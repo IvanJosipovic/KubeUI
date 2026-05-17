@@ -1,4 +1,4 @@
-﻿<UserControl
+<UserControl
     x:Class="KubeUI.Avalonia.Resources.CustomResourceDefinition.Views.PropertiesView"
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -16,7 +16,7 @@
         <c:PropertyItem Key="{x:Static assets:Resources.CustomResourceDefinitionPropertiesView_Scope}" Value="{Binding Spec.Scope}" />
         <c:PropertyItem Key="{x:Static assets:Resources.Shared_Kind}" Value="{Binding Spec.Names.Kind}" />
         <c:PropertyItem Key="{x:Static assets:Resources.CustomResourceDefinitionPropertiesView_Versions}" Value="{Binding Spec.Versions.Count}" />
-        <c:ExpandableSection Header="Status">
+        <c:ExpandableSection Header="{x:Static assets:Resources.Shared_Status}">
             <StackPanel>
                 <c:PropertyItem Key="{x:Static assets:Resources.CustomResourceDefinitionPropertiesView_Accepted_Kind}" Value="{Binding Status.AcceptedNames.Kind}" />
                 <c:PropertyItem Key="{x:Static assets:Resources.CustomResourceDefinitionPropertiesView_Stored_Versions}" Value="{Binding Status.StoredVersions.Count}" />

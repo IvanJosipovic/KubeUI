@@ -100,7 +100,7 @@
         <c:PropertyItem Key="{x:Static assets:Resources.PodPropertiesView_PodIp}" Value="{Binding Status.PodIP}" />
         <c:PropertyItem Key="{x:Static assets:Resources.PodPropertiesView_Service_Account}" Value="{Binding Spec.ServiceAccountName}" />
 
-        <c:ExpandableSection Header="Metadata">
+        <c:ExpandableSection Header="{x:Static assets:Resources.Shared_Metadata}">
             <StackPanel>
                 <c:CollectionItem Key="{x:Static assets:Resources.PodPropertiesView_Labels}" Value="{Binding Metadata.Labels}">
                     <c:CollectionItem.ItemTemplate>

@@ -16,7 +16,7 @@
         <c:PropertyItem Key="{x:Static assets:Resources.Shared_Available_Replicas}" Value="{Binding Status.AvailableReplicas}" />
         <c:PropertyItem Key="{x:Static assets:Resources.Shared_Ready_Replicas}" Value="{Binding Status.ReadyReplicas}" />
         <c:PropertyItem Key="{x:Static assets:Resources.Shared_Updated_Replicas}" Value="{Binding Status.UpdatedReplicas}" />
-        <c:ExpandableSection Header="Rollout">
+        <c:ExpandableSection Header="{x:Static assets:Resources.DeploymentPropertiesView_Rollout}">
             <StackPanel>
                 <c:PropertyItem Key="{x:Static assets:Resources.DeploymentPropertiesView_Unavailable_Replicas}" Value="{Binding Status.UnavailableReplicas}" />
                 <c:PropertyItem Key="{x:Static assets:Resources.Shared_Conditions}" Value="{Binding Status.Conditions.Count}" />

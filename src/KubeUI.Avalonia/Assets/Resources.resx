@@ -1035,6 +1035,18 @@ Are you sure?</value>
   <data name="Shared_Conditions" xml:space="preserve">
     <value>Conditions</value>
   </data>
+  <data name="Shared_Configuration" xml:space="preserve">
+    <value>Configuration</value>
+  </data>
+  <data name="Shared_Status" xml:space="preserve">
+    <value>Status</value>
+  </data>
+  <data name="Shared_Metadata" xml:space="preserve">
+    <value>Metadata</value>
+  </data>
+  <data name="Shared_Resources" xml:space="preserve">
+    <value>Resources</value>
+  </data>
   <data name="Shared_Capacity_Entries" xml:space="preserve">
     <value>Capacity Entries</value>
   </data>
@@ -1079,6 +1091,12 @@ Are you sure?</value>
   </data>
   <data name="ServicePropertiesView_Cluster_IPs" xml:space="preserve">
     <value>Cluster IPs</value>
+  </data>
+  <data name="ServicePropertiesView_Routing" xml:space="preserve">
+    <value>Routing</value>
+  </data>
+  <data name="ServicePropertiesView_Networking" xml:space="preserve">
+    <value>Networking</value>
   </data>
   <data name="JobPropertiesView_Succeeded" xml:space="preserve">
     <value>Succeeded</value>
@@ -1430,6 +1448,9 @@ Are you sure?</value>
   </data>
   <data name="DeploymentPropertiesView_Unavailable_Replicas" xml:space="preserve">
     <value>Unavailable Replicas</value>
+  </data>
+  <data name="DeploymentPropertiesView_Rollout" xml:space="preserve">
+    <value>Rollout</value>
   </data>
   <data name="JobPropertiesView_Active_Deadline_Seconds" xml:space="preserve">
     <value>Active Deadline Seconds</value>

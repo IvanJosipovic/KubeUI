@@ -1,4 +1,4 @@
-﻿<UserControl
+<UserControl
     x:Class="KubeUI.Avalonia.Resources.Workloads.v1.StatefulSet.Views.PropertiesView"
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -18,14 +18,14 @@
         <c:PropertyItem Key="{x:Static assets:Resources.Shared_Updated_Replicas}" Value="{Binding Status.UpdatedReplicas}" />
         <c:PropertyItem Key="{x:Static assets:Resources.Shared_Available_Replicas}" Value="{Binding Status.AvailableReplicas}" />
         <c:PropertyItem Key="{x:Static assets:Resources.StatefulSetPropertiesView_Service_Name}" Value="{Binding Spec.ServiceName}" />
-        <c:ExpandableSection Header="Status">
+        <c:ExpandableSection Header="{x:Static assets:Resources.Shared_Status}">
             <StackPanel>
                 <c:PropertyItem Key="{x:Static assets:Resources.StatefulSetPropertiesView_Current_Revision}" Value="{Binding Status.CurrentRevision}" />
                 <c:PropertyItem Key="{x:Static assets:Resources.StatefulSetPropertiesView_Update_Revision}" Value="{Binding Status.UpdateRevision}" />
                 <c:PropertyItem Key="{x:Static assets:Resources.Shared_Conditions}" Value="{Binding Status.Conditions.Count}" />
             </StackPanel>
         </c:ExpandableSection>
-        <c:ExpandableSection Header="Configuration">
+        <c:ExpandableSection Header="{x:Static assets:Resources.Shared_Configuration}">
             <StackPanel>
                 <c:PropertyItem Key="{x:Static assets:Resources.StatefulSetPropertiesView_Pod_Management_Policy}" Value="{Binding Spec.PodManagementPolicy}" />
                 <c:PropertyItem Key="{x:Static assets:Resources.StatefulSetPropertiesView_Update_Strategy}" Value="{Binding Spec.UpdateStrategy.Type}" />

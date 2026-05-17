@@ -1,4 +1,4 @@
-﻿<UserControl
+<UserControl
     x:Class="KubeUI.Avalonia.Resources.Workloads.v1.Job.Views.PropertiesView"
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -16,7 +16,7 @@
         <c:PropertyItem Key="{x:Static assets:Resources.JobPropertiesView_Parallelism}" Value="{Binding Spec.Parallelism}" />
         <c:PropertyItem Key="{x:Static assets:Resources.JobPropertiesView_Succeeded}" Value="{Binding Status.Succeeded}" />
         <c:PropertyItem Key="{x:Static assets:Resources.JobPropertiesView_Failed}" Value="{Binding Status.Failed}" />
-        <c:ExpandableSection Header="Configuration">
+        <c:ExpandableSection Header="{x:Static assets:Resources.Shared_Configuration}">
             <StackPanel>
                 <c:PropertyItem Key="{x:Static assets:Resources.JobPropertiesView_Backoff_Limit}" Value="{Binding Spec.BackoffLimit}" />
                 <c:PropertyItem Key="{x:Static assets:Resources.JobPropertiesView_Active_Deadline_Seconds}" Value="{Binding Spec.ActiveDeadlineSeconds}" />
@@ -24,7 +24,7 @@
                 <c:PropertyItem Key="{x:Static assets:Resources.Shared_Suspend}" Value="{Binding Spec.Suspend}" />
             </StackPanel>
         </c:ExpandableSection>
-        <c:ExpandableSection Header="Status">
+        <c:ExpandableSection Header="{x:Static assets:Resources.Shared_Status}">
             <StackPanel>
                 <c:PropertyItem Key="{x:Static assets:Resources.JobPropertiesView_Active_Pods}" Value="{Binding Status.Active}" />
                 <c:PropertyItem Key="{x:Static assets:Resources.JobPropertiesView_Start_Time}" Value="{Binding Status.StartTime}" />

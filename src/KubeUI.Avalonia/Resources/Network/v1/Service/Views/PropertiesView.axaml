@@ -16,7 +16,7 @@
         <c:PropertyItem Key="{x:Static assets:Resources.ServicePropertiesView_Cluster_IP}" Value="{Binding Spec.ClusterIP}" />
         <c:PropertyItem Key="{x:Static assets:Resources.Shared_Ports}" Value="{Binding Spec.Ports.Count}" />
         <c:PropertyItem Key="{x:Static assets:Resources.ServicePropertiesView_Load_Balancer_Ingress}" Value="{Binding Status.LoadBalancer.Ingress.Count}" />
-        <c:ExpandableSection Header="Routing">
+        <c:ExpandableSection Header="{x:Static assets:Resources.ServicePropertiesView_Routing}">
             <StackPanel>
                 <c:PropertyItem Key="{x:Static assets:Resources.ServicePropertiesView_Selector}" Value="{Binding Spec.Selector.Count}" />
                 <c:PropertyItem Key="{x:Static assets:Resources.ServicePropertiesView_Session_Affinity}" Value="{Binding Spec.SessionAffinity}" />
@@ -25,7 +25,7 @@
                 <c:PropertyItem Key="{x:Static assets:Resources.ServicePropertiesView_Publish_Not_Ready_Addresses}" Value="{Binding Spec.PublishNotReadyAddresses}" />
             </StackPanel>
         </c:ExpandableSection>
-        <c:ExpandableSection Header="Networking">
+        <c:ExpandableSection Header="{x:Static assets:Resources.ServicePropertiesView_Networking}">
             <StackPanel>
                 <c:PropertyItem Key="{x:Static assets:Resources.ServicePropertiesView_Cluster_IPs}" Value="{Binding Spec.ClusterIPs.Count}" />
                 <c:PropertyItem Key="{x:Static assets:Resources.ServicePropertiesView_External_IPs}" Value="{Binding Spec.ExternalIPs.Count}" />

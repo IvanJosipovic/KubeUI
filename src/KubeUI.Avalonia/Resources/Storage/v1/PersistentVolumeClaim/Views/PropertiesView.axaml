@@ -1,4 +1,4 @@
-﻿<UserControl
+<UserControl
     x:Class="KubeUI.Avalonia.Resources.Storage.v1.PersistentVolumeClaim.Views.PropertiesView"
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -16,13 +16,13 @@
         <c:PropertyItem Key="{x:Static assets:Resources.Shared_Storage_Class}" Value="{Binding Spec.StorageClassName}" />
         <c:PropertyItem Key="{x:Static assets:Resources.PersistentVolumeClaimPropertiesView_Volume_Name}" Value="{Binding Spec.VolumeName}" />
         <c:PropertyItem Key="{x:Static assets:Resources.Shared_Access_Modes}" Value="{Binding Spec.AccessModes.Count}" />
-        <c:ExpandableSection Header="Configuration">
+        <c:ExpandableSection Header="{x:Static assets:Resources.Shared_Configuration}">
             <StackPanel>
                 <c:PropertyItem Key="{x:Static assets:Resources.Shared_Volume_Mode}" Value="{Binding Spec.VolumeMode}" />
                 <c:PropertyItem Key="{x:Static assets:Resources.PersistentVolumeClaimPropertiesView_Requested_Storage}" Value="{Binding Spec.Resources.Requests.Count}" />
             </StackPanel>
         </c:ExpandableSection>
-        <c:ExpandableSection Header="Status">
+        <c:ExpandableSection Header="{x:Static assets:Resources.Shared_Status}">
             <StackPanel>
                 <c:PropertyItem Key="{x:Static assets:Resources.Shared_Capacity_Entries}" Value="{Binding Status.Capacity.Count}" />
                 <c:PropertyItem Key="{x:Static assets:Resources.Shared_Conditions}" Value="{Binding Status.Conditions.Count}" />
