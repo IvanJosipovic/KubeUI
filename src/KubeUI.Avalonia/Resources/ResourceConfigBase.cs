@@ -482,10 +482,17 @@ public class ResourceListColumn<T, TValue> : IResourceListColumn where T : class
         o =>
         {
             var t = (T)o;
-            if (Display != null)
-                return Display(t);
-            var v = GetFieldValue(t);
-            return v?.ToString() ?? "";
+            try
+            {
+                if (Display != null)
+                    return Display(t);
+                var v = GetFieldValue(t);
+                return v?.ToString() ?? "";
+            }
+            catch (Exception ex) when (IsMissingOptionalValue(ex))
+            {
+                return "";
+            }
         };
 
     private Func<T, TValue> GetFieldAccessor()
@@ -500,10 +507,17 @@ public class ResourceListColumn<T, TValue> : IResourceListColumn where T : class
         {
             return GetFieldAccessor()(item);
         }
-        catch (InvalidOperationException ex) when (ex.Message == NullableValueMissingMessage)
+        catch (Exception ex) when (IsMissingOptionalValue(ex))
         {
             return null;
         }
+    }
+
+    private static bool IsMissingOptionalValue(Exception ex)
+    {
+        return ex is KeyNotFoundException
+            || (ex is InvalidOperationException invalidOperationException
+                && invalidOperationException.Message == NullableValueMissingMessage);
     }
 
     private sealed class LambdaColumnValueAccessor : IDataGridColumnValueAccessor
@@ -527,7 +541,7 @@ public class ResourceListColumn<T, TValue> : IResourceListColumn where T : class
             {
                 return _getter((T)item)!;
             }
-            catch (InvalidOperationException ex) when (ex.Message == NullableValueMissingMessage)
+            catch (Exception ex) when (IsMissingOptionalValue(ex))
             {
                 return null!;
             }
@@ -539,4 +553,3 @@ public class ResourceListColumn<T, TValue> : IResourceListColumn where T : class
         }
     }
 }
-
