@@ -42,10 +42,6 @@
     <AvaloniaResource Include="Assets\**" Exclude="Assets\Resources.resx" />
   </ItemGroup>
 
-<PropertyGroup>
-	<ResXGenerator_GenerationType>CodeGeneration</ResXGenerator_GenerationType>
-</PropertyGroup>
-
   <ItemGroup>
     <PackageReference Include="Aigamo.ResXGenerator" Version="4.3.0">
       <PrivateAssets>all</PrivateAssets>
