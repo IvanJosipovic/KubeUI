@@ -75,7 +75,7 @@
     <PackageReference Include="Irihi.Ursa" Version="2.0.0" />
     <PackageReference Include="Irihi.Ursa.Themes.Semi" Version="2.0.0" />
     <PackageReference Include="JsonPathLINQ" Version="1.0.0-alpha.13" />
-    <PackageReference Include="LiveChartsCore.SkiaSharpView.Avalonia" Version="2.1.0-dev-365" />
+    <PackageReference Include="LiveChartsCore.SkiaSharpView.Avalonia" Version="2.1.0-dev-570" />
     <PackageReference Include="Markdig" Version="1.2.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.8" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.8" />
