@@ -520,36 +520,6 @@ public class ResourceListColumn<T, TValue> : IResourceListColumn where T : class
             && invalidOperationException.Message == NullableValueMissingMessage;
     }
 
-    private static string NormalizeKey(string value)
-    {
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            return string.Empty;
-        }
-
-        var builder = new StringBuilder(value.Length);
-        var pendingDash = false;
-
-        foreach (var ch in value)
-        {
-            if (char.IsLetterOrDigit(ch))
-            {
-                if (pendingDash && builder.Length > 0)
-                {
-                    builder.Append('-');
-                }
-
-                builder.Append(char.ToLowerInvariant(ch));
-                pendingDash = false;
-                continue;
-            }
-
-            pendingDash = true;
-        }
-
-        return builder.ToString().Trim('-');
-    }
-
     private sealed class LambdaColumnValueAccessor : IDataGridColumnValueAccessor
     {
         private readonly Func<T, TValue> _getter;
