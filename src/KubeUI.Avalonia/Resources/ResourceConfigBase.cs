@@ -516,8 +516,8 @@ public class ResourceListColumn<T, TValue> : IResourceListColumn where T : class
     private static bool IsMissingOptionalValue(Exception ex)
     {
         return ex is KeyNotFoundException
-            || ex is InvalidOperationException invalidOperationException
-            && invalidOperationException.Message == NullableValueMissingMessage;
+            || (ex is InvalidOperationException invalidOperationException
+                && invalidOperationException.Message == NullableValueMissingMessage);
     }
 
     private sealed class LambdaColumnValueAccessor : IDataGridColumnValueAccessor
