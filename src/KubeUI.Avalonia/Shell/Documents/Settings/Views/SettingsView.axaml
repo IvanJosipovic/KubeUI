@@ -54,8 +54,7 @@
             <Label Grid.Column="0" Content="{x:Static assets:Resources.SettingsView_PreRelease_Label}" />
             <CheckBox
                 Grid.Column="1"
-                IsChecked="{Binding SettingsService.Settings.PreReleaseChannel}"
-                IsEnabled="False" />
+                IsChecked="{Binding SettingsService.Settings.PreReleaseChannel}" />
         </Grid>
 
         <Grid ColumnDefinitions="*,2*" ToolTip.Tip="{x:Static assets:Resources.SettingsView_FontSize_ToolTip}">
