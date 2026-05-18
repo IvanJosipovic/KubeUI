@@ -3,9 +3,9 @@
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:agc="clr-namespace:AvaloniaGraphControl;assembly=AvaloniaGraphControl"
+    xmlns:appconv="clr-namespace:KubeUI.Avalonia.Converters;assembly=KubeUI.Avalonia"
     xmlns:assets="clr-namespace:KubeUI.Avalonia.Assets;assembly=KubeUI.Avalonia"
     xmlns:controls="clr-namespace:NodifyM.Avalonia.Controls;assembly=NodifyM.Avalonia"
-    xmlns:converters="clr-namespace:NodifyM.Avalonia.Converters;assembly=NodifyM.Avalonia"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:ic="using:FluentIcons.Avalonia"
     xmlns:k8s="using:k8s.Models"
@@ -33,26 +33,45 @@
     </UserControl.Styles>
 
     <Grid RowDefinitions="Auto,*">
-        <StackPanel Grid.Row="0"
-            HorizontalAlignment="Left"
-            Orientation="Horizontal">
-            <ToggleButton IsChecked="{Binding HideNoise}" ToolTip.Tip="{x:Static assets:Resources.VisualizationView_HideNoiseTooltip}">
-                <ic:FluentIcon Icon="EyeOff" />
-            </ToggleButton>
+        <DockPanel Grid.Row="0" LastChildFill="True">
+            <StackPanel
+                HorizontalAlignment="Left"
+                DockPanel.Dock="Left"
+                Orientation="Horizontal">
+                <ToggleButton IsChecked="{Binding HideNoise}" ToolTip.Tip="{x:Static assets:Resources.VisualizationView_HideNoiseTooltip}">
+                    <ic:FluentIcon Icon="EyeOff" />
+                </ToggleButton>
 
-            <Label
-                Width="200"
-                VerticalContentAlignment="Center"
-                Content="{Binding Resources.Count, StringFormat={x:Static assets:Resources.VisualizationView_ItemsFormat}}" />
-        </StackPanel>
+                <Label
+                    Width="200"
+                    VerticalContentAlignment="Center"
+                    Content="{Binding Resources.Count, StringFormat={x:Static assets:Resources.VisualizationView_ItemsFormat}}" />
+            </StackPanel>
+
+            <TextBlock x:Name="ResourceToolbarText"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Center"
+                FontWeight="SemiBold"
+                IsVisible="{Binding RootResource, Converter={x:Static appconv:Converters.NotNull}}">
+                <TextBlock.Text>
+                    <MultiBinding StringFormat="Resource: {0}/{1} {2}/{3}">
+                        <Binding Path="RootResource.ApiVersion" />
+                        <Binding Path="RootResource.Kind" />
+                        <Binding Path="RootResource.Metadata.NamespaceProperty" />
+                        <Binding Path="RootResource.Metadata.Name" />
+                    </MultiBinding>
+                </TextBlock.Text>
+            </TextBlock>
+        </DockPanel>
 
         <StackPanel Grid.Row="0"
             HorizontalAlignment="Right"
             Orientation="Horizontal">
-            <u:MultiComboBox
+            <u:MultiComboBox x:Name="NamespaceSelector"
                 Width="200"
                 MaxHeight="20"
                 Classes="ClearButton"
+                IsVisible="{Binding RootResource, Converter={x:Static appconv:Converters.IsNullOrUnset}}"
                 ItemsSource="{Binding Cluster.Namespaces}"
                 SelectedItems="{Binding Cluster.SelectedNamespaces}">
 
@@ -134,6 +153,28 @@
                                 </StackPanel>
                             </Border>
                         </DataTemplate>
+                        <DataTemplate x:DataType="vm:VisualizationViewModel+GroupNodeViewModel">
+                            <Border
+                                Margin="18,12"
+                                Padding="12,10"
+                                Background="#2A1F2937"
+                                BorderBrush="#88A7B0C0"
+                                BorderThickness="1"
+                                CornerRadius="10">
+                                <StackPanel Width="128">
+                                    <TextBlock
+                                        HorizontalAlignment="Center"
+                                        FontSize="13"
+                                        FontWeight="SemiBold"
+                                        Text="{Binding DisplayText}"
+                                        TextAlignment="Center"
+                                        TextWrapping="Wrap" />
+                                </StackPanel>
+                            </Border>
+                        </DataTemplate>
+                        <DataTemplate x:DataType="vm:VisualizationViewModel+GroupEdge">
+                            <agc:Connection Brush="Transparent" />
+                        </DataTemplate>
                         <DataTemplate DataType="agc:Edge">
                             <agc:Connection Brush="Green" />
                         </DataTemplate>
@@ -143,6 +184,3 @@
         </ScrollViewer>
     </Grid>
 </UserControl>
-
-
-

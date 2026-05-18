@@ -1,5 +1,6 @@
 using Avalonia;
 using Avalonia.Headless.XUnit;
+using AvaloniaGraphControl;
 using k8s;
 using k8s.Models;
 using KubeUI.Avalonia.Tests.Infra;
@@ -36,6 +37,9 @@ public class VisualizationViewModelTests : AvaloniaTestBase
         _disposables.Add(vm);
         return vm;
     }
+
+    private static IEnumerable<Edge> ResourceEdges(Graph graph)
+        => graph.Edges.Where(edge => edge is not GroupEdge);
 
     [AvaloniaFact]
     public async Task LinkOwners()
@@ -79,9 +83,205 @@ public class VisualizationViewModelTests : AvaloniaTestBase
         // Simulate selection
         vm.Initialize(cluster);
 
-        vm.Graph.Edges.Count.ShouldBe(1);
-        vm.Graph.Edges.First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Deployment>();
-        vm.Graph.Edges.First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ConfigMap>();
+        ResourceEdges(vm.Graph).Count().ShouldBe(1);
+        ResourceEdges(vm.Graph).First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Deployment>();
+        ResourceEdges(vm.Graph).First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ConfigMap>();
+    }
+
+    [AvaloniaFact]
+    public async Task LinkOwners_CronJobJobPodChain()
+    {
+        var cluster = await CreateClusterAsync();
+
+        const string namespaceName = "viz-ownership-chain";
+
+        var backupNamespace = new V1Namespace
+        {
+            Metadata = new()
+            {
+                Name = namespaceName,
+            },
+        };
+
+        await cluster.AddOrUpdateResource(backupNamespace);
+        cluster.SelectedNamespaces.Add(backupNamespace);
+
+        await cluster.AddOrUpdateResource(new V1CronJob
+        {
+            ApiVersion = "batch/v1",
+            Kind = V1CronJob.KubeKind,
+            Metadata = new()
+            {
+                Name = "backup-backup",
+                NamespaceProperty = namespaceName,
+                Uid = "cronjob-uid",
+            },
+        });
+
+        await cluster.AddOrUpdateResource(new V1Job
+        {
+            ApiVersion = "batch/v1",
+            Kind = V1Job.KubeKind,
+            Metadata = new()
+            {
+                Name = "backup-backup-29651025",
+                NamespaceProperty = namespaceName,
+                Uid = "job-uid",
+                OwnerReferences =
+                [
+                    new()
+                    {
+                        ApiVersion = "batch/v1",
+                        Kind = V1CronJob.KubeKind,
+                        Name = "backup-backup",
+                        Uid = "cronjob-uid",
+                        Controller = true,
+                        BlockOwnerDeletion = true,
+                    }
+                ],
+            },
+        });
+
+        await cluster.AddOrUpdateResource(new V1Pod
+        {
+            ApiVersion = "v1",
+            Kind = V1Pod.KubeKind,
+            Metadata = new()
+            {
+                Name = "backup-backup-29651025-ddzf6",
+                NamespaceProperty = namespaceName,
+                Uid = "pod-uid",
+                OwnerReferences =
+                [
+                    new()
+                    {
+                        ApiVersion = "batch/v1",
+                        Kind = V1Job.KubeKind,
+                        Name = "backup-backup-29651025",
+                        Uid = "job-uid",
+                        Controller = true,
+                        BlockOwnerDeletion = true,
+                    }
+                ],
+            },
+            Spec = new V1PodSpec(),
+        });
+
+        var vm = CreateViewModel();
+        vm.Initialize(cluster);
+
+        var edges = ResourceEdges(vm.Graph)
+            .Select(edge => (
+                Tail: ((ResourceNodeViewModel)edge.Tail).Resource.GetType(),
+                Head: ((ResourceNodeViewModel)edge.Head).Resource.GetType()))
+            .ToHashSet();
+
+        edges.Count.ShouldBe(2);
+        edges.ShouldContain((typeof(V1CronJob), typeof(V1Job)));
+        edges.ShouldContain((typeof(V1Job), typeof(V1Pod)));
+    }
+
+    [AvaloniaFact]
+    public async Task LinkOwners_CronJobJobPodChain_WhenVisualizingPod_IncludesParents()
+    {
+        var cluster = await CreateClusterAsync();
+
+        const string namespaceName = "viz-ownership-root";
+
+        var namespaceResource = new V1Namespace
+        {
+            Metadata = new()
+            {
+                Name = namespaceName,
+            },
+        };
+
+        await cluster.AddOrUpdateResource(namespaceResource);
+
+        var cronJob = new V1CronJob
+        {
+            ApiVersion = "batch/v1",
+            Kind = V1CronJob.KubeKind,
+            Metadata = new()
+            {
+                Name = "backup-backup",
+                NamespaceProperty = namespaceName,
+                Uid = "cronjob-uid",
+            },
+        };
+
+        await cluster.AddOrUpdateResource(cronJob);
+
+        var job = new V1Job
+        {
+            ApiVersion = "batch/v1",
+            Kind = V1Job.KubeKind,
+            Metadata = new()
+            {
+                Name = "backup-backup-29651025",
+                NamespaceProperty = namespaceName,
+                Uid = "job-uid",
+                OwnerReferences =
+                [
+                    new()
+                    {
+                        ApiVersion = "batch/v1",
+                        Kind = V1CronJob.KubeKind,
+                        Name = "backup-backup",
+                        Uid = "cronjob-uid",
+                        Controller = true,
+                        BlockOwnerDeletion = true,
+                    }
+                ],
+            },
+        };
+
+        await cluster.AddOrUpdateResource(job);
+
+        var pod = new V1Pod
+        {
+            ApiVersion = "v1",
+            Kind = V1Pod.KubeKind,
+            Metadata = new()
+            {
+                Name = "backup-backup-29651025-ddzf6",
+                NamespaceProperty = namespaceName,
+                Uid = "pod-uid",
+                OwnerReferences =
+                [
+                    new()
+                    {
+                        ApiVersion = "batch/v1",
+                        Kind = V1Job.KubeKind,
+                        Name = "backup-backup-29651025",
+                        Uid = "job-uid",
+                        Controller = true,
+                        BlockOwnerDeletion = true,
+                    }
+                ],
+            },
+            Spec = new V1PodSpec(),
+        };
+
+        await cluster.AddOrUpdateResource(pod);
+
+        var vm = CreateViewModel();
+        vm.Initialize(cluster, pod);
+
+        var resourceTypes = vm.Resources.Select(x => x.Resource.GetType()).ToHashSet();
+        resourceTypes.ShouldContain(typeof(V1Pod));
+        resourceTypes.ShouldContain(typeof(V1Job));
+        resourceTypes.ShouldContain(typeof(V1CronJob));
+
+        var edges = ResourceEdges(vm.Graph)
+            .Select(edge => (
+                Tail: ((ResourceNodeViewModel)edge.Tail).Resource.GetType(),
+                Head: ((ResourceNodeViewModel)edge.Head).Resource.GetType()))
+            .ToHashSet();
+
+        edges.Count.ShouldBe(2);
+        edges.ShouldContain((typeof(V1CronJob), typeof(V1Job)));
+        edges.ShouldContain((typeof(V1Job), typeof(V1Pod)));
     }
 
     [AvaloniaFact]
@@ -179,9 +379,9 @@ public class VisualizationViewModelTests : AvaloniaTestBase
         var vm = CreateViewModel();
         vm.Initialize(cluster);
 
-        vm.Graph.Edges.Count.ShouldBe(1);
-        vm.Graph.Edges.First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<ArgoApplication>();
-        vm.Graph.Edges.First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Secret>();
+        ResourceEdges(vm.Graph).Count().ShouldBe(1);
+        ResourceEdges(vm.Graph).First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<ArgoApplication>();
+        ResourceEdges(vm.Graph).First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Secret>();
     }
 
     [AvaloniaFact]
@@ -226,9 +426,9 @@ public class VisualizationViewModelTests : AvaloniaTestBase
         var vm = CreateViewModel();
         vm.Initialize(cluster);
 
-        vm.Graph.Edges.Count.ShouldBe(1);
-        vm.Graph.Edges.First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<FluxKustomization>();
-        vm.Graph.Edges.First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ConfigMap>();
+        ResourceEdges(vm.Graph).Count().ShouldBe(1);
+        ResourceEdges(vm.Graph).First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<FluxKustomization>();
+        ResourceEdges(vm.Graph).First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ConfigMap>();
     }
 
     [AvaloniaFact]
@@ -273,13 +473,13 @@ public class VisualizationViewModelTests : AvaloniaTestBase
         var vm = CreateViewModel();
         vm.Initialize(cluster);
 
-        vm.Graph.Edges.Count.ShouldBe(1);
-        vm.Graph.Edges.First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<FluxHelmRelease>();
-        vm.Graph.Edges.First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ConfigMap>();
+        ResourceEdges(vm.Graph).Count().ShouldBe(1);
+        ResourceEdges(vm.Graph).First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<FluxHelmRelease>();
+        ResourceEdges(vm.Graph).First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ConfigMap>();
     }
 
     [AvaloniaFact]
-    public async Task Initialize_with_root_resource_filters_to_parents_and_dependents()
+    public async Task Initialize_with_root_secret_filters_to_parents_only()
     {
         var cluster = await CreateClusterAsync();
 
@@ -377,6 +577,55 @@ public class VisualizationViewModelTests : AvaloniaTestBase
             },
         };
 
+        var secret = new V1Secret
+        {
+            Metadata = new()
+            {
+                Name = "workload-secret",
+                NamespaceProperty = "default",
+                Uid = "secret-uid"
+            }
+        };
+
+        await cluster.AddOrUpdateResource(secret);
+
+        pod.Spec = new()
+        {
+            Containers =
+            [
+                new V1Container
+                {
+                    Name = "app",
+                    Image = "busybox",
+                    Env =
+                    [
+                        new()
+                        {
+                            ValueFrom = new()
+                            {
+                                SecretKeyRef = new()
+                                {
+                                    Name = "workload-secret"
+                                }
+                            }
+                        }
+                    ]
+                }
+            ],
+            ServiceAccountName = "workload-sa",
+            Volumes =
+            [
+                new()
+                {
+                    Name = "config",
+                    ConfigMap = new()
+                    {
+                        Name = "workload-config"
+                    }
+                }
+            ]
+        };
+
         await cluster.AddOrUpdateResource(pod);
 
         await cluster.AddOrUpdateResource(new V1ServiceAccount
@@ -388,14 +637,14 @@ public class VisualizationViewModelTests : AvaloniaTestBase
             }
         });
 
-        await cluster.AddOrUpdateResource(new V1ConfigMap
+        await cluster.AddOrUpdateResource(new V1Secret
         {
             Metadata = new()
             {
-                Name = "workload-config",
+                Name = "other-secret",
                 NamespaceProperty = "default"
             },
-            Data = new Dictionary<string, string>()
+            StringData = new Dictionary<string, string>()
         });
 
         await cluster.AddOrUpdateResource(new V1ConfigMap
@@ -416,23 +665,587 @@ public class VisualizationViewModelTests : AvaloniaTestBase
         });
 
         var vm = CreateViewModel();
-        vm.Initialize(cluster, pod);
+        vm.Initialize(cluster, secret);
 
-        vm.Resources.Count.ShouldBe(5);
+        vm.Resources.Count.ShouldBe(4);
         vm.Resources.Select(x => x.Resource).Any(x => ReferenceEquals(x, deployment)).ShouldBeTrue();
         vm.Resources.Select(x => x.Resource).Any(x => x is V1ReplicaSet linkedReplicaSet && linkedReplicaSet.Name() == "my-app-7c4f5d8f7b").ShouldBeTrue();
         vm.Resources.Select(x => x.Resource).Any(x => x is V1Pod linkedPod && linkedPod.Name() == "my-app-7c4f5d8f7b-abcde").ShouldBeTrue();
-        vm.Resources.Select(x => x.Resource).Any(x => x is V1ServiceAccount linkedServiceAccount && linkedServiceAccount.Name() == "workload-sa").ShouldBeTrue();
-        vm.Resources.Select(x => x.Resource).Any(x => x is V1ConfigMap linkedConfigMap && linkedConfigMap.Name() == "workload-config").ShouldBeTrue();
+        vm.Resources.Select(x => x.Resource).Any(x => x is V1Secret linkedSecret && linkedSecret.Name() == "workload-secret").ShouldBeTrue();
+        vm.Resources.Select(x => x.Resource).Any(x => x is V1ServiceAccount linkedServiceAccount && linkedServiceAccount.Name() == "workload-sa").ShouldBeFalse();
+        vm.Resources.Select(x => x.Resource).Any(x => x is V1ConfigMap linkedConfigMap && linkedConfigMap.Name() == "workload-config").ShouldBeFalse();
         vm.Resources.Select(x => x.Resource).Any(x => x is V1ConfigMap configMap && configMap.Name() == "unrelated-config").ShouldBeFalse();
-        vm.Resources.Single(x => ReferenceEquals(x.Resource, pod)).IsRoot.ShouldBeTrue();
-        vm.Resources.Where(x => !ReferenceEquals(x.Resource, pod)).All(x => !x.IsRoot).ShouldBeTrue();
-        vm.Graph.Edges.Count.ShouldBe(4);
-        vm.Graph.Edges.Select(x => x.Tail).OfType<ResourceNodeViewModel>().Any(x => ReferenceEquals(x.Resource, deployment)).ShouldBeTrue();
-        vm.Graph.Edges.Select(x => x.Tail).OfType<ResourceNodeViewModel>().Any(x => x.Resource is V1ReplicaSet linkedReplicaSet && linkedReplicaSet.Name() == "my-app-7c4f5d8f7b").ShouldBeTrue();
-        vm.Graph.Edges.Select(x => x.Tail).OfType<ResourceNodeViewModel>().Any(x => x.Resource is V1Pod linkedPod && linkedPod.Name() == "my-app-7c4f5d8f7b-abcde").ShouldBeTrue();
-        vm.Graph.Edges.Select(x => x.Head).OfType<ResourceNodeViewModel>().Any(x => x.Resource is V1ServiceAccount linkedServiceAccount && linkedServiceAccount.Name() == "workload-sa").ShouldBeTrue();
-        vm.Graph.Edges.Select(x => x.Head).OfType<ResourceNodeViewModel>().Any(x => x.Resource is V1ConfigMap linkedConfigMap && linkedConfigMap.Name() == "workload-config").ShouldBeTrue();
+        vm.Resources.Single(x => x.Resource is V1Secret linkedSecret && linkedSecret.Name() == "workload-secret").IsRoot.ShouldBeTrue();
+        vm.Resources.Where(x => !ReferenceEquals(x.Resource, secret)).All(x => !x.IsRoot).ShouldBeTrue();
+        ResourceEdges(vm.Graph).Count().ShouldBe(3);
+        ResourceEdges(vm.Graph).Select(x => x.Tail).OfType<ResourceNodeViewModel>().Any(x => ReferenceEquals(x.Resource, deployment)).ShouldBeTrue();
+        ResourceEdges(vm.Graph).Select(x => x.Tail).OfType<ResourceNodeViewModel>().Any(x => x.Resource is V1ReplicaSet linkedReplicaSet && linkedReplicaSet.Name() == "my-app-7c4f5d8f7b").ShouldBeTrue();
+        ResourceEdges(vm.Graph).Select(x => x.Tail).OfType<ResourceNodeViewModel>().Any(x => x.Resource is V1Pod linkedPod && linkedPod.Name() == "my-app-7c4f5d8f7b-abcde").ShouldBeTrue();
+        ResourceEdges(vm.Graph).Select(x => x.Head).OfType<ResourceNodeViewModel>().Any(x => x.Resource is V1Secret linkedSecret && linkedSecret.Name() == "workload-secret").ShouldBeTrue();
+    }
+
+    [AvaloniaFact]
+    public async Task Initialize_with_root_deployment_includes_dependents()
+    {
+        var cluster = await CreateClusterAsync();
+
+        var deployment = new V1Deployment
+        {
+            Metadata = new()
+            {
+                Name = "my-app",
+                NamespaceProperty = "default",
+                Uid = "deployment-uid"
+            },
+            Spec = new()
+            {
+                Template = new()
+                {
+                    Spec = new()
+                    {
+                        Containers =
+                        [
+                            new V1Container
+                            {
+                                Name = "app",
+                                Image = "busybox"
+                            }
+                        ]
+                    }
+                }
+            }
+        };
+
+        await cluster.AddOrUpdateResource(deployment);
+
+        var replicaSet = new V1ReplicaSet
+        {
+            Metadata = new()
+            {
+                Name = "my-app-7c4f5d8f7b",
+                NamespaceProperty = "default",
+                Uid = "replicaset-uid",
+                OwnerReferences =
+                [
+                    new()
+                    {
+                        Uid = "deployment-uid",
+                        Kind = "Deployment",
+                        ApiVersion = V1Deployment.KubeApiVersion,
+                        Controller = true,
+                    }
+                ],
+            },
+            Spec = new()
+            {
+                Template = new()
+                {
+                    Spec = new()
+                    {
+                        Containers =
+                        [
+                            new V1Container
+                            {
+                                Name = "app",
+                                Image = "busybox",
+                                Env =
+                                [
+                                    new()
+                                    {
+                                        ValueFrom = new()
+                                        {
+                                            SecretKeyRef = new()
+                                            {
+                                                Name = "workload-secret"
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                }
+            }
+        };
+
+        await cluster.AddOrUpdateResource(replicaSet);
+
+        var pod = new V1Pod
+        {
+            Metadata = new()
+            {
+                Name = "my-app-7c4f5d8f7b-abcde",
+                NamespaceProperty = "default",
+                Uid = "pod-uid",
+                OwnerReferences =
+                [
+                    new()
+                    {
+                        Uid = "replicaset-uid",
+                        Kind = "ReplicaSet",
+                        ApiVersion = V1ReplicaSet.KubeApiVersion,
+                        Controller = true,
+                    }
+                ]
+            },
+            Spec = new()
+            {
+                Containers =
+                [
+                    new V1Container
+                    {
+                        Name = "app",
+                        Image = "busybox",
+                        Env =
+                        [
+                            new()
+                            {
+                                ValueFrom = new()
+                                {
+                                    SecretKeyRef = new()
+                                    {
+                                        Name = "workload-secret"
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                ]
+            }
+        };
+
+        await cluster.AddOrUpdateResource(pod);
+
+        await cluster.AddOrUpdateResource(new V1Secret
+        {
+            Metadata = new()
+            {
+                Name = "workload-secret",
+                NamespaceProperty = "default"
+            },
+            StringData = new Dictionary<string, string>()
+        });
+
+        var vm = CreateViewModel();
+        vm.Initialize(cluster, deployment);
+
+        vm.Resources.Select(x => x.Resource).Any(x => ReferenceEquals(x, deployment)).ShouldBeTrue();
+        vm.Resources.Select(x => x.Resource).Any(x => x is V1ReplicaSet linkedReplicaSet && linkedReplicaSet.Name() == "my-app-7c4f5d8f7b").ShouldBeTrue();
+        vm.Resources.Select(x => x.Resource).Any(x => x is V1Pod linkedPod && linkedPod.Name() == "my-app-7c4f5d8f7b-abcde").ShouldBeTrue();
+        vm.Resources.Select(x => x.Resource).Any(x => x is V1Secret linkedSecret && linkedSecret.Name() == "workload-secret").ShouldBeFalse();
+        ResourceEdges(vm.Graph).Count().ShouldBe(2);
+        ResourceEdges(vm.Graph).Any(x => x.Tail is ResourceNodeViewModel tail && ReferenceEquals(tail.Resource, deployment) && x.Head is ResourceNodeViewModel head && ReferenceEquals(head.Resource, replicaSet)).ShouldBeTrue();
+        ResourceEdges(vm.Graph).Any(x => x.Tail is ResourceNodeViewModel tail && ReferenceEquals(tail.Resource, replicaSet) && x.Head is ResourceNodeViewModel head && ReferenceEquals(head.Resource, pod)).ShouldBeTrue();
+    }
+
+    [AvaloniaFact]
+    public async Task Initialize_with_root_pod_includes_secret_dependent()
+    {
+        var cluster = await CreateClusterAsync();
+
+        var pod = new V1Pod
+        {
+            Metadata = new()
+            {
+                Name = "my-pod",
+                NamespaceProperty = "default",
+                Uid = "pod-uid"
+            },
+            Spec = new()
+            {
+                Containers =
+                [
+                    new V1Container
+                    {
+                        Name = "app",
+                        Image = "busybox",
+                        Env =
+                        [
+                            new()
+                            {
+                                ValueFrom = new()
+                                {
+                                    SecretKeyRef = new()
+                                    {
+                                        Name = "workload-secret"
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                ]
+            }
+        };
+
+        await cluster.AddOrUpdateResource(pod);
+
+        await cluster.AddOrUpdateResource(new V1Secret
+        {
+            Metadata = new()
+            {
+                Name = "workload-secret",
+                NamespaceProperty = "default"
+            },
+            StringData = new Dictionary<string, string>()
+        });
+
+        var vm = CreateViewModel();
+        vm.Initialize(cluster, pod);
+
+        vm.Resources.Select(x => x.Resource).Any(x => x is V1Secret linkedSecret && linkedSecret.Name() == "workload-secret").ShouldBeTrue();
+        ResourceEdges(vm.Graph).Count().ShouldBe(1);
+        ResourceEdges(vm.Graph).Any(x => x.Tail is ResourceNodeViewModel tail && ReferenceEquals(tail.Resource, pod) && x.Head is ResourceNodeViewModel head && head.Resource is V1Secret linkedSecret && linkedSecret.Name() == "workload-secret").ShouldBeTrue();
+    }
+
+    [AvaloniaFact]
+    public async Task Initialize_with_selected_namespace_keeps_nearest_dependency_only()
+    {
+        var cluster = await CreateClusterAsync();
+
+        var selectedNamespace = new V1Namespace
+        {
+            Metadata = new()
+            {
+                Name = "default"
+            }
+        };
+
+        await cluster.AddOrUpdateResource(selectedNamespace);
+        cluster.SelectedNamespaces.Add(selectedNamespace);
+
+        var deployment = new V1Deployment
+        {
+            Metadata = new()
+            {
+                Name = "my-app",
+                NamespaceProperty = "default",
+                Uid = "deployment-uid"
+            },
+            Spec = new()
+            {
+                Template = new()
+                {
+                    Spec = new()
+                    {
+                        Containers =
+                        [
+                            new V1Container
+                            {
+                                Name = "app",
+                                Image = "busybox",
+                                Env =
+                                [
+                                    new()
+                                    {
+                                        ValueFrom = new()
+                                        {
+                                            SecretKeyRef = new()
+                                            {
+                                                Name = "shared-secret"
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                }
+            }
+        };
+
+        var replicaSet = new V1ReplicaSet
+        {
+            Metadata = new()
+            {
+                Name = "my-app-7c4f5d8f7b",
+                NamespaceProperty = "default",
+                Uid = "replicaset-uid",
+                OwnerReferences =
+                [
+                    new()
+                    {
+                        Uid = "deployment-uid",
+                        Kind = "Deployment",
+                        ApiVersion = V1Deployment.KubeApiVersion,
+                        Controller = true,
+                    }
+                ],
+            },
+            Spec = new()
+            {
+                Template = new()
+                {
+                    Spec = new()
+                    {
+                        Containers =
+                        [
+                            new V1Container
+                            {
+                                Name = "app",
+                                Image = "busybox",
+                                Env =
+                                [
+                                    new()
+                                    {
+                                        ValueFrom = new()
+                                        {
+                                            SecretKeyRef = new()
+                                            {
+                                                Name = "shared-secret"
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                }
+            }
+        };
+
+        var pod = new V1Pod
+        {
+            Metadata = new()
+            {
+                Name = "my-app-7c4f5d8f7b-abcde",
+                NamespaceProperty = "default",
+                Uid = "pod-uid",
+                OwnerReferences =
+                [
+                    new()
+                    {
+                        Uid = "replicaset-uid",
+                        Kind = "ReplicaSet",
+                        ApiVersion = V1ReplicaSet.KubeApiVersion,
+                        Controller = true,
+                    }
+                ]
+            },
+            Spec = new()
+            {
+                Containers =
+                [
+                    new V1Container
+                    {
+                        Name = "app",
+                        Image = "busybox",
+                        Env =
+                        [
+                            new()
+                            {
+                                ValueFrom = new()
+                                {
+                                    SecretKeyRef = new()
+                                    {
+                                        Name = "shared-secret"
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                ]
+            }
+        };
+
+        var secret = new V1Secret
+        {
+            Metadata = new()
+            {
+                Name = "shared-secret",
+                NamespaceProperty = "default",
+                Uid = "secret-uid"
+            }
+        };
+
+        await cluster.AddOrUpdateResource(deployment);
+        await cluster.AddOrUpdateResource(replicaSet);
+        await cluster.AddOrUpdateResource(pod);
+        await cluster.AddOrUpdateResource(secret);
+
+        var vm = CreateViewModel();
+        vm.Initialize(cluster);
+
+        ResourceEdges(vm.Graph).Count().ShouldBe(3);
+        ResourceEdges(vm.Graph).Any(x => x.Tail is ResourceNodeViewModel tail && ReferenceEquals(tail.Resource, deployment) && x.Head is ResourceNodeViewModel head && ReferenceEquals(head.Resource, secret)).ShouldBeFalse();
+        ResourceEdges(vm.Graph).Any(x => x.Tail is ResourceNodeViewModel tail && ReferenceEquals(tail.Resource, replicaSet) && x.Head is ResourceNodeViewModel head && ReferenceEquals(head.Resource, secret)).ShouldBeFalse();
+        ResourceEdges(vm.Graph).Any(x => x.Tail is ResourceNodeViewModel tail && ReferenceEquals(tail.Resource, pod) && x.Head is ResourceNodeViewModel head && ReferenceEquals(head.Resource, secret)).ShouldBeTrue();
+    }
+
+    [AvaloniaFact]
+    public async Task Initialize_with_selected_namespace_keeps_nearest_dependency_only_when_replicaset_is_hidden()
+    {
+        var cluster = await CreateClusterAsync();
+
+        var selectedNamespace = new V1Namespace
+        {
+            Metadata = new()
+            {
+                Name = "default"
+            }
+        };
+
+        await cluster.AddOrUpdateResource(selectedNamespace);
+        cluster.SelectedNamespaces.Add(selectedNamespace);
+
+        var deployment = new V1Deployment
+        {
+            Metadata = new()
+            {
+                Name = "my-app",
+                NamespaceProperty = "default",
+                Uid = "deployment-uid"
+            },
+            Spec = new()
+            {
+                Template = new()
+                {
+                    Spec = new()
+                    {
+                        Containers =
+                        [
+                            new V1Container
+                            {
+                                Name = "app",
+                                Image = "busybox",
+                                Env =
+                                [
+                                    new()
+                                    {
+                                        ValueFrom = new()
+                                        {
+                                            SecretKeyRef = new()
+                                            {
+                                                Name = "shared-secret"
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                }
+            }
+        };
+
+        var replicaSet = new V1ReplicaSet
+        {
+            Metadata = new()
+            {
+                Name = "my-app-7c4f5d8f7b",
+                NamespaceProperty = "default",
+                Uid = "replicaset-uid",
+                OwnerReferences =
+                [
+                    new()
+                    {
+                        Uid = "deployment-uid",
+                        Kind = "Deployment",
+                        ApiVersion = V1Deployment.KubeApiVersion,
+                        Controller = true,
+                    }
+                ],
+            },
+            Status = new()
+            {
+                Replicas = 0,
+            },
+            Spec = new()
+            {
+                Template = new()
+                {
+                    Spec = new()
+                    {
+                        Containers =
+                        [
+                            new V1Container
+                            {
+                                Name = "app",
+                                Image = "busybox",
+                                Env =
+                                [
+                                    new()
+                                    {
+                                        ValueFrom = new()
+                                        {
+                                            SecretKeyRef = new()
+                                            {
+                                                Name = "shared-secret"
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                }
+            }
+        };
+
+        var pod = new V1Pod
+        {
+            Metadata = new()
+            {
+                Name = "my-app-7c4f5d8f7b-abcde",
+                NamespaceProperty = "default",
+                Uid = "pod-uid",
+                OwnerReferences =
+                [
+                    new()
+                    {
+                        Uid = "replicaset-uid",
+                        Kind = "ReplicaSet",
+                        ApiVersion = V1ReplicaSet.KubeApiVersion,
+                        Controller = true,
+                    }
+                ]
+            },
+            Spec = new()
+            {
+                Containers =
+                [
+                    new V1Container
+                    {
+                        Name = "app",
+                        Image = "busybox",
+                        Env =
+                        [
+                            new()
+                            {
+                                ValueFrom = new()
+                                {
+                                    SecretKeyRef = new()
+                                    {
+                                        Name = "shared-secret"
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                ]
+            }
+        };
+
+        var secret = new V1Secret
+        {
+            Metadata = new()
+            {
+                Name = "shared-secret",
+                NamespaceProperty = "default",
+                Uid = "secret-uid"
+            }
+        };
+
+        await cluster.AddOrUpdateResource(deployment);
+        await cluster.AddOrUpdateResource(replicaSet);
+        await cluster.AddOrUpdateResource(pod);
+        await cluster.AddOrUpdateResource(secret);
+
+        var vm = CreateViewModel();
+        vm.Initialize(cluster);
+
+        ResourceEdges(vm.Graph).Count().ShouldBe(1);
+        ResourceEdges(vm.Graph).Any(x => x.Tail is ResourceNodeViewModel tail && ReferenceEquals(tail.Resource, deployment) && x.Head is ResourceNodeViewModel head && ReferenceEquals(head.Resource, secret)).ShouldBeFalse();
+        ResourceEdges(vm.Graph).Any(x => x.Tail is ResourceNodeViewModel tail && ReferenceEquals(tail.Resource, pod) && x.Head is ResourceNodeViewModel head && ReferenceEquals(head.Resource, secret)).ShouldBeTrue();
     }
 
     #region ConfigMap
@@ -486,9 +1299,9 @@ public class VisualizationViewModelTests : AvaloniaTestBase
 
         vm.Initialize(cluster);
 
-        vm.Graph.Edges.Count.ShouldBe(1);
-        vm.Graph.Edges.First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Pod>();
-        vm.Graph.Edges.First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ConfigMap>();
+        ResourceEdges(vm.Graph).Count().ShouldBe(1);
+        ResourceEdges(vm.Graph).First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Pod>();
+        ResourceEdges(vm.Graph).First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ConfigMap>();
     }
 
     [AvaloniaFact]
@@ -539,9 +1352,9 @@ public class VisualizationViewModelTests : AvaloniaTestBase
         var vm = CreateViewModel();
         vm.Initialize(cluster);
 
-        vm.Graph.Edges.Count.ShouldBe(1);
-        vm.Graph.Edges.First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Pod>();
-        vm.Graph.Edges.First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ConfigMap>();
+        ResourceEdges(vm.Graph).Count().ShouldBe(1);
+        ResourceEdges(vm.Graph).First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Pod>();
+        ResourceEdges(vm.Graph).First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ConfigMap>();
     }
 
     [AvaloniaFact]
@@ -589,9 +1402,9 @@ public class VisualizationViewModelTests : AvaloniaTestBase
         var vm = CreateViewModel();
         vm.Initialize(cluster);
 
-        vm.Graph.Edges.Count.ShouldBe(1);
-        vm.Graph.Edges.First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Pod>();
-        vm.Graph.Edges.First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ConfigMap>();
+        ResourceEdges(vm.Graph).Count().ShouldBe(1);
+        ResourceEdges(vm.Graph).First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Pod>();
+        ResourceEdges(vm.Graph).First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ConfigMap>();
     }
 
     [AvaloniaFact]
@@ -639,9 +1452,9 @@ public class VisualizationViewModelTests : AvaloniaTestBase
         var vm = CreateViewModel();
         vm.Initialize(cluster);
 
-        vm.Graph.Edges.Count.ShouldBe(1);
-        vm.Graph.Edges.First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Pod>();
-        vm.Graph.Edges.First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ConfigMap>();
+        ResourceEdges(vm.Graph).Count().ShouldBe(1);
+        ResourceEdges(vm.Graph).First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Pod>();
+        ResourceEdges(vm.Graph).First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ConfigMap>();
     }
 
     [AvaloniaFact]
@@ -683,9 +1496,9 @@ public class VisualizationViewModelTests : AvaloniaTestBase
         var vm = CreateViewModel();
         vm.Initialize(cluster);
 
-        vm.Graph.Edges.Count.ShouldBe(1);
-        vm.Graph.Edges.First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Pod>();
-        vm.Graph.Edges.First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ConfigMap>();
+        ResourceEdges(vm.Graph).Count().ShouldBe(1);
+        ResourceEdges(vm.Graph).First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Pod>();
+        ResourceEdges(vm.Graph).First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ConfigMap>();
     }
 
     [AvaloniaFact]
@@ -734,9 +1547,9 @@ public class VisualizationViewModelTests : AvaloniaTestBase
         var vm = CreateViewModel();
         vm.Initialize(cluster);
 
-        vm.Graph.Edges.Count.ShouldBe(1);
-        vm.Graph.Edges.First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Deployment>();
-        vm.Graph.Edges.First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ConfigMap>();
+        ResourceEdges(vm.Graph).Count().ShouldBe(1);
+        ResourceEdges(vm.Graph).First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Deployment>();
+        ResourceEdges(vm.Graph).First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ConfigMap>();
     }
 
     [AvaloniaFact]
@@ -782,9 +1595,9 @@ public class VisualizationViewModelTests : AvaloniaTestBase
         var vm = CreateViewModel();
         vm.Initialize(cluster);
 
-        vm.Graph.Edges.Count.ShouldBe(1);
-        vm.Graph.Edges.First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Deployment>();
-        vm.Graph.Edges.First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ConfigMap>();
+        ResourceEdges(vm.Graph).Count().ShouldBe(1);
+        ResourceEdges(vm.Graph).First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Deployment>();
+        ResourceEdges(vm.Graph).First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ConfigMap>();
     }
 
     [AvaloniaFact]
@@ -827,9 +1640,9 @@ public class VisualizationViewModelTests : AvaloniaTestBase
         var vm = CreateViewModel();
         vm.Initialize(cluster);
 
-        vm.Graph.Edges.Count.ShouldBe(1);
-        vm.Graph.Edges.First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Deployment>();
-        vm.Graph.Edges.First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ConfigMap>();
+        ResourceEdges(vm.Graph).Count().ShouldBe(1);
+        ResourceEdges(vm.Graph).First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Deployment>();
+        ResourceEdges(vm.Graph).First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ConfigMap>();
     }
 
     [AvaloniaFact]
@@ -872,9 +1685,9 @@ public class VisualizationViewModelTests : AvaloniaTestBase
         var vm = CreateViewModel();
         vm.Initialize(cluster);
 
-        vm.Graph.Edges.Count.ShouldBe(1);
-        vm.Graph.Edges.First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Deployment>();
-        vm.Graph.Edges.First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ConfigMap>();
+        ResourceEdges(vm.Graph).Count().ShouldBe(1);
+        ResourceEdges(vm.Graph).First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Deployment>();
+        ResourceEdges(vm.Graph).First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ConfigMap>();
     }
 
     [AvaloniaFact]
@@ -911,9 +1724,9 @@ public class VisualizationViewModelTests : AvaloniaTestBase
         var vm = CreateViewModel();
         vm.Initialize(cluster);
 
-        vm.Graph.Edges.Count.ShouldBe(1);
-        vm.Graph.Edges.First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Deployment>();
-        vm.Graph.Edges.First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ConfigMap>();
+        ResourceEdges(vm.Graph).Count().ShouldBe(1);
+        ResourceEdges(vm.Graph).First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Deployment>();
+        ResourceEdges(vm.Graph).First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ConfigMap>();
     }
 
     [AvaloniaFact]
@@ -959,9 +1772,9 @@ public class VisualizationViewModelTests : AvaloniaTestBase
         var vm = CreateViewModel();
         vm.Initialize(cluster);
 
-        vm.Graph.Edges.Count.ShouldBe(1);
-        vm.Graph.Edges.First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1DaemonSet>();
-        vm.Graph.Edges.First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ConfigMap>();
+        ResourceEdges(vm.Graph).Count().ShouldBe(1);
+        ResourceEdges(vm.Graph).First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1DaemonSet>();
+        ResourceEdges(vm.Graph).First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ConfigMap>();
     }
 
     [AvaloniaFact]
@@ -1007,9 +1820,9 @@ public class VisualizationViewModelTests : AvaloniaTestBase
         var vm = CreateViewModel();
         vm.Initialize(cluster);
 
-        vm.Graph.Edges.Count.ShouldBe(1);
-        vm.Graph.Edges.First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1DaemonSet>();
-        vm.Graph.Edges.First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ConfigMap>();
+        ResourceEdges(vm.Graph).Count().ShouldBe(1);
+        ResourceEdges(vm.Graph).First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1DaemonSet>();
+        ResourceEdges(vm.Graph).First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ConfigMap>();
     }
 
     [AvaloniaFact]
@@ -1052,9 +1865,9 @@ public class VisualizationViewModelTests : AvaloniaTestBase
         var vm = CreateViewModel();
         vm.Initialize(cluster);
 
-        vm.Graph.Edges.Count.ShouldBe(1);
-        vm.Graph.Edges.First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1DaemonSet>();
-        vm.Graph.Edges.First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ConfigMap>();
+        ResourceEdges(vm.Graph).Count().ShouldBe(1);
+        ResourceEdges(vm.Graph).First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1DaemonSet>();
+        ResourceEdges(vm.Graph).First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ConfigMap>();
     }
 
     [AvaloniaFact]
@@ -1097,9 +1910,9 @@ public class VisualizationViewModelTests : AvaloniaTestBase
         var vm = CreateViewModel();
         vm.Initialize(cluster);
 
-        vm.Graph.Edges.Count.ShouldBe(1);
-        vm.Graph.Edges.First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1DaemonSet>();
-        vm.Graph.Edges.First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ConfigMap>();
+        ResourceEdges(vm.Graph).Count().ShouldBe(1);
+        ResourceEdges(vm.Graph).First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1DaemonSet>();
+        ResourceEdges(vm.Graph).First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ConfigMap>();
     }
 
     [AvaloniaFact]
@@ -1136,9 +1949,9 @@ public class VisualizationViewModelTests : AvaloniaTestBase
         var vm = CreateViewModel();
         vm.Initialize(cluster);
 
-        vm.Graph.Edges.Count.ShouldBe(1);
-        vm.Graph.Edges.First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1DaemonSet>();
-        vm.Graph.Edges.First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ConfigMap>();
+        ResourceEdges(vm.Graph).Count().ShouldBe(1);
+        ResourceEdges(vm.Graph).First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1DaemonSet>();
+        ResourceEdges(vm.Graph).First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ConfigMap>();
     }
 
     [AvaloniaFact]
@@ -1184,9 +1997,9 @@ public class VisualizationViewModelTests : AvaloniaTestBase
         var vm = CreateViewModel();
         vm.Initialize(cluster);
 
-        vm.Graph.Edges.Count.ShouldBe(1);
-        vm.Graph.Edges.First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1StatefulSet>();
-        vm.Graph.Edges.First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ConfigMap>();
+        ResourceEdges(vm.Graph).Count().ShouldBe(1);
+        ResourceEdges(vm.Graph).First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1StatefulSet>();
+        ResourceEdges(vm.Graph).First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ConfigMap>();
     }
 
     [AvaloniaFact]
@@ -1232,9 +2045,9 @@ public class VisualizationViewModelTests : AvaloniaTestBase
         var vm = CreateViewModel();
         vm.Initialize(cluster);
 
-        vm.Graph.Edges.Count.ShouldBe(1);
-        vm.Graph.Edges.First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1StatefulSet>();
-        vm.Graph.Edges.First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ConfigMap>();
+        ResourceEdges(vm.Graph).Count().ShouldBe(1);
+        ResourceEdges(vm.Graph).First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1StatefulSet>();
+        ResourceEdges(vm.Graph).First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ConfigMap>();
     }
 
     [AvaloniaFact]
@@ -1277,9 +2090,9 @@ public class VisualizationViewModelTests : AvaloniaTestBase
         var vm = CreateViewModel();
         vm.Initialize(cluster);
 
-        vm.Graph.Edges.Count.ShouldBe(1);
-        vm.Graph.Edges.First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1StatefulSet>();
-        vm.Graph.Edges.First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ConfigMap>();
+        ResourceEdges(vm.Graph).Count().ShouldBe(1);
+        ResourceEdges(vm.Graph).First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1StatefulSet>();
+        ResourceEdges(vm.Graph).First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ConfigMap>();
     }
 
     [AvaloniaFact]
@@ -1322,9 +2135,9 @@ public class VisualizationViewModelTests : AvaloniaTestBase
         var vm = CreateViewModel();
         vm.Initialize(cluster);
 
-        vm.Graph.Edges.Count.ShouldBe(1);
-        vm.Graph.Edges.First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1StatefulSet>();
-        vm.Graph.Edges.First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ConfigMap>();
+        ResourceEdges(vm.Graph).Count().ShouldBe(1);
+        ResourceEdges(vm.Graph).First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1StatefulSet>();
+        ResourceEdges(vm.Graph).First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ConfigMap>();
     }
 
     [AvaloniaFact]
@@ -1361,9 +2174,9 @@ public class VisualizationViewModelTests : AvaloniaTestBase
         var vm = CreateViewModel();
         vm.Initialize(cluster);
 
-        vm.Graph.Edges.Count.ShouldBe(1);
-        vm.Graph.Edges.First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1StatefulSet>();
-        vm.Graph.Edges.First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ConfigMap>();
+        ResourceEdges(vm.Graph).Count().ShouldBe(1);
+        ResourceEdges(vm.Graph).First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1StatefulSet>();
+        ResourceEdges(vm.Graph).First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ConfigMap>();
     }
 
     //todo add test for hidenoise and ReplicaSet = 1/0
@@ -1412,9 +2225,9 @@ public class VisualizationViewModelTests : AvaloniaTestBase
         var vm = CreateViewModel();
         vm.Initialize(cluster);
 
-        vm.Graph.Edges.Count.ShouldBe(1);
-        vm.Graph.Edges.First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ReplicaSet>();
-        vm.Graph.Edges.First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ConfigMap>();
+        ResourceEdges(vm.Graph).Count().ShouldBe(1);
+        ResourceEdges(vm.Graph).First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ReplicaSet>();
+        ResourceEdges(vm.Graph).First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ConfigMap>();
     }
 
     [AvaloniaFact]
@@ -1461,9 +2274,9 @@ public class VisualizationViewModelTests : AvaloniaTestBase
         var vm = CreateViewModel();
         vm.Initialize(cluster);
 
-        vm.Graph.Edges.Count.ShouldBe(1);
-        vm.Graph.Edges.First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ReplicaSet>();
-        vm.Graph.Edges.First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ConfigMap>();
+        ResourceEdges(vm.Graph).Count().ShouldBe(1);
+        ResourceEdges(vm.Graph).First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ReplicaSet>();
+        ResourceEdges(vm.Graph).First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ConfigMap>();
     }
 
     [AvaloniaFact]
@@ -1507,9 +2320,9 @@ public class VisualizationViewModelTests : AvaloniaTestBase
         var vm = CreateViewModel();
         vm.Initialize(cluster);
 
-        vm.Graph.Edges.Count.ShouldBe(1);
-        vm.Graph.Edges.First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ReplicaSet>();
-        vm.Graph.Edges.First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ConfigMap>();
+        ResourceEdges(vm.Graph).Count().ShouldBe(1);
+        ResourceEdges(vm.Graph).First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ReplicaSet>();
+        ResourceEdges(vm.Graph).First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ConfigMap>();
     }
 
     [AvaloniaFact]
@@ -1553,9 +2366,9 @@ public class VisualizationViewModelTests : AvaloniaTestBase
         var vm = CreateViewModel();
         vm.Initialize(cluster);
 
-        vm.Graph.Edges.Count.ShouldBe(1);
-        vm.Graph.Edges.First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ReplicaSet>();
-        vm.Graph.Edges.First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ConfigMap>();
+        ResourceEdges(vm.Graph).Count().ShouldBe(1);
+        ResourceEdges(vm.Graph).First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ReplicaSet>();
+        ResourceEdges(vm.Graph).First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ConfigMap>();
     }
 
     [AvaloniaFact]
@@ -1593,9 +2406,9 @@ public class VisualizationViewModelTests : AvaloniaTestBase
         var vm = CreateViewModel();
         vm.Initialize(cluster);
 
-        vm.Graph.Edges.Count.ShouldBe(1);
-        vm.Graph.Edges.First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ReplicaSet>();
-        vm.Graph.Edges.First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ConfigMap>();
+        ResourceEdges(vm.Graph).Count().ShouldBe(1);
+        ResourceEdges(vm.Graph).First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ReplicaSet>();
+        ResourceEdges(vm.Graph).First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ConfigMap>();
     }
 
     #endregion
@@ -1645,9 +2458,9 @@ public class VisualizationViewModelTests : AvaloniaTestBase
         var vm = CreateViewModel();
         vm.Initialize(cluster);
 
-        vm.Graph.Edges.Count.ShouldBe(1);
-        vm.Graph.Edges.First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Deployment>();
-        vm.Graph.Edges.First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Secret>();
+        ResourceEdges(vm.Graph).Count().ShouldBe(1);
+        ResourceEdges(vm.Graph).First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Deployment>();
+        ResourceEdges(vm.Graph).First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Secret>();
     }
 
     [AvaloniaFact]
@@ -1693,9 +2506,9 @@ public class VisualizationViewModelTests : AvaloniaTestBase
         var vm = CreateViewModel();
         vm.Initialize(cluster);
 
-        vm.Graph.Edges.Count.ShouldBe(1);
-        vm.Graph.Edges.First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Deployment>();
-        vm.Graph.Edges.First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Secret>();
+        ResourceEdges(vm.Graph).Count().ShouldBe(1);
+        ResourceEdges(vm.Graph).First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Deployment>();
+        ResourceEdges(vm.Graph).First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Secret>();
     }
 
     [AvaloniaFact]
@@ -1738,9 +2551,9 @@ public class VisualizationViewModelTests : AvaloniaTestBase
         var vm = CreateViewModel();
         vm.Initialize(cluster);
 
-        vm.Graph.Edges.Count.ShouldBe(1);
-        vm.Graph.Edges.First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Deployment>();
-        vm.Graph.Edges.First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Secret>();
+        ResourceEdges(vm.Graph).Count().ShouldBe(1);
+        ResourceEdges(vm.Graph).First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Deployment>();
+        ResourceEdges(vm.Graph).First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Secret>();
     }
 
     [AvaloniaFact]
@@ -1783,9 +2596,9 @@ public class VisualizationViewModelTests : AvaloniaTestBase
         var vm = CreateViewModel();
         vm.Initialize(cluster);
 
-        vm.Graph.Edges.Count.ShouldBe(1);
-        vm.Graph.Edges.First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Deployment>();
-        vm.Graph.Edges.First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Secret>();
+        ResourceEdges(vm.Graph).Count().ShouldBe(1);
+        ResourceEdges(vm.Graph).First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Deployment>();
+        ResourceEdges(vm.Graph).First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Secret>();
     }
 
     [AvaloniaFact]
@@ -1822,9 +2635,9 @@ public class VisualizationViewModelTests : AvaloniaTestBase
         var vm = CreateViewModel();
         vm.Initialize(cluster);
 
-        vm.Graph.Edges.Count.ShouldBe(1);
-        vm.Graph.Edges.First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Deployment>();
-        vm.Graph.Edges.First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Secret>();
+        ResourceEdges(vm.Graph).Count().ShouldBe(1);
+        ResourceEdges(vm.Graph).First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Deployment>();
+        ResourceEdges(vm.Graph).First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Secret>();
     }
 
     [AvaloniaFact]
@@ -1870,9 +2683,9 @@ public class VisualizationViewModelTests : AvaloniaTestBase
         var vm = CreateViewModel();
         vm.Initialize(cluster);
 
-        vm.Graph.Edges.Count.ShouldBe(1);
-        vm.Graph.Edges.First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1DaemonSet>();
-        vm.Graph.Edges.First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Secret>();
+        ResourceEdges(vm.Graph).Count().ShouldBe(1);
+        ResourceEdges(vm.Graph).First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1DaemonSet>();
+        ResourceEdges(vm.Graph).First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Secret>();
     }
 
     [AvaloniaFact]
@@ -1918,9 +2731,9 @@ public class VisualizationViewModelTests : AvaloniaTestBase
         var vm = CreateViewModel();
         vm.Initialize(cluster);
 
-        vm.Graph.Edges.Count.ShouldBe(1);
-        vm.Graph.Edges.First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1DaemonSet>();
-        vm.Graph.Edges.First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Secret>();
+        ResourceEdges(vm.Graph).Count().ShouldBe(1);
+        ResourceEdges(vm.Graph).First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1DaemonSet>();
+        ResourceEdges(vm.Graph).First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Secret>();
     }
 
     [AvaloniaFact]
@@ -1963,9 +2776,9 @@ public class VisualizationViewModelTests : AvaloniaTestBase
         var vm = CreateViewModel();
         vm.Initialize(cluster);
 
-        vm.Graph.Edges.Count.ShouldBe(1);
-        vm.Graph.Edges.First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1DaemonSet>();
-        vm.Graph.Edges.First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Secret>();
+        ResourceEdges(vm.Graph).Count().ShouldBe(1);
+        ResourceEdges(vm.Graph).First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1DaemonSet>();
+        ResourceEdges(vm.Graph).First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Secret>();
     }
 
     [AvaloniaFact]
@@ -2008,9 +2821,9 @@ public class VisualizationViewModelTests : AvaloniaTestBase
         var vm = CreateViewModel();
         vm.Initialize(cluster);
 
-        vm.Graph.Edges.Count.ShouldBe(1);
-        vm.Graph.Edges.First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1DaemonSet>();
-        vm.Graph.Edges.First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Secret>();
+        ResourceEdges(vm.Graph).Count().ShouldBe(1);
+        ResourceEdges(vm.Graph).First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1DaemonSet>();
+        ResourceEdges(vm.Graph).First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Secret>();
     }
 
     [AvaloniaFact]
@@ -2047,9 +2860,9 @@ public class VisualizationViewModelTests : AvaloniaTestBase
         var vm = CreateViewModel();
         vm.Initialize(cluster);
 
-        vm.Graph.Edges.Count.ShouldBe(1);
-        vm.Graph.Edges.First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1DaemonSet>();
-        vm.Graph.Edges.First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Secret>();
+        ResourceEdges(vm.Graph).Count().ShouldBe(1);
+        ResourceEdges(vm.Graph).First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1DaemonSet>();
+        ResourceEdges(vm.Graph).First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Secret>();
     }
 
     [AvaloniaFact]
@@ -2095,9 +2908,9 @@ public class VisualizationViewModelTests : AvaloniaTestBase
         var vm = CreateViewModel();
         vm.Initialize(cluster);
 
-        vm.Graph.Edges.Count.ShouldBe(1);
-        vm.Graph.Edges.First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1StatefulSet>();
-        vm.Graph.Edges.First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Secret>();
+        ResourceEdges(vm.Graph).Count().ShouldBe(1);
+        ResourceEdges(vm.Graph).First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1StatefulSet>();
+        ResourceEdges(vm.Graph).First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Secret>();
     }
 
     [AvaloniaFact]
@@ -2143,9 +2956,9 @@ public class VisualizationViewModelTests : AvaloniaTestBase
         var vm = CreateViewModel();
         vm.Initialize(cluster);
 
-        vm.Graph.Edges.Count.ShouldBe(1);
-        vm.Graph.Edges.First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1StatefulSet>();
-        vm.Graph.Edges.First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Secret>();
+        ResourceEdges(vm.Graph).Count().ShouldBe(1);
+        ResourceEdges(vm.Graph).First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1StatefulSet>();
+        ResourceEdges(vm.Graph).First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Secret>();
     }
 
     [AvaloniaFact]
@@ -2188,9 +3001,9 @@ public class VisualizationViewModelTests : AvaloniaTestBase
         var vm = CreateViewModel();
         vm.Initialize(cluster);
 
-        vm.Graph.Edges.Count.ShouldBe(1);
-        vm.Graph.Edges.First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1StatefulSet>();
-        vm.Graph.Edges.First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Secret>();
+        ResourceEdges(vm.Graph).Count().ShouldBe(1);
+        ResourceEdges(vm.Graph).First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1StatefulSet>();
+        ResourceEdges(vm.Graph).First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Secret>();
     }
 
     [AvaloniaFact]
@@ -2233,9 +3046,9 @@ public class VisualizationViewModelTests : AvaloniaTestBase
         var vm = CreateViewModel();
         vm.Initialize(cluster);
 
-        vm.Graph.Edges.Count.ShouldBe(1);
-        vm.Graph.Edges.First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1StatefulSet>();
-        vm.Graph.Edges.First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Secret>();
+        ResourceEdges(vm.Graph).Count().ShouldBe(1);
+        ResourceEdges(vm.Graph).First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1StatefulSet>();
+        ResourceEdges(vm.Graph).First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Secret>();
     }
 
     [AvaloniaFact]
@@ -2272,9 +3085,9 @@ public class VisualizationViewModelTests : AvaloniaTestBase
         var vm = CreateViewModel();
         vm.Initialize(cluster);
 
-        vm.Graph.Edges.Count.ShouldBe(1);
-        vm.Graph.Edges.First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1StatefulSet>();
-        vm.Graph.Edges.First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Secret>();
+        ResourceEdges(vm.Graph).Count().ShouldBe(1);
+        ResourceEdges(vm.Graph).First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1StatefulSet>();
+        ResourceEdges(vm.Graph).First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Secret>();
     }
 
     [AvaloniaFact]
@@ -2321,9 +3134,9 @@ public class VisualizationViewModelTests : AvaloniaTestBase
         var vm = CreateViewModel();
         vm.Initialize(cluster);
 
-        vm.Graph.Edges.Count.ShouldBe(1);
-        vm.Graph.Edges.First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ReplicaSet>();
-        vm.Graph.Edges.First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Secret>();
+        ResourceEdges(vm.Graph).Count().ShouldBe(1);
+        ResourceEdges(vm.Graph).First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ReplicaSet>();
+        ResourceEdges(vm.Graph).First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Secret>();
     }
 
     [AvaloniaFact]
@@ -2370,9 +3183,9 @@ public class VisualizationViewModelTests : AvaloniaTestBase
         var vm = CreateViewModel();
         vm.Initialize(cluster);
 
-        vm.Graph.Edges.Count.ShouldBe(1);
-        vm.Graph.Edges.First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ReplicaSet>();
-        vm.Graph.Edges.First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Secret>();
+        ResourceEdges(vm.Graph).Count().ShouldBe(1);
+        ResourceEdges(vm.Graph).First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ReplicaSet>();
+        ResourceEdges(vm.Graph).First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Secret>();
     }
 
     [AvaloniaFact]
@@ -2416,9 +3229,9 @@ public class VisualizationViewModelTests : AvaloniaTestBase
         var vm = CreateViewModel();
         vm.Initialize(cluster);
 
-        vm.Graph.Edges.Count.ShouldBe(1);
-        vm.Graph.Edges.First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ReplicaSet>();
-        vm.Graph.Edges.First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Secret>();
+        ResourceEdges(vm.Graph).Count().ShouldBe(1);
+        ResourceEdges(vm.Graph).First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ReplicaSet>();
+        ResourceEdges(vm.Graph).First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Secret>();
     }
 
     [AvaloniaFact]
@@ -2462,9 +3275,9 @@ public class VisualizationViewModelTests : AvaloniaTestBase
         var vm = CreateViewModel();
         vm.Initialize(cluster);
 
-        vm.Graph.Edges.Count.ShouldBe(1);
-        vm.Graph.Edges.First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ReplicaSet>();
-        vm.Graph.Edges.First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Secret>();
+        ResourceEdges(vm.Graph).Count().ShouldBe(1);
+        ResourceEdges(vm.Graph).First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ReplicaSet>();
+        ResourceEdges(vm.Graph).First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Secret>();
     }
 
     [AvaloniaFact]
@@ -2502,9 +3315,9 @@ public class VisualizationViewModelTests : AvaloniaTestBase
         var vm = CreateViewModel();
         vm.Initialize(cluster);
 
-        vm.Graph.Edges.Count.ShouldBe(1);
-        vm.Graph.Edges.First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ReplicaSet>();
-        vm.Graph.Edges.First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Secret>();
+        ResourceEdges(vm.Graph).Count().ShouldBe(1);
+        ResourceEdges(vm.Graph).First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ReplicaSet>();
+        ResourceEdges(vm.Graph).First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Secret>();
     }
 
     [AvaloniaFact]
@@ -2541,9 +3354,9 @@ public class VisualizationViewModelTests : AvaloniaTestBase
         var vm = CreateViewModel();
         vm.Initialize(cluster);
 
-        vm.Graph.Edges.Count.ShouldBe(1);
-        vm.Graph.Edges.First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ServiceAccount>();
-        vm.Graph.Edges.First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Secret>();
+        ResourceEdges(vm.Graph).Count().ShouldBe(1);
+        ResourceEdges(vm.Graph).First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ServiceAccount>();
+        ResourceEdges(vm.Graph).First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Secret>();
     }
 
     #endregion
@@ -2581,9 +3394,9 @@ public class VisualizationViewModelTests : AvaloniaTestBase
         vm.HideNoise = false;
         vm.Initialize(cluster);
 
-        vm.Graph.Edges.Count.ShouldBe(1);
-        vm.Graph.Edges.First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<Corev1Event>();
-        vm.Graph.Edges.First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Deployment>();
+        ResourceEdges(vm.Graph).Count().ShouldBe(1);
+        ResourceEdges(vm.Graph).First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<Corev1Event>();
+        ResourceEdges(vm.Graph).First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Deployment>();
     }
 
     [AvaloniaFact]
@@ -2624,9 +3437,9 @@ public class VisualizationViewModelTests : AvaloniaTestBase
         var vm = CreateViewModel();
         vm.Initialize(cluster);
 
-        vm.Graph.Edges.Count.ShouldBe(1);
-        vm.Graph.Edges.First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1EndpointSlice>();
-        vm.Graph.Edges.First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Pod>();
+        ResourceEdges(vm.Graph).Count().ShouldBe(1);
+        ResourceEdges(vm.Graph).First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1EndpointSlice>();
+        ResourceEdges(vm.Graph).First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Pod>();
     }
 
     [AvaloniaFact]
@@ -2681,9 +3494,9 @@ public class VisualizationViewModelTests : AvaloniaTestBase
         var vm = CreateViewModel();
         vm.Initialize(cluster);
 
-        vm.Graph.Edges.Count.ShouldBe(1);
-        vm.Graph.Edges.First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Ingress>();
-        vm.Graph.Edges.First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Service>();
+        ResourceEdges(vm.Graph).Count().ShouldBe(1);
+        ResourceEdges(vm.Graph).First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Ingress>();
+        ResourceEdges(vm.Graph).First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Service>();
     }
 
     [AvaloniaFact]
@@ -2723,9 +3536,9 @@ public class VisualizationViewModelTests : AvaloniaTestBase
         var vm = CreateViewModel();
         vm.Initialize(cluster);
 
-        vm.Graph.Edges.Count.ShouldBe(1);
-        vm.Graph.Edges.First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Ingress>();
-        vm.Graph.Edges.First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Service>();
+        ResourceEdges(vm.Graph).Count().ShouldBe(1);
+        ResourceEdges(vm.Graph).First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Ingress>();
+        ResourceEdges(vm.Graph).First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Service>();
     }
 
     [AvaloniaFact]
@@ -2764,9 +3577,9 @@ public class VisualizationViewModelTests : AvaloniaTestBase
         var vm = CreateViewModel();
         vm.Initialize(cluster);
 
-        vm.Graph.Edges.Count.ShouldBe(1);
-        vm.Graph.Edges.First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1PersistentVolumeClaim>();
-        vm.Graph.Edges.First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1PersistentVolume>();
+        ResourceEdges(vm.Graph).Count().ShouldBe(1);
+        ResourceEdges(vm.Graph).First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1PersistentVolumeClaim>();
+        ResourceEdges(vm.Graph).First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1PersistentVolume>();
     }
 
     [AvaloniaFact]
@@ -2805,9 +3618,9 @@ public class VisualizationViewModelTests : AvaloniaTestBase
         var vm = CreateViewModel();
         vm.Initialize(cluster);
 
-        vm.Graph.Edges.Count.ShouldBe(1);
-        vm.Graph.Edges.First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1RoleBinding>();
-        vm.Graph.Edges.First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ServiceAccount>();
+        ResourceEdges(vm.Graph).Count().ShouldBe(1);
+        ResourceEdges(vm.Graph).First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1RoleBinding>();
+        ResourceEdges(vm.Graph).First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ServiceAccount>();
     }
 
     [AvaloniaFact]
@@ -2842,9 +3655,9 @@ public class VisualizationViewModelTests : AvaloniaTestBase
         var vm = CreateViewModel();
         vm.Initialize(cluster);
 
-        vm.Graph.Edges.Count.ShouldBe(1);
-        vm.Graph.Edges.First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1RoleBinding>();
-        vm.Graph.Edges.First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Role>();
+        ResourceEdges(vm.Graph).Count().ShouldBe(1);
+        ResourceEdges(vm.Graph).First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Role>();
+        ResourceEdges(vm.Graph).First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1RoleBinding>();
     }
 
     [AvaloniaFact]
@@ -2878,9 +3691,9 @@ public class VisualizationViewModelTests : AvaloniaTestBase
         var vm = CreateViewModel();
         vm.Initialize(cluster);
 
-        vm.Graph.Edges.Count.ShouldBe(1);
-        vm.Graph.Edges.First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1RoleBinding>();
-        vm.Graph.Edges.First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ClusterRole>();
+        ResourceEdges(vm.Graph).Count().ShouldBe(1);
+        ResourceEdges(vm.Graph).First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ClusterRole>();
+        ResourceEdges(vm.Graph).First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1RoleBinding>();
     }
 
     [AvaloniaFact]
@@ -2919,9 +3732,9 @@ public class VisualizationViewModelTests : AvaloniaTestBase
         var vm = CreateViewModel();
         vm.Initialize(cluster);
 
-        vm.Graph.Edges.Count.ShouldBe(1);
-        vm.Graph.Edges.First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ClusterRoleBinding>();
-        vm.Graph.Edges.First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ServiceAccount>();
+        ResourceEdges(vm.Graph).Count().ShouldBe(1);
+        ResourceEdges(vm.Graph).First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ClusterRoleBinding>();
+        ResourceEdges(vm.Graph).First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ServiceAccount>();
     }
 
     [AvaloniaFact]
@@ -2955,9 +3768,9 @@ public class VisualizationViewModelTests : AvaloniaTestBase
         var vm = CreateViewModel();
         vm.Initialize(cluster);
 
-        vm.Graph.Edges.Count.ShouldBe(1);
-        vm.Graph.Edges.First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ClusterRoleBinding>();
-        vm.Graph.Edges.First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ClusterRole>();
+        ResourceEdges(vm.Graph).Count().ShouldBe(1);
+        ResourceEdges(vm.Graph).First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ClusterRole>();
+        ResourceEdges(vm.Graph).First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ClusterRoleBinding>();
     }
 
     #region ServiceAccount
@@ -2993,9 +3806,9 @@ public class VisualizationViewModelTests : AvaloniaTestBase
         var vm = CreateViewModel();
         vm.Initialize(cluster);
 
-        vm.Graph.Edges.Count.ShouldBe(1);
-        vm.Graph.Edges.First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Pod>();
-        vm.Graph.Edges.First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ServiceAccount>();
+        ResourceEdges(vm.Graph).Count().ShouldBe(1);
+        ResourceEdges(vm.Graph).First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Pod>();
+        ResourceEdges(vm.Graph).First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ServiceAccount>();
     }
 
     [AvaloniaFact]
@@ -3035,9 +3848,9 @@ public class VisualizationViewModelTests : AvaloniaTestBase
         var vm = CreateViewModel();
         vm.Initialize(cluster);
 
-        vm.Graph.Edges.Count.ShouldBe(1);
-        vm.Graph.Edges.First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Deployment>();
-        vm.Graph.Edges.First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ServiceAccount>();
+        ResourceEdges(vm.Graph).Count().ShouldBe(1);
+        ResourceEdges(vm.Graph).First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Deployment>();
+        ResourceEdges(vm.Graph).First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ServiceAccount>();
     }
 
     [AvaloniaFact]
@@ -3070,9 +3883,9 @@ public class VisualizationViewModelTests : AvaloniaTestBase
         var vm = CreateViewModel();
         vm.Initialize(cluster);
 
-        vm.Graph.Edges.Count.ShouldBe(1);
-        vm.Graph.Edges.First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1StatefulSet>();
-        vm.Graph.Edges.First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ServiceAccount>();
+        ResourceEdges(vm.Graph).Count().ShouldBe(1);
+        ResourceEdges(vm.Graph).First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1StatefulSet>();
+        ResourceEdges(vm.Graph).First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ServiceAccount>();
     }
 
     [AvaloniaFact]
@@ -3105,9 +3918,9 @@ public class VisualizationViewModelTests : AvaloniaTestBase
         var vm = CreateViewModel();
         vm.Initialize(cluster);
 
-        vm.Graph.Edges.Count.ShouldBe(1);
-        vm.Graph.Edges.First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1DaemonSet>();
-        vm.Graph.Edges.First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ServiceAccount>();
+        ResourceEdges(vm.Graph).Count().ShouldBe(1);
+        ResourceEdges(vm.Graph).First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1DaemonSet>();
+        ResourceEdges(vm.Graph).First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ServiceAccount>();
     }
 
     [AvaloniaFact]
@@ -3141,9 +3954,9 @@ public class VisualizationViewModelTests : AvaloniaTestBase
         var vm = CreateViewModel();
         vm.Initialize(cluster);
 
-        vm.Graph.Edges.Count.ShouldBe(1);
-        vm.Graph.Edges.First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ReplicaSet>();
-        vm.Graph.Edges.First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ServiceAccount>();
+        ResourceEdges(vm.Graph).Count().ShouldBe(1);
+        ResourceEdges(vm.Graph).First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ReplicaSet>();
+        ResourceEdges(vm.Graph).First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ServiceAccount>();
     }
 
     #endregion
@@ -3189,9 +4002,9 @@ public class VisualizationViewModelTests : AvaloniaTestBase
         var vm = CreateViewModel();
         vm.Initialize(cluster);
 
-        vm.Graph.Edges.Count.ShouldBe(1);
-        vm.Graph.Edges.First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Pod>();
-        vm.Graph.Edges.First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1PersistentVolumeClaim>();
+        ResourceEdges(vm.Graph).Count().ShouldBe(1);
+        ResourceEdges(vm.Graph).First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Pod>();
+        ResourceEdges(vm.Graph).First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1PersistentVolumeClaim>();
     }
 
     [AvaloniaFact]
@@ -3239,9 +4052,9 @@ public class VisualizationViewModelTests : AvaloniaTestBase
         var vm = CreateViewModel();
         vm.Initialize(cluster);
 
-        vm.Graph.Edges.Count.ShouldBe(1);
-        vm.Graph.Edges.First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Deployment>();
-        vm.Graph.Edges.First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1PersistentVolumeClaim>();
+        ResourceEdges(vm.Graph).Count().ShouldBe(1);
+        ResourceEdges(vm.Graph).First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Deployment>();
+        ResourceEdges(vm.Graph).First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1PersistentVolumeClaim>();
     }
 
     [AvaloniaFact]
@@ -3289,9 +4102,9 @@ public class VisualizationViewModelTests : AvaloniaTestBase
         var vm = CreateViewModel();
         vm.Initialize(cluster);
 
-        vm.Graph.Edges.Count.ShouldBe(1);
-        vm.Graph.Edges.First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1StatefulSet>();
-        vm.Graph.Edges.First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1PersistentVolumeClaim>();
+        ResourceEdges(vm.Graph).Count().ShouldBe(1);
+        ResourceEdges(vm.Graph).First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1StatefulSet>();
+        ResourceEdges(vm.Graph).First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1PersistentVolumeClaim>();
     }
 
     [AvaloniaFact]
@@ -3339,9 +4152,9 @@ public class VisualizationViewModelTests : AvaloniaTestBase
         var vm = CreateViewModel();
         vm.Initialize(cluster);
 
-        vm.Graph.Edges.Count.ShouldBe(1);
-        vm.Graph.Edges.First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1DaemonSet>();
-        vm.Graph.Edges.First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1PersistentVolumeClaim>();
+        ResourceEdges(vm.Graph).Count().ShouldBe(1);
+        ResourceEdges(vm.Graph).First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1DaemonSet>();
+        ResourceEdges(vm.Graph).First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1PersistentVolumeClaim>();
     }
 
     [AvaloniaFact]
@@ -3390,9 +4203,47 @@ public class VisualizationViewModelTests : AvaloniaTestBase
         var vm = CreateViewModel();
         vm.Initialize(cluster);
 
-        vm.Graph.Edges.Count.ShouldBe(1);
-        vm.Graph.Edges.First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ReplicaSet>();
-        vm.Graph.Edges.First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1PersistentVolumeClaim>();
+        ResourceEdges(vm.Graph).Count().ShouldBe(1);
+        ResourceEdges(vm.Graph).First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ReplicaSet>();
+        ResourceEdges(vm.Graph).First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1PersistentVolumeClaim>();
+    }
+
+    [AvaloniaFact]
+    public async Task GroupsResourcesByNamespaceAndComponentLabel()
+    {
+        var cluster = await CreateClusterAsync();
+
+        var pod = new V1Pod
+        {
+            ApiVersion = "v1",
+            Kind = V1Pod.KubeKind,
+            Metadata = new()
+            {
+                Name = "worker-pod",
+                NamespaceProperty = "default",
+                Labels = new Dictionary<string, string>
+                {
+                    ["app.kubernetes.io/component"] = "worker",
+                },
+            },
+            Spec = new V1PodSpec(),
+        };
+
+        await cluster.AddOrUpdateResource(pod);
+
+        var vm = CreateViewModel();
+        vm.Initialize(cluster, pod);
+
+        var podNode = vm.Resources.Single(x => ReferenceEquals(x.Resource, pod));
+        var componentGroup = vm.Graph.Parent[podNode];
+        componentGroup.ShouldNotBeNull();
+        componentGroup.ShouldBeOfType<GroupNodeViewModel>().DisplayText.ShouldBe("Component worker");
+
+        var namespaceGroup = vm.Graph.Parent[componentGroup];
+        namespaceGroup.ShouldNotBeNull();
+        namespaceGroup.ShouldBeOfType<GroupNodeViewModel>().DisplayText.ShouldBe("Namespace default");
+
+        vm.Graph.Edges.OfType<GroupEdge>().Count().ShouldBe(2);
     }
 
     #endregion
@@ -3427,3 +4278,5 @@ public class VisualizationViewModelTests : AvaloniaTestBase
         public V1ObjectMeta Metadata { get; set; } = new();
     }
 }
+
+
