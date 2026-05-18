@@ -92,6 +92,7 @@ Releases are available for AMD64 and ARM64 on:
 
 - Linux
 - macOS
+   - `brew install --cask IvanJosipovic/homebrew-repo/kubeui`
 - Windows
   - `winget install KubeUI`
   - [![Microsoft Store](https://get.microsoft.com/images/en-us%20dark.svg)](https://apps.microsoft.com/detail/XP9MRWDV3N310N?mode=direct)
