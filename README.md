@@ -97,7 +97,7 @@ Releases are available for AMD64 and ARM64 on:
   - `winget install KubeUI`
   - [![Microsoft Store](https://get.microsoft.com/images/en-us%20dark.svg)](https://apps.microsoft.com/detail/XP9MRWDV3N310N?mode=direct)
 
-Download binaries from [Releases](https://github.com/IvanJosipovic/KubeUI/releases).
+Download binaries from [Releases](https://github.com/IvanJosipovic/KubeUI/releases/latest).
 
 ## Build
 
