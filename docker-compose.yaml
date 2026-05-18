@@ -1,0 +1,13 @@
+services:
+  aspire-dashboard:
+    image: mcr.microsoft.com/dotnet/aspire-dashboard:latest
+    pull_policy: always
+    container_name: aspire-dashboard
+    ports:
+      - "18888:18888" # dashboard UI
+      - "4317:18889"  # OTLP gRPC
+      - "4318:18890"  # OTLP HTTP
+      - "18891:18891" # MCP
+    restart: unless-stopped
+    environment:
+      ASPIRE_DASHBOARD_MCP_ENDPOINT_URL: http://[::]:18891

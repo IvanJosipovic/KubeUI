@@ -1,0 +1,22 @@
+﻿<UserControl
+    x:Class="KubeUI.Avalonia.Resources.Core.v1.Event.Controls.EventLastSeenCell"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="using:KubeUI.Avalonia.Resources.Core.v1.Event.Controls"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    HorizontalAlignment="Left"
+    VerticalAlignment="Center"
+    d:DesignHeight="50"
+    d:DesignWidth="200"
+    mc:Ignorable="d">
+    <TextBlock
+        Margin="12,0,12,0"
+        HorizontalAlignment="Left"
+        VerticalAlignment="Center"
+        Text="{Binding PrettyString, RelativeSource={RelativeSource AncestorType=local:EventLastSeenCell}}"
+        ToolTip.Tip="{Binding PrettyString, RelativeSource={RelativeSource AncestorType=local:EventLastSeenCell}}" />
+</UserControl>
+
+
+

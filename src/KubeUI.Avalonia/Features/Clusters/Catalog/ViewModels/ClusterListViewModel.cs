@@ -1,0 +1,68 @@
+using FluentAvalonia.UI.Controls;
+using HanumanInstitute.MvvmDialogs;
+using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
+using KubeUI.Avalonia.Features.Clusters.Workspace;
+using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
+using KubeUI.Avalonia.Infrastructure;
+using KubeUI.Avalonia.Infrastructure.Presentation;
+using KubeUI.Avalonia.Services.Settings;
+using KubeUI.Kubernetes;
+using Microsoft.Extensions.DependencyInjection;
+
+namespace KubeUI.Avalonia.Features.Clusters.Catalog.ViewModels;
+
+public sealed partial class ClusterListViewModel : ViewModelBase
+{
+    private readonly IDialogService _dialogService;
+
+    [ObservableProperty]
+    public partial ClusterWorkspaceCatalog ClusterCatalog { get; set; }
+
+    [ObservableProperty]
+    public partial ISettingsService Settings { get; set; }
+
+    public ClusterListViewModel(
+        IServiceProvider serviceProvider,
+        ClusterWorkspaceCatalog clusterCatalog,
+        ISettingsService settings,
+        IDialogService dialogService)
+    {
+        ClusterCatalog = clusterCatalog;
+        Settings = settings;
+        _dialogService = dialogService;
+
+        Title = Assets.Resources.ClusterListView_Title;
+        Id = nameof(ClusterListViewModel);
+    }
+
+    [ObservableProperty]
+    public partial ClusterWorkspaceViewModel? SelectedItem { get; set; }
+
+    [RelayCommand(CanExecute = nameof(CanDelete))]
+    private async Task Delete(ClusterWorkspaceViewModel cluster)
+    {
+        ContentDialogSettings settings = new()
+        {
+            Title = Assets.Resources.ClusterListView_Delete_Title,
+            Content = string.Format(Assets.Resources.ClusterListView_Delete_Content, cluster.Name),
+            PrimaryButtonText = Assets.Resources.ClusterListView_Delete_Primary,
+            SecondaryButtonText = Assets.Resources.ClusterListView_Delete_Secondary,
+            DefaultButton = FAContentDialogButton.Secondary
+        };
+
+        var result = await _dialogService.ShowContentDialogAsync(this, settings);
+
+        if (result == FAContentDialogResult.Primary)
+        {
+            ClusterCatalog.RemoveCluster(cluster);
+        }
+    }
+
+    private bool CanDelete(ClusterWorkspaceViewModel cluster)
+    {
+        return cluster != null;
+    }
+}
+
+
+

@@ -398,3 +398,9 @@ FodyWeavers.xsd
 *.sln.iml
 
 *.mono
+.DS_Store
+packed
+
+*.lscache
+
+.dotnet

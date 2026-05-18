@@ -1,0 +1,61 @@
+using Avalonia.Controls;
+using FluentIcons.Common;
+using HanumanInstitute.MvvmDialogs;
+using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
+using k8s;
+using k8s.Models;
+using KubeUI.Avalonia.Features.Resources.Common;
+using KubeUI.Avalonia.Resources.Workloads.v1.DaemonSet.Views;
+
+namespace KubeUI.Avalonia.Resources.Workloads.v1.DaemonSet;
+
+public sealed partial class V1DaemonSetConfig : ResourceConfigBase<V1DaemonSet>
+{
+    public V1DaemonSetConfig(IServiceProvider serviceProvider)
+        : base(serviceProvider)
+    {
+    }
+    public override bool IsNamespaced => true;
+    public override string Category => Assets.Resources.ResourceConfig_Category_Workloads!;
+
+    public override int Order => 2;
+
+    public override IList<IResourceListColumn> Columns()
+    {
+        return [
+            NameColumn(SortDirection.Ascending),
+            NamespaceColumn(),
+            new ResourceListColumn<V1DaemonSet, int>()
+            {
+                Key = "pods",
+                Name = Assets.Resources.V1DaemonSetConfig_Pods!,
+                Field = x => x.Status.NumberReady,
+                Width = nameof(DataGridLengthUnitType.SizeToHeader)
+            },
+            new ResourceListColumn<V1DaemonSet, string>()
+            {
+                Key = "node-selector",
+                Name = Assets.Resources.V1DaemonSetConfig_Node_Selector!,
+                Field = x => x.Spec?.Selector?.MatchLabels is { Count: > 0 } matchLabels ? string.Join(", ", matchLabels.Select(x => x.Key + "=" + x.Value)) : "",
+                Width = nameof(DataGridLengthUnitType.SizeToHeader)
+            },
+            AgeColumn(),
+            ];
+    }
+
+    protected override IEnumerable<MenuItemViewModel> CreateCustomMenuItems(IEnumerable<V1DaemonSet>? selectedItems)
+    {
+        return [
+            new()
+            {
+                Header = "Restart",
+                FluentIcon = Icon.ArrowSync,
+                Command = RestartCommand,
+                CommandParameter = selectedItems?.ToList()
+            },
+        ];
+    }
+
+    public override Control[] Properties(V1DaemonSet resource) => [new PropertiesView()];
+}
+

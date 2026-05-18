@@ -1,0 +1,793 @@
+using System.ComponentModel;
+using Avalonia;
+using Avalonia.Input;
+using Avalonia.Styling;
+using Avalonia.Xaml.Interactivity;
+using AvaloniaEdit;
+using AvaloniaEdit.CodeCompletion;
+using AvaloniaEdit.Document;
+using AvaloniaEdit.Editing;
+using AvaloniaEdit.Folding;
+using AvaloniaEdit.Indentation;
+using AvaloniaEdit.TextMate;
+using KubeUI.Avalonia;
+using KubeUI.Avalonia.Features.Resources.Yaml.ViewModels;
+using KubeUI.Avalonia.Infrastructure;
+using KubeUI.Avalonia.Infrastructure.DependencyInjection;
+using KubeUI.Kubernetes;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using TextMateSharp.Grammars;
+using static AvaloniaEdit.TextMate.TextMate;
+
+namespace KubeUI.Avalonia.Features.Resources.Yaml.Behaviors;
+
+public sealed class YamlEditorBehavior : Behavior<TextEditor>
+{
+    private const int IndentationSize = 2;
+    private static readonly IIndentationStrategy s_yamlIndentationStrategy = new YamlIndentationStrategy();
+
+    private sealed class EditorInputHandler(
+        TextArea textArea,
+        System.Action triggerCompletion,
+        Func<bool> triggerBackspaceUnindent,
+        Func<bool> triggerSelectionIndent,
+        Func<bool> triggerSelectionUnindent) : TextAreaStackedInputHandler(textArea)
+    {
+        public override void OnPreviewKeyDown(KeyEventArgs e)
+        {
+            if (e.Handled)
+            {
+                return;
+            }
+
+            if (e.Key == Key.Space && e.KeyModifiers.HasFlag(KeyModifiers.Control))
+            {
+                triggerCompletion();
+                e.Handled = true;
+                return;
+            }
+
+            if (e.Key == Key.Tab && e.KeyModifiers == KeyModifiers.None && triggerSelectionIndent())
+            {
+                e.Handled = true;
+                return;
+            }
+
+            if (e.Key == Key.Back && e.KeyModifiers == KeyModifiers.None && triggerBackspaceUnindent())
+            {
+                e.Handled = true;
+                return;
+            }
+
+            if (e.Key == Key.Tab && e.KeyModifiers == KeyModifiers.Shift && triggerSelectionUnindent())
+            {
+                e.Handled = true;
+            }
+        }
+    }
+
+    private Installation? _textMateInstallation;
+    private RegistryOptions _registryOptions = null!;
+    private FoldingManager? _foldingManager;
+    private ResourceYamlViewModel? _currentViewModel;
+    private readonly Dictionary<string, Queue<bool>> _savedFoldStates = new(StringComparer.Ordinal);
+    private bool _isRefreshingFromViewModel;
+    private CompletionWindow? _completionWindow;
+    private EditorInputHandler? _editorInputHandler;
+
+    protected override void OnAttached()
+    {
+        base.OnAttached();
+
+        if (AssociatedObject == null)
+        {
+            return;
+        }
+
+        _registryOptions = new RegistryOptions(Application.Current!.ActualThemeVariant == ThemeVariant.Light
+            ? ThemeName.Light
+            : ThemeName.DarkPlus);
+
+        // Keep behavior lifecycle tied to ViewModel attach/detach only.
+
+        AssociatedObject.TextChanged += Editor_TextChanged;
+        Application.Current!.ActualThemeVariantChanged += ThemeChanged;
+
+        AssociatedObject.DataContextChanged += OnDataContextChanged;
+        AssociatedObject.AttachedToVisualTree += AttachedToVisualTree;
+        AssociatedObject.DetachedFromVisualTree += DetachedFromVisualTree;
+        AssociatedObject.TextArea.TextEntering += TextArea_TextEntering;
+        AssociatedObject.TextArea.TextEntered += TextArea_TextEntered;
+        _editorInputHandler = new EditorInputHandler(
+            AssociatedObject.TextArea,
+            ShowCompletionWindow,
+            TryUnindentOnBackspace,
+            TryIndentSelection,
+            TryUnindentSelection);
+        AssociatedObject.TextArea.PushStackedInputHandler(_editorInputHandler);
+
+        if (AssociatedObject.DataContext is ResourceYamlViewModel vm)
+        {
+            _currentViewModel = vm;
+            SubscribeViewModel(vm);
+            InitializeEditor(vm);
+        }
+    }
+
+    // Factory event wiring removed. Behavior relies on DataContext attach/detach
+    // and visual tree attach/detach for fold-state persistence.
+    private void OnDataContextChanged(object? sender, EventArgs e)
+    {
+        if (AssociatedObject == null)
+        {
+            return;
+        }
+
+        var nextViewModel = AssociatedObject.DataContext as ResourceYamlViewModel;
+        if (ReferenceEquals(_currentViewModel, nextViewModel))
+        {
+            if (nextViewModel != null)
+            {
+                InitializeEditor(nextViewModel);
+            }
+
+            return;
+        }
+
+        var previousViewModel = _currentViewModel;
+        PersistFoldingState(previousViewModel, persistToViewModel: true);
+        UnsubscribeViewModel(_currentViewModel);
+        _currentViewModel = nextViewModel;
+
+        if (nextViewModel != null && !ReferenceEquals(previousViewModel, nextViewModel))
+        {
+            _savedFoldStates.Clear();
+            LoadSavedFoldStates(nextViewModel);
+        }
+
+        SubscribeViewModel(_currentViewModel);
+
+        if (nextViewModel != null)
+        {
+            InitializeEditor(nextViewModel);
+        }
+    }
+
+    private void InitializeEditor(ResourceYamlViewModel vm)
+    {
+        if (AssociatedObject == null)
+        {
+            return;
+        }
+
+        AssociatedObject.Document = vm.YamlDocument;
+        AssociatedObject.TextArea.IndentationStrategy = s_yamlIndentationStrategy;
+
+        if (_textMateInstallation == null)
+        {
+            _textMateInstallation = AssociatedObject.InstallTextMate(_registryOptions, true);
+            _textMateInstallation.SetGrammar(_registryOptions
+                .GetScopeByLanguageId(_registryOptions.GetLanguageByExtension(".yaml").Id));
+        }
+
+        if (_foldingManager == null)
+        {
+            _foldingManager = FoldingManager.Install(AssociatedObject.TextArea);
+        }
+
+        UpdateFoldings();
+    }
+
+    private void AttachedToVisualTree(object? sender, VisualTreeAttachmentEventArgs e)
+    {
+        if (AssociatedObject?.DataContext is ResourceYamlViewModel)
+        {
+            UpdateFoldings();
+        }
+    }
+
+    private void DetachedFromVisualTree(object? sender, VisualTreeAttachmentEventArgs e)
+    {
+        PersistFoldingState(_currentViewModel, persistToViewModel: true);
+    }
+
+    protected override void OnDetaching()
+    {
+        PersistFoldingState(_currentViewModel, persistToViewModel: true);
+
+        if (AssociatedObject != null)
+        {
+            AssociatedObject.DataContextChanged -= OnDataContextChanged;
+            AssociatedObject.AttachedToVisualTree -= AttachedToVisualTree;
+            AssociatedObject.DetachedFromVisualTree -= DetachedFromVisualTree;
+            AssociatedObject.TextChanged -= Editor_TextChanged;
+            AssociatedObject.TextArea.TextEntering -= TextArea_TextEntering;
+            AssociatedObject.TextArea.TextEntered -= TextArea_TextEntered;
+
+            if (_editorInputHandler != null)
+            {
+                AssociatedObject.TextArea.PopStackedInputHandler(_editorInputHandler);
+                _editorInputHandler = null;
+            }
+        }
+
+        Application.Current!.ActualThemeVariantChanged -= ThemeChanged;
+        CloseCompletionWindow();
+
+        _textMateInstallation?.Dispose();
+        _textMateInstallation = null;
+
+        if (_foldingManager != null)
+        {
+            FoldingManager.Uninstall(_foldingManager);
+            _foldingManager = null;
+        }
+
+        UnsubscribeViewModel(_currentViewModel);
+        _currentViewModel = null;
+
+        base.OnDetaching();
+    }
+
+    private void ThemeChanged(object? sender, EventArgs e)
+    {
+        if (_textMateInstallation == null)
+        {
+            return;
+        }
+
+        if (Application.Current!.ActualThemeVariant == ThemeVariant.Light)
+        {
+            _textMateInstallation.SetTheme(_registryOptions.LoadTheme(ThemeName.Light));
+        }
+        else
+        {
+            _textMateInstallation.SetTheme(_registryOptions.LoadTheme(ThemeName.DarkPlus));
+        }
+    }
+
+    private void Editor_TextChanged(object? sender, EventArgs e)
+    {
+        if (!_isRefreshingFromViewModel)
+        {
+            PersistFoldingState(_currentViewModel);
+        }
+
+        UpdateFoldings();
+        _isRefreshingFromViewModel = false;
+    }
+
+    private void PersistFoldingState(ResourceYamlViewModel? vm, bool persistToViewModel = false)
+    {
+        if (vm == null || _foldingManager == null)
+        {
+            return;
+        }
+
+        _savedFoldStates.Clear();
+        List<NewFolding>? foldings = persistToViewModel ? [] : null;
+
+        foreach (var folding in _foldingManager.AllFoldings)
+        {
+            var tag = (NewFolding)folding.Tag;
+            tag.DefaultClosed = folding.IsFolded;
+
+            var title = tag.Name.TrimEnd();
+            if (!_savedFoldStates.TryGetValue(title, out var states))
+            {
+                states = new Queue<bool>();
+                _savedFoldStates.Add(title, states);
+            }
+
+            states.Enqueue(folding.IsFolded);
+            foldings?.Add(tag);
+        }
+
+        if (foldings != null)
+        {
+            vm.AllFoldings = foldings;
+        }
+    }
+
+    private void SubscribeViewModel(ResourceYamlViewModel? vm)
+    {
+        if (vm != null)
+        {
+            vm.PropertyChanged += ViewModelOnPropertyChanged;
+            vm.CompletionRequested += ViewModelOnCompletionRequested;
+        }
+    }
+
+    private void UnsubscribeViewModel(ResourceYamlViewModel? vm)
+    {
+        if (vm != null)
+        {
+            vm.PropertyChanged -= ViewModelOnPropertyChanged;
+            vm.CompletionRequested -= ViewModelOnCompletionRequested;
+        }
+    }
+
+    private void ViewModelOnPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName is nameof(ResourceYamlViewModel.Object)
+            or nameof(ResourceYamlViewModel.EditMode)
+            or nameof(ResourceYamlViewModel.HideNoisyFields))
+        {
+            PersistFoldingState(_currentViewModel);
+            _isRefreshingFromViewModel = true;
+        }
+    }
+
+    private void TextArea_TextEntered(object? sender, TextInputEventArgs e)
+    {
+        if (AssociatedObject == null || _currentViewModel?.Object == null || !_currentViewModel.EditMode)
+        {
+            return;
+        }
+
+        if (string.IsNullOrEmpty(e.Text))
+        {
+            return;
+        }
+
+        var entered = e.Text[0];
+        if (char.IsLetterOrDigit(entered) || entered is '_' or '-')
+        {
+            ShowCompletionWindow();
+        }
+    }
+
+    private void TextArea_TextEntering(object? sender, TextInputEventArgs e)
+    {
+        if (TryExitListOnNewLine(e))
+        {
+            return;
+        }
+
+        if (TryInsertSequenceEntryOnNewLine(e))
+        {
+            return;
+        }
+
+        if (TryContinueListItemOnNewLine(e))
+        {
+            return;
+        }
+
+        if (_completionWindow != null && !string.IsNullOrEmpty(e.Text) && !char.IsLetterOrDigit(e.Text[0]) && e.Text[0] != '_')
+        {
+            _completionWindow.CompletionList.RequestInsertion(e);
+        }
+
+    }
+
+    private bool TryExitListOnNewLine(TextInputEventArgs e)
+    {
+        if (AssociatedObject?.Document == null
+            || AssociatedObject.IsReadOnly
+            || _currentViewModel?.EditMode != true
+            || (e.Text != "\n" && e.Text != "\r" && e.Text != "\r\n")
+            || !AssociatedObject.TextArea.Selection.IsEmpty)
+        {
+            return false;
+        }
+
+        var document = AssociatedObject.Document;
+        var caretOffset = AssociatedObject.CaretOffset;
+        var line = document.GetLineByOffset(caretOffset);
+        var lineText = document.GetText(line);
+        if (caretOffset != line.EndOffset)
+        {
+            return false;
+        }
+
+        var trimmed = lineText.Trim();
+        if (trimmed != "-")
+        {
+            return false;
+        }
+
+        var indent = CountLeadingSpaces(lineText);
+        var nextIndent = Math.Max(0, indent - IndentationSize);
+        document.Replace(line.Offset, line.Length, new string(' ', nextIndent));
+        AssociatedObject.TextArea.Caret.Offset = line.Offset + nextIndent;
+        e.Handled = true;
+        return true;
+    }
+
+    private bool TryContinueListItemOnNewLine(TextInputEventArgs e)
+    {
+        if (AssociatedObject?.Document == null
+            || AssociatedObject.IsReadOnly
+            || _currentViewModel?.EditMode != true
+            || (e.Text != "\n" && e.Text != "\r" && e.Text != "\r\n")
+            || !AssociatedObject.TextArea.Selection.IsEmpty)
+        {
+            return false;
+        }
+
+        var document = AssociatedObject.Document;
+        var caretOffset = AssociatedObject.CaretOffset;
+        var line = document.GetLineByOffset(caretOffset);
+        if (caretOffset != line.EndOffset)
+        {
+            return false;
+        }
+
+        var lineText = document.GetText(line);
+        var trimmed = lineText.Trim();
+        if (!trimmed.StartsWith("- ", StringComparison.Ordinal) || trimmed == "-")
+        {
+            return false;
+        }
+
+        var insertText = GetDocumentNewLine(document) + new string(' ', CountLeadingSpaces(lineText)) + "- ";
+        document.Insert(caretOffset, insertText);
+        AssociatedObject.TextArea.Caret.Offset = caretOffset + insertText.Length;
+        e.Handled = true;
+        return true;
+    }
+
+    private bool TryInsertSequenceEntryOnNewLine(TextInputEventArgs e)
+    {
+        if (AssociatedObject?.Document == null
+            || AssociatedObject.IsReadOnly
+            || _currentViewModel?.Object == null
+            || _currentViewModel.Cluster == null
+            || !_currentViewModel.EditMode
+            || (e.Text != "\n" && e.Text != "\r" && e.Text != "\r\n"))
+        {
+            return false;
+        }
+
+        if (!YamlSchemaContext.TryCreateSequenceEntryInsertion(
+                AssociatedObject.Document,
+                AssociatedObject.CaretOffset,
+                _currentViewModel.Object.GetType(),
+                _currentViewModel.Cluster.ModelCache,
+                out var insertionText))
+        {
+            return false;
+        }
+
+        var offset = AssociatedObject.CaretOffset;
+        AssociatedObject.Document.Insert(offset, insertionText);
+        AssociatedObject.TextArea.Caret.Offset = Math.Min(offset + insertionText.Length, AssociatedObject.Document.TextLength);
+        e.Handled = true;
+        return true;
+    }
+
+    internal static bool TryUnindentEmptyLine(TextArea textArea)
+    {
+        ArgumentNullException.ThrowIfNull(textArea);
+
+        var document = textArea.Document;
+        if (document == null || !textArea.Selection.IsEmpty)
+        {
+            return false;
+        }
+
+        var caretOffset = textArea.Caret.Offset;
+        var line = document.GetLineByOffset(caretOffset);
+        var lineText = document.GetText(line);
+        if (!string.IsNullOrWhiteSpace(lineText))
+        {
+            return false;
+        }
+
+        var caretColumn = caretOffset - line.Offset;
+        if (caretColumn != line.Length || caretColumn == 0)
+        {
+            return false;
+        }
+
+        var removeCount = Math.Min(2, caretColumn);
+        document.Remove(caretOffset - removeCount, removeCount);
+        textArea.Caret.Offset = caretOffset - removeCount;
+        return true;
+    }
+
+    internal static bool TryIndentSelectedLines(TextArea textArea)
+    {
+        ArgumentNullException.ThrowIfNull(textArea);
+
+        var document = textArea.Document;
+        if (document == null || textArea.Selection.IsEmpty)
+        {
+            return false;
+        }
+
+        var segment = textArea.Selection.SurroundingSegment;
+        var startLine = document.GetLineByOffset(segment.Offset);
+        var endLine = GetSelectionEndLine(document, segment);
+        for (var line = startLine; line.LineNumber <= endLine.LineNumber; line = line.NextLine!)
+        {
+            document.Insert(line.Offset, new string(' ', IndentationSize));
+            if (line.NextLine == null)
+            {
+                break;
+            }
+        }
+
+        textArea.Selection = Selection.Create(textArea, segment.Offset + IndentationSize, segment.EndOffset + (IndentationSize * (endLine.LineNumber - startLine.LineNumber + 1)));
+        return true;
+    }
+
+    internal static bool TryUnindentSelectedLines(TextArea textArea)
+    {
+        ArgumentNullException.ThrowIfNull(textArea);
+
+        var document = textArea.Document;
+        if (document == null)
+        {
+            return false;
+        }
+
+        if (TryUnindentEmptyLine(textArea))
+        {
+            return true;
+        }
+
+        if (textArea.Selection.IsEmpty)
+        {
+            return TryUnindentCurrentLine(textArea);
+        }
+
+        var segment = textArea.Selection.SurroundingSegment;
+        var startLine = document.GetLineByOffset(segment.Offset);
+        var endLine = GetSelectionEndLine(document, segment);
+        var removed = 0;
+        for (var line = startLine; line.LineNumber <= endLine.LineNumber; line = line.NextLine!)
+        {
+            var lineText = document.GetText(line);
+            var removeCount = Math.Min(IndentationSize, CountLeadingSpaces(lineText));
+            if (removeCount > 0)
+            {
+                document.Remove(line.Offset, removeCount);
+                removed += removeCount;
+            }
+
+            if (line.NextLine == null)
+            {
+                break;
+            }
+        }
+
+        var startOffset = Math.Max(startLine.Offset, segment.Offset - Math.Min(IndentationSize, CountLeadingSpaces(document.GetText(startLine))));
+        var endOffset = Math.Max(startOffset, segment.EndOffset - removed);
+        textArea.Selection = Selection.Create(textArea, startOffset, endOffset);
+        return true;
+    }
+
+    internal static bool TryUnindentCurrentLine(TextArea textArea)
+    {
+        ArgumentNullException.ThrowIfNull(textArea);
+
+        var document = textArea.Document;
+        if (document == null || !textArea.Selection.IsEmpty)
+        {
+            return false;
+        }
+
+        var caretOffset = textArea.Caret.Offset;
+        var line = document.GetLineByOffset(caretOffset);
+        var lineText = document.GetText(line);
+        var removeCount = Math.Min(IndentationSize, CountLeadingSpaces(lineText));
+        if (removeCount == 0)
+        {
+            return false;
+        }
+
+        document.Remove(line.Offset, removeCount);
+        textArea.Caret.Offset = Math.Max(line.Offset, caretOffset - removeCount);
+        return true;
+    }
+
+    private bool TryUnindentOnBackspace()
+    {
+        if (AssociatedObject == null || AssociatedObject.IsReadOnly || _currentViewModel?.EditMode != true)
+        {
+            return false;
+        }
+
+        return TryUnindentEmptyLine(AssociatedObject.TextArea);
+    }
+
+    private bool TryIndentSelection()
+    {
+        if (AssociatedObject == null || AssociatedObject.IsReadOnly || _currentViewModel?.EditMode != true)
+        {
+            return false;
+        }
+
+        return TryIndentSelectedLines(AssociatedObject.TextArea);
+    }
+
+    private bool TryUnindentSelection()
+    {
+        if (AssociatedObject == null || AssociatedObject.IsReadOnly || _currentViewModel?.EditMode != true)
+        {
+            return false;
+        }
+
+        return TryUnindentSelectedLines(AssociatedObject.TextArea);
+    }
+
+    private static DocumentLine GetSelectionEndLine(TextDocument document, ISegment segment)
+    {
+        var endOffset = segment.EndOffset;
+        if (endOffset > segment.Offset)
+        {
+            var endLine = document.GetLineByOffset(Math.Max(0, endOffset - 1));
+            if (endLine.Offset == endOffset && endLine.PreviousLine != null)
+            {
+                return endLine.PreviousLine;
+            }
+
+            return endLine;
+        }
+
+        return document.GetLineByOffset(endOffset);
+    }
+
+    private static int CountLeadingSpaces(string text)
+    {
+        var count = 0;
+        while (count < text.Length && text[count] == ' ')
+        {
+            count++;
+        }
+
+        return count;
+    }
+
+    private static string GetDocumentNewLine(TextDocument document)
+    {
+        return document.Text.Contains("\r\n", StringComparison.Ordinal) ? "\r\n" : "\n";
+    }
+
+    private void ShowCompletionWindow()
+    {
+        if (AssociatedObject?.Document == null
+            || AssociatedObject.IsReadOnly
+            || _currentViewModel?.Object == null
+            || _currentViewModel.Cluster == null
+            || !_currentViewModel.EditMode)
+        {
+            return;
+        }
+
+        var context = YamlSchemaContext.Resolve(
+            AssociatedObject.Document,
+            AssociatedObject.CaretOffset,
+            _currentViewModel.Object.GetType(),
+            _currentViewModel.Cluster.ModelCache);
+
+        if (context.CompletionItems.Count == 0)
+        {
+            CloseCompletionWindow();
+            return;
+        }
+
+        if (_completionWindow == null)
+        {
+            _completionWindow = new CompletionWindow(AssociatedObject.TextArea);
+            _completionWindow.Closed += CompletionWindow_Closed;
+        }
+        else
+        {
+            _completionWindow.CompletionList.CompletionData.Clear();
+        }
+
+        _completionWindow.StartOffset = context.Key.StartOffset;
+        _completionWindow.EndOffset = Math.Max(context.Key.StartOffset, context.Key.EndOffset);
+
+        foreach (var item in context.CompletionItems)
+        {
+            _completionWindow.CompletionList.CompletionData.Add(new YamlCompletionData(item));
+        }
+
+        _completionWindow.CompletionList.SelectItem(context.Key.Prefix);
+
+        if (_completionWindow.IsOpen)
+        {
+            return;
+        }
+
+        _completionWindow.Show();
+    }
+
+    private void ViewModelOnCompletionRequested(object? sender, EventArgs e)
+    {
+        ShowCompletionWindow();
+    }
+
+    private void CompletionWindow_Closed(object? sender, EventArgs e)
+    {
+        CloseCompletionWindow();
+    }
+
+    private void CloseCompletionWindow()
+    {
+        if (_completionWindow == null)
+        {
+            return;
+        }
+
+        _completionWindow.Closed -= CompletionWindow_Closed;
+        if (_completionWindow.IsOpen)
+        {
+            _completionWindow.Hide();
+        }
+
+        _completionWindow = null;
+    }
+
+    private void UpdateFoldings()
+    {
+        if (_foldingManager == null || AssociatedObject == null)
+        {
+            return;
+        }
+
+        if (AssociatedObject.DataContext is ResourceYamlViewModel vm)
+        {
+            try
+            {
+                if (_savedFoldStates.Count == 0)
+                {
+                    LoadSavedFoldStates(vm);
+                }
+
+                var newFoldings = YamlFoldingStrategy.CreateNewFoldings(AssociatedObject.Document!, out var firstErrorOffset)
+                    .ToList();
+
+                _foldingManager.UpdateFoldings(newFoldings, firstErrorOffset);
+                RestoreFoldStates();
+            }
+            catch (Exception ex)
+            {
+                if (Application.Current is not IServiceProviderHost host)
+                {
+                    return;
+                }
+
+                var logger = host.Services.GetRequiredService<ILogger<YamlEditorBehavior>>();
+                logger?.LogWarning(ex, "Error loading foldings");
+            }
+        }
+    }
+
+    private void LoadSavedFoldStates(ResourceYamlViewModel vm)
+    {
+        if (vm.AllFoldings == null)
+        {
+            return;
+        }
+
+        foreach (var folding in vm.AllFoldings)
+        {
+            var title = folding.Name.TrimEnd();
+            if (!_savedFoldStates.TryGetValue(title, out var states))
+            {
+                states = new Queue<bool>();
+                _savedFoldStates.Add(title, states);
+            }
+
+            states.Enqueue(folding.DefaultClosed);
+        }
+    }
+
+    private void RestoreFoldStates()
+    {
+        foreach (var folding in _foldingManager!.AllFoldings)
+        {
+            var title = folding.Title.TrimEnd();
+            if (_savedFoldStates.TryGetValue(title, out var states) && states.Count > 0)
+            {
+                folding.IsFolded = states.Dequeue();
+            }
+        }
+    }
+}

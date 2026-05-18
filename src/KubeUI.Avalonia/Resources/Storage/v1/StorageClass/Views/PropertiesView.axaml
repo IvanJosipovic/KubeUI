@@ -1,0 +1,23 @@
+﻿<UserControl
+    x:Class="KubeUI.Avalonia.Resources.Storage.v1.StorageClass.Views.PropertiesView"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:assets="using:KubeUI.Avalonia.Assets"
+    xmlns:c="using:KubeUI.Avalonia.Features.Resources.Properties.Controls"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:models="using:k8s.Models"
+    d:DesignHeight="300"
+    d:DesignWidth="450"
+    x:DataType="models:V1StorageClass"
+    mc:Ignorable="d">
+    <StackPanel>
+        <c:PropertyItem Key="{x:Static assets:Resources.StorageClassPropertiesView_Provisioner}" Value="{Binding Provisioner}" />
+        <c:PropertyItem Key="{x:Static assets:Resources.Shared_Reclaim_Policy}" Value="{Binding ReclaimPolicy}" />
+        <c:PropertyItem Key="{x:Static assets:Resources.StorageClassPropertiesView_Volume_Binding_Mode}" Value="{Binding VolumeBindingMode}" />
+        <c:PropertyItem Key="{x:Static assets:Resources.StorageClassPropertiesView_Allow_Volume_Expansion}" Value="{Binding AllowVolumeExpansion}" />
+        <c:PropertyItem Key="{x:Static assets:Resources.Shared_Mount_Options}" Value="{Binding MountOptions.Count}" />
+        <c:PropertyItem Key="{x:Static assets:Resources.StorageClassPropertiesView_Parameters}" Value="{Binding Parameters.Count}" />
+        <c:PropertyItem Key="{x:Static assets:Resources.StorageClassPropertiesView_Allowed_Topologies}" Value="{Binding AllowedTopologies.Count}" />
+    </StackPanel>
+</UserControl>

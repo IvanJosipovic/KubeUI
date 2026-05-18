@@ -1,5 +1,5 @@
 <Project>
   <PropertyGroup>
-    <AccelerateBuildsInVisualStudio>true</AccelerateBuildsInVisualStudio>
+    <WarningsAsErrors>$(WarningsAsErrors);CS4014</WarningsAsErrors>
   </PropertyGroup>
 </Project>

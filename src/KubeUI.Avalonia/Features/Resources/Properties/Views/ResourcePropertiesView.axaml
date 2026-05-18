@@ -1,0 +1,14 @@
+﻿<UserControl
+    x:Class="KubeUI.Avalonia.Features.Resources.Properties.Views.ResourcePropertiesView"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:k8s="using:k8s.Models"
+    xmlns:local="using:KubeUI.Avalonia.Features.Resources.Properties.Views"
+    xmlns:vm="using:KubeUI.Avalonia.Features.Resources.Properties.ViewModels">
+    <ScrollViewer x:Name="PART_ScrollViewer" VerticalScrollBarVisibility="Auto">
+        <StackPanel x:Name="PART_Items" HorizontalAlignment="Stretch" />
+    </ScrollViewer>
+</UserControl>
+
+
+

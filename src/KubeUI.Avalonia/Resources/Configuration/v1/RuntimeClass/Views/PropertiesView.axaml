@@ -1,0 +1,20 @@
+﻿<UserControl
+    x:Class="KubeUI.Avalonia.Resources.Configuration.v1.RuntimeClass.Views.PropertiesView"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:assets="using:KubeUI.Avalonia.Assets"
+    xmlns:c="using:KubeUI.Avalonia.Features.Resources.Properties.Controls"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:models="using:k8s.Models"
+    d:DesignHeight="250"
+    d:DesignWidth="450"
+    x:DataType="models:V1RuntimeClass"
+    mc:Ignorable="d">
+    <StackPanel>
+        <c:PropertyItem Key="{x:Static assets:Resources.RuntimeClassPropertiesView_Handler}" Value="{Binding Handler}" />
+        <c:PropertyItem Key="{x:Static assets:Resources.RuntimeClassPropertiesView_Overhead_Entries}" Value="{Binding Overhead.PodFixed.Count}" />
+        <c:PropertyItem Key="{x:Static assets:Resources.RuntimeClassPropertiesView_Node_Selector_Entries}" Value="{Binding Scheduling.NodeSelector.Count}" />
+        <c:PropertyItem Key="{x:Static assets:Resources.Shared_Tolerations}" Value="{Binding Scheduling.Tolerations.Count}" />
+    </StackPanel>
+</UserControl>

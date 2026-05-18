@@ -1,0 +1,45 @@
+{
+    "name": ".NET in Codespaces",
+    "image": "mcr.microsoft.com/devcontainers/dotnet:10.0",
+    "features": {
+        "ghcr.io/devcontainers/features/docker-in-docker:2": {},
+        "ghcr.io/devcontainers/features/powershell:2": {},
+        "ghcr.io/devcontainers/features/common-utils:2": {},
+        "ghcr.io/devcontainers/features/git-lfs:1": {},
+        "ghcr.io/devcontainers/features/kubectl-helm-minikube:1": {},
+        "desktop-lite": {
+            "password": "vscode",
+            "webPort": "6080"
+            //"vncPort": "5901"
+        }
+    },
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "GitHub.copilot",
+                "GitHub.vscode-github-actions",
+                "ms-dotnettools.csdevkit",
+                "avaloniateam.vscode-avalonia",
+                "ms-vscode.PowerShell"
+            ]
+        }
+    },
+    "forwardPorts": [
+        6080
+    ],
+    "postCreateCommand": "minikube start --force && dotnet build",
+    "hostRequirements": {
+        "memory": "8gb",
+        "cpus": 4
+    },
+    "remoteEnv": {
+        "DOTNET_MULTILEVEL_LOOKUP": "0",
+        "TARGET": "net10.0"
+    },
+    "portsAttributes": {
+        "6080": {
+            "label": "desktop"
+        }
+    },
+    "remoteUser": "root"
+}

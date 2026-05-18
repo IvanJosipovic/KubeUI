@@ -7,34 +7,132 @@
   "assignees": [ "@ivanjosipovic" ],
   "extends": [ "config:recommended" ],
   "platformAutomerge": true,
+  "prConcurrentLimit": 0,
+  "prHourlyLimit": 0,
   "ignorePaths": [
     "**/docs/**"
   ],
+  "git-submodules": {
+    "enabled": true
+  },
   "packageRules": [
+    {
+      "matchManagers": [ "nuget" ],
+      "matchPackageNames": [
+        "OpenTelemetry.Instrumentation.Process",
+        "OpenTelemetry.Resources.OperatingSystem"
+      ],
+      "ignoreUnstable": false,
+      "respectLatest": false
+    },
+    {
+      "matchUpdateTypes": [ "minor", "patch", "digest" ],
+      "automerge": true,
+      "matchFileNames": [
+        "tests/**",
+        "benchmarks/**"
+      ]
+    },
+    {
+      "matchUpdateTypes": [ "minor", "patch", "digest" ],
+      "automerge": false,
+      "matchFileNames": [
+        "src/**",
+        "global.json"
+      ]
+    },
     {
       "groupName": "Avalonia",
       "separateMajorMinor": true,
       "groupSlug": "avalonia-libs",
-      "packageRules": [
-        {
-          "matchPackagePatterns": [
-            "Avalonia",
-            "Avalonia.*"
-          ]
-        }
+      "matchPackageNames": [
+        "Avalonia",
+        "Avalonia.*"
       ]
     },
     {
       "groupName": "Dock",
       "separateMajorMinor": true,
       "groupSlug": "dock",
-      "packageRules": [
-        {
-          "matchPackagePatterns": [
-            "Dock.*"
-          ]
-        }
+      "matchPackageNames": [
+        "Dock.*"
       ]
+    },
+    {
+      "groupName": "NodeEditorAvalonia",
+      "separateMajorMinor": true,
+      "groupSlug": "nodeeditoravalonia",
+      "matchPackageNames": [
+        "NodeEditorAvalonia",
+        "NodeEditorAvalonia.*"
+      ]
+    },
+    {
+      "groupName": "Irihi",
+      "separateMajorMinor": true,
+      "groupSlug": "irihi",
+      "matchPackageNames": [
+        "Irihi.*"
+      ]
+    },
+    {
+      "groupName": "TextMateSharp",
+      "separateMajorMinor": true,
+      "groupSlug": "textmatesharp",
+      "matchPackageNames": [
+        "TextMateSharp",
+        "TextMateSharp.*"
+      ]
+    },
+    {
+      "groupName": "OpenTelemetry",
+      "separateMajorMinor": true,
+      "groupSlug": "opentelemetry",
+      "matchPackageNames": [
+        "OpenTelemetry",
+        "OpenTelemetry.*"
+      ]
+    },
+    {
+      "groupName": "AvaloniaEdit",
+      "separateMajorMinor": true,
+      "groupSlug": "avaloniaedit",
+      "matchPackageNames": [
+        "AvaloniaEdit.TextMate",
+        "Avalonia.AvaloniaEdit"
+      ]
+    },
+    {
+      "groupName": "HanumanInstitute.MvvmDialogs.Avalonia",
+      "separateMajorMinor": true,
+      "groupSlug": "hanumaninstitute-mvvmdialogs",
+      "matchPackageNames": [
+        "hanumaninstitute.mvvmdialogs.*"
+      ]
+    }
+  ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/Kind\\.cs$/"
+      ],
+      "matchStrings": [
+        "private const string Version = \"v(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)\";"
+      ],
+      "depNameTemplate": "kubernetes-sigs/kind",
+      "datasourceTemplate": "github-releases"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/Kind\\.cs$/"
+      ],
+      "matchStrings": [
+        "private const string KubernetesVersion = \"kindest/node:v(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)\";"
+      ],
+      "depNameTemplate": "kindest/node",
+      "datasourceTemplate": "docker"
     }
   ]
 }

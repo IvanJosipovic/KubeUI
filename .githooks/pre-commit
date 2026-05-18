@@ -1,0 +1,15 @@
+#!/bin/sh
+set -eu
+
+repo_root=$(git rev-parse --show-toplevel)
+cd "$repo_root"
+
+if ! git diff --quiet --ignore-submodules -- || [ -n "$(git ls-files --others --exclude-standard)" ]; then
+    echo "pre-commit: please commit from a clean working tree or stash unrelated changes first." >&2
+    exit 1
+fi
+
+dotnet format KubeUI.slnx --verbosity minimal
+dotnet dnx XamlStyler.Console -r -d src/KubeUI.Avalonia -c Settings.XamlStyler
+
+git add -u

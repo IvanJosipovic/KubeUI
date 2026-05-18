@@ -1,0 +1,53 @@
+﻿<UserControl
+    x:Class="KubeUI.Avalonia.Resources.Workloads.v1.Pod.Views.PortForwarderListView"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:assets="clr-namespace:KubeUI.Avalonia.Assets;assembly=KubeUI.Avalonia"
+    xmlns:c="clr-namespace:KubeUI.Avalonia.Controls"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:viewmodels="using:KubeUI.Avalonia.Resources.Workloads.v1.Pod.ViewModels"
+    xmlns:vm="using:KubeUI.Avalonia.Resources.Workloads.v1.Pod.ViewModels"
+    d:DesignHeight="400"
+    d:DesignWidth="800"
+    x:DataType="vm:PortForwarderListViewModel">
+    <Grid>
+        <DataGrid x:Name="PortForwardersGrid"
+            CanUserReorderColumns="True"
+            CanUserResizeColumns="True"
+            GridLinesVisibility="All"
+            IsReadOnly="True"
+            ItemsSource="{Binding Cluster.PortForwarders}"
+            SelectedItem="{Binding SelectedItem, Mode=TwoWay}">
+            <DataGrid.Columns>
+                <c:MyDataGridTextColumn
+                    Binding="{Binding Type}"
+                    Header="{x:Static assets:Resources.PortForwarderListView_Type}"
+                    SortDirection="Ascending" />
+                <c:MyDataGridTextColumn
+                    Width="*"
+                    Binding="{Binding Name}"
+                    Header="{x:Static assets:Resources.PortForwarderListView_Name}" />
+                <c:MyDataGridTextColumn Binding="{Binding Namespace}" Header="{x:Static assets:Resources.PortForwarderListView_Namespace}" />
+                <c:MyDataGridTextColumn Binding="{Binding Port}" Header="{x:Static assets:Resources.PortForwarderListView_Port}" />
+                <c:MyDataGridTextColumn Binding="{Binding LocalPort}" Header="{x:Static assets:Resources.PortForwarderListView_LocalPort}" />
+                <c:MyDataGridTextColumn Binding="{Binding Connections}" Header="{x:Static assets:Resources.PortForwarderListView_Connections}" />
+                <c:MyDataGridTextColumn Binding="{Binding Status}" Header="{x:Static assets:Resources.PortForwarderListView_Status}" />
+            </DataGrid.Columns>
+            <DataGrid.ContextMenu>
+                <ContextMenu>
+                    <MenuItem
+                        Command="{Binding OpenCommand}"
+                        CommandParameter="{Binding SelectedItem}"
+                        Header="{x:Static assets:Resources.PortForwarderListView_OpenInBrowser}" />
+                    <MenuItem
+                        Command="{Binding RemoveCommand}"
+                        CommandParameter="{Binding SelectedItem}"
+                        Header="{x:Static assets:Resources.PortForwarderListView_Remove}" />
+                </ContextMenu>
+            </DataGrid.ContextMenu>
+        </DataGrid>
+    </Grid>
+</UserControl>
+
+
+

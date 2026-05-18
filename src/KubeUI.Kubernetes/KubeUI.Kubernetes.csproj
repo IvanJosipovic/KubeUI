@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>preview</LangVersion>
+    <DebugType>embedded</DebugType>
+    <AssemblyName>KubeUI.Kubernetes</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Using Include="CommunityToolkit.Mvvm.ComponentModel" />
+    <Using Include="KubeUI.Kubernetes" />
+    <Using Include="Microsoft.Extensions.DependencyInjection" />
+    <Using Include="Microsoft.Extensions.Logging" />
+    <Using Include="System.Collections" />
+    <Using Include="System.Collections.ObjectModel" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="KubeUI.Kubernetes.Tests" />
+    <InternalsVisibleTo Include="KubeUI.Avalonia.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+    <PackageReference Include="Azure.Identity" Version="1.21.0" />
+    <PackageReference Include="Azure.ResourceManager" Version="1.14.0" />
+    <PackageReference Include="Azure.ResourceManager.ContainerService" Version="1.4.0" />
+    <PackageReference Include="DynamicData" Version="9.4.31" />
+    <PackageReference Include="Humanizer.Core" Version="3.0.10" />
+    <PackageReference Include="KubernetesClient" Version="19.0.2" />
+    <PackageReference Include="KubernetesClient.Informer" Version="1.0.0" />
+    <PackageReference Include="KubernetesCRDModelGen" Version="1.6.2" />
+    <PackageReference Include="Mapster" Version="7.4.0" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.8" />
+    <PackageReference Include="Microsoft.Extensions.Http.Resilience" Version="10.6.0" />
+    <PackageReference Include="Swordfish.NET.CollectionsV3" Version="3.3.16" />
+    <PackageReference Include="YamlDotNet.System.Text.Json" Version="1.8.0" />
+  </ItemGroup>
+</Project>

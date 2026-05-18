@@ -1,0 +1,34 @@
+<UserControl
+    x:Class="KubeUI.Avalonia.Resources.Workloads.v1.CronJob.Views.PropertiesView"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:assets="using:KubeUI.Avalonia.Assets"
+    xmlns:c="using:KubeUI.Avalonia.Features.Resources.Properties.Controls"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:models="using:k8s.Models"
+    d:DesignHeight="400"
+    d:DesignWidth="500"
+    x:DataType="models:V1CronJob"
+    mc:Ignorable="d">
+    <StackPanel>
+        <c:PropertyItem Key="{x:Static assets:Resources.CronJobPropertiesView_Schedule}" Value="{Binding Spec.Schedule}" />
+        <c:PropertyItem Key="{x:Static assets:Resources.Shared_Suspend}" Value="{Binding Spec.Suspend}" />
+        <c:PropertyItem Key="{x:Static assets:Resources.CronJobPropertiesView_Concurrency_Policy}" Value="{Binding Spec.ConcurrencyPolicy}" />
+        <c:ExpandableSection Header="{x:Static assets:Resources.Shared_Configuration}">
+            <StackPanel>
+                <c:PropertyItem Key="{x:Static assets:Resources.CronJobPropertiesView_Successful_History_Limit}" Value="{Binding Spec.SuccessfulJobsHistoryLimit}" />
+                <c:PropertyItem Key="{x:Static assets:Resources.CronJobPropertiesView_Failed_History_Limit}" Value="{Binding Spec.FailedJobsHistoryLimit}" />
+                <c:PropertyItem Key="{x:Static assets:Resources.CronJobPropertiesView_Starting_Deadline_Seconds}" Value="{Binding Spec.StartingDeadlineSeconds}" />
+                <c:PropertyItem Key="{x:Static assets:Resources.CronJobPropertiesView_Time_Zone}" Value="{Binding Spec.TimeZone}" />
+            </StackPanel>
+        </c:ExpandableSection>
+        <c:ExpandableSection Header="{x:Static assets:Resources.Shared_Status}">
+            <StackPanel>
+                <c:PropertyItem Key="{x:Static assets:Resources.CronJobPropertiesView_Active_Jobs}" Value="{Binding Status.Active.Count}" />
+                <c:PropertyItem Key="{x:Static assets:Resources.CronJobPropertiesView_Last_Schedule_Time}" Value="{Binding Status.LastScheduleTime}" />
+                <c:PropertyItem Key="{x:Static assets:Resources.CronJobPropertiesView_Last_Successful_Time}" Value="{Binding Status.LastSuccessfulTime}" />
+            </StackPanel>
+        </c:ExpandableSection>
+    </StackPanel>
+</UserControl>

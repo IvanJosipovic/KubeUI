@@ -1,0 +1,51 @@
+﻿<UserControl
+    x:Class="KubeUI.Avalonia.Shell.Main.Views.MainView"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:assets="clr-namespace:KubeUI.Avalonia.Assets;assembly=KubeUI.Avalonia"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:doc="using:Dock.Avalonia.Controls"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:views="clr-namespace:KubeUI.Avalonia.Shell.Main.Views"
+    xmlns:vm="clr-namespace:KubeUI.Avalonia.Shell.Main.ViewModels"
+    d:DesignHeight="450"
+    d:DesignWidth="800"
+    x:DataType="vm:MainViewModel"
+    mc:Ignorable="d">
+    <Design.DataContext>
+        <vm:MainViewModel />
+    </Design.DataContext>
+
+    <Grid Background="Transparent" RowDefinitions="Auto,*">
+        <!--  Top Menu (hidden on macOS in code-behind)  -->
+        <Menu x:Name="MainMenu" Grid.Row="0"
+            VerticalAlignment="Top">
+            <MenuItem Header="{x:Static assets:Resources.MainView_Menu_File}">
+                <MenuItem Command="{Binding LoadKubeConfigCommand}" Header="{x:Static assets:Resources.MainView_Menu_File_LoadKubeConfig}" />
+                <MenuItem Command="{Binding ImportAksClusterCommand}" Header="{x:Static assets:Resources.MainView_Menu_File_ImportAksCluster}" />
+                <MenuItem Command="{Binding OpenClustersCommand}" Header="{x:Static assets:Resources.MainView_Menu_File_Clusters}" />
+                <MenuItem Command="{Binding OpenSettingsCommand}" Header="{x:Static assets:Resources.MainView_Menu_File_Settings}" />
+                <Separator />
+                <MenuItem Command="{Binding CloseCommand}" Header="{x:Static assets:Resources.MainView_Menu_File_Exit}" />
+            </MenuItem>
+
+            <MenuItem Header="{x:Static assets:Resources.MainView_Menu_Window}">
+                <MenuItem Command="{Binding ResetLayoutCommand}" Header="{x:Static assets:Resources.MainView_Menu_Window_ResetLayout}" />
+                <MenuItem Command="{Binding SwitchThemeCommand}" Header="{x:Static assets:Resources.MainView_Menu_Window_SwitchTheme}" />
+            </MenuItem>
+
+            <MenuItem Header="{x:Static assets:Resources.MainView_Menu_Help}">
+                <MenuItem Command="{Binding OpenAboutCommand}" Header="{x:Static assets:Resources.MainView_Menu_Help_About}" />
+            </MenuItem>
+        </Menu>
+
+        <doc:DockControl Grid.Row="1"
+            Margin="4"
+            Layout="{Binding Layout}" />
+    </Grid>
+</UserControl>
+
+
+
+
+

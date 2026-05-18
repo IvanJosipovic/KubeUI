@@ -1,0 +1,21 @@
+﻿<UserControl
+    x:Class="KubeUI.Avalonia.Resources.Configuration.v1.Lease.Views.PropertiesView"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:assets="using:KubeUI.Avalonia.Assets"
+    xmlns:c="using:KubeUI.Avalonia.Features.Resources.Properties.Controls"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:models="using:k8s.Models"
+    d:DesignHeight="250"
+    d:DesignWidth="450"
+    x:DataType="models:V1Lease"
+    mc:Ignorable="d">
+    <StackPanel>
+        <c:PropertyItem Key="{x:Static assets:Resources.LeasePropertiesView_Holder_Identity}" Value="{Binding Spec.HolderIdentity}" />
+        <c:PropertyItem Key="{x:Static assets:Resources.LeasePropertiesView_Lease_Duration_Seconds}" Value="{Binding Spec.LeaseDurationSeconds}" />
+        <c:PropertyItem Key="{x:Static assets:Resources.LeasePropertiesView_Acquire_Time}" Value="{Binding Spec.AcquireTime}" />
+        <c:PropertyItem Key="{x:Static assets:Resources.LeasePropertiesView_Renew_Time}" Value="{Binding Spec.RenewTime}" />
+        <c:PropertyItem Key="{x:Static assets:Resources.LeasePropertiesView_Lease_Transitions}" Value="{Binding Spec.LeaseTransitions}" />
+    </StackPanel>
+</UserControl>

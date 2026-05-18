@@ -1,0 +1,55 @@
+﻿<UserControl
+    x:Class="KubeUI.Avalonia.Controls.DataGridFilters.NumericFilterFlyoutView"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:assets="using:KubeUI.Avalonia.Assets"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:filters="using:KubeUI.Avalonia.Controls.DataGridFilters"
+    x:DataType="filters:NumericFilterFlyoutContext">
+    <StackPanel Classes="filter-flyout-root">
+        <TextBlock Classes="filter-flyout-title" Text="{Binding Title}" />
+        <Grid Classes="filter-flyout-row" ColumnDefinitions="72,*">
+            <TextBlock Classes="filter-flyout-label" Text="{x:Static assets:Resources.DataGridFilterFlyout_Condition}" />
+            <ComboBox
+                Grid.Column="1"
+                Classes="filter-flyout-editor"
+                ItemsSource="{Binding Operators}"
+                SelectedItem="{Binding SelectedOperator, Mode=TwoWay}">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate x:DataType="filters:FilterOperatorChoice">
+                        <TextBlock Text="{Binding Label}" />
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
+        </Grid>
+        <Grid Classes="filter-flyout-row" ColumnDefinitions="72,*">
+            <TextBlock Classes="filter-flyout-label" Text="{x:Static assets:Resources.DataGridFilterFlyout_Value}" />
+            <NumericUpDown
+                Grid.Column="1"
+                Classes="filter-flyout-editor"
+                Increment="1"
+                Value="{Binding Value, Mode=TwoWay}" />
+        </Grid>
+        <Grid
+            Classes="filter-flyout-row"
+            ColumnDefinitions="72,*"
+            IsVisible="{Binding IsRangeVisible}">
+            <TextBlock Classes="filter-flyout-label" Text="{x:Static assets:Resources.DataGridFilterFlyout_And}" />
+            <NumericUpDown
+                Grid.Column="1"
+                Classes="filter-flyout-editor"
+                Increment="1"
+                Value="{Binding SecondValue, Mode=TwoWay}" />
+        </Grid>
+        <StackPanel Classes="filter-flyout-actions">
+            <Button
+                Classes="filter-flyout-action"
+                Command="{Binding ClearCommand}"
+                Content="{x:Static assets:Resources.DataGridFilterFlyout_Clear}" />
+            <Button
+                Classes="filter-flyout-action"
+                Command="{Binding ApplyCommand}"
+                Content="{x:Static assets:Resources.DataGridFilterFlyout_Apply}" />
+        </StackPanel>
+    </StackPanel>
+</UserControl>

@@ -1,0 +1,128 @@
+using Avalonia.Collections;
+using Avalonia.Controls;
+using FluentAvalonia.UI.Controls;
+using FluentIcons.Common;
+using HanumanInstitute.MvvmDialogs;
+using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
+using k8s.Models;
+using KubeUI.Avalonia.Features.Resources.Common;
+using KubeUI.Avalonia.Resources.Network.v1.Service.Views;
+using KubeUI.Kubernetes;
+
+namespace KubeUI.Avalonia.Resources.Network.v1.Service;
+
+public sealed partial class V1ServiceConfig : ResourceConfigBase<V1Service>
+{
+    private static readonly AuthorizationRequest[] s_portForwardAuthorizationRequests =
+    [
+        new(typeof(V1Pod), Verb.Create, "portforward"),
+        new(typeof(V1EndpointSlice), Verb.List, null),
+        new(typeof(V1EndpointSlice), Verb.Watch, null),
+    ];
+
+    public V1ServiceConfig(IServiceProvider serviceProvider)
+        : base(serviceProvider)
+    {
+    }
+    public override bool IsNamespaced => true;
+    public override string Category => Assets.Resources.ResourceConfig_Category_Network!;
+    public override int Order => 0;
+
+    public override IList<IResourceListColumn> Columns()
+    {
+        return [
+            NameColumn(SortDirection.Ascending),
+            NamespaceColumn(),
+            new ResourceListColumn<V1Service, string>()
+            {
+                Key = "type",
+                Name = Assets.Resources.V1ServiceConfig_Type!,
+                Field = x => x.Spec.Type,
+                Width = nameof(DataGridLengthUnitType.SizeToCells)
+            },
+            new ResourceListColumn<V1Service, string>()
+            {
+                Key = "cluster-ip",
+                Name = Assets.Resources.V1ServiceConfig_Cluster_IP!,
+                Field = x => x.Spec.ClusterIP,
+                Width = nameof(DataGridLengthUnitType.SizeToCells)
+            },
+            new ResourceListColumn<V1Service, int>()
+            {
+                Key = "ports",
+                Name = Assets.Resources.V1ServiceConfig_Ports!,
+                Display = x => x.Spec?.Ports is { Count: > 0 } ports ? string.Join(", ", ports.Select(x => $"{x.Port}{(string.IsNullOrEmpty(x.Name) ? "" : ":" + x.Name)}/{x.Protocol}")) : "",
+                Field = x => x.Spec?.Ports?.FirstOrDefault()?.Port ?? 0,
+                Width = nameof(DataGridLengthUnitType.SizeToCells)
+            },
+            AgeColumn(),
+        ];
+    }
+
+    public override IEnumerable<AuthorizationRequest> AuthorizationRequests()
+    {
+        return base.AuthorizationRequests().Concat(s_portForwardAuthorizationRequests);
+    }
+
+    protected override IEnumerable<MenuItemViewModel> CreateCustomMenuItems(IEnumerable<V1Service>? selectedItems)
+    {
+        var selectedItem = selectedItems?.FirstOrDefault();
+
+        return [
+            new()
+            {
+                Header = "Port Forwarding",
+                FluentIcon = Icon.CloudFlow,
+                Items = selectedItem?.Spec?.Ports == null
+                    ? null
+                    : new AvaloniaList<MenuItemViewModel>(selectedItem.Spec.Ports.Select(p => new MenuItemViewModel()
+                    {
+                        Header = $"{p.Name} - {p.Port}",
+                        Command = PortForwardServiceCommand,
+                        CommandParameter = new ArrayList { selectedItem, p },
+                    }).ToList()),
+            },
+        ];
+    }
+
+    [RelayCommand(CanExecute = nameof(CanPortForwardService))]
+    private async Task PortForwardService(IList parameters)
+    {
+        if (parameters[0] is V1Service service && parameters[1] is V1ServicePort containerPort)
+        {
+            var pf = Cluster.AddServicePortForward(service.Namespace(), service.Name(), containerPort.Port);
+
+            ContentDialogSettings settings = new()
+            {
+                Title = Assets.Resources.ResourceListView_PortForward_Title,
+                Content = string.Format(Assets.Resources.ResourceListView_PortForward_Content, containerPort.Port, pf.LocalPort),
+                PrimaryButtonText = Assets.Resources.ResourceListView_PortForward_Primary,
+                SecondaryButtonText = Assets.Resources.ResourceListView_PortForward_Secondary,
+                DefaultButton = FAContentDialogButton.Secondary
+            };
+
+            var result = await _dialogService.ShowContentDialogAsync(this, settings);
+
+            if (result == FAContentDialogResult.Primary)
+            {
+                await App.TopLevel!.Launcher.LaunchUriAsync(new Uri($"http://localhost:{pf.LocalPort}"));
+            }
+        }
+    }
+
+    private bool CanPortForwardService(IList? parameters)
+    {
+        if (parameters?[0] is V1Service service && parameters?[1] is V1ServicePort servicePort)
+        {
+            return servicePort?.Port > 0 &&
+                   servicePort.Protocol == "TCP" &&
+                   Cluster.CanI<V1Pod>(Verb.Create, service.Namespace(), "portforward") &&
+                   Cluster.CanI<V1EndpointSlice>(Verb.List, service.Namespace()) &&
+                   Cluster.CanI<V1EndpointSlice>(Verb.Watch, service.Namespace());
+        }
+
+        return false;
+    }
+
+    public override Control[] Properties(V1Service resource) => [new PropertiesView()];
+}

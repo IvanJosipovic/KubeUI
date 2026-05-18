@@ -1,0 +1,29 @@
+﻿<UserControl
+    x:Class="KubeUI.Avalonia.Resources.Workloads.v1.Deployment.Views.PropertiesView"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:assets="using:KubeUI.Avalonia.Assets"
+    xmlns:c="using:KubeUI.Avalonia.Features.Resources.Properties.Controls"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:models="using:k8s.Models"
+    d:DesignHeight="400"
+    d:DesignWidth="500"
+    x:DataType="models:V1Deployment"
+    mc:Ignorable="d">
+    <StackPanel>
+        <c:PropertyItem Key="{x:Static assets:Resources.Shared_Replicas}" Value="{Binding Spec.Replicas}" />
+        <c:PropertyItem Key="{x:Static assets:Resources.Shared_Available_Replicas}" Value="{Binding Status.AvailableReplicas}" />
+        <c:PropertyItem Key="{x:Static assets:Resources.Shared_Ready_Replicas}" Value="{Binding Status.ReadyReplicas}" />
+        <c:PropertyItem Key="{x:Static assets:Resources.Shared_Updated_Replicas}" Value="{Binding Status.UpdatedReplicas}" />
+        <c:ExpandableSection Header="{x:Static assets:Resources.DeploymentPropertiesView_Rollout}">
+            <StackPanel>
+                <c:PropertyItem Key="{x:Static assets:Resources.DeploymentPropertiesView_Unavailable_Replicas}" Value="{Binding Status.UnavailableReplicas}" />
+                <c:PropertyItem Key="{x:Static assets:Resources.Shared_Conditions}" Value="{Binding Status.Conditions.Count}" />
+                <c:PropertyItem Key="{x:Static assets:Resources.DeploymentPropertiesView_Strategy_Type}" Value="{Binding Spec.Strategy.Type}" />
+                <c:PropertyItem Key="{x:Static assets:Resources.DeploymentPropertiesView_Progress_Deadline_Seconds}" Value="{Binding Spec.ProgressDeadlineSeconds}" />
+                <c:PropertyItem Key="{x:Static assets:Resources.Shared_Revision_History_Limit}" Value="{Binding Spec.RevisionHistoryLimit}" />
+            </StackPanel>
+        </c:ExpandableSection>
+    </StackPanel>
+</UserControl>

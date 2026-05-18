@@ -1,4 +1,4 @@
-name: CICD
+name: Release
 
 on:
   workflow_dispatch:
@@ -7,109 +7,49 @@ on:
       - 'main'
       - 'alpha'
       - 'beta'
-      - 'dev'
-  pull_request:
-    types: [opened, reopened, synchronize]
+
+permissions:
+  id-token: write
+  contents: write
+  actions: write
+  checks: write
+  issues: write
+  pull-requests: write
 
 jobs:
+  build-test:
+    name: Build & Test
+    uses: ./.github/workflows/build-test.yml
+
   semantic-release:
     name: Bump Version
+    needs: [build-test]
     runs-on: ubuntu-latest
     outputs:
       new_release_published: ${{ steps.semantic.outputs.new_release_published }}
-      new_release_version: ${{ (steps.semantic.outputs.new_release_published && steps.semantic.outputs.new_release_version) || '0.0.1' }}
+      new_release_version: ${{ (steps.semantic.outputs.new_release_published && steps.semantic.outputs.new_release_version) || '0.0.1-alpha.1' }}
+      new_release_notes: ${{ steps.semantic.outputs.new_release_notes }}
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
 
     - name: Semantic Release
-      uses: cycjimmy/semantic-release-action@v4
+      uses: cycjimmy/semantic-release-action@v6.0.0
       id: semantic
       with:
         dry_run: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  build-test:
-    name: Build & Test
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup .NET Core
-        uses: actions/setup-dotnet@v4
-        with:
-          global-json-file: global.json
-
-      - name: Test
-        run: dotnet test -c Release --collect:"XPlat Code Coverage"
-
-      - name: Coverage
-        uses: codecov/codecov-action@v4
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          file: coverage.cobertura.xml
-          fail_ci_if_error: true
-
-      - name: Benchmarks
-        working-directory: benchmarks/KubeUI.Models.Generator.Benchmarks
-        run: dotnet run -c Release
-
   publish-matrix:
-    name: Publish Installer
-    runs-on: ${{ matrix.runs-on }}
+    name: Publish Installers
     needs: [semantic-release]
-    strategy:
-      matrix:
-        include:
-          - rid: win-x64
-            fileName: KubeUI.Desktop.exe
-            runs-on: windows-latest
-          - rid: win-arm64
-            fileName: KubeUI.Desktop.exe
-            runs-on: windows-latest
-          - rid: linux-x64
-            fileName: KubeUI.Desktop
-            runs-on: ubuntu-latest
-          - rid: linux-arm64
-            fileName: KubeUI.Desktop
-            runs-on: ubuntu-latest
-          - rid: osx-x64
-            fileName: KubeUI.Desktop
-            runs-on: macos-latest
-          - rid: osx-arm64
-            fileName: KubeUI.Desktop
-            runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup .NET Core
-        uses: actions/setup-dotnet@v4
-        with:
-          global-json-file: global.json
-
-      - name: Install Velopack
-        run: dotnet tool install -g vpk
-
-      - name: Install Velopack Deps
-        if: matrix.runs-on == 'ubuntu-latest'
-        run: sudo apt install libfuse2
-
-      - name: Publish
-        working-directory: src/KubeUI.Desktop
-        run: dotnet publish -c Release -r ${{ matrix.rid }} -o bin/publish -p:Version=${{ needs.semantic-release.outputs.new_release_version }}
-
-      - name: Create Release
-        working-directory: src/KubeUI.Desktop
-        run: |
-          vpk download github --repoUrl https://github.com/${{ github.repository }} --token ${{ secrets.GITHUB_TOKEN }} -c ${{ matrix.rid }} --pre
-          vpk pack --packTitle KubeUI -u KubeUI -v ${{ needs.semantic-release.outputs.new_release_version }} -p bin/publish -c ${{ matrix.rid }} -e ${{ matrix.fileName }} -o packed
-
-      - name: Upload Artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.rid }}-artifacts
-          path: src/KubeUI.Desktop/packed
+    uses: ./.github/workflows/publish-installer.yml
+    secrets: inherit
+    with:
+      package_version: ${{ needs.semantic-release.outputs.new_release_version }}
+      release_notes: ${{ needs.semantic-release.outputs.new_release_notes }}
+      download_releases: ${{ needs.semantic-release.outputs.new_release_published == 'true' }}
+      enable_code_signing: true
 
   release:
     if: needs.semantic-release.outputs.new_release_published == 'true'
@@ -117,14 +57,14 @@ jobs:
     needs: [semantic-release, publish-matrix]
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
 
     - name: Download artifacts
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v8
       with:
         path: dist/
 
     - name: Semantic Release
-      uses: cycjimmy/semantic-release-action@v4
+      uses: cycjimmy/semantic-release-action@v6.0.0
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

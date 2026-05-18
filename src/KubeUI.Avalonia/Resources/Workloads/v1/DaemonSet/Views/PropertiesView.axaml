@@ -1,0 +1,35 @@
+<UserControl
+    x:Class="KubeUI.Avalonia.Resources.Workloads.v1.DaemonSet.Views.PropertiesView"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:assets="using:KubeUI.Avalonia.Assets"
+    xmlns:c="using:KubeUI.Avalonia.Features.Resources.Properties.Controls"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:models="using:k8s.Models"
+    d:DesignHeight="400"
+    d:DesignWidth="500"
+    x:DataType="models:V1DaemonSet"
+    mc:Ignorable="d">
+    <StackPanel>
+        <c:PropertyItem Key="{x:Static assets:Resources.DaemonSetPropertiesView_Desired_Scheduled}" Value="{Binding Status.DesiredNumberScheduled}" />
+        <c:PropertyItem Key="{x:Static assets:Resources.DaemonSetPropertiesView_Current_Scheduled}" Value="{Binding Status.CurrentNumberScheduled}" />
+        <c:PropertyItem Key="{x:Static assets:Resources.DaemonSetPropertiesView_Ready}" Value="{Binding Status.NumberReady}" />
+        <c:PropertyItem Key="{x:Static assets:Resources.DaemonSetPropertiesView_Updated}" Value="{Binding Status.UpdatedNumberScheduled}" />
+        <c:ExpandableSection Header="{x:Static assets:Resources.Shared_Status}">
+            <StackPanel>
+                <c:PropertyItem Key="{x:Static assets:Resources.DaemonSetPropertiesView_Available}" Value="{Binding Status.NumberAvailable}" />
+                <c:PropertyItem Key="{x:Static assets:Resources.DaemonSetPropertiesView_Unavailable}" Value="{Binding Status.NumberUnavailable}" />
+                <c:PropertyItem Key="{x:Static assets:Resources.DaemonSetPropertiesView_Misscheduled}" Value="{Binding Status.NumberMisscheduled}" />
+                <c:PropertyItem Key="{x:Static assets:Resources.Shared_Conditions}" Value="{Binding Status.Conditions.Count}" />
+            </StackPanel>
+        </c:ExpandableSection>
+        <c:ExpandableSection Header="{x:Static assets:Resources.Shared_Configuration}">
+            <StackPanel>
+                <c:PropertyItem Key="{x:Static assets:Resources.Shared_Min_Ready_Seconds}" Value="{Binding Spec.MinReadySeconds}" />
+                <c:PropertyItem Key="{x:Static assets:Resources.Shared_Revision_History_Limit}" Value="{Binding Spec.RevisionHistoryLimit}" />
+                <c:PropertyItem Key="{x:Static assets:Resources.Shared_Selector_Labels}" Value="{Binding Spec.Selector.MatchLabels.Count}" />
+            </StackPanel>
+        </c:ExpandableSection>
+    </StackPanel>
+</UserControl>
