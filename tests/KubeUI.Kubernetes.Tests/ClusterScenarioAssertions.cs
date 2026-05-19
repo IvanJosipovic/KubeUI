@@ -193,7 +193,10 @@ public abstract class ClusterScenarioAssertions
 
         await harness.Cluster.ImportYaml(new MemoryStream(Encoding.UTF8.GetBytes(SharedScenarioData.CustomResourceYaml)));
 
-        var seedMethod = harness.Cluster.GetType().GetMethod(nameof(IClusterRuntime.SeedResource))!;
+        var seedMethod = harness.Cluster.GetType()
+            .GetMethods()
+            .Single(method => method.Name == nameof(IClusterRuntime.SeedResource) && method.IsGenericMethodDefinition);
+
         await (Task)seedMethod.MakeGenericMethod(generatedType!).Invoke(harness.Cluster, [true])!;
 
         var kind = harness.Cluster.Objects[GroupApiVersionKind.From(generatedType)];
@@ -368,5 +371,4 @@ public abstract class ClusterScenarioAssertions
         return null;
     }
 }
-
 
