@@ -1,7 +1,7 @@
 # KubeUI
 
 ![cicd](https://github.com/IvanJosipovic/KubeUI/workflows/CICD/badge.svg)
-[![codecov](https://codecov.io/gh/IvanJosipovic/KubeUI/branch/alpha/graph/badge.svg?token=E05HWW1QYR)](https://codecov.io/gh/IvanJosipovic/KubeUI)
+[![codecov](https://codecov.io/gh/IvanJosipovic/KubeUI/branch/main/graph/badge.svg?token=E05HWW1QYR)](https://codecov.io/gh/IvanJosipovic/KubeUI)
 ![GitHub all releases](https://img.shields.io/github/downloads/IvanJosipovic/KubeUI/total)
 [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FIvanJosipovic%2FKubeUI.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2FIvanJosipovic%2FKubeUI?ref=badge_shield)
 
@@ -92,11 +92,12 @@ Releases are available for AMD64 and ARM64 on:
 
 - Linux
 - macOS
+   - `brew install --cask IvanJosipovic/homebrew-repo/kubeui`
 - Windows
   - `winget install KubeUI`
   - [![Microsoft Store](https://get.microsoft.com/images/en-us%20dark.svg)](https://apps.microsoft.com/detail/XP9MRWDV3N310N?mode=direct)
 
-Download binaries from [Releases](https://github.com/IvanJosipovic/KubeUI/releases).
+Download binaries from [Releases](https://github.com/IvanJosipovic/KubeUI/releases/latest).
 
 ## Build
 
