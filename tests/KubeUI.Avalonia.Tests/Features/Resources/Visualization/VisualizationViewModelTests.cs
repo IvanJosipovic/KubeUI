@@ -1,8 +1,10 @@
 using Avalonia;
 using Avalonia.Headless.XUnit;
+using Avalonia.Threading;
 using AvaloniaGraphControl;
 using k8s;
 using k8s.Models;
+using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Tests.Infra;
 using Shouldly;
 using static KubeUI.Avalonia.Features.Resources.Visualization.ViewModels.VisualizationViewModel;
@@ -282,6 +284,45 @@ public class VisualizationViewModelTests : AvaloniaTestBase
         edges.Count.ShouldBe(2);
         edges.ShouldContain((typeof(V1CronJob), typeof(V1Job)));
         edges.ShouldContain((typeof(V1Job), typeof(V1Pod)));
+    }
+
+    [AvaloniaFact]
+    public async Task Initialize_seeds_missing_owner_reference_resource_types()
+    {
+        var cluster = await CreateClusterAsync();
+        var leaseKind = GroupApiVersionKind.From<V1Lease>();
+
+        await cluster.AddOrUpdateResource(new V1Pod
+        {
+            ApiVersion = "v1",
+            Kind = V1Pod.KubeKind,
+            Metadata = new()
+            {
+                Name = "lease-child",
+                NamespaceProperty = "default",
+                Uid = "pod-uid",
+                OwnerReferences =
+                [
+                    new()
+                    {
+                        ApiVersion = "coordination.k8s.io/v1",
+                        Kind = V1Lease.KubeKind,
+                        Name = "lease-owner",
+                        Uid = "lease-uid",
+                    }
+                ],
+            },
+            Spec = new V1PodSpec(),
+        });
+
+        cluster.Objects.ContainsKey(leaseKind).ShouldBeFalse();
+
+        var vm = CreateViewModel();
+        vm.Initialize(cluster);
+
+        await WaitForAsync(() => cluster.Objects.ContainsKey(leaseKind));
+
+        cluster.Objects.ContainsKey(leaseKind).ShouldBeTrue();
     }
 
     [AvaloniaFact]
@@ -4246,6 +4287,127 @@ public class VisualizationViewModelTests : AvaloniaTestBase
         vm.Graph.Edges.OfType<GroupEdge>().Count().ShouldBe(2);
     }
 
+    [AvaloniaFact]
+    public async Task visible_resource_update_refreshes_the_graph()
+    {
+        var cluster = await CreateClusterAsync();
+
+        var namespaceResource = new V1Namespace
+        {
+            Metadata = new()
+            {
+                Name = "refresh-ns",
+            },
+        };
+
+        await cluster.AddOrUpdateResource(namespaceResource);
+        cluster.SelectedNamespaces.Add(namespaceResource);
+
+        var pod = new V1Pod
+        {
+            ApiVersion = "v1",
+            Kind = V1Pod.KubeKind,
+            Metadata = new()
+            {
+                Name = "refresh-pod",
+                NamespaceProperty = "refresh-ns",
+                Uid = "pod-uid",
+            },
+            Spec = new V1PodSpec(),
+        };
+
+        await cluster.AddOrUpdateResource(pod);
+
+        var vm = CreateViewModel();
+        vm.Initialize(cluster);
+
+        var podNode = vm.Resources.Single(x => ReferenceEquals(x.Resource, pod));
+        vm.Graph.Parent[podNode].ShouldBeOfType<GroupNodeViewModel>().DisplayText.ShouldBe("Namespace refresh-ns");
+
+        var updatedPod = new V1Pod
+        {
+            ApiVersion = "v1",
+            Kind = V1Pod.KubeKind,
+            Metadata = new()
+            {
+                Name = "refresh-pod",
+                NamespaceProperty = "refresh-ns",
+                Uid = "pod-uid",
+                Labels = new Dictionary<string, string>
+                {
+                    ["app.kubernetes.io/component"] = "worker",
+                },
+            },
+            Spec = new V1PodSpec(),
+        };
+
+        await cluster.AddOrUpdateResource(updatedPod);
+        Dispatcher.UIThread.RunJobs();
+
+        vm.Resources.Single(x => ReferenceEquals(x.Resource, pod)).ShouldNotBeNull();
+        vm.Graph.Parent[vm.Resources.Single(x => ReferenceEquals(x.Resource, pod))]
+            .ShouldBeOfType<GroupNodeViewModel>()
+            .DisplayText.ShouldBe("Namespace refresh-ns");
+
+        await Task.Delay(600);
+        Dispatcher.UIThread.RunJobs();
+
+        var refreshedPodNode = vm.Resources.Single(x => x.Resource.Name() == "refresh-pod");
+        var componentGroup = vm.Graph.Parent[refreshedPodNode];
+        componentGroup.ShouldBeOfType<GroupNodeViewModel>().DisplayText.ShouldBe("Component worker");
+
+        var namespaceGroup = vm.Graph.Parent[componentGroup!];
+        namespaceGroup.ShouldBeOfType<GroupNodeViewModel>().DisplayText.ShouldBe("Namespace refresh-ns");
+    }
+
+    [AvaloniaFact]
+    public async Task visible_resource_delete_refreshes_the_graph()
+    {
+        var cluster = await CreateClusterAsync();
+
+        var namespaceResource = new V1Namespace
+        {
+            Metadata = new()
+            {
+                Name = "delete-ns",
+            },
+        };
+
+        await cluster.AddOrUpdateResource(namespaceResource);
+        cluster.SelectedNamespaces.Add(namespaceResource);
+
+        var pod = new V1Pod
+        {
+            ApiVersion = "v1",
+            Kind = V1Pod.KubeKind,
+            Metadata = new()
+            {
+                Name = "delete-pod",
+                NamespaceProperty = "delete-ns",
+                Uid = "pod-uid",
+            },
+            Spec = new V1PodSpec(),
+        };
+
+        await cluster.AddOrUpdateResource(pod);
+
+        var vm = CreateViewModel();
+        vm.Initialize(cluster);
+
+        vm.Resources.Single(x => ReferenceEquals(x.Resource, pod)).ShouldNotBeNull();
+
+        await cluster.DeleteResource(pod);
+        Dispatcher.UIThread.RunJobs();
+
+        vm.Resources.ShouldContain(x => x.Resource.Name() == "delete-pod");
+
+        await Task.Delay(600);
+        Dispatcher.UIThread.RunJobs();
+
+        vm.Resources.ShouldNotContain(x => x.Resource.Name() == "delete-pod");
+        vm.Graph.Edges.Where(edge => edge is not GroupEdge).ShouldBeEmpty();
+    }
+
     #endregion
 
     [KubernetesEntity(Group = "argoproj.io", ApiVersion = "v1alpha1", Kind = "Application", PluralName = "applications")]
@@ -4276,6 +4438,24 @@ public class VisualizationViewModelTests : AvaloniaTestBase
         public string Kind { get; set; } = "HelmRelease";
 
         public V1ObjectMeta Metadata { get; set; } = new();
+    }
+
+    private static async Task WaitForAsync(Func<bool> predicate, int timeoutMs = 3000)
+    {
+        var deadline = Environment.TickCount64 + timeoutMs;
+
+        while (Environment.TickCount64 < deadline)
+        {
+            if (predicate())
+            {
+                return;
+            }
+
+            await Task.Delay(25);
+            Dispatcher.UIThread.RunJobs();
+        }
+
+        predicate().ShouldBeTrue();
     }
 }
 

@@ -5,7 +5,10 @@
     xmlns:agc="clr-namespace:AvaloniaGraphControl;assembly=AvaloniaGraphControl"
     xmlns:appconv="clr-namespace:KubeUI.Avalonia.Converters;assembly=KubeUI.Avalonia"
     xmlns:assets="clr-namespace:KubeUI.Avalonia.Assets;assembly=KubeUI.Avalonia"
+    xmlns:behaviors="using:KubeUI.Avalonia.Features.Resources.Visualization.Behaviors"
+    xmlns:common="using:KubeUI.Avalonia.Features.Resources.Common"
     xmlns:controls="clr-namespace:NodifyM.Avalonia.Controls;assembly=NodifyM.Avalonia"
+    xmlns:converters="using:KubeUI.Avalonia.Converters"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:ic="using:FluentIcons.Avalonia"
     xmlns:k8s="using:k8s.Models"
@@ -125,18 +128,38 @@
                                         </MultiBinding>
                                     </ToolTip.Tip>
                                     <Svg Width="64" Path="{Binding IconPath}">
-                                        <Svg.ContextFlyout>
-                                            <MenuFlyout>
-                                                <MenuItem
-                                                    Command="{Binding ViewPropertiesCommand}"
-                                                    CommandParameter="{Binding Resource}"
-                                                    Header="{x:Static assets:Resources.VisualizationView_Properties}" />
-                                                <MenuItem
-                                                    Command="{Binding ViewYamlCommand}"
-                                                    CommandParameter="{Binding Resource}"
-                                                    Header="{x:Static assets:Resources.VisualizationView_ViewYaml}" />
-                                            </MenuFlyout>
-                                        </Svg.ContextFlyout>
+                                        <Interaction.Behaviors>
+                                            <behaviors:VisualizationResourceContextMenuBehavior />
+                                        </Interaction.Behaviors>
+                                        <Svg.ContextMenu>
+                                            <ContextMenu>
+                                                <ContextMenu.Styles>
+                                                    <Style x:DataType="common:MenuItemViewModel" Selector="MenuItem">
+                                                        <Setter Property="IsVisible" Value="{Binding IsVisible}" />
+                                                        <Setter Property="Header" Value="{Binding Header}" />
+                                                        <Setter Property="Command" Value="{Binding Command}" />
+                                                        <Setter Property="CommandParameter" Value="{Binding CommandParameter}" />
+                                                        <Setter Property="ItemsSource" Value="{Binding Items}" />
+                                                        <Setter Property="Classes.separator" Value="{Binding IsSeparator}" />
+                                                        <Setter Property="Icon">
+                                                            <Template>
+                                                                <Panel>
+                                                                    <ic:FluentIcon Icon="{Binding FluentIcon}" IsVisible="{Binding FluentIcon, Converter={x:Static appconv:Converters.NotNull}}" />
+                                                                    <PathIcon Data="{Binding IconResource, Converter={x:Static converters:StaticResourceConverter.Instance}}" IsVisible="{Binding IconResource, Converter={x:Static appconv:Converters.NotNull}}" />
+                                                                </Panel>
+                                                            </Template>
+                                                        </Setter>
+                                                    </Style>
+                                                    <Style Selector="MenuItem.separator">
+                                                        <Setter Property="Template">
+                                                            <ControlTemplate>
+                                                                <Separator />
+                                                            </ControlTemplate>
+                                                        </Setter>
+                                                    </Style>
+                                                </ContextMenu.Styles>
+                                            </ContextMenu>
+                                        </Svg.ContextMenu>
                                     </Svg>
                                     <TextBlock
                                         Width="128"

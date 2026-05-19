@@ -1,17 +1,17 @@
 using System.Collections.Specialized;
+using System.Reactive.Linq;
 using System.Reactive.Subjects;
+using Avalonia.Threading;
 using AvaloniaGraphControl;
-using Dock.Model.Core;
 using k8s;
 using k8s.Models;
+using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
-using KubeUI.Avalonia.Features.Resources.Properties.ViewModels;
-using KubeUI.Avalonia.Features.Resources.Visualization.ViewModels;
-using KubeUI.Avalonia.Features.Resources.Yaml.ViewModels;
+using KubeUI.Avalonia.Features.Resources.Common;
 using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
-using KubeUI.Avalonia.Infrastructure.Docking;
 using KubeUI.Avalonia.Infrastructure.Presentation;
+using KubeUI.Avalonia.Infrastructure.Threading;
 using KubeUI.Kubernetes;
 using Microsoft.Extensions.DependencyInjection;
 using static AvaloniaGraphControl.GraphPanel;
@@ -20,8 +20,11 @@ namespace KubeUI.Avalonia.Features.Resources.Visualization.ViewModels;
 
 public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeCluster, IDisposable
 {
-    private readonly IServiceProvider _serviceProvider;
+    private static readonly TimeSpan RefreshDelay = TimeSpan.FromMilliseconds(500);
     private readonly List<object> _groupNodes = [];
+    private readonly Subject<int> _refreshRequests = new();
+    private readonly IDisposable _refreshSubscription;
+    private bool _disposed;
 
     [ObservableProperty]
     public partial ClusterWorkspaceViewModel? Cluster { get; set; }
@@ -43,8 +46,11 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 
     public VisualizationViewModel(IServiceProvider serviceProvider)
     {
-        _serviceProvider = serviceProvider;
         Title = Assets.Resources.VisualizationView_Title;
+        _refreshSubscription = _refreshRequests
+            .Throttle(RefreshDelay, AvaloniaScheduler.Instance)
+            .ObserveOn(AvaloniaScheduler.Instance)
+            .Subscribe(_ => Run());
     }
 
     protected override void OnPropertyChanged(PropertyChangedEventArgs e)
@@ -53,7 +59,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 
         if (e.PropertyName == nameof(HideNoise))
         {
-            Run();
+            QueueRun();
         }
     }
 
@@ -68,6 +74,8 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         if (Cluster != null && Cluster.SelectedNamespaces != null)
         {
             Cluster.SelectedNamespaces.CollectionChanged -= SelectedNamespaces_CollectionChanged;
+            Cluster.OnChange -= Cluster_OnChange;
+            Cluster.ResourceSeeded -= Cluster_ResourceSeeded;
         }
 
         Cluster = cluster;
@@ -78,6 +86,10 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
             // Ensure single subscription
             Cluster.SelectedNamespaces.CollectionChanged -= SelectedNamespaces_CollectionChanged;
             Cluster.SelectedNamespaces.CollectionChanged += SelectedNamespaces_CollectionChanged;
+            Cluster.OnChange -= Cluster_OnChange;
+            Cluster.OnChange += Cluster_OnChange;
+            Cluster.ResourceSeeded -= Cluster_ResourceSeeded;
+            Cluster.ResourceSeeded += Cluster_ResourceSeeded;
         }
 
         Id = CreateId(cluster, rootResource);
@@ -115,6 +127,8 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         _ = cluster.SeedResource<V1ClusterRoleBinding>();
         _ = cluster.SeedResource<V1Role>();
         _ = cluster.SeedResource<V1ClusterRole>();
+
+        _ = SeedOwnerReferenceResourceTypesAsync();
 
         Run();
     }
@@ -180,7 +194,165 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 
     private void SelectedNamespaces_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
-        Run();
+        QueueRun();
+    }
+
+    private void Cluster_OnChange(WatchEventType eventType, GroupApiVersionKind groupApiVersionKind, IKubernetesObject<V1ObjectMeta> resource)
+    {
+        if (Cluster == null || resource.Metadata == null)
+        {
+            return;
+        }
+
+        if (!IsVisibleResource(resource))
+        {
+            return;
+        }
+
+        QueueRun();
+    }
+
+    private void Cluster_ResourceSeeded(ClusterWorkspaceViewModel seededCluster, Type resourceType)
+    {
+        if (_disposed || !ReferenceEquals(seededCluster, Cluster))
+        {
+            return;
+        }
+
+        QueueRun();
+    }
+
+    private void QueueRun()
+    {
+        if (_disposed)
+        {
+            return;
+        }
+
+        if (!Dispatcher.UIThread.CheckAccess())
+        {
+            Dispatcher.UIThread.Post(() =>
+            {
+                if (!_disposed)
+                {
+                    _refreshRequests.OnNext(0);
+                }
+            });
+            return;
+        }
+
+        if (_disposed)
+        {
+            return;
+        }
+
+        _refreshRequests.OnNext(0);
+    }
+
+    private async Task SeedOwnerReferenceResourceTypesAsync()
+    {
+        var cluster = Cluster;
+        if (cluster == null)
+        {
+            return;
+        }
+
+        var ownerReferenceTypes = new HashSet<Type>();
+
+        foreach (var resource in EnumerateClusterResources(includeAllNamespaces: true))
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            var ownerReferences = resource.Metadata?.OwnerReferences;
+            if (ownerReferences == null)
+            {
+                continue;
+            }
+
+            foreach (var ownerReference in ownerReferences)
+            {
+                if (ownerReference.Kind == V1Namespace.KubeKind
+                    || string.IsNullOrWhiteSpace(ownerReference.Kind)
+                    || string.IsNullOrWhiteSpace(ownerReference.ApiVersion))
+                {
+                    continue;
+                }
+
+                if (!TryGetOwnerReferenceType(cluster, ownerReference.ApiVersion, ownerReference.Kind, out var ownerReferenceType))
+                {
+                    continue;
+                }
+
+                if (cluster.Objects.ContainsKey(GroupApiVersionKind.From(ownerReferenceType)))
+                {
+                    continue;
+                }
+
+                ownerReferenceTypes.Add(ownerReferenceType);
+            }
+        }
+
+        foreach (var ownerReferenceType in ownerReferenceTypes)
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            try
+            {
+                await cluster.SeedResource(ownerReferenceType).ConfigureAwait(false);
+            }
+            catch
+            {
+                // Ignore individual seed failures so the visible graph can still render.
+            }
+        }
+    }
+
+    private bool TryGetOwnerReferenceType(ClusterWorkspaceViewModel cluster, string apiVersion, string kind, out Type resourceType)
+    {
+        resourceType = null!;
+
+        var slashIndex = apiVersion.IndexOf('/');
+        var group = slashIndex < 0 ? string.Empty : apiVersion[..slashIndex];
+        var version = slashIndex < 0 ? apiVersion : apiVersion[(slashIndex + 1)..];
+
+        if (string.IsNullOrWhiteSpace(version))
+        {
+            return false;
+        }
+
+        resourceType = cluster.ModelCache.GetResourceType(group, version, kind);
+        return resourceType != null;
+    }
+
+    private bool IsVisibleResource(IKubernetesObject<V1ObjectMeta> resource)
+    {
+        foreach (var node in Resources)
+        {
+            if (IsSameResource(node.Resource, resource))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool IsSameResource(IKubernetesObject<V1ObjectMeta> left, IKubernetesObject<V1ObjectMeta> right)
+    {
+        if (!string.Equals(left.ApiVersion, right.ApiVersion, StringComparison.Ordinal)
+            || !string.Equals(left.Kind, right.Kind, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        return string.Equals(left.Metadata?.Name, right.Metadata?.Name, StringComparison.Ordinal)
+            && string.Equals(left.Metadata?.NamespaceProperty, right.Metadata?.NamespaceProperty, StringComparison.Ordinal);
     }
 
     private void PopulateAllResources(bool includeAllNamespaces)
@@ -202,7 +374,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                 continue;
             }
 
-            var node = new ResourceNodeViewModel(_serviceProvider)
+            var node = new ResourceNodeViewModel()
             {
                 Cluster = Cluster,
                 Resource = value,
@@ -2700,10 +2872,21 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 
     public void Dispose()
     {
-        if (Cluster?.SelectedNamespaces != null)
+        _disposed = true;
+
+        var cluster = Cluster;
+        if (cluster != null)
         {
-            Cluster.SelectedNamespaces.CollectionChanged -= SelectedNamespaces_CollectionChanged;
+            if (cluster.SelectedNamespaces != null)
+            {
+                cluster.SelectedNamespaces.CollectionChanged -= SelectedNamespaces_CollectionChanged;
+            }
+
+            cluster.OnChange -= Cluster_OnChange;
+            cluster.ResourceSeeded -= Cluster_ResourceSeeded;
         }
+        _refreshSubscription.Dispose();
+        _refreshRequests.Dispose();
         Cluster = null;
         // Clear heavy collections to avoid retaining large object graphs between runs
         try
@@ -2721,9 +2904,6 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 
     public sealed partial class ResourceNodeViewModel : ViewModelBase
     {
-        private readonly IServiceProvider _serviceProvider;
-        private IFactory Factory => _serviceProvider.GetRequiredService<IFactory>();
-
         [ObservableProperty]
         public partial ClusterWorkspaceViewModel Cluster { get; set; }
 
@@ -2736,32 +2916,37 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         [ObservableProperty]
         public partial bool IsRoot { get; set; }
 
-        public ResourceNodeViewModel(IServiceProvider serviceProvider)
+        public IEnumerable<MenuItemViewModel> ContextMenuItems
         {
-            _serviceProvider = serviceProvider;
-        }
+            get
+            {
+                if (Cluster == null || Resource == null)
+                {
+                    return [];
+                }
 
-        [RelayCommand]
-        private void ViewYaml(IKubernetesObject<V1ObjectMeta> resource)
-        {
-            var vm = _serviceProvider.GetRequiredService<ResourceYamlViewModel>();
+                var resourceConfig = Cluster.GetResourceConfigs().FirstOrDefault(config => config.Type == Resource.GetType());
+                if (resourceConfig == null)
+                {
+                    return [];
+                }
 
-            vm.Initialize(Cluster, resource);
+                var selectedItems = new[] { Resource };
+                var items = new List<MenuItemViewModel>();
+                items.AddRange(resourceConfig.GetDefaultMenuItems(selectedItems));
 
-            Factory.AddToBottom(vm);
-        }
+                var customItems = resourceConfig.GetCustomMenuItems(selectedItems).ToList();
+                if (customItems.Count > 0)
+                {
+                    items.Add(new MenuItemViewModel
+                    {
+                        IsSeparator = true
+                    });
+                    items.AddRange(customItems);
+                }
 
-        [RelayCommand]
-        private void ViewProperties(IKubernetesObject<V1ObjectMeta> resource)
-        {
-            var propType = typeof(ResourcePropertiesViewModel<>).MakeGenericType(resource.GetType());
-
-            var instance = _serviceProvider.GetRequiredService(propType) as IDockable;
-            instance.CanFloat = false;
-
-            propType.GetMethod(nameof(ResourcePropertiesViewModel<V1Pod>.Initialize)).Invoke(instance, [Cluster, resource]);
-
-            Factory?.AddToRight(instance);
+                return items;
+            }
         }
     }
 
