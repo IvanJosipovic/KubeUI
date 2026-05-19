@@ -1,18 +1,471 @@
-<!DOCTYPE HTML>
-<html lang="en-US">
-    <head>
-        <meta charset="UTF-8">
-        <meta http-equiv="refresh" content="0; url=https://github.com/IvanJosipovic/KubeUI">
-        <script type="text/javascript">
-            window.location.href = "https://github.com/IvanJosipovic/KubeUI"
-        </script>
-        <title>KubeUI - Kubernetes User Interface</title>
-        <meta name="description" content="Kubernetes User Interface<">
-        <meta name="keywords" content="Kubernetes, UI, Kube, KubeUI, GUI, User Interface, IDE, Editor, Kubectl">
-        <meta name="author" content="Ivan Josipovic">
-    </head>
-    <body>
-        <!-- Note: don't tell people to `click` the link, just tell them that it is a link. -->
-        If you are not redirected automatically, go here <a href='https://github.com/IvanJosipovic/KubeUI'>KubeUI GitHub</a>.
-    </body>
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>KubeUI - Kubernetes User Interface</title>
+    <meta name="description" content="KubeUI is a desktop Kubernetes interface for browsing clusters, inspecting resources, reading logs, and working with YAML.">
+    <meta name="keywords" content="Kubernetes, UI, Kube, KubeUI, GUI, User Interface, IDE, Editor, Kubectl">
+    <meta name="author" content="Ivan Josipovic">
+    <style>
+        :root {
+            --bg: #0b1014;
+            --panel: #121a21;
+            --text: #f4f8fb;
+            --muted: #aab7c2;
+            --line: #27333d;
+            --accent: #4fb3ff;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            background: var(--bg);
+            color: var(--text);
+            font-family: Arial, Helvetica, sans-serif;
+            line-height: 1.5;
+        }
+
+        a {
+            color: inherit;
+        }
+
+        header,
+        main,
+        footer {
+            width: min(980px, calc(100% - 32px));
+            margin: 0 auto;
+        }
+
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 22px 0;
+        }
+
+        .brand {
+            font-size: 22px;
+            font-weight: 700;
+            text-decoration: none;
+        }
+
+        nav {
+            display: flex;
+            gap: 16px;
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        .hero {
+            display: grid;
+            gap: 28px;
+            align-items: center;
+            padding: 44px 0 38px;
+        }
+
+        .hero > * {
+            min-width: 0;
+        }
+
+        .hero-copy {
+            max-width: 720px;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: clamp(42px, 8vw, 78px);
+            line-height: 1;
+        }
+
+        .lead {
+            margin: 18px 0 0;
+            color: var(--muted);
+            font-size: 19px;
+        }
+
+        .actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 26px;
+        }
+
+        .button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 42px;
+            padding: 0 16px;
+            border: 1px solid var(--accent);
+            border-radius: 6px;
+            background: var(--accent);
+            color: #061019;
+            font-weight: 700;
+            text-decoration: none;
+        }
+
+        .button.secondary {
+            border-color: var(--line);
+            background: transparent;
+            color: var(--text);
+        }
+
+        .downloads {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 12px;
+            padding: 0 0 48px;
+        }
+
+        .section-heading {
+            margin: 0 0 16px;
+            font-size: 28px;
+            line-height: 1.15;
+        }
+
+        .section-heading + .downloads,
+        .section-heading + .features {
+            padding-top: 0;
+        }
+
+        .download-group {
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: var(--panel);
+            padding: 14px;
+        }
+
+        .download-group h2 {
+            margin: 0 0 10px;
+            font-size: 17px;
+        }
+
+        .download-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .download-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 34px;
+            padding: 0 12px;
+            border: 1px solid var(--line);
+            border-radius: 6px;
+            color: var(--text);
+            font-size: 14px;
+            text-decoration: none;
+        }
+
+        .download-link:hover {
+            border-color: var(--accent);
+        }
+
+        .install-command {
+            display: block;
+            margin-top: 10px;
+            padding: 10px 12px;
+            overflow-x: auto;
+            border: 1px solid var(--line);
+            border-radius: 6px;
+            background: #090d11;
+            color: var(--muted);
+            font-family: Consolas, "Liberation Mono", Menlo, monospace;
+            font-size: 13px;
+            white-space: nowrap;
+        }
+
+        .store-link {
+            display: inline-flex;
+            margin-top: 10px;
+        }
+
+        .store-link img {
+            display: block;
+            height: 40px;
+            max-width: 100%;
+        }
+
+        .carousel {
+            overflow: hidden;
+            border: 1px solid #3b4b59;
+            border-radius: 10px;
+            background: var(--panel);
+            box-shadow: 0 24px 70px rgba(0, 0, 0, 0.42);
+        }
+
+        .slides {
+            display: flex;
+            transition: transform 240ms ease;
+        }
+
+        .slide {
+            min-width: 100%;
+            margin: 0;
+        }
+
+        .slide img {
+            display: block;
+            width: 100%;
+            aspect-ratio: 1581 / 1005;
+            object-fit: contain;
+            background: #090d11;
+        }
+
+        .slide figcaption {
+            padding: 14px 16px;
+            border-top: 1px solid var(--line);
+            color: var(--muted);
+            font-size: 15px;
+        }
+
+        .carousel-controls {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 16px;
+            border-top: 1px solid var(--line);
+        }
+
+        .arrow {
+            width: 44px;
+            height: 38px;
+            border: 1px solid var(--line);
+            border-radius: 6px;
+            background: transparent;
+            color: var(--text);
+            cursor: pointer;
+            font-size: 20px;
+        }
+
+        .dots {
+            display: flex;
+            gap: 8px;
+        }
+
+        .dot {
+            width: 11px;
+            height: 11px;
+            border: 0;
+            border-radius: 50%;
+            background: #52616f;
+            cursor: pointer;
+        }
+
+        .dot.active {
+            background: var(--accent);
+        }
+
+        .features {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 16px;
+            padding: 22px 0 56px;
+        }
+
+        .feature {
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: var(--panel);
+            padding: 18px;
+        }
+
+        .feature h2 {
+            margin: 0 0 8px;
+            font-size: 18px;
+        }
+
+        .feature p {
+            margin: 0;
+            color: var(--muted);
+        }
+
+        footer {
+            display: flex;
+            justify-content: space-between;
+            gap: 16px;
+            padding: 22px 0;
+            border-top: 1px solid var(--line);
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        @media (max-width: 900px) {
+            header,
+            footer {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .downloads,
+            .features {
+                grid-template-columns: 1fr;
+            }
+
+            .hero {
+                padding: 34px 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <a class="brand" href="#">KubeUI</a>
+        <nav aria-label="Main navigation">
+            <a href="#features">Features</a>
+            <a href="https://github.com/IvanJosipovic/KubeUI">GitHub</a>
+            <a href="https://github.com/IvanJosipovic/KubeUI/releases">Releases</a>
+        </nav>
+    </header>
+
+    <main>
+        <section class="hero">
+            <div class="hero-copy">
+                <h1>KubeUI</h1>
+                <p class="lead">A desktop UI for browsing Kubernetes clusters, inspecting resources, reading logs, and working with YAML.</p>
+            </div>
+
+            <section class="carousel" aria-label="KubeUI screenshots">
+                <div class="slides" data-slides>
+                    <figure class="slide">
+                        <img src="screenshots/kubeui-1.png" alt="KubeUI screenshot placeholder 1">
+                    </figure>
+                    <figure class="slide">
+                        <img src="screenshots/kubeui-2.png" alt="KubeUI screenshot placeholder 2">
+                    </figure>
+                    <figure class="slide">
+                        <img src="screenshots/kubeui-3.png" alt="KubeUI screenshot placeholder 3">
+                    </figure>
+                    <figure class="slide">
+                        <img src="screenshots/kubeui-4.png" alt="KubeUI screenshot placeholder 4">
+                    </figure>
+                    <figure class="slide">
+                        <img src="screenshots/kubeui-5.png" alt="KubeUI screenshot placeholder 5">
+                    </figure>
+                </div>
+                <div class="carousel-controls">
+                    <button class="arrow" type="button" data-prev aria-label="Previous screenshot">&lt;</button>
+                    <div class="dots" aria-label="Screenshot selector">
+                        <button class="dot active" type="button" data-dot="0" aria-label="Show screenshot 1"></button>
+                        <button class="dot" type="button" data-dot="1" aria-label="Show screenshot 2"></button>
+                        <button class="dot" type="button" data-dot="2" aria-label="Show screenshot 3"></button>
+                        <button class="dot" type="button" data-dot="3" aria-label="Show screenshot 4"></button>
+                        <button class="dot" type="button" data-dot="4" aria-label="Show screenshot 5"></button>
+                    </div>
+                    <button class="arrow" type="button" data-next aria-label="Next screenshot">&gt;</button>
+                </div>
+            </section>
+
+            <div class="actions">
+                <a class="button" href="https://github.com/IvanJosipovic/KubeUI">View on GitHub</a>
+                <a class="button secondary" href="https://github.com/IvanJosipovic/KubeUI/releases">All releases</a>
+            </div>
+        </section>
+
+        <h2 class="section-heading">Downloads</h2>
+        <section class="downloads" aria-label="Download options">
+            <section class="download-group">
+                <h2>Windows</h2>
+                <div class="download-options">
+                    <a class="download-link" href="https://github.com/IvanJosipovic/KubeUI/releases/latest/download/KubeUI-win-arm64-Setup.exe">arm64 installer</a>
+                    <a class="download-link" href="https://github.com/IvanJosipovic/KubeUI/releases/latest/download/KubeUI-win-arm64-Portable.zip">arm64 portable</a>
+                    <a class="download-link" href="https://github.com/IvanJosipovic/KubeUI/releases/latest/download/KubeUI-win-x64-Setup.exe">x64 installer</a>
+                    <a class="download-link" href="https://github.com/IvanJosipovic/KubeUI/releases/latest/download/KubeUI-win-x64-Portable.zip">x64 portable</a>
+                </div>
+                <code class="install-command">winget install KubeUI</code>
+                <a class="store-link" href="https://apps.microsoft.com/detail/XP9MRWDV3N310N?mode=direct" aria-label="Download from Microsoft Store">
+                    <img src="https://get.microsoft.com/images/en-us%20dark.svg" alt="Download from Microsoft Store">
+                </a>
+            </section>
+            <section class="download-group">
+                <h2>macOS</h2>
+                <div class="download-options">
+                    <a class="download-link" href="https://github.com/IvanJosipovic/KubeUI/releases/latest/download/KubeUI-osx-arm64-Setup.pkg">arm64 .pkg</a>
+                    <a class="download-link" href="https://github.com/IvanJosipovic/KubeUI/releases/latest/download/KubeUI-osx-arm64-Portable.zip">arm64 .app</a>
+                    <a class="download-link" href="https://github.com/IvanJosipovic/KubeUI/releases/latest/download/KubeUI-osx-x64-Setup.pkg">x64 .pkg</a>
+                    <a class="download-link" href="https://github.com/IvanJosipovic/KubeUI/releases/latest/download/KubeUI-osx-x64-Portable.zip">x64 .app</a>
+                </div>
+                <code class="install-command">brew install --cask IvanJosipovic/homebrew-repo/kubeui</code>
+            </section>
+            <section class="download-group">
+                <h2>Linux</h2>
+                <div class="download-options">
+                    <a class="download-link" href="https://github.com/IvanJosipovic/KubeUI/releases/latest/download/KubeUI-linux-arm64.AppImage">arm64</a>
+                    <a class="download-link" href="https://github.com/IvanJosipovic/KubeUI/releases/latest/download/KubeUI-linux-x64.AppImage">x64</a>
+                </div>
+            </section>
+        </section>
+
+        <h2 id="features" class="section-heading">Features</h2>
+        <section class="features" aria-label="Features">
+            <article class="feature">
+                <h2>Browse resources</h2>
+                <p>Navigate workloads, services, config, storage, and custom resources.</p>
+            </article>
+            <article class="feature">
+                <h2>Inspect details</h2>
+                <p>Read status, YAML, properties, and events in one desktop workspace.</p>
+            </article>
+            <article class="feature">
+                <h2>Work with pods</h2>
+                <p>Follow logs and inspect pod state without rebuilding context.</p>
+            </article>
+            <article class="feature">
+                <h2>Edit YAML</h2>
+                <p>Review and apply Kubernetes manifests from a focused editor workflow.</p>
+            </article>
+            <article class="feature">
+                <h2>Visualize relationships</h2>
+                <p>See owner references and related resources without manually tracing labels.</p>
+            </article>
+            <article class="feature">
+                <h2>Multi-cluster workflow</h2>
+                <p>Connect to saved clusters and keep navigation organized per workspace.</p>
+            </article>
+            <article class="feature">
+                <h2>Resource events</h2>
+                <p>Read recent events next to the resource you are already inspecting.</p>
+            </article>
+            <article class="feature">
+                <h2>Custom resources</h2>
+                <p>Browse CRDs alongside built-in Kubernetes resources.</p>
+            </article>
+            <article class="feature">
+                <h2>Desktop app</h2>
+                <p>Use a native interface on Windows, macOS, and Linux.</p>
+            </article>
+        </section>
+    </main>
+
+    <footer>
+        <span>KubeUI - Kubernetes User Interface</span>
+        <a href="https://github.com/IvanJosipovic/KubeUI">github.com/IvanJosipovic/KubeUI</a>
+    </footer>
+
+    <script>
+        const slides = document.querySelector("[data-slides]");
+        const dots = Array.from(document.querySelectorAll("[data-dot]"));
+        let activeSlide = 0;
+
+        function showSlide(index) {
+            activeSlide = (index + dots.length) % dots.length;
+            slides.style.transform = `translateX(-${activeSlide * 100}%)`;
+            dots.forEach((dot, dotIndex) => {
+                dot.classList.toggle("active", dotIndex === activeSlide);
+            });
+        }
+
+        document.querySelector("[data-prev]").addEventListener("click", () => showSlide(activeSlide - 1));
+        document.querySelector("[data-next]").addEventListener("click", () => showSlide(activeSlide + 1));
+        dots.forEach((dot) => {
+            dot.addEventListener("click", () => showSlide(Number(dot.dataset.dot)));
+        });
+    </script>
+</body>
 </html>
