@@ -10,7 +10,7 @@ public sealed partial class Settings : ObservableObject
     public partial bool TelemetryEnabled { get; set; } = true;
 
     [ObservableProperty]
-    public partial bool PreReleaseChannel { get; set; } = true;
+    public partial bool PreReleaseChannel { get; set; }
 
     [ObservableProperty]
     public partial Dictionary<string, ClusterSettings> ClusterSettings { get; set; } = [];
