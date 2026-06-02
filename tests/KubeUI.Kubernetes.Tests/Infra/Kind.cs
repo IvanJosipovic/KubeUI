@@ -11,7 +11,7 @@ namespace KubeUI.Kubernetes.Tests.Infra;
 /// </summary>
 public static class Kind
 {
-    private const string Version = "v0.31.0";
+    private const string Version = "v0.32.0";
 
     private const string KubernetesVersion = "kindest/node:v1.35.1";
 
