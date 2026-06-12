@@ -42,7 +42,7 @@ jobs:
           - rid: linux-x64
             fileName: KubeUI.Desktop
             runs-on: ubuntu-latest
-            packParams: --icon docs/icon-512.png
+            packParams: ''
             icon: docs/icon-512.png
           - rid: linux-arm64
             fileName: KubeUI.Desktop
@@ -162,7 +162,7 @@ jobs:
         run: vpk download github --outputDir "packed" --channel ${{ matrix.rid }} --repoUrl https://github.com/${{ github.repository }} --token ${{ secrets.GITHUB_TOKEN }} --pre
 
       - name: Create Package
-        run: vpk pack --outputDir "packed" --channel ${{ matrix.rid }} --packId "KubeUI" --packVersion "${{ inputs.package_version }}" --packDir "src/KubeUI.Desktop/bin/publish" --packAuthors "Ivan Josipovic" --packTitle "KubeUI" --releaseNotes "CHANGELOG.md" --mainExe "${{ matrix.fileName }}" ${{ matrix.packParams }} ${{ inputs.enable_code_signing && matrix.signingParams || '' }}
+        run: vpk pack --outputDir "packed" --channel ${{ matrix.rid }} --packId "KubeUI" --packVersion "${{ inputs.package_version }}" --packDir "src/KubeUI.Desktop/bin/publish" --packAuthors "Ivan Josipovic" --packTitle "KubeUI" --releaseNotes "CHANGELOG.md" --mainExe "${{ matrix.fileName }}" --icon "${{ matrix.icon }}" ${{ matrix.packParams }} ${{ inputs.enable_code_signing && matrix.signingParams || '' }}
 
       - name: Remove unnecessary assets
         shell: pwsh
