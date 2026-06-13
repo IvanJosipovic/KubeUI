@@ -23,7 +23,7 @@ jobs:
         run: |
           dotnet test \
             --project tests/KubeUI.Avalonia.Tests/KubeUI.Avalonia.Tests.csproj \
-            -c Release \
+            --configuration Release \
             --no-build \
             --hangdump \
             --hangdump-timeout 1m \
@@ -37,7 +37,7 @@ jobs:
         run: |
           dotnet test \
             --project tests/KubeUI.Kubernetes.Tests/KubeUI.Kubernetes.Tests.csproj \
-            -c Release \
+            --configuration Release \
             --no-build \
             --hangdump \
             --hangdump-timeout 1m \
@@ -48,6 +48,13 @@ jobs:
             --coverage-output coverage.cobertura.xml
         env:
           KUBEUI_RUN_KIND_TESTS: 1
+
+      - name: Upload test dump
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-diagnostics
+          path: tests/**/TestResults/*.dmp
 
       - name: Test Report
         uses: dorny/test-reporter@v3
@@ -63,7 +70,7 @@ jobs:
         with:
           check_name: KubeUI Tests
           comment_mode: always
-          files: tests/*/TestResults/*.trx
+          files: tests/**/TestResults/*.trx
 
       - name: Coverage
         uses: codecov/codecov-action@v7

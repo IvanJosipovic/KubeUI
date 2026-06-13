@@ -7,7 +7,12 @@
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
     <WarningsAsErrors>xUnit1031</WarningsAsErrors>
+    <TestingPlatformDotnetTestSupport>true</TestingPlatformDotnetTestSupport>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="xunit.runner.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="CliWrap" Version="3.10.2" />
