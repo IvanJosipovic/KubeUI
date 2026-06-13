@@ -23,7 +23,7 @@ jobs:
         run: |
           dotnet test \
             --project tests/KubeUI.Avalonia.Tests/KubeUI.Avalonia.Tests.csproj \
-            -c Release \
+            --configuration Release \
             --no-build \
             --hangdump \
             --hangdump-timeout 1m \
@@ -37,7 +37,7 @@ jobs:
         run: |
           dotnet test \
             --project tests/KubeUI.Kubernetes.Tests/KubeUI.Kubernetes.Tests.csproj \
-            -c Release \
+            --configuration Release \
             --no-build \
             --hangdump \
             --hangdump-timeout 1m \
