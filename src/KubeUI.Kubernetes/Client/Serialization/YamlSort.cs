@@ -26,5 +26,14 @@ public class SortedTypeInspector : TypeInspectorSkeleton
     {
         return _innerTypeInspector.GetProperties(type, container).OrderBy(x => x.Name);
     }
-}
 
+    public override bool HasParseMethod(Type type)
+    {
+        return false;
+    }
+
+    public override object? Parse(string value, Type expectedType)
+    {
+        throw new NotImplementedException();
+    }
+}
