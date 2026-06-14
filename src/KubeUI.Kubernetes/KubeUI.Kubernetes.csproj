@@ -36,6 +36,6 @@
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.9" />
     <PackageReference Include="Microsoft.Extensions.Http.Resilience" Version="10.7.0" />
     <PackageReference Include="Swordfish.NET.CollectionsV3" Version="3.3.16" />
-    <PackageReference Include="YamlDotNet.System.Text.Json" Version="1.8.0" />
+    <PackageReference Include="YamlDotNet.System.Text.Json" Version="1.9.0" />
   </ItemGroup>
 </Project>
