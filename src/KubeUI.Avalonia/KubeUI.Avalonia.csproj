@@ -53,6 +53,7 @@
       <IncludeAssets>None</IncludeAssets>
       <PrivateAssets>All</PrivateAssets>
     </PackageReference>
+    <PackageReference Include="Avalonia.Markup.Declarative" Version="12.0.1" />
     <PackageReference Include="Avalonia.Fonts.Inter" Version="12.0.4" />
     <PackageReference Include="Avalonia.Skia" Version="12.0.4" />
     <PackageReference Include="Avalonia.Themes.Fluent" Version="12.0.4" />

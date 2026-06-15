@@ -22,6 +22,3 @@ public sealed partial class ClusterSettingsView : UserControl
         DataContext = await DesignTimePreview.CreateClusterBoundViewModelAsync<ClusterSettingsViewModel, V1Pod>();
     }
 }
-
-
-

@@ -1,6 +1,7 @@
 using System.Reflection;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Markup.Declarative;
 using KubeUI.Avalonia;
 using KubeUI.Avalonia.Assets;
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
@@ -30,9 +31,17 @@ internal static class Program
 
         EnsureMacOsPath();
 
-        EnsureHostInitialized();
+        _host = EnsureHostInitialized();
 
-        BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
+        var builder = AppBuilder.Configure(() => new App(_host.Services))
+            .UsePlatformDetect()
+            .ConfigureFonts(fontManager => fontManager.AddFontCollection(new CascadiaMonoFontCollection()))
+            .WithInterFont()
+            .UseServiceProvider(_host.Services)
+            .UseComponentControlFactory(type => (Control)ActivatorUtilities.CreateInstance(_host.Services, type))
+            .UseViewInitializationStrategy(ViewInitializationStrategy.Lazy);
+
+        builder.StartWithClassicDesktopLifetime(args);
 
         _host.StopAsync().GetAwaiter().GetResult();
 
