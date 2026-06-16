@@ -1,5 +1,7 @@
 using System.Diagnostics;
+using Avalonia.Markup.Declarative;
 using Avalonia.Markup.Xaml;
+using Dock.Avalonia.Controls;
 using Dock.Model.Controls;
 using Dock.Model.Core;
 using k8s;
@@ -16,6 +18,8 @@ using Microsoft.Extensions.Hosting;
 using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Trace;
+
+[assembly: GenerateMarkupExtensionsForAssembly(typeof(DockControl))]
 
 namespace KubeUI.Avalonia;
 
