@@ -364,14 +364,14 @@ public static class Utilities
     }
 
 
-    public static T BindValue<T>(this T control, AvaloniaProperty prop, BindingBase binding) where T : Control
+    public static T BindValue<T>(this T control, AvaloniaProperty prop, BindingBase binding) where T : AvaloniaObject
     {
         control.Bind(prop, binding);
 
         return control;
     }
 
-    public static T AddBehaviors<T>(this T obj, BehaviorCollection behaviorCollection) where T : AvaloniaObject
+    public static T AddBehaviors<T>(this T obj, params BehaviorCollection behaviorCollection) where T : AvaloniaObject
     {
         var collection = obj.GetValue(Interaction.BehaviorsProperty);
         collection ??= [];

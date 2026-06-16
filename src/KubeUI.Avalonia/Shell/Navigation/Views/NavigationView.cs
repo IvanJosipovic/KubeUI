@@ -1,24 +1,19 @@
 using System.Globalization;
 using System.Reactive.Linq;
-using Avalonia;
 using Avalonia.Controls.Shapes;
 using Avalonia.Controls.Templates;
-using Avalonia.Data;
 using Avalonia.Data.Converters;
 using Avalonia.Layout;
 using Avalonia.Markup.Declarative;
-using Avalonia.Media;
 using Avalonia.Styling;
 using Avalonia.Svg.Skia;
 using Avalonia.Xaml.Interactions.Core;
 using Avalonia.Xaml.Interactions.Custom;
-using Avalonia.Xaml.Interactivity;
 using FluentIcons.Avalonia;
 using FluentIcons.Common;
 using KubeUI.Avalonia.Features.Clusters.Catalog.Behaviors;
 using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
-using KubeUI.Avalonia.Infrastructure.Threading;
 using KubeUI.Avalonia.Shell.Navigation.ViewModels;
 using KubeUI.Kubernetes;
 
@@ -42,7 +37,7 @@ public sealed class NavigationView : ViewBase<NavigationViewModel>
             .Margin(new Thickness(-5, 0, 0, 0))
             .AutoScrollToSelectedItem(false)
             .ItemsSource(vm, x => x.Clusters)
-            .Styles([
+            .Styles(
                 new Style(x => x.OfType<TreeViewItem>())
                     .Setter(TreeViewItem.IsExpandedProperty, CompiledBinding.Create<IExpandableNavigationNode, bool>(x => x.IsExpanded)),
                 new Style(x => x.OfType<Image>())
@@ -53,26 +48,16 @@ public sealed class NavigationView : ViewBase<NavigationViewModel>
                     .Setter(HeightProperty, 16.0)
                     .Setter(WidthProperty, 16.0)
                     .Setter(MarginProperty, new Thickness(0, 0, 4, 0))
-            ])
-            .DataTemplates([
+            )
+            .DataTemplates(
                 CreateClusterTemplate(),
                 CreateResourceTemplate(),
                 CreateNavigationItemTemplate()
-            ])
-            .AddBehaviors([
-                new TreeViewItemContextMenuBehavior(),
-                new EventTriggerBehavior()
-                {
-                    EventName = nameof(TreeView.SelectionChanged),
-                    Actions = [
-                        new InvokeCommandAction
-                        {
-                            Command = vm.HandleSelectionChangedCommand,
-                            PassEventArgsToCommand = true,
-                        }
-                    ]
-                }
-            ]);
+            )
+            .OnSelectionChanged((args) => vm.HandleSelectionChangedCommand.Execute(args))
+            .AddBehaviors(
+                new TreeViewItemContextMenuBehavior()
+            );
 
         return treeView;
     }
@@ -81,49 +66,50 @@ public sealed class NavigationView : ViewBase<NavigationViewModel>
     {
         return new FuncTreeDataTemplate<ClusterNavigationNode>(
             (node, _) =>
-            {
-                var border = new Border()
-                    .Margin(new Thickness(-5, 0, 0, 0))
-                    .HorizontalAlignment(HorizontalAlignment.Stretch)
-                    .Background(Brushes.Transparent)
-                    .ContextMenu(new ContextMenu()
-                        .Items([
-                            new MenuItem()
-                                .Header(node, x => x.ConnectionMenuHeader)
-                                .Command(node, x => x.ToggleConnectionCommand)
-                                .CommandParameter(node)
-                                .Icon(new FluentIcon().Icon(node, x => x.ConnectionMenuIcon)),
-                            new MenuItem()
-                                .Header(Assets.Resources.NavigationView_ContextMenu_Settings)
-                                .Command(node, x => x.OpenSettingsCommand)
-                                .CommandParameter(node)
-                                .Icon(new FluentIcon().Icon(Icon.Settings))
-                        ]))
-                    .Child(
-                        new StackPanel()
-                            .VerticalAlignment(VerticalAlignment.Center)
-                            .Orientation(Orientation.Horizontal)
-                            .Children(
-                                new Rectangle()
-                                    .Width(10)
-                                    .Height(10)
-                                    .Margin(0, 0, 4, 0)
-                                    .Fill(node, x => x.Cluster.ClusterColor)
-                                    .Stroke(Brushes.Gray)
-                                    .StrokeThickness(0.6),
-                                new TextBlock()
-                                    .VerticalAlignment(VerticalAlignment.Center)
-                                    .Text(node, x => x.Cluster.Name))
-                    )
-                    .AddBehaviors([
-                        CreateTooltipBehavior(node, ClusterStatus.None, Assets.Resources.NavigationView_ToolTip_ClickToConnect!),
-                        CreateTooltipBehavior(node, ClusterStatus.Connecting, Assets.Resources.NavigationView_ToolTip_Connecting!),
-                        CreateTooltipBehavior(node, ClusterStatus.Errored, Assets.Resources.NavigationView_ToolTip_Errored!),
-                        CreateTooltipBehavior(node, ClusterStatus.Connected, Assets.Resources.NavigationView_ToolTip_Connected!),
-                    ]);
-
-                return border;
-            },
+            new Border()
+                .Margin(-5, 0, 0, 0)
+                .HorizontalAlignment(HorizontalAlignment.Stretch)
+                .Background(Brushes.Transparent)
+                .ContextMenu(new ContextMenu()
+                    .Items(
+                        new MenuItem()
+                            .Header(node, x => x.ConnectionMenuHeader)
+                            .Command(node, x => x.ToggleConnectionCommand)
+                            .CommandParameter(node)
+                            .Icon(new FluentIcon().Icon(node, x => x.ConnectionMenuIcon)),
+                        new MenuItem()
+                            .Header(Assets.Resources.NavigationView_ContextMenu_Settings)
+                            .Command(node, x => x.OpenSettingsCommand)
+                            .CommandParameter(node)
+                            .Icon(new FluentIcon().Icon(Icon.Settings))
+                    ))
+                .Child(
+                    new StackPanel()
+                        .VerticalAlignment(VerticalAlignment.Center)
+                        .Orientation(Orientation.Horizontal)
+                        .Children(
+                            new Rectangle()
+                                .Width(10)
+                                .Height(10)
+                                .Margin(0, 0, 4, 0)
+                                .Fill(node, x => x.Cluster.ClusterColor)
+                                .Stroke(Brushes.Gray)
+                                .StrokeThickness(0.6),
+                            new TextBlock()
+                                .VerticalAlignment(VerticalAlignment.Center)
+                                .Text(node, x => x.Cluster.Name))
+                )
+                .ToolTip_Tip(node, x => x.Cluster.Status, BindingMode.OneWay, new FuncValueConverter<ClusterStatus, string>(status =>
+                {
+                    return status switch
+                    {
+                        ClusterStatus.None => Assets.Resources.NavigationView_ToolTip_ClickToConnect!,
+                        ClusterStatus.Connecting => Assets.Resources.NavigationView_ToolTip_Connecting!,
+                        ClusterStatus.Errored => Assets.Resources.NavigationView_ToolTip_Errored!,
+                        ClusterStatus.Connected => Assets.Resources.NavigationView_ToolTip_Connected!,
+                        _ => string.Empty
+                    };
+                })),
             node => node.NavigationItems);
     }
 
@@ -131,9 +117,8 @@ public sealed class NavigationView : ViewBase<NavigationViewModel>
     {
         return new FuncTreeDataTemplate<ResourceNavigationLink>(
             (link, _) =>
-            {
-                Border border = new Border()
-                    .Margin(new Thickness(-5, 0, 0, 0))
+                new Border()
+                    .Margin(-5, 0, 0, 0)
                     .HorizontalAlignment(HorizontalAlignment.Stretch)
                     .Background(Brushes.Transparent)
                     .ContextMenu(new ContextMenu()
@@ -166,11 +151,8 @@ public sealed class NavigationView : ViewBase<NavigationViewModel>
                                         .Margin(4, 0, 0, 0)
                                         .BindValue(TextBlock.TextProperty, new Binding("Count^"))
                                 )
-                        );
-
-                return border;
-            },
-            link => link.NavigationItems);
+                        ),
+                link => link.NavigationItems);
     }
 
     private static FuncTreeDataTemplate<NavigationItem> CreateNavigationItemTemplate()
@@ -178,7 +160,7 @@ public sealed class NavigationView : ViewBase<NavigationViewModel>
         return new FuncTreeDataTemplate<NavigationItem>(
             (item, _) =>
                 new StackPanel()
-                    .Margin(new Thickness(-5, 0, 0, 0))
+                    .Margin(-5, 0, 0, 0)
                     .Orientation(Orientation.Horizontal)
                     .Children(
                         new FluentIcon()
@@ -194,25 +176,9 @@ public sealed class NavigationView : ViewBase<NavigationViewModel>
                             .IsVisible(item, x => x.SvgIcon, BindingMode.OneWay, Converters.Converters.NotNull),
                         new TextBlock()
                             .VerticalAlignment(VerticalAlignment.Center)
-                            .Text(item, x => x.Name)),
-            item => item.NavigationItems);
-    }
-
-    private static DataTriggerBehavior CreateTooltipBehavior(ClusterNavigationNode vm, ClusterStatus status, string tip)
-    {
-        return new DataTriggerBehavior()
-        {
-            Binding = CompiledBinding.Create<ClusterNavigationNode, ClusterStatus>(x => x.Cluster.Status, vm),
-            Value = status,
-            Actions =
-            [
-                new SetToolTipTipAction
-                {
-                    Tip = new TextBlock()
-                            .Text(tip)
-                }
-            ]
-        };
+                            .Text(item, x => x.Name)
+                    ),
+                item => item.NavigationItems);
     }
 }
 

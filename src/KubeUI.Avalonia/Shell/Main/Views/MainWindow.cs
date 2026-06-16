@@ -20,6 +20,7 @@ public sealed class MainWindow : Window
         {
             DataContext = DesignTimePreview.Get<MainViewModel>();
         }
+
         UpdateMenu();
     }
 
