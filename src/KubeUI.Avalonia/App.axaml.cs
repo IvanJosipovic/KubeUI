@@ -1,9 +1,11 @@
 using System.Diagnostics;
 using Avalonia.Markup.Declarative;
 using Avalonia.Markup.Xaml;
+using Avalonia.Xaml.Interactions.Core;
 using Dock.Avalonia.Controls;
 using Dock.Model.Controls;
 using Dock.Model.Core;
+using FluentIcons.Avalonia;
 using k8s;
 using KubeUI.Avalonia.Features.Clusters.Error.ViewModels;
 using KubeUI.Avalonia.Infrastructure;
@@ -20,6 +22,9 @@ using OpenTelemetry.Metrics;
 using OpenTelemetry.Trace;
 
 [assembly: GenerateMarkupExtensionsForAssembly(typeof(DockControl))]
+[assembly: GenerateMarkupExtensionsForAssembly(typeof(TreeView))]
+[assembly: GenerateMarkupExtensionsForAssembly(typeof(EventTriggerBehavior))]
+[assembly: GenerateMarkupExtensionsForAssembly(typeof(FluentIcon))]
 
 namespace KubeUI.Avalonia;
 

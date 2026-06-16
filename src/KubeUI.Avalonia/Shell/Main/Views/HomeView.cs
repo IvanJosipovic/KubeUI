@@ -17,7 +17,7 @@ public sealed class HomeView() : ViewBase<HomeViewModel>
                     .HorizontalAlignment(HorizontalAlignment.Center)
                     .Source(new SvgImage
                     {
-                        Source = SvgSource.Load("/Assets/kube/infrastructure_components/unlabeled/control-plane.svg", new Uri("avares://KubeUI.Avalonia"))
+                        Source = SvgSource.Load("avares://KubeUI.Avalonia/Assets/kube/infrastructure_components/unlabeled/control-plane.svg")
                     }),
                 new TextBlock()
                     .Margin(0, 5, 0, 0)

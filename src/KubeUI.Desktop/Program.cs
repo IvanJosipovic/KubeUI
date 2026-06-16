@@ -39,7 +39,9 @@ internal static class Program
             .WithInterFont()
             .UseServiceProvider(_host.Services)
             .UseComponentControlFactory(type => (Control)ActivatorUtilities.CreateInstance(_host.Services, type))
-            .UseViewInitializationStrategy(ViewInitializationStrategy.Lazy);
+            .UseViewInitializationStrategy(ViewInitializationStrategy.Lazy)
+            .UseHotReload()
+;
 
         builder.StartWithClassicDesktopLifetime(args);
 
@@ -49,11 +51,11 @@ internal static class Program
         _host = null;
     }
 
-    public static AppBuilder BuildAvaloniaApp()
-            => AppBuilder.Configure(() => new App(EnsureHostInitialized().Services))
-            .ConfigureFonts(fontManager => fontManager.AddFontCollection(new CascadiaMonoFontCollection()))
-            .WithInterFont()
-            .UsePlatformDetect();
+    //public static AppBuilder BuildAvaloniaApp()
+    //        => AppBuilder.Configure(() => new App(EnsureHostInitialized().Services))
+    //        .ConfigureFonts(fontManager => fontManager.AddFontCollection(new CascadiaMonoFontCollection()))
+    //        .WithInterFont()
+    //        .UsePlatformDetect();
 
     private static IHost EnsureHostInitialized()
     {
