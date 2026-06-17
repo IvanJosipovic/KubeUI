@@ -2,15 +2,10 @@ using Dock.Model.Core;
 using k8s.Models;
 using KubeUI.Avalonia.Features.Resources.Common;
 using KubeUI.Avalonia.Features.Resources.List.ViewModels;
-using KubeUI.Avalonia.Infrastructure;
-using KubeUI.Avalonia.Infrastructure.DependencyInjection;
 using KubeUI.Avalonia.Infrastructure.Docking;
 using KubeUI.Avalonia.Infrastructure.Presentation;
-using KubeUI.Avalonia.Resources.CustomResourceDefinition.Views;
-using KubeUI.Kubernetes;
-using Microsoft.Extensions.DependencyInjection;
 
-namespace KubeUI.Avalonia.Resources;
+namespace KubeUI.Avalonia.Resources.CustomResourceDefinition;
 
 public sealed partial class V1CustomResourceDefinitionConfig : ResourceConfigBase<V1CustomResourceDefinition>
 {
