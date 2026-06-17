@@ -31,7 +31,7 @@ using KubeUI.Avalonia.Infrastructure.Platform;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Infrastructure.Threading;
 using KubeUI.Avalonia.Resources;
-using KubeUI.Avalonia.Resources.Workloads.v1.Pod.ViewModels;
+using KubeUI.Avalonia.Resources.Workloads.v1.Pod;
 using KubeUI.Kubernetes;
 using Microsoft.Extensions.DependencyInjection;
 

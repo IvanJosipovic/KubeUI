@@ -12,7 +12,7 @@ using KubeUI.Avalonia.Services.Settings;
 using KubeUI.Kubernetes;
 using SvcSystems.UI.Terminal;
 
-namespace KubeUI.Avalonia.Resources.Workloads.v1.Pod.ViewModels;
+namespace KubeUI.Avalonia.Resources.Workloads.v1.Pod;
 
 public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
 {

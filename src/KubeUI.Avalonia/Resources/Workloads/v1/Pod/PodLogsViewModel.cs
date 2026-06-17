@@ -6,7 +6,7 @@ using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Services.Settings;
 using KubeUI.Kubernetes;
 
-namespace KubeUI.Avalonia.Resources.Workloads.v1.Pod.ViewModels;
+namespace KubeUI.Avalonia.Resources.Workloads.v1.Pod;
 
 public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
 {
@@ -127,6 +127,5 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
         _streamReader?.Dispose();
     }
 }
-
 
 

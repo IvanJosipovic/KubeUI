@@ -9,7 +9,7 @@ using KubeUI.Avalonia;
 using KubeUI.Avalonia.Features.Resources.Yaml.ViewModels;
 using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
-using KubeUI.Avalonia.Resources.Workloads.v1.Pod.Views;
+using KubeUI.Avalonia.Resources.Workloads.v1.Pod;
 
 namespace KubeUI.Avalonia.Features.Resources.Yaml.Behaviors;
 

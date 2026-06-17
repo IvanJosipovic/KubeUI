@@ -17,6 +17,7 @@ using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Trace;
 
+[assembly: GenerateMarkupExtensionsForAssembly(typeof(Avalonia.Controls.DataGrid))]
 [assembly: GenerateMarkupExtensionsForAssembly(typeof(Avalonia.Skia.SkiaPlatform))]
 [assembly: GenerateMarkupExtensionsForAssembly(typeof(Avalonia.Svg.Skia.SvgImage))]
 [assembly: GenerateMarkupExtensionsForAssembly(typeof(Avalonia.Xaml.Interactions.Core.DataTrigger))]

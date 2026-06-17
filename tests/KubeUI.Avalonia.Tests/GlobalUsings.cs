@@ -44,7 +44,7 @@ global using KubeUI.Avalonia.Resources.Workloads.v1.CronJob;
 global using KubeUI.Avalonia.Resources.Workloads.v1.DaemonSet;
 global using KubeUI.Avalonia.Resources.Workloads.v1.Deployment;
 global using KubeUI.Avalonia.Resources.Workloads.v1.Job;
-global using KubeUI.Avalonia.Resources.Workloads.v1.Pod.Views;
+global using KubeUI.Avalonia.Resources.Workloads.v1.Pod;
 global using KubeUI.Avalonia.Resources.Workloads.v1.ReplicaSet;
 global using KubeUI.Avalonia.Resources.Workloads.v1.StatefulSet;
 global using KubeUI.Avalonia.Services.Settings;

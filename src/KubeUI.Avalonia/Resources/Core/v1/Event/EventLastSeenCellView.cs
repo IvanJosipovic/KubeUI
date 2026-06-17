@@ -47,10 +47,10 @@ public sealed partial class EventLastSeenCellView : ViewBase<Corev1Event>, IInit
 
         return new TextBlock()
             .Margin(12, 0, 12, 0)
-            .HorizontalAlignment(global::Avalonia.Layout.HorizontalAlignment.Left)
-            .VerticalAlignment(global::Avalonia.Layout.VerticalAlignment.Center)
-            .BindValue(TextBlock.TextProperty, new Binding(nameof(PrettyString)) { Source = this })
-            .BindValue(ToolTip.TipProperty, new Binding(nameof(PrettyString)) { Source = this });
+            .HorizontalAlignment(HorizontalAlignment.Left)
+            .VerticalAlignment(VerticalAlignment.Center)
+            .Text(this, x => x.PrettyString)
+            .ToolTip_Tip(this, x => x.PrettyString);
     }
 
     protected override void OnDataContextChanged(EventArgs e)

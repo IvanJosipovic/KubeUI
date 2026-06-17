@@ -1,12 +1,15 @@
-using Humanizer;
+using Avalonia.Controls;
+using Avalonia.Data;
+using Avalonia.Markup.Declarative;
 using k8s.Models;
 using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
+using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Kubernetes;
 
-namespace KubeUI.Avalonia.Resources.Workloads.v1.Pod.Controls;
+namespace KubeUI.Avalonia.Resources.Workloads.v1.Pod;
 
-public partial class PodMetricMemoryCell : UserControl, IInitializeCluster
+public partial class PodMetricCPUCellView : ViewBase<V1Pod>, IInitializeCluster
 {
     private ClusterWorkspaceViewModel? _cluster;
 
@@ -15,15 +18,25 @@ public partial class PodMetricMemoryCell : UserControl, IInitializeCluster
     [GeneratedDirectProperty]
     public partial string PrettyString { get; set; } = string.Empty;
 
-    public PodMetricMemoryCell()
+    public PodMetricCPUCellView()
     {
-        InitializeComponent();
-
         if (!s_timer.IsEnabled)
         {
             s_timer.Interval = TimeSpan.FromSeconds(1);
             s_timer.Start();
         }
+    }
+
+    protected override object Build(V1Pod vm)
+    {
+        ArgumentNullException.ThrowIfNull(vm);
+
+        return new TextBlock()
+            .Margin(12, 0, 12, 0)
+            .HorizontalAlignment(HorizontalAlignment.Left)
+            .VerticalAlignment(VerticalAlignment.Center)
+            .Text(this, x => x.PrettyString)
+            .ToolTip_Tip(this, x => x.PrettyString);
     }
 
     protected override void OnDataContextChanged(EventArgs e)
@@ -41,23 +54,16 @@ public partial class PodMetricMemoryCell : UserControl, IInitializeCluster
             return;
         }
 
-        var metric = _cluster.PodMetrics.FirstOrDefault(m =>
-            m.Name() == pod.Name() && m.Namespace() == pod.Namespace());
+        var metric = _cluster.PodMetrics.FirstOrDefault(x =>
+            x.Name() == pod.Name() && x.Namespace() == pod.Namespace());
 
         if (metric == null)
         {
             return;
         }
 
-        try
-        {
-            var usageBytes = metric.Containers.Sum(c => c.Usage["memory"].ToInt64());
-            PrettyString = usageBytes.Bytes().Humanize();
-        }
-        catch
-        {
-            PrettyString = string.Empty;
-        }
+        var usage = metric.Containers.Sum(c => c.Usage["cpu"].ToDecimal());
+        PrettyString = $"{usage:F3}c";
     }
 
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
@@ -77,5 +83,3 @@ public partial class PodMetricMemoryCell : UserControl, IInitializeCluster
         _cluster = cluster;
     }
 }
-
-

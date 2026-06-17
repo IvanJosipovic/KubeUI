@@ -1,14 +1,16 @@
+using Avalonia.Markup.Declarative;
 using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
+using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Kubernetes;
 using AppResources = KubeUI.Avalonia.Assets.Resources;
 
-namespace KubeUI.Avalonia.Resources.Workloads.v1.Pod.Controls;
+namespace KubeUI.Avalonia.Resources.Workloads.v1.Pod;
 
-public sealed partial class PodStatusCell : UserControl, IInitializeCluster
+public sealed partial class PodStatusCellView : ViewBase<V1Pod>, IInitializeCluster
 {
     private ClusterWorkspaceViewModel? _cluster;
 
@@ -17,14 +19,22 @@ public sealed partial class PodStatusCell : UserControl, IInitializeCluster
     private GroupApiVersionKind _groupApiVersionKind = GroupApiVersionKind.From<V1Pod>();
 
     [GeneratedDirectProperty]
-    public partial string PrettyString { get; set; }
+    public partial string PrettyString { get; set; } = string.Empty;
 
     [GeneratedDirectProperty]
-    public partial IBrush Color { get; set; }
+    public partial IBrush Color { get; set; } = new SolidColorBrush(Colors.Orange);
 
-    public PodStatusCell()
+    protected override object Build(V1Pod vm)
     {
-        InitializeComponent();
+        ArgumentNullException.ThrowIfNull(vm);
+
+        return new TextBlock()
+            .Margin(12, 0, 12, 0)
+            .HorizontalAlignment(HorizontalAlignment.Left)
+            .VerticalAlignment(VerticalAlignment.Center)
+            .Foreground(this, x => x.Color)
+            .Text(this, x => x.PrettyString)
+            .ToolTip_Tip(this, x => x.PrettyString);
     }
 
     protected override void OnDataContextChanged(EventArgs e)
@@ -68,6 +78,7 @@ public sealed partial class PodStatusCell : UserControl, IInitializeCluster
         else
         {
             PrettyString = string.Empty;
+            Color = new SolidColorBrush(Colors.Orange);
         }
     }
 
@@ -89,5 +100,3 @@ public sealed partial class PodStatusCell : UserControl, IInitializeCluster
         _cluster.OnChange += _cluster_OnChange;
     }
 }
-
-

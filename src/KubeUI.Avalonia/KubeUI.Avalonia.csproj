@@ -10,22 +10,23 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Using Include="Avalonia" />
-    <Using Include="Avalonia.Controls" />
     <Using Include="Avalonia.Controls.ApplicationLifetimes" />
+    <Using Include="Avalonia.Controls" />
     <Using Include="Avalonia.Data" />
     <Using Include="Avalonia.Interactivity" />
+    <Using Include="Avalonia.Layout" />
     <Using Include="Avalonia.Media" />
     <Using Include="Avalonia.Threading" />
+    <Using Include="Avalonia" />
     <Using Include="CommunityToolkit.Mvvm.ComponentModel" />
     <Using Include="CommunityToolkit.Mvvm.Input" />
-    <Using Include="PropertyGenerator.Avalonia" />
     <Using Include="Microsoft.Extensions.DependencyInjection" />
     <Using Include="Microsoft.Extensions.Logging" />
-    <Using Include="System" />
-    <Using Include="System.Collections" />
+    <Using Include="PropertyGenerator.Avalonia" />
     <Using Include="System.Collections.ObjectModel" />
+    <Using Include="System.Collections" />
     <Using Include="System.ComponentModel" />
+    <Using Include="System" />
   </ItemGroup>
 
   <ItemGroup>
