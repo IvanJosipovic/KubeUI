@@ -550,6 +550,18 @@ public class TestClusterRuntime : IClusterRuntime, INotifyPropertyChanged
         return Task.FromResult(true);
     }
 
+    public Task SeedResource(Type resourceType, bool waitForReady = false)
+    {
+        ArgumentNullException.ThrowIfNull(resourceType);
+
+        var method = GetType()
+            .GetMethods(BindingFlags.Instance | BindingFlags.Public)
+            .First(x => x.Name == nameof(SeedResource) && x.IsGenericMethodDefinition && x.GetParameters().Length == 1)
+            .MakeGenericMethod(resourceType);
+
+        return (Task)method.Invoke(this, [waitForReady])!;
+    }
+
     public Task SeedResource<T>(bool waitForReady = false) where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
         var type = typeof(T);

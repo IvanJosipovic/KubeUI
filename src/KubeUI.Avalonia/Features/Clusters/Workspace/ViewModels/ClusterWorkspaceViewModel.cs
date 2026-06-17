@@ -236,6 +236,12 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
         return SeedResourceCoreAsync<T>(waitForReady);
     }
 
+    public Task SeedResource(Type resourceType, bool waitForReady = false)
+    {
+        ArgumentNullException.ThrowIfNull(resourceType);
+        return Runtime.SeedResource(resourceType, waitForReady);
+    }
+
     public Task<bool> IsResourceReady<T>(CancellationToken? token = null) where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
         return Runtime.IsResourceReady<T>(token);

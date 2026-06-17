@@ -240,6 +240,13 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime
         return Task.CompletedTask;
     }
 
+    public Task SeedResource(Type resourceType, bool waitForReady = false)
+    {
+        ArgumentNullException.ThrowIfNull(resourceType);
+
+        return SeedResourceAsync(resourceType, waitForReady);
+    }
+
     public async Task SeedResource<T>(bool waitForReady = false) where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
         var type = typeof(T);

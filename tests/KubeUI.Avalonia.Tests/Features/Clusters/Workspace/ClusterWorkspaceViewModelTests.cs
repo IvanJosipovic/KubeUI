@@ -688,6 +688,7 @@ internal sealed class CountingClusterRuntime : IClusterRuntime, INotifyPropertyC
     public Task DryRunYaml(Stream stream) => _inner.DryRunYaml(stream);
     public Task ImportFolder(string path) => _inner.ImportFolder(path);
     public Task ImportYaml(Stream stream) => _inner.ImportYaml(stream);
+    public Task SeedResource(Type resourceType, bool waitForReady = false) => _inner.SeedResource(resourceType, waitForReady);
     public Task<bool> IsResourceReady<T>(CancellationToken? token = null) where T : class, IKubernetesObject<V1ObjectMeta>, new() => _inner.IsResourceReady<T>(token);
     public T? GetResource<T>(string? @namespace, string name) where T : class, IKubernetesObject<V1ObjectMeta>, new() => _inner.GetResource<T>(@namespace, name);
     public IReadOnlyList<T> GetResourceList<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new() => _inner.GetResourceList<T>();
@@ -781,6 +782,7 @@ internal sealed class RecordingAuthorizationClusterRuntime : IClusterRuntime, IN
     public Task DryRunYaml(Stream stream) => _inner.DryRunYaml(stream);
     public Task ImportFolder(string path) => _inner.ImportFolder(path);
     public Task ImportYaml(Stream stream) => _inner.ImportYaml(stream);
+    public Task SeedResource(Type resourceType, bool waitForReady = false) => _inner.SeedResource(resourceType, waitForReady);
     public Task<bool> IsResourceReady<T>(CancellationToken? token = null) where T : class, IKubernetesObject<V1ObjectMeta>, new() => _inner.IsResourceReady<T>(token);
     public T? GetResource<T>(string? @namespace, string name) where T : class, IKubernetesObject<V1ObjectMeta>, new() => _inner.GetResource<T>(@namespace, name);
     public IReadOnlyList<T> GetResourceList<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new() => _inner.GetResourceList<T>();
