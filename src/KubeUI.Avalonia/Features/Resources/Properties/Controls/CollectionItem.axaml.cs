@@ -1,8 +1,9 @@
 using Avalonia.Controls.Templates;
+using Avalonia.Markup.Declarative;
 
 namespace KubeUI.Avalonia.Features.Resources.Properties.Controls;
 
-public partial class CollectionItem : UserControl
+public partial class CollectionItem : UserControl, IDeclarativeViewBase
 {
     [GeneratedDirectProperty]
     public partial string Key { get; set; }

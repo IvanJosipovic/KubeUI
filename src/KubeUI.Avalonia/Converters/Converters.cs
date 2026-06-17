@@ -26,11 +26,11 @@ public static class Converters
             return "N/A";
         });
 
-    public static readonly IValueConverter NotNull = new FuncValueConverter<object, bool>((x) => x != null && x != AvaloniaProperty.UnsetValue);
+    public static readonly IValueConverter NotNull = new FuncValueConverter<object?, bool>((x) => x != null && x != AvaloniaProperty.UnsetValue);
 
     public static IValueConverter StringFormat(string Format)
     {
-        return new FuncValueConverter<object, string>(value =>
+        return new FuncValueConverter<object?, string>(value =>
         {
             if (value != null && value != AvaloniaProperty.UnsetValue)
             {

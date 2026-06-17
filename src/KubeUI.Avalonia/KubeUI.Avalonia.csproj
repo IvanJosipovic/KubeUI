@@ -35,7 +35,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\KubeUI.Kubernetes\KubeUI.Kubernetes.csproj" />
+    <ProjectReference Include="..\KubeUI.Kubernetes\KubeUI.Kubernetes.csproj" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup>
@@ -91,7 +91,7 @@
     <PackageReference Include="OpenTelemetry.Resources.OperatingSystem" Version="1.15.1-beta.1" />
     <PackageReference Include="PanAndZoom" Version="12.0.0.1" />
     <PackageReference Include="ProDataGrid" Version="12.0.0" />
-    <PackageReference Include="PropertyGenerator.Avalonia" Version="1.3.1" />
+    <PackageReference Include="PropertyGenerator.Avalonia" Version="1.3.1" PrivateAssets="all" />
     <PackageReference Include="roslynator.analyzers" Version="4.15.0" PrivateAssets="all" />
     <PackageReference Include="Semi.Avalonia" Version="12.0.3" />
     <PackageReference Include="ServiceScan.SourceGenerator" Version="3.1.4" PrivateAssets="all" />
@@ -101,4 +101,11 @@
     <PackageReference Include="Velopack" Version="1.2.0" />
     <PackageReference Include="Xaml.Behaviors.Avalonia" Version="12.0.0.1" />
   </ItemGroup>
+
+  <Target Name="DisableAnalyzers" BeforeTargets="CoreCompile">
+    <ItemGroup>
+      <Analyzer Remove="@(Analyzer)" Condition="'%(Filename)' == 'Avalonia.Analyzers.VisualBasic'" />
+    </ItemGroup>
+  </Target>
+
 </Project>

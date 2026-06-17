@@ -20,6 +20,7 @@ using FluentAvalonia.UI.Controls;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Features.Resources.Yaml.Behaviors;
+using KubeUI.Avalonia.Shell.Documents.About;
 using KubeUI.Avalonia.Tests.Infra;
 using Shouldly;
 

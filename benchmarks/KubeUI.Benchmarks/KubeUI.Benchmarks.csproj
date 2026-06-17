@@ -12,5 +12,12 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\KubeUI.Avalonia\KubeUI.Avalonia.csproj" />
+    <ProjectReference Include="..\..\src\KubeUI.Kubernetes\KubeUI.Kubernetes.csproj" />
   </ItemGroup>
+
+  <Target Name="DisableAnalyzers" BeforeTargets="CoreCompile">
+    <ItemGroup>
+      <Analyzer Remove="@(Analyzer)" Condition="'%(Filename)' == 'Avalonia.Markup.Declarative.SourceGenerator'" />
+    </ItemGroup>
+  </Target>
 </Project>

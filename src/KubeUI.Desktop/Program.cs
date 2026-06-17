@@ -40,8 +40,10 @@ internal static class Program
             .UseServiceProvider(_host.Services)
             .UseComponentControlFactory(type => (Control)ActivatorUtilities.CreateInstance(_host.Services, type))
             .UseViewInitializationStrategy(ViewInitializationStrategy.Lazy)
+#if DEBUG
             .UseHotReload()
-;
+#endif
+            ;
 
         builder.StartWithClassicDesktopLifetime(args);
 
