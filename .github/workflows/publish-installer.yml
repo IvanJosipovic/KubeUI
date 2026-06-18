@@ -62,7 +62,7 @@ jobs:
             signingParams: '--signAppIdentity "Developer ID Application: Ivan Josipovic" --signInstallIdentity "Developer ID Installer: Ivan Josipovic" --notaryProfile "velopack-profile" --keychain $RUNNER_TEMP/app-signing.keychain-db --signEntitlements src/KubeUI.Desktop/entitlements.entitlements'
             icon: src/KubeUI.Avalonia/Assets/icon.icns
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Setup .NET Core
         uses: actions/setup-dotnet@v5
