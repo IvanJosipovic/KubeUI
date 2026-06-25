@@ -6,7 +6,6 @@ using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using k8s.Models;
 using KubeUI.Avalonia.Features.Resources.Common;
-using KubeUI.Avalonia.Resources.Network.v1.Service.Views;
 using KubeUI.Kubernetes;
 
 namespace KubeUI.Avalonia.Resources.Network.v1.Service;

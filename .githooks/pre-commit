@@ -10,6 +10,5 @@ if ! git diff --quiet --ignore-submodules -- || [ -n "$(git ls-files --others --
 fi
 
 dotnet format KubeUI.slnx --verbosity minimal
-dotnet dnx XamlStyler.Console -r -d src/KubeUI.Avalonia -c Settings.XamlStyler
 
 git add -u

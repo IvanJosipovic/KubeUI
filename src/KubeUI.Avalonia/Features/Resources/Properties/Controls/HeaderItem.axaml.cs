@@ -1,6 +1,8 @@
+using Avalonia.Markup.Declarative;
+
 namespace KubeUI.Avalonia.Features.Resources.Properties.Controls;
 
-public partial class HeaderItem : UserControl
+public partial class HeaderItem : UserControl, IDeclarativeViewBase
 {
     [GeneratedDirectProperty]
     public partial string Text { get; set; }

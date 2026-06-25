@@ -4,7 +4,7 @@ using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
 using k8s.Models;
-using KubeUI.Avalonia.Resources.Workloads.v1.Pod.Controls;
+using KubeUI.Avalonia.Resources.Workloads.v1.Pod;
 using KubeUI.Avalonia.Tests.Infra;
 using Shouldly;
 using Xunit;
@@ -50,7 +50,7 @@ public sealed class PodContainerCellTests : AvaloniaTestBase
             }
         };
 
-        var view = new PodContainerCell
+        var view = new PodContainerCellView
         {
             DataContext = pod
         };
@@ -108,7 +108,7 @@ public sealed class PodContainerCellTests : AvaloniaTestBase
             }
         };
 
-        var view = new PodContainerCell
+        var view = new PodContainerCellView
         {
             DataContext = firstPod
         };

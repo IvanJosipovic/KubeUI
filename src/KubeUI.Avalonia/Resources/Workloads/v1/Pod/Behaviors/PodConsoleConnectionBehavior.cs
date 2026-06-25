@@ -2,7 +2,6 @@ using Avalonia.Controls;
 using Avalonia.VisualTree;
 using Avalonia.Xaml.Interactivity;
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
-using KubeUI.Avalonia.Resources.Workloads.v1.Pod.ViewModels;
 
 namespace KubeUI.Avalonia.Resources.Workloads.v1.Pod.Behaviors;
 

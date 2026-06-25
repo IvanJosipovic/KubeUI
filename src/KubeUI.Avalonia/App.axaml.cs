@@ -1,21 +1,36 @@
 using System.Diagnostics;
+using Avalonia.Markup.Declarative;
 using Avalonia.Markup.Xaml;
 using Dock.Model.Controls;
 using Dock.Model.Core;
 using k8s;
 using KubeUI.Avalonia.Features.Clusters.Error.ViewModels;
-using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
 using KubeUI.Avalonia.Infrastructure.Docking;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Services.Settings;
-using KubeUI.Avalonia.Shell.Main.ViewModels;
-using KubeUI.Avalonia.Shell.Main.Views;
+using KubeUI.Avalonia.Shell.Main;
+using KubeUI.Avalonia.Styles;
 using KubeUI.Kubernetes;
 using Microsoft.Extensions.Hosting;
 using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Trace;
+
+[assembly: GenerateMarkupExtensionsForAssembly(typeof(Avalonia.Controls.DataGrid))]
+[assembly: GenerateMarkupExtensionsForAssembly(typeof(Avalonia.Skia.SkiaPlatform))]
+[assembly: GenerateMarkupExtensionsForAssembly(typeof(Avalonia.Svg.Skia.SvgImage))]
+[assembly: GenerateMarkupExtensionsForAssembly(typeof(Avalonia.Xaml.Interactions.Core.DataTrigger))]
+[assembly: GenerateMarkupExtensionsForAssembly(typeof(Avalonia.Xaml.Interactions.Events.PointerPressedEventTrigger))]
+[assembly: GenerateMarkupExtensionsForAssembly(typeof(Avalonia.Xaml.Interactivity.EventTriggerBase))]
+[assembly: GenerateMarkupExtensionsForAssembly(typeof(AvaloniaEdit.TextEditor))]
+[assembly: GenerateMarkupExtensionsForAssembly(typeof(Dock.Avalonia.Controls.DockableControl))]
+[assembly: GenerateMarkupExtensionsForAssembly(typeof(Dock.Controls.DeferredContentControl.DeferredContentControl))]
+[assembly: GenerateMarkupExtensionsForAssembly(typeof(FluentAvalonia.UI.Controls.FABitmapIcon))]
+[assembly: GenerateMarkupExtensionsForAssembly(typeof(FluentIcons.Avalonia.FluentIcon))]
+[assembly: GenerateMarkupExtensionsForAssembly(typeof(LiveChartsCore.SkiaSharpView.Avalonia.PieChart))]
+[assembly: GenerateMarkupExtensionsForAssembly(typeof(SvcSystems.UI.Terminal.Terminal))]
+[assembly: GenerateMarkupExtensionsForAssembly(typeof(Ursa.Controls.Anchor))]
 
 namespace KubeUI.Avalonia;
 
@@ -49,6 +64,7 @@ public partial class App : Application, IServiceProviderHost
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);
+        Styles.Add(new Fluent());
 
 #if DEBUG
         this.AttachDeveloperTools();

@@ -1,6 +1,6 @@
 using Avalonia.Controls;
 using k8s.Models;
-using KubeUI.Avalonia.Resources.AccessControl.v1.ClusterRoleBinding.Views;
+using KubeUI.Avalonia.Resources.AccessControl.v1.ClusterRoleBinding;
 
 namespace KubeUI.Avalonia.Resources.AccessControl.v1.ClusterRoleBinding;
 

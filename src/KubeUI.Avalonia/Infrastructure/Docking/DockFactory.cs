@@ -5,9 +5,8 @@ using Dock.Model.Core;
 using Dock.Model.Mvvm;
 using Dock.Model.Mvvm.Controls;
 using KubeUI.Avalonia.Infrastructure;
-using KubeUI.Avalonia.Shell.Main.ViewModels;
-using KubeUI.Avalonia.Shell.Navigation.ViewModels;
-using Microsoft.Extensions.DependencyInjection;
+using KubeUI.Avalonia.Shell.Main;
+using KubeUI.Avalonia.Shell.Navigation;
 using Orientation = Dock.Model.Core.Orientation;
 
 namespace KubeUI.Avalonia.Infrastructure.Docking;

@@ -28,4 +28,18 @@
     <ProjectReference Include="..\KubeUI.Avalonia\KubeUI.Avalonia.csproj" />
     <ProjectReference Include="..\KubeUI.Kubernetes\KubeUI.Kubernetes.csproj" />
   </ItemGroup>
+
+  <Target Name="DisableAnalyzers"
+          BeforeTargets="CoreCompile">
+    <ItemGroup>
+      <Analyzer Remove="@(Analyzer)"
+                Condition="'%(Filename)' == 'Avalonia.Markup.Declarative.SourceGenerator' Or
+                           '%(Filename)' == 'Avalonia.Generators' Or
+                           '%(Filename)' == 'Avalonia.Analyzers.VisualBasic' or
+                           '%(Filename)' == 'Avalonia.Analyzers.CSharp' or
+                           '%(Filename)' == 'CommunityToolkit.Mvvm.SourceGenerators'
+
+                " />
+    </ItemGroup>
+  </Target>
 </Project>

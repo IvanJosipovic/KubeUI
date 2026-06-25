@@ -5,7 +5,6 @@ using k8s;
 using k8s.Models;
 using KubeUI.Avalonia.Assets;
 using KubeUI.Avalonia.Resources.Workloads.v1.Pod;
-using KubeUI.Avalonia.Resources.Workloads.v1.Pod.ViewModels;
 using KubeUI.Avalonia.Tests.Infra;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;

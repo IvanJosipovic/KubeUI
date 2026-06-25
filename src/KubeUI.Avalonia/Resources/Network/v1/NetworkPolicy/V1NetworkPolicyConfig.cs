@@ -1,6 +1,5 @@
 using Avalonia.Controls;
 using k8s.Models;
-using KubeUI.Avalonia.Resources.Network.v1.NetworkPolicy.Views;
 
 namespace KubeUI.Avalonia.Resources.Network.v1.NetworkPolicy;
 
@@ -32,4 +31,3 @@ public sealed partial class V1NetworkPolicyConfig : ResourceConfigBase<V1Network
 
     public override Control[] Properties(V1NetworkPolicy resource) => [new PropertiesView()];
 }
-

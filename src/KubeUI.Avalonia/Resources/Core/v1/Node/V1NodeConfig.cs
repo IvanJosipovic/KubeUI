@@ -8,7 +8,6 @@ using k8s.Models;
 using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Features.Resources.Common;
 using KubeUI.Avalonia.Infrastructure;
-using KubeUI.Avalonia.Resources.Core.v1.Node.Views;
 using KubeUI.Kubernetes;
 
 namespace KubeUI.Avalonia.Resources.Core.v1.Node;
@@ -276,4 +275,3 @@ public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>
 
     public override Control[] Properties(V1Node resource) => [new PropertiesView()];
 }
-
