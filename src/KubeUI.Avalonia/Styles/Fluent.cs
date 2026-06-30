@@ -48,7 +48,7 @@ public sealed class Fluent : AvaloniaStyles
             .Setter(HostWindow.BackgroundProperty, new DynamicResourceExtension("SystemRegionBrush"))
             .Setter(HostWindow.OpacityProperty, 1d)
             .Setter(HostWindow.RequestedThemeVariantProperty, new Binding(nameof(Application.RequestedThemeVariant)) { Source = Application.Current })
-            .Setter(HostWindow.TransparencyLevelHintProperty, WindowTransparencyLevel.None));
+            .Setter(HostWindow.TransparencyLevelHintProperty, new[] { WindowTransparencyLevel.None }));
 
         Add(new Style<DataGrid>()
             .Setter(DataGrid.RowHeightProperty, new DynamicResourceExtension("DataGridRowHeight"))

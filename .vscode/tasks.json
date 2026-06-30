@@ -17,28 +17,9 @@
             "problemMatcher": []
         },
         {
-            "label": "XAML Styler: Format KubeUI.Avalonia",
-            "type": "shell",
-            "command": "dotnet",
-            "args": [
-                "dnx",
-                "XamlStyler.Console",
-                "-r",
-                "-d",
-                "src\\KubeUI.Avalonia",
-                "-c",
-                "Settings.XamlStyler"
-            ],
-            "options": {
-                "cwd": "${workspaceFolder}"
-            },
-            "problemMatcher": []
-        },
-        {
             "label": "format: all",
             "dependsOn": [
-                "dotnet: format solution",
-                "XAML Styler: Format KubeUI.Avalonia"
+                "dotnet: format solution"
             ],
             "dependsOrder": "sequence",
             "problemMatcher": []

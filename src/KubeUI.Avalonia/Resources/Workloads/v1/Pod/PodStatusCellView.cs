@@ -57,16 +57,17 @@ public sealed partial class PodStatusCellView : ViewBase<V1Pod>, IInitializeClus
 
             if (pod.Metadata?.DeletionTimestamp.HasValue == true)
             {
-                PrettyString = AppResources.PodStatusCell_Terminating;
+                PrettyString = AppResources.PodStatusCell_Terminating!;
             }
             else
             {
                 var ready = pod.Status?.Conditions?.FirstOrDefault(c => c.Type == "Ready");
+
                 PrettyString = ready?.Status == "True"
-                    ? AppResources.PodStatusCell_Running
+                    ? AppResources.PodStatusCell_Running!
                     : ready?.Reason == "PodCompleted"
-                        ? AppResources.PodStatusCell_PodCompleted
-                        : ready?.Reason ?? AppResources.PodStatusCell_Unknown;
+                        ? AppResources.PodStatusCell_PodCompleted!
+                        : ready?.Reason ?? AppResources.PodStatusCell_Unknown!;
             }
 
             Color = PrettyString switch

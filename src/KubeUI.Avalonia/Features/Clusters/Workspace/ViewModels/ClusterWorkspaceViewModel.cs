@@ -446,7 +446,7 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
             await EnsureBuiltInResourceConfigsAsync();
             await EnsureConfiguredNamespacesAvailableAsync().ConfigureAwait(false);
             await RefreshResourceConfigPermissionsAsync().ConfigureAwait(false);
-            await EnsureDynamicResourceConfigsAsync().ConfigureAwait(false);
+            //await EnsureDynamicResourceConfigsAsync().ConfigureAwait(false);
             _workspaceStateInitialized = true;
             UpdateClusterColor();
             NotifyRuntimeStateChanged();

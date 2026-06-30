@@ -1,6 +1,7 @@
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Markup.Declarative;
+using Avalonia.Markup.Xaml.MarkupExtensions;
 using Avalonia.Styling;
 using AvaloniaEdit;
 using FluentIcons.Avalonia;
@@ -33,9 +34,9 @@ public sealed partial class PodLogsView : ViewBase<PodLogsViewModel>
         var textEditor = new TextEditor()
             .Row(1)
             .OnTextChanged((e) => TextEditorControl_TextChanged(e))
-            .Background(Brushes.Transparent)
+            .BindValue(TextEditor.BackgroundProperty, new DynamicResourceExtension("SystemAltHighColor"))
             .Document(vm, x => x.Logs)
-            .FontSize(vm, x => (double)x.SettingsService.Appearance.FontSize)
+            .FontSize(vm, x => x.SettingsService.Appearance.FontSize)
             .WordWrap(vm, x => x.WordWrap)
             .FontFamily(new FontFamily("Cascadia Mono"))
             .FontWeight(FontWeight.Normal)
@@ -43,6 +44,13 @@ public sealed partial class PodLogsView : ViewBase<PodLogsViewModel>
             .IsReadOnly(true)
             .ShowLineNumbers(false)
             .VerticalScrollBarVisibility(ScrollBarVisibility.Visible)
+            .Options(new TextEditorOptions()
+            {
+                AllowScrollBelowDocument = false,
+                EnableEmailHyperlinks = false,
+                EnableHyperlinks = false,
+                ShowBoxForControlCharacters = false
+            })
             .ContextMenu(new ContextMenu()
                 .Items(
                     new MenuItem()
@@ -159,5 +167,4 @@ public sealed partial class PodLogsView : ViewBase<PodLogsViewModel>
             sc?.Offset = new Vector(sc.Offset.X, sc.ScrollBarMaximum.Y);
         }
     }
-
 }

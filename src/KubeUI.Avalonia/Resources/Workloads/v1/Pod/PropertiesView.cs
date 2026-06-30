@@ -1,9 +1,7 @@
-using System.Collections.Generic;
-using System.Linq;
 using Avalonia.Controls.Templates;
-using Avalonia.Data;
 using Avalonia.Markup.Declarative;
 using k8s.Models;
+using KubeUI.Avalonia.Converters;
 using KubeUI.Avalonia.Features.Resources.Properties.Controls;
 using AppConverters = KubeUI.Avalonia.Converters.Converters;
 
@@ -19,7 +17,7 @@ public sealed class PropertiesView : ViewBase<V1Pod>
             .Children(
                 new PropertyItem()
                     .Key(Assets.Resources.PodPropertiesView_ControlledBy!)
-                    .Value(vm, x => x, BindingMode.OneWay, AppConverters.ObjectOwnerName),
+                    .Value(vm.Metadata.OwnerReferences?.FirstOrDefault(x => x.Controller == true)?.Name ?? "N/A"),
                 new PropertyItem()
                     .Key(Assets.Resources.PodPropertiesView_Status!)
                     .Value(vm.Status?.Phase ?? ""),
@@ -72,12 +70,12 @@ public sealed class PropertiesView : ViewBase<V1Pod>
                 new ExpandableSection()
                     .Header(Assets.Resources.PodPropertiesView_InitContainers!)
                     .IsExpanded(true)
-                    .IsVisible(vm, x => x.Spec.InitContainers, BindingMode.OneWay, KubeUI.Avalonia.Converters.NotEmptyCollectionConverter.Instance)
+                    .IsVisible(vm, x => x.Spec.InitContainers, BindingMode.OneWay, NotEmptyCollectionConverter.Instance)
                     .Content(CreateContainers(vm.Spec?.InitContainers ?? [])),
                 new ExpandableSection()
                     .Header(Assets.Resources.PodPropertiesView_EphemeralContainers!)
                     .IsExpanded(true)
-                    .IsVisible(vm, x => x.Spec.EphemeralContainers, BindingMode.OneWay, KubeUI.Avalonia.Converters.NotEmptyCollectionConverter.Instance)
+                    .IsVisible(vm, x => x.Spec.EphemeralContainers, BindingMode.OneWay, NotEmptyCollectionConverter.Instance)
                     .Content(CreateEphemeralContainers(vm.Spec?.EphemeralContainers ?? [])),
                 new ExpandableSection()
                     .Header(Assets.Resources.PodPropertiesView_Containers!)

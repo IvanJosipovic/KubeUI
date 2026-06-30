@@ -62,7 +62,7 @@ public partial class CRDResourceConfig<T> : ResourceConfigBase<T> where T : clas
 
                     if (item.Type == "string")
                     {
-                        var exp = JsonPathLINQ.JsonPath.GetExpression<T, string>(item.JsonPath, true);
+                        var exp = JsonPathLINQ.JsonPath.GetExpression<T, string?>(item.JsonPath, true);
 
                         var colDef = CreateColumn(item.Name, exp);
 

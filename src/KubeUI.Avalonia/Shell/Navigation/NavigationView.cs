@@ -161,7 +161,8 @@ public sealed class NavigationView : ViewBase<NavigationViewModel>
                     .Orientation(Orientation.Horizontal)
                     .Children(
                         new FluentIcon()
-                            .Icon(item, x => x.FluentIcon, BindingMode.OneWay)
+                            .BindValue(FluentIcon.IconProperty, CompiledBinding.Create<NavigationItem, Icon?>(x => x.FluentIcon, item))
+                            //.Icon(item, x => x.FluentIcon, BindingMode.OneWay, Converters.Converters.NotNull)
                             .IsVisible(item, x => x.FluentIcon, BindingMode.OneWay, Converters.Converters.NotNull),
                         new PathIcon()
                             .Data(item, x => x.StyleIcon, BindingMode.OneWay, new StringToGeometryConverter())

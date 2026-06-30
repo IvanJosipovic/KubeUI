@@ -1,17 +1,14 @@
-using System.Collections.ObjectModel;
 using System.Globalization;
-using Avalonia.Controls;
 using Avalonia.Controls.Shapes;
 using Avalonia.Controls.Templates;
 using Avalonia.Markup.Declarative;
-using Avalonia.Media;
+using Avalonia.Markup.Xaml.Templates;
 using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Converters;
 using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
 using KubeUI.Avalonia.Infrastructure.Presentation;
-using KubeUI.Kubernetes;
 using AppResources = KubeUI.Avalonia.Assets.Resources;
 
 namespace KubeUI.Avalonia.Resources.Workloads.v1.Pod;
@@ -20,7 +17,7 @@ public partial class PodContainerCellView : ViewBase<V1Pod>, IInitializeCluster
 {
     private ClusterWorkspaceViewModel? _cluster;
 
-    private V1Pod? _viewModel => DataContext as V1Pod;
+    private V1Pod? _viewModel;
 
     private GroupApiVersionKind _groupApiVersionKind = GroupApiVersionKind.From<V1Pod>();
 
@@ -91,7 +88,35 @@ public partial class PodContainerCellView : ViewBase<V1Pod>, IInitializeCluster
         return new ItemsControl()
             .Margin(10, 0, 0, 0)
             .ItemsSource(this, x => x.ContainerStatuses)
-            .ItemTemplate(new FuncDataTemplate<ContainerStatusViewModel>((vm, _) => CreateIndicator(vm)));
+            .ItemsPanel(new ItemsPanelTemplate()
+            {
+                Content = (IServiceProvider? _) =>
+                    new TemplateResult<Control>(
+                        new StackPanel()
+                            .Orientation(Orientation.Horizontal)
+                        , new NameScope())
+            })
+            .ItemTemplate(new FuncDataTemplate<ContainerStatusViewModel>((vm, _) =>
+                new Ellipse()
+                    .Fill(vm.Brush)
+                    .Width(10)
+                    .Height(10)
+                    .Stroke(Brushes.Gray)
+                    .StrokeThickness(1)
+                    .Margin(0, 0, 4, 0)
+                    .ToolTip_Tip(
+                        new StackPanel()
+                            .Children(
+                                new TextBlock()
+                                    .Text(string.Format(AppResources.PodContainerCell_NameFormat, vm.Name)),
+                                new TextBlock()
+                                    .Text(string.Format(AppResources.PodContainerCell_TypeFormat, vm.Type)),
+                                new TextBlock()
+                                    .Text(string.Format(AppResources.PodContainerCell_StatusFormat, vm.Status)),
+                                new TextBlock()
+                                    .Text(string.Format(AppResources.PodContainerCell_RestartsFormat, vm.Restarts)),
+                                new TextBlock()
+                                    .Text(string.Format(AppResources.PodContainerCell_ImageFormat, vm.Image))))));
     }
 
     protected override void OnDataContextChanged(EventArgs e)
@@ -110,8 +135,10 @@ public partial class PodContainerCellView : ViewBase<V1Pod>, IInitializeCluster
     {
         ContainerStatuses.Clear();
 
-        if (_viewModel is V1Pod pod)
+        if (DataContext is V1Pod pod)
         {
+            _viewModel = pod;
+
             if (pod.Status?.ContainerStatuses != null)
             {
                 foreach (var status in pod.Status.ContainerStatuses)
@@ -160,30 +187,6 @@ public partial class PodContainerCellView : ViewBase<V1Pod>, IInitializeCluster
         return vm;
     }
 
-    private static Control CreateIndicator(ContainerStatusViewModel vm)
-    {
-        return new Ellipse()
-            .Fill(vm.Brush)
-            .Width(10)
-            .Height(10)
-            .Stroke(Brushes.Gray)
-            .StrokeThickness(1)
-            .Margin(0, 0, 4, 0)
-            .ToolTip_Tip(
-            new StackPanel()
-                .Children(
-                    new TextBlock()
-                        .Text(string.Format(AppResources.PodContainerCell_NameFormat, vm.Name)),
-                    new TextBlock()
-                        .Text(string.Format(AppResources.PodContainerCell_TypeFormat, vm.Type)),
-                    new TextBlock()
-                        .Text(string.Format(AppResources.PodContainerCell_StatusFormat, vm.Status)),
-                    new TextBlock()
-                        .Text(string.Format(AppResources.PodContainerCell_RestartsFormat, vm.Restarts)),
-                    new TextBlock()
-                        .Text(string.Format(AppResources.PodContainerCell_ImageFormat, vm.Image))));
-    }
-
     private static string GetStatusText(V1ContainerStatus status)
     {
         try
@@ -195,13 +198,13 @@ public partial class PodContainerCellView : ViewBase<V1Pod>, IInitializeCluster
 
             if (status.State?.Waiting != null)
             {
-                V1ContainerStateWaiting waiting = status.State.Waiting;
+                var waiting = status.State.Waiting;
                 string? reason = !string.IsNullOrWhiteSpace(waiting.Reason) ? waiting.Reason : null;
                 string? msg = !string.IsNullOrWhiteSpace(waiting.Message) ? waiting.Message : null;
                 return reason ?? msg ?? "Waiting";
             }
 
-            V1ContainerStateTerminated? terminated = status.State?.Terminated;
+            var terminated = status.State?.Terminated;
             if (terminated != null)
             {
                 if (terminated.Reason == "Completed")

@@ -21,8 +21,8 @@ namespace KubeUI.Desktop;
 
 internal static class Program
 {
-    private static readonly object HostLock = new();
-    private static IHost? _host;
+    private static readonly object s_hostLock = new();
+    private static IHost? s_host;
 
     [STAThread]
     public static void Main(string[] args)
@@ -31,14 +31,14 @@ internal static class Program
 
         EnsureMacOsPath();
 
-        _host = EnsureHostInitialized();
+        s_host = EnsureHostInitialized();
 
-        var builder = AppBuilder.Configure(() => new App(_host.Services))
+        var builder = AppBuilder.Configure(() => new App(s_host.Services))
             .UsePlatformDetect()
             .ConfigureFonts(fontManager => fontManager.AddFontCollection(new CascadiaMonoFontCollection()))
             .WithInterFont()
-            .UseServiceProvider(_host.Services)
-            .UseComponentControlFactory(type => (Control)ActivatorUtilities.CreateInstance(_host.Services, type))
+            .UseServiceProvider(s_host.Services)
+            .UseComponentControlFactory(type => (Control)ActivatorUtilities.CreateInstance(s_host.Services, type))
             .UseViewInitializationStrategy(ViewInitializationStrategy.Lazy)
 #if DEBUG
             .UseHotReload()
@@ -47,10 +47,10 @@ internal static class Program
 
         builder.StartWithClassicDesktopLifetime(args);
 
-        _host.StopAsync().GetAwaiter().GetResult();
+        s_host.StopAsync().GetAwaiter().GetResult();
 
-        _host.Dispose();
-        _host = null;
+        s_host.Dispose();
+        s_host = null;
     }
 
     //public static AppBuilder BuildAvaloniaApp()
@@ -61,22 +61,22 @@ internal static class Program
 
     private static IHost EnsureHostInitialized()
     {
-        if (_host != null)
+        if (s_host != null)
         {
-            return _host;
+            return s_host;
         }
 
-        lock (HostLock)
+        lock (s_hostLock)
         {
-            if (_host == null)
+            if (s_host == null)
             {
-                _host = CreateHostBuilder(Environment.GetCommandLineArgs()).Build();
-                _host.Services.ConfigureKubeUIKubernetesJsonLogging();
-                _host.StartAsync().GetAwaiter().GetResult();
+                s_host = CreateHostBuilder(Environment.GetCommandLineArgs()).Build();
+                s_host.Services.ConfigureKubeUIKubernetesJsonLogging();
+                s_host.StartAsync().GetAwaiter().GetResult();
             }
         }
 
-        return _host;
+        return s_host;
     }
 
     private static HostApplicationBuilder CreateHostBuilder(string[] args)

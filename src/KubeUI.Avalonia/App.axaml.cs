@@ -77,10 +77,10 @@ public partial class App : Application, IServiceProviderHost
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            MainWindow mainWindow = Services.GetRequiredService<MainWindow>();
+            var mainWindow = Services.GetRequiredService<MainWindow>();
             mainWindow.DataContext = Services.GetRequiredService<MainViewModel>();
             desktop.MainWindow = mainWindow;
-            TopLevel = TopLevel.GetTopLevel(desktop.MainWindow)!;
+            TopLevel = desktop.MainWindow;
             desktop.ShutdownRequested += (_, _) => GracefulShutdown();
         }
         else if (ApplicationLifetime is ISingleViewApplicationLifetime singleViewPlatform)
@@ -116,7 +116,7 @@ public partial class App : Application, IServiceProviderHost
 
         _logger.LogError("Cluster ExecStdError: {Data}", e.Data);
 
-        Dispatcher.UIThread.Post(() => ShowClusterError(e.Data));
+        Dispatcher.UIThread.Post(() => ShowClusterError(e.Data), DispatcherPriority.Background);
     }
 
     private void ShowClusterError(string error)

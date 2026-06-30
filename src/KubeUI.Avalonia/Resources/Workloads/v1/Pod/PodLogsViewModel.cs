@@ -11,6 +11,7 @@ namespace KubeUI.Avalonia.Resources.Workloads.v1.Pod;
 public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
 {
     public ISettingsService SettingsService { get; }
+
     private readonly ILogger<PodLogsViewModel> _logger;
 
     [ObservableProperty]

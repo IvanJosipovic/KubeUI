@@ -47,7 +47,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
                 {
                     Key = "restarts",
                     Name = Assets.Resources.V1PodConfig_Restarts!,
-                    Field = x => x.Status.ContainerStatuses?.Sum(x => x.RestartCount) ?? 0,
+                    Field = x => x?.Status?.ContainerStatuses?.Sum(x => x.RestartCount) ?? 0,
                     Width = nameof(DataGridLengthUnitType.SizeToHeader)
                 },
                 new ResourceListColumn<V1Pod, string>()
@@ -61,14 +61,14 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
                 {
                     Key = "node",
                     Name = Assets.Resources.V1PodConfig_Node!,
-                    Field = x => x.Spec.NodeName ?? "",
+                    Field = x => x?.Spec?.NodeName ?? "",
                     Width = nameof(DataGridLengthUnitType.SizeToHeader)
                 },
                 new ResourceListColumn<V1Pod, string>()
                 {
                     Key = "qos",
                     Name = Assets.Resources.V1PodConfig_QoS!,
-                    Field = x => x.Status.QosClass ?? "",
+                    Field = x => x?.Status?.QosClass ?? "",
                     Width = nameof(DataGridLengthUnitType.SizeToCells)
                 },
                 AgeColumn(),
@@ -127,32 +127,32 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
                     new()
                     {
                         Header = "Init",
-                        Items = new AvaloniaList<MenuItemViewModel>(initContainers.Select(c => new MenuItemViewModel()
+                        Items = [.. initContainers.Select(c => new MenuItemViewModel()
                         {
                             Header = c.Name,
                             Command = ViewConsoleCommand,
                             CommandParameter = new ArrayList { selectedItem, c },
-                        }).ToList()),
+                        }).ToList()],
                     },
                     new()
                     {
                         Header = "Normal",
-                        Items = new AvaloniaList<MenuItemViewModel>(containers.Select(c => new MenuItemViewModel()
+                        Items = [.. containers.Select(c => new MenuItemViewModel()
                         {
                             Header = c.Name,
                             Command = ViewConsoleCommand,
                             CommandParameter = new ArrayList { selectedItem, c },
-                        }).ToList()),
+                        }).ToList()],
                     },
                     new()
                     {
                         Header = "Ephemeral",
-                        Items = new AvaloniaList<MenuItemViewModel>(ephemeralContainers.Select(c => new MenuItemViewModel()
+                        Items = [.. ephemeralContainers.Select(c => new MenuItemViewModel()
                         {
                             Header = c.Name,
                             Command = ViewConsoleCommand,
                             CommandParameter = new ArrayList { selectedItem, c },
-                        }).ToList()),
+                        }).ToList()],
                     },
                 ]),
             },
@@ -201,32 +201,32 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
                     new()
                     {
                         Header = "Init",
-                        Items = new AvaloniaList<MenuItemViewModel>(initContainers.Select(c => new MenuItemViewModel()
+                        Items = [.. initContainers.Select(c => new MenuItemViewModel()
                         {
                             Header = c.Name,
                             Command = ViewLogsCommand,
                             CommandParameter = new ArrayList { selectedItem, c },
-                        }).ToList()),
+                        }).ToList()],
                     },
                     new()
                     {
                         Header = "Normal",
-                        Items = new AvaloniaList<MenuItemViewModel>(containers.Select(c => new MenuItemViewModel()
+                        Items = [.. containers.Select(c => new MenuItemViewModel()
                         {
                             Header = c.Name,
                             Command = ViewLogsCommand,
                             CommandParameter = new ArrayList { selectedItem, c },
-                        }).ToList()),
+                        }).ToList()],
                     },
                     new()
                     {
                         Header = "Ephemeral",
-                        Items = new AvaloniaList<MenuItemViewModel>(ephemeralContainers.Select(c => new MenuItemViewModel()
+                        Items = [.. ephemeralContainers.Select(c => new MenuItemViewModel()
                         {
                             Header = c.Name,
                             Command = ViewLogsCommand,
                             CommandParameter = new ArrayList { selectedItem, c },
-                        }).ToList()),
+                        }).ToList()],
                     },
                 ]),
             },

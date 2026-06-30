@@ -1,18 +1,16 @@
-using System.Collections;
 using System.Collections.Specialized;
 using System.Globalization;
+using System.Reactive;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Windows.Input;
-using Avalonia;
 using Avalonia.Controls.DataGridFiltering;
 using Avalonia.Controls.DataGridSearching;
+using Avalonia.Controls.DataGridSelection;
 using Avalonia.Controls.DataGridSorting;
 using Avalonia.Controls.Selection;
 using Avalonia.Controls.Templates;
-using Avalonia.Data;
 using AvaloniaEdit.Utils;
 using DynamicData;
 using DynamicData.Binding;
@@ -20,17 +18,13 @@ using Humanizer;
 using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
-using KubeUI.Avalonia.Controls.DataGridFilters;
 using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
 using KubeUI.Avalonia.Features.Resources.Common;
 using KubeUI.Avalonia.Features.Resources.List.Controls;
-using KubeUI.Avalonia.Features.Resources.List.ViewModels;
-using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Infrastructure.Threading;
 using KubeUI.Avalonia.Resources;
 using KubeUI.Avalonia.Services.Settings;
-using KubeUI.Kubernetes;
 using SortDirection = KubeUI.Avalonia.Resources.SortDirection;
 
 namespace KubeUI.Avalonia.Features.Resources.List.ViewModels;
@@ -55,9 +49,9 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     [ObservableProperty]
     public partial ISourceCache<T, string> Objects { get; set; }
 
-    public T? SelectedItem => ((SelectionModel<T>)SelectionModel).SelectedItem;
+    public T? SelectedItem => SelectionModel.SelectedItems[0] as T;
 
-    public IReadOnlyList<T?> SelectedItems => ((SelectionModel<T>)SelectionModel).SelectedItems;
+    public IReadOnlyList<T>? SelectedItems => SelectionModel.SelectedItems?.Cast<T>().ToList();
 
     [ObservableProperty]
     public partial string SearchQuery { get; set; }
@@ -78,12 +72,10 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     private readonly Subject<string> _searchQueryChanges = new();
     private readonly IDisposable _searchQuerySubscription;
 
-    private readonly SelectionModel<T> _selectionModel = new()
+    private readonly ISelectionModel _selectionModel = new IdentitySelectionModel(item => item is T x ? x.Namespace() + "/" + x.Name() : item)
     {
         SingleSelect = false
     };
-
-    private readonly List<T> _selectionSnapshot = [];
 
     public IList View => _view ?? throw new InvalidOperationException("Resource list view has not been initialized.");
 
@@ -160,7 +152,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         _searchQuerySubscription = _searchQueryChanges
             .Throttle(SearchDebounceDelay)
             .ObserveOn(AvaloniaScheduler.Instance)
-            .Subscribe(System.Reactive.Observer.Create<string>(_ => ApplySearch()));
+            .Subscribe(Observer.Create<string>(_ => ApplySearch()));
 
         SortingModel.SortingChanged += SortingModelOnSortingChanged;
         FilteringModel.FilteringChanged += FilteringModelOnFilteringChanged;
@@ -354,17 +346,11 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         {
             _logger.LogError(ex, "Error loading resource list for {Type}", typeof(T));
 
-            await Dispatcher.UIThread.InvokeAsync(() =>
-            {
-                LoadError = ex;
-            });
+            await Dispatcher.UIThread.InvokeAsync(() => LoadError = ex);
         }
         finally
         {
-            await Dispatcher.UIThread.InvokeAsync(() =>
-            {
-                IsLoading = false;
-            });
+            await Dispatcher.UIThread.InvokeAsync(() => IsLoading = false);
         }
     }
 
@@ -377,13 +363,12 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
 
         SetNamespaceFilter();
 
-        BehaviorSubject<IComparer<T>> sortSubject = _sortSubject ?? throw new InvalidOperationException("Sort subject has not been initialized.");
-        BehaviorSubject<Func<T, bool>> filterSubject = _filterSubject ?? throw new InvalidOperationException("Filter subject has not been initialized.");
-        BehaviorSubject<Func<T, bool>> searchSubject = _searchSubject ?? throw new InvalidOperationException("Search subject has not been initialized.");
+        var sortSubject = _sortSubject ?? throw new InvalidOperationException("Sort subject has not been initialized.");
+        var filterSubject = _filterSubject ?? throw new InvalidOperationException("Filter subject has not been initialized.");
+        var searchSubject = _searchSubject ?? throw new InvalidOperationException("Search subject has not been initialized.");
 
         _subscription = Objects.Connect()
             .ObserveOn(AvaloniaScheduler.Instance)
-            .Do(_ => CaptureSelectionSnapshot())
             .Filter(filterSubject)
             .Filter(searchSubject)
             .SortAndBind(out var view, sortSubject, new()
@@ -393,7 +378,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                 InitialCapacity = Objects.Count
             })
             .Subscribe(
-                _ => SynchronizeSelectionWithView(),
+                _ => { },
                 ex => _logger.LogError(ex, "Error Setting Resource List Filter: {ns} ", typeof(T))
             );
 
@@ -409,7 +394,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                 .Sample(TimeSpan.FromMilliseconds(100), AvaloniaScheduler.Instance)
                 .DistinctUntilChanged();
 
-        _countSubscription = ((IObservable<int>)countObs).Subscribe(System.Reactive.Observer.Create<int>(c => ItemCount = c));
+        _countSubscription = countObs.Subscribe(Observer.Create<int>(c => ItemCount = c));
 
         _view = view;
     }
@@ -422,10 +407,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
 
     private void UnsubscribeFromSelectedNamespaces()
     {
-        if (Cluster != null)
-        {
-            Cluster.SelectedNamespaces.CollectionChanged -= SelectedNamespaces_CollectionChanged;
-        }
+        Cluster?.SelectedNamespaces.CollectionChanged -= SelectedNamespaces_CollectionChanged;
 
         _localSelectedNamespaces.CollectionChanged -= SelectedNamespaces_CollectionChanged;
     }
@@ -561,18 +543,18 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     private void SortingModelOnSortingChanged(object? sender, SortingChangedEventArgs e)
     {
         _sortingAdapterFactory.UpdateComparer(e.NewDescriptors);
-        BehaviorSubject<IComparer<T>> sortSubject = _sortSubject ?? throw new InvalidOperationException("Sort subject has not been initialized.");
+        var sortSubject = _sortSubject ?? throw new InvalidOperationException("Sort subject has not been initialized.");
         sortSubject.OnNext(_sortingAdapterFactory.SortComparer);
     }
 
     private void FilteringModelOnFilteringChanged(object? sender, FilteringChangedEventArgs e)
     {
         _filteringAdapterFactory.UpdateFilter(e.NewDescriptors);
-        BehaviorSubject<Func<T, bool>> filterSubject = _filterSubject ?? throw new InvalidOperationException("Filter subject has not been initialized.");
+        var filterSubject = _filterSubject ?? throw new InvalidOperationException("Filter subject has not been initialized.");
         filterSubject.OnNext(_filteringAdapterFactory.FilterPredicate);
     }
 
-    private void SelectionModelOnSelectionChanged(object? sender, SelectionModelSelectionChangedEventArgs<T> e)
+    private void SelectionModelOnSelectionChanged(object? sender, SelectionModelSelectionChangedEventArgs e)
     {
         OnPropertyChanged(nameof(SelectedItem));
         OnPropertyChanged(nameof(SelectedItems));
@@ -581,11 +563,10 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     // Runtime DataGrid state captured from ProDataGrid (in-memory snapshot)
     public DataGridState? DataGridRuntimeState { get; set; }
 
-
     private void SearchModelOnSearchChanged(object? sender, SearchChangedEventArgs e)
     {
         _searchAdapterFactory.UpdatePredicate(e.NewDescriptors);
-        BehaviorSubject<Func<T, bool>> searchSubject = _searchSubject ?? throw new InvalidOperationException("Search subject has not been initialized.");
+        var searchSubject = _searchSubject ?? throw new InvalidOperationException("Search subject has not been initialized.");
         searchSubject.OnNext(_searchAdapterFactory.SearchPredicate);
     }
 
@@ -606,94 +587,6 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
 
         return -1;
     }
-
-    private void CaptureSelectionSnapshot()
-    {
-        _selectionSnapshot.Clear();
-
-        foreach (var item in _selectionModel.SelectedItems)
-        {
-            if (item is T resource)
-            {
-                _selectionSnapshot.Add(resource);
-            }
-        }
-    }
-
-    private void SynchronizeSelectionWithView()
-    {
-        ReadOnlyObservableCollection<T>? view = _view;
-        if (view is null)
-        {
-            return;
-        }
-
-        if (_selectionSnapshot.Count == 0 || view.Count == 0)
-        {
-            return;
-        }
-
-        var desiredIndexes = new List<int>(_selectionSnapshot.Count);
-
-        for (var i = 0; i < view.Count; i++)
-        {
-            if (view[i] is not T resource)
-            {
-                continue;
-            }
-
-            for (var j = 0; j < _selectionSnapshot.Count; j++)
-            {
-                if (ReferenceEquals(resource, _selectionSnapshot[j]))
-                {
-                    desiredIndexes.Add(i);
-                    break;
-                }
-            }
-        }
-
-        _selectionSnapshot.Clear();
-
-        if (desiredIndexes.Count == 0 || SelectionMatches(desiredIndexes))
-        {
-            return;
-        }
-
-        using (SelectionModelExtensions.BatchUpdate(_selectionModel))
-        {
-            _selectionModel.Clear();
-
-            if (_selectionModel.SingleSelect)
-            {
-                _selectionModel.Select(desiredIndexes[0]);
-                return;
-            }
-
-            foreach (var index in desiredIndexes)
-            {
-                _selectionModel.Select(index);
-            }
-        }
-    }
-
-    private bool SelectionMatches(IReadOnlyList<int> desiredIndexes)
-    {
-        if (_selectionModel.SelectedIndexes.Count != desiredIndexes.Count)
-        {
-            return false;
-        }
-
-        for (var i = 0; i < desiredIndexes.Count; i++)
-        {
-            if (_selectionModel.SelectedIndexes[i] != desiredIndexes[i])
-            {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
 }
 
 public sealed class DynamicDataSortingAdapterFactory<T> : IDataGridSortingAdapterFactory where T : class, IKubernetesObject<V1ObjectMeta>, new()
@@ -1787,7 +1680,3 @@ public sealed class DynamicDataSearchAdapterFactory<T> : IDataGridSearchAdapterF
         }
     }
 }
-
-
-
-
