@@ -27,6 +27,8 @@ public static class Converters
         });
 
     public static readonly IValueConverter NotNull = new FuncValueConverter<object, bool>((x) => x != null && x != AvaloniaProperty.UnsetValue);
+
+    public static readonly IValueConverter IsNullOrUnset = new FuncValueConverter<object, bool>(x => x == null || x == AvaloniaProperty.UnsetValue);
 }
 
 public sealed class PropertyItemValueConverter : IValueConverter

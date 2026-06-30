@@ -1,11 +1,14 @@
-<UserControl
+﻿<UserControl
     x:Class="KubeUI.Avalonia.Features.Resources.Visualization.Views.VisualizationView"
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:agc="clr-namespace:AvaloniaGraphControl;assembly=AvaloniaGraphControl"
+    xmlns:appconv="clr-namespace:KubeUI.Avalonia.Converters;assembly=KubeUI.Avalonia"
     xmlns:assets="clr-namespace:KubeUI.Avalonia.Assets;assembly=KubeUI.Avalonia"
+    xmlns:behaviors="using:KubeUI.Avalonia.Features.Resources.Visualization.Behaviors"
+    xmlns:common="using:KubeUI.Avalonia.Features.Resources.Common"
     xmlns:controls="clr-namespace:NodifyM.Avalonia.Controls;assembly=NodifyM.Avalonia"
-    xmlns:converters="clr-namespace:NodifyM.Avalonia.Converters;assembly=NodifyM.Avalonia"
+    xmlns:converters="using:KubeUI.Avalonia.Converters"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:ic="using:FluentIcons.Avalonia"
     xmlns:k8s="using:k8s.Models"
@@ -24,29 +27,54 @@
         <vm:VisualizationViewModel />
     </Design.DataContext>
 
-    <UserControl.Styles />
+    <UserControl.Styles>
+        <Style Selector="Border.root">
+            <Setter Property="Background" Value="#203B82F6" />
+            <Setter Property="BorderBrush" Value="#FF3B82F6" />
+            <Setter Property="BorderThickness" Value="2" />
+        </Style>
+    </UserControl.Styles>
 
     <Grid RowDefinitions="Auto,*">
-        <StackPanel Grid.Row="0"
-            HorizontalAlignment="Left"
-            Orientation="Horizontal">
-            <ToggleButton IsChecked="{Binding HideNoise}" ToolTip.Tip="{x:Static assets:Resources.VisualizationView_HideNoiseTooltip}">
-                <ic:FluentIcon Icon="EyeOff" />
-            </ToggleButton>
+        <DockPanel Grid.Row="0" LastChildFill="True">
+            <StackPanel
+                HorizontalAlignment="Left"
+                DockPanel.Dock="Left"
+                Orientation="Horizontal">
+                <ToggleButton IsChecked="{Binding HideNoise}" ToolTip.Tip="{x:Static assets:Resources.VisualizationView_HideNoiseTooltip}">
+                    <ic:FluentIcon Icon="EyeOff" />
+                </ToggleButton>
 
-            <Label
-                Width="200"
-                VerticalContentAlignment="Center"
-                Content="{Binding Resources.Count, StringFormat={x:Static assets:Resources.VisualizationView_ItemsFormat}}" />
-        </StackPanel>
+                <Label
+                    Width="200"
+                    VerticalContentAlignment="Center"
+                    Content="{Binding Resources.Count, StringFormat={x:Static assets:Resources.VisualizationView_ItemsFormat}}" />
+            </StackPanel>
+
+            <TextBlock x:Name="ResourceToolbarText"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Center"
+                FontWeight="SemiBold"
+                IsVisible="{Binding RootResource, Converter={x:Static appconv:Converters.NotNull}}">
+                <TextBlock.Text>
+                    <MultiBinding StringFormat="Resource: {0}/{1} {2}/{3}">
+                        <Binding Path="RootResource.ApiVersion" />
+                        <Binding Path="RootResource.Kind" />
+                        <Binding Path="RootResource.Metadata.NamespaceProperty" />
+                        <Binding Path="RootResource.Metadata.Name" />
+                    </MultiBinding>
+                </TextBlock.Text>
+            </TextBlock>
+        </DockPanel>
 
         <StackPanel Grid.Row="0"
             HorizontalAlignment="Right"
             Orientation="Horizontal">
-            <u:MultiComboBox
+            <u:MultiComboBox x:Name="NamespaceSelector"
                 Width="200"
                 MaxHeight="20"
                 Classes="ClearButton"
+                IsVisible="{Binding RootResource, Converter={x:Static appconv:Converters.IsNullOrUnset}}"
                 ItemsSource="{Binding Cluster.Namespaces}"
                 SelectedItems="{Binding Cluster.SelectedNamespaces}">
 
@@ -86,41 +114,89 @@
                     LayoutMethod="{Binding LayoutMethod}">
                     <agc:GraphPanel.DataTemplates>
                         <DataTemplate x:DataType="vm:VisualizationViewModel+ResourceNodeViewModel">
-                            <StackPanel Width="64" Margin="40,16,40,16">
-                                <ToolTip.Tip>
-                                    <MultiBinding StringFormat="{} {0}/{1} {2}">
-                                        <Binding Path="Resource.ApiVersion" />
-                                        <Binding Path="Resource.Kind" />
-                                        <Binding Path="Resource.Metadata.Name" />
-                                    </MultiBinding>
-                                </ToolTip.Tip>
-                                <Svg Width="64" Path="{Binding IconPath}">
-                                    <Svg.ContextFlyout>
-                                        <MenuFlyout>
-                                            <MenuItem
-                                                Command="{Binding ViewPropertiesCommand}"
-                                                CommandParameter="{Binding Resource}"
-                                                Header="{x:Static assets:Resources.VisualizationView_Properties}" />
-                                            <MenuItem
-                                                Command="{Binding ViewYamlCommand}"
-                                                CommandParameter="{Binding Resource}"
-                                                Header="{x:Static assets:Resources.VisualizationView_ViewYaml}" />
-                                        </MenuFlyout>
-                                    </Svg.ContextFlyout>
-                                </Svg>
-                                <TextBlock
-                                    Width="128"
-                                    ClipToBounds="false"
-                                    Text="{Binding Resource.Kind}"
-                                    TextAlignment="Center"
-                                    TextWrapping="NoWrap" />
-                                <TextBlock
-                                    Width="128"
-                                    ClipToBounds="false"
-                                    Text="{Binding Resource.Metadata.Name}"
-                                    TextAlignment="Center"
-                                    TextWrapping="Wrap" />
-                            </StackPanel>
+                            <Border
+                                Margin="24,16"
+                                Padding="16,12"
+                                Classes.root="{Binding IsRoot}"
+                                CornerRadius="12">
+                                <StackPanel Width="64">
+                                    <ToolTip.Tip>
+                                        <MultiBinding StringFormat="{} {0}/{1} {2}">
+                                            <Binding Path="Resource.ApiVersion" />
+                                            <Binding Path="Resource.Kind" />
+                                            <Binding Path="Resource.Metadata.Name" />
+                                        </MultiBinding>
+                                    </ToolTip.Tip>
+                                    <Svg Width="64" Path="{Binding IconPath}">
+                                        <Interaction.Behaviors>
+                                            <behaviors:VisualizationResourceContextMenuBehavior />
+                                        </Interaction.Behaviors>
+                                        <Svg.ContextMenu>
+                                            <ContextMenu>
+                                                <ContextMenu.Styles>
+                                                    <Style x:DataType="common:MenuItemViewModel" Selector="MenuItem">
+                                                        <Setter Property="IsVisible" Value="{Binding IsVisible}" />
+                                                        <Setter Property="Header" Value="{Binding Header}" />
+                                                        <Setter Property="Command" Value="{Binding Command}" />
+                                                        <Setter Property="CommandParameter" Value="{Binding CommandParameter}" />
+                                                        <Setter Property="ItemsSource" Value="{Binding Items}" />
+                                                        <Setter Property="Classes.separator" Value="{Binding IsSeparator}" />
+                                                        <Setter Property="Icon">
+                                                            <Template>
+                                                                <Panel>
+                                                                    <ic:FluentIcon Icon="{Binding FluentIcon}" IsVisible="{Binding FluentIcon, Converter={x:Static appconv:Converters.NotNull}}" />
+                                                                    <PathIcon Data="{Binding IconResource, Converter={x:Static converters:StaticResourceConverter.Instance}}" IsVisible="{Binding IconResource, Converter={x:Static appconv:Converters.NotNull}}" />
+                                                                </Panel>
+                                                            </Template>
+                                                        </Setter>
+                                                    </Style>
+                                                    <Style Selector="MenuItem.separator">
+                                                        <Setter Property="Template">
+                                                            <ControlTemplate>
+                                                                <Separator />
+                                                            </ControlTemplate>
+                                                        </Setter>
+                                                    </Style>
+                                                </ContextMenu.Styles>
+                                            </ContextMenu>
+                                        </Svg.ContextMenu>
+                                    </Svg>
+                                    <TextBlock
+                                        Width="128"
+                                        ClipToBounds="false"
+                                        Text="{Binding Resource.Kind}"
+                                        TextAlignment="Center"
+                                        TextWrapping="NoWrap" />
+                                    <TextBlock
+                                        Width="128"
+                                        ClipToBounds="false"
+                                        Text="{Binding Resource.Metadata.Name}"
+                                        TextAlignment="Center"
+                                        TextWrapping="Wrap" />
+                                </StackPanel>
+                            </Border>
+                        </DataTemplate>
+                        <DataTemplate x:DataType="vm:VisualizationViewModel+GroupNodeViewModel">
+                            <Border
+                                Margin="18,12"
+                                Padding="12,10"
+                                Background="#2A1F2937"
+                                BorderBrush="#88A7B0C0"
+                                BorderThickness="1"
+                                CornerRadius="10">
+                                <StackPanel Width="128">
+                                    <TextBlock
+                                        HorizontalAlignment="Center"
+                                        FontSize="13"
+                                        FontWeight="SemiBold"
+                                        Text="{Binding DisplayText}"
+                                        TextAlignment="Center"
+                                        TextWrapping="Wrap" />
+                                </StackPanel>
+                            </Border>
+                        </DataTemplate>
+                        <DataTemplate x:DataType="vm:VisualizationViewModel+GroupEdge">
+                            <agc:Connection Brush="Transparent" />
                         </DataTemplate>
                         <DataTemplate DataType="agc:Edge">
                             <agc:Connection Brush="Green" />
@@ -131,6 +207,3 @@
         </ScrollViewer>
     </Grid>
 </UserControl>
-
-
-

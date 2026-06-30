@@ -47,6 +47,7 @@ public interface IClusterRuntime
     Task DryRunYaml(Stream stream);
     Task ImportFolder(string path);
     Task ImportYaml(Stream stream);
+    Task SeedResource(Type resourceType, bool waitForReady = false);
     Task SeedResource<T>(bool waitForReady = false) where T : class, IKubernetesObject<V1ObjectMeta>, new();
     Task<bool> IsResourceReady<T>(CancellationToken? token = null) where T : class, IKubernetesObject<V1ObjectMeta>, new();
     T? GetResource<T>(string? @namespace, string name) where T : class, IKubernetesObject<V1ObjectMeta>, new();
