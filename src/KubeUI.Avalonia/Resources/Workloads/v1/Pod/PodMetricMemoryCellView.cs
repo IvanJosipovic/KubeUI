@@ -33,6 +33,7 @@ public partial class PodMetricMemoryCellView : ViewBase<V1Pod>, IInitializeClust
         ArgumentNullException.ThrowIfNull(vm);
 
         return new TextBlock()
+            .Name("CellTextBlock")
             .Margin(12, 0, 12, 0)
             .HorizontalAlignment(HorizontalAlignment.Left)
             .VerticalAlignment(VerticalAlignment.Center)

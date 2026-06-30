@@ -46,6 +46,7 @@ public sealed partial class EventLastSeenCellView : ViewBase<Corev1Event>, IInit
         ArgumentNullException.ThrowIfNull(vm);
 
         return new TextBlock()
+            .Name("CellTextBlock")
             .Margin(12, 0, 12, 0)
             .HorizontalAlignment(HorizontalAlignment.Left)
             .VerticalAlignment(VerticalAlignment.Center)

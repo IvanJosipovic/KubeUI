@@ -29,6 +29,7 @@ public sealed partial class PodStatusCellView : ViewBase<V1Pod>, IInitializeClus
         ArgumentNullException.ThrowIfNull(vm);
 
         return new TextBlock()
+            .Name("CellTextBlock")
             .Margin(12, 0, 12, 0)
             .HorizontalAlignment(HorizontalAlignment.Left)
             .VerticalAlignment(VerticalAlignment.Center)

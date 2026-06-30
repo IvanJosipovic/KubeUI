@@ -58,11 +58,7 @@ public sealed class Fluent : AvaloniaStyles
             .Setter(DataGridColumnHeader.FontSizeProperty, new DynamicResourceExtension("DataGridFontSize"))
             .Setter(DataGridColumnHeader.MinHeightProperty, new DynamicResourceExtension("DataGridColumnHeaderMinHeight")));
 
-        Add(new Style(x => x.OfType<DataGrid>().Descendant().OfType<TextBlock>())
-            .Setter(TextBlock.MaxLinesProperty, 1)
-            .Setter(TextBlock.FontSizeProperty, new DynamicResourceExtension("DataGridFontSize")));
-
-        Add(new Style(x => x.OfType<TextBlock>().Name("CellTextBlock"))
+        Add(new Style(x => x.OfType<DataGrid>().Descendant().Name("CellTextBlock"))
             .Setter(TextBlock.MaxLinesProperty, 1)
             .Setter(TextBlock.FontSizeProperty, new DynamicResourceExtension("DataGridFontSize")));
 
