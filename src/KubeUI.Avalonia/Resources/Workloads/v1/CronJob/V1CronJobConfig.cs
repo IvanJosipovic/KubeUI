@@ -4,7 +4,6 @@ using FluentIcons.Common;
 using k8s.Models;
 using KubeUI.Avalonia.Features.Resources.Common;
 using KubeUI.Avalonia.Infrastructure;
-using KubeUI.Avalonia.Resources.Workloads.v1.CronJob.Views;
 using KubeUI.Kubernetes;
 
 namespace KubeUI.Avalonia.Resources.Workloads.v1.CronJob;

@@ -4,7 +4,7 @@ using Avalonia.Threading;
 using k8s;
 using k8s.KubeConfigModels;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
-using KubeUI.Avalonia.Shell.Documents.CloudClusters.Aks.ViewModels;
+using KubeUI.Avalonia.Shell.Documents.CloudClusters.Aks;
 using KubeUI.Avalonia.Tests.Infra;
 using KubeUI.Kubernetes;
 using Microsoft.Extensions.Logging;

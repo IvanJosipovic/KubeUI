@@ -1,6 +1,5 @@
 using Avalonia.Controls;
 using k8s.Models;
-using KubeUI.Avalonia.Resources.Configuration.v1.ValidatingWebhookConfiguration.Views;
 
 namespace KubeUI.Avalonia.Resources.Configuration.v1.ValidatingWebhookConfiguration;
 
@@ -32,4 +31,3 @@ public sealed partial class V1ValidatingWebhookConfigurationConfig : ResourceCon
     public override Control[] Properties(V1ValidatingWebhookConfiguration resource) => [new PropertiesView()];
 
 }
-

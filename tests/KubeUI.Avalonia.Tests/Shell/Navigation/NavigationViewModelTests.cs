@@ -20,6 +20,7 @@ using k8s.Models;
 using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Features.Resources.List.ViewModels;
 using KubeUI.Avalonia.Resources;
+using KubeUI.Avalonia.Shell.Navigation;
 using KubeUI.Avalonia.Tests.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Tests.Infra;
 using KubeUI.Kubernetes;

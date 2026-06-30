@@ -1,6 +1,5 @@
 using Avalonia.Controls;
 using k8s.Models;
-using KubeUI.Avalonia.Resources.Configuration.v1.LimitRange.Views;
 
 namespace KubeUI.Avalonia.Resources.Configuration.v1.LimitRange;
 
@@ -24,4 +23,3 @@ public sealed partial class V1LimitRangeConfig : ResourceConfigBase<V1LimitRange
 
     public override Control[] Properties(V1LimitRange resource) => [new PropertiesView()];
 }
-

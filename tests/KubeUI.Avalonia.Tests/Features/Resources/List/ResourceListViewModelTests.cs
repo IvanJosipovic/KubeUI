@@ -28,6 +28,7 @@ using KubeUI.Avalonia;
 using KubeUI.Avalonia.Controls.DataGridFilters;
 using KubeUI.Avalonia.Features.Resources.List.Behaviors;
 using KubeUI.Avalonia.Resources;
+using KubeUI.Avalonia.Shell.Documents.About;
 using KubeUI.Avalonia.Tests.Infra;
 using Shouldly;
 

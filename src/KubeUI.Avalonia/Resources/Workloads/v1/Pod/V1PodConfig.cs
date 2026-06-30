@@ -10,9 +10,6 @@ using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
 using KubeUI.Avalonia.Infrastructure.Docking;
 using KubeUI.Avalonia.Options;
-using KubeUI.Avalonia.Resources.Workloads.v1.Pod.Controls;
-using KubeUI.Avalonia.Resources.Workloads.v1.Pod.ViewModels;
-using KubeUI.Avalonia.Resources.Workloads.v1.Pod.Views;
 using KubeUI.Avalonia.Services.Settings;
 using KubeUI.Kubernetes;
 using Microsoft.Extensions.DependencyInjection;
@@ -41,7 +38,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
                 {
                     Key = "containers",
                     Name = Assets.Resources.V1PodConfig_Containers!,
-                    CustomControl = typeof(PodContainerCell),
+                    CustomControl = typeof(PodContainerCellView),
                     Field = x => x.Spec.Containers.Count + ((x.Spec.InitContainers?.Count) ?? 0),
                     Width = nameof(DataGridLengthUnitType.SizeToCells)
                 },
@@ -80,7 +77,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
                     Key = "status",
                     Name = Assets.Resources.V1PodConfig_Status!,
                     Field = x => x.Status?.Conditions?.FirstOrDefault(x => x.Type == "Ready")?.Status == "True" ? "Running" : x.Status?.Conditions?.FirstOrDefault(x => x.Type == "Ready")?.Reason ?? "Unknown",
-                    CustomControl = typeof(PodStatusCell),
+                    CustomControl = typeof(PodStatusCellView),
                     Width = nameof(DataGridLengthUnitType.SizeToHeader)
                 },
             ];
@@ -91,7 +88,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
             {
                 Key = "cpu",
                 Name = Assets.Resources.V1PodConfig_CPU!,
-                CustomControl = typeof(PodMetricCPUCell),
+                CustomControl = typeof(PodMetricCPUCellView),
                 Field = x => Cluster.PodMetrics.FirstOrDefault(y => y.Name() == x.Name() && y.Namespace() == x.Namespace())?.Containers.Sum(z => z.Usage["cpu"]) ?? 0,
                 Width = "80"
             });
@@ -99,7 +96,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
             {
                 Key = "memory",
                 Name = Assets.Resources.V1PodConfig_Memory!,
-                CustomControl = typeof(PodMetricMemoryCell),
+                CustomControl = typeof(PodMetricMemoryCellView),
                 Field = x => Cluster.PodMetrics.FirstOrDefault(y => y.Name() == x.Name() && y.Namespace() == x.Namespace())?.Containers.Sum(z => z.Usage["memory"]) ?? 0,
                 Width = "80"
             });
@@ -596,4 +593,3 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
 
     public override Control[] Properties(V1Pod resource) => [new PropertiesView()];
 }
-

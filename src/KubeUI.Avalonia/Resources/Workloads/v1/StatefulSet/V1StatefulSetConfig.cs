@@ -5,7 +5,6 @@ using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using k8s;
 using k8s.Models;
 using KubeUI.Avalonia.Features.Resources.Common;
-using KubeUI.Avalonia.Resources.Workloads.v1.StatefulSet.Views;
 
 namespace KubeUI.Avalonia.Resources.Workloads.v1.StatefulSet;
 
@@ -51,5 +50,4 @@ public sealed partial class V1StatefulSetConfig : ResourceConfigBase<V1StatefulS
 
     public override Control[] Properties(V1StatefulSet resource) => [new PropertiesView()];
 }
-
 

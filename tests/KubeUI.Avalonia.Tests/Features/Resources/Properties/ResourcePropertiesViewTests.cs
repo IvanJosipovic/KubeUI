@@ -108,7 +108,7 @@ public sealed class ResourcePropertiesViewTests : AvaloniaTestBase
             },
         };
 
-        var view = new KubeUI.Avalonia.Resources.Workloads.v1.Pod.Views.PropertiesView
+        var view = new KubeUI.Avalonia.Resources.Workloads.v1.Pod.PropertiesView
         {
             DataContext = pod,
         };

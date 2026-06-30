@@ -1,6 +1,7 @@
 using Avalonia;
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
+using KubeUI.Avalonia.Shell.Navigation;
 using KubeUI.Avalonia.Tests.Infra;
 using KubeUI.Kubernetes.Tests.Infra;
 using Microsoft.Extensions.DependencyInjection;

@@ -1,6 +1,5 @@
 using Avalonia.Controls;
 using k8s.Models;
-using KubeUI.Avalonia.Resources.Core.v1.Namespace.Views;
 
 namespace KubeUI.Avalonia.Resources.Core.v1.Namespace;
 

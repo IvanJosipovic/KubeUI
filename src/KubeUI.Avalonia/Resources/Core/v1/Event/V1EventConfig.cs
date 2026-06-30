@@ -3,16 +3,15 @@ using Avalonia.Styling;
 using k8s.Models;
 using KubeUI.Avalonia.Features.Resources.Properties.Controls;
 using KubeUI.Avalonia.Resources.Core.v1.Event.Controls;
-using KubeUI.Avalonia.Resources.Core.v1.Event.Views;
 
 namespace KubeUI.Avalonia.Resources.Core.v1.Event;
 
 public sealed partial class V1EventConfig : ResourceConfigBase<Corev1Event>
 {
-    public V1EventConfig(IServiceProvider serviceProvider)
-        : base(serviceProvider)
+    public V1EventConfig(IServiceProvider serviceProvider) : base(serviceProvider)
     {
     }
+
     public override bool IsNamespaced => true;
     public override bool ShowNewResource => false;
     public override int Order => 7;
@@ -60,7 +59,7 @@ public sealed partial class V1EventConfig : ResourceConfigBase<Corev1Event>
             {
                 Key = "last-seen",
                 Name = Assets.Resources.V1EventConfig_Last_Seen!,
-                CustomControl = typeof(EventLastSeenCell),
+                CustomControl = typeof(EventLastSeenCellView),
                 Field = x => EventTimeFormatter.ResolveTimestamp(x),
                 Sort = SortDirection.Descending,
                 Width = "80"
@@ -95,5 +94,4 @@ public sealed partial class V1EventConfig : ResourceConfigBase<Corev1Event>
         return style;
     }
 }
-
 

@@ -1,6 +1,5 @@
 using Avalonia.Controls;
 using k8s.Models;
-using KubeUI.Avalonia.Resources.Storage.v1.PersistentVolumeClaim.Views;
 
 namespace KubeUI.Avalonia.Resources.Storage.v1.PersistentVolumeClaim;
 
@@ -47,4 +46,3 @@ public sealed partial class V1PersistentVolumeClaimConfig : ResourceConfigBase<V
 
     public override Control[] Properties(V1PersistentVolumeClaim resource) => [new PropertiesView()];
 }
-
