@@ -27,7 +27,7 @@
     <PackageReference Include="Azure.Identity" Version="1.21.0" />
     <PackageReference Include="Azure.ResourceManager" Version="1.14.0" />
     <PackageReference Include="Azure.ResourceManager.ContainerService" Version="1.5.0" />
-    <PackageReference Include="DynamicData" Version="9.4.31" />
+    <PackageReference Include="DynamicData" Version="9.4.33" />
     <PackageReference Include="Humanizer.Core" Version="3.0.10" />
     <PackageReference Include="KubernetesClient" Version="19.0.2" />
     <PackageReference Include="KubernetesClient.Informer" Version="1.0.0" />
