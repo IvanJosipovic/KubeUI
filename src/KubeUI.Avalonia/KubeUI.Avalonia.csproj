@@ -72,8 +72,8 @@
     <PackageReference Include="HanumanInstitute.MvvmDialogs.Avalonia" Version="2.3.0" />
     <PackageReference Include="HanumanInstitute.MvvmDialogs.Avalonia.Fluent" Version="2.3.0" />
     <PackageReference Include="Humanizer.Core" Version="3.0.10" />
-    <PackageReference Include="Irihi.Ursa" Version="2.0.1" />
-    <PackageReference Include="Irihi.Ursa.Themes.Semi" Version="2.0.1" />
+    <PackageReference Include="Irihi.Ursa" Version="2.1.0" />
+    <PackageReference Include="Irihi.Ursa.Themes.Semi" Version="2.1.0" />
     <PackageReference Include="JsonPathLINQ" Version="1.0.0-alpha.13" />
     <PackageReference Include="LiveChartsCore.SkiaSharpView.Avalonia" Version="2.1.0-dev-798" />
     <PackageReference Include="Markdig" Version="1.3.0" />
