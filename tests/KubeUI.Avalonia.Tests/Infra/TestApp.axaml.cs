@@ -3,7 +3,6 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Controls.Notifications;
-using Avalonia.Markup.Xaml;
 using Avalonia.Threading;
 using Dock.Model.Core;
 using FluentAvalonia.UI.Controls;
@@ -15,6 +14,7 @@ using KubeUI.Avalonia.Infrastructure.DependencyInjection;
 using KubeUI.Avalonia.Infrastructure.Docking;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Services.Settings;
+using KubeUI.Avalonia.Styles;
 using KubeUI.Kubernetes;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -36,7 +36,7 @@ public class TestApp : Application, IServiceProviderHost
 
     public override void Initialize()
     {
-        AvaloniaXamlLoader.Load(this);
+        ApplicationThemeStyles.AddTo(Styles);
         ResetServices();
     }
 

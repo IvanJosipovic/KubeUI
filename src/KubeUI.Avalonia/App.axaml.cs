@@ -1,6 +1,5 @@
 using System.Diagnostics;
 using Avalonia.Markup.Declarative;
-using Avalonia.Markup.Xaml;
 using Dock.Model.Controls;
 using Dock.Model.Core;
 using k8s;
@@ -63,8 +62,7 @@ public partial class App : Application, IServiceProviderHost
 
     public override void Initialize()
     {
-        AvaloniaXamlLoader.Load(this);
-        Styles.Add(new Fluent());
+        ApplicationThemeStyles.AddTo(Styles);
 
         Services.GetRequiredService<Instrumentation>().AppOpened.Add(1);
     }
