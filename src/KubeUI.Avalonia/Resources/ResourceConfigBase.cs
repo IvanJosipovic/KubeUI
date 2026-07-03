@@ -61,7 +61,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
 
     public virtual int Order { get; }
 
-    public virtual IStyle ListStyle() => new global::Avalonia.Styling.Style();
+    public virtual Style[] ListStyle() => [];
 
     public virtual IList<IResourceListColumn> Columns()
     {

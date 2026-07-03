@@ -2368,7 +2368,7 @@ internal class FakeCustomResourceConfig : IResourceConfig
     public int Order { get; set; }
     public string Name { get; }
     public string? Category => null;
-    public IStyle ListStyle() => new global::Avalonia.Styling.Style();
+    public Style[] ListStyle() => [];
     public IEnumerable<(Verb verb, string? subresource)> Permissions() => [];
     public Task UpdatePermissions() => Task.CompletedTask;
     public Type Type { get; }
@@ -2401,7 +2401,7 @@ internal class FakeResourceConfig : IResourceConfig
     public int Order { get; set; }
     public string Name { get; }
     public string? Category => null;
-    public IStyle ListStyle() => new global::Avalonia.Styling.Style();
+    public Style[] ListStyle() => [];
     public IEnumerable<(Verb verb, string? subresource)> Permissions() => [];
     public Task UpdatePermissions() => Task.CompletedTask;
     public Type Type { get; }
@@ -2433,7 +2433,7 @@ internal sealed class DeferredPermissionResourceConfig : IResourceConfig
     public int Order { get; set; }
     public string Name { get; }
     public string? Category => null;
-    public IStyle ListStyle() => new global::Avalonia.Styling.Style();
+    public Style[] ListStyle() => [];
     public IEnumerable<(Verb verb, string? subresource)> Permissions() => [];
     public Type Type { get; }
 
@@ -2498,7 +2498,7 @@ internal sealed class SlowPermissionResourceConfig : IResourceConfig
     public int Order { get; set; }
     public string Name { get; }
     public string? Category => null;
-    public IStyle ListStyle() => new global::Avalonia.Styling.Style();
+    public Style[] ListStyle() => [];
     public IEnumerable<(Verb verb, string? subresource)> Permissions() => [];
     public Type Type { get; }
 

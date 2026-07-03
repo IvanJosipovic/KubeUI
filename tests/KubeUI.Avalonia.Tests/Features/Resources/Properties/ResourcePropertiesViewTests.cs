@@ -33,7 +33,7 @@ public sealed class ResourcePropertiesViewTests : AvaloniaTestBase
             }
         });
 
-        var view = new ResourcePropertiesView
+        var view = new ResourcePropertiesView<V1Pod>
         {
             DataContext = viewModel
         };
@@ -67,7 +67,7 @@ public sealed class ResourcePropertiesViewTests : AvaloniaTestBase
             }
         });
 
-        var view = new ResourcePropertiesView
+        var view = new ResourcePropertiesView<V1Node>
         {
             DataContext = viewModel
         };
@@ -187,7 +187,7 @@ public sealed class ResourcePropertiesViewTests : AvaloniaTestBase
             }
         });
 
-        var view = new ResourcePropertiesView
+        var view = new ResourcePropertiesView<V1Pod>
         {
             DataContext = viewModel,
         };

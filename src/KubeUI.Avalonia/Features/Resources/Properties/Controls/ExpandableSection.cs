@@ -6,7 +6,14 @@ public partial class ExpandableSection : Expander, IDeclarativeViewBase
 {
     public ExpandableSection()
     {
-        InitializeComponent();
+        HorizontalAlignment = HorizontalAlignment.Stretch;
+        VerticalAlignment = VerticalAlignment.Top;
+        IsExpanded = true;
+        Resources.Add("ExpanderMinHeight", 28d);
+        Resources.Add("ExpanderHeaderPadding", new Thickness(10, 0, 0, 0));
+        Resources.Add("ExpanderChevronMargin", new Thickness(8, 0, 4, 0));
+        Resources.Add("ExpanderChevronButtonSize", 24d);
+        Resources.Add("ExpanderContentPadding", new Thickness(5, 0, 0, 0));
 
 #if DEBUG
         if (Design.IsDesignMode)

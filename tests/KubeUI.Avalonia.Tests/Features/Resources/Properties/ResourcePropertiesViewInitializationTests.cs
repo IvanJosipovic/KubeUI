@@ -37,7 +37,7 @@ public sealed class ResourcePropertiesViewInitializationTests : AvaloniaTestBase
         });
         viewModel.ResourceConfig = trackingConfig;
 
-        var view = new ResourcePropertiesView
+        var view = new ResourcePropertiesView<V1Pod>
         {
             DataContext = viewModel,
         };
@@ -72,7 +72,7 @@ public sealed class ResourcePropertiesViewInitializationTests : AvaloniaTestBase
             }
         });
 
-        var view = new ResourcePropertiesView
+        var view = new ResourcePropertiesView<V1Pod>
         {
             DataContext = viewModel,
         };

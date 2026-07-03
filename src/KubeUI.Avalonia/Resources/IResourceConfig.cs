@@ -20,7 +20,7 @@ namespace KubeUI.Avalonia.Resources
         int Order { get; }
         string Name { get; }
         string? Category { get; }
-        IStyle ListStyle();
+        Style[] ListStyle();
         IEnumerable<(Verb verb, string? subresource)> Permissions();
         IEnumerable<AuthorizationRequest> AuthorizationRequests()
         {

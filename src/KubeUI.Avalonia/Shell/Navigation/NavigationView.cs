@@ -30,7 +30,7 @@ public sealed class NavigationView : ViewBase<NavigationViewModel>
     {
         ArgumentNullException.ThrowIfNull(vm);
 
-        var treeView = new TreeView()
+        return new TreeView()
             .Margin(new Thickness(-5, 0, 0, 0))
             .AutoScrollToSelectedItem(false)
             .ItemsSource(vm, x => x.Clusters)
@@ -52,11 +52,9 @@ public sealed class NavigationView : ViewBase<NavigationViewModel>
                 CreateNavigationItemTemplate()
             )
             .OnSelectionChanged((args) => vm.HandleSelectionChangedCommand.Execute(args))
-            .AddBehaviors(
+            .Behaviors(
                 new TreeViewItemContextMenuBehavior()
             );
-
-        return treeView;
     }
 
     private static FuncTreeDataTemplate<ClusterNavigationNode> CreateClusterTemplate()

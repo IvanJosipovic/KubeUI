@@ -7,7 +7,6 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Avalonia.Controls.DataGridFiltering;
 using Avalonia.Controls.DataGridSearching;
-using Avalonia.Controls.DataGridSelection;
 using Avalonia.Controls.DataGridSorting;
 using Avalonia.Controls.Selection;
 using Avalonia.Controls.Templates;
@@ -21,6 +20,7 @@ using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
 using KubeUI.Avalonia.Features.Resources.Common;
 using KubeUI.Avalonia.Features.Resources.List.Controls;
+using KubeUI.Avalonia.Infrastructure.DataGrid;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Infrastructure.Threading;
 using KubeUI.Avalonia.Resources;
@@ -49,7 +49,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     [ObservableProperty]
     public partial ISourceCache<T, string> Objects { get; set; }
 
-    public T? SelectedItem => SelectionModel.SelectedItems[0] as T;
+    public T? SelectedItem => _selectionModel.SelectedItem as T;
 
     public IReadOnlyList<T>? SelectedItems => SelectionModel.SelectedItems?.Cast<T>().ToList();
 
@@ -72,7 +72,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     private readonly Subject<string> _searchQueryChanges = new();
     private readonly IDisposable _searchQuerySubscription;
 
-    private readonly ISelectionModel _selectionModel = new IdentitySelectionModel(item => item is T x ? x.Namespace() + "/" + x.Name() : item)
+    private readonly ISelectionModel _selectionModel = new IdentityPreservingSelectionModel<T>(GetResourceIdentity)
     {
         SingleSelect = false
     };
@@ -577,15 +577,27 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
             return -1;
         }
 
+        var identity = GetResourceIdentity(resource);
+
         for (var i = 0; i < list.Count; i++)
         {
             if (ReferenceEquals(list[i], resource))
             {
                 return i;
             }
+
+            if (list[i] is T candidate && string.Equals(GetResourceIdentity(candidate), identity, StringComparison.Ordinal))
+            {
+                return i;
+            }
         }
 
         return -1;
+    }
+
+    private static string GetResourceIdentity(T resource)
+    {
+        return string.Create(CultureInfo.InvariantCulture, $"{resource.Namespace()}/{resource.Name()}");
     }
 }
 

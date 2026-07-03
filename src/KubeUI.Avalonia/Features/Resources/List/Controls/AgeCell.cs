@@ -12,7 +12,9 @@ public sealed partial class AgeCell : UserControl
 
     public AgeCell()
     {
-        InitializeComponent();
+        HorizontalAlignment = HorizontalAlignment.Left;
+        VerticalAlignment = VerticalAlignment.Center;
+        Content = CreateCellTextBlock();
 
         if (!s_timer.IsEnabled)
         {
@@ -32,6 +34,17 @@ public sealed partial class AgeCell : UserControl
             };
         }
 #endif
+    }
+
+    private TextBlock CreateCellTextBlock()
+    {
+        return new TextBlock()
+            .Name("CellTextBlock")
+            .Margin(12, 0, 12, 0)
+            .HorizontalAlignment(HorizontalAlignment.Left)
+            .VerticalAlignment(VerticalAlignment.Center)
+            .Text(this, x => x.PrettyString)
+            .ToolTip_Tip(this, x => x.PrettyString);
     }
 
     protected override void OnDataContextChanged(EventArgs e)

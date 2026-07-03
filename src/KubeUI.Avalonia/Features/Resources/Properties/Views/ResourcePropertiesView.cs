@@ -1,9 +1,9 @@
 using System.ComponentModel;
-using System.Reflection;
 using Avalonia;
 using Avalonia.Controls.Primitives;
 using Avalonia.Layout;
 using Avalonia.LogicalTree;
+using Avalonia.Markup.Declarative;
 using Avalonia.Threading;
 using k8s;
 using k8s.Models;
@@ -15,14 +15,33 @@ using AppResources = KubeUI.Avalonia.Assets.Resources;
 
 namespace KubeUI.Avalonia.Features.Resources.Properties.Views;
 
-public partial class ResourcePropertiesView : UserControl
+public partial class ResourcePropertiesView<T> : ViewBase<ResourcePropertiesViewModel<T>> where T : class, IKubernetesObject<V1ObjectMeta>, new()
 {
+    private readonly StackPanel _itemsPanel = new()
+    {
+        HorizontalAlignment = HorizontalAlignment.Stretch
+    };
+
+    private ScrollViewer? _scrollViewer;
     private INotifyPropertyChanged? _viewModel;
     private bool _isDetached;
 
-    public ResourcePropertiesView()
+    protected override object Build(ResourcePropertiesViewModel<T> vm)
     {
-        InitializeComponent();
+        ArgumentNullException.ThrowIfNull(vm);
+
+        _scrollViewer = new ScrollViewer()
+            .VerticalScrollBarVisibility(ScrollBarVisibility.Auto)
+            .Content(_itemsPanel);
+
+        _itemsPanel.Name = "PART_Items";
+        _scrollViewer.Name = "PART_ScrollViewer";
+        var nameScope = new NameScope();
+        NameScope.SetNameScope(this, nameScope);
+        nameScope.Register(_itemsPanel.Name, _itemsPanel);
+        nameScope.Register(_scrollViewer.Name, _scrollViewer);
+
+        return _scrollViewer;
     }
 
     protected override void OnDataContextChanged(EventArgs e)
@@ -48,40 +67,7 @@ public partial class ResourcePropertiesView : UserControl
 
     private void AttachAndReload()
     {
-        if (DataContext == null)
-        {
-            ClearItems();
-            return;
-        }
-
-        // Determine if DataContext is a generic ResourcePropertiesViewModel<T>
-        // If so, extract T and invoke Reload<T>() via reflection
-        var dcType = DataContext.GetType();
-
-        if (dcType.IsGenericType)
-        {
-            var genericArgs = dcType.GetGenericArguments();
-            if (genericArgs.Length == 1)
-            {
-                var t = genericArgs[0];
-
-                if (typeof(IKubernetesObject<V1ObjectMeta>).IsAssignableFrom(t))
-                {
-                    var reloadMethod = typeof(ResourcePropertiesView)
-                        .GetMethod(nameof(Reload), BindingFlags.NonPublic | BindingFlags.Instance);
-
-                    if (reloadMethod?.IsGenericMethodDefinition == true)
-                    {
-                        var genericReload = reloadMethod.MakeGenericMethod(t);
-                        genericReload.Invoke(this, null);
-                        return;
-                    }
-                }
-            }
-        }
-
-        // Fallback if not matching expected generic pattern
-        ClearItems();
+        ReloadProperties();
     }
 
     private void SubscribeToViewModel()
@@ -123,7 +109,7 @@ public partial class ResourcePropertiesView : UserControl
                     return;
                 }
 
-                PART_Items.Children.Clear();
+                _itemsPanel.Children.Clear();
             }
             catch
             {
@@ -157,7 +143,7 @@ public partial class ResourcePropertiesView : UserControl
         Dispatcher.UIThread.Post(AttachAndReload, DispatcherPriority.Background);
     }
 
-    private void Reload<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    private void ReloadProperties()
     {
         if (_isDetached)
         {
@@ -176,13 +162,13 @@ public partial class ResourcePropertiesView : UserControl
 
         var obj = viewModel.Object;
 
-        PART_Items.Children.Add(new PropertyItem { Key = AppResources.ResourcePropertiesView_Name, Value = obj.Metadata.Name });
+        _itemsPanel.Children.Add(new PropertyItem { Key = AppResources.ResourcePropertiesView_Name, Value = obj.Metadata.Name });
         if (viewModel.ResourceConfig?.IsNamespaced == true)
         {
-            PART_Items.Children.Add(new PropertyItem { Key = AppResources.ResourcePropertiesView_Namespace, Value = obj.Metadata.NamespaceProperty });
+            _itemsPanel.Children.Add(new PropertyItem { Key = AppResources.ResourcePropertiesView_Namespace, Value = obj.Metadata.NamespaceProperty });
         }
 
-        PART_Items.Children.Add(new PropertyItem { Key = AppResources.ResourcePropertiesView_Created, Value = obj.Metadata.CreationTimestamp });
+        _itemsPanel.Children.Add(new PropertyItem { Key = AppResources.ResourcePropertiesView_Created, Value = obj.Metadata.CreationTimestamp });
 
         if (viewModel.ResourceConfig == null)
         {
@@ -196,7 +182,7 @@ public partial class ResourcePropertiesView : UserControl
             {
                 c.DataContext = obj;
                 c.HorizontalAlignment = HorizontalAlignment.Stretch;
-                PART_Items.Children.Add(c);
+                _itemsPanel.Children.Add(c);
 
                 if (viewModel.Cluster != null)
                 {
@@ -215,7 +201,7 @@ public partial class ResourcePropertiesView : UserControl
                 HorizontalAlignment = HorizontalAlignment.Stretch,
             };
 
-            PART_Items.Children.Add(eventsView);
+            _itemsPanel.Children.Add(eventsView);
             eventsView.Initialize(viewModel.Cluster);
         }
 
@@ -231,7 +217,7 @@ public partial class ResourcePropertiesView : UserControl
     {
         Dispatcher.UIThread.Post(() =>
         {
-            if (PART_ScrollViewer is not { } scrollViewer)
+            if (_scrollViewer is not { } scrollViewer)
             {
                 return;
             }

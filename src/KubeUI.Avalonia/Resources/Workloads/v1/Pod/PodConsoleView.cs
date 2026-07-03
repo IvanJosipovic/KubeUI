@@ -11,7 +11,7 @@ public sealed class PodConsoleView : ViewBase<PodConsoleViewModel>
     {
         ArgumentNullException.ThrowIfNull(vm);
 
-        this.AddBehaviors(new PodConsoleConnectionBehavior());
+        this.Behaviors(new PodConsoleConnectionBehavior());
 
         return new Grid()
             .Rows("Auto,*")

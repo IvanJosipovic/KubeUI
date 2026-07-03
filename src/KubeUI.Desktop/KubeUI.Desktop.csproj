@@ -21,7 +21,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Avalonia.Desktop" Version="12.0.4" />
+    <PackageReference Include="Avalonia.Desktop" Version="12.0.5" />
   </ItemGroup>
 
   <ItemGroup>
@@ -37,9 +37,7 @@
                            '%(Filename)' == 'Avalonia.Generators' Or
                            '%(Filename)' == 'Avalonia.Analyzers.VisualBasic' or
                            '%(Filename)' == 'Avalonia.Analyzers.CSharp' or
-                           '%(Filename)' == 'CommunityToolkit.Mvvm.SourceGenerators'
-
-                " />
+                           '%(Filename)' == 'CommunityToolkit.Mvvm.SourceGenerators'" />
     </ItemGroup>
   </Target>
 </Project>

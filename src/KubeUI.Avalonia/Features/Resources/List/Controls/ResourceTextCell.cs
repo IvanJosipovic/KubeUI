@@ -1,5 +1,6 @@
 using k8s;
 using k8s.Models;
+using Avalonia.Markup.Declarative;
 using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
 using KubeUI.Avalonia.Infrastructure.Presentation;
@@ -25,7 +26,9 @@ public sealed partial class ResourceTextCell : UserControl, IInitializeCluster, 
 
     public ResourceTextCell()
     {
-        InitializeComponent();
+        HorizontalAlignment = HorizontalAlignment.Left;
+        VerticalAlignment = VerticalAlignment.Center;
+        Content = CreateCellTextBlock();
 
 #if DEBUG
         if (Design.IsDesignMode)
@@ -41,6 +44,17 @@ public sealed partial class ResourceTextCell : UserControl, IInitializeCluster, 
             };
         }
 #endif
+    }
+
+    private TextBlock CreateCellTextBlock()
+    {
+        return new TextBlock()
+            .Name("CellTextBlock")
+            .Margin(12, 0, 12, 0)
+            .HorizontalAlignment(HorizontalAlignment.Left)
+            .VerticalAlignment(VerticalAlignment.Center)
+            .Text(this, x => x.PrettyString)
+            .ToolTip_Tip(this, x => x.PrettyString);
     }
 
     protected override void OnDataContextChanged(EventArgs e)

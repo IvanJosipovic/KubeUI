@@ -2,6 +2,7 @@
 using System.Reflection;
 using System.Text.Json;
 using Avalonia.Controls.Notifications;
+using Avalonia.Input;
 using Avalonia.Xaml.Interactivity;
 using k8s;
 using k8s.Autorest;
@@ -371,7 +372,7 @@ public static class Utilities
         return control;
     }
 
-    public static T AddBehaviors<T>(this T obj, params BehaviorCollection behaviorCollection) where T : AvaloniaObject
+    public static T Behaviors<T>(this T obj, params BehaviorCollection behaviorCollection) where T : AvaloniaObject
     {
         var collection = obj.GetValue(Interaction.BehaviorsProperty);
         collection ??= [];
@@ -379,6 +380,12 @@ public static class Utilities
         collection.AddRange(behaviorCollection);
         obj.SetValue(Interaction.BehaviorsProperty, collection);
 
+        return obj;
+    }
+
+    public static T KeyBindings<T>(this T obj, params KeyBinding[] keyBindings) where T : IInputElement
+    {
+        obj.KeyBindings.AddRange(keyBindings);
         return obj;
     }
 }

@@ -1,4 +1,3 @@
-using System.Reflection;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
@@ -59,7 +58,7 @@ public sealed class ResourcePropertiesViewThreadingTests : AvaloniaTestBase
     }
 }
 
-internal sealed class TestableResourcePropertiesView : ResourcePropertiesView
+internal sealed class TestableResourcePropertiesView : ResourcePropertiesView<V1Pod>
 {
     public void InvokeClear() => ClearItems();
 }

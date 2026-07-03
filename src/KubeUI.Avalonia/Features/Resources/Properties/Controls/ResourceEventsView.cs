@@ -1,9 +1,13 @@
 using System.Collections.ObjectModel;
 using System.Reactive.Linq;
+using Avalonia.Controls.Templates;
+using Avalonia.Data.Converters;
+using Avalonia.Markup.Declarative;
 using DynamicData;
 using DynamicData.Binding;
 using k8s;
 using k8s.Models;
+using KubeUI.Avalonia.Converters;
 using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Infrastructure.Threading;
@@ -13,6 +17,8 @@ namespace KubeUI.Avalonia.Features.Resources.Properties.Controls;
 
 public sealed partial class ResourceEventsView : UserControl, IInitializeCluster
 {
+    private static readonly EventWarningForegroundConverter EventWarningForegroundConverter = new();
+    private static readonly FuncValueConverter<bool, bool> NotConverter = new(value => !value);
     private readonly DispatcherTimer _timer = new(DispatcherPriority.Background);
     private static readonly IReadOnlyList<ResourceEventItem> EmptyItems = Array.Empty<ResourceEventItem>();
     private ClusterWorkspaceViewModel? _cluster;
@@ -33,11 +39,63 @@ public sealed partial class ResourceEventsView : UserControl, IInitializeCluster
 
     public ResourceEventsView()
     {
-        InitializeComponent();
+        Content = CreateContent();
         Items = EmptyItems;
         _matchedEvents = _emptyEvents;
         _timer.Interval = TimeSpan.FromSeconds(1);
         _timer.Tick += Timer_Tick;
+    }
+
+    private ExpandableSection CreateContent()
+    {
+        return new ExpandableSection()
+            .Header(Assets.Resources.ResourceEventsView_Title)
+            .IsExpanded(true)
+            .Content(
+                new StackPanel()
+                    .Margin(0, -4, 0, 0)
+                    .Spacing(2)
+                    .Children(
+                        new ItemsControl()
+                            .IsVisible(this, x => x.HasItems)
+                            .ItemsSource(this, x => x.Items)
+                            .ItemTemplate(new FuncDataTemplate<ResourceEventItem>((item, _) => CreateEventCard(item!))),
+                        new PropertyItem()
+                            .IsVisible(this, x => x.HasItems, BindingMode.OneWay, NotConverter)
+                            .Value(Assets.Resources.ResourceEventsView_NoEventsFound)));
+    }
+
+    private static Border CreateEventCard(ResourceEventItem item)
+    {
+        return new Border()
+            .Margin(0)
+            .Padding(item.CardPadding)
+            .Classes("card")
+            .Child(
+                new StackPanel()
+                    .Spacing(2)
+                    .Children(
+                        new TextBlock()
+                            .FontWeight(FontWeight.SemiBold)
+                            .Foreground(item, x => x.IsWarning, BindingMode.OneWay, EventWarningForegroundConverter)
+                            .IsVisible(item.HasMessage)
+                            .Text(item.Message)
+                            .TextWrapping(TextWrapping.Wrap),
+                        new StackPanel()
+                            .Spacing(0)
+                            .Children(
+                                new PropertyItem()
+                                    .Key(Assets.Resources.Shared_Source)
+                                    .Value(item.Source),
+                                new PropertyItem()
+                                    .Key(Assets.Resources.Shared_Count)
+                                    .Value(item.Count),
+                                new PropertyItem()
+                                    .Key(Assets.Resources.ResourceEventsView_SubObject)
+                                    .Value(item.SubObject),
+                                new PropertyItem()
+                                    .Key(Assets.Resources.ResourceEventsView_LastSeen)
+                                    .Value(item.LastSeen))));
     }
 
     protected override void OnDataContextChanged(EventArgs e)

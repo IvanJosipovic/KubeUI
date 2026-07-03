@@ -1205,8 +1205,8 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         vm.SelectedItem.Name().ShouldBe("a");
     }
 
-    [AvaloniaFact(DisplayName = "Namespace filter selects remaining item when selection filtered out")]
-    public async Task namespace_filter_selects_remaining_item_when_selection_filtered_out()
+    [AvaloniaFact(DisplayName = "Namespace filter clears item when selection filtered out")]
+    public async Task namespace_filter_clears_item_when_selection_filtered_out()
     {
         var window = CreateWindow();
         var cluster = await CreateClusterAsync();
@@ -1233,20 +1233,8 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         cluster.SelectedNamespaces.Add(NamespaceResource("ns4"));
         Dispatcher.UIThread.RunJobs();
 
-        vm.SelectionModel.SelectedIndexes.ShouldBe([0]);
-        vm.SelectedItem.ShouldNotBeNull();
-        vm.SelectedItem!.Namespace().ShouldBe("ns4");
-        vm.SelectedItem.Name().ShouldBe("d");
-
-        var menuItem = vm.GetContextMenuItems(vm.SelectionModel.SelectedItems).FirstOrDefault(x => x.Header == "View");
-        menuItem.ShouldNotBeNull();
-
-        var parameters = menuItem!.CommandParameter as IList;
-        parameters.ShouldNotBeNull();
-        parameters!.Count.ShouldBe(1);
-        var selected = parameters[0].ShouldBeOfType<V1Pod>();
-        selected.Namespace().ShouldBe("ns4");
-        selected.Name().ShouldBe("d");
+        vm.SelectionModel.SelectedIndexes.ShouldBeEmpty();
+        vm.SelectedItem?.ShouldBeNull();
     }
 
     [AvaloniaFact(DisplayName = "Namespace filter updates context menu selection")]
@@ -1302,17 +1290,7 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         Dispatcher.UIThread.RunJobs();
 
         var portForwardMenu = vm.GetContextMenuItems(vm.SelectionModel.SelectedItems).FirstOrDefault(x => x.Header == "Port Forwarding");
-        portForwardMenu.ShouldNotBeNull();
-
-        var groups = portForwardMenu!.Items?.ToList();
-        groups.ShouldNotBeNull();
-        groups!.Select(x => x.Header).ShouldContain("Normal");
-
-        var normalGroup = groups.Single(x => x.Header == "Normal");
-        var containers = normalGroup.Items?.ToList();
-        containers.ShouldNotBeNull();
-        containers!.Count.ShouldBe(1);
-        containers[0].Header.ShouldBe("d-container");
+        portForwardMenu.ShouldBeNull();
     }
 
     [AvaloniaFact(DisplayName = "Resource list enum filters render a selector")]
@@ -1805,6 +1783,63 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         descriptor.Values[0].ShouldBe("default");
     }
 
+    [AvaloniaFact(DisplayName = "Namespace selector filters the resource list")]
+    public async Task namespace_selector_filters_the_resource_list()
+    {
+        var window = CreateWindow();
+        var cluster = await CreateClusterAsync();
+
+        await AddOrUpdateAsync(cluster, NamespaceResource("ns1"));
+        await AddOrUpdateAsync(cluster, NamespaceResource("ns2"));
+
+        var vm = GetRequiredService<ResourceListViewModel<V1Pod>>();
+        vm.Initialize(cluster);
+
+        var view = GetRequiredService<ResourceListView>();
+        view.DataContext = vm;
+
+        window.Content = view;
+        window.Show();
+
+        await AddOrUpdateAsync(cluster, Pod("ns1", "a"));
+        await AddOrUpdateAsync(cluster, Pod("ns2", "b"));
+        Dispatcher.UIThread.RunJobs();
+
+        vm.View.Count.ShouldBe(2);
+
+        var selector = view.GetVisualDescendants().OfType<Ursa.Controls.MultiComboBox>().Single();
+        selector.SelectedItems.ShouldBeSameAs(vm.SelectedNamespaces);
+        var grid = view.FindControl<DataGrid>("PART_Grid");
+        grid.ShouldNotBeNull();
+
+        var ns1 = cluster.Namespaces.Single(x => x.Name() == "ns1");
+        selector.IsDropDownOpen = true;
+        Dispatcher.UIThread.RunJobs();
+
+        var item = selector.ContainerFromItem(ns1).ShouldBeOfType<Ursa.Controls.MultiComboBoxItem>();
+        item.IsSelected = true;
+        selector.IsDropDownOpen = false;
+        Dispatcher.UIThread.RunJobs();
+
+        vm.SelectedNamespaces.Select(x => x.Name()).ShouldBe(["ns1"]);
+        vm.View.Count.ShouldBe(1);
+        vm.View[0].ShouldBeOfType<V1Pod>().Namespace().ShouldBe("ns1");
+        grid!.ItemsSource.ShouldBeSameAs(vm.View);
+
+        for (var i = 0; i < 5; i++)
+        {
+            grid.UpdateLayout();
+            Dispatcher.UIThread.RunJobs();
+        }
+
+        var allRows = GetAllRows(grid).ToList();
+        allRows.Count.ShouldBeGreaterThan(0);
+        allRows.Select(x => (x.DataContext as V1Pod)?.Namespace()).ShouldContain("ns1");
+        var rows = allRows.Where(x => x.IsVisible).ToList();
+        rows.Count.ShouldBe(1);
+        rows[0].DataContext.ShouldBeOfType<V1Pod>().Namespace().ShouldBe("ns1");
+    }
+
     [AvaloniaFact(DisplayName = "Search query is debounced before filtering view")]
     public async Task search_query_is_debounced_before_filtering_view()
     {
@@ -2036,7 +2071,7 @@ internal sealed class FakeDoubleTapResourceConfig : IResourceConfig
     public int Order => 0;
     public string Name => "Pods";
     public string? Category => null;
-    public IStyle ListStyle() => new global::Avalonia.Styling.Style();
+    public Style[] ListStyle() => [];
     public IEnumerable<(Verb verb, string? subresource)> Permissions() => [];
     public Task UpdatePermissions() => Task.CompletedTask;
     public Type Type => typeof(V1Pod);

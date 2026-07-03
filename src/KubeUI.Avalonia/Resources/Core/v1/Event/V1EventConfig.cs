@@ -70,28 +70,25 @@ public sealed partial class V1EventConfig : ResourceConfigBase<Corev1Event>
 
     public override Control[] Properties(Corev1Event resource) => [new PropertiesView()];
 
-    public override IStyle ListStyle()
-    {
-        var style = new Style(x => x.OfType<DataGridRow>());
-        style.Add(new Setter(DataGridRow.ForegroundProperty, new Binding("Type")
-        {
-            Converter = new FuncValueConverter<string, IBrush>(x =>
-            {
-                if (string.Equals(x, "Warning", StringComparison.Ordinal))
+    public override Style[] ListStyle() =>
+    [
+        new Style(x => x.OfType<DataGridRow>())
+            .Setter(DataGridRow.ForegroundProperty, CompiledBinding.Create<Corev1Event, object>(x => x.Type,
+                converter: new FuncValueConverter<string, IBrush>(y =>
                 {
-                    return Brushes.Red;
-                }
+                    if (string.Equals(y, "Warning", StringComparison.Ordinal))
+                    {
+                        return Brushes.Red;
+                    }
 
-                if (Application.Current.ActualThemeVariant == ThemeVariant.Light)
-                {
-                    return Brushes.Black; //todo reference style
-                }
+                    if (Application.Current.ActualThemeVariant == ThemeVariant.Light)
+                    {
+                        return Brushes.Black; //todo reference style
+                    }
 
-                return Brushes.White; //todo reference style
-            })
-        }));
+                    return Brushes.White; //todo reference style));
 
-        return style;
-    }
+                })))
+    ];
 }
 

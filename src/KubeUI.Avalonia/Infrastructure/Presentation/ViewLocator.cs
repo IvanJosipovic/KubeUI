@@ -51,7 +51,7 @@ public sealed class ViewLocator : IDataTemplate
     {
         if (modelType.IsGenericType && modelType.GetGenericTypeDefinition() == typeof(ResourcePropertiesViewModel<>))
         {
-            return typeof(ResourcePropertiesView);
+            return typeof(ResourcePropertiesView<>).MakeGenericType(modelType.GetGenericArguments());
         }
 
         var expectedName = GetUnboundFullName(modelType).Replace("ViewModel", "View", StringComparison.Ordinal);

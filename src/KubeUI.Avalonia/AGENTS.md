@@ -85,3 +85,5 @@ References:
 - All public APIs must be documented and unit-tested.
 - No hacks or weird workarounds; if you think you need one, ask for guidance.
 - UI text should be added to resources.
+- Prefer fluent declarative collection options in C# Avalonia views, such as dataGrid.Columns([...]) instead of dataGrid.Columns.Add(...).
+- Keep view code in the Build methods, only create methods for large sections or repeated view code.

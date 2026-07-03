@@ -43,12 +43,11 @@ public partial class PortForwarderListView : ViewBase<PortForwarderListViewModel
 
     private static MyDataGridTextColumn CreateColumn<TValue>(Expression<Func<PortForwarder, TValue>> bindingExpression, string header, double width, bool isStar = false)
     {
-        var column = new MyDataGridTextColumn()
-            .Header(header)
-            .Width(isStar ? new DataGridLength(width, DataGridLengthUnitType.Star) : new DataGridLength(width));
-
-        column.Binding = CompiledBinding.Create(bindingExpression);
-
-        return column;
+        return new MyDataGridTextColumn
+        {
+            Binding = CompiledBinding.Create(bindingExpression),
+            Header = header,
+            Width = isStar ? new DataGridLength(width, DataGridLengthUnitType.Star) : new DataGridLength(width)
+        };
     }
 }

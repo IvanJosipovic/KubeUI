@@ -94,7 +94,7 @@ public sealed class ResourceFeatureConfigTests : AvaloniaTestBase
 
         var lastSeenColumn = config.Columns().Single(x => x.Name == KubeUI.Avalonia.Assets.Resources.V1EventConfig_Last_Seen);
 
-        lastSeenColumn.CustomControl.Name.ShouldBe("EventLastSeenCell");
+        lastSeenColumn.CustomControl.Name.ShouldBe("EventLastSeenCellView");
     }
 
     [AvaloniaFact]
