@@ -11,7 +11,7 @@ namespace KubeUI.Avalonia.Resources.Workloads.v1.Pod;
 
 public partial class PodMetricCPUCellView : ViewBase<V1Pod>, IInitializeCluster
 {
-    private ClusterWorkspaceViewModel? _cluster;
+    public ClusterWorkspaceViewModel? Cluster { get; private set; }
 
     private static readonly DispatcherTimer s_timer = new(DispatcherPriority.Default);
 
@@ -50,12 +50,12 @@ public partial class PodMetricCPUCellView : ViewBase<V1Pod>, IInitializeCluster
 
     private void Update()
     {
-        if (_cluster == null || DataContext is not V1Pod pod)
+        if (Cluster == null || DataContext is not V1Pod pod)
         {
             return;
         }
 
-        var metric = _cluster.PodMetrics.FirstOrDefault(x =>
+        var metric = Cluster.PodMetrics.FirstOrDefault(x =>
             x.Name() == pod.Name() && x.Namespace() == pod.Namespace());
 
         if (metric == null)
@@ -81,6 +81,6 @@ public partial class PodMetricCPUCellView : ViewBase<V1Pod>, IInitializeCluster
 
     public void Initialize(ClusterWorkspaceViewModel cluster)
     {
-        _cluster = cluster;
+        Cluster = cluster;
     }
 }

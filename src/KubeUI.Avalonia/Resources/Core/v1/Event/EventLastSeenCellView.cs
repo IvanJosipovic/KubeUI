@@ -16,7 +16,7 @@ public sealed partial class EventLastSeenCellView : ViewBase<Corev1Event>, IInit
         Interval = TimeSpan.FromSeconds(1)
     };
 
-    private ClusterWorkspaceViewModel? _cluster;
+    public ClusterWorkspaceViewModel? Cluster { get; private set; }
 
     private Corev1Event? _viewModel;
 
@@ -75,7 +75,7 @@ public sealed partial class EventLastSeenCellView : ViewBase<Corev1Event>, IInit
     protected override void OnUnloaded(RoutedEventArgs e)
     {
         base.OnUnloaded(e);
-        _cluster?.OnChange -= _cluster_OnChange;
+        Cluster?.OnChange -= _cluster_OnChange;
     }
 
     private void Timer_Tick(object? sender, EventArgs e)
@@ -117,7 +117,7 @@ public sealed partial class EventLastSeenCellView : ViewBase<Corev1Event>, IInit
 
     public void Initialize(ClusterWorkspaceViewModel cluster)
     {
-        _cluster = cluster;
-        _cluster.OnChange += _cluster_OnChange;
+        Cluster = cluster;
+        Cluster.OnChange += _cluster_OnChange;
     }
 }

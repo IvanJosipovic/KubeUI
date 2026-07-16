@@ -15,7 +15,6 @@ References:
 
 ### Views and styling
 - Use C# for layout and visuals;
-- Define styles and resources in dedicated resource dictionaries and merge them in `App.axaml`.
 - Prefer `StaticResource` for immutable resources and `DynamicResource` when runtime updates are required.
 
 ### Data binding

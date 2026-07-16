@@ -48,10 +48,9 @@ public sealed partial class VisualizationView : ViewBase<VisualizationViewModel>
                 new Label()
                     .Width(200)
                     .VerticalContentAlignment(VerticalAlignment.Center)
-                    .BindValue(ContentControl.ContentProperty, new Binding("Resources.Count")
-                    {
-                        StringFormat = Assets.Resources.VisualizationView_ItemsFormat
-                    }));
+                    .BindValue(ContentControl.ContentProperty, CompiledBinding.Create<VisualizationViewModel, int>(x => x.Resources.Count,
+                        source: vm,
+                        stringFormat: Assets.Resources.VisualizationView_ItemsFormat)));
     }
 
     private static StackPanel CreateRightToolbar(VisualizationViewModel vm)
@@ -114,9 +113,9 @@ public sealed partial class VisualizationView : ViewBase<VisualizationViewModel>
                 StringFormat = "{} {0}/{1} {2}",
                 Bindings =
                 {
-                    new Binding("Resource.ApiVersion"),
-                    new Binding("Resource.Kind"),
-                    new Binding("Resource.Metadata.Name")
+                    CompiledBinding.Create<VisualizationViewModel.ResourceNodeViewModel, string?>(x => x.Resource.ApiVersion),
+                    CompiledBinding.Create<VisualizationViewModel.ResourceNodeViewModel, string?>(x => x.Resource.Kind),
+                    CompiledBinding.Create<VisualizationViewModel.ResourceNodeViewModel, string?>(x => x.Resource.Metadata.Name)
                 }
             })
             .Children(

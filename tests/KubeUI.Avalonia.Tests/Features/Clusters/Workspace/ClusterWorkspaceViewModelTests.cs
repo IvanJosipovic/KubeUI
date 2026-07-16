@@ -814,6 +814,7 @@ internal sealed class BlockingPodPermissionResourceConfig : IResourceConfig
         _releaseTask = releaseTask;
     }
 
+    public ClusterWorkspaceViewModel? Cluster { get; private set; }
     public bool IsNamespaced => true;
     public bool CanListAndWatch { get; private set; }
     public bool PermissionsLoaded { get; private set; }
@@ -842,6 +843,7 @@ internal sealed class BlockingPodPermissionResourceConfig : IResourceConfig
 
     public void Initialize(ClusterWorkspaceViewModel cluster)
     {
+        Cluster = cluster;
     }
 }
 
@@ -856,6 +858,7 @@ internal sealed class ImmediatePermissionResourceConfig : IResourceConfig
         _completion = completion;
     }
 
+    public ClusterWorkspaceViewModel? Cluster { get; private set; }
     public bool IsNamespaced => true;
     public bool CanListAndWatch { get; private set; }
     public bool PermissionsLoaded { get; private set; }
@@ -884,6 +887,7 @@ internal sealed class ImmediatePermissionResourceConfig : IResourceConfig
 
     public void Initialize(ClusterWorkspaceViewModel cluster)
     {
+        Cluster = cluster;
     }
 }
 

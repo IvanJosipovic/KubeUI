@@ -57,14 +57,14 @@ public sealed partial class ClusterView : ViewBase<ClusterViewModel>
     {
         return CreateGaugeChart(
             Assets.Resources.ClusterView_Cpu,
-            new Binding("CPUGaugeData.CpuCapacity.Value"),
+            CompiledBinding.Create<ClusterViewModel, double?>(x => x.CPUGaugeData.CpuCapacity.Value),
             new AvaloniaList<ISeries>
             {
-                CreateGaugeSeries(Assets.Resources.ClusterView_CpuCapacity, new Binding("CPUGaugeData.CpuCapacity.Value"), CPUGaugeData.DataLabelsFormatter),
-                CreateGaugeSeries(Assets.Resources.ClusterView_CpuAllocatable, new Binding("CPUGaugeData.CpuAllocatable.Value"), CPUGaugeData.DataLabelsFormatter),
-                CreateGaugeSeries(Assets.Resources.ClusterView_CpuLimits, new Binding("CPUGaugeData.CpuLimits.Value"), CPUGaugeData.DataLabelsFormatter),
-                CreateGaugeSeries(Assets.Resources.ClusterView_CpuRequests, new Binding("CPUGaugeData.CpuRequests.Value"), CPUGaugeData.DataLabelsFormatter),
-                CreateGaugeSeries(Assets.Resources.ClusterView_CpuUsage, new Binding("CPUGaugeData.CpuUsage.Value"), CPUGaugeData.DataLabelsFormatter),
+                CreateGaugeSeries(Assets.Resources.ClusterView_CpuCapacity, CompiledBinding.Create<ClusterViewModel, double?>(x => x.CPUGaugeData.CpuCapacity.Value), CPUGaugeData.DataLabelsFormatter),
+                CreateGaugeSeries(Assets.Resources.ClusterView_CpuAllocatable, CompiledBinding.Create<ClusterViewModel, double?>(x => x.CPUGaugeData.CpuAllocatable.Value), CPUGaugeData.DataLabelsFormatter),
+                CreateGaugeSeries(Assets.Resources.ClusterView_CpuLimits, CompiledBinding.Create<ClusterViewModel, double?>(x => x.CPUGaugeData.CpuLimits.Value), CPUGaugeData.DataLabelsFormatter),
+                CreateGaugeSeries(Assets.Resources.ClusterView_CpuRequests, CompiledBinding.Create<ClusterViewModel, double?>(x => x.CPUGaugeData.CpuRequests.Value), CPUGaugeData.DataLabelsFormatter),
+                CreateGaugeSeries(Assets.Resources.ClusterView_CpuUsage, CompiledBinding.Create<ClusterViewModel, double?>(x => x.CPUGaugeData.CpuUsage.Value), CPUGaugeData.DataLabelsFormatter),
                 new XamlGaugeBackgroundSeries()
             })
             .Col(0);
@@ -74,14 +74,14 @@ public sealed partial class ClusterView : ViewBase<ClusterViewModel>
     {
         return CreateGaugeChart(
             Assets.Resources.ClusterView_Memory,
-            new Binding("MemoryGaugeData.MemoryCapacity.Value"),
+            CompiledBinding.Create<ClusterViewModel, double?>(x => x.MemoryGaugeData.MemoryCapacity.Value),
             new AvaloniaList<ISeries>
             {
-                CreateGaugeSeries(Assets.Resources.ClusterView_MemoryCapacity, new Binding("MemoryGaugeData.MemoryCapacity.Value"), MemoryGaugeData.DataLabelsFormatter),
-                CreateGaugeSeries(Assets.Resources.ClusterView_MemoryAllocatable, new Binding("MemoryGaugeData.MemoryAllocatable.Value"), MemoryGaugeData.DataLabelsFormatter),
-                CreateGaugeSeries(Assets.Resources.ClusterView_MemoryLimits, new Binding("MemoryGaugeData.MemoryLimits.Value"), MemoryGaugeData.DataLabelsFormatter),
-                CreateGaugeSeries(Assets.Resources.ClusterView_MemoryRequests, new Binding("MemoryGaugeData.MemoryRequests.Value"), MemoryGaugeData.DataLabelsFormatter),
-                CreateGaugeSeries(Assets.Resources.ClusterView_MemoryUsage, new Binding("MemoryGaugeData.MemoryUsage.Value"), MemoryGaugeData.DataLabelsFormatter),
+                CreateGaugeSeries(Assets.Resources.ClusterView_MemoryCapacity, CompiledBinding.Create<ClusterViewModel, double?>(x => x.MemoryGaugeData.MemoryCapacity.Value), MemoryGaugeData.DataLabelsFormatter),
+                CreateGaugeSeries(Assets.Resources.ClusterView_MemoryAllocatable, CompiledBinding.Create<ClusterViewModel, double?>(x => x.MemoryGaugeData.MemoryAllocatable.Value), MemoryGaugeData.DataLabelsFormatter),
+                CreateGaugeSeries(Assets.Resources.ClusterView_MemoryLimits, CompiledBinding.Create<ClusterViewModel, double?>(x => x.MemoryGaugeData.MemoryLimits.Value), MemoryGaugeData.DataLabelsFormatter),
+                CreateGaugeSeries(Assets.Resources.ClusterView_MemoryRequests, CompiledBinding.Create<ClusterViewModel, double?>(x => x.MemoryGaugeData.MemoryRequests.Value), MemoryGaugeData.DataLabelsFormatter),
+                CreateGaugeSeries(Assets.Resources.ClusterView_MemoryUsage, CompiledBinding.Create<ClusterViewModel, double?>(x => x.MemoryGaugeData.MemoryUsage.Value), MemoryGaugeData.DataLabelsFormatter),
                 new XamlGaugeBackgroundSeries()
             })
             .Row(0)
@@ -92,18 +92,18 @@ public sealed partial class ClusterView : ViewBase<ClusterViewModel>
     {
         return CreateGaugeChart(
             Assets.Resources.ClusterView_Pods,
-            new Binding("PodGaugeData.MaxPods.Value"),
+            CompiledBinding.Create<ClusterViewModel, double?>(x => x.PodGaugeData.MaxPods.Value),
             new AvaloniaList<ISeries>
             {
-                CreateGaugeSeries(Assets.Resources.ClusterView_PodsCapacity, new Binding("PodGaugeData.MaxPods.Value"), PodGaugeData.DataLabelsFormatter),
-                CreateGaugeSeries(Assets.Resources.ClusterView_PodsCount, new Binding("PodGaugeData.TotalPods.Value"), PodGaugeData.DataLabelsFormatter),
+                CreateGaugeSeries(Assets.Resources.ClusterView_PodsCapacity, CompiledBinding.Create<ClusterViewModel, double?>(x => x.PodGaugeData.MaxPods.Value), PodGaugeData.DataLabelsFormatter),
+                CreateGaugeSeries(Assets.Resources.ClusterView_PodsCount, CompiledBinding.Create<ClusterViewModel, double?>(x => x.PodGaugeData.TotalPods.Value), PodGaugeData.DataLabelsFormatter),
                 new XamlGaugeBackgroundSeries()
             })
             .Row(0)
             .Col(2);
     }
 
-    private static PieChart CreateGaugeChart(string title, Binding maxValueBinding, AvaloniaList<ISeries> series)
+    private static PieChart CreateGaugeChart(string title, BindingBase maxValueBinding, AvaloniaList<ISeries> series)
     {
         return new PieChart()
             .MinHeight(100)
@@ -121,7 +121,7 @@ public sealed partial class ClusterView : ViewBase<ClusterViewModel>
             .Series(series);
     }
 
-    private static XamlGaugeSeries CreateGaugeSeries(string name, Binding gaugeValueBinding, Func<ChartPoint, string> formatter)
+    private static XamlGaugeSeries CreateGaugeSeries(string name, BindingBase gaugeValueBinding, Func<ChartPoint, string> formatter)
     {
         return new XamlGaugeSeries
         {

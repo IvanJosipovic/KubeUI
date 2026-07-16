@@ -37,10 +37,10 @@ public partial class CollectionItem : UserControl, IDeclarativeViewBase
 
     private static IDataTemplate CreateDefaultItemTemplate()
     {
-        return new FuncDataTemplate<object?>((_, _) =>
+        return new FuncDataTemplate<object?>((item, _) =>
             new SelectableTextBlock()
                 .Padding(0)
-                .BindValue(SelectableTextBlock.TextProperty, new Binding()));
+                .Text(item?.ToString() ?? string.Empty));
     }
 
     private Border CreateContent()

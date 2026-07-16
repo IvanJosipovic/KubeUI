@@ -111,6 +111,8 @@ public sealed class ResourcePropertiesViewInitializationTests : AvaloniaTestBase
     {
         public int InitializeCount { get; private set; }
 
+        public ClusterWorkspaceViewModel? Cluster { get; private set; }
+
         public TrackingClusterControl()
         {
             Content = new TextBlock { Text = "tracking" };
@@ -118,6 +120,7 @@ public sealed class ResourcePropertiesViewInitializationTests : AvaloniaTestBase
 
         public void Initialize(ClusterWorkspaceViewModel cluster)
         {
+            Cluster = cluster;
             InitializeCount++;
         }
     }

@@ -2059,6 +2059,7 @@ internal sealed class FakeDoubleTapResourceConfig : IResourceConfig
             canExecute: items => items?.Count == 1);
     }
 
+    public ClusterWorkspaceViewModel? Cluster { get; private set; }
     public bool IsNamespaced => true;
     public bool CanListAndWatch => true;
     public bool PermissionsLoaded => true;
@@ -2080,6 +2081,7 @@ internal sealed class FakeDoubleTapResourceConfig : IResourceConfig
 
     public void Initialize(ClusterWorkspaceViewModel cluster)
     {
+        Cluster = cluster;
     }
 }
 

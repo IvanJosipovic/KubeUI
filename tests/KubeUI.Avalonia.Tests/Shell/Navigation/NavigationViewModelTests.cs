@@ -2356,6 +2356,7 @@ internal class FakeCustomResourceConfig : IResourceConfig
         CanListAndWatch = canListAndWatch;
     }
 
+    public ClusterWorkspaceViewModel? Cluster { get; private set; }
     public bool IsNamespaced => true;
     public bool CanListAndWatch { get; set; }
     public bool PermissionsLoaded { get; set; } = true;
@@ -2377,7 +2378,10 @@ internal class FakeCustomResourceConfig : IResourceConfig
 
     public IRelayCommand<IList> ViewCommand => throw new NotImplementedException();
 
-    public void Initialize(ClusterWorkspaceViewModel cluster) { }
+    public void Initialize(ClusterWorkspaceViewModel cluster)
+    {
+        Cluster = cluster;
+    }
 }
 
 internal class FakeResourceConfig : IResourceConfig
@@ -2389,6 +2393,7 @@ internal class FakeResourceConfig : IResourceConfig
         CanListAndWatch = canListAndWatch;
     }
 
+    public ClusterWorkspaceViewModel? Cluster { get; private set; }
     public bool IsNamespaced => true;
     public bool CanListAndWatch { get; set; }
     public bool PermissionsLoaded { get; set; } = true;
@@ -2410,7 +2415,10 @@ internal class FakeResourceConfig : IResourceConfig
 
     public IRelayCommand<IList> ViewCommand => throw new NotImplementedException();
 
-    public void Initialize(ClusterWorkspaceViewModel cluster) { }
+    public void Initialize(ClusterWorkspaceViewModel cluster)
+    {
+        Cluster = cluster;
+    }
 }
 
 internal sealed class DeferredPermissionResourceConfig : IResourceConfig
@@ -2421,6 +2429,7 @@ internal sealed class DeferredPermissionResourceConfig : IResourceConfig
         Name = name;
     }
 
+    public ClusterWorkspaceViewModel? Cluster { get; private set; }
     public bool IsNamespaced => true;
     public bool CanListAndWatch { get; set; }
     public bool PermissionsLoaded { get; set; }
@@ -2448,7 +2457,10 @@ internal sealed class DeferredPermissionResourceConfig : IResourceConfig
 
     public IRelayCommand<IList> ViewCommand => throw new NotImplementedException();
 
-    public void Initialize(ClusterWorkspaceViewModel cluster) { }
+    public void Initialize(ClusterWorkspaceViewModel cluster)
+    {
+        Cluster = cluster;
+    }
 }
 
 [KubernetesEntity(Group = "permissions.alpha.kubeui.com", ApiVersion = "v1", Kind = "TestPermissionResourceAlpha")]
@@ -2486,6 +2498,7 @@ internal sealed class SlowPermissionResourceConfig : IResourceConfig
         _permissionRefreshTask = permissionRefreshTask;
     }
 
+    public ClusterWorkspaceViewModel? Cluster { get; private set; }
     public bool IsNamespaced => true;
     public bool CanListAndWatch { get; set; }
     public bool PermissionsLoaded { get; set; }
@@ -2513,5 +2526,8 @@ internal sealed class SlowPermissionResourceConfig : IResourceConfig
 
     public IRelayCommand<IList> ViewCommand => throw new NotImplementedException();
 
-    public void Initialize(ClusterWorkspaceViewModel cluster) { }
+    public void Initialize(ClusterWorkspaceViewModel cluster)
+    {
+        Cluster = cluster;
+    }
 }

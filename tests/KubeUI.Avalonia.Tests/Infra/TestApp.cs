@@ -169,5 +169,3 @@ public class TestApp : Application, IServiceProviderHost
         Dispatcher.UIThread.InvokeAsync(action).GetAwaiter().GetResult();
     }
 }
-
-

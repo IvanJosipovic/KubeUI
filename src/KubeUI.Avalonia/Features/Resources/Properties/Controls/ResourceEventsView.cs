@@ -17,11 +17,12 @@ namespace KubeUI.Avalonia.Features.Resources.Properties.Controls;
 
 public sealed partial class ResourceEventsView : UserControl, IInitializeCluster
 {
+    public ClusterWorkspaceViewModel? Cluster { get; private set; }
+
     private static readonly EventWarningForegroundConverter EventWarningForegroundConverter = new();
     private static readonly FuncValueConverter<bool, bool> NotConverter = new(value => !value);
     private readonly DispatcherTimer _timer = new(DispatcherPriority.Background);
     private static readonly IReadOnlyList<ResourceEventItem> EmptyItems = Array.Empty<ResourceEventItem>();
-    private ClusterWorkspaceViewModel? _cluster;
     private ISourceCache<Corev1Event, string>? _eventCache;
     private IDisposable? _eventCacheSubscription;
     private readonly ReadOnlyObservableCollection<Corev1Event> _emptyEvents = new([]);
@@ -138,7 +139,7 @@ public sealed partial class ResourceEventsView : UserControl, IInitializeCluster
 
     public void Initialize(ClusterWorkspaceViewModel cluster)
     {
-        _cluster = cluster;
+        Cluster = cluster;
         try
         {
             _eventCache = cluster.GetResourceSourceCache<Corev1Event>();

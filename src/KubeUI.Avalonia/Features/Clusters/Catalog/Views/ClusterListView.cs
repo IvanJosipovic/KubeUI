@@ -41,13 +41,13 @@ public sealed partial class ClusterListView : ViewBase<ClusterListViewModel>
                         new MyDataGridTextColumn
                         {
                             Width = new DataGridLength(1, DataGridLengthUnitType.Star),
-                            Binding = new Binding(nameof(Kubernetes.Cluster.Name)),
+                            Binding = CompiledBinding.Create<Kubernetes.Cluster, string?>(x => x.Name),
                             Header = Assets.Resources.ClusterListView_Name,
                             SortDirection = ListSortDirection.Ascending
                         },
                         new MyDataGridTextColumn
                         {
-                            Binding = new Binding(nameof(Kubernetes.Cluster.KubeConfigPath)),
+                            Binding = CompiledBinding.Create<Kubernetes.Cluster, string?>(x => x.KubeConfigPath),
                             Header = Assets.Resources.ClusterListView_KubeConfig
                         }
                     ]));

@@ -13,7 +13,7 @@ public sealed partial class EventLastSeenCell : ViewBase<Corev1Event>, IInitiali
 {
     private static readonly DispatcherTimer s_timer = new(DispatcherPriority.Default);
 
-    private ClusterWorkspaceViewModel? _cluster;
+    public ClusterWorkspaceViewModel? Cluster { get; private set; }
 
     private Corev1Event? _viewModel => DataContext as Corev1Event;
 
@@ -72,7 +72,7 @@ public sealed partial class EventLastSeenCell : ViewBase<Corev1Event>, IInitiali
     protected override void OnUnloaded(RoutedEventArgs e)
     {
         base.OnUnloaded(e);
-        _cluster?.OnChange -= _cluster_OnChange;
+        Cluster?.OnChange -= _cluster_OnChange;
     }
 
     private void Timer_Tick(object? sender, EventArgs e)
@@ -113,7 +113,7 @@ public sealed partial class EventLastSeenCell : ViewBase<Corev1Event>, IInitiali
 
     public void Initialize(ClusterWorkspaceViewModel cluster)
     {
-        _cluster = cluster;
-        _cluster.OnChange += _cluster_OnChange;
+        Cluster = cluster;
+        Cluster.OnChange += _cluster_OnChange;
     }
 }

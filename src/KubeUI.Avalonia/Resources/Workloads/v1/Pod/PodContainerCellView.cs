@@ -15,7 +15,7 @@ namespace KubeUI.Avalonia.Resources.Workloads.v1.Pod;
 
 public partial class PodContainerCellView : ViewBase<V1Pod>, IInitializeCluster
 {
-    private ClusterWorkspaceViewModel? _cluster;
+    public ClusterWorkspaceViewModel? Cluster { get; private set; }
 
     private V1Pod? _viewModel;
 
@@ -128,7 +128,7 @@ public partial class PodContainerCellView : ViewBase<V1Pod>, IInitializeCluster
     protected override void OnUnloaded(RoutedEventArgs e)
     {
         base.OnUnloaded(e);
-        _cluster?.OnChange -= _cluster_OnChange;
+        Cluster?.OnChange -= _cluster_OnChange;
     }
 
     private void PopulateData()
@@ -247,8 +247,8 @@ public partial class PodContainerCellView : ViewBase<V1Pod>, IInitializeCluster
 
     public void Initialize(ClusterWorkspaceViewModel cluster)
     {
-        _cluster = cluster;
-        _cluster.OnChange += _cluster_OnChange;
+        Cluster = cluster;
+        Cluster.OnChange += _cluster_OnChange;
     }
 
     public sealed partial class ContainerStatusViewModel : ObservableObject

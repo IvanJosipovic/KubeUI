@@ -7,6 +7,7 @@ using Avalonia.Styling;
 using Avalonia.Xaml.Interactivity;
 using Dock.Avalonia.Controls;
 using Dock.Model.Core;
+using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
 using KubeUI.Avalonia.Infrastructure;
 using Ursa.Controls;
 using AvaloniaStyles = Avalonia.Styling.Styles;
@@ -25,29 +26,12 @@ public sealed class Fluent : AvaloniaStyles
         };
 
         Add(new Style<DocumentControl>()
-            .Setter(DocumentControl.HeaderTemplateProperty, new FuncDataTemplate<IDockable>((_, _) =>
-                new StackPanel()
-                    .VerticalAlignment(VerticalAlignment.Center)
-                    .Orientation(LayoutOrientation.Horizontal)
-                    .Children(
-                        new Rectangle()
-                            .Width(10)
-                            .Height(10)
-                            .Margin(0, 0, 2, 0)
-                            .BindValue(Shape.FillProperty, new Binding("Cluster.ClusterColor"))
-                            .BindValue(Rectangle.IsVisibleProperty, new Binding("Cluster") { Converter = Converters.Converters.NotNull, FallbackValue = false })
-                            .Stroke(Brushes.Gray)
-                            .StrokeThickness(0.6)
-                            .BindValue(ToolTip.TipProperty, new Binding("Cluster.Name")),
-                        new TextBlock()
-                            .VerticalAlignment(VerticalAlignment.Center)
-                            .BindValue(TextBlock.TextProperty, new Binding("Title")))
-                    , false)));
+            .Setter(DocumentControl.HeaderTemplateProperty, new FuncDataTemplate<IDockable>((dockable, _) => CreateDocumentHeader(dockable!), false)));
 
         Add(new Style(x => x.OfType<HostWindow>().Class(":toolwindow"))
             .Setter(HostWindow.BackgroundProperty, new DynamicResourceExtension("SystemRegionBrush"))
             .Setter(HostWindow.OpacityProperty, 1d)
-            .Setter(HostWindow.RequestedThemeVariantProperty, new Binding(nameof(Application.RequestedThemeVariant)) { Source = Application.Current })
+            .Setter(HostWindow.RequestedThemeVariantProperty, CompiledBinding.Create<Application, ThemeVariant?>(x => x.RequestedThemeVariant, source: Application.Current))
             .Setter(HostWindow.TransparencyLevelHintProperty, new[] { WindowTransparencyLevel.None }));
 
         Add(new Style<DataGrid>()
@@ -134,5 +118,41 @@ public sealed class Fluent : AvaloniaStyles
         theme.Setters.Add(new Setter(ContentControl.VerticalAlignmentProperty, VerticalAlignment.Top));
 
         return theme;
+    }
+
+    private static StackPanel CreateDocumentHeader(IDockable dockable)
+    {
+        var cluster = GetCluster(dockable);
+
+        return new StackPanel()
+            .VerticalAlignment(VerticalAlignment.Center)
+            .Orientation(LayoutOrientation.Horizontal)
+            .Children(
+                CreateClusterIndicator(cluster),
+                new TextBlock()
+                    .VerticalAlignment(VerticalAlignment.Center)
+                    .BindValue(TextBlock.TextProperty, CompiledBinding.Create<IDockable, string?>(x => x.Title, source: dockable)));
+    }
+
+    private static Rectangle CreateClusterIndicator(ClusterWorkspaceViewModel? cluster)
+    {
+        var indicator = new Rectangle()
+            .Width(10)
+            .Height(10)
+            .Margin(0, 0, 2, 0)
+            .IsVisible(cluster != null)
+            .Stroke(Brushes.Gray)
+            .StrokeThickness(0.6);
+
+        return cluster == null
+            ? indicator
+            : indicator
+                .Fill(cluster, x => x.ClusterColor)
+                .ToolTip_Tip(cluster, x => x.Name);
+    }
+
+    private static ClusterWorkspaceViewModel? GetCluster(IDockable dockable)
+    {
+        return dockable.GetType().GetProperty("Cluster")?.GetValue(dockable) as ClusterWorkspaceViewModel;
     }
 }

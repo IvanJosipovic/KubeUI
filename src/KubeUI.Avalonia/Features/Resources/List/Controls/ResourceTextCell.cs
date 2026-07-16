@@ -15,7 +15,7 @@ public interface IDisplayFunc
 
 public sealed partial class ResourceTextCell : UserControl, IInitializeCluster, IDisplayFunc
 {
-    private ClusterWorkspaceViewModel? _cluster;
+    public ClusterWorkspaceViewModel? Cluster { get; private set; }
 
     private Func<object, string>? _displayFunc;
 
@@ -67,13 +67,13 @@ public sealed partial class ResourceTextCell : UserControl, IInitializeCluster, 
     protected override void OnUnloaded(RoutedEventArgs e)
     {
         base.OnUnloaded(e);
-        _cluster?.OnChange -= _cluster_OnChange;
+        Cluster?.OnChange -= _cluster_OnChange;
     }
 
     public void Initialize(ClusterWorkspaceViewModel cluster)
     {
-        _cluster = cluster;
-        _cluster.OnChange += _cluster_OnChange;
+        Cluster = cluster;
+        Cluster.OnChange += _cluster_OnChange;
     }
 
     public void SetDisplayFunc(Func<object, string> selector)
