@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Reactive.Linq;
 using Avalonia.Controls.Shapes;
 using Avalonia.Controls.Templates;
+using Avalonia.Data;
 using Avalonia.Data.Converters;
 using Avalonia.Layout;
 using Avalonia.Markup.Declarative;
@@ -141,29 +142,13 @@ public sealed class NavigationView : ViewBase<NavigationViewModel>
                                     new TextBlock()
                                         .VerticalAlignment(VerticalAlignment.Center)
                                         .Text(link, x => x.Name),
-                                    CreateResourceCountTextBlock(link)
+                                    new TextBlock()
+                                        .VerticalAlignment(VerticalAlignment.Center)
+                                        .Margin(4, 0, 0, 0)
+                                        .BindValue(TextBlock.TextProperty, new Binding("Count^")) //todo replace with CompiledBinding
                                 )
                         ),
                 link => link.NavigationItems);
-    }
-
-    private static TextBlock CreateResourceCountTextBlock(ResourceNavigationLink link)
-    {
-        var textBlock = new TextBlock()
-            .VerticalAlignment(VerticalAlignment.Center)
-            .Margin(4, 0, 0, 0);
-
-        if (link.Count == null)
-        {
-            return textBlock;
-        }
-
-        var subscription = link.Count.Subscribe(count =>
-            Dispatcher.UIThread.Post(() => textBlock.Text = count.ToString(CultureInfo.InvariantCulture)));
-
-        textBlock.DetachedFromVisualTree += (_, _) => subscription.Dispose();
-
-        return textBlock;
     }
 
     private static FuncTreeDataTemplate<NavigationItem> CreateNavigationItemTemplate()

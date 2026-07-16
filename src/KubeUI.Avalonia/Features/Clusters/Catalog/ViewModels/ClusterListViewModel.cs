@@ -3,11 +3,8 @@ using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
-using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Services.Settings;
-using KubeUI.Kubernetes;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace KubeUI.Avalonia.Features.Clusters.Catalog.ViewModels;
 
@@ -31,7 +28,7 @@ public sealed partial class ClusterListViewModel : ViewModelBase
         Settings = settings;
         _dialogService = dialogService;
 
-        Title = Assets.Resources.ClusterListView_Title;
+        Title = Assets.Resources.ClusterListView_Title!;
         Id = nameof(ClusterListViewModel);
     }
 
@@ -63,6 +60,3 @@ public sealed partial class ClusterListViewModel : ViewModelBase
         return cluster != null;
     }
 }
-
-
-

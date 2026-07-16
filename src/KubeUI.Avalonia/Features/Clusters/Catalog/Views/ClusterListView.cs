@@ -2,6 +2,7 @@ using FluentIcons.Avalonia;
 using FluentIcons.Common;
 using KubeUI.Avalonia.Controls;
 using KubeUI.Avalonia.Features.Clusters.Catalog.ViewModels;
+using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
 
 namespace KubeUI.Avalonia.Features.Clusters.Catalog.Views;
@@ -28,7 +29,7 @@ public sealed partial class ClusterListView : ViewBase<ClusterListViewModel>
                     .GridLinesVisibility(DataGridGridLinesVisibility.All)
                     .IsReadOnly(true)
                     .ItemsSource(vm, x => x.ClusterCatalog.Clusters)
-                    .SelectedItem(vm, x => x.SelectedItem, BindingMode.TwoWay)
+                    .SelectedItem(vm, x => x.SelectedItem)
                     .ContextMenu(
                         new ContextMenu()
                             .Items(
@@ -41,13 +42,13 @@ public sealed partial class ClusterListView : ViewBase<ClusterListViewModel>
                         new MyDataGridTextColumn
                         {
                             Width = new DataGridLength(1, DataGridLengthUnitType.Star),
-                            Binding = CompiledBinding.Create<Kubernetes.Cluster, string?>(x => x.Name),
+                            Binding = CompiledBinding.Create<ClusterWorkspaceViewModel, string>(x => x.Name),
                             Header = Assets.Resources.ClusterListView_Name,
                             SortDirection = ListSortDirection.Ascending
                         },
                         new MyDataGridTextColumn
                         {
-                            Binding = CompiledBinding.Create<Kubernetes.Cluster, string?>(x => x.KubeConfigPath),
+                            Binding = CompiledBinding.Create<ClusterWorkspaceViewModel, string?>(x => x.KubeConfigPath),
                             Header = Assets.Resources.ClusterListView_KubeConfig
                         }
                     ]));
