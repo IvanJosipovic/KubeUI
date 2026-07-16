@@ -386,7 +386,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
 
         if (parameters?[0] is V1Pod pod && (parameters?[1] is V1Container || parameters?[1] is k8s.Models.V1EphemeralContainer))
         {
-            return Cluster.CanI<V1Pod>(Verb.Get, pod.Namespace(), "log");
+            return Cluster.PermissionCache.CanI<V1Pod>(Verb.Get, pod.Namespace(), "log");
         }
 
         return false;
@@ -478,7 +478,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
 
         if (parameters?[0] is V1Pod pod && (parameters?[1] is V1Container || parameters?[1] is k8s.Models.V1EphemeralContainer))
         {
-            return Cluster.CanI<V1Pod>(Verb.Create, pod.Namespace(), subResource);
+            return Cluster.PermissionCache.CanI<V1Pod>(Verb.Create, pod.Namespace(), subResource);
         }
 
         return false;
@@ -530,7 +530,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
             return false;
         }
 
-        return Cluster.CanI<V1Pod>(Verb.Update, pod.Namespace(), "ephemeralcontainers");
+        return Cluster.PermissionCache.CanI<V1Pod>(Verb.Update, pod.Namespace(), "ephemeralcontainers");
     }
 
     [RelayCommand(CanExecute = nameof(CanPortForward))]
@@ -569,7 +569,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
         {
             return containerPort.ContainerPort > 0 &&
                    containerPort.Protocol == "TCP" &&
-                   Cluster.CanI<V1Pod>(Verb.Create, pod.Namespace(), "portforward");
+                   Cluster.PermissionCache.CanI<V1Pod>(Verb.Create, pod.Namespace(), "portforward");
         }
 
         return false;

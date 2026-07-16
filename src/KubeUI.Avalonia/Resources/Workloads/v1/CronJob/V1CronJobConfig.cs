@@ -117,7 +117,7 @@ public sealed partial class V1CronJobConfig : ResourceConfigBase<V1CronJob>
 
         foreach (var item in items.Cast<V1CronJob>().ToList().GroupBy(x => x.Namespace()))
         {
-            if (!Cluster.CanI<V1Job>(Verb.Create, item.Key))
+            if (!Cluster.PermissionCache.CanI<V1Job>(Verb.Create, item.Key))
             {
                 return false;
             }

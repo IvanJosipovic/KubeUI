@@ -115,9 +115,9 @@ public sealed partial class V1ServiceConfig : ResourceConfigBase<V1Service>
         {
             return servicePort?.Port > 0 &&
                    servicePort.Protocol == "TCP" &&
-                   Cluster.CanI<V1Pod>(Verb.Create, service.Namespace(), "portforward") &&
-                   Cluster.CanI<V1EndpointSlice>(Verb.List, service.Namespace()) &&
-                   Cluster.CanI<V1EndpointSlice>(Verb.Watch, service.Namespace());
+                   Cluster.PermissionCache.CanI<V1Pod>(Verb.Create, service.Namespace(), "portforward") &&
+                   Cluster.PermissionCache.CanI<V1EndpointSlice>(Verb.List, service.Namespace()) &&
+                   Cluster.PermissionCache.CanI<V1EndpointSlice>(Verb.Watch, service.Namespace());
         }
 
         return false;

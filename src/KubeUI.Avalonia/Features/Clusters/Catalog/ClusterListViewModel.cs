@@ -40,10 +40,10 @@ public sealed partial class ClusterListViewModel : ViewModelBase
     {
         ContentDialogSettings settings = new()
         {
-            Title = Assets.Resources.ClusterListView_Delete_Title,
-            Content = string.Format(Assets.Resources.ClusterListView_Delete_Content, cluster.Name),
-            PrimaryButtonText = Assets.Resources.ClusterListView_Delete_Primary,
-            SecondaryButtonText = Assets.Resources.ClusterListView_Delete_Secondary,
+            Title = Assets.Resources.ClusterListView_Delete_Title!,
+            Content = string.Format(Assets.Resources.ClusterListView_Delete_Content!, cluster.Name),
+            PrimaryButtonText = Assets.Resources.ClusterListView_Delete_Primary!,
+            SecondaryButtonText = Assets.Resources.ClusterListView_Delete_Secondary!,
             DefaultButton = FAContentDialogButton.Secondary
         };
 

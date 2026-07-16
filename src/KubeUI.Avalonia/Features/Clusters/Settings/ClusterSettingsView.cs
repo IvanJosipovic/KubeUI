@@ -5,7 +5,7 @@ using KubeUI.Avalonia.Features.Clusters.Settings.ViewModels;
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
 using TextMateSharp.Internal.Rules;
 
-namespace KubeUI.Avalonia.Features.Clusters.Settings.Views;
+namespace KubeUI.Avalonia.Features.Clusters.Settings;
 
 public sealed class ClusterSettingsView : ViewBase<ClusterSettingsViewModel>
 {
@@ -35,7 +35,7 @@ public sealed class ClusterSettingsView : ViewBase<ClusterSettingsViewModel>
     {
         return new Grid()
             .Cols("*,2*")
-            .IsEnabled(vm, x => !x.Cluster.ListNamespaces)
+            .IsVisible(vm, x => !x.Cluster.ListNamespaces)
             .ToolTip_Tip(Assets.Resources.ClusterSettingsView_ManualNamespacesTooltip)
             .Children(
                 new Label()

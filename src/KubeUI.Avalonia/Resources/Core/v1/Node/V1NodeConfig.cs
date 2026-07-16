@@ -147,7 +147,7 @@ public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>
 
     private bool CanCordonNode(IList? items)
     {
-        return items?.Count > 0 && Cluster.CanI<V1Node>(Verb.Patch);
+        return items?.Count > 0 && Cluster.PermissionCache.CanI<V1Node>(Verb.Patch);
     }
 
     [RelayCommand(CanExecute = nameof(CanUnCordonNode))]
@@ -190,7 +190,7 @@ public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>
 
     private bool CanUnCordonNode(IList? items)
     {
-        return items?.Count > 0 && Cluster.CanI<V1Node>(Verb.Patch);
+        return items?.Count > 0 && Cluster.PermissionCache.CanI<V1Node>(Verb.Patch);
     }
 
     [RelayCommand(CanExecute = nameof(CanDrainNode))]
@@ -270,7 +270,7 @@ public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>
 
     private bool CanDrainNode(IList? items)
     {
-        return items?.Count > 0 && Cluster.CanI<V1Node>(Verb.Patch);
+        return items?.Count > 0 && Cluster.PermissionCache.CanI<V1Node>(Verb.Patch);
     }
 
     public override Control[] Properties(V1Node resource) => [new PropertiesView()];

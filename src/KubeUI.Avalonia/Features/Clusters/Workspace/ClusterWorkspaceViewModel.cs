@@ -30,11 +30,9 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
     private readonly ConcurrentDictionary<string, string> _customResourceDefinitionSignatures = new(StringComparer.Ordinal);
     private readonly SemaphoreSlim _pendingCustomResourceDefinitionSignal = new(0);
     private readonly SemaphoreSlim _workspaceStateRefreshGate = new(1, 1);
-    private readonly SemaphoreSlim _resourcePermissionRefreshGate = new(1, 1);
     private readonly CancellationTokenSource _disposeCancellation = new();
     private readonly Task _pendingCustomResourceDefinitionTask;
     private INotifyCollectionChanged? _runtimeNamespacesCollection;
-    private bool _suppressPermissionRefresh;
     private bool _disposed;
     private bool _workspaceStateInitialized;
 
@@ -49,6 +47,11 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
         _clusterSettingsStore = clusterSettingsStore;
         _logger = logger;
 
+        PermissionCache = new ClusterPermissionCache(serviceProvider.GetRequiredService<ILogger<ClusterPermissionCache>>());
+        PermissionCache.Initialize(this);
+        PermissionCache.ResourcePermissionsChanged += OnResourcePermissionsChanged;
+        PermissionCache.ResourceConfigPermissionsUpdated += OnResourceConfigPermissionsUpdated;
+
         Title = runtime.Name;
         Id = $"cluster-workspace-{runtime.Name}";
         BindRuntimeCollections();
@@ -61,6 +64,8 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
 
     [ObservableProperty]
     public partial IClusterRuntime Runtime { get; set; }
+
+    public ClusterPermissionCache PermissionCache { get; }
 
     [ObservableProperty]
     public partial bool IsExpanded { get; set; }
@@ -188,7 +193,7 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
 
     public async Task Disconnect()
     {
-        _suppressPermissionRefresh = true;
+        PermissionCache.SetPermissionRefreshSuppressed(true);
 
         try
         {
@@ -197,7 +202,7 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
         }
         finally
         {
-            _suppressPermissionRefresh = false;
+            PermissionCache.SetPermissionRefreshSuppressed(false);
         }
     }
 
@@ -268,27 +273,27 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
 
     public Task RefreshAuthorizationIndexAsync(IEnumerable<AuthorizationRequest> requests)
     {
-        return Runtime.RefreshAuthorizationIndexAsync(requests);
+        return PermissionCache.RefreshAuthorizationIndexAsync(requests);
     }
 
     public bool CanI(Type type, Verb verb, string? @namespace = null, string? subresource = null)
     {
-        return Runtime.CanI(type, verb, @namespace, subresource);
+        return PermissionCache.CanI(type, verb, @namespace, subresource);
     }
 
     public bool CanI<T>(Verb verb, string? @namespace = null, string? subresource = null) where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
-        return Runtime.CanI<T>(verb, @namespace, subresource);
+        return PermissionCache.CanI<T>(verb, @namespace, subresource);
     }
 
     public bool CanIAnyNamespace(Type type, Verb verb, string? subresource = null)
     {
-        return Runtime.CanIAnyNamespace(type, verb, subresource);
+        return PermissionCache.CanIAnyNamespace(type, verb, subresource);
     }
 
     public bool CanIAnyNamespace<T>(Verb verb, string? subresource = null) where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
-        return Runtime.CanIAnyNamespace<T>(verb, subresource);
+        return PermissionCache.CanIAnyNamespace<T>(verb, subresource);
     }
 
     public bool IsResourceNamespaced(Type type)
@@ -341,32 +346,32 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
 
     public Task UpdatePermissionsAllNamespaceAsync(Type type, Verb verb, string? subresource = null)
     {
-        return Runtime.UpdatePermissionsAllNamespaceAsync(type, verb, subresource);
+        return PermissionCache.UpdatePermissionsAllNamespaceAsync(type, verb, subresource);
     }
 
     public Task UpdatePermissionsAllNamespaceAsync<T>(Verb verb, string? subresource = null) where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
-        return Runtime.UpdatePermissionsAllNamespaceAsync<T>(verb, subresource);
+        return PermissionCache.UpdatePermissionsAllNamespaceAsync<T>(verb, subresource);
     }
 
     public Task<bool> UpdateCanI(Type type, Verb verb, string? @namespace = null, string? subresource = null)
     {
-        return Runtime.UpdateCanI(type, verb, @namespace, subresource);
+        return PermissionCache.UpdateCanI(type, verb, @namespace, subresource);
     }
 
     public Task<bool> UpdateCanI<T>(Verb verb, string? @namespace = null, string? subresource = null) where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
-        return Runtime.UpdateCanI<T>(verb, @namespace, subresource);
+        return PermissionCache.UpdateCanI<T>(verb, @namespace, subresource);
     }
 
     public Task<bool> UpdateCanIAnyNamespaceAsync(Type type, Verb verb, string? subresource = null)
     {
-        return Runtime.UpdateCanIAnyNamespaceAsync(type, verb, subresource);
+        return PermissionCache.UpdateCanIAnyNamespaceAsync(type, verb, subresource);
     }
 
     public Task<bool> UpdateCanIAnyNamespaceAsync<T>(Verb verb, string? subresource = null) where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
-        return Runtime.UpdateCanIAnyNamespaceAsync<T>(verb, subresource);
+        return PermissionCache.UpdateCanIAnyNamespaceAsync<T>(verb, subresource);
     }
 
     public IResourceConfig GetResourceConfig(GroupApiVersionKind kind)
@@ -409,6 +414,9 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
         _disposed = true;
         Runtime.OnChange -= OnRuntimeChange;
         Runtime.OnCustomResourceDefinitionReady -= HandleCustomResourceDefinitionReady;
+        PermissionCache.ResourcePermissionsChanged -= OnResourcePermissionsChanged;
+        PermissionCache.ResourceConfigPermissionsUpdated -= OnResourceConfigPermissionsUpdated;
+        PermissionCache.Dispose();
         UnsubscribeNamespaceCollection();
 
         if (Runtime is INotifyPropertyChanged propertyChanged)
@@ -547,26 +555,12 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
 
     private void QueueResourceConfigPermissionsRefresh(IReadOnlyCollection<IResourceConfig>? resourceConfigs = null)
     {
-        if (_suppressPermissionRefresh || _disposed)
+        if (_disposed)
         {
             return;
         }
 
-        _ = Task.Run(() => RefreshResourceConfigPermissionsQueuedAsync(resourceConfigs));
-    }
-
-    private async Task RefreshResourceConfigPermissionsQueuedAsync(IReadOnlyCollection<IResourceConfig>? resourceConfigs)
-    {
-        await _resourcePermissionRefreshGate.WaitAsync().ConfigureAwait(false);
-
-        try
-        {
-            await RefreshResourceConfigPermissionsAsync(resourceConfigs).ConfigureAwait(false);
-        }
-        finally
-        {
-            _resourcePermissionRefreshGate.Release();
-        }
+        PermissionCache.QueueResourceConfigPermissionsRefresh(resourceConfigs);
     }
 
     private async Task EnsureDynamicResourceConfigsAsync()
@@ -601,8 +595,8 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
         var resourceConfig = (IResourceConfig)_serviceProvider.GetRequiredService(resourceConfigType);
 
         resourceConfig.Initialize(this);
-        await RefreshAuthorizationIndexForConfigsAsync([resourceConfig]).ConfigureAwait(false);
-        await resourceConfig.UpdatePermissions().ConfigureAwait(false);
+        await PermissionCache.RefreshAuthorizationIndexAsync(resourceConfig.AuthorizationRequests()).ConfigureAwait(false);
+        await PermissionCache.RefreshResourceConfigPermissionAsync(resourceConfig).ConfigureAwait(false);
 
         if (!resourceConfig.CanListAndWatch)
         {
@@ -614,50 +608,26 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
         return new PendingCustomResourceConfig(api, resourceConfig);
     }
 
-    private async Task RefreshAuthorizationIndexForConfigsAsync(IEnumerable<IResourceConfig> resourceConfigs)
+    private Task RefreshResourceConfigPermissionsAsync(IReadOnlyCollection<IResourceConfig>? resourceConfigs = null)
     {
-        var requests = BuildAuthorizationRequests(resourceConfigs);
-        if (requests.Length == 0)
-        {
-            return;
-        }
-
-        await Runtime.RefreshAuthorizationIndexAsync(requests).ConfigureAwait(false);
-    }
-
-    private async Task RefreshResourceConfigPermissionsAsync(IReadOnlyCollection<IResourceConfig>? resourceConfigs = null)
-    {
-        var configSnapshot = resourceConfigs?.ToArray() ?? _resourceConfigs.Values.ToArray();
-        var updateTasks = configSnapshot
-            .Select(RefreshResourceConfigPermissionAsync)
-            .ToArray();
-
-        if (updateTasks.Length == 0)
-        {
-            await EnsureCustomResourceDefinitionResourceSeededAsync().ConfigureAwait(false);
-            await EnsureEventResourceSeededAsync().ConfigureAwait(false);
-            NotifyResourcePermissionsChanged();
-            return;
-        }
-
-        await RefreshAuthorizationIndexForConfigsAsync(configSnapshot).ConfigureAwait(false);
-        await Task.WhenAll(updateTasks).ConfigureAwait(false);
-        await EnsureCustomResourceDefinitionResourceSeededAsync().ConfigureAwait(false);
-        await EnsureEventResourceSeededAsync().ConfigureAwait(false);
-    }
-
-    private static AuthorizationRequest[] BuildAuthorizationRequests(IEnumerable<IResourceConfig> resourceConfigs)
-    {
-        return resourceConfigs
-            .SelectMany(static config => config.AuthorizationRequests())
-            .Distinct()
-            .ToArray();
+        return PermissionCache.RefreshResourceConfigPermissionsAsync(
+            resourceConfigs,
+            whenNoConfigs: async () =>
+            {
+                await EnsureCustomResourceDefinitionResourceSeededAsync().ConfigureAwait(false);
+                await EnsureEventResourceSeededAsync().ConfigureAwait(false);
+            },
+            afterRefresh: async () =>
+            {
+                await EnsureCustomResourceDefinitionResourceSeededAsync().ConfigureAwait(false);
+                await EnsureEventResourceSeededAsync().ConfigureAwait(false);
+            });
     }
 
     private bool CanReadEventsInNamespace(string? @namespace)
     {
-        return Runtime.CanI<Corev1Event>(Verb.List, @namespace)
-            && Runtime.CanI<Corev1Event>(Verb.Watch, @namespace);
+        return PermissionCache.CanI<Corev1Event>(Verb.List, @namespace)
+            && PermissionCache.CanI<Corev1Event>(Verb.Watch, @namespace);
     }
 
     private async Task EnsureEventResourceSeededAsync()
@@ -698,8 +668,8 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
             return false;
         }
 
-        if (await Runtime.UpdateCanI<Corev1Event>(Verb.List).ConfigureAwait(false)
-            && await Runtime.UpdateCanI<Corev1Event>(Verb.Watch).ConfigureAwait(false))
+        if (await PermissionCache.UpdateCanI<Corev1Event>(Verb.List).ConfigureAwait(false)
+            && await PermissionCache.UpdateCanI<Corev1Event>(Verb.Watch).ConfigureAwait(false))
         {
             return true;
         }
@@ -712,8 +682,8 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
                 continue;
             }
 
-            if (await Runtime.UpdateCanI<Corev1Event>(Verb.List, @namespace).ConfigureAwait(false)
-                && await Runtime.UpdateCanI<Corev1Event>(Verb.Watch, @namespace).ConfigureAwait(false))
+            if (await PermissionCache.UpdateCanI<Corev1Event>(Verb.List, @namespace).ConfigureAwait(false)
+                && await PermissionCache.UpdateCanI<Corev1Event>(Verb.Watch, @namespace).ConfigureAwait(false))
             {
                 return true;
             }
@@ -747,6 +717,11 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
 
     private void OnRuntimeNamespacesCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
+        if (!_workspaceStateInitialized || _disposed)
+        {
+            return;
+        }
+
         var namespacedResourceConfigs = _resourceConfigs.Values
             .Where(static resourceConfig => resourceConfig.IsNamespaced)
             .ToArray();
@@ -754,26 +729,24 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
         QueueResourceConfigPermissionsRefresh(namespacedResourceConfigs);
     }
 
-    private async Task RefreshResourceConfigPermissionAsync(IResourceConfig resourceConfig)
+    private void OnResourcePermissionsChanged(ClusterWorkspaceViewModel cluster)
     {
-        var previousIsVisible = resourceConfig.PermissionsLoaded && resourceConfig.CanListAndWatch;
-
-        try
+        if (!ReferenceEquals(cluster, this))
         {
-            await resourceConfig.UpdatePermissions().ConfigureAwait(false);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogDebug(ex, "Unable to refresh permissions for {Kind}", resourceConfig.Kind);
+            return;
         }
 
-        var currentIsVisible = resourceConfig.PermissionsLoaded && resourceConfig.CanListAndWatch;
+        NotifyResourcePermissionsChanged();
+    }
+
+    private void OnResourceConfigPermissionsUpdated(ClusterWorkspaceViewModel cluster, IResourceConfig resourceConfig)
+    {
+        if (!ReferenceEquals(cluster, this))
+        {
+            return;
+        }
+
         NotifyResourceConfigPermissionsUpdated(resourceConfig);
-
-        if (previousIsVisible != currentIsVisible)
-        {
-            NotifyResourcePermissionsChanged();
-        }
     }
 
     private void SubscribeRuntime()

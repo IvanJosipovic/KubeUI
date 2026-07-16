@@ -5,6 +5,10 @@ using KubernetesClient.Informer.Client;
 
 namespace KubeUI.Kubernetes;
 
+/// <summary>
+/// Runtime authorization engine and permission index for a cluster.
+/// Owns Kubernetes authorization calls and cached permission truth.
+/// </summary>
 public partial class Cluster
 {
     private readonly ConcurrentDictionary<string, bool> _permissionIndex = new();

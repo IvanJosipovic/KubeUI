@@ -262,7 +262,7 @@ public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
 
     private bool CanSetEditMode()
     {
-        return Cluster!.CanI(Object!.GetType(), Verb.Update, Object?.Metadata?.NamespaceProperty);
+        return Cluster!.PermissionCache.CanI(Object!.GetType(), Verb.Update, Object?.Metadata?.NamespaceProperty);
     }
 
     [RelayCommand(CanExecute = nameof(CanUndo))]

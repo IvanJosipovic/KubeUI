@@ -56,10 +56,10 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
     {
         ["Workloads"] = 8,
         ["Configuration"] = 9,
-        ["Network"] = 10,
+        [NetworkCategoryName] = 10,
         ["Storage"] = 11,
         ["Access Control"] = 12,
-        ["Custom Resource Definitions"] = 13,
+        [CustomResourceDefinitionsCategoryName] = 13,
     };
 
     private readonly ILogger<NavigationViewModel> _logger;
@@ -450,14 +450,6 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
         });
     }
 
-    private void InitializeClusterNavigation(ClusterWorkspaceViewModel cluster, bool updatePortForwarders = false)
-    {
-        if (_clusterNodes.TryGetValue(cluster, out var node))
-        {
-            InitializeClusterNavigation(node, updatePortForwarders);
-        }
-    }
-
     private void InitializeClusterNavigation(ClusterNavigationNode node, bool updatePortForwarders = false)
     {
         node.NavigationItems.Clear();
@@ -511,20 +503,27 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
 
     private static void AddBaseNavigationItems(ClusterNavigationNode node)
     {
-        node.NavigationItems.Add(CreateNavigationLink(node.Cluster, NavigationTargets.ClusterWorkspace, Assets.Resources.ClusterView_Title, ClusterWorkspaceOrder));
-        node.NavigationItems.Add(CreateNavigationLink(node.Cluster, NavigationTargets.Visualization, Assets.Resources.VisualizationView_Title, VisualizationOrder));
-        node.NavigationItems.Add(CreateNavigationLink(node.Cluster, NavigationTargets.ClusterSettings, Assets.Resources.ClusterSettingsView_Title, ClusterSettingsOrder));
-        node.NavigationItems.Add(CreateNavigationLink(node.Cluster, "load-yaml", Assets.Resources.NavigationView_LoadYaml, LoadYamlOrder));
-        node.NavigationItems.Add(CreateNavigationLink(node.Cluster, "load-folder", Assets.Resources.NavigationView_LoadFolder, LoadFolderOrder));
+        foreach (var link in CreateBaseNavigationLinks(node.Cluster))
+        {
+            node.NavigationItems.Add(link);
+        }
     }
 
     private static void EnsureBaseNavigationItems(ClusterNavigationNode node)
     {
-        UpsertNavigationItem(node.NavigationItems, CreateNavigationLink(node.Cluster, NavigationTargets.ClusterWorkspace, Assets.Resources.ClusterView_Title, ClusterWorkspaceOrder));
-        UpsertNavigationItem(node.NavigationItems, CreateNavigationLink(node.Cluster, NavigationTargets.Visualization, Assets.Resources.VisualizationView_Title, VisualizationOrder));
-        UpsertNavigationItem(node.NavigationItems, CreateNavigationLink(node.Cluster, NavigationTargets.ClusterSettings, Assets.Resources.ClusterSettingsView_Title, ClusterSettingsOrder));
-        UpsertNavigationItem(node.NavigationItems, CreateNavigationLink(node.Cluster, "load-yaml", Assets.Resources.NavigationView_LoadYaml, LoadYamlOrder));
-        UpsertNavigationItem(node.NavigationItems, CreateNavigationLink(node.Cluster, "load-folder", Assets.Resources.NavigationView_LoadFolder, LoadFolderOrder));
+        foreach (var link in CreateBaseNavigationLinks(node.Cluster))
+        {
+            UpsertNavigationItem(node.NavigationItems, link);
+        }
+    }
+
+    private static IEnumerable<NavigationLink> CreateBaseNavigationLinks(ClusterWorkspaceViewModel cluster)
+    {
+        yield return CreateNavigationLink(cluster, NavigationTargets.ClusterWorkspace, Assets.Resources.ClusterView_Title, ClusterWorkspaceOrder);
+        yield return CreateNavigationLink(cluster, NavigationTargets.Visualization, Assets.Resources.VisualizationView_Title, VisualizationOrder);
+        yield return CreateNavigationLink(cluster, NavigationTargets.ClusterSettings, Assets.Resources.ClusterSettingsView_Title, ClusterSettingsOrder);
+        yield return CreateNavigationLink(cluster, "load-yaml", Assets.Resources.NavigationView_LoadYaml, LoadYamlOrder);
+        yield return CreateNavigationLink(cluster, "load-folder", Assets.Resources.NavigationView_LoadFolder, LoadFolderOrder);
     }
 
     private bool CanShowPortForwarders(ClusterWorkspaceViewModel cluster)
@@ -539,7 +538,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
 
         try
         {
-            return cluster.CanIAnyNamespace(typeof(V1Pod), Verb.Create, "portforward");
+            return cluster.PermissionCache.CanIAnyNamespace(typeof(V1Pod), Verb.Create, "portforward");
         }
         catch (Exception ex)
         {
@@ -1208,8 +1207,8 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
                 return true;
             }
 
-            if (cluster.CanI(resourceConfig.Type, Verb.List)
-                && cluster.CanI(resourceConfig.Type, Verb.Watch))
+            if (cluster.PermissionCache.CanI(resourceConfig.Type, Verb.List)
+                && cluster.PermissionCache.CanI(resourceConfig.Type, Verb.Watch))
             {
                 return true;
             }
@@ -1233,8 +1232,8 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
                 continue;
             }
 
-            if (cluster.CanI(resourceConfig.Type, Verb.List, namespaceName)
-                && cluster.CanI(resourceConfig.Type, Verb.Watch, namespaceName))
+            if (cluster.PermissionCache.CanI(resourceConfig.Type, Verb.List, namespaceName)
+                && cluster.PermissionCache.CanI(resourceConfig.Type, Verb.Watch, namespaceName))
             {
                 return true;
             }
@@ -1411,24 +1410,6 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
 
             Factory.AddToDocuments(vm);
         }
-    }
-
-    private bool TryActivateExistingDocument(string? id)
-    {
-        if (string.IsNullOrWhiteSpace(id))
-        {
-            return false;
-        }
-
-        var existing = Factory.FindDockableById(id);
-
-        if (existing == null)
-        {
-            return false;
-        }
-
-        ActivateDocument(existing);
-        return true;
     }
 
     private void ActivateDocument(IDockable dockable)

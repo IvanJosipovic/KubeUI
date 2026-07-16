@@ -52,6 +52,24 @@ public class ClusterWorkspaceViewModelTests : AvaloniaTestBase
     }
 
     [AvaloniaFact]
+    public void permission_cache_is_initialized_for_workspace_cluster()
+    {
+        var runtime = new TestCluster();
+        var workspace = CreateWorkspace(runtime);
+
+        workspace.PermissionCache.Cluster.ShouldBeSameAs(workspace);
+    }
+
+    [AvaloniaFact]
+    public void permission_cache_rejects_rebinding_to_different_cluster()
+    {
+        var workspace = CreateWorkspace(new TestCluster());
+        var otherWorkspace = CreateWorkspace(new TestCluster());
+
+        Should.Throw<InvalidOperationException>(() => workspace.PermissionCache.Initialize(otherWorkspace));
+    }
+
+    [AvaloniaFact]
     public async Task added_crd_adds_resource_config_and_model_cache_entry()
     {
         var runtime = new TestCluster();

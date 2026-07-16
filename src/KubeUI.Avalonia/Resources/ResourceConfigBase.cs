@@ -95,7 +95,12 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
 
     protected virtual Task RefreshPermissionAsync(Verb verb, string? subResource)
     {
-        return Cluster.UpdatePermissionsAllNamespaceAsync<T>(verb, subResource);
+        if (Cluster.AuthorizationIndexReady)
+        {
+            return Task.CompletedTask;
+        }
+
+        return Cluster.PermissionCache.UpdatePermissionsAllNamespaceAsync<T>(verb, subResource);
     }
 
     public IEnumerable<(Verb verb, string? subresource)> Permissions()
@@ -198,8 +203,13 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
 
         try
         {
-            var canList = await Cluster.UpdateCanIAnyNamespaceAsync<T>(Verb.List).ConfigureAwait(false);
-            var canWatch = await Cluster.UpdateCanIAnyNamespaceAsync<T>(Verb.Watch).ConfigureAwait(false);
+            if (!Cluster.AuthorizationIndexReady)
+            {
+                await Cluster.PermissionCache.RefreshAuthorizationIndexAsync(AuthorizationRequests()).ConfigureAwait(false);
+            }
+
+            var canList = Cluster.PermissionCache.CanIAnyNamespace<T>(Verb.List);
+            var canWatch = Cluster.PermissionCache.CanIAnyNamespace<T>(Verb.Watch);
             CanListAndWatch = canList && canWatch;
         }
         catch (Exception ex)
@@ -276,7 +286,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
 
     public bool CanNewResource()
     {
-        return Cluster.CanIAnyNamespace<T>(Verb.Create);
+        return Cluster.PermissionCache.CanIAnyNamespace<T>(Verb.Create);
     }
 
     [RelayCommand(CanExecute = nameof(CanDelete))]
@@ -330,7 +340,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
 
         foreach (var item in items.Cast<T>().ToList().GroupBy(x => x.Namespace()))
         {
-            if (!Cluster.CanI<T>(Verb.Delete, item.Key))
+            if (!Cluster.PermissionCache.CanI<T>(Verb.Delete, item.Key))
             {
                 return false;
             }
@@ -436,7 +446,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
 
         foreach (var item in items.Cast<T>().ToList().GroupBy(x => x.Namespace()))
         {
-            if (!Cluster.CanI<T>(Verb.Patch, item.Key))
+            if (!Cluster.PermissionCache.CanI<T>(Verb.Patch, item.Key))
             {
                 return false;
             }
