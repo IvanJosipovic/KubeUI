@@ -2186,6 +2186,7 @@ internal sealed class TestEnumColumnDefinition : IResourceListColumn
     public string Key => "status";
     public string Name => "Status";
     public string? Width => null;
+    public double MinWidth => 90;
     public KubeUI.Avalonia.Resources.SortDirection Sort { get; set; } = KubeUI.Avalonia.Resources.SortDirection.None;
     public Type CustomControl => typeof(object);
     public Type ItemType => typeof(V1Pod);
