@@ -1,13 +1,10 @@
 using Dock.Model.Controls;
 using Dock.Model.Core;
 using KubeUI.Avalonia.Features.Resources.List.ViewModels;
-using KubeUI.Avalonia.Infrastructure.DependencyInjection;
 using KubeUI.Avalonia.Infrastructure.Docking;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Resources;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
-using KubeUI.Kubernetes;
-using Microsoft.Extensions.DependencyInjection;
 using KubernetesClient.Informer.Client;
 
 namespace KubeUI.Avalonia.Shell.Navigation;

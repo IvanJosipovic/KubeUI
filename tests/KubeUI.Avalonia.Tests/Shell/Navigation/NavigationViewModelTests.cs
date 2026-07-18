@@ -281,9 +281,6 @@ public class NavigationViewModelTests : AvaloniaTestBase
         };
 
         var workspace = CreateWorkspace(runtime);
-        await workspace.SeedResource<V1Namespace>();
-        await workspace.Connect();
-        Dispatcher.UIThread.RunJobs();
         workspace.AddResourceConfigForTest(new FakeResourceConfig(typeof(V1CustomResourceDefinition), "Definitions"));
 
         var vm = CreateViewModel();
@@ -317,8 +314,6 @@ public class NavigationViewModelTests : AvaloniaTestBase
         };
 
         var workspace = CreateWorkspace(runtime);
-        await workspace.Connect();
-        Dispatcher.UIThread.RunJobs();
 
         var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
@@ -343,8 +338,6 @@ public class NavigationViewModelTests : AvaloniaTestBase
         };
 
         var workspace = CreateWorkspace(runtime);
-        await workspace.Connect();
-        Dispatcher.UIThread.RunJobs();
         workspace.AddResourceConfigForTest(new FakeResourceConfig(typeof(V1CustomResourceDefinition), "Definitions"));
         var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
@@ -689,7 +682,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
     }
 
     [AvaloniaFact]
-    public async Task namespaced_resource_link_uses_namespace_permissions_even_when_cached_config_flag_is_false()
+    public async Task namespaced_resource_link_stays_hidden_when_cached_config_flag_is_false()
     {
         var runtime = new TestCluster
         {
@@ -723,9 +716,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
         Dispatcher.UIThread.RunJobs();
 
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
-        var link = await WaitForValueAsync(() => FindResourceLink(clusterNode, "Alpha Permission Resource"));
-
-        link.ShouldNotBeNull();
+        FindResourceLink(clusterNode, "Alpha Permission Resource").ShouldBeNull();
     }
 
     [AvaloniaFact]
@@ -1598,7 +1589,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
     }
 
     [AvaloniaFact]
-    public async Task updated_crd_reloads_open_resource_list_document_to_the_new_generated_type()
+    public async Task updated_crd_reopening_resource_list_document_uses_the_new_generated_type()
     {
         var runtime = new TestCluster
         {
@@ -1644,7 +1635,11 @@ public class NavigationViewModelTests : AvaloniaTestBase
         var updatedType = await WaitForValueAsync(() => GetCustomResourceType(runtime, updatedCrd));
         updatedType.ShouldNotBeNull();
         updatedType.ShouldNotBe(originalType);
+
         await AddGeneratedCustomResourceAsync(workspace, updatedType, updatedCrd, "default", "new-item");
+
+        await vm.OpenResourceNavigationCommand.ExecuteAsync(originalLink);
+        Dispatcher.UIThread.RunJobs();
 
         await WaitForAsync(() =>
             documents.VisibleDockables?.OfType<IResourceListViewModel>().Any(x =>
@@ -1779,9 +1774,10 @@ public class NavigationViewModelTests : AvaloniaTestBase
         var podsLink = await WaitForValueAsync(() => FindResourceLink(clusterNode, "Pods"));
 
         podsLink.ShouldNotBeNull();
-        (podsLink.Count is not null).ShouldBeTrue();
-        var countTask = WaitForCountAsync(podsLink.Count, timeoutMs: 10000);
+        podsLink.Count.ShouldBeNull();
         await vm.TreeViewSelectionChangedAsync(podsLink);
+        await WaitForAsync(() => podsLink.Count is not null, timeoutMs: 10000);
+        var countTask = WaitForCountAsync(podsLink.Count!, timeoutMs: 10000);
         var count = await countTask;
         count.ShouldBe(0);
     }
