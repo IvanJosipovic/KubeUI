@@ -2558,6 +2558,7 @@ internal class FakeCustomResourceConfig : IResourceConfig
     public IRelayCommand NewResourceCommand => throw new NotImplementedException();
 
     public IRelayCommand<IList> ViewCommand => throw new NotImplementedException();
+    public IAsyncRelayCommand<IList> DeleteCommand => throw new NotImplementedException();
 
     public void Initialize(ClusterWorkspace cluster)
     {
@@ -2595,6 +2596,7 @@ internal class FakeResourceConfig : IResourceConfig
     public IRelayCommand NewResourceCommand => throw new NotImplementedException();
 
     public IRelayCommand<IList> ViewCommand => throw new NotImplementedException();
+    public IAsyncRelayCommand<IList> DeleteCommand => throw new NotImplementedException();
 
     public void Initialize(ClusterWorkspace cluster)
     {
@@ -2637,6 +2639,7 @@ internal sealed class DeferredPermissionResourceConfig : IResourceConfig
     public IRelayCommand NewResourceCommand => throw new NotImplementedException();
 
     public IRelayCommand<IList> ViewCommand => throw new NotImplementedException();
+    public IAsyncRelayCommand<IList> DeleteCommand => throw new NotImplementedException();
 
     public void Initialize(ClusterWorkspace cluster)
     {
@@ -2706,6 +2709,7 @@ internal sealed class SlowPermissionResourceConfig : IResourceConfig
     public IRelayCommand NewResourceCommand => throw new NotImplementedException();
 
     public IRelayCommand<IList> ViewCommand => throw new NotImplementedException();
+    public IAsyncRelayCommand<IList> DeleteCommand => throw new NotImplementedException();
 
     public void Initialize(ClusterWorkspace cluster)
     {

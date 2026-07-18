@@ -476,6 +476,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
             CanUserSort = true,
             ShowFilterButton = true,
             CustomSortComparer = s_noopSortComparer,
+            MinWidth = columnDefinition.MinWidth,
             Width = ParseWidth(columnDefinition.Width, converter),
             ValueAccessor = columnDefinition.ValueAccessor,
             ValueType = columnDefinition.ValueType,

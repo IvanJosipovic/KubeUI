@@ -918,6 +918,7 @@ internal sealed class BlockingPodPermissionResourceConfig : IResourceConfig
     public Type Type { get; } = typeof(V1Pod);
     public IRelayCommand NewResourceCommand => throw new NotImplementedException();
     public IRelayCommand<IList> ViewCommand => throw new NotImplementedException();
+    public IAsyncRelayCommand<IList> DeleteCommand => throw new NotImplementedException();
     public IEnumerable<(Verb verb, string? subresource)> Permissions() => [(Verb.List, null), (Verb.Watch, null), (Verb.Create, "portforward")];
 
     public async Task EvaluateListWatchAccessAsync()
@@ -962,6 +963,7 @@ internal sealed class ImmediatePermissionResourceConfig : IResourceConfig
     public Type Type { get; }
     public IRelayCommand NewResourceCommand => throw new NotImplementedException();
     public IRelayCommand<IList> ViewCommand => throw new NotImplementedException();
+    public IAsyncRelayCommand<IList> DeleteCommand => throw new NotImplementedException();
     public IEnumerable<(Verb verb, string? subresource)> Permissions() => [(Verb.List, null), (Verb.Watch, null)];
 
     public Task EvaluateListWatchAccessAsync()

@@ -46,7 +46,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
 
     public virtual string Name => Kind.Kind.Humanize(LetterCasing.Title).Pluralize();
 
-    public virtual string? Category { get; } = null;
+    public virtual string? Category { get; }
 
     public virtual bool ShowNewResource { get; } = true;
 
@@ -518,6 +518,8 @@ public class ResourceListColumn<T, TValue> : IResourceListColumn where T : class
     public Type CustomControl { get; set; } = typeof(ResourceTextCell);
 
     public string? Width { get; set; }
+
+    public double MinWidth { get; set; } = 90;
 
     public Type ItemType => typeof(T);
 

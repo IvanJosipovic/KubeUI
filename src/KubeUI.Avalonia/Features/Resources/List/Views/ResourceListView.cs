@@ -54,10 +54,7 @@ public partial class ResourceListView : ViewBase<IResourceListViewModel>
         }
 
         var state = grid.CaptureState(DataGridStateSections.All, CreateStateOptions(grid));
-        if (state.Scroll is not null || vm.DataGridRuntimeState?.Scroll is null)
-        {
-            vm.DataGridRuntimeState = state;
-        }
+        vm.DataGridRuntimeState = state;
     }
 
     private static DataGridStateOptions CreateStateOptions(DataGrid grid) => new()
@@ -93,7 +90,6 @@ public partial class ResourceListView : ViewBase<IResourceListViewModel>
                     .GridLinesVisibility(DataGridGridLinesVisibility.All)
                     .IsReadOnly(true)
                     .ItemsSource(vm, x => x.View)
-                    .MinColumnWidth(90)
                     .SearchModel(vm, x => x.SearchModel)
                     .Selection(vm, x => x.SelectionModel)
                     .SelectionMode(DataGridSelectionMode.Extended)

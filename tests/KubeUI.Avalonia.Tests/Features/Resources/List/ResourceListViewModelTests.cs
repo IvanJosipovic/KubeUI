@@ -1760,6 +1760,197 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         ((DataGridControlTemplateColumnDefinition)(vm.SortingModel.Descriptors[0].ColumnId)).ColumnKey.ShouldBe("labels");
     }
 
+    [AvaloniaFact(DisplayName = "Restoring DataGrid state preserves column widths")]
+    public async Task restoring_datagrid_state_preserves_column_widths()
+    {
+        var window = CreateWindow();
+        var cluster = await CreateClusterAsync();
+
+        var vm = GetRequiredService<ResourceListViewModel<V1Pod>>();
+        vm.Initialize(cluster);
+
+        var view = GetRequiredService<ResourceListView>();
+        view.DataContext = vm;
+        window.Content = view;
+        window.Show();
+        Dispatcher.UIThread.RunJobs();
+
+        var grid = view.FindControl<DataGrid>("PART_Grid");
+        grid.ShouldNotBeNull();
+        grid.Columns.Count.ShouldBeGreaterThan(1);
+
+        var columns = grid.Columns.Take(2).ToList();
+        foreach (var (column, width) in columns.Zip([180d, 240d]))
+        {
+            column.Width = new DataGridLength(width);
+        }
+
+        grid.UpdateLayout();
+        Dispatcher.UIThread.RunJobs();
+
+        var widths = columns.ToDictionary(
+            column => column.ColumnKey ?? column.Header!,
+            column => column.Width.DisplayValue);
+
+        window.Content = null;
+        Dispatcher.UIThread.RunJobs();
+
+        var restoredView = GetRequiredService<ResourceListView>();
+        restoredView.DataContext = vm;
+        window.Content = restoredView;
+        Dispatcher.UIThread.RunJobs();
+
+        var restoredGrid = restoredView.FindControl<DataGrid>("PART_Grid");
+        restoredGrid.ShouldNotBeNull();
+
+        foreach (var column in restoredGrid.Columns.Take(2))
+        {
+            var key = column.ColumnKey ?? column.Header!;
+            column.Width.DisplayValue.ShouldBe(widths[key], tolerance: 0.1);
+        }
+    }
+
+    [AvaloniaFact(DisplayName = "Restoring DataGrid state enforces the grid minimum column width")]
+    public async Task restoring_datagrid_state_enforces_grid_minimum_column_width()
+    {
+        var window = CreateWindow();
+        var cluster = await CreateClusterAsync();
+
+        var vm = GetRequiredService<ResourceListViewModel<V1Pod>>();
+        vm.Initialize(cluster);
+
+        var view = GetRequiredService<ResourceListView>();
+        view.DataContext = vm;
+        window.Content = view;
+        window.Show();
+        Dispatcher.UIThread.RunJobs();
+
+        var grid = view.FindControl<DataGrid>("PART_Grid");
+        grid.ShouldNotBeNull();
+        grid.Columns.First().MinWidth.ShouldBe(90);
+        window.Content = null;
+        Dispatcher.UIThread.RunJobs();
+
+        vm.DataGridRuntimeState.ShouldNotBeNull();
+        vm.DataGridRuntimeState!.Columns.ShouldNotBeNull();
+        var columns = vm.DataGridRuntimeState.Columns.Columns.ToList();
+        columns[0].Width = new DataGridLength(20);
+        vm.DataGridRuntimeState.Columns = new DataGridColumnLayoutState
+        {
+            Columns = columns,
+            FrozenColumnCount = vm.DataGridRuntimeState.Columns.FrozenColumnCount,
+            FrozenColumnCountRight = vm.DataGridRuntimeState.Columns.FrozenColumnCountRight
+        };
+
+        var restoredView = GetRequiredService<ResourceListView>();
+        restoredView.DataContext = vm;
+        window.Content = restoredView;
+        Dispatcher.UIThread.RunJobs();
+
+        var restoredGrid = restoredView.FindControl<DataGrid>("PART_Grid");
+        restoredGrid.ShouldNotBeNull();
+        var restoredColumn = restoredGrid.Columns.First();
+        restoredColumn.Width.DisplayValue.ShouldBeGreaterThanOrEqualTo(90);
+
+        restoredColumn.Width = new DataGridLength(20);
+        restoredColumn.Width.DisplayValue.ShouldBeGreaterThanOrEqualTo(90);
+    }
+
+    [AvaloniaFact(DisplayName = "Restoring DataGrid state handles DataContext assigned after attachment")]
+    public async Task restoring_datagrid_state_handles_datacontext_assigned_after_attachment()
+    {
+        var window = CreateWindow();
+        var cluster = await CreateClusterAsync();
+
+        var vm = GetRequiredService<ResourceListViewModel<V1Pod>>();
+        vm.Initialize(cluster);
+
+        var view = GetRequiredService<ResourceListView>();
+        view.DataContext = vm;
+        window.Content = view;
+        window.Show();
+        Dispatcher.UIThread.RunJobs();
+
+        var grid = view.FindControl<DataGrid>("PART_Grid");
+        grid.ShouldNotBeNull();
+        var column = grid.Columns.First();
+        column.Width = new DataGridLength(180);
+        grid.UpdateLayout();
+        Dispatcher.UIThread.RunJobs();
+        var originalWidth = column.Width.DisplayValue;
+
+        window.Content = null;
+        Dispatcher.UIThread.RunJobs();
+        vm.DataGridRuntimeState.ShouldNotBeNull();
+
+        var replacementVm = GetRequiredService<ResourceListViewModel<V1Pod>>();
+        replacementVm.Initialize(cluster);
+        replacementVm.DataGridRuntimeState = vm.DataGridRuntimeState;
+
+        var restoredView = GetRequiredService<ResourceListView>();
+        restoredView.DataContext = vm;
+        window.Content = restoredView;
+        Dispatcher.UIThread.RunJobs();
+
+        restoredView.DataContext = replacementVm;
+        Dispatcher.UIThread.RunJobs();
+
+        var restoredGrid = restoredView.FindControl<DataGrid>("PART_Grid");
+        restoredGrid.ShouldNotBeNull();
+        restoredGrid.Columns.First().Width.DisplayValue.ShouldBe(originalWidth, tolerance: 0.1);
+    }
+
+    [AvaloniaFact(DisplayName = "Saving DataGrid state preserves column width changes when scroll state is unavailable")]
+    public async Task saving_datagrid_state_preserves_column_width_changes_when_scroll_state_is_unavailable()
+    {
+        var window = CreateWindow();
+        var cluster = await CreateClusterAsync();
+
+        var vm = GetRequiredService<ResourceListViewModel<V1Pod>>();
+        vm.Initialize(cluster);
+
+        var view = GetRequiredService<ResourceListView>();
+        view.DataContext = vm;
+        window.Content = view;
+        window.Show();
+        Dispatcher.UIThread.RunJobs();
+
+        var grid = view.FindControl<DataGrid>("PART_Grid");
+        grid.ShouldNotBeNull();
+        var column = grid.Columns.First();
+        column.Width = new DataGridLength(180);
+        grid.UpdateLayout();
+        Dispatcher.UIThread.RunJobs();
+
+        window.Content = null;
+        Dispatcher.UIThread.RunJobs();
+        vm.DataGridRuntimeState.ShouldNotBeNull();
+        vm.DataGridRuntimeState!.Scroll = new DataGridScrollState();
+
+        var changedView = GetRequiredService<ResourceListView>();
+        changedView.DataContext = vm;
+        window.Content = changedView;
+        Dispatcher.UIThread.RunJobs();
+
+        var changedGrid = changedView.FindControl<DataGrid>("PART_Grid");
+        changedGrid.ShouldNotBeNull();
+        changedGrid.Columns.First().Width = new DataGridLength(240);
+        changedGrid.UpdateLayout();
+        Dispatcher.UIThread.RunJobs();
+
+        window.Content = null;
+        Dispatcher.UIThread.RunJobs();
+
+        var restoredView = GetRequiredService<ResourceListView>();
+        restoredView.DataContext = vm;
+        window.Content = restoredView;
+        Dispatcher.UIThread.RunJobs();
+
+        var restoredGrid = restoredView.FindControl<DataGrid>("PART_Grid");
+        restoredGrid.ShouldNotBeNull();
+        restoredGrid.Columns.First().Width.DisplayValue.ShouldBe(240, tolerance: 0.1);
+    }
+
     [AvaloniaFact(DisplayName = "Namespace filter initializes from selected namespaces")]
     public async Task namespace_filter_initializes_from_selected_namespaces()
     {
@@ -2080,6 +2271,7 @@ internal sealed class FakeDoubleTapResourceConfig : IResourceConfig
     public Type Type => typeof(V1Pod);
     public IRelayCommand NewResourceCommand => new RelayCommand(() => { });
     public IRelayCommand<IList> ViewCommand { get; }
+    public IAsyncRelayCommand<IList> DeleteCommand => throw new NotImplementedException();
 
     public void Initialize(ClusterWorkspace cluster)
     {
