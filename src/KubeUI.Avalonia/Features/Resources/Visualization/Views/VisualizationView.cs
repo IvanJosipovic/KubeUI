@@ -67,7 +67,7 @@ public sealed partial class VisualizationView : ViewBase<VisualizationViewModel>
                     .Width(200)
                     .MaxHeight(20)
                     .Classes("ClearButton")
-                    .ItemsSource(vm, x => x.Cluster.Namespaces)
+                    .ItemsSource(vm, x => x.Cluster.Runtime.Namespaces)
                     .SelectedItems(vm, x => x.Cluster.SelectedNamespaces)
                     .SelectedItemTemplate(template)
                     .ItemTemplate(template));

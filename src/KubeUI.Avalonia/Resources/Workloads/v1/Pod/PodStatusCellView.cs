@@ -2,7 +2,7 @@ using Avalonia.Markup.Declarative;
 using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
-using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
+using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Kubernetes;
@@ -12,7 +12,7 @@ namespace KubeUI.Avalonia.Resources.Workloads.v1.Pod;
 
 public sealed partial class PodStatusCellView : ViewBase<V1Pod>, IInitializeCluster
 {
-    public ClusterWorkspaceViewModel? Cluster { get; private set; }
+    public ClusterWorkspace? Cluster { get; private set; }
 
     private V1Pod? _viewModel;
 
@@ -47,7 +47,7 @@ public sealed partial class PodStatusCellView : ViewBase<V1Pod>, IInitializeClus
     protected override void OnUnloaded(RoutedEventArgs e)
     {
         base.OnUnloaded(e);
-        Cluster?.OnChange -= _cluster_OnChange;
+        Cluster?.Runtime.OnChange -= _cluster_OnChange;
     }
 
     private void SetPrettyString()
@@ -96,9 +96,9 @@ public sealed partial class PodStatusCellView : ViewBase<V1Pod>, IInitializeClus
         }
     }
 
-    public void Initialize(ClusterWorkspaceViewModel cluster)
+    public void Initialize(ClusterWorkspace cluster)
     {
         Cluster = cluster;
-        Cluster.OnChange += _cluster_OnChange;
+        Cluster.Runtime.OnChange += _cluster_OnChange;
     }
 }

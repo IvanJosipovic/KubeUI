@@ -1,19 +1,14 @@
 using System.Collections.Specialized;
-using System.Reactive.Subjects;
 using AvaloniaGraphControl;
 using Dock.Model.Core;
 using k8s;
 using k8s.Models;
-using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
+using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Features.Resources.Properties.ViewModels;
-using KubeUI.Avalonia.Features.Resources.Visualization.ViewModels;
 using KubeUI.Avalonia.Features.Resources.Yaml.ViewModels;
 using KubeUI.Avalonia.Infrastructure;
-using KubeUI.Avalonia.Infrastructure.DependencyInjection;
 using KubeUI.Avalonia.Infrastructure.Docking;
 using KubeUI.Avalonia.Infrastructure.Presentation;
-using KubeUI.Kubernetes;
-using Microsoft.Extensions.DependencyInjection;
 using static AvaloniaGraphControl.GraphPanel;
 
 namespace KubeUI.Avalonia.Features.Resources.Visualization.ViewModels;
@@ -23,7 +18,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
     private readonly IServiceProvider _serviceProvider;
 
     [ObservableProperty]
-    public partial ClusterWorkspaceViewModel? Cluster { get; set; }
+    public partial ClusterWorkspace? Cluster { get; set; }
 
     [ObservableProperty]
     public partial Graph Graph { get; set; }
@@ -53,7 +48,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         }
     }
 
-    public void Initialize(ClusterWorkspaceViewModel cluster)
+    public void Initialize(ClusterWorkspace cluster)
     {
         // Detach from any previous cluster to avoid duplicate event subscriptions
         if (Cluster != null && Cluster.SelectedNamespaces != null)
@@ -72,39 +67,39 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 
         Id = nameof(VisualizationViewModel) + "-" + cluster;
 
-        _ = cluster.SeedResource<V1Node>();
+        _ = cluster.Runtime.SeedResource<V1Node>();
 
-        _ = cluster.SeedResource<Corev1Event>();
+        _ = cluster.Runtime.SeedResource<Corev1Event>();
 
         // Workloads
-        _ = cluster.SeedResource<V1Pod>();
-        _ = cluster.SeedResource<V1ReplicaSet>();
-        _ = cluster.SeedResource<V1Deployment>();
-        _ = cluster.SeedResource<V1StatefulSet>();
-        _ = cluster.SeedResource<V1DaemonSet>();
-        _ = cluster.SeedResource<V1CronJob>();
-        _ = cluster.SeedResource<V1Job>();
+        _ = cluster.Runtime.SeedResource<V1Pod>();
+        _ = cluster.Runtime.SeedResource<V1ReplicaSet>();
+        _ = cluster.Runtime.SeedResource<V1Deployment>();
+        _ = cluster.Runtime.SeedResource<V1StatefulSet>();
+        _ = cluster.Runtime.SeedResource<V1DaemonSet>();
+        _ = cluster.Runtime.SeedResource<V1CronJob>();
+        _ = cluster.Runtime.SeedResource<V1Job>();
 
         // Configuration
-        _ = cluster.SeedResource<V1Secret>();
-        _ = cluster.SeedResource<V1ConfigMap>();
+        _ = cluster.Runtime.SeedResource<V1Secret>();
+        _ = cluster.Runtime.SeedResource<V1ConfigMap>();
 
         // Network
-        _ = cluster.SeedResource<V1Service>();
-        _ = cluster.SeedResource<V1EndpointSlice>();
-        _ = cluster.SeedResource<V1Ingress>();
-        _ = cluster.SeedResource<V1IngressClass>();
+        _ = cluster.Runtime.SeedResource<V1Service>();
+        _ = cluster.Runtime.SeedResource<V1EndpointSlice>();
+        _ = cluster.Runtime.SeedResource<V1Ingress>();
+        _ = cluster.Runtime.SeedResource<V1IngressClass>();
 
         // Storage
-        _ = cluster.SeedResource<V1PersistentVolumeClaim>();
-        _ = cluster.SeedResource<V1PersistentVolume>();
+        _ = cluster.Runtime.SeedResource<V1PersistentVolumeClaim>();
+        _ = cluster.Runtime.SeedResource<V1PersistentVolume>();
 
         // Access Control
-        _ = cluster.SeedResource<V1ServiceAccount>();
-        _ = cluster.SeedResource<V1RoleBinding>();
-        _ = cluster.SeedResource<V1ClusterRoleBinding>();
-        _ = cluster.SeedResource<V1Role>();
-        _ = cluster.SeedResource<V1ClusterRole>();
+        _ = cluster.Runtime.SeedResource<V1ServiceAccount>();
+        _ = cluster.Runtime.SeedResource<V1RoleBinding>();
+        _ = cluster.Runtime.SeedResource<V1ClusterRoleBinding>();
+        _ = cluster.Runtime.SeedResource<V1Role>();
+        _ = cluster.Runtime.SeedResource<V1ClusterRole>();
 
         Run();
     }
@@ -155,12 +150,12 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 
     private void PopulateAllResources()
     {
-        if (Cluster?.Objects == null)
+        if (Cluster?.Runtime.Objects == null)
         {
             return;
         }
 
-        foreach (var kvp in Cluster.Objects)
+        foreach (var kvp in Cluster.Runtime.Objects)
         {
             var container = kvp.Value;
 
@@ -2047,7 +2042,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         private IFactory Factory => _serviceProvider.GetRequiredService<IFactory>();
 
         [ObservableProperty]
-        public partial ClusterWorkspaceViewModel Cluster { get; set; }
+        public partial ClusterWorkspace Cluster { get; set; }
 
         [ObservableProperty]
         public partial IKubernetesObject<V1ObjectMeta> Resource { get; set; }
@@ -2084,6 +2079,5 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         }
     }
 }
-
 
 

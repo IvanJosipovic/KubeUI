@@ -18,7 +18,7 @@ public sealed class ResourceYamlViewCopyTests : AvaloniaTestBase
     public async Task Editor_copy_writes_selected_yaml_text_to_the_clipboard()
     {
         var cluster = new TestCluster().CreateWorkspace();
-        await cluster.EnsureWorkspaceStateInitializedAsync();
+        await cluster.Connect();
 
         var viewModel = TestApp.CurrentServices!.GetRequiredService<ResourceYamlViewModel>();
         viewModel.Initialize(cluster, new V1Pod
@@ -87,7 +87,7 @@ public sealed class ResourceYamlViewCopyTests : AvaloniaTestBase
     public async Task Editor_context_menu_copy_writes_selected_yaml_text_to_the_clipboard()
     {
         var cluster = new TestCluster().CreateWorkspace();
-        await cluster.EnsureWorkspaceStateInitializedAsync();
+        await cluster.Connect();
 
         var viewModel = TestApp.CurrentServices!.GetRequiredService<ResourceYamlViewModel>();
         viewModel.Initialize(cluster, new V1Pod

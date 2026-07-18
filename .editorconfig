@@ -240,6 +240,14 @@ dotnet_diagnostic.MA0011.severity = silent
 dotnet_diagnostic.MA0004.severity = silent
 dotnet_diagnostic.MVVMTK0034.severity = error
 
+# unused code
+dotnet_diagnostic.IDE0005.severity = error
+dotnet_diagnostic.IDE0051.severity = error
+dotnet_diagnostic.IDE0052.severity = error
+dotnet_diagnostic.IDE0059.severity = error
+dotnet_diagnostic.IDE0060.severity = error
+
+
 # Xaml files
 [*.{xaml,axaml}]
 indent_size = 2

@@ -215,29 +215,29 @@ public abstract class ClusterScenarioAssertions
         await using var harness = await CreateHarnessAsync();
         var cluster = harness.Cluster;
 
-        (await cluster.UpdateCanI<V1Pod>(Verb.Create)).ShouldBeTrue();
-        (await cluster.UpdateCanI<V1Pod>(Verb.Delete)).ShouldBeTrue();
-        (await cluster.UpdateCanI<V1Pod>(Verb.Get)).ShouldBeTrue();
-        (await cluster.UpdateCanI<V1Pod>(Verb.List)).ShouldBeTrue();
-        (await cluster.UpdateCanI<V1Pod>(Verb.Patch)).ShouldBeTrue();
-        (await cluster.UpdateCanI<V1Pod>(Verb.Update)).ShouldBeTrue();
-        (await cluster.UpdateCanI<V1Pod>(Verb.Watch)).ShouldBeTrue();
+        (await cluster.Permissions.UpdateCanI<V1Pod>(Verb.Create)).ShouldBeTrue();
+        (await cluster.Permissions.UpdateCanI<V1Pod>(Verb.Delete)).ShouldBeTrue();
+        (await cluster.Permissions.UpdateCanI<V1Pod>(Verb.Get)).ShouldBeTrue();
+        (await cluster.Permissions.UpdateCanI<V1Pod>(Verb.List)).ShouldBeTrue();
+        (await cluster.Permissions.UpdateCanI<V1Pod>(Verb.Patch)).ShouldBeTrue();
+        (await cluster.Permissions.UpdateCanI<V1Pod>(Verb.Update)).ShouldBeTrue();
+        (await cluster.Permissions.UpdateCanI<V1Pod>(Verb.Watch)).ShouldBeTrue();
 
-        (await cluster.UpdateCanI<V1Pod>(Verb.Get, subresource: "log")).ShouldBeTrue();
-        (await cluster.UpdateCanI<V1Pod>(Verb.Create, subresource: "exec")).ShouldBeTrue();
-        (await cluster.UpdateCanI<V1Pod>(Verb.Create, subresource: "portforward")).ShouldBeTrue();
+        (await cluster.Permissions.UpdateCanI<V1Pod>(Verb.Get, subresource: "log")).ShouldBeTrue();
+        (await cluster.Permissions.UpdateCanI<V1Pod>(Verb.Create, subresource: "exec")).ShouldBeTrue();
+        (await cluster.Permissions.UpdateCanI<V1Pod>(Verb.Create, subresource: "portforward")).ShouldBeTrue();
 
-        (await cluster.UpdateCanI<V1Pod>(Verb.Create, "default")).ShouldBeTrue();
-        (await cluster.UpdateCanI<V1Pod>(Verb.Delete, "default")).ShouldBeTrue();
-        (await cluster.UpdateCanI<V1Pod>(Verb.Get, "default")).ShouldBeTrue();
-        (await cluster.UpdateCanI<V1Pod>(Verb.List, "default")).ShouldBeTrue();
-        (await cluster.UpdateCanI<V1Pod>(Verb.Patch, "default")).ShouldBeTrue();
-        (await cluster.UpdateCanI<V1Pod>(Verb.Update, "default")).ShouldBeTrue();
-        (await cluster.UpdateCanI<V1Pod>(Verb.Watch, "default")).ShouldBeTrue();
+        (await cluster.Permissions.UpdateCanI<V1Pod>(Verb.Create, "default")).ShouldBeTrue();
+        (await cluster.Permissions.UpdateCanI<V1Pod>(Verb.Delete, "default")).ShouldBeTrue();
+        (await cluster.Permissions.UpdateCanI<V1Pod>(Verb.Get, "default")).ShouldBeTrue();
+        (await cluster.Permissions.UpdateCanI<V1Pod>(Verb.List, "default")).ShouldBeTrue();
+        (await cluster.Permissions.UpdateCanI<V1Pod>(Verb.Patch, "default")).ShouldBeTrue();
+        (await cluster.Permissions.UpdateCanI<V1Pod>(Verb.Update, "default")).ShouldBeTrue();
+        (await cluster.Permissions.UpdateCanI<V1Pod>(Verb.Watch, "default")).ShouldBeTrue();
 
-        (await cluster.UpdateCanI<V1Pod>(Verb.Get, "default", "log")).ShouldBeTrue();
-        (await cluster.UpdateCanI<V1Pod>(Verb.Create, "default", "exec")).ShouldBeTrue();
-        (await cluster.UpdateCanI<V1Pod>(Verb.Create, "default", "portforward")).ShouldBeTrue();
+        (await cluster.Permissions.UpdateCanI<V1Pod>(Verb.Get, "default", "log")).ShouldBeTrue();
+        (await cluster.Permissions.UpdateCanI<V1Pod>(Verb.Create, "default", "exec")).ShouldBeTrue();
+        (await cluster.Permissions.UpdateCanI<V1Pod>(Verb.Create, "default", "portforward")).ShouldBeTrue();
     }
 
     protected async Task LimitedAccessCore(bool includeNamespaceFallback)
@@ -265,49 +265,49 @@ public abstract class ClusterScenarioAssertions
         await cluster.Connect();
         await cluster.SeedResource<V1Pod>(true);
 
-        (await cluster.UpdateCanI<V1Namespace>(Verb.Create)).ShouldBeFalse();
-        (await cluster.UpdateCanI<V1Namespace>(Verb.Delete)).ShouldBeFalse();
-        (await cluster.UpdateCanI<V1Namespace>(Verb.Get)).ShouldBeFalse();
-        (await cluster.UpdateCanI<V1Namespace>(Verb.List)).ShouldBeFalse();
-        (await cluster.UpdateCanI<V1Namespace>(Verb.Patch)).ShouldBeFalse();
-        (await cluster.UpdateCanI<V1Namespace>(Verb.Update)).ShouldBeFalse();
-        (await cluster.UpdateCanI<V1Namespace>(Verb.Watch)).ShouldBeFalse();
+        (await cluster.Permissions.UpdateCanI<V1Namespace>(Verb.Create)).ShouldBeFalse();
+        (await cluster.Permissions.UpdateCanI<V1Namespace>(Verb.Delete)).ShouldBeFalse();
+        (await cluster.Permissions.UpdateCanI<V1Namespace>(Verb.Get)).ShouldBeFalse();
+        (await cluster.Permissions.UpdateCanI<V1Namespace>(Verb.List)).ShouldBeFalse();
+        (await cluster.Permissions.UpdateCanI<V1Namespace>(Verb.Patch)).ShouldBeFalse();
+        (await cluster.Permissions.UpdateCanI<V1Namespace>(Verb.Update)).ShouldBeFalse();
+        (await cluster.Permissions.UpdateCanI<V1Namespace>(Verb.Watch)).ShouldBeFalse();
 
-        (await cluster.UpdateCanI<V1Pod>(Verb.Create)).ShouldBeFalse();
-        (await cluster.UpdateCanI<V1Pod>(Verb.Delete)).ShouldBeFalse();
-        (await cluster.UpdateCanI<V1Pod>(Verb.Get)).ShouldBeFalse();
-        (await cluster.UpdateCanI<V1Pod>(Verb.List)).ShouldBeFalse();
-        (await cluster.UpdateCanI<V1Pod>(Verb.Patch)).ShouldBeFalse();
-        (await cluster.UpdateCanI<V1Pod>(Verb.Update)).ShouldBeFalse();
-        (await cluster.UpdateCanI<V1Pod>(Verb.Watch)).ShouldBeFalse();
+        (await cluster.Permissions.UpdateCanI<V1Pod>(Verb.Create)).ShouldBeFalse();
+        (await cluster.Permissions.UpdateCanI<V1Pod>(Verb.Delete)).ShouldBeFalse();
+        (await cluster.Permissions.UpdateCanI<V1Pod>(Verb.Get)).ShouldBeFalse();
+        (await cluster.Permissions.UpdateCanI<V1Pod>(Verb.List)).ShouldBeFalse();
+        (await cluster.Permissions.UpdateCanI<V1Pod>(Verb.Patch)).ShouldBeFalse();
+        (await cluster.Permissions.UpdateCanI<V1Pod>(Verb.Update)).ShouldBeFalse();
+        (await cluster.Permissions.UpdateCanI<V1Pod>(Verb.Watch)).ShouldBeFalse();
 
-        (await cluster.UpdateCanI<V1Pod>(Verb.Get, subresource: "log")).ShouldBeFalse();
-        (await cluster.UpdateCanI<V1Pod>(Verb.Create, subresource: "exec")).ShouldBeFalse();
-        (await cluster.UpdateCanI<V1Pod>(Verb.Create, subresource: "portforward")).ShouldBeFalse();
+        (await cluster.Permissions.UpdateCanI<V1Pod>(Verb.Get, subresource: "log")).ShouldBeFalse();
+        (await cluster.Permissions.UpdateCanI<V1Pod>(Verb.Create, subresource: "exec")).ShouldBeFalse();
+        (await cluster.Permissions.UpdateCanI<V1Pod>(Verb.Create, subresource: "portforward")).ShouldBeFalse();
 
-        (await cluster.UpdateCanI<V1Pod>(Verb.Create, "my-app")).ShouldBeFalse();
-        (await cluster.UpdateCanI<V1Pod>(Verb.Delete, "my-app")).ShouldBeTrue();
-        (await cluster.UpdateCanI<V1Pod>(Verb.Get, "my-app")).ShouldBeTrue();
-        (await cluster.UpdateCanI<V1Pod>(Verb.List, "my-app")).ShouldBeTrue();
-        (await cluster.UpdateCanI<V1Pod>(Verb.Patch, "my-app")).ShouldBeFalse();
-        (await cluster.UpdateCanI<V1Pod>(Verb.Update, "my-app")).ShouldBeFalse();
-        (await cluster.UpdateCanI<V1Pod>(Verb.Watch, "my-app")).ShouldBeTrue();
+        (await cluster.Permissions.UpdateCanI<V1Pod>(Verb.Create, "my-app")).ShouldBeFalse();
+        (await cluster.Permissions.UpdateCanI<V1Pod>(Verb.Delete, "my-app")).ShouldBeTrue();
+        (await cluster.Permissions.UpdateCanI<V1Pod>(Verb.Get, "my-app")).ShouldBeTrue();
+        (await cluster.Permissions.UpdateCanI<V1Pod>(Verb.List, "my-app")).ShouldBeTrue();
+        (await cluster.Permissions.UpdateCanI<V1Pod>(Verb.Patch, "my-app")).ShouldBeFalse();
+        (await cluster.Permissions.UpdateCanI<V1Pod>(Verb.Update, "my-app")).ShouldBeFalse();
+        (await cluster.Permissions.UpdateCanI<V1Pod>(Verb.Watch, "my-app")).ShouldBeTrue();
 
-        (await cluster.UpdateCanI<V1Pod>(Verb.Get, "my-app", "log")).ShouldBeTrue();
-        (await cluster.UpdateCanI<V1Pod>(Verb.Create, "my-app", "exec")).ShouldBeTrue();
-        (await cluster.UpdateCanI<V1Pod>(Verb.Create, "my-app", "portforward")).ShouldBeTrue();
+        (await cluster.Permissions.UpdateCanI<V1Pod>(Verb.Get, "my-app", "log")).ShouldBeTrue();
+        (await cluster.Permissions.UpdateCanI<V1Pod>(Verb.Create, "my-app", "exec")).ShouldBeTrue();
+        (await cluster.Permissions.UpdateCanI<V1Pod>(Verb.Create, "my-app", "portforward")).ShouldBeTrue();
 
-        (await cluster.UpdateCanI<V1Deployment>(Verb.Create)).ShouldBeFalse();
-        (await cluster.UpdateCanI<V1Deployment>(Verb.Delete)).ShouldBeFalse();
-        (await cluster.UpdateCanI<V1Deployment>(Verb.Get)).ShouldBeFalse();
-        (await cluster.UpdateCanI<V1Deployment>(Verb.List)).ShouldBeFalse();
-        (await cluster.UpdateCanI<V1Deployment>(Verb.Patch)).ShouldBeFalse();
-        (await cluster.UpdateCanI<V1Deployment>(Verb.Update)).ShouldBeFalse();
-        (await cluster.UpdateCanI<V1Deployment>(Verb.Watch)).ShouldBeFalse();
+        (await cluster.Permissions.UpdateCanI<V1Deployment>(Verb.Create)).ShouldBeFalse();
+        (await cluster.Permissions.UpdateCanI<V1Deployment>(Verb.Delete)).ShouldBeFalse();
+        (await cluster.Permissions.UpdateCanI<V1Deployment>(Verb.Get)).ShouldBeFalse();
+        (await cluster.Permissions.UpdateCanI<V1Deployment>(Verb.List)).ShouldBeFalse();
+        (await cluster.Permissions.UpdateCanI<V1Deployment>(Verb.Patch)).ShouldBeFalse();
+        (await cluster.Permissions.UpdateCanI<V1Deployment>(Verb.Update)).ShouldBeFalse();
+        (await cluster.Permissions.UpdateCanI<V1Deployment>(Verb.Watch)).ShouldBeFalse();
 
-        (await cluster.UpdateCanI<V1Deployment>(Verb.Get, "my-app")).ShouldBeTrue();
-        (await cluster.UpdateCanI<V1Deployment>(Verb.List, "my-app")).ShouldBeTrue();
-        (await cluster.UpdateCanI<V1Deployment>(Verb.Watch, "my-app")).ShouldBeTrue();
+        (await cluster.Permissions.UpdateCanI<V1Deployment>(Verb.Get, "my-app")).ShouldBeTrue();
+        (await cluster.Permissions.UpdateCanI<V1Deployment>(Verb.List, "my-app")).ShouldBeTrue();
+        (await cluster.Permissions.UpdateCanI<V1Deployment>(Verb.Watch, "my-app")).ShouldBeTrue();
     }
 
     public static async Task<T?> WaitForResourceAsync<T>(IClusterRuntime cluster, string? @namespace, string name, TimeSpan? timeout = null, int pollIntervalMs = 100)
@@ -368,5 +368,3 @@ public abstract class ClusterScenarioAssertions
         return null;
     }
 }
-
-

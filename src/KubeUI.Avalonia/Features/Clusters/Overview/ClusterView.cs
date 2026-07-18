@@ -1,7 +1,5 @@
 using Avalonia.Collections;
-using Avalonia.Markup.Declarative;
 using k8s.Models;
-using KubeUI.Avalonia.Features.Clusters.Overview.ViewModels;
 using KubeUI.Avalonia.Features.Resources.List.Views;
 using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
@@ -10,7 +8,6 @@ using LiveChartsCore.Kernel;
 using LiveChartsCore.Measure;
 using LiveChartsCore.SkiaSharpView.Avalonia;
 using LiveChartsCore.SkiaSharpView.Painting;
-using LiveChartsCore.SkiaSharpView.VisualElements;
 using SkiaSharp;
 
 namespace KubeUI.Avalonia.Features.Clusters.Overview.Views;
@@ -35,9 +32,9 @@ public sealed partial class ClusterView : ViewBase<ClusterViewModel>
             .Cols("*,*,*")
             .Rows("*,2*")
             .Children(
-                CreateCpuChart(vm),
-                CreateMemoryChart(vm),
-                CreatePodChart(vm),
+                CreateCpuChart(),
+                CreateMemoryChart(),
+                CreatePodChart(),
                 new Grid()
                     .Row(1)
                     .ColSpan(3)
@@ -53,7 +50,7 @@ public sealed partial class ClusterView : ViewBase<ClusterViewModel>
                             .DataContext(vm.EventsVM)));
     }
 
-    private static PieChart CreateCpuChart(ClusterViewModel vm)
+    private static PieChart CreateCpuChart()
     {
         return CreateGaugeChart(
             Assets.Resources.ClusterView_Cpu,
@@ -70,7 +67,7 @@ public sealed partial class ClusterView : ViewBase<ClusterViewModel>
             .Col(0);
     }
 
-    private static PieChart CreateMemoryChart(ClusterViewModel vm)
+    private static PieChart CreateMemoryChart()
     {
         return CreateGaugeChart(
             Assets.Resources.ClusterView_Memory,
@@ -88,7 +85,7 @@ public sealed partial class ClusterView : ViewBase<ClusterViewModel>
             .Col(1);
     }
 
-    private static PieChart CreatePodChart(ClusterViewModel vm)
+    private static PieChart CreatePodChart()
     {
         return CreateGaugeChart(
             Assets.Resources.ClusterView_Pods,
@@ -174,6 +171,4 @@ public sealed partial class ClusterView : ViewBase<ClusterViewModel>
         _timer.Tick -= TimerOnTick;
     }
 }
-
-
 

@@ -1,15 +1,13 @@
 using Avalonia.Styling;
 using k8s.Models;
-using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
+using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Features.Resources.List.ViewModels;
-using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Services.Settings;
-using KubeUI.Kubernetes;
 using LiveChartsCore.Defaults;
 using LiveChartsCore.Kernel;
 
-namespace KubeUI.Avalonia.Features.Clusters.Overview.ViewModels;
+namespace KubeUI.Avalonia.Features.Clusters.Overview;
 
 public sealed partial class ClusterViewModel : ViewModelBase, IInitializeCluster, INotifyPropertyChanged
 {
@@ -17,7 +15,7 @@ public sealed partial class ClusterViewModel : ViewModelBase, IInitializeCluster
     public partial ISettingsService Settings { get; set; }
 
     [ObservableProperty]
-    public partial ClusterWorkspaceViewModel? Cluster { get; set; }
+    public partial ClusterWorkspace? Cluster { get; set; }
 
     [ObservableProperty]
     public partial ResourceListViewModel<Corev1Event> EventsVM { get; set; }
@@ -47,13 +45,13 @@ public sealed partial class ClusterViewModel : ViewModelBase, IInitializeCluster
             return;
         }
 
-        await Cluster.SeedResource<V1Pod>(true);
-        await Cluster.SeedResource<V1Node>(true);
-        var pods = Cluster.GetResourceList<V1Pod>();
-        var nodes = Cluster.GetResourceList<V1Node>();
+        await Cluster.Runtime.SeedResource<V1Pod>(true);
+        await Cluster.Runtime.SeedResource<V1Node>(true);
+        var pods = Cluster.Runtime.GetResourceList<V1Pod>();
+        var nodes = Cluster.Runtime.GetResourceList<V1Node>();
 
         var allPodContainers = pods.SelectMany(p => p.Spec?.Containers ?? []).ToArray();
-        var allMetricContainers = (Cluster.PodMetrics ?? []).SelectMany(m => m.Containers ?? []).ToArray();
+        var allMetricContainers = (Cluster.Runtime.PodMetrics ?? []).SelectMany(m => m.Containers ?? []).ToArray();
 
         PodGaugeData.TotalPods.Value = pods.Count;
         PodGaugeData.MaxPods.Value = nodes.Sum(x => x.Status.Capacity?.TryGetValue("pods", out var value) == true ? value.ToDouble() : 0);
@@ -94,11 +92,11 @@ public sealed partial class ClusterViewModel : ViewModelBase, IInitializeCluster
                 : 0d) / 1048576 / 1024;
     }
 
-    public void Initialize(ClusterWorkspaceViewModel cluster)
+    public void Initialize(ClusterWorkspace cluster)
     {
         Cluster = cluster;
 
-        Id = nameof(ClusterViewModel) + "-" + Cluster.Name + "-" + Title;
+        Id = nameof(ClusterViewModel) + "-" + Cluster.Runtime.Name + "-" + Title;
 
         if (EventsVM is IInitializeCluster init)
         {
@@ -158,7 +156,6 @@ public partial class MemoryGaugeData : ObservableObject
     public partial ObservableValue MemoryUsage { get; set; } = new();
 
     public static Func<ChartPoint, string> DataLabelsFormatter { get; } = p => $"{p.Coordinate.PrimaryValue:F2}Gi";
-
 }
 
 public partial class PodGaugeData : ObservableObject
@@ -171,6 +168,3 @@ public partial class PodGaugeData : ObservableObject
 
     public static Func<ChartPoint, string> DataLabelsFormatter { get; } = p => $"{p.Coordinate.PrimaryValue:F0}";
 }
-
-
-

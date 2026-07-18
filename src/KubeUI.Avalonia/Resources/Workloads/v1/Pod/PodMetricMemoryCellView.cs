@@ -3,7 +3,7 @@ using Avalonia.Data;
 using Avalonia.Markup.Declarative;
 using Humanizer;
 using k8s.Models;
-using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
+using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Kubernetes;
@@ -12,7 +12,7 @@ namespace KubeUI.Avalonia.Resources.Workloads.v1.Pod;
 
 public partial class PodMetricMemoryCellView : ViewBase<V1Pod>, IInitializeCluster
 {
-    public ClusterWorkspaceViewModel? Cluster { get; private set; }
+    public ClusterWorkspace? Cluster { get; private set; }
 
     private static readonly DispatcherTimer s_timer = new(DispatcherPriority.Default);
 
@@ -56,7 +56,7 @@ public partial class PodMetricMemoryCellView : ViewBase<V1Pod>, IInitializeClust
             return;
         }
 
-        var metric = Cluster.PodMetrics.FirstOrDefault(m =>
+        var metric = Cluster.Runtime.PodMetrics.FirstOrDefault(m =>
             m.Name() == pod.Name() && m.Namespace() == pod.Namespace());
 
         if (metric == null)
@@ -87,7 +87,7 @@ public partial class PodMetricMemoryCellView : ViewBase<V1Pod>, IInitializeClust
         s_timer.Tick -= Timer_Tick;
     }
 
-    public void Initialize(ClusterWorkspaceViewModel cluster)
+    public void Initialize(ClusterWorkspace cluster)
     {
         Cluster = cluster;
     }

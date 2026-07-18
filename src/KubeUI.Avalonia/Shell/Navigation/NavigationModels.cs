@@ -1,8 +1,9 @@
 using System.ComponentModel;
 using System.Windows.Input;
 using FluentIcons.Common;
-using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
+using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Infrastructure;
+using KubeUI.Kubernetes;
 using Swordfish.NET.Collections;
 
 namespace KubeUI.Avalonia.Shell.Navigation;
@@ -20,21 +21,29 @@ public interface IExpandableNavigationNode
     bool IsExpanded { get; set; }
 }
 
-public partial class ClusterNavigationNode : ObservableObject, IExpandableNavigationNode
+public partial class ClusterNavigationNode : NavigationItem, IDisposable
 {
-    [ObservableProperty]
-    public partial ClusterWorkspaceViewModel Cluster { get; set; }
+    private const int ClusterSettingsOrder = -480;
+    private string _runtimeName;
 
-    [ObservableProperty]
-    public partial ObservableCollection<NavigationItem> NavigationItems { get; set; } = new ObservableSortedCollection<NavigationItem>(new NavigationItemOrderComparer());
+    public ClusterNavigationNode(ClusterWorkspace cluster)
+    {
+        Cluster = cluster;
+        _runtimeName = cluster.Runtime.Name;
+        if (cluster.Runtime is INotifyPropertyChanged runtime)
+        {
+            runtime.PropertyChanged += OnRuntimePropertyChanged;
+        }
+        UpdateConnectionNavigation(cluster.Runtime.Connected);
+    }
 
-    private INotifyPropertyChanged? _clusterPropertyChanged;
+    public ClusterWorkspace Cluster { get; }
 
-    public string ConnectionMenuHeader => Cluster.Connected
+    public string ConnectionMenuHeader => Cluster.Runtime.Connected
         ? KubeUI.Avalonia.Assets.Resources.NavigationView_ContextMenu_Disconnect!
         : KubeUI.Avalonia.Assets.Resources.NavigationView_ContextMenu_Connect!;
 
-    public Icon ConnectionMenuIcon => Cluster.Connected
+    public Icon ConnectionMenuIcon => Cluster.Runtime.Connected
         ? Icon.Dismiss
         : Icon.Link;
 
@@ -44,63 +53,112 @@ public partial class ClusterNavigationNode : ObservableObject, IExpandableNaviga
     [ObservableProperty]
     public partial ICommand? OpenSettingsCommand { get; set; }
 
-    public bool IsExpanded
+    private void OnRuntimePropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        get => Cluster.IsExpanded;
-        set
-        {
-            if (Cluster.IsExpanded == value)
-            {
-                return;
-            }
-
-            Cluster.IsExpanded = value;
-            OnPropertyChanged(nameof(IsExpanded));
-        }
-    }
-
-    partial void OnClusterChanged(ClusterWorkspaceViewModel value)
-    {
-        UnsubscribeCluster();
-        SubscribeCluster(value);
-
-        OnPropertyChanged(nameof(IsExpanded));
-    }
-
-    private void SubscribeCluster(ClusterWorkspaceViewModel cluster)
-    {
-        if (cluster is not INotifyPropertyChanged propertyChanged)
-        {
-            return;
-        }
-
-        propertyChanged.PropertyChanged += OnClusterPropertyChanged;
-        _clusterPropertyChanged = propertyChanged;
-    }
-
-    private void UnsubscribeCluster()
-    {
-        if (_clusterPropertyChanged is null)
-        {
-            return;
-        }
-
-        _clusterPropertyChanged.PropertyChanged -= OnClusterPropertyChanged;
-        _clusterPropertyChanged = null;
-    }
-
-    private void OnClusterPropertyChanged(object? sender, PropertyChangedEventArgs e)
-    {
-        if (e.PropertyName == nameof(ClusterWorkspaceViewModel.IsExpanded))
-        {
-            OnPropertyChanged(nameof(IsExpanded));
-            return;
-        }
-
-        if (e.PropertyName == nameof(ClusterWorkspaceViewModel.Connected))
+        if (e.PropertyName == nameof(IClusterRuntime.Connected))
         {
             OnPropertyChanged(nameof(ConnectionMenuHeader));
             OnPropertyChanged(nameof(ConnectionMenuIcon));
+            UpdateConnectionNavigation(Cluster.Runtime.Connected);
+            if (Cluster.Runtime.Connected)
+            {
+                IsExpanded = true;
+            }
+        }
+        else if (e.PropertyName == nameof(IClusterRuntime.Name))
+        {
+            UpdateNavigationIds(_runtimeName, Cluster.Runtime.Name);
+            _runtimeName = Cluster.Runtime.Name;
+        }
+    }
+
+    private void UpdateNavigationIds(string oldName, string newName)
+    {
+        if (string.Equals(oldName, newName, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        var oldPrefix = oldName + "-";
+        foreach (var item in NavigationItems)
+        {
+            UpdateNavigationId(item, oldPrefix, newName);
+        }
+    }
+
+    private static void UpdateNavigationId(NavigationItem item, string oldPrefix, string newName)
+    {
+        if (item.Id.StartsWith(oldPrefix, StringComparison.Ordinal))
+        {
+            item.Id = newName + item.Id[(oldPrefix.Length - 1)..];
+        }
+
+        foreach (var child in item.NavigationItems)
+        {
+            UpdateNavigationId(child, oldPrefix, newName);
+        }
+    }
+
+    private void UpdateConnectionNavigation(bool connected)
+    {
+        NavigationItems.Clear();
+        if (!connected)
+        {
+            return;
+        }
+
+        NavigationItems.Add(new NavigationLink
+        {
+            Cluster = Cluster,
+            Id = $"{Cluster.Runtime.Name}-{NavigationTargets.ClusterWorkspace}",
+            Name = Assets.Resources.ClusterView_Title!,
+            ViewModelKey = NavigationTargets.ClusterWorkspace,
+            Order = -500,
+            FluentIcon = Icon.Desktop,
+        });
+        NavigationItems.Add(new NavigationLink
+        {
+            Cluster = Cluster,
+            Id = $"{Cluster.Runtime.Name}-{NavigationTargets.Visualization}",
+            Name = Assets.Resources.VisualizationView_Title!,
+            ViewModelKey = NavigationTargets.Visualization,
+            Order = -490,
+            FluentIcon = Icon.DataUsage,
+        });
+        NavigationItems.Add(new NavigationLink
+        {
+            Cluster = Cluster,
+            Id = $"{Cluster.Runtime.Name}-{NavigationTargets.ClusterSettings}",
+            Name = Assets.Resources.ClusterSettingsView_Title!,
+            ViewModelKey = NavigationTargets.ClusterSettings,
+            Order = ClusterSettingsOrder,
+            FluentIcon = Icon.Settings,
+        });
+        NavigationItems.Add(new NavigationLink
+        {
+            Cluster = Cluster,
+            Id = $"{Cluster.Runtime.Name}-load-yaml",
+            Name = Assets.Resources.NavigationView_LoadYaml!,
+            ViewModelKey = "load-yaml",
+            Order = -470,
+            FluentIcon = Icon.ArrowUpload,
+        });
+        NavigationItems.Add(new NavigationLink
+        {
+            Cluster = Cluster,
+            Id = $"{Cluster.Runtime.Name}-load-folder",
+            Name = Assets.Resources.NavigationView_LoadFolder!,
+            ViewModelKey = "load-folder",
+            Order = -460,
+            FluentIcon = Icon.FolderAdd,
+        });
+    }
+
+    public void Dispose()
+    {
+        if (Cluster.Runtime is INotifyPropertyChanged runtime)
+        {
+            runtime.PropertyChanged -= OnRuntimePropertyChanged;
         }
     }
 }
@@ -135,7 +193,7 @@ public partial class NavigationItem : ObservableObject, IExpandableNavigationNod
 public partial class NavigationLink : NavigationItem
 {
     [ObservableProperty]
-    public partial ClusterWorkspaceViewModel Cluster { get; set; }
+    public partial ClusterWorkspace Cluster { get; set; }
 
     [ObservableProperty]
     public partial Type? ControlType { get; set; }
@@ -202,5 +260,3 @@ public class NavigationItemOrderComparer : IComparer<NavigationItem>
         return string.Compare(x.Id, y.Id, StringComparison.Ordinal);
     }
 }
-
-

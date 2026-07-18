@@ -2,7 +2,7 @@ using Avalonia.Markup.Declarative;
 using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
-using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
+using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Features.Resources.Properties.Controls;
 using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Infrastructure.Presentation;
@@ -13,7 +13,7 @@ public sealed partial class EventLastSeenCell : ViewBase<Corev1Event>, IInitiali
 {
     private static readonly DispatcherTimer s_timer = new(DispatcherPriority.Default);
 
-    public ClusterWorkspaceViewModel? Cluster { get; private set; }
+    public ClusterWorkspace? Cluster { get; private set; }
 
     private Corev1Event? _viewModel => DataContext as Corev1Event;
 
@@ -72,7 +72,7 @@ public sealed partial class EventLastSeenCell : ViewBase<Corev1Event>, IInitiali
     protected override void OnUnloaded(RoutedEventArgs e)
     {
         base.OnUnloaded(e);
-        Cluster?.OnChange -= _cluster_OnChange;
+        Cluster?.Runtime.OnChange -= _cluster_OnChange;
     }
 
     private void Timer_Tick(object? sender, EventArgs e)
@@ -111,9 +111,9 @@ public sealed partial class EventLastSeenCell : ViewBase<Corev1Event>, IInitiali
         }
     }
 
-    public void Initialize(ClusterWorkspaceViewModel cluster)
+    public void Initialize(ClusterWorkspace cluster)
     {
         Cluster = cluster;
-        Cluster.OnChange += _cluster_OnChange;
+        Cluster.Runtime.OnChange += _cluster_OnChange;
     }
 }

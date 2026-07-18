@@ -5,9 +5,7 @@ using FluentAvalonia.UI.Controls;
 using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
-using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
-using KubeUI.Avalonia.Features.Resources.Yaml;
-using KubeUI.Avalonia.Features.Resources.Yaml.ViewModels;
+using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Services.Settings;
@@ -30,7 +28,7 @@ public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
     internal TimeSpan ValidationDebounceDelay { get; set; } = TimeSpan.FromSeconds(1);
 
     [ObservableProperty]
-    public partial ClusterWorkspaceViewModel? Cluster { get; set; }
+    public partial ClusterWorkspace? Cluster { get; set; }
 
     private IKubernetesObject<V1ObjectMeta>? _object;
 
@@ -103,13 +101,13 @@ public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
         AttachValidationDocument(YamlDocument);
     }
 
-    public void Initialize(ClusterWorkspaceViewModel cluster, IKubernetesObject<V1ObjectMeta> @object)
+    public void Initialize(ClusterWorkspace cluster, IKubernetesObject<V1ObjectMeta> @object)
     {
         Cluster = cluster;
-        Cluster.OnChange += Cluster_OnChange;
+        Cluster.Runtime.OnChange += Cluster_OnChange;
         Object = @object;
 
-        Id = $"{nameof(ResourceYamlViewModel)}-{Cluster.Name}-{Object.ApiVersion}/{Object.Kind}/{Object.Metadata.NamespaceProperty}/{Object.Metadata.Name}";
+        Id = $"{nameof(ResourceYamlViewModel)}-{Cluster.Runtime.Name}-{Object.ApiVersion}/{Object.Kind}/{Object.Metadata.NamespaceProperty}/{Object.Metadata.Name}";
     }
 
     private void SetYamlDocument()
@@ -169,6 +167,8 @@ public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
 
     private void Cluster_OnChange(WatchEventType eventType, GroupApiVersionKind groupApiVersionKind, IKubernetesObject<V1ObjectMeta> resource)
     {
+        _ = eventType;
+        _ = groupApiVersionKind;
         if (Object != null
             && Object.Kind == resource.Kind
             && Object.ApiVersion == resource.ApiVersion
@@ -196,7 +196,7 @@ public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
         {
             byte[] byteArray = Encoding.UTF8.GetBytes(YamlDocument.Text);
             await using MemoryStream stream = new(byteArray);
-            await Cluster!.ImportYaml(stream);
+            await Cluster!.Runtime.ImportYaml(stream);
             SetActionResult(true, Assets.Resources.ResourceYamlView_SaveSucceeded, Assets.Resources.ResourceYamlView_SaveSucceededMessage);
         }
         catch (Exception ex)
@@ -228,7 +228,7 @@ public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
         {
             byte[] byteArray = Encoding.UTF8.GetBytes(YamlDocument.Text);
             await using MemoryStream stream = new(byteArray);
-            await Cluster!.DryRunYaml(stream);
+            await Cluster!.Runtime.DryRunYaml(stream);
             SetActionResult(true, Assets.Resources.ResourceYamlView_DryRunSucceeded, Assets.Resources.ResourceYamlView_DryRunSucceededMessage);
         }
         catch (Exception ex)
@@ -262,7 +262,7 @@ public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
 
     private bool CanSetEditMode()
     {
-        return Cluster!.PermissionCache.CanI(Object!.GetType(), Verb.Update, Object?.Metadata?.NamespaceProperty);
+        return Cluster!.Runtime.Permissions.CanI(Object!.GetType(), Verb.Update, Object?.Metadata?.NamespaceProperty);
     }
 
     [RelayCommand(CanExecute = nameof(CanUndo))]
@@ -292,7 +292,7 @@ public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
 
         if (Cluster != null)
         {
-            Cluster.OnChange -= Cluster_OnChange;
+            Cluster.Runtime.OnChange -= Cluster_OnChange;
         }
     }
 
@@ -381,7 +381,7 @@ public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
 
     private void ValidateYamlDocument()
     {
-        ValidationDiagnostics = _yamlValidationService.Validate(YamlDocument.Text, Cluster?.ModelCache);
+        ValidationDiagnostics = _yamlValidationService.Validate(YamlDocument.Text, Cluster?.Runtime.ModelCache);
 
         if (ValidationDiagnostics.Count > 0)
         {
@@ -416,6 +416,4 @@ public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
         ActionResultSuccess = false;
     }
 }
-
-
 

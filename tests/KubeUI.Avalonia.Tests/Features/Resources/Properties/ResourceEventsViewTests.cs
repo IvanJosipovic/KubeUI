@@ -15,7 +15,7 @@ public sealed class ResourceEventsViewTests : AvaloniaTestBase
     public async Task pre_attach_refresh_does_not_throw_when_dispatcher_flushes()
     {
         var workspace = new TestCluster().CreateWorkspace();
-        await workspace.EnsureWorkspaceStateInitializedAsync();
+        await workspace.Connect();
         _ = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
 
         var view = new ResourceEventsView();
@@ -48,7 +48,7 @@ public sealed class ResourceEventsViewTests : AvaloniaTestBase
     public async Task detached_resource_events_view_does_not_throw_when_data_context_changes()
     {
         var workspace = new TestCluster().CreateWorkspace();
-        await workspace.EnsureWorkspaceStateInitializedAsync();
+        await workspace.Connect();
         _ = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
 
         var view = new ResourceEventsView();
@@ -90,7 +90,7 @@ public sealed class ResourceEventsViewTests : AvaloniaTestBase
     public async Task refresh_keeps_a_stable_items_source_instance()
     {
         var workspace = new TestCluster().CreateWorkspace();
-        await workspace.EnsureWorkspaceStateInitializedAsync();
+        await workspace.Connect();
         _ = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
 
         var view = new ResourceEventsView();
@@ -131,7 +131,7 @@ public sealed class ResourceEventsViewTests : AvaloniaTestBase
     public async Task queued_update_during_teardown_does_not_throw()
     {
         var workspace = new TestCluster().CreateWorkspace();
-        await workspace.EnsureWorkspaceStateInitializedAsync();
+        await workspace.Connect();
         _ = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
 
         var view = new ResourceEventsView();

@@ -21,8 +21,10 @@ using YamlDotNet.Core.Events;
 
 namespace KubeUI.Testing;
 
-public class TestClusterRuntime : IClusterRuntime, INotifyPropertyChanged
+public class TestClusterRuntime : IClusterRuntime, IClusterAuthorization, INotifyPropertyChanged
 {
+    public IClusterAuthorization Permissions => this;
+
     static TestClusterRuntime()
     {
         MapsterConfiguration.Configure();
@@ -58,7 +60,6 @@ public class TestClusterRuntime : IClusterRuntime, INotifyPropertyChanged
     private bool _authorizationIndexReady;
     private long _authorizationIndexVersion;
     private string? _lastError;
-    private bool _requiresNamespaceSelectionPrompt;
     private ClusterStatus _status;
     private IKubernetes? _client;
     private K8SConfiguration _kubeConfig = new();
@@ -80,6 +81,8 @@ public class TestClusterRuntime : IClusterRuntime, INotifyPropertyChanged
     public event PropertyChangedEventHandler? PropertyChanged;
     public event Action<V1CustomResourceDefinition>? OnCustomResourceDefinitionReady;
     public event Action<WatchEventType, GroupApiVersionKind, IKubernetesObject<V1ObjectMeta>>? OnChange;
+    public event Action<IClusterRuntime>? NamespaceSelectionRequired;
+    public event Action<IClusterRuntime, GroupApiVersionKind>? ResourceSeeded;
 
     public Func<Task>? ConnectBehavior { get; set; }
     public Func<Stream, Task>? DryRunYamlBehavior { get; set; }
@@ -121,12 +124,6 @@ public class TestClusterRuntime : IClusterRuntime, INotifyPropertyChanged
     {
         get => _lastError;
         set => SetProperty(ref _lastError, value);
-    }
-
-    public bool RequiresNamespaceSelectionPrompt
-    {
-        get => _requiresNamespaceSelectionPrompt;
-        set => SetProperty(ref _requiresNamespaceSelectionPrompt, value);
     }
 
     public bool IsMetricsAvailable => true;
@@ -219,11 +216,12 @@ public class TestClusterRuntime : IClusterRuntime, INotifyPropertyChanged
         Connected = false;
         Status = ClusterStatus.None;
         LastError = null;
-        RequiresNamespaceSelectionPrompt = false;
         AuthorizationIndexReady = false;
 
         return Task.CompletedTask;
     }
+
+    public void RaiseNamespaceSelectionRequired() => NamespaceSelectionRequired?.Invoke(this);
 
     private void ClearDynamicCustomResourceDefinitions()
     {
@@ -554,6 +552,7 @@ public class TestClusterRuntime : IClusterRuntime, INotifyPropertyChanged
     {
         var type = typeof(T);
         var kind = GroupApiVersionKind.From<T>();
+        var seeded = false;
 
         if (Objects.GetOrAdd(kind, static _ => new ContainerClass<T>()) is not ContainerClass<T> container)
         {
@@ -571,6 +570,8 @@ public class TestClusterRuntime : IClusterRuntime, INotifyPropertyChanged
                     var informer = new TestResourceInformer();
                     container.Informers.Add(informer);
                     container.InformerRegistrations.Add(informer.Register(static (_, _) => { }));
+                    seeded = true;
+                    ResourceSeeded?.Invoke(this, kind);
                     return Task.CompletedTask;
                 }
 
@@ -599,10 +600,31 @@ public class TestClusterRuntime : IClusterRuntime, INotifyPropertyChanged
                 {
                     container.Initialized = false;
                 }
+                else
+                {
+                    seeded = true;
+                }
             }
         }
 
+        if (seeded)
+        {
+            ResourceSeeded?.Invoke(this, kind);
+        }
+
         return Task.CompletedTask;
+    }
+
+    public Task SeedResource(Type resourceType, bool waitForReady = false)
+    {
+        ArgumentNullException.ThrowIfNull(resourceType);
+
+        var method = GetType()
+            .GetMethods()
+            .First(x => x.Name == nameof(SeedResource) && x.IsGenericMethodDefinition && x.GetParameters().Length == 1)
+            .MakeGenericMethod(resourceType);
+
+        return (Task)method.Invoke(this, [waitForReady])!;
     }
 
     public async Task ImportFolder(string path)

@@ -68,10 +68,10 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         return window;
     }
 
-    private async Task<ClusterWorkspaceViewModel> CreateClusterAsync()
+    private async Task<ClusterWorkspace> CreateClusterAsync()
     {
         var cluster = new TestCluster().CreateWorkspace();
-        await cluster.EnsureWorkspaceStateInitializedAsync();
+        await cluster.Connect();
         Dispatcher.UIThread.RunJobs();
         _disposables.Add(cluster);
         return cluster;
@@ -130,7 +130,7 @@ public class ResourceListViewModelTests : AvaloniaTestBase
             }
         };
 
-    private static async Task AddOrUpdateAsync<T>(ClusterWorkspaceViewModel cluster, T resource) where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    private static async Task AddOrUpdateAsync<T>(ClusterWorkspace cluster, T resource) where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
         await cluster.AddOrUpdateResource(resource);
         Dispatcher.UIThread.RunJobs();
@@ -1581,8 +1581,8 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         ((DataGridControlTemplateColumnDefinition)(vm.SortingModel.Descriptors[0].ColumnId)).ColumnKey.ShouldBe("name");
     }
 
-    [AvaloniaFact(DisplayName = "Reattach preserves DataGrid scroll offset")]
-    public async Task reattach_preserves_datagrid_scroll_offset()
+    [AvaloniaFact(DisplayName = "Switching document tabs preserves DataGrid scroll offset")]
+    public async Task switching_document_tabs_preserves_datagrid_scroll_offset()
     {
         var factory = GetRequiredService<IFactory>();
         var layout = factory.CreateLayout();
@@ -1652,6 +1652,8 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         Dispatcher.UIThread.RunJobs();
 
         vm.DataGridRuntimeState.ShouldNotBeNull();
+        vm.DataGridRuntimeState!.Scroll.ShouldNotBeNull();
+        vm.DataGridRuntimeState.Scroll!.VerticalOffset.ShouldBe(targetOffset.Y);
 
         // switch back and ensure restore
         factory.SetActiveDockable(vm);
@@ -1678,7 +1680,7 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         }
 
         Dispatcher.UIThread.RunJobs();
-        restoredScrollViewer.Offset.Y.ShouldBe(0);
+        restoredScrollViewer.Offset.Y.ShouldBe(targetOffset.Y);
         ReferenceEquals(grid, restoredGrid).ShouldBeFalse();
         vm.DataGridRuntimeState.ShouldNotBeNull();
 
@@ -1812,7 +1814,7 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         var grid = view.FindControl<DataGrid>("PART_Grid");
         grid.ShouldNotBeNull();
 
-        var ns1 = cluster.Namespaces.Single(x => x.Name() == "ns1");
+        var ns1 = cluster.Runtime.Namespaces.Single(x => x.Name() == "ns1");
         selector.IsDropDownOpen = true;
         Dispatcher.UIThread.RunJobs();
 
@@ -2024,7 +2026,7 @@ internal sealed class FakeDoubleTapResourceListViewModel : IResourceListViewMode
 
     public int ViewInvocations { get; private set; }
 
-    public ClusterWorkspaceViewModel Cluster { get; set; } = null!;
+    public ClusterWorkspace Cluster { get; set; } = null!;
     public ObservableCollection<V1Namespace> SelectedNamespaces { get; } = [];
     public bool IsNamespaceSelectionLinked { get; set; } = true;
     public GroupApiVersionKind Kind => GroupApiVersionKind.From<V1Pod>();
@@ -2059,7 +2061,7 @@ internal sealed class FakeDoubleTapResourceConfig : IResourceConfig
             canExecute: items => items?.Count == 1);
     }
 
-    public ClusterWorkspaceViewModel? Cluster { get; private set; }
+    public ClusterWorkspace? Cluster { get; private set; }
     public bool IsNamespaced => true;
     public bool CanListAndWatch => true;
     public bool PermissionsLoaded => true;
@@ -2074,12 +2076,12 @@ internal sealed class FakeDoubleTapResourceConfig : IResourceConfig
     public string? Category => null;
     public Style[] ListStyle() => [];
     public IEnumerable<(Verb verb, string? subresource)> Permissions() => [];
-    public Task UpdatePermissions() => Task.CompletedTask;
+    public Task EvaluateListWatchAccessAsync() => Task.CompletedTask;
     public Type Type => typeof(V1Pod);
     public IRelayCommand NewResourceCommand => new RelayCommand(() => { });
     public IRelayCommand<IList> ViewCommand { get; }
 
-    public void Initialize(ClusterWorkspaceViewModel cluster)
+    public void Initialize(ClusterWorkspace cluster)
     {
         Cluster = cluster;
     }
@@ -2093,7 +2095,7 @@ internal sealed class FakeContextMenuResourceListViewModel : IResourceListViewMo
         ResourceConfig = new FakeDoubleTapResourceConfig(() => { });
     }
 
-    public ClusterWorkspaceViewModel Cluster { get; set; } = null!;
+    public ClusterWorkspace Cluster { get; set; } = null!;
     public ObservableCollection<V1Namespace> SelectedNamespaces { get; } = [];
     public bool IsNamespaceSelectionLinked { get; set; } = true;
     public GroupApiVersionKind Kind => GroupApiVersionKind.From<V1Pod>();

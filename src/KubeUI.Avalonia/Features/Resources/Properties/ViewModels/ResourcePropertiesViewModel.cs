@@ -1,7 +1,7 @@
 using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
-using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
+using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Resources;
 using KubeUI.Kubernetes;
@@ -11,7 +11,7 @@ namespace KubeUI.Avalonia.Features.Resources.Properties.ViewModels;
 public partial class ResourcePropertiesViewModel<T> : ViewModelBase, IDisposable where T : class, IKubernetesObject<V1ObjectMeta>, new()
 {
     [ObservableProperty]
-    public partial ClusterWorkspaceViewModel? Cluster { get; set; }
+    public partial ClusterWorkspace? Cluster { get; set; }
 
     public GroupApiVersionKind Kind { get; } = GroupApiVersionKind.From<T>();
 
@@ -36,12 +36,12 @@ public partial class ResourcePropertiesViewModel<T> : ViewModelBase, IDisposable
         Id = nameof(ResourcePropertiesViewModel<>);
     }
 
-    public void Initialize(ClusterWorkspaceViewModel cluster, T resource)
+    public void Initialize(ClusterWorkspace cluster, T resource)
     {
         Cluster = cluster;
         Object = resource;
         ResourceConfig = (ResourceConfigBase<T>)Cluster.GetResourceConfig(Kind);
-        Cluster.OnChange += Cluster_OnChange;
+        Cluster.Runtime.OnChange += Cluster_OnChange;
     }
 
     public void Cluster_OnChange(WatchEventType eventType, GroupApiVersionKind groupApiVersionKind, IKubernetesObject<V1ObjectMeta> resource)
@@ -58,8 +58,7 @@ public partial class ResourcePropertiesViewModel<T> : ViewModelBase, IDisposable
 
     public void Dispose()
     {
-        Cluster?.OnChange -= Cluster_OnChange;
+        Cluster?.Runtime.OnChange -= Cluster_OnChange;
     }
 }
-
 

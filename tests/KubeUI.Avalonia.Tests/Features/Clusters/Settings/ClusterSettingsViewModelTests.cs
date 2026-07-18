@@ -18,7 +18,7 @@ public sealed class ClusterSettingsViewModelTests : AvaloniaTestBase
         var workspace = runtime.CreateWorkspace();
 
         var settings = TestApp.CurrentServices!.GetRequiredService<ISettingsService>();
-        settings.Settings.GetClusterSettings(workspace).DebugContainerImage.ShouldBe(ClusterSettings.DefaultDebugContainerImage);
+        settings.Settings.GetClusterSettings(workspace.Runtime).DebugContainerImage.ShouldBe(ClusterSettings.DefaultDebugContainerImage);
     }
 
     [AvaloniaFact]
@@ -36,7 +36,7 @@ public sealed class ClusterSettingsViewModelTests : AvaloniaTestBase
 
         TestApp.CurrentServices!.GetRequiredService<ISettingsService>()
             .Settings
-            .GetClusterSettings(workspace)
+            .GetClusterSettings(workspace.Runtime)
             .DebugContainerImage
             .ShouldBe("example.com/debug:1");
     }

@@ -8,7 +8,7 @@ using DynamicData.Binding;
 using k8s;
 using k8s.Models;
 using KubeUI.Avalonia.Converters;
-using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
+using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Infrastructure.Threading;
 using KubeUI.Kubernetes;
@@ -17,7 +17,7 @@ namespace KubeUI.Avalonia.Features.Resources.Properties.Controls;
 
 public sealed partial class ResourceEventsView : UserControl, IInitializeCluster
 {
-    public ClusterWorkspaceViewModel? Cluster { get; private set; }
+    public ClusterWorkspace? Cluster { get; private set; }
 
     private static readonly EventWarningForegroundConverter EventWarningForegroundConverter = new();
     private static readonly FuncValueConverter<bool, bool> NotConverter = new(value => !value);
@@ -137,12 +137,12 @@ public sealed partial class ResourceEventsView : UserControl, IInitializeCluster
         DisposeEventSubscription();
     }
 
-    public void Initialize(ClusterWorkspaceViewModel cluster)
+    public void Initialize(ClusterWorkspace cluster)
     {
         Cluster = cluster;
         try
         {
-            _eventCache = cluster.GetResourceSourceCache<Corev1Event>();
+            _eventCache = cluster.Runtime.GetResourceSourceCache<Corev1Event>();
         }
         catch (Exception)
         {

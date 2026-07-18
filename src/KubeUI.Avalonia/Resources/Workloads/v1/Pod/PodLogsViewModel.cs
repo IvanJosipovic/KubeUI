@@ -1,7 +1,7 @@
 using AvaloniaEdit.Document;
 using k8s;
 using k8s.Models;
-using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
+using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Services.Settings;
 using KubeUI.Kubernetes;
@@ -15,7 +15,7 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
     private readonly ILogger<PodLogsViewModel> _logger;
 
     [ObservableProperty]
-    public partial ClusterWorkspaceViewModel Cluster { get; set; }
+    public partial ClusterWorkspace Cluster { get; set; }
 
     [ObservableProperty]
     public partial V1Pod Object { get; set; }
@@ -62,7 +62,7 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
         {
             Logs.Text = string.Empty;
 
-            _stream = await Cluster!.Client!.CoreV1.ReadNamespacedPodLogAsync(Object.Name(), Object.Namespace(), container: ContainerName, tailLines: _lines, previous: Previous, follow: true, pretty: true, timestamps: Timestamps);
+            _stream = await Cluster!.Runtime.Client!.CoreV1.ReadNamespacedPodLogAsync(Object.Name(), Object.Namespace(), container: ContainerName, tailLines: _lines, previous: Previous, follow: true, pretty: true, timestamps: Timestamps);
 
             _streamReader = new StreamReader(_stream);
 

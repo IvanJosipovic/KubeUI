@@ -135,7 +135,7 @@ public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>
             {
                 try
                 {
-                    await Cluster.Client.CoreV1.PatchNodeAsync(new V1Patch(patch, V1Patch.PatchType.MergePatch), item.Name(), item.Namespace());
+                    await Cluster.Runtime.Client.CoreV1.PatchNodeAsync(new V1Patch(patch, V1Patch.PatchType.MergePatch), item.Name(), item.Namespace());
                 }
                 catch (Exception ex)
                 {
@@ -147,7 +147,7 @@ public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>
 
     private bool CanCordonNode(IList? items)
     {
-        return items?.Count > 0 && Cluster.PermissionCache.CanI<V1Node>(Verb.Patch);
+        return items?.Count > 0 && Cluster.Runtime.Permissions.CanI<V1Node>(Verb.Patch);
     }
 
     [RelayCommand(CanExecute = nameof(CanUnCordonNode))]
@@ -178,7 +178,7 @@ public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>
             {
                 try
                 {
-                    await Cluster.Client.CoreV1.PatchNodeAsync(new V1Patch(patch, V1Patch.PatchType.MergePatch), item.Name(), item.Namespace());
+                    await Cluster.Runtime.Client.CoreV1.PatchNodeAsync(new V1Patch(patch, V1Patch.PatchType.MergePatch), item.Name(), item.Namespace());
                 }
                 catch (Exception ex)
                 {
@@ -190,7 +190,7 @@ public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>
 
     private bool CanUnCordonNode(IList? items)
     {
-        return items?.Count > 0 && Cluster.PermissionCache.CanI<V1Node>(Verb.Patch);
+        return items?.Count > 0 && Cluster.Runtime.Permissions.CanI<V1Node>(Verb.Patch);
     }
 
     [RelayCommand(CanExecute = nameof(CanDrainNode))]
@@ -221,10 +221,10 @@ public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>
             {
                 try
                 {
-                    await Cluster.Client.CoreV1.PatchNodeAsync(new V1Patch(patch, V1Patch.PatchType.MergePatch), item.Name(), item.Namespace());
+                    await Cluster.Runtime.Client.CoreV1.PatchNodeAsync(new V1Patch(patch, V1Patch.PatchType.MergePatch), item.Name(), item.Namespace());
 
-                    await Cluster.SeedResource<V1Pod>(true);
-                    var pods = Cluster.GetResourceList<V1Pod>();
+                    await Cluster.Runtime.SeedResource<V1Pod>(true);
+                    var pods = Cluster.Runtime.GetResourceList<V1Pod>();
 
                     foreach (var pod in pods)
                     {
@@ -251,7 +251,7 @@ public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>
 
                             try
                             {
-                                await Cluster.Client.CoreV1.CreateNamespacedPodEvictionAsync(evict, pod.Metadata.Name, pod.Metadata.NamespaceProperty);
+                                await Cluster.Runtime.Client.CoreV1.CreateNamespacedPodEvictionAsync(evict, pod.Metadata.Name, pod.Metadata.NamespaceProperty);
                             }
                             catch (Exception ex)
                             {
@@ -270,7 +270,7 @@ public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>
 
     private bool CanDrainNode(IList? items)
     {
-        return items?.Count > 0 && Cluster.PermissionCache.CanI<V1Node>(Verb.Patch);
+        return items?.Count > 0 && Cluster.Runtime.Permissions.CanI<V1Node>(Verb.Patch);
     }
 
     public override Control[] Properties(V1Node resource) => [new PropertiesView()];

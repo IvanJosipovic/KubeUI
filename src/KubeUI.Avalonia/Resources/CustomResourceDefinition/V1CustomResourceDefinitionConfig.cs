@@ -9,6 +9,7 @@ namespace KubeUI.Avalonia.Resources.CustomResourceDefinition;
 
 public sealed partial class V1CustomResourceDefinitionConfig : ResourceConfigBase<V1CustomResourceDefinition>
 {
+    public override bool SeedOnConnect => true;
     public V1CustomResourceDefinitionConfig(IServiceProvider serviceProvider)
         : base(serviceProvider)
     {
@@ -83,7 +84,7 @@ public sealed partial class V1CustomResourceDefinitionConfig : ResourceConfigBas
             return;
         }
 
-        var type = Cluster.ModelCache.GetResourceType(spec.Group, version.Name, spec.Names.Kind);
+        var type = Cluster.Runtime.ModelCache.GetResourceType(spec.Group, version.Name, spec.Names.Kind);
         if (type == null)
         {
             return;
@@ -115,7 +116,7 @@ public sealed partial class V1CustomResourceDefinitionConfig : ResourceConfigBas
             return false;
         }
 
-        var type = Cluster.ModelCache.GetResourceType(spec.Group, version.Name, spec.Names.Kind);
+        var type = Cluster.Runtime.ModelCache.GetResourceType(spec.Group, version.Name, spec.Names.Kind);
         if (type == null)
         {
             return false;

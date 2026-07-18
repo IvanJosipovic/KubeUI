@@ -10,6 +10,7 @@ public sealed partial class V1NamespaceConfig : ResourceConfigBase<V1Namespace>
     {
     }
     public override int Order => 6;
+    public override bool SeedOnConnect => true;
 
     public override IList<IResourceListColumn> Columns()
     {

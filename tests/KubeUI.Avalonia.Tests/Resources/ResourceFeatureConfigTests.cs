@@ -255,7 +255,7 @@ public sealed class ResourceFeatureConfigTests : AvaloniaTestBase
         });
 
         var workspace = runtime.CreateWorkspace();
-        await workspace.EnsureWorkspaceStateInitializedAsync();
+        await workspace.Connect();
         var config = (V1CronJobConfig)workspace.GetResourceConfig<V1CronJob>();
         V1CronJob cronJob = CreateCronJob("volsync", "immich-rclone-backup");
 
@@ -285,7 +285,7 @@ public sealed class ResourceFeatureConfigTests : AvaloniaTestBase
         });
 
         var workspace = runtime.CreateWorkspace();
-        await workspace.EnsureWorkspaceStateInitializedAsync();
+        await workspace.Connect();
         var config = (V1CronJobConfig)workspace.GetResourceConfig<V1CronJob>();
         V1CronJob cronJob = CreateCronJob("volsync", "immich-rclone-backup");
 
@@ -308,7 +308,7 @@ public sealed class ResourceFeatureConfigTests : AvaloniaTestBase
         });
 
         var workspace = runtime.CreateWorkspace();
-        await workspace.EnsureWorkspaceStateInitializedAsync();
+        await workspace.Connect();
         var config = (V1CronJobConfig)workspace.GetResourceConfig<V1CronJob>();
         V1CronJob cronJob = CreateCronJob("volsync", "immich-rclone-backup");
 

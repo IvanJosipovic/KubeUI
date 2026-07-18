@@ -17,7 +17,7 @@ public partial class PortForwarderListView : ViewBase<PortForwarderListViewModel
             .CanUserResizeColumns(true)
             .GridLinesVisibility(DataGridGridLinesVisibility.All)
             .IsReadOnly(true)
-            .ItemsSource(vm, x => x.Cluster.PortForwarders)
+            .ItemsSource(vm, x => x.Cluster.Runtime.PortForwarders)
             .SelectedItem(vm, x => x.SelectedItem)
             .ContextMenu(new ContextMenu()
                 .Items(

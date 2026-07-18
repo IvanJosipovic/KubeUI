@@ -248,7 +248,7 @@ public sealed class PodAttachTests : AvaloniaTestBase
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(webSocket.Object);
 
-        workspace.Client = client.Object;
+        workspace.Runtime.Client = client.Object;
 
         PodConsoleViewModel viewModel = new(logger, settings)
         {

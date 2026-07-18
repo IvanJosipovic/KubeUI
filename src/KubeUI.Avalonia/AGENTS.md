@@ -20,7 +20,6 @@ References:
 ### Data binding
 - Use compiled bindings only on all binding scopes.
 - Keep bindings one-way unless user input must update the ViewModel.
-- Use `DataTemplates` or a custom `ViewLocator` for view lookup.
 
 ### Custom controls
 - Use `StyledProperty` only for values that must participate in styling.

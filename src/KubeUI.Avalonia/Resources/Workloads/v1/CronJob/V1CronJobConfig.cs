@@ -93,7 +93,7 @@ public sealed partial class V1CronJobConfig : ResourceConfigBase<V1CronJob>
             try
             {
                 V1Job job = CreateJobFromCronJob(cronJob, timestamp);
-                await Cluster.AddOrUpdateResource(job).ConfigureAwait(false);
+                await Cluster.Runtime.AddOrUpdateResource(job).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -117,7 +117,7 @@ public sealed partial class V1CronJobConfig : ResourceConfigBase<V1CronJob>
 
         foreach (var item in items.Cast<V1CronJob>().ToList().GroupBy(x => x.Namespace()))
         {
-            if (!Cluster.PermissionCache.CanI<V1Job>(Verb.Create, item.Key))
+            if (!Cluster.Runtime.Permissions.CanI<V1Job>(Verb.Create, item.Key))
             {
                 return false;
             }

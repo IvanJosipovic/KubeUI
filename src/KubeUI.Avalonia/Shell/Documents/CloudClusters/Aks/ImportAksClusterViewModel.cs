@@ -8,17 +8,17 @@ namespace KubeUI.Avalonia.Shell.Documents.CloudClusters.Aks;
 public sealed partial class ImportAksClusterViewModel : ViewModelBase
 {
     private readonly IAksClusterService _aksClusterService;
-    private readonly ClusterWorkspaceCatalog _clusterCatalog;
+    private readonly IClusterRuntimeCatalog _runtimeCatalog;
     private readonly ILogger<ImportAksClusterViewModel> _logger;
     private bool _suppressSelectedSubscriptionLoad;
 
     public ImportAksClusterViewModel(
         IAksClusterService aksClusterService,
-        ClusterWorkspaceCatalog clusterCatalog,
+        IClusterRuntimeCatalog runtimeCatalog,
         ILogger<ImportAksClusterViewModel> logger)
     {
         _aksClusterService = aksClusterService;
-        _clusterCatalog = clusterCatalog;
+        _runtimeCatalog = runtimeCatalog;
         _logger = logger;
 
         Title = Assets.Resources.ImportAksClusterView_Title;
@@ -204,7 +204,7 @@ public sealed partial class ImportAksClusterViewModel : ViewModelBase
                 SelectedCluster,
                 AksCredentialKind.User).ConfigureAwait(false);
 
-            _clusterCatalog.ImportIntoKubeConfig(credentials.KubeConfig);
+            _runtimeCatalog.ImportIntoKubeConfig(credentials.KubeConfig);
 
             await Dispatcher.UIThread.InvokeAsync(() =>
             {

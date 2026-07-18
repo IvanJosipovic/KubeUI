@@ -8,7 +8,7 @@ using k8s.Models;
 
 namespace KubeUI.Avalonia.Resources;
 
-public partial class CRDResourceConfig<T> : ResourceConfigBase<T> where T : class, IKubernetesObject<V1ObjectMeta>, new()
+public partial class CRDResourceConfig<T> : ResourceConfigBase<T>, ICustomResourceConfig where T : class, IKubernetesObject<V1ObjectMeta>, new()
 {
     private bool _showNamespaces = true;
     private string? _generatedName;

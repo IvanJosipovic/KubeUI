@@ -7,7 +7,7 @@ using Avalonia.Markup.Declarative;
 using Avalonia.Threading;
 using k8s;
 using k8s.Models;
-using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
+using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Features.Resources.Properties.Controls;
 using KubeUI.Avalonia.Features.Resources.Properties.ViewModels;
 using KubeUI.Avalonia.Infrastructure.Presentation;
@@ -233,7 +233,7 @@ public partial class ResourcePropertiesView<T> : ViewBase<ResourcePropertiesView
         }, DispatcherPriority.Loaded);
     }
 
-    private static void InitializeClusterControls(Control control, ClusterWorkspaceViewModel cluster)
+    private static void InitializeClusterControls(Control control, ClusterWorkspace cluster)
     {
         foreach (var current in EnumerateLogicalControls(control))
         {

@@ -17,7 +17,7 @@ using Humanizer;
 using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
-using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
+using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Features.Resources.Common;
 using KubeUI.Avalonia.Features.Resources.List.Controls;
 using KubeUI.Avalonia.Infrastructure.DataGrid;
@@ -42,7 +42,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     public ISettingsService SettingsService { get; }
 
     [ObservableProperty]
-    public partial ClusterWorkspaceViewModel Cluster { get; set; }
+    public partial ClusterWorkspace Cluster { get; set; }
 
     public GroupApiVersionKind Kind => GroupApiVersionKind.From<T>();
 
@@ -160,11 +160,11 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         _selectionModel.SelectionChanged += SelectionModelOnSelectionChanged;
     }
 
-    public void Initialize(ClusterWorkspaceViewModel cluster)
+    public void Initialize(ClusterWorkspace cluster)
     {
         Cluster = cluster;
         Title = Kind.Kind.Humanize(LetterCasing.Title).Pluralize();
-        Id = Cluster.Name + "-" + Kind;
+        Id = Cluster.Runtime.Name + "-" + Kind;
         ResourceConfig = (ResourceConfigBase<T>)Cluster.GetResourceConfig(Kind);
         _resourceColumns = ResourceConfig.Columns();
         _resourceColumnsByKey.Clear();
@@ -188,7 +188,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         GenerateColumnDefinitions();
         SetNamespaceFilter();
 
-        var seedTask = Cluster.SeedResource<T>();
+        var seedTask = Cluster.Runtime.SeedResource<T>();
 
         if (seedTask.IsCompletedSuccessfully)
         {
@@ -356,7 +356,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
 
     private void BindObjects()
     {
-        Objects = Cluster.GetResourceSourceCache<T>();
+        Objects = Cluster.Runtime.GetResourceSourceCache<T>();
         SubscribeToSelectedNamespaces();
 
         _subscription?.Dispose();
@@ -563,6 +563,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     // Runtime DataGrid state captured from ProDataGrid (in-memory snapshot)
     public DataGridState? DataGridRuntimeState { get; set; }
 
+
     private void SearchModelOnSearchChanged(object? sender, SearchChangedEventArgs e)
     {
         _searchAdapterFactory.UpdatePredicate(e.NewDescriptors);
@@ -695,8 +696,7 @@ public sealed class DynamicDataSortingAdapterFactory<T> : IDataGridSortingAdapte
 
             if (TryResolveKey(definition.ColumnKey, out var key))
             {
-                IResourceListColumn? resolvedColumn = null;
-                if (_resourceColumnsByKey.TryGetValue(key, out resolvedColumn))
+                if (_resourceColumnsByKey.TryGetValue(key, out var resolvedColumn))
                 {
                     return resolvedColumn;
                 }
@@ -705,8 +705,7 @@ public sealed class DynamicDataSortingAdapterFactory<T> : IDataGridSortingAdapte
 
         if (TryResolveKey(columnId, out var directKey))
         {
-            IResourceListColumn? directColumn = null;
-            if (_resourceColumnsByKey.TryGetValue(directKey, out directColumn))
+            if (_resourceColumnsByKey.TryGetValue(directKey, out var directColumn))
             {
                 return directColumn;
             }
@@ -945,8 +944,7 @@ public sealed class DynamicDataFilteringAdapterFactory<T> : IDataGridFilteringAd
 
             if (TryResolveKey(definition.ColumnKey, out var key))
             {
-                IResourceListColumn? resolvedColumn = null;
-                if (_resourceColumnsByKey.TryGetValue(key, out resolvedColumn))
+                if (_resourceColumnsByKey.TryGetValue(key, out var resolvedColumn))
                 {
                     return resolvedColumn;
                 }
@@ -955,8 +953,7 @@ public sealed class DynamicDataFilteringAdapterFactory<T> : IDataGridFilteringAd
 
         if (TryResolveKey(columnId, out var directKey))
         {
-            IResourceListColumn? directColumn = null;
-            if (_resourceColumnsByKey.TryGetValue(directKey, out directColumn))
+            if (_resourceColumnsByKey.TryGetValue(directKey, out var directColumn))
             {
                 return directColumn;
             }

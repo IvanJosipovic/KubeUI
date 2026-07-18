@@ -27,6 +27,7 @@ public sealed partial class MainViewModel : ViewModelBase
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<MainViewModel> _logger;
     private readonly IFactory _factory = null!;
+    private readonly IClusterRuntimeCatalog _runtimeCatalog;
 
     [ObservableProperty]
     private partial ISettingsService SettingsService { get; set; }
@@ -42,6 +43,7 @@ public sealed partial class MainViewModel : ViewModelBase
         IFactory factory,
         ISettingsService settingsService,
         ClusterWorkspaceCatalog clusterCatalog,
+        IClusterRuntimeCatalog runtimeCatalog,
         IDialogService dialogService)
     {
         _serviceProvider = serviceProvider;
@@ -49,6 +51,7 @@ public sealed partial class MainViewModel : ViewModelBase
         _factory = factory;
         SettingsService = settingsService;
         ClusterCatalog = clusterCatalog;
+        _runtimeCatalog = runtimeCatalog;
         _dialogService = dialogService;
 
         DebugFactoryEvents(_factory);
@@ -283,7 +286,7 @@ public sealed partial class MainViewModel : ViewModelBase
         {
             try
             {
-                ClusterCatalog.LoadFromConfigFromPath(file.Path.LocalPath);
+                _runtimeCatalog.LoadFromConfigFromPath(file.Path.LocalPath);
             }
             catch (Exception ex)
             {
@@ -352,6 +355,5 @@ public sealed partial class MainViewModel : ViewModelBase
         }
     }
 }
-
 
 

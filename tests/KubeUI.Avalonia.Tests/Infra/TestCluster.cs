@@ -6,9 +6,9 @@ namespace KubeUI.Avalonia.Tests.Infra;
 
 public sealed class TestCluster : TestClusterRuntime
 {
-    private ClusterWorkspaceViewModel? _workspace;
+    private ClusterWorkspace? _workspace;
 
-    public static async Task<ClusterWorkspaceViewModel> GetAsync()
+    public static async Task<ClusterWorkspace> GetAsync()
     {
         var runtime = new TestCluster();
         await runtime.AddOrUpdateResource(new k8s.Models.V1Namespace
@@ -21,9 +21,9 @@ public sealed class TestCluster : TestClusterRuntime
         return workspace;
     }
 
-    public ClusterWorkspaceViewModel CreateWorkspace()
+    public ClusterWorkspace CreateWorkspace()
     {
-        _workspace ??= ActivatorUtilities.CreateInstance<ClusterWorkspaceViewModel>(
+        _workspace ??= ActivatorUtilities.CreateInstance<ClusterWorkspace>(
             TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized."),
             this);
 

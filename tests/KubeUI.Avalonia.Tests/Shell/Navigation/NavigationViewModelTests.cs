@@ -44,9 +44,17 @@ public class NavigationViewModelTests : AvaloniaTestBase
         base.Dispose();
     }
 
-    private ClusterWorkspaceViewModel CreateWorkspace(TestCluster runtime)
+    private ClusterWorkspace CreateWorkspace(TestCluster runtime)
     {
-        var workspace = runtime.CreateWorkspace();
+        var workspace = CreateWorkspace((IClusterRuntime)runtime);
+        return workspace;
+    }
+
+    private ClusterWorkspace CreateWorkspace(IClusterRuntime runtime)
+    {
+        var workspace = ActivatorUtilities.CreateInstance<ClusterWorkspace>(
+            TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized."),
+            runtime);
         _disposables.Add(workspace);
         return workspace;
     }
@@ -230,7 +238,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
         return version == null ? null : runtime.ModelCache.GetResourceType(crd.Spec.Group, version, crd.Spec.Names.Kind);
     }
 
-    private static async Task AddGeneratedCustomResourceAsync(ClusterWorkspaceViewModel cluster, Type resourceType, V1CustomResourceDefinition crd, string @namespace, string name)
+    private static async Task AddGeneratedCustomResourceAsync(ClusterWorkspace cluster, Type resourceType, V1CustomResourceDefinition crd, string @namespace, string name)
     {
         var resource = Activator.CreateInstance(resourceType).ShouldNotBeNull();
         var metadata = new V1ObjectMeta
@@ -244,12 +252,12 @@ public class NavigationViewModelTests : AvaloniaTestBase
         resourceType.GetProperty(nameof(IKubernetesObject.ApiVersion))?.SetValue(resource, $"{crd.Spec.Group}/{crd.Spec.Versions.First(x => x.Served && x.Storage).Name}");
         resourceType.GetProperty(nameof(IKubernetesObject.Kind))?.SetValue(resource, crd.Spec.Names.Kind);
 
-        var addOrUpdateMethod = typeof(ClusterWorkspaceViewModel)
-            .GetMethods(BindingFlags.Instance | BindingFlags.Public)
-            .First(x => x.Name == nameof(ClusterWorkspaceViewModel.AddOrUpdateResource) && x.IsGenericMethodDefinition && x.GetParameters().Length == 1)
+        var addOrUpdateMethod = typeof(IClusterRuntime)
+            .GetMethods()
+            .First(x => x.Name == nameof(IClusterRuntime.AddOrUpdateResource) && x.IsGenericMethodDefinition && x.GetParameters().Length == 1)
             .MakeGenericMethod(resourceType);
 
-        await (Task)addOrUpdateMethod.Invoke(cluster, [resource])!;
+        await (Task)addOrUpdateMethod.Invoke(cluster.Runtime, [resource])!;
         Dispatcher.UIThread.RunJobs();
     }
 
@@ -274,7 +282,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
 
         var workspace = CreateWorkspace(runtime);
         await workspace.SeedResource<V1Namespace>();
-        await workspace.EnsureWorkspaceStateInitializedAsync();
+        await workspace.Connect();
         Dispatcher.UIThread.RunJobs();
         workspace.AddResourceConfigForTest(new FakeResourceConfig(typeof(V1CustomResourceDefinition), "Definitions"));
 
@@ -288,7 +296,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
 
         await vm.TreeViewSelectionChangedAsync(clusterNode);
 
-        await WaitForAsync(() => clusterNode.Cluster.Status == ClusterStatus.Connecting);
+        await WaitForAsync(() => clusterNode.Cluster.Runtime.Status == ClusterStatus.Connecting);
         clusterNode.NavigationItems.Count.ShouldBe(0);
         clusterNode.IsExpanded.ShouldBeFalse();
 
@@ -309,7 +317,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
         };
 
         var workspace = CreateWorkspace(runtime);
-        await workspace.EnsureWorkspaceStateInitializedAsync();
+        await workspace.Connect();
         Dispatcher.UIThread.RunJobs();
 
         var vm = CreateViewModel();
@@ -320,7 +328,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
 
         await vm.TreeViewSelectionChangedAsync(clusterNode);
 
-        await WaitForAsync(() => clusterNode.Cluster.Status == ClusterStatus.Errored);
+        await WaitForAsync(() => clusterNode.Cluster.Runtime.Status == ClusterStatus.Errored);
         clusterNode.NavigationItems.Count.ShouldBe(0);
     }
 
@@ -335,7 +343,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
         };
 
         var workspace = CreateWorkspace(runtime);
-        await workspace.EnsureWorkspaceStateInitializedAsync();
+        await workspace.Connect();
         Dispatcher.UIThread.RunJobs();
         workspace.AddResourceConfigForTest(new FakeResourceConfig(typeof(V1CustomResourceDefinition), "Definitions"));
         var vm = CreateViewModel();
@@ -368,17 +376,17 @@ public class NavigationViewModelTests : AvaloniaTestBase
             Name = "settings-reuse-" + Guid.NewGuid().ToString("N"),
             Connected = false,
             Status = ClusterStatus.None,
-            ListNamespaces = false,
+            ListNamespaces = true,
         };
         runtime.ConnectBehavior = () =>
         {
             runtime.Status = ClusterStatus.Errored;
-            runtime.RequiresNamespaceSelectionPrompt = true;
+            runtime.RaiseNamespaceSelectionRequired();
             return Task.CompletedTask;
         };
 
         var workspace = CreateWorkspace(runtime);
-        await workspace.EnsureWorkspaceStateInitializedAsync();
+        await workspace.Connect();
         Dispatcher.UIThread.RunJobs();
         workspace.AddResourceConfigForTest(new FakeResourceConfig(typeof(V1CustomResourceDefinition), "Definitions"));
         var vm = CreateViewModel();
@@ -392,11 +400,11 @@ public class NavigationViewModelTests : AvaloniaTestBase
         await vm.TreeViewSelectionChangedAsync(clusterNode);
 
         await WaitForAsync(() =>
-            documents.VisibleDockables?.OfType<ClusterSettingsViewModel>().Any(x => x.Id == nameof(ClusterSettingsViewModel) + workspace.Name) == true);
+            documents.VisibleDockables?.OfType<ClusterSettingsViewModel>().Any(x => x.Id == nameof(ClusterSettingsViewModel) + workspace.Runtime.Name) == true);
 
         var settingsDocument = documents.VisibleDockables!
             .OfType<ClusterSettingsViewModel>()
-            .Single(x => x.Id == nameof(ClusterSettingsViewModel) + workspace.Name);
+            .Single(x => x.Id == nameof(ClusterSettingsViewModel) + workspace.Runtime.Name);
 
         settingsDocument.Cluster.ShouldBe(workspace);
         runtime.Status.ShouldBe(ClusterStatus.Errored);
@@ -420,12 +428,12 @@ public class NavigationViewModelTests : AvaloniaTestBase
         runtime.ConnectBehavior = () =>
         {
             runtime.Status = ClusterStatus.Errored;
-            runtime.RequiresNamespaceSelectionPrompt = true;
+            runtime.RaiseNamespaceSelectionRequired();
             return Task.CompletedTask;
         };
 
         var workspace = CreateWorkspace(runtime);
-        await workspace.EnsureWorkspaceStateInitializedAsync();
+        await workspace.Connect();
         Dispatcher.UIThread.RunJobs();
         workspace.AddResourceConfigForTest(new FakeResourceConfig(typeof(V1CustomResourceDefinition), "Definitions"));
         var vm = CreateViewModel();
@@ -469,7 +477,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
         };
 
         var workspace = CreateWorkspace(runtime);
-        await workspace.EnsureWorkspaceStateInitializedAsync();
+        await workspace.Connect();
         Dispatcher.UIThread.RunJobs();
 
         var vm = CreateViewModel();
@@ -483,7 +491,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
         await vm.ToggleClusterConnectionCommand.ExecuteAsync(clusterNode);
         Dispatcher.UIThread.RunJobs();
 
-        await WaitForAsync(() => !workspace.Connected && workspace.Status == ClusterStatus.None);
+        await WaitForAsync(() => !workspace.Runtime.Connected && workspace.Runtime.Status == ClusterStatus.None);
         clusterNode.NavigationItems.Count.ShouldBe(0);
         clusterNode.ConnectionMenuHeader.ShouldBe(Assets.Resources.NavigationView_ContextMenu_Connect);
     }
@@ -502,7 +510,6 @@ public class NavigationViewModelTests : AvaloniaTestBase
         {
             runtime.Connected = true;
             runtime.Status = ClusterStatus.Connected;
-            runtime.RequiresNamespaceSelectionPrompt = false;
             connectCompleted.TrySetResult(null);
             return Task.CompletedTask;
         };
@@ -510,7 +517,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
         var workspace = CreateWorkspace(runtime);
         var settingsService = TestApp.CurrentServices?.GetRequiredService<ISettingsService>()
             ?? throw new InvalidOperationException("Test services are not initialized.");
-        settingsService.Settings.GetClusterSettings(workspace).Namespaces!.Add("my-app");
+        settingsService.Settings.GetClusterSettings(workspace.Runtime).Namespaces!.Add("my-app");
 
         var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
@@ -540,7 +547,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
         {
             Connected = false,
             Status = ClusterStatus.None,
-            ListNamespaces = false,
+            ListNamespaces = true,
             DefaultPermissionAllowed = false,
         };
 
@@ -551,9 +558,12 @@ public class NavigationViewModelTests : AvaloniaTestBase
 
         runtime.ConnectBehavior = async () =>
         {
+            await runtime.AddOrUpdateResource(new V1Namespace
+            {
+                Metadata = new V1ObjectMeta { Name = "my-app" }
+            });
             runtime.Connected = true;
             runtime.Status = ClusterStatus.Connected;
-            runtime.RequiresNamespaceSelectionPrompt = false;
 
             await Task.CompletedTask;
         };
@@ -561,7 +571,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
         var workspace = CreateWorkspace(runtime);
         var settingsService = TestApp.CurrentServices?.GetRequiredService<ISettingsService>()
             ?? throw new InvalidOperationException("Test services are not initialized.");
-        settingsService.Settings.GetClusterSettings(workspace).Namespaces!.Add("my-app");
+        settingsService.Settings.GetClusterSettings(workspace.Runtime).Namespaces!.Add("my-app");
 
         var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
@@ -590,7 +600,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
         };
 
         var workspace = CreateWorkspace(runtime);
-        await workspace.EnsureWorkspaceStateInitializedAsync();
+        await workspace.Connect();
         Dispatcher.UIThread.RunJobs();
 
         var vm = CreateViewModel();
@@ -627,8 +637,8 @@ public class NavigationViewModelTests : AvaloniaTestBase
             .ToList();
 
         podDocuments.Count.ShouldBe(2);
-        podDocuments[0].Id.ShouldBe($"{workspace.Name}-{GroupApiVersionKind.From<V1Pod>()}");
-        podDocuments[1].Id.ShouldBe($"{workspace.Name}-{GroupApiVersionKind.From<V1Pod>()}#2");
+        podDocuments[0].Id.ShouldBe($"{workspace.Runtime.Name}-{GroupApiVersionKind.From<V1Pod>()}");
+        podDocuments[1].Id.ShouldBe($"{workspace.Runtime.Name}-{GroupApiVersionKind.From<V1Pod>()}#2");
     }
 
     [AvaloniaFact]
@@ -638,7 +648,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
         {
             Connected = false,
             Status = ClusterStatus.None,
-            ListNamespaces = false,
+            ListNamespaces = true,
             DefaultPermissionAllowed = false,
         };
 
@@ -647,18 +657,20 @@ public class NavigationViewModelTests : AvaloniaTestBase
         runtime.SetPermission<V1Deployment>(Verb.List, true, "my-app");
         runtime.SetPermission<V1Deployment>(Verb.Watch, true, "my-app");
 
-        runtime.ConnectBehavior = () =>
+        runtime.ConnectBehavior = async () =>
         {
+            await runtime.AddOrUpdateResource(new V1Namespace
+            {
+                Metadata = new V1ObjectMeta { Name = "my-app" }
+            });
             runtime.Connected = true;
             runtime.Status = ClusterStatus.Connected;
-            runtime.RequiresNamespaceSelectionPrompt = false;
-            return Task.CompletedTask;
         };
 
         var workspace = CreateWorkspace(runtime);
         var settingsService = TestApp.CurrentServices?.GetRequiredService<ISettingsService>()
             ?? throw new InvalidOperationException("Test services are not initialized.");
-        settingsService.Settings.GetClusterSettings(workspace).Namespaces!.Add("my-app");
+        settingsService.Settings.GetClusterSettings(workspace.Runtime).Namespaces!.Add("my-app");
 
         var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
@@ -683,7 +695,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
         {
             Connected = true,
             Status = ClusterStatus.Connected,
-            ListNamespaces = false,
+            ListNamespaces = true,
             DefaultPermissionAllowed = false,
         };
 
@@ -691,10 +703,14 @@ public class NavigationViewModelTests : AvaloniaTestBase
         runtime.SetPermission<TestPermissionResourceAlpha>(Verb.Watch, true, "my-app");
 
         var workspace = CreateWorkspace(runtime);
+        await runtime.AddOrUpdateResource(new V1Namespace
+        {
+            Metadata = new V1ObjectMeta { Name = "my-app" }
+        });
         var settingsService = TestApp.CurrentServices?.GetRequiredService<ISettingsService>()
             ?? throw new InvalidOperationException("Test services are not initialized.");
-        settingsService.Settings.GetClusterSettings(workspace).Namespaces!.Add("my-app");
-        await workspace.EnsureWorkspaceStateInitializedAsync();
+        settingsService.Settings.GetClusterSettings(workspace.Runtime).Namespaces!.Add("my-app");
+        await workspace.Connect();
         Dispatcher.UIThread.RunJobs();
 
         workspace.AddResourceConfigForTest(new FakeResourceConfig(
@@ -713,7 +729,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
     }
 
     [AvaloniaFact]
-    public async Task namespaced_resource_link_stays_hidden_until_settings_namespace_is_materialized_into_runtime_namespaces()
+    public async Task namespaced_resource_link_stays_hidden_without_runtime_namespace_access()
     {
         var runtime = new TestCluster
         {
@@ -729,7 +745,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
         var workspace = CreateWorkspace(runtime);
         var settingsService = TestApp.CurrentServices?.GetRequiredService<ISettingsService>()
             ?? throw new InvalidOperationException("Test services are not initialized.");
-        settingsService.Settings.GetClusterSettings(workspace).Namespaces!.Add("my-app");
+        settingsService.Settings.GetClusterSettings(workspace.Runtime).Namespaces!.Add("my-app");
         workspace.AddResourceConfigForTest(new FakeResourceConfig(typeof(TestPermissionResourceAlpha), "Alpha Permission Resource"));
 
         var vm = CreateViewModel();
@@ -740,11 +756,10 @@ public class NavigationViewModelTests : AvaloniaTestBase
 
         FindResourceLink(clusterNode, "Alpha Permission Resource").ShouldBeNull();
 
-        await workspace.EnsureWorkspaceStateInitializedAsync();
+        await workspace.Connect();
         Dispatcher.UIThread.RunJobs();
 
-        var link = await WaitForValueAsync(() => FindResourceLink(clusterNode, "Alpha Permission Resource"));
-        link.ShouldNotBeNull();
+        FindResourceLink(clusterNode, "Alpha Permission Resource").ShouldBeNull();
     }
 
     [AvaloniaFact]
@@ -754,7 +769,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
         {
             Connected = false,
             Status = ClusterStatus.None,
-            ListNamespaces = false,
+            ListNamespaces = true,
             DefaultPermissionAllowed = false,
         };
 
@@ -767,6 +782,11 @@ public class NavigationViewModelTests : AvaloniaTestBase
 
         runtime.ConnectBehavior = async () =>
         {
+            await runtime.AddOrUpdateResource(new V1Namespace
+            {
+                Metadata = new V1ObjectMeta { Name = "my-app" }
+            });
+
             await runtime.AddOrUpdateResource(new V1Pod
             {
                 Metadata = new()
@@ -799,13 +819,12 @@ public class NavigationViewModelTests : AvaloniaTestBase
 
             runtime.Connected = true;
             runtime.Status = ClusterStatus.Connected;
-            runtime.RequiresNamespaceSelectionPrompt = false;
         };
 
         var workspace = CreateWorkspace(runtime);
         var settingsService = TestApp.CurrentServices?.GetRequiredService<ISettingsService>()
             ?? throw new InvalidOperationException("Test services are not initialized.");
-        settingsService.Settings.GetClusterSettings(workspace).Namespaces!.Add("my-app");
+        settingsService.Settings.GetClusterSettings(workspace.Runtime).Namespaces!.Add("my-app");
 
         var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
@@ -817,7 +836,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
         await vm.TreeViewSelectionChangedAsync(clusterNode);
 
-        await WaitForAsync(() => workspace.Namespaces.Any(x => x.Name() == "my-app"));
+        await WaitForAsync(() => workspace.Runtime.Namespaces.Any(x => x.Name() == "my-app"));
         await WaitForAsync(() => workspace.GetResourceConfigs().Any(x => x.Type == typeof(V1Pod) && x.PermissionsLoaded));
 
         var podConfig = workspace.GetResourceConfig<V1Pod>();
@@ -831,11 +850,11 @@ public class NavigationViewModelTests : AvaloniaTestBase
         await vm.TreeViewSelectionChangedAsync(podsLink);
 
         await WaitForAsync(() =>
-            documents.VisibleDockables?.OfType<ResourceListViewModel<V1Pod>>().Any(x => x.Id == $"{workspace.Name}-{GroupApiVersionKind.From<V1Pod>()}") == true);
+            documents.VisibleDockables?.OfType<ResourceListViewModel<V1Pod>>().Any(x => x.Id == $"{workspace.Runtime.Name}-{GroupApiVersionKind.From<V1Pod>()}") == true);
 
         var podsDocument = documents.VisibleDockables!
             .OfType<ResourceListViewModel<V1Pod>>()
-            .Single(x => x.Id == $"{workspace.Name}-{GroupApiVersionKind.From<V1Pod>()}");
+            .Single(x => x.Id == $"{workspace.Runtime.Name}-{GroupApiVersionKind.From<V1Pod>()}");
 
         podsDocument.LoadError.ShouldBeNull();
         await WaitForAsync(() => podsDocument.ItemCount > 0);
@@ -874,7 +893,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
         var workspace = CreateWorkspace(runtime);
         var settingsService = TestApp.CurrentServices?.GetRequiredService<ISettingsService>()
             ?? throw new InvalidOperationException("Test services are not initialized.");
-        settingsService.Settings.GetClusterSettings(workspace).Namespaces!.Add("my-app");
+        settingsService.Settings.GetClusterSettings(workspace.Runtime).Namespaces!.Add("my-app");
 
         var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
@@ -899,7 +918,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
         };
 
         var workspace = CreateWorkspace(runtime);
-        await workspace.EnsureWorkspaceStateInitializedAsync();
+        await workspace.Connect();
         Dispatcher.UIThread.RunJobs();
 
         var vm = CreateViewModel();
@@ -911,7 +930,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
 
         await vm.TreeViewSelectionChangedAsync(clusterNode);
 
-        await WaitForAsync(() => clusterNode.Cluster.Connected && clusterNode.IsExpanded);
+        await WaitForAsync(() => clusterNode.Cluster.Runtime.Connected && clusterNode.IsExpanded);
     }
 
     [AvaloniaFact]
@@ -1033,7 +1052,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
         };
 
         var workspace = CreateWorkspace(runtime);
-        await workspace.EnsureWorkspaceStateInitializedAsync();
+        await workspace.Connect();
         Dispatcher.UIThread.RunJobs();
 
         var vm = CreateViewModel();
@@ -1052,7 +1071,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
         releaseConnect.TrySetResult(null);
 
         await WaitForAsync(() => clusterNode.IsExpanded);
-        clusterNode.Cluster.Connected.ShouldBeTrue();
+        clusterNode.Cluster.Runtime.Connected.ShouldBeTrue();
     }
 
     [AvaloniaFact]
@@ -1065,7 +1084,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
         };
 
         var workspace = CreateWorkspace(runtime);
-        await workspace.EnsureWorkspaceStateInitializedAsync();
+        await workspace.Connect();
         Dispatcher.UIThread.RunJobs();
 
         var vm = CreateViewModel();
@@ -1096,7 +1115,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
         };
 
         var workspace = CreateWorkspace(runtime);
-        await workspace.EnsureWorkspaceStateInitializedAsync();
+        await workspace.Connect();
         Dispatcher.UIThread.RunJobs();
 
         var vm = CreateViewModel();
@@ -1140,7 +1159,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
         };
 
         var workspace = CreateWorkspace(runtime);
-        await workspace.EnsureWorkspaceStateInitializedAsync();
+        await workspace.Connect();
         Dispatcher.UIThread.RunJobs();
 
         var vm = CreateViewModel();
@@ -1165,6 +1184,62 @@ public class NavigationViewModelTests : AvaloniaTestBase
     }
 
     [AvaloniaFact]
+    public async Task renaming_connected_cluster_preserves_resource_navigation()
+    {
+        var runtime = new TestCluster
+        {
+            Name = "old-name",
+            Connected = true,
+            Status = ClusterStatus.Connected,
+        };
+        var workspace = CreateWorkspace(runtime);
+        await workspace.Connect();
+        Dispatcher.UIThread.RunJobs();
+
+        var vm = CreateViewModel();
+        vm.ClusterCatalog.Clusters.Add(workspace);
+        Dispatcher.UIThread.RunJobs();
+
+        workspace.AddResourceConfigForTest(new FakeResourceConfig(
+            typeof(TestPermissionResourceAlpha),
+            "Alpha Permission Resource"));
+
+        var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
+        var resourceLink = FindResourceLink(clusterNode, "Alpha Permission Resource");
+        resourceLink.ShouldNotBeNull();
+
+        runtime.Name = "new-name";
+
+        FindResourceLink(clusterNode, "Alpha Permission Resource").ShouldBeSameAs(resourceLink);
+        resourceLink!.Id.ShouldStartWith("new-name-");
+        clusterNode.NavigationItems.ShouldNotBeEmpty();
+    }
+
+    [AvaloniaFact]
+    public async Task resource_config_navigation_is_applied_immediately_on_ui_thread()
+    {
+        var runtime = new TestCluster
+        {
+            Connected = true,
+            Status = ClusterStatus.Connected,
+        };
+        var workspace = CreateWorkspace(runtime);
+        await workspace.Connect();
+        Dispatcher.UIThread.RunJobs();
+
+        var vm = CreateViewModel();
+        vm.ClusterCatalog.Clusters.Add(workspace);
+        Dispatcher.UIThread.RunJobs();
+        var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
+
+        workspace.AddResourceConfigForTest(new FakeResourceConfig(
+            typeof(TestPermissionResourceAlpha),
+            "Alpha Permission Resource"));
+
+        FindResourceLink(clusterNode, "Alpha Permission Resource").ShouldNotBeNull();
+    }
+
+    [AvaloniaFact]
     public async Task port_forwarders_is_under_network_category_not_top_level()
     {
         var runtime = new TestCluster
@@ -1173,7 +1248,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
             Status = ClusterStatus.Connected,
         };
         var workspace = CreateWorkspace(runtime);
-        await workspace.EnsureWorkspaceStateInitializedAsync();
+        await workspace.Connect();
         Dispatcher.UIThread.RunJobs();
 
         var vm = CreateViewModel();
@@ -1207,7 +1282,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
         };
 
         var workspace = CreateWorkspace(runtime);
-        await workspace.EnsureWorkspaceStateInitializedAsync();
+        await workspace.Connect();
         Dispatcher.UIThread.RunJobs();
 
         var vm = CreateViewModel();
@@ -1262,7 +1337,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
         };
 
         var workspace = CreateWorkspace(runtime);
-        await workspace.EnsureWorkspaceStateInitializedAsync();
+        await workspace.Connect();
         Dispatcher.UIThread.RunJobs();
 
         var podRelease = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -1349,7 +1424,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
             Status = ClusterStatus.Connected,
         };
         var workspace = CreateWorkspace(runtime);
-        await workspace.EnsureWorkspaceStateInitializedAsync();
+        await workspace.Connect();
         Dispatcher.UIThread.RunJobs();
 
         var vm = CreateViewModel();
@@ -1369,7 +1444,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
             Status = ClusterStatus.Connected,
         };
         var workspace = CreateWorkspace(runtime);
-        await workspace.EnsureWorkspaceStateInitializedAsync();
+        await workspace.Connect();
         Dispatcher.UIThread.RunJobs();
 
         var vm = CreateViewModel();
@@ -1395,7 +1470,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
             Status = ClusterStatus.Connected,
         };
         var workspace = CreateWorkspace(runtime);
-        await workspace.EnsureWorkspaceStateInitializedAsync();
+        await workspace.Connect();
         Dispatcher.UIThread.RunJobs();
 
         workspace.AddResourceConfigForTest(new FakeCustomResourceConfig(typeof(TestCustomResourceAlpha), "Alpha Resources"));
@@ -1467,7 +1542,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
             Status = ClusterStatus.Connected,
         };
         var workspace = CreateWorkspace(runtime);
-        await workspace.EnsureWorkspaceStateInitializedAsync();
+        await workspace.Connect();
         Dispatcher.UIThread.RunJobs();
         workspace.AddResourceConfigForTest(new FakeCustomResourceConfig(typeof(TestCustomResourceAlpha), "Alpha Resources"));
 
@@ -1498,7 +1573,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
 
         var workspace = CreateWorkspace(runtime);
         await workspace.SeedResource<V1Namespace>();
-        await workspace.EnsureWorkspaceStateInitializedAsync();
+        await workspace.Connect();
         Dispatcher.UIThread.RunJobs();
 
         var vm = CreateViewModel();
@@ -1535,7 +1610,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
         };
 
         var workspace = CreateWorkspace(runtime);
-        await workspace.EnsureWorkspaceStateInitializedAsync();
+        await workspace.Connect();
         Dispatcher.UIThread.RunJobs();
 
         var originalCrd = ClusterWorkspaceTestCustomResourceDefinitionFactory.Create("tests.kubeui.com", "tests", "someString");
@@ -1604,7 +1679,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
         };
 
         var workspace = CreateWorkspace(runtime);
-        await workspace.EnsureWorkspaceStateInitializedAsync();
+        await workspace.Connect();
         Dispatcher.UIThread.RunJobs();
 
         var originalCrd = ClusterWorkspaceTestCustomResourceDefinitionFactory.Create("tests.kubeui.com", "tests", "someString");
@@ -1661,7 +1736,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
         };
 
         var workspace = CreateWorkspace(runtime);
-        await workspace.EnsureWorkspaceStateInitializedAsync();
+        await workspace.Connect();
         Dispatcher.UIThread.RunJobs();
 
         var vm = CreateViewModel();
@@ -1694,7 +1769,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
         });
 
         var workspace = CreateWorkspace(runtime);
-        await workspace.EnsureWorkspaceStateInitializedAsync();
+        await workspace.Connect();
         Dispatcher.UIThread.RunJobs();
 
         var vm = CreateViewModel();
@@ -1727,7 +1802,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
         });
 
         var workspace = CreateWorkspace(runtime);
-        await workspace.EnsureWorkspaceStateInitializedAsync();
+        await workspace.Connect();
         Dispatcher.UIThread.RunJobs();
 
         var vm = CreateViewModel();
@@ -1765,7 +1840,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
         };
 
         var workspace = CreateWorkspace(runtime);
-        await workspace.EnsureWorkspaceStateInitializedAsync();
+        await workspace.Connect();
         Dispatcher.UIThread.RunJobs();
 
         var vm = CreateViewModel();
@@ -1806,6 +1881,49 @@ public class NavigationViewModelTests : AvaloniaTestBase
 
         var count = await countTask;
         count.ShouldBe(1);
+    }
+
+    [AvaloniaFact]
+    public async Task resource_navigation_count_updates_when_runtime_is_decorated()
+    {
+        var runtime = new CountingClusterRuntime(new TestClusterRuntime
+        {
+            Connected = true,
+            Status = ClusterStatus.Connected,
+        });
+
+        var workspace = CreateWorkspace(runtime);
+        await workspace.Connect();
+        Dispatcher.UIThread.RunJobs();
+
+        var vm = CreateViewModel();
+        vm.ClusterCatalog.Clusters.Add(workspace);
+        Dispatcher.UIThread.RunJobs();
+
+        var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
+        var eventsLink = await WaitForValueAsync(() => FindResourceLink(clusterNode, typeof(Corev1Event)));
+        eventsLink.ShouldNotBeNull();
+        eventsLink.Count.ShouldNotBeNull();
+
+        var countTask = WaitForObservedCountAsync(eventsLink.Count, expected: 1, timeoutMs: 10000);
+        await runtime.AddOrUpdateResource(new Corev1Event
+        {
+            Metadata = new()
+            {
+                Name = "event-from-decorated-runtime",
+                NamespaceProperty = "default",
+            },
+            InvolvedObject = new()
+            {
+                Name = "pod-one",
+                NamespaceProperty = "default",
+                Kind = "Pod",
+            },
+            LastTimestamp = DateTime.UtcNow,
+            Count = 1,
+        });
+
+        (await countTask).ShouldBe(1);
     }
 
     [AvaloniaFact]
@@ -1865,7 +1983,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
     }
 
     [AvaloniaFact]
-    public async Task resource_navigation_count_is_replaced_when_existing_link_is_updated()
+    public async Task resource_navigation_count_is_preserved_until_resource_is_seeded()
     {
         var runtime = new TestCluster
         {
@@ -1903,12 +2021,13 @@ public class NavigationViewModelTests : AvaloniaTestBase
         var method = typeof(NavigationViewModel).GetMethod("UpdateNavigationItem", BindingFlags.Static | BindingFlags.NonPublic);
         method.ShouldNotBeNull();
 
+        var originalCount = current.Count;
         method.Invoke(null, [current, desired]);
 
-        current.Count.ShouldBeSameAs(desiredCount);
+        current.Count.ShouldBeSameAs(originalCount);
 
         var count = await WaitForCountAsync(current.Count, timeoutMs: 1000);
-        count.ShouldBe(2);
+        count.ShouldBe(1);
     }
 
     [AvaloniaFact]
@@ -1937,7 +2056,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
         runtime.SetPermission(typeof(Corev1Event), Verb.Watch, allowed: true, @namespace: "default");
 
         var workspace = CreateWorkspace(runtime);
-        await workspace.EnsureWorkspaceStateInitializedAsync();
+        await workspace.Connect();
         Dispatcher.UIThread.RunJobs();
 
         runtime.Objects[GroupApiVersionKind.From<Corev1Event>()].ShouldBeOfType<ContainerClass<Corev1Event>>()
@@ -1991,7 +2110,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
         });
 
         var workspace = CreateWorkspace(runtime);
-        await workspace.EnsureWorkspaceStateInitializedAsync();
+        await workspace.Connect();
         Dispatcher.UIThread.RunJobs();
 
         var vm = CreateViewModel();
@@ -2029,7 +2148,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
         });
 
         var workspace = CreateWorkspace(runtime);
-        await workspace.EnsureWorkspaceStateInitializedAsync();
+        await workspace.Connect();
         Dispatcher.UIThread.RunJobs();
 
         var vm = CreateViewModel();
@@ -2040,7 +2159,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
         var namespaceLink = clusterNode.NavigationItems
             .OfType<ResourceNavigationLink>()
             .Single(x => x.ControlType == typeof(V1Namespace));
-        var initialNamespaceCount = workspace.Namespaces.Count;
+        var initialNamespaceCount = workspace.Runtime.Namespaces.Count;
 
         await runtime.AddOrUpdateResource(new V1Namespace
         {
@@ -2050,7 +2169,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
             }
         });
 
-        await WaitForAsync(() => workspace.Namespaces.Count == initialNamespaceCount + 1);
+        await WaitForAsync(() => workspace.Runtime.Namespaces.Count == initialNamespaceCount + 1);
 
         var updatedNamespaceLink = clusterNode.NavigationItems
             .OfType<ResourceNavigationLink>()
@@ -2070,7 +2189,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
         };
 
         var workspace = CreateWorkspace(runtime);
-        await workspace.EnsureWorkspaceStateInitializedAsync();
+        await workspace.Connect();
         Dispatcher.UIThread.RunJobs();
         workspace.AddResourceConfigForTest(new FakeResourceConfig(typeof(V1CustomResourceDefinition), "Definitions"));
 
@@ -2108,7 +2227,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
         };
 
         var workspace = CreateWorkspace(runtime);
-        await workspace.EnsureWorkspaceStateInitializedAsync();
+        await workspace.Connect();
         Dispatcher.UIThread.RunJobs();
         workspace.AddResourceConfigForTest(new FakeResourceConfig(typeof(V1CustomResourceDefinition), "Definitions"));
         var vm = CreateViewModel();
@@ -2152,7 +2271,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
             timeoutMs: 10000);
         updatedLink.ShouldNotBeNull();
         ReferenceEquals(originalLink, updatedLink).ShouldBeTrue();
-        ReferenceEquals(originalCount, updatedLink.Count).ShouldBeFalse();
+        ReferenceEquals(originalCount, updatedLink.Count).ShouldBeTrue();
     }
 
     [AvaloniaFact]
@@ -2165,7 +2284,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
         };
 
         var workspace = CreateWorkspace(runtime);
-        await workspace.EnsureWorkspaceStateInitializedAsync();
+        await workspace.Connect();
         Dispatcher.UIThread.RunJobs();
         workspace.AddResourceConfigForTest(new FakeResourceConfig(typeof(V1CustomResourceDefinition), "Definitions"));
         var vm = CreateViewModel();
@@ -2212,7 +2331,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
         };
 
         var workspace = CreateWorkspace(runtime);
-        await workspace.EnsureWorkspaceStateInitializedAsync();
+        await workspace.Connect();
         Dispatcher.UIThread.RunJobs();
         workspace.AddResourceConfigForTest(new FakeResourceConfig(typeof(V1CustomResourceDefinition), "Definitions"));
         var vm = CreateViewModel();
@@ -2356,7 +2475,7 @@ internal class FakeCustomResourceConfig : IResourceConfig
         CanListAndWatch = canListAndWatch;
     }
 
-    public ClusterWorkspaceViewModel? Cluster { get; private set; }
+    public ClusterWorkspace? Cluster { get; private set; }
     public bool IsNamespaced => true;
     public bool CanListAndWatch { get; set; }
     public bool PermissionsLoaded { get; set; } = true;
@@ -2371,14 +2490,14 @@ internal class FakeCustomResourceConfig : IResourceConfig
     public string? Category => null;
     public Style[] ListStyle() => [];
     public IEnumerable<(Verb verb, string? subresource)> Permissions() => [];
-    public Task UpdatePermissions() => Task.CompletedTask;
+    public Task EvaluateListWatchAccessAsync() => Task.CompletedTask;
     public Type Type { get; }
 
     public IRelayCommand NewResourceCommand => throw new NotImplementedException();
 
     public IRelayCommand<IList> ViewCommand => throw new NotImplementedException();
 
-    public void Initialize(ClusterWorkspaceViewModel cluster)
+    public void Initialize(ClusterWorkspace cluster)
     {
         Cluster = cluster;
     }
@@ -2393,7 +2512,7 @@ internal class FakeResourceConfig : IResourceConfig
         CanListAndWatch = canListAndWatch;
     }
 
-    public ClusterWorkspaceViewModel? Cluster { get; private set; }
+    public ClusterWorkspace? Cluster { get; private set; }
     public bool IsNamespaced => true;
     public bool CanListAndWatch { get; set; }
     public bool PermissionsLoaded { get; set; } = true;
@@ -2408,14 +2527,14 @@ internal class FakeResourceConfig : IResourceConfig
     public string? Category => null;
     public Style[] ListStyle() => [];
     public IEnumerable<(Verb verb, string? subresource)> Permissions() => [];
-    public Task UpdatePermissions() => Task.CompletedTask;
+    public Task EvaluateListWatchAccessAsync() => Task.CompletedTask;
     public Type Type { get; }
 
     public IRelayCommand NewResourceCommand => throw new NotImplementedException();
 
     public IRelayCommand<IList> ViewCommand => throw new NotImplementedException();
 
-    public void Initialize(ClusterWorkspaceViewModel cluster)
+    public void Initialize(ClusterWorkspace cluster)
     {
         Cluster = cluster;
     }
@@ -2429,7 +2548,7 @@ internal sealed class DeferredPermissionResourceConfig : IResourceConfig
         Name = name;
     }
 
-    public ClusterWorkspaceViewModel? Cluster { get; private set; }
+    public ClusterWorkspace? Cluster { get; private set; }
     public bool IsNamespaced => true;
     public bool CanListAndWatch { get; set; }
     public bool PermissionsLoaded { get; set; }
@@ -2446,7 +2565,7 @@ internal sealed class DeferredPermissionResourceConfig : IResourceConfig
     public IEnumerable<(Verb verb, string? subresource)> Permissions() => [];
     public Type Type { get; }
 
-    public Task UpdatePermissions()
+    public Task EvaluateListWatchAccessAsync()
     {
         CanListAndWatch = true;
         PermissionsLoaded = true;
@@ -2457,7 +2576,7 @@ internal sealed class DeferredPermissionResourceConfig : IResourceConfig
 
     public IRelayCommand<IList> ViewCommand => throw new NotImplementedException();
 
-    public void Initialize(ClusterWorkspaceViewModel cluster)
+    public void Initialize(ClusterWorkspace cluster)
     {
         Cluster = cluster;
     }
@@ -2498,7 +2617,7 @@ internal sealed class SlowPermissionResourceConfig : IResourceConfig
         _permissionRefreshTask = permissionRefreshTask;
     }
 
-    public ClusterWorkspaceViewModel? Cluster { get; private set; }
+    public ClusterWorkspace? Cluster { get; private set; }
     public bool IsNamespaced => true;
     public bool CanListAndWatch { get; set; }
     public bool PermissionsLoaded { get; set; }
@@ -2515,7 +2634,7 @@ internal sealed class SlowPermissionResourceConfig : IResourceConfig
     public IEnumerable<(Verb verb, string? subresource)> Permissions() => [];
     public Type Type { get; }
 
-    public async Task UpdatePermissions()
+    public async Task EvaluateListWatchAccessAsync()
     {
         await _permissionRefreshTask;
         CanListAndWatch = true;
@@ -2526,7 +2645,7 @@ internal sealed class SlowPermissionResourceConfig : IResourceConfig
 
     public IRelayCommand<IList> ViewCommand => throw new NotImplementedException();
 
-    public void Initialize(ClusterWorkspaceViewModel cluster)
+    public void Initialize(ClusterWorkspace cluster)
     {
         Cluster = cluster;
     }

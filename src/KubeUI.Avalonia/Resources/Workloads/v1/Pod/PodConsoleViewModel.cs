@@ -5,7 +5,7 @@ using System.Threading;
 using Avalonia.Input.Platform;
 using k8s;
 using k8s.Models;
-using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
+using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Infrastructure.Platform;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Services.Settings;
@@ -18,12 +18,11 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
 {
     private readonly ILogger<PodConsoleViewModel> _logger;
 
-    private readonly ISettingsService _settingsService;
 
     public PodConsoleViewModel(ILogger<PodConsoleViewModel> logger, ISettingsService settings)
     {
+        _ = settings;
         _logger = logger;
-        _settingsService = settings;
         Title = Assets.Resources.PodConsoleView_Title;
 
         Model.UserInput += Input;
@@ -31,7 +30,7 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
     }
 
     [ObservableProperty]
-    public partial ClusterWorkspaceViewModel Cluster { get; set; }
+    public partial ClusterWorkspace Cluster { get; set; }
 
     [ObservableProperty]
     public partial V1Pod Object { get; set; }
@@ -130,7 +129,7 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
     {
         if (UseAttach)
         {
-            return Cluster.Client!.WebSocketNamespacedPodAttachAsync(
+            return Cluster.Runtime.Client!.WebSocketNamespacedPodAttachAsync(
                 Object.Name(),
                 Object.Namespace(),
                 ContainerName,
@@ -147,7 +146,7 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
             "clear; (bash || ash || sh || echo 'No Shell Found!')",
         ];
 
-        return Cluster.Client!.WebSocketNamespacedPodExecAsync(Object.Name(), Object.Namespace(), command, ContainerName);
+        return Cluster.Runtime.Client!.WebSocketNamespacedPodExecAsync(Object.Name(), Object.Namespace(), command, ContainerName);
     }
 
     private void Input(object? sender, TerminalUserInputEventArgs args)

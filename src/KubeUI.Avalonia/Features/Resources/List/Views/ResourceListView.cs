@@ -150,7 +150,7 @@ public partial class ResourceListView : ViewBase<IResourceListViewModel>
             .HorizontalAlignment(HorizontalAlignment.Stretch)
             .Classes("ClearButton")
             .IsVisible(vm, x => x.ResourceConfig.IsNamespaced)
-            .ItemsSource(vm, x => x.Cluster.Namespaces)
+            .ItemsSource(vm, x => x.Cluster.Runtime.Namespaces)
             .PlaceholderText(Assets.Resources.ResourceListView_SelectNamespace)
             .SelectedItems(vm, x => x.SelectedNamespaces)
             .ItemTemplate(template)

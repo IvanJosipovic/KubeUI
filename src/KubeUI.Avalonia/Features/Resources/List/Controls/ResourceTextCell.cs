@@ -2,7 +2,7 @@ using k8s;
 using k8s.Models;
 using Avalonia.Markup.Declarative;
 using KubernetesClient.Informer.Client;
-using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
+using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Kubernetes;
 
@@ -15,7 +15,7 @@ public interface IDisplayFunc
 
 public sealed partial class ResourceTextCell : UserControl, IInitializeCluster, IDisplayFunc
 {
-    public ClusterWorkspaceViewModel? Cluster { get; private set; }
+    public ClusterWorkspace? Cluster { get; private set; }
 
     private Func<object, string>? _displayFunc;
 
@@ -67,13 +67,13 @@ public sealed partial class ResourceTextCell : UserControl, IInitializeCluster, 
     protected override void OnUnloaded(RoutedEventArgs e)
     {
         base.OnUnloaded(e);
-        Cluster?.OnChange -= _cluster_OnChange;
+        Cluster?.Runtime.OnChange -= _cluster_OnChange;
     }
 
-    public void Initialize(ClusterWorkspaceViewModel cluster)
+    public void Initialize(ClusterWorkspace cluster)
     {
         Cluster = cluster;
-        Cluster.OnChange += _cluster_OnChange;
+        Cluster.Runtime.OnChange += _cluster_OnChange;
     }
 
     public void SetDisplayFunc(Func<object, string> selector)
@@ -117,5 +117,4 @@ public sealed partial class ResourceTextCell : UserControl, IInitializeCluster, 
         }
     }
 }
-
 

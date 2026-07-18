@@ -286,7 +286,7 @@ public sealed class YamlHoverToolTipBehavior : Behavior<TextEditor>
             AssociatedObject.Document,
             offset,
             _currentViewModel.Object.GetType(),
-            _currentViewModel.Cluster.ModelCache);
+            _currentViewModel.Cluster.Runtime.ModelCache);
 
         if (context.Documentation == null || context.CurrentProperty == null || !IsWithinFieldName(AssociatedObject.Document, offset, context))
         {

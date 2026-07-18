@@ -60,7 +60,7 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
         return window;
     }
 
-    private ClusterWorkspaceViewModel CreateTestWorkspace()
+    private ClusterWorkspace CreateTestWorkspace()
     {
         var cluster = new TestCluster().CreateWorkspace();
         _disposables.Add(cluster);
@@ -2220,7 +2220,7 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
               namespace: default
             spec:
               unknownField: value
-            """.ReplaceLineEndings("\n"), cluster.ModelCache);
+            """.ReplaceLineEndings("\n"), cluster.Runtime.ModelCache);
 
         diagnostics.Count.ShouldBe(1);
         diagnostics[0].Severity.ShouldBe(YamlDiagnosticSeverity.Error);
@@ -2241,7 +2241,7 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
               namespace: default
             spec:
               activeDeadlineSeconds: a
-            """.ReplaceLineEndings("\n"), cluster.ModelCache);
+            """.ReplaceLineEndings("\n"), cluster.Runtime.ModelCache);
 
         diagnostics.Count.ShouldBe(1);
         diagnostics[0].Severity.ShouldBe(YamlDiagnosticSeverity.Error);

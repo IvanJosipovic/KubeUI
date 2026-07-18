@@ -1,10 +1,7 @@
-using KubeUI.Avalonia.Features.Clusters.Settings.ViewModels;
-using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
-using KubeUI.Avalonia.Infrastructure;
+using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Options;
 using KubeUI.Avalonia.Services.Settings;
-using KubeUI.Kubernetes;
 
 namespace KubeUI.Avalonia.Features.Clusters.Settings.ViewModels;
 
@@ -12,19 +9,19 @@ public sealed partial class ClusterSettingsViewModel : ViewModelBase, IInitializ
 {
     public ISettingsService SettingsService { get; }
 
-    public ClusterWorkspaceViewModel? Cluster { get; set; }
+    public ClusterWorkspace? Cluster { get; set; }
 
     public ClusterSettingsViewModel(ISettingsService settingsService)
     {
-        Title = Assets.Resources.ClusterSettingsView_Title;
+        Title = Assets.Resources.ClusterSettingsView_Title!;
         SettingsService = settingsService;
     }
 
-    public void Initialize(ClusterWorkspaceViewModel cluster)
+    public void Initialize(ClusterWorkspace cluster)
     {
         Cluster = cluster;
-        Id = nameof(ClusterSettingsViewModel) + Cluster.Name;
-        ClusterSettings = SettingsService.Settings.GetClusterSettings(cluster);
+        Id = nameof(ClusterSettingsViewModel) + Cluster.Runtime.Name;
+        ClusterSettings = SettingsService.Settings.GetClusterSettings(cluster.Runtime);
         DebugContainerImage = ClusterSettings.DebugContainerImage;
     }
 
@@ -72,6 +69,5 @@ public sealed partial class ClusterSettingsViewModel : ViewModelBase, IInitializ
         SettingsService.SaveSettings();
     }
 }
-
 
 

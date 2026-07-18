@@ -82,14 +82,14 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
                 },
             ];
 
-        if (Cluster.IsMetricsAvailable)
+        if (Cluster.Runtime.IsMetricsAvailable)
         {
             cols.Insert(3, new ResourceListColumn<V1Pod, decimal>()
             {
                 Key = "cpu",
                 Name = Assets.Resources.V1PodConfig_CPU!,
                 CustomControl = typeof(PodMetricCPUCellView),
-                Field = x => Cluster.PodMetrics.FirstOrDefault(y => y.Name() == x.Name() && y.Namespace() == x.Namespace())?.Containers.Sum(z => z.Usage["cpu"]) ?? 0,
+                Field = x => Cluster.Runtime.PodMetrics.FirstOrDefault(y => y.Name() == x.Name() && y.Namespace() == x.Namespace())?.Containers.Sum(z => z.Usage["cpu"]) ?? 0,
                 Width = "80"
             });
             cols.Insert(4, new ResourceListColumn<V1Pod, decimal>()
@@ -97,7 +97,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
                 Key = "memory",
                 Name = Assets.Resources.V1PodConfig_Memory!,
                 CustomControl = typeof(PodMetricMemoryCellView),
-                Field = x => Cluster.PodMetrics.FirstOrDefault(y => y.Name() == x.Name() && y.Namespace() == x.Namespace())?.Containers.Sum(z => z.Usage["memory"]) ?? 0,
+                Field = x => Cluster.Runtime.PodMetrics.FirstOrDefault(y => y.Name() == x.Name() && y.Namespace() == x.Namespace())?.Containers.Sum(z => z.Usage["memory"]) ?? 0,
                 Width = "80"
             });
         }
@@ -361,7 +361,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
         vm.Cluster = Cluster;
         vm.Object = pod;
         vm.ContainerName = containerName;
-        vm.Id = $"{nameof(ViewLogs)}-{Cluster.Name}-{pod.Namespace()} - {pod.Name()}-{containerName}";
+        vm.Id = $"{nameof(ViewLogs)}-{Cluster.Runtime.Name}-{pod.Namespace()} - {pod.Name()}-{containerName}";
 
         if (_factory.AddToBottom(vm))
         {
@@ -386,7 +386,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
 
         if (parameters?[0] is V1Pod pod && (parameters?[1] is V1Container || parameters?[1] is k8s.Models.V1EphemeralContainer))
         {
-            return Cluster.PermissionCache.CanI<V1Pod>(Verb.Get, pod.Namespace(), "log");
+            return Cluster.Runtime.Permissions.CanI<V1Pod>(Verb.Get, pod.Namespace(), "log");
         }
 
         return false;
@@ -420,7 +420,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
         vm.Cluster = Cluster;
         vm.Object = pod;
         vm.ContainerName = containerName;
-        vm.Id = $"{nameof(ViewConsole)}-{Cluster.Name}-{pod.Namespace()}-{pod.Name()}-{containerName}";
+        vm.Id = $"{nameof(ViewConsole)}-{Cluster.Runtime.Name}-{pod.Namespace()}-{pod.Name()}-{containerName}";
 
         _factory.AddToBottom(vm);
     }
@@ -459,7 +459,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
         vm.Object = pod;
         vm.ContainerName = containerName;
         vm.UseAttach = true;
-        vm.Id = $"{nameof(AttachConsole)}-{Cluster.Name}-{pod.Namespace()}-{pod.Name()}-{containerName}";
+        vm.Id = $"{nameof(AttachConsole)}-{Cluster.Runtime.Name}-{pod.Namespace()}-{pod.Name()}-{containerName}";
 
         _factory.AddToBottom(vm);
     }
@@ -478,7 +478,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
 
         if (parameters?[0] is V1Pod pod && (parameters?[1] is V1Container || parameters?[1] is k8s.Models.V1EphemeralContainer))
         {
-            return Cluster.PermissionCache.CanI<V1Pod>(Verb.Create, pod.Namespace(), subResource);
+            return Cluster.Runtime.Permissions.CanI<V1Pod>(Verb.Create, pod.Namespace(), subResource);
         }
 
         return false;
@@ -495,7 +495,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
         string? targetContainerName = parameters.Count > 1 ? GetContainerName(parameters[1]) : null;
         string debugContainerImage = ServiceProvider.GetRequiredService<ISettingsService>()
             .Settings
-            .GetClusterSettings(Cluster)
+            .GetClusterSettings(Cluster.Runtime)
             .DebugContainerImage;
 
         if (string.IsNullOrWhiteSpace(debugContainerImage))
@@ -505,7 +505,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
 
         try
         {
-            await Cluster.AddPodEphemeralDebugContainer(pod, targetContainerName, debugContainerImage);
+            await Cluster.Runtime.AddPodEphemeralDebugContainer(pod, targetContainerName, debugContainerImage);
         }
         catch (Exception ex)
         {
@@ -530,7 +530,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
             return false;
         }
 
-        return Cluster.PermissionCache.CanI<V1Pod>(Verb.Update, pod.Namespace(), "ephemeralcontainers");
+        return Cluster.Runtime.Permissions.CanI<V1Pod>(Verb.Update, pod.Namespace(), "ephemeralcontainers");
     }
 
     [RelayCommand(CanExecute = nameof(CanPortForward))]
@@ -538,7 +538,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
     {
         if (parameters[0] is V1Pod pod && parameters[1] is V1ContainerPort containerPort)
         {
-            var pf = Cluster.AddPodPortForward(pod.Namespace(), pod.Name(), containerPort.ContainerPort);
+            var pf = Cluster.Runtime.AddPodPortForward(pod.Namespace(), pod.Name(), containerPort.ContainerPort);
 
             ContentDialogSettings settings = new()
             {
@@ -569,7 +569,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
         {
             return containerPort.ContainerPort > 0 &&
                    containerPort.Protocol == "TCP" &&
-                   Cluster.PermissionCache.CanI<V1Pod>(Verb.Create, pod.Namespace(), "portforward");
+                   Cluster.Runtime.Permissions.CanI<V1Pod>(Verb.Create, pod.Namespace(), "portforward");
         }
 
         return false;

@@ -1,6 +1,6 @@
 global using KubeUI.Avalonia.Features.Clusters.Error.ViewModels;
 global using KubeUI.Avalonia.Features.Clusters.Settings.ViewModels;
-global using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
+global using KubeUI.Avalonia.Features.Clusters.Workspace;
 global using KubeUI.Avalonia.Features.Resources.Common;
 global using KubeUI.Avalonia.Features.Resources.List.ViewModels;
 global using KubeUI.Avalonia.Features.Resources.List.Views;

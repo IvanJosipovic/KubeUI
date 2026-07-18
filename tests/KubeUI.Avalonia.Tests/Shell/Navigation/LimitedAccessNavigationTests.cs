@@ -12,18 +12,18 @@ namespace KubeUI.Avalonia.Tests.Shell.Navigation;
 public sealed class LimitedAccessNavigationTests : AvaloniaTestBase
 {
     [AvaloniaFact]
-    public async Task limited_access_with_namespace_fallback_shows_namespaced_resources_in_navigation()
+    public async Task limited_access_with_listable_namespace_shows_namespaced_resources_in_navigation()
     {
         await using var harness = new MockClusterScenarioHarness();
         await harness.InitializeAsync();
 
-        var runtime = await harness.CreateLimitedAccessClusterAsync(includeNamespaceFallback: true);
+        var runtime = await harness.CreateLimitedAccessClusterAsync(includeNamespaceFallback: false);
         var services = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
-        var workspace = ActivatorUtilities.CreateInstance<ClusterWorkspaceViewModel>(services, runtime);
+        var workspace = ActivatorUtilities.CreateInstance<ClusterWorkspace>(services, runtime);
         var navigation = services.GetRequiredService<NavigationViewModel>();
 
         navigation.ClusterCatalog.Clusters.Add(workspace);
-        await workspace.EnsureWorkspaceStateInitializedAsync();
+        await workspace.Connect();
         Dispatcher.UIThread.RunJobs();
 
         var clusterNode = navigation.Clusters.Single(x => x.Cluster == workspace);

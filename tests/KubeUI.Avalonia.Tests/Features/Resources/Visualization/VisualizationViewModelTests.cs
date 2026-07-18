@@ -22,7 +22,7 @@ public class VisualizationViewModelTests : AvaloniaTestBase
         base.Dispose();
     }
 
-    private async Task<ClusterWorkspaceViewModel> CreateClusterAsync()
+    private async Task<ClusterWorkspace> CreateClusterAsync()
     {
         var cluster = await TestCluster.GetAsync();
         _disposables.Add(cluster);

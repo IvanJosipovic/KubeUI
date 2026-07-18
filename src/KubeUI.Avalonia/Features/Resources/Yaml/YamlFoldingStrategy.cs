@@ -32,8 +32,6 @@ internal static class YamlFoldingStrategy
             index++;
         }
 
-        var openFolds = new Stack<OpenFold>(lineCount / 4);
-
         for (var lineIndex = 0; lineIndex < index; lineIndex++)
         {
             var lineInfo = lineInfos[lineIndex];

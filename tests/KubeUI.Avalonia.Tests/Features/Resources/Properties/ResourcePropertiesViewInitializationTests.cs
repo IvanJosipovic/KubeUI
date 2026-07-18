@@ -3,7 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
 using k8s.Models;
-using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
+using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Features.Resources.Properties.Controls;
 using KubeUI.Avalonia.Features.Resources.Properties.ViewModels;
 using KubeUI.Avalonia.Features.Resources.Properties.Views;
@@ -22,7 +22,7 @@ public sealed class ResourcePropertiesViewInitializationTests : AvaloniaTestBase
     public async Task cluster_aware_property_controls_are_initialized_once()
     {
         var workspace = new TestCluster().CreateWorkspace();
-        await workspace.EnsureWorkspaceStateInitializedAsync();
+        await workspace.Connect();
 
         var services = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
         var trackingConfig = new TrackingResourceConfig(services);
@@ -59,7 +59,7 @@ public sealed class ResourcePropertiesViewInitializationTests : AvaloniaTestBase
     public async Task properties_view_populates_on_first_attach()
     {
         var workspace = new TestCluster().CreateWorkspace();
-        await workspace.EnsureWorkspaceStateInitializedAsync();
+        await workspace.Connect();
 
         var services = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
         var viewModel = services.GetRequiredService<ResourcePropertiesViewModel<V1Pod>>();
@@ -111,14 +111,14 @@ public sealed class ResourcePropertiesViewInitializationTests : AvaloniaTestBase
     {
         public int InitializeCount { get; private set; }
 
-        public ClusterWorkspaceViewModel? Cluster { get; private set; }
+        public ClusterWorkspace? Cluster { get; private set; }
 
         public TrackingClusterControl()
         {
             Content = new TextBlock { Text = "tracking" };
         }
 
-        public void Initialize(ClusterWorkspaceViewModel cluster)
+        public void Initialize(ClusterWorkspace cluster)
         {
             Cluster = cluster;
             InitializeCount++;

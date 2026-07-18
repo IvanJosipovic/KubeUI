@@ -93,9 +93,9 @@ public sealed class NavigationView : ViewBase<NavigationViewModel>
                                 .StrokeThickness(0.6),
                             new TextBlock()
                                 .VerticalAlignment(VerticalAlignment.Center)
-                                .Text(node, x => x.Cluster.Name))
+                                .Text(node, x => x.Cluster.Runtime.Name))
                 )
-                .ToolTip_Tip(node, x => x.Cluster.Status, BindingMode.OneWay, new FuncValueConverter<ClusterStatus, string>(status =>
+                .ToolTip_Tip(node, x => x.Cluster.Runtime.Status, BindingMode.OneWay, new FuncValueConverter<ClusterStatus, string>(status =>
                 {
                     return status switch
                     {

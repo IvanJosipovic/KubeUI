@@ -10,7 +10,7 @@ using Humanizer;
 using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
-using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
+using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Features.Resources.Common;
 using KubeUI.Avalonia.Features.Resources.List.Controls;
 using KubeUI.Avalonia.Features.Resources.Properties.ViewModels;
@@ -43,7 +43,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
 
     public GroupApiVersionKind Kind { get; } = GroupApiVersionKind.From<T>();
 
-    public ClusterWorkspaceViewModel Cluster { get; private set; }
+    public ClusterWorkspace Cluster { get; private set; }
 
     public virtual string Name => Kind.Kind.Humanize(LetterCasing.Title).Pluralize();
 
@@ -54,6 +54,8 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
     public virtual bool IsNamespaced { get; private set; }
 
     public virtual bool IsCustomResource => false;
+
+    public virtual bool SeedOnConnect => false;
 
     public bool CanListAndWatch { get; private set; }
 
@@ -95,12 +97,12 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
 
     protected virtual Task RefreshPermissionAsync(Verb verb, string? subResource)
     {
-        if (Cluster.AuthorizationIndexReady)
+        if (Cluster.Runtime.AuthorizationIndexReady)
         {
             return Task.CompletedTask;
         }
 
-        return Cluster.PermissionCache.UpdatePermissionsAllNamespaceAsync<T>(verb, subResource);
+        return Cluster.Runtime.Permissions.UpdatePermissionsAllNamespaceAsync<T>(verb, subResource);
     }
 
     public IEnumerable<(Verb verb, string? subresource)> Permissions()
@@ -113,6 +115,14 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
     public virtual IEnumerable<AuthorizationRequest> AuthorizationRequests()
     {
         return Permissions().Select(permission => new AuthorizationRequest(Type, permission.verb, permission.subresource));
+    }
+
+    public virtual IEnumerable<AuthorizationRequest> ListWatchAuthorizationRequests()
+    {
+        return [
+            new AuthorizationRequest(Type, Verb.List, null),
+            new AuthorizationRequest(Type, Verb.Watch, null),
+        ];
     }
 
     public virtual Control[] Properties(T resource) => [];
@@ -152,7 +162,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
         };
     }
 
-    public void Initialize(ClusterWorkspaceViewModel cluster)
+    public void Initialize(ClusterWorkspace cluster)
     {
         Cluster = cluster;
     }
@@ -198,29 +208,10 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
 
     public async Task UpdatePermissions()
     {
-        PermissionsLoaded = false;
-        CanListAndWatch = false;
-
-        try
-        {
-            if (!Cluster.AuthorizationIndexReady)
-            {
-                await Cluster.PermissionCache.RefreshAuthorizationIndexAsync(AuthorizationRequests()).ConfigureAwait(false);
-            }
-
-            var canList = Cluster.PermissionCache.CanIAnyNamespace<T>(Verb.List);
-            var canWatch = Cluster.PermissionCache.CanIAnyNamespace<T>(Verb.Watch);
-            CanListAndWatch = canList && canWatch;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogDebug(ex, "Unable to evaluate cached list/watch permissions for {Type}", typeof(T).FullName);
-            CanListAndWatch = false;
-        }
+        await EvaluateListWatchAccessAsync().ConfigureAwait(false);
 
         if (!CanListAndWatch)
         {
-            PermissionsLoaded = true;
             return;
         }
 
@@ -253,10 +244,60 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
         if (exceptions.Count > 0)
         {
             _logger.LogDebug(new AggregateException(exceptions), "Unable to refresh non-list permissions for {Type}", typeof(T).FullName);
+            PermissionsLoaded = false;
             return;
         }
 
         PermissionsLoaded = true;
+    }
+
+    public async Task EvaluateListWatchAccessAsync()
+    {
+        PermissionsLoaded = false;
+        CanListAndWatch = false;
+
+        try
+        {
+            CanListAndWatch = await HasListAndWatchAccessAsync().ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "Unable to evaluate cached list/watch permissions for {Type}", typeof(T).FullName);
+            CanListAndWatch = false;
+        }
+
+        PermissionsLoaded = true;
+    }
+
+    private async Task<bool> HasListAndWatchAccessAsync()
+    {
+        if (Cluster.Runtime.Permissions.CanIAnyNamespace<T>(Verb.List)
+            && Cluster.Runtime.Permissions.CanIAnyNamespace<T>(Verb.Watch))
+        {
+            return true;
+        }
+
+        if (!IsNamespaced)
+        {
+            return false;
+        }
+
+        foreach (var @namespace in Cluster.Runtime.Namespaces)
+        {
+            var namespaceName = @namespace.Name();
+            if (string.IsNullOrWhiteSpace(namespaceName))
+            {
+                continue;
+            }
+
+            if (await Cluster.Runtime.Permissions.UpdateCanI<T>(Verb.List, namespaceName).ConfigureAwait(false)
+                && await Cluster.Runtime.Permissions.UpdateCanI<T>(Verb.Watch, namespaceName).ConfigureAwait(false))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     #region Actions
@@ -286,7 +327,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
 
     public bool CanNewResource()
     {
-        return Cluster.PermissionCache.CanIAnyNamespace<T>(Verb.Create);
+        return Cluster.Runtime.Permissions.CanIAnyNamespace<T>(Verb.Create);
     }
 
     [RelayCommand(CanExecute = nameof(CanDelete))]
@@ -311,7 +352,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
             {
                 try
                 {
-                    await Cluster.DeleteResource<T>(item);
+                    await Cluster.Runtime.DeleteResource<T>(item);
                 }
                 catch (JsonException ex)
                 {
@@ -340,7 +381,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
 
         foreach (var item in items.Cast<T>().ToList().GroupBy(x => x.Namespace()))
         {
-            if (!Cluster.PermissionCache.CanI<T>(Verb.Delete, item.Key))
+            if (!Cluster.Runtime.Permissions.CanI<T>(Verb.Delete, item.Key))
             {
                 return false;
             }
@@ -415,7 +456,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
             {
                 try
                 {
-                    using var genClient = KubeUI.Kubernetes.KubernetesClientExtensions.GetGenericClient(Cluster.Client, item);
+                    using var genClient = KubeUI.Kubernetes.KubernetesClientExtensions.GetGenericClient(Cluster.Runtime.Client, item);
 
                     await genClient.PatchNamespacedAsync<T>(new V1Patch(sRestartControllerPatch, V1Patch.PatchType.MergePatch), item.Metadata.NamespaceProperty, item.Metadata.Name);
                 }
@@ -446,7 +487,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
 
         foreach (var item in items.Cast<T>().ToList().GroupBy(x => x.Namespace()))
         {
-            if (!Cluster.PermissionCache.CanI<T>(Verb.Patch, item.Key))
+            if (!Cluster.Runtime.Permissions.CanI<T>(Verb.Patch, item.Key))
             {
                 return false;
             }

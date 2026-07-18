@@ -1,8 +1,7 @@
 using FluentAvalonia.UI.Controls;
 using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
-using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
-using KubeUI.Avalonia.Infrastructure;
+using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Services.Settings;
 using KubeUI.Kubernetes;
@@ -17,7 +16,7 @@ public sealed partial class PortForwarderListViewModel : ViewModelBase, IInitial
     public partial ISettingsService Settings { get; set; }
 
     [ObservableProperty]
-    public partial ClusterWorkspaceViewModel Cluster { get; set; }
+    public partial ClusterWorkspace Cluster { get; set; }
 
     [ObservableProperty]
     public partial PortForwarder? SelectedItem { get; set; }
@@ -45,7 +44,7 @@ public sealed partial class PortForwarderListViewModel : ViewModelBase, IInitial
 
         if (result == FAContentDialogResult.Primary)
         {
-            Cluster.RemovePortForward(pf);
+            Cluster.Runtime.RemovePortForward(pf);
         }
     }
 
@@ -65,11 +64,10 @@ public sealed partial class PortForwarderListViewModel : ViewModelBase, IInitial
         return pf != null;
     }
 
-    public void Initialize(ClusterWorkspaceViewModel cluster)
+    public void Initialize(ClusterWorkspace cluster)
     {
         Cluster = cluster;
-        Id = cluster.Name + nameof(PortForwarderListViewModel);
+        Id = cluster.Runtime.Name + nameof(PortForwarderListViewModel);
     }
 }
-
 

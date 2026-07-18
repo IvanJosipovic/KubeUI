@@ -133,11 +133,6 @@ public sealed class ModelCache
         return GetDocumentation(type, 'T', string.Empty);
     }
 
-    private void AddAssemblyUnsafe(Assembly assembly, XmlDocument xmlDocument)
-    {
-        AddAssemblyUnsafe(assembly, xmlDocument, null);
-    }
-
     private void AddAssemblyUnsafe(Assembly assembly, XmlDocument xmlDocument, GeneratedAssemblyUnloadHandle? unloadHandle)
     {
         Cache[assembly] = xmlDocument;
@@ -209,4 +204,3 @@ public sealed class ModelCache
         return (type.FullName ?? type.Name).Replace('+', '.');
     }
 }
-

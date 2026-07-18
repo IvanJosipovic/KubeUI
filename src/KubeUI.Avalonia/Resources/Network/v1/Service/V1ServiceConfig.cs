@@ -89,7 +89,7 @@ public sealed partial class V1ServiceConfig : ResourceConfigBase<V1Service>
     {
         if (parameters[0] is V1Service service && parameters[1] is V1ServicePort containerPort)
         {
-            var pf = Cluster.AddServicePortForward(service.Namespace(), service.Name(), containerPort.Port);
+            var pf = Cluster.Runtime.AddServicePortForward(service.Namespace(), service.Name(), containerPort.Port);
 
             ContentDialogSettings settings = new()
             {
@@ -115,9 +115,9 @@ public sealed partial class V1ServiceConfig : ResourceConfigBase<V1Service>
         {
             return servicePort?.Port > 0 &&
                    servicePort.Protocol == "TCP" &&
-                   Cluster.PermissionCache.CanI<V1Pod>(Verb.Create, service.Namespace(), "portforward") &&
-                   Cluster.PermissionCache.CanI<V1EndpointSlice>(Verb.List, service.Namespace()) &&
-                   Cluster.PermissionCache.CanI<V1EndpointSlice>(Verb.Watch, service.Namespace());
+                   Cluster.Runtime.Permissions.CanI<V1Pod>(Verb.Create, service.Namespace(), "portforward") &&
+                   Cluster.Runtime.Permissions.CanI<V1EndpointSlice>(Verb.List, service.Namespace()) &&
+                   Cluster.Runtime.Permissions.CanI<V1EndpointSlice>(Verb.Watch, service.Namespace());
         }
 
         return false;

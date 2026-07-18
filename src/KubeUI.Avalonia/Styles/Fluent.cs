@@ -7,7 +7,7 @@ using Avalonia.Styling;
 using Avalonia.Xaml.Interactivity;
 using Dock.Avalonia.Controls;
 using Dock.Model.Core;
-using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
+using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Infrastructure;
 using Ursa.Controls;
 using AvaloniaStyles = Avalonia.Styling.Styles;
@@ -134,7 +134,7 @@ public sealed class Fluent : AvaloniaStyles
                     .BindValue(TextBlock.TextProperty, CompiledBinding.Create<IDockable, string?>(x => x.Title, source: dockable)));
     }
 
-    private static Rectangle CreateClusterIndicator(ClusterWorkspaceViewModel? cluster)
+    private static Rectangle CreateClusterIndicator(ClusterWorkspace? cluster)
     {
         var indicator = new Rectangle()
             .Width(10)
@@ -148,11 +148,11 @@ public sealed class Fluent : AvaloniaStyles
             ? indicator
             : indicator
                 .Fill(cluster, x => x.ClusterColor)
-                .ToolTip_Tip(cluster, x => x.Name);
+                .ToolTip_Tip(cluster, x => x.Runtime.Name);
     }
 
-    private static ClusterWorkspaceViewModel? GetCluster(IDockable dockable)
+    private static ClusterWorkspace? GetCluster(IDockable dockable)
     {
-        return dockable.GetType().GetProperty("Cluster")?.GetValue(dockable) as ClusterWorkspaceViewModel;
+        return dockable.GetType().GetProperty("Cluster")?.GetValue(dockable) as ClusterWorkspace;
     }
 }

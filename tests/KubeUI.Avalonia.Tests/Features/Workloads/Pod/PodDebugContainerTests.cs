@@ -15,7 +15,7 @@ public sealed class PodDebugContainerTests : AvaloniaTestBase
         var runtime = new TestCluster();
         var workspace = runtime.CreateWorkspace();
         var settings = TestApp.CurrentServices!.GetRequiredService<ISettingsService>();
-        settings.Settings.GetClusterSettings(workspace).DebugContainerImage = "example.com/debug:1";
+        settings.Settings.GetClusterSettings(workspace.Runtime).DebugContainerImage = "example.com/debug:1";
 
         V1Pod pod = new()
         {
@@ -37,7 +37,7 @@ public sealed class PodDebugContainerTests : AvaloniaTestBase
         };
 
         await workspace.AddOrUpdateResource(pod);
-        await workspace.AddPodEphemeralDebugContainer(pod, "app", settings.Settings.GetClusterSettings(workspace).DebugContainerImage);
+        await workspace.AddPodEphemeralDebugContainer(pod, "app", settings.Settings.GetClusterSettings(workspace.Runtime).DebugContainerImage);
 
         V1Pod updated = runtime.GetResource<V1Pod>("default", "pod-1").ShouldNotBeNull();
         updated.Spec.EphemeralContainers.ShouldNotBeNull();

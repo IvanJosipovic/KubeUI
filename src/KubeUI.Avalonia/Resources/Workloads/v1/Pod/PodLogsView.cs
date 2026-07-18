@@ -33,7 +33,7 @@ public sealed partial class PodLogsView : ViewBase<PodLogsViewModel>
 
         var textEditor = new TextEditor()
             .Row(1)
-            .OnTextChanged((e) => TextEditorControl_TextChanged(e))
+            .OnTextChanged((_) => TextEditorControl_TextChanged())
             .BindValue(TextEditor.BackgroundProperty, new DynamicResourceExtension("SystemAltHighColor"))
             .Document(vm, x => x.Logs)
             .FontSize(vm, x => x.SettingsService.Appearance.FontSize)
@@ -159,7 +159,7 @@ public sealed partial class PodLogsView : ViewBase<PodLogsViewModel>
         SetOffset();
     }
 
-    private void TextEditorControl_TextChanged(EventArgs e)
+    private void TextEditorControl_TextChanged()
     {
         if (ViewModel?.AutoScrollToBottom == true)
         {

@@ -5,6 +5,7 @@ using KubernetesClient.Informer.Client;
 using KubernetesCRDModelGen;
 using KubeUI.Kubernetes;
 using KubeUI.Testing;
+using KubeUI.Kubernetes.Tests.Infra;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Shouldly;
@@ -45,7 +46,7 @@ public sealed class ClusterAuthTests
     }
 
     [Fact]
-    public void removing_seeded_resource_container_also_clears_cached_seed_task()
+    public void removing_seeded_resource_container_removes_the_container()
     {
         using var loggerFactory = NullLoggerFactory.Instance;
         var cluster = new Cluster(
@@ -62,12 +63,6 @@ public sealed class ClusterAuthTests
             Initialized = true,
         };
 
-        var seedTasksField = typeof(Cluster).GetField("_seedTasks", BindingFlags.Instance | BindingFlags.NonPublic);
-        seedTasksField.ShouldNotBeNull();
-
-        var seedTasks = seedTasksField!.GetValue(cluster).ShouldBeOfType<ConcurrentDictionary<GroupApiVersionKind, Lazy<Task>>>();
-        seedTasks[kind] = new Lazy<Task>(() => Task.CompletedTask);
-
         var invalidateSeededResourceMethod = typeof(Cluster).GetMethod("InvalidateSeededResource", BindingFlags.Instance | BindingFlags.NonPublic);
         invalidateSeededResourceMethod.ShouldNotBeNull();
 
@@ -75,7 +70,55 @@ public sealed class ClusterAuthTests
 
         invalidated.ShouldBeTrue();
         cluster.Objects.ContainsKey(kind).ShouldBeFalse();
-        seedTasks.ContainsKey(kind).ShouldBeFalse();
+    }
+
+    [Fact]
+    public async Task custom_resource_definition_processing_is_serialized()
+    {
+        using var loggerFactory = NullLoggerFactory.Instance;
+        var cluster = new Cluster(
+            NullLogger<Cluster>.Instance,
+            loggerFactory,
+            new ModelCache(),
+            new Generator(),
+            new TestClusterSettingsStore(),
+            new ServiceCollection().BuildServiceProvider());
+        cluster.Connected = true;
+
+        var first = KubeUI.Kubernetes.Serialization.KubernetesYaml.Deserialize<V1CustomResourceDefinition>(SharedScenarioData.CustomResourceDefinitionYaml);
+        var second = KubeUI.Kubernetes.Serialization.KubernetesYaml.Deserialize<V1CustomResourceDefinition>(SharedScenarioData.CustomResourceDefinitionYaml);
+        second.Spec!.Names!.Kind = "UpdatedTest";
+
+        var firstEntered = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseFirst = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var secondReady = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var readyCount = 0;
+        cluster.OnCustomResourceDefinitionReady += crd =>
+        {
+            if (Interlocked.Increment(ref readyCount) == 1)
+            {
+                firstEntered.TrySetResult(null);
+                releaseFirst.Task.GetAwaiter().GetResult();
+            }
+            else
+            {
+                secondReady.TrySetResult(null);
+            }
+        };
+
+        var queueMethod = typeof(Cluster).GetMethod("QueueCustomResourceDefinition", BindingFlags.Instance | BindingFlags.NonPublic);
+        queueMethod.ShouldNotBeNull();
+
+        queueMethod!.Invoke(cluster, [first]);
+        await firstEntered.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        queueMethod.Invoke(cluster, [second]);
+
+        await Task.Delay(100);
+        Volatile.Read(ref readyCount).ShouldBe(1);
+
+        releaseFirst.TrySetResult(null);
+        await secondReady.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        readyCount.ShouldBe(2);
     }
 
     private sealed class TestClusterSettingsStore : IClusterSettingsStore

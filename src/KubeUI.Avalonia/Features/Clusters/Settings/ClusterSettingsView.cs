@@ -26,7 +26,7 @@ public sealed class ClusterSettingsView : ViewBase<ClusterSettingsViewModel>
             .Children(
                 new TextBlock()
                     .FontSize(25)
-                    .Text(vm, x => x.Cluster.Name, BindingMode.OneWay, Converters.Converters.StringFormat(Assets.Resources.ClusterSettingsView_TitleFormat)),
+                    .Text(vm, x => x.Cluster.Runtime.Name, BindingMode.OneWay, Converters.Converters.StringFormat(Assets.Resources.ClusterSettingsView_TitleFormat)),
                 CreateNamespacesRow(vm),
                 CreateDebugContainerImageRow(vm));
     }
@@ -35,7 +35,7 @@ public sealed class ClusterSettingsView : ViewBase<ClusterSettingsViewModel>
     {
         return new Grid()
             .Cols("*,2*")
-            .IsVisible(vm, x => !x.Cluster.ListNamespaces)
+            .IsVisible(vm, x => !x.Cluster.Runtime.ListNamespaces)
             .ToolTip_Tip(Assets.Resources.ClusterSettingsView_ManualNamespacesTooltip)
             .Children(
                 new Label()

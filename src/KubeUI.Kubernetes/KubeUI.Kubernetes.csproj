@@ -6,6 +6,9 @@
     <LangVersion>preview</LangVersion>
     <DebugType>embedded</DebugType>
     <AssemblyName>KubeUI.Kubernetes</AssemblyName>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <AnalysisMode>All</AnalysisMode>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
   </PropertyGroup>
 
   <ItemGroup>

@@ -445,7 +445,7 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
                 AssociatedObject.Document,
                 AssociatedObject.CaretOffset,
                 _currentViewModel.Object.GetType(),
-                _currentViewModel.Cluster.ModelCache,
+                _currentViewModel.Cluster.Runtime.ModelCache,
                 out var insertionText))
         {
             return false;
@@ -662,7 +662,7 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
             AssociatedObject.Document,
             AssociatedObject.CaretOffset,
             _currentViewModel.Object.GetType(),
-            _currentViewModel.Cluster.ModelCache);
+            _currentViewModel.Cluster.Runtime.ModelCache);
 
         if (context.CompletionItems.Count == 0)
         {

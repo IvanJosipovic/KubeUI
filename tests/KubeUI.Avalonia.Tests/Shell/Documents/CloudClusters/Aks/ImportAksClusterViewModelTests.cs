@@ -18,9 +18,10 @@ public sealed class ImportAksClusterViewModelTests : AvaloniaTestBase
     public async Task connect_imports_aks_credentials_into_cluster_catalog()
     {
         var catalog = TestApp.CurrentServices!.GetRequiredService<ClusterWorkspaceCatalog>();
+        var runtimeCatalog = TestApp.CurrentServices!.GetRequiredService<IClusterRuntimeCatalog>();
         var viewModel = new ImportAksClusterViewModel(
             new FakeAksClusterService(),
-            catalog,
+            runtimeCatalog,
             TestApp.CurrentServices!.GetRequiredService<ILogger<ImportAksClusterViewModel>>());
 
         await WaitForAsync(() => viewModel.Subscriptions.Count == 1 && viewModel.Clusters.Count == 1);
@@ -29,18 +30,19 @@ public sealed class ImportAksClusterViewModelTests : AvaloniaTestBase
         var clusterName = viewModel.SelectedCluster!.Name;
 
         viewModel.ImportCommand.Execute(null);
-        await WaitForAsync(() => catalog.Clusters.Any(x => x.Name == clusterName));
+        await WaitForAsync(() => catalog.Clusters.Any(x => x.Runtime.Name == clusterName));
 
-        catalog.Clusters.Any(x => x.Name == clusterName).ShouldBeTrue();
+        catalog.Clusters.Any(x => x.Runtime.Name == clusterName).ShouldBeTrue();
     }
 
     [AvaloniaFact]
     public async Task refresh_shows_empty_state_when_no_subscriptions_are_available()
     {
         var catalog = TestApp.CurrentServices!.GetRequiredService<ClusterWorkspaceCatalog>();
+        var runtimeCatalog = TestApp.CurrentServices!.GetRequiredService<IClusterRuntimeCatalog>();
         var viewModel = new ImportAksClusterViewModel(
             new EmptyAksClusterService(),
-            catalog,
+            runtimeCatalog,
             TestApp.CurrentServices!.GetRequiredService<ILogger<ImportAksClusterViewModel>>());
 
         await WaitForAsync(() => viewModel.StatusMessage == KubeUI.Avalonia.Assets.Resources.ImportAksClusterView_NoSubscriptions);
@@ -55,9 +57,10 @@ public sealed class ImportAksClusterViewModelTests : AvaloniaTestBase
     public async Task refresh_is_disabled_while_busy()
     {
         var catalog = TestApp.CurrentServices!.GetRequiredService<ClusterWorkspaceCatalog>();
+        var runtimeCatalog = TestApp.CurrentServices!.GetRequiredService<IClusterRuntimeCatalog>();
         var viewModel = new ImportAksClusterViewModel(
             new EmptyAksClusterService(),
-            catalog,
+            runtimeCatalog,
             TestApp.CurrentServices!.GetRequiredService<ILogger<ImportAksClusterViewModel>>());
 
         await WaitForAsync(() => viewModel.StatusMessage == KubeUI.Avalonia.Assets.Resources.ImportAksClusterView_NoSubscriptions);
