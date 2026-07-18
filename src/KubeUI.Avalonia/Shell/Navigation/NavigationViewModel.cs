@@ -141,7 +141,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
             return;
         }
 
-        _ = ConnectIfIdleAsync(clusterNode);
+        Task.Run(() => ConnectIfIdleAsync(clusterNode));
     }
 
     [RelayCommand]
@@ -162,11 +162,19 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
         await ConnectIfIdleAsync(clusterNode).ConfigureAwait(false);
     }
 
-    private Task ConnectIfIdleAsync(ClusterNavigationNode clusterNode)
+    private async Task ConnectIfIdleAsync(ClusterNavigationNode clusterNode)
     {
-        return clusterNode.Cluster.Runtime.Status == ClusterStatus.Connecting
-            ? Task.CompletedTask
-            : clusterNode.Cluster.Connect();
+        if (clusterNode.Cluster.Runtime.Status == ClusterStatus.Connecting)
+        {
+            return;
+        }
+
+        await clusterNode.Cluster.Connect().ConfigureAwait(false);
+
+        if (clusterNode.Cluster.Runtime.Connected)
+        {
+            Dispatcher.UIThread.Post(() => clusterNode.IsExpanded = true);
+        }
     }
 
     [RelayCommand]
@@ -420,11 +428,9 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
         });
     }
 
-    private void AttachResourceCountIfSeeded(ClusterWorkspace cluster, GroupApiVersionKind kind, Type resourceType)
+    private void AttachResourceCount(ClusterWorkspace cluster, GroupApiVersionKind kind, Type resourceType)
     {
-        if (!cluster.Runtime.Objects.TryGetValue(kind, out var resource)
-            || resource is not IResourceContainer
-            || !_clusterNodes.TryGetValue(cluster, out var node))
+        if (!_clusterNodes.TryGetValue(cluster, out var node))
         {
             return;
         }
@@ -467,6 +473,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
             }
 
             RemoveNavigationItem(node.NavigationItems, $"{cluster.Runtime.Name}-{removedKind}");
+            RemoveEmptyCategories(node.NavigationItems, cluster);
         });
     }
 
@@ -492,7 +499,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
             UpdatePortForwardersNavigation(node);
         }
 
-        AttachResourceCountIfSeeded(cluster, resourceConfig.Kind, resourceConfig.Type);
+        AttachResourceCount(cluster, resourceConfig.Kind, resourceConfig.Type);
     }
 
     private void UpdateStandardResourceNavigation(ClusterNavigationNode node, ClusterWorkspace cluster, IResourceConfig config)
@@ -588,7 +595,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
         if (changedConfig.Type == typeof(V1CustomResourceDefinition)
             || changedConfig.IsCustomResource)
         {
-            AttachResourceCountIfSeeded(cluster, changedConfig.Kind, changedConfig.Type);
+            AttachResourceCount(cluster, changedConfig.Kind, changedConfig.Type);
         }
     }
 
