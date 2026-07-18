@@ -729,7 +729,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
     }
 
     [AvaloniaFact]
-    public async Task namespaced_resource_link_stays_hidden_without_runtime_namespace_access()
+    public async Task configured_namespaced_resource_link_is_visible_without_namespace_listing_access()
     {
         var runtime = new TestCluster
         {
@@ -754,12 +754,12 @@ public class NavigationViewModelTests : AvaloniaTestBase
 
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
 
-        FindResourceLink(clusterNode, "Alpha Permission Resource").ShouldBeNull();
+        FindResourceLink(clusterNode, "Alpha Permission Resource").ShouldNotBeNull();
 
         await workspace.Connect();
         Dispatcher.UIThread.RunJobs();
 
-        FindResourceLink(clusterNode, "Alpha Permission Resource").ShouldBeNull();
+        FindResourceLink(clusterNode, "Alpha Permission Resource").ShouldNotBeNull();
     }
 
     [AvaloniaFact]
@@ -934,12 +934,12 @@ public class NavigationViewModelTests : AvaloniaTestBase
     }
 
     [AvaloniaFact]
-    public async Task selecting_already_connected_cluster_initializes_navigation_on_demand()
+    public async Task selecting_disconnected_cluster_initializes_navigation_on_demand()
     {
         var runtime = new TestCluster
         {
-            Connected = true,
-            Status = ClusterStatus.Connected,
+            Connected = false,
+            Status = ClusterStatus.None,
         };
 
         var workspace = CreateWorkspace(runtime);
@@ -1052,9 +1052,6 @@ public class NavigationViewModelTests : AvaloniaTestBase
         };
 
         var workspace = CreateWorkspace(runtime);
-        await workspace.Connect();
-        Dispatcher.UIThread.RunJobs();
-
         var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
         Dispatcher.UIThread.RunJobs();
@@ -1747,9 +1744,11 @@ public class NavigationViewModelTests : AvaloniaTestBase
         var podsLink = FindResourceLink(clusterNode, "Pods");
 
         podsLink.ShouldNotBeNull();
-        (podsLink.Count is not null).ShouldBeTrue();
-        var countTask = WaitForCountAsync(podsLink.Count, timeoutMs: 10000);
+        podsLink.Count.ShouldBeNull();
         await vm.TreeViewSelectionChangedAsync(podsLink);
+
+        await WaitForAsync(() => podsLink.Count is not null, timeoutMs: 10000);
+        var countTask = WaitForCountAsync(podsLink.Count!, timeoutMs: 10000);
         var count = await countTask;
         count.ShouldBe(0);
     }
@@ -1813,8 +1812,10 @@ public class NavigationViewModelTests : AvaloniaTestBase
         var podsLink = FindResourceLink(clusterNode, "Pods");
 
         podsLink.ShouldNotBeNull();
-        (podsLink.Count is not null).ShouldBeTrue();
-        var countTask = WaitForCountAsync(podsLink.Count, timeoutMs: 10000);
+        podsLink.Count.ShouldBeNull();
+        await runtime.SeedResource<V1Pod>();
+        await WaitForAsync(() => podsLink.Count is not null, timeoutMs: 10000);
+        var countTask = WaitForObservedCountAsync(podsLink.Count!, expected: 1, timeoutMs: 10000);
         await runtime.AddOrUpdateResource(new V1Pod
         {
             Metadata = new()

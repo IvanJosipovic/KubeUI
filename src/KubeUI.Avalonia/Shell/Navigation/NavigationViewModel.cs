@@ -436,7 +436,9 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
         }
 
         var link = FindResourceNavigationLink(node.NavigationItems, kind);
-        if (link != null)
+        if (link != null
+            && cluster.Runtime.Objects.TryGetValue(kind, out var container)
+            && container is IResourceContainer { IsSeeded: true })
         {
             link.Count ??= CreateResourceCountStream(cluster, resourceType);
         }
@@ -658,7 +660,9 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
         {
             var item = items[i];
             RemoveEmptyCategories(item.NavigationItems, cluster);
-            if (item.NavigationItems.Count == 0 && item.Id.StartsWith($"{cluster.Runtime.Name}-category-", StringComparison.Ordinal))
+            if (item.NavigationItems.Count == 0
+                && (item.Id.StartsWith($"{cluster.Runtime.Name}-category-", StringComparison.Ordinal)
+                    || item.Id.StartsWith($"{cluster.Runtime.Name}-crd-group-", StringComparison.Ordinal)))
             {
                 items.RemoveAt(i);
             }
