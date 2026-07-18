@@ -2593,7 +2593,7 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
     }
 
     [AvaloniaFact]
-    public async Task ResourceYamlView_DebouncesValidationWhileTypingPartialPropertyName()
+    public async Task ResourceYamlView_DebouncesValidationWhileTypingInvalidYaml()
     {
         var cluster = CreateTestWorkspace();
         var vm = ResolveService<ResourceYamlViewModel>();
@@ -2614,8 +2614,7 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
             metadata:
               name: test
               namespace: default
-            spec:
-              con
+              labels: [test
             """.ReplaceLineEndings("\n");
         Dispatcher.UIThread.RunJobs();
 
