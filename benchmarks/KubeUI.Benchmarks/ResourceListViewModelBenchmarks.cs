@@ -270,6 +270,8 @@ public class ResourceListViewModelBenchmarks
 
         public string? Width { get; } = null;
 
+        public double MinWidth { get; } = 90;
+
         public SortDirection Sort { get; set; } = SortDirection.None;
 
         public Type CustomControl { get; } = typeof(object);
