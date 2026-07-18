@@ -44,5 +44,6 @@ namespace KubeUI.Avalonia.Resources
         Type Type { get; }
         IRelayCommand NewResourceCommand { get; }
         IRelayCommand<IList> ViewCommand { get; }
+        IAsyncRelayCommand<IList> DeleteCommand { get; }
     }
 }

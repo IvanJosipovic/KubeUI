@@ -804,7 +804,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
     {
         return cluster.Runtime.GetResourceCount(resourceType)
             .DistinctUntilChanged()
-            .Publish(counts => counts.Take(1).Merge(counts.Skip(1).Throttle(TimeSpan.FromMilliseconds(100), AvaloniaScheduler.Instance)))
+            .Publish(counts => counts.Take(1).Merge(counts.Skip(1).Sample(TimeSpan.FromMilliseconds(100), AvaloniaScheduler.Instance)))
             .ObserveOn(AvaloniaScheduler.Instance)
             .Replay(1)
             .RefCount();

@@ -1884,6 +1884,68 @@ public class NavigationViewModelTests : AvaloniaTestBase
     }
 
     [AvaloniaFact]
+    public async Task resource_navigation_count_updates_while_resource_events_continue()
+    {
+        var runtime = new TestCluster
+        {
+            Connected = true,
+            Status = ClusterStatus.Connected,
+        };
+
+        var workspace = CreateWorkspace(runtime);
+        await workspace.Connect();
+        Dispatcher.UIThread.RunJobs();
+
+        var vm = CreateViewModel();
+        vm.ClusterCatalog.Clusters.Add(workspace);
+        Dispatcher.UIThread.RunJobs();
+
+        var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
+        var eventsLink = await WaitForValueAsync(() => FindResourceLink(clusterNode, typeof(Corev1Event)));
+        eventsLink.ShouldNotBeNull();
+        eventsLink.Count.ShouldNotBeNull();
+
+        var positiveCount = new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var subscription = eventsLink.Count.Subscribe(count =>
+        {
+            if (count > 0)
+            {
+                positiveCount.TrySetResult(count);
+            }
+        });
+
+        for (var i = 0; i < 20; i++)
+        {
+            await runtime.AddOrUpdateResource(new Corev1Event
+            {
+                Metadata = new()
+                {
+                    Name = $"event-{i}",
+                    NamespaceProperty = "default",
+                },
+                InvolvedObject = new()
+                {
+                    Name = "pod-one",
+                    NamespaceProperty = "default",
+                    Kind = "Pod",
+                },
+                LastTimestamp = DateTime.UtcNow,
+                Count = 1,
+            });
+
+            await Task.Delay(20);
+            Dispatcher.UIThread.RunJobs();
+
+            if (positiveCount.Task.IsCompleted)
+            {
+                break;
+            }
+        }
+
+        positiveCount.Task.IsCompleted.ShouldBeTrue();
+    }
+
+    [AvaloniaFact]
     public async Task resource_navigation_count_updates_when_runtime_is_decorated()
     {
         var runtime = new CountingClusterRuntime(new TestClusterRuntime

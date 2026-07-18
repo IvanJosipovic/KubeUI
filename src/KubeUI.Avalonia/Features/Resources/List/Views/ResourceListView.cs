@@ -1,4 +1,3 @@
-using System.Reflection;
 using System.Globalization;
 using System.Windows.Input;
 using Avalonia.Controls.Primitives;
@@ -8,7 +7,6 @@ using Avalonia.Input;
 using Avalonia.Styling;
 using FluentIcons.Avalonia;
 using FluentIcons.Common;
-using k8s;
 using k8s.Models;
 using KubeUI.Avalonia.Controls.DataGridFilters;
 using KubeUI.Avalonia.Converters;
@@ -32,6 +30,43 @@ public partial class ResourceListView : ViewBase<IResourceListViewModel>
         DesignTimePreview.Run(InitializePreviewDataAsync);
     }
 
+    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnAttachedToVisualTree(e);
+
+        if (_grid is DataGrid grid && DataContext is IResourceListViewModel vm && vm.DataGridRuntimeState is { } state)
+        {
+            grid.RestoreState(state, DataGridStateSections.All, CreateStateOptions(grid));
+        }
+    }
+
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        SaveDataGridState();
+        base.OnDetachedFromVisualTree(e);
+    }
+
+    private void SaveDataGridState()
+    {
+        if (_grid is not DataGrid grid || DataContext is not IResourceListViewModel vm)
+        {
+            return;
+        }
+
+        var state = grid.CaptureState(DataGridStateSections.All, CreateStateOptions(grid));
+        if (state.Scroll is not null || vm.DataGridRuntimeState?.Scroll is null)
+        {
+            vm.DataGridRuntimeState = state;
+        }
+    }
+
+    private static DataGridStateOptions CreateStateOptions(DataGrid grid) => new()
+    {
+        ColumnKeySelector = column => column.ColumnKey?.ToString(),
+        ColumnKeyResolver = key => grid.Columns.FirstOrDefault(column =>
+            string.Equals(column.ColumnKey?.ToString(), key?.ToString(), StringComparison.Ordinal))
+    };
+
     protected override object Build(IResourceListViewModel vm)
     {
         ArgumentNullException.ThrowIfNull(vm);
@@ -46,10 +81,6 @@ public partial class ResourceListView : ViewBase<IResourceListViewModel>
                     SortingAdapterFactory = vm.SortingAdapterFactory,
                     FilteringAdapterFactory = vm.FilteringAdapterFactory,
                     SearchAdapterFactory = vm.SearchAdapterFactory,
-                    //SortingModel = vm.SortingModel,
-                    //FilteringModel = vm.FilteringModel,
-                    //SearchModel = vm.SearchModel,
-                    //Selection = vm.SelectionModel,
                 }
                     .Name("PART_Grid")
                     .Ref(out _grid)
@@ -72,7 +103,6 @@ public partial class ResourceListView : ViewBase<IResourceListViewModel>
                     .RowHeightEstimator(new DefaultRowHeightEstimator())
                     .Behaviors([
                         new ResourceListDoubleTapBehavior(),
-                        new ResourceListPersistenceBehavior(),
                         new ResourceListContextMenuBehavior()
                         ])
                     .KeyBindings(
@@ -81,6 +111,12 @@ public partial class ResourceListView : ViewBase<IResourceListViewModel>
                             Command = vm.ResourceConfig.ViewCommand,
                             CommandParameter = vm.SelectionModel.SelectedItems,
                             Gesture = new KeyGesture(Key.Enter)
+                        },
+                        new KeyBinding
+                        {
+                            Command = vm.ResourceConfig.DeleteCommand,
+                            CommandParameter = vm.SelectionModel.SelectedItems,
+                            Gesture = new KeyGesture(Key.Delete)
                         }))
                     .Styles(vm.ResourceConfig.ListStyle());
 

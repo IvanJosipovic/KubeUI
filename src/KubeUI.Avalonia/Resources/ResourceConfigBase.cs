@@ -18,7 +18,6 @@ using KubeUI.Avalonia.Features.Resources.Yaml.ViewModels;
 using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Infrastructure.Docking;
 using KubeUI.Kubernetes;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace KubeUI.Avalonia.Resources;
 
