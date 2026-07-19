@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Reflection;
 using System.Text;
 using k8s;
 using k8s.Models;
@@ -193,7 +194,11 @@ public abstract class ClusterScenarioAssertions
 
         await harness.Cluster.ImportYaml(new MemoryStream(Encoding.UTF8.GetBytes(SharedScenarioData.CustomResourceYaml)));
 
-        var seedMethod = harness.Cluster.GetType().GetMethod(nameof(IClusterRuntime.SeedResource))!;
+        var seedMethod = harness.Cluster.GetType()
+            .GetMethods(BindingFlags.Instance | BindingFlags.Public)
+            .Single(method => method.Name == nameof(IClusterRuntime.SeedResource)
+                && method.IsGenericMethodDefinition
+                && method.GetParameters().Length == 1);
         await (Task)seedMethod.MakeGenericMethod(generatedType!).Invoke(harness.Cluster, [true])!;
 
         var kind = harness.Cluster.Objects[GroupApiVersionKind.From(generatedType)];
