@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Specialized;
 using System.Reflection;
+using System.Security.Cryptography;
 using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
@@ -54,7 +55,7 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
     {
         try
         {
-            await Runtime.Connect().ConfigureAwait(true);
+            await Runtime.Connect().ConfigureAwait(false);
             if (!Runtime.Connected)
             {
                 return;
@@ -66,10 +67,10 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
             }
 
             EnsureBuiltInResourceConfigs();
-            await RefreshResourceConfigPermissionsAsync().ConfigureAwait(true);
-            await SeedResourcesConfiguredForConnectAsync().ConfigureAwait(true);
+            await RefreshResourceConfigPermissionsAsync().ConfigureAwait(false);
+            await SeedResourcesConfiguredForConnectAsync().ConfigureAwait(false);
             _workspaceStateInitialized = true;
-            UpdateClusterColor();
+            await Dispatcher.UIThread.InvokeAsync(UpdateClusterColor);
         }
         catch (Exception ex)
         {
@@ -275,15 +276,7 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
             return;
         }
 
-        await SeedResourceAsync(resourceConfig).ConfigureAwait(false);
-
-    }
-
-    private Task SeedResourceAsync(IResourceConfig resourceConfig)
-    {
-        return Runtime.SeedResource(
-            resourceConfig.Type,
-            resourceConfig.Type == typeof(V1CustomResourceDefinition));
+        await Runtime.SeedResource(resourceConfig.Type).ConfigureAwait(false);
     }
 
     private void SubscribeNamespaceCollection(ReadOnlyObservableCollection<V1Namespace>? namespaces)
@@ -503,6 +496,6 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
             .Where(x => x.Name != nameof(Brushes.Red) && x.Name != nameof(Brushes.Orange))
             .ToArray();
 
-        return (IBrush)properties[Random.Shared.Next(properties.Length)].GetValue(null)!;
+        return (IBrush)properties[RandomNumberGenerator.GetInt32(properties.Length)].GetValue(null)!;
     }
 }
