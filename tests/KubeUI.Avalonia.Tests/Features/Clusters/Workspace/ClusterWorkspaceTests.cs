@@ -489,20 +489,27 @@ public class ClusterWorkspaceTests : AvaloniaTestBase
     }
 
     [AvaloniaFact]
-    public async Task connected_property_change_does_not_block_ui_thread_while_workspace_refresh_runs()
+    public async Task namespace_change_does_not_block_ui_thread_while_workspace_refresh_runs()
     {
         var runtime = new TestCluster
         {
-            Connected = false,
-            Status = ClusterStatus.None,
+            Connected = true,
+            Status = ClusterStatus.Connected,
         };
 
         var workspace = CreateWorkspace(runtime);
+        await workspace.Connect();
+
         var releaseRefresh = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
         workspace.AddResourceConfigForTest(new BlockingPodPermissionResourceConfig(runtime, releaseRefresh.Task));
 
+        var namespaceAdded = runtime.AddOrUpdateResource(new V1Namespace
+        {
+            Metadata = new V1ObjectMeta { Name = "refresh-test" }
+        });
+
         var sw = Stopwatch.StartNew();
-        var connectTask = workspace.Connect();
+        await namespaceAdded;
         sw.Stop();
 
         sw.Elapsed.ShouldBeLessThan(TimeSpan.FromMilliseconds(250));
@@ -514,7 +521,6 @@ public class ClusterWorkspaceTests : AvaloniaTestBase
 
         releaseRefresh.TrySetResult(null);
 
-        await connectTask;
         await WaitForAsync(() => workspace.GetResourceConfig<V1Pod>().PermissionsLoaded);
         workspace.GetResourceConfig<V1Pod>().PermissionsLoaded.ShouldBeTrue();
     }
