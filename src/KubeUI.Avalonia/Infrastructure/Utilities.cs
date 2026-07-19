@@ -1,5 +1,4 @@
-﻿using System.Linq.Expressions;
-using System.Reflection;
+﻿using System.Reflection;
 using System.Text.Json;
 using Avalonia.Controls.Notifications;
 using Avalonia.Input;
@@ -7,8 +6,6 @@ using Avalonia.Xaml.Interactivity;
 using k8s;
 using k8s.Autorest;
 using k8s.Models;
-using KubernetesClient.Informer.Client;
-using KubeUI.Avalonia.Infrastructure;
 
 namespace KubeUI.Avalonia.Infrastructure;
 

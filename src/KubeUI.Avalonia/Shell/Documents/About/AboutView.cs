@@ -1,7 +1,4 @@
-﻿using System;
-using Avalonia.Layout;
-using Avalonia.Markup.Declarative;
-using Avalonia.Svg.Skia;
+﻿using Avalonia.Svg.Skia;
 
 namespace KubeUI.Avalonia.Shell.Documents.About;
 

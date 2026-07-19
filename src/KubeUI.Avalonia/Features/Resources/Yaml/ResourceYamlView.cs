@@ -1,7 +1,6 @@
 using Avalonia.Controls.Primitives;
 using Avalonia.Data.Converters;
 using Avalonia.Input;
-using Avalonia.Markup.Declarative;
 using Avalonia.Markup.Xaml.MarkupExtensions;
 using Avalonia.Xaml.Interactions.Core;
 using AvaloniaEdit;
@@ -10,11 +9,10 @@ using FluentIcons.Avalonia;
 using FluentIcons.Common;
 using k8s.Models;
 using KubeUI.Avalonia.Features.Resources.Yaml.Behaviors;
-using KubeUI.Avalonia.Features.Resources.Yaml.ViewModels;
 using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
 
-namespace KubeUI.Avalonia.Features.Resources.Yaml.Views;
+namespace KubeUI.Avalonia.Features.Resources.Yaml;
 
 public sealed partial class ResourceYamlView : ViewBase<ResourceYamlViewModel>
 {

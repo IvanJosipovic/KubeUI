@@ -1,8 +1,5 @@
 #nullable enable
 
-using System;
-using System.Collections;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.Globalization;
 using Avalonia.Controls;
@@ -10,7 +7,6 @@ using Avalonia.Controls.DataGridFiltering;
 using Avalonia.Controls.DataGridSearching;
 using Avalonia.Controls.DataGridSorting;
 using BenchmarkDotNet.Attributes;
-using BenchmarkDotNet.Jobs;
 using k8s.Models;
 using KubeUI.Avalonia.Features.Resources.List.ViewModels;
 using KubeUI.Avalonia.Resources;

@@ -1,5 +1,3 @@
-using Avalonia.Markup.Declarative;
-
 namespace KubeUI.Avalonia.Controls.DataGridFilters;
 
 internal sealed partial class NumericFilterFlyoutView : ViewBase<NumericFilterFlyoutContext>

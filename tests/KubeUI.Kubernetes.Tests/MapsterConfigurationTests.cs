@@ -1,6 +1,4 @@
 using k8s.Models;
-using KubernetesClient.Informer.Client;
-using KubeUI.Kubernetes;
 using Mapster;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;

@@ -1,10 +1,10 @@
-using Avalonia;
 using Avalonia.Headless.XUnit;
 using k8s;
 using k8s.Models;
+using KubeUI.Avalonia.Features.Resources.Visualization;
 using KubeUI.Avalonia.Tests.Infra;
 using Shouldly;
-using static KubeUI.Avalonia.Features.Resources.Visualization.ViewModels.VisualizationViewModel;
+using static KubeUI.Avalonia.Features.Resources.Visualization.VisualizationViewModel;
 
 namespace KubeUI.Avalonia.Tests.Features.Resources.Visualization;
 

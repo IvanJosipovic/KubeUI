@@ -1,12 +1,8 @@
 using System.Net.WebSockets;
 using Avalonia.Headless.XUnit;
-using FluentAvalonia.UI.Controls;
 using k8s;
 using k8s.Models;
-using KubeUI.Avalonia.Assets;
-using KubeUI.Avalonia.Resources.Workloads.v1.Pod;
 using KubeUI.Avalonia.Tests.Infra;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Shouldly;

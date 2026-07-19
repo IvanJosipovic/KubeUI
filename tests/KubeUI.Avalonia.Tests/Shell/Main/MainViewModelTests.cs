@@ -1,10 +1,7 @@
-using System.Linq;
-using System.Threading.Tasks;
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
 using Dock.Model.Controls;
 using Dock.Model.Core;
-using Dock.Model.Mvvm;
 using KubeUI.Avalonia.Shell.Documents.CloudClusters.Aks;
 using KubeUI.Avalonia.Shell.Main;
 using KubeUI.Avalonia.Tests.Infra;

@@ -4,14 +4,14 @@ using Dock.Model.Core;
 using k8s;
 using k8s.Models;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
-using KubeUI.Avalonia.Features.Resources.Properties.ViewModels;
-using KubeUI.Avalonia.Features.Resources.Yaml.ViewModels;
+using KubeUI.Avalonia.Features.Resources.Properties;
+using KubeUI.Avalonia.Features.Resources.Yaml;
 using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Infrastructure.Docking;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using static AvaloniaGraphControl.GraphPanel;
 
-namespace KubeUI.Avalonia.Features.Resources.Visualization.ViewModels;
+namespace KubeUI.Avalonia.Features.Resources.Visualization;
 
 public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeCluster, IDisposable
 {

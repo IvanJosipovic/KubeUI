@@ -1,7 +1,6 @@
 using System.Collections.Specialized;
 using System.Windows.Input;
 using Avalonia.Collections;
-using CommunityToolkit.Mvvm.ComponentModel;
 using FluentIcons.Common;
 
 namespace KubeUI.Avalonia.Features.Resources.Common;

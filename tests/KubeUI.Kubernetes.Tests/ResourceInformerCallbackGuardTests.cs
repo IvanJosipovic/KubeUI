@@ -1,7 +1,6 @@
 using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
-using KubeUI.Kubernetes;
 using Microsoft.Extensions.Logging;
 using Shouldly;
 

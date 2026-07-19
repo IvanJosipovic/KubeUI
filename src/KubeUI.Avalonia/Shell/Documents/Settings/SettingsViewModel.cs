@@ -1,7 +1,5 @@
-using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Services.Settings;
-using KubeUI.Kubernetes;
 
 namespace KubeUI.Avalonia.Shell.Documents.Settings;
 

@@ -1,8 +1,5 @@
-using Avalonia;
-using Avalonia.Media;
 using AvaloniaEdit.Document;
 using AvaloniaEdit.Rendering;
-using KubeUI.Avalonia.Features.Resources.Yaml.ViewModels;
 
 namespace KubeUI.Avalonia.Features.Resources.Yaml.Behaviors;
 

@@ -1,6 +1,5 @@
 using System.Linq.Expressions;
 using System.Windows.Input;
-using Avalonia.Markup.Declarative;
 using Avalonia.Platform;
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
 

@@ -1,6 +1,5 @@
 using Avalonia.Controls.Templates;
 using Avalonia.Logging;
-using Avalonia.Markup.Declarative;
 using KubeUI.Avalonia.Controls.DataGridFilters;
 using KubeUI.Avalonia.Features.Resources.Yaml;
 using KubeUI.Avalonia.Infrastructure.Logging;

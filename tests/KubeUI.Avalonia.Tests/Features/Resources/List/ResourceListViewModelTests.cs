@@ -24,7 +24,6 @@ using FluentAvalonia.Core;
 using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
-using KubeUI.Avalonia;
 using KubeUI.Avalonia.Controls.DataGridFilters;
 using KubeUI.Avalonia.Features.Resources.List.Behaviors;
 using KubeUI.Avalonia.Resources;
@@ -1000,7 +999,7 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         numericDescriptor.Values.Count.ShouldBe(2);
 
         var beforeDateFilter = DateTimeOffset.UtcNow;
-        var days = GetDateRelativeUnit(vm, 2);
+        var days = GetDateRelativeUnit<ResourceListViewModel<Corev1Event>>(2);
         filterService.ApplyDateFilter(vm.FilteringModel, lastSeenColumn, lastSeenColumn.ValueType, GetDateOperator(FilteringOperator.GreaterThan), 5d, days);
         vm.FilteringModel.Descriptors.Count(descriptor => ReferenceEquals(descriptor.ColumnId, lastSeenColumn) || Equals(descriptor.ColumnId, lastSeenColumn)).ShouldBe(1);
         var dateDescriptor = GetDescriptorForColumn(lastSeenColumn);
@@ -1010,7 +1009,7 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         var actualThreshold = ToDateTimeOffset(dateDescriptor.Value!);
         Math.Abs((actualThreshold - expectedThreshold).TotalSeconds).ShouldBeLessThan(10);
 
-        var hours = GetDateRelativeUnit(vm, 1);
+        var hours = GetDateRelativeUnit<ResourceListViewModel<Corev1Event>>(1);
         filterService.ApplyDateFilter(vm.FilteringModel, lastSeenColumn, lastSeenColumn.ValueType, GetDateOperator(FilteringOperator.LessThan), 12d, hours);
         vm.FilteringModel.Descriptors.Count(descriptor => ReferenceEquals(descriptor.ColumnId, lastSeenColumn) || Equals(descriptor.ColumnId, lastSeenColumn)).ShouldBe(1);
         dateDescriptor = GetDescriptorForColumn(lastSeenColumn);
@@ -1127,7 +1126,7 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         countVm.View.Count.ShouldBe(2);
 
         var lastSeenColumn = countVm.ColumnDefinitions.First(column => string.Equals(column.Header?.ToString(), KubeUI.Avalonia.Assets.Resources.V1EventConfig_Last_Seen, StringComparison.Ordinal));
-        var hours = GetDateRelativeUnit(countVm, 1);
+        var hours = GetDateRelativeUnit<ResourceListViewModel<Corev1Event>>(1);
         filterService.ApplyDateFilter(countVm.FilteringModel, lastSeenColumn, lastSeenColumn.ValueType, GetDateOperator(FilteringOperator.GreaterThan), 1d, hours);
         Dispatcher.UIThread.RunJobs();
 
@@ -2138,7 +2137,7 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         return descriptor.Values.Cast<string>().ToList();
     }
 
-    private static DateRelativeUnit GetDateRelativeUnit<T>(T viewModel, int index)
+    private static DateRelativeUnit GetDateRelativeUnit<T>(int index)
     {
         return ResourceListFilterFlyoutOptions.DateRelativeUnits[index].Unit;
     }

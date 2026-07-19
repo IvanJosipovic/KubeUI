@@ -1,11 +1,9 @@
-using System;
 using System.Globalization;
 using System.Reflection;
 using Avalonia.Controls;
 using Avalonia.Controls.DataGridFiltering;
 using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Engines;
-using BenchmarkDotNet.Jobs;
 using k8s.Models;
 using KubeUI.Avalonia.Features.Resources.List.Controls;
 using KubeUI.Avalonia.Features.Resources.List.Views;

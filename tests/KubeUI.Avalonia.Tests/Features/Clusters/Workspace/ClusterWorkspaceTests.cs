@@ -3,8 +3,6 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Reflection;
-using Avalonia;
-using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Styling;
 using Avalonia.Threading;
@@ -18,7 +16,6 @@ using KubeUI.Avalonia.Resources;
 using KubeUI.Avalonia.Tests.Infra;
 using KubeUI.Avalonia.Tests.Shell.Navigation;
 using KubeUI.Testing;
-using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Features.Clusters.Workspace;

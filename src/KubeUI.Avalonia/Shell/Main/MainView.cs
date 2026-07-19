@@ -1,7 +1,4 @@
 using System.Runtime.InteropServices;
-using Avalonia.Data;
-using Avalonia.Layout;
-using Avalonia.Markup.Declarative;
 using Dock.Avalonia.Controls;
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
 

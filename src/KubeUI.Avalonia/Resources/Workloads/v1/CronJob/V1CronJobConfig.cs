@@ -1,5 +1,3 @@
-using System.Collections;
-using Avalonia.Controls;
 using FluentIcons.Common;
 using k8s.Models;
 using KubeUI.Avalonia.Features.Resources.Common;

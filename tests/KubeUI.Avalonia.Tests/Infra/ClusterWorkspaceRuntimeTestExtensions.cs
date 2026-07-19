@@ -1,6 +1,5 @@
 using k8s;
 using k8s.Models;
-using KubeUI.Avalonia.Features.Clusters.Workspace;
 
 namespace KubeUI.Avalonia.Tests.Infra;
 

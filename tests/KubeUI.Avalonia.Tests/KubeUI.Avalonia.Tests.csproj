@@ -7,6 +7,9 @@
     <LangVersion>latest</LangVersion>
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <AnalysisMode>All</AnalysisMode>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <NoWarn>CS8602,CS8618,CS8625,CS8604,CS8605,CS8600</NoWarn>
     <WarningsAsErrors>xUnit1031</WarningsAsErrors>
     <TestingPlatformDotnetTestSupport>true</TestingPlatformDotnetTestSupport>

@@ -1,4 +1,3 @@
-using Avalonia.Markup.Declarative;
 using KubeUI.Avalonia.Features.Clusters.Error.ViewModels;
 
 namespace KubeUI.Avalonia.Features.Clusters.Error.Views;

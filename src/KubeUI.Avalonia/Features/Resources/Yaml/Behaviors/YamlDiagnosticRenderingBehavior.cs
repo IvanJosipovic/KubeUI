@@ -1,8 +1,5 @@
-using System.ComponentModel;
-using Avalonia;
 using Avalonia.Xaml.Interactivity;
 using AvaloniaEdit;
-using KubeUI.Avalonia.Features.Resources.Yaml.ViewModels;
 
 namespace KubeUI.Avalonia.Features.Resources.Yaml.Behaviors;
 

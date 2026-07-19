@@ -1,5 +1,4 @@
 using Azure.Identity;
-using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Kubernetes;
 

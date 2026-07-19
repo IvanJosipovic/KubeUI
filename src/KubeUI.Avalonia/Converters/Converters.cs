@@ -1,9 +1,5 @@
 using System.Globalization;
 using Avalonia.Data.Converters;
-using Avalonia.Media;
-using k8s;
-using k8s.Models;
-using KubeUI.Avalonia.Infrastructure;
 
 namespace KubeUI.Avalonia.Converters;
 

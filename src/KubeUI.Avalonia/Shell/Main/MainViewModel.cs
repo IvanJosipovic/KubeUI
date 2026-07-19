@@ -6,8 +6,6 @@ using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using KubeUI.Avalonia.Features.Clusters.Catalog.ViewModels;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
-using KubeUI.Avalonia.Infrastructure;
-using KubeUI.Avalonia.Infrastructure.DependencyInjection;
 using KubeUI.Avalonia.Infrastructure.Docking;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Options;
@@ -16,7 +14,6 @@ using KubeUI.Avalonia.Shell.Documents.About;
 using KubeUI.Avalonia.Shell.Documents.CloudClusters.Aks;
 using KubeUI.Avalonia.Shell.Documents.Settings;
 using KubeUI.Kubernetes;
-using Microsoft.Extensions.DependencyInjection;
 using Velopack;
 using Velopack.Sources;
 

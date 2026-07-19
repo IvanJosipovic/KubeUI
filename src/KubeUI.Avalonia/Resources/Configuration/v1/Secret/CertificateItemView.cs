@@ -1,11 +1,7 @@
-using System.Collections.ObjectModel;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
-using Avalonia;
-using Avalonia.Controls;
 using Avalonia.Controls.Templates;
-using Avalonia.Markup.Declarative;
 using KubeUI.Avalonia.Features.Resources.Properties.Controls;
 
 namespace KubeUI.Avalonia.Resources.Configuration.v1.Secret;

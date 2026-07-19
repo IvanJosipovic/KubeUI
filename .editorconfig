@@ -247,6 +247,7 @@ dotnet_diagnostic.IDE0052.severity = error
 dotnet_diagnostic.IDE0059.severity = error
 dotnet_diagnostic.IDE0060.severity = error
 
+dotnet_diagnostic.CS4014.severity = error
 
 # Xaml files
 [*.{xaml,axaml}]

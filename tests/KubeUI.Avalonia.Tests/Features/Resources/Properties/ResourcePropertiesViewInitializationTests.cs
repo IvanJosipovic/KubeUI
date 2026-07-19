@@ -1,16 +1,11 @@
-using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
 using k8s.Models;
-using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Features.Resources.Properties.Controls;
-using KubeUI.Avalonia.Features.Resources.Properties.ViewModels;
-using KubeUI.Avalonia.Features.Resources.Properties.Views;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Resources;
 using KubeUI.Avalonia.Tests.Infra;
-using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 using AppResources = KubeUI.Avalonia.Assets.Resources;
 

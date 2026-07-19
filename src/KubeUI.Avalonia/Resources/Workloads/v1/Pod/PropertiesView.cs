@@ -1,9 +1,7 @@
 using Avalonia.Controls.Templates;
-using Avalonia.Markup.Declarative;
 using k8s.Models;
 using KubeUI.Avalonia.Converters;
 using KubeUI.Avalonia.Features.Resources.Properties.Controls;
-using AppConverters = KubeUI.Avalonia.Converters.Converters;
 
 namespace KubeUI.Avalonia.Resources.Workloads.v1.Pod;
 

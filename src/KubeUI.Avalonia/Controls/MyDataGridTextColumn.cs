@@ -1,5 +1,3 @@
-using Avalonia.Markup.Declarative;
-
 namespace KubeUI.Avalonia.Controls;
 
 /// <summary>

@@ -1,10 +1,7 @@
 using System.Xml;
-using System.Xml.XPath;
 using k8s.Models;
 using KubernetesCRDModelGen;
-using KubeUI.Kubernetes;
 using KubeUI.Kubernetes.Serialization;
-using Microsoft.Extensions.Logging;
 using Shouldly;
 
 namespace KubeUI.Kubernetes.Tests;

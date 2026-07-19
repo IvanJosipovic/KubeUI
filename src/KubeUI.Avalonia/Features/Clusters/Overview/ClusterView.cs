@@ -10,7 +10,7 @@ using LiveChartsCore.SkiaSharpView.Avalonia;
 using LiveChartsCore.SkiaSharpView.Painting;
 using SkiaSharp;
 
-namespace KubeUI.Avalonia.Features.Clusters.Overview.Views;
+namespace KubeUI.Avalonia.Features.Clusters.Overview;
 
 public sealed partial class ClusterView : ViewBase<ClusterViewModel>
 {

@@ -1,5 +1,3 @@
-using Avalonia.Markup.Declarative;
-
 namespace KubeUI.Avalonia.Features.Resources.Properties.Controls;
 
 public partial class ExpandableSection : Expander, IDeclarativeViewBase

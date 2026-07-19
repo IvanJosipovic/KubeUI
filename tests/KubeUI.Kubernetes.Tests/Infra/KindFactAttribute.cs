@@ -1,5 +1,3 @@
-using Xunit;
-
 namespace KubeUI.Kubernetes.Tests.Infra;
 
 public sealed class KindFactAttribute : FactAttribute

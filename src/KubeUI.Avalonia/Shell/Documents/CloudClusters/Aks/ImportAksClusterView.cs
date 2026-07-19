@@ -1,5 +1,3 @@
-using Avalonia.Layout;
-using Avalonia.Markup.Declarative;
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
 using KubeUI.Kubernetes;
 

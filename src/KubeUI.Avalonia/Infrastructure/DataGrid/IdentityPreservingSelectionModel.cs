@@ -1,8 +1,5 @@
-using System.Collections;
 using System.Collections.Specialized;
-using System.ComponentModel;
 using Avalonia.Controls.Selection;
-using Avalonia.Threading;
 
 namespace KubeUI.Avalonia.Infrastructure.DataGrid;
 

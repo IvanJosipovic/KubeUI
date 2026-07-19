@@ -4,7 +4,6 @@ using Avalonia.Headless.XUnit;
 using CommunityToolkit.Mvvm.Input;
 using k8s.Models;
 using KubeUI.Avalonia.Resources;
-using KubeUI.Avalonia.Resources.Workloads.v1.Pod;
 using KubeUI.Avalonia.Tests.Infra;
 using Shouldly;
 using ClusterRoleBindingPropertiesView = KubeUI.Avalonia.Resources.AccessControl.v1.ClusterRoleBinding.PropertiesView;

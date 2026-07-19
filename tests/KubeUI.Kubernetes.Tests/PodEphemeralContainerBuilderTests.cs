@@ -1,6 +1,4 @@
 using k8s.Models;
-using KubeUI.Avalonia.Options;
-using KubeUI.Kubernetes;
 using Shouldly;
 
 namespace KubeUI.Kubernetes.Tests;

@@ -2,12 +2,8 @@ using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
 using k8s.Models;
-using KubeUI.Avalonia.Features.Clusters.Workspace;
-using KubeUI.Avalonia.Features.Resources.Properties.ViewModels;
-using KubeUI.Avalonia.Features.Resources.Properties.Views;
+using KubeUI.Avalonia.Features.Resources.Properties;
 using KubeUI.Avalonia.Tests.Infra;
-using Microsoft.Extensions.DependencyInjection;
-using Xunit;
 
 namespace KubeUI.Avalonia.Tests.Features.Resources.Properties;
 

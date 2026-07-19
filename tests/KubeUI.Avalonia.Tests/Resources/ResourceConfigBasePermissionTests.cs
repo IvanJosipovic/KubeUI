@@ -1,10 +1,7 @@
-using System.Collections;
 using Avalonia.Headless.XUnit;
-using k8s;
 using k8s.Models;
 using KubeUI.Avalonia.Resources;
 using KubeUI.Avalonia.Tests.Infra;
-using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Resources;

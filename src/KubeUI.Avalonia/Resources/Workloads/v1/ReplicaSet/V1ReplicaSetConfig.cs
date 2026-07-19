@@ -1,8 +1,4 @@
-using Avalonia.Controls;
 using FluentIcons.Common;
-using HanumanInstitute.MvvmDialogs;
-using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
-using k8s;
 using k8s.Models;
 using KubeUI.Avalonia.Features.Resources.Common;
 

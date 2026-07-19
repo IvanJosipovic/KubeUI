@@ -1,5 +1,3 @@
-using System.ComponentModel;
-using Avalonia;
 using Avalonia.Input;
 using Avalonia.Styling;
 using Avalonia.Xaml.Interactivity;
@@ -10,13 +8,7 @@ using AvaloniaEdit.Editing;
 using AvaloniaEdit.Folding;
 using AvaloniaEdit.Indentation;
 using AvaloniaEdit.TextMate;
-using KubeUI.Avalonia;
-using KubeUI.Avalonia.Features.Resources.Yaml.ViewModels;
-using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
-using KubeUI.Kubernetes;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using TextMateSharp.Grammars;
 using static AvaloniaEdit.TextMate.TextMate;
 

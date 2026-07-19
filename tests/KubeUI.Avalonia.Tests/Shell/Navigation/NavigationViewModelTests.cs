@@ -1,31 +1,21 @@
 using System.Collections;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Reactive.Linq;
 using System.Reflection;
-using System.Threading;
-using System.Threading.Tasks;
-using Avalonia;
 using Avalonia.Headless.XUnit;
 using Avalonia.Styling;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.Input;
 using Dock.Model.Controls;
-using Dock.Model.Core;
 using FluentAvalonia.UI.Controls;
-using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
-using KubeUI.Avalonia.Features.Resources.List.ViewModels;
 using KubeUI.Avalonia.Resources;
 using KubeUI.Avalonia.Shell.Navigation;
 using KubeUI.Avalonia.Tests.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Tests.Infra;
-using KubeUI.Kubernetes;
 using KubeUI.Testing;
-using Moq;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Shell.Navigation;
@@ -1900,7 +1890,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
         var eventsLink = await WaitForValueAsync(() => FindResourceLink(clusterNode, typeof(Corev1Event)));
         eventsLink.ShouldNotBeNull();
-        eventsLink.Count.ShouldNotBeNull();
+        await eventsLink.Count.ShouldNotBeNull();
 
         var positiveCount = new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously);
         using var subscription = eventsLink.Count.Subscribe(count =>
@@ -1962,7 +1952,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
         var eventsLink = await WaitForValueAsync(() => FindResourceLink(clusterNode, typeof(Corev1Event)));
         eventsLink.ShouldNotBeNull();
-        eventsLink.Count.ShouldNotBeNull();
+        await eventsLink.Count.ShouldNotBeNull();
 
         var countTask = WaitForObservedCountAsync(eventsLink.Count, expected: 1, timeoutMs: 10000);
         await runtime.AddOrUpdateResource(new Corev1Event

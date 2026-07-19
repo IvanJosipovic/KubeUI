@@ -1,4 +1,3 @@
-using Avalonia.Controls;
 using k8s.Models;
 
 namespace KubeUI.Avalonia.Resources.Workloads.v1.Job;

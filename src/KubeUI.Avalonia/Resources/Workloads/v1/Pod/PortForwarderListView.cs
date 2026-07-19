@@ -1,5 +1,4 @@
 using System.Linq.Expressions;
-using Avalonia.Markup.Declarative;
 using k8s.Models;
 using KubeUI.Avalonia.Controls;
 using KubeUI.Kubernetes;

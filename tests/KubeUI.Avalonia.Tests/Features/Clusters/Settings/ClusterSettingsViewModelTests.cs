@@ -1,10 +1,6 @@
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
-using KubeUI.Avalonia.Features.Clusters.Settings.ViewModels;
-using KubeUI.Avalonia.Options;
-using KubeUI.Avalonia.Services.Settings;
 using KubeUI.Avalonia.Tests.Infra;
-using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Features.Clusters.Settings;

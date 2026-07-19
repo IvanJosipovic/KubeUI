@@ -1,6 +1,5 @@
 using k8s;
 using k8s.Models;
-using KubeUI.Kubernetes;
 
 namespace KubeUI.Kubernetes.Tests.Infra;
 

@@ -1,5 +1,4 @@
 using k8s.KubeConfigModels;
-using KubeUI.Kubernetes;
 using Shouldly;
 
 namespace KubeUI.Kubernetes.Tests;

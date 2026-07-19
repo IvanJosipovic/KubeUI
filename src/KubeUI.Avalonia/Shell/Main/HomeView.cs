@@ -1,5 +1,3 @@
-using Avalonia.Layout;
-using Avalonia.Markup.Declarative;
 using Avalonia.Svg.Skia;
 
 namespace KubeUI.Avalonia.Shell.Main;

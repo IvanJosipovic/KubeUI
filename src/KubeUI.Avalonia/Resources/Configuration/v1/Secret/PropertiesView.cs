@@ -1,7 +1,5 @@
-using System.Collections.Generic;
 using System.Text;
 using Avalonia.Controls.Templates;
-using Avalonia.Markup.Declarative;
 using k8s.Models;
 using KubeUI.Avalonia.Features.Resources.Properties.Controls;
 

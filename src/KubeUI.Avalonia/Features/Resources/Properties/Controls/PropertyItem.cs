@@ -1,5 +1,4 @@
 using Avalonia.Controls.Primitives;
-using Avalonia.Markup.Declarative;
 using Avalonia.Markup.Xaml.MarkupExtensions;
 using KubeUI.Avalonia.Converters;
 

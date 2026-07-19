@@ -1,7 +1,6 @@
 using System.Text;
 using k8s;
 using k8s.Models;
-using KubeUI.Kubernetes;
 using KubeUI.Testing;
 
 namespace KubeUI.Kubernetes.Tests.Infra;

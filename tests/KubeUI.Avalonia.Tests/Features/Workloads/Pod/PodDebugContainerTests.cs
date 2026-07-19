@@ -1,8 +1,6 @@
 using Avalonia.Headless.XUnit;
 using k8s.Models;
-using KubeUI.Avalonia.Services.Settings;
 using KubeUI.Avalonia.Tests.Infra;
-using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Features.Workloads.Pod;

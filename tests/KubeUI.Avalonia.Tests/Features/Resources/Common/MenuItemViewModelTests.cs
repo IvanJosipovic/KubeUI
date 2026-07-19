@@ -1,6 +1,5 @@
 using Avalonia.Collections;
 using CommunityToolkit.Mvvm.Input;
-using KubeUI.Avalonia.Features.Resources.Common;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Features.Resources.Common;

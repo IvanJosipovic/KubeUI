@@ -1,5 +1,4 @@
 using Avalonia.Controls.Notifications;
-using Avalonia.Threading;
 using Dock.Model.Core;
 using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia;
@@ -7,9 +6,7 @@ using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using KubeUI.Avalonia.Infrastructure.Dialogs;
 using KubeUI.Avalonia.Infrastructure.Docking;
 using KubeUI.Kubernetes;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Microsoft.Extensions.Logging;
 
 namespace KubeUI.Avalonia.Infrastructure.DependencyInjection;
 

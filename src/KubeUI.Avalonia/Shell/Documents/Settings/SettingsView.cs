@@ -1,7 +1,6 @@
 using System.Globalization;
 using System.Linq.Expressions;
 using Avalonia.Data.Converters;
-using Avalonia.Markup.Declarative;
 using KubeUI.Avalonia.Options;
 
 namespace KubeUI.Avalonia.Shell.Documents.Settings;

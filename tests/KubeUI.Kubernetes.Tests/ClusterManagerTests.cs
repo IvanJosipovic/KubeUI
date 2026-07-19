@@ -1,8 +1,6 @@
 using System.Collections.ObjectModel;
 using k8s;
 using k8s.KubeConfigModels;
-using KubeUI.Kubernetes;
-using KubeUI.Kubernetes.Serialization;
 using KubeUI.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;

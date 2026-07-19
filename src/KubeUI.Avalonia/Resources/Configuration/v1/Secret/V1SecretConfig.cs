@@ -1,7 +1,3 @@
-using System.Text;
-using Avalonia.Controls.Templates;
-using k8s.Models;
-
 namespace KubeUI.Avalonia.Resources.Configuration.v1.Secret;
 
 public sealed partial class V1SecretConfig : ResourceConfigBase<k8s.Models.V1Secret>

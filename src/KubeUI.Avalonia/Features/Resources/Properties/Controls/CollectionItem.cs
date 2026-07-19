@@ -1,6 +1,5 @@
 using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Templates;
-using Avalonia.Markup.Declarative;
 using Avalonia.Markup.Xaml.MarkupExtensions;
 
 namespace KubeUI.Avalonia.Features.Resources.Properties.Controls;

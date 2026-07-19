@@ -1,6 +1,5 @@
 using System.Reflection;
 using Shouldly;
-using Xunit;
 
 namespace KubeUI.Kubernetes.Tests;
 

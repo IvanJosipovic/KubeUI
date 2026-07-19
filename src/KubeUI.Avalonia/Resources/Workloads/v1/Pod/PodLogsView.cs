@@ -1,11 +1,11 @@
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
-using Avalonia.Markup.Declarative;
 using Avalonia.Markup.Xaml.MarkupExtensions;
 using Avalonia.Styling;
 using AvaloniaEdit;
 using FluentIcons.Avalonia;
 using FluentIcons.Common;
+using KubeUI.Avalonia.Infrastructure.Platform;
 using TextMateSharp.Grammars;
 using static AvaloniaEdit.TextMate.TextMate;
 

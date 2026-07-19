@@ -1,6 +1,4 @@
-using Avalonia;
 using KubeUI.Testing;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace KubeUI.Avalonia.Tests.Infra;
 

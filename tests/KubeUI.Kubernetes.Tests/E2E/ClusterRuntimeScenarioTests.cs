@@ -1,5 +1,4 @@
 using KubeUI.Kubernetes.Tests.Infra;
-using Xunit;
 
 namespace KubeUI.Kubernetes.Tests.E2E;
 

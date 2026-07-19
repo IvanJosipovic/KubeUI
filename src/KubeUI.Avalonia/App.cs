@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using Avalonia.Markup.Declarative;
 using Dock.Model.Controls;
 using Dock.Model.Core;
 using k8s;

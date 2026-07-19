@@ -1,12 +1,7 @@
-using Avalonia;
-using Avalonia.Threading;
 using k8s;
 using k8s.Models;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
-using KubeUI.Avalonia.Features.Resources.List.ViewModels;
 using KubeUI.Avalonia.Infrastructure.Presentation;
-using KubeUI.Kubernetes;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace KubeUI.Avalonia.Infrastructure.DependencyInjection;
 

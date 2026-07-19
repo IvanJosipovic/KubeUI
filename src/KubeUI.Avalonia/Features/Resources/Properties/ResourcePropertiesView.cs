@@ -1,19 +1,13 @@
-using System.ComponentModel;
-using Avalonia;
 using Avalonia.Controls.Primitives;
-using Avalonia.Layout;
 using Avalonia.LogicalTree;
-using Avalonia.Markup.Declarative;
-using Avalonia.Threading;
 using k8s;
 using k8s.Models;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Features.Resources.Properties.Controls;
-using KubeUI.Avalonia.Features.Resources.Properties.ViewModels;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using AppResources = KubeUI.Avalonia.Assets.Resources;
 
-namespace KubeUI.Avalonia.Features.Resources.Properties.Views;
+namespace KubeUI.Avalonia.Features.Resources.Properties;
 
 public partial class ResourcePropertiesView<T> : ViewBase<ResourcePropertiesViewModel<T>> where T : class, IKubernetesObject<V1ObjectMeta>, new()
 {

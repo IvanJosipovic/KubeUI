@@ -4,9 +4,8 @@ using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Resources;
-using KubeUI.Kubernetes;
 
-namespace KubeUI.Avalonia.Features.Resources.Properties.ViewModels;
+namespace KubeUI.Avalonia.Features.Resources.Properties;
 
 public partial class ResourcePropertiesViewModel<T> : ViewModelBase, IDisposable where T : class, IKubernetesObject<V1ObjectMeta>, new()
 {

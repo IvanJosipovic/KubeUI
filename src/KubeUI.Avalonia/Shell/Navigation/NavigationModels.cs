@@ -1,4 +1,3 @@
-using System.ComponentModel;
 using System.Windows.Input;
 using FluentIcons.Common;
 using KubeUI.Avalonia.Features.Clusters.Workspace;

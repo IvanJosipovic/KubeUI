@@ -1,4 +1,3 @@
-using Avalonia.Markup.Declarative;
 using k8s.Models;
 using KubeUI.Avalonia.Features.Resources.Properties.Controls;
 

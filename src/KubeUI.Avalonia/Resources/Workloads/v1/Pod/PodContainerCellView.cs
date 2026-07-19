@@ -1,7 +1,6 @@
 using System.Globalization;
 using Avalonia.Controls.Shapes;
 using Avalonia.Controls.Templates;
-using Avalonia.Markup.Declarative;
 using Avalonia.Markup.Xaml.Templates;
 using k8s;
 using k8s.Models;

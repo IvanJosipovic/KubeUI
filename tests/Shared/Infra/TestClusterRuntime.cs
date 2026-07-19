@@ -12,7 +12,6 @@ using k8s.KubeConfigModels;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
 using KubernetesCRDModelGen;
-using KubeUI.Kubernetes;
 using Mapster;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;

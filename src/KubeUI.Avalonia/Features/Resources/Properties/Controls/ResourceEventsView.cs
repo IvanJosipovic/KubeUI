@@ -1,8 +1,6 @@
-using System.Collections.ObjectModel;
 using System.Reactive.Linq;
 using Avalonia.Controls.Templates;
 using Avalonia.Data.Converters;
-using Avalonia.Markup.Declarative;
 using DynamicData;
 using DynamicData.Binding;
 using k8s;
@@ -11,7 +9,6 @@ using KubeUI.Avalonia.Converters;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Infrastructure.Threading;
-using KubeUI.Kubernetes;
 
 namespace KubeUI.Avalonia.Features.Resources.Properties.Controls;
 

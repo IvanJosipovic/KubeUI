@@ -1,9 +1,5 @@
-using Avalonia.Data.Converters;
-using Avalonia.Layout;
-using Avalonia.Markup.Declarative;
 using KubeUI.Avalonia.Features.Clusters.Settings.ViewModels;
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
-using TextMateSharp.Internal.Rules;
 
 namespace KubeUI.Avalonia.Features.Clusters.Settings;
 

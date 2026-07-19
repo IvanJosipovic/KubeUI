@@ -1,8 +1,3 @@
-using KubeUI.Avalonia;
-using KubeUI.Avalonia.Options;
-using KubeUI.Avalonia.Services.Settings;
-using KubeUI.Kubernetes;
-
 namespace KubeUI.Kubernetes.Tests.Infra;
 
 public sealed class TestSettingsService : ISettingsService, IClusterSettingsStore

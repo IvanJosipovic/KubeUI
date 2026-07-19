@@ -1,13 +1,9 @@
-using System.Collections.Generic;
-using System.Linq;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
 using k8s.Models;
-using KubeUI.Avalonia.Resources.Workloads.v1.Pod;
 using KubeUI.Avalonia.Tests.Infra;
 using Shouldly;
-using Xunit;
 
 namespace KubeUI.Avalonia.Tests.Features.Workloads.Pod;
 

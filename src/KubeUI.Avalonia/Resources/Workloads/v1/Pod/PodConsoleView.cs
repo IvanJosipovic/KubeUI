@@ -1,4 +1,3 @@
-using Avalonia.Markup.Declarative;
 using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Resources.Workloads.v1.Pod.Behaviors;
 using SvcSystems.UI.Terminal;

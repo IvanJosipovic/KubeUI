@@ -1,11 +1,6 @@
-using Avalonia.Controls;
-using Avalonia.Data;
-using Avalonia.Markup.Declarative;
 using k8s.Models;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
-using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Infrastructure.Presentation;
-using KubeUI.Kubernetes;
 
 namespace KubeUI.Avalonia.Resources.Workloads.v1.Pod;
 

@@ -1,7 +1,5 @@
-using Avalonia.Controls;
 using k8s;
 using k8s.Models;
-using KubeUI.Avalonia.Features.Resources.Properties.Controls;
 
 namespace KubeUI.Avalonia.Features.Resources.Properties.Controls;
 

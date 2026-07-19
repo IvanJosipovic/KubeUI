@@ -1,8 +1,7 @@
 using Avalonia.Input;
 using Avalonia.Xaml.Interactivity;
 using AvaloniaEdit;
-using KubeUI.Avalonia.Features.Resources.Yaml.ViewModels;
-using KubeUI.Avalonia.Resources.Workloads.v1.Pod;
+using KubeUI.Avalonia.Infrastructure.Platform;
 
 namespace KubeUI.Avalonia.Features.Resources.Yaml.Behaviors;
 

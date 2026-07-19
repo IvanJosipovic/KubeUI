@@ -1,9 +1,7 @@
-using System.Collections.Concurrent;
 using System.Reflection;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
 using KubernetesCRDModelGen;
-using KubeUI.Kubernetes;
 using KubeUI.Testing;
 using KubeUI.Kubernetes.Tests.Infra;
 using Microsoft.Extensions.DependencyInjection;

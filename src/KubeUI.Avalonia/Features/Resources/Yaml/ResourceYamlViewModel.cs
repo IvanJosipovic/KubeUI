@@ -12,7 +12,7 @@ using KubeUI.Avalonia.Services.Settings;
 using KubeUI.Kubernetes;
 using KubeUI.Kubernetes.Serialization;
 
-namespace KubeUI.Avalonia.Features.Resources.Yaml.ViewModels;
+namespace KubeUI.Avalonia.Features.Resources.Yaml;
 
 public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
 {

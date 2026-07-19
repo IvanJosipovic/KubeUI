@@ -9,11 +9,10 @@ using AvaloniaGraphControl;
 using FluentIcons.Avalonia;
 using FluentIcons.Common;
 using k8s.Models;
-using KubeUI.Avalonia.Features.Resources.Visualization.ViewModels;
 using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
 
-namespace KubeUI.Avalonia.Features.Resources.Visualization.Views;
+namespace KubeUI.Avalonia.Features.Resources.Visualization;
 
 public sealed partial class VisualizationView : ViewBase<VisualizationViewModel>
 {

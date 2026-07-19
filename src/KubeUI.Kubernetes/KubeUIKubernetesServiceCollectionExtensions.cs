@@ -1,10 +1,7 @@
 using System.Text.Json.Serialization.Metadata;
 using k8s;
 using KubernetesCRDModelGen;
-using KubeUI.Kubernetes;
 using KubeUI.Kubernetes.Serialization;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 
 namespace KubeUI.Kubernetes;
 

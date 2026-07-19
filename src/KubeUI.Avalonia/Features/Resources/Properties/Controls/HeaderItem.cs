@@ -1,4 +1,3 @@
-using Avalonia.Markup.Declarative;
 using Avalonia.Markup.Xaml.MarkupExtensions;
 
 namespace KubeUI.Avalonia.Features.Resources.Properties.Controls;
