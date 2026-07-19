@@ -9,7 +9,7 @@
                 "format",
                 "KubeUI.slnx",
                 "--verbosity",
-                "minimal"
+                "Minimal"
             ],
             "options": {
                 "cwd": "${workspaceFolder}"
