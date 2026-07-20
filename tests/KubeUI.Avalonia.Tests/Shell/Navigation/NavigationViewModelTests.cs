@@ -1890,7 +1890,10 @@ public class NavigationViewModelTests : AvaloniaTestBase
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
         var eventsLink = await WaitForValueAsync(() => FindResourceLink(clusterNode, typeof(Corev1Event)));
         eventsLink.ShouldNotBeNull();
-        await eventsLink.Count.ShouldNotBeNull();
+        if (eventsLink.Count is null)
+        {
+            throw new InvalidOperationException("The Events navigation count was not attached.");
+        }
 
         var positiveCount = new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously);
         using var subscription = eventsLink.Count.Subscribe(count =>
@@ -1942,7 +1945,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
         });
 
         var workspace = CreateWorkspace(runtime);
-        await workspace.Connect();
+        await workspace.Connect().WaitAsync(TimeSpan.FromSeconds(5));
         Dispatcher.UIThread.RunJobs();
 
         var vm = CreateViewModel();
@@ -1952,7 +1955,10 @@ public class NavigationViewModelTests : AvaloniaTestBase
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
         var eventsLink = await WaitForValueAsync(() => FindResourceLink(clusterNode, typeof(Corev1Event)));
         eventsLink.ShouldNotBeNull();
-        await eventsLink.Count.ShouldNotBeNull();
+        if (eventsLink.Count is null)
+        {
+            throw new InvalidOperationException("The Events navigation count was not attached.");
+        }
 
         var countTask = WaitForObservedCountAsync(eventsLink.Count, expected: 1, timeoutMs: 10000);
         await runtime.AddOrUpdateResource(new Corev1Event
