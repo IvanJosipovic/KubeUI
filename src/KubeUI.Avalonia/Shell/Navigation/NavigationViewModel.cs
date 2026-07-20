@@ -446,7 +446,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
 
     private static ResourceNavigationLink? FindResourceNavigationLink(IEnumerable<NavigationItem> items, GroupApiVersionKind kind)
     {
-        foreach (var item in items.ToList())
+        foreach (var item in items)
         {
             if (item is ResourceNavigationLink link
                 && link.ControlType != null
