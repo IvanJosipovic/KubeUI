@@ -1,6 +1,6 @@
 using Avalonia.Collections;
 using k8s.Models;
-using KubeUI.Avalonia.Features.Resources.List.Views;
+using KubeUI.Avalonia.Features.Resources.List;
 using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
 using LiveChartsCore;
@@ -171,4 +171,3 @@ public sealed partial class ClusterView : ViewBase<ClusterViewModel>
         _timer.Tick -= TimerOnTick;
     }
 }
-

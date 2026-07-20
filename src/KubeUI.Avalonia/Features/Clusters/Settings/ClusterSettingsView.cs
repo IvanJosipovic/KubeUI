@@ -1,4 +1,4 @@
-using KubeUI.Avalonia.Features.Clusters.Settings.ViewModels;
+using KubeUI.Avalonia.Features.Clusters.Settings;
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
 
 namespace KubeUI.Avalonia.Features.Clusters.Settings;

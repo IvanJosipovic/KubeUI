@@ -2,7 +2,7 @@ using System.Diagnostics;
 using Dock.Model.Controls;
 using Dock.Model.Core;
 using k8s;
-using KubeUI.Avalonia.Features.Clusters.Error.ViewModels;
+using KubeUI.Avalonia.Features.Clusters.Error;
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
 using KubeUI.Avalonia.Infrastructure.Docking;
 using KubeUI.Avalonia.Infrastructure.Presentation;

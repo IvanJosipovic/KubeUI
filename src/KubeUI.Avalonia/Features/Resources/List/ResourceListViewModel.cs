@@ -27,7 +27,7 @@ using KubeUI.Avalonia.Resources;
 using KubeUI.Avalonia.Services.Settings;
 using SortDirection = KubeUI.Avalonia.Resources.SortDirection;
 
-namespace KubeUI.Avalonia.Features.Resources.List.ViewModels;
+namespace KubeUI.Avalonia.Features.Resources.List;
 
 public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluster, IDisposable, IResourceListViewModel where T : class, IKubernetesObject<V1ObjectMeta>, new()
 {

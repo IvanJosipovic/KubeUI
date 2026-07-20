@@ -109,7 +109,7 @@ public sealed partial class VisualizationView : ViewBase<VisualizationViewModel>
             .Margin(40, 16, 40, 16)
             .BindValue(ToolTip.TipProperty, new MultiBinding
             {
-                StringFormat = "{} {0}/{1} {2}",
+                StringFormat = "{0}/{1} {2}",
                 Bindings =
                 {
                     CompiledBinding.Create<VisualizationViewModel.ResourceNodeViewModel, string?>(x => x.Resource.ApiVersion),

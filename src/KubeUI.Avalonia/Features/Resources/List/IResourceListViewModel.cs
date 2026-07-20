@@ -9,7 +9,7 @@ using KubeUI.Avalonia.Features.Resources.Common;
 using KubeUI.Avalonia.Resources;
 using KubeUI.Avalonia.Services.Settings;
 
-namespace KubeUI.Avalonia.Features.Resources.List.ViewModels
+namespace KubeUI.Avalonia.Features.Resources.List
 {
     public interface IResourceListViewModel
     {

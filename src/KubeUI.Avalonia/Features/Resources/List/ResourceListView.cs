@@ -12,13 +12,13 @@ using KubeUI.Avalonia.Controls.DataGridFilters;
 using KubeUI.Avalonia.Converters;
 using KubeUI.Avalonia.Features.Resources.Common;
 using KubeUI.Avalonia.Features.Resources.List.Behaviors;
-using KubeUI.Avalonia.Features.Resources.List.ViewModels;
+using KubeUI.Avalonia.Features.Resources.List;
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
 using KubeUI.Avalonia.Resources;
 using Ursa.Controls;
 using KubeUI.Avalonia.Infrastructure;
 
-namespace KubeUI.Avalonia.Features.Resources.List.Views;
+namespace KubeUI.Avalonia.Features.Resources.List;
 
 public partial class ResourceListView : ViewBase<IResourceListViewModel>
 {

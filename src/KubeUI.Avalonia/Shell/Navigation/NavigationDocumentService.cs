@@ -1,6 +1,6 @@
 using Dock.Model.Controls;
 using Dock.Model.Core;
-using KubeUI.Avalonia.Features.Resources.List.ViewModels;
+using KubeUI.Avalonia.Features.Resources.List;
 using KubeUI.Avalonia.Infrastructure.Docking;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Resources;

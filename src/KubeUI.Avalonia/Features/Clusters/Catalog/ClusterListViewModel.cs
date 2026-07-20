@@ -6,7 +6,7 @@ using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Kubernetes;
 using KubeUI.Avalonia.Services.Settings;
 
-namespace KubeUI.Avalonia.Features.Clusters.Catalog.ViewModels;
+namespace KubeUI.Avalonia.Features.Clusters.Catalog;
 
 public sealed partial class ClusterListViewModel : ViewModelBase
 {

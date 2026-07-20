@@ -6,7 +6,7 @@ using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Engines;
 using k8s.Models;
 using KubeUI.Avalonia.Features.Resources.List.Controls;
-using KubeUI.Avalonia.Features.Resources.List.Views;
+using KubeUI.Avalonia.Features.Resources.List;
 using KubeUI.Avalonia.Resources;
 using Microsoft.VSDiagnostics;
 

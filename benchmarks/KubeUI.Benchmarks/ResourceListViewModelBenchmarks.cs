@@ -8,7 +8,7 @@ using Avalonia.Controls.DataGridSearching;
 using Avalonia.Controls.DataGridSorting;
 using BenchmarkDotNet.Attributes;
 using k8s.Models;
-using KubeUI.Avalonia.Features.Resources.List.ViewModels;
+using KubeUI.Avalonia.Features.Resources.List;
 using KubeUI.Avalonia.Resources;
 
 namespace KubeUI.Benchmarks;

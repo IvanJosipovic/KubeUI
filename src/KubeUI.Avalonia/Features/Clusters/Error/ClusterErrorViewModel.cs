@@ -1,5 +1,5 @@
 using KubeUI.Avalonia.Infrastructure.Presentation;
-namespace KubeUI.Avalonia.Features.Clusters.Error.ViewModels;
+namespace KubeUI.Avalonia.Features.Clusters.Error;
 
 public sealed partial class ClusterErrorViewModel : ViewModelBase
 {
@@ -12,4 +12,3 @@ public sealed partial class ClusterErrorViewModel : ViewModelBase
     [ObservableProperty]
     public partial string? Error { get; set; }
 }
-

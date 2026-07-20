@@ -4,7 +4,7 @@ using Dock.Model.Core;
 using FluentAvalonia.UI.Controls;
 using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
-using KubeUI.Avalonia.Features.Clusters.Catalog.ViewModels;
+using KubeUI.Avalonia.Features.Clusters.Catalog;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Infrastructure.Docking;
 using KubeUI.Avalonia.Infrastructure.Presentation;
@@ -352,5 +352,4 @@ public sealed partial class MainViewModel : ViewModelBase
         }
     }
 }
-
 

@@ -1,6 +1,7 @@
 using System.Diagnostics.Metrics;
 using Avalonia.Headless.XUnit;
 using k8s.Models;
+using KubeUI.Avalonia.Features.Clusters.Settings;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Tests.Infra;
 using Shouldly;
@@ -9,6 +10,18 @@ namespace KubeUI.Avalonia.Tests.Infrastructure.Presentation;
 
 public sealed class ViewLocatorTests : AvaloniaTestBase
 {
+    [AvaloniaFact]
+    public void Build_ResolvesClusterSettingsViewFromViewModelsNamespace()
+    {
+        var services = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
+        var locator = services.GetRequiredService<ViewLocator>();
+        var viewModel = services.GetRequiredService<ClusterSettingsViewModel>();
+
+        var view = locator.Build(viewModel);
+
+        view.ShouldBeOfType<ClusterSettingsView>();
+    }
+
     [AvaloniaFact]
     public void Build_EmitsGenericResourceListViewMetricName()
     {

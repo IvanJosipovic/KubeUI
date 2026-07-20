@@ -1,6 +1,6 @@
-using KubeUI.Avalonia.Features.Clusters.Error.ViewModels;
+using KubeUI.Avalonia.Features.Clusters.Error;
 
-namespace KubeUI.Avalonia.Features.Clusters.Error.Views;
+namespace KubeUI.Avalonia.Features.Clusters.Error;
 
 public sealed partial class ClusterErrorView : ViewBase<ClusterErrorViewModel>
 {
@@ -33,4 +33,3 @@ public sealed partial class ClusterErrorView : ViewBase<ClusterErrorViewModel>
                     .TextWrapping(TextWrapping.Wrap));
     }
 }
-

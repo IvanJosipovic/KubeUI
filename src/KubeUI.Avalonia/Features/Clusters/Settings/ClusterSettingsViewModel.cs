@@ -3,7 +3,7 @@ using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Options;
 using KubeUI.Avalonia.Services.Settings;
 
-namespace KubeUI.Avalonia.Features.Clusters.Settings.ViewModels;
+namespace KubeUI.Avalonia.Features.Clusters.Settings;
 
 public sealed partial class ClusterSettingsViewModel : ViewModelBase, IInitializeCluster
 {
@@ -69,5 +69,4 @@ public sealed partial class ClusterSettingsViewModel : ViewModelBase, IInitializ
         SettingsService.SaveSettings();
     }
 }
-
 
