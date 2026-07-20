@@ -7,7 +7,8 @@ namespace KubeUI.Kubernetes;
 
 public static class KubeUIKubernetesServiceCollectionExtensions
 {
-    private static int _isJsonConfigured;
+    private static readonly object _jsonConfigurationLock = new();
+    private static bool _isJsonConfigured;
     private static ILogger? _jsonLogger;
 
     public static IServiceCollection AddKubeUIKubernetesServices(this IServiceCollection services)
@@ -29,37 +30,55 @@ public static class KubeUIKubernetesServiceCollectionExtensions
 
     private static void ConfigureKubeUIKubernetesJson()
     {
-        if (Interlocked.Exchange(ref _isJsonConfigured, 1) == 1)
+        lock (_jsonConfigurationLock)
         {
-            return;
-        }
+            if (_isJsonConfigured)
+            {
+                return;
+            }
 
-        KubernetesJson.AddJsonOptions(options =>
-        {
-            options.TypeInfoResolver = JsonTypeInfoResolver.Combine(
-                CustomSourceGenerationContext.Default,
-                new DefaultJsonTypeInfoResolver
+            KubernetesJson.AddJsonOptions(options =>
+            {
+                if (options.IsReadOnly)
                 {
-                    Modifiers =
-                    {
-                        jsonTypeInfo =>
+                    return;
+                }
+
+                try
+                {
+                    options.TypeInfoResolver = JsonTypeInfoResolver.Combine(
+                        CustomSourceGenerationContext.Default,
+                        new DefaultJsonTypeInfoResolver
                         {
-                            if (jsonTypeInfo.Type?.Namespace?.StartsWith("KubeUI.Models", StringComparison.Ordinal) == true)
+                            Modifiers =
                             {
-                                foreach (var prop in jsonTypeInfo.Properties)
+                                jsonTypeInfo =>
                                 {
-                                    prop.IsRequired = false;
+                                    if (jsonTypeInfo.Type?.Namespace?.StartsWith("KubeUI.Models", StringComparison.Ordinal) == true)
+                                    {
+                                        foreach (var prop in jsonTypeInfo.Properties)
+                                        {
+                                            prop.IsRequired = false;
+                                        }
+                                    }
+
+                                    if (jsonTypeInfo.OriginatingResolver is DefaultJsonTypeInfoResolver)
+                                    {
+                                        _jsonLogger?.LogDebug("Type is serialized using reflection: {Type}", jsonTypeInfo.Type);
+                                    }
                                 }
                             }
+                        });
+                }
+                catch (InvalidOperationException) when (options.IsReadOnly)
+                {
+                    // KubernetesJson owns a process-wide options instance. It may have
+                    // been frozen by an earlier serialization before services are registered.
+                }
+            });
 
-                            if (jsonTypeInfo.OriginatingResolver is DefaultJsonTypeInfoResolver)
-                            {
-                                _jsonLogger?.LogDebug("Type is serialized using reflection: {Type}", jsonTypeInfo.Type);
-                            }
-                        }
-                    }
-                });
-        });
+            _isJsonConfigured = true;
+        }
     }
 
     public static void ConfigureKubeUIKubernetesJsonLogging(this IServiceProvider services)
@@ -67,6 +86,3 @@ public static class KubeUIKubernetesServiceCollectionExtensions
         _jsonLogger ??= services.GetService<ILoggerFactory>()?.CreateLogger("KubeUI.KubernetesJson");
     }
 }
-
-
-

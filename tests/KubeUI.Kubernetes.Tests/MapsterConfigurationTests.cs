@@ -1,3 +1,4 @@
+using k8s;
 using k8s.Models;
 using Mapster;
 using Microsoft.Extensions.DependencyInjection;
@@ -7,6 +8,14 @@ namespace KubeUI.Kubernetes.Tests;
 
 public class MapsterConfigurationTests
 {
+    [Fact]
+    public void Adding_services_after_kubernetes_json_has_been_used_does_not_throw()
+    {
+        KubernetesJson.Serialize(new { Name = "used-before-registration" });
+
+        Should.NotThrow(() => new ServiceCollection().AddKubeUIKubernetesServices());
+    }
+
     [Fact]
     public void SameTypeAdapter_HandlesNestedResourceQuantityWithoutThrowing()
     {
