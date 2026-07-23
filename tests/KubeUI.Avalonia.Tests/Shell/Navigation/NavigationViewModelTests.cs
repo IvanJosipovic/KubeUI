@@ -2309,6 +2309,39 @@ public class NavigationViewModelTests : AvaloniaTestBase
     }
 
     [AvaloniaFact]
+    public async Task coalesced_custom_resource_updates_add_each_navigation_entry()
+    {
+        var runtime = new TestCluster
+        {
+            Connected = true,
+            Status = ClusterStatus.Connected,
+        };
+
+        var workspace = CreateWorkspace(runtime);
+        await workspace.Connect();
+        Dispatcher.UIThread.RunJobs();
+        workspace.AddResourceConfigForTest(new FakeResourceConfig(typeof(V1CustomResourceDefinition), "Definitions"));
+
+        var vm = CreateViewModel();
+        vm.ClusterCatalog.Clusters.Add(workspace);
+        Dispatcher.UIThread.RunJobs();
+
+        workspace.AddResourceConfigForTest(new FakeCustomResourceConfig(typeof(TestCustomResourceAlpha), "Alpha"));
+        workspace.AddResourceConfigForTest(new FakeCustomResourceConfig(typeof(TestCustomResourceBeta), "Beta"));
+
+        var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
+        var alphaLink = await WaitForValueAsync(
+            () => FindResourceLink(clusterNode, typeof(TestCustomResourceAlpha)),
+            timeoutMs: 10000);
+        var betaLink = await WaitForValueAsync(
+            () => FindResourceLink(clusterNode, typeof(TestCustomResourceBeta)),
+            timeoutMs: 10000);
+
+        alphaLink.ShouldNotBeNull();
+        betaLink.ShouldNotBeNull();
+    }
+
+    [AvaloniaFact]
     public async Task custom_resource_definition_update_updates_existing_navigation_entry_without_replacing_group()
     {
         var runtime = new TestCluster

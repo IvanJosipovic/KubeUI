@@ -380,18 +380,12 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
             return;
         }
 
-        if (!_workspacesByRuntime.TryGetValue(runtime, out var cluster))
-        {
-            return;
-        }
-
         Dispatcher.UIThread.Post(() =>
         {
             if (runtime.Status == ClusterStatus.Errored)
             {
                 ShowClusterError(runtime.LastError);
             }
-
         });
     }
 
@@ -445,35 +439,23 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
                 ? cluster.GetResourceConfigs().ToArray()
                 : [];
             var batch = new ResourceNavigationUpdateBatch(resourceConfigs, resourceConfigSnapshot);
-            Dispatcher.UIThread.Post(() => ApplyResourceNavigationUpdateBatch(cluster, batch));
+            Dispatcher.UIThread.Post(
+                () => ApplyResourceNavigationUpdateBatch(cluster, batch),
+                DispatcherPriority.Background);
         });
     }
 
     private void ApplyResourceNavigationUpdateBatch(ClusterWorkspace cluster, ResourceNavigationUpdateBatch batch)
     {
-        if (!_clusterNodes.TryGetValue(cluster, out var node)
+        if (!_clusterNodes.ContainsKey(cluster)
             || cluster.Runtime.Status != ClusterStatus.Connected)
         {
             return;
         }
 
-        foreach (var resourceConfig in batch.ProcessedResourceConfigs.Where(static config =>
-                     config.Type != typeof(V1CustomResourceDefinition) && !config.IsCustomResource))
+        foreach (var resourceConfig in batch.ProcessedResourceConfigs)
         {
-            ApplyResourceConfigNavigation(cluster, resourceConfig);
-        }
-
-        var changedCustomResourceConfig = batch.ProcessedResourceConfigs.FirstOrDefault(static config =>
-            config.Type == typeof(V1CustomResourceDefinition) || config.IsCustomResource);
-        if (changedCustomResourceConfig != null)
-        {
-            UpdateCustomResourceNavigation(node, cluster, changedCustomResourceConfig, batch.ResourceConfigSnapshot);
-
-            foreach (var resourceConfig in batch.ProcessedResourceConfigs.Where(static config =>
-                         config.Type == typeof(V1CustomResourceDefinition) || config.IsCustomResource))
-            {
-                AttachResourceCount(cluster, resourceConfig.Kind, resourceConfig.Type);
-            }
+            ApplyResourceConfigNavigation(cluster, resourceConfig, batch.ResourceConfigSnapshot);
         }
     }
 
@@ -486,20 +468,11 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
                 return;
             }
 
-            if (!_clusterNodes.TryGetValue(cluster, out var node))
-            {
-                return;
-            }
-
-            var link = FindResourceNavigationLink(node.NavigationItems, kind);
-            if (link?.ControlType != null)
-            {
-                link.Count ??= CreateResourceCountStream(cluster, link.ControlType);
-            }
+            AttachResourceCount(cluster, kind);
         });
     }
 
-    private void AttachResourceCount(ClusterWorkspace cluster, GroupApiVersionKind kind, Type resourceType)
+    private void AttachResourceCount(ClusterWorkspace cluster, GroupApiVersionKind kind)
     {
         if (!_clusterNodes.TryGetValue(cluster, out var node))
         {
@@ -511,7 +484,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
             && cluster.Runtime.Objects.TryGetValue(kind, out var container)
             && container is IResourceContainer { IsSeeded: true })
         {
-            link.Count ??= CreateResourceCountStream(cluster, resourceType);
+            link.Count ??= CreateResourceCountStream(cluster, link.ControlType);
         }
     }
 
@@ -547,15 +520,13 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
 
             RemoveNavigationItem(node.NavigationItems, $"{cluster.Runtime.Name}-{removedKind}");
             RemoveEmptyCategories(node.NavigationItems, cluster);
-
-            foreach (var resourceConfig in cluster.GetResourceConfigs())
-            {
-                OnClusterResourceConfigProcessed(cluster, resourceConfig);
-            }
         });
     }
 
-    private void ApplyResourceConfigNavigation(ClusterWorkspace cluster, IResourceConfig resourceConfig)
+    private void ApplyResourceConfigNavigation(
+        ClusterWorkspace cluster,
+        IResourceConfig resourceConfig,
+        IReadOnlyCollection<IResourceConfig>? resourceConfigs = null)
     {
         if (!_clusterNodes.TryGetValue(cluster, out var node)
             || cluster.Runtime.Status != ClusterStatus.Connected)
@@ -565,7 +536,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
 
         if (resourceConfig.Type == typeof(V1CustomResourceDefinition) || resourceConfig.IsCustomResource)
         {
-            UpdateCustomResourceNavigation(node, cluster, resourceConfig);
+            UpdateCustomResourceNavigation(node, cluster, resourceConfig, resourceConfigs);
         }
         else
         {
@@ -577,7 +548,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
             UpdatePortForwardersNavigation(node);
         }
 
-        AttachResourceCount(cluster, resourceConfig.Kind, resourceConfig.Type);
+        AttachResourceCount(cluster, resourceConfig.Kind);
     }
 
     private void UpdateStandardResourceNavigation(ClusterNavigationNode node, ClusterWorkspace cluster, IResourceConfig config)
@@ -650,6 +621,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
             node.NavigationItems.Add(root);
 
             UpdateCustomResourceLink(root, cluster, definitions);
+
             foreach (var config in configs
                          .Where(config => config.IsCustomResource && config.PermissionsLoaded && config.CanListAndWatch)
                          .OrderBy(config => config.Order)
@@ -675,11 +647,6 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
             }
         }
 
-        if (changedConfig.Type == typeof(V1CustomResourceDefinition)
-            || changedConfig.IsCustomResource)
-        {
-            AttachResourceCount(cluster, changedConfig.Kind, changedConfig.Type);
-        }
     }
 
     private void UpdatePortForwardersNavigation(ClusterNavigationNode node)
