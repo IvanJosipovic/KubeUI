@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Reflection;
 using System.Security.Cryptography;
 using k8s;
@@ -53,11 +54,18 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
     public event Action<ClusterWorkspace, IResourceConfig>? ResourceConfigProcessed;
     public event Action<ClusterWorkspace, GroupApiVersionKind>? CustomResourceDefinitionRemoved;
 
+    private Activity? StartWorkspaceActivity(string activityName, ActivityKind activityKind = ActivityKind.Internal)
+    {
+        var activity = _instrumentation.Source.StartActivity(activityName, activityKind);
+        activity?.SetTag("kubernetes.cluster.name", Runtime.Name);
+        return activity;
+    }
+
     public Task Connect() => Task.Run(ConnectCoreAsync);
 
     private async Task ConnectCoreAsync()
     {
-        using var activity = _instrumentation.Source.StartActivity(nameof(Connect), System.Diagnostics.ActivityKind.Client);
+        using var activity = StartWorkspaceActivity(nameof(Connect), ActivityKind.Client);
         try
         {
             EnsureBuiltInResourceConfigs();
@@ -72,7 +80,7 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
                 return;
             }
 
-            await UpdateResourceConfigPermissionsAsync().ConfigureAwait(false);
+            await UpdateResourceConfigsPermissionsAsync().ConfigureAwait(false);
             await EvaluateResourceConfigAccessAsync().ConfigureAwait(false);
             await SeedResourcesConfiguredForConnectAsync().ConfigureAwait(false);
             _workspaceStateInitialized = true;
@@ -80,15 +88,16 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
         }
         catch (Exception ex)
         {
+            activity?.SetStatus(System.Diagnostics.ActivityStatusCode.Error, ex.Message);
             Runtime.LastError = ex.Message;
             Runtime.Status = ClusterStatus.Errored;
         }
     }
 
-    private async Task  UpdateResourceConfigPermissionsAsync(
+    private async Task  UpdateResourceConfigsPermissionsAsync(
         IReadOnlyCollection<IResourceConfig>? resourceConfigs = null)
     {
-        using var activity = _instrumentation.Source.StartActivity(nameof(UpdateResourceConfigPermissionsAsync));
+        using var activity = StartWorkspaceActivity(nameof(UpdateResourceConfigPermissionsAsync));
 
         var categoryBatches = (resourceConfigs ?? GetResourceConfigs())
             .GroupBy(static config => config.Category, StringComparer.Ordinal)
@@ -174,7 +183,7 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
 
     private void EnsureBuiltInResourceConfigs()
     {
-        using var activity = _instrumentation.Source.StartActivity(nameof(EnsureBuiltInResourceConfigs));
+        using var activity = StartWorkspaceActivity(nameof(EnsureBuiltInResourceConfigs));
 
         var serviceDescriptors = _serviceProvider.GetRequiredService<ServiceDescriptor[]>();
 
@@ -197,7 +206,7 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
     private async Task EvaluateResourceConfigAccessAsync(
         IReadOnlyCollection<IResourceConfig>? resourceConfigs = null)
     {
-        using var activity = _instrumentation.Source.StartActivity(nameof(EvaluateResourceConfigAccessAsync));
+        using var activity = StartWorkspaceActivity(nameof(EvaluateResourceConfigAccessAsync));
 
         if (_disposed)
         {
@@ -217,6 +226,7 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
         }
         catch (Exception ex)
         {
+            activity?.SetStatus(System.Diagnostics.ActivityStatusCode.Error, ex.Message);
             _logger.LogDebug(ex, "Unable to evaluate workspace resource access.");
         }
     }
@@ -231,6 +241,7 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
         }
         catch (Exception ex)
         {
+            System.Diagnostics.Activity.Current?.SetStatus(System.Diagnostics.ActivityStatusCode.Error, ex.Message);
             _logger.LogDebug(ex, "Unable to evaluate permissions for {Kind}", resourceConfig.Kind);
         }
 
@@ -239,6 +250,9 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
 
     private async Task<IResourceConfig?> BuildCustomResourceConfigAsync(V1CustomResourceDefinition crd)
     {
+        using var activity = StartWorkspaceActivity(nameof(BuildCustomResourceConfigAsync));
+        activity?.SetTag("kubernetes.crd.name", crd.Name());
+
         var version = crd.Spec?.Versions?.FirstOrDefault(x => x.Served && x.Storage);
         if (version == null)
         {
@@ -255,7 +269,7 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
         var resourceConfig = (IResourceConfig)_serviceProvider.GetRequiredService(resourceConfigType);
 
         resourceConfig.Initialize(this);
-        await UpdateResourceConfigPermissionsAsync([resourceConfig]).ConfigureAwait(false);
+        await UpdateResourceConfigsPermissionsAsync([resourceConfig]).ConfigureAwait(false);
         await EvaluateResourceConfigAccessCoreAsync(resourceConfig).ConfigureAwait(false);
 
         if (!resourceConfig.CanListAndWatch)
@@ -268,14 +282,17 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
             return null;
         }
 
+        using var generationActivity = StartWorkspaceActivity("GenerateCustomResourceConfig");
+        generationActivity?.SetTag("kubernetes.crd.name", crd.Name());
         customResourceConfig.Generate(crd);
+        generationActivity?.Stop();
 
         return resourceConfig;
     }
 
     private async Task SeedResourcesConfiguredForConnectAsync()
     {
-        using var activity = _instrumentation.Source.StartActivity(nameof(SeedResourcesConfiguredForConnectAsync));
+        using var activity = StartWorkspaceActivity(nameof(SeedResourcesConfiguredForConnectAsync));
 
         var seedBatches = _resourceConfigs.Values
             .Where(static config => config.SeedOnConnect && config.PermissionsLoaded && config.CanListAndWatch)
@@ -290,7 +307,7 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
 
     private async Task EnsureResourceSeededAsync(IResourceConfig resourceConfig)
     {
-        using var activity = _instrumentation.Source.StartActivity(nameof(EnsureResourceSeededAsync));
+        using var activity = StartWorkspaceActivity(nameof(EnsureResourceSeededAsync));
 
         if (Runtime.Objects.TryGetValue(resourceConfig.Kind, out var existing)
             && existing is IResourceContainer { IsSeeded: true })
@@ -303,7 +320,7 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
 
     private void ProcessResourceConfigPermissionsUpdated(IResourceConfig resourceConfig)
     {
-        using var activity = _instrumentation.Source.StartActivity(nameof(ProcessResourceConfigPermissionsUpdated));
+        using var activity = StartWorkspaceActivity(nameof(ProcessResourceConfigPermissionsUpdated));
 
         ResourceConfigProcessed?.Invoke(this, resourceConfig);
     }
@@ -360,6 +377,9 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
 
     private async Task ProcessCustomResourceDefinitionAsync(V1CustomResourceDefinition crd)
     {
+        using var activity = StartWorkspaceActivity(nameof(ProcessCustomResourceDefinitionAsync));
+        activity?.SetTag("kubernetes.crd.name", crd.Name());
+
         try
         {
             var signature = GetCustomResourceDefinitionSignature(crd);
@@ -384,6 +404,7 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
         }
         catch (Exception ex)
         {
+            activity?.SetStatus(System.Diagnostics.ActivityStatusCode.Error, ex.Message);
             _logger.LogError(ex, "Error processing custom resource definition {Crd}", crd.Name());
         }
     }

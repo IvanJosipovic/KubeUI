@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
@@ -42,7 +43,7 @@ public partial class Cluster
 
     private async Task UpdateNamespacePermission()
     {
-        using var activity = KubeInstrumentation.Source.StartActivity(nameof(UpdateNamespacePermission));
+        using var activity = StartClusterActivity(nameof(UpdateNamespacePermission));
         await UpdateCanI<V1Namespace>(Verb.List).ConfigureAwait(false);
         await UpdateCanI<V1Namespace>(Verb.Watch).ConfigureAwait(false);
 
@@ -60,9 +61,19 @@ public partial class Cluster
         _permissionIndex.Clear();
     }
 
+    private static void SetAuthorizationActivityTags(Activity? activity, Type type, Verb verb, string? @namespace, string? subresource)
+    {
+        activity?.SetTag("kubernetes.resource.type", type.Name);
+        activity?.SetTag("kubernetes.authorization.verb", verb.ToString());
+        activity?.SetTag("kubernetes.namespace", @namespace);
+        activity?.SetTag("kubernetes.subresource", subresource);
+    }
+
     private async Task<bool> BuildPermissionAsync(Type type, Verb verb, string? @namespace = null, string? subresource = null)
     {
-        using var activity = KubeInstrumentation.Source.StartActivity(nameof(BuildPermissionAsync) + " " + type.Name + " " + verb.ToString() + (" " + @namespace ?? "") + (" " + subresource ?? ""));
+        using var activity = StartClusterActivity(nameof(BuildPermissionAsync));
+        SetAuthorizationActivityTags(activity, type, verb, @namespace, subresource);
+
         var kind = GroupApiVersionKind.From(type);
         var verbString = verb.ToString().ToLowerInvariant();
         var keyCheck = BuildReviewKey(kind, verbString, @namespace, subresource);
@@ -97,7 +108,9 @@ public partial class Cluster
 
     public bool CanI(Type type, Verb verb, string? @namespace = null, string? subresource = null)
     {
-        using var activity = KubeInstrumentation.Source.StartActivity(nameof(CanI) + " " + type.Name + " " + verb.ToString() + (" " + @namespace ?? "") + (" " + subresource ?? ""));
+        using var activity = StartClusterActivity(nameof(CanI));
+        SetAuthorizationActivityTags(activity, type, verb, @namespace, subresource);
+
         var kind = GroupApiVersionKind.From(type);
         var verbString = verb.ToString().ToLowerInvariant();
 
@@ -129,25 +142,33 @@ public partial class Cluster
 
     public bool CanI<T>(Verb verb, string? @namespace = null, string? subresource = null) where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
-        using var activity = KubeInstrumentation.Source.StartActivity(nameof(CanI) + " " + typeof(T).Name + " " + verb.ToString() + (" " + @namespace ?? "") + (" " + subresource ?? ""));
+        using var activity = StartClusterActivity(nameof(CanI));
+        SetAuthorizationActivityTags(activity, typeof(T), verb, @namespace, subresource);
+
         return CanI(typeof(T), verb, @namespace, subresource);
     }
 
-    public Task<bool> UpdateCanI(Type type, Verb verb, string? @namespace = null, string? subresource = null)
+    public async Task<bool> UpdateCanI(Type type, Verb verb, string? @namespace = null, string? subresource = null)
     {
-        using var activity = KubeInstrumentation.Source.StartActivity(nameof(UpdateCanI) + " " + type.Name + " " + verb.ToString() + (" " + @namespace ?? "") + (" " + subresource ?? ""));
-        return BuildPermissionAsync(type, verb, @namespace, subresource);
+        using var activity = StartClusterActivity(nameof(UpdateCanI));
+        SetAuthorizationActivityTags(activity, type, verb, @namespace, subresource);
+
+        return await BuildPermissionAsync(type, verb, @namespace, subresource).ConfigureAwait(false);
     }
 
-    public Task<bool> UpdateCanI<T>(Verb verb, string? @namespace = null, string? subresource = null) where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    public async Task<bool> UpdateCanI<T>(Verb verb, string? @namespace = null, string? subresource = null) where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
-        using var activity = KubeInstrumentation.Source.StartActivity(nameof(UpdateCanI) + " " + typeof(T).Name + " " + verb.ToString() + (" " + @namespace ?? "") + (" " + subresource ?? ""));
-        return UpdateCanI(typeof(T), verb, @namespace, subresource);
+        using var activity = StartClusterActivity(nameof(UpdateCanI));
+        SetAuthorizationActivityTags(activity, typeof(T), verb, @namespace, subresource);
+
+        return await UpdateCanI(typeof(T), verb, @namespace, subresource).ConfigureAwait(false);
     }
 
     public async Task UpdatePermissionsAllNamespaceAsync(Type type, Verb verb, string? subresource = null)
     {
-        using var activity = KubeInstrumentation.Source.StartActivity(nameof(UpdatePermissionsAllNamespaceAsync) + " " + type.Name + " " + verb.ToString() + (" " + subresource ?? ""));
+        using var activity = StartClusterActivity(nameof(UpdatePermissionsAllNamespaceAsync));
+        SetAuthorizationActivityTags(activity, type, verb, null, subresource);
+
         ArgumentNullException.ThrowIfNull(type);
 
         var globallyAllowed = await UpdateCanI(type, verb, subresource: subresource).ConfigureAwait(false);
@@ -165,15 +186,19 @@ public partial class Cluster
             async (@namespace, _) => await UpdateCanI(type, verb, @namespace, subresource).ConfigureAwait(false)).ConfigureAwait(false);
     }
 
-    public Task UpdatePermissionsAllNamespaceAsync<T>(Verb verb, string? subresource = null) where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    public async Task UpdatePermissionsAllNamespaceAsync<T>(Verb verb, string? subresource = null) where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
-        using var activity = KubeInstrumentation.Source.StartActivity(nameof(UpdatePermissionsAllNamespaceAsync) + " " + typeof(T).Name + " " + verb.ToString() + (" " + subresource ?? ""));
-        return UpdatePermissionsAllNamespaceAsync(typeof(T), verb, subresource);
+        using var activity = StartClusterActivity(nameof(UpdatePermissionsAllNamespaceAsync));
+        SetAuthorizationActivityTags(activity, typeof(T), verb, null, subresource);
+
+        await UpdatePermissionsAllNamespaceAsync(typeof(T), verb, subresource).ConfigureAwait(false);
     }
 
     public bool CanIAnyNamespace(Type type, Verb verb, string? subresource = null)
     {
-        using var activity = KubeInstrumentation.Source.StartActivity(nameof(CanIAnyNamespace) + " " + type.Name + " " + verb.ToString() + (" " + subresource ?? ""));
+        using var activity = StartClusterActivity(nameof(CanIAnyNamespace));
+        SetAuthorizationActivityTags(activity, type, verb, null, subresource);
+
         if (CanI(type, verb, subresource: subresource))
         {
             return true;
@@ -199,7 +224,9 @@ public partial class Cluster
 
     public bool CanIAnyNamespace<T>(Verb verb, string? subresource = null) where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
-        using var activity = KubeInstrumentation.Source.StartActivity(nameof(CanIAnyNamespace) + " " + typeof(T).Name + " " + verb.ToString() + (" " + subresource ?? ""));
+        using var activity = StartClusterActivity(nameof(CanIAnyNamespace));
+        SetAuthorizationActivityTags(activity, typeof(T), verb, null, subresource);
+
         return CanIAnyNamespace(typeof(T), verb, subresource);
     }
 }

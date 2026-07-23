@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Net.Http.Json;
 using System.Reactive.Linq;
 using System.Reflection;
@@ -101,9 +102,16 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
         _ = ProcessCustomResourceDefinitionQueueAsync();
     }
 
+    private Activity? StartClusterActivity(string activityName, ActivityKind activityKind = ActivityKind.Internal)
+    {
+        var activity = KubeInstrumentation.Source.StartActivity(activityName, activityKind);
+        activity?.SetTag("kubernetes.cluster.name", Name);
+        return activity;
+    }
+
     public async Task Connect()
     {
-        using var activity = KubeInstrumentation.Source.StartActivity(nameof(Connect));
+        using var activity = StartClusterActivity(nameof(Connect));
 
         await _connectionLimiter.WaitAsync();
         _logger.LogInformation("Connecting to {name}", Name);
@@ -195,6 +203,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
                 }
                 catch (Exception ex)
                 {
+                    activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
                     _logger.LogError(ex, "Error connecting to {name}", Name);
 
                     Connected = false;
@@ -245,7 +254,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
 
     public async Task SeedResource<T>(bool waitForReady = false) where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
-        using var activity = KubeInstrumentation.Source.StartActivity(nameof(SeedResource) + "<" + typeof(T).Name + ">");
+        using var activity = StartClusterActivity(nameof(SeedResource) + "<" + typeof(T).Name + ">");
 
         var type = typeof(T);
         var kind = GroupApiVersionKind.From<T>();
@@ -409,6 +418,10 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
 
     private async Task ProcessCustomResourceDefinitionQueueAsync()
     {
+        using var activity = StartClusterActivity(
+            nameof(ProcessCustomResourceDefinitionQueueAsync),
+            ActivityKind.Consumer);
+
         await foreach (var crd in _customResourceDefinitionQueue.Reader.ReadAllAsync())
         {
             await ProcessCustomResourceDefinitionAsync(crd).ConfigureAwait(false);
@@ -417,7 +430,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
 
     private async Task ProcessCustomResourceDefinitionAsync(V1CustomResourceDefinition crd)
     {
-        using var activity = KubeInstrumentation.Source.StartActivity(nameof(ProcessCustomResourceDefinitionAsync));
+        using var activity = StartClusterActivity(nameof(ProcessCustomResourceDefinitionAsync));
         activity?.SetTag("kubernetes.crd.name", crd.Name());
 
         try
@@ -434,6 +447,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
         }
         catch (Exception ex)
         {
+            activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
             _logger.LogError(ex, "Error processing CRD {name}", crd.Name());
         }
     }
@@ -446,12 +460,16 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
         }
         catch (Exception ex)
         {
+            Activity.Current?.SetStatus(ActivityStatusCode.Error, ex.Message);
             _logger.LogError(ex, "Unable to refresh API discovery for cluster {name}", Name);
         }
     }
 
     private async Task<bool> ProcessNewCRD(V1CustomResourceDefinition crd)
     {
+        using var activity = StartClusterActivity(nameof(ProcessNewCRD));
+        activity?.SetTag("kubernetes.crd.name", crd.Name());
+
         var key = GetCustomResourceDefinitionKey(crd);
         var signature = GetCustomResourceDefinitionSignature(crd);
 
@@ -462,7 +480,10 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
             return false;
         }
 
+        using var generationActivity = StartClusterActivity("GenerateCustomResourceDefinitionAssembly");
+        generationActivity?.SetTag("kubernetes.crd.name", crd.Name());
         var result = _generator.GenerateAssembly(crd, "KubeUI.Models");
+        generationActivity?.Stop();
 
         if (!result.Success || result.Assembly == null || result.XmlDocumentation == null)
         {
@@ -512,6 +533,10 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
 
     private async Task ReplaceCustomResourceDefinitionArtifactsAsync(Type? previousType, Type currentType)
     {
+        using var activity = StartClusterActivity(nameof(ReplaceCustomResourceDefinitionArtifactsAsync));
+        activity?.SetTag("kubernetes.resource.type", currentType.Name);
+        activity?.SetTag("kubernetes.previous_resource.type", previousType?.Name);
+
         var invalidatedSeedState = previousType != null && InvalidateSeededResource(previousType);
         if (!invalidatedSeedState)
         {
@@ -903,7 +928,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
 
     private async Task<V2beta1APIGroupDiscoveryList> GetAPIGroupDiscoveryList(bool native = true)
     {
-        using var activity = KubeInstrumentation.Source.StartActivity(nameof(GetAPIGroupDiscoveryList) + (native ? "Native" : ""));
+        using var activity = StartClusterActivity(nameof(GetAPIGroupDiscoveryList) + (native ? "Native" : ""));
 
         var mi = typeof(k8s.Kubernetes).GetMethod("SendRequest", BindingFlags.NonPublic | BindingFlags.Instance);
 
