@@ -11,7 +11,7 @@ public sealed class MenuItemViewModelTests
     {
         MenuItemViewModel menuItem = new()
         {
-            Header = "Group",
+            Title = "Group",
             Items = new AvaloniaList<MenuItemViewModel>()
         };
 
@@ -23,7 +23,7 @@ public sealed class MenuItemViewModelTests
     {
         MenuItemViewModel menuItem = new()
         {
-            Header = "Action",
+            Title = "Action",
             Command = new RelayCommand(static () => { }),
             Items = new AvaloniaList<MenuItemViewModel>()
         };
@@ -36,12 +36,12 @@ public sealed class MenuItemViewModelTests
     {
         MenuItemViewModel menuItem = new()
         {
-            Header = "Group",
+            Title = "Group",
             Items = new AvaloniaList<MenuItemViewModel>
             {
                 new()
                 {
-                    Header = "Child"
+                    Title = "Child"
                 }
             }
         };
@@ -54,7 +54,7 @@ public sealed class MenuItemViewModelTests
     {
         MenuItemViewModel menuItem = new()
         {
-            Header = "Group",
+            Title = "Group",
             Items = new AvaloniaList<MenuItemViewModel>()
         };
 
@@ -62,7 +62,7 @@ public sealed class MenuItemViewModelTests
 
         menuItem.Items!.Add(new MenuItemViewModel
         {
-            Header = "Child"
+            Title = "Child"
         });
 
         menuItem.IsVisible.ShouldBeTrue();

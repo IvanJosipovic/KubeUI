@@ -297,7 +297,7 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         var items = contextMenu.ItemsSource as IEnumerable<MenuItemViewModel>;
         items.ShouldNotBeNull();
 
-        var headers = items!.Select(item => item.Header).ToList();
+        var headers = items!.Select(x => x.Title).ToList();
         headers.ShouldContain("View");
     }
 
@@ -341,7 +341,7 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         var items = contextMenu.ItemsSource as IEnumerable<MenuItemViewModel>;
         items.ShouldNotBeNull();
 
-        var viewItem = items!.First(item => item.Header == "View");
+            var viewItem = items!.First(item => item.Title == "View");
         var commandParameter = viewItem.CommandParameter as IList;
 
         commandParameter.ShouldNotBeNull();
@@ -432,7 +432,7 @@ public class ResourceListViewModelTests : AvaloniaTestBase
                     return false;
                 }
 
-                var viewItem = items.FirstOrDefault(item => item.Header == "View");
+                var viewItem = items.FirstOrDefault(item => item.Title == "View");
                 var commandParameter = viewItem?.CommandParameter as IList;
                 if (commandParameter is null || commandParameter.Count != 1)
                 {
@@ -443,7 +443,7 @@ public class ResourceListViewModelTests : AvaloniaTestBase
             });
 
             var menuItems = (contextMenu.ItemsSource as IEnumerable<MenuItemViewModel>)!.ToList();
-            var viewMenuItem = menuItems.First(item => item.Header == "View");
+            var viewMenuItem = menuItems.First(item => item.Title == "View");
             var commandItems = (viewMenuItem.CommandParameter as IList)!;
 
             commandItems.Count.ShouldBe(1);
@@ -493,7 +493,7 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         var items = contextMenu.ItemsSource as IEnumerable<MenuItemViewModel>;
         items.ShouldNotBeNull();
 
-        var headers = items!.Select(item => item.Header).ToList();
+            var headers = items!.Select(item => item.Title).ToList();
         headers.ShouldContain("View");
         headers.ShouldContain("Delete");
     }
@@ -546,7 +546,7 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         var items = contextMenu.ItemsSource as IEnumerable<MenuItemViewModel>;
         items.ShouldNotBeNull();
 
-        var deleteItem = items!.First(item => item.Header == "Delete");
+            var deleteItem = items!.First(item => item.Title == "Delete");
         var commandParameter = deleteItem.CommandParameter as IList;
 
         commandParameter.ShouldNotBeNull();
@@ -556,7 +556,7 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         deleteItem.Command.ShouldNotBeNull();
         deleteItem.Command!.CanExecute(commandParameter).ShouldBeTrue();
 
-        var viewItem = items.First(item => item.Header == "View");
+            var viewItem = items.First(item => item.Title == "View");
         viewItem.Command.ShouldNotBeNull();
         viewItem.Command!.CanExecute(commandParameter).ShouldBeFalse();
 
@@ -572,7 +572,7 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         items = contextMenu.ItemsSource as IEnumerable<MenuItemViewModel>;
         items.ShouldNotBeNull();
 
-        deleteItem = items!.First(item => item.Header == "Delete");
+            deleteItem = items!.First(item => item.Title == "Delete");
         commandParameter = deleteItem.CommandParameter as IList;
 
         commandParameter.ShouldNotBeNull();
@@ -582,7 +582,7 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         deleteItem.Command.ShouldNotBeNull();
         deleteItem.Command!.CanExecute(commandParameter).ShouldBeTrue();
 
-        viewItem = items.First(item => item.Header == "View");
+            viewItem = items.First(item => item.Title == "View");
         viewItem.Command.ShouldNotBeNull();
         viewItem.Command!.CanExecute(commandParameter).ShouldBeFalse();
     }
@@ -1288,7 +1288,7 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         cluster.SelectedNamespaces.Add(NamespaceResource("ns4"));
         Dispatcher.UIThread.RunJobs();
 
-        var portForwardMenu = vm.GetContextMenuItems(vm.SelectionModel.SelectedItems).FirstOrDefault(x => x.Header == "Port Forwarding");
+        var portForwardMenu = vm.GetContextMenuItems(vm.SelectionModel.SelectedItems).FirstOrDefault(x => x.Title == "Port Forwarding");
         portForwardMenu.ShouldBeNull();
     }
 
@@ -1469,7 +1469,7 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         vm.SelectionModel.Select(0);
         vm.SelectionModel.Select(1);
 
-        var headers = vm.GetContextMenuItems(vm.SelectionModel.SelectedItems).Select(x => x.Header).ToList();
+        var headers = vm.GetContextMenuItems(vm.SelectionModel.SelectedItems).Select(x => x.Title).ToList();
 
         headers.ShouldNotContain("View Console");
         headers.ShouldNotContain("View Logs");

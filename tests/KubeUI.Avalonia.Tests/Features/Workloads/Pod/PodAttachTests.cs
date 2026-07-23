@@ -39,14 +39,14 @@ public sealed class PodAttachTests : AvaloniaTestBase
         };
 
         List<MenuItemViewModel> items = config.GetCustomMenuItems(new[] { pod }).ToList();
-        MenuItemViewModel attachMenu = items.Single(x => x.Header?.Equals("Attach") == true);
+        MenuItemViewModel attachMenu = items.Single(x => x.Title?.Equals("Attach") == true);
 
         attachMenu.Items.ShouldNotBeNull();
 
         List<MenuItemViewModel> attachGroups = attachMenu.Items.Cast<MenuItemViewModel>().ToList();
-        attachGroups.Select(x => x.Header).ShouldContain("Init");
-        attachGroups.Select(x => x.Header).ShouldContain("Normal");
-        attachGroups.Select(x => x.Header).ShouldContain("Ephemeral");
+        attachGroups.Select(x => x.Title).ShouldContain("Init");
+        attachGroups.Select(x => x.Title).ShouldContain("Normal");
+        attachGroups.Select(x => x.Title).ShouldContain("Ephemeral");
     }
 
     [AvaloniaFact]
@@ -111,26 +111,26 @@ public sealed class PodAttachTests : AvaloniaTestBase
 
         List<MenuItemViewModel> items = config.GetCustomMenuItems(new[] { pod }).ToList();
 
-        MenuItemViewModel debugMenu = items.Single(x => x.Header == Assets.Resources.V1PodConfig_DebugContainer);
+        MenuItemViewModel debugMenu = items.Single(x => x.Title == Assets.Resources.V1PodConfig_DebugContainer);
         List<MenuItemViewModel> debugGroups = debugMenu.Items!.Cast<MenuItemViewModel>().ToList();
-        debugGroups.Select(x => x.Header).ShouldContain("Init");
-        debugGroups.Select(x => x.Header).ShouldContain("Normal");
-        debugGroups.Select(x => x.Header).ShouldContain("Ephemeral");
+        debugGroups.Select(x => x.Title).ShouldContain("Init");
+        debugGroups.Select(x => x.Title).ShouldContain("Normal");
+        debugGroups.Select(x => x.Title).ShouldContain("Ephemeral");
 
-        MenuItemViewModel portForwardMenu = items.Single(x => x.Header == "Port Forwarding");
+        MenuItemViewModel portForwardMenu = items.Single(x => x.Title == "Port Forwarding");
         List<MenuItemViewModel> portForwardGroups = portForwardMenu.Items!.Cast<MenuItemViewModel>().ToList();
-        portForwardGroups.Select(x => x.Header).ShouldContain("Init");
-        portForwardGroups.Select(x => x.Header).ShouldContain("Normal");
-        portForwardGroups.Select(x => x.Header).ShouldContain("Ephemeral");
+        portForwardGroups.Select(x => x.Title).ShouldContain("Init");
+        portForwardGroups.Select(x => x.Title).ShouldContain("Normal");
+        portForwardGroups.Select(x => x.Title).ShouldContain("Ephemeral");
 
-        var initContainer = portForwardGroups.Single(x => x.Header == "Init").Items!.Cast<MenuItemViewModel>().Single(x => x.Header == "init");
-        initContainer.Items!.Cast<MenuItemViewModel>().Select(x => x.Header).ShouldContain("metrics - 9000");
+        var initContainer = portForwardGroups.Single(x => x.Title == "Init").Items!.Cast<MenuItemViewModel>().Single(x => x.Title == "init");
+        initContainer.Items!.Cast<MenuItemViewModel>().Select(x => x.Title).ShouldContain("metrics - 9000");
 
-        var normalContainer = portForwardGroups.Single(x => x.Header == "Normal").Items!.Cast<MenuItemViewModel>().Single(x => x.Header == "app");
-        normalContainer.Items!.Cast<MenuItemViewModel>().Select(x => x.Header).ShouldContain("http - 8080");
+        var normalContainer = portForwardGroups.Single(x => x.Title == "Normal").Items!.Cast<MenuItemViewModel>().Single(x => x.Title == "app");
+        normalContainer.Items!.Cast<MenuItemViewModel>().Select(x => x.Title).ShouldContain("http - 8080");
 
-        var ephemeralContainer = portForwardGroups.Single(x => x.Header == "Ephemeral").Items!.Cast<MenuItemViewModel>().Single(x => x.Header == "debug");
-        ephemeralContainer.Items!.Cast<MenuItemViewModel>().Select(x => x.Header).ShouldContain("probe - 7777");
+        var ephemeralContainer = portForwardGroups.Single(x => x.Title == "Ephemeral").Items!.Cast<MenuItemViewModel>().Single(x => x.Title == "debug");
+        ephemeralContainer.Items!.Cast<MenuItemViewModel>().Select(x => x.Title).ShouldContain("probe - 7777");
     }
 
     [AvaloniaFact]

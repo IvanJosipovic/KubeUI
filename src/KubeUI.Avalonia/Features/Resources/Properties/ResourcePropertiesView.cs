@@ -3,6 +3,7 @@ using Avalonia.LogicalTree;
 using k8s;
 using k8s.Models;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
+using KubeUI.Avalonia.Features.Resources.Common;
 using KubeUI.Avalonia.Features.Resources.Properties.Controls;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using AppResources = KubeUI.Avalonia.Assets.Resources;
@@ -14,6 +15,14 @@ public partial class ResourcePropertiesView<T> : ViewBase<ResourcePropertiesView
     private readonly StackPanel _itemsPanel = new()
     {
         HorizontalAlignment = HorizontalAlignment.Stretch
+    };
+
+    private readonly StackPanel _actionsPanel = new()
+    {
+        Orientation = Orientation.Horizontal,
+        Spacing = 2,
+        Margin = new Thickness(2),
+        HorizontalAlignment = HorizontalAlignment.Left,
     };
 
     private ScrollViewer? _scrollViewer;
@@ -35,7 +44,14 @@ public partial class ResourcePropertiesView<T> : ViewBase<ResourcePropertiesView
         nameScope.Register(_itemsPanel.Name, _itemsPanel);
         nameScope.Register(_scrollViewer.Name, _scrollViewer);
 
-        return _scrollViewer;
+        _actionsPanel.Name = "PART_Actions";
+        nameScope.Register(_actionsPanel.Name, _actionsPanel);
+
+        return new Grid()
+            .Rows("Auto,*")
+            .Children(
+                _actionsPanel,
+                _scrollViewer.Row(1));
     }
 
     protected override void OnDataContextChanged(EventArgs e)
@@ -89,6 +105,11 @@ public partial class ResourcePropertiesView<T> : ViewBase<ResourcePropertiesView
         if (e.PropertyName is "Object" or "ResourceConfig" or "Cluster")
         {
             ReloadNowOrLater();
+        }
+
+        if (e.PropertyName == nameof(ResourcePropertiesViewModel<T>.Actions))
+        {
+            ReloadActions();
         }
     }
 
@@ -145,6 +166,7 @@ public partial class ResourcePropertiesView<T> : ViewBase<ResourcePropertiesView
         }
 
         ClearItems();
+        ReloadActions();
 
         if (DataContext is not ResourcePropertiesViewModel<T> viewModel)
         {
@@ -200,6 +222,52 @@ public partial class ResourcePropertiesView<T> : ViewBase<ResourcePropertiesView
         }
 
         QueueScrollToTop();
+    }
+
+    private void ReloadActions()
+    {
+        _actionsPanel.Children.Clear();
+
+        if (DataContext is not ResourcePropertiesViewModel<T> viewModel)
+        {
+            _actionsPanel.IsVisible = false;
+            return;
+        }
+
+        foreach (var action in viewModel.Actions)
+        {
+            if (!action.IsVisible || action.IsSeparator || !action.ShowInPropertiesView)
+            {
+                continue;
+            }
+
+            var button = new Button
+            {
+                Width = 32,
+                Height = 32,
+                Padding = new Thickness(4),
+                Content = ResourceActionPresenter.CreateIcon(action),
+            };
+            ToolTip.SetTip(button, action.Title);
+
+            if (action.Items is { Count: > 0 } children)
+            {
+                button.Flyout = ResourceActionPresenter.CreateFlyout(children);
+            }
+            else if (action.Command != null)
+            {
+                button.Command = action.Command;
+                button.CommandParameter = action.CommandParameter;
+            }
+            else
+            {
+                continue;
+            }
+
+            _actionsPanel.Children.Add(button);
+        }
+
+        _actionsPanel.IsVisible = _actionsPanel.Children.Count > 0;
     }
 
     private void QueueScrollToTop()

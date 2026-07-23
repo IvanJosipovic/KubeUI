@@ -218,20 +218,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
             return [];
         }
 
-        var items = new List<MenuItemViewModel>();
-        items.AddRange(ResourceConfig.GetDefaultMenuItems(selectedItems));
-
-        var custom = ResourceConfig.GetCustomMenuItems(selectedItems).ToList();
-        if (custom.Count > 0)
-        {
-            items.Add(new MenuItemViewModel
-            {
-                IsSeparator = true
-            });
-            items.AddRange(custom);
-        }
-
-        return items;
+        return ResourceActionPresenter.Compose(ResourceConfig, selectedItems);
     }
 
     private void SelectedNamespaces_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)

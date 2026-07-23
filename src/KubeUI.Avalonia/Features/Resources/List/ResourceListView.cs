@@ -194,7 +194,7 @@ public partial class ResourceListView : ViewBase<IResourceListViewModel>
             .Styles(
                 new Style<MenuItem>()
                     .Setter(MenuItem.IsVisibleProperty, CompiledBinding.Create<MenuItemViewModel, bool>(x => x.IsVisible))
-                    .Setter(HeaderedItemsControl.HeaderProperty, CompiledBinding.Create<MenuItemViewModel, string?>(x => x.Header))
+                    .Setter(HeaderedItemsControl.HeaderProperty, CompiledBinding.Create<MenuItemViewModel, string?>(x => x.Title))
                     .Setter(MenuItem.CommandProperty, CompiledBinding.Create<MenuItemViewModel, ICommand?>(x => x.Command))
                     .Setter(MenuItem.CommandParameterProperty, CompiledBinding.Create<MenuItemViewModel, object?>(x => x.CommandParameter))
                     .Setter(ItemsControl.ItemsSourceProperty, CompiledBinding.Create<MenuItemViewModel, IEnumerable?>(x => x.Items))
@@ -217,21 +217,7 @@ public partial class ResourceListView : ViewBase<IResourceListViewModel>
                 return null;
             }
 
-            if (item.FluentIcon is { } fluentIcon)
-            {
-                return new FluentIcon().Icon(fluentIcon);
-            }
-
-            if (!string.IsNullOrWhiteSpace(item.IconResource))
-            {
-                var data = StaticResourceConverter.Instance.Convert(item.IconResource, typeof(object), parameter, culture);
-                if (data != AvaloniaProperty.UnsetValue)
-                {
-                    return new PathIcon { Data = data as Geometry };
-                }
-            }
-
-            return null;
+            return ResourceActionPresenter.CreateIcon(item);
         }
 
         public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)

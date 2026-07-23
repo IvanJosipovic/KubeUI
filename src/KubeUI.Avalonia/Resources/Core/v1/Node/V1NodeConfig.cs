@@ -83,21 +83,21 @@ public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>
         return [
             new()
             {
-                Header = "Cordon",
+                Title = Assets.Resources.V1NodeConfig_MenuItem_Cordon,
                 FluentIcon = Icon.Stop,
                 Command = CordonNodeCommand,
                 CommandParameter = selectedItems?.ToList(),
             },
             new()
             {
-                Header = "UnCordon",
+                Title = Assets.Resources.V1NodeConfig_MenuItem_UnCordon,
                 FluentIcon = Icon.Play,
                 Command = UnCordonNodeCommand,
                 CommandParameter = selectedItems?.ToList(),
             },
             new()
             {
-                Header = "Drain",
+                Title = Assets.Resources.V1NodeConfig_MenuItem_Drain,
                 FluentIcon = Icon.ArrowSync,
                 Command = DrainNodeCommand,
                 CommandParameter = selectedItems?.ToList(),

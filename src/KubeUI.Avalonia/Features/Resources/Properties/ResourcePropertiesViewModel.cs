@@ -2,6 +2,7 @@ using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
+using KubeUI.Avalonia.Features.Resources.Common;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Resources;
 
@@ -23,11 +24,14 @@ public partial class ResourcePropertiesViewModel<T> : ViewModelBase, IDisposable
         {
             _object = value;
             OnPropertyChanged();
+            RefreshActions();
         }
     }
 
     [ObservableProperty]
     public partial ResourceConfigBase<T> ResourceConfig { get; set; }
+
+    public IReadOnlyList<MenuItemViewModel> Actions { get; private set; } = [];
 
     public ResourcePropertiesViewModel()
     {
@@ -41,6 +45,19 @@ public partial class ResourcePropertiesViewModel<T> : ViewModelBase, IDisposable
         Object = resource;
         ResourceConfig = (ResourceConfigBase<T>)Cluster.GetResourceConfig(Kind);
         Cluster.Runtime.OnChange += Cluster_OnChange;
+    }
+
+    partial void OnResourceConfigChanged(ResourceConfigBase<T> value)
+    {
+        RefreshActions();
+    }
+
+    private void RefreshActions()
+    {
+        Actions = Object == null || ResourceConfig == null
+            ? []
+            : ResourceActionPresenter.Compose(ResourceConfig, new[] { Object }).ToList();
+        OnPropertyChanged(nameof(Actions));
     }
 
     public void Cluster_OnChange(WatchEventType eventType, GroupApiVersionKind groupApiVersionKind, IKubernetesObject<V1ObjectMeta> resource)

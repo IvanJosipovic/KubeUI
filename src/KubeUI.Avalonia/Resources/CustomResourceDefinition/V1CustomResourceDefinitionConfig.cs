@@ -62,7 +62,7 @@ public sealed partial class V1CustomResourceDefinitionConfig : ResourceConfigBas
         return [
             new()
             {
-                Header = "View Items",
+                Title = Assets.Resources.V1CustomResourceDefinitionConfig_MenuItem_ViewItems,
                 Command = ListCRDCommand,
                 CommandParameter = selectedItem
             },

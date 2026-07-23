@@ -258,7 +258,7 @@ public sealed class ResourceFeatureConfigTests : AvaloniaTestBase
         var config = (V1CronJobConfig)workspace.GetResourceConfig<V1CronJob>();
         V1CronJob cronJob = CreateCronJob("volsync", "immich-rclone-backup");
 
-        MenuItemViewModel startItem = config.GetCustomMenuItems(new[] { cronJob }).Single(item => item.Header == "Start");
+        MenuItemViewModel startItem = config.GetCustomMenuItems(new[] { cronJob }).Single(item => item.Title == "Start");
         var command = startItem.Command.ShouldBeAssignableTo<IAsyncRelayCommand>();
         var commandParameter = startItem.CommandParameter.ShouldBeAssignableTo<IList>();
 
@@ -288,7 +288,7 @@ public sealed class ResourceFeatureConfigTests : AvaloniaTestBase
         var config = (V1CronJobConfig)workspace.GetResourceConfig<V1CronJob>();
         V1CronJob cronJob = CreateCronJob("volsync", "immich-rclone-backup");
 
-        MenuItemViewModel startItem = config.GetCustomMenuItems(new[] { cronJob }).Single(item => item.Header == "Start");
+        MenuItemViewModel startItem = config.GetCustomMenuItems(new[] { cronJob }).Single(item => item.Title == "Start");
         var command = startItem.Command.ShouldBeAssignableTo<IAsyncRelayCommand>();
         var commandParameter = startItem.CommandParameter.ShouldBeAssignableTo<IList>();
 
@@ -311,7 +311,7 @@ public sealed class ResourceFeatureConfigTests : AvaloniaTestBase
         var config = (V1CronJobConfig)workspace.GetResourceConfig<V1CronJob>();
         V1CronJob cronJob = CreateCronJob("volsync", "immich-rclone-backup");
 
-        MenuItemViewModel startItem = config.GetCustomMenuItems(new[] { cronJob }).Single(item => item.Header == "Start");
+        MenuItemViewModel startItem = config.GetCustomMenuItems(new[] { cronJob }).Single(item => item.Title == "Start");
         var command = startItem.Command.ShouldBeAssignableTo<IAsyncRelayCommand>();
         var commandParameter = startItem.CommandParameter.ShouldBeAssignableTo<IList>();
 

@@ -43,7 +43,7 @@ public sealed partial class V1DaemonSetConfig : ResourceConfigBase<V1DaemonSet>
         return [
             new()
             {
-                Header = "Restart",
+                Title = Assets.Resources.V1DaemonSetConfig_MenuItem_Restart,
                 FluentIcon = Icon.ArrowSync,
                 Command = RestartCommand,
                 CommandParameter = selectedItems?.ToList()

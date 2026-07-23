@@ -50,7 +50,7 @@ public sealed partial class V1ReplicaSetConfig : ResourceConfigBase<V1ReplicaSet
         return [
             new()
             {
-                Header = "Restart",
+                Title = Assets.Resources.V1ReplicaSetConfig_MenuItem_Restart,
                 FluentIcon = Icon.ArrowSync,
                 Command = RestartCommand,
                 CommandParameter = selectedItems?.ToList(),

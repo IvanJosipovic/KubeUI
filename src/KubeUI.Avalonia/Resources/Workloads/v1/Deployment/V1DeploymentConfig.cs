@@ -51,7 +51,7 @@ public sealed partial class V1DeploymentConfig : ResourceConfigBase<V1Deployment
         return [
             new()
             {
-                Header = "Restart",
+                Title = Assets.Resources.V1DeploymentConfig_MenuItem_Restart,
                 FluentIcon = Icon.ArrowSync,
                 Command = RestartCommand,
                 CommandParameter = selectedItems?.ToList()

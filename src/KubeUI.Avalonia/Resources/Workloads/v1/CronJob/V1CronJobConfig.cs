@@ -72,7 +72,7 @@ public sealed partial class V1CronJobConfig : ResourceConfigBase<V1CronJob>
         return [
             new()
             {
-                Header = Assets.Resources.V1CronJobConfig_Start!,
+                Title = Assets.Resources.V1CronJobConfig_Start!,
                 FluentIcon = Icon.Play,
                 Command = StartCommand,
                 CommandParameter = selectedItems?.ToList(),

@@ -36,7 +36,7 @@ public sealed partial class V1StatefulSetConfig : ResourceConfigBase<V1StatefulS
         return [
             new()
             {
-                Header = "Restart",
+                Title = Assets.Resources.V1StatefulSetConfig_MenuItem_Restart,
                 FluentIcon = Icon.ArrowSync,
                 Command = RestartCommand,
                 CommandParameter = selectedItems?.ToList()

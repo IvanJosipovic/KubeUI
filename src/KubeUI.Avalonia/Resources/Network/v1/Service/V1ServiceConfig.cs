@@ -69,13 +69,13 @@ public sealed partial class V1ServiceConfig : ResourceConfigBase<V1Service>
         return [
             new()
             {
-                Header = "Port Forwarding",
+                Title = Assets.Resources.V1ServiceConfig_MenuItem_PortForwarding,
                 FluentIcon = Icon.CloudFlow,
                 Items = selectedItem?.Spec?.Ports == null
                     ? null
                     : new AvaloniaList<MenuItemViewModel>(selectedItem.Spec.Ports.Select(p => new MenuItemViewModel()
                     {
-                        Header = $"{p.Name} - {p.Port}",
+                        Title = string.Format(Assets.Resources.V1ServiceConfig_MenuItem_PortFormat, p.Name, p.Port),
                         Command = PortForwardServiceCommand,
                         CommandParameter = new ArrayList { selectedItem, p },
                     }).ToList()),

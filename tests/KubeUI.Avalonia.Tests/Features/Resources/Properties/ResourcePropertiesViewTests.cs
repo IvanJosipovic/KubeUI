@@ -48,6 +48,61 @@ public sealed class ResourcePropertiesViewTests : AvaloniaTestBase
     }
 
     [AvaloniaFact]
+    public async Task resource_properties_view_renders_leaf_actions_and_submenu_flyouts()
+    {
+        var workspace = new TestCluster().CreateWorkspace();
+        await workspace.Connect();
+        var services = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
+        var viewModel = services.GetRequiredService<ResourcePropertiesViewModel<V1Pod>>();
+        viewModel.Initialize(workspace, new V1Pod
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "pod-1",
+                NamespaceProperty = "default",
+            },
+            Spec = new V1PodSpec
+            {
+                Containers =
+                [
+                    new V1Container
+                    {
+                        Name = "app",
+                        Image = "example/app:1",
+                    }
+                ]
+            }
+        });
+
+        var view = new ResourcePropertiesView<V1Pod>
+        {
+            DataContext = viewModel
+        };
+
+        var window = new Window
+        {
+            Content = view
+        };
+
+        window.Show();
+        Dispatcher.UIThread.RunJobs();
+
+        var buttons = view.FindControl<StackPanel>("PART_Actions")!.Children.OfType<Button>().ToList();
+
+        viewModel.Actions.Single(action => action.Title == "View").ShowInPropertiesView.ShouldBeFalse();
+        buttons.Any(button => Equals(ToolTip.GetTip(button), "View")).ShouldBeFalse();
+        buttons.Any(button => button.Command != null && button.Flyout == null).ShouldBeTrue();
+        var submenus = buttons.Select(button => button.Flyout).OfType<MenuFlyout>().ToList();
+        submenus.Count.ShouldBeGreaterThan(1);
+        var submenu = submenus[0];
+        var submenuItems = submenu.Items.OfType<MenuItem>().ToList();
+        submenuItems.ShouldNotBeEmpty();
+        submenuItems.Any(item => item.Items.OfType<MenuItem>().Any()).ShouldBeTrue();
+
+        window.Close();
+    }
+
+    [AvaloniaFact]
     public async Task cluster_scoped_resource_hides_namespace_property_item()
     {
         var workspace = new TestCluster().CreateWorkspace();
