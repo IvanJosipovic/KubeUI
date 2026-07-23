@@ -417,6 +417,9 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
 
     private async Task ProcessCustomResourceDefinitionAsync(V1CustomResourceDefinition crd)
     {
+        using var activity = KubeInstrumentation.Source.StartActivity(nameof(ProcessCustomResourceDefinitionAsync));
+        activity?.SetTag("kubernetes.crd.name", crd.Name());
+
         try
         {
             if (!Connected)

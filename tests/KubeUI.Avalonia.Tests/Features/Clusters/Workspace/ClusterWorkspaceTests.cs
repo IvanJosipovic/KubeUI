@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Reflection;
 using Avalonia.Headless.XUnit;
 using Avalonia.Styling;
@@ -365,6 +366,33 @@ public class ClusterWorkspaceTests : AvaloniaTestBase
         await workspace.Disconnect();
 
         GetCustomResourceType(runtime, crd).ShouldBeNull();
+    }
+
+    [AvaloniaFact]
+    public async Task connect_returns_before_synchronous_connection_work_completes()
+    {
+        var runtime = new TestCluster
+        {
+            Connected = false,
+            Status = ClusterStatus.None,
+        };
+        runtime.ConnectBehavior = () =>
+        {
+            Thread.Sleep(300);
+            runtime.Connected = true;
+            runtime.Status = ClusterStatus.Connected;
+            return Task.CompletedTask;
+        };
+        var workspace = CreateWorkspace(runtime);
+
+        var stopwatch = Stopwatch.StartNew();
+        var connectTask = workspace.Connect();
+        stopwatch.Stop();
+
+        stopwatch.Elapsed.ShouldBeLessThan(TimeSpan.FromMilliseconds(150));
+
+        await connectTask;
+        runtime.Connected.ShouldBeTrue();
     }
 
     [AvaloniaFact]

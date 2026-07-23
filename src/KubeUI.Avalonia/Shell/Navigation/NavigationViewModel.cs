@@ -35,7 +35,14 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
     public new IFactory Factory => _serviceProvider.GetRequiredService<IFactory>();
     private readonly Dictionary<ClusterWorkspace, ClusterNavigationNode> _clusterNodes = [];
     private readonly Dictionary<IClusterRuntime, ClusterWorkspace> _workspacesByRuntime = [];
+    private readonly object _pendingResourceNavigationUpdatesLock = new();
+    private readonly Dictionary<ClusterWorkspace, HashSet<IResourceConfig>> _pendingResourceNavigationUpdates = [];
+    private readonly HashSet<ClusterWorkspace> _scheduledResourceNavigationUpdates = [];
     private readonly NavigationDocumentService _documentService;
+
+    private sealed record ResourceNavigationUpdateBatch(
+        IResourceConfig[] ProcessedResourceConfigs,
+        IResourceConfig[] ResourceConfigSnapshot);
 
     [ObservableProperty]
     public partial ClusterWorkspaceCatalog ClusterCatalog { get; set; }
@@ -84,6 +91,11 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
 
         _clusterNodes.Clear();
         _workspacesByRuntime.Clear();
+        lock (_pendingResourceNavigationUpdatesLock)
+        {
+            _pendingResourceNavigationUpdates.Clear();
+            _scheduledResourceNavigationUpdates.Clear();
+        }
         Clusters.Clear();
     }
 
@@ -273,6 +285,12 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
 
     private void ReloadClusters()
     {
+        lock (_pendingResourceNavigationUpdatesLock)
+        {
+            _pendingResourceNavigationUpdates.Clear();
+            _scheduledResourceNavigationUpdates.Clear();
+        }
+
         foreach (var cluster in _clusterNodes.Keys.ToList())
         {
             UnsubscribeCluster(cluster);
@@ -314,6 +332,12 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
 
     private void RemoveClusterNode(ClusterWorkspace cluster)
     {
+        lock (_pendingResourceNavigationUpdatesLock)
+        {
+            _pendingResourceNavigationUpdates.Remove(cluster);
+            _scheduledResourceNavigationUpdates.Remove(cluster);
+        }
+
         if (!_clusterNodes.Remove(cluster, out var node))
         {
             return;
@@ -367,6 +391,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
             {
                 ShowClusterError(runtime.LastError);
             }
+
         });
     }
 
@@ -374,19 +399,82 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
     {
         if (_workspacesByRuntime.TryGetValue(runtime, out var cluster))
         {
-            _ = ShowMissingNamespacePermissionPromptAsync(cluster);
+            Dispatcher.UIThread.Post(() => _ = ShowMissingNamespacePermissionPromptAsync(cluster));
         }
     }
 
     private void OnClusterResourceConfigProcessed(ClusterWorkspace cluster, IResourceConfig resourceConfig)
     {
-        if (Dispatcher.UIThread.CheckAccess())
+        var scheduleUpdate = false;
+        lock (_pendingResourceNavigationUpdatesLock)
         {
-            ApplyResourceConfigNavigation(cluster, resourceConfig);
+            if (!_pendingResourceNavigationUpdates.TryGetValue(cluster, out var resourceConfigs))
+            {
+                resourceConfigs = [];
+                _pendingResourceNavigationUpdates.Add(cluster, resourceConfigs);
+            }
+
+            resourceConfigs.Add(resourceConfig);
+            scheduleUpdate = _scheduledResourceNavigationUpdates.Add(cluster);
+        }
+
+        if (scheduleUpdate)
+        {
+            _ = PrepareAndApplyQueuedResourceNavigationUpdatesAsync(cluster);
+        }
+    }
+
+    private Task PrepareAndApplyQueuedResourceNavigationUpdatesAsync(ClusterWorkspace cluster)
+    {
+        return Task.Run(() =>
+        {
+            IResourceConfig[] resourceConfigs;
+            lock (_pendingResourceNavigationUpdatesLock)
+            {
+                _scheduledResourceNavigationUpdates.Remove(cluster);
+                if (!_pendingResourceNavigationUpdates.Remove(cluster, out var pendingResourceConfigs))
+                {
+                    return;
+                }
+
+                resourceConfigs = pendingResourceConfigs.ToArray();
+            }
+
+            var resourceConfigSnapshot = resourceConfigs.Any(static config =>
+                    config.Type == typeof(V1CustomResourceDefinition) || config.IsCustomResource)
+                ? cluster.GetResourceConfigs().ToArray()
+                : [];
+            var batch = new ResourceNavigationUpdateBatch(resourceConfigs, resourceConfigSnapshot);
+            Dispatcher.UIThread.Post(() => ApplyResourceNavigationUpdateBatch(cluster, batch));
+        });
+    }
+
+    private void ApplyResourceNavigationUpdateBatch(ClusterWorkspace cluster, ResourceNavigationUpdateBatch batch)
+    {
+        if (!_clusterNodes.TryGetValue(cluster, out var node)
+            || cluster.Runtime.Status != ClusterStatus.Connected)
+        {
             return;
         }
 
-        Dispatcher.UIThread.Post(() => ApplyResourceConfigNavigation(cluster, resourceConfig));
+        foreach (var resourceConfig in batch.ProcessedResourceConfigs.Where(static config =>
+                     config.Type != typeof(V1CustomResourceDefinition) && !config.IsCustomResource))
+        {
+            ApplyResourceConfigNavigation(cluster, resourceConfig);
+        }
+
+        var changedCustomResourceConfig = batch.ProcessedResourceConfigs.FirstOrDefault(static config =>
+            config.Type == typeof(V1CustomResourceDefinition) || config.IsCustomResource);
+        if (changedCustomResourceConfig != null)
+        {
+            UpdateCustomResourceNavigation(node, cluster, changedCustomResourceConfig, batch.ResourceConfigSnapshot);
+
+            foreach (var resourceConfig in batch.ProcessedResourceConfigs.Where(static config =>
+                         config.Type == typeof(V1CustomResourceDefinition) || config.IsCustomResource))
+            {
+                AttachResourceCount(cluster, resourceConfig.Kind, resourceConfig.Type);
+            }
+        }
     }
 
     private void OnClusterResourceSeeded(IClusterRuntime runtime, GroupApiVersionKind kind)
@@ -459,6 +547,11 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
 
             RemoveNavigationItem(node.NavigationItems, $"{cluster.Runtime.Name}-{removedKind}");
             RemoveEmptyCategories(node.NavigationItems, cluster);
+
+            foreach (var resourceConfig in cluster.GetResourceConfigs())
+            {
+                OnClusterResourceConfigProcessed(cluster, resourceConfig);
+            }
         });
     }
 
@@ -524,9 +617,14 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
         }
     }
 
-    private void UpdateCustomResourceNavigation(ClusterNavigationNode node, ClusterWorkspace cluster, IResourceConfig changedConfig)
+    private void UpdateCustomResourceNavigation(
+        ClusterNavigationNode node,
+        ClusterWorkspace cluster,
+        IResourceConfig changedConfig,
+        IReadOnlyCollection<IResourceConfig>? resourceConfigs = null)
     {
-        var definitions = cluster.GetResourceConfigs()
+        var configs = resourceConfigs ?? cluster.GetResourceConfigs().ToArray();
+        var definitions = configs
             .FirstOrDefault(config => config.Type == typeof(V1CustomResourceDefinition));
         var rootId = $"{cluster.Runtime.Name}-custom-resource-definitions";
         var root = node.NavigationItems.FirstOrDefault(item => item.Id == rootId);
@@ -552,7 +650,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
             node.NavigationItems.Add(root);
 
             UpdateCustomResourceLink(root, cluster, definitions);
-            foreach (var config in cluster.GetResourceConfigs()
+            foreach (var config in configs
                          .Where(config => config.IsCustomResource && config.PermissionsLoaded && config.CanListAndWatch)
                          .OrderBy(config => config.Order)
                          .ThenBy(config => config.Name, StringComparer.Ordinal))

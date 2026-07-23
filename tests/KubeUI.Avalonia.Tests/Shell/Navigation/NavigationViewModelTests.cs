@@ -1084,6 +1084,42 @@ public class NavigationViewModelTests : AvaloniaTestBase
     }
 
     [AvaloniaFact]
+    public async Task resource_config_burst_preserves_existing_navigation_nodes()
+    {
+        var runtime = new TestCluster
+        {
+            Connected = true,
+            Status = ClusterStatus.Connected,
+        };
+        var workspace = CreateWorkspace(runtime);
+        await workspace.Connect();
+        Dispatcher.UIThread.RunJobs();
+
+        var vm = CreateViewModel();
+        vm.ClusterCatalog.Clusters.Add(workspace);
+        Dispatcher.UIThread.RunJobs();
+
+        var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
+        var originalNamespaceLink = clusterNode.NavigationItems
+            .OfType<ResourceNavigationLink>()
+            .Single(x => x.ControlType == typeof(V1Namespace));
+        var alphaConfig = new FakeResourceConfig(typeof(TestPermissionResourceAlpha), "Alpha Permission Resource");
+        var betaConfig = new FakeResourceConfig(typeof(TestPermissionResourceBeta), "Beta Permission Resource");
+
+        workspace.AddResourceConfigForTest(alphaConfig);
+        workspace.AddResourceConfigForTest(betaConfig);
+
+        await WaitForAsync(() =>
+            FindResourceLink(clusterNode, alphaConfig.Name) != null
+            && FindResourceLink(clusterNode, betaConfig.Name) != null);
+
+        clusterNode.NavigationItems
+            .OfType<ResourceNavigationLink>()
+            .Single(x => x.ControlType == typeof(V1Namespace))
+            .ShouldBeSameAs(originalNamespaceLink);
+    }
+
+    [AvaloniaFact]
     public async Task resource_navigation_items_appear_incrementally_as_permissions_complete()
     {
         var runtime = new TestCluster

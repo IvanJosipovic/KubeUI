@@ -53,7 +53,9 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
     public event Action<ClusterWorkspace, IResourceConfig>? ResourceConfigProcessed;
     public event Action<ClusterWorkspace, GroupApiVersionKind>? CustomResourceDefinitionRemoved;
 
-    public async Task Connect()
+    public Task Connect() => Task.Run(ConnectCoreAsync);
+
+    private async Task ConnectCoreAsync()
     {
         using var activity = _instrumentation.Source.StartActivity(nameof(Connect), System.Diagnostics.ActivityKind.Client);
         try
@@ -83,7 +85,7 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
         }
     }
 
-    private async Task UpdateResourceConfigPermissionsAsync(
+    private async Task  UpdateResourceConfigPermissionsAsync(
         IReadOnlyCollection<IResourceConfig>? resourceConfigs = null)
     {
         using var activity = _instrumentation.Source.StartActivity(nameof(UpdateResourceConfigPermissionsAsync));
@@ -303,12 +305,6 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
     {
         using var activity = _instrumentation.Source.StartActivity(nameof(ProcessResourceConfigPermissionsUpdated));
 
-        if (!Dispatcher.UIThread.CheckAccess())
-        {
-            _ = Dispatcher.UIThread.InvokeAsync(() => ProcessResourceConfigPermissionsUpdated(resourceConfig));
-            return;
-        }
-
         ResourceConfigProcessed?.Invoke(this, resourceConfig);
     }
 
@@ -440,12 +436,6 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
 
     private void NotifyCustomResourceDefinitionRemoved(GroupApiVersionKind kind)
     {
-        if (!Dispatcher.UIThread.CheckAccess())
-        {
-            _ = Dispatcher.UIThread.InvokeAsync(() => NotifyCustomResourceDefinitionRemoved(kind));
-            return;
-        }
-
         CustomResourceDefinitionRemoved?.Invoke(this, kind);
     }
 

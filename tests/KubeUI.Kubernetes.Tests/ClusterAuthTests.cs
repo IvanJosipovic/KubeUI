@@ -1,4 +1,5 @@
 using System.Reflection;
+using System.Collections.ObjectModel;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
 using KubernetesCRDModelGen;
@@ -41,6 +42,32 @@ public sealed class ClusterAuthTests
         });
 
         cluster.CanIAnyNamespace<V1Pod>(Verb.Create, "portforward").ShouldBeTrue();
+    }
+
+    [Fact]
+    public async Task globally_allowed_namespaced_permission_skips_namespace_reviews()
+    {
+        using var loggerFactory = NullLoggerFactory.Instance;
+        var cluster = new Cluster(
+            NullLogger<Cluster>.Instance,
+            loggerFactory,
+            new ModelCache(),
+            new Generator(),
+            new TestClusterSettingsStore(),
+            new ServiceCollection().BuildServiceProvider());
+        var namespaces = new ObservableCollection<V1Namespace>
+        {
+            new() { Metadata = new V1ObjectMeta { Name = "my-app" } }
+        };
+        cluster.Namespaces = new ReadOnlyObservableCollection<V1Namespace>(namespaces);
+
+        var setPermissionResult = typeof(Cluster).GetMethod("SetPermissionResult", BindingFlags.Instance | BindingFlags.NonPublic);
+        setPermissionResult.ShouldNotBeNull();
+        setPermissionResult!.Invoke(cluster, [GroupApiVersionKind.From<V1Pod>(), "list", null, null, true]);
+
+        await cluster.UpdatePermissionsAllNamespaceAsync<V1Pod>(Verb.List);
+
+        cluster.CanI<V1Pod>(Verb.List, "my-app").ShouldBeTrue();
     }
 
     [Fact]
