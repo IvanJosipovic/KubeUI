@@ -422,7 +422,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
             nameof(ProcessCustomResourceDefinitionQueueAsync),
             ActivityKind.Consumer);
 
-        await foreach (var crd in _customResourceDefinitionQueue.Reader.ReadAllAsync())
+        await foreach (var crd in _customResourceDefinitionQueue.Reader.ReadAllAsync().ConfigureAwait(false))
         {
             await ProcessCustomResourceDefinitionAsync(crd).ConfigureAwait(false);
         }
