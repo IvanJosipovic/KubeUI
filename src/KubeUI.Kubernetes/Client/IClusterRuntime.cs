@@ -14,13 +14,10 @@ public interface IClusterAuthorization
     bool CanI<T>(Verb verb, string? @namespace = null, string? subresource = null) where T : class, IKubernetesObject<V1ObjectMeta>, new();
     bool CanIAnyNamespace(Type type, Verb verb, string? subresource = null);
     bool CanIAnyNamespace<T>(Verb verb, string? subresource = null) where T : class, IKubernetesObject<V1ObjectMeta>, new();
-    Task RefreshAuthorizationIndexAsync(IEnumerable<AuthorizationRequest> requests);
-    Task UpdatePermissionsAllNamespaceAsync(Type type, Verb verb, string? subresource = null);
-    Task UpdatePermissionsAllNamespaceAsync<T>(Verb verb, string? subresource = null) where T : class, IKubernetesObject<V1ObjectMeta>, new();
     Task<bool> UpdateCanI(Type type, Verb verb, string? @namespace = null, string? subresource = null);
     Task<bool> UpdateCanI<T>(Verb verb, string? @namespace = null, string? subresource = null) where T : class, IKubernetesObject<V1ObjectMeta>, new();
-    Task<bool> UpdateCanIAnyNamespaceAsync(Type type, Verb verb, string? subresource = null);
-    Task<bool> UpdateCanIAnyNamespaceAsync<T>(Verb verb, string? subresource = null) where T : class, IKubernetesObject<V1ObjectMeta>, new();
+    Task UpdatePermissionsAllNamespaceAsync(Type type, Verb verb, string? subresource = null);
+    Task UpdatePermissionsAllNamespaceAsync<T>(Verb verb, string? subresource = null) where T : class, IKubernetesObject<V1ObjectMeta>, new();
 }
 
 public interface IClusterRuntime
@@ -29,8 +26,6 @@ public interface IClusterRuntime
     bool Connected { get; set; }
     ClusterStatus Status { get; set; }
     string? LastError { get; set; }
-    bool AuthorizationIndexReady { get; }
-    long AuthorizationIndexVersion { get; }
     bool IsMetricsAvailable { get; }
     bool ListNamespaces { get; set; }
     event Action<WatchEventType, GroupApiVersionKind, IKubernetesObject<V1ObjectMeta>>? OnChange;

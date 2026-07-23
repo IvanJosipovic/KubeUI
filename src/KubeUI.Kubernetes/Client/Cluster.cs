@@ -211,29 +211,36 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
         }
     }
 
-    public Task Disconnect()
+    public async Task Disconnect()
     {
+        await _connectionLimiter.WaitAsync().ConfigureAwait(false);
         _logger.LogInformation("Disconnecting from {name}", Name);
 
-        StopMetrics();
-        StopPortForwarders();
-        StopResourceInformers();
-        ClearDynamicCustomResourceDefinitions();
-        ClearSeededResources();
-
-        if (Client is IDisposable disposableClient)
+        try
         {
-            disposableClient.Dispose();
+            StopMetrics();
+            StopPortForwarders();
+            StopResourceInformers();
+            ClearDynamicCustomResourceDefinitions();
+            ClearSeededResources();
+
+            if (Client is IDisposable disposableClient)
+            {
+                disposableClient.Dispose();
+            }
+
+            Client = null;
+            Connected = false;
+            Status = ClusterStatus.None;
+            LastError = null;
+            ResetAuthorizationIndex();
+        }
+        finally
+        {
+            _connectionLimiter.Release();
         }
 
-        Client = null;
-        Connected = false;
-        Status = ClusterStatus.None;
-        LastError = null;
-        ResetAuthorizationIndex();
-
         _logger.LogInformation("Disconnected from {name}", Name);
-        return Task.CompletedTask;
     }
 
     public async Task SeedResource<T>(bool waitForReady = false) where T : class, IKubernetesObject<V1ObjectMeta>, new()
@@ -280,7 +287,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
 
         ContainerClass<T> container = (ContainerClass<T>)Objects.GetOrAdd(kind, _ => new ContainerClass<T>());
 
-        if (await UpdateCanI(type, Verb.List).ConfigureAwait(false) && await UpdateCanI(type, Verb.Watch).ConfigureAwait(false))
+        if (CanI(type, Verb.List) && CanI(type, Verb.Watch))
         {
             var informer = new ResourceInformer<T>(Client, _serviceProvider.GetRequiredService<IHostApplicationLifetime>(), _loggerFactory.CreateLogger<ResourceInformer<T>>());
             container.Informers.Add(informer);
@@ -303,7 +310,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
             {
                 string ns = item.Name();
 
-                if (await UpdateCanI(type, Verb.List, ns).ConfigureAwait(false) && await UpdateCanI(type, Verb.Watch, ns).ConfigureAwait(false))
+                if (CanI(type, Verb.List, ns) && CanI(type, Verb.Watch, ns))
                 {
                     var informer = new ResourceInformer<T>(Client, _serviceProvider.GetRequiredService<IHostApplicationLifetime>(), _loggerFactory.CreateLogger<ResourceInformer<T>>(), @namespace: ns);
                     container.Informers.Add(informer);

@@ -56,8 +56,6 @@ public class TestClusterRuntime : IClusterRuntime, IClusterAuthorization, INotif
     private bool _connected;
     private bool _defaultPermissionAllowed = true;
     private bool _listNamespaces;
-    private bool _authorizationIndexReady;
-    private long _authorizationIndexVersion;
     private string? _lastError;
     private ClusterStatus _status;
     private IKubernetes? _client;
@@ -126,18 +124,6 @@ public class TestClusterRuntime : IClusterRuntime, IClusterAuthorization, INotif
     }
 
     public bool IsMetricsAvailable => true;
-
-    public bool AuthorizationIndexReady
-    {
-        get => _authorizationIndexReady;
-        set => SetProperty(ref _authorizationIndexReady, value);
-    }
-
-    public long AuthorizationIndexVersion
-    {
-        get => _authorizationIndexVersion;
-        set => SetProperty(ref _authorizationIndexVersion, value);
-    }
 
     public IKubernetes? Client
     {
@@ -215,8 +201,6 @@ public class TestClusterRuntime : IClusterRuntime, IClusterAuthorization, INotif
         Connected = false;
         Status = ClusterStatus.None;
         LastError = null;
-        AuthorizationIndexReady = false;
-
         return Task.CompletedTask;
     }
 
@@ -307,6 +291,26 @@ public class TestClusterRuntime : IClusterRuntime, IClusterAuthorization, INotif
         return CanIAnyNamespace(typeof(T), verb, subresource);
     }
 
+    public Task<bool> UpdateCanI(Type type, Verb verb, string? @namespace = null, string? subresource = null)
+    {
+        return Task.FromResult(CanI(type, verb, @namespace, subresource));
+    }
+
+    public Task<bool> UpdateCanI<T>(Verb verb, string? @namespace = null, string? subresource = null) where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    {
+        return UpdateCanI(typeof(T), verb, @namespace, subresource);
+    }
+
+    public Task UpdatePermissionsAllNamespaceAsync(Type type, Verb verb, string? subresource = null)
+    {
+        return Task.CompletedTask;
+    }
+
+    public Task UpdatePermissionsAllNamespaceAsync<T>(Verb verb, string? subresource = null) where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    {
+        return UpdatePermissionsAllNamespaceAsync(typeof(T), verb, subresource);
+    }
+
     public bool IsResourceNamespaced(Type type)
     {
         return type != typeof(V1Namespace)
@@ -328,46 +332,9 @@ public class TestClusterRuntime : IClusterRuntime, IClusterAuthorization, INotif
         return IsResourceNamespaced(typeof(T));
     }
 
-    public Task<bool> UpdateCanI(Type type, Verb verb, string? @namespace = null, string? subresource = null)
-    {
-        return Task.FromResult(CanI(type, verb, @namespace, subresource));
-    }
-
-    public Task<bool> UpdateCanI<T>(Verb verb, string? @namespace = null, string? subresource = null) where T : class, IKubernetesObject<V1ObjectMeta>, new()
-    {
-        return Task.FromResult(CanI<T>(verb, @namespace, subresource));
-    }
-
     public void ResetPortForwardPermissionChecks()
     {
         PortForwardPermissionChecks = 0;
-    }
-
-    public Task<bool> UpdateCanIAnyNamespaceAsync(Type type, Verb verb, string? subresource = null)
-    {
-        return Task.FromResult(CanIAnyNamespace(type, verb, subresource));
-    }
-
-    public Task<bool> UpdateCanIAnyNamespaceAsync<T>(Verb verb, string? subresource = null) where T : class, IKubernetesObject<V1ObjectMeta>, new()
-    {
-        return Task.FromResult(CanIAnyNamespace<T>(verb, subresource));
-    }
-
-    public Task RefreshAuthorizationIndexAsync(IEnumerable<AuthorizationRequest> requests)
-    {
-        AuthorizationIndexReady = true;
-        AuthorizationIndexVersion++;
-        return Task.CompletedTask;
-    }
-
-    public Task UpdatePermissionsAllNamespaceAsync(Type type, Verb verb, string? subresource = null)
-    {
-        return Task.CompletedTask;
-    }
-
-    public Task UpdatePermissionsAllNamespaceAsync<T>(Verb verb, string? subresource = null) where T : class, IKubernetesObject<V1ObjectMeta>, new()
-    {
-        return Task.CompletedTask;
     }
 
     public PortForwarder AddPodPortForward(string @namespace, string podName, int containerPort)

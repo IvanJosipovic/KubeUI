@@ -304,6 +304,9 @@ Are you sure?</value>
   <data name="ResourceConfig_Category_Workloads" xml:space="preserve">
     <value>Workloads</value>
   </data>
+  <data name="ResourceConfig_Category_CustomResourceDefinitions" xml:space="preserve">
+    <value>Custom Resource Definitions</value>
+  </data>
   <data name="NavigationView_ContextMenu_Connect" xml:space="preserve">
     <value>Connect</value>
   </data>

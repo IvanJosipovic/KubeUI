@@ -1,5 +1,4 @@
 using System.Collections.Concurrent;
-using System.Collections.Specialized;
 using System.Reflection;
 using System.Security.Cryptography;
 using k8s;
@@ -18,7 +17,6 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
     private readonly ConcurrentDictionary<GroupApiVersionKind, IResourceConfig> _resourceConfigs = new();
     private readonly ConcurrentDictionary<string, string> _customResourceDefinitionSignatures = new(StringComparer.Ordinal);
     private readonly CancellationTokenSource _disposeCancellation = new();
-    private INotifyCollectionChanged? _runtimeNamespacesCollection;
     private bool _disposed;
     private bool _workspaceStateInitialized;
 
@@ -35,7 +33,6 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
         _instrumentation = instrumentation;
 
         SubscribeRuntime();
-        SubscribeNamespaceCollection(Runtime.Namespaces);
         UpdateClusterColor();
     }
 
@@ -61,6 +58,7 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
         using var activity = _instrumentation.Source.StartActivity(nameof(Connect), System.Diagnostics.ActivityKind.Client);
         try
         {
+            EnsureBuiltInResourceConfigs();
             await Runtime.Connect().ConfigureAwait(false);
             if (!Runtime.Connected)
             {
@@ -72,8 +70,8 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
                 return;
             }
 
-            EnsureBuiltInResourceConfigs();
-            await RefreshResourceConfigPermissionsAsync().ConfigureAwait(false);
+            await UpdateResourceConfigPermissionsAsync().ConfigureAwait(false);
+            await EvaluateResourceConfigAccessAsync().ConfigureAwait(false);
             await SeedResourcesConfiguredForConnectAsync().ConfigureAwait(false);
             _workspaceStateInitialized = true;
             await Dispatcher.UIThread.InvokeAsync(UpdateClusterColor);
@@ -82,6 +80,38 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
         {
             Runtime.LastError = ex.Message;
             Runtime.Status = ClusterStatus.Errored;
+        }
+    }
+
+    private async Task UpdateResourceConfigPermissionsAsync(
+        IReadOnlyCollection<IResourceConfig>? resourceConfigs = null)
+    {
+        using var activity = _instrumentation.Source.StartActivity(nameof(UpdateResourceConfigPermissionsAsync));
+
+        var categoryBatches = (resourceConfigs ?? GetResourceConfigs())
+            .GroupBy(static config => config.Category, StringComparer.Ordinal)
+            .OrderBy(static category => ResourceCategories.GetOrder(category.Key, category.Min(config => config.Order)))
+            .ThenBy(static category => category.Key, StringComparer.Ordinal);
+
+        foreach (var categoryBatch in categoryBatches)
+        {
+            foreach (var orderBatch in categoryBatch.GroupBy(static config => config.Order).OrderBy(static batch => batch.Key))
+            {
+                await Parallel.ForEachAsync(
+                    orderBatch,
+                    new ParallelOptions { MaxDegreeOfParallelism = 4 },
+                    async (resourceConfig, _) => await UpdateResourceConfigPermissionsAsync(resourceConfig).ConfigureAwait(false)).ConfigureAwait(false);
+            }
+        }
+    }
+
+    private async Task UpdateResourceConfigPermissionsAsync(IResourceConfig resourceConfig)
+    {
+        foreach (var request in resourceConfig.AuthorizationRequests().Distinct())
+        {
+            await Runtime.Permissions
+                .UpdatePermissionsAllNamespaceAsync(request.ResourceType, request.Verb, request.Subresource)
+                .ConfigureAwait(false);
         }
     }
 
@@ -135,7 +165,6 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
         _disposed = true;
         Runtime.OnChange -= OnRuntimeChange;
         Runtime.OnCustomResourceDefinitionReady -= HandleCustomResourceDefinitionReady;
-        UnsubscribeNamespaceCollection();
 
         _disposeCancellation.Cancel();
         _disposeCancellation.Dispose();
@@ -163,10 +192,10 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
         }
     }
 
-    private async Task RefreshResourceConfigPermissionsAsync(
+    private async Task EvaluateResourceConfigAccessAsync(
         IReadOnlyCollection<IResourceConfig>? resourceConfigs = null)
     {
-        using var activity = _instrumentation.Source.StartActivity(nameof(RefreshResourceConfigPermissionsAsync));
+        using var activity = _instrumentation.Source.StartActivity(nameof(EvaluateResourceConfigAccessAsync));
 
         if (_disposed)
         {
@@ -182,16 +211,15 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
                 return;
             }
 
-            await RefreshAuthorizationIndexForConfigsAsync(configSnapshot).ConfigureAwait(false);
-            await Task.WhenAll(configSnapshot.Select(RefreshResourceConfigPermissionCoreAsync)).ConfigureAwait(false);
+            await Task.WhenAll(configSnapshot.Select(EvaluateResourceConfigAccessCoreAsync)).ConfigureAwait(false);
         }
         catch (Exception ex)
         {
-            _logger.LogDebug(ex, "Unable to refresh workspace resource permissions.");
+            _logger.LogDebug(ex, "Unable to evaluate workspace resource access.");
         }
     }
 
-    private async Task RefreshResourceConfigPermissionCoreAsync(IResourceConfig resourceConfig)
+    private async Task EvaluateResourceConfigAccessCoreAsync(IResourceConfig resourceConfig)
     {
         ArgumentNullException.ThrowIfNull(resourceConfig);
 
@@ -201,25 +229,10 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
         }
         catch (Exception ex)
         {
-            _logger.LogDebug(ex, "Unable to refresh permissions for {Kind}", resourceConfig.Kind);
+            _logger.LogDebug(ex, "Unable to evaluate permissions for {Kind}", resourceConfig.Kind);
         }
 
         ProcessResourceConfigPermissionsUpdated(resourceConfig);
-    }
-
-    private async Task RefreshAuthorizationIndexForConfigsAsync(IEnumerable<IResourceConfig> resourceConfigs)
-    {
-        using var activity = _instrumentation.Source.StartActivity(nameof(RefreshAuthorizationIndexForConfigsAsync));
-
-        var requests = resourceConfigs
-            .SelectMany(static config => config.AuthorizationRequests())
-            .Distinct()
-            .ToArray();
-
-        if (requests.Length > 0)
-        {
-            await Runtime.Permissions.RefreshAuthorizationIndexAsync(requests).ConfigureAwait(false);
-        }
     }
 
     private async Task<IResourceConfig?> BuildCustomResourceConfigAsync(V1CustomResourceDefinition crd)
@@ -240,8 +253,8 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
         var resourceConfig = (IResourceConfig)_serviceProvider.GetRequiredService(resourceConfigType);
 
         resourceConfig.Initialize(this);
-        await Runtime.Permissions.RefreshAuthorizationIndexAsync(resourceConfig.ListWatchAuthorizationRequests()).ConfigureAwait(false);
-        await RefreshResourceConfigPermissionCoreAsync(resourceConfig).ConfigureAwait(false);
+        await UpdateResourceConfigPermissionsAsync([resourceConfig]).ConfigureAwait(false);
+        await EvaluateResourceConfigAccessCoreAsync(resourceConfig).ConfigureAwait(false);
 
         if (!resourceConfig.CanListAndWatch)
         {
@@ -262,11 +275,14 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
     {
         using var activity = _instrumentation.Source.StartActivity(nameof(SeedResourcesConfiguredForConnectAsync));
 
-        foreach (var resourceConfig in _resourceConfigs.Values
-                     .Where(static config => config.SeedOnConnect && config.PermissionsLoaded && config.CanListAndWatch)
-                     .OrderBy(static config => config.Order))
+        var seedBatches = _resourceConfigs.Values
+            .Where(static config => config.SeedOnConnect && config.PermissionsLoaded && config.CanListAndWatch)
+            .GroupBy(static config => config.Order)
+            .OrderBy(static batch => batch.Key);
+
+        foreach (var seedBatch in seedBatches)
         {
-            await EnsureResourceSeededAsync(resourceConfig).ConfigureAwait(false);
+            await Task.WhenAll(seedBatch.Select(EnsureResourceSeededAsync)).ConfigureAwait(false);
         }
     }
 
@@ -281,47 +297,6 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
         }
 
         await Runtime.SeedResource(resourceConfig.Type).ConfigureAwait(false);
-    }
-
-    private void SubscribeNamespaceCollection(ReadOnlyObservableCollection<V1Namespace>? namespaces)
-    {
-        if (namespaces is not INotifyCollectionChanged collection || ReferenceEquals(_runtimeNamespacesCollection, collection))
-        {
-            return;
-        }
-
-        UnsubscribeNamespaceCollection();
-        _runtimeNamespacesCollection = collection;
-        _runtimeNamespacesCollection.CollectionChanged += OnRuntimeNamespacesCollectionChanged;
-    }
-
-    private void UnsubscribeNamespaceCollection()
-    {
-        if (_runtimeNamespacesCollection == null)
-        {
-            return;
-        }
-
-        _runtimeNamespacesCollection.CollectionChanged -= OnRuntimeNamespacesCollectionChanged;
-        _runtimeNamespacesCollection = null;
-    }
-
-    private void OnRuntimeNamespacesCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
-    {
-        if (_disposed
-            || e.Action is not NotifyCollectionChangedAction.Add and not NotifyCollectionChangedAction.Remove)
-        {
-            return;
-        }
-
-        var namespacedResourceConfigs = _resourceConfigs.Values
-            .Where(static resourceConfig => resourceConfig.IsNamespaced)
-            .ToArray();
-
-        if (Runtime.Connected)
-        {
-            _ = RefreshResourceConfigPermissionsAsync(namespacedResourceConfigs);
-        }
     }
 
     private void ProcessResourceConfigPermissionsUpdated(IResourceConfig resourceConfig)

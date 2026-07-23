@@ -94,16 +94,6 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
 
     public virtual IList<(Verb verb, string? subResource)> CustomPermissions() => [];
 
-    protected virtual Task RefreshPermissionAsync(Verb verb, string? subResource)
-    {
-        if (Cluster.Runtime.AuthorizationIndexReady)
-        {
-            return Task.CompletedTask;
-        }
-
-        return Cluster.Runtime.Permissions.UpdatePermissionsAllNamespaceAsync<T>(verb, subResource);
-    }
-
     public IEnumerable<(Verb verb, string? subresource)> Permissions()
     {
         return DefaultPermissions()
@@ -205,51 +195,6 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
         (Verb.Watch, null),
     ];
 
-    public async Task UpdatePermissions()
-    {
-        await EvaluateListWatchAccessAsync().ConfigureAwait(false);
-
-        if (!CanListAndWatch)
-        {
-            return;
-        }
-
-        var exceptions = new List<Exception>();
-
-        foreach (var (verb, subResource) in DefaultPermissions())
-        {
-            try
-            {
-                await RefreshPermissionAsync(verb, subResource).ConfigureAwait(false);
-            }
-            catch (Exception ex)
-            {
-                exceptions.Add(ex);
-            }
-        }
-
-        foreach (var (verb, subResource) in CustomPermissions())
-        {
-            try
-            {
-                await RefreshPermissionAsync(verb, subResource).ConfigureAwait(false);
-            }
-            catch (Exception ex)
-            {
-                exceptions.Add(ex);
-            }
-        }
-
-        if (exceptions.Count > 0)
-        {
-            _logger.LogDebug(new AggregateException(exceptions), "Unable to refresh non-list permissions for {Type}", typeof(T).FullName);
-            PermissionsLoaded = false;
-            return;
-        }
-
-        PermissionsLoaded = true;
-    }
-
     public async Task EvaluateListWatchAccessAsync()
     {
         PermissionsLoaded = false;
@@ -257,7 +202,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
 
         try
         {
-            CanListAndWatch = await HasListAndWatchAccessAsync().ConfigureAwait(false);
+            CanListAndWatch = HasListAndWatchAccess();
         }
         catch (Exception ex)
         {
@@ -268,7 +213,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
         PermissionsLoaded = true;
     }
 
-    private async Task<bool> HasListAndWatchAccessAsync()
+    private bool HasListAndWatchAccess()
     {
         if (Cluster.Runtime.Permissions.CanIAnyNamespace<T>(Verb.List)
             && Cluster.Runtime.Permissions.CanIAnyNamespace<T>(Verb.Watch))
@@ -289,8 +234,8 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
                 continue;
             }
 
-            if (await Cluster.Runtime.Permissions.UpdateCanI<T>(Verb.List, namespaceName).ConfigureAwait(false)
-                && await Cluster.Runtime.Permissions.UpdateCanI<T>(Verb.Watch, namespaceName).ConfigureAwait(false))
+            if (Cluster.Runtime.Permissions.CanI<T>(Verb.List, namespaceName)
+                && Cluster.Runtime.Permissions.CanI<T>(Verb.Watch, namespaceName))
             {
                 return true;
             }

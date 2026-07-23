@@ -28,22 +28,6 @@ namespace KubeUI.Avalonia.Shell.Navigation;
 
 public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
 {
-    private const int ClusterSettingsOrder = -480;
-    private const int CategoryOrderOffset = 1000;
-    private const int CustomResourceDefinitionsCategoryOrder = 13 + CategoryOrderOffset;
-    private const string NetworkCategoryName = "Network";
-    private const string CustomResourceDefinitionsCategoryName = "Custom Resource Definitions";
-
-    private static readonly Dictionary<string, int> s_categoryOrderOverrides = new(StringComparer.Ordinal)
-    {
-        ["Workloads"] = 8,
-        ["Configuration"] = 9,
-        [NetworkCategoryName] = 10,
-        ["Storage"] = 11,
-        ["Access Control"] = 12,
-        [CustomResourceDefinitionsCategoryName] = 13,
-    };
-
     private readonly ILogger<NavigationViewModel> _logger;
     private readonly INotificationManager _notificationManager;
     private readonly IServiceProvider _serviceProvider;
@@ -188,8 +172,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
         return SelectNavigationLink(CreateNavigationLink(
             clusterNode.Cluster,
             NavigationTargets.ClusterSettings,
-            Assets.Resources.ClusterSettingsView_Title!,
-            ClusterSettingsOrder));
+            Assets.Resources.ClusterSettingsView_Title!));
     }
 
     [RelayCommand]
@@ -563,8 +546,8 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
             root = new NavigationItem
             {
                 Id = rootId,
-                Name = CustomResourceDefinitionsCategoryName,
-                Order = CustomResourceDefinitionsCategoryOrder,
+                Name = ResourceCategories.CustomResourceDefinitions,
+                Order = ResourceCategories.CustomResourceDefinitionsNavigationOrder,
             };
             node.NavigationItems.Add(root);
 
@@ -614,7 +597,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
             return;
         }
 
-        EnsureNavigationCategory(node.NavigationItems, node.Cluster, NetworkCategoryName, 10)
+        EnsureNavigationCategory(node.NavigationItems, node.Cluster, ResourceCategories.Network, 10)
             .NavigationItems
             .Add(CreateNavigationLink(node.Cluster, NavigationTargets.PortForwarders, Assets.Resources.PortForwarderListView_Title, -450));
     }
@@ -719,7 +702,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
         {
             Id = id,
             Name = name,
-            Order = (s_categoryOrderOverrides.TryGetValue(name, out var fixedOrder) ? fixedOrder : order) + CategoryOrderOffset,
+            Order = ResourceCategories.GetOrder(name, order),
         };
         items.Add(category);
         return category;
@@ -821,7 +804,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
             .RefCount();
     }
 
-    private static NavigationLink CreateNavigationLink(ClusterWorkspace cluster, string id, string name, int order)
+    private static NavigationLink CreateNavigationLink(ClusterWorkspace cluster, string id, string name, int order = 0)
     {
         return new NavigationLink
         {

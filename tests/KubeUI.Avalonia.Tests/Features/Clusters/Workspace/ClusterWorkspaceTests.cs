@@ -1,7 +1,6 @@
 using System.Collections;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Diagnostics;
 using System.Reflection;
 using Avalonia.Headless.XUnit;
 using Avalonia.Styling;
@@ -14,7 +13,6 @@ using k8s.Models;
 using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Resources;
 using KubeUI.Avalonia.Tests.Infra;
-using KubeUI.Avalonia.Tests.Shell.Navigation;
 using KubeUI.Testing;
 using Shouldly;
 
@@ -370,66 +368,6 @@ public class ClusterWorkspaceTests : AvaloniaTestBase
     }
 
     [AvaloniaFact]
-    public async Task namespace_permission_refresh_does_not_reseed_events_when_events_are_already_seeded()
-    {
-        var runtime = new CountingClusterRuntime(new TestClusterRuntime
-        {
-            Connected = true,
-            Status = ClusterStatus.Connected,
-            DefaultPermissionAllowed = true,
-        });
-
-        var workspace = ActivatorUtilities.CreateInstance<ClusterWorkspace>(
-            TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized."),
-            runtime);
-        _disposables.Add(workspace);
-
-        await workspace.Connect();
-        await WaitForAsync(() => runtime.EventSeedCalls == 1);
-
-        await runtime.AddOrUpdateResource(new V1Namespace
-        {
-            Metadata = new V1ObjectMeta { Name = "team-a" }
-        });
-
-        await Task.Delay(200);
-        Dispatcher.UIThread.RunJobs();
-
-        runtime.EventSeedCalls.ShouldBe(1);
-    }
-
-    [AvaloniaFact]
-    public async Task later_permission_refresh_seeds_events_when_initial_permissions_were_unavailable()
-    {
-        var baseRuntime = new TestClusterRuntime
-        {
-            Connected = true,
-            Status = ClusterStatus.Connected,
-            DefaultPermissionAllowed = false,
-        };
-        var runtime = new CountingClusterRuntime(baseRuntime);
-
-        var workspace = ActivatorUtilities.CreateInstance<ClusterWorkspace>(
-            TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized."),
-            runtime);
-        _disposables.Add(workspace);
-
-        await workspace.Connect();
-        runtime.EventSeedCalls.ShouldBe(0);
-
-        baseRuntime.SetPermission<Corev1Event>(Verb.List, true);
-        baseRuntime.SetPermission<Corev1Event>(Verb.Watch, true);
-
-        await runtime.AddOrUpdateResource(new V1Namespace
-        {
-            Metadata = new V1ObjectMeta { Name = "default" }
-        });
-
-        await WaitForAsync(() => runtime.EventSeedCalls == 1);
-        runtime.Objects.ContainsKey(GroupApiVersionKind.From<Corev1Event>()).ShouldBeTrue();
-    }
-
-    [AvaloniaFact]
     public async Task connect_skips_workspace_initialization_when_runtime_remains_disconnected()
     {
         var runtime = new TestCluster
@@ -444,106 +382,11 @@ public class ClusterWorkspaceTests : AvaloniaTestBase
         await workspace.Connect();
 
         runtime.Connected.ShouldBeFalse();
-        workspace.GetResourceConfigs().ShouldBeEmpty();
+        workspace.GetResourceConfigs().ShouldNotBeEmpty();
     }
 
     [AvaloniaFact]
-    public async Task permission_refresh_completes_other_resource_configs_before_pod_permissions_finish()
-    {
-        var runtime = new TestCluster
-        {
-            Connected = true,
-            Status = ClusterStatus.Connected,
-            DefaultPermissionAllowed = false,
-        };
-
-        var workspace = CreateWorkspace(runtime);
-        await workspace.Connect();
-        Dispatcher.UIThread.RunJobs();
-
-        var podRelease = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
-        var fastRefreshCompleted = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
-
-        workspace.AddResourceConfigForTest(new BlockingPodPermissionResourceConfig(runtime, podRelease.Task));
-        workspace.AddResourceConfigForTest(new ImmediatePermissionResourceConfig(typeof(TestPermissionResourceAlpha), "Alpha Permission Resource", fastRefreshCompleted));
-
-        await runtime.AddOrUpdateResource(new V1Namespace
-        {
-            Metadata = new V1ObjectMeta { Name = "my-app" }
-        });
-
-        await Task.Delay(100);
-        Dispatcher.UIThread.RunJobs();
-
-        await WaitForAsync(() => fastRefreshCompleted.Task.IsCompleted);
-        workspace.GetResourceConfig<TestPermissionResourceAlpha>().PermissionsLoaded.ShouldBeTrue();
-        workspace.GetResourceConfig<V1Pod>().PermissionsLoaded.ShouldBeFalse();
-
-        podRelease.TrySetResult(null);
-
-        await WaitForAsync(() => workspace.GetResourceConfig<V1Pod>().PermissionsLoaded);
-        workspace.GetResourceConfig<V1Pod>().PermissionsLoaded.ShouldBeTrue();
-    }
-
-    [AvaloniaFact]
-    public async Task namespace_change_does_not_block_ui_thread_while_workspace_refresh_runs()
-    {
-        var runtime = new TestCluster
-        {
-            Connected = true,
-            Status = ClusterStatus.Connected,
-        };
-
-        var workspace = CreateWorkspace(runtime);
-        await workspace.Connect();
-
-        var releaseRefresh = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
-        workspace.AddResourceConfigForTest(new BlockingPodPermissionResourceConfig(runtime, releaseRefresh.Task));
-
-        var namespaceAdded = runtime.AddOrUpdateResource(new V1Namespace
-        {
-            Metadata = new V1ObjectMeta { Name = "refresh-test" }
-        });
-
-        var sw = Stopwatch.StartNew();
-        await namespaceAdded;
-        sw.Stop();
-
-        sw.Elapsed.ShouldBeLessThan(TimeSpan.FromMilliseconds(250));
-
-        var uiCallbackCompleted = false;
-        await Dispatcher.UIThread.InvokeAsync(() => uiCallbackCompleted = true);
-        uiCallbackCompleted.ShouldBeTrue();
-        workspace.GetResourceConfig<V1Pod>().PermissionsLoaded.ShouldBeFalse();
-
-        releaseRefresh.TrySetResult(null);
-
-        await WaitForAsync(() => workspace.GetResourceConfig<V1Pod>().PermissionsLoaded);
-        workspace.GetResourceConfig<V1Pod>().PermissionsLoaded.ShouldBeTrue();
-    }
-
-    [AvaloniaFact]
-    public async Task runtime_authorization_index_state_is_updated_after_initialization()
-    {
-        var runtime = new TestCluster
-        {
-            Connected = true,
-            Status = ClusterStatus.Connected,
-        };
-
-        var workspace = CreateWorkspace(runtime);
-
-        runtime.AuthorizationIndexReady.ShouldBeFalse();
-        runtime.AuthorizationIndexVersion.ShouldBe(0);
-
-        await workspace.Connect();
-
-        runtime.AuthorizationIndexReady.ShouldBeTrue();
-        runtime.AuthorizationIndexVersion.ShouldBeGreaterThan(0);
-    }
-
-    [AvaloniaFact]
-    public async Task added_crd_refreshes_authorization_index_for_generated_resource_before_config_is_published()
+    public async Task added_crd_does_not_refresh_authorization_index_for_generated_resource()
     {
         var runtime = new RecordingAuthorizationClusterRuntime(new TestCluster());
         var workspace = ActivatorUtilities.CreateInstance<ClusterWorkspace>(
@@ -552,7 +395,7 @@ public class ClusterWorkspaceTests : AvaloniaTestBase
         _disposables.Add(workspace);
 
         await workspace.Connect();
-        runtime.ClearRecordedAuthorizationRequests();
+        var authorizationPlanCount = runtime.RecordedAuthorizationRequests.Count;
 
         var crd = ClusterWorkspaceTestCustomResourceDefinitionFactory.Create("tests.kubeui.com", "tests", "someString");
         await runtime.AddOrUpdateResource(crd);
@@ -562,10 +405,7 @@ public class ClusterWorkspaceTests : AvaloniaTestBase
 
         await WaitForAsync(() => GetCustomResourceConfig(workspace, crd) != null);
 
-        runtime.RecordedAuthorizationRequests
-            .SelectMany(static batch => batch)
-            .Any(request => request.ResourceType == resourceType)
-            .ShouldBeTrue();
+        runtime.RecordedAuthorizationRequests.Count.ShouldBe(authorizationPlanCount);
     }
 
     private ClusterWorkspace CreateWorkspace(TestCluster runtime)
@@ -725,8 +565,6 @@ internal sealed class CountingClusterRuntime : IClusterRuntime, INotifyPropertyC
     public bool Connected { get => _inner.Connected; set => _inner.Connected = value; }
     public ClusterStatus Status { get => _inner.Status; set => _inner.Status = value; }
     public string? LastError { get => _inner.LastError; set => _inner.LastError = value; }
-    public bool AuthorizationIndexReady => _inner.AuthorizationIndexReady;
-    public long AuthorizationIndexVersion => _inner.AuthorizationIndexVersion;
     public bool IsMetricsAvailable => _inner.IsMetricsAvailable;
     public bool ListNamespaces { get => _inner.ListNamespaces; set => _inner.ListNamespaces = value; }
     public IKubernetes? Client { get => _inner.Client; set => _inner.Client = value; }
@@ -739,7 +577,6 @@ internal sealed class CountingClusterRuntime : IClusterRuntime, INotifyPropertyC
     public ObservableCollection<PodMetrics> PodMetrics => _inner.PodMetrics;
     public ObservableCollection<PortForwarder> PortForwarders => _inner.PortForwarders;
     public IClusterAuthorization Permissions => _inner.Permissions;
-
     public bool IsResourceNamespaced(Type type) => _inner.IsResourceNamespaced(type);
     public bool IsResourceNamespaced<T>() => _inner.IsResourceNamespaced<T>();
     public PortForwarder AddPodPortForward(string @namespace, string podName, int containerPort) => _inner.AddPodPortForward(@namespace, podName, containerPort);
@@ -833,8 +670,6 @@ internal sealed class RecordingAuthorizationClusterRuntime : IClusterRuntime, IC
     public bool Connected { get => _inner.Connected; set => _inner.Connected = value; }
     public ClusterStatus Status { get => _inner.Status; set => _inner.Status = value; }
     public string? LastError { get => _inner.LastError; set => _inner.LastError = value; }
-    public bool AuthorizationIndexReady => _inner.AuthorizationIndexReady;
-    public long AuthorizationIndexVersion => _inner.AuthorizationIndexVersion;
     public bool IsMetricsAvailable => _inner.IsMetricsAvailable;
     public bool ListNamespaces { get => _inner.ListNamespaces; set => _inner.ListNamespaces = value; }
     public IKubernetes? Client { get => _inner.Client; set => _inner.Client = value; }
@@ -848,15 +683,14 @@ internal sealed class RecordingAuthorizationClusterRuntime : IClusterRuntime, IC
     public ObservableCollection<PortForwarder> PortForwarders => _inner.PortForwarders;
     public IClusterAuthorization Permissions => this;
 
-    public void ClearRecordedAuthorizationRequests()
-    {
-        RecordedAuthorizationRequests.Clear();
-    }
-
     public bool CanI(Type type, Verb verb, string? @namespace = null, string? subresource = null) => _inner.CanI(type, verb, @namespace, subresource);
     public bool CanI<T>(Verb verb, string? @namespace = null, string? subresource = null) where T : class, IKubernetesObject<V1ObjectMeta>, new() => _inner.CanI<T>(verb, @namespace, subresource);
     public bool CanIAnyNamespace(Type type, Verb verb, string? subresource = null) => _inner.CanIAnyNamespace(type, verb, subresource);
     public bool CanIAnyNamespace<T>(Verb verb, string? subresource = null) where T : class, IKubernetesObject<V1ObjectMeta>, new() => _inner.CanIAnyNamespace<T>(verb, subresource);
+    public Task<bool> UpdateCanI(Type type, Verb verb, string? @namespace = null, string? subresource = null) => _inner.UpdateCanI(type, verb, @namespace, subresource);
+    public Task<bool> UpdateCanI<T>(Verb verb, string? @namespace = null, string? subresource = null) where T : class, IKubernetesObject<V1ObjectMeta>, new() => _inner.UpdateCanI<T>(verb, @namespace, subresource);
+    public Task UpdatePermissionsAllNamespaceAsync(Type type, Verb verb, string? subresource = null) => _inner.UpdatePermissionsAllNamespaceAsync(type, verb, subresource);
+    public Task UpdatePermissionsAllNamespaceAsync<T>(Verb verb, string? subresource = null) where T : class, IKubernetesObject<V1ObjectMeta>, new() => _inner.UpdatePermissionsAllNamespaceAsync<T>(verb, subresource);
     public bool IsResourceNamespaced(Type type) => _inner.IsResourceNamespaced(type);
     public bool IsResourceNamespaced<T>() => _inner.IsResourceNamespaced<T>();
     public PortForwarder AddPodPortForward(string @namespace, string podName, int containerPort) => _inner.AddPodPortForward(@namespace, podName, containerPort);
@@ -877,18 +711,6 @@ internal sealed class RecordingAuthorizationClusterRuntime : IClusterRuntime, IC
     public IObservable<int> GetResourceCount(Type type) => _inner.GetResourceCount(type);
     public IObservable<int> GetResourceCount<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new() => _inner.GetResourceCount<T>();
 
-    public Task RefreshAuthorizationIndexAsync(IEnumerable<AuthorizationRequest> requests)
-    {
-        RecordedAuthorizationRequests.Add(requests.Distinct().ToArray());
-        return _inner.RefreshAuthorizationIndexAsync(requests);
-    }
-
-    public Task UpdatePermissionsAllNamespaceAsync(Type type, Verb verb, string? subresource = null) => _inner.UpdatePermissionsAllNamespaceAsync(type, verb, subresource);
-    public Task UpdatePermissionsAllNamespaceAsync<T>(Verb verb, string? subresource = null) where T : class, IKubernetesObject<V1ObjectMeta>, new() => _inner.UpdatePermissionsAllNamespaceAsync<T>(verb, subresource);
-    public Task<bool> UpdateCanI(Type type, Verb verb, string? @namespace = null, string? subresource = null) => _inner.UpdateCanI(type, verb, @namespace, subresource);
-    public Task<bool> UpdateCanI<T>(Verb verb, string? @namespace = null, string? subresource = null) where T : class, IKubernetesObject<V1ObjectMeta>, new() => _inner.UpdateCanI<T>(verb, @namespace, subresource);
-    public Task<bool> UpdateCanIAnyNamespaceAsync(Type type, Verb verb, string? subresource = null) => _inner.UpdateCanIAnyNamespaceAsync(type, verb, subresource);
-    public Task<bool> UpdateCanIAnyNamespaceAsync<T>(Verb verb, string? subresource = null) where T : class, IKubernetesObject<V1ObjectMeta>, new() => _inner.UpdateCanIAnyNamespaceAsync<T>(verb, subresource);
     public Task SeedResource<T>(bool waitForReady = false) where T : class, IKubernetesObject<V1ObjectMeta>, new() => _inner.SeedResource<T>(waitForReady);
     public Task SeedResource(Type resourceType, bool waitForReady = false) => _inner.SeedResource(resourceType, waitForReady);
 }
