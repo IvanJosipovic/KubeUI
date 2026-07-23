@@ -80,8 +80,7 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
                 return;
             }
 
-            await UpdateResourceConfigsPermissionsAsync().ConfigureAwait(false);
-            await EvaluateResourceConfigAccessAsync().ConfigureAwait(false);
+            await UpdateResourceConfigsPermissionsAndEvaluateAsync().ConfigureAwait(false);
             await SeedResourcesConfiguredForConnectAsync().ConfigureAwait(false);
             _workspaceStateInitialized = true;
         }
@@ -93,7 +92,29 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
         }
     }
 
-    private async Task  UpdateResourceConfigsPermissionsAsync(
+    private async Task UpdateResourceConfigsPermissionsAndEvaluateAsync(
+        IReadOnlyCollection<IResourceConfig>? resourceConfigs = null)
+    {
+        using var activity = StartWorkspaceActivity(nameof(UpdateResourceConfigsPermissionsAndEvaluateAsync));
+
+        var categoryBatches = (resourceConfigs ?? GetResourceConfigs())
+            .GroupBy(static config => config.Category, StringComparer.Ordinal)
+            .OrderBy(static category => ResourceCategories.GetOrder(category.Key, category.Min(config => config.Order)))
+            .ThenBy(static category => category.Key, StringComparer.Ordinal);
+
+        foreach (var categoryBatch in categoryBatches)
+        {
+            foreach (var orderBatch in categoryBatch.GroupBy(static config => config.Order).OrderBy(static batch => batch.Key))
+            {
+                await Parallel.ForEachAsync(
+                    orderBatch,
+                    new ParallelOptions { MaxDegreeOfParallelism = 4 },
+                    async (resourceConfig, _) => await UpdateResourceConfigPermissionsAndEvaluateAsync(resourceConfig).ConfigureAwait(false)).ConfigureAwait(false);
+            }
+        }
+    }
+
+    private async Task UpdateResourceConfigsPermissionsAsync(
         IReadOnlyCollection<IResourceConfig>? resourceConfigs = null)
     {
         using var activity = StartWorkspaceActivity(nameof(UpdateResourceConfigPermissionsAsync));
@@ -123,6 +144,12 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
                 .UpdatePermissionsAllNamespaceAsync(request.ResourceType, request.Verb, request.Subresource)
                 .ConfigureAwait(false);
         }
+    }
+
+    private async Task UpdateResourceConfigPermissionsAndEvaluateAsync(IResourceConfig resourceConfig)
+    {
+        await UpdateResourceConfigPermissionsAsync(resourceConfig).ConfigureAwait(false);
+        await EvaluateResourceConfigAccessCoreAsync(resourceConfig).ConfigureAwait(false);
     }
 
     public async Task Disconnect()
@@ -203,34 +230,6 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
             var resourceConfig = (IResourceConfig)_serviceProvider.GetRequiredService(type);
             resourceConfig.Initialize(this);
             _resourceConfigs[resourceConfig.Kind] = resourceConfig;
-        }
-    }
-
-    private async Task EvaluateResourceConfigAccessAsync(
-        IReadOnlyCollection<IResourceConfig>? resourceConfigs = null)
-    {
-        using var activity = StartWorkspaceActivity(nameof(EvaluateResourceConfigAccessAsync));
-
-        if (_disposed)
-        {
-            return;
-        }
-
-        try
-        {
-            var configSnapshot = resourceConfigs?.ToArray() ?? GetResourceConfigs().ToArray();
-
-            if (configSnapshot.Length == 0)
-            {
-                return;
-            }
-
-            await Task.WhenAll(configSnapshot.Select(EvaluateResourceConfigAccessCoreAsync)).ConfigureAwait(false);
-        }
-        catch (Exception ex)
-        {
-            activity?.SetStatus(System.Diagnostics.ActivityStatusCode.Error, ex.Message);
-            _logger.LogDebug(ex, "Unable to evaluate workspace resource access.");
         }
     }
 
