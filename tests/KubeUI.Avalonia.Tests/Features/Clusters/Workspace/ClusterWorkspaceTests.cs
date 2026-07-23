@@ -48,6 +48,23 @@ public class ClusterWorkspaceTests : AvaloniaTestBase
     }
 
     [AvaloniaFact]
+    public void changing_runtime_status_to_connecting_updates_cluster_color()
+    {
+        var runtime = new TestCluster
+        {
+            Connected = false,
+            Status = ClusterStatus.None,
+        };
+
+        var workspace = CreateWorkspace(runtime);
+
+        runtime.Status = ClusterStatus.Connecting;
+        Dispatcher.UIThread.RunJobs();
+
+        workspace.ClusterColor.ShouldBe(Brushes.Orange);
+    }
+
+    [AvaloniaFact]
     public async Task added_crd_adds_resource_config_and_model_cache_entry()
     {
         var runtime = new TestCluster();

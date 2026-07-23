@@ -84,7 +84,6 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
             await EvaluateResourceConfigAccessAsync().ConfigureAwait(false);
             await SeedResourcesConfiguredForConnectAsync().ConfigureAwait(false);
             _workspaceStateInitialized = true;
-            await Dispatcher.UIThread.InvokeAsync(UpdateClusterColor);
         }
         catch (Exception ex)
         {
@@ -176,6 +175,10 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
         _disposed = true;
         Runtime.OnChange -= OnRuntimeChange;
         Runtime.OnCustomResourceDefinitionReady -= HandleCustomResourceDefinitionReady;
+        if (Runtime is INotifyPropertyChanged runtime)
+        {
+            runtime.PropertyChanged -= OnRuntimePropertyChanged;
+        }
 
         _disposeCancellation.Cancel();
         _disposeCancellation.Dispose();
@@ -329,6 +332,18 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
     {
         Runtime.OnChange += OnRuntimeChange;
         Runtime.OnCustomResourceDefinitionReady += HandleCustomResourceDefinitionReady;
+        if (Runtime is INotifyPropertyChanged runtime)
+        {
+            runtime.PropertyChanged += OnRuntimePropertyChanged;
+        }
+    }
+
+    private void OnRuntimePropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(IClusterRuntime.Status))
+        {
+            Dispatcher.UIThread.Post(UpdateClusterColor);
+        }
     }
 
     private void ResetWorkspaceState()
@@ -473,11 +488,6 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
 
     private IBrush GetConnectedBrush()
     {
-        if (ClusterColor != Brushes.Red && ClusterColor != Brushes.Orange)
-        {
-            return ClusterColor;
-        }
-
         var properties = typeof(Brushes)
             .GetProperties(BindingFlags.Public | BindingFlags.Static)
             .Where(x => x.Name != nameof(Brushes.Red) && x.Name != nameof(Brushes.Orange))
