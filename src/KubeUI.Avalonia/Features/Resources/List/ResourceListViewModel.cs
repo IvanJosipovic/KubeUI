@@ -186,6 +186,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         _searchSubject = new(_searchAdapterFactory.SearchPredicate);
 
         GenerateColumnDefinitions();
+        SubscribeToSelectedNamespaces();
         SetNamespaceFilter();
 
         var seedTask = Cluster.Runtime.SeedResource<T>();

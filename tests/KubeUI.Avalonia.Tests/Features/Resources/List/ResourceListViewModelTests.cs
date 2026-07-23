@@ -101,6 +101,19 @@ public class ResourceListViewModelTests : AvaloniaTestBase
             }
         };
 
+    private static V1Deployment Deployment(string ns, string name)
+        => new()
+        {
+            ApiVersion = V1Deployment.KubeApiVersion,
+            Kind = V1Deployment.KubeKind,
+            Metadata = new V1ObjectMeta
+            {
+                NamespaceProperty = ns,
+                Name = name,
+                CreationTimestamp = DateTime.UtcNow,
+            }
+        };
+
     private static Corev1Event Event(string ns, string name, DateTime? timestamp = null, int? count = null)
     {
         var actualTimestamp = timestamp ?? DateTime.UtcNow;
@@ -1202,6 +1215,42 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         vm.SelectedItem.ShouldNotBeNull();
         vm.SelectedItem!.Namespace().ShouldBe("ns1");
         vm.SelectedItem.Name().ShouldBe("a");
+    }
+
+    [AvaloniaFact(DisplayName = "Namespace filter applies when opening another resource list")]
+    public async Task namespace_filter_applies_when_opening_another_resource_list()
+    {
+        var window = CreateWindow();
+        var cluster = await CreateClusterAsync();
+
+        var podVm = GetRequiredService<ResourceListViewModel<V1Pod>>();
+        podVm.Initialize(cluster);
+
+        var view = GetRequiredService<ResourceListView>();
+        view.DataContext = podVm;
+        window.Content = view;
+        window.Show();
+
+        await AddOrUpdateAsync(cluster, Pod("ns1", "pod-a"));
+        await AddOrUpdateAsync(cluster, Pod("ns2", "pod-b"));
+
+        podVm.IsNamespaceSelectionLinked = false;
+        podVm.SelectedNamespaces.Add(NamespaceResource("ns1"));
+        Dispatcher.UIThread.RunJobs();
+
+        var deploymentVm = GetRequiredService<ResourceListViewModel<V1Deployment>>();
+        deploymentVm.Initialize(cluster);
+        deploymentVm.IsNamespaceSelectionLinked = podVm.IsNamespaceSelectionLinked;
+        deploymentVm.SelectedNamespaces.Add(podVm.SelectedNamespaces[0]);
+        view.DataContext = deploymentVm;
+
+        await AddOrUpdateAsync(cluster, Deployment("ns1", "deployment-a"));
+        await AddOrUpdateAsync(cluster, Deployment("ns2", "deployment-b"));
+
+        Dispatcher.UIThread.RunJobs();
+
+        deploymentVm.View.Count.ShouldBe(1);
+        deploymentVm.View[0].ShouldBeOfType<V1Deployment>().Namespace().ShouldBe("ns1");
     }
 
     [AvaloniaFact(DisplayName = "Namespace filter clears item when selection filtered out")]
