@@ -5,11 +5,11 @@ using k8s;
 using KubeUI.Avalonia.Features.Clusters.Error;
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
 using KubeUI.Avalonia.Infrastructure.Docking;
+using KubeUI.Avalonia.Infrastructure.Platform;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Services.Settings;
 using KubeUI.Avalonia.Shell.Main;
 using KubeUI.Avalonia.Styles;
-using KubeUI.Kubernetes;
 using Microsoft.Extensions.Hosting;
 using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
@@ -43,6 +43,8 @@ public partial class App : Application, IServiceProviderHost
 
     public App(IServiceProvider serviceProvider)
     {
+        Name = "KubeUI";
+
         Services = serviceProvider;
         _logger = Services.GetRequiredService<ILogger<App>>();
         _hostApplicationLifetime = Services.GetRequiredService<IHostApplicationLifetime>();
@@ -160,5 +162,4 @@ public partial class App : Application, IServiceProviderHost
         Services.GetService<TracerProvider>()?.ForceFlush();
         _hostApplicationLifetime.StopApplication();
     }
-
 }

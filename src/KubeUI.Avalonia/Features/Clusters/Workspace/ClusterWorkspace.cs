@@ -5,6 +5,7 @@ using System.Security.Cryptography;
 using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
+using KubeUI.Avalonia.Infrastructure.Platform;
 using KubeUI.Avalonia.Resources;
 using KubeUI.Kubernetes;
 
@@ -20,14 +21,18 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
     private INotifyCollectionChanged? _runtimeNamespacesCollection;
     private bool _disposed;
     private bool _workspaceStateInitialized;
+
+    private Instrumentation _instrumentation;
+
     public ClusterWorkspace(
         IClusterRuntime runtime,
         IServiceProvider serviceProvider,
-        ILogger<ClusterWorkspace> logger)
+        ILogger<ClusterWorkspace> logger, Instrumentation instrumentation)
     {
         Runtime = runtime;
         _serviceProvider = serviceProvider;
         _logger = logger;
+        _instrumentation = instrumentation;
 
         SubscribeRuntime();
         SubscribeNamespaceCollection(Runtime.Namespaces);
@@ -53,6 +58,7 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
 
     public async Task Connect()
     {
+        using var activity = _instrumentation.Source.StartActivity(nameof(Connect), System.Diagnostics.ActivityKind.Client);
         try
         {
             await Runtime.Connect().ConfigureAwait(false);
@@ -137,6 +143,8 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
 
     private void EnsureBuiltInResourceConfigs()
     {
+        using var activity = _instrumentation.Source.StartActivity(nameof(EnsureBuiltInResourceConfigs));
+
         var serviceDescriptors = _serviceProvider.GetRequiredService<ServiceDescriptor[]>();
 
         var types = serviceDescriptors
@@ -158,6 +166,8 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
     private async Task RefreshResourceConfigPermissionsAsync(
         IReadOnlyCollection<IResourceConfig>? resourceConfigs = null)
     {
+        using var activity = _instrumentation.Source.StartActivity(nameof(RefreshResourceConfigPermissionsAsync));
+
         if (_disposed)
         {
             return;
@@ -181,18 +191,6 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
         }
     }
 
-    private async Task RefreshResourceConfigPermissionAsync(IResourceConfig resourceConfig)
-    {
-        ArgumentNullException.ThrowIfNull(resourceConfig);
-
-        if (_disposed)
-        {
-            return;
-        }
-
-        await RefreshResourceConfigPermissionCoreAsync(resourceConfig).ConfigureAwait(false);
-    }
-
     private async Task RefreshResourceConfigPermissionCoreAsync(IResourceConfig resourceConfig)
     {
         ArgumentNullException.ThrowIfNull(resourceConfig);
@@ -211,6 +209,8 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
 
     private async Task RefreshAuthorizationIndexForConfigsAsync(IEnumerable<IResourceConfig> resourceConfigs)
     {
+        using var activity = _instrumentation.Source.StartActivity(nameof(RefreshAuthorizationIndexForConfigsAsync));
+
         var requests = resourceConfigs
             .SelectMany(static config => config.AuthorizationRequests())
             .Distinct()
@@ -241,7 +241,7 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
 
         resourceConfig.Initialize(this);
         await Runtime.Permissions.RefreshAuthorizationIndexAsync(resourceConfig.ListWatchAuthorizationRequests()).ConfigureAwait(false);
-        await RefreshResourceConfigPermissionAsync(resourceConfig).ConfigureAwait(false);
+        await RefreshResourceConfigPermissionCoreAsync(resourceConfig).ConfigureAwait(false);
 
         if (!resourceConfig.CanListAndWatch)
         {
@@ -260,6 +260,8 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
 
     private async Task SeedResourcesConfiguredForConnectAsync()
     {
+        using var activity = _instrumentation.Source.StartActivity(nameof(SeedResourcesConfiguredForConnectAsync));
+
         foreach (var resourceConfig in _resourceConfigs.Values
                      .Where(static config => config.SeedOnConnect && config.PermissionsLoaded && config.CanListAndWatch)
                      .OrderBy(static config => config.Order))
@@ -270,6 +272,8 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
 
     private async Task EnsureResourceSeededAsync(IResourceConfig resourceConfig)
     {
+        using var activity = _instrumentation.Source.StartActivity(nameof(EnsureResourceSeededAsync));
+
         if (Runtime.Objects.TryGetValue(resourceConfig.Kind, out var existing)
             && existing is IResourceContainer { IsSeeded: true })
         {
@@ -320,8 +324,10 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
         }
     }
 
-    internal void ProcessResourceConfigPermissionsUpdated(IResourceConfig resourceConfig)
+    private void ProcessResourceConfigPermissionsUpdated(IResourceConfig resourceConfig)
     {
+        using var activity = _instrumentation.Source.StartActivity(nameof(ProcessResourceConfigPermissionsUpdated));
+
         if (!Dispatcher.UIThread.CheckAccess())
         {
             _ = Dispatcher.UIThread.InvokeAsync(() => ProcessResourceConfigPermissionsUpdated(resourceConfig));
@@ -329,11 +335,6 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
         }
 
         ResourceConfigProcessed?.Invoke(this, resourceConfig);
-
-        if (resourceConfig.SeedOnConnect && resourceConfig.PermissionsLoaded && resourceConfig.CanListAndWatch)
-        {
-            _ = EnsureResourceSeededAsync(resourceConfig);
-        }
     }
 
     private void SubscribeRuntime()

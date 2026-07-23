@@ -1,7 +1,6 @@
 using FluentIcons.Avalonia;
 using FluentIcons.Common;
 using KubeUI.Avalonia.Controls;
-using KubeUI.Avalonia.Features.Clusters.Catalog;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
 

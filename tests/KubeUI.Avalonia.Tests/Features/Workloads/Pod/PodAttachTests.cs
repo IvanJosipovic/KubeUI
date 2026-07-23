@@ -150,9 +150,9 @@ public sealed class PodAttachTests : AvaloniaTestBase
     {
         var settings = TestApp.CurrentServices!.GetRequiredService<KubeUI.Avalonia.Services.Settings.ISettingsService>();
         var logger = TestApp.CurrentServices.GetRequiredService<ILogger<PodConsoleViewModel>>();
-        var stream = new ThrowingWriteStream(new WebSocketException(WebSocketError.InvalidState));
+        using var stream = new ThrowingWriteStream(new WebSocketException(WebSocketError.InvalidState));
 
-        PodConsoleViewModel viewModel = new(logger, settings);
+        using PodConsoleViewModel viewModel = new(logger, settings);
         viewModel.SetStreamsForTesting(stream: stream);
 
         viewModel.WriteInput("ls"u8.ToArray());
@@ -168,9 +168,9 @@ public sealed class PodAttachTests : AvaloniaTestBase
     {
         var settings = TestApp.CurrentServices!.GetRequiredService<KubeUI.Avalonia.Services.Settings.ISettingsService>();
         var logger = TestApp.CurrentServices.GetRequiredService<ILogger<PodConsoleViewModel>>();
-        var stream = new ThrowingWriteStream(new IOException());
+        using var stream = new ThrowingWriteStream(new IOException());
 
-        PodConsoleViewModel viewModel = new(logger, settings);
+        using PodConsoleViewModel viewModel = new(logger, settings);
         viewModel.SetStreamsForTesting(refreshStream: stream);
 
         viewModel.SendResize(80, 24);
@@ -246,7 +246,7 @@ public sealed class PodAttachTests : AvaloniaTestBase
 
         workspace.Runtime.Client = client.Object;
 
-        PodConsoleViewModel viewModel = new(logger, settings)
+        using PodConsoleViewModel viewModel = new(logger, settings)
         {
             Cluster = workspace,
             Object = pod,

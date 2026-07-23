@@ -1,5 +1,3 @@
-using KubeUI.Avalonia.Features.Clusters.Error;
-
 namespace KubeUI.Avalonia.Features.Clusters.Error;
 
 public sealed partial class ClusterErrorView : ViewBase<ClusterErrorViewModel>

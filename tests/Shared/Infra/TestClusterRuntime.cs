@@ -372,7 +372,9 @@ public class TestClusterRuntime : IClusterRuntime, IClusterAuthorization, INotif
 
     public PortForwarder AddPodPortForward(string @namespace, string podName, int containerPort)
     {
+#pragma warning disable CA2000 // Dispose objects before losing scope
         var pf = new PortForwarder(this, @namespace);
+#pragma warning restore CA2000 // Dispose objects before losing scope
         pf.SetPod(podName, containerPort);
 
         var existing = FindPortForwarder(pf);
@@ -394,7 +396,9 @@ public class TestClusterRuntime : IClusterRuntime, IClusterAuthorization, INotif
 
     public PortForwarder AddServicePortForward(string @namespace, string serviceName, int servicePort)
     {
+#pragma warning disable CA2000 // Dispose objects before losing scope
         var pf = new PortForwarder(this, @namespace);
+#pragma warning restore CA2000 // Dispose objects before losing scope
         pf.SetService(serviceName, servicePort);
 
         var existing = FindPortForwarder(pf);
@@ -636,8 +640,12 @@ public class TestClusterRuntime : IClusterRuntime, IClusterAuthorization, INotif
         foreach (var file in Directory.EnumerateFiles(path, "*.*", SearchOption.AllDirectories)
                      .Where(x => x.EndsWith(".yaml", StringComparison.OrdinalIgnoreCase) || x.EndsWith(".yml", StringComparison.OrdinalIgnoreCase)))
         {
-            await using var stream = File.OpenRead(file);
-            await ImportYaml(stream);
+#pragma warning disable CA2000
+            using (var stream = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.Read))
+#pragma warning restore CA2000
+            {
+                await ImportYaml(stream);
+            }
         }
     }
 
@@ -748,7 +756,7 @@ public class TestClusterRuntime : IClusterRuntime, IClusterAuthorization, INotif
             return;
         }
 
-        await SeedResourceAsync(currentType);
+        await SeedResource(currentType);
     }
 
     private bool RemoveSeededResourceContainer(Type resourceType)
@@ -766,16 +774,6 @@ public class TestClusterRuntime : IClusterRuntime, IClusterAuthorization, INotif
 
         ClearResourceContainer(resourceContainer);
         return true;
-    }
-
-    private Task SeedResourceAsync(Type resourceType, bool waitForReady = false)
-    {
-        var method = GetType()
-            .GetMethods(BindingFlags.Instance | BindingFlags.Public)
-            .First(x => x.Name == nameof(SeedResource) && x.IsGenericMethodDefinition && x.GetParameters().Length == 1)
-            .MakeGenericMethod(resourceType);
-
-        return (Task)method.Invoke(this, [waitForReady])!;
     }
 
     private void SyncNamespaceCollection(V1Namespace item)

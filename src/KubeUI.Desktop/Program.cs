@@ -1,10 +1,12 @@
+using System.Diagnostics;
 using System.Reflection;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Markup.Declarative;
 using KubeUI.Avalonia;
-using KubeUI.Avalonia.Assets;
+using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
+using KubeUI.Avalonia.Infrastructure.Platform;
 using KubeUI.Avalonia.Services.Settings;
 using KubeUI.Kubernetes;
 using Microsoft.Extensions.DependencyInjection;
@@ -21,6 +23,8 @@ namespace KubeUI.Desktop;
 
 internal static class Program
 {
+    public static ActivitySource Source { get; } = new ActivitySource("com.KubeUI.Desktop", "1.0.0");
+
     private static readonly object s_hostLock = new();
     private static IHost? s_host;
 
@@ -45,19 +49,13 @@ internal static class Program
 #endif
             ;
 
-        builder.StartWithClassicDesktopLifetime(args);
+        builder.StartWithClassicDesktopLifetime(args, ShutdownMode.OnLastWindowClose);
 
         s_host.StopAsync().GetAwaiter().GetResult();
 
         s_host.Dispose();
         s_host = null;
     }
-
-    //public static AppBuilder BuildAvaloniaApp()
-    //        => AppBuilder.Configure(() => new App(EnsureHostInitialized().Services))
-    //        .ConfigureFonts(fontManager => fontManager.AddFontCollection(new CascadiaMonoFontCollection()))
-    //        .WithInterFont()
-    //        .UsePlatformDetect();
 
     private static IHost EnsureHostInitialized()
     {
@@ -81,7 +79,11 @@ internal static class Program
 
     private static HostApplicationBuilder CreateHostBuilder(string[] args)
     {
-        var builder = Host.CreateApplicationBuilder(args);
+        var builder = Host.CreateEmptyApplicationBuilder(new HostApplicationBuilderSettings()
+        {
+            ApplicationName = "KubeUI",
+            Args = args
+        });
         var settings = SettingsService.LoadSettingsFromFile();
 
         builder.Logging.SetMinimumLevel(LogLevel.Debug);
@@ -178,6 +180,9 @@ internal static class Program
             .WithTracing(tracingProvider =>
             {
                 tracingProvider
+                    .AddSource(Source.Name)
+                    .AddSource(KubeUI.Kubernetes.Client.KubeInstrumentation.SourceName)
+                    .AddSource(Instrumentation.SourceName)
                     .AddHttpClientInstrumentation()
                     .AddOtlpExporter(e =>
                     {

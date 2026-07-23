@@ -2,7 +2,6 @@ using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.VisualTree;
 using Avalonia.Xaml.Interactivity;
-using KubeUI.Avalonia.Features.Resources.List;
 
 namespace KubeUI.Avalonia.Features.Resources.List.Behaviors;
 

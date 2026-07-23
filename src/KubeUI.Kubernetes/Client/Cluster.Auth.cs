@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
+using KubeUI.Kubernetes.Client;
 
 namespace KubeUI.Kubernetes;
 
@@ -50,8 +51,9 @@ public partial class Cluster
 
     private async Task UpdateNamespacePermission()
     {
-        await UpdatePermissionsAllNamespaceAsync<V1Namespace>(Verb.List);
-        await UpdatePermissionsAllNamespaceAsync<V1Namespace>(Verb.Watch);
+        using var activity = KubeInstrumentation.Source.StartActivity(nameof(UpdateNamespacePermission));
+        await UpdatePermissionsAllNamespaceAsync<V1Namespace>(Verb.List).ConfigureAwait(false);
+        await UpdatePermissionsAllNamespaceAsync<V1Namespace>(Verb.Watch).ConfigureAwait(false);
 
         ListNamespaces = CanI<V1Namespace>(Verb.List) && CanI<V1Namespace>(Verb.Watch);
     }
@@ -92,6 +94,7 @@ public partial class Cluster
 
     private async Task<bool> GetSelfSubjectAccessReview(Type type, Verb verb, string? @namespace = null, string? subresource = null)
     {
+        using var activity = KubeInstrumentation.Source.StartActivity(nameof(GetSelfSubjectAccessReview) + " " + type.Name + " " + verb.ToString() + (" " + @namespace ?? "") + (" " + subresource ?? ""));
         var kind = GroupApiVersionKind.From(type);
         var verbString = verb.ToString().ToLowerInvariant();
         var keyCheck = BuildReviewKey(kind, verbString, @namespace, subresource);
@@ -223,6 +226,8 @@ public partial class Cluster
 
     public async Task RefreshAuthorizationIndexAsync(IEnumerable<AuthorizationRequest> requests)
     {
+        using var activity = KubeInstrumentation.Source.StartActivity(nameof(RefreshAuthorizationIndexAsync));
+
         ArgumentNullException.ThrowIfNull(requests);
 
         var manifest = requests

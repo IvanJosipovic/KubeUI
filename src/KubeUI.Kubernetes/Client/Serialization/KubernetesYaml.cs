@@ -143,14 +143,14 @@ public static class KubernetesYaml
     /// <returns>collection of objects</returns>
     public static async Task<List<object>> LoadAllFromStreamAsync(Stream stream, IDictionary<string, Type> typeMap = null)
     {
-        var reader = new StreamReader(stream);
+        using var reader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, bufferSize: 1024, leaveOpen: true);
         var content = await reader.ReadToEndAsync().ConfigureAwait(false);
         return LoadAllFromString(content, typeMap);
     }
 
     public static async Task<List<object>> LoadAllFromStreamAsync(Stream stream, IDictionary<string, Type> typeMap, bool strict)
     {
-        var reader = new StreamReader(stream);
+        using var reader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, bufferSize: 1024, leaveOpen: true);
         var content = await reader.ReadToEndAsync().ConfigureAwait(false);
         return LoadAllFromString(content, typeMap, strict);
     }
@@ -331,4 +331,3 @@ public static class KubernetesYaml
         return stringBuilder.ToString();
     }
 }
-

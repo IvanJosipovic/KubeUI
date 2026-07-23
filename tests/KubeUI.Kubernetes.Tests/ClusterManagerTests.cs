@@ -23,7 +23,7 @@ public class ClusterManagerTests
             .AddTransient<IClusterRuntime, TestClusterRuntime>()
             .BuildServiceProvider();
 
-        var manager = new ClusterManager(
+        using var manager = new ClusterManager(
             NullLogger<ClusterManager>.Instance,
             services,
             services.GetRequiredService<IClusterSettingsStore>(),
@@ -69,7 +69,7 @@ public class ClusterManagerTests
         K8SConfiguration existingConfig = CreateKubeConfig("existing-context", "existing-cluster", "existing-user", "https://existing.example.com");
         File.WriteAllText(kubeConfigPath, KubeUI.Kubernetes.Serialization.KubernetesYaml.Serialize(existingConfig));
 
-        var manager = new ClusterManager(
+        using var manager = new ClusterManager(
             NullLogger<ClusterManager>.Instance,
             services,
             services.GetRequiredService<IClusterSettingsStore>(),
@@ -120,7 +120,7 @@ public class ClusterManagerTests
         config.FileName = kubeConfigPath;
         File.WriteAllText(kubeConfigPath, KubeUI.Kubernetes.Serialization.KubernetesYaml.Serialize(config));
 
-        var manager = new ClusterManager(
+        using var manager = new ClusterManager(
             NullLogger<ClusterManager>.Instance,
             services,
             services.GetRequiredService<IClusterSettingsStore>(),

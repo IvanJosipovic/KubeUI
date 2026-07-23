@@ -1,9 +1,9 @@
 using System.Diagnostics.Metrics;
 using Avalonia.Headless.XUnit;
 using k8s.Models;
-using KubeUI.Avalonia.Features.Clusters.Settings;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Tests.Infra;
+using KubeUI.Kubernetes.Client;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Infrastructure.Presentation;
@@ -29,7 +29,7 @@ public sealed class ViewLocatorTests : AvaloniaTestBase
         using var listener = new MeterListener();
         listener.InstrumentPublished = (instrument, meterListener) =>
         {
-            if (instrument.Meter.Name == Instrumentation.MeterName && instrument.Name == Instrumentation.MeterName + "_view_opened")
+            if (instrument.Meter.Name == KubeInstrumentation.MeterName && instrument.Name == KubeInstrumentation.MeterName + "_view_opened")
             {
                 meterListener.EnableMeasurementEvents(instrument);
             }

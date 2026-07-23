@@ -6,10 +6,8 @@
     <LangVersion>preview</LangVersion>
     <EnableAvaloniaXamlCompilation>false</EnableAvaloniaXamlCompilation>
     <DebugType>embedded</DebugType>
-    <AssemblyName>KubeUI.Avalonia</AssemblyName>
     <AnalysisLevel>latest</AnalysisLevel>
     <AnalysisMode>All</AnalysisMode>
-    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
   </PropertyGroup>
 
   <ItemGroup>
@@ -107,11 +105,4 @@
     <PackageReference Include="Velopack" Version="1.2.0" />
     <PackageReference Include="Xaml.Behaviors.Avalonia" Version="12.0.5" />
   </ItemGroup>
-
-  <Target Name="DisableAnalyzers" BeforeTargets="CoreCompile">
-    <ItemGroup>
-      <Analyzer Remove="@(Analyzer)" Condition="'%(Filename)' == 'Avalonia.Analyzers.VisualBasic'" />
-    </ItemGroup>
-  </Target>
-
 </Project>

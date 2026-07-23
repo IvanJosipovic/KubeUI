@@ -3,11 +3,11 @@ using System.Reflection;
 using Avalonia.Controls.Templates;
 using Dock.Model.Core;
 using KubeUI.Avalonia.Features.Resources.Properties;
-using KubeUI.Kubernetes;
+using KubeUI.Avalonia.Infrastructure.Platform;
 
 namespace KubeUI.Avalonia.Infrastructure.Presentation;
 
-public sealed class ViewLocator : IDataTemplate
+sealed class ViewLocator : IDataTemplate
 {
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<ViewLocator> _logger;

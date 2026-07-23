@@ -3,11 +3,10 @@ using Avalonia.Logging;
 using KubeUI.Avalonia.Controls.DataGridFilters;
 using KubeUI.Avalonia.Features.Resources.Yaml;
 using KubeUI.Avalonia.Infrastructure.Logging;
+using KubeUI.Avalonia.Infrastructure.Platform;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Services.Settings;
 using KubeUI.Kubernetes;
-using Microsoft.Extensions.DependencyInjection.Extensions;
-using Microsoft.Extensions.Hosting;
 using ServiceScan.SourceGenerator;
 
 namespace KubeUI.Avalonia.Infrastructure.DependencyInjection;
@@ -32,7 +31,6 @@ public static partial class KubeUIShellServiceCollectionExtensions
         services.AddSingleton<IDataTemplate>(sp => sp.GetRequiredService<ViewLocator>());
         services.AddSingleton<ISettingsService, SettingsService>();
         services.AddSingleton<IClusterSettingsStore>(sp => sp.GetRequiredService<ISettingsService>());
-        services.TryAddSingleton<IHostApplicationLifetime, KubeUI.Avalonia.Infrastructure.Hosting.Host>();
         return services;
     }
 

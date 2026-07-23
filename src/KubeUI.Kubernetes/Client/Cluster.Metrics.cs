@@ -1,5 +1,6 @@
 using k8s;
 using k8s.Models;
+using KubeUI.Kubernetes.Client;
 
 namespace KubeUI.Kubernetes;
 
@@ -17,6 +18,8 @@ public partial class Cluster
 
     private async Task SyncData(CancellationToken cancellationToken)
     {
+        using var activity = KubeInstrumentation.Source.StartActivity(nameof(SyncData));
+
         try
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -45,6 +48,8 @@ public partial class Cluster
 
     private async Task InitMetrics()
     {
+        using var activity = KubeInstrumentation.Source.StartActivity(nameof(InitMetrics));
+
         var kube = Client as k8s.Kubernetes;
 
         var model = new V1SelfSubjectAccessReview()

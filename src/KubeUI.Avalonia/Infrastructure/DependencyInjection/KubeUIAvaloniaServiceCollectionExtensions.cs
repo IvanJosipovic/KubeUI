@@ -20,7 +20,6 @@ public static class KubeUIAvaloniaServiceCollectionExtensions
 
         configureOverrides?.Invoke(services);
 
-        services.RemoveAll<ServiceDescriptor[]>();
         services.AddSingleton<ServiceDescriptor[]>([.. services]);
         return services;
     }

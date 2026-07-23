@@ -107,10 +107,11 @@ public sealed class PortForwarderTests
     {
         var cluster = new TestClusterRuntime();
 
-        var left = cluster.AddPodPortForward("default", "pod-1", 8080);
-        var right = cluster.AddPodPortForward("default", "pod-1", 8080);
+        using var left = cluster.AddPodPortForward("default", "pod-1", 8080);
+        using var right = cluster.AddPodPortForward("default", "pod-1", 8080);
 
         ReferenceEquals(left, right).ShouldBeTrue();
+        left.Status.ShouldBe("Active");
         cluster.PortForwarders.Count.ShouldBe(1);
     }
 
@@ -119,10 +120,11 @@ public sealed class PortForwarderTests
     {
         var cluster = new TestClusterRuntime();
 
-        var left = cluster.AddServicePortForward("default", "prometheus", 9090);
-        var right = cluster.AddServicePortForward("default", "prometheus", 9090);
+        using var left = cluster.AddServicePortForward("default", "prometheus", 9090);
+        using var right = cluster.AddServicePortForward("default", "prometheus", 9090);
 
         ReferenceEquals(left, right).ShouldBeTrue();
+        left.Status.ShouldBe("Active");
         cluster.PortForwarders.Count.ShouldBe(1);
     }
 
@@ -130,7 +132,7 @@ public sealed class PortForwarderTests
     public async Task Port_forward_uses_mocked_transport_and_copies_client_bytes()
     {
         var cluster = new TestClusterRuntime();
-        var stream = new CaptureStream();
+        using var stream = new CaptureStream();
         var session = new Mock<IPortForwardSession>(MockBehavior.Strict);
         session.SetupGet(x => x.Stream).Returns(stream);
         session.Setup(x => x.Dispose());

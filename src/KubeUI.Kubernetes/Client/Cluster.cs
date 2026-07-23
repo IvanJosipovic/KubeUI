@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.Net.Http.Json;
 using System.Reactive.Linq;
 using System.Reflection;
+using System.Text;
 using System.Threading.Channels;
 using System.Xml;
 using DynamicData;
@@ -12,6 +13,7 @@ using k8s.KubeConfigModels;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
 using KubernetesCRDModelGen;
+using KubeUI.Kubernetes.Client;
 using Mapster;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Http.Resilience;
@@ -101,6 +103,8 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
 
     public async Task Connect()
     {
+        using var activity = KubeInstrumentation.Source.StartActivity(nameof(Connect));
+
         await _connectionLimiter.WaitAsync();
         _logger.LogInformation("Connecting to {name}", Name);
 
@@ -141,7 +145,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
                         InnerHandler = new ResilienceHandler(pipe.Build())
                     };
 
-                    Client = new k8s.Kubernetes(config);
+                    Client = new k8s.Kubernetes(config, handler);
                     EnsureResourceInformerCancellationTokenSource();
 
                     NativeAPIGroupDiscoveryList = await GetAPIGroupDiscoveryList().ConfigureAwait(true);
@@ -234,6 +238,8 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
 
     public async Task SeedResource<T>(bool waitForReady = false) where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
+        using var activity = KubeInstrumentation.Source.StartActivity(nameof(SeedResource) + "<" + typeof(T).Name + ">");
+
         var type = typeof(T);
         var kind = GroupApiVersionKind.From<T>();
         var container = (ContainerClass<T>)Objects.GetOrAdd(kind, _ => new ContainerClass<T>());
@@ -650,7 +656,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
         var dryRunMethod = GetType().GetMethods(BindingFlags.Instance | BindingFlags.NonPublic)
             .First(x => x.Name == nameof(DryRunResourceAsync) && x.IsGenericMethod && x.GetParameters().Length == 1);
 
-        var reader = new StreamReader(stream);
+        using var reader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, bufferSize: 1024, leaveOpen: true);
         var parser = new Parser(new StringReader(reader.ReadToEnd()));
         parser.Consume<StreamStart>();
 
@@ -696,7 +702,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
     {
         var mi = GetType().GetMethods().First(x => x.Name == nameof(AddOrUpdateResource) && x.IsGenericMethod && x.GetParameters().Length == 1);
 
-        var reader = new StreamReader(stream);
+        using var reader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, bufferSize: 1024, leaveOpen: true);
         var parser = new Parser(new StringReader(reader.ReadToEnd()));
         parser.Consume<StreamStart>();
 
@@ -754,7 +760,8 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
             {
                 try
                 {
-                    await ImportYaml(file.OpenRead());
+                    await using var stream = file.OpenRead();
+                    await ImportYaml(stream);
                 }
                 catch (Exception ex)
                 {
@@ -886,6 +893,8 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
 
     private async Task<V2beta1APIGroupDiscoveryList> GetAPIGroupDiscoveryList(bool native = true)
     {
+        using var activity = KubeInstrumentation.Source.StartActivity(nameof(GetAPIGroupDiscoveryList) + (native ? "Native" : ""));
+
         var mi = typeof(k8s.Kubernetes).GetMethod("SendRequest", BindingFlags.NonPublic | BindingFlags.Instance);
 
         var gen = mi.MakeGenericMethod([typeof(V2beta1APIGroupDiscoveryList)]);

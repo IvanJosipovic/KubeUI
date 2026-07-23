@@ -12,7 +12,6 @@ using KubeUI.Avalonia.Controls.DataGridFilters;
 using KubeUI.Avalonia.Converters;
 using KubeUI.Avalonia.Features.Resources.Common;
 using KubeUI.Avalonia.Features.Resources.List.Behaviors;
-using KubeUI.Avalonia.Features.Resources.List;
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
 using KubeUI.Avalonia.Resources;
 using Ursa.Controls;
