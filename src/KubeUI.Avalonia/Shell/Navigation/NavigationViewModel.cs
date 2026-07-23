@@ -453,6 +453,15 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
             return;
         }
 
+        if (batch.ProcessedResourceConfigs.Length == 1)
+        {
+            ApplyResourceConfigNavigation(
+                cluster,
+                batch.ProcessedResourceConfigs[0],
+                batch.ResourceConfigSnapshot);
+            return;
+        }
+
         foreach (var resourceConfig in batch.ProcessedResourceConfigs)
         {
             ApplyResourceConfigNavigation(cluster, resourceConfig, batch.ResourceConfigSnapshot);

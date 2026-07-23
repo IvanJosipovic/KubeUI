@@ -3,7 +3,6 @@ using System.Diagnostics;
 using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
-using KubeUI.Kubernetes.Client;
 
 namespace KubeUI.Kubernetes;
 

@@ -1,6 +1,5 @@
 using k8s;
 using k8s.Models;
-using KubeUI.Kubernetes.Client;
 
 namespace KubeUI.Kubernetes;
 
