@@ -1,4 +1,8 @@
+using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
+using Avalonia.Threading;
+using Avalonia.VisualTree;
+using AvaloniaGraphControl;
 using k8s;
 using k8s.Models;
 using KubeUI.Avalonia.Features.Resources.Visualization;
@@ -82,6 +86,81 @@ public class VisualizationViewModelTests : AvaloniaTestBase
         vm.Graph.Edges.Count.ShouldBe(1);
         vm.Graph.Edges.First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Deployment>();
         vm.Graph.Edges.First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ConfigMap>();
+    }
+
+    [AvaloniaFact]
+    public async Task VisualizationViewRestoresGraphTemplatesAfterReattach()
+    {
+        var cluster = await CreateClusterAsync();
+        var deployment = new V1Deployment
+        {
+            Metadata = new()
+            {
+                Name = "my-deployment",
+                NamespaceProperty = "default",
+                Uid = "owner-uid"
+            },
+            Spec = new()
+            {
+                Template = new()
+                {
+                    Spec = new()
+                }
+            }
+        };
+
+        await cluster.AddOrUpdateResource(deployment);
+        cluster.SelectedNamespaces.Add(new V1Namespace
+        {
+            Metadata = new()
+            {
+                Name = "default"
+            }
+        });
+
+        await cluster.AddOrUpdateResource(new V1ConfigMap
+        {
+            Metadata = new()
+            {
+                Name = "my-config",
+                NamespaceProperty = "default",
+                OwnerReferences =
+                [
+                    new()
+                    {
+                        Uid = "owner-uid"
+                    }
+                ]
+            }
+        });
+
+        var vm = CreateViewModel();
+        vm.Initialize(cluster);
+
+        var view = TestApp.CurrentServices?.GetRequiredService<VisualizationView>()
+            ?? throw new InvalidOperationException("Test services are not initialized.");
+        view.DataContext = vm;
+        var window = new Window { Content = view };
+        window.Show();
+
+        try
+        {
+            Dispatcher.UIThread.RunJobs();
+            window.Content = null;
+            var restoredView = TestApp.CurrentServices?.GetRequiredService<VisualizationView>()
+                ?? throw new InvalidOperationException("Test services are not initialized.");
+            restoredView.DataContext = vm;
+            window.Content = restoredView;
+            Dispatcher.UIThread.RunJobs();
+
+            var graphPanel = restoredView.GetVisualDescendants().OfType<GraphPanel>().Single();
+
+            graphPanel.Children.OfType<Connection>().Count().ShouldBe(1);
+        }
+        finally
+        {
+            window.Close();
+        }
     }
 
     [AvaloniaFact]

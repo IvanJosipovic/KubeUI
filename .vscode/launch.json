@@ -5,10 +5,7 @@
             "name": "Launch Desktop",
             "type": "dotnet",
             "request": "launch",
-            "projectPath": "${workspaceFolder}/src/KubeUI.Desktop/KubeUI.Desktop.csproj",
-            "args": [],
-            "cwd": "${workspaceFolder}/src/KubeUI.Desktop",
-            "stopAtEntry": false
+            "projectPath": "${workspaceFolder}/src/KubeUI.Desktop/KubeUI.Desktop.csproj"
         }
     ]
 }

@@ -1,5 +1,6 @@
 {
     "recommendations": [
+        "GitHub.copilot",
         "ms-dotnettools.csdevkit",
         "ms-vscode.PowerShell",
         "openai.chatgpt"

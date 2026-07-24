@@ -80,21 +80,25 @@ public sealed partial class VisualizationView : ViewBase<VisualizationViewModel>
             .VerticalScrollBarVisibility(ScrollBarVisibility.Auto)
             .Content(new ZoomBorder
             {
-                HorizontalAlignment = HorizontalAlignment.Stretch,
-                VerticalAlignment = VerticalAlignment.Stretch,
                 ClipToBounds = true,
                 EnableConstrains = false,
+                EnableDoubleClickZoom = false,
                 EnableGestures = true,
                 Focusable = true,
+                HorizontalAlignment = HorizontalAlignment.Stretch,
                 Stretch = StretchMode.None,
-                ZoomSpeed = 1.5,
+                VerticalAlignment = VerticalAlignment.Stretch,
+                WheelBehavior = WheelBehaviorMode.PanVertical,
+                WheelWithShift = WheelBehaviorMode.PanHorizontal,
+                WheelPanSensitivity = 2.0,
+                WheelZoomSensitivity = 2.0,
                 GestureRecognizers =
                 {
                     new PinchGestureRecognizer()
                 },
                 Child = new GraphPanel()
-                    .BindValue(GraphPanel.GraphProperty, CompiledBinding.Create<VisualizationViewModel, Graph>(x => x.Graph, source: vm))
-                    .BindValue(GraphPanel.LayoutMethodProperty, CompiledBinding.Create<VisualizationViewModel, GraphPanel.LayoutMethods>(x => x.LayoutMethod, source: vm))
+                    .BindValue(GraphPanel.GraphProperty, CompiledBinding.Create<VisualizationViewModel, Graph>(x => x.Graph))
+                    .BindValue(GraphPanel.LayoutMethodProperty, CompiledBinding.Create<VisualizationViewModel, GraphPanel.LayoutMethods>(x => x.LayoutMethod))
                     .DataTemplates(
                         new FuncDataTemplate<VisualizationViewModel.ResourceNodeViewModel>((node, _) => CreateResourceNode(node!)),
                         new FuncDataTemplate<Edge>((_, _) => new Connection { Brush = Brushes.Green })
