@@ -93,32 +93,7 @@ public sealed class EndpointSliceRelationshipProvider : IResourceRelationshipPro
     }
 }
 
-public sealed class VolumeSecretRelationshipProvider : IResourceRelationshipProvider
-{
-    public void AddRelationships(IKubernetesObject<V1ObjectMeta> resource, ResourceRelationshipContext context, ICollection<ResourceRelationship> relationships)
-    {
-        V1PodSpec? podSpec = RelationshipProviderHelpers.PodSpec(resource);
-        if (podSpec == null)
-        {
-            return;
-        }
-
-        foreach (V1Volume volume in podSpec.Volumes ?? [])
-        {
-            RelationshipProviderHelpers.AddByName(
-                context,
-                relationships,
-                resource,
-                "v1",
-                V1Secret.KubeKind,
-                resource.Namespace(),
-                volume.Secret?.SecretName,
-                ResourceRelationshipKind.Reference);
-        }
-    }
-}
-
-public sealed class WorkloadLabelRelationshipProvider : IResourceRelationshipProvider
+public sealed class PodTemplateReferenceRelationshipProvider : IResourceRelationshipProvider
 {
     public void AddRelationships(IKubernetesObject<V1ObjectMeta> resource, ResourceRelationshipContext context, ICollection<ResourceRelationship> relationships)
     {
@@ -132,27 +107,27 @@ public sealed class WorkloadLabelRelationshipProvider : IResourceRelationshipPro
         {
             foreach (V1EnvVar env in container.Env ?? [])
             {
-                RelationshipProviderHelpers.AddByName(context, relationships, resource, "v1", V1ConfigMap.KubeKind, resource.Namespace(), env.ValueFrom?.ConfigMapKeyRef?.Name, ResourceRelationshipKind.Label, env.Name);
-                RelationshipProviderHelpers.AddByName(context, relationships, resource, "v1", V1Secret.KubeKind, resource.Namespace(), env.ValueFrom?.SecretKeyRef?.Name, ResourceRelationshipKind.Label, env.Name);
+                RelationshipProviderHelpers.AddByName(context, relationships, resource, "v1", V1ConfigMap.KubeKind, resource.Namespace(), env.ValueFrom?.ConfigMapKeyRef?.Name, ResourceRelationshipKind.Reference);
+                RelationshipProviderHelpers.AddByName(context, relationships, resource, "v1", V1Secret.KubeKind, resource.Namespace(), env.ValueFrom?.SecretKeyRef?.Name, ResourceRelationshipKind.Reference);
             }
 
             foreach (V1EnvFromSource envFrom in container.EnvFrom ?? [])
             {
-                RelationshipProviderHelpers.AddByName(context, relationships, resource, "v1", V1ConfigMap.KubeKind, resource.Namespace(), envFrom.ConfigMapRef?.Name, ResourceRelationshipKind.Label, envFrom.Prefix);
-                RelationshipProviderHelpers.AddByName(context, relationships, resource, "v1", V1Secret.KubeKind, resource.Namespace(), envFrom.SecretRef?.Name, ResourceRelationshipKind.Label, envFrom.Prefix);
+                RelationshipProviderHelpers.AddByName(context, relationships, resource, "v1", V1ConfigMap.KubeKind, resource.Namespace(), envFrom.ConfigMapRef?.Name, ResourceRelationshipKind.Reference);
+                RelationshipProviderHelpers.AddByName(context, relationships, resource, "v1", V1Secret.KubeKind, resource.Namespace(), envFrom.SecretRef?.Name, ResourceRelationshipKind.Reference);
             }
         }
 
         foreach (V1Volume volume in podSpec.Volumes ?? [])
         {
-            RelationshipProviderHelpers.AddByName(context, relationships, resource, "v1", V1ConfigMap.KubeKind, resource.Namespace(), volume.ConfigMap?.Name, ResourceRelationshipKind.Label, volume.Name);
-            RelationshipProviderHelpers.AddByName(context, relationships, resource, "v1", V1Secret.KubeKind, resource.Namespace(), volume.Secret?.SecretName, ResourceRelationshipKind.Label, volume.Name);
+            RelationshipProviderHelpers.AddByName(context, relationships, resource, "v1", V1ConfigMap.KubeKind, resource.Namespace(), volume.ConfigMap?.Name, ResourceRelationshipKind.Reference);
+            RelationshipProviderHelpers.AddByName(context, relationships, resource, "v1", V1Secret.KubeKind, resource.Namespace(), volume.Secret?.SecretName, ResourceRelationshipKind.Reference);
             RelationshipProviderHelpers.AddByName(context, relationships, resource, "v1", V1PersistentVolumeClaim.KubeKind, resource.Namespace(), volume.PersistentVolumeClaim?.ClaimName, ResourceRelationshipKind.Storage);
         }
 
         foreach (V1LocalObjectReference imagePullSecret in podSpec.ImagePullSecrets ?? [])
         {
-            RelationshipProviderHelpers.AddByName(context, relationships, resource, "v1", V1Secret.KubeKind, resource.Namespace(), imagePullSecret.Name, ResourceRelationshipKind.Label, imagePullSecret.Name);
+            RelationshipProviderHelpers.AddByName(context, relationships, resource, "v1", V1Secret.KubeKind, resource.Namespace(), imagePullSecret.Name, ResourceRelationshipKind.Reference);
         }
     }
 }

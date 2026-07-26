@@ -1,6 +1,7 @@
 using k8s;
 using k8s.Models;
 using KubeUI.Kubernetes.Resources.Relationships;
+using KubeUI.Kubernetes.Resources.Relationships.Providers;
 using Shouldly;
 
 namespace KubeUI.Kubernetes.Tests.Resources.Relationships;
@@ -57,9 +58,15 @@ public sealed class ResourceRelationshipBuilderTests
             },
         };
 
-        ResourceRelationshipGraph graph = new ResourceRelationshipBuilder().Build([configMap, pod], new HashSet<string> { "demo" }, hideNoise: true);
+        ResourceRelationshipGraph graph = new ResourceRelationshipBuilder([new PodTemplateReferenceRelationshipProvider()]).Build([configMap, pod], new HashSet<string> { "demo" }, hideNoise: true);
 
-        graph.Relationships.Count(x => x.Source.Name == "web" && x.Target.Name == "settings").ShouldBe(1);
+        graph.Relationships.ShouldBe(
+        [
+            new ResourceRelationship(
+                new("v1", V1Pod.KubeKind, "demo", "web", null),
+                new("v1", V1ConfigMap.KubeKind, "demo", "settings", "config-uid"),
+                ResourceRelationshipKind.Reference),
+        ]);
     }
 
     [Fact]
@@ -93,6 +100,57 @@ public sealed class ResourceRelationshipBuilderTests
 
         graph.Relationships
             .Where(relationship => relationship.Target.Name == "tls-client")
+            .Select(relationship => (relationship.Source.Name, relationship.Kind, relationship.Label))
+            .ShouldBe(
+            [
+                ("pod", ResourceRelationshipKind.Reference, null),
+                ("deployment", ResourceRelationshipKind.Reference, null),
+                ("replicaset", ResourceRelationshipKind.Reference, null),
+                ("statefulset", ResourceRelationshipKind.Reference, null),
+                ("daemonset", ResourceRelationshipKind.Reference, null),
+                ("job", ResourceRelationshipKind.Reference, null),
+                ("cronjob", ResourceRelationshipKind.Reference, null),
+            ]);
+    }
+
+    [Fact]
+    public void Relates_secret_key_environment_variables_from_pods_and_workload_templates()
+    {
+        V1Secret secret = new()
+        {
+            ApiVersion = "v1",
+            Kind = V1Secret.KubeKind,
+            Metadata = new() { Name = "azure-app-reg-pwd-secret", NamespaceProperty = "demo", Uid = "secret-uid" },
+        };
+        V1PodTemplateSpec template = new()
+        {
+            Spec = new()
+            {
+                Containers =
+                [
+                    new()
+                    {
+                        Name = "app",
+                        Env = [new() { Name = "settings__cookie__clientSecret", ValueFrom = new() { SecretKeyRef = new() { Name = "azure-app-reg-pwd-secret", Key = "attribute.value" } } }],
+                    },
+                ],
+            },
+        };
+        IKubernetesObject<V1ObjectMeta>[] consumers =
+        [
+            new V1Pod { ApiVersion = "v1", Kind = V1Pod.KubeKind, Metadata = new() { Name = "pod", NamespaceProperty = "demo" }, Spec = template.Spec },
+            new V1Deployment { ApiVersion = "apps/v1", Kind = V1Deployment.KubeKind, Metadata = new() { Name = "deployment", NamespaceProperty = "demo" }, Spec = new() { Template = template } },
+            new V1ReplicaSet { ApiVersion = "apps/v1", Kind = V1ReplicaSet.KubeKind, Metadata = new() { Name = "replicaset", NamespaceProperty = "demo" }, Spec = new() { Template = template } },
+            new V1StatefulSet { ApiVersion = "apps/v1", Kind = V1StatefulSet.KubeKind, Metadata = new() { Name = "statefulset", NamespaceProperty = "demo" }, Spec = new() { Template = template } },
+            new V1DaemonSet { ApiVersion = "apps/v1", Kind = V1DaemonSet.KubeKind, Metadata = new() { Name = "daemonset", NamespaceProperty = "demo" }, Spec = new() { Template = template } },
+            new V1Job { ApiVersion = "batch/v1", Kind = V1Job.KubeKind, Metadata = new() { Name = "job", NamespaceProperty = "demo" }, Spec = new() { Template = template } },
+            new V1CronJob { ApiVersion = "batch/v1", Kind = V1CronJob.KubeKind, Metadata = new() { Name = "cronjob", NamespaceProperty = "demo" }, Spec = new() { JobTemplate = new() { Spec = new() { Template = template } } } },
+        ];
+
+        ResourceRelationshipGraph graph = new ResourceRelationshipBuilder().Build([secret, .. consumers], new HashSet<string> { "demo" }, hideNoise: true);
+
+        graph.Relationships
+            .Where(relationship => relationship.Target.Name == "azure-app-reg-pwd-secret")
             .Select(relationship => (relationship.Source.Name, relationship.Kind, relationship.Label))
             .ShouldBe(
             [
