@@ -1,6 +1,8 @@
 using Avalonia.Headless.XUnit;
 using Avalonia.Controls;
+using Avalonia.Controls.Presenters;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using System.Diagnostics;
 using k8s;
 using KubeUI.Avalonia.Infrastructure;
@@ -11,6 +13,8 @@ using Shouldly;
 using k8s.Models;
 using Westermo.GraphX.Controls.Controls;
 using Westermo.GraphX.Controls.Behaviours;
+using Westermo.GraphX.Controls.Controls.EdgeLabels;
+using Westermo.GraphX.Controls.Controls.VertexLabels;
 
 namespace KubeUI.Avalonia.Tests.Features.Resources.Visualization;
 
@@ -52,6 +56,7 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
         control.Area.LogicCore.ShouldNotBeNull();
         control.Area.LogicCore!.Graph.VertexCount.ShouldBe(2);
         control.Area.LogicCore.Graph.EdgeCount.ShouldBe(1);
+        control.Area.VertexLabelFactory.ShouldBeOfType<ResourceVertexLabelFactory>();
         control.Area.SelectionMode.ShouldBe(SelectionMode.Multiple);
         control.Area.SelectedVertices.ShouldNotBeNull();
     }
@@ -78,6 +83,17 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
             EdgeControl edge = control.Area.EdgesList.Values.Single();
             VertexControl sourceControl = control.Area.VertexList.Values.First();
             VertexControl targetControl = control.Area.VertexList.Values.Last();
+            sourceControl.ShowLabel.ShouldBeTrue();
+            AttachableVertexLabelControl[] labels = control.Area.Children.OfType<AttachableVertexLabelControl>().ToArray();
+            labels.Length.ShouldBe(2);
+            foreach (AttachableVertexLabelControl label in labels)
+            {
+                label.IsVisible.ShouldBeTrue();
+                label.Bounds.Width.ShouldBeGreaterThan(0);
+                label.Bounds.Height.ShouldBeGreaterThan(0);
+                label.AttachNode.ShouldNotBeNull();
+                label.GetVisualDescendants().OfType<ContentPresenter>().Any(presenter => presenter.Content is ResourceGraphVertex).ShouldBeTrue();
+            }
             DragBehaviour.GetIsDragEnabled(sourceControl).ShouldBeTrue();
             DragBehaviour.GetUpdateEdgesOnMove(sourceControl).ShouldBeTrue();
             edge.SourceEndpoint.ShouldNotBeNull();
@@ -99,6 +115,30 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
         {
             window.Close();
         }
+    }
+
+    [AvaloniaFact]
+    public async Task labels_and_arrows_are_created_when_graph_is_added_after_initial_empty_graph()
+    {
+        V1Pod source = new() { ApiVersion = "v1", Kind = V1Pod.KubeKind, Metadata = new() { Name = "source", NamespaceProperty = "demo", Uid = "source" } };
+        V1Pod target = new() { ApiVersion = "v1", Kind = V1Pod.KubeKind, Metadata = new() { Name = "target", NamespaceProperty = "demo", Uid = "target" } };
+        ResourceIdentity sourceIdentity = new("v1", V1Pod.KubeKind, "demo", "source", "source");
+        ResourceIdentity targetIdentity = new("v1", V1Pod.KubeKind, "demo", "target", "target");
+        using ResourceGraphControl control = new() { Graph = ResourceRelationshipGraph.Empty };
+        Window window = new() { Width = 800, Height = 600, Content = control };
+        window.Show();
+        await Dispatcher.UIThread.InvokeAsync(control.Area.UpdateLayout);
+
+        control.Graph = new ResourceRelationshipGraph(
+            [source, target],
+            [new ResourceRelationship(sourceIdentity, targetIdentity, ResourceRelationshipKind.Reference)]);
+
+        await Task.Delay(100);
+        await Dispatcher.UIThread.InvokeAsync(control.Area.UpdateLayout);
+
+        control.Area.Children.OfType<AttachableVertexLabelControl>().Count().ShouldBe(2);
+        control.Area.Children.OfType<AttachableEdgeLabelControl>().Count().ShouldBe(1);
+        control.Area.EdgesList.Values.Single().GetEdgePointerForTarget()!.IsVisible.ShouldBeTrue();
     }
 
     [AvaloniaFact]
@@ -129,7 +169,7 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
     }
 
     [AvaloniaFact]
-    public void removes_deleted_resource_from_live_graph_without_replacing_graph()
+    public void applies_deleted_resource_from_graph_without_rebuilding_remaining_vertex()
     {
         V1Pod source = new() { ApiVersion = "v1", Kind = V1Pod.KubeKind, Metadata = new() { Name = "source", NamespaceProperty = "demo", Uid = "source" } };
         V1Pod target = new() { ApiVersion = "v1", Kind = V1Pod.KubeKind, Metadata = new() { Name = "target", NamespaceProperty = "demo", Uid = "target" } };
@@ -139,13 +179,12 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
             [source, target],
             [new ResourceRelationship(sourceIdentity, targetIdentity, ResourceRelationshipKind.Reference)]);
         using ResourceGraphControl control = new() { Graph = graph };
-        ResourceRelationshipGraph graphBeforeDelete = control.Graph!;
+        ResourceGraphVertex remainingVertex = control.Area.LogicCore!.Graph.Vertices.Single(vertex => vertex.Identity == targetIdentity);
+        control.Graph = new ResourceRelationshipGraph([target], []);
 
-        control.ApplyResourceDeletion(sourceIdentity);
-
-        ReferenceEquals(control.Graph, graphBeforeDelete).ShouldBeTrue();
         control.Area.LogicCore!.Graph.VertexCount.ShouldBe(1);
         control.Area.LogicCore.Graph.EdgeCount.ShouldBe(0);
+        control.Area.LogicCore.Graph.Vertices.Single().ShouldBeSameAs(remainingVertex);
     }
 
     [AvaloniaFact]

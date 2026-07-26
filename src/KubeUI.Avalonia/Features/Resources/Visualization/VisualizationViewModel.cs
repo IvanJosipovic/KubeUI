@@ -19,8 +19,6 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
     private IDisposable? _resourceChangesSubscription;
     private int _rebuildVersion;
 
-    internal event Action<ResourceIdentity>? ResourceDeleted;
-
     [ObservableProperty]
     public partial IKubernetesObject<V1ObjectMeta>? RootResource { get; set; }
 
@@ -39,9 +37,6 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 
     [ObservableProperty]
     public partial ResourceRelationshipGraph? Graph { get; set; } = ResourceRelationshipGraph.Empty;
-
-    [ObservableProperty]
-    public partial ObservableCollection<ResourceNodeViewModel> Resources { get; set; } = [];
 
     [ObservableProperty]
     public partial bool HideNoise { get; set; } = true;
@@ -124,31 +119,14 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         if (change.EventType == WatchEventType.Deleted)
         {
             _resourcesByKey.Remove(key);
-            ResourceNodeViewModel? deletedNode = Resources.FirstOrDefault(node => IsSameResource(node.Resource, change.Resource));
-            if (deletedNode != null)
-            {
-                Resources.Remove(deletedNode);
-            }
-
-            ResourceDeleted?.Invoke(new ResourceIdentity(
-                change.Resource.ApiVersion ?? string.Empty,
-                change.Resource.Kind ?? string.Empty,
-                change.Resource.Namespace(),
-                change.Resource.Name() ?? string.Empty,
-                change.Resource.Uid()));
+            RemoveResourceFromGraph(change.Resource);
             return;
         }
 
         _resourcesByKey[key] = change.Resource;
-        ResourceNodeViewModel? node = Resources.FirstOrDefault(x => IsSameResource(x.Resource, change.Resource));
-        if (change.EventType == WatchEventType.Modified && node != null)
-        {
-            node.UpdateResource(change.Resource);
-            return;
-        }
-
         if (change.EventType == WatchEventType.Modified)
         {
+            ReplaceResourceInGraph(change.Resource);
             return;
         }
 
@@ -200,17 +178,6 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                 && !delta.Relationships.Any(relationship => currentIdentities.Contains(relationship.Source) || currentIdentities.Contains(relationship.Target)))
             {
                 return;
-            }
-
-            if (!currentIdentities.Contains(identity))
-            {
-                ResourceNodeViewModel addedNode = new()
-                {
-                    Cluster = cluster,
-                    Resource = resource,
-                    IconPath = Utilities.GetKubeAssetPath(resource.GetType()),
-                };
-                Resources.Add(addedNode);
             }
 
             IReadOnlyList<IKubernetesObject<V1ObjectMeta>> resources = current.Resources
@@ -287,7 +254,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         ClusterWorkspace? cluster = Cluster;
         if (cluster == null || (RootResource == null && cluster.SelectedNamespaces.Count == 0))
         {
-            ApplySnapshot(new VisualizationSnapshot([], ResourceRelationshipGraph.Empty));
+            Graph = ResourceRelationshipGraph.Empty;
             return;
         }
 
@@ -296,7 +263,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         bool hideNoise = HideNoise;
         IReadOnlyList<IKubernetesObject<V1ObjectMeta>> source = _resourcesByKey.Values.ToArray();
 
-        _ = Task.Run(() => BuildSnapshot(source, cluster, root, namespaces, hideNoise))
+        _ = Task.Run(() => BuildGraph(source, root, namespaces, hideNoise))
             .ContinueWith(task =>
             {
                 if (task.IsFaulted || task.IsCanceled)
@@ -308,15 +275,14 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                 {
                     if (!_disposed && version == _rebuildVersion)
                     {
-                        ApplySnapshot(task.Result);
+                        Graph = task.Result;
                     }
                 });
             }, TaskScheduler.Default);
     }
 
-    private VisualizationSnapshot BuildSnapshot(
+    private ResourceRelationshipGraph BuildGraph(
         IReadOnlyList<IKubernetesObject<V1ObjectMeta>> source,
-        ClusterWorkspace cluster,
         IKubernetesObject<V1ObjectMeta>? root,
         IReadOnlySet<string> namespaces,
         bool hideNoise)
@@ -327,25 +293,35 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
             graph = FilterToRootResource(graph, root);
         }
 
-        ObservableCollection<ResourceNodeViewModel> nodes = [];
-        foreach (IKubernetesObject<V1ObjectMeta> resource in graph.Resources)
-        {
-            nodes.Add(new ResourceNodeViewModel
-            {
-                Cluster = cluster,
-                Resource = resource,
-                IconPath = Utilities.GetKubeAssetPath(resource.GetType()),
-            });
-        }
-
-        return new VisualizationSnapshot(nodes, graph);
+        return graph;
     }
 
-    private void ApplySnapshot(VisualizationSnapshot snapshot)
+    private void ReplaceResourceInGraph(IKubernetesObject<V1ObjectMeta> resource)
     {
-        Dispatcher.UIThread.VerifyAccess();
-        Resources = snapshot.Resources;
-        Graph = snapshot.Graph;
+        ResourceRelationshipGraph current = Graph ?? ResourceRelationshipGraph.Empty;
+        ResourceIdentity identity = GetIdentity(resource);
+        if (!current.Resources.Any(item => GetIdentity(item) == identity))
+        {
+            return;
+        }
+
+        Graph = new ResourceRelationshipGraph(
+            current.Resources.Select(item => GetIdentity(item) == identity ? resource : item).ToArray(),
+            current.Relationships);
+    }
+
+    private void RemoveResourceFromGraph(IKubernetesObject<V1ObjectMeta> resource)
+    {
+        ResourceRelationshipGraph current = Graph ?? ResourceRelationshipGraph.Empty;
+        ResourceIdentity identity = GetIdentity(resource);
+        if (!current.Resources.Any(item => GetIdentity(item) == identity))
+        {
+            return;
+        }
+
+        Graph = new ResourceRelationshipGraph(
+            current.Resources.Where(item => GetIdentity(item) != identity).ToArray(),
+            current.Relationships.Where(relationship => relationship.Source != identity && relationship.Target != identity).ToArray());
     }
 
     private static ResourceRelationshipGraph FilterToRootResource(ResourceRelationshipGraph graph, IKubernetesObject<V1ObjectMeta> root)
@@ -429,13 +405,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         Interlocked.Increment(ref _rebuildVersion);
         UnsubscribeCluster();
         _resourcesByKey.Clear();
-        ResourceDeleted = null;
-        Resources.Clear();
         Graph = ResourceRelationshipGraph.Empty;
         Cluster = null;
     }
-
-    private sealed record VisualizationSnapshot(
-        ObservableCollection<ResourceNodeViewModel> Resources,
-        ResourceRelationshipGraph Graph);
 }

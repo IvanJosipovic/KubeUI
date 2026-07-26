@@ -10,7 +10,7 @@ namespace KubeUI.Avalonia.Features.Resources.Visualization;
 public sealed partial class ResourceNodeViewModel : ViewModelBase
 {
     [ObservableProperty]
-    public partial ClusterWorkspace Cluster { get; set; }
+    public partial ClusterWorkspace? Cluster { get; set; }
 
     [ObservableProperty]
     public partial IKubernetesObject<V1ObjectMeta> Resource { get; set; }

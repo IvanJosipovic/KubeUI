@@ -35,7 +35,8 @@
             "args": [
                 "build",
                 "src/KubeUI.Desktop/KubeUI.Desktop.csproj",
-                "--no-restore"
+                "--no-restore",
+                "-p:WarningLevel=0"
             ],
             "options": {
                 "cwd": "${workspaceFolder}"

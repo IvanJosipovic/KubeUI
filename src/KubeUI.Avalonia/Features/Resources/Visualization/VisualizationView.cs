@@ -46,7 +46,7 @@ public sealed partial class VisualizationView : ViewBase<VisualizationViewModel>
                 new Label()
                     .Width(200)
                     .VerticalContentAlignment(VerticalAlignment.Center)
-                    .BindValue(ContentControl.ContentProperty, CompiledBinding.Create<VisualizationViewModel, int>(x => x.Resources.Count,
+                    .BindValue(ContentControl.ContentProperty, CompiledBinding.Create<VisualizationViewModel, int>(x => x.Graph!.Resources.Count,
                         source: vm,
                         stringFormat: Assets.Resources.VisualizationView_ItemsFormat)));
     }

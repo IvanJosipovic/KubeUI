@@ -1,15 +1,15 @@
 using Avalonia.Controls.Templates;
 using k8s;
 using k8s.Models;
+using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Kubernetes.Resources.Relationships;
 using QuikGraph;
 using Westermo.GraphX.Common.Enums;
 using Westermo.GraphX.Controls.Controls;
 using Westermo.GraphX.Logic.Models;
 using Westermo.GraphX.Controls.Controls.ZoomControl;
-using Westermo.GraphX.Controls.Controls.ZoomControl.SupportClasses;
+using Westermo.GraphX.Controls.Models;
 using Westermo.GraphX.Logic.Algorithms.LayoutAlgorithms;
-using Westermo.GraphX.Controls.Controls.Misc;
 
 namespace KubeUI.Avalonia.Features.Resources.Visualization;
 
@@ -40,7 +40,7 @@ public sealed class ResourceGraphControl : UserControl, IDisposable
                 return;
             }
 
-            ResourceRelationshipGraph? previous = _graph;
+            var previous = _graph;
             _graph = value;
             RaisePropertyChanged(GraphProperty, null, value);
 
@@ -63,17 +63,6 @@ public sealed class ResourceGraphControl : UserControl, IDisposable
 
     public ResourceGraphControl()
     {
-        _area = new GraphArea<ResourceGraphVertex, ResourceGraphEdge, BidirectionalGraph<ResourceGraphVertex, ResourceGraphEdge>>
-        {
-            EdgeLabelFactory = null,
-            LogicCoreChangeAction = LogicCoreChangedAction.None,
-            ControlsDrawOrder = ControlDrawOrder.EdgesOnTop,
-            SelectedVertices = new HashSet<ResourceGraphVertex>(),
-            SelectionMode = SelectionMode.Multiple,
-        };
-        ResourceGraphStyles.Apply(_area);
-        _area.DataTemplates.Add(new FuncDataTemplate<ResourceGraphVertex>((vertex, _) => VisualizationView.CreateResourceNode(vertex!.Node)));
-
         _logicCore = new GXLogicCore<ResourceGraphVertex, ResourceGraphEdge, BidirectionalGraph<ResourceGraphVertex, ResourceGraphEdge>>
         {
             DefaultLayoutAlgorithm = LayoutAlgorithmTypeEnum.Tree,
@@ -83,22 +72,32 @@ public sealed class ResourceGraphControl : UserControl, IDisposable
             DefaultLayoutAlgorithmParams = new SimpleTreeLayoutParameters
             {
                 Direction = LayoutDirection.TopToBottom,
-                LayerGap = 80,
-                VertexGap = 80,
-                ComponentGap = 80,
-                OptimizeWidthAndHeight = true,
+                LayerGap = 120,
+                VertexGap = 120,
+                ComponentGap = 120,
+                OptimizeWidthAndHeight = false,
                 SpanningTreeGeneration = SpanningTreeGeneration.DFS,
             },
-            AsyncAlgorithmCompute = false,
+            AsyncAlgorithmCompute = true,
         };
-        _area.LogicCore = _logicCore;
+
+        _area = new GraphArea<ResourceGraphVertex, ResourceGraphEdge, BidirectionalGraph<ResourceGraphVertex, ResourceGraphEdge>>
+        {
+            LogicCore = _logicCore,
+            SelectedVertices = new HashSet<ResourceGraphVertex>(),
+            SelectionMode = SelectionMode.Multiple,
+        };
+
+        ResourceGraphStyles.Apply(_area);
+        _area.DataTemplates.Add(new FuncDataTemplate<ResourceGraphVertex>((vertex, _) => VisualizationView.CreateResourceNode(vertex!.Node)));
+
         _zoomControl = new ZoomControl
         {
             Background = Brushes.Transparent,
             AllowZoomingWithoutCtrl = true,
-            IsAnimationEnabled = false,
             Content = _area,
         };
+
         Content = _zoomControl;
     }
 
@@ -110,11 +109,10 @@ public sealed class ResourceGraphControl : UserControl, IDisposable
         if (_graph != null)
         {
             Dictionary<ResourceIdentity, ResourceGraphVertex> vertices = [];
-            Dictionary<IKubernetesObject<V1ObjectMeta>, ResourceNodeViewModel> nodesByResource = CreateNodesByResource();
 
             foreach (var resource in _graph.Resources)
             {
-                ResourceGraphVertex vertex = CreateVertex(resource, nodesByResource);
+                var vertex = CreateVertex(resource);
                 vertices.Add(vertex.Identity, vertex);
                 _vertices.Add(vertex.Identity, vertex);
                 graph.AddVertex(vertex);
@@ -141,6 +139,12 @@ public sealed class ResourceGraphControl : UserControl, IDisposable
         BidirectionalGraph<ResourceGraphVertex, ResourceGraphEdge> graph = _logicCore.Graph;
         Dictionary<ResourceIdentity, ResourceGraphVertex> vertices = _vertices;
         HashSet<ResourceIdentity> desiredIdentities = current.Resources.Select(GetIdentity).ToHashSet();
+        HashSet<ResourceRelationship> desiredRelationships = current.Relationships.ToHashSet();
+        bool structureChanged = vertices.Keys.Any(identity => !desiredIdentities.Contains(identity))
+            || desiredIdentities.Any(identity => !vertices.ContainsKey(identity))
+            || graph.Edges.Any(edge => !desiredRelationships.Contains(edge.Relationship))
+            || desiredRelationships.Any(relationship => !graph.Edges.Any(edge => edge.Relationship == relationship));
+
         foreach (ResourceGraphVertex vertex in vertices.Values.Where(vertex => !desiredIdentities.Contains(vertex.Identity)).ToArray())
         {
             _area.RemoveVertexAndEdges(vertex);
@@ -152,7 +156,6 @@ public sealed class ResourceGraphControl : UserControl, IDisposable
             vertices.Remove(vertex.Identity);
         }
 
-        HashSet<ResourceRelationship> desiredRelationships = current.Relationships.ToHashSet();
         foreach (ResourceGraphEdge edge in graph.Edges.ToArray())
         {
             if (!desiredRelationships.Contains(edge.Relationship)
@@ -167,8 +170,6 @@ public sealed class ResourceGraphControl : UserControl, IDisposable
             }
         }
 
-        Dictionary<IKubernetesObject<V1ObjectMeta>, ResourceNodeViewModel> nodesByResource = CreateNodesByResource();
-
         foreach (IKubernetesObject<V1ObjectMeta> resource in current.Resources)
         {
             ResourceIdentity identity = GetIdentity(resource);
@@ -178,9 +179,9 @@ public sealed class ResourceGraphControl : UserControl, IDisposable
                 continue;
             }
 
-            ResourceGraphVertex vertex = CreateVertex(resource, nodesByResource);
+            var vertex = CreateVertex(resource);
             vertices.Add(identity, vertex);
-            _area.AddVertexAndData(vertex, _area.ControlFactory.CreateVertexControl(vertex));
+            _area.AddVertexAndData(vertex, _area.ControlFactory.CreateVertexControl(vertex), generateLabel: true);
         }
 
         HashSet<ResourceRelationship> existingRelationships = graph.Edges.Select(edge => edge.Relationship).ToHashSet();
@@ -200,48 +201,34 @@ public sealed class ResourceGraphControl : UserControl, IDisposable
                     _area.ControlFactory.CreateEdgeControl(
                         _area.VertexList[edge.Source],
                         _area.VertexList[edge.Target],
-                        edge));
+                        edge),
+                    generateLabel: true);
             }
         }
 
-        QueueGraphGeneration();
+        if (structureChanged)
+        {
+            _zoomAfterLayout = true;
+            QueueGraphGeneration();
+        }
     }
 
     private static ResourceIdentity GetIdentity(IKubernetesObject<V1ObjectMeta> resource)
         => new(resource.ApiVersion ?? string.Empty, resource.Kind ?? string.Empty, resource.Namespace(), resource.Name() ?? string.Empty, resource.Uid());
 
-    private Dictionary<IKubernetesObject<V1ObjectMeta>, ResourceNodeViewModel> CreateNodesByResource()
+    private ResourceGraphVertex CreateVertex(IKubernetesObject<V1ObjectMeta> resource)
     {
-        Dictionary<IKubernetesObject<V1ObjectMeta>, ResourceNodeViewModel> nodesByResource =
-            new(ReferenceEqualityComparer.Instance);
-        if (DataContext is VisualizationViewModel viewModel)
-        {
-            foreach (ResourceNodeViewModel node in viewModel.Resources)
-            {
-                nodesByResource.TryAdd(node.Resource, node);
-            }
-        }
-
-        return nodesByResource;
-    }
-
-    private static ResourceGraphVertex CreateVertex(
-        IKubernetesObject<V1ObjectMeta> resource,
-        Dictionary<IKubernetesObject<V1ObjectMeta>, ResourceNodeViewModel> nodesByResource)
-    {
-        if (!nodesByResource.TryGetValue(resource, out ResourceNodeViewModel? node))
-        {
-            node = new ResourceNodeViewModel
-            {
-                Resource = resource,
-            };
-        }
-
-        return new ResourceGraphVertex
+        var vertex = new ResourceGraphVertex
         {
             Identity = GetIdentity(resource),
-            Node = node,
+            Node = new()
+            {
+                Cluster = _viewModel?.Cluster,
+                Resource = resource,
+                IconPath = Utilities.GetKubeAssetPath(resource.GetType()),
+            },
         };
+        return vertex;
     }
 
     private static bool TryCreateEdge(
@@ -265,38 +252,15 @@ public sealed class ResourceGraphControl : UserControl, IDisposable
         base.OnDataContextChanged(e);
         if (_viewModel != null)
         {
-            _viewModel.ResourceDeleted -= ApplyResourceDeletion;
-            _viewModel.PropertyChanged -= ViewModelPropertyChanged;
+            _viewModel = null;
         }
 
         _viewModel = DataContext as VisualizationViewModel;
-        if (_viewModel != null)
-        {
-            _viewModel.ResourceDeleted += ApplyResourceDeletion;
-            _viewModel.PropertyChanged += ViewModelPropertyChanged;
-        }
 
         if (_viewModel != null && _graph != null && !_isDetached)
         {
             RebuildGraph();
         }
-    }
-
-    internal void ApplyResourceDeletion(ResourceIdentity identity)
-    {
-        Dispatcher.UIThread.VerifyAccess();
-        if (!_vertices.Remove(identity, out ResourceGraphVertex? vertex))
-        {
-            return;
-        }
-
-        _area.RemoveVertexAndEdges(vertex);
-        if (_logicCore.Graph.ContainsVertex(vertex))
-        {
-            _logicCore.Graph.RemoveVertex(vertex);
-        }
-
-        QueueGraphGeneration();
     }
 
     private void QueueGraphGeneration()
@@ -311,14 +275,6 @@ public sealed class ResourceGraphControl : UserControl, IDisposable
         _graphGenerationTask = ProcessPendingLayoutAsync();
     }
 
-    private void ViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
-    {
-        if (e.PropertyName == nameof(VisualizationViewModel.Resources))
-        {
-            _zoomAfterLayout = true;
-        }
-    }
-
     private async Task ProcessPendingLayoutAsync()
     {
         Dispatcher.UIThread.VerifyAccess();
@@ -328,18 +284,12 @@ public sealed class ResourceGraphControl : UserControl, IDisposable
             bool initialGeneration = !_hasGeneratedGraph;
             if (!initialGeneration)
             {
-                await _area.RelayoutGraph(generateAllEdges: true).ConfigureAwait(true);
+                await _area.RelayoutGraph(true).ConfigureAwait(true);
             }
             else
             {
-                await _area.GenerateGraph().ConfigureAwait(true);
+                await _area.GenerateGraph(true).ConfigureAwait(true);
                 _hasGeneratedGraph = true;
-            }
-            _area.ShowAllEdgesArrows(true);
-            foreach (EdgeControl control in _area.EdgesList.Values)
-            {
-                control.GetEdgePointerForSource()?.Hide();
-                ShowTargetArrow(control);
             }
             if (initialGeneration || _zoomAfterLayout)
             {
