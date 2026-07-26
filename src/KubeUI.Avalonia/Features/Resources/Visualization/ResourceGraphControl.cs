@@ -27,7 +27,6 @@ public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphContr
     private Task? _graphGenerationTask;
     private bool _layoutPending;
     private bool _hasGeneratedGraph;
-    private bool _zoomAfterLayout;
     private bool _zoomAfterGeneration;
     private bool _isDetached;
 
@@ -215,7 +214,6 @@ public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphContr
 
         if (structureChanged)
         {
-            _zoomAfterLayout = true;
             QueueGraphGeneration();
         }
     }
@@ -290,8 +288,7 @@ public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphContr
         {
             _layoutPending = false;
             bool initialGeneration = !_hasGeneratedGraph;
-            _zoomAfterGeneration |= initialGeneration || _zoomAfterLayout;
-            _zoomAfterLayout = false;
+            _zoomAfterGeneration |= initialGeneration;
 
             if (!initialGeneration)
             {

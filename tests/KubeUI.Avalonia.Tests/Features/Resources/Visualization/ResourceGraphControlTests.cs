@@ -282,6 +282,42 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
     }
 
     [AvaloniaFact]
+    public async Task graph_update_preserves_user_zoom_after_initial_render()
+    {
+        V1Pod source = new() { ApiVersion = "v1", Kind = V1Pod.KubeKind, Metadata = new() { Name = "source", NamespaceProperty = "demo", Uid = "source" } };
+        V1Pod target = new() { ApiVersion = "v1", Kind = V1Pod.KubeKind, Metadata = new() { Name = "target", NamespaceProperty = "demo", Uid = "target" } };
+        ResourceIdentity sourceIdentity = new("v1", V1Pod.KubeKind, "demo", "source", "source");
+        ResourceIdentity targetIdentity = new("v1", V1Pod.KubeKind, "demo", "target", "target");
+        using ResourceGraphControl control = new()
+        {
+            Graph = new ResourceRelationshipGraph([source], []),
+        };
+        Window window = new() { Width = 800, Height = 600, Content = control };
+        try
+        {
+            window.Show();
+            await Task.Delay(250);
+
+            var zoomControl = control.GetVisualDescendants()
+                .OfType<Westermo.GraphX.Controls.Controls.ZoomControl.ZoomControl>()
+                .Single();
+            zoomControl.Zoom = 0.5;
+
+            control.Graph = new ResourceRelationshipGraph(
+                [source, target],
+                [new ResourceRelationship(sourceIdentity, targetIdentity, ResourceRelationshipKind.Reference)]);
+
+            await Task.Delay(250);
+
+            zoomControl.Zoom.ShouldBe(0.5);
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    [AvaloniaFact]
     public async Task labels_and_arrows_are_created_when_graph_is_added_after_initial_empty_graph()
     {
         V1Pod source = new() { ApiVersion = "v1", Kind = V1Pod.KubeKind, Metadata = new() { Name = "source", NamespaceProperty = "demo", Uid = "source" } };
