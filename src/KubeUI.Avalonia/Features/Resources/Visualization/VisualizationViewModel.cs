@@ -124,6 +124,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         }
 
         _resourcesByKey[key] = change.Resource;
+        SeedOwnerReferenceResourceTypes(change.Resource);
         if (change.EventType == WatchEventType.Modified)
         {
             ReplaceResourceInGraph(change.Resource);
@@ -198,7 +199,6 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         try
         {
             await Task.WhenAll(SeedTypes.Select(type => cluster.Runtime.SeedResource(type))).ConfigureAwait(false);
-            await SeedOwnerReferenceResourceTypesAsync().ConfigureAwait(false);
         }
         finally
         {
@@ -352,7 +352,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         return new ResourceRelationshipGraph(resources, relationships);
     }
 
-    private async Task SeedOwnerReferenceResourceTypesAsync()
+    private void SeedOwnerReferenceResourceTypes(IKubernetesObject<V1ObjectMeta> resource)
     {
         ClusterWorkspace? cluster = Cluster;
         if (cluster == null)
@@ -360,23 +360,20 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
             return;
         }
 
-        foreach (IKubernetesObject<V1ObjectMeta> resource in _resourcesByKey.Values.ToArray())
+        foreach (V1OwnerReference owner in resource.Metadata?.OwnerReferences ?? [])
         {
-            foreach (V1OwnerReference owner in resource.Metadata?.OwnerReferences ?? [])
+            if (owner.Kind == V1Namespace.KubeKind || string.IsNullOrWhiteSpace(owner.ApiVersion) || string.IsNullOrWhiteSpace(owner.Kind))
             {
-                if (owner.Kind == V1Namespace.KubeKind || string.IsNullOrWhiteSpace(owner.ApiVersion) || string.IsNullOrWhiteSpace(owner.Kind))
-                {
-                    continue;
-                }
+                continue;
+            }
 
-                int slash = owner.ApiVersion.IndexOf('/');
-                string group = slash < 0 ? string.Empty : owner.ApiVersion[..slash];
-                string version = slash < 0 ? owner.ApiVersion : owner.ApiVersion[(slash + 1)..];
-                Type? type = cluster.Runtime.ModelCache.GetResourceType(group, version, owner.Kind);
-                if (type != null)
-                {
-                    await cluster.Runtime.SeedResource(type).ConfigureAwait(false);
-                }
+            int slash = owner.ApiVersion.IndexOf('/');
+            string group = slash < 0 ? string.Empty : owner.ApiVersion[..slash];
+            string version = slash < 0 ? owner.ApiVersion : owner.ApiVersion[(slash + 1)..];
+            Type? type = cluster.Runtime.ModelCache.GetResourceType(group, version, owner.Kind);
+            if (type != null)
+            {
+                _ = cluster.Runtime.SeedResource(type);
             }
         }
     }

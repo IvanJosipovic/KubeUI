@@ -584,6 +584,7 @@ internal sealed class CountingClusterRuntime : IClusterRuntime, INotifyPropertyC
 
     public int EventSeedCalls { get; private set; }
     public bool EventSeedWaitForReady { get; private set; }
+    public event Action<Type, bool>? ResourceSeedRequested;
 
     public event PropertyChangedEventHandler? PropertyChanged;
     public event Action<WatchEventType, GroupApiVersionKind, IKubernetesObject<V1ObjectMeta>>? OnChange
@@ -654,6 +655,7 @@ internal sealed class CountingClusterRuntime : IClusterRuntime, INotifyPropertyC
 
     public Task SeedResource<T>(bool waitForReady = false) where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
+        ResourceSeedRequested?.Invoke(typeof(T), waitForReady);
         if (typeof(T) == typeof(global::k8s.Models.Corev1Event))
         {
             EventSeedCalls++;
@@ -665,6 +667,7 @@ internal sealed class CountingClusterRuntime : IClusterRuntime, INotifyPropertyC
 
     public Task SeedResource(Type resourceType, bool waitForReady = false)
     {
+        ResourceSeedRequested?.Invoke(resourceType, waitForReady);
         if (resourceType == typeof(Corev1Event))
         {
             EventSeedCalls++;

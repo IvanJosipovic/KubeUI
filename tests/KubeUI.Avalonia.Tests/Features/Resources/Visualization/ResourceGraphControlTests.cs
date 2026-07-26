@@ -11,6 +11,8 @@ using KubeUI.Avalonia.Tests.Infra;
 using KubeUI.Kubernetes.Resources.Relationships;
 using Shouldly;
 using k8s.Models;
+using KubeUI.Avalonia.Features.Clusters.Workspace;
+using KubeUI.Avalonia.Tests.Features.Clusters.Workspace;
 using Westermo.GraphX.Controls.Controls;
 using Westermo.GraphX.Controls.Behaviours;
 using Westermo.GraphX.Controls.Controls.EdgeLabels;
@@ -20,6 +22,96 @@ namespace KubeUI.Avalonia.Tests.Features.Resources.Visualization;
 
 public sealed class ResourceGraphControlTests : AvaloniaTestBase
 {
+    [AvaloniaFact]
+    public async Task initialization_starts_seeded_resource_caches_without_waiting_for_ready()
+    {
+        var innerRuntime = new TestCluster();
+        await innerRuntime.AddOrUpdateResource(new V1Namespace { Metadata = new() { Name = "default" } });
+        var runtime = new CountingClusterRuntime(innerRuntime);
+        using var cluster = ActivatorUtilities.CreateInstance<ClusterWorkspace>(TestApp.CurrentServices!, runtime);
+        cluster.SelectedNamespaces.Add(innerRuntime.Namespaces.Single());
+        using VisualizationViewModel viewModel = new(new ResourceRelationshipBuilder());
+
+        viewModel.Initialize(cluster);
+
+        runtime.EventSeedCalls.ShouldBeGreaterThan(0);
+        runtime.EventSeedWaitForReady.ShouldBeFalse();
+    }
+
+    [AvaloniaFact]
+    public async Task added_resource_starts_owner_reference_seed_without_waiting_for_ready()
+    {
+        var innerRuntime = new TestCluster();
+        await innerRuntime.AddOrUpdateResource(new V1Namespace { Metadata = new() { Name = "default" } });
+        var runtime = new CountingClusterRuntime(innerRuntime);
+        using var cluster = ActivatorUtilities.CreateInstance<ClusterWorkspace>(TestApp.CurrentServices!, runtime);
+        cluster.SelectedNamespaces.Add(innerRuntime.Namespaces.Single());
+        using VisualizationViewModel viewModel = new(new ResourceRelationshipBuilder());
+        var ownerSeed = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        void OnResourceSeedRequested(Type resourceType, bool waitForReady)
+        {
+            if (resourceType == typeof(V1CustomResourceDefinition))
+            {
+                ownerSeed.TrySetResult(waitForReady);
+            }
+        }
+
+        runtime.ResourceSeedRequested += OnResourceSeedRequested;
+        try
+        {
+            viewModel.Initialize(cluster);
+            await innerRuntime.AddOrUpdateResource(new V1Pod
+            {
+                ApiVersion = "v1",
+                Kind = V1Pod.KubeKind,
+                Metadata = new()
+                {
+                    Name = "owned-pod",
+                    NamespaceProperty = "default",
+                    OwnerReferences =
+                    [
+                        new()
+                        {
+                            ApiVersion = "apiextensions.k8s.io/v1",
+                            Kind = V1CustomResourceDefinition.KubeKind,
+                            Name = "owner",
+                            Uid = "owner",
+                        },
+                    ],
+                },
+            });
+
+            (await ownerSeed.Task.WaitAsync(TimeSpan.FromSeconds(5))).ShouldBeFalse();
+        }
+        finally
+        {
+            runtime.ResourceSeedRequested -= OnResourceSeedRequested;
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task added_unrelated_cluster_scoped_resource_does_not_bypass_namespace_filter()
+    {
+        using var cluster = await TestCluster.GetAsync();
+        var builder = new AdditionCaptureRelationshipBuilder();
+        using VisualizationViewModel viewModel = new(builder);
+        viewModel.Initialize(cluster);
+        await builder.WaitForInitialBuildAsync();
+
+        await cluster.Runtime.AddOrUpdateResource(new V1Node
+        {
+            ApiVersion = "v1",
+            Kind = V1Node.KubeKind,
+            Metadata = new() { Name = "unrelated-node", Uid = "unrelated-node" },
+        });
+
+        ResourceRelationshipGraph delta = await builder.WaitForAdditionAsync();
+
+        delta.Resources.ShouldBeEmpty();
+        delta.Relationships.ShouldBeEmpty();
+    }
+
     [AvaloniaFact]
     public async Task namespace_selection_does_not_run_graph_build_on_ui_thread()
     {
@@ -338,6 +430,38 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
         public async Task WaitForInitialBuildAsync() => await _initialBuild.Task;
 
         public async Task<AdditionDeltaInput> WaitForFirstAdditionAsync() => await _firstAddition.Task;
+    }
+
+    private sealed class AdditionCaptureRelationshipBuilder : IResourceRelationshipBuilder
+    {
+        private readonly ResourceRelationshipBuilder _inner = new();
+        private readonly TaskCompletionSource _initialBuild = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource<ResourceRelationshipGraph> _addition = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public ResourceRelationshipGraph Build(
+            IEnumerable<IKubernetesObject<V1ObjectMeta>> resources,
+            IReadOnlySet<string> selectedNamespaces,
+            bool hideNoise)
+        {
+            ResourceRelationshipGraph graph = _inner.Build(resources, selectedNamespaces, hideNoise);
+            _initialBuild.TrySetResult();
+            return graph;
+        }
+
+        public ResourceRelationshipGraph BuildAdditionDelta(
+            IEnumerable<IKubernetesObject<V1ObjectMeta>> resources,
+            ResourceKey addedResource,
+            IReadOnlySet<string> selectedNamespaces,
+            bool hideNoise)
+        {
+            ResourceRelationshipGraph graph = _inner.BuildAdditionDelta(resources, addedResource, selectedNamespaces, hideNoise);
+            _addition.TrySetResult(graph);
+            return graph;
+        }
+
+        public async Task WaitForInitialBuildAsync() => await _initialBuild.Task;
+
+        public async Task<ResourceRelationshipGraph> WaitForAdditionAsync() => await _addition.Task;
     }
 
     private sealed record AdditionDeltaInput(IReadOnlyList<string> Resources, bool HideNoise);

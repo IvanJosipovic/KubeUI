@@ -12,10 +12,12 @@ using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Resources;
+using KubeUI.Avalonia.Features.Resources.Visualization;
 using KubeUI.Avalonia.Shell.Navigation;
 using KubeUI.Avalonia.Tests.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Tests.Infra;
 using KubeUI.Testing;
+using KubeUI.Kubernetes.Resources.Relationships;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Shell.Navigation;
@@ -1851,6 +1853,36 @@ public class NavigationViewModelTests : AvaloniaTestBase
 
         var count = await countTask;
         count.ShouldBe(1);
+    }
+
+    [AvaloniaFact]
+    public async Task visualization_seeded_resource_attaches_navigation_count()
+    {
+        var runtime = new TestCluster
+        {
+            Connected = true,
+            Status = ClusterStatus.Connected,
+        };
+        await runtime.AddOrUpdateResource(new V1Namespace { Metadata = new() { Name = "default" } });
+
+        var workspace = CreateWorkspace(runtime);
+        await workspace.Connect();
+        var navigation = CreateViewModel();
+        navigation.ClusterCatalog.Clusters.Add(workspace);
+        Dispatcher.UIThread.RunJobs();
+
+        var clusterNode = navigation.Clusters.Single(x => x.Cluster == workspace);
+        var podsLink = await WaitForValueAsync(() => FindResourceLink(clusterNode, typeof(V1Pod)));
+        podsLink.ShouldNotBeNull();
+        podsLink.Count.ShouldBeNull();
+
+        using var visualization = new VisualizationViewModel(new ResourceRelationshipBuilder());
+        visualization.Initialize(workspace);
+
+        await WaitForAsync(() => podsLink.Count is not null, timeoutMs: 10000);
+        var count = await WaitForObservedCountAsync(podsLink.Count, expected: 0, timeoutMs: 10000);
+
+        count.ShouldBe(0);
     }
 
     [AvaloniaFact]

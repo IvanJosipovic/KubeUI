@@ -215,68 +215,38 @@ public sealed class ResourceRelationshipBuilder : IResourceRelationshipBuilder
         ArgumentNullException.ThrowIfNull(resources);
         ArgumentNullException.ThrowIfNull(selectedNamespaces);
 
-        List<IKubernetesObject<V1ObjectMeta>> visible = [];
-        IKubernetesObject<V1ObjectMeta>? added = null;
-        foreach (IKubernetesObject<V1ObjectMeta> resource in resources)
-        {
-            if (hideNoise && (resource is Corev1Event || resource is V1ReplicaSet replicaSet && replicaSet.Status?.Replicas == 0))
-            {
-                continue;
-            }
-
-            visible.Add(resource);
-            if (new ResourceKey(resource.ApiVersion ?? string.Empty, resource.Kind ?? string.Empty, resource.Namespace(), resource.Name() ?? string.Empty) == addedResource)
-            {
-                added = resource;
-            }
-        }
-
+        ResourceRelationshipGraph graph = Build(resources, selectedNamespaces, hideNoise);
+        IKubernetesObject<V1ObjectMeta>? added = graph.Resources.FirstOrDefault(resource =>
+            new ResourceKey(resource.ApiVersion ?? string.Empty, resource.Kind ?? string.Empty, resource.Namespace(), resource.Name() ?? string.Empty) == addedResource);
         if (added == null)
         {
             return ResourceRelationshipGraph.Empty;
         }
 
-        Dictionary<string, IKubernetesObject<V1ObjectMeta>> byUid = new(StringComparer.Ordinal);
-        Dictionary<ResourceKey, IKubernetesObject<V1ObjectMeta>> byKey = [];
-        Dictionary<string, List<IKubernetesObject<V1ObjectMeta>>> byKind = new(StringComparer.Ordinal);
-        foreach (IKubernetesObject<V1ObjectMeta> resource in visible)
+        ResourceIdentity addedIdentity = new(added.ApiVersion ?? string.Empty, added.Kind ?? string.Empty, added.Namespace(), added.Name() ?? string.Empty, added.Uid());
+        HashSet<ResourceIdentity> included = [addedIdentity];
+        bool changed;
+        do
         {
-            string? uid = resource.Uid();
-            if (!string.IsNullOrWhiteSpace(uid))
+            changed = false;
+            foreach (ResourceRelationship relationship in graph.Relationships)
             {
-                byUid.TryAdd(uid, resource);
-            }
-
-            byKey.TryAdd(new(resource.ApiVersion ?? string.Empty, resource.Kind ?? string.Empty, resource.Namespace(), resource.Name() ?? string.Empty), resource);
-            if (!byKind.TryGetValue(resource.Kind ?? string.Empty, out List<IKubernetesObject<V1ObjectMeta>>? kindResources))
-            {
-                kindResources = [];
-                byKind.Add(resource.Kind ?? string.Empty, kindResources);
-            }
-
-            kindResources.Add(resource);
-        }
-
-        ResourceRelationshipContext context = new(byUid, byKey, byKind.ToDictionary(x => x.Key, x => (IReadOnlyList<IKubernetesObject<V1ObjectMeta>>)x.Value, StringComparer.Ordinal));
-        ResourceIdentity addedIdentity = context.Identity(added);
-        HashSet<ResourceRelationship> affected = [];
-        foreach (IKubernetesObject<V1ObjectMeta> resource in visible)
-        {
-            foreach (IResourceRelationshipProvider provider in _providers)
-            {
-                List<ResourceRelationship> relationships = [];
-                provider.AddRelationships(resource, context, relationships);
-                foreach (ResourceRelationship relationship in relationships)
+                if (included.Contains(relationship.Source) && included.Add(relationship.Target)
+                    || included.Contains(relationship.Target) && included.Add(relationship.Source))
                 {
-                    if (relationship.Source == addedIdentity || relationship.Target == addedIdentity)
-                    {
-                        affected.Add(relationship);
-                    }
+                    changed = true;
                 }
             }
-        }
+        } while (changed);
 
-        return new ResourceRelationshipGraph([added], SimplifyRelationships(affected));
+        return new ResourceRelationshipGraph(
+            graph.Resources.Where(resource => included.Contains(new ResourceIdentity(
+                resource.ApiVersion ?? string.Empty,
+                resource.Kind ?? string.Empty,
+                resource.Namespace(),
+                resource.Name() ?? string.Empty,
+                resource.Uid()))).ToArray(),
+            graph.Relationships.Where(relationship => included.Contains(relationship.Source) && included.Contains(relationship.Target)).ToArray());
     }
 
     public static IReadOnlyList<ResourceRelationship> SimplifyRelationships(IEnumerable<ResourceRelationship> relationships)

@@ -226,6 +226,26 @@ public sealed class ResourceRelationshipBuilderTests
     }
 
     [Fact]
+    public void Addition_delta_keeps_cluster_scoped_resources_connected_to_selected_namespace()
+    {
+        V1Pod selected = new() { ApiVersion = "v1", Kind = V1Pod.KubeKind, Metadata = new() { Name = "selected", NamespaceProperty = "demo", Uid = "selected-uid" } };
+        V1Node related = new() { ApiVersion = "v1", Kind = V1Node.KubeKind, Metadata = new() { Name = "related", Uid = "related-uid" } };
+        ResourceRelationshipBuilder builder = new([new SelectedToNodeProvider()]);
+
+        ResourceRelationshipGraph delta = builder.BuildAdditionDelta(
+            [selected, related],
+            new ResourceKey("v1", V1Node.KubeKind, null, "related"),
+            new HashSet<string> { "demo" },
+            hideNoise: true);
+
+        delta.Resources.Select(resource => resource.Name()).ShouldBe(["selected", "related"]);
+        delta.Relationships.ShouldContain(new ResourceRelationship(
+            new("v1", V1Pod.KubeKind, "demo", "selected", "selected-uid"),
+            new("v1", V1Node.KubeKind, null, "related", "related-uid"),
+            ResourceRelationshipKind.Reference));
+    }
+
+    [Fact]
     public void Keeps_related_resources_from_other_namespaces()
     {
         V1Pod selected = new() { ApiVersion = "v1", Kind = V1Pod.KubeKind, Metadata = new() { Name = "selected", NamespaceProperty = "demo", Uid = "selected-uid" } };
@@ -371,6 +391,22 @@ public sealed class ResourceRelationshipBuilderTests
             }
 
             context.Add(relationships, resource, related, ResourceRelationshipKind.Reference);
+        }
+    }
+
+    private sealed class SelectedToNodeProvider : IResourceRelationshipProvider
+    {
+        public void AddRelationships(
+            IKubernetesObject<V1ObjectMeta> resource,
+            ResourceRelationshipContext context,
+            ICollection<ResourceRelationship> relationships)
+        {
+            if (resource.Name() == "selected"
+                && context.TryGet("v1", V1Node.KubeKind, null, "related", out IKubernetesObject<V1ObjectMeta>? related)
+                && related != null)
+            {
+                context.Add(relationships, resource, related, ResourceRelationshipKind.Reference);
+            }
         }
     }
 }
