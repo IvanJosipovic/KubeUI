@@ -9,10 +9,11 @@ using Westermo.GraphX.Controls.Controls;
 using Westermo.GraphX.Logic.Models;
 using Westermo.GraphX.Controls.Controls.ZoomControl;
 using Westermo.GraphX.Logic.Algorithms.LayoutAlgorithms;
+using Westermo.GraphX.Controls.Models.Interfaces;
 
 namespace KubeUI.Avalonia.Features.Resources.Visualization;
 
-public sealed class ResourceGraphControl : UserControl, IDisposable
+public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphControlFactory
 {
     public static readonly DirectProperty<ResourceGraphControl, ResourceRelationshipGraph?> GraphProperty =
         AvaloniaProperty.RegisterDirect<ResourceGraphControl, ResourceRelationshipGraph?>(nameof(Graph), control => control.Graph, (control, value) => control.Graph = value);
@@ -27,6 +28,7 @@ public sealed class ResourceGraphControl : UserControl, IDisposable
     private bool _layoutPending;
     private bool _hasGeneratedGraph;
     private bool _zoomAfterLayout;
+    private bool _zoomAfterGeneration;
     private bool _isDetached;
 
     public ResourceRelationshipGraph? Graph
@@ -60,6 +62,8 @@ public sealed class ResourceGraphControl : UserControl, IDisposable
 
     internal GraphArea<ResourceGraphVertex, ResourceGraphEdge, BidirectionalGraph<ResourceGraphVertex, ResourceGraphEdge>> Area => _area;
 
+    public GraphAreaBase FactoryRootArea => _area;
+
     public ResourceGraphControl()
     {
         _logicCore = new GXLogicCore<ResourceGraphVertex, ResourceGraphEdge, BidirectionalGraph<ResourceGraphVertex, ResourceGraphEdge>>
@@ -85,9 +89,13 @@ public sealed class ResourceGraphControl : UserControl, IDisposable
             LogicCore = _logicCore,
             SelectedVertices = new HashSet<ResourceGraphVertex>(),
             SelectionMode = SelectionMode.Multiple,
+            ControlFactory = this,
+            VertexLabelFactory = null
         };
 
         ResourceGraphStyles.Apply(_area);
+        _area.GenerateGraphFinished += OnGraphLayoutFinished;
+        _area.RelayoutFinished += OnGraphLayoutFinished;
         _area.DataTemplates.Add(new FuncDataTemplate<ResourceGraphVertex>((vertex, _) => VisualizationView.CreateResourceNode(vertex!.Node)));
 
         _zoomControl = new ZoomControl
@@ -227,6 +235,7 @@ public sealed class ResourceGraphControl : UserControl, IDisposable
                 IconPath = Utilities.GetKubeAssetPath(resource.GetType()),
             },
         };
+
         return vertex;
     }
 
@@ -243,7 +252,6 @@ public sealed class ResourceGraphControl : UserControl, IDisposable
         }
 
         edge = new ResourceGraphEdge(source, target, relationship);
-
         return true;
     }
 
@@ -282,6 +290,8 @@ public sealed class ResourceGraphControl : UserControl, IDisposable
         {
             _layoutPending = false;
             bool initialGeneration = !_hasGeneratedGraph;
+            _zoomAfterGeneration |= initialGeneration || _zoomAfterLayout;
+            _zoomAfterLayout = false;
 
             if (!initialGeneration)
             {
@@ -292,23 +302,19 @@ public sealed class ResourceGraphControl : UserControl, IDisposable
                 await _area.GenerateGraph(true).ConfigureAwait(true);
                 _hasGeneratedGraph = true;
             }
-
-            foreach (EdgeControl edge in _area.EdgesList.Values)
-            {
-                edge.GetEdgePointerForSource()?.Hide();
-                edge.GetEdgePointerForTarget()?.Show();
-            }
-
-            _area.ShowAllEdgesArrows(true);
-
-            if (initialGeneration || _zoomAfterLayout)
-            {
-                _zoomAfterLayout = false;
-                await Dispatcher.UIThread.InvokeAsync(_zoomControl.ZoomToFill, DispatcherPriority.Render);
-            }
-
-
         }
+    }
+
+    private void OnGraphLayoutFinished(object? sender, EventArgs e)
+    {
+        _area.UpdateAllEdges(performFullUpdate: true, skipHiddenEdges: false);
+        if (!_zoomAfterGeneration)
+        {
+            return;
+        }
+
+        _zoomAfterGeneration = false;
+        _zoomControl.ZoomToFill();
     }
 
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
@@ -332,7 +338,24 @@ public sealed class ResourceGraphControl : UserControl, IDisposable
 
     public void Dispose()
     {
+        _area.GenerateGraphFinished -= OnGraphLayoutFinished;
+        _area.RelayoutFinished -= OnGraphLayoutFinished;
         _area.Dispose();
         _logicCore.Dispose();
+    }
+
+    public EdgeControl CreateEdgeControl(VertexControl source, VertexControl target, object edge, bool showArrows = true, bool isVisible = true)
+    {
+        return new EdgeControl(source, target, edge, showArrows)
+        {
+            RootArea = _area,
+            IsVisible = isVisible,
+        };
+    }
+
+    public VertexControl CreateVertexControl(object vertexData)
+    {
+        var vertexControl = new VertexControl(vertexData);
+        return vertexControl;
     }
 }

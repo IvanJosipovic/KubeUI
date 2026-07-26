@@ -1,11 +1,16 @@
 using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Presenters;
 using Avalonia.Controls.Templates;
+using Avalonia.Data;
+using Avalonia.Media;
 using Westermo.GraphX.Controls.Controls;
 using Westermo.GraphX.Controls.Behaviours;
 using QuikGraph;
 using Westermo.GraphX.Common.Enums;
 using Westermo.GraphX.Controls.Controls.EdgeLabels;
+using Westermo.GraphX.Controls.Controls.EdgePointers;
+using Path = Avalonia.Controls.Shapes.Path;
+using Shape = Avalonia.Controls.Shapes.Shape;
 
 namespace KubeUI.Avalonia.Features.Resources.Visualization;
 
@@ -17,7 +22,6 @@ internal static class ResourceGraphStyles
         {
             Setters =
             {
-                new Setter(EdgeControlBase.ShowArrowsProperty, true),
                 new Setter(EdgeControl.StrokeThicknessProperty, 1d),
                 new Setter(
                     TemplatedControl.ForegroundProperty,
@@ -25,6 +29,7 @@ internal static class ResourceGraphStyles
                 new Setter(
                     ToolTip.TipProperty,
                     CompiledBinding.Create<ResourceGraphEdge, string>(edge => edge.RelationshipName)),
+                new Setter(TemplatedControl.TemplateProperty, CreateDirectedEdgeTemplate()),
             },
         });
 
@@ -36,9 +41,8 @@ internal static class ResourceGraphStyles
                 new Setter(TemplatedControl.PaddingProperty, new Thickness(0)),
                 new Setter(TemplatedControl.BorderBrushProperty, Brushes.Transparent),
                 new Setter(TemplatedControl.BorderThicknessProperty, new Thickness(0)),
-                new Setter(VertexControlBase.ShowLabelProperty, false),
-                new Setter(ContentControl.HorizontalContentAlignmentProperty, HorizontalAlignment.Center),
-                new Setter(ContentControl.VerticalContentAlignmentProperty, VerticalAlignment.Center),
+                // new Setter(ContentControl.HorizontalContentAlignmentProperty, HorizontalAlignment.Center),
+                // new Setter(ContentControl.VerticalContentAlignmentProperty, VerticalAlignment.Center),
                 new Setter(DragBehaviour.IsDragEnabledProperty, true),
                 new Setter(DragBehaviour.UpdateEdgesOnMoveProperty, true),
                 new Setter(VertexControlBase.VertexShapeProperty, VertexShape.Rectangle),
@@ -56,7 +60,7 @@ internal static class ResourceGraphStyles
                         Background = Brushes.Transparent,
                         BorderBrush = Brushes.Transparent,
                         BorderThickness = new Thickness(0),
-                        CornerRadius = new CornerRadius(8),
+                        CornerRadius = new CornerRadius(0),
                         Child = new ContentPresenter
                         {
                             Content = label.AttachNode?.Edge,
@@ -64,6 +68,56 @@ internal static class ResourceGraphStyles
                         },
                     })),
             },
+        });
+
+    }
+
+    private static FuncControlTemplate<EdgeControl> CreateDirectedEdgeTemplate()
+    {
+        return new FuncControlTemplate<EdgeControl>((_, nameScope) =>
+        {
+            Path edgePath = new() { Name = "PART_edgePath" };
+            edgePath.Bind(Shape.StrokeProperty, new TemplateBinding { Property = TemplatedControl.ForegroundProperty });
+            edgePath.Bind(Shape.StrokeThicknessProperty, new TemplateBinding { Property = EdgeControl.StrokeThicknessProperty });
+
+            Path targetArrow = new()
+            {
+                Data = Geometry.Parse("M0,0.5 L1,1 1,0"),
+                Stretch = Stretch.Uniform,
+                Width = 10,
+                Height = 10,
+            };
+            targetArrow.Bind(Shape.FillProperty, new TemplateBinding { Property = TemplatedControl.ForegroundProperty });
+
+            Path selfLoop = new()
+            {
+                Name = "PART_SelfLoopedEdge",
+                Data = Geometry.Parse("F1 M 17.4167,32.25L 32.9107,32.25L 38,18L 43.0893,32.25L 58.5833,32.25L 45.6798,41.4944L 51.4583,56L 38,48.0833L 26.125,56L 30.5979,41.7104L 17.4167,32.25 Z"),
+                Stretch = Stretch.Uniform,
+                Width = 10,
+                Height = 10,
+            };
+            selfLoop.Bind(Shape.FillProperty, new TemplateBinding { Property = TemplatedControl.ForegroundProperty });
+
+            DefaultEdgePointer targetPointer = new()
+            {
+                Name = "PART_EdgePointerForTarget",
+                NeedRotation = true,
+                Content = targetArrow,
+            };
+            nameScope.Register("PART_edgePath", edgePath);
+            nameScope.Register("PART_EdgePointerForTarget", targetPointer);
+            nameScope.Register("PART_SelfLoopedEdge", selfLoop);
+
+            return new Grid
+            {
+                Children =
+                {
+                    edgePath,
+                    targetPointer,
+                    selfLoop,
+                },
+            };
         });
     }
 }
