@@ -566,6 +566,7 @@ internal sealed class CountingClusterRuntime : IClusterRuntime, INotifyPropertyC
     private readonly TestClusterRuntime _inner;
     private event Action<IClusterRuntime>? NamespaceSelectionRequiredCore;
     private event Action<IClusterRuntime, GroupApiVersionKind>? ResourceSeededCore;
+    private event Action<IClusterRuntime, GroupApiVersionKind>? ResourceUnseededCore;
 
     public CountingClusterRuntime(TestClusterRuntime inner)
     {
@@ -573,11 +574,13 @@ internal sealed class CountingClusterRuntime : IClusterRuntime, INotifyPropertyC
         _inner.PropertyChanged += (_, e) => PropertyChanged?.Invoke(this, e);
         _inner.NamespaceSelectionRequired += ForwardNamespaceSelectionRequired;
         _inner.ResourceSeeded += ForwardResourceSeeded;
+        _inner.ResourceUnseeded += ForwardResourceUnseeded;
     }
 
     private void ForwardNamespaceSelectionRequired(IClusterRuntime _) => NamespaceSelectionRequiredCore?.Invoke(this);
 
     private void ForwardResourceSeeded(IClusterRuntime _, GroupApiVersionKind kind) => ResourceSeededCore?.Invoke(this, kind);
+    private void ForwardResourceUnseeded(IClusterRuntime _, GroupApiVersionKind kind) => ResourceUnseededCore?.Invoke(this, kind);
 
     public int EventSeedCalls { get; private set; }
     public bool EventSeedWaitForReady { get; private set; }
@@ -605,6 +608,12 @@ internal sealed class CountingClusterRuntime : IClusterRuntime, INotifyPropertyC
     {
         add => ResourceSeededCore += value;
         remove => ResourceSeededCore -= value;
+    }
+
+    public event Action<IClusterRuntime, GroupApiVersionKind>? ResourceUnseeded
+    {
+        add => ResourceUnseededCore += value;
+        remove => ResourceUnseededCore -= value;
     }
 
     public IReadOnlyDictionary<GroupApiVersionKind, object> Objects => _inner.Objects;
@@ -671,6 +680,7 @@ internal sealed class RecordingAuthorizationClusterRuntime : IClusterRuntime, IC
     private readonly TestClusterRuntime _inner;
     private event Action<IClusterRuntime>? NamespaceSelectionRequiredCore;
     private event Action<IClusterRuntime, GroupApiVersionKind>? ResourceSeededCore;
+    private event Action<IClusterRuntime, GroupApiVersionKind>? ResourceUnseededCore;
 
     public RecordingAuthorizationClusterRuntime(TestClusterRuntime inner)
     {
@@ -678,11 +688,13 @@ internal sealed class RecordingAuthorizationClusterRuntime : IClusterRuntime, IC
         _inner.PropertyChanged += (_, e) => PropertyChanged?.Invoke(this, e);
         _inner.NamespaceSelectionRequired += ForwardNamespaceSelectionRequired;
         _inner.ResourceSeeded += ForwardResourceSeeded;
+        _inner.ResourceUnseeded += ForwardResourceUnseeded;
     }
 
     private void ForwardNamespaceSelectionRequired(IClusterRuntime _) => NamespaceSelectionRequiredCore?.Invoke(this);
 
     private void ForwardResourceSeeded(IClusterRuntime _, GroupApiVersionKind kind) => ResourceSeededCore?.Invoke(this, kind);
+    private void ForwardResourceUnseeded(IClusterRuntime _, GroupApiVersionKind kind) => ResourceUnseededCore?.Invoke(this, kind);
 
     public TestClusterRuntime Inner => _inner;
     public List<AuthorizationRequest[]> RecordedAuthorizationRequests { get; } = [];
@@ -710,6 +722,12 @@ internal sealed class RecordingAuthorizationClusterRuntime : IClusterRuntime, IC
     {
         add => ResourceSeededCore += value;
         remove => ResourceSeededCore -= value;
+    }
+
+    public event Action<IClusterRuntime, GroupApiVersionKind>? ResourceUnseeded
+    {
+        add => ResourceUnseededCore += value;
+        remove => ResourceUnseededCore -= value;
     }
 
     public IReadOnlyDictionary<GroupApiVersionKind, object> Objects => _inner.Objects;

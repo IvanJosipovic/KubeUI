@@ -620,6 +620,9 @@ Are you sure?</value>
   <data name="VisualizationView_Title" xml:space="preserve">
     <value>Visualization</value>
   </data>
+  <data name="ResourceConfigBase_MenuItem_Visualize" xml:space="preserve">
+    <value>Visualize</value>
+  </data>
   <data name="ResourcePropertiesView_Name" xml:space="preserve">
     <value>Name</value>
   </data>

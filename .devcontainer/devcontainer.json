@@ -17,7 +17,7 @@
     "customizations": {
         "vscode": {
             "extensions": [
-                "GitHub.copilot",
+                "github.copilot-chat",
                 "GitHub.vscode-github-actions",
                 "ms-dotnettools.csdevkit",
                 "ms-vscode.PowerShell",

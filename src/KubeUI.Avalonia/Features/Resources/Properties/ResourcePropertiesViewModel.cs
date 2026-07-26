@@ -8,7 +8,7 @@ using KubeUI.Avalonia.Resources;
 
 namespace KubeUI.Avalonia.Features.Resources.Properties;
 
-public partial class ResourcePropertiesViewModel<T> : ViewModelBase, IDisposable where T : class, IKubernetesObject<V1ObjectMeta>, new()
+public sealed partial class ResourcePropertiesViewModel<T> : ViewModelBase, IDisposable where T : class, IKubernetesObject<V1ObjectMeta>, new()
 {
     [ObservableProperty]
     public partial ClusterWorkspace? Cluster { get; set; }

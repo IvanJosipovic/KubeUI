@@ -114,6 +114,39 @@ public sealed class ResourceFeatureConfigTests : AvaloniaTestBase
     }
 
     [AvaloniaFact]
+    public void deployment_config_exposes_visualize_action_for_single_selection()
+    {
+        var config = ResolveConfig<V1DeploymentConfig>();
+        var deployment = new V1Deployment
+        {
+            Metadata = new V1ObjectMeta { Name = "api", NamespaceProperty = "default" },
+        };
+
+        var action = config.GetDefaultMenuItems(new[] { deployment })
+            .Single(item => item.Title == KubeUI.Avalonia.Assets.Resources.ResourceConfigBase_MenuItem_Visualize);
+
+        action.Command.ShouldNotBeNull();
+        action.CommandParameter.ShouldBeAssignableTo<IList>();
+        action.Command!.CanExecute(action.CommandParameter).ShouldBeTrue();
+    }
+
+    [AvaloniaFact]
+    public void deployment_config_disables_visualize_for_multiple_selection()
+    {
+        var config = ResolveConfig<V1DeploymentConfig>();
+        var deployments = new[]
+        {
+            new V1Deployment { Metadata = new V1ObjectMeta { Name = "api", NamespaceProperty = "default" } },
+            new V1Deployment { Metadata = new V1ObjectMeta { Name = "worker", NamespaceProperty = "default" } },
+        };
+
+        var action = config.GetDefaultMenuItems(deployments)
+            .Single(item => item.Title == KubeUI.Avalonia.Assets.Resources.ResourceConfigBase_MenuItem_Visualize);
+
+        action.Command!.CanExecute(action.CommandParameter).ShouldBeFalse();
+    }
+
+    [AvaloniaFact]
     public void service_config_uses_service_properties_view()
     {
         var config = ResolveConfig<V1ServiceConfig>();

@@ -19,6 +19,7 @@
     <Using Include="Avalonia.Layout" />
     <Using Include="Avalonia.Markup.Declarative" />
     <Using Include="Avalonia.Media" />
+    <Using Include="Avalonia.Styling" />
     <Using Include="Avalonia.Threading" />
     <Using Include="CommunityToolkit.Mvvm.ComponentModel" />
     <Using Include="CommunityToolkit.Mvvm.Input" />
@@ -61,7 +62,10 @@
     <PackageReference Include="Avalonia.Skia" Version="12.0.5" />
     <PackageReference Include="Avalonia.Themes.Fluent" Version="12.0.5" />
     <PackageReference Include="AvaloniaEdit.TextMate" Version="12.0.0" />
-    <PackageReference Include="AvaloniaGraphControl" Version="0.7.0" />
+    <PackageReference Include="Westermo.GraphX.Controls.Avalonia" Version="4.3.2" />
+    <!-- The Fluent theme package currently publishes 4.2.0; it supports the 4.3.x controls API. -->
+    <PackageReference Include="Westermo.GraphX.Controls.Avalonia.Themes.Fluent" Version="4.2.0" />
+    <PackageReference Include="Westermo.GraphX.Logic" Version="4.3.2" />
     <PackageReference Include="ProDiagnostics" Version="12.0.4">
       <PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>
     </PackageReference>

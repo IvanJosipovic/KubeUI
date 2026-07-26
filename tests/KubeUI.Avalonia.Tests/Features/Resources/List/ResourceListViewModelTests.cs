@@ -1253,6 +1253,61 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         deploymentVm.View[0].ShouldBeOfType<V1Deployment>().Namespace().ShouldBe("ns1");
     }
 
+    [AvaloniaFact(DisplayName = "Reopening a list does not restore stale managed filters")]
+    public async Task reopening_list_does_not_restore_stale_managed_filters()
+    {
+        var window = CreateWindow();
+        var cluster = await CreateClusterAsync();
+
+        var podVm = GetRequiredService<ResourceListViewModel<V1Pod>>();
+        podVm.Initialize(cluster);
+        var podView = GetRequiredService<ResourceListView>();
+        podView.DataContext = podVm;
+
+        window.Content = podView;
+        window.Show();
+
+        await AddOrUpdateAsync(cluster, Pod("a", "pod-a"));
+        await AddOrUpdateAsync(cluster, Pod("b", "pod-b"));
+
+        cluster.SelectedNamespaces.Add(NamespaceResource("a"));
+        Dispatcher.UIThread.RunJobs();
+        podVm.View.Count.ShouldBe(1);
+        GetNamespaceFilterValues(podVm).ShouldBe(["a"]);
+
+        var filterService = GetRequiredService<DataGridColumnFilterService>();
+        var nameColumn = podVm.ColumnDefinitions.First(column => Equals(column.ColumnKey, "name"));
+        filterService.ApplyTextFilter(podVm.FilteringModel, nameColumn, GetTextOperator(FilteringOperator.Contains), "pod-a");
+        podVm.SearchQuery = "pod-a";
+        Dispatcher.UIThread.RunJobs();
+
+        var deploymentVm = GetRequiredService<ResourceListViewModel<V1Deployment>>();
+        deploymentVm.Initialize(cluster);
+        var deploymentView = GetRequiredService<ResourceListView>();
+        deploymentView.DataContext = deploymentVm;
+
+        window.Content = deploymentView;
+        Dispatcher.UIThread.RunJobs();
+
+        cluster.SelectedNamespaces.Clear();
+        Dispatcher.UIThread.RunJobs();
+        podVm.SelectedNamespaces.ShouldBeEmpty();
+        podVm.FilteringModel.Descriptors.ShouldNotContain(descriptor => Equals(descriptor.ColumnId, ResourceListViewModel<V1Pod>.NamespaceScopeFilterId));
+        podVm.FilteringModel.Descriptors.ShouldContain(descriptor => Equals(descriptor.ColumnId, nameColumn));
+
+        podVm.SearchQuery = string.Empty;
+        podVm.FilteringModel.Clear();
+        Dispatcher.UIThread.RunJobs();
+        window.Content = podView;
+        Dispatcher.UIThread.RunJobs();
+
+        podVm.SelectedNamespaces.ShouldBeEmpty();
+        podVm.FilteringModel.Descriptors.ShouldNotContain(descriptor => Equals(descriptor.ColumnId, ResourceListViewModel<V1Pod>.NamespaceScopeFilterId));
+        podVm.FilteringModel.Descriptors.ShouldContain(descriptor => Equals(descriptor.ColumnId, nameColumn));
+        podVm.SearchModel.Descriptors.ShouldBeEmpty();
+        podVm.View.Count.ShouldBe(1);
+    }
+
     [AvaloniaFact(DisplayName = "Namespace filter clears item when selection filtered out")]
     public async Task namespace_filter_clears_item_when_selection_filtered_out()
     {

@@ -31,6 +31,7 @@ public interface IClusterRuntime
     event Action<WatchEventType, GroupApiVersionKind, IKubernetesObject<V1ObjectMeta>>? OnChange;
     event Action<IClusterRuntime>? NamespaceSelectionRequired;
     event Action<IClusterRuntime, GroupApiVersionKind>? ResourceSeeded;
+    event Action<IClusterRuntime, GroupApiVersionKind>? ResourceUnseeded;
     event Action<V1CustomResourceDefinition>? OnCustomResourceDefinitionReady;
     IKubernetes? Client { get; set; }
     K8SConfiguration KubeConfig { get; set; }
@@ -63,4 +64,5 @@ public interface IClusterRuntime
     ISourceCache<T, string> GetResourceSourceCache<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new();
     IObservable<int> GetResourceCount(Type type);
     IObservable<int> GetResourceCount<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new();
+    IObservable<ResourceChange> ConnectResources() => ClusterResourceChangeFeed.Connect(this);
 }

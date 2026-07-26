@@ -17,20 +17,25 @@
             "problemMatcher": []
         },
         {
-            "label": "format: all",
-            "dependsOn": [
-                "dotnet: format solution"
+            "label": "dotnet: restore",
+            "type": "shell",
+            "command": "dotnet",
+            "args": [
+                "restore"
             ],
-            "dependsOrder": "sequence",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
             "problemMatcher": []
         },
         {
-            "label": "dotnet: build solution",
+            "label": "dotnet: build Desktop",
             "type": "shell",
             "command": "dotnet",
             "args": [
                 "build",
-                "KubeUI.slnx"
+                "src/KubeUI.Desktop/KubeUI.Desktop.csproj",
+                "--no-restore"
             ],
             "options": {
                 "cwd": "${workspaceFolder}"

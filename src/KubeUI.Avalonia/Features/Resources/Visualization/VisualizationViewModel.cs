@@ -1,27 +1,44 @@
 using System.Collections.Specialized;
-using AvaloniaGraphControl;
-using Dock.Model.Core;
+using System.Reactive.Linq;
 using k8s;
 using k8s.Models;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
-using KubeUI.Avalonia.Features.Resources.Properties;
-using KubeUI.Avalonia.Features.Resources.Yaml;
 using KubeUI.Avalonia.Infrastructure;
-using KubeUI.Avalonia.Infrastructure.Docking;
 using KubeUI.Avalonia.Infrastructure.Presentation;
-using static AvaloniaGraphControl.GraphPanel;
+using KubeUI.Kubernetes;
+using KubeUI.Kubernetes.Resources.Relationships;
 
 namespace KubeUI.Avalonia.Features.Resources.Visualization;
 
 public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeCluster, IDisposable
 {
-    private readonly IServiceProvider _serviceProvider;
+    private readonly IResourceRelationshipBuilder _resourceRelationshipBuilder;
+    private readonly Dictionary<ResourceKey, IKubernetesObject<V1ObjectMeta>> _resourcesByKey = [];
+    private bool _disposed;
+    private bool _suppressResourceChanges;
+    private IDisposable? _resourceChangesSubscription;
+    private int _rebuildVersion;
+
+    internal event Action<ResourceIdentity>? ResourceDeleted;
+
+    [ObservableProperty]
+    public partial IKubernetesObject<V1ObjectMeta>? RootResource { get; set; }
+
+    public string RootResourceDisplay => RootResource == null
+        ? string.Empty
+        : $"Resource: {RootResource.ApiVersion}/{RootResource.Kind} {RootResource.Namespace()}/{RootResource.Name()}";
+
+    partial void OnRootResourceChanged(IKubernetesObject<V1ObjectMeta>? value)
+    {
+        OnPropertyChanged(nameof(RootResourceDisplay));
+        Run();
+    }
 
     [ObservableProperty]
     public partial ClusterWorkspace? Cluster { get; set; }
 
     [ObservableProperty]
-    public partial Graph Graph { get; set; }
+    public partial ResourceRelationshipGraph? Graph { get; set; } = ResourceRelationshipGraph.Empty;
 
     [ObservableProperty]
     public partial ObservableCollection<ResourceNodeViewModel> Resources { get; set; } = [];
@@ -29,2055 +46,396 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
     [ObservableProperty]
     public partial bool HideNoise { get; set; } = true;
 
-    [ObservableProperty]
-    public partial LayoutMethods LayoutMethod { get; set; } = LayoutMethods.SugiyamaScheme;
-
-    public VisualizationViewModel(IServiceProvider serviceProvider)
+    public VisualizationViewModel()
     {
-        _serviceProvider = serviceProvider;
+        _resourceRelationshipBuilder = new ResourceRelationshipBuilder();
+        Title = Assets.Resources.VisualizationView_Title;
+    }
+
+    internal VisualizationViewModel(IResourceRelationshipBuilder resourceRelationshipBuilder)
+    {
+        _resourceRelationshipBuilder = resourceRelationshipBuilder;
         Title = Assets.Resources.VisualizationView_Title;
     }
 
     protected override void OnPropertyChanged(PropertyChangedEventArgs e)
     {
         base.OnPropertyChanged(e);
-
         if (e.PropertyName == nameof(HideNoise))
         {
             Run();
         }
     }
 
-    public void Initialize(ClusterWorkspace cluster)
+    public void Initialize(ClusterWorkspace cluster) => Initialize(cluster, null);
+
+    public void Initialize(ClusterWorkspace cluster, IKubernetesObject<V1ObjectMeta>? rootResource)
     {
-        // Detach from any previous cluster to avoid duplicate event subscriptions
-        if (Cluster != null && Cluster.SelectedNamespaces != null)
-        {
-            Cluster.SelectedNamespaces.CollectionChanged -= SelectedNamespaces_CollectionChanged;
-        }
-
+        ArgumentNullException.ThrowIfNull(cluster);
+        UnsubscribeCluster();
         Cluster = cluster;
-
-        if (Cluster?.SelectedNamespaces != null)
-        {
-            // Ensure single subscription
-            Cluster.SelectedNamespaces.CollectionChanged -= SelectedNamespaces_CollectionChanged;
-            Cluster.SelectedNamespaces.CollectionChanged += SelectedNamespaces_CollectionChanged;
-        }
-
+        RootResource = rootResource;
         Id = nameof(VisualizationViewModel) + "-" + cluster;
 
-        _ = cluster.Runtime.SeedResource<V1Node>();
+        _resourcesByKey.Clear();
+        _suppressResourceChanges = true;
+        _resourceChangesSubscription = cluster.Runtime.ConnectResources().Subscribe(OnResourceChange);
 
-        _ = cluster.Runtime.SeedResource<Corev1Event>();
+        cluster.SelectedNamespaces.CollectionChanged += SelectedNamespaces_CollectionChanged;
+        _ = InitializeResourcesAsync(cluster);
+    }
 
-        // Workloads
-        _ = cluster.Runtime.SeedResource<V1Pod>();
-        _ = cluster.Runtime.SeedResource<V1ReplicaSet>();
-        _ = cluster.Runtime.SeedResource<V1Deployment>();
-        _ = cluster.Runtime.SeedResource<V1StatefulSet>();
-        _ = cluster.Runtime.SeedResource<V1DaemonSet>();
-        _ = cluster.Runtime.SeedResource<V1CronJob>();
-        _ = cluster.Runtime.SeedResource<V1Job>();
+    private static readonly Type[] SeedTypes =
+    [
+        typeof(V1Node), typeof(Corev1Event), typeof(V1Pod), typeof(V1ReplicaSet), typeof(V1Deployment),
+        typeof(V1StatefulSet), typeof(V1DaemonSet), typeof(V1CronJob), typeof(V1Job), typeof(V1Secret),
+        typeof(V1ConfigMap), typeof(V1Service), typeof(V1EndpointSlice), typeof(V1Ingress), typeof(V1IngressClass),
+        typeof(V1PersistentVolumeClaim), typeof(V1PersistentVolume), typeof(V1ServiceAccount), typeof(V1RoleBinding),
+        typeof(V1ClusterRoleBinding), typeof(V1Role), typeof(V1ClusterRole),
+    ];
 
-        // Configuration
-        _ = cluster.Runtime.SeedResource<V1Secret>();
-        _ = cluster.Runtime.SeedResource<V1ConfigMap>();
+    private void SelectedNamespaces_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e) => Run();
 
-        // Network
-        _ = cluster.Runtime.SeedResource<V1Service>();
-        _ = cluster.Runtime.SeedResource<V1EndpointSlice>();
-        _ = cluster.Runtime.SeedResource<V1Ingress>();
-        _ = cluster.Runtime.SeedResource<V1IngressClass>();
+    private void OnResourceChange(ResourceChange change)
+    {
+        if (Dispatcher.UIThread.CheckAccess())
+        {
+            ApplyResourceChange(change);
+            return;
+        }
 
-        // Storage
-        _ = cluster.Runtime.SeedResource<V1PersistentVolumeClaim>();
-        _ = cluster.Runtime.SeedResource<V1PersistentVolume>();
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (!_disposed)
+            {
+                ApplyResourceChange(change);
+            }
+        });
+    }
 
-        // Access Control
-        _ = cluster.Runtime.SeedResource<V1ServiceAccount>();
-        _ = cluster.Runtime.SeedResource<V1RoleBinding>();
-        _ = cluster.Runtime.SeedResource<V1ClusterRoleBinding>();
-        _ = cluster.Runtime.SeedResource<V1Role>();
-        _ = cluster.Runtime.SeedResource<V1ClusterRole>();
+    private void ApplyResourceChange(ResourceChange change)
+    {
+        if (_disposed)
+        {
+            return;
+        }
 
-        Run();
+        ResourceKey key = GetResourceKey(change.Resource);
+        if (change.EventType == WatchEventType.Deleted)
+        {
+            _resourcesByKey.Remove(key);
+            ResourceNodeViewModel? deletedNode = Resources.FirstOrDefault(node => IsSameResource(node.Resource, change.Resource));
+            if (deletedNode != null)
+            {
+                Resources.Remove(deletedNode);
+            }
+
+            ResourceDeleted?.Invoke(new ResourceIdentity(
+                change.Resource.ApiVersion ?? string.Empty,
+                change.Resource.Kind ?? string.Empty,
+                change.Resource.Namespace(),
+                change.Resource.Name() ?? string.Empty,
+                change.Resource.Uid()));
+            return;
+        }
+
+        _resourcesByKey[key] = change.Resource;
+        ResourceNodeViewModel? node = Resources.FirstOrDefault(x => IsSameResource(x.Resource, change.Resource));
+        if (change.EventType == WatchEventType.Modified && node != null)
+        {
+            node.UpdateResource(change.Resource);
+            return;
+        }
+
+        if (change.EventType == WatchEventType.Modified)
+        {
+            return;
+        }
+
+        if (change.EventType == WatchEventType.Added)
+        {
+            if (!_suppressResourceChanges && ResourceCanAffectGraph(change.Resource))
+            {
+                _ = AddResourceIncrementallyAsync(change.Resource, key);
+            }
+
+            return;
+        }
+
+        if (!_suppressResourceChanges && ResourceCanAffectGraph(change.Resource))
+        {
+            Run();
+        }
+    }
+
+    private async Task AddResourceIncrementallyAsync(
+        IKubernetesObject<V1ObjectMeta> resource,
+        ResourceKey key)
+    {
+        ClusterWorkspace? cluster = Cluster;
+        if (cluster == null)
+        {
+            return;
+        }
+
+        HashSet<string> namespaces = cluster.SelectedNamespaces.Select(x => x.Name()).OfType<string>().ToHashSet(StringComparer.Ordinal);
+        ResourceRelationshipGraph delta = await Task.Run(() => _resourceRelationshipBuilder.BuildAdditionDelta(
+            _resourcesByKey.Values.ToArray(),
+            key,
+            namespaces,
+            HideNoise)).ConfigureAwait(false);
+
+        await Dispatcher.UIThread.InvokeAsync(() =>
+        {
+            if (_disposed || !ReferenceEquals(Cluster, cluster) || !_resourcesByKey.ContainsKey(key) || delta.Resources.Count == 0)
+            {
+                return;
+            }
+
+            ResourceIdentity identity = new(resource.ApiVersion ?? string.Empty, resource.Kind ?? string.Empty, resource.Namespace(), resource.Name() ?? string.Empty, resource.Uid());
+            ResourceRelationshipGraph current = Graph ?? ResourceRelationshipGraph.Empty;
+            HashSet<ResourceIdentity> currentIdentities = current.Resources.Select(GetIdentity).ToHashSet();
+            if (RootResource != null
+                && identity != GetIdentity(RootResource)
+                && !delta.Relationships.Any(relationship => currentIdentities.Contains(relationship.Source) || currentIdentities.Contains(relationship.Target)))
+            {
+                return;
+            }
+
+            if (!currentIdentities.Contains(identity))
+            {
+                ResourceNodeViewModel addedNode = new()
+                {
+                    Cluster = cluster,
+                    Resource = resource,
+                    IconPath = Utilities.GetKubeAssetPath(resource.GetType()),
+                };
+                Resources.Add(addedNode);
+            }
+
+            IReadOnlyList<IKubernetesObject<V1ObjectMeta>> resources = current.Resources
+                .Concat(delta.Resources)
+                .GroupBy(GetIdentity)
+                .Select(group => group.First())
+                .ToArray();
+            IReadOnlyList<ResourceRelationship> relationships = ResourceRelationshipBuilder.SimplifyRelationships(
+                current.Relationships.Concat(delta.Relationships));
+            Graph = new ResourceRelationshipGraph(resources, relationships);
+        });
+    }
+
+    private async Task InitializeResourcesAsync(ClusterWorkspace cluster)
+    {
+        try
+        {
+            await Task.WhenAll(SeedTypes.Select(type => cluster.Runtime.SeedResource(type))).ConfigureAwait(false);
+            await SeedOwnerReferenceResourceTypesAsync().ConfigureAwait(false);
+        }
+        finally
+        {
+            if (!_disposed && ReferenceEquals(Cluster, cluster))
+            {
+                _suppressResourceChanges = false;
+                Run();
+            }
+        }
+    }
+
+    private bool ResourceCanAffectGraph(IKubernetesObject<V1ObjectMeta> resource)
+    {
+        if (HideNoise && (resource is Corev1Event || resource is V1ReplicaSet replicaSet && replicaSet.Status?.Replicas == 0))
+        {
+            return false;
+        }
+
+        ClusterWorkspace? cluster = Cluster;
+        if (cluster == null)
+        {
+            return false;
+        }
+
+        if (RootResource == null && cluster.SelectedNamespaces.Count == 0)
+        {
+            return false;
+        }
+
+        if (cluster.SelectedNamespaces.Count == 0)
+        {
+            return true;
+        }
+
+        string? namespaceName = resource.Namespace();
+        return string.IsNullOrEmpty(namespaceName)
+            || cluster.SelectedNamespaces.Any(selected => selected.Name() == namespaceName);
     }
 
     private void Run()
     {
-        if (Cluster == null || Cluster.SelectedNamespaces.Count == 0)
-        {
-            Graph = new Graph();
-            Resources.Clear();
-            return;
-        }
-
-        var graph = new Graph();
-        Resources.Clear();
-        PopulateAllResources();
-
-        LinkOwners(Resources, graph);
-        LinkEvent(Resources, graph);
-
-        LinkIngress(Resources, graph);
-        LinkEndpointSlice(Resources, graph);
-
-        LinkConfigMap(Resources, graph);
-        LinkSecret(Resources, graph);
-
-        LinkArgoCDTracking(Resources, graph);
-
-        LinkServiceAccount(Resources, graph);
-
-        LinkPersistantVolumeClaim(Resources, graph);
-        LinkPersistantVolume(Resources, graph);
-
-        LinkRoleBinding(Resources, graph);
-        LinkClusterRoleBinding(Resources, graph);
-
-        RemoveDuplicateConnections(graph);
-
-        RemoveNonRelatedToNamespace(graph);
-
-        Graph = graph;
-    }
-
-    private void SelectedNamespaces_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
-    {
-        Run();
-    }
-
-    private void PopulateAllResources()
-    {
-        if (Cluster?.Runtime.Objects == null)
+        if (_disposed)
         {
             return;
         }
 
-        foreach (var kvp in Cluster.Runtime.Objects)
+        if (!Dispatcher.UIThread.CheckAccess())
         {
-            var container = kvp.Value;
+            Dispatcher.UIThread.Post(Run);
+            return;
+        }
 
-            var itemsProperty = container.GetType().GetProperty("Items");
-            var items = itemsProperty?.GetValue(container);
-            var nestedItemsProperty = items?.GetType().GetProperty("Items");
-            var nestedItems = nestedItemsProperty?.GetValue(items) as IList;
+        int version = Interlocked.Increment(ref _rebuildVersion);
 
-            if (nestedItems == null)
+        ClusterWorkspace? cluster = Cluster;
+        if (cluster == null || (RootResource == null && cluster.SelectedNamespaces.Count == 0))
+        {
+            ApplySnapshot(new VisualizationSnapshot([], ResourceRelationshipGraph.Empty));
+            return;
+        }
+
+        HashSet<string> namespaces = cluster.SelectedNamespaces.Select(x => x.Name()).OfType<string>().ToHashSet(StringComparer.Ordinal);
+        IKubernetesObject<V1ObjectMeta>? root = RootResource;
+        bool hideNoise = HideNoise;
+        IReadOnlyList<IKubernetesObject<V1ObjectMeta>> source = _resourcesByKey.Values.ToArray();
+
+        _ = Task.Run(() => BuildSnapshot(source, cluster, root, namespaces, hideNoise))
+            .ContinueWith(task =>
             {
-                continue;
+                if (task.IsFaulted || task.IsCanceled)
+                {
+                    return;
+                }
+
+                Dispatcher.UIThread.Post(() =>
+                {
+                    if (!_disposed && version == _rebuildVersion)
+                    {
+                        ApplySnapshot(task.Result);
+                    }
+                });
+            }, TaskScheduler.Default);
+    }
+
+    private VisualizationSnapshot BuildSnapshot(
+        IReadOnlyList<IKubernetesObject<V1ObjectMeta>> source,
+        ClusterWorkspace cluster,
+        IKubernetesObject<V1ObjectMeta>? root,
+        IReadOnlySet<string> namespaces,
+        bool hideNoise)
+    {
+        ResourceRelationshipGraph graph = _resourceRelationshipBuilder.Build(source, namespaces, hideNoise);
+        if (root != null)
+        {
+            graph = FilterToRootResource(graph, root);
+        }
+
+        ObservableCollection<ResourceNodeViewModel> nodes = [];
+        foreach (IKubernetesObject<V1ObjectMeta> resource in graph.Resources)
+        {
+            nodes.Add(new ResourceNodeViewModel
+            {
+                Cluster = cluster,
+                Resource = resource,
+                IconPath = Utilities.GetKubeAssetPath(resource.GetType()),
+            });
+        }
+
+        return new VisualizationSnapshot(nodes, graph);
+    }
+
+    private void ApplySnapshot(VisualizationSnapshot snapshot)
+    {
+        Dispatcher.UIThread.VerifyAccess();
+        Resources = snapshot.Resources;
+        Graph = snapshot.Graph;
+    }
+
+    private static ResourceRelationshipGraph FilterToRootResource(ResourceRelationshipGraph graph, IKubernetesObject<V1ObjectMeta> root)
+    {
+        ResourceIdentity rootIdentity = new(root.ApiVersion ?? string.Empty, root.Kind ?? string.Empty, root.Namespace(), root.Name() ?? string.Empty, root.Uid());
+        HashSet<ResourceIdentity> reachable = [rootIdentity];
+        bool changed;
+        do
+        {
+            changed = false;
+            foreach (ResourceRelationship relationship in graph.Relationships)
+            {
+                if (reachable.Contains(relationship.Source) && reachable.Add(relationship.Target))
+                {
+                    changed = true;
+                }
+                else if (reachable.Contains(relationship.Target) && reachable.Add(relationship.Source))
+                {
+                    changed = true;
+                }
             }
+        } while (changed);
 
-            foreach (object item in nestedItems)
+        IReadOnlyList<IKubernetesObject<V1ObjectMeta>> resources = graph.Resources.Where(resource => reachable.Contains(new ResourceIdentity(resource.ApiVersion ?? string.Empty, resource.Kind ?? string.Empty, resource.Namespace(), resource.Name() ?? string.Empty, resource.Uid()))).ToArray();
+        IReadOnlyList<ResourceRelationship> relationships = graph.Relationships.Where(x => reachable.Contains(x.Source) && reachable.Contains(x.Target)).ToArray();
+        return new ResourceRelationshipGraph(resources, relationships);
+    }
+
+    private async Task SeedOwnerReferenceResourceTypesAsync()
+    {
+        ClusterWorkspace? cluster = Cluster;
+        if (cluster == null)
+        {
+            return;
+        }
+
+        foreach (IKubernetesObject<V1ObjectMeta> resource in _resourcesByKey.Values.ToArray())
+        {
+            foreach (V1OwnerReference owner in resource.Metadata?.OwnerReferences ?? [])
             {
-                var value = (IKubernetesObject<V1ObjectMeta>)item;
-
-                if (!string.IsNullOrEmpty(value.Namespace()) && !Cluster.SelectedNamespaces.Any(x => x.Name() == value.Namespace()))
+                if (owner.Kind == V1Namespace.KubeKind || string.IsNullOrWhiteSpace(owner.ApiVersion) || string.IsNullOrWhiteSpace(owner.Kind))
                 {
                     continue;
                 }
 
-                // HideNoise
-                if (HideNoise
-                    && (
-                           (value is V1ReplicaSet replicaSet && replicaSet.Status.Replicas == 0)
-                        || (value is Corev1Event)
-                    ))
+                int slash = owner.ApiVersion.IndexOf('/');
+                string group = slash < 0 ? string.Empty : owner.ApiVersion[..slash];
+                string version = slash < 0 ? owner.ApiVersion : owner.ApiVersion[(slash + 1)..];
+                Type? type = cluster.Runtime.ModelCache.GetResourceType(group, version, owner.Kind);
+                if (type != null)
                 {
-                    continue;
-                }
-
-                var node = new ResourceNodeViewModel(_serviceProvider)
-                {
-                    Cluster = Cluster,
-                    Resource = value,
-                    IconPath = Utilities.GetKubeAssetPath(value.GetType())
-                };
-
-                Resources.Add(node);
-            }
-        }
-    }
-
-    private static void RemoveDuplicateConnections(Graph graph)
-    {
-        if (graph?.Edges == null || graph.Edges.Count < 2)
-        {
-            return;
-        }
-
-        var seen = new HashSet<(object? Head, object? Tail)>();
-
-        // Iterate backwards so we can remove in-place
-        for (int i = graph.Edges.Count - 1; i >= 0; i--)
-        {
-            var edge = graph.Edges.ElementAt(i);
-            var key = (edge.Head, edge.Tail);
-
-            if (!seen.Add(key))
-            {
-                // Duplicate found, remove it
-                graph.Edges.Remove(edge);
-            }
-        }
-    }
-
-    private void RemoveNonRelatedToNamespace(Graph graph)
-    {
-        if (graph?.Edges == null || graph.Edges.Count == 0 || Cluster == null)
-        {
-            return;
-        }
-
-        var selectedNamespaces = new HashSet<string>(
-            Cluster.SelectedNamespaces
-                .Where(n => !string.IsNullOrEmpty(n.Name()))
-                .Select(n => n.Name()!));
-
-        if (selectedNamespaces.Count == 0)
-        {
-            return;
-        }
-
-        // Collect all resource nodes participating in edges
-        var nodes = new HashSet<ResourceNodeViewModel>();
-        foreach (var edge in graph.Edges)
-        {
-            if (edge.Head is ResourceNodeViewModel head)
-            {
-                nodes.Add(head);
-            }
-
-            if (edge.Tail is ResourceNodeViewModel tail)
-            {
-                nodes.Add(tail);
-            }
-        }
-
-        if (nodes.Count == 0)
-        {
-            return;
-        }
-
-        // Determine which nodes are in a selected namespace
-        var nodeIsInSelectedNamespace = new Dictionary<ResourceNodeViewModel, bool>();
-        foreach (var node in nodes)
-        {
-            var ns = node.Resource?.Namespace();
-            nodeIsInSelectedNamespace[node] = ns != null && selectedNamespaces.Contains(ns);
-        }
-
-        // Build undirected adjacency list
-        var adjacency = new Dictionary<ResourceNodeViewModel, List<ResourceNodeViewModel>>();
-        foreach (var node in nodes)
-        {
-            adjacency[node] = new List<ResourceNodeViewModel>();
-        }
-
-        foreach (var edge in graph.Edges)
-        {
-            if (edge.Head is ResourceNodeViewModel head && edge.Tail is ResourceNodeViewModel tail)
-            {
-                adjacency[head].Add(tail);
-                adjacency[tail].Add(head);
-            }
-        }
-
-        var visited = new HashSet<ResourceNodeViewModel>();
-        var edgesToRemove = new HashSet<Edge>();
-
-        // Traverse connected components; keep only components that have at least one node in a selected namespace
-        foreach (var start in nodes)
-        {
-            if (!visited.Add(start))
-            {
-                continue;
-            }
-
-            var componentNodes = new List<ResourceNodeViewModel>();
-            var queue = new Queue<ResourceNodeViewModel>();
-            queue.Enqueue(start);
-
-            var componentHasSelectedNamespaceNode = false;
-
-            while (queue.Count > 0)
-            {
-                var current = queue.Dequeue();
-                componentNodes.Add(current);
-
-                if (nodeIsInSelectedNamespace[current])
-                {
-                    componentHasSelectedNamespaceNode = true;
-                }
-
-                foreach (var neighbor in adjacency[current])
-                {
-                    if (visited.Add(neighbor))
-                    {
-                        queue.Enqueue(neighbor);
-                    }
-                }
-            }
-
-            if (!componentHasSelectedNamespaceNode)
-            {
-                var componentSet = new HashSet<ResourceNodeViewModel>(componentNodes);
-
-                // Mark all edges entirely contained in this component for removal
-                foreach (var edge in graph.Edges)
-                {
-                    if (edge.Head is ResourceNodeViewModel head && edge.Tail is ResourceNodeViewModel tail)
-                    {
-                        if (componentSet.Contains(head) && componentSet.Contains(tail))
-                        {
-                            edgesToRemove.Add(edge);
-                        }
-                    }
-                }
-            }
-        }
-
-        // Remove edges not related to any selected namespace chain
-        if (edgesToRemove.Count > 0)
-        {
-            foreach (var edge in edgesToRemove)
-            {
-                graph.Edges.Remove(edge);
-            }
-        }
-    }
-
-    #region Links
-
-    private static void LinkOwners(ObservableCollection<ResourceNodeViewModel> resources, Graph graph)
-    {
-        foreach (var end in resources)
-        {
-            if (end.Resource?.Metadata?.OwnerReferences != null)
-            {
-                foreach (var ownerReference in end.Resource.Metadata.OwnerReferences)
-                {
-                    if (ownerReference.Kind == V1Namespace.KubeKind)
-                    {
-                        continue;
-                    }
-
-                    var start = resources.FirstOrDefault(x => x.Resource.Uid() == ownerReference.Uid);
-
-                    if (start != null)
-                    {
-                        graph.Edges.Add(new Edge(start, end));
-                    }
+                    await cluster.Runtime.SeedResource(type).ConfigureAwait(false);
                 }
             }
         }
     }
 
-    private static void LinkIngress(ObservableCollection<ResourceNodeViewModel> resources, Graph graph)
+    private static bool IsSameResource(IKubernetesObject<V1ObjectMeta> left, IKubernetesObject<V1ObjectMeta> right)
+        => left.GetType() == right.GetType() && left.Namespace() == right.Namespace() && left.Name() == right.Name();
+
+    private static ResourceIdentity GetIdentity(IKubernetesObject<V1ObjectMeta> resource)
+        => new(resource.ApiVersion ?? string.Empty, resource.Kind ?? string.Empty, resource.Namespace(), resource.Name() ?? string.Empty, resource.Uid());
+
+    private static ResourceKey GetResourceKey(IKubernetesObject<V1ObjectMeta> resource)
+        => new(resource.ApiVersion ?? string.Empty, resource.Kind ?? string.Empty, resource.Namespace(), resource.Name() ?? string.Empty);
+
+    private void UnsubscribeCluster()
     {
-        foreach (var start in resources)
-        {
-            if (start.Resource is V1Ingress ingress)
-            {
-                if (ingress?.Spec?.Rules != null)
-                {
-                    foreach (var serviceBackend in ingress.Spec.Rules
-                                                    .SelectMany(x => x.Http.Paths.Where(y => y.Backend?.Service != null)
-                                                    .Select(y => y.Backend.Service)))
-                    {
-                        foreach (var end in resources)
-                        {
-                            if (end.Resource is V1Service service)
-                            {
-                                if (service.Name() == serviceBackend.Name && service.Namespace() == ingress.Namespace())
-                                {
-                                    graph.Edges.Add(new Edge(start, end));
-                                }
-                            }
-                        }
-                    }
-                }
-
-                if (ingress?.Spec?.DefaultBackend != null)
-                {
-                    if (ingress.Spec.DefaultBackend.Service != null)
-                    {
-                        foreach (var end in resources)
-                        {
-                            if (end.Resource is V1Service service)
-                            {
-                                if (service.Name() == ingress.Spec.DefaultBackend.Service.Name && service.Namespace() == ingress.Namespace())
-                                {
-                                    graph.Edges.Add(new Edge(start, end));
-                                }
-                            }
-                        }
-                    }
-
-                    //todo DefaultBackend.Resource
-                }
-
-                //todo Backend.Resource
-            }
-        }
-    }
-
-    private static void LinkEndpointSlice(ObservableCollection<ResourceNodeViewModel> resources, Graph graph)
-    {
-        foreach (var start in resources)
-        {
-            if (start.Resource is V1EndpointSlice endpointSlice)
-            {
-                if (endpointSlice.Endpoints == null)
-                {
-                    continue;
-                }
-
-                foreach (var endpoint in endpointSlice.Endpoints)
-                {
-                    if (endpoint.TargetRef == null)
-                    {
-                        continue;
-                    }
-
-                    foreach (var end in resources)
-                    {
-                        if (end.Resource is V1Pod pod)
-                        {
-                            if (pod.Uid() == endpoint.TargetRef.Uid)
-                            {
-                                graph.Edges.Add(new Edge(start, end));
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    private static void LinkConfigMap(ObservableCollection<ResourceNodeViewModel> resources, Graph graph)
-    {
-        foreach (var start in resources)
-        {
-            if (start.Resource is V1Deployment deployment)
-            {
-                if (deployment?.Spec?.Template?.Spec?.Containers != null)
-                {
-                    foreach (var container in deployment.Spec.Template.Spec.Containers)
-                    {
-                        if (container.Env != null)
-                        {
-                            foreach (var env in container.Env)
-                            {
-                                if (env.ValueFrom?.ConfigMapKeyRef != null)
-                                {
-                                    foreach (var end in resources)
-                                    {
-                                        if (end.Resource is V1ConfigMap configMap)
-                                        {
-                                            if (configMap.Name() == env.ValueFrom.ConfigMapKeyRef.Name && configMap.Namespace() == deployment.Namespace())
-                                            {
-                                                graph.Edges.Add(new Edge(start, end));
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        if (container.EnvFrom != null)
-                        {
-                            foreach (var envFrom in container.EnvFrom)
-                            {
-                                if (envFrom.ConfigMapRef != null)
-                                {
-                                    foreach (var end in resources)
-                                    {
-                                        if (end.Resource is V1ConfigMap configMap)
-                                        {
-                                            if (configMap.Name() == envFrom.ConfigMapRef.Name && configMap.Namespace() == deployment.Namespace())
-                                            {
-                                                graph.Edges.Add(new Edge(start, end));
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                if (deployment?.Spec?.Template?.Spec?.InitContainers != null)
-                {
-                    foreach (var container in deployment.Spec.Template.Spec.InitContainers)
-                    {
-                        if (container.Env != null)
-                        {
-                            foreach (var env in container.Env)
-                            {
-                                if (env.ValueFrom?.ConfigMapKeyRef != null)
-                                {
-                                    foreach (var end in resources)
-                                    {
-                                        if (end.Resource is V1ConfigMap configMap)
-                                        {
-                                            if (configMap.Name() == env.ValueFrom.ConfigMapKeyRef.Name && configMap.Namespace() == deployment.Namespace())
-                                            {
-                                                graph.Edges.Add(new Edge(start, end));
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        if (container.EnvFrom != null)
-                        {
-                            foreach (var envFrom in container.EnvFrom)
-                            {
-                                if (envFrom.ConfigMapRef != null)
-                                {
-                                    foreach (var end in resources)
-                                    {
-                                        if (end.Resource is V1ConfigMap configMap)
-                                        {
-                                            if (configMap.Name() == envFrom.ConfigMapRef.Name && configMap.Namespace() == deployment.Namespace())
-                                            {
-                                                graph.Edges.Add(new Edge(start, end));
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                if (deployment?.Spec?.Template?.Spec?.Volumes != null)
-                {
-                    foreach (var volume in deployment.Spec.Template.Spec.Volumes)
-                    {
-                        if (volume.ConfigMap != null)
-                        {
-                            foreach (var end in resources)
-                            {
-                                if (end.Resource is V1ConfigMap configMap)
-                                {
-                                    if (configMap.Name() == volume.ConfigMap.Name && configMap.Namespace() == deployment.Namespace())
-                                    {
-                                        graph.Edges.Add(new Edge(start, end));
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            if (start.Resource is V1ReplicaSet replicaSet)
-            {
-                if (replicaSet?.Spec?.Template?.Spec?.Containers != null)
-                {
-                    foreach (var container in replicaSet.Spec.Template.Spec.Containers)
-                    {
-                        if (container.Env != null)
-                        {
-                            foreach (var env in container.Env)
-                            {
-                                if (env.ValueFrom?.ConfigMapKeyRef != null)
-                                {
-                                    foreach (var end in resources)
-                                    {
-                                        if (end.Resource is V1ConfigMap configMap)
-                                        {
-                                            if (configMap.Name() == env.ValueFrom.ConfigMapKeyRef.Name && configMap.Namespace() == replicaSet.Namespace())
-                                            {
-                                                graph.Edges.Add(new Edge(start, end));
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        if (container.EnvFrom != null)
-                        {
-                            foreach (var envFrom in container.EnvFrom)
-                            {
-                                if (envFrom.ConfigMapRef != null)
-                                {
-                                    foreach (var end in resources)
-                                    {
-                                        if (end.Resource is V1ConfigMap configMap)
-                                        {
-                                            if (configMap.Name() == envFrom.ConfigMapRef.Name && configMap.Namespace() == replicaSet.Namespace())
-                                            {
-                                                graph.Edges.Add(new Edge(start, end));
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                if (replicaSet?.Spec?.Template?.Spec?.InitContainers != null)
-                {
-                    foreach (var container in replicaSet.Spec.Template.Spec.InitContainers)
-                    {
-                        if (container.Env != null)
-                        {
-                            foreach (var env in container.Env)
-                            {
-                                if (env.ValueFrom?.ConfigMapKeyRef != null)
-                                {
-                                    foreach (var end in resources)
-                                    {
-                                        if (end.Resource is V1ConfigMap configMap)
-                                        {
-                                            if (configMap.Name() == env.ValueFrom.ConfigMapKeyRef.Name && configMap.Namespace() == replicaSet.Namespace())
-                                            {
-                                                graph.Edges.Add(new Edge(start, end));
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        if (container.EnvFrom != null)
-                        {
-                            foreach (var envFrom in container.EnvFrom)
-                            {
-                                if (envFrom.ConfigMapRef != null)
-                                {
-                                    foreach (var end in resources)
-                                    {
-                                        if (end.Resource is V1ConfigMap configMap)
-                                        {
-                                            if (configMap.Name() == envFrom.ConfigMapRef.Name && configMap.Namespace() == replicaSet.Namespace())
-                                            {
-                                                graph.Edges.Add(new Edge(start, end));
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                if (replicaSet?.Spec?.Template?.Spec?.Volumes != null)
-                {
-                    foreach (var volume in replicaSet.Spec.Template.Spec.Volumes)
-                    {
-                        if (volume.ConfigMap != null)
-                        {
-                            foreach (var end in resources)
-                            {
-                                if (end.Resource is V1ConfigMap configMap)
-                                {
-                                    if (configMap.Name() == volume.ConfigMap.Name && configMap.Namespace() == replicaSet.Namespace())
-                                    {
-                                        graph.Edges.Add(new Edge(start, end));
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            if (start.Resource is V1StatefulSet statefulSet)
-            {
-                if (statefulSet?.Spec?.Template?.Spec?.Containers != null)
-                {
-                    foreach (var container in statefulSet.Spec.Template.Spec.Containers)
-                    {
-                        if (container.Env != null)
-                        {
-                            foreach (var env in container.Env)
-                            {
-                                if (env.ValueFrom?.ConfigMapKeyRef != null)
-                                {
-                                    foreach (var end in resources)
-                                    {
-                                        if (end.Resource is V1ConfigMap configMap)
-                                        {
-                                            if (configMap.Name() == env.ValueFrom.ConfigMapKeyRef.Name && configMap.Namespace() == statefulSet.Namespace())
-                                            {
-                                                graph.Edges.Add(new Edge(start, end));
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        if (container.EnvFrom != null)
-                        {
-                            foreach (var envFrom in container.EnvFrom)
-                            {
-                                if (envFrom.ConfigMapRef != null)
-                                {
-                                    foreach (var end in resources)
-                                    {
-                                        if (end.Resource is V1ConfigMap configMap)
-                                        {
-                                            if (configMap.Name() == envFrom.ConfigMapRef.Name && configMap.Namespace() == statefulSet.Namespace())
-                                            {
-                                                graph.Edges.Add(new Edge(start, end));
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                if (statefulSet?.Spec?.Template?.Spec?.InitContainers != null)
-                {
-                    foreach (var container in statefulSet.Spec.Template.Spec.InitContainers)
-                    {
-                        if (container.Env != null)
-                        {
-                            foreach (var env in container.Env)
-                            {
-                                if (env.ValueFrom?.ConfigMapKeyRef != null)
-                                {
-                                    foreach (var end in resources)
-                                    {
-                                        if (end.Resource is V1ConfigMap configMap)
-                                        {
-                                            if (configMap.Name() == env.ValueFrom.ConfigMapKeyRef.Name && configMap.Namespace() == statefulSet.Namespace())
-                                            {
-                                                graph.Edges.Add(new Edge(start, end));
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        if (container.EnvFrom != null)
-                        {
-                            foreach (var envFrom in container.EnvFrom)
-                            {
-                                if (envFrom.ConfigMapRef != null)
-                                {
-                                    foreach (var end in resources)
-                                    {
-                                        if (end.Resource is V1ConfigMap configMap)
-                                        {
-                                            if (configMap.Name() == envFrom.ConfigMapRef.Name && configMap.Namespace() == statefulSet.Namespace())
-                                            {
-                                                graph.Edges.Add(new Edge(start, end));
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                if (statefulSet?.Spec?.Template?.Spec?.Volumes != null)
-                {
-                    foreach (var volume in statefulSet.Spec.Template.Spec.Volumes)
-                    {
-                        if (volume.ConfigMap != null)
-                        {
-                            foreach (var end in resources)
-                            {
-                                if (end.Resource is V1ConfigMap configMap)
-                                {
-                                    if (configMap.Name() == volume.ConfigMap.Name && configMap.Namespace() == statefulSet.Namespace())
-                                    {
-                                        graph.Edges.Add(new Edge(start, end));
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            if (start.Resource is V1DaemonSet daemonSet)
-            {
-                if (daemonSet?.Spec?.Template?.Spec?.Containers != null)
-                {
-                    foreach (var container in daemonSet.Spec.Template.Spec.Containers)
-                    {
-                        if (container.Env != null)
-                        {
-                            foreach (var env in container.Env)
-                            {
-                                if (env.ValueFrom?.ConfigMapKeyRef != null)
-                                {
-                                    foreach (var end in resources)
-                                    {
-                                        if (end.Resource is V1ConfigMap configMap)
-                                        {
-                                            if (configMap.Name() == env.ValueFrom?.ConfigMapKeyRef.Name && configMap.Namespace() == daemonSet.Namespace())
-                                            {
-                                                graph.Edges.Add(new Edge(start, end));
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        if (container.EnvFrom != null)
-                        {
-                            foreach (var envFrom in container.EnvFrom)
-                            {
-                                if (envFrom.ConfigMapRef != null)
-                                {
-                                    foreach (var end in resources)
-                                    {
-                                        if (end.Resource is V1ConfigMap configMap)
-                                        {
-                                            if (configMap.Name() == envFrom.ConfigMapRef.Name && configMap.Namespace() == daemonSet.Namespace())
-                                            {
-                                                graph.Edges.Add(new Edge(start, end));
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                if (daemonSet?.Spec?.Template?.Spec?.InitContainers != null)
-                {
-                    foreach (var container in daemonSet.Spec.Template.Spec.InitContainers)
-                    {
-                        if (container.Env != null)
-                        {
-                            foreach (var env in container.Env)
-                            {
-                                if (env.ValueFrom?.ConfigMapKeyRef != null)
-                                {
-                                    foreach (var end in resources)
-                                    {
-                                        if (end.Resource is V1ConfigMap configMap)
-                                        {
-                                            if (configMap.Name() == env.ValueFrom.ConfigMapKeyRef.Name && configMap.Namespace() == daemonSet.Namespace())
-                                            {
-                                                graph.Edges.Add(new Edge(start, end));
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        if (container.EnvFrom != null)
-                        {
-                            foreach (var envFrom in container.EnvFrom)
-                            {
-                                if (envFrom.ConfigMapRef != null)
-                                {
-                                    foreach (var end in resources)
-                                    {
-                                        if (end.Resource is V1ConfigMap configMap)
-                                        {
-                                            if (configMap.Name() == envFrom.ConfigMapRef.Name && configMap.Namespace() == daemonSet.Namespace())
-                                            {
-                                                graph.Edges.Add(new Edge(start, end));
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                if (daemonSet?.Spec?.Template?.Spec?.Volumes != null)
-                {
-                    foreach (var volume in daemonSet.Spec.Template.Spec.Volumes)
-                    {
-                        if (volume.ConfigMap != null)
-                        {
-                            foreach (var end in resources)
-                            {
-                                if (end.Resource is V1ConfigMap configMap)
-                                {
-                                    if (configMap.Name() == volume.ConfigMap.Name && configMap.Namespace() == daemonSet.Namespace())
-                                    {
-                                        graph.Edges.Add(new Edge(start, end));
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            if (start.Resource is V1Pod pod)
-            {
-                if (pod.Spec.Containers != null)
-                {
-                    foreach (var container in pod.Spec.Containers)
-                    {
-                        if (container.Env != null)
-                        {
-                            foreach (var env in container.Env)
-                            {
-                                if (env.ValueFrom?.ConfigMapKeyRef != null)
-                                {
-                                    foreach (var end in resources)
-                                    {
-                                        if (end.Resource is V1ConfigMap configMap)
-                                        {
-                                            if (configMap.Name() == env.ValueFrom.ConfigMapKeyRef.Name && configMap.Namespace() == pod.Namespace())
-                                            {
-                                                graph.Edges.Add(new Edge(start, end));
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        if (container.EnvFrom != null)
-                        {
-                            foreach (var envFrom in container.EnvFrom)
-                            {
-                                if (envFrom.ConfigMapRef != null)
-                                {
-                                    foreach (var end in resources)
-                                    {
-                                        if (end.Resource is V1ConfigMap configMap)
-                                        {
-                                            if (configMap.Name() == envFrom.ConfigMapRef.Name && configMap.Namespace() == pod.Namespace())
-                                            {
-                                                graph.Edges.Add(new Edge(start, end));
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                if (pod.Spec.InitContainers != null)
-                {
-                    foreach (var container in pod.Spec.InitContainers)
-                    {
-                        if (container.Env != null)
-                        {
-                            foreach (var env in container.Env)
-                            {
-                                if (env.ValueFrom?.ConfigMapKeyRef != null)
-                                {
-                                    foreach (var end in resources)
-                                    {
-                                        if (end.Resource is V1ConfigMap configMap)
-                                        {
-                                            if (configMap.Name() == env.ValueFrom.ConfigMapKeyRef.Name && configMap.Namespace() == pod.Namespace())
-                                            {
-                                                graph.Edges.Add(new Edge(start, end));
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        if (container.EnvFrom != null)
-                        {
-                            foreach (var envFrom in container.EnvFrom)
-                            {
-                                if (envFrom.ConfigMapRef != null)
-                                {
-                                    foreach (var end in resources)
-                                    {
-                                        if (end.Resource is V1ConfigMap configMap)
-                                        {
-                                            if (configMap.Name() == envFrom.ConfigMapRef.Name && configMap.Namespace() == pod.Namespace())
-                                            {
-                                                graph.Edges.Add(new Edge(start, end));
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                if (pod.Spec.Volumes != null)
-                {
-                    foreach (var volume in pod.Spec.Volumes)
-                    {
-                        if (volume.ConfigMap != null)
-                        {
-                            foreach (var end in resources)
-                            {
-                                if (end.Resource is V1ConfigMap configMap)
-                                {
-                                    if (configMap.Name() == volume.ConfigMap.Name && configMap.Namespace() == pod.Namespace())
-                                    {
-                                        graph.Edges.Add(new Edge(start, end));
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    private static void LinkSecret(ObservableCollection<ResourceNodeViewModel> resources, Graph graph)
-    {
-        foreach (var start in resources)
-        {
-            if (start.Resource is V1Deployment deployment)
-            {
-                if (deployment?.Spec?.Template?.Spec?.Containers != null)
-                {
-                    foreach (var container in deployment.Spec.Template.Spec.Containers)
-                    {
-                        if (container.Env != null)
-                        {
-                            foreach (var env in container.Env)
-                            {
-                                if (env.ValueFrom?.SecretKeyRef != null)
-                                {
-                                    foreach (var end in resources)
-                                    {
-                                        if (end.Resource is V1Secret secret)
-                                        {
-                                            if (secret.Name() == env.ValueFrom.SecretKeyRef.Name && secret.Namespace() == deployment.Namespace())
-                                            {
-                                                graph.Edges.Add(new Edge(start, end));
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        if (container.EnvFrom != null)
-                        {
-                            foreach (var envFrom in container.EnvFrom)
-                            {
-                                if (envFrom.SecretRef != null)
-                                {
-                                    foreach (var end in resources)
-                                    {
-                                        if (end.Resource is V1Secret secret)
-                                        {
-                                            if (secret.Name() == envFrom.SecretRef.Name && secret.Namespace() == deployment.Namespace())
-                                            {
-                                                graph.Edges.Add(new Edge(start, end));
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                if (deployment?.Spec?.Template?.Spec?.InitContainers != null)
-                {
-                    foreach (var container in deployment.Spec.Template.Spec.InitContainers)
-                    {
-                        if (container.Env != null)
-                        {
-                            foreach (var env in container.Env)
-                            {
-                                if (env.ValueFrom?.SecretKeyRef != null)
-                                {
-                                    foreach (var end in resources)
-                                    {
-                                        if (end.Resource is V1Secret secret)
-                                        {
-                                            if (secret.Name() == env.ValueFrom.SecretKeyRef.Name && secret.Namespace() == deployment.Namespace())
-                                            {
-                                                graph.Edges.Add(new Edge(start, end));
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        if (container.EnvFrom != null)
-                        {
-                            foreach (var envFrom in container.EnvFrom)
-                            {
-                                if (envFrom.SecretRef != null)
-                                {
-                                    foreach (var end in resources)
-                                    {
-                                        if (end.Resource is V1Secret secret)
-                                        {
-                                            if (secret.Name() == envFrom.SecretRef.Name && secret.Namespace() == deployment.Namespace())
-                                            {
-                                                graph.Edges.Add(new Edge(start, end));
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                if (deployment?.Spec?.Template?.Spec?.Volumes != null)
-                {
-                    foreach (var volume in deployment.Spec.Template.Spec.Volumes)
-                    {
-                        if (volume.Secret != null)
-                        {
-                            foreach (var end in resources)
-                            {
-                                if (end.Resource is V1Secret secret)
-                                {
-                                    if (secret.Name() == volume.Secret.SecretName && secret.Namespace() == deployment.Namespace())
-                                    {
-                                        graph.Edges.Add(new Edge(start, end));
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            if (start.Resource is V1ReplicaSet replicaSet)
-            {
-                if (replicaSet?.Spec?.Template?.Spec?.Containers != null)
-                {
-                    foreach (var container in replicaSet.Spec.Template.Spec.Containers)
-                    {
-                        if (container.Env != null)
-                        {
-                            foreach (var env in container.Env)
-                            {
-                                if (env.ValueFrom?.SecretKeyRef != null)
-                                {
-                                    foreach (var end in resources)
-                                    {
-                                        if (end.Resource is V1Secret secret)
-                                        {
-                                            if (secret.Name() == env.ValueFrom.SecretKeyRef.Name && secret.Namespace() == replicaSet.Namespace())
-                                            {
-                                                graph.Edges.Add(new Edge(start, end));
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        if (container.EnvFrom != null)
-                        {
-                            foreach (var envFrom in container.EnvFrom)
-                            {
-                                if (envFrom.SecretRef != null)
-                                {
-                                    foreach (var end in resources)
-                                    {
-                                        if (end.Resource is V1Secret secret)
-                                        {
-                                            if (secret.Name() == envFrom.SecretRef.Name && secret.Namespace() == replicaSet.Namespace())
-                                            {
-                                                graph.Edges.Add(new Edge(start, end));
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                if (replicaSet?.Spec?.Template?.Spec?.InitContainers != null)
-                {
-                    foreach (var container in replicaSet.Spec.Template.Spec.InitContainers)
-                    {
-                        if (container.Env != null)
-                        {
-                            foreach (var env in container.Env)
-                            {
-                                if (env.ValueFrom?.SecretKeyRef != null)
-                                {
-                                    foreach (var end in resources)
-                                    {
-                                        if (end.Resource is V1Secret secret)
-                                        {
-                                            if (secret.Name() == env.ValueFrom.SecretKeyRef.Name && secret.Namespace() == replicaSet.Namespace())
-                                            {
-                                                graph.Edges.Add(new Edge(start, end));
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        if (container.EnvFrom != null)
-                        {
-                            foreach (var envFrom in container.EnvFrom)
-                            {
-                                if (envFrom.SecretRef != null)
-                                {
-                                    foreach (var end in resources)
-                                    {
-                                        if (end.Resource is V1Secret secret)
-                                        {
-                                            if (secret.Name() == envFrom.SecretRef.Name && secret.Namespace() == replicaSet.Namespace())
-                                            {
-                                                graph.Edges.Add(new Edge(start, end));
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                if (replicaSet?.Spec?.Template?.Spec?.Volumes != null)
-                {
-                    foreach (var volume in replicaSet.Spec.Template.Spec.Volumes)
-                    {
-                        if (volume.Secret != null)
-                        {
-                            foreach (var end in resources)
-                            {
-                                if (end.Resource is V1Secret secret)
-                                {
-                                    if (secret.Name() == volume.Secret.SecretName && secret.Namespace() == replicaSet.Namespace())
-                                    {
-                                        graph.Edges.Add(new Edge(start, end));
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            if (start.Resource is V1StatefulSet statefulSet)
-            {
-                if (statefulSet?.Spec?.Template?.Spec?.Containers != null)
-                {
-                    foreach (var container in statefulSet.Spec.Template.Spec.Containers)
-                    {
-                        if (container.Env != null)
-                        {
-                            foreach (var env in container.Env)
-                            {
-                                if (env.ValueFrom?.SecretKeyRef != null)
-                                {
-                                    foreach (var end in resources)
-                                    {
-                                        if (end.Resource is V1Secret secret)
-                                        {
-                                            if (secret.Name() == env.ValueFrom.SecretKeyRef.Name && secret.Namespace() == statefulSet.Namespace())
-                                            {
-                                                graph.Edges.Add(new Edge(start, end));
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        if (container.EnvFrom != null)
-                        {
-                            foreach (var envFrom in container.EnvFrom)
-                            {
-                                if (envFrom.SecretRef != null)
-                                {
-                                    foreach (var end in resources)
-                                    {
-                                        if (end.Resource is V1Secret secret)
-                                        {
-                                            if (secret.Name() == envFrom.SecretRef.Name && secret.Namespace() == statefulSet.Namespace())
-                                            {
-                                                graph.Edges.Add(new Edge(start, end));
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                if (statefulSet?.Spec?.Template?.Spec?.InitContainers != null)
-                {
-                    foreach (var container in statefulSet.Spec.Template.Spec.InitContainers)
-                    {
-                        if (container.Env != null)
-                        {
-                            foreach (var env in container.Env)
-                            {
-                                if (env.ValueFrom?.SecretKeyRef != null)
-                                {
-                                    foreach (var end in resources)
-                                    {
-                                        if (end.Resource is V1Secret secret)
-                                        {
-                                            if (secret.Name() == env.ValueFrom.SecretKeyRef.Name && secret.Namespace() == statefulSet.Namespace())
-                                            {
-                                                graph.Edges.Add(new Edge(start, end));
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        if (container.EnvFrom != null)
-                        {
-                            foreach (var envFrom in container.EnvFrom)
-                            {
-                                if (envFrom.SecretRef != null)
-                                {
-                                    foreach (var end in resources)
-                                    {
-                                        if (end.Resource is V1Secret secret)
-                                        {
-                                            if (secret.Name() == envFrom.SecretRef.Name && secret.Namespace() == statefulSet.Namespace())
-                                            {
-                                                graph.Edges.Add(new Edge(start, end));
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                if (statefulSet?.Spec?.Template?.Spec?.Volumes != null)
-                {
-                    foreach (var volume in statefulSet.Spec.Template.Spec.Volumes)
-                    {
-                        if (volume.Secret != null)
-                        {
-                            foreach (var end in resources)
-                            {
-                                if (end.Resource is V1Secret secret)
-                                {
-                                    if (secret.Name() == volume.Secret.SecretName && secret.Namespace() == statefulSet.Namespace())
-                                    {
-                                        graph.Edges.Add(new Edge(start, end));
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            if (start.Resource is V1DaemonSet daemonSet)
-            {
-                if (daemonSet?.Spec?.Template?.Spec?.Containers != null)
-                {
-                    foreach (var container in daemonSet.Spec.Template.Spec.Containers)
-                    {
-                        if (container.Env != null)
-                        {
-                            foreach (var env in container.Env)
-                            {
-                                if (env.ValueFrom?.SecretKeyRef != null)
-                                {
-                                    foreach (var end in resources)
-                                    {
-                                        if (end.Resource is V1Secret secret)
-                                        {
-                                            if (secret.Name() == env.ValueFrom.SecretKeyRef.Name && secret.Namespace() == daemonSet.Namespace())
-                                            {
-                                                graph.Edges.Add(new Edge(start, end));
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        if (container.EnvFrom != null)
-                        {
-                            foreach (var envFrom in container.EnvFrom)
-                            {
-                                if (envFrom.SecretRef != null)
-                                {
-                                    foreach (var end in resources)
-                                    {
-                                        if (end.Resource is V1Secret secret)
-                                        {
-                                            if (secret.Name() == envFrom.SecretRef.Name && secret.Namespace() == daemonSet.Namespace())
-                                            {
-                                                graph.Edges.Add(new Edge(start, end));
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                if (daemonSet?.Spec?.Template?.Spec?.InitContainers != null)
-                {
-                    foreach (var container in daemonSet.Spec.Template.Spec.InitContainers)
-                    {
-                        if (container.Env != null)
-                        {
-                            foreach (var env in container.Env)
-                            {
-                                if (env.ValueFrom?.SecretKeyRef != null)
-                                {
-                                    foreach (var end in resources)
-                                    {
-                                        if (end.Resource is V1Secret secret)
-                                        {
-                                            if (secret.Name() == env.ValueFrom.SecretKeyRef.Name && secret.Namespace() == daemonSet.Namespace())
-                                            {
-                                                graph.Edges.Add(new Edge(start, end));
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        if (container.EnvFrom != null)
-                        {
-                            foreach (var envFrom in container.EnvFrom)
-                            {
-                                if (envFrom.SecretRef != null)
-                                {
-                                    foreach (var end in resources)
-                                    {
-                                        if (end.Resource is V1Secret secret)
-                                        {
-                                            if (secret.Name() == envFrom.SecretRef.Name && secret.Namespace() == daemonSet.Namespace())
-                                            {
-                                                graph.Edges.Add(new Edge(start, end));
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                if (daemonSet?.Spec?.Template?.Spec?.Volumes != null)
-                {
-                    foreach (var volume in daemonSet.Spec.Template.Spec.Volumes)
-                    {
-                        if (volume.Secret != null)
-                        {
-                            foreach (var end in resources)
-                            {
-                                if (end.Resource is V1Secret secret)
-                                {
-                                    if (secret.Name() == volume.Secret.SecretName && secret.Namespace() == daemonSet.Namespace())
-                                    {
-                                        graph.Edges.Add(new Edge(start, end));
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            if (start.Resource is V1Pod pod)
-            {
-                if (pod.Spec.Containers != null)
-                {
-                    foreach (var container in pod.Spec.Containers)
-                    {
-                        if (container.Env != null)
-                        {
-                            foreach (var env in container.Env)
-                            {
-                                if (env.ValueFrom?.SecretKeyRef != null)
-                                {
-                                    foreach (var end in resources)
-                                    {
-                                        if (end.Resource is V1Secret secret)
-                                        {
-                                            if (secret.Name() == env.ValueFrom.SecretKeyRef.Name && secret.Namespace() == pod.Namespace())
-                                            {
-                                                graph.Edges.Add(new Edge(start, end));
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        if (container.EnvFrom != null)
-                        {
-                            foreach (var envFrom in container.EnvFrom)
-                            {
-                                if (envFrom.SecretRef != null)
-                                {
-                                    foreach (var end in resources)
-                                    {
-                                        if (end.Resource is V1Secret secret)
-                                        {
-                                            if (secret.Name() == envFrom.SecretRef.Name && secret.Namespace() == pod.Namespace())
-                                            {
-                                                graph.Edges.Add(new Edge(start, end));
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                if (pod?.Spec?.InitContainers != null)
-                {
-                    foreach (var container in pod.Spec.InitContainers)
-                    {
-                        if (container.Env != null)
-                        {
-                            foreach (var env in container.Env)
-                            {
-                                if (env.ValueFrom?.SecretKeyRef != null)
-                                {
-                                    foreach (var end in resources)
-                                    {
-                                        if (end.Resource is V1Secret secret)
-                                        {
-                                            if (secret.Name() == env.ValueFrom.SecretKeyRef.Name && secret.Namespace() == pod.Namespace())
-                                            {
-                                                graph.Edges.Add(new Edge(start, end));
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        if (container.EnvFrom != null)
-                        {
-                            foreach (var envFrom in container.EnvFrom)
-                            {
-                                if (envFrom.SecretRef != null)
-                                {
-                                    foreach (var end in resources)
-                                    {
-                                        if (end.Resource is V1Secret secret)
-                                        {
-                                            if (secret.Name() == envFrom.SecretRef.Name && secret.Namespace() == pod.Namespace())
-                                            {
-                                                graph.Edges.Add(new Edge(start, end));
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                if (pod?.Spec?.Volumes != null)
-                {
-                    foreach (var volume in pod.Spec.Volumes)
-                    {
-                        if (volume.Secret != null)
-                        {
-                            foreach (var end in resources)
-                            {
-                                if (end.Resource is V1Secret secret)
-                                {
-                                    if (secret.Name() == volume.Secret.SecretName && secret.Namespace() == pod.Namespace())
-                                    {
-                                        graph.Edges.Add(new Edge(start, end));
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            if (start.Resource is V1ServiceAccount serviceAccount)
-            {
-                if (serviceAccount.Secrets != null)
-                {
-                    foreach (var secretReference in serviceAccount.Secrets)
-                    {
-                        foreach (var end in resources)
-                        {
-                            if (end.Resource is V1Secret secret)
-                            {
-                                if (secret.Uid() == secretReference.Uid && end.Resource.Namespace() == serviceAccount.Namespace())
-                                {
-                                    graph.Edges.Add(new Edge(start, end));
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    private static void LinkEvent(ObservableCollection<ResourceNodeViewModel> resources, Graph graph)
-    {
-        foreach (var start in resources)
-        {
-            if (start.Resource is Corev1Event @event)
-            {
-                foreach (var end in resources)
-                {
-                    if (end.Resource.Uid() == @event.InvolvedObject.Uid)
-                    {
-                        graph.Edges.Add(new Edge(start, end));
-                    }
-                }
-            }
-        }
-    }
-
-    private static void LinkServiceAccount(ObservableCollection<ResourceNodeViewModel> resources, Graph graph)
-    {
-        foreach (var start in resources)
-        {
-            if (start.Resource is V1Deployment deployment)
-            {
-                foreach (var end in resources)
-                {
-                    if (end.Resource is V1ServiceAccount serviceAccount &&
-                        serviceAccount.Name() == deployment.Spec.Template.Spec.ServiceAccountName &&
-                        end.Resource.Namespace() == deployment.Namespace())
-                    {
-                        graph.Edges.Add(new Edge(start, end));
-                    }
-                }
-            }
-
-            if (start.Resource is V1ReplicaSet replicaSet)
-            {
-                foreach (var end in resources)
-                {
-                    if (end.Resource is V1ServiceAccount serviceAccount)
-                    {
-                        if (serviceAccount.Name() == replicaSet.Spec.Template.Spec.ServiceAccountName && end.Resource.Namespace() == replicaSet.Namespace())
-                        {
-                            graph.Edges.Add(new Edge(start, end));
-                        }
-                    }
-                }
-            }
-
-            if (start.Resource is V1DaemonSet daemonSet)
-            {
-                foreach (var end in resources)
-                {
-                    if (end.Resource is V1ServiceAccount serviceAccount)
-                    {
-                        if (serviceAccount.Name() == daemonSet.Spec.Template.Spec.ServiceAccountName && end.Resource.Namespace() == daemonSet.Namespace())
-                        {
-                            graph.Edges.Add(new Edge(start, end));
-                        }
-                    }
-                }
-            }
-
-            if (start.Resource is V1StatefulSet statefulSet)
-            {
-                foreach (var end in resources)
-                {
-                    if (end.Resource is V1ServiceAccount serviceAccount)
-                    {
-                        if (serviceAccount.Name() == statefulSet.Spec.Template.Spec.ServiceAccountName && end.Resource.Namespace() == statefulSet.Namespace())
-                        {
-                            graph.Edges.Add(new Edge(start, end));
-                        }
-                    }
-                }
-            }
-
-            if (start.Resource is V1Pod pod)
-            {
-                foreach (var end in resources)
-                {
-                    if (end.Resource is V1ServiceAccount serviceAccount)
-                    {
-                        if (serviceAccount.Name() == pod.Spec.ServiceAccountName && end.Resource.Namespace() == pod.Namespace())
-                        {
-                            graph.Edges.Add(new Edge(start, end));
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    private static void LinkPersistantVolumeClaim(ObservableCollection<ResourceNodeViewModel> resources, Graph graph)
-    {
-        foreach (var start in resources)
-        {
-            if (start.Resource is V1Deployment deployment)
-            {
-                if (deployment?.Spec?.Template?.Spec?.Volumes != null)
-                {
-                    foreach (var volume in deployment.Spec.Template.Spec.Volumes)
-                    {
-                        if (volume?.PersistentVolumeClaim != null)
-                        {
-                            foreach (var end in resources)
-                            {
-                                if (end.Resource is V1PersistentVolumeClaim pvc)
-                                {
-                                    if (pvc.Name() == volume.PersistentVolumeClaim.ClaimName && pvc.Namespace() == deployment.Namespace())
-                                    {
-                                        graph.Edges.Add(new Edge(start, end));
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            if (start.Resource is V1ReplicaSet replicaSet)
-            {
-                if (replicaSet?.Spec?.Template?.Spec?.Volumes != null)
-                {
-                    foreach (var volume in replicaSet.Spec.Template.Spec.Volumes)
-                    {
-                        if (volume?.PersistentVolumeClaim != null)
-                        {
-                            foreach (var end in resources)
-                            {
-                                if (end.Resource is V1PersistentVolumeClaim pvc)
-                                {
-                                    if (pvc.Name() == volume.PersistentVolumeClaim.ClaimName && pvc.Namespace() == replicaSet.Namespace())
-                                    {
-                                        graph.Edges.Add(new Edge(start, end));
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            if (start.Resource is V1StatefulSet statefulSet)
-            {
-                if (statefulSet?.Spec?.Template?.Spec?.Volumes != null)
-                {
-                    foreach (var volume in statefulSet.Spec.Template.Spec.Volumes)
-                    {
-                        if (volume?.PersistentVolumeClaim != null)
-                        {
-                            foreach (var end in resources)
-                            {
-                                if (end.Resource is V1PersistentVolumeClaim pvc)
-                                {
-                                    if (pvc.Name() == volume.PersistentVolumeClaim.ClaimName && pvc.Namespace() == statefulSet.Namespace())
-                                    {
-                                        graph.Edges.Add(new Edge(start, end));
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            if (start.Resource is V1DaemonSet daemonSet)
-            {
-                if (daemonSet?.Spec?.Template?.Spec?.Volumes != null)
-                {
-                    foreach (var volume in daemonSet.Spec.Template.Spec.Volumes)
-                    {
-                        if (volume?.PersistentVolumeClaim != null)
-                        {
-                            foreach (var end in resources)
-                            {
-                                if (end.Resource is V1PersistentVolumeClaim pvc)
-                                {
-                                    if (pvc.Name() == volume.PersistentVolumeClaim.ClaimName && pvc.Namespace() == daemonSet.Namespace())
-                                    {
-                                        graph.Edges.Add(new Edge(start, end));
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            if (start.Resource is V1Pod pod)
-            {
-                if (pod.Spec.Volumes != null)
-                {
-                    foreach (var volume in pod.Spec.Volumes)
-                    {
-                        if (volume?.PersistentVolumeClaim != null)
-                        {
-                            foreach (var end in resources)
-                            {
-                                if (end.Resource is V1PersistentVolumeClaim pvc)
-                                {
-                                    if (pvc.Name() == volume.PersistentVolumeClaim.ClaimName && pvc.Namespace() == pod.Namespace())
-                                    {
-                                        graph.Edges.Add(new Edge(start, end));
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    private static void LinkPersistantVolume(ObservableCollection<ResourceNodeViewModel> resources, Graph graph)
-    {
-        foreach (var start in resources)
-        {
-            if (start.Resource is V1PersistentVolumeClaim persistentVolumeClaim)
-            {
-                if (persistentVolumeClaim?.Spec?.VolumeName != null)
-                {
-                    foreach (var end in resources)
-                    {
-                        if (end.Resource is V1PersistentVolume persistentVolume)
-                        {
-                            if (persistentVolume.Name() == persistentVolumeClaim.Spec.VolumeName)
-                            {
-                                graph.Edges.Add(new Edge(start, end));
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    private static void LinkRoleBinding(ObservableCollection<ResourceNodeViewModel> resources, Graph graph)
-    {
-        foreach (var start in resources)
-        {
-            if (start.Resource is V1RoleBinding roleBinding)
-            {
-                if (roleBinding.Subjects != null)
-                {
-                    foreach (var subject in roleBinding.Subjects)
-                    {
-                        foreach (var end in resources)
-                        {
-                            if (subject.Kind == V1ServiceAccount.KubeKind)
-                            {
-                                if (end.Resource is V1ServiceAccount serviceAccount)
-                                {
-                                    if (serviceAccount.Name() == subject.Name
-                                        && serviceAccount.Namespace() == subject.NamespaceProperty)
-                                    {
-                                        graph.Edges.Add(new Edge(start, end));
-                                    }
-                                }
-                            }
-
-                            //todo User
-
-                            //todo Group
-                        }
-                    }
-                }
-
-                if (roleBinding.RoleRef != null)
-                {
-                    foreach (var end in resources)
-                    {
-                        if (roleBinding.RoleRef.Kind == V1Role.KubeKind)
-                        {
-                            if (end.Resource is V1Role role)
-                            {
-                                if (role.Name() == roleBinding.RoleRef.Name
-                                    && role.Namespace() == roleBinding.Namespace())
-                                {
-                                    graph.Edges.Add(new Edge(start, end));
-                                }
-                            }
-                        }
-
-                        if (roleBinding.RoleRef.Kind == V1ClusterRole.KubeKind)
-                        {
-                            if (end.Resource is V1ClusterRole clusterRole)
-                            {
-                                if (clusterRole.Name() == roleBinding.RoleRef.Name)
-                                {
-                                    graph.Edges.Add(new Edge(start, end));
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    private static void LinkClusterRoleBinding(ObservableCollection<ResourceNodeViewModel> resources, Graph graph)
-    {
-        foreach (var start in resources)
-        {
-            if (start.Resource is V1ClusterRoleBinding roleBinding)
-            {
-                if (roleBinding.Subjects != null)
-                {
-                    foreach (var subject in roleBinding.Subjects)
-                    {
-                        foreach (var end in resources)
-                        {
-                            if (subject.Kind == V1ServiceAccount.KubeKind)
-                            {
-                                if (end.Resource is V1ServiceAccount serviceAccount)
-                                {
-                                    if (serviceAccount.Name() == subject.Name
-                                        && serviceAccount.Namespace() == subject.NamespaceProperty)
-                                    {
-                                        graph.Edges.Add(new Edge(start, end));
-                                    }
-                                }
-                            }
-
-                            //todo User
-
-                            //todo Group
-                        }
-                    }
-                }
-
-                if (roleBinding.RoleRef != null)
-                {
-                    foreach (var end in resources)
-                    {
-                        if (roleBinding.RoleRef.Kind == V1ClusterRole.KubeKind)
-                        {
-                            if (end.Resource is V1ClusterRole clusterRole)
-                            {
-                                if (clusterRole.Name() == roleBinding.RoleRef.Name)
-                                {
-                                    graph.Edges.Add(new Edge(start, end));
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    private static void LinkArgoCDTracking(ObservableCollection<ResourceNodeViewModel> resources, Graph graph)
-    {
-        foreach (var resource in resources)
-        {
-            var annotations = resource.Resource?.Metadata?.Annotations;
-            if (annotations != null && annotations.TryGetValue("argocd.argoproj.io/tracking-id", out var trackingId))
-            {
-                var firstColon = trackingId.IndexOf(':');
-                if (firstColon > 0)
-                {
-                    var appName = trackingId.Substring(0, firstColon);
-                    // Find Argo Application resource with matching appName, ApiVersion, and Kind
-                    var argoApp = resources.FirstOrDefault(r =>
-                        r.Resource?.Metadata?.Name == appName &&
-                        r.Resource?.ApiVersion == "argoproj.io/v1alpha1" &&
-                        r.Resource?.Kind == "Application");
-                    if (argoApp != null)
-                    {
-                        graph.Edges.Add(new Edge(argoApp, resource));
-                    }
-                }
-            }
-        }
-    }
-
-    #endregion
-
-    public void Dispose()
-    {
-        if (Cluster?.SelectedNamespaces != null)
+        if (Cluster != null)
         {
             Cluster.SelectedNamespaces.CollectionChanged -= SelectedNamespaces_CollectionChanged;
         }
-        Cluster = null;
-        // Clear heavy collections to avoid retaining large object graphs between runs
-        try
-        {
-            Resources?.Clear();
-        }
-        catch { }
 
-        try
-        {
-            Graph = new Graph();
-        }
-        catch { }
+        _resourceChangesSubscription?.Dispose();
+        _resourceChangesSubscription = null;
     }
 
-    public sealed partial class ResourceNodeViewModel : ViewModelBase
+    public void Dispose()
     {
-        private readonly IServiceProvider _serviceProvider;
-        private IFactory Factory => _serviceProvider.GetRequiredService<IFactory>();
-
-        [ObservableProperty]
-        public partial ClusterWorkspace Cluster { get; set; }
-
-        [ObservableProperty]
-        public partial IKubernetesObject<V1ObjectMeta> Resource { get; set; }
-
-        [ObservableProperty]
-        public partial string IconPath { get; set; }
-
-        public ResourceNodeViewModel(IServiceProvider serviceProvider)
-        {
-            _serviceProvider = serviceProvider;
-        }
-
-        [RelayCommand]
-        private void ViewYaml(IKubernetesObject<V1ObjectMeta> resource)
-        {
-            var vm = _serviceProvider.GetRequiredService<ResourceYamlViewModel>();
-
-            vm.Initialize(Cluster, resource);
-
-            Factory.AddToBottom(vm);
-        }
-
-        [RelayCommand]
-        private void ViewProperties(IKubernetesObject<V1ObjectMeta> resource)
-        {
-            var propType = typeof(ResourcePropertiesViewModel<>).MakeGenericType(resource.GetType());
-
-            var instance = _serviceProvider.GetRequiredService(propType) as IDockable;
-            instance.CanFloat = false;
-
-            propType.GetMethod(nameof(ResourcePropertiesViewModel<V1Pod>.Initialize)).Invoke(instance, [Cluster, resource]);
-
-            Factory?.AddToRight(instance);
-        }
+        _disposed = true;
+        Interlocked.Increment(ref _rebuildVersion);
+        UnsubscribeCluster();
+        _resourcesByKey.Clear();
+        ResourceDeleted = null;
+        Resources.Clear();
+        Graph = ResourceRelationshipGraph.Empty;
+        Cluster = null;
     }
+
+    private sealed record VisualizationSnapshot(
+        ObservableCollection<ResourceNodeViewModel> Resources,
+        ResourceRelationshipGraph Graph);
 }
-
-

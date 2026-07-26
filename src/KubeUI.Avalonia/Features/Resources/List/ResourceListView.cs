@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Windows.Input;
+using Avalonia.Controls.DataGridFiltering;
 using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Templates;
 using Avalonia.Data.Converters;
@@ -21,6 +22,9 @@ namespace KubeUI.Avalonia.Features.Resources.List;
 
 public partial class ResourceListView : ViewBase<IResourceListViewModel>
 {
+    private const DataGridStateSections RestoredStateSections =
+        DataGridStateSections.All & ~DataGridStateSections.Searching;
+
     private DataGrid _grid;
     private DataGridColumnFilterFlyoutFactory? _filterFlyoutFactory;
 
@@ -35,7 +39,7 @@ public partial class ResourceListView : ViewBase<IResourceListViewModel>
 
         if (_grid is DataGrid grid && DataContext is IResourceListViewModel vm && vm.DataGridRuntimeState is { } state)
         {
-            grid.RestoreState(state, DataGridStateSections.All, CreateStateOptions(grid));
+            grid.RestoreState(RemoveNamespaceScopeFilter(state), RestoredStateSections, CreateStateOptions(grid));
         }
     }
 
@@ -53,7 +57,35 @@ public partial class ResourceListView : ViewBase<IResourceListViewModel>
         }
 
         var state = grid.CaptureState(DataGridStateSections.All, CreateStateOptions(grid));
-        vm.DataGridRuntimeState = state;
+        vm.DataGridRuntimeState = RemoveNamespaceScopeFilter(state);
+    }
+
+    private static DataGridState RemoveNamespaceScopeFilter(DataGridState state)
+    {
+        if (state.Filtering?.Descriptors is not { } descriptors)
+        {
+            return state;
+        }
+
+        var filteredDescriptors = descriptors
+            .Where(descriptor => !string.Equals(
+                descriptor.ColumnId?.ToString(),
+                ResourceListViewModel<V1Pod>.NamespaceScopeFilterId,
+                StringComparison.Ordinal))
+            .ToArray();
+
+        if (filteredDescriptors.Length == descriptors.Count)
+        {
+            return state;
+        }
+
+        state.Filtering = new DataGridFilteringState
+        {
+            Descriptors = filteredDescriptors,
+            OwnsViewFilter = state.Filtering.OwnsViewFilter
+        };
+
+        return state;
     }
 
     private static DataGridStateOptions CreateStateOptions(DataGrid grid) => new()

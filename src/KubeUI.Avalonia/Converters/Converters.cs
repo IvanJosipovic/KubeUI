@@ -10,6 +10,8 @@ public static class Converters
 {
     public static readonly IValueConverter NotNull = new FuncValueConverter<object?, bool>((x) => x != null && x != AvaloniaProperty.UnsetValue);
 
+    public static readonly IValueConverter IsNull = new FuncValueConverter<object?, bool>((x) => x == null || x == AvaloniaProperty.UnsetValue);
+
     public static IValueConverter StringFormat(string Format)
     {
         return new FuncValueConverter<object?, string>(value =>

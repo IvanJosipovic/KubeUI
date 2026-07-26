@@ -19,6 +19,7 @@ References:
 
 ### Data binding
 - Use compiled bindings only on all binding scopes.
+- Do not use new Binding()
 - Keep bindings one-way unless user input must update the ViewModel.
 
 ### Custom controls
@@ -85,3 +86,4 @@ References:
 - UI text should be added to resources.
 - Prefer fluent declarative collection options in C# Avalonia views, such as dataGrid.Columns([...]) instead of dataGrid.Columns.Add(...).
 - Keep view code in the Build methods, only create methods for large sections or repeated view code.
+- If a class inherits from ObservableObject, always use [ObservableProperty] etc for properties

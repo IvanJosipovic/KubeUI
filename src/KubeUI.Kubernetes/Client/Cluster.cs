@@ -45,6 +45,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
     public event Action<WatchEventType, GroupApiVersionKind, IKubernetesObject<V1ObjectMeta>>? OnChange;
     public event Action<IClusterRuntime>? NamespaceSelectionRequired;
     public event Action<IClusterRuntime, GroupApiVersionKind>? ResourceSeeded;
+    public event Action<IClusterRuntime, GroupApiVersionKind>? ResourceUnseeded;
     public event Action<V1CustomResourceDefinition>? OnCustomResourceDefinitionReady;
 
     private readonly SemaphoreSlim _connectionLimiter = new(1, 1);
@@ -555,6 +556,8 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
             return false;
         }
 
+        ResourceUnseeded?.Invoke(this, kind);
+
         if (existingContainer is IClearableResourceContainer resourceContainer)
         {
             ClearResourceContainer(resourceContainer);
@@ -1008,9 +1011,11 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
 
     private void ClearSeededResources()
     {
-        foreach (var container in Objects.Values)
+        foreach (var pair in Objects)
         {
-            if (container is IClearableResourceContainer resourceContainer)
+            ResourceUnseeded?.Invoke(this, pair.Key);
+
+            if (pair.Value is IClearableResourceContainer resourceContainer)
             {
                 ClearResourceContainer(resourceContainer);
             }
@@ -1045,6 +1050,7 @@ public interface IResourceContainer
 {
     int InformerCount { get; }
     bool IsSeeded { get; }
+    IObservable<ResourceChange> ConnectChanges(GroupApiVersionKind kind);
 }
 
 public interface IClearableResourceContainer : IResourceContainer
@@ -1063,6 +1069,21 @@ public partial class ContainerClass<T> : ObservableObject, IClearableResourceCon
     public bool IsSeeded => InformerCount > 0;
 
     public ISourceCache<T, string> Items { get; } = new SourceCache<T, string>(x => x.Namespace() + "/" + x.Name());
+
+    public IObservable<ResourceChange> ConnectChanges(GroupApiVersionKind kind)
+    {
+        return Items.Connect()
+            .SelectMany(changes => changes)
+            .Select(change => new ResourceChange(
+                change.Reason switch
+                {
+                    ChangeReason.Add => WatchEventType.Added,
+                    ChangeReason.Remove => WatchEventType.Deleted,
+                    _ => WatchEventType.Modified,
+                },
+                kind,
+                change.Current));
+    }
 
     [ObservableProperty]
     public partial List<IResourceInformer> Informers { get; set; } = [];

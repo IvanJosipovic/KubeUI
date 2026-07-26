@@ -6,6 +6,7 @@ using Dock.Avalonia.Themes.Fluent;
 using FluentAvalonia.Styling;
 using Semi.Avalonia;
 using Ursa.Themes.Semi;
+using Westermo.GraphX.Controls.Avalonia.Themes.Fluent;
 
 namespace KubeUI.Avalonia.Styles;
 
@@ -20,6 +21,7 @@ internal static class ApplicationThemeStyles
 
         styles.Add(new SemiTheme { Locale = Locale });
         styles.Add(new UrsaSemiTheme { Locale = Locale });
+        styles.Add(new GraphXFluentTheme());
         styles.Add(new FluentAvaloniaTheme());
         styles.Add(CreateFluentTheme());
         styles.Add(CreateStyleInclude("avares://Avalonia.Controls.DataGrid/Themes/Fluent.v2.xaml"));

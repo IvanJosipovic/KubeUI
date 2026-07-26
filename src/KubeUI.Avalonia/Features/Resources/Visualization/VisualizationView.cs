@@ -1,14 +1,13 @@
 using System.Globalization;
-using Avalonia.Controls.PanAndZoom;
+using System.Diagnostics.CodeAnalysis;
 using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Templates;
 using Avalonia.Data.Converters;
-using Avalonia.Input;
 using Avalonia.Svg.Skia;
-using AvaloniaGraphControl;
 using FluentIcons.Avalonia;
 using FluentIcons.Common;
 using k8s.Models;
+using KubeUI.Avalonia.Features.Resources.Common;
 using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
 
@@ -69,88 +68,41 @@ public sealed partial class VisualizationView : ViewBase<VisualizationViewModel>
                     .ItemsSource(vm, x => x.Cluster.Runtime.Namespaces)
                     .SelectedItems(vm, x => x.Cluster.SelectedNamespaces)
                     .SelectedItemTemplate(template)
-                    .ItemTemplate(template));
+                    .ItemTemplate(template)
+                    .IsVisible(vm, x => x.RootResource, converter: Converters.Converters.IsNull),
+                new TextBlock()
+                    .Name("ResourceToolbarText")
+                    .Text(vm, x => x.RootResourceDisplay)
+                    .IsVisible(vm, x => x.RootResource, converter: Converters.Converters.NotNull));
     }
 
-    private static ScrollViewer CreateGraphViewer(VisualizationViewModel vm)
+    [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "ResourceGraphControl ownership is transferred to the visual tree via fluent builder.")]
+    private static ResourceGraphControl CreateGraphViewer(VisualizationViewModel vm)
     {
-        return new ScrollViewer()
+        return new ResourceGraphControl()
             .Row(1)
-            .HorizontalScrollBarVisibility(ScrollBarVisibility.Auto)
-            .VerticalScrollBarVisibility(ScrollBarVisibility.Auto)
-            .Content(new ZoomBorder
-            {
-                ClipToBounds = true,
-                EnableConstrains = false,
-                EnableDoubleClickZoom = false,
-                EnableGestures = true,
-                Focusable = true,
-                HorizontalAlignment = HorizontalAlignment.Stretch,
-                Stretch = StretchMode.None,
-                VerticalAlignment = VerticalAlignment.Stretch,
-                WheelBehavior = WheelBehaviorMode.PanVertical,
-                WheelWithShift = WheelBehaviorMode.PanHorizontal,
-                WheelPanSensitivity = 2.0,
-                WheelZoomSensitivity = 2.0,
-                GestureRecognizers =
-                {
-                    new PinchGestureRecognizer()
-                },
-                Child = new GraphPanel()
-                    .BindValue(GraphPanel.GraphProperty, CompiledBinding.Create<VisualizationViewModel, Graph>(x => x.Graph))
-                    .BindValue(GraphPanel.LayoutMethodProperty, CompiledBinding.Create<VisualizationViewModel, GraphPanel.LayoutMethods>(x => x.LayoutMethod))
-                    .DataTemplates(
-                        new FuncDataTemplate<VisualizationViewModel.ResourceNodeViewModel>((node, _) => CreateResourceNode(node!)),
-                        new FuncDataTemplate<Edge>((_, _) => new Connection { Brush = Brushes.Green })
-                    )
-            });
+            .BindValue(ResourceGraphControl.GraphProperty, CompiledBinding.Create<VisualizationViewModel, KubeUI.Kubernetes.Resources.Relationships.ResourceRelationshipGraph?>(x => x.Graph, source: vm));
     }
 
-    private static StackPanel CreateResourceNode(VisualizationViewModel.ResourceNodeViewModel node)
+    internal static StackPanel CreateResourceNode(ResourceNodeViewModel node)
     {
         return new StackPanel()
-            .Width(64)
-            .Margin(40, 16, 40, 16)
             .BindValue(ToolTip.TipProperty, new MultiBinding
             {
                 StringFormat = "{0}/{1} {2}",
                 Bindings =
                 {
-                    CompiledBinding.Create<VisualizationViewModel.ResourceNodeViewModel, string?>(x => x.Resource.ApiVersion),
-                    CompiledBinding.Create<VisualizationViewModel.ResourceNodeViewModel, string?>(x => x.Resource.Kind),
-                    CompiledBinding.Create<VisualizationViewModel.ResourceNodeViewModel, string?>(x => x.Resource.Metadata.Name)
+                    CompiledBinding.Create<ResourceNodeViewModel, string?>(x => x.Resource.ApiVersion, node),
+                    CompiledBinding.Create<ResourceNodeViewModel, string?>(x => x.Resource.Kind, node),
+                    CompiledBinding.Create<ResourceNodeViewModel, string?>(x => x.Resource.Metadata.Name, node)
                 }
             })
             .Children(
                 new Image()
                     .Width(64)
+                    .Height(64)
                     .Source(node, x => x.IconPath, BindingMode.OneWay, new ResourceIconToSvgImageConverter())
-                    .ContextFlyout(new MenuFlyout
-                    {
-                        Items =
-                        {
-                            new MenuItem()
-                                .Command(node, x => x.ViewPropertiesCommand)
-                                .CommandParameter(node, x => x.Resource)
-                                .Header(Assets.Resources.VisualizationView_Properties),
-                            new MenuItem()
-                                .Command(node, x => x.ViewYamlCommand)
-                                .CommandParameter(node, x => x.Resource)
-                                .Header(Assets.Resources.VisualizationView_ViewYaml)
-                        }
-                    }),
-                new TextBlock()
-                    .Width(128)
-                    .ClipToBounds(false)
-                    .Text(node, x => x.Resource.Kind)
-                    .TextAlignment(TextAlignment.Center)
-                    .TextWrapping(TextWrapping.NoWrap),
-                new TextBlock()
-                    .Width(128)
-                    .ClipToBounds(false)
-                    .Text(node, x => x.Resource.Metadata.Name)
-                    .TextAlignment(TextAlignment.Center)
-                    .TextWrapping(TextWrapping.Wrap));
+                    .ContextFlyout(ResourceActionPresenter.CreateFlyout(node.ContextMenuItems)));
     }
 
     private sealed class ResourceIconToSvgImageConverter : IValueConverter

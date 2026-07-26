@@ -1974,7 +1974,7 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
             kind: Pod
             spec:
               containers:
-                - 
+                -
             """.ReplaceLineEndings("\n");
 
         var view = ResolveService<ResourceYamlView>();
@@ -2024,7 +2024,7 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
             spec:
               containers:
                 - command:
-                  - 
+                  -
             """.ReplaceLineEndings("\n");
 
         var view = ResolveService<ResourceYamlView>();

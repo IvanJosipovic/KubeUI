@@ -80,6 +80,7 @@ public class TestClusterRuntime : IClusterRuntime, IClusterAuthorization, INotif
     public event Action<WatchEventType, GroupApiVersionKind, IKubernetesObject<V1ObjectMeta>>? OnChange;
     public event Action<IClusterRuntime>? NamespaceSelectionRequired;
     public event Action<IClusterRuntime, GroupApiVersionKind>? ResourceSeeded;
+    public event Action<IClusterRuntime, GroupApiVersionKind>? ResourceUnseeded;
 
     public Func<Task>? ConnectBehavior { get; set; }
     public Func<Stream, Task>? DryRunYamlBehavior { get; set; }
@@ -184,9 +185,11 @@ public class TestClusterRuntime : IClusterRuntime, IClusterAuthorization, INotif
 
         ClearDynamicCustomResourceDefinitions();
 
-        foreach (var container in Objects.Values)
+        foreach (var pair in Objects)
         {
-            if (container is IClearableResourceContainer resourceContainer)
+            ResourceUnseeded?.Invoke(this, pair.Key);
+
+            if (pair.Value is IClearableResourceContainer resourceContainer)
             {
                 ClearResourceContainer(resourceContainer);
             }
@@ -733,6 +736,8 @@ public class TestClusterRuntime : IClusterRuntime, IClusterAuthorization, INotif
         {
             return false;
         }
+
+        ResourceUnseeded?.Invoke(this, kind);
 
         if (existingContainer is not IClearableResourceContainer resourceContainer)
         {
