@@ -157,11 +157,13 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         }
 
         HashSet<string> namespaces = cluster.SelectedNamespaces.Select(x => x.Name()).OfType<string>().ToHashSet(StringComparer.Ordinal);
+        bool hideNoise = HideNoise;
+        IReadOnlyList<IKubernetesObject<V1ObjectMeta>> source = _resourcesByKey.Values.ToArray();
         ResourceRelationshipGraph delta = await Task.Run(() => _resourceRelationshipBuilder.BuildAdditionDelta(
-            _resourcesByKey.Values.ToArray(),
+            source,
             key,
             namespaces,
-            HideNoise)).ConfigureAwait(false);
+            hideNoise)).ConfigureAwait(false);
 
         await Dispatcher.UIThread.InvokeAsync(() =>
         {

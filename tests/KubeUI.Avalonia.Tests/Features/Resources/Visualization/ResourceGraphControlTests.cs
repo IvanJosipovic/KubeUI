@@ -40,6 +40,49 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
     }
 
     [AvaloniaFact]
+    public async Task added_resource_delta_uses_the_resource_snapshot_from_its_event()
+    {
+        using var cluster = await TestCluster.GetAsync();
+        var builder = new AdditionSnapshotRelationshipBuilder();
+        using VisualizationViewModel viewModel = new(builder);
+        viewModel.Initialize(cluster);
+        await builder.WaitForInitialBuildAsync();
+
+        ThreadPool.GetMinThreads(out int workerThreads, out int completionPortThreads);
+        ThreadPool.SetMinThreads(Math.Max(workerThreads, 32), completionPortThreads);
+        using var workersStarted = new CountdownEvent(32);
+        using var releaseWorkers = new ManualResetEventSlim();
+        Task[] workers = Enumerable.Range(0, 32)
+            .Select(_ => Task.Run(() =>
+            {
+                workersStarted.Signal();
+                releaseWorkers.Wait();
+            }))
+            .ToArray();
+
+        try
+        {
+            workersStarted.Wait(TimeSpan.FromSeconds(10)).ShouldBeTrue();
+
+            await cluster.AddOrUpdateResource(CreatePod("first"));
+            await cluster.AddOrUpdateResource(CreatePod("second"));
+            viewModel.HideNoise = false;
+            releaseWorkers.Set();
+
+            AdditionDeltaInput firstDelta = await builder.WaitForFirstAdditionAsync();
+            firstDelta.Resources.ShouldContain("first");
+            firstDelta.Resources.ShouldNotContain("second");
+            firstDelta.HideNoise.ShouldBeTrue();
+        }
+        finally
+        {
+            releaseWorkers.Set();
+            await Task.WhenAll(workers);
+            ThreadPool.SetMinThreads(workerThreads, completionPortThreads);
+        }
+    }
+
+    [AvaloniaFact]
     public void creates_graph_vertices_and_edges_from_graph_input()
     {
         V1Pod source = new() { ApiVersion = "v1", Kind = V1Pod.KubeKind, Metadata = new() { Name = "source", NamespaceProperty = "demo", Uid = "source" } };
@@ -263,4 +306,51 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
         public async Task<int> WaitForBuildAsync(int buildNumber)
             => await (buildNumber == 1 ? _firstBuild.Task : _secondBuild.Task);
     }
+
+    private sealed class AdditionSnapshotRelationshipBuilder : IResourceRelationshipBuilder
+    {
+        private readonly TaskCompletionSource _initialBuild = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource<AdditionDeltaInput> _firstAddition = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public ResourceRelationshipGraph Build(
+            IEnumerable<IKubernetesObject<V1ObjectMeta>> resources,
+            IReadOnlySet<string> selectedNamespaces,
+            bool hideNoise)
+        {
+            _initialBuild.TrySetResult();
+            return ResourceRelationshipGraph.Empty;
+        }
+
+        public ResourceRelationshipGraph BuildAdditionDelta(
+            IEnumerable<IKubernetesObject<V1ObjectMeta>> resources,
+            ResourceKey addedResource,
+            IReadOnlySet<string> selectedNamespaces,
+            bool hideNoise)
+        {
+            if (addedResource.Name == "first")
+            {
+                _firstAddition.TrySetResult(new AdditionDeltaInput(resources.Select(resource => resource.Name()!).ToArray(), hideNoise));
+            }
+
+            return ResourceRelationshipGraph.Empty;
+        }
+
+        public async Task WaitForInitialBuildAsync() => await _initialBuild.Task;
+
+        public async Task<AdditionDeltaInput> WaitForFirstAdditionAsync() => await _firstAddition.Task;
+    }
+
+    private sealed record AdditionDeltaInput(IReadOnlyList<string> Resources, bool HideNoise);
+
+    private static V1Pod CreatePod(string name) => new()
+    {
+        ApiVersion = "v1",
+        Kind = V1Pod.KubeKind,
+        Metadata = new()
+        {
+            Name = name,
+            NamespaceProperty = "default",
+            Uid = name,
+        },
+    };
 }

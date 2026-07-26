@@ -102,12 +102,13 @@ public sealed class ResourceRelationshipBuilder : IResourceRelationshipBuilder
             new Providers.OwnerReferenceRelationshipProvider(),
             new Providers.IngressRelationshipProvider(),
             new Providers.EndpointSliceRelationshipProvider(),
-            new Providers.WorkloadLabelRelationshipProvider(),
+            new Providers.VolumeSecretRelationshipProvider(),
+           // new Providers.WorkloadLabelRelationshipProvider(),
             new Providers.ServiceAccountRelationshipProvider(),
             new Providers.StorageRelationshipProvider(),
             new Providers.RbacRelationshipProvider(),
             new Providers.EventRelationshipProvider(),
-            new Providers.ArgoCdRelationshipProvider(),
+            new Providers.GitOpsRelationshipProvider(),
         ];
     }
 

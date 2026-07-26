@@ -12,6 +12,8 @@ internal static class RelationshipProviderHelpers
             V1ReplicaSet x => x.Spec?.Template?.Spec,
             V1StatefulSet x => x.Spec?.Template?.Spec,
             V1DaemonSet x => x.Spec?.Template?.Spec,
+            V1Job x => x.Spec?.Template?.Spec,
+            V1CronJob x => x.Spec?.JobTemplate?.Spec?.Template?.Spec,
             V1Pod x => x.Spec,
             _ => null,
         };
@@ -87,6 +89,31 @@ public sealed class EndpointSliceRelationshipProvider : IResourceRelationshipPro
             }
 
             context.Add(relationships, resource, target, ResourceRelationshipKind.Reference);
+        }
+    }
+}
+
+public sealed class VolumeSecretRelationshipProvider : IResourceRelationshipProvider
+{
+    public void AddRelationships(IKubernetesObject<V1ObjectMeta> resource, ResourceRelationshipContext context, ICollection<ResourceRelationship> relationships)
+    {
+        V1PodSpec? podSpec = RelationshipProviderHelpers.PodSpec(resource);
+        if (podSpec == null)
+        {
+            return;
+        }
+
+        foreach (V1Volume volume in podSpec.Volumes ?? [])
+        {
+            RelationshipProviderHelpers.AddByName(
+                context,
+                relationships,
+                resource,
+                "v1",
+                V1Secret.KubeKind,
+                resource.Namespace(),
+                volume.Secret?.SecretName,
+                ResourceRelationshipKind.Reference);
         }
     }
 }
@@ -213,7 +240,7 @@ public sealed class EventRelationshipProvider : IResourceRelationshipProvider
     }
 }
 
-public sealed class ArgoCdRelationshipProvider : IResourceRelationshipProvider
+public sealed class GitOpsRelationshipProvider : IResourceRelationshipProvider
 {
     public void AddRelationships(IKubernetesObject<V1ObjectMeta> resource, ResourceRelationshipContext context, ICollection<ResourceRelationship> relationships)
     {

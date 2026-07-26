@@ -63,6 +63,50 @@ public sealed class ResourceRelationshipBuilderTests
     }
 
     [Fact]
+    public void Relates_secret_backed_volumes_from_pods_and_workload_templates()
+    {
+        V1Secret secret = new()
+        {
+            ApiVersion = "v1",
+            Kind = V1Secret.KubeKind,
+            Metadata = new() { Name = "tls-client", NamespaceProperty = "demo", Uid = "secret-uid" },
+        };
+        V1PodTemplateSpec template = new()
+        {
+            Spec = new()
+            {
+                Volumes = [new() { Name = "tls-client-certs", Secret = new() { SecretName = "tls-client" } }],
+            },
+        };
+        IKubernetesObject<V1ObjectMeta>[] consumers =
+        [
+            new V1Pod { ApiVersion = "v1", Kind = V1Pod.KubeKind, Metadata = new() { Name = "pod", NamespaceProperty = "demo" }, Spec = template.Spec },
+            new V1Deployment { ApiVersion = "apps/v1", Kind = V1Deployment.KubeKind, Metadata = new() { Name = "deployment", NamespaceProperty = "demo" }, Spec = new() { Template = template } },
+            new V1ReplicaSet { ApiVersion = "apps/v1", Kind = V1ReplicaSet.KubeKind, Metadata = new() { Name = "replicaset", NamespaceProperty = "demo" }, Spec = new() { Template = template } },
+            new V1StatefulSet { ApiVersion = "apps/v1", Kind = V1StatefulSet.KubeKind, Metadata = new() { Name = "statefulset", NamespaceProperty = "demo" }, Spec = new() { Template = template } },
+            new V1DaemonSet { ApiVersion = "apps/v1", Kind = V1DaemonSet.KubeKind, Metadata = new() { Name = "daemonset", NamespaceProperty = "demo" }, Spec = new() { Template = template } },
+            new V1Job { ApiVersion = "batch/v1", Kind = V1Job.KubeKind, Metadata = new() { Name = "job", NamespaceProperty = "demo" }, Spec = new() { Template = template } },
+            new V1CronJob { ApiVersion = "batch/v1", Kind = V1CronJob.KubeKind, Metadata = new() { Name = "cronjob", NamespaceProperty = "demo" }, Spec = new() { JobTemplate = new() { Spec = new() { Template = template } } } },
+        ];
+
+        ResourceRelationshipGraph graph = new ResourceRelationshipBuilder().Build([secret, .. consumers], new HashSet<string> { "demo" }, hideNoise: true);
+
+        graph.Relationships
+            .Where(relationship => relationship.Target.Name == "tls-client")
+            .Select(relationship => (relationship.Source.Name, relationship.Kind, relationship.Label))
+            .ShouldBe(
+            [
+                ("pod", ResourceRelationshipKind.Reference, null),
+                ("deployment", ResourceRelationshipKind.Reference, null),
+                ("replicaset", ResourceRelationshipKind.Reference, null),
+                ("statefulset", ResourceRelationshipKind.Reference, null),
+                ("daemonset", ResourceRelationshipKind.Reference, null),
+                ("job", ResourceRelationshipKind.Reference, null),
+                ("cronjob", ResourceRelationshipKind.Reference, null),
+            ]);
+    }
+
+    [Fact]
     public void Preserves_distinct_labels_for_the_same_endpoints()
     {
         ResourceIdentity source = new("v1", V1Pod.KubeKind, "demo", "web", "web-uid");
