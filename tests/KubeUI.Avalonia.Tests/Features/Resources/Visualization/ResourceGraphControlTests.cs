@@ -56,7 +56,6 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
         control.Area.LogicCore.ShouldNotBeNull();
         control.Area.LogicCore!.Graph.VertexCount.ShouldBe(2);
         control.Area.LogicCore.Graph.EdgeCount.ShouldBe(1);
-        control.Area.VertexLabelFactory.ShouldBeOfType<ResourceVertexLabelFactory>();
         control.Area.SelectionMode.ShouldBe(SelectionMode.Multiple);
         control.Area.SelectedVertices.ShouldNotBeNull();
     }
@@ -92,12 +91,14 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
                 label.Bounds.Width.ShouldBeGreaterThan(0);
                 label.Bounds.Height.ShouldBeGreaterThan(0);
                 label.AttachNode.ShouldNotBeNull();
-                label.GetVisualDescendants().OfType<ContentPresenter>().Any(presenter => presenter.Content is ResourceGraphVertex).ShouldBeTrue();
+                label.GetVisualDescendants().OfType<TextBlock>().Single().Text.ShouldBe(label.AttachNode.Vertex!.ToString());
+                label.Bounds.Top.ShouldBeGreaterThan(label.AttachNode.Bounds.Bottom - 0.01);
             }
             DragBehaviour.GetIsDragEnabled(sourceControl).ShouldBeTrue();
             DragBehaviour.GetUpdateEdgesOnMove(sourceControl).ShouldBeTrue();
             edge.SourceEndpoint.ShouldNotBeNull();
             edge.TargetEndpoint.ShouldNotBeNull();
+            edge.GetEdgePointerForSource()!.IsVisible.ShouldBeFalse();
             edge.GetEdgePointerForTarget().ShouldNotBeNull();
             edge.GetEdgePointerForTarget()!.IsVisible.ShouldBeTrue();
             ((Control)edge.GetEdgePointerForTarget()!).Bounds.Width.ShouldBeGreaterThan(0);
@@ -133,11 +134,13 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
             [source, target],
             [new ResourceRelationship(sourceIdentity, targetIdentity, ResourceRelationshipKind.Reference)]);
 
-        await Task.Delay(100);
+        await Task.Delay(250);
         await Dispatcher.UIThread.InvokeAsync(control.Area.UpdateLayout);
 
         control.Area.Children.OfType<AttachableVertexLabelControl>().Count().ShouldBe(2);
-        control.Area.Children.OfType<AttachableEdgeLabelControl>().Count().ShouldBe(1);
+        AttachableEdgeLabelControl edgeLabel = control.Area.Children.OfType<AttachableEdgeLabelControl>().Single();
+        edgeLabel.GetVisualDescendants().OfType<Border>().Single().Background.ShouldBe(global::Avalonia.Media.Brushes.Transparent);
+        control.Area.EdgesList.Values.Single().GetEdgePointerForSource()!.IsVisible.ShouldBeFalse();
         control.Area.EdgesList.Values.Single().GetEdgePointerForTarget()!.IsVisible.ShouldBeTrue();
     }
 

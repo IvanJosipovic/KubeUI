@@ -86,23 +86,32 @@ public sealed partial class VisualizationView : ViewBase<VisualizationViewModel>
 
     internal static StackPanel CreateResourceNode(ResourceNodeViewModel node)
     {
-        return new StackPanel()
-            .BindValue(ToolTip.TipProperty, new MultiBinding
+
+        var content = new MultiBinding
             {
-                StringFormat = "{0}/{1} {2}",
+                StringFormat = "{0}\n{1}",
                 Bindings =
                 {
-                    CompiledBinding.Create<ResourceNodeViewModel, string?>(x => x.Resource.ApiVersion, node),
                     CompiledBinding.Create<ResourceNodeViewModel, string?>(x => x.Resource.Kind, node),
                     CompiledBinding.Create<ResourceNodeViewModel, string?>(x => x.Resource.Metadata.Name, node)
                 }
-            })
+            };
+
+        return new StackPanel()
+            .BindValue(ToolTip.TipProperty, content)
             .Children(
                 new Image()
                     .Width(64)
                     .Height(64)
                     .Source(node, x => x.IconPath, BindingMode.OneWay, new ResourceIconToSvgImageConverter())
-                    .ContextFlyout(ResourceActionPresenter.CreateFlyout(node.ContextMenuItems)));
+                    .ContextFlyout(ResourceActionPresenter.CreateFlyout(node.ContextMenuItems)),
+                new Label()
+                    .HorizontalContentAlignment(HorizontalAlignment.Center)
+                    .BindValue(Label.ContentProperty, CompiledBinding.Create<ResourceNodeViewModel, string?>(x => x.Resource.Kind, node)),
+                new Label()
+                    .HorizontalContentAlignment(HorizontalAlignment.Center)
+                    .BindValue(Label.ContentProperty, CompiledBinding.Create<ResourceNodeViewModel, string?>(x => x.Resource.Metadata.Name, node))
+            );
     }
 
     private sealed class ResourceIconToSvgImageConverter : IValueConverter

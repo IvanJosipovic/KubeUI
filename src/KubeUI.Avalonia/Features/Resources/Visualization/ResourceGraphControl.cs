@@ -8,7 +8,6 @@ using Westermo.GraphX.Common.Enums;
 using Westermo.GraphX.Controls.Controls;
 using Westermo.GraphX.Logic.Models;
 using Westermo.GraphX.Controls.Controls.ZoomControl;
-using Westermo.GraphX.Controls.Models;
 using Westermo.GraphX.Logic.Algorithms.LayoutAlgorithms;
 
 namespace KubeUI.Avalonia.Features.Resources.Visualization;
@@ -73,7 +72,7 @@ public sealed class ResourceGraphControl : UserControl, IDisposable
             {
                 Direction = LayoutDirection.TopToBottom,
                 LayerGap = 120,
-                VertexGap = 120,
+                VertexGap = 240,
                 ComponentGap = 120,
                 OptimizeWidthAndHeight = false,
                 SpanningTreeGeneration = SpanningTreeGeneration.DFS,
@@ -118,9 +117,9 @@ public sealed class ResourceGraphControl : UserControl, IDisposable
                 graph.AddVertex(vertex);
             }
 
-            foreach (ResourceRelationship relationship in _graph.Relationships)
+            foreach (var relationship in _graph.Relationships)
             {
-                if (TryCreateEdge(relationship, vertices, out ResourceGraphEdge edge))
+                if (TryCreateEdge(relationship, vertices, out var edge))
                 {
                     graph.AddEdge(edge);
                 }
@@ -136,8 +135,8 @@ public sealed class ResourceGraphControl : UserControl, IDisposable
 
     private void ApplyGraphChanges(ResourceRelationshipGraph current)
     {
-        BidirectionalGraph<ResourceGraphVertex, ResourceGraphEdge> graph = _logicCore.Graph;
-        Dictionary<ResourceIdentity, ResourceGraphVertex> vertices = _vertices;
+        var graph = _logicCore.Graph;
+        var vertices = _vertices;
         HashSet<ResourceIdentity> desiredIdentities = current.Resources.Select(GetIdentity).ToHashSet();
         HashSet<ResourceRelationship> desiredRelationships = current.Relationships.ToHashSet();
         bool structureChanged = vertices.Keys.Any(identity => !desiredIdentities.Contains(identity))
@@ -145,7 +144,7 @@ public sealed class ResourceGraphControl : UserControl, IDisposable
             || graph.Edges.Any(edge => !desiredRelationships.Contains(edge.Relationship))
             || desiredRelationships.Any(relationship => !graph.Edges.Any(edge => edge.Relationship == relationship));
 
-        foreach (ResourceGraphVertex vertex in vertices.Values.Where(vertex => !desiredIdentities.Contains(vertex.Identity)).ToArray())
+        foreach (var vertex in vertices.Values.Where(vertex => !desiredIdentities.Contains(vertex.Identity)).ToArray())
         {
             _area.RemoveVertexAndEdges(vertex);
             if (graph.ContainsVertex(vertex))
@@ -156,7 +155,7 @@ public sealed class ResourceGraphControl : UserControl, IDisposable
             vertices.Remove(vertex.Identity);
         }
 
-        foreach (ResourceGraphEdge edge in graph.Edges.ToArray())
+        foreach (var edge in graph.Edges.ToArray())
         {
             if (!desiredRelationships.Contains(edge.Relationship)
                 || !desiredIdentities.Contains(edge.Source.Identity)
@@ -170,10 +169,10 @@ public sealed class ResourceGraphControl : UserControl, IDisposable
             }
         }
 
-        foreach (IKubernetesObject<V1ObjectMeta> resource in current.Resources)
+        foreach (var resource in current.Resources)
         {
-            ResourceIdentity identity = GetIdentity(resource);
-            if (vertices.TryGetValue(identity, out ResourceGraphVertex? existingVertex))
+            var identity = GetIdentity(resource);
+            if (vertices.TryGetValue(identity, out var existingVertex))
             {
                 existingVertex.Node.UpdateResource(resource);
                 continue;
@@ -181,20 +180,20 @@ public sealed class ResourceGraphControl : UserControl, IDisposable
 
             var vertex = CreateVertex(resource);
             vertices.Add(identity, vertex);
-            _area.AddVertexAndData(vertex, _area.ControlFactory.CreateVertexControl(vertex), generateLabel: true);
+            _area.AddVertexAndData(vertex, _area.ControlFactory.CreateVertexControl(vertex), generateLabel: false);
         }
 
         HashSet<ResourceRelationship> existingRelationships = graph.Edges.Select(edge => edge.Relationship).ToHashSet();
-        foreach (ResourceRelationship relationship in current.Relationships)
+        foreach (var relationship in current.Relationships)
         {
             if (existingRelationships.Contains(relationship)
-                || !vertices.TryGetValue(relationship.Source, out ResourceGraphVertex? source)
-                || !vertices.TryGetValue(relationship.Target, out ResourceGraphVertex? target))
+                || !vertices.TryGetValue(relationship.Source, out var source)
+                || !vertices.TryGetValue(relationship.Target, out var target))
             {
                 continue;
             }
 
-            if (TryCreateEdge(relationship, vertices, out ResourceGraphEdge edge))
+            if (TryCreateEdge(relationship, vertices, out var edge))
             {
                 _area.InsertEdgeAndData(
                     edge,
@@ -236,14 +235,15 @@ public sealed class ResourceGraphControl : UserControl, IDisposable
         Dictionary<ResourceIdentity, ResourceGraphVertex> vertices,
         out ResourceGraphEdge edge)
     {
-        if (!vertices.TryGetValue(relationship.Source, out ResourceGraphVertex? source)
-            || !vertices.TryGetValue(relationship.Target, out ResourceGraphVertex? target))
+        if (!vertices.TryGetValue(relationship.Source, out var source)
+            || !vertices.TryGetValue(relationship.Target, out var target))
         {
             edge = null!;
             return false;
         }
 
         edge = new ResourceGraphEdge(source, target, relationship);
+
         return true;
     }
 
@@ -282,6 +282,7 @@ public sealed class ResourceGraphControl : UserControl, IDisposable
         {
             _layoutPending = false;
             bool initialGeneration = !_hasGeneratedGraph;
+
             if (!initialGeneration)
             {
                 await _area.RelayoutGraph(true).ConfigureAwait(true);
@@ -291,11 +292,22 @@ public sealed class ResourceGraphControl : UserControl, IDisposable
                 await _area.GenerateGraph(true).ConfigureAwait(true);
                 _hasGeneratedGraph = true;
             }
+
+            foreach (EdgeControl edge in _area.EdgesList.Values)
+            {
+                edge.GetEdgePointerForSource()?.Hide();
+                edge.GetEdgePointerForTarget()?.Show();
+            }
+
+            _area.ShowAllEdgesArrows(true);
+
             if (initialGeneration || _zoomAfterLayout)
             {
                 _zoomAfterLayout = false;
                 await Dispatcher.UIThread.InvokeAsync(_zoomControl.ZoomToFill, DispatcherPriority.Render);
             }
+
+
         }
     }
 
@@ -316,17 +328,6 @@ public sealed class ResourceGraphControl : UserControl, IDisposable
         _area.ClearLayout();
         _vertices.Clear();
         base.OnDetachedFromVisualTree(e);
-    }
-
-    private static void ShowTargetArrow(EdgeControl control)
-    {
-        control.GetEdgePointerForSource()?.Hide();
-        control.GetEdgePointerForTarget()?.Show();
-
-        if (control.GetEdgePointerForTarget() is ContentControl { Content: global::Avalonia.Controls.Shapes.Path path })
-        {
-            path.Fill = control.Foreground;
-        }
     }
 
     public void Dispose()
