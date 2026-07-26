@@ -122,7 +122,7 @@ public sealed partial class V1CustomResourceDefinitionConfig : ResourceConfigBas
             return false;
         }
 
-        var resourceConfig = Cluster.GetResourceConfigs().FirstOrDefault(config => config.Type == type);
+        var resourceConfig = Cluster.GetResourceConfig(type);
         return resourceConfig?.PermissionsLoaded == true && resourceConfig.CanListAndWatch;
     }
 }

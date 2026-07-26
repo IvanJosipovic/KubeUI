@@ -33,7 +33,7 @@ public sealed partial class ResourceNodeViewModel : ViewModelBase
                 return [];
             }
 
-            var config = Cluster.GetResourceConfigs().FirstOrDefault(item => item.Type == Resource.GetType());
+            var config = Cluster.GetResourceConfig(Resource.GetType());
             return config == null
                 ? []
                 : ResourceActionPresenter.Compose(config, new[] { Resource });

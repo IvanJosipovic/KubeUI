@@ -604,12 +604,11 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
         IReadOnlyCollection<IResourceConfig>? resourceConfigs = null)
     {
         var configs = resourceConfigs ?? cluster.GetResourceConfigs().ToArray();
-        var definitions = configs
-            .FirstOrDefault(config => config.Type == typeof(V1CustomResourceDefinition));
+        IResourceConfig? definition = cluster.GetResourceConfig(typeof(V1CustomResourceDefinition));
         var rootId = $"{cluster.Runtime.Name}-custom-resource-definitions";
         var root = node.NavigationItems.FirstOrDefault(item => item.Id == rootId);
 
-        if (definitions is not { PermissionsLoaded: true, CanListAndWatch: true })
+        if (definition is not { PermissionsLoaded: true, CanListAndWatch: true })
         {
             if (root != null)
             {
@@ -629,7 +628,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
             };
             node.NavigationItems.Add(root);
 
-            UpdateCustomResourceLink(root, cluster, definitions);
+            UpdateCustomResourceLink(root, cluster, definition);
 
             foreach (var config in configs
                          .Where(config => config.IsCustomResource && config.PermissionsLoaded && config.CanListAndWatch)
@@ -641,7 +640,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
         }
         else if (changedConfig.Type == typeof(V1CustomResourceDefinition))
         {
-            UpdateCustomResourceLink(root, cluster, definitions);
+            UpdateCustomResourceLink(root, cluster, definition);
         }
         else if (changedConfig.IsCustomResource)
         {
@@ -663,7 +662,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
         var id = $"{node.Cluster.Runtime.Name}-{NavigationTargets.PortForwarders}";
         RemoveNavigationItem(node.NavigationItems, id);
 
-        var podConfig = node.Cluster.GetResourceConfigs().FirstOrDefault(config => config.Type == typeof(V1Pod));
+        IResourceConfig? podConfig = node.Cluster.GetResourceConfig(typeof(V1Pod));
         if (podConfig is not { PermissionsLoaded: true, CanListAndWatch: true }
             || !CanCreatePortForward(node.Cluster))
         {

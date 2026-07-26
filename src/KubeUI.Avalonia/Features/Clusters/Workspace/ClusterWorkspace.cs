@@ -174,6 +174,15 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
         return _resourceConfigs[kind];
     }
 
+    /// <summary>
+    /// Gets the registered resource configuration for a resource type, if one exists.
+    /// </summary>
+    public IResourceConfig? GetResourceConfig(Type resourceType)
+    {
+        ArgumentNullException.ThrowIfNull(resourceType);
+        return _resourceConfigs.GetValueOrDefault(GroupApiVersionKind.From(resourceType));
+    }
+
     public IResourceConfig GetResourceConfig<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
         return GetResourceConfig(GroupApiVersionKind.From<T>());

@@ -49,6 +49,18 @@ public class ClusterWorkspaceTests : AvaloniaTestBase
     }
 
     [AvaloniaFact]
+    public async Task resource_config_can_be_looked_up_by_resource_type()
+    {
+        var runtime = new TestCluster();
+        var workspace = CreateWorkspace(runtime);
+
+        await workspace.Connect();
+
+        IResourceConfig expected = workspace.GetResourceConfig<V1Pod>();
+        workspace.GetResourceConfig(typeof(V1Pod)).ShouldBeSameAs(expected);
+    }
+
+    [AvaloniaFact]
     public void changing_runtime_status_to_connecting_updates_cluster_color()
     {
         var runtime = new TestCluster

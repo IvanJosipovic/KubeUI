@@ -23,7 +23,7 @@ namespace KubeUI.Avalonia.Tests.Features.Resources.Visualization;
 public sealed class ResourceGraphControlTests : AvaloniaTestBase
 {
     [AvaloniaFact]
-    public async Task initialization_starts_seeded_resource_caches_without_waiting_for_ready()
+    public async Task processed_resource_config_starts_required_seed_without_waiting_for_ready()
     {
         var innerRuntime = new TestCluster();
         await innerRuntime.AddOrUpdateResource(new V1Namespace { Metadata = new() { Name = "default" } });
@@ -33,6 +33,9 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
         using VisualizationViewModel viewModel = new(new ResourceRelationshipBuilder());
 
         viewModel.Initialize(cluster);
+
+        runtime.EventSeedCalls.ShouldBe(0);
+        await cluster.Connect();
 
         runtime.EventSeedCalls.ShouldBeGreaterThan(0);
         runtime.EventSeedWaitForReady.ShouldBeFalse();
@@ -48,6 +51,8 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
         cluster.SelectedNamespaces.Add(innerRuntime.Namespaces.Single());
         using VisualizationViewModel viewModel = new(new ResourceRelationshipBuilder());
         var ownerSeed = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        await cluster.Connect();
 
         void OnResourceSeedRequested(Type resourceType, bool waitForReady)
         {

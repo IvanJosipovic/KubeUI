@@ -5,6 +5,7 @@ using k8s.Models;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Infrastructure.Presentation;
+using KubeUI.Avalonia.Resources;
 using KubeUI.Kubernetes;
 using KubeUI.Kubernetes.Resources.Relationships;
 
@@ -14,6 +15,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 {
     private readonly IResourceRelationshipBuilder _resourceRelationshipBuilder;
     private readonly Dictionary<ResourceKey, IKubernetesObject<V1ObjectMeta>> _resourcesByKey = [];
+    private readonly HashSet<Type> _requiredSeedTypes = [];
     private bool _disposed;
     private bool _suppressResourceChanges;
     private IDisposable? _resourceChangesSubscription;
@@ -73,11 +75,19 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         Id = nameof(VisualizationViewModel) + "-" + cluster;
 
         _resourcesByKey.Clear();
+        _requiredSeedTypes.Clear();
         _suppressResourceChanges = true;
         _resourceChangesSubscription = cluster.Runtime.ConnectResources().Subscribe(OnResourceChange);
 
         cluster.SelectedNamespaces.CollectionChanged += SelectedNamespaces_CollectionChanged;
-        _ = InitializeResourcesAsync(cluster);
+        cluster.ResourceConfigProcessed += ResourceConfigProcessed;
+        foreach (Type type in SeedTypes)
+        {
+            RequireSeed(cluster, type);
+        }
+
+        _suppressResourceChanges = false;
+        Run();
     }
 
     private static readonly Type[] SeedTypes =
@@ -194,19 +204,26 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         });
     }
 
-    private async Task InitializeResourcesAsync(ClusterWorkspace cluster)
+    private void ResourceConfigProcessed(ClusterWorkspace cluster, IResourceConfig resourceConfig)
     {
-        try
+        if (!_disposed
+            && ReferenceEquals(Cluster, cluster)
+            && _requiredSeedTypes.Contains(resourceConfig.Type)
+            && resourceConfig.PermissionsLoaded
+            && resourceConfig.CanListAndWatch)
         {
-            await Task.WhenAll(SeedTypes.Select(type => cluster.Runtime.SeedResource(type))).ConfigureAwait(false);
+            _ = cluster.Runtime.SeedResource(resourceConfig.Type);
         }
-        finally
+    }
+
+    private void RequireSeed(ClusterWorkspace cluster, Type resourceType)
+    {
+        _requiredSeedTypes.Add(resourceType);
+
+        IResourceConfig? resourceConfig = cluster.GetResourceConfig(resourceType);
+        if (resourceConfig is { PermissionsLoaded: true, CanListAndWatch: true })
         {
-            if (!_disposed && ReferenceEquals(Cluster, cluster))
-            {
-                _suppressResourceChanges = false;
-                Run();
-            }
+            _ = cluster.Runtime.SeedResource(resourceType);
         }
     }
 
@@ -373,7 +390,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
             Type? type = cluster.Runtime.ModelCache.GetResourceType(group, version, owner.Kind);
             if (type != null)
             {
-                _ = cluster.Runtime.SeedResource(type);
+                RequireSeed(cluster, type);
             }
         }
     }
@@ -392,10 +409,12 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         if (Cluster != null)
         {
             Cluster.SelectedNamespaces.CollectionChanged -= SelectedNamespaces_CollectionChanged;
+            Cluster.ResourceConfigProcessed -= ResourceConfigProcessed;
         }
 
         _resourceChangesSubscription?.Dispose();
         _resourceChangesSubscription = null;
+        _requiredSeedTypes.Clear();
     }
 
     public void Dispose()
