@@ -24,6 +24,36 @@ namespace KubeUI.Avalonia.Tests.Features.Resources.Visualization;
 
 public sealed class ResourceGraphControlTests : AvaloniaTestBase
 {
+    [AvaloniaFact]
+    public async Task visualizing_namespace_links_namespace_selector_and_can_unlink()
+    {
+        using var cluster = await TestCluster.GetAsync();
+        V1Namespace namespaceResource = new() { Metadata = new() { Name = "team-a" } };
+        await cluster.Runtime.AddOrUpdateResource(namespaceResource);
+
+        using VisualizationViewModel viewModel = new(new ResourceRelationshipBuilder());
+        viewModel.Initialize(cluster, namespaceResource);
+
+        viewModel.IsNamespaceSelectionLinked.ShouldBeFalse();
+        viewModel.IsNamespaceSelectorVisible.ShouldBeTrue();
+        viewModel.RootResource.ShouldBeNull();
+        ReferenceEquals(viewModel.SelectedNamespaces, cluster.SelectedNamespaces).ShouldBeFalse();
+        viewModel.SelectedNamespaces.Select(x => x.Name()).ShouldContain("team-a");
+        cluster.SelectedNamespaces.Select(x => x.Name()).ShouldNotContain("team-a");
+
+        viewModel.IsNamespaceSelectionLinked = false;
+        Dispatcher.UIThread.RunJobs();
+
+        ReferenceEquals(viewModel.SelectedNamespaces, cluster.SelectedNamespaces).ShouldBeFalse();
+        viewModel.SelectedNamespaces.Select(x => x.Name()).ShouldContain("team-a");
+
+        cluster.SelectedNamespaces.Add(new V1Namespace { Metadata = new() { Name = "team-b" } });
+        Dispatcher.UIThread.RunJobs();
+
+        viewModel.SelectedNamespaces.Select(x => x.Name()).ShouldContain("team-a");
+        viewModel.SelectedNamespaces.Select(x => x.Name()).ShouldNotContain("team-b");
+    }
+
     [Fact]
     public void root_filter_does_not_expand_downward_from_parents()
     {

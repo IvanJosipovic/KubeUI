@@ -20,6 +20,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
     private bool _suppressResourceChanges;
     private IDisposable? _resourceChangesSubscription;
     private int _rebuildVersion;
+    private readonly ObservableCollection<V1Namespace> _localSelectedNamespaces = [];
 
     [ObservableProperty]
     public partial IKubernetesObject<V1ObjectMeta>? RootResource { get; set; }
@@ -31,6 +32,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
     partial void OnRootResourceChanged(IKubernetesObject<V1ObjectMeta>? value)
     {
         OnPropertyChanged(nameof(RootResourceDisplay));
+        OnPropertyChanged(nameof(IsNamespaceSelectorVisible));
         Run();
     }
 
@@ -42,6 +44,14 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 
     [ObservableProperty]
     public partial bool HideNoise { get; set; } = true;
+
+    [ObservableProperty]
+    public partial bool IsNamespaceSelectionLinked { get; set; } = true;
+
+    public ObservableCollection<V1Namespace> SelectedNamespaces
+        => IsNamespaceSelectionLinked && Cluster != null ? Cluster.SelectedNamespaces : _localSelectedNamespaces;
+
+    public bool IsNamespaceSelectorVisible => RootResource == null || RootResource is V1Namespace;
 
     public VisualizationViewModel()
     {
@@ -71,15 +81,18 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         ArgumentNullException.ThrowIfNull(cluster);
         UnsubscribeCluster();
         Cluster = cluster;
-        RootResource = rootResource;
-        Id = nameof(VisualizationViewModel) + "-" + cluster + "-" + (rootResource == null ? "All" : rootResource.ApiVersion + "/" + rootResource.Kind + "/" + rootResource.Namespace() + "/" + rootResource.Name());
+        bool isNamespaceRoot = rootResource is V1Namespace;
+        RootResource = isNamespaceRoot ? null : rootResource;
+        IsNamespaceSelectionLinked = !isNamespaceRoot;
+        SelectRootNamespace(rootResource);
+        Id = nameof(VisualizationViewModel) + "-" + cluster + "-" + (rootResource?.Uid() ?? "null");
 
         _resourcesByKey.Clear();
         _requiredSeedTypes.Clear();
         _suppressResourceChanges = true;
         _resourceChangesSubscription = cluster.Runtime.ConnectResources().Subscribe(OnResourceChange);
 
-        cluster.SelectedNamespaces.CollectionChanged += SelectedNamespaces_CollectionChanged;
+        SubscribeToSelectedNamespaces();
         cluster.ResourceConfigProcessed += ResourceConfigProcessed;
         foreach (Type type in SeedTypes)
         {
@@ -123,6 +136,57 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
     ];
 
     private void SelectedNamespaces_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e) => Run();
+
+    partial void OnIsNamespaceSelectionLinkedChanged(bool value)
+    {
+        if (Cluster == null)
+        {
+            OnPropertyChanged(nameof(SelectedNamespaces));
+            return;
+        }
+
+        if (!value)
+        {
+            CopyNamespaces(Cluster.SelectedNamespaces, _localSelectedNamespaces);
+        }
+
+        SubscribeToSelectedNamespaces();
+        OnPropertyChanged(nameof(SelectedNamespaces));
+        Run();
+    }
+
+    private void SelectRootNamespace(IKubernetesObject<V1ObjectMeta>? rootResource)
+    {
+        if (rootResource is not V1Namespace namespaceResource || namespaceResource.Name() is not string namespaceName)
+        {
+            return;
+        }
+
+        V1Namespace selectedNamespace = Cluster!.Runtime.Namespaces.FirstOrDefault(x => x.Name() == namespaceName) ?? namespaceResource;
+        _localSelectedNamespaces.Clear();
+        _localSelectedNamespaces.Add(selectedNamespace);
+    }
+
+    private static void CopyNamespaces(IEnumerable<V1Namespace> source, ObservableCollection<V1Namespace> target)
+    {
+        target.Clear();
+        foreach (V1Namespace selectedNamespace in source)
+        {
+            target.Add(selectedNamespace);
+        }
+    }
+
+    private void SubscribeToSelectedNamespaces()
+    {
+        UnsubscribeFromSelectedNamespaces();
+        SelectedNamespaces.CollectionChanged += SelectedNamespaces_CollectionChanged;
+    }
+
+    private void UnsubscribeFromSelectedNamespaces()
+    {
+        Cluster?.SelectedNamespaces.CollectionChanged -= SelectedNamespaces_CollectionChanged;
+        _localSelectedNamespaces.CollectionChanged -= SelectedNamespaces_CollectionChanged;
+    }
 
     private void OnResourceChange(ResourceChange change)
     {
@@ -190,7 +254,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
             return;
         }
 
-        HashSet<string> namespaces = cluster.SelectedNamespaces.Select(x => x.Name()).OfType<string>().ToHashSet(StringComparer.Ordinal);
+        HashSet<string> namespaces = SelectedNamespaces.Select(x => x.Name()).OfType<string>().ToHashSet(StringComparer.Ordinal);
         bool hideNoise = HideNoise;
         IReadOnlyList<IKubernetesObject<V1ObjectMeta>> source = _resourcesByKey.Values.ToArray();
         ResourceRelationshipGraph delta = await Task.Run(() => _resourceRelationshipBuilder.BuildAdditionDelta(
@@ -266,19 +330,19 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
             return false;
         }
 
-        if (RootResource == null && cluster.SelectedNamespaces.Count == 0)
+        if (RootResource == null && SelectedNamespaces.Count == 0)
         {
             return false;
         }
 
-        if (cluster.SelectedNamespaces.Count == 0)
+        if (SelectedNamespaces.Count == 0)
         {
             return true;
         }
 
         string? namespaceName = resource.Namespace();
         return string.IsNullOrEmpty(namespaceName)
-            || cluster.SelectedNamespaces.Any(selected => selected.Name() == namespaceName);
+            || SelectedNamespaces.Any(selected => selected.Name() == namespaceName);
     }
 
     private void Run()
@@ -297,13 +361,13 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         int version = Interlocked.Increment(ref _rebuildVersion);
 
         ClusterWorkspace? cluster = Cluster;
-        if (cluster == null || (RootResource == null && cluster.SelectedNamespaces.Count == 0))
+        if (cluster == null || (RootResource == null && SelectedNamespaces.Count == 0))
         {
             Graph = ResourceRelationshipGraph.Empty;
             return;
         }
 
-        HashSet<string> namespaces = cluster.SelectedNamespaces.Select(x => x.Name()).OfType<string>().ToHashSet(StringComparer.Ordinal);
+        HashSet<string> namespaces = SelectedNamespaces.Select(x => x.Name()).OfType<string>().ToHashSet(StringComparer.Ordinal);
         IKubernetesObject<V1ObjectMeta>? root = RootResource;
         bool hideNoise = HideNoise;
         IReadOnlyList<IKubernetesObject<V1ObjectMeta>> source = _resourcesByKey.Values.ToArray();
@@ -453,6 +517,8 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
             Cluster.SelectedNamespaces.CollectionChanged -= SelectedNamespaces_CollectionChanged;
             Cluster.ResourceConfigProcessed -= ResourceConfigProcessed;
         }
+
+        _localSelectedNamespaces.CollectionChanged -= SelectedNamespaces_CollectionChanged;
 
         _resourceChangesSubscription?.Dispose();
         _resourceChangesSubscription = null;

@@ -44,11 +44,14 @@ public sealed partial class VisualizationView : ViewBase<VisualizationViewModel>
                     .ToolTip_Tip(Assets.Resources.VisualizationView_HideNoiseTooltip)
                     .Content(new FluentIcon().Icon(Icon.EyeOff)),
                 new Label()
-                    .Width(200)
                     .VerticalContentAlignment(VerticalAlignment.Center)
                     .BindValue(ContentControl.ContentProperty, CompiledBinding.Create<VisualizationViewModel, int>(x => x.Graph!.Resources.Count,
                         source: vm,
-                        stringFormat: Assets.Resources.VisualizationView_ItemsFormat)));
+                        stringFormat: Assets.Resources.VisualizationView_ItemsFormat)),
+                new Label()
+                    .Content(vm, x => x.RootResourceDisplay)
+                    .VerticalContentAlignment(VerticalAlignment.Center)
+                    .IsVisible(vm, x => x.RootResource, converter: Converters.Converters.NotNull));
     }
 
     private static StackPanel CreateRightToolbar(VisualizationViewModel vm)
@@ -66,14 +69,15 @@ public sealed partial class VisualizationView : ViewBase<VisualizationViewModel>
                     .MaxHeight(20)
                     .Classes("ClearButton")
                     .ItemsSource(vm, x => x.Cluster.Runtime.Namespaces)
-                    .SelectedItems(vm, x => x.Cluster.SelectedNamespaces)
+                    .SelectedItems(vm, x => x.SelectedNamespaces)
                     .SelectedItemTemplate(template)
                     .ItemTemplate(template)
-                    .IsVisible(vm, x => x.RootResource, converter: Converters.Converters.IsNull),
-                new TextBlock()
-                    .Name("ResourceToolbarText")
-                    .Text(vm, x => x.RootResourceDisplay)
-                    .IsVisible(vm, x => x.RootResource, converter: Converters.Converters.NotNull));
+                    .IsVisible(vm, x => x.IsNamespaceSelectorVisible),
+                new ToggleButton()
+                    .IsChecked(vm, x => x.IsNamespaceSelectionLinked, BindingMode.TwoWay)
+                    .ToolTip_Tip(Assets.Resources.ResourceListView_NamespaceLink)
+                    .Content(new FluentIcon().Icon(Icon.Link))
+                    .IsVisible(vm, x => x.IsNamespaceSelectorVisible));
     }
 
     [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "ResourceGraphControl ownership is transferred to the visual tree via fluent builder.")]
