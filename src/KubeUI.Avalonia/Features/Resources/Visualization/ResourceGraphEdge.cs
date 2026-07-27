@@ -1,4 +1,5 @@
 using KubeUI.Kubernetes.Resources.Relationships;
+using Westermo.GraphX.Common.Enums;
 using Westermo.GraphX.Common.Models;
 
 namespace KubeUI.Avalonia.Features.Resources.Visualization;
@@ -9,6 +10,10 @@ public sealed class ResourceGraphEdge: EdgeBase<ResourceGraphVertex>
         : base(source, target)
     {
         Relationship = relationship;
+
+        // SkipProcessing = relationship.Kind == ResourceRelationshipKind.Owner
+        //     ? ProcessingOptionEnum.Default
+        //     : ProcessingOptionEnum.Exclude;
     }
 
     public ResourceRelationship Relationship { get; }

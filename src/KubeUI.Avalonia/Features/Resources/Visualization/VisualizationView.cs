@@ -99,18 +99,22 @@ public sealed partial class VisualizationView : ViewBase<VisualizationViewModel>
 
         return new StackPanel()
             .BindValue(ToolTip.TipProperty, content)
+            .Width(128)
+            .Height(128)
             .Children(
                 new Image()
                     .Width(64)
                     .Height(64)
                     .Source(node, x => x.IconPath, BindingMode.OneWay, new ResourceIconToSvgImageConverter())
                     .ContextFlyout(ResourceActionPresenter.CreateFlyout(node.ContextMenuItems)),
-                new Label()
-                    .HorizontalContentAlignment(HorizontalAlignment.Center)
-                    .BindValue(Label.ContentProperty, CompiledBinding.Create<ResourceNodeViewModel, string?>(x => x.Resource.Kind, node)),
-                new Label()
-                    .HorizontalContentAlignment(HorizontalAlignment.Center)
-                    .BindValue(Label.ContentProperty, CompiledBinding.Create<ResourceNodeViewModel, string?>(x => x.Resource.Metadata.Name, node))
+                new TextBlock()
+                    .TextAlignment(TextAlignment.Center)
+                    .TextWrapping(TextWrapping.Wrap)
+                    .Text(node, x => x.Resource.Kind),
+                new TextBlock()
+                    .TextAlignment(TextAlignment.Center)
+                    .TextWrapping(TextWrapping.Wrap)
+                    .Text(node, x => x.Resource.Metadata.Name)
             );
     }
 

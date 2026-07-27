@@ -9,6 +9,7 @@ using Westermo.GraphX.Controls.Controls;
 using Westermo.GraphX.Logic.Models;
 using Westermo.GraphX.Controls.Controls.ZoomControl;
 using Westermo.GraphX.Logic.Algorithms.LayoutAlgorithms;
+using Westermo.GraphX.Logic.Algorithms.OverlapRemoval;
 using Westermo.GraphX.Controls.Models.Interfaces;
 
 namespace KubeUI.Avalonia.Features.Resources.Visualization;
@@ -28,6 +29,7 @@ public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphContr
     private bool _layoutPending;
     private bool _hasGeneratedGraph;
     private bool _zoomAfterGeneration;
+    private bool _vertexMeasurementPending;
     private bool _isDetached;
 
     public ResourceRelationshipGraph? Graph
@@ -68,17 +70,22 @@ public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphContr
         _logicCore = new GXLogicCore<ResourceGraphVertex, ResourceGraphEdge, BidirectionalGraph<ResourceGraphVertex, ResourceGraphEdge>>
         {
             DefaultLayoutAlgorithm = LayoutAlgorithmTypeEnum.Tree,
-            DefaultOverlapRemovalAlgorithm = OverlapRemovalAlgorithmTypeEnum.None,
+            DefaultOverlapRemovalAlgorithm = OverlapRemovalAlgorithmTypeEnum.FSA,
             DefaultEdgeRoutingAlgorithm = EdgeRoutingAlgorithmTypeEnum.None,
 
             DefaultLayoutAlgorithmParams = new SimpleTreeLayoutParameters
             {
                 Direction = LayoutDirection.TopToBottom,
-                LayerGap = 120,
-                VertexGap = 240,
-                ComponentGap = 120,
-                OptimizeWidthAndHeight = false,
+                LayerGap = 240,
+                VertexGap = 64,
+                //ComponentGap = 120,
+                OptimizeWidthAndHeight = true,
                 SpanningTreeGeneration = SpanningTreeGeneration.DFS,
+            },
+            DefaultOverlapRemovalAlgorithmParams = new OverlapRemovalParameters
+            {
+                HorizontalGap = 120,
+                VerticalGap = 120,
             },
             AsyncAlgorithmCompute = true,
         };
@@ -188,6 +195,7 @@ public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphContr
             var vertex = CreateVertex(resource);
             vertices.Add(identity, vertex);
             _area.AddVertexAndData(vertex, _area.ControlFactory.CreateVertexControl(vertex), generateLabel: false);
+            _vertexMeasurementPending = true;
         }
 
         HashSet<ResourceRelationship> existingRelationships = graph.Edges.Select(edge => edge.Relationship).ToHashSet();
@@ -273,6 +281,12 @@ public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphContr
     {
         Dispatcher.UIThread.VerifyAccess();
         _layoutPending = true;
+        if (_vertexMeasurementPending && VisualRoot != null)
+        {
+            _area.UpdateLayout();
+            _vertexMeasurementPending = false;
+        }
+
         if (_graphGenerationTask is { IsCompleted: false })
         {
             return;
@@ -328,6 +342,7 @@ public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphContr
     {
         _isDetached = true;
         _layoutPending = false;
+        _vertexMeasurementPending = false;
         _area.ClearLayout();
         _vertices.Clear();
         base.OnDetachedFromVisualTree(e);

@@ -1308,6 +1308,38 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         podVm.View.Count.ShouldBe(1);
     }
 
+    [AvaloniaFact(DisplayName = "Reattaching a list preserves the current namespace scope filter")]
+    public async Task reattaching_list_preserves_current_namespace_scope_filter()
+    {
+        var window = CreateWindow();
+        var cluster = await CreateClusterAsync();
+
+        var vm = GetRequiredService<ResourceListViewModel<V1Pod>>();
+        vm.Initialize(cluster);
+        var view = GetRequiredService<ResourceListView>();
+        view.DataContext = vm;
+
+        window.Content = view;
+        window.Show();
+
+        await AddOrUpdateAsync(cluster, Pod("a", "pod-a"));
+        await AddOrUpdateAsync(cluster, Pod("b", "pod-b"));
+
+        cluster.SelectedNamespaces.Add(NamespaceResource("a"));
+        Dispatcher.UIThread.RunJobs();
+        vm.View.Count.ShouldBe(1);
+        GetNamespaceFilterValues(vm).ShouldBe(["a"]);
+
+        window.Content = null;
+        Dispatcher.UIThread.RunJobs();
+        window.Content = view;
+        Dispatcher.UIThread.RunJobs();
+
+        vm.SelectedNamespaces.Select(namespaceResource => namespaceResource.Name()).ShouldBe(["a"]);
+        GetNamespaceFilterValues(vm).ShouldBe(["a"]);
+        vm.View.Count.ShouldBe(1);
+    }
+
     [AvaloniaFact(DisplayName = "Namespace filter clears item when selection filtered out")]
     public async Task namespace_filter_clears_item_when_selection_filtered_out()
     {

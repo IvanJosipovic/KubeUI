@@ -39,7 +39,7 @@ public partial class ResourceListView : ViewBase<IResourceListViewModel>
 
         if (_grid is DataGrid grid && DataContext is IResourceListViewModel vm && vm.DataGridRuntimeState is { } state)
         {
-            grid.RestoreState(RemoveNamespaceScopeFilter(state), RestoredStateSections, CreateStateOptions(grid));
+            grid.RestoreState(PrepareStateForRestore(grid, state), RestoredStateSections, CreateStateOptions(grid));
         }
     }
 
@@ -68,10 +68,7 @@ public partial class ResourceListView : ViewBase<IResourceListViewModel>
         }
 
         var filteredDescriptors = descriptors
-            .Where(descriptor => !string.Equals(
-                descriptor.ColumnId?.ToString(),
-                ResourceListViewModel<V1Pod>.NamespaceScopeFilterId,
-                StringComparison.Ordinal))
+            .Where(descriptor => !IsNamespaceScopeFilter(descriptor))
             .ToArray();
 
         if (filteredDescriptors.Length == descriptors.Count)
@@ -87,6 +84,30 @@ public partial class ResourceListView : ViewBase<IResourceListViewModel>
 
         return state;
     }
+
+    private static DataGridState PrepareStateForRestore(DataGrid grid, DataGridState state)
+    {
+        DataGridState sanitizedState = RemoveNamespaceScopeFilter(state);
+        IReadOnlyList<FilteringDescriptor> currentNamespaceDescriptors = grid.FilteringModel.Descriptors
+            .Where(IsNamespaceScopeFilter)
+            .ToArray();
+
+        if (currentNamespaceDescriptors.Count == 0 || sanitizedState.Filtering is not { } filteringState)
+        {
+            return sanitizedState;
+        }
+
+        filteringState.Descriptors = filteringState.Descriptors
+            .Concat(currentNamespaceDescriptors)
+            .ToArray();
+        return sanitizedState;
+    }
+
+    private static bool IsNamespaceScopeFilter(FilteringDescriptor descriptor)
+        => string.Equals(
+            descriptor.ColumnId?.ToString(),
+            ResourceListViewModel<V1Pod>.NamespaceScopeFilterId,
+            StringComparison.Ordinal);
 
     private static DataGridStateOptions CreateStateOptions(DataGrid grid) => new()
     {

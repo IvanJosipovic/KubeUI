@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.Presenters;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
+using Avalonia;
 using System.Diagnostics;
 using k8s;
 using KubeUI.Avalonia.Infrastructure;
@@ -17,6 +18,7 @@ using Westermo.GraphX.Controls.Controls;
 using Westermo.GraphX.Controls.Behaviours;
 using Westermo.GraphX.Controls.Controls.EdgeLabels;
 using Westermo.GraphX.Controls.Controls.VertexLabels;
+using Westermo.GraphX.Common.Enums;
 
 namespace KubeUI.Avalonia.Tests.Features.Resources.Visualization;
 
@@ -196,8 +198,43 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
         control.Area.LogicCore.ShouldNotBeNull();
         control.Area.LogicCore!.Graph.VertexCount.ShouldBe(2);
         control.Area.LogicCore.Graph.EdgeCount.ShouldBe(1);
+        control.Area.LogicCore.DefaultLayoutAlgorithm.ShouldBe(LayoutAlgorithmTypeEnum.KK);
+        control.Area.LogicCore.DefaultOverlapRemovalAlgorithm.ShouldBe(OverlapRemovalAlgorithmTypeEnum.FSA);
+        control.Area.LogicCore.DefaultEdgeRoutingAlgorithm.ShouldBe(EdgeRoutingAlgorithmTypeEnum.SimpleER);
+        control.Area.LogicCore.EdgeCurvingEnabled.ShouldBeFalse();
         control.Area.SelectionMode.ShouldBe(SelectionMode.Multiple);
         control.Area.SelectedVertices.ShouldNotBeNull();
+    }
+
+    [AvaloniaFact]
+    public async Task layout_does_not_overlap_measured_resource_vertices()
+    {
+        V1Pod first = new() { ApiVersion = "v1", Kind = V1Pod.KubeKind, Metadata = new() { Name = "first", NamespaceProperty = "demo", Uid = "first" } };
+        V1Pod second = new() { ApiVersion = "v1", Kind = V1Pod.KubeKind, Metadata = new() { Name = "second", NamespaceProperty = "demo", Uid = "second" } };
+        using ResourceGraphControl control = new()
+        {
+            Graph = new ResourceRelationshipGraph([first], []),
+        };
+        Window window = new() { Width = 800, Height = 600, Content = control };
+        try
+        {
+            window.Show();
+            await Task.Delay(500);
+
+            control.Graph = new ResourceRelationshipGraph([first, second], []);
+            await Task.Delay(500);
+
+            VertexControl[] vertices = control.Area.VertexList.Values.ToArray();
+            Rect[] bounds = vertices
+                .Select(vertex => new Rect(vertex.GetPosition(final: true), vertex.Bounds.Size))
+                .ToArray();
+
+            bounds[0].Intersects(bounds[1]).ShouldBeFalse();
+        }
+        finally
+        {
+            window.Close();
+        }
     }
 
     [AvaloniaFact]
