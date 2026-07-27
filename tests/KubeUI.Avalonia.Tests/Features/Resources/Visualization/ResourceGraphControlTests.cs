@@ -49,6 +49,25 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
     }
 
     [Fact]
+    public void root_filter_does_not_include_parents_of_descendants()
+    {
+        V1Pod root = new() { ApiVersion = "v1", Kind = V1Pod.KubeKind, Metadata = new() { Name = "root", NamespaceProperty = "demo", Uid = "root-uid" } };
+        V1Pod child = new() { ApiVersion = "v1", Kind = V1Pod.KubeKind, Metadata = new() { Name = "child", NamespaceProperty = "demo", Uid = "child-uid" } };
+        V1Pod childParent = new() { ApiVersion = "v1", Kind = V1Pod.KubeKind, Metadata = new() { Name = "child-parent", NamespaceProperty = "other", Uid = "child-parent-uid" } };
+
+        ResourceRelationshipGraph graph = new(
+            [root, child, childParent],
+            [
+                new(GetIdentity(root), GetIdentity(child), ResourceRelationshipKind.Owner),
+                new(GetIdentity(childParent), GetIdentity(child), ResourceRelationshipKind.Owner),
+            ]);
+
+        ResourceRelationshipGraph filtered = VisualizationViewModel.FilterToRootResource(graph, root);
+
+        filtered.Resources.Select(resource => resource.Name()).ShouldBe(["root", "child"]);
+    }
+
+    [Fact]
     public void endpoint_slice_root_does_not_include_sibling_endpoint_slices()
     {
         V1Service service = new() { ApiVersion = "v1", Kind = V1Service.KubeKind, Metadata = new() { Name = "database", NamespaceProperty = "authentik", Uid = "service-uid" } };

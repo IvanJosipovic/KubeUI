@@ -228,35 +228,40 @@ public sealed class ResourceRelationshipBuilder : IResourceRelationshipBuilder
         }
 
         ResourceIdentity addedIdentity = new(added.ApiVersion ?? string.Empty, added.Kind ?? string.Empty, added.Namespace(), added.Name() ?? string.Empty, added.Uid());
-        HashSet<ResourceIdentity> included = [addedIdentity];
-        HashSet<ResourceIdentity> upwardOnly = [];
-        Queue<(ResourceIdentity Identity, bool ExpandDownward)> pending = new([(addedIdentity, true)]);
-        HashSet<(ResourceIdentity Identity, bool ExpandDownward)> visited = [];
-        while (pending.Count > 0)
+        HashSet<ResourceIdentity> ancestors = [addedIdentity];
+        Queue<ResourceIdentity> parents = new([addedIdentity]);
+        while (parents.Count > 0)
         {
-            (ResourceIdentity current, bool expandDownward) = pending.Dequeue();
-            if (expandDownward && upwardOnly.Contains(current)
-                || !visited.Add((current, expandDownward)))
+            ResourceIdentity current = parents.Dequeue();
+            foreach (ResourceRelationship relationship in graph.Relationships)
+            {
+                if (relationship.Target == current
+                    && (CanTraverseBackwards(current) || current == addedIdentity)
+                    && ancestors.Add(relationship.Source))
+                {
+                    parents.Enqueue(relationship.Source);
+                }
+            }
+        }
+
+        HashSet<ResourceIdentity> included = [.. ancestors];
+        Queue<ResourceIdentity> descendants = new([addedIdentity]);
+        HashSet<ResourceIdentity> visitedDescendants = [];
+        while (descendants.Count > 0)
+        {
+            ResourceIdentity current = descendants.Dequeue();
+            if (!visitedDescendants.Add(current) || current != addedIdentity && ancestors.Contains(current))
             {
                 continue;
             }
 
             foreach (ResourceRelationship relationship in graph.Relationships)
             {
-                if (expandDownward
-                    && relationship.Source == current
+                if (relationship.Source == current
                     && (CanTraverse(relationship.Source, relationship.Target) || current == addedIdentity)
                     && included.Add(relationship.Target))
                 {
-                    pending.Enqueue((relationship.Target, true));
-                }
-
-                if (relationship.Target == current
-                    && (CanTraverseBackwards(current) || current == addedIdentity)
-                    && upwardOnly.Add(relationship.Source))
-                {
-                    included.Add(relationship.Source);
-                    pending.Enqueue((relationship.Source, false));
+                    descendants.Enqueue(relationship.Target);
                 }
             }
         }

@@ -372,33 +372,36 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
     internal static ResourceRelationshipGraph FilterToRootResource(ResourceRelationshipGraph graph, IKubernetesObject<V1ObjectMeta> root)
     {
         ResourceIdentity rootIdentity = new(root.ApiVersion ?? string.Empty, root.Kind ?? string.Empty, root.Namespace(), root.Name() ?? string.Empty, root.Uid());
-        HashSet<ResourceIdentity> reachable = [rootIdentity];
-        HashSet<ResourceIdentity> upwardOnly = [];
-        Queue<(ResourceIdentity Identity, bool ExpandDownward)> pending = new([(rootIdentity, true)]);
-        HashSet<(ResourceIdentity Identity, bool ExpandDownward)> visited = [];
-        while (pending.Count > 0)
+        HashSet<ResourceIdentity> ancestors = [rootIdentity];
+        Queue<ResourceIdentity> parents = new([rootIdentity]);
+        while (parents.Count > 0)
         {
-            (ResourceIdentity current, bool expandDownward) = pending.Dequeue();
-            if (expandDownward && upwardOnly.Contains(current)
-                || !visited.Add((current, expandDownward)))
+            ResourceIdentity current = parents.Dequeue();
+            foreach (ResourceRelationship relationship in graph.Relationships)
+            {
+                if (relationship.Target == current && ancestors.Add(relationship.Source))
+                {
+                    parents.Enqueue(relationship.Source);
+                }
+            }
+        }
+
+        HashSet<ResourceIdentity> reachable = [.. ancestors];
+        Queue<ResourceIdentity> descendants = new([rootIdentity]);
+        HashSet<ResourceIdentity> visitedDescendants = [];
+        while (descendants.Count > 0)
+        {
+            ResourceIdentity current = descendants.Dequeue();
+            if (!visitedDescendants.Add(current) || current != rootIdentity && ancestors.Contains(current))
             {
                 continue;
             }
 
             foreach (ResourceRelationship relationship in graph.Relationships)
             {
-                if (expandDownward
-                    && relationship.Source == current
-                    && reachable.Add(relationship.Target))
+                if (relationship.Source == current && reachable.Add(relationship.Target))
                 {
-                    pending.Enqueue((relationship.Target, true));
-                }
-
-                if (relationship.Target == current
-                    && upwardOnly.Add(relationship.Source))
-                {
-                    reachable.Add(relationship.Source);
-                    pending.Enqueue((relationship.Source, false));
+                    descendants.Enqueue(relationship.Target);
                 }
             }
         }
