@@ -188,8 +188,12 @@ public sealed class ResourceRelationshipBuilder : IResourceRelationshipBuilder
             changed = false;
             foreach (ResourceRelationship relationship in relationships)
             {
-                if (included.Contains(relationship.Source) && included.Add(relationship.Target)
-                    || included.Contains(relationship.Target) && included.Add(relationship.Source))
+                if (included.Contains(relationship.Source)
+                    && CanTraverse(relationship.Source, relationship.Target)
+                    && included.Add(relationship.Target)
+                    || included.Contains(relationship.Target)
+                    && CanTraverseBackwards(relationship.Target)
+                    && included.Add(relationship.Source))
                 {
                     changed = true;
                 }
@@ -231,8 +235,12 @@ public sealed class ResourceRelationshipBuilder : IResourceRelationshipBuilder
             changed = false;
             foreach (ResourceRelationship relationship in graph.Relationships)
             {
-                if (included.Contains(relationship.Source) && included.Add(relationship.Target)
-                    || included.Contains(relationship.Target) && included.Add(relationship.Source))
+                if (included.Contains(relationship.Source)
+                    && (CanTraverse(relationship.Source, relationship.Target) || relationship.Source == addedIdentity)
+                    && included.Add(relationship.Target)
+                    || included.Contains(relationship.Target)
+                    && (CanTraverseBackwards(relationship.Target) || relationship.Target == addedIdentity)
+                    && included.Add(relationship.Source))
                 {
                     changed = true;
                 }
@@ -248,6 +256,12 @@ public sealed class ResourceRelationshipBuilder : IResourceRelationshipBuilder
                 resource.Uid()))).ToArray(),
             graph.Relationships.Where(relationship => included.Contains(relationship.Source) && included.Contains(relationship.Target)).ToArray());
     }
+
+    private static bool CanTraverse(ResourceIdentity source, ResourceIdentity target)
+        => !string.IsNullOrEmpty(source.Namespace) || string.IsNullOrEmpty(target.Namespace);
+
+    private static bool CanTraverseBackwards(ResourceIdentity target)
+        => !string.IsNullOrEmpty(target.Namespace);
 
     public static IReadOnlyList<ResourceRelationship> SimplifyRelationships(IEnumerable<ResourceRelationship> relationships)
     {
@@ -320,8 +334,49 @@ public sealed class ResourceRelationshipBuilder : IResourceRelationshipBuilder
             }
         }
 
+        Dictionary<(ResourceIdentity Source, ResourceRelationshipKind Kind, string? Label), List<ResourceIdentity>> relationshipTargets = [];
+        foreach (ResourceRelationship relationship in unique)
+        {
+            relationshipTargets.TryAdd((relationship.Source, relationship.Kind, relationship.Label), []);
+            relationshipTargets[(relationship.Source, relationship.Kind, relationship.Label)].Add(relationship.Target);
+        }
+
+        HashSet<ResourceRelationship> transitive = [];
+        foreach (ResourceRelationship relationship in unique)
+        {
+            if (!relationshipTargets.TryGetValue((relationship.Source, relationship.Kind, relationship.Label), out List<ResourceIdentity>? initialTargets))
+            {
+                continue;
+            }
+
+            Queue<ResourceIdentity> queue = new(initialTargets.Where(target => target != relationship.Target));
+            HashSet<ResourceIdentity> visited = [];
+            while (queue.Count > 0)
+            {
+                ResourceIdentity current = queue.Dequeue();
+                if (!visited.Add(current))
+                {
+                    continue;
+                }
+
+                if (current == relationship.Target)
+                {
+                    transitive.Add(relationship);
+                    break;
+                }
+
+                if (relationshipTargets.TryGetValue((current, relationship.Kind, relationship.Label), out List<ResourceIdentity>? nextTargets))
+                {
+                    foreach (ResourceIdentity target in nextTargets)
+                    {
+                        queue.Enqueue(target);
+                    }
+                }
+            }
+        }
+
         return unique
-            .Where(relationship => !remove.Contains((relationship.Source, relationship.Target)))
+            .Where(relationship => !remove.Contains((relationship.Source, relationship.Target)) && !transitive.Contains(relationship))
             .ToArray();
     }
 }

@@ -72,7 +72,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         UnsubscribeCluster();
         Cluster = cluster;
         RootResource = rootResource;
-        Id = nameof(VisualizationViewModel) + "-" + cluster;
+        Id = nameof(VisualizationViewModel) + "-" + cluster + "-" + (rootResource == null ? "All" : rootResource.ApiVersion + "/" + rootResource.Kind + "/" + rootResource.Namespace() + "/" + rootResource.Name());
 
         _resourcesByKey.Clear();
         _requiredSeedTypes.Clear();
@@ -92,11 +92,34 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 
     private static readonly Type[] SeedTypes =
     [
-        typeof(V1Node), typeof(Corev1Event), typeof(V1Pod), typeof(V1ReplicaSet), typeof(V1Deployment),
-        typeof(V1StatefulSet), typeof(V1DaemonSet), typeof(V1CronJob), typeof(V1Job), typeof(V1Secret),
-        typeof(V1ConfigMap), typeof(V1Service), typeof(V1EndpointSlice), typeof(V1Ingress), typeof(V1IngressClass),
-        typeof(V1PersistentVolumeClaim), typeof(V1PersistentVolume), typeof(V1ServiceAccount), typeof(V1RoleBinding),
-        typeof(V1ClusterRoleBinding), typeof(V1Role), typeof(V1ClusterRole),
+        typeof(V1Node),
+        typeof(Corev1Event),
+
+        typeof(V1Pod),
+        typeof(V1ReplicaSet),
+        typeof(V1Deployment),
+        typeof(V1StatefulSet),
+        typeof(V1DaemonSet),
+        typeof(V1CronJob),
+        typeof(V1Job),
+
+        typeof(V1Secret),
+        typeof(V1ConfigMap),
+        typeof(V1Service),
+        typeof(V1EndpointSlice),
+
+        typeof(V1Ingress),
+        typeof(V1IngressClass),
+
+        typeof(V1PersistentVolumeClaim),
+        typeof(V1PersistentVolume),
+        typeof(V1StorageClass),
+        typeof(V1ServiceAccount),
+
+        typeof(V1RoleBinding),
+        typeof(V1ClusterRoleBinding),
+        typeof(V1Role),
+        typeof(V1ClusterRole),
     ];
 
     private void SelectedNamespaces_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e) => Run();

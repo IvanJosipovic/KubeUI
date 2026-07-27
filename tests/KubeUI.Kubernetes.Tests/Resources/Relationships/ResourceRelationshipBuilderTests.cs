@@ -9,6 +9,145 @@ namespace KubeUI.Kubernetes.Tests.Resources.Relationships;
 public sealed class ResourceRelationshipBuilderTests
 {
     [Fact]
+    public void Relates_persistent_volumes_and_claims_to_their_storage_class()
+    {
+        V1StorageClass storageClass = new()
+        {
+            ApiVersion = "storage.k8s.io/v1",
+            Kind = V1StorageClass.KubeKind,
+            Metadata = new() { Name = "fast", Uid = "storage-class-uid" },
+        };
+        V1PersistentVolume volume = new()
+        {
+            ApiVersion = "v1",
+            Kind = V1PersistentVolume.KubeKind,
+            Metadata = new() { Name = "volume", Uid = "volume-uid" },
+            Spec = new() { StorageClassName = "fast" },
+        };
+        V1PersistentVolume unrelatedVolume = new()
+        {
+            ApiVersion = "v1",
+            Kind = V1PersistentVolume.KubeKind,
+            Metadata = new() { Name = "unrelated", Uid = "unrelated-volume-uid" },
+            Spec = new() { StorageClassName = "fast" },
+        };
+        V1PersistentVolumeClaim claim = new()
+        {
+            ApiVersion = "v1",
+            Kind = V1PersistentVolumeClaim.KubeKind,
+            Metadata = new() { Name = "claim", NamespaceProperty = "demo", Uid = "claim-uid" },
+            Spec = new() { VolumeName = "volume", StorageClassName = "fast" },
+        };
+
+        ResourceRelationshipContext context = new(
+            new Dictionary<string, IKubernetesObject<V1ObjectMeta>> { [storageClass.Uid()!] = storageClass, [volume.Uid()!] = volume, [unrelatedVolume.Uid()!] = unrelatedVolume, [claim.Uid()!] = claim },
+            new Dictionary<ResourceKey, IKubernetesObject<V1ObjectMeta>>
+            {
+                [new(storageClass.ApiVersion!, storageClass.Kind!, storageClass.Namespace(), storageClass.Name()!)] = storageClass,
+                [new(volume.ApiVersion!, volume.Kind!, volume.Namespace(), volume.Name()!)] = volume,
+                [new(unrelatedVolume.ApiVersion!, unrelatedVolume.Kind!, unrelatedVolume.Namespace(), unrelatedVolume.Name()!)] = unrelatedVolume,
+                [new(claim.ApiVersion!, claim.Kind!, claim.Namespace(), claim.Name()!)] = claim,
+            },
+            new Dictionary<string, IReadOnlyList<IKubernetesObject<V1ObjectMeta>>>
+            {
+                [storageClass.Kind!] = [storageClass],
+                [volume.Kind!] = [volume, unrelatedVolume],
+                [claim.Kind!] = [claim],
+            });
+        HashSet<ResourceRelationship> providerRelationships = [];
+        new StorageRelationshipProvider().AddRelationships(volume, context, providerRelationships);
+        providerRelationships.ShouldContain(new ResourceRelationship(
+            new("v1", V1PersistentVolume.KubeKind, null, "volume", "volume-uid"),
+            new("storage.k8s.io/v1", V1StorageClass.KubeKind, null, "fast", "storage-class-uid"),
+            ResourceRelationshipKind.Storage));
+
+        ResourceRelationshipGraph graph = new ResourceRelationshipBuilder().Build([storageClass, volume, unrelatedVolume, claim], new HashSet<string> { "demo" }, hideNoise: true);
+
+        graph.Relationships.ShouldContain(new ResourceRelationship(
+            new("v1", V1PersistentVolume.KubeKind, null, "volume", "volume-uid"),
+            new("storage.k8s.io/v1", V1StorageClass.KubeKind, null, "fast", "storage-class-uid"),
+            ResourceRelationshipKind.Storage));
+        graph.Relationships.Any(relationship =>
+            relationship.Source.Name == "claim"
+            && relationship.Target.Name == "fast"
+            && relationship.Kind == ResourceRelationshipKind.Storage).ShouldBeFalse();
+        graph.Relationships.ShouldContain(new ResourceRelationship(
+            new("v1", V1PersistentVolumeClaim.KubeKind, "demo", "claim", "claim-uid"),
+            new("v1", V1PersistentVolume.KubeKind, null, "volume", "volume-uid"),
+            ResourceRelationshipKind.Storage));
+        graph.Resources.Select(resource => resource.Name()).ShouldNotContain("unrelated");
+    }
+
+    [Fact]
+    public void Does_not_use_a_storage_class_as_a_namespace_filter_bridge()
+    {
+        V1StorageClass storageClass = new()
+        {
+            ApiVersion = "storage.k8s.io/v1",
+            Kind = V1StorageClass.KubeKind,
+            Metadata = new() { Name = "fast", Uid = "storage-class-uid" },
+        };
+        V1PersistentVolumeClaim selectedClaim = new()
+        {
+            ApiVersion = "v1",
+            Kind = V1PersistentVolumeClaim.KubeKind,
+            Metadata = new() { Name = "selected", NamespaceProperty = "demo", Uid = "selected-uid" },
+            Spec = new() { StorageClassName = "fast" },
+        };
+        V1PersistentVolumeClaim otherClaim = new()
+        {
+            ApiVersion = "v1",
+            Kind = V1PersistentVolumeClaim.KubeKind,
+            Metadata = new() { Name = "other", NamespaceProperty = "other", Uid = "other-uid" },
+            Spec = new() { StorageClassName = "fast" },
+        };
+
+        ResourceRelationshipGraph graph = new ResourceRelationshipBuilder().Build([storageClass, selectedClaim, otherClaim], new HashSet<string> { "demo" }, hideNoise: true);
+
+        graph.Resources.Select(resource => resource.Name()).ShouldBe(["fast", "selected"]);
+        graph.Relationships.ShouldContain(new ResourceRelationship(
+            new("v1", V1PersistentVolumeClaim.KubeKind, "demo", "selected", "selected-uid"),
+            new("storage.k8s.io/v1", V1StorageClass.KubeKind, null, "fast", "storage-class-uid"),
+            ResourceRelationshipKind.Storage));
+    }
+
+    [Fact]
+    public void Removes_transitive_relationships_of_any_kind()
+    {
+        ResourceIdentity first = new("v1", "First", "demo", "first", null);
+        ResourceIdentity second = new("v1", "Second", "demo", "second", null);
+        ResourceIdentity third = new("v1", "Third", "demo", "third", null);
+
+        IReadOnlyList<ResourceRelationship> relationships = ResourceRelationshipBuilder.SimplifyRelationships(
+        [
+            new(first, second, ResourceRelationshipKind.Reference),
+            new(second, third, ResourceRelationshipKind.Reference),
+            new(first, third, ResourceRelationshipKind.Reference),
+        ]);
+
+        relationships.ShouldBe(
+        [
+            new(first, second, ResourceRelationshipKind.Reference),
+            new(second, third, ResourceRelationshipKind.Reference),
+        ]);
+
+        ResourceIdentity claim = new("v1", V1PersistentVolumeClaim.KubeKind, "demo", "claim", "claim-uid");
+        ResourceIdentity volume = new("v1", V1PersistentVolume.KubeKind, null, "volume", "volume-uid");
+        ResourceIdentity storageClass = new("storage.k8s.io/v1", V1StorageClass.KubeKind, null, "fast", "storage-class-uid");
+
+        ResourceRelationshipBuilder.SimplifyRelationships(
+        [
+            new(claim, volume, ResourceRelationshipKind.Storage),
+            new(volume, storageClass, ResourceRelationshipKind.Storage),
+            new(claim, storageClass, ResourceRelationshipKind.Storage),
+        ]).ShouldBe(
+        [
+            new(claim, volume, ResourceRelationshipKind.Storage),
+            new(volume, storageClass, ResourceRelationshipKind.Storage),
+        ]);
+    }
+
+    [Fact]
     public void Builds_owner_relationships_with_explicit_direction()
     {
         V1Deployment deployment = new()

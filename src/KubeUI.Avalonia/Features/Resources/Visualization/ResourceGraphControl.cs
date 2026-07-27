@@ -77,9 +77,9 @@ public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphContr
             {
                 Direction = LayoutDirection.TopToBottom,
                 LayerGap = 240,
-                VertexGap = 64,
+                VertexGap = 120,
                 //ComponentGap = 120,
-                OptimizeWidthAndHeight = true,
+                OptimizeWidthAndHeight = false,
                 SpanningTreeGeneration = SpanningTreeGeneration.DFS,
             },
             DefaultOverlapRemovalAlgorithmParams = new OverlapRemovalParameters

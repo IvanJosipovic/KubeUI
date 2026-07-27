@@ -378,7 +378,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
         var selectedItem = items.Cast<T>().Single();
         var vm = ServiceProvider.GetRequiredService<VisualizationViewModel>();
         vm.Initialize(Cluster, selectedItem);
-        _factory.AddToBottom(vm);
+        _factory.AddToDocuments(vm);
     }
 
     public bool CanVisualize(IList? items) => items?.Count == 1;
