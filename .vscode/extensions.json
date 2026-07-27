@@ -3,6 +3,7 @@
         "github.copilot-chat",
         "GitHub.vscode-github-actions",
         "ms-dotnettools.csdevkit",
+        "ms-dotnettools.msbuild-binlog-analyzer",
         "ms-vscode.PowerShell",
         "openai.chatgpt"
     ]

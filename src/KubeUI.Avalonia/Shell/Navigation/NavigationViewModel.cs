@@ -110,7 +110,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
     {
         if (item is ClusterNavigationNode clusterNode)
         {
-            HandleClusterSelection(clusterNode);
+            await HandleClusterSelectionAsync(clusterNode).ConfigureAwait(true);
         }
         else if (item is ResourceNavigationLink resourceNavLink)
         {
@@ -127,7 +127,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
         }
     }
 
-    private void HandleClusterSelection(ClusterNavigationNode clusterNode)
+    private async Task HandleClusterSelectionAsync(ClusterNavigationNode clusterNode)
     {
         var cluster = clusterNode.Cluster;
 
@@ -137,7 +137,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
             return;
         }
 
-        Task.Run(() => ConnectIfIdleAsync(clusterNode));
+        await ConnectIfIdleAsync(clusterNode).ConfigureAwait(true);
     }
 
     [RelayCommand]

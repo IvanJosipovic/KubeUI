@@ -21,6 +21,7 @@ public sealed class ResourcePropertiesViewInitializationTests : AvaloniaTestBase
 
         var services = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
         var trackingConfig = new TrackingResourceConfig(services);
+        trackingConfig.Initialize(workspace);
         var viewModel = services.GetRequiredService<ResourcePropertiesViewModel<V1Pod>>();
         viewModel.Initialize(workspace, new V1Pod
         {

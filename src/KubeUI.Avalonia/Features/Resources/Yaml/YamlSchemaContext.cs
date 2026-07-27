@@ -372,7 +372,8 @@ internal static class YamlSchemaContext
     private static bool IsSequenceEntry(string lineText)
     {
         var trimmed = lineText.TrimStart();
-        return trimmed == "-" || trimmed.StartsWith("- ", StringComparison.Ordinal);
+        return trimmed == "-"
+            || (trimmed.Length > 1 && trimmed[0] == '-');
     }
 
     private static bool TryExtractKey(string trimmedLine, out string key, out string valuePart)

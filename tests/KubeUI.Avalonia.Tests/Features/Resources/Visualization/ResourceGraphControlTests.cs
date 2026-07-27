@@ -24,6 +24,78 @@ namespace KubeUI.Avalonia.Tests.Features.Resources.Visualization;
 
 public sealed class ResourceGraphControlTests : AvaloniaTestBase
 {
+    [Fact]
+    public void root_filter_does_not_expand_downward_from_parents()
+    {
+        V1Pod grandparent = new() { ApiVersion = "v1", Kind = V1Pod.KubeKind, Metadata = new() { Name = "grandparent", NamespaceProperty = "demo", Uid = "grandparent-uid" } };
+        V1Pod parent = new() { ApiVersion = "v1", Kind = V1Pod.KubeKind, Metadata = new() { Name = "parent", NamespaceProperty = "demo", Uid = "parent-uid" } };
+        V1Pod root = new() { ApiVersion = "v1", Kind = V1Pod.KubeKind, Metadata = new() { Name = "root", NamespaceProperty = "demo", Uid = "root-uid" } };
+        V1Pod child = new() { ApiVersion = "v1", Kind = V1Pod.KubeKind, Metadata = new() { Name = "child", NamespaceProperty = "demo", Uid = "child-uid" } };
+        V1Pod sibling = new() { ApiVersion = "v1", Kind = V1Pod.KubeKind, Metadata = new() { Name = "sibling", NamespaceProperty = "demo", Uid = "sibling-uid" } };
+
+        ResourceRelationshipGraph graph = new(
+            [grandparent, parent, root, child, sibling],
+            [
+                new(GetIdentity(grandparent), GetIdentity(parent), ResourceRelationshipKind.Owner),
+                new(GetIdentity(parent), GetIdentity(root), ResourceRelationshipKind.Owner),
+                new(GetIdentity(root), GetIdentity(parent), ResourceRelationshipKind.Reference),
+                new(GetIdentity(parent), GetIdentity(sibling), ResourceRelationshipKind.Owner),
+                new(GetIdentity(root), GetIdentity(child), ResourceRelationshipKind.Owner),
+            ]);
+
+        ResourceRelationshipGraph filtered = VisualizationViewModel.FilterToRootResource(graph, root);
+
+        filtered.Resources.Select(resource => resource.Name()).ShouldBe(["grandparent", "parent", "root", "child"]);
+    }
+
+    [Fact]
+    public void endpoint_slice_root_does_not_include_sibling_endpoint_slices()
+    {
+        V1Service service = new() { ApiVersion = "v1", Kind = V1Service.KubeKind, Metadata = new() { Name = "database", NamespaceProperty = "authentik", Uid = "service-uid" } };
+        V1Pod pod = new() { ApiVersion = "v1", Kind = V1Pod.KubeKind, Metadata = new() { Name = "database-0", NamespaceProperty = "authentik", Uid = "pod-uid" } };
+        V1Pod siblingPod = new() { ApiVersion = "v1", Kind = V1Pod.KubeKind, Metadata = new() { Name = "database-1", NamespaceProperty = "authentik", Uid = "sibling-pod-uid" } };
+        V1EndpointSlice root = new()
+        {
+            ApiVersion = "discovery.k8s.io/v1",
+            Kind = V1EndpointSlice.KubeKind,
+            Metadata = new()
+            {
+                Name = "database-root",
+                NamespaceProperty = "authentik",
+                Uid = "root-endpoint-slice-uid",
+                OwnerReferences = [new() { ApiVersion = "v1", Kind = V1Service.KubeKind, Name = "database", Uid = "service-uid" }],
+            },
+            Endpoints = [new() { TargetRef = new() { ApiVersion = "v1", Kind = V1Pod.KubeKind, Name = "database-0", NamespaceProperty = "authentik", Uid = "pod-uid" } }],
+        };
+        V1EndpointSlice sibling = new()
+        {
+            ApiVersion = "discovery.k8s.io/v1",
+            Kind = V1EndpointSlice.KubeKind,
+            Metadata = new()
+            {
+                Name = "database-sibling",
+                NamespaceProperty = "authentik",
+                Uid = "sibling-endpoint-slice-uid",
+                OwnerReferences = [new() { ApiVersion = "v1", Kind = V1Service.KubeKind, Name = "database", Uid = "service-uid" }],
+            },
+            Endpoints = [new() { TargetRef = new() { ApiVersion = "v1", Kind = V1Pod.KubeKind, Name = "database-1", NamespaceProperty = "authentik", Uid = "sibling-pod-uid" } }],
+        };
+
+        ResourceRelationshipGraph graph = new ResourceRelationshipBuilder().Build([service, pod, siblingPod, root, sibling], new HashSet<string>(), hideNoise: true);
+        ResourceRelationshipGraph delta = new ResourceRelationshipBuilder().BuildAdditionDelta(
+            [service, pod, siblingPod, root, sibling],
+            new ResourceKey("discovery.k8s.io/v1", V1EndpointSlice.KubeKind, "authentik", "database-root"),
+            new HashSet<string>(),
+            hideNoise: true);
+        delta.Resources.Select(resource => resource.Name()).ShouldBe(["database", "database-0", "database-root"]);
+        ResourceRelationshipGraph filtered = VisualizationViewModel.FilterToRootResource(graph, root);
+
+        filtered.Resources.Select(resource => resource.Name()).ShouldBe(["database", "database-0", "database-root"]);
+    }
+
+    private static ResourceIdentity GetIdentity(IKubernetesObject<V1ObjectMeta> resource)
+        => new(resource.ApiVersion!, resource.Kind!, resource.Namespace(), resource.Name()!, resource.Uid());
+
     [AvaloniaFact]
     public async Task processed_resource_config_starts_required_seed_without_waiting_for_ready()
     {
@@ -198,10 +270,10 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
         control.Area.LogicCore.ShouldNotBeNull();
         control.Area.LogicCore!.Graph.VertexCount.ShouldBe(2);
         control.Area.LogicCore.Graph.EdgeCount.ShouldBe(1);
-        control.Area.LogicCore.DefaultLayoutAlgorithm.ShouldBe(LayoutAlgorithmTypeEnum.KK);
+        control.Area.LogicCore.DefaultLayoutAlgorithm.ShouldBe(LayoutAlgorithmTypeEnum.Tree);
         control.Area.LogicCore.DefaultOverlapRemovalAlgorithm.ShouldBe(OverlapRemovalAlgorithmTypeEnum.FSA);
-        control.Area.LogicCore.DefaultEdgeRoutingAlgorithm.ShouldBe(EdgeRoutingAlgorithmTypeEnum.SimpleER);
-        control.Area.LogicCore.EdgeCurvingEnabled.ShouldBeFalse();
+        control.Area.LogicCore.DefaultEdgeRoutingAlgorithm.ShouldBe(EdgeRoutingAlgorithmTypeEnum.None);
+        control.Area.LogicCore.EdgeCurvingEnabled.ShouldBeTrue();
         control.Area.SelectionMode.ShouldBe(SelectionMode.Multiple);
         control.Area.SelectedVertices.ShouldNotBeNull();
     }
@@ -292,8 +364,8 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
             VertexControl sourceControl = control.Area.VertexList.Values.First();
             VertexControl targetControl = control.Area.VertexList.Values.Last();
             control.Area.Children.OfType<AttachableVertexLabelControl>().ShouldBeEmpty();
-            Label[] sourceLabels = sourceControl.GetVisualDescendants().OfType<Label>().ToArray();
-            sourceLabels.Select(label => label.Content).ShouldBe([V1Pod.KubeKind, "source"]);
+            TextBlock[] sourceLabels = sourceControl.GetVisualDescendants().OfType<TextBlock>().ToArray();
+            sourceLabels.Select(label => label.Text).ShouldBe([V1Pod.KubeKind, "source"]);
             DragBehaviour.GetIsDragEnabled(sourceControl).ShouldBeTrue();
             DragBehaviour.GetUpdateEdgesOnMove(sourceControl).ShouldBeTrue();
             edge.SourceEndpoint.ShouldNotBeNull();

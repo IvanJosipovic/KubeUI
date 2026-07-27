@@ -229,23 +229,37 @@ public sealed class ResourceRelationshipBuilder : IResourceRelationshipBuilder
 
         ResourceIdentity addedIdentity = new(added.ApiVersion ?? string.Empty, added.Kind ?? string.Empty, added.Namespace(), added.Name() ?? string.Empty, added.Uid());
         HashSet<ResourceIdentity> included = [addedIdentity];
-        bool changed;
-        do
+        HashSet<ResourceIdentity> upwardOnly = [];
+        Queue<(ResourceIdentity Identity, bool ExpandDownward)> pending = new([(addedIdentity, true)]);
+        HashSet<(ResourceIdentity Identity, bool ExpandDownward)> visited = [];
+        while (pending.Count > 0)
         {
-            changed = false;
+            (ResourceIdentity current, bool expandDownward) = pending.Dequeue();
+            if (expandDownward && upwardOnly.Contains(current)
+                || !visited.Add((current, expandDownward)))
+            {
+                continue;
+            }
+
             foreach (ResourceRelationship relationship in graph.Relationships)
             {
-                if (included.Contains(relationship.Source)
-                    && (CanTraverse(relationship.Source, relationship.Target) || relationship.Source == addedIdentity)
-                    && included.Add(relationship.Target)
-                    || included.Contains(relationship.Target)
-                    && (CanTraverseBackwards(relationship.Target) || relationship.Target == addedIdentity)
-                    && included.Add(relationship.Source))
+                if (expandDownward
+                    && relationship.Source == current
+                    && (CanTraverse(relationship.Source, relationship.Target) || current == addedIdentity)
+                    && included.Add(relationship.Target))
                 {
-                    changed = true;
+                    pending.Enqueue((relationship.Target, true));
+                }
+
+                if (relationship.Target == current
+                    && (CanTraverseBackwards(current) || current == addedIdentity)
+                    && upwardOnly.Add(relationship.Source))
+                {
+                    included.Add(relationship.Source);
+                    pending.Enqueue((relationship.Source, false));
                 }
             }
-        } while (changed);
+        }
 
         return new ResourceRelationshipGraph(
             graph.Resources.Where(resource => included.Contains(new ResourceIdentity(

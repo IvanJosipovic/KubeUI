@@ -283,13 +283,15 @@ public class NavigationViewModelTests : AvaloniaTestBase
 
         clusterNode.NavigationItems.Count.ShouldBe(0);
 
-        await vm.TreeViewSelectionChangedAsync(clusterNode);
+        var selectTask = vm.TreeViewSelectionChangedAsync(clusterNode);
 
         await WaitForAsync(() => clusterNode.Cluster.Runtime.Status == ClusterStatus.Connecting);
         clusterNode.NavigationItems.Count.ShouldBe(0);
         clusterNode.IsExpanded.ShouldBeFalse();
 
         releaseConnect.TrySetResult(null);
+
+        await selectTask;
 
         await WaitForAsync(() => clusterNode.NavigationItems.Count > 0);
         clusterNode.IsExpanded.ShouldBeTrue();

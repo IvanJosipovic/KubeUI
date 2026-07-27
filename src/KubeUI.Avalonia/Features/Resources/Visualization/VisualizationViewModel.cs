@@ -223,7 +223,10 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                 .ToArray();
             IReadOnlyList<ResourceRelationship> relationships = ResourceRelationshipBuilder.SimplifyRelationships(
                 current.Relationships.Concat(delta.Relationships));
-            Graph = new ResourceRelationshipGraph(resources, relationships);
+            ResourceRelationshipGraph merged = new(resources, relationships);
+            Graph = RootResource is { } root
+                ? FilterToRootResource(merged, root)
+                : merged;
         });
     }
 
@@ -366,26 +369,39 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
             current.Relationships.Where(relationship => relationship.Source != identity && relationship.Target != identity).ToArray());
     }
 
-    private static ResourceRelationshipGraph FilterToRootResource(ResourceRelationshipGraph graph, IKubernetesObject<V1ObjectMeta> root)
+    internal static ResourceRelationshipGraph FilterToRootResource(ResourceRelationshipGraph graph, IKubernetesObject<V1ObjectMeta> root)
     {
         ResourceIdentity rootIdentity = new(root.ApiVersion ?? string.Empty, root.Kind ?? string.Empty, root.Namespace(), root.Name() ?? string.Empty, root.Uid());
         HashSet<ResourceIdentity> reachable = [rootIdentity];
-        bool changed;
-        do
+        HashSet<ResourceIdentity> upwardOnly = [];
+        Queue<(ResourceIdentity Identity, bool ExpandDownward)> pending = new([(rootIdentity, true)]);
+        HashSet<(ResourceIdentity Identity, bool ExpandDownward)> visited = [];
+        while (pending.Count > 0)
         {
-            changed = false;
+            (ResourceIdentity current, bool expandDownward) = pending.Dequeue();
+            if (expandDownward && upwardOnly.Contains(current)
+                || !visited.Add((current, expandDownward)))
+            {
+                continue;
+            }
+
             foreach (ResourceRelationship relationship in graph.Relationships)
             {
-                if (reachable.Contains(relationship.Source) && reachable.Add(relationship.Target))
+                if (expandDownward
+                    && relationship.Source == current
+                    && reachable.Add(relationship.Target))
                 {
-                    changed = true;
+                    pending.Enqueue((relationship.Target, true));
                 }
-                else if (reachable.Contains(relationship.Target) && reachable.Add(relationship.Source))
+
+                if (relationship.Target == current
+                    && upwardOnly.Add(relationship.Source))
                 {
-                    changed = true;
+                    reachable.Add(relationship.Source);
+                    pending.Enqueue((relationship.Source, false));
                 }
             }
-        } while (changed);
+        }
 
         IReadOnlyList<IKubernetesObject<V1ObjectMeta>> resources = graph.Resources.Where(resource => reachable.Contains(new ResourceIdentity(resource.ApiVersion ?? string.Empty, resource.Kind ?? string.Empty, resource.Namespace(), resource.Name() ?? string.Empty, resource.Uid()))).ToArray();
         IReadOnlyList<ResourceRelationship> relationships = graph.Relationships.Where(x => reachable.Contains(x.Source) && reachable.Contains(x.Target)).ToArray();
