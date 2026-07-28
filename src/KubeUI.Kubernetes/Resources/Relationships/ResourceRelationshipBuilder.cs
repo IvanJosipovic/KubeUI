@@ -5,18 +5,32 @@ namespace KubeUI.Kubernetes.Resources.Relationships;
 
 public sealed record ResourceRelationshipGraph(
     IReadOnlyList<IKubernetesObject<V1ObjectMeta>> Resources,
-    IReadOnlyList<ResourceRelationship> Relationships)
+    IReadOnlyList<ResourceRelationship> Relationships,
+    IReadOnlySet<UnresolvedResourceReference>? UnresolvedReferences = null)
 {
     public static ResourceRelationshipGraph Empty { get; } = new([], []);
+
+    public IReadOnlySet<UnresolvedResourceReference> PendingReferences
+        => UnresolvedReferences ?? EmptyUnresolvedReferences;
+
+    private static IReadOnlySet<UnresolvedResourceReference> EmptyUnresolvedReferences { get; } = new HashSet<UnresolvedResourceReference>();
 }
 
 public readonly record struct ResourceKey(string ApiVersion, string Kind, string? Namespace, string Name);
+
+public sealed record UnresolvedResourceReference(
+    string ApiGroup,
+    string? ApiVersion,
+    string Kind,
+    string? Namespace,
+    string Name);
 
 public sealed class ResourceRelationshipContext
 {
     private readonly Dictionary<string, IKubernetesObject<V1ObjectMeta>> _resourcesByUid;
     private readonly Dictionary<ResourceKey, IKubernetesObject<V1ObjectMeta>> _resourcesByKey;
     private readonly Dictionary<string, IReadOnlyList<IKubernetesObject<V1ObjectMeta>>> _resourcesByKind;
+    private readonly HashSet<UnresolvedResourceReference> _unresolvedReferences = [];
 
     internal ResourceRelationshipContext(
         Dictionary<string, IKubernetesObject<V1ObjectMeta>> resourcesByUid,
@@ -37,17 +51,50 @@ public sealed class ResourceRelationshipContext
     public bool TryGet(string apiVersion, string kind, string? namespaceName, string? name, out IKubernetesObject<V1ObjectMeta>? resource)
     {
         resource = null;
-        return !string.IsNullOrWhiteSpace(name)
-            && _resourcesByKey.TryGetValue(new ResourceKey(apiVersion, kind, namespaceName, name), out resource);
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            return false;
+        }
+
+        if (_resourcesByKey.TryGetValue(new ResourceKey(apiVersion, kind, namespaceName, name), out resource))
+        {
+            return true;
+        }
+
+        RecordUnresolvedApiVersion(apiVersion, kind, namespaceName, name);
+        return false;
     }
 
     public bool TryGetByKind(string kind, out IReadOnlyList<IKubernetesObject<V1ObjectMeta>> resources)
         => _resourcesByKind.TryGetValue(kind, out resources!);
 
+    public void RecordUnresolved(string apiGroup, string kind, string? namespaceName, string? name, string? apiVersion = null)
+    {
+        if (!string.IsNullOrWhiteSpace(name))
+        {
+            _unresolvedReferences.Add(new UnresolvedResourceReference(apiGroup, apiVersion, kind, namespaceName, name));
+        }
+    }
+
+    internal void RecordUnresolvedApiVersion(string apiVersion, string kind, string? namespaceName, string? name)
+    {
+        int slash = apiVersion.IndexOf('/');
+        string apiGroup = slash < 0 ? string.Empty : apiVersion[..slash];
+        string version = slash < 0 ? apiVersion : apiVersion[(slash + 1)..];
+        RecordUnresolved(apiGroup, kind, namespaceName, name, version);
+    }
+
+    internal IReadOnlySet<UnresolvedResourceReference> UnresolvedReferences => _unresolvedReferences;
+
     public bool TryGetByName(string apiVersion, string kind, string? name, out IKubernetesObject<V1ObjectMeta>? resource)
     {
         resource = null;
-        if (string.IsNullOrWhiteSpace(name) || !_resourcesByKind.TryGetValue(kind, out IReadOnlyList<IKubernetesObject<V1ObjectMeta>>? resources))
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            return false;
+        }
+
+        if (!_resourcesByKind.TryGetValue(kind, out IReadOnlyList<IKubernetesObject<V1ObjectMeta>>? resources))
         {
             return false;
         }
@@ -168,7 +215,7 @@ public sealed class ResourceRelationshipBuilder : IResourceRelationshipBuilder
         IReadOnlyList<ResourceRelationship> relationships = SimplifyRelationships(relationshipSet);
         if (selectedNamespaces.Count == 0)
         {
-            return new ResourceRelationshipGraph(visible, relationships);
+            return new ResourceRelationshipGraph(visible, relationships, context.UnresolvedReferences);
         }
 
         HashSet<ResourceIdentity> included = [];
@@ -248,7 +295,7 @@ public sealed class ResourceRelationshipBuilder : IResourceRelationshipBuilder
             resource.Name() ?? string.Empty,
             resource.Uid()))).ToList();
         relationships = relationships.Where(relationship => included.Contains(relationship.Source) && included.Contains(relationship.Target)).ToArray();
-        return new ResourceRelationshipGraph(visible, relationships);
+        return new ResourceRelationshipGraph(visible, relationships, context.UnresolvedReferences);
     }
 
     public ResourceRelationshipGraph BuildAdditionDelta(
@@ -299,7 +346,7 @@ public sealed class ResourceRelationshipBuilder : IResourceRelationshipBuilder
             foreach (ResourceRelationship relationship in graph.Relationships)
             {
                 if (relationship.Source == current
-                    && (CanTraverse(relationship.Source, relationship.Target) || current == addedIdentity)
+                    && CanTraverse(relationship.Source, relationship.Target)
                     && included.Add(relationship.Target))
                 {
                     descendants.Enqueue(relationship.Target);
@@ -314,7 +361,8 @@ public sealed class ResourceRelationshipBuilder : IResourceRelationshipBuilder
                 resource.Namespace(),
                 resource.Name() ?? string.Empty,
                 resource.Uid()))).ToArray(),
-            graph.Relationships.Where(relationship => included.Contains(relationship.Source) && included.Contains(relationship.Target)).ToArray());
+            graph.Relationships.Where(relationship => included.Contains(relationship.Source) && included.Contains(relationship.Target)).ToArray(),
+            graph.PendingReferences);
     }
 
     private static bool CanTraverse(ResourceIdentity source, ResourceIdentity target)

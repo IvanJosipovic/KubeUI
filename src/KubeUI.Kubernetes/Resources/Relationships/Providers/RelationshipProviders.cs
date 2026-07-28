@@ -234,23 +234,47 @@ public sealed class GitOpsRelationshipProvider : IResourceRelationshipProvider
             {
                 context.Add(relationships, application, resource, ResourceRelationshipKind.GitOps);
             }
+            else
+            {
+                context.RecordUnresolved("argoproj.io", "Application", null, name, "v1alpha1");
+            }
         }
 
-        AddFlux(context, relationships, resource, "kustomize.toolkit.fluxcd.io/name", "kustomize.toolkit.fluxcd.io/namespace", "kustomize.toolkit.fluxcd.io/v1", "Kustomization");
-        AddFlux(context, relationships, resource, "helm.toolkit.fluxcd.io/name", "helm.toolkit.fluxcd.io/namespace", "helm.toolkit.fluxcd.io/v2", "HelmRelease");
+        AddFlux(context, relationships, resource, "kustomize.toolkit.fluxcd.io/name", "kustomize.toolkit.fluxcd.io/namespace", "kustomize.toolkit.fluxcd.io", "Kustomization");
+        AddFlux(context, relationships, resource, "helm.toolkit.fluxcd.io/name", "helm.toolkit.fluxcd.io/namespace", "helm.toolkit.fluxcd.io", "HelmRelease");
     }
 
-    private static void AddFlux(ResourceRelationshipContext context, ICollection<ResourceRelationship> relationships, IKubernetesObject<V1ObjectMeta> resource, string nameKey, string namespaceKey, string apiVersion, string kind)
+    private static void AddFlux(ResourceRelationshipContext context, ICollection<ResourceRelationship> relationships, IKubernetesObject<V1ObjectMeta> resource, string nameKey, string namespaceKey, string apiGroup, string kind)
     {
         string? name = TryGet(resource.Metadata?.Labels, nameKey);
         string? namespaceName = TryGet(resource.Metadata?.Labels, namespaceKey);
-        if (name != null
-            && context.TryGet(apiVersion, kind, namespaceName, name, out IKubernetesObject<V1ObjectMeta>? controller)
-            && controller != null
-            && !ReferenceEquals(controller, resource))
+        if (name == null)
         {
-            context.Add(relationships, controller, resource, ResourceRelationshipKind.GitOps);
+            return;
         }
+
+        if (!context.TryGetByKind(kind, out IReadOnlyList<IKubernetesObject<V1ObjectMeta>> controllers))
+        {
+            context.RecordUnresolved(apiGroup, kind, namespaceName, name);
+            return;
+        }
+
+        foreach (IKubernetesObject<V1ObjectMeta> controller in controllers)
+        {
+            if (controller.ApiVersion is not { } apiVersion
+                || !apiVersion.StartsWith(apiGroup + "/", StringComparison.Ordinal)
+                || controller.Namespace() != namespaceName
+                || controller.Name() != name
+                || ReferenceEquals(controller, resource))
+            {
+                continue;
+            }
+
+            context.Add(relationships, controller, resource, ResourceRelationshipKind.GitOps);
+            return;
+        }
+
+        context.RecordUnresolved(apiGroup, kind, namespaceName, name);
     }
 
     private static string? TryGet(IDictionary<string, string>? values, string key)

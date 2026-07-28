@@ -552,6 +552,24 @@ public sealed class ResourceRelationshipBuilderTests
     }
 
     [Fact]
+    public void Addition_delta_does_not_expand_global_parents_to_namespaced_children()
+    {
+        V1Pod selected = new() { ApiVersion = "v1", Kind = V1Pod.KubeKind, Metadata = new() { Name = "selected", NamespaceProperty = "demo", Uid = "selected-uid" } };
+        V1Node parent = new() { ApiVersion = "v1", Kind = V1Node.KubeKind, Metadata = new() { Name = "parent", Uid = "parent-uid" } };
+        V1Pod unrelatedChild = new() { ApiVersion = "v1", Kind = V1Pod.KubeKind, Metadata = new() { Name = "unrelated", NamespaceProperty = "other", Uid = "unrelated-uid" } };
+        ResourceRelationshipBuilder builder = new([new GlobalParentProvider()]);
+
+        ResourceRelationshipGraph delta = builder.BuildAdditionDelta(
+            [selected, parent, unrelatedChild],
+            new ResourceKey("v1", V1Node.KubeKind, null, "parent"),
+            new HashSet<string>(),
+            hideNoise: true);
+
+        delta.Resources.Select(resource => resource.Name()).ShouldContain("parent");
+        delta.Resources.Select(resource => resource.Name()).ShouldNotContain("unrelated");
+    }
+
+    [Fact]
     public void Keeps_related_resources_from_other_namespaces()
     {
         V1Pod selected = new() { ApiVersion = "v1", Kind = V1Pod.KubeKind, Metadata = new() { Name = "selected", NamespaceProperty = "demo", Uid = "selected-uid" } };
@@ -682,6 +700,110 @@ public sealed class ResourceRelationshipBuilderTests
             ResourceRelationshipKind.GitOps));
     }
 
+    [Fact]
+    public void Resolves_flux_helm_release_from_cert_manager_labels_across_api_versions()
+    {
+        V1Deployment deployment = new()
+        {
+            ApiVersion = "apps/v1",
+            Kind = V1Deployment.KubeKind,
+            Metadata = new()
+            {
+                Name = "cert-manager",
+                NamespaceProperty = "cert-manager",
+                Labels = new Dictionary<string, string>
+                {
+                    ["helm.toolkit.fluxcd.io/name"] = "cert-manager",
+                    ["helm.toolkit.fluxcd.io/namespace"] = "cert-manager",
+                },
+            },
+        };
+        V1ConfigMap helmRelease = new()
+        {
+            ApiVersion = "helm.toolkit.fluxcd.io/v2beta1",
+            Kind = "HelmRelease",
+            Metadata = new() { Name = "cert-manager", NamespaceProperty = "cert-manager", Uid = "helm-uid" },
+        };
+
+        ResourceRelationshipGraph graph = new ResourceRelationshipBuilder().Build(
+            [deployment, helmRelease],
+            new HashSet<string> { "cert-manager" },
+            hideNoise: true);
+
+        graph.Relationships.ShouldContain(new ResourceRelationship(
+            new("helm.toolkit.fluxcd.io/v2beta1", "HelmRelease", "cert-manager", "cert-manager", "helm-uid"),
+            new("apps/v1", V1Deployment.KubeKind, "cert-manager", "cert-manager", null),
+            ResourceRelationshipKind.GitOps));
+    }
+
+    [Fact]
+    public void Tracks_unresolved_flux_helm_release_from_labels()
+    {
+        V1Deployment deployment = new()
+        {
+            ApiVersion = "apps/v1",
+            Kind = V1Deployment.KubeKind,
+            Metadata = new()
+            {
+                Name = "cert-manager",
+                NamespaceProperty = "cert-manager",
+                Labels = new Dictionary<string, string>
+                {
+                    ["helm.toolkit.fluxcd.io/name"] = "cert-manager",
+                    ["helm.toolkit.fluxcd.io/namespace"] = "cert-manager",
+                },
+            },
+        };
+
+        ResourceRelationshipGraph graph = new ResourceRelationshipBuilder().Build(
+            [deployment],
+            new HashSet<string> { "cert-manager" },
+            hideNoise: true);
+
+        graph.PendingReferences.ShouldContain(new UnresolvedResourceReference(
+            "helm.toolkit.fluxcd.io",
+            null,
+            "HelmRelease",
+            "cert-manager",
+            "cert-manager"));
+    }
+
+    [Fact]
+    public void Tracks_unresolved_gitops_controllers_from_resource_metadata()
+    {
+        V1Deployment deployment = new()
+        {
+            ApiVersion = "apps/v1",
+            Kind = V1Deployment.KubeKind,
+            Metadata = new()
+            {
+                Name = "managed",
+                NamespaceProperty = "demo",
+                Annotations = new Dictionary<string, string>
+                {
+                    ["argocd.argoproj.io/tracking-id"] = "demo-app:apps/Deployment:demo/managed",
+                },
+                Labels = new Dictionary<string, string>
+                {
+                    ["helm.toolkit.fluxcd.io/name"] = "release-a",
+                    ["helm.toolkit.fluxcd.io/namespace"] = "demo",
+                    ["kustomize.toolkit.fluxcd.io/name"] = "kustomization-a",
+                    ["kustomize.toolkit.fluxcd.io/namespace"] = "demo",
+                },
+            },
+        };
+
+        ResourceRelationshipGraph graph = new ResourceRelationshipBuilder().Build(
+            [deployment],
+            new HashSet<string> { "demo" },
+            hideNoise: true);
+
+        graph.PendingReferences.Count.ShouldBe(3);
+        graph.PendingReferences.ShouldContain(new UnresolvedResourceReference("argoproj.io", "v1alpha1", "Application", null, "demo-app"));
+        graph.PendingReferences.ShouldContain(new UnresolvedResourceReference("helm.toolkit.fluxcd.io", null, "HelmRelease", "demo", "release-a"));
+        graph.PendingReferences.ShouldContain(new UnresolvedResourceReference("kustomize.toolkit.fluxcd.io", null, "Kustomization", "demo", "kustomization-a"));
+    }
+
     private sealed class CrossNamespaceProvider : IResourceRelationshipProvider
     {
         public void AddRelationships(
@@ -712,6 +834,32 @@ public sealed class ResourceRelationshipBuilderTests
                 && related != null)
             {
                 context.Add(relationships, resource, related, ResourceRelationshipKind.Reference);
+            }
+        }
+    }
+
+    private sealed class GlobalParentProvider : IResourceRelationshipProvider
+    {
+        public void AddRelationships(
+            IKubernetesObject<V1ObjectMeta> resource,
+            ResourceRelationshipContext context,
+            ICollection<ResourceRelationship> relationships)
+        {
+            if (resource.Name() != "parent")
+            {
+                return;
+            }
+
+            if (context.TryGet("v1", V1Pod.KubeKind, "demo", "selected", out IKubernetesObject<V1ObjectMeta>? selected)
+                && selected != null)
+            {
+                context.Add(relationships, resource, selected, ResourceRelationshipKind.Owner);
+            }
+
+            if (context.TryGet("v1", V1Pod.KubeKind, "other", "unrelated", out IKubernetesObject<V1ObjectMeta>? unrelated)
+                && unrelated != null)
+            {
+                context.Add(relationships, resource, unrelated, ResourceRelationshipKind.Owner);
             }
         }
     }

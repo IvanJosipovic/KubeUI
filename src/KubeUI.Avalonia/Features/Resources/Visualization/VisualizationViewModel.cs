@@ -18,6 +18,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
     private readonly Dictionary<ResourceKey, IKubernetesObject<V1ObjectMeta>> _resourcesByKey = [];
     private readonly Dictionary<string, HashSet<ResourceKey>> _resourcesByOwnerUid = new(StringComparer.Ordinal);
     private readonly HashSet<Type> _requiredSeedTypes = [];
+    private readonly HashSet<UnresolvedResourceReference> _pendingReferences = [];
     private readonly HashSet<string> _knownResourceTypes = new(StringComparer.Ordinal);
     private readonly HashSet<string> _excludedResourceTypes = new(StringComparer.Ordinal);
     private bool _disposed;
@@ -114,6 +115,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         _resourcesByKey.Clear();
         _resourcesByOwnerUid.Clear();
         _requiredSeedTypes.Clear();
+        _pendingReferences.Clear();
         _completeGraph = ResourceRelationshipGraph.Empty;
         _knownResourceTypes.Clear();
         _excludedResourceTypes.Clear();
@@ -209,6 +211,16 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 
     internal void ApplyGraph(ResourceRelationshipGraph graph)
     {
+        foreach (UnresolvedResourceReference reference in _pendingReferences.ToArray())
+        {
+            if (graph.Resources.Any(resource => Matches(reference, resource)))
+            {
+                _pendingReferences.Remove(reference);
+            }
+        }
+
+        _pendingReferences.UnionWith(graph.PendingReferences);
+        SeedUnresolvedResourceTypes();
         _completeGraph = graph;
         UpdateResourceTypes(graph);
         ApplyTypeFilter();
@@ -478,6 +490,8 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
             _ = cluster.Runtime.SeedResource(resourceConfig.Type);
         }
 
+        SeedUnresolvedResourceTypes();
+
         bool ownerReferenceFound = false;
         IReadOnlyList<IKubernetesObject<V1ObjectMeta>> resources = _resourcesByKey.Values.ToArray();
         foreach (IKubernetesObject<V1ObjectMeta> resource in resources)
@@ -496,13 +510,53 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 
     private void RequireSeed(ClusterWorkspace cluster, Type resourceType)
     {
-        _requiredSeedTypes.Add(resourceType);
+        if (!_requiredSeedTypes.Add(resourceType))
+        {
+            return;
+        }
 
         IResourceConfig? resourceConfig = cluster.GetResourceConfig(resourceType);
         if (resourceConfig is { PermissionsLoaded: true, CanListAndWatch: true })
         {
             _ = cluster.Runtime.SeedResource(resourceType);
         }
+    }
+
+    private void SeedUnresolvedResourceTypes()
+    {
+        ClusterWorkspace? cluster = Cluster;
+        if (cluster == null)
+        {
+            return;
+        }
+
+        foreach (UnresolvedResourceReference reference in _pendingReferences)
+        {
+            foreach (IResourceConfig resourceConfig in cluster.GetResourceConfigs())
+            {
+                if (!string.Equals(resourceConfig.Kind.Group, reference.ApiGroup, StringComparison.Ordinal)
+                    || !string.Equals(resourceConfig.Kind.Kind, reference.Kind, StringComparison.Ordinal)
+                    || reference.ApiVersion != null && !string.Equals(resourceConfig.Kind.ApiVersion, reference.ApiVersion, StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                RequireSeed(cluster, resourceConfig.Type);
+            }
+        }
+    }
+
+    private static bool Matches(UnresolvedResourceReference reference, IKubernetesObject<V1ObjectMeta> resource)
+    {
+        string? apiVersion = resource.ApiVersion;
+        int slash = apiVersion?.IndexOf('/') ?? -1;
+        string group = slash < 0 ? string.Empty : apiVersion![..slash];
+        string version = slash < 0 ? apiVersion ?? string.Empty : apiVersion![(slash + 1)..];
+        return string.Equals(group, reference.ApiGroup, StringComparison.Ordinal)
+            && (reference.ApiVersion == null || string.Equals(version, reference.ApiVersion, StringComparison.Ordinal))
+            && string.Equals(resource.Kind, reference.Kind, StringComparison.Ordinal)
+            && string.Equals(resource.Namespace(), reference.Namespace, StringComparison.Ordinal)
+            && string.Equals(resource.Name(), reference.Name, StringComparison.Ordinal);
     }
 
     private bool ResourceCanAffectGraph(IKubernetesObject<V1ObjectMeta> resource)

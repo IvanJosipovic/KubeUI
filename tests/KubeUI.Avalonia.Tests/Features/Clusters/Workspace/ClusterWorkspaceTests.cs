@@ -96,6 +96,21 @@ public class ClusterWorkspaceTests : AvaloniaTestBase
     }
 
     [AvaloniaFact]
+    public async Task resource_config_processed_event_observes_registered_crd_config()
+    {
+        var runtime = new TestCluster();
+        var workspace = CreateWorkspace(runtime);
+        IResourceConfig? processedConfig = null;
+        workspace.ResourceConfigProcessed += (_, resourceConfig) => processedConfig = workspace.GetResourceConfig(resourceConfig.Type);
+        var crd = ClusterWorkspaceTestCustomResourceDefinitionFactory.Create("tests.kubeui.com", "tests", "someString");
+
+        await runtime.AddOrUpdateResource(crd);
+
+        var resourceConfig = await WaitForValueAsync(() => GetCustomResourceConfig(workspace, crd));
+        processedConfig.ShouldBeSameAs(resourceConfig);
+    }
+
+    [AvaloniaFact]
     public async Task updated_crd_replaces_resource_config_model_cache_entry_and_seeded_informer()
     {
         var runtime = new TestCluster();
