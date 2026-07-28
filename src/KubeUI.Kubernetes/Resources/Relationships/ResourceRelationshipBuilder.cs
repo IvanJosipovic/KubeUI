@@ -100,6 +100,7 @@ public sealed class ResourceRelationshipBuilder : IResourceRelationshipBuilder
         _providers = providers?.ToArray() ??
         [
             new Providers.OwnerReferenceRelationshipProvider(),
+            new Providers.CrossplaneUsageRelationshipProvider(),
             new Providers.IngressRelationshipProvider(),
             new Providers.EndpointSliceRelationshipProvider(),
             new Providers.PodTemplateReferenceRelationshipProvider(),

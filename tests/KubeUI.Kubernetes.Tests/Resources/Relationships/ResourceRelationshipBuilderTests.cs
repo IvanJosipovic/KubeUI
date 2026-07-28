@@ -9,6 +9,75 @@ namespace KubeUI.Kubernetes.Tests.Resources.Relationships;
 public sealed class ResourceRelationshipBuilderTests
 {
     [Fact]
+    public void Relates_crossplane_usage_references_without_a_static_usage_model()
+    {
+        TestDynamicResource schema = new()
+        {
+            ApiVersion = "unity.databricks.m.crossplane.io/v1beta1",
+            Kind = "Schema",
+            Metadata = new() { NamespaceProperty = "platform-test-data-product", Name = "schema", Uid = "schema-uid" },
+        };
+        TestDynamicResource catalog = new()
+        {
+            ApiVersion = "unity.databricks.m.crossplane.io/v1beta1",
+            Kind = "Catalog",
+            Metadata = new() { NamespaceProperty = "platform-test-data-product", Name = "catalog", Uid = "catalog-uid" },
+        };
+        TestDynamicUsage usage = new()
+        {
+            ApiVersion = "protection.crossplane.io/v1beta1",
+            Kind = "Usage",
+            Metadata = new() { NamespaceProperty = "platform-test-data-product", Name = "usage", Uid = "usage-uid" },
+            Spec = new()
+            {
+                By = CreateReference("Schema", "schema"),
+                Of = CreateReference("Catalog", "catalog"),
+            },
+        };
+
+        ResourceRelationshipGraph graph = new ResourceRelationshipBuilder().Build(
+            [schema, catalog, usage],
+            new HashSet<string> { "platform-test-data-product" },
+            hideNoise: true);
+
+        graph.Relationships.ShouldContain(new ResourceRelationship(
+            new(schema.ApiVersion!, schema.Kind!, schema.Namespace(), schema.Name()!, schema.Uid()),
+            new(catalog.ApiVersion!, catalog.Kind!, catalog.Namespace(), catalog.Name()!, catalog.Uid()),
+            ResourceRelationshipKind.Reference,
+            "uses"));
+    }
+
+    [Fact]
+    public void Ignores_crossplane_usage_with_an_incomplete_reference()
+    {
+        TestDynamicUsage usage = new()
+        {
+            ApiVersion = "protection.crossplane.io/v1beta1",
+            Kind = "Usage",
+            Metadata = new() { NamespaceProperty = "platform-test-data-product", Name = "usage", Uid = "usage-uid" },
+            Spec = new()
+            {
+                By = CreateReference("Schema", "schema"),
+            },
+        };
+
+        ResourceRelationshipGraph graph = new ResourceRelationshipBuilder().Build(
+            [usage],
+            new HashSet<string> { "platform-test-data-product" },
+            hideNoise: true);
+
+        graph.Relationships.ShouldBeEmpty();
+    }
+
+    private static TestDynamicUsageReference CreateReference(string kind, string name)
+        => new()
+        {
+            ApiVersion = "unity.databricks.m.crossplane.io/v1beta1",
+            Kind = kind,
+            ResourceRef = new() { Name = name },
+        };
+
+    [Fact]
     public void Relates_persistent_volumes_and_claims_to_their_storage_class()
     {
         V1StorageClass storageClass = new()
@@ -547,5 +616,35 @@ public sealed class ResourceRelationshipBuilderTests
                 context.Add(relationships, resource, related, ResourceRelationshipKind.Reference);
             }
         }
+    }
+
+    private class TestDynamicResource : IKubernetesObject<V1ObjectMeta>
+    {
+        public string? ApiVersion { get; set; }
+        public string? Kind { get; set; }
+        public V1ObjectMeta Metadata { get; set; } = new();
+    }
+
+    private sealed class TestDynamicUsage : TestDynamicResource
+    {
+        public TestDynamicUsageSpec Spec { get; set; } = new();
+    }
+
+    private sealed class TestDynamicUsageSpec
+    {
+        public TestDynamicUsageReference By { get; set; } = new();
+        public TestDynamicUsageReference Of { get; set; } = new();
+    }
+
+    private sealed class TestDynamicUsageReference
+    {
+        public string? ApiVersion { get; set; }
+        public string? Kind { get; set; }
+        public TestDynamicResourceReference ResourceRef { get; set; } = new();
+    }
+
+    private sealed class TestDynamicResourceReference
+    {
+        public string? Name { get; set; }
     }
 }
