@@ -142,6 +142,39 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
         filtered.Resources.Select(resource => resource.Name()).ShouldBe(["database", "database-0", "database-root"]);
     }
 
+    [Fact]
+    public void resource_type_selection_persists_across_graph_updates_and_selects_new_types()
+    {
+        V1Pod pod = CreatePod("pod");
+        V1Service service = new()
+        {
+            ApiVersion = "v1",
+            Kind = V1Service.KubeKind,
+            Metadata = new() { Name = "service", NamespaceProperty = "default", Uid = "service" },
+        };
+        V1Deployment deployment = new()
+        {
+            ApiVersion = "apps/v1",
+            Kind = V1Deployment.KubeKind,
+            Metadata = new() { Name = "deployment", NamespaceProperty = "default", Uid = "deployment" },
+        };
+
+        using VisualizationViewModel viewModel = new(new ResourceRelationshipBuilder());
+        viewModel.ApplyGraph(new ResourceRelationshipGraph([pod, service], []));
+
+        viewModel.ResourceTypes.ShouldBe([V1Pod.KubeKind, V1Service.KubeKind]);
+        viewModel.SelectedResourceTypes.ShouldBe([V1Pod.KubeKind, V1Service.KubeKind]);
+
+        viewModel.SelectedResourceTypes.Remove(V1Pod.KubeKind);
+        viewModel.Graph!.Resources.Select(resource => resource.Kind).ShouldBe([V1Service.KubeKind]);
+
+        viewModel.ApplyGraph(new ResourceRelationshipGraph([pod, service, deployment], []));
+
+        viewModel.ResourceTypes.ShouldBe([V1Deployment.KubeKind, V1Pod.KubeKind, V1Service.KubeKind]);
+        viewModel.SelectedResourceTypes.ShouldBe([V1Service.KubeKind, V1Deployment.KubeKind]);
+        viewModel.Graph!.Resources.Select(resource => resource.Kind).ShouldBe([V1Service.KubeKind, V1Deployment.KubeKind]);
+    }
+
     private static ResourceIdentity GetIdentity(IKubernetesObject<V1ObjectMeta> resource)
         => new(resource.ApiVersion!, resource.Kind!, resource.Namespace(), resource.Name()!, resource.Uid());
 
@@ -410,6 +443,7 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
             await Dispatcher.UIThread.InvokeAsync(control.Area.UpdateLayout);
 
             EdgeControl edge = control.Area.EdgesList.Values.Single();
+            edge.Opacity.ShouldBe(0.5d);
             VertexControl sourceControl = control.Area.VertexList.Values.First();
             VertexControl targetControl = control.Area.VertexList.Values.Last();
             control.Area.Children.OfType<AttachableVertexLabelControl>().ShouldBeEmpty();

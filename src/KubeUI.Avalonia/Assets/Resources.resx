@@ -340,6 +340,9 @@ Are you sure?</value>
   <data name="VisualizationView_HideNoiseTooltip" xml:space="preserve">
     <value>Hide noisy resources like inactive Replica Sets</value>
   </data>
+  <data name="VisualizationView_ResourceTypesTooltip" xml:space="preserve">
+    <value>Resource types visible in the graph</value>
+  </data>
   <data name="VisualizationView_Properties" xml:space="preserve">
     <value>Properties</value>
   </data>

@@ -23,12 +23,15 @@ internal static class ResourceGraphStyles
             Setters =
             {
                 new Setter(EdgeControl.StrokeThicknessProperty, 1d),
+                new Setter(Visual.OpacityProperty, 0.2d),
                 new Setter(
                     TemplatedControl.ForegroundProperty,
                     CompiledBinding.Create<ResourceGraphEdge, IBrush>(edge => edge.Brush)),
                 new Setter(
                     ToolTip.TipProperty,
                     CompiledBinding.Create<ResourceGraphEdge, string>(edge => edge.RelationshipName)),
+                // GraphX exposes only a single ShowArrows switch. Its default template therefore renders
+                // arrows at both ends; use a target-only template for directed Kubernetes relationships.
                 new Setter(TemplatedControl.TemplateProperty, CreateDirectedEdgeTemplate()),
             },
         });

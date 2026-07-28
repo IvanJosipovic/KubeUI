@@ -68,6 +68,13 @@ public sealed partial class VisualizationView : ViewBase<VisualizationViewModel>
                     .Width(200)
                     .MaxHeight(20)
                     .Classes("ClearButton")
+                    .ToolTip_Tip(Assets.Resources.VisualizationView_ResourceTypesTooltip)
+                    .ItemsSource(vm, x => x.ResourceTypes)
+                    .SelectedItems(vm, x => x.SelectedResourceTypes),
+                new Ursa.Controls.MultiComboBox()
+                    .Width(200)
+                    .MaxHeight(20)
+                    .Classes("ClearButton")
                     .ItemsSource(vm, x => x.Cluster.Runtime.Namespaces)
                     .SelectedItems(vm, x => x.SelectedNamespaces)
                     .SelectedItemTemplate(template)
