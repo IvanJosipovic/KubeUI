@@ -246,6 +246,90 @@ public sealed class ResourceRelationshipBuilderTests
     }
 
     [Fact]
+    public void Keeps_cluster_scoped_crossplane_owner_chains_connected_to_selected_namespace()
+    {
+        TestDynamicResource provider = new()
+        {
+            ApiVersion = "pkg.crossplane.io/v1",
+            Kind = "Provider",
+            Metadata = new() { Name = "provider-aws", Uid = "provider-uid" },
+        };
+        TestDynamicResource providerRevision = new()
+        {
+            ApiVersion = "pkg.crossplane.io/v1",
+            Kind = "ProviderRevision",
+            Metadata = new()
+            {
+                Name = "provider-aws-abc123",
+                Uid = "provider-revision-uid",
+                OwnerReferences = [new() { ApiVersion = provider.ApiVersion, Kind = provider.Kind, Name = provider.Name(), Uid = provider.Uid() }],
+            },
+        };
+        TestDynamicResource function = new()
+        {
+            ApiVersion = "pkg.crossplane.io/v1beta1",
+            Kind = "Function",
+            Metadata = new() { Name = "function-go-templating", Uid = "function-uid" },
+        };
+        TestDynamicResource functionRevision = new()
+        {
+            ApiVersion = "pkg.crossplane.io/v1beta1",
+            Kind = "FunctionRevision",
+            Metadata = new()
+            {
+                Name = "function-go-templating-abc123",
+                Uid = "function-revision-uid",
+                OwnerReferences = [new() { ApiVersion = function.ApiVersion, Kind = function.Kind, Name = function.Name(), Uid = function.Uid() }],
+            },
+        };
+        TestDynamicResource selectedProviderResource = new()
+        {
+            ApiVersion = "example.crossplane.io/v1",
+            Kind = "ProviderUsage",
+            Metadata = new()
+            {
+                Name = "provider-usage",
+                NamespaceProperty = "crossplane-system",
+                OwnerReferences = [new() { ApiVersion = provider.ApiVersion, Kind = provider.Kind, Name = provider.Name(), Uid = provider.Uid() }],
+            },
+        };
+        TestDynamicResource selectedFunctionResource = new()
+        {
+            ApiVersion = "example.crossplane.io/v1",
+            Kind = "FunctionUsage",
+            Metadata = new()
+            {
+                Name = "function-usage",
+                NamespaceProperty = "crossplane-system",
+                OwnerReferences = [new() { ApiVersion = function.ApiVersion, Kind = function.Kind, Name = function.Name(), Uid = function.Uid() }],
+            },
+        };
+
+        ResourceRelationshipGraph graph = new ResourceRelationshipBuilder().Build(
+            [provider, providerRevision, function, functionRevision, selectedProviderResource, selectedFunctionResource],
+            new HashSet<string> { "crossplane-system" },
+            hideNoise: true);
+
+        graph.Resources.Select(resource => resource.Name()).ShouldBe(
+        [
+            "provider-aws",
+            "provider-aws-abc123",
+            "function-go-templating",
+            "function-go-templating-abc123",
+            "provider-usage",
+            "function-usage",
+        ]);
+        graph.Relationships.ShouldContain(new ResourceRelationship(
+            new(provider.ApiVersion!, provider.Kind!, null, provider.Name()!, provider.Uid()),
+            new(providerRevision.ApiVersion!, providerRevision.Kind!, null, providerRevision.Name()!, providerRevision.Uid()),
+            ResourceRelationshipKind.Owner));
+        graph.Relationships.ShouldContain(new ResourceRelationship(
+            new(function.ApiVersion!, function.Kind!, null, function.Name()!, function.Uid()),
+            new(functionRevision.ApiVersion!, functionRevision.Kind!, null, functionRevision.Name()!, functionRevision.Uid()),
+            ResourceRelationshipKind.Owner));
+    }
+
+    [Fact]
     public void Uses_indexes_and_suppresses_duplicate_configuration_relationships()
     {
         V1ConfigMap configMap = new()

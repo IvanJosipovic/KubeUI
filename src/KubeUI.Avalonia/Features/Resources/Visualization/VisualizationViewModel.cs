@@ -2,6 +2,7 @@ using System.Collections.Specialized;
 using System.Reactive.Linq;
 using k8s;
 using k8s.Models;
+using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Infrastructure.Presentation;
@@ -15,6 +16,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 {
     private readonly IResourceRelationshipBuilder _resourceRelationshipBuilder;
     private readonly Dictionary<ResourceKey, IKubernetesObject<V1ObjectMeta>> _resourcesByKey = [];
+    private readonly Dictionary<string, HashSet<ResourceKey>> _resourcesByOwnerUid = new(StringComparer.Ordinal);
     private readonly HashSet<Type> _requiredSeedTypes = [];
     private readonly HashSet<string> _knownResourceTypes = new(StringComparer.Ordinal);
     private readonly HashSet<string> _excludedResourceTypes = new(StringComparer.Ordinal);
@@ -59,6 +61,9 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
     public partial bool HideNoise { get; set; } = true;
 
     [ObservableProperty]
+    public partial bool ShowNotReadyOnly { get; set; }
+
+    [ObservableProperty]
     public partial bool IsNamespaceSelectionLinked { get; set; } = true;
 
     public ObservableCollection<V1Namespace> SelectedNamespaces
@@ -87,6 +92,10 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         {
             Run();
         }
+        else if (e.PropertyName == nameof(ShowNotReadyOnly))
+        {
+            ApplyTypeFilter();
+        }
     }
 
     public void Initialize(ClusterWorkspace cluster) => Initialize(cluster, null);
@@ -103,6 +112,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         Id = nameof(VisualizationViewModel) + "-" + cluster + "-" + (rootResource?.Uid() ?? "null");
 
         _resourcesByKey.Clear();
+        _resourcesByOwnerUid.Clear();
         _requiredSeedTypes.Clear();
         _completeGraph = ResourceRelationshipGraph.Empty;
         _knownResourceTypes.Clear();
@@ -120,6 +130,17 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         foreach (Type type in SeedTypes)
         {
             RequireSeed(cluster, type);
+        }
+
+        if (RootResource == null)
+        {
+            foreach (IResourceConfig resourceConfig in cluster.GetResourceConfigs())
+            {
+                if (resourceConfig.IsCustomResource && resourceConfig.IsNamespaced)
+                {
+                    RequireSeed(cluster, resourceConfig.Type);
+                }
+            }
         }
 
         _suppressResourceChanges = false;
@@ -238,6 +259,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         HashSet<string> selectedTypes = SelectedResourceTypes.ToHashSet(StringComparer.Ordinal);
         IReadOnlyList<IKubernetesObject<V1ObjectMeta>> resources = _completeGraph.Resources
             .Where(resource => resource.Kind is string kind && selectedTypes.Contains(kind))
+            .Where(resource => !ShowNotReadyOnly || ResourceReadiness.IsNotReady(resource))
             .ToArray();
         HashSet<ResourceIdentity> identities = resources.Select(GetIdentity).ToHashSet();
         Graph = new ResourceRelationshipGraph(
@@ -325,13 +347,26 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         ResourceKey key = GetResourceKey(change.Resource);
         if (change.EventType == WatchEventType.Deleted)
         {
+            RemoveOwnerReferenceIndex(change.Resource, key);
             _resourcesByKey.Remove(key);
             RemoveResourceFromGraph(change.Resource);
             return;
         }
 
+        if (_resourcesByKey.TryGetValue(key, out IKubernetesObject<V1ObjectMeta>? previousResource))
+        {
+            RemoveOwnerReferenceIndex(previousResource, key);
+        }
+
         _resourcesByKey[key] = change.Resource;
+        AddOwnerReferenceIndex(change.Resource, key);
         SeedOwnerReferenceResourceTypes(change.Resource);
+
+        if (_suppressResourceChanges)
+        {
+            return;
+        }
+
         if (change.EventType == WatchEventType.Modified)
         {
             Run();
@@ -340,7 +375,15 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 
         if (change.EventType == WatchEventType.Added)
         {
-            if (!_suppressResourceChanges && ResourceCanAffectGraph(change.Resource))
+            if (HasOwnerReferencesTo(change.Resource)
+                || _rebuildRunning
+                || _pendingRebuild != null)
+            {
+                Run();
+                return;
+            }
+
+            if (ResourceCanAffectGraph(change.Resource))
             {
                 _ = AddResourceIncrementallyAsync(change.Resource, key, changeVersion);
             }
@@ -348,7 +391,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
             return;
         }
 
-        if (!_suppressResourceChanges && ResourceCanAffectGraph(change.Resource))
+        if (ResourceCanAffectGraph(change.Resource))
         {
             Run();
         }
@@ -368,10 +411,13 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         HashSet<string> namespaces = SelectedNamespaces.Select(x => x.Name()).OfType<string>().ToHashSet(StringComparer.Ordinal);
         bool hideNoise = HideNoise;
         IReadOnlyList<IKubernetesObject<V1ObjectMeta>> source = _resourcesByKey.Values.ToArray();
+        IReadOnlySet<string> buildNamespaces = RootResource == null
+            ? namespaces
+            : new HashSet<string>(StringComparer.Ordinal);
         ResourceRelationshipGraph delta = await Task.Run(() => _resourceRelationshipBuilder.BuildAdditionDelta(
             source,
             key,
-            namespaces,
+            buildNamespaces,
             hideNoise)).ConfigureAwait(false);
 
         await Dispatcher.UIThread.InvokeAsync(() =>
@@ -386,6 +432,12 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                 return;
             }
 
+                if (_rebuildRunning || _pendingRebuild != null)
+                {
+                    Run();
+                    return;
+                }
+
             ResourceIdentity identity = new(resource.ApiVersion ?? string.Empty, resource.Kind ?? string.Empty, resource.Namespace(), resource.Name() ?? string.Empty, resource.Uid());
             ResourceRelationshipGraph current = _completeGraph;
             HashSet<ResourceIdentity> currentIdentities = current.Resources.Select(GetIdentity).ToHashSet();
@@ -393,6 +445,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                 && identity != GetIdentity(RootResource)
                 && !delta.Relationships.Any(relationship => currentIdentities.Contains(relationship.Source) || currentIdentities.Contains(relationship.Target)))
             {
+                Run();
                 return;
             }
 
@@ -413,13 +466,31 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 
     private void ResourceConfigProcessed(ClusterWorkspace cluster, IResourceConfig resourceConfig)
     {
-        if (!_disposed
-            && ReferenceEquals(Cluster, cluster)
-            && _requiredSeedTypes.Contains(resourceConfig.Type)
+        if (_disposed || !ReferenceEquals(Cluster, cluster))
+        {
+            return;
+        }
+
+        if (_requiredSeedTypes.Contains(resourceConfig.Type)
             && resourceConfig.PermissionsLoaded
             && resourceConfig.CanListAndWatch)
         {
             _ = cluster.Runtime.SeedResource(resourceConfig.Type);
+        }
+
+        bool ownerReferenceFound = false;
+        IReadOnlyList<IKubernetesObject<V1ObjectMeta>> resources = _resourcesByKey.Values.ToArray();
+        foreach (IKubernetesObject<V1ObjectMeta> resource in resources)
+        {
+            ownerReferenceFound |= SeedOwnerReferenceResourceType(
+                resource,
+                resourceConfig.Type,
+                resourceConfig.PermissionsLoaded && resourceConfig.CanListAndWatch);
+        }
+
+        if (ownerReferenceFound)
+        {
+            Run();
         }
     }
 
@@ -462,6 +533,50 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         string? namespaceName = resource.Namespace();
         return string.IsNullOrEmpty(namespaceName)
             || SelectedNamespaces.Any(selected => selected.Name() == namespaceName);
+    }
+
+    private void AddOwnerReferenceIndex(IKubernetesObject<V1ObjectMeta> resource, ResourceKey key)
+    {
+        foreach (V1OwnerReference owner in resource.Metadata?.OwnerReferences ?? [])
+        {
+            if (string.IsNullOrWhiteSpace(owner.Uid))
+            {
+                continue;
+            }
+
+            if (!_resourcesByOwnerUid.TryGetValue(owner.Uid, out HashSet<ResourceKey>? resources))
+            {
+                resources = [];
+                _resourcesByOwnerUid.Add(owner.Uid, resources);
+            }
+
+            resources.Add(key);
+        }
+    }
+
+    private void RemoveOwnerReferenceIndex(IKubernetesObject<V1ObjectMeta> resource, ResourceKey key)
+    {
+        foreach (V1OwnerReference owner in resource.Metadata?.OwnerReferences ?? [])
+        {
+            if (string.IsNullOrWhiteSpace(owner.Uid)
+                || !_resourcesByOwnerUid.TryGetValue(owner.Uid, out HashSet<ResourceKey>? resources))
+            {
+                continue;
+            }
+
+            resources.Remove(key);
+            if (resources.Count == 0)
+            {
+                _resourcesByOwnerUid.Remove(owner.Uid);
+            }
+        }
+    }
+
+    private bool HasOwnerReferencesTo(IKubernetesObject<V1ObjectMeta> resource)
+    {
+        string? uid = resource.Uid();
+        return !string.IsNullOrWhiteSpace(uid)
+            && _resourcesByOwnerUid.ContainsKey(uid);
     }
 
     private void Run()
@@ -548,7 +663,10 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         IReadOnlySet<string> namespaces,
         bool hideNoise)
     {
-        ResourceRelationshipGraph graph = _resourceRelationshipBuilder.Build(source, namespaces, hideNoise);
+        IReadOnlySet<string> buildNamespaces = root == null
+            ? namespaces
+            : new HashSet<string>(StringComparer.Ordinal);
+        ResourceRelationshipGraph graph = _resourceRelationshipBuilder.Build(source, buildNamespaces, hideNoise);
         if (root != null)
         {
             graph = FilterToRootResource(graph, root);
@@ -659,6 +777,48 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         }
     }
 
+    private bool SeedOwnerReferenceResourceType(
+        IKubernetesObject<V1ObjectMeta> resource,
+        Type ownerType,
+        bool canSeed)
+    {
+        ClusterWorkspace? cluster = Cluster;
+        if (cluster == null)
+        {
+            return false;
+        }
+
+        GroupApiVersionKind target = GroupApiVersionKind.From(ownerType);
+        foreach (V1OwnerReference owner in resource.Metadata?.OwnerReferences ?? [])
+        {
+            if (owner.Kind == V1Namespace.KubeKind || string.IsNullOrWhiteSpace(owner.ApiVersion) || string.IsNullOrWhiteSpace(owner.Kind))
+            {
+                continue;
+            }
+
+            int slash = owner.ApiVersion.IndexOf('/');
+            string group = slash < 0 ? string.Empty : owner.ApiVersion[..slash];
+            string version = slash < 0 ? owner.ApiVersion : owner.ApiVersion[(slash + 1)..];
+            if (string.Equals(group, target.Group, StringComparison.Ordinal)
+                && string.Equals(version, target.ApiVersion, StringComparison.Ordinal)
+                && string.Equals(owner.Kind, target.Kind, StringComparison.Ordinal))
+            {
+                if (canSeed)
+                {
+                    _ = cluster.Runtime.SeedResource(ownerType);
+                }
+                else
+                {
+                    RequireSeed(cluster, ownerType);
+                }
+
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private static ResourceIdentity GetIdentity(IKubernetesObject<V1ObjectMeta> resource)
         => new(resource.ApiVersion ?? string.Empty, resource.Kind ?? string.Empty, resource.Namespace(), resource.Name() ?? string.Empty, resource.Uid());
 
@@ -688,6 +848,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         Interlocked.Increment(ref _rebuildVersion);
         UnsubscribeCluster();
         _resourcesByKey.Clear();
+        _resourcesByOwnerUid.Clear();
         _completeGraph = ResourceRelationshipGraph.Empty;
         Graph = ResourceRelationshipGraph.Empty;
         Cluster = null;

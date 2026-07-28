@@ -1,6 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Templates;
+using Avalonia.Data.Converters;
 using FluentIcons.Avalonia;
 using FluentIcons.Common;
 using k8s.Models;
@@ -12,6 +13,9 @@ namespace KubeUI.Avalonia.Features.Resources.Visualization;
 
 public sealed partial class VisualizationView : ViewBase<VisualizationViewModel>
 {
+    private static readonly FuncValueConverter<bool, IBrush> NotReadyBorderBrushConverter = new(
+        isNotReady => isNotReady ? Brushes.Orange : Brushes.Transparent);
+
     public VisualizationView()
     {
         DesignTimePreview.Run(InitializeDesignTimeDataAsync);
@@ -40,6 +44,10 @@ public sealed partial class VisualizationView : ViewBase<VisualizationViewModel>
                     .IsChecked(vm, x => x.HideNoise, BindingMode.TwoWay)
                     .ToolTip_Tip(Assets.Resources.VisualizationView_HideNoiseTooltip)
                     .Content(new FluentIcon().Icon(Icon.EyeOff)),
+                new ToggleButton()
+                    .IsChecked(vm, x => x.ShowNotReadyOnly, BindingMode.TwoWay)
+                    .ToolTip_Tip(Assets.Resources.VisualizationView_ShowNotReadyOnlyTooltip)
+                    .Content(new FluentIcon().Icon(Icon.Warning)),
                 new Label()
                     .VerticalContentAlignment(VerticalAlignment.Center)
                     .BindValue(ContentControl.ContentProperty, CompiledBinding.Create<VisualizationViewModel, int>(x => x.Graph!.Resources.Count,
@@ -93,7 +101,7 @@ public sealed partial class VisualizationView : ViewBase<VisualizationViewModel>
             .BindValue(ResourceGraphControl.GraphProperty, CompiledBinding.Create<VisualizationViewModel, KubeUI.Kubernetes.Resources.Relationships.ResourceRelationshipGraph?>(x => x.Graph, source: vm));
     }
 
-    internal static StackPanel CreateResourceNode(ResourceNodeViewModel node)
+    internal static Border CreateResourceNode(ResourceNodeViewModel node)
     {
 
         var content = new MultiBinding
@@ -106,25 +114,33 @@ public sealed partial class VisualizationView : ViewBase<VisualizationViewModel>
                 }
             };
 
-        return new StackPanel()
-            .BindValue(ToolTip.TipProperty, content)
-            .Width(128)
-            .Height(128)
-            .ContextFlyout(ResourceActionPresenter.CreateFlyout(node.ContextMenuItems))
-            .Children(
-                new Image()
-                    .Width(64)
-                    .Height(64)
-                    .Source(node, x => x.Icon, BindingMode.OneWay),
-                new TextBlock()
-                    .TextAlignment(TextAlignment.Center)
-                    .TextWrapping(TextWrapping.Wrap)
-                    .Text(node, x => x.Resource.Kind),
-                new TextBlock()
-                    .TextAlignment(TextAlignment.Center)
-                    .TextWrapping(TextWrapping.Wrap)
-                    .Text(node, x => x.Resource.Metadata.Name)
-            );
+        return new Border()
+            .BorderBrush(Brushes.Transparent)
+            .BorderThickness(2)
+            .BindValue(Border.BorderBrushProperty, CompiledBinding.Create<ResourceNodeViewModel, bool>(
+                x => x.IsNotReady,
+                source: node,
+                converter: NotReadyBorderBrushConverter))
+            .Child(
+                new StackPanel()
+                    .BindValue(ToolTip.TipProperty, content)
+                    .Width(128)
+                    .Height(128)
+                    .ContextFlyout(ResourceActionPresenter.CreateFlyout(node.ContextMenuItems))
+                    .Children(
+                        new Image()
+                            .Width(64)
+                            .Height(64)
+                            .Source(node, x => x.Icon, BindingMode.OneWay),
+                        new TextBlock()
+                            .TextAlignment(TextAlignment.Center)
+                            .TextWrapping(TextWrapping.Wrap)
+                            .Text(node, x => x.Resource.Kind),
+                        new TextBlock()
+                            .TextAlignment(TextAlignment.Center)
+                            .TextWrapping(TextWrapping.Wrap)
+                            .Text(node, x => x.Resource.Metadata.Name)
+                    ));
     }
 
     private async Task InitializeDesignTimeDataAsync()

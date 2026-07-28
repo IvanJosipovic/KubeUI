@@ -1051,6 +1051,7 @@ public interface IResourceContainer
     int InformerCount { get; }
     bool IsSeeded { get; }
     IObservable<ResourceChange> ConnectChanges(GroupApiVersionKind kind);
+    IReadOnlyList<IKubernetesObject<V1ObjectMeta>> Snapshot();
 }
 
 public interface IClearableResourceContainer : IResourceContainer
@@ -1084,6 +1085,9 @@ public partial class ContainerClass<T> : ObservableObject, IClearableResourceCon
                 kind,
                 change.Current));
     }
+
+    public IReadOnlyList<IKubernetesObject<V1ObjectMeta>> Snapshot()
+        => Items.Items.Cast<IKubernetesObject<V1ObjectMeta>>().ToArray();
 
     [ObservableProperty]
     public partial List<IResourceInformer> Informers { get; set; } = [];

@@ -2,6 +2,7 @@ using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using DynamicData;
 using k8s;
+using k8s.Models;
 using KubernetesClient.Informer.Client;
 
 namespace KubeUI.Kubernetes;
@@ -32,6 +33,11 @@ internal static class ClusterResourceChangeFeed
                 }
 
                 IDisposable subscription = container.ConnectChanges(kind).Subscribe(observer.OnNext, observer.OnError);
+                foreach (IKubernetesObject<V1ObjectMeta> resource in container.Snapshot())
+                {
+                    observer.OnNext(new ResourceChange(WatchEventType.Added, kind, resource));
+                }
+
                 lock (sync)
                 {
                     if (disposed || subscriptions.ContainsKey(kind))

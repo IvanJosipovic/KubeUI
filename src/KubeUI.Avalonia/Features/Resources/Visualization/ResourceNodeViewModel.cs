@@ -19,6 +19,11 @@ public sealed partial class ResourceNodeViewModel : ViewModelBase
     [ObservableProperty]
     public partial IImage Icon { get; set; }
 
+    public bool IsNotReady => ResourceReadiness.IsNotReady(Resource);
+
+    partial void OnResourceChanged(IKubernetesObject<V1ObjectMeta> value)
+        => OnPropertyChanged(nameof(IsNotReady));
+
     internal void UpdateResource(IKubernetesObject<V1ObjectMeta> resource)
     {
         Resource = resource;

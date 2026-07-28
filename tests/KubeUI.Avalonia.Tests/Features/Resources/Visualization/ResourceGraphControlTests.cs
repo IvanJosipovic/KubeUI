@@ -179,6 +179,25 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
     }
 
     [Fact]
+    public void not_ready_filter_keeps_only_resources_with_false_conditions()
+    {
+        V1Pod ready = CreatePod("ready");
+        ready.Status = new() { Conditions = [new() { Type = "Ready", Status = "True" }] };
+        V1Pod notReady = CreatePod("not-ready");
+        notReady.Status = new() { Conditions = [new() { Type = "Ready", Status = "False" }] };
+        V1Pod unknown = CreatePod("unknown");
+        unknown.Status = new() { Conditions = [new() { Type = "Ready", Status = "Unknown" }] };
+        V1Pod withoutConditions = CreatePod("without-conditions");
+
+        using VisualizationViewModel viewModel = new(new ResourceRelationshipBuilder());
+        viewModel.ApplyGraph(new ResourceRelationshipGraph([ready, notReady, unknown, withoutConditions], []));
+
+        viewModel.ShowNotReadyOnly = true;
+
+        viewModel.Graph!.Resources.Select(resource => resource.Name()).ShouldBe(["not-ready"]);
+    }
+
+    [Fact]
     public void resource_type_is_selected_again_after_disappearing_and_reappearing()
     {
         V1Pod pod = CreatePod("pod");

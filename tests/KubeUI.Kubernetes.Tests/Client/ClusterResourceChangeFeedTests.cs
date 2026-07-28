@@ -12,8 +12,20 @@ public sealed class ClusterResourceChangeFeedTests
     public async Task ConnectResources_tracks_existing_and_late_seeded_source_caches()
     {
         TestClusterRuntime runtime = new();
+        V1Service existingService = new()
+        {
+            ApiVersion = "v1",
+            Kind = V1Service.KubeKind,
+            Metadata = new() { Name = "existing", NamespaceProperty = "demo" },
+        };
+        await runtime.AddOrUpdateResource(existingService);
+
         List<ResourceChange> changes = [];
         using IDisposable subscription = ((IClusterRuntime)runtime).ConnectResources().Subscribe(changes.Add);
+
+        changes.Any(change => change.Resource is V1Service service
+            && service.Name() == "existing"
+            && change.EventType == WatchEventType.Added).ShouldBeTrue();
 
         V1Pod pod = new() { ApiVersion = "v1", Kind = V1Pod.KubeKind, Metadata = new() { Name = "web", NamespaceProperty = "demo" } };
         await runtime.AddOrUpdateResource(pod);

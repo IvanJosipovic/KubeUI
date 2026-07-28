@@ -187,13 +187,22 @@ public sealed class ResourceRelationshipBuilder : IResourceRelationshipBuilder
 
         bool changed;
         Dictionary<ResourceIdentity, List<ResourceIdentity>> targetsBySource = [];
-        Dictionary<ResourceIdentity, List<ResourceIdentity>> sourcesByTarget = [];
+        Dictionary<ResourceIdentity, List<ResourceRelationship>> relationshipsByTarget = [];
         foreach (ResourceRelationship relationship in relationships)
         {
             targetsBySource.TryAdd(relationship.Source, []);
             targetsBySource[relationship.Source].Add(relationship.Target);
-            sourcesByTarget.TryAdd(relationship.Target, []);
-            sourcesByTarget[relationship.Target].Add(relationship.Source);
+            relationshipsByTarget.TryAdd(relationship.Target, []);
+            relationshipsByTarget[relationship.Target].Add(relationship);
+
+            if (relationship.Kind == ResourceRelationshipKind.Owner
+                && string.IsNullOrEmpty(relationship.Source.Namespace)
+                && string.IsNullOrEmpty(relationship.Target.Namespace)
+                && (included.Contains(relationship.Source) || included.Contains(relationship.Target)))
+            {
+                included.Add(relationship.Source);
+                included.Add(relationship.Target);
+            }
         }
 
         do
@@ -217,14 +226,14 @@ public sealed class ResourceRelationshipBuilder : IResourceRelationshipBuilder
 
             foreach (ResourceIdentity target in included.ToArray())
             {
-                if (!sourcesByTarget.TryGetValue(target, out List<ResourceIdentity>? sources))
+                if (!relationshipsByTarget.TryGetValue(target, out List<ResourceRelationship>? incomingRelationships))
                 {
                     continue;
                 }
 
-                foreach (ResourceIdentity source in sources)
+                foreach (ResourceRelationship relationship in incomingRelationships)
                 {
-                    if (CanTraverseBackwards(target) && included.Add(source))
+                    if (CanTraverseBackwards(relationship, target) && included.Add(relationship.Source))
                     {
                         changed = true;
                     }
@@ -268,7 +277,7 @@ public sealed class ResourceRelationshipBuilder : IResourceRelationshipBuilder
             foreach (ResourceRelationship relationship in graph.Relationships)
             {
                 if (relationship.Target == current
-                    && (CanTraverseBackwards(current) || current == addedIdentity)
+                    && (current == addedIdentity || CanTraverseBackwards(relationship, current))
                     && ancestors.Add(relationship.Source))
                 {
                     parents.Enqueue(relationship.Source);
@@ -311,8 +320,12 @@ public sealed class ResourceRelationshipBuilder : IResourceRelationshipBuilder
     private static bool CanTraverse(ResourceIdentity source, ResourceIdentity target)
         => !string.IsNullOrEmpty(source.Namespace) || string.IsNullOrEmpty(target.Namespace);
 
-    private static bool CanTraverseBackwards(ResourceIdentity target)
-        => !string.IsNullOrEmpty(target.Namespace);
+    private static bool CanTraverseBackwards(ResourceRelationship relationship, ResourceIdentity target)
+        => (!string.IsNullOrEmpty(target.Namespace) || string.IsNullOrEmpty(relationship.Source.Namespace))
+            && relationship.Kind is not (ResourceRelationshipKind.Reference
+                or ResourceRelationshipKind.Storage
+                or ResourceRelationshipKind.Identity
+                or ResourceRelationshipKind.Event);
 
     public static IReadOnlyList<ResourceRelationship> SimplifyRelationships(IEnumerable<ResourceRelationship> relationships)
     {
