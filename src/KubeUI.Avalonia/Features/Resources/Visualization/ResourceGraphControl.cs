@@ -1,5 +1,4 @@
 using Avalonia.Controls.Templates;
-using Avalonia.Svg.Skia;
 using k8s;
 using k8s.Models;
 using KubeUI.Avalonia.Infrastructure;
@@ -33,7 +32,6 @@ public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphContr
     private bool _layoutPending;
     private bool _hasGeneratedGraph;
     private bool _zoomAfterGeneration;
-    private bool _vertexMeasurementPending;
     private bool _isDetached;
 
     public ResourceRelationshipGraph? Graph
@@ -128,19 +126,16 @@ public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphContr
         _vertices.Clear();
         if (_graph != null)
         {
-            Dictionary<ResourceIdentity, ResourceGraphVertex> vertices = [];
-
             foreach (var resource in _graph.Resources)
             {
                 var vertex = CreateVertex(resource);
-                vertices.Add(vertex.Identity, vertex);
                 _vertices.Add(vertex.Identity, vertex);
                 graph.AddVertex(vertex);
             }
 
             foreach (var relationship in _graph.Relationships)
             {
-                if (TryCreateEdge(relationship, vertices, out var edge))
+                if (TryCreateEdge(relationship, _vertices, out var edge))
                 {
                     graph.AddEdge(edge);
                 }
@@ -158,16 +153,26 @@ public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphContr
     {
         var graph = _logicCore.Graph;
         var vertices = _vertices;
-        HashSet<ResourceIdentity> desiredIdentities = current.Resources.Select(GetIdentity).ToHashSet();
-        HashSet<ResourceRelationship> desiredRelationships = current.Relationships.ToHashSet();
-        HashSet<ResourceRelationship> existingRelationships = graph.Edges.Select(edge => edge.Relationship).ToHashSet();
-        bool structureChanged = vertices.Keys.Any(identity => !desiredIdentities.Contains(identity))
-            || desiredIdentities.Any(identity => !vertices.ContainsKey(identity))
-            || graph.Edges.Any(edge => !desiredRelationships.Contains(edge.Relationship))
-            || desiredRelationships.Any(relationship => !existingRelationships.Contains(relationship));
+        HashSet<ResourceIdentity> desiredIdentities = new(current.Resources.Count);
+        foreach (var resource in current.Resources)
+        {
+            desiredIdentities.Add(GetIdentity(resource));
+        }
+
+        HashSet<ResourceRelationship> desiredRelationships = new(current.Relationships.Count);
+        desiredRelationships.UnionWith(current.Relationships);
+
+        HashSet<ResourceRelationship> existingRelationships = new(graph.EdgeCount);
+        foreach (var edge in graph.Edges)
+        {
+            existingRelationships.Add(edge.Relationship);
+        }
+
+        bool structureChanged = false;
 
         foreach (var vertex in vertices.Values.Where(vertex => !desiredIdentities.Contains(vertex.Identity)).ToArray())
         {
+            structureChanged = true;
             _area.RemoveVertexAndEdges(vertex);
             if (graph.ContainsVertex(vertex))
             {
@@ -183,6 +188,7 @@ public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphContr
                 || !desiredIdentities.Contains(edge.Source.Identity)
                 || !desiredIdentities.Contains(edge.Target.Identity))
             {
+                structureChanged = true;
                 _area.RemoveEdge(edge, removeEdgeFromDataGraph: true);
                 if (graph.ContainsEdge(edge))
                 {
@@ -196,35 +202,38 @@ public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphContr
             var identity = GetIdentity(resource);
             if (vertices.TryGetValue(identity, out var existingVertex))
             {
-                existingVertex.Node.UpdateResource(resource);
+                if (!ReferenceEquals(existingVertex.Node.Resource, resource))
+                {
+                    existingVertex.Node.UpdateResource(resource);
+                }
+
                 continue;
             }
 
             var vertex = CreateVertex(resource);
+            structureChanged = true;
             vertices.Add(identity, vertex);
             _area.AddVertexAndData(vertex, _area.ControlFactory.CreateVertexControl(vertex), generateLabel: false);
-            _vertexMeasurementPending = true;
         }
 
         foreach (var relationship in current.Relationships)
         {
-            if (existingRelationships.Contains(relationship)
+            if (!existingRelationships.Add(relationship)
                 || !vertices.TryGetValue(relationship.Source, out var source)
                 || !vertices.TryGetValue(relationship.Target, out var target))
             {
                 continue;
             }
 
-            if (TryCreateEdge(relationship, vertices, out var edge))
-            {
-                _area.InsertEdgeAndData(
-                    edge,
-                    _area.ControlFactory.CreateEdgeControl(
-                        _area.VertexList[edge.Source],
-                        _area.VertexList[edge.Target],
-                        edge),
-                    generateLabel: true);
-            }
+            var edge = new ResourceGraphEdge(source, target, relationship);
+            structureChanged = true;
+            _area.InsertEdgeAndData(
+                edge,
+                _area.ControlFactory.CreateEdgeControl(
+                    _area.VertexList[edge.Source],
+                    _area.VertexList[edge.Target],
+                    edge),
+                generateLabel: true);
         }
 
         if (structureChanged)
@@ -271,11 +280,6 @@ public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphContr
     protected override void OnDataContextChanged(EventArgs e)
     {
         base.OnDataContextChanged(e);
-        if (_viewModel != null)
-        {
-            _viewModel = null;
-        }
-
         _viewModel = DataContext as VisualizationViewModel;
 
         if (_viewModel != null && _graph != null && !_isDetached)
@@ -288,11 +292,6 @@ public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphContr
     {
         Dispatcher.UIThread.VerifyAccess();
         _layoutPending = true;
-        if (_vertexMeasurementPending && VisualRoot != null)
-        {
-            _area.UpdateLayout();
-            _vertexMeasurementPending = false;
-        }
 
         if (_graphGenerationTask is { IsCompleted: false })
         {
@@ -304,7 +303,6 @@ public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphContr
 
     private async Task ProcessPendingLayoutAsync()
     {
-        Dispatcher.UIThread.VerifyAccess();
         while (_layoutPending && VisualRoot != null)
         {
             _layoutPending = false;
@@ -313,11 +311,11 @@ public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphContr
 
             if (!initialGeneration)
             {
-                await _area.RelayoutGraph(true).ConfigureAwait(true);
+                await _area.RelayoutGraph(true);
             }
             else
             {
-                await _area.GenerateGraph(true).ConfigureAwait(true);
+                await _area.GenerateGraph(true);
                 _hasGeneratedGraph = true;
             }
         }
@@ -325,7 +323,6 @@ public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphContr
 
     private void OnGraphLayoutFinished(object? sender, EventArgs e)
     {
-        _area.UpdateAllEdges(performFullUpdate: true, skipHiddenEdges: false);
         if (!_zoomAfterGeneration)
         {
             return;
@@ -349,9 +346,7 @@ public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphContr
     {
         _isDetached = true;
         _layoutPending = false;
-        _vertexMeasurementPending = false;
         _area.ClearLayout();
-        _vertices.Clear();
         base.OnDetachedFromVisualTree(e);
     }
 
@@ -374,7 +369,6 @@ public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphContr
 
     public VertexControl CreateVertexControl(object vertexData)
     {
-        var vertexControl = new VertexControl(vertexData);
-        return vertexControl;
+        return new VertexControl(vertexData);
     }
 }

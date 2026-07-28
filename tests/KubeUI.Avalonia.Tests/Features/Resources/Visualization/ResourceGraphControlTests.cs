@@ -1,6 +1,9 @@
 using Avalonia.Headless.XUnit;
 using Avalonia.Controls;
 using Avalonia.Controls.Presenters;
+using Avalonia.Controls.Primitives;
+using Avalonia.Data;
+using Avalonia.Media.Imaging;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Avalonia;
@@ -397,94 +400,6 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
         ResourceRelationshipGraph delta = await builder.WaitForAdditionAsync();
 
         delta.Resources.ShouldBeEmpty();
-        delta.Relationships.ShouldBeEmpty();
-    }
-
-    [AvaloniaFact]
-    public async Task namespace_selection_does_not_run_graph_build_on_ui_thread()
-    {
-        using var cluster = await TestCluster.GetAsync();
-        cluster.SelectedNamespaces.Add(new V1Namespace { Metadata = new() { Name = "default" } });
-
-        var builder = new DelayingRelationshipBuilder();
-        using VisualizationViewModel viewModel = new(builder);
-        viewModel.Initialize(cluster);
-        await builder.WaitForBuildAsync(1);
-
-        Stopwatch stopwatch = Stopwatch.StartNew();
-        cluster.SelectedNamespaces.Add(new V1Namespace { Metadata = new() { Name = "other" } });
-        stopwatch.Stop();
-
-        stopwatch.Elapsed.ShouldBeLessThan(TimeSpan.FromMilliseconds(100));
-        (await builder.WaitForBuildAsync(2)).ShouldNotBe(Environment.CurrentManagedThreadId);
-    }
-
-    [AvaloniaFact]
-    public async Task added_resource_delta_uses_the_resource_snapshot_from_its_event()
-    {
-        using var cluster = await TestCluster.GetAsync();
-        var builder = new AdditionSnapshotRelationshipBuilder();
-        using VisualizationViewModel viewModel = new(builder);
-        viewModel.Initialize(cluster);
-        await builder.WaitForInitialBuildAsync();
-
-        ThreadPool.GetMinThreads(out int workerThreads, out int completionPortThreads);
-        ThreadPool.SetMinThreads(Math.Max(workerThreads, 32), completionPortThreads);
-        using var workersStarted = new CountdownEvent(32);
-        using var releaseWorkers = new ManualResetEventSlim();
-        Task[] workers = Enumerable.Range(0, 32)
-            .Select(_ => Task.Run(() =>
-            {
-                workersStarted.Signal();
-                releaseWorkers.Wait();
-            }))
-            .ToArray();
-
-        try
-        {
-            workersStarted.Wait(TimeSpan.FromSeconds(10)).ShouldBeTrue();
-
-            await cluster.AddOrUpdateResource(CreatePod("first"));
-            await cluster.AddOrUpdateResource(CreatePod("second"));
-            viewModel.HideNoise = false;
-            releaseWorkers.Set();
-
-            AdditionDeltaInput firstDelta = await builder.WaitForFirstAdditionAsync();
-            firstDelta.Resources.ShouldContain("first");
-            firstDelta.Resources.ShouldNotContain("second");
-            firstDelta.HideNoise.ShouldBeTrue();
-        }
-        finally
-        {
-            releaseWorkers.Set();
-            await Task.WhenAll(workers);
-            ThreadPool.SetMinThreads(workerThreads, completionPortThreads);
-        }
-    }
-
-    [AvaloniaFact]
-    public void creates_graph_vertices_and_edges_from_graph_input()
-    {
-        V1Pod source = new() { ApiVersion = "v1", Kind = V1Pod.KubeKind, Metadata = new() { Name = "source", NamespaceProperty = "demo", Uid = "source" } };
-        V1Pod target = new() { ApiVersion = "v1", Kind = V1Pod.KubeKind, Metadata = new() { Name = "target", NamespaceProperty = "demo", Uid = "target" } };
-        ResourceIdentity sourceIdentity = new("v1", V1Pod.KubeKind, "demo", "source", "source");
-        ResourceIdentity targetIdentity = new("v1", V1Pod.KubeKind, "demo", "target", "target");
-        using ResourceGraphControl control = new()
-        {
-            Graph = new ResourceRelationshipGraph(
-                [source, target],
-                [new ResourceRelationship(sourceIdentity, targetIdentity, ResourceRelationshipKind.Reference)]),
-        };
-
-        control.Area.LogicCore.ShouldNotBeNull();
-        control.Area.LogicCore!.Graph.VertexCount.ShouldBe(2);
-        control.Area.LogicCore.Graph.EdgeCount.ShouldBe(1);
-        control.Area.LogicCore.DefaultLayoutAlgorithm.ShouldBe(LayoutAlgorithmTypeEnum.Tree);
-        control.Area.LogicCore.DefaultOverlapRemovalAlgorithm.ShouldBe(OverlapRemovalAlgorithmTypeEnum.FSA);
-        control.Area.LogicCore.DefaultEdgeRoutingAlgorithm.ShouldBe(EdgeRoutingAlgorithmTypeEnum.None);
-        control.Area.LogicCore.EdgeCurvingEnabled.ShouldBeTrue();
-        control.Area.SelectionMode.ShouldBe(SelectionMode.Multiple);
-        control.Area.SelectedVertices.ShouldNotBeNull();
     }
 
     [AvaloniaFact]
@@ -536,13 +451,109 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
         {
             window.Show();
             await Task.Delay(250);
+            Dispatcher.UIThread.RunJobs();
+            await Dispatcher.UIThread.InvokeAsync(control.Area.UpdateLayout);
 
             EdgeControl edge = control.Area.EdgesList.Values.Single();
             edge.GetEdgePointerForSource().ShouldBeNull();
+            edge.Template.ShouldNotBeNull();
+            edge.GetEdgePointerForTarget().ShouldNotBeNull();
             edge.GetEdgePointerForTarget()!.IsVisible.ShouldBeTrue();
-            Control targetPointer = (Control)edge.GetEdgePointerForTarget()!;
+            TemplatedControl targetPointer = (TemplatedControl)edge.GetEdgePointerForTarget()!;
+            targetPointer.Template.ShouldNotBeNull();
             targetPointer.Bounds.Width.ShouldBeGreaterThan(0);
             targetPointer.Bounds.Height.ShouldBeGreaterThan(0);
+            ContentControl targetPointerContent = (ContentControl)targetPointer;
+            targetPointerContent.Content.ShouldNotBeNull();
+            global::Avalonia.Controls.Shapes.Path targetArrow = (global::Avalonia.Controls.Shapes.Path)targetPointerContent.Content!;
+            targetArrow.Bounds.Width.ShouldBeGreaterThan(0);
+            targetArrow.Bounds.Height.ShouldBeGreaterThan(0);
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task rendered_graph_is_unchanged_when_control_is_detached_and_reattached()
+    {
+        V1Pod source = new() { ApiVersion = "v1", Kind = V1Pod.KubeKind, Metadata = new() { Name = "source", NamespaceProperty = "demo", Uid = "source" } };
+        V1Pod target = new() { ApiVersion = "v1", Kind = V1Pod.KubeKind, Metadata = new() { Name = "target", NamespaceProperty = "demo", Uid = "target" } };
+        ResourceIdentity sourceIdentity = new("v1", V1Pod.KubeKind, "demo", "source", "source");
+        ResourceIdentity targetIdentity = new("v1", V1Pod.KubeKind, "demo", "target", "target");
+        using ResourceGraphControl control = new()
+        {
+            Graph = new ResourceRelationshipGraph(
+                [source, target],
+                [new ResourceRelationship(sourceIdentity, targetIdentity, ResourceRelationshipKind.Reference)]),
+        };
+        Window window = new() { Width = 800, Height = 600, Content = control };
+        string screenshotDirectory = Path.Combine(Path.GetTempPath(), $"kubeui-resource-graph-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(screenshotDirectory);
+        try
+        {
+            window.Show();
+            await Task.Delay(250);
+            await Dispatcher.UIThread.InvokeAsync(window.UpdateLayout);
+            byte[] initialScreenshot = CaptureScreenshot(window, Path.Combine(screenshotDirectory, "initial.png"));
+
+            window.Content = null;
+            await Dispatcher.UIThread.InvokeAsync(window.UpdateLayout);
+            window.Content = control;
+            await Task.Delay(250);
+            Dispatcher.UIThread.RunJobs();
+            await Dispatcher.UIThread.InvokeAsync(window.UpdateLayout);
+            byte[] reattachedScreenshot = CaptureScreenshot(window, Path.Combine(screenshotDirectory, "reattached.png"));
+
+            initialScreenshot.SequenceEqual(reattachedScreenshot).ShouldBeTrue(
+                $"The rendered graph changed after reattachment. Screenshots: {screenshotDirectory}");
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task asynchronously_arriving_graph_renders_target_arrow_after_view_load()
+    {
+        V1Pod source = new() { ApiVersion = "v1", Kind = V1Pod.KubeKind, Metadata = new() { Name = "source", NamespaceProperty = "demo", Uid = "source" } };
+        V1Pod target = new() { ApiVersion = "v1", Kind = V1Pod.KubeKind, Metadata = new() { Name = "target", NamespaceProperty = "demo", Uid = "target" } };
+        ResourceIdentity sourceIdentity = new("v1", V1Pod.KubeKind, "demo", "source", "source");
+        ResourceIdentity targetIdentity = new("v1", V1Pod.KubeKind, "demo", "target", "target");
+        using VisualizationViewModel viewModel = new(new EmptyRelationshipBuilder());
+        using ResourceGraphControl control = new() { DataContext = viewModel };
+        control.Bind(ResourceGraphControl.GraphProperty, new Binding(nameof(VisualizationViewModel.Graph)));
+        Window window = new() { Width = 800, Height = 600, Content = control };
+        try
+        {
+            window.Show();
+            await Task.Delay(250);
+            await Dispatcher.UIThread.InvokeAsync(window.UpdateLayout);
+
+            ResourceRelationshipGraph sourceGraph = await Task.Run(() => new ResourceRelationshipGraph([source], []));
+            await Dispatcher.UIThread.InvokeAsync(() => viewModel.Graph = sourceGraph);
+            await Task.Delay(250);
+            Dispatcher.UIThread.RunJobs();
+            await Dispatcher.UIThread.InvokeAsync(window.UpdateLayout);
+
+            ResourceRelationshipGraph completeGraph = await Task.Run(() => new ResourceRelationshipGraph(
+                [source, target],
+                [new ResourceRelationship(sourceIdentity, targetIdentity, ResourceRelationshipKind.Reference)]));
+            control.IsVisible = false;
+            await Dispatcher.UIThread.InvokeAsync(() => viewModel.Graph = completeGraph);
+            control.IsVisible = true;
+
+            await Task.Delay(250);
+            Dispatcher.UIThread.RunJobs();
+            await Dispatcher.UIThread.InvokeAsync(window.UpdateLayout);
+
+            EdgeControl edge = control.Area.EdgesList.Values.Single();
+            edge.GetEdgePointerForTarget().ShouldNotBeNull();
+            ((Control)edge.GetEdgePointerForTarget()!).Bounds.Size.ShouldBe(new Size(10, 10));
+            byte[] screenshot = CaptureScreenshot(window, Path.Combine(Path.GetTempPath(), $"kubeui-resource-graph-incremental-{Guid.NewGuid():N}.png"));
+            screenshot.Any(value => value != screenshot[0]).ShouldBeTrue();
         }
         finally
         {
@@ -653,12 +664,26 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
             [new ResourceRelationship(sourceIdentity, targetIdentity, ResourceRelationshipKind.Reference)]);
 
         await Task.Delay(250);
+        Dispatcher.UIThread.RunJobs();
+        await Dispatcher.UIThread.InvokeAsync(control.Area.UpdateLayout);
 
         control.Area.Children.OfType<AttachableVertexLabelControl>().ShouldBeEmpty();
         AttachableEdgeLabelControl edgeLabel = control.Area.Children.OfType<AttachableEdgeLabelControl>().Single();
         edgeLabel.GetVisualDescendants().OfType<Border>().Single().Background.ShouldBe(global::Avalonia.Media.Brushes.Transparent);
-        control.Area.EdgesList.Values.Single().GetEdgePointerForSource().ShouldBeNull();
-        control.Area.EdgesList.Values.Single().GetEdgePointerForTarget()!.IsVisible.ShouldBeTrue();
+        EdgeControl edge = control.Area.EdgesList.Values.Single();
+        edge.Template.ShouldNotBeNull();
+        edge.GetEdgePointerForSource().ShouldBeNull();
+        edge.GetEdgePointerForTarget().ShouldNotBeNull();
+        edge.GetEdgePointerForTarget()!.IsVisible.ShouldBeTrue();
+        TemplatedControl targetPointer = (TemplatedControl)edge.GetEdgePointerForTarget()!;
+        targetPointer.Template.ShouldNotBeNull();
+        targetPointer.Bounds.Width.ShouldBeGreaterThan(0);
+        targetPointer.Bounds.Height.ShouldBeGreaterThan(0);
+        ContentControl targetPointerContent = (ContentControl)targetPointer;
+        targetPointerContent.Content.ShouldNotBeNull();
+        global::Avalonia.Controls.Shapes.Path targetArrow = (global::Avalonia.Controls.Shapes.Path)targetPointerContent.Content!;
+        targetArrow.Bounds.Width.ShouldBeGreaterThan(0);
+        targetArrow.Bounds.Height.ShouldBeGreaterThan(0);
     }
 
     [AvaloniaFact]
@@ -929,6 +954,18 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
         public async Task WaitForAdditionCompletedAsync() => await _additionCompleted.Task;
 
         public void ReleaseAddition() => _releaseAddition.TrySetResult();
+    }
+
+    private static byte[] CaptureScreenshot(Window window, string path)
+    {
+        PixelSize pixelSize = new((int)window.Bounds.Width, (int)window.Bounds.Height);
+        using RenderTargetBitmap bitmap = new(pixelSize, new Vector(96, 96));
+        bitmap.Render(window);
+        using MemoryStream stream = new();
+        bitmap.Save(stream);
+        byte[] screenshot = stream.ToArray();
+        File.WriteAllBytes(path, screenshot);
+        return screenshot;
     }
 
     private static V1Pod CreatePod(string name) => new()

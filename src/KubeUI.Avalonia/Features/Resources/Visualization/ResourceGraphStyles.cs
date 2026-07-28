@@ -1,7 +1,6 @@
 using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Presenters;
 using Avalonia.Controls.Templates;
-using Avalonia.Data;
 using Avalonia.Media;
 using Westermo.GraphX.Controls.Controls;
 using Westermo.GraphX.Controls.Behaviours;
@@ -107,12 +106,14 @@ internal static class ResourceGraphStyles
                 Name = "PART_EdgePointerForTarget",
                 NeedRotation = true,
                 Content = targetArrow,
+                Width = 10,
+                Height = 10,
             };
             nameScope.Register("PART_edgePath", edgePath);
             nameScope.Register("PART_EdgePointerForTarget", targetPointer);
             nameScope.Register("PART_SelfLoopedEdge", selfLoop);
 
-            return new Grid
+            return new Canvas
             {
                 Children =
                 {
