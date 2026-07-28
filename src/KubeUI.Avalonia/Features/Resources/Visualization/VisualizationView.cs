@@ -67,7 +67,8 @@ public sealed partial class VisualizationView : ViewBase<VisualizationViewModel>
                     .Classes("ClearButton")
                     .ToolTip_Tip(Assets.Resources.VisualizationView_ResourceTypesTooltip)
                     .ItemsSource(vm, x => x.ResourceTypes)
-                    .SelectedItems(vm, x => x.SelectedResourceTypes),
+                    .SelectedItems(vm, x => x.SelectedResourceTypes)
+                    .IsEnabled(vm, x => x.HasResourceTypes),
                 new Ursa.Controls.MultiComboBox()
                     .Width(200)
                     .MaxHeight(20)
@@ -109,12 +110,12 @@ public sealed partial class VisualizationView : ViewBase<VisualizationViewModel>
             .BindValue(ToolTip.TipProperty, content)
             .Width(128)
             .Height(128)
+            .ContextFlyout(ResourceActionPresenter.CreateFlyout(node.ContextMenuItems))
             .Children(
                 new Image()
                     .Width(64)
                     .Height(64)
-                    .Source(node, x => x.Icon, BindingMode.OneWay)
-                    .ContextFlyout(ResourceActionPresenter.CreateFlyout(node.ContextMenuItems)),
+                    .Source(node, x => x.Icon, BindingMode.OneWay),
                 new TextBlock()
                     .TextAlignment(TextAlignment.Center)
                     .TextWrapping(TextWrapping.Wrap)

@@ -53,6 +53,8 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 
     public ObservableCollection<string> SelectedResourceTypes { get; } = [];
 
+    public bool HasResourceTypes => ResourceTypes.Count > 0;
+
     [ObservableProperty]
     public partial bool HideNoise { get; set; } = true;
 
@@ -106,6 +108,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         _knownResourceTypes.Clear();
         _excludedResourceTypes.Clear();
         ResourceTypes.Clear();
+        OnPropertyChanged(nameof(HasResourceTypes));
         _suppressResourceTypeChanges = true;
         SelectedResourceTypes.Clear();
         _suppressResourceTypeChanges = false;
@@ -221,6 +224,8 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
             {
                 ResourceTypes.Add(type);
             }
+
+            OnPropertyChanged(nameof(HasResourceTypes));
         }
         finally
         {
@@ -431,7 +436,9 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 
     private bool ResourceCanAffectGraph(IKubernetesObject<V1ObjectMeta> resource)
     {
-        if (HideNoise && (resource is Corev1Event || resource is V1ReplicaSet replicaSet && replicaSet.Status?.Replicas == 0))
+        if (HideNoise && (resource is Corev1Event
+            || resource is V1ReplicaSet replicaSet && replicaSet.Status?.Replicas == 0
+            || resource is V1Pod pod && pod.Status?.Phase == "Succeeded"))
         {
             return false;
         }

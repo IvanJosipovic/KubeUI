@@ -124,7 +124,9 @@ public sealed class ResourceRelationshipBuilder : IResourceRelationshipBuilder
         foreach (IKubernetesObject<V1ObjectMeta> resource in resources)
         {
             string? namespaceName = resource.Namespace();
-            if (hideNoise && (resource is Corev1Event || resource is V1ReplicaSet replicaSet && replicaSet.Status?.Replicas == 0))
+            if (hideNoise && (resource is Corev1Event
+                || resource is V1ReplicaSet replicaSet && replicaSet.Status?.Replicas == 0
+                || resource is V1Pod pod && pod.Status?.Phase == "Succeeded"))
             {
                 continue;
             }

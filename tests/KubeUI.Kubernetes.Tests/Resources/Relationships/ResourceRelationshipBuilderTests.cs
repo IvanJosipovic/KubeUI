@@ -413,12 +413,26 @@ public sealed class ResourceRelationshipBuilderTests
     public void Applies_namespace_and_noise_filters()
     {
         V1Pod selected = new() { ApiVersion = "v1", Kind = V1Pod.KubeKind, Metadata = new() { Name = "selected", NamespaceProperty = "demo" } };
+        V1Pod completed = new()
+        {
+            ApiVersion = "v1",
+            Kind = V1Pod.KubeKind,
+            Metadata = new() { Name = "completed", NamespaceProperty = "demo" },
+            Status = new() { Phase = "Succeeded" },
+        };
+        V1Pod failed = new()
+        {
+            ApiVersion = "v1",
+            Kind = V1Pod.KubeKind,
+            Metadata = new() { Name = "failed", NamespaceProperty = "demo" },
+            Status = new() { Phase = "Failed" },
+        };
         V1Pod other = new() { ApiVersion = "v1", Kind = V1Pod.KubeKind, Metadata = new() { Name = "other", NamespaceProperty = "other" } };
         Corev1Event noise = new() { ApiVersion = "v1", Kind = Corev1Event.KubeKind, Metadata = new() { Name = "event", NamespaceProperty = "demo" } };
 
-        ResourceRelationshipGraph graph = new ResourceRelationshipBuilder().Build([selected, other, noise], new HashSet<string> { "demo" }, hideNoise: true);
+        ResourceRelationshipGraph graph = new ResourceRelationshipBuilder().Build([selected, completed, failed, other, noise], new HashSet<string> { "demo" }, hideNoise: true);
 
-        graph.Resources.Select(x => x.Name()).ShouldBe(["selected"]);
+        graph.Resources.Select(x => x.Name()).ShouldBe(["selected", "failed"]);
     }
 
     [Fact]
