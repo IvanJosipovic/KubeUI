@@ -1,7 +1,6 @@
 using System.Windows.Input;
 using FluentIcons.Common;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
-using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Kubernetes;
 using Swordfish.NET.Collections;
 
@@ -212,7 +211,8 @@ public partial class ResourceNavigationLink : NavigationLink
     [ObservableProperty]
     public partial ICommand? OpenInNewTabCommand { get; set; }
 
-    public string IconPath => Utilities.GetKubeAssetPath(ControlType!);
+    [ObservableProperty]
+    public partial IImage? ResourceIcon { get; set; }
 }
 
 public class NavigationItemNameComparer : IComparer<NavigationItem>

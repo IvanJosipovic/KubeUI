@@ -23,7 +23,7 @@ internal static class ResourceGraphStyles
             Setters =
             {
                 new Setter(EdgeControl.StrokeThicknessProperty, 1d),
-                new Setter(Visual.OpacityProperty, 0.2d),
+                new Setter(Visual.OpacityProperty, 0.5d),
                 new Setter(
                     TemplatedControl.ForegroundProperty,
                     CompiledBinding.Create<ResourceGraphEdge, IBrush>(edge => edge.Brush)),

@@ -184,19 +184,48 @@ public sealed class ResourceRelationshipBuilder : IResourceRelationshipBuilder
         }
 
         bool changed;
+        Dictionary<ResourceIdentity, List<ResourceIdentity>> targetsBySource = [];
+        Dictionary<ResourceIdentity, List<ResourceIdentity>> sourcesByTarget = [];
+        foreach (ResourceRelationship relationship in relationships)
+        {
+            targetsBySource.TryAdd(relationship.Source, []);
+            targetsBySource[relationship.Source].Add(relationship.Target);
+            sourcesByTarget.TryAdd(relationship.Target, []);
+            sourcesByTarget[relationship.Target].Add(relationship.Source);
+        }
+
         do
         {
             changed = false;
-            foreach (ResourceRelationship relationship in relationships)
+            foreach (ResourceIdentity source in included.ToArray())
             {
-                if (included.Contains(relationship.Source)
-                    && CanTraverse(relationship.Source, relationship.Target)
-                    && included.Add(relationship.Target)
-                    || included.Contains(relationship.Target)
-                    && CanTraverseBackwards(relationship.Target)
-                    && included.Add(relationship.Source))
+                if (!targetsBySource.TryGetValue(source, out List<ResourceIdentity>? targets))
                 {
-                    changed = true;
+                    continue;
+                }
+
+                foreach (ResourceIdentity target in targets)
+                {
+                    if (CanTraverse(source, target) && included.Add(target))
+                    {
+                        changed = true;
+                    }
+                }
+            }
+
+            foreach (ResourceIdentity target in included.ToArray())
+            {
+                if (!sourcesByTarget.TryGetValue(target, out List<ResourceIdentity>? sources))
+                {
+                    continue;
+                }
+
+                foreach (ResourceIdentity source in sources)
+                {
+                    if (CanTraverseBackwards(target) && included.Add(source))
+                    {
+                        changed = true;
+                    }
                 }
             }
         } while (changed);

@@ -1,5 +1,6 @@
 using k8s;
 using k8s.Models;
+using Avalonia.Media;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Features.Resources.Common;
 using KubeUI.Avalonia.Infrastructure.Presentation;
@@ -16,7 +17,7 @@ public sealed partial class ResourceNodeViewModel : ViewModelBase
     public partial IKubernetesObject<V1ObjectMeta> Resource { get; set; }
 
     [ObservableProperty]
-    public partial string IconPath { get; set; }
+    public partial IImage Icon { get; set; }
 
     internal void UpdateResource(IKubernetesObject<V1ObjectMeta> resource)
     {

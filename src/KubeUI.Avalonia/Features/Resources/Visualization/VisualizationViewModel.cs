@@ -17,10 +17,14 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
     private readonly Dictionary<ResourceKey, IKubernetesObject<V1ObjectMeta>> _resourcesByKey = [];
     private readonly HashSet<Type> _requiredSeedTypes = [];
     private readonly HashSet<string> _knownResourceTypes = new(StringComparer.Ordinal);
+    private readonly HashSet<string> _excludedResourceTypes = new(StringComparer.Ordinal);
     private bool _disposed;
     private bool _suppressResourceChanges;
     private bool _suppressResourceTypeChanges;
     private IDisposable? _resourceChangesSubscription;
+    private CancellationTokenSource? _rebuildCancellation;
+    private RebuildRequest? _pendingRebuild;
+    private bool _rebuildRunning;
     private int _rebuildVersion;
     private readonly ObservableCollection<V1Namespace> _localSelectedNamespaces = [];
     private ResourceRelationshipGraph _completeGraph = ResourceRelationshipGraph.Empty;
@@ -100,6 +104,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         _requiredSeedTypes.Clear();
         _completeGraph = ResourceRelationshipGraph.Empty;
         _knownResourceTypes.Clear();
+        _excludedResourceTypes.Clear();
         ResourceTypes.Clear();
         _suppressResourceTypeChanges = true;
         SelectedResourceTypes.Clear();
@@ -154,10 +159,28 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 
     private void SelectedResourceTypes_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
-        if (!_suppressResourceTypeChanges)
+        if (_suppressResourceTypeChanges)
         {
-            ApplyTypeFilter();
+            return;
         }
+
+        if (e.OldItems != null)
+        {
+            foreach (string type in e.OldItems.OfType<string>())
+            {
+                _excludedResourceTypes.Add(type);
+            }
+        }
+
+        if (e.NewItems != null)
+        {
+            foreach (string type in e.NewItems.OfType<string>())
+            {
+                _excludedResourceTypes.Remove(type);
+            }
+        }
+
+        ApplyTypeFilter();
     }
 
     internal void ApplyGraph(ResourceRelationshipGraph graph)
@@ -180,7 +203,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         {
             foreach (string type in availableTypes.Order(StringComparer.Ordinal))
             {
-                if (_knownResourceTypes.Add(type))
+                if (_knownResourceTypes.Add(type) && !_excludedResourceTypes.Contains(type))
                 {
                     SelectedResourceTypes.Add(type);
                 }
@@ -188,6 +211,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 
             foreach (string type in ResourceTypes.Where(type => !availableTypes.Contains(type)).ToArray())
             {
+                _knownResourceTypes.Remove(type);
                 ResourceTypes.Remove(type);
                 SelectedResourceTypes.Remove(type);
             }
@@ -291,6 +315,8 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
             return;
         }
 
+        int changeVersion = Interlocked.Increment(ref _rebuildVersion);
+
         ResourceKey key = GetResourceKey(change.Resource);
         if (change.EventType == WatchEventType.Deleted)
         {
@@ -303,7 +329,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         SeedOwnerReferenceResourceTypes(change.Resource);
         if (change.EventType == WatchEventType.Modified)
         {
-            ReplaceResourceInGraph(change.Resource);
+            Run();
             return;
         }
 
@@ -311,7 +337,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         {
             if (!_suppressResourceChanges && ResourceCanAffectGraph(change.Resource))
             {
-                _ = AddResourceIncrementallyAsync(change.Resource, key);
+                _ = AddResourceIncrementallyAsync(change.Resource, key, changeVersion);
             }
 
             return;
@@ -325,7 +351,8 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 
     private async Task AddResourceIncrementallyAsync(
         IKubernetesObject<V1ObjectMeta> resource,
-        ResourceKey key)
+        ResourceKey key,
+        int changeVersion)
     {
         ClusterWorkspace? cluster = Cluster;
         if (cluster == null)
@@ -344,7 +371,12 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 
         await Dispatcher.UIThread.InvokeAsync(() =>
         {
-            if (_disposed || !ReferenceEquals(Cluster, cluster) || !_resourcesByKey.ContainsKey(key) || delta.Resources.Count == 0)
+            if (_disposed
+                || changeVersion != _rebuildVersion
+                || !ReferenceEquals(Cluster, cluster)
+                || !_resourcesByKey.TryGetValue(key, out IKubernetesObject<V1ObjectMeta>? currentResource)
+                || !ReferenceEquals(currentResource, resource)
+                || delta.Resources.Count == 0)
             {
                 return;
             }
@@ -452,23 +484,56 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         bool hideNoise = HideNoise;
         IReadOnlyList<IKubernetesObject<V1ObjectMeta>> source = _resourcesByKey.Values.ToArray();
 
-        _ = Task.Run(() => BuildGraph(source, root, namespaces, hideNoise))
-            .ContinueWith(task =>
-            {
-                if (task.IsFaulted || task.IsCanceled)
-                {
-                    return;
-                }
-
-                Dispatcher.UIThread.Post(() =>
-                {
-                    if (!_disposed && version == _rebuildVersion)
-                    {
-                        ApplyGraph(task.Result);
-                    }
-                });
-            }, TaskScheduler.Default);
+        _pendingRebuild = new RebuildRequest(source, root, namespaces, hideNoise, version);
+        _rebuildCancellation?.Cancel();
+        if (!_rebuildRunning)
+        {
+            _rebuildRunning = true;
+            _ = ProcessRebuildsAsync();
+        }
     }
+
+    private async Task ProcessRebuildsAsync()
+    {
+        Dispatcher.UIThread.VerifyAccess();
+        while (!_disposed && _pendingRebuild is { } request)
+        {
+            _pendingRebuild = null;
+            using CancellationTokenSource cancellation = new();
+            _rebuildCancellation = cancellation;
+
+            try
+            {
+                ResourceRelationshipGraph graph = await Task.Run(
+                    () => BuildGraph(request.Source, request.Root, request.Namespaces, request.HideNoise),
+                    cancellation.Token).ConfigureAwait(true);
+
+                if (!_disposed && !cancellation.IsCancellationRequested && request.Version == _rebuildVersion)
+                {
+                    ApplyGraph(graph);
+                }
+            }
+            catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
+            {
+            }
+            finally
+            {
+                if (ReferenceEquals(_rebuildCancellation, cancellation))
+                {
+                    _rebuildCancellation = null;
+                }
+            }
+        }
+
+        _rebuildRunning = false;
+    }
+
+    private sealed record RebuildRequest(
+        IReadOnlyList<IKubernetesObject<V1ObjectMeta>> Source,
+        IKubernetesObject<V1ObjectMeta>? Root,
+        IReadOnlySet<string> Namespaces,
+        bool HideNoise,
+        int Version);
 
     private ResourceRelationshipGraph BuildGraph(
         IReadOnlyList<IKubernetesObject<V1ObjectMeta>> source,
@@ -483,20 +548,6 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         }
 
         return graph;
-    }
-
-    private void ReplaceResourceInGraph(IKubernetesObject<V1ObjectMeta> resource)
-    {
-        ResourceRelationshipGraph current = _completeGraph;
-        ResourceIdentity identity = GetIdentity(resource);
-        if (!current.Resources.Any(item => GetIdentity(item) == identity))
-        {
-            return;
-        }
-
-        ApplyGraph(new ResourceRelationshipGraph(
-            current.Resources.Select(item => GetIdentity(item) == identity ? resource : item).ToArray(),
-            current.Relationships));
     }
 
     private void RemoveResourceFromGraph(IKubernetesObject<V1ObjectMeta> resource)
@@ -516,16 +567,31 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
     internal static ResourceRelationshipGraph FilterToRootResource(ResourceRelationshipGraph graph, IKubernetesObject<V1ObjectMeta> root)
     {
         ResourceIdentity rootIdentity = new(root.ApiVersion ?? string.Empty, root.Kind ?? string.Empty, root.Namespace(), root.Name() ?? string.Empty, root.Uid());
+        Dictionary<ResourceIdentity, List<ResourceIdentity>> parentsByChild = [];
+        Dictionary<ResourceIdentity, List<ResourceIdentity>> childrenByParent = [];
+        foreach (ResourceRelationship relationship in graph.Relationships)
+        {
+            parentsByChild.TryAdd(relationship.Target, []);
+            parentsByChild[relationship.Target].Add(relationship.Source);
+            childrenByParent.TryAdd(relationship.Source, []);
+            childrenByParent[relationship.Source].Add(relationship.Target);
+        }
+
         HashSet<ResourceIdentity> ancestors = [rootIdentity];
         Queue<ResourceIdentity> parents = new([rootIdentity]);
         while (parents.Count > 0)
         {
             ResourceIdentity current = parents.Dequeue();
-            foreach (ResourceRelationship relationship in graph.Relationships)
+            if (!parentsByChild.TryGetValue(current, out List<ResourceIdentity>? parentIdentities))
             {
-                if (relationship.Target == current && ancestors.Add(relationship.Source))
+                continue;
+            }
+
+            foreach (ResourceIdentity parent in parentIdentities)
+            {
+                if (ancestors.Add(parent))
                 {
-                    parents.Enqueue(relationship.Source);
+                    parents.Enqueue(parent);
                 }
             }
         }
@@ -541,11 +607,16 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                 continue;
             }
 
-            foreach (ResourceRelationship relationship in graph.Relationships)
+            if (!childrenByParent.TryGetValue(current, out List<ResourceIdentity>? childIdentities))
             {
-                if (relationship.Source == current && reachable.Add(relationship.Target))
+                continue;
+            }
+
+            foreach (ResourceIdentity child in childIdentities)
+            {
+                if (reachable.Add(child))
                 {
-                    descendants.Enqueue(relationship.Target);
+                    descendants.Enqueue(child);
                 }
             }
         }
@@ -581,9 +652,6 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         }
     }
 
-    private static bool IsSameResource(IKubernetesObject<V1ObjectMeta> left, IKubernetesObject<V1ObjectMeta> right)
-        => left.GetType() == right.GetType() && left.Namespace() == right.Namespace() && left.Name() == right.Name();
-
     private static ResourceIdentity GetIdentity(IKubernetesObject<V1ObjectMeta> resource)
         => new(resource.ApiVersion ?? string.Empty, resource.Kind ?? string.Empty, resource.Namespace(), resource.Name() ?? string.Empty, resource.Uid());
 
@@ -602,6 +670,8 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 
         _resourceChangesSubscription?.Dispose();
         _resourceChangesSubscription = null;
+        _rebuildCancellation?.Cancel();
+        _rebuildCancellation = null;
         _requiredSeedTypes.Clear();
     }
 

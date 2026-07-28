@@ -3,7 +3,6 @@ using System.Reactive.Linq;
 using Avalonia.Controls.Shapes;
 using Avalonia.Controls.Templates;
 using Avalonia.Data.Converters;
-using Avalonia.Styling;
 using Avalonia.Svg.Skia;
 using FluentIcons.Avalonia;
 using FluentIcons.Common;
@@ -132,10 +131,7 @@ public sealed class NavigationView : ViewBase<NavigationViewModel>
                                 .Orientation(Orientation.Horizontal)
                                 .Children(
                                     new Image()
-                                        .Source(new SvgImage
-                                        {
-                                            Source = SvgSource.Load(link.IconPath, new Uri("avares://KubeUI.Avalonia"))
-                                        }),
+                                        .Source(link, x => x.ResourceIcon),
                                     new TextBlock()
                                         .VerticalAlignment(VerticalAlignment.Center)
                                         .Text(link, x => x.Name),

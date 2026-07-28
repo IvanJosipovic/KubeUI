@@ -175,8 +175,135 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
         viewModel.Graph!.Resources.Select(resource => resource.Kind).ShouldBe([V1Service.KubeKind, V1Deployment.KubeKind]);
     }
 
+    [Fact]
+    public void resource_type_is_selected_again_after_disappearing_and_reappearing()
+    {
+        V1Pod pod = CreatePod("pod");
+        V1Service service = new()
+        {
+            ApiVersion = "v1",
+            Kind = V1Service.KubeKind,
+            Metadata = new() { Name = "service", NamespaceProperty = "default", Uid = "service" },
+        };
+
+        using VisualizationViewModel viewModel = new(new ResourceRelationshipBuilder());
+        viewModel.ApplyGraph(new ResourceRelationshipGraph([pod, service], []));
+        viewModel.ApplyGraph(new ResourceRelationshipGraph([service], []));
+        viewModel.ApplyGraph(new ResourceRelationshipGraph([pod, service], []));
+
+        viewModel.ResourceTypes.ShouldBe([V1Pod.KubeKind, V1Service.KubeKind]);
+        viewModel.SelectedResourceTypes.Order(StringComparer.Ordinal).ShouldBe([V1Pod.KubeKind, V1Service.KubeKind]);
+        viewModel.Graph!.Resources.ShouldBe([pod, service]);
+    }
+
+    [AvaloniaFact]
+    public async Task late_incremental_delta_does_not_overwrite_newer_rebuild()
+    {
+        using var cluster = await TestCluster.GetAsync();
+        var builder = new LateAdditionRelationshipBuilder();
+        using VisualizationViewModel viewModel = new(builder);
+        viewModel.Initialize(cluster);
+        await builder.WaitForInitialBuildAsync();
+
+        V1Pod pod = CreatePod("late");
+        await cluster.Runtime.AddOrUpdateResource(pod);
+        await builder.WaitForAdditionStartedAsync();
+
+        viewModel.HideNoise = false;
+        await builder.WaitForSecondBuildAsync();
+        Dispatcher.UIThread.RunJobs();
+        viewModel.Graph!.Resources.ShouldBeEmpty();
+
+        builder.ReleaseAddition();
+        await builder.WaitForAdditionCompletedAsync();
+        Dispatcher.UIThread.RunJobs();
+
+        viewModel.Graph!.Resources.ShouldBeEmpty();
+    }
+
+    [AvaloniaFact]
+    public async Task modified_resource_rebuilds_changed_relationships_in_visualization_graph()
+    {
+        using var cluster = await TestCluster.GetAsync();
+        using VisualizationViewModel viewModel = new(new OwnerRelationshipBuilder());
+        viewModel.Initialize(cluster);
+
+        V1Deployment firstOwner = CreateDeployment("first-owner");
+        V1Deployment secondOwner = CreateDeployment("second-owner");
+        V1Pod pod = CreatePodWithOwner("owned-pod", firstOwner);
+
+        await cluster.AddOrUpdateResource(firstOwner);
+        await cluster.AddOrUpdateResource(secondOwner);
+        await cluster.AddOrUpdateResource(pod);
+        Dispatcher.UIThread.RunJobs();
+
+        ResourceIdentity firstOwnerIdentity = GetIdentity(firstOwner);
+        ResourceIdentity secondOwnerIdentity = GetIdentity(secondOwner);
+        ResourceIdentity podIdentity = GetIdentity(pod);
+        ResourceRelationship initialRelationship = new(firstOwnerIdentity, podIdentity, ResourceRelationshipKind.Owner);
+        ResourceRelationship changedRelationship = new(secondOwnerIdentity, podIdentity, ResourceRelationshipKind.Owner);
+        viewModel.ApplyGraph(new ResourceRelationshipGraph([firstOwner, secondOwner, pod], [initialRelationship]));
+
+        pod.Metadata!.OwnerReferences =
+        [
+            new()
+            {
+                ApiVersion = secondOwner.ApiVersion,
+                Kind = secondOwner.Kind,
+                Name = secondOwner.Name(),
+                Uid = secondOwner.Uid(),
+            },
+        ];
+        await cluster.AddOrUpdateResource(pod);
+
+        Stopwatch timeout = Stopwatch.StartNew();
+        while (timeout.Elapsed < TimeSpan.FromSeconds(5)
+            && !viewModel.Graph!.Relationships.Contains(changedRelationship))
+        {
+            Dispatcher.UIThread.RunJobs();
+            await Task.Delay(10);
+        }
+
+        viewModel.Graph!.Relationships.ShouldContain(changedRelationship);
+        viewModel.Graph.Relationships.ShouldNotContain(initialRelationship);
+    }
+
     private static ResourceIdentity GetIdentity(IKubernetesObject<V1ObjectMeta> resource)
         => new(resource.ApiVersion!, resource.Kind!, resource.Namespace(), resource.Name()!, resource.Uid());
+
+    private static V1Deployment CreateDeployment(string name) => new()
+    {
+        ApiVersion = "apps/v1",
+        Kind = V1Deployment.KubeKind,
+        Metadata = new()
+        {
+            Name = name,
+            NamespaceProperty = "default",
+            Uid = name,
+        },
+    };
+
+    private static V1Pod CreatePodWithOwner(string name, V1Deployment owner) => new()
+    {
+        ApiVersion = "v1",
+        Kind = V1Pod.KubeKind,
+        Metadata = new()
+        {
+            Name = name,
+            NamespaceProperty = "default",
+            Uid = name,
+            OwnerReferences =
+            [
+                new()
+                {
+                    ApiVersion = owner.ApiVersion,
+                    Kind = owner.Kind,
+                    Name = owner.Name(),
+                    Uid = owner.Uid(),
+                },
+            ],
+        },
+    };
 
     [AvaloniaFact]
     public async Task processed_resource_config_starts_required_seed_without_waiting_for_ready()
@@ -632,6 +759,59 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
             => await (buildNumber == 1 ? _firstBuild.Task : _secondBuild.Task);
     }
 
+    private sealed class EmptyRelationshipBuilder : IResourceRelationshipBuilder
+    {
+        public ResourceRelationshipGraph Build(
+            IEnumerable<IKubernetesObject<V1ObjectMeta>> resources,
+            IReadOnlySet<string> selectedNamespaces,
+            bool hideNoise)
+            => ResourceRelationshipGraph.Empty;
+
+        public ResourceRelationshipGraph BuildAdditionDelta(
+            IEnumerable<IKubernetesObject<V1ObjectMeta>> resources,
+            ResourceKey addedResource,
+            IReadOnlySet<string> selectedNamespaces,
+            bool hideNoise)
+            => ResourceRelationshipGraph.Empty;
+    }
+
+    private sealed class OwnerRelationshipBuilder : IResourceRelationshipBuilder
+    {
+        public ResourceRelationshipGraph Build(
+            IEnumerable<IKubernetesObject<V1ObjectMeta>> resources,
+            IReadOnlySet<string> selectedNamespaces,
+            bool hideNoise)
+        {
+            IKubernetesObject<V1ObjectMeta>[] resourceArray = resources.ToArray();
+            Dictionary<string, IKubernetesObject<V1ObjectMeta>> resourcesByUid = resourceArray
+                .Where(resource => resource.Uid() is not null)
+                .ToDictionary(resource => resource.Uid()!, StringComparer.Ordinal);
+            List<ResourceRelationship> relationships = [];
+            foreach (IKubernetesObject<V1ObjectMeta> resource in resourceArray)
+            {
+                foreach (V1OwnerReference owner in resource.Metadata?.OwnerReferences ?? [])
+                {
+                    if (owner.Uid is not null && resourcesByUid.TryGetValue(owner.Uid, out IKubernetesObject<V1ObjectMeta>? ownerResource))
+                    {
+                        relationships.Add(new(
+                            GetIdentity(ownerResource),
+                            GetIdentity(resource),
+                            ResourceRelationshipKind.Owner));
+                    }
+                }
+            }
+
+            return new ResourceRelationshipGraph(resourceArray, relationships);
+        }
+
+        public ResourceRelationshipGraph BuildAdditionDelta(
+            IEnumerable<IKubernetesObject<V1ObjectMeta>> resources,
+            ResourceKey addedResource,
+            IReadOnlySet<string> selectedNamespaces,
+            bool hideNoise)
+            => ResourceRelationshipGraph.Empty;
+    }
+
     private sealed class AdditionSnapshotRelationshipBuilder : IResourceRelationshipBuilder
     {
         private readonly TaskCompletionSource _initialBuild = new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -698,6 +878,58 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
     }
 
     private sealed record AdditionDeltaInput(IReadOnlyList<string> Resources, bool HideNoise);
+
+    private sealed class LateAdditionRelationshipBuilder : IResourceRelationshipBuilder
+    {
+        private readonly TaskCompletionSource _initialBuild = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource _secondBuild = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource _additionStarted = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource _releaseAddition = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource _additionCompleted = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private int _buildCount;
+
+        public ResourceRelationshipGraph Build(
+            IEnumerable<IKubernetesObject<V1ObjectMeta>> resources,
+            IReadOnlySet<string> selectedNamespaces,
+            bool hideNoise)
+        {
+            if (Interlocked.Increment(ref _buildCount) == 1)
+            {
+                _initialBuild.TrySetResult();
+            }
+            else
+            {
+                _secondBuild.TrySetResult();
+            }
+
+            return ResourceRelationshipGraph.Empty;
+        }
+
+        public ResourceRelationshipGraph BuildAdditionDelta(
+            IEnumerable<IKubernetesObject<V1ObjectMeta>> resources,
+            ResourceKey addedResource,
+            IReadOnlySet<string> selectedNamespaces,
+            bool hideNoise)
+        {
+            _additionStarted.TrySetResult();
+            _releaseAddition.Task.GetAwaiter().GetResult();
+            _additionCompleted.TrySetResult();
+            IKubernetesObject<V1ObjectMeta>? resource = resources.SingleOrDefault(item => item.Name() == addedResource.Name);
+            return resource == null
+                ? ResourceRelationshipGraph.Empty
+                : new ResourceRelationshipGraph([resource], []);
+        }
+
+        public async Task WaitForInitialBuildAsync() => await _initialBuild.Task;
+
+        public async Task WaitForSecondBuildAsync() => await _secondBuild.Task;
+
+        public async Task WaitForAdditionStartedAsync() => await _additionStarted.Task;
+
+        public async Task WaitForAdditionCompletedAsync() => await _additionCompleted.Task;
+
+        public void ReleaseAddition() => _releaseAddition.TrySetResult();
+    }
 
     private static V1Pod CreatePod(string name) => new()
     {

@@ -1,7 +1,10 @@
 using Avalonia.Controls.Templates;
+using Avalonia.Svg.Skia;
 using k8s;
 using k8s.Models;
 using KubeUI.Avalonia.Infrastructure;
+using KubeUI.Avalonia.Infrastructure.DependencyInjection;
+using KubeUI.Avalonia.Services.Icons;
 using KubeUI.Kubernetes.Resources.Relationships;
 using QuikGraph;
 using Westermo.GraphX.Common.Enums;
@@ -23,6 +26,7 @@ public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphContr
     private readonly GraphArea<ResourceGraphVertex, ResourceGraphEdge, BidirectionalGraph<ResourceGraphVertex, ResourceGraphEdge>> _area;
     private readonly GXLogicCore<ResourceGraphVertex, ResourceGraphEdge, BidirectionalGraph<ResourceGraphVertex, ResourceGraphEdge>> _logicCore;
     private readonly ZoomControl _zoomControl;
+    private readonly IResourceIconService _iconService;
     private readonly Dictionary<ResourceIdentity, ResourceGraphVertex> _vertices = [];
     private VisualizationViewModel? _viewModel;
     private Task? _graphGenerationTask;
@@ -65,8 +69,11 @@ public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphContr
 
     public GraphAreaBase FactoryRootArea => _area;
 
-    public ResourceGraphControl()
+    public ResourceGraphControl(IResourceIconService? iconService = null)
     {
+        _iconService = iconService
+            ?? (Application.Current as IServiceProviderHost)?.Services.GetService<IResourceIconService>()
+            ?? new ResourceIconService();
         _logicCore = new GXLogicCore<ResourceGraphVertex, ResourceGraphEdge, BidirectionalGraph<ResourceGraphVertex, ResourceGraphEdge>>
         {
             DefaultLayoutAlgorithm = LayoutAlgorithmTypeEnum.Tree,
@@ -153,10 +160,11 @@ public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphContr
         var vertices = _vertices;
         HashSet<ResourceIdentity> desiredIdentities = current.Resources.Select(GetIdentity).ToHashSet();
         HashSet<ResourceRelationship> desiredRelationships = current.Relationships.ToHashSet();
+        HashSet<ResourceRelationship> existingRelationships = graph.Edges.Select(edge => edge.Relationship).ToHashSet();
         bool structureChanged = vertices.Keys.Any(identity => !desiredIdentities.Contains(identity))
             || desiredIdentities.Any(identity => !vertices.ContainsKey(identity))
             || graph.Edges.Any(edge => !desiredRelationships.Contains(edge.Relationship))
-            || desiredRelationships.Any(relationship => !graph.Edges.Any(edge => edge.Relationship == relationship));
+            || desiredRelationships.Any(relationship => !existingRelationships.Contains(relationship));
 
         foreach (var vertex in vertices.Values.Where(vertex => !desiredIdentities.Contains(vertex.Identity)).ToArray())
         {
@@ -198,7 +206,6 @@ public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphContr
             _vertexMeasurementPending = true;
         }
 
-        HashSet<ResourceRelationship> existingRelationships = graph.Edges.Select(edge => edge.Relationship).ToHashSet();
         foreach (var relationship in current.Relationships)
         {
             if (existingRelationships.Contains(relationship)
@@ -238,7 +245,7 @@ public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphContr
             {
                 Cluster = _viewModel?.Cluster,
                 Resource = resource,
-                IconPath = Utilities.GetKubeAssetPath(resource.GetType()),
+                Icon = _iconService.GetIcon(resource.GetType()),
             },
         };
 

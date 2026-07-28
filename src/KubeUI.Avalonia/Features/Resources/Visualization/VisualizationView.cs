@@ -1,9 +1,6 @@
-using System.Globalization;
 using System.Diagnostics.CodeAnalysis;
 using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Templates;
-using Avalonia.Data.Converters;
-using Avalonia.Svg.Skia;
 using FluentIcons.Avalonia;
 using FluentIcons.Common;
 using k8s.Models;
@@ -116,7 +113,7 @@ public sealed partial class VisualizationView : ViewBase<VisualizationViewModel>
                 new Image()
                     .Width(64)
                     .Height(64)
-                    .Source(node, x => x.IconPath, BindingMode.OneWay, new ResourceIconToSvgImageConverter())
+                    .Source(node, x => x.Icon, BindingMode.OneWay)
                     .ContextFlyout(ResourceActionPresenter.CreateFlyout(node.ContextMenuItems)),
                 new TextBlock()
                     .TextAlignment(TextAlignment.Center)
@@ -127,25 +124,6 @@ public sealed partial class VisualizationView : ViewBase<VisualizationViewModel>
                     .TextWrapping(TextWrapping.Wrap)
                     .Text(node, x => x.Resource.Metadata.Name)
             );
-    }
-
-    private sealed class ResourceIconToSvgImageConverter : IValueConverter
-    {
-        public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
-        {
-            if (value is not string path || string.IsNullOrWhiteSpace(path))
-            {
-                return null;
-            }
-
-            return new SvgImage
-            {
-                Source = SvgSource.Load(path, new Uri("avares://KubeUI.Avalonia"))
-            };
-        }
-
-        public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
-            => throw new NotSupportedException();
     }
 
     private async Task InitializeDesignTimeDataAsync()

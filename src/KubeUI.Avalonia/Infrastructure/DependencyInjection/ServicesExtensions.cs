@@ -6,6 +6,7 @@ using KubeUI.Avalonia.Infrastructure.Logging;
 using KubeUI.Avalonia.Infrastructure.Platform;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Services.Settings;
+using KubeUI.Avalonia.Services.Icons;
 using KubeUI.Kubernetes;
 using ServiceScan.SourceGenerator;
 
@@ -30,6 +31,7 @@ public static partial class KubeUIShellServiceCollectionExtensions
         services.AddSingleton<DataGridColumnFilterFlyoutFactory>();
         services.AddSingleton<IDataTemplate>(sp => sp.GetRequiredService<ViewLocator>());
         services.AddSingleton<ISettingsService, SettingsService>();
+        services.AddSingleton<IResourceIconService, ResourceIconService>();
         services.AddSingleton<IClusterSettingsStore>(sp => sp.GetRequiredService<ISettingsService>());
         return services;
     }

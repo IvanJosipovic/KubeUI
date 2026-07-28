@@ -22,6 +22,7 @@ using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Infrastructure.Threading;
 using KubeUI.Avalonia.Resources;
 using KubeUI.Avalonia.Resources.Workloads.v1.Pod;
+using KubeUI.Avalonia.Services.Icons;
 using KubeUI.Kubernetes;
 
 namespace KubeUI.Avalonia.Shell.Navigation;
@@ -39,6 +40,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
     private readonly Dictionary<ClusterWorkspace, HashSet<IResourceConfig>> _pendingResourceNavigationUpdates = [];
     private readonly HashSet<ClusterWorkspace> _scheduledResourceNavigationUpdates = [];
     private readonly NavigationDocumentService _documentService;
+    private readonly IResourceIconService _iconService;
 
     private sealed record ResourceNavigationUpdateBatch(
         IResourceConfig[] ProcessedResourceConfigs,
@@ -55,11 +57,13 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
         INotificationManager notificationManager,
         IDialogService dialogService,
         ClusterWorkspaceCatalog clusterCatalog,
-        IServiceProvider serviceProvider)
+        IServiceProvider serviceProvider,
+        IResourceIconService iconService)
     {
         _logger = logger;
         _notificationManager = notificationManager;
         _serviceProvider = serviceProvider;
+        _iconService = iconService;
         _dialogService = dialogService;
         ClusterCatalog = clusterCatalog;
         _documentService = new NavigationDocumentService(
@@ -759,6 +763,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
             currentResource.ControlType = desiredResource.ControlType;
             currentResource.OpenCommand = desiredResource.OpenCommand;
             currentResource.OpenInNewTabCommand = desiredResource.OpenInNewTabCommand;
+            currentResource.ResourceIcon = desiredResource.ResourceIcon;
         }
     }
 
@@ -839,6 +844,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
             Id = $"{cluster.Runtime.Name}-{config.Kind}",
             Name = config.Name,
             ControlType = config.Type,
+            ResourceIcon = _iconService.GetIcon(config.Type),
             Order = config.Order,
             OpenCommand = OpenResourceNavigationCommand,
             OpenInNewTabCommand = OpenResourceNavigationInNewTabCommand,
