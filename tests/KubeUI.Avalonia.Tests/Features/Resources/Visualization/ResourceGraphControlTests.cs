@@ -209,6 +209,47 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
     }
 
     [Fact]
+    public void incremental_gitops_application_keeps_both_cross_namespace_endpoints()
+    {
+        TestDynamicResource managed = new()
+        {
+            ApiVersion = "pkg.crossplane.io/v1",
+            Kind = "Provider",
+            Metadata = new()
+            {
+                Name = "provider-databricks",
+                NamespaceProperty = "crossplane-system",
+                Annotations = new Dictionary<string, string>
+                {
+                    ["argocd.argoproj.io/tracking-id"] = "crossplane-providers:pkg.crossplane.io/Provider:crossplane-system/provider-databricks",
+                },
+            },
+        };
+        V1ConfigMap application = new()
+        {
+            ApiVersion = "argoproj.io/v1alpha1",
+            Kind = "Application",
+            Metadata = new() { Name = "crossplane-providers", NamespaceProperty = "argocd" },
+        };
+        ResourceRelationshipGraph delta = new ResourceRelationshipBuilder().BuildAdditionDelta(
+            [managed, application],
+            new ResourceKey("argoproj.io/v1alpha1", "Application", "argocd", "crossplane-providers"),
+            new HashSet<string> { "crossplane-system" },
+            hideNoise: true);
+
+        ResourceRelationshipGraph filtered = VisualizationViewModel.FilterIncrementalDelta(
+            delta,
+            new HashSet<string> { "crossplane-system" },
+            new HashSet<ResourceIdentity> { new("pkg.crossplane.io/v1", "Provider", "crossplane-system", "provider-databricks", null) });
+
+        filtered.Resources.Select(resource => resource.Name()).ShouldBe(["provider-databricks", "crossplane-providers"]);
+        filtered.Relationships.ShouldContain(new ResourceRelationship(
+            new("argoproj.io/v1alpha1", "Application", "argocd", "crossplane-providers", null),
+            new("pkg.crossplane.io/v1", "Provider", "crossplane-system", "provider-databricks", null),
+            ResourceRelationshipKind.GitOps));
+    }
+
+    [Fact]
     public void not_ready_filter_keeps_only_resources_with_false_conditions()
     {
         V1Pod ready = CreatePod("ready");
@@ -1232,4 +1273,11 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
             Uid = name,
         },
     };
+
+    private sealed class TestDynamicResource : IKubernetesObject<V1ObjectMeta>
+    {
+        public string? ApiVersion { get; set; }
+        public string? Kind { get; set; }
+        public V1ObjectMeta Metadata { get; set; } = new();
+    }
 }

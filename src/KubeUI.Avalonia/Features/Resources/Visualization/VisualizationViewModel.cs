@@ -109,7 +109,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         RootResource = isNamespaceRoot ? null : rootResource;
         IsNamespaceSelectionLinked = !isNamespaceRoot;
         SelectRootNamespace(rootResource);
-        Id = nameof(VisualizationViewModel) + "-" + cluster + "-" + (rootResource?.Uid() ?? "null");
+        Id = nameof(VisualizationViewModel) + "-" + cluster.Title + "-" + (rootResource?.Uid() ?? "null");
 
         _resourcesByKey.Clear();
         _resourcesByOwnerUid.Clear();
@@ -509,7 +509,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
             graph.RequiredSeedPrerequisites);
     }
 
-    private static ResourceRelationshipGraph FilterIncrementalDelta(
+    internal static ResourceRelationshipGraph FilterIncrementalDelta(
         ResourceRelationshipGraph delta,
         IReadOnlySet<string> selectedNamespaces,
         IReadOnlySet<ResourceIdentity> currentIdentities)
@@ -534,13 +534,17 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
             }
 
             if (selectedNamespaces.Contains(relationship.Source.Namespace ?? string.Empty)
-                || string.IsNullOrEmpty(relationship.Source.Namespace))
+                || string.IsNullOrEmpty(relationship.Source.Namespace)
+                || relationship.Kind is ResourceRelationshipKind.Reference or ResourceRelationshipKind.GitOps
+                    && selectedNamespaces.Contains(relationship.Target.Namespace ?? string.Empty))
             {
                 included.Add(relationship.Source);
             }
 
             if (selectedNamespaces.Contains(relationship.Target.Namespace ?? string.Empty)
-                || string.IsNullOrEmpty(relationship.Target.Namespace))
+                || string.IsNullOrEmpty(relationship.Target.Namespace)
+                || relationship.Kind is ResourceRelationshipKind.Reference or ResourceRelationshipKind.GitOps
+                    && selectedNamespaces.Contains(relationship.Source.Namespace ?? string.Empty))
             {
                 included.Add(relationship.Target);
             }
@@ -701,6 +705,12 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         }
 
         if (SelectedNamespaces.Count == 0)
+        {
+            return true;
+        }
+
+        if (string.Equals(resource.ApiVersion, "argoproj.io/v1alpha1", StringComparison.Ordinal)
+            && string.Equals(resource.Kind, "Application", StringComparison.Ordinal))
         {
             return true;
         }
