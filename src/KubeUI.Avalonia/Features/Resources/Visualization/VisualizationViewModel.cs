@@ -457,7 +457,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         });
     }
 
-    private static ResourceRelationshipGraph FilterToSelectedNamespaces(
+    internal static ResourceRelationshipGraph FilterToSelectedNamespaces(
         ResourceRelationshipGraph graph,
         IReadOnlySet<string> selectedNamespaces)
     {
@@ -484,6 +484,19 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                     && included.Add(relationship.Source))
                 {
                     changed = true;
+                }
+
+                if (relationship.Kind is ResourceRelationshipKind.Reference or ResourceRelationshipKind.GitOps)
+                {
+                    if (included.Contains(relationship.Source) && included.Add(relationship.Target))
+                    {
+                        changed = true;
+                    }
+
+                    if (included.Contains(relationship.Target) && included.Add(relationship.Source))
+                    {
+                        changed = true;
+                    }
                 }
             }
         }

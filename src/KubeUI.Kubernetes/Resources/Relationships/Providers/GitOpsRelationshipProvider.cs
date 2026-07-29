@@ -24,8 +24,10 @@ public sealed class GitOpsRelationshipProvider : IResourceRelationshipProvider
     private static void AddArgo(ResourceRelationshipContext context, ICollection<ResourceRelationship> relationships, IKubernetesObject<V1ObjectMeta> resource)
     {
         string? trackingId = TryGet(resource.Metadata?.Annotations, "argocd.argoproj.io/tracking-id");
-        string? name = trackingId?.Split(':', 2).FirstOrDefault();
-        if (name == null)
+        string? name = trackingId?.Split(':', 2).FirstOrDefault()
+            ?? TryGet(resource.Metadata?.Annotations, "argocd.argoproj.io/instance")
+            ?? TryGet(resource.Metadata?.Labels, "argocd.argoproj.io/instance");
+        if (string.IsNullOrWhiteSpace(name))
         {
             return;
         }

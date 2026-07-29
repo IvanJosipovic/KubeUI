@@ -170,6 +170,45 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
     }
 
     [Fact]
+    public void selected_namespace_keeps_cross_namespace_gitops_application()
+    {
+        V1Deployment managed = new()
+        {
+            ApiVersion = "apps/v1",
+            Kind = V1Deployment.KubeKind,
+            Metadata = new()
+            {
+                Name = "managed",
+                NamespaceProperty = "workload",
+                Annotations = new Dictionary<string, string>
+                {
+                    ["argocd.argoproj.io/tracking-id"] = "demo-app:apps/Deployment:workload/managed",
+                },
+            },
+        };
+        V1ConfigMap application = new()
+        {
+            ApiVersion = "argoproj.io/v1alpha1",
+            Kind = "Application",
+            Metadata = new() { Name = "demo-app", NamespaceProperty = "argocd" },
+        };
+        ResourceRelationshipGraph graph = new ResourceRelationshipBuilder().Build(
+            [managed, application],
+            new HashSet<string>(),
+            hideNoise: true);
+
+        ResourceRelationshipGraph filtered = VisualizationViewModel.FilterToSelectedNamespaces(
+            graph,
+            new HashSet<string> { "workload" });
+
+        filtered.Resources.Select(resource => resource.Name()).ShouldBe(["managed", "demo-app"]);
+        filtered.Relationships.ShouldContain(new ResourceRelationship(
+            new("argoproj.io/v1alpha1", "Application", "argocd", "demo-app", null),
+            new("apps/v1", V1Deployment.KubeKind, "workload", "managed", null),
+            ResourceRelationshipKind.GitOps));
+    }
+
+    [Fact]
     public void not_ready_filter_keeps_only_resources_with_false_conditions()
     {
         V1Pod ready = CreatePod("ready");

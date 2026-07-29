@@ -753,6 +753,35 @@ public sealed class ResourceRelationshipBuilderTests
     }
 
     [Fact]
+    public void Resolves_argo_application_from_instance_annotation()
+    {
+        V1Deployment managed = new()
+        {
+            ApiVersion = "apps/v1",
+            Kind = V1Deployment.KubeKind,
+            Metadata = new()
+            {
+                Name = "managed",
+                NamespaceProperty = "workload",
+                Annotations = new Dictionary<string, string> { ["argocd.argoproj.io/instance"] = "demo-app" },
+            },
+        };
+        V1ConfigMap application = new()
+        {
+            ApiVersion = "argoproj.io/v1alpha1",
+            Kind = "Application",
+            Metadata = new() { Name = "demo-app", NamespaceProperty = "argocd" },
+        };
+
+        ResourceRelationshipGraph graph = new ResourceRelationshipBuilder().Build([managed, application], new HashSet<string> { "workload" }, hideNoise: true);
+
+        graph.Relationships.ShouldContain(new ResourceRelationship(
+            new("argoproj.io/v1alpha1", "Application", "argocd", "demo-app", null),
+            new("apps/v1", V1Deployment.KubeKind, "workload", "managed", null),
+            ResourceRelationshipKind.GitOps));
+    }
+
+    [Fact]
     public void Points_rbac_role_to_role_binding()
     {
         V1Role role = new()
