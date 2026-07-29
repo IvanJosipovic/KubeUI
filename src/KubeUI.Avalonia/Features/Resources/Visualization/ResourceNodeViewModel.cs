@@ -1,6 +1,5 @@
 using k8s;
 using k8s.Models;
-using Avalonia.Media;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Features.Resources.Common;
 using KubeUI.Avalonia.Infrastructure.Presentation;

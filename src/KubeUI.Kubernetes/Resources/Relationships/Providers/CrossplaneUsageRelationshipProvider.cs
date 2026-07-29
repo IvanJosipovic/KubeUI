@@ -2,6 +2,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using k8s;
 using k8s.Models;
+using KubernetesClient.Informer.Client;
 
 namespace KubeUI.Kubernetes.Resources.Relationships.Providers;
 
@@ -10,6 +11,11 @@ public sealed class CrossplaneUsageRelationshipProvider : IResourceRelationshipP
     private const string UsageApiVersion = "protection.crossplane.io/v1beta1";
     private const string UsageKind = "Usage";
     private static readonly ConditionalWeakTable<Type, UsageAccessors> AccessorsByType = new();
+
+    public IEnumerable<ResourceSeedPrerequisite> SeedPrerequisites =>
+    [
+        new(new GroupApiVersionKind("protection.crossplane.io", "v1beta1", UsageKind, "usages")),
+    ];
 
     public void AddRelationships(
         IKubernetesObject<V1ObjectMeta> resource,

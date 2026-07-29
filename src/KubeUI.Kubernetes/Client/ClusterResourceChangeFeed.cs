@@ -1,6 +1,5 @@
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
-using DynamicData;
 using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;

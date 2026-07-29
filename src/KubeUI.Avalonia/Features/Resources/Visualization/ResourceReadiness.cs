@@ -1,6 +1,5 @@
 using k8s;
 using k8s.Models;
-using System.Collections;
 using System.Reflection;
 
 namespace KubeUI.Avalonia.Features.Resources.Visualization;

@@ -4,7 +4,6 @@ using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
-using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Resources;
 using KubeUI.Kubernetes;
@@ -129,10 +128,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 
         SubscribeToSelectedNamespaces();
         cluster.ResourceConfigProcessed += ResourceConfigProcessed;
-        foreach (Type type in SeedTypes)
-        {
-            RequireSeed(cluster, type);
-        }
+        cluster.Runtime.ResourceSeeded += OnResourceSeeded;
 
         if (RootResource == null)
         {
@@ -143,43 +139,12 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                     RequireSeed(cluster, resourceConfig.Type);
                 }
             }
+
         }
 
         _suppressResourceChanges = false;
         Run();
     }
-
-    private static readonly Type[] SeedTypes =
-    [
-        typeof(V1Node),
-        typeof(Corev1Event),
-
-        typeof(V1Pod),
-        typeof(V1ReplicaSet),
-        typeof(V1Deployment),
-        typeof(V1StatefulSet),
-        typeof(V1DaemonSet),
-        typeof(V1CronJob),
-        typeof(V1Job),
-
-        typeof(V1Secret),
-        typeof(V1ConfigMap),
-        typeof(V1Service),
-        typeof(V1EndpointSlice),
-
-        typeof(V1Ingress),
-        typeof(V1IngressClass),
-
-        typeof(V1PersistentVolumeClaim),
-        typeof(V1PersistentVolume),
-        typeof(V1StorageClass),
-        typeof(V1ServiceAccount),
-
-        typeof(V1RoleBinding),
-        typeof(V1ClusterRoleBinding),
-        typeof(V1Role),
-        typeof(V1ClusterRole),
-    ];
 
     private void SelectedNamespaces_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e) => Run();
 
@@ -220,6 +185,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         }
 
         _pendingReferences.UnionWith(graph.PendingReferences);
+        SeedProviderPrerequisites(graph);
         SeedUnresolvedResourceTypes();
         _completeGraph = graph;
         UpdateResourceTypes(graph);
@@ -276,7 +242,9 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         HashSet<ResourceIdentity> identities = resources.Select(GetIdentity).ToHashSet();
         Graph = new ResourceRelationshipGraph(
             resources,
-            _completeGraph.Relationships.Where(relationship => identities.Contains(relationship.Source) && identities.Contains(relationship.Target)).ToArray());
+            _completeGraph.Relationships.Where(relationship => identities.Contains(relationship.Source) && identities.Contains(relationship.Target)).ToArray(),
+            _completeGraph.UnresolvedReferences,
+            _completeGraph.RequiredSeedPrerequisites);
     }
 
     partial void OnIsNamespaceSelectionLinkedChanged(bool value)
@@ -468,12 +436,60 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                 .ToArray();
             IReadOnlyList<ResourceRelationship> relationships = ResourceRelationshipBuilder.SimplifyRelationships(
                 current.Relationships.Concat(delta.Relationships));
-            ResourceRelationshipGraph merged = new(resources, relationships);
+            ResourceRelationshipGraph merged = new(
+                resources,
+                relationships,
+                current.PendingReferences.Union(delta.PendingReferences).ToHashSet(),
+                current.RequiredSeedPrerequisites.Union(delta.RequiredSeedPrerequisites).ToHashSet());
             ResourceRelationshipGraph completeGraph = RootResource is { } root
                 ? FilterToRootResource(merged, root)
                 : merged;
             ApplyGraph(completeGraph);
         });
+    }
+
+    private void SeedProviderPrerequisites(ResourceRelationshipGraph graph)
+    {
+        ClusterWorkspace? cluster = Cluster;
+        if (cluster == null)
+        {
+            return;
+        }
+
+        foreach (ResourceSeedPrerequisite prerequisite in graph.RequiredSeedPrerequisites)
+        {
+            if (prerequisite.Type is { } type)
+            {
+                RequireSeed(cluster, type);
+                continue;
+            }
+
+            if (prerequisite.Kind is not { } kind)
+            {
+                continue;
+            }
+
+            foreach (IResourceConfig resourceConfig in cluster.GetResourceConfigs())
+            {
+                if (resourceConfig.Kind == kind)
+                {
+                    RequireSeed(cluster, resourceConfig.Type);
+                }
+            }
+        }
+    }
+
+    private void OnResourceSeeded(IClusterRuntime runtime, GroupApiVersionKind kind)
+    {
+        if (_disposed || Cluster?.Runtime != runtime || !_completeGraph.RequiredSeedPrerequisites.Any(prerequisite =>
+                prerequisite.Type is { } type
+                    ? GroupApiVersionKind.From(type) == kind
+                    : prerequisite.Kind == kind))
+        {
+            return;
+        }
+
+        Run();
     }
 
     private void ResourceConfigProcessed(ClusterWorkspace cluster, IResourceConfig resourceConfig)
@@ -802,7 +818,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 
         IReadOnlyList<IKubernetesObject<V1ObjectMeta>> resources = graph.Resources.Where(resource => reachable.Contains(new ResourceIdentity(resource.ApiVersion ?? string.Empty, resource.Kind ?? string.Empty, resource.Namespace(), resource.Name() ?? string.Empty, resource.Uid()))).ToArray();
         IReadOnlyList<ResourceRelationship> relationships = graph.Relationships.Where(x => reachable.Contains(x.Source) && reachable.Contains(x.Target)).ToArray();
-        return new ResourceRelationshipGraph(resources, relationships);
+        return new ResourceRelationshipGraph(resources, relationships, graph.UnresolvedReferences, graph.RequiredSeedPrerequisites);
     }
 
     private void SeedOwnerReferenceResourceTypes(IKubernetesObject<V1ObjectMeta> resource)
@@ -885,6 +901,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         {
             Cluster.SelectedNamespaces.CollectionChanged -= SelectedNamespaces_CollectionChanged;
             Cluster.ResourceConfigProcessed -= ResourceConfigProcessed;
+            Cluster.Runtime.ResourceSeeded -= OnResourceSeeded;
         }
 
         _localSelectedNamespaces.CollectionChanged -= SelectedNamespaces_CollectionChanged;

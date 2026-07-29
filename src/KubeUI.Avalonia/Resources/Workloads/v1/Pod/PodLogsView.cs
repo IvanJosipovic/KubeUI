@@ -1,7 +1,6 @@
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Markup.Xaml.MarkupExtensions;
-using Avalonia.Styling;
 using AvaloniaEdit;
 using FluentIcons.Avalonia;
 using FluentIcons.Common;

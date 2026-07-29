@@ -1,5 +1,4 @@
 using Avalonia.Data.Converters;
-using Avalonia.Styling;
 using k8s.Models;
 using KubeUI.Avalonia.Features.Resources.Properties.Controls;
 using KubeUI.Avalonia.Resources.Core.v1.Event.Controls;

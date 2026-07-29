@@ -1,6 +1,5 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using Avalonia.Styling;
 using KubeUI.Avalonia.Options;
 using KubeUI.Kubernetes;
 using static KubeUI.Avalonia.Services.Settings.SettingsService;

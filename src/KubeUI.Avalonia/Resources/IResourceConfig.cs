@@ -1,4 +1,3 @@
-using Avalonia.Styling;
 using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Features.Resources.Common;
 using KubeUI.Avalonia.Infrastructure.Presentation;

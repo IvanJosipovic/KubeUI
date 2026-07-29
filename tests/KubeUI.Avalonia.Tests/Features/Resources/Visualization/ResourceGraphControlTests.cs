@@ -1,27 +1,24 @@
 using Avalonia.Headless.XUnit;
 using Avalonia.Controls;
-using Avalonia.Controls.Presenters;
 using Avalonia.Controls.Primitives;
 using Avalonia.Data;
 using Avalonia.Media.Imaging;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Avalonia;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using k8s;
-using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Features.Resources.Visualization;
 using KubeUI.Avalonia.Tests.Infra;
 using KubeUI.Kubernetes.Resources.Relationships;
 using Shouldly;
 using k8s.Models;
-using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Tests.Features.Clusters.Workspace;
 using Westermo.GraphX.Controls.Controls;
 using Westermo.GraphX.Controls.Behaviours;
 using Westermo.GraphX.Controls.Controls.EdgeLabels;
 using Westermo.GraphX.Controls.Controls.VertexLabels;
-using Westermo.GraphX.Common.Enums;
 
 namespace KubeUI.Avalonia.Tests.Features.Resources.Visualization;
 
@@ -198,6 +195,26 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
     }
 
     [Fact]
+    public void type_filter_preserves_pending_references_and_seed_prerequisites()
+    {
+        V1Pod pod = CreatePod("pod");
+        UnresolvedResourceReference pending = new("apps", "v1", "Deployment", "default", "owner");
+        ResourceSeedPrerequisite prerequisite = new(typeof(V1Deployment));
+
+        using VisualizationViewModel viewModel = new(new ResourceRelationshipBuilder());
+        viewModel.ApplyGraph(new ResourceRelationshipGraph(
+            [pod],
+            [],
+            new HashSet<UnresolvedResourceReference> { pending },
+            new HashSet<ResourceSeedPrerequisite> { prerequisite }));
+
+        viewModel.ShowNotReadyOnly = true;
+
+        viewModel.Graph!.PendingReferences.ShouldContain(pending);
+        viewModel.Graph.RequiredSeedPrerequisites.ShouldContain(prerequisite);
+    }
+
+    [Fact]
     public void resource_type_is_selected_again_after_disappearing_and_reappearing()
     {
         V1Pod pod = CreatePod("pod");
@@ -347,6 +364,46 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
     }
 
     [AvaloniaFact]
+    public async Task applying_graph_starts_provider_prerequisite_seed()
+    {
+        var innerRuntime = new TestCluster();
+        await innerRuntime.AddOrUpdateResource(new V1Namespace { Metadata = new() { Name = "default" } });
+        var runtime = new CountingClusterRuntime(innerRuntime);
+        using var cluster = ActivatorUtilities.CreateInstance<ClusterWorkspace>(TestApp.CurrentServices!, runtime);
+        cluster.SelectedNamespaces.Add(innerRuntime.Namespaces.Single());
+        await cluster.Connect();
+
+        var seedRequested = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        void OnResourceSeedRequested(Type resourceType, bool waitForReady)
+        {
+            if (resourceType == typeof(V1Node))
+            {
+                seedRequested.TrySetResult(waitForReady);
+            }
+        }
+
+        runtime.ResourceSeedRequested += OnResourceSeedRequested;
+        try
+        {
+            using VisualizationViewModel viewModel = new(new ResourceRelationshipBuilder());
+            viewModel.Initialize(cluster);
+            viewModel.ApplyGraph(new ResourceRelationshipGraph(
+                [],
+                [],
+                SeedPrerequisites: new HashSet<ResourceSeedPrerequisite>
+                {
+                    new(typeof(V1Node)),
+                }));
+
+            (await seedRequested.Task.WaitAsync(TimeSpan.FromSeconds(5))).ShouldBeFalse();
+        }
+        finally
+        {
+            runtime.ResourceSeedRequested -= OnResourceSeedRequested;
+        }
+    }
+
+    [AvaloniaFact]
     public async Task added_resource_starts_owner_reference_seed_without_waiting_for_ready()
     {
         var innerRuntime = new TestCluster();
@@ -419,6 +476,132 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
         ResourceRelationshipGraph delta = await builder.WaitForAdditionAsync();
 
         delta.Resources.ShouldBeEmpty();
+    }
+
+    [AvaloniaFact]
+    public async Task changing_selected_namespaces_rebuilds_graph_with_new_namespace_filter()
+    {
+        using var cluster = await TestCluster.GetAsync();
+        await cluster.Runtime.AddOrUpdateResource(new V1Namespace { Metadata = new() { Name = "other" } });
+        var builder = new BuildCaptureRelationshipBuilder();
+        using VisualizationViewModel viewModel = new(builder);
+
+        viewModel.Initialize(cluster);
+        (await builder.WaitForBuildAsync(1)).SelectedNamespaces.ShouldBe(["default"]);
+
+        cluster.SelectedNamespaces.Clear();
+        cluster.SelectedNamespaces.Add(cluster.Runtime.Namespaces.Single(item => item.Name() == "other"));
+        Dispatcher.UIThread.RunJobs();
+
+        (await builder.WaitForBuildAsync(2)).SelectedNamespaces.ShouldBe(["other"]);
+    }
+
+    [AvaloniaFact]
+    public async Task changing_hide_noise_rebuilds_graph_with_new_noise_filter()
+    {
+        using var cluster = await TestCluster.GetAsync();
+        var builder = new BuildCaptureRelationshipBuilder();
+        using VisualizationViewModel viewModel = new(builder);
+
+        viewModel.Initialize(cluster);
+        (await builder.WaitForBuildAsync(1)).HideNoise.ShouldBeTrue();
+
+        viewModel.HideNoise = false;
+        Dispatcher.UIThread.RunJobs();
+
+        (await builder.WaitForBuildAsync(2)).HideNoise.ShouldBeFalse();
+    }
+
+    [AvaloniaFact]
+    public async Task added_unrelated_namespaced_resource_does_not_bypass_namespace_filter()
+    {
+        using var cluster = await TestCluster.GetAsync();
+        var builder = new AdditionCaptureRelationshipBuilder();
+        using VisualizationViewModel viewModel = new(builder);
+        viewModel.Initialize(cluster);
+        await builder.WaitForInitialBuildAsync();
+
+        await cluster.Runtime.AddOrUpdateResource(new V1Pod
+        {
+            ApiVersion = "v1",
+            Kind = V1Pod.KubeKind,
+            Metadata = new() { Name = "unrelated", NamespaceProperty = "other", Uid = "unrelated" },
+        });
+
+        await Task.Delay(100);
+        Dispatcher.UIThread.RunJobs();
+        viewModel.Graph!.Resources.ShouldNotContain(resource => resource.Name() == "unrelated");
+    }
+
+    [AvaloniaFact]
+    public async Task seeded_prerequisite_triggers_graph_rebuild()
+    {
+        using var cluster = await TestCluster.GetAsync();
+        var builder = new BuildCaptureRelationshipBuilder();
+        using VisualizationViewModel viewModel = new(builder);
+        viewModel.Initialize(cluster);
+        await builder.WaitForBuildAsync(1);
+
+        ResourceSeedPrerequisite prerequisite = new(typeof(V1Deployment));
+        viewModel.ApplyGraph(new ResourceRelationshipGraph([], [], SeedPrerequisites: new HashSet<ResourceSeedPrerequisite> { prerequisite }));
+        await cluster.Runtime.SeedResource(typeof(V1Deployment));
+        Dispatcher.UIThread.RunJobs();
+        builder.BuildCount.ShouldBeGreaterThan(1);
+    }
+
+    [AvaloniaFact]
+    public async Task disposed_view_model_unsubscribes_from_namespace_changes()
+    {
+        using var cluster = await TestCluster.GetAsync();
+        var builder = new BuildCaptureRelationshipBuilder();
+        VisualizationViewModel viewModel = new(builder);
+        viewModel.Initialize(cluster);
+        await builder.WaitForBuildAsync(1);
+
+        viewModel.Dispose();
+        cluster.SelectedNamespaces.Add(new V1Namespace { Metadata = new() { Name = "other" } });
+        Dispatcher.UIThread.RunJobs();
+
+        builder.BuildCount.ShouldBe(1);
+    }
+
+    [AvaloniaFact]
+    public async Task background_resource_changes_are_processed_on_the_ui_thread()
+    {
+        using var cluster = await TestCluster.GetAsync();
+        var builder = new BuildCaptureRelationshipBuilder();
+        using VisualizationViewModel viewModel = new(builder);
+        viewModel.Initialize(cluster);
+        await builder.WaitForBuildAsync(1);
+
+        V1Pod background = CreatePod("background");
+        await cluster.Runtime.AddOrUpdateResource(background);
+        await Task.Run(() => cluster.Runtime.AddOrUpdateResource(background));
+
+        Stopwatch timeout = Stopwatch.StartNew();
+        while (timeout.Elapsed < TimeSpan.FromSeconds(5) && builder.BuildCount < 2)
+        {
+            Dispatcher.UIThread.RunJobs();
+            await Task.Delay(10);
+        }
+
+        builder.BuildCount.ShouldBeGreaterThan(1);
+    }
+
+    [AvaloniaFact]
+    public async Task disposed_view_model_ignores_runtime_resource_changes()
+    {
+        using var cluster = await TestCluster.GetAsync();
+        var builder = new BuildCaptureRelationshipBuilder();
+        VisualizationViewModel viewModel = new(builder);
+        viewModel.Initialize(cluster);
+        await builder.WaitForBuildAsync(1);
+
+        viewModel.Dispose();
+        await cluster.Runtime.AddOrUpdateResource(CreatePod("after-dispose"));
+        Dispatcher.UIThread.RunJobs();
+
+        builder.BuildCount.ShouldBe(1);
     }
 
     [AvaloniaFact]
@@ -932,6 +1115,8 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
         private readonly TaskCompletionSource _additionCompleted = new(TaskCreationOptions.RunContinuationsAsynchronously);
         private int _buildCount;
 
+        public int BuildCount => Volatile.Read(ref _buildCount);
+
         public ResourceRelationshipGraph Build(
             IEnumerable<IKubernetesObject<V1ObjectMeta>> resources,
             IReadOnlySet<string> selectedNamespaces,
@@ -974,6 +1159,37 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
 
         public void ReleaseAddition() => _releaseAddition.TrySetResult();
     }
+
+    private sealed class BuildCaptureRelationshipBuilder : IResourceRelationshipBuilder
+    {
+        private readonly ConcurrentDictionary<int, TaskCompletionSource<BuildInput>> _builds = [];
+        private int _buildCount;
+
+        public int BuildCount => Volatile.Read(ref _buildCount);
+
+        public ResourceRelationshipGraph Build(
+            IEnumerable<IKubernetesObject<V1ObjectMeta>> resources,
+            IReadOnlySet<string> selectedNamespaces,
+            bool hideNoise)
+        {
+            int buildNumber = Interlocked.Increment(ref _buildCount);
+            _builds.GetOrAdd(buildNumber, _ => new(TaskCreationOptions.RunContinuationsAsynchronously))
+                .TrySetResult(new(selectedNamespaces.Order(StringComparer.Ordinal).ToArray(), hideNoise));
+            return ResourceRelationshipGraph.Empty;
+        }
+
+        public ResourceRelationshipGraph BuildAdditionDelta(
+            IEnumerable<IKubernetesObject<V1ObjectMeta>> resources,
+            ResourceKey addedResource,
+            IReadOnlySet<string> selectedNamespaces,
+            bool hideNoise)
+            => ResourceRelationshipGraph.Empty;
+
+        public async Task<BuildInput> WaitForBuildAsync(int buildNumber)
+            => await _builds.GetOrAdd(buildNumber, _ => new(TaskCreationOptions.RunContinuationsAsynchronously)).Task;
+    }
+
+    private sealed record BuildInput(IReadOnlyList<string> SelectedNamespaces, bool HideNoise);
 
     private static byte[] CaptureScreenshot(Window window, string path)
     {

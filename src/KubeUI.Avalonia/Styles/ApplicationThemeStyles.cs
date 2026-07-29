@@ -1,6 +1,5 @@
 using System.Globalization;
 using Avalonia.Markup.Xaml.Styling;
-using Avalonia.Styling;
 using Avalonia.Themes.Fluent;
 using Dock.Avalonia.Themes.Fluent;
 using FluentAvalonia.Styling;

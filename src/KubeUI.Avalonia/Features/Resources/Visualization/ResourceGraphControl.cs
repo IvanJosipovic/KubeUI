@@ -1,7 +1,6 @@
 using Avalonia.Controls.Templates;
 using k8s;
 using k8s.Models;
-using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
 using KubeUI.Avalonia.Services.Icons;
 using KubeUI.Kubernetes.Resources.Relationships;
@@ -84,7 +83,6 @@ public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphContr
                 LayerGap = 240,
                 VertexGap = 120,
                 //ComponentGap = 120,
-                OptimizeWidthAndHeight = false,
                 SpanningTreeGeneration = SpanningTreeGeneration.DFS,
             },
             DefaultOverlapRemovalAlgorithmParams = new OverlapRemovalParameters

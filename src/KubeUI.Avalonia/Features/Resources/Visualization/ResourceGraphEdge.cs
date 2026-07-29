@@ -1,5 +1,4 @@
 using KubeUI.Kubernetes.Resources.Relationships;
-using Westermo.GraphX.Common.Enums;
 using Westermo.GraphX.Common.Models;
 
 namespace KubeUI.Avalonia.Features.Resources.Visualization;

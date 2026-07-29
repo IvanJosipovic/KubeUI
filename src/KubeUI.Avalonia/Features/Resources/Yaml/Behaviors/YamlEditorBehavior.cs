@@ -1,5 +1,4 @@
 using Avalonia.Input;
-using Avalonia.Styling;
 using Avalonia.Xaml.Interactivity;
 using AvaloniaEdit;
 using AvaloniaEdit.CodeCompletion;

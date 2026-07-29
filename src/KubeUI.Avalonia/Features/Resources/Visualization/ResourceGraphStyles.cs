@@ -1,7 +1,6 @@
 using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Presenters;
 using Avalonia.Controls.Templates;
-using Avalonia.Media;
 using Westermo.GraphX.Controls.Controls;
 using Westermo.GraphX.Controls.Behaviours;
 using QuikGraph;
@@ -43,8 +42,6 @@ internal static class ResourceGraphStyles
                 new Setter(TemplatedControl.PaddingProperty, new Thickness(0)),
                 new Setter(TemplatedControl.BorderBrushProperty, Brushes.Transparent),
                 new Setter(TemplatedControl.BorderThicknessProperty, new Thickness(0)),
-                // new Setter(ContentControl.HorizontalContentAlignmentProperty, HorizontalAlignment.Center),
-                // new Setter(ContentControl.VerticalContentAlignmentProperty, VerticalAlignment.Center),
                 new Setter(DragBehaviour.IsDragEnabledProperty, true),
                 new Setter(DragBehaviour.UpdateEdgesOnMoveProperty, true),
                 new Setter(VertexControlBase.VertexShapeProperty, VertexShape.Rectangle),

@@ -1,5 +1,6 @@
 using k8s;
 using k8s.Models;
+using KubernetesClient.Informer.Client;
 using KubeUI.Kubernetes.Resources.Relationships;
 using KubeUI.Kubernetes.Resources.Relationships.Providers;
 using Shouldly;
@@ -8,6 +9,96 @@ namespace KubeUI.Kubernetes.Tests.Resources.Relationships;
 
 public sealed class ResourceRelationshipBuilderTests
 {
+    [Fact]
+    public void Relates_pod_to_its_node()
+    {
+        V1Pod pod = new()
+        {
+            ApiVersion = "v1",
+            Kind = V1Pod.KubeKind,
+            Metadata = new() { Name = "web", NamespaceProperty = "demo" },
+            Spec = new() { NodeName = "node-a" },
+        };
+        V1Node node = new()
+        {
+            ApiVersion = "v1",
+            Kind = V1Node.KubeKind,
+            Metadata = new() { Name = "node-a" },
+        };
+
+        ResourceRelationshipGraph graph = new ResourceRelationshipBuilder().Build(
+            [pod, node],
+            new HashSet<string> { "demo" },
+            hideNoise: true);
+
+        graph.Relationships.ShouldContain(new ResourceRelationship(
+            new("v1", V1Pod.KubeKind, "demo", "web", null),
+            new("v1", V1Node.KubeKind, null, "node-a", null),
+            ResourceRelationshipKind.Reference));
+    }
+
+    [Fact]
+    public void Relates_ingress_to_its_ingress_class()
+    {
+        V1Ingress ingress = new()
+        {
+            ApiVersion = "networking.k8s.io/v1",
+            Kind = V1Ingress.KubeKind,
+            Metadata = new() { Name = "web", NamespaceProperty = "demo" },
+            Spec = new() { IngressClassName = "nginx" },
+        };
+        V1IngressClass ingressClass = new()
+        {
+            ApiVersion = "networking.k8s.io/v1",
+            Kind = V1IngressClass.KubeKind,
+            Metadata = new() { Name = "nginx" },
+        };
+
+        ResourceRelationshipGraph graph = new ResourceRelationshipBuilder().Build(
+            [ingress, ingressClass],
+            new HashSet<string> { "demo" },
+            hideNoise: true);
+
+        graph.Relationships.ShouldContain(new ResourceRelationship(
+            new("networking.k8s.io/v1", V1Ingress.KubeKind, "demo", "web", null),
+            new("networking.k8s.io/v1", V1IngressClass.KubeKind, null, "nginx", null),
+            ResourceRelationshipKind.Reference));
+    }
+
+    [Fact]
+    public void Aggregates_seed_prerequisites_from_relationship_providers()
+    {
+        ResourceRelationshipGraph graph = new ResourceRelationshipBuilder().Build(
+            Array.Empty<IKubernetesObject<V1ObjectMeta>>(),
+            new HashSet<string>(),
+            hideNoise: true);
+
+        graph.RequiredSeedPrerequisites.ShouldContain(new ResourceSeedPrerequisite(typeof(V1Service)));
+        graph.RequiredSeedPrerequisites.ShouldContain(new ResourceSeedPrerequisite(typeof(V1Ingress)));
+        graph.RequiredSeedPrerequisites.ShouldContain(new ResourceSeedPrerequisite(typeof(V1EndpointSlice)));
+        graph.RequiredSeedPrerequisites.ShouldContain(new ResourceSeedPrerequisite(typeof(V1Pod)));
+        graph.RequiredSeedPrerequisites.ShouldContain(new ResourceSeedPrerequisite(typeof(V1Node)));
+        graph.RequiredSeedPrerequisites.ShouldContain(new ResourceSeedPrerequisite(typeof(V1ConfigMap)));
+        graph.RequiredSeedPrerequisites.ShouldContain(new ResourceSeedPrerequisite(typeof(V1Secret)));
+        graph.RequiredSeedPrerequisites.ShouldContain(new ResourceSeedPrerequisite(typeof(V1PersistentVolumeClaim)));
+        graph.RequiredSeedPrerequisites.ShouldContain(new ResourceSeedPrerequisite(typeof(V1RoleBinding)));
+        graph.RequiredSeedPrerequisites.ShouldContain(new ResourceSeedPrerequisite(typeof(V1ClusterRoleBinding)));
+        graph.RequiredSeedPrerequisites.ShouldContain(new ResourceSeedPrerequisite(typeof(Corev1Event)));
+        graph.RequiredSeedPrerequisites.ShouldContain(new ResourceSeedPrerequisite(typeof(V1ServiceAccount)));
+        graph.RequiredSeedPrerequisites.ShouldContain(new ResourceSeedPrerequisite(typeof(V1PersistentVolume)));
+        graph.RequiredSeedPrerequisites.ShouldContain(new ResourceSeedPrerequisite(typeof(V1StorageClass)));
+        graph.RequiredSeedPrerequisites.ShouldContain(new ResourceSeedPrerequisite(typeof(V1Role)));
+        graph.RequiredSeedPrerequisites.ShouldContain(new ResourceSeedPrerequisite(typeof(V1ClusterRole)));
+        graph.RequiredSeedPrerequisites.ShouldContain(new ResourceSeedPrerequisite(
+            new GroupApiVersionKind("protection.crossplane.io", "v1beta1", "Usage", "usages")));
+        graph.RequiredSeedPrerequisites.ShouldContain(new ResourceSeedPrerequisite(
+            new GroupApiVersionKind("argoproj.io", "v1alpha1", "Application", "applications")));
+        graph.RequiredSeedPrerequisites.ShouldContain(new ResourceSeedPrerequisite(
+            new GroupApiVersionKind("kustomize.toolkit.fluxcd.io", "v1", "Kustomization", "kustomizations")));
+        graph.RequiredSeedPrerequisites.ShouldContain(new ResourceSeedPrerequisite(
+            new GroupApiVersionKind("helm.toolkit.fluxcd.io", "v2", "HelmRelease", "helmreleases")));
+    }
+
     [Fact]
     public void Relates_crossplane_usage_references_without_a_static_usage_model()
     {
@@ -116,12 +207,6 @@ public sealed class ResourceRelationshipBuilderTests
                 [new(volume.ApiVersion!, volume.Kind!, volume.Namespace(), volume.Name()!)] = volume,
                 [new(unrelatedVolume.ApiVersion!, unrelatedVolume.Kind!, unrelatedVolume.Namespace(), unrelatedVolume.Name()!)] = unrelatedVolume,
                 [new(claim.ApiVersion!, claim.Kind!, claim.Namespace(), claim.Name()!)] = claim,
-            },
-            new Dictionary<string, IReadOnlyList<IKubernetesObject<V1ObjectMeta>>>
-            {
-                [storageClass.Kind!] = [storageClass],
-                [volume.Kind!] = [volume, unrelatedVolume],
-                [claim.Kind!] = [claim],
             });
         HashSet<ResourceRelationship> providerRelationships = [];
         new StorageRelationshipProvider().AddRelationships(volume, context, providerRelationships);
@@ -570,6 +655,60 @@ public sealed class ResourceRelationshipBuilderTests
     }
 
     [Fact]
+    public void Addition_delta_excludes_unrelated_namespaced_resources()
+    {
+        V1Pod selected = new() { ApiVersion = "v1", Kind = V1Pod.KubeKind, Metadata = new() { Name = "selected", NamespaceProperty = "demo", Uid = "selected-uid" } };
+        V1Pod unrelated = new() { ApiVersion = "v1", Kind = V1Pod.KubeKind, Metadata = new() { Name = "unrelated", NamespaceProperty = "other", Uid = "unrelated-uid" } };
+
+        ResourceRelationshipGraph delta = new ResourceRelationshipBuilder().BuildAdditionDelta(
+            [selected, unrelated],
+            new ResourceKey("v1", V1Pod.KubeKind, "other", "unrelated"),
+            new HashSet<string> { "demo" },
+            hideNoise: true);
+
+        delta.Resources.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public void Namespace_filter_does_not_traverse_owner_relationships_across_namespaces()
+    {
+        V1Deployment owner = new()
+        {
+            ApiVersion = "apps/v1",
+            Kind = V1Deployment.KubeKind,
+            Metadata = new() { Name = "owner", NamespaceProperty = "demo", Uid = "owner-uid" },
+        };
+        V1Pod unrelatedChild = new()
+        {
+            ApiVersion = "v1",
+            Kind = V1Pod.KubeKind,
+            Metadata = new()
+            {
+                Name = "unrelated-child",
+                NamespaceProperty = "other",
+                Uid = "unrelated-child-uid",
+                OwnerReferences =
+                [
+                    new()
+                    {
+                        ApiVersion = owner.ApiVersion,
+                        Kind = owner.Kind,
+                        Name = owner.Name(),
+                        Uid = owner.Uid(),
+                    },
+                ],
+            },
+        };
+
+        ResourceRelationshipGraph graph = new ResourceRelationshipBuilder().Build(
+            [owner, unrelatedChild],
+            new HashSet<string> { "demo" },
+            hideNoise: true);
+
+        graph.Resources.Select(resource => resource.Name()).ShouldBe(["owner"]);
+    }
+
+    [Fact]
     public void Keeps_related_resources_from_other_namespaces()
     {
         V1Pod selected = new() { ApiVersion = "v1", Kind = V1Pod.KubeKind, Metadata = new() { Name = "selected", NamespaceProperty = "demo", Uid = "selected-uid" } };
@@ -698,6 +837,12 @@ public sealed class ResourceRelationshipBuilderTests
             new("kustomize.toolkit.fluxcd.io/v1", "Kustomization", "demo", "kustomization-a", "kustomize-uid"),
             new("v1", V1ConfigMap.KubeKind, "demo", "kustomize-managed", null),
             ResourceRelationshipKind.GitOps));
+        graph.RequiredSeedPrerequisites.ShouldContain(new ResourceSeedPrerequisite(
+            new GroupApiVersionKind("argoproj.io", "v1alpha1", "Application", "applications")));
+        graph.RequiredSeedPrerequisites.ShouldContain(new ResourceSeedPrerequisite(
+            new GroupApiVersionKind("kustomize.toolkit.fluxcd.io", "v1", "Kustomization", "kustomizations")));
+        graph.RequiredSeedPrerequisites.ShouldContain(new ResourceSeedPrerequisite(
+            new GroupApiVersionKind("helm.toolkit.fluxcd.io", "v2", "HelmRelease", "helmreleases")));
     }
 
     [Fact]
@@ -802,6 +947,37 @@ public sealed class ResourceRelationshipBuilderTests
         graph.PendingReferences.ShouldContain(new UnresolvedResourceReference("argoproj.io", "v1alpha1", "Application", null, "demo-app"));
         graph.PendingReferences.ShouldContain(new UnresolvedResourceReference("helm.toolkit.fluxcd.io", null, "HelmRelease", "demo", "release-a"));
         graph.PendingReferences.ShouldContain(new UnresolvedResourceReference("kustomize.toolkit.fluxcd.io", null, "Kustomization", "demo", "kustomization-a"));
+    }
+
+    [Fact]
+    public void Tracks_unresolved_argo_application_from_data_product_tracking_id()
+    {
+        TestDynamicResource dataProduct = new()
+        {
+            ApiVersion = "data.platform.da.teck.com/v1alpha1",
+            Kind = "DataProduct",
+            Metadata = new()
+            {
+                Name = "canary",
+                NamespaceProperty = "platform-test-data-product",
+                Annotations = new Dictionary<string, string>
+                {
+                    ["argocd.argoproj.io/tracking-id"] = "platform-test-data-product:data.platform.da.teck.com/DataProduct:platform-test-data-product/canary",
+                },
+            },
+        };
+
+        ResourceRelationshipGraph graph = new ResourceRelationshipBuilder().Build(
+            [dataProduct],
+            new HashSet<string> { "platform-test-data-product" },
+            hideNoise: true);
+
+        graph.PendingReferences.ShouldContain(new UnresolvedResourceReference(
+            "argoproj.io",
+            "v1alpha1",
+            "Application",
+            null,
+            "platform-test-data-product"));
     }
 
     private sealed class CrossNamespaceProvider : IResourceRelationshipProvider

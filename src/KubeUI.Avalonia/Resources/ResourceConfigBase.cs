@@ -1,6 +1,5 @@
 using System.Text.Json;
 using Avalonia.Controls.Notifications;
-using Avalonia.Styling;
 using Dock.Model.Core;
 using FluentAvalonia.UI.Controls;
 using FluentIcons.Common;

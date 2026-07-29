@@ -1,6 +1,5 @@
 using KubeUI.Testing;
 using Shouldly;
-using KubernetesClient.Informer.Client;
 using k8s;
 using k8s.Models;
 

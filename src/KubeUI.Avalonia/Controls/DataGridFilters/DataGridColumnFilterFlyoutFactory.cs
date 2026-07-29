@@ -1,6 +1,5 @@
 using Avalonia.Controls.DataGridFiltering;
 using Avalonia.Controls.Primitives;
-using Avalonia.Styling;
 using KubeUI.Avalonia.Resources;
 
 namespace KubeUI.Avalonia.Controls.DataGridFilters;
