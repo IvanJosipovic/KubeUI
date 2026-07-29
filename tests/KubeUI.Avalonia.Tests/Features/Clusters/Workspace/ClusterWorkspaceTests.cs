@@ -134,7 +134,11 @@ public class ClusterWorkspaceTests : AvaloniaTestBase
         updatedType.ShouldNotBeNull();
         updatedType.ShouldNotBe(originalType);
 
-        var updatedResourceConfig = await WaitForValueAsync(() => GetCustomResourceConfig(workspace, updatedCrd));
+        var updatedResourceConfig = await WaitForValueAsync(() =>
+        {
+            var resourceConfig = GetCustomResourceConfig(workspace, updatedCrd);
+            return resourceConfig?.Type == updatedType ? resourceConfig : null;
+        });
         updatedResourceConfig.ShouldNotBeNull();
         updatedResourceConfig.Type.ShouldBe(updatedType);
 
