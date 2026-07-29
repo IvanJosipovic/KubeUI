@@ -17,7 +17,7 @@ jobs:
           global-json-file: global.json
 
       - name: Build
-        run: dotnet build --configuration Release --verbosity Minimal
+        run: dotnet build --configuration Release -p:WarningLevel=0
 
       - name: Test Avalonia
         run: |

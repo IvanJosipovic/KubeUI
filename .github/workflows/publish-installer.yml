@@ -84,7 +84,7 @@ jobs:
 
       - name: Publish
         working-directory: src/KubeUI.Desktop
-        run: dotnet publish -c Release -r ${{ matrix.rid }} -o bin/publish -p:Version=${{ inputs.package_version }} --verbosity Minimal
+        run: dotnet publish -c Release -r ${{ matrix.rid }} -o bin/publish -p:Version=${{ inputs.package_version }} -p:WarningLevel=0
 
       - name: Replace single file
         if: matrix.runs-on == 'macos-latest'
