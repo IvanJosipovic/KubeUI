@@ -130,6 +130,31 @@ public class NavigationViewModelTests : AvaloniaTestBase
         return null;
     }
 
+    [AvaloniaFact]
+    public void cluster_catalog_changes_update_navigation_nodes()
+    {
+        using var vm = CreateViewModel();
+        using var firstWorkspace = CreateWorkspace(new TestCluster { Name = "catalog-first" });
+        using var replacementWorkspace = CreateWorkspace(new TestCluster { Name = "catalog-replacement" });
+
+        vm.ClusterCatalog.Clusters.Add(firstWorkspace);
+        vm.Clusters.ShouldContain(node => ReferenceEquals(node.Cluster, firstWorkspace));
+
+        vm.ClusterCatalog.Clusters.Remove(firstWorkspace);
+        vm.Clusters.ShouldNotContain(node => ReferenceEquals(node.Cluster, firstWorkspace));
+
+        vm.ClusterCatalog.Clusters.Add(firstWorkspace);
+        var firstIndex = vm.ClusterCatalog.Clusters.IndexOf(firstWorkspace);
+        firstIndex.ShouldBeGreaterThanOrEqualTo(0);
+        vm.ClusterCatalog.Clusters[firstIndex] = replacementWorkspace;
+
+        vm.Clusters.ShouldNotContain(node => ReferenceEquals(node.Cluster, firstWorkspace));
+        vm.Clusters.ShouldContain(node => ReferenceEquals(node.Cluster, replacementWorkspace));
+
+        vm.ClusterCatalog.Clusters.Clear();
+        vm.Clusters.ShouldBeEmpty();
+    }
+
     private static ResourceNavigationLink? FindResourceLink(ClusterNavigationNode root, string name)
     {
         return FindResourceLink(root.NavigationItems, name);
@@ -1223,7 +1248,9 @@ public class NavigationViewModelTests : AvaloniaTestBase
             "Alpha Permission Resource"));
 
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
-        var resourceLink = FindResourceLink(clusterNode, "Alpha Permission Resource");
+        var resourceLink = await WaitForValueAsync(
+            () => FindResourceLink(clusterNode, "Alpha Permission Resource"),
+            timeoutMs: 1000);
         resourceLink.ShouldNotBeNull();
 
         runtime.Name = "new-name";
@@ -1234,7 +1261,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
     }
 
     [AvaloniaFact]
-    public async Task resource_config_navigation_is_applied_immediately_on_ui_thread()
+    public async Task resource_config_navigation_is_applied_after_background_processing()
     {
         var runtime = new TestCluster
         {
@@ -1254,7 +1281,8 @@ public class NavigationViewModelTests : AvaloniaTestBase
             typeof(TestPermissionResourceAlpha),
             "Alpha Permission Resource"));
 
-        FindResourceLink(clusterNode, "Alpha Permission Resource").ShouldNotBeNull();
+        FindResourceLink(clusterNode, "Alpha Permission Resource").ShouldBeNull();
+        await WaitForAsync(() => FindResourceLink(clusterNode, "Alpha Permission Resource") != null);
     }
 
     [AvaloniaFact]
@@ -1355,14 +1383,18 @@ public class NavigationViewModelTests : AvaloniaTestBase
         };
 
         var workspace = CreateWorkspace(runtime);
-        await workspace.Connect();
-        Dispatcher.UIThread.RunJobs();
-
         var podRelease = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
         var fastRefreshCompleted = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var podConfig = new BlockingPodPermissionResourceConfig(runtime, podRelease.Task);
+        var fastConfig = new ImmediatePermissionResourceConfig(
+            typeof(TestPermissionResourceAlpha),
+            "Alpha Permission Resource",
+            fastRefreshCompleted);
 
-        workspace.AddResourceConfigForTest(new BlockingPodPermissionResourceConfig(runtime, podRelease.Task));
-        workspace.AddResourceConfigForTest(new ImmediatePermissionResourceConfig(typeof(TestPermissionResourceAlpha), "Alpha Permission Resource", fastRefreshCompleted));
+        workspace.AddResourceConfigForTest(podConfig);
+        var podPermissionTask = podConfig.EvaluateListWatchAccessAsync();
+        await fastConfig.EvaluateListWatchAccessAsync();
+        workspace.AddResourceConfigForTest(fastConfig);
 
         var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
@@ -1370,14 +1402,6 @@ public class NavigationViewModelTests : AvaloniaTestBase
 
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
         runtime.ResetPortForwardPermissionChecks();
-
-        await runtime.AddOrUpdateResource(new V1Namespace
-        {
-            Metadata = new V1ObjectMeta { Name = "my-app" }
-        });
-
-        await Task.Delay(100);
-        Dispatcher.UIThread.RunJobs();
 
         await WaitForAsync(() => fastRefreshCompleted.Task.IsCompleted);
         FindResourceLink(clusterNode, "Alpha Permission Resource").ShouldNotBeNull();
@@ -1387,6 +1411,8 @@ public class NavigationViewModelTests : AvaloniaTestBase
         runtime.ThrowOnMissingPortForwardReview = false;
         podRelease.TrySetResult(null);
 
+        await podPermissionTask;
+        workspace.AddResourceConfigForTest(podConfig);
         await WaitForAsync(() => FindNavigationLink(clusterNode.NavigationItems, NavigationTargets.PortForwarders) != null);
     }
 
@@ -1880,6 +1906,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
 
         using var visualization = new VisualizationViewModel(new ResourceRelationshipBuilder());
         visualization.Initialize(workspace);
+        await runtime.SeedResource<V1Pod>();
 
         await WaitForAsync(() => podsLink.Count is not null, timeoutMs: 10000);
         var count = await WaitForObservedCountAsync(podsLink.Count, expected: 0, timeoutMs: 10000);
