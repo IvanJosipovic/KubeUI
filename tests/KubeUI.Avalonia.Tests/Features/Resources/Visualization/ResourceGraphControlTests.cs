@@ -634,8 +634,7 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
         ResourceSeedPrerequisite prerequisite = new(typeof(V1Deployment));
         viewModel.ApplyGraph(new ResourceRelationshipGraph([], [], SeedPrerequisites: new HashSet<ResourceSeedPrerequisite> { prerequisite }));
         await cluster.Runtime.SeedResource(typeof(V1Deployment));
-        Dispatcher.UIThread.RunJobs();
-        builder.BuildCount.ShouldBeGreaterThan(1);
+        await builder.WaitForBuildAsync(2);
     }
 
     private sealed class LeakyAdditionRelationshipBuilder : IResourceRelationshipBuilder
