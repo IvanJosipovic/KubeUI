@@ -192,8 +192,22 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
             Kind = "Application",
             Metadata = new() { Name = "demo-app", NamespaceProperty = "argocd" },
         };
+        V1Deployment unrelatedManaged = new()
+        {
+            ApiVersion = "apps/v1",
+            Kind = V1Deployment.KubeKind,
+            Metadata = new()
+            {
+                Name = "unrelated-managed",
+                NamespaceProperty = "other-workload",
+                Annotations = new Dictionary<string, string>
+                {
+                    ["argocd.argoproj.io/tracking-id"] = "demo-app:apps/Deployment:other-workload/unrelated-managed",
+                },
+            },
+        };
         ResourceRelationshipGraph graph = new ResourceRelationshipBuilder().Build(
-            [managed, application],
+            [managed, application, unrelatedManaged],
             new HashSet<string>(),
             hideNoise: true);
 

@@ -461,10 +461,11 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         ResourceRelationshipGraph graph,
         IReadOnlySet<string> selectedNamespaces)
     {
-        HashSet<ResourceIdentity> included = graph.Resources
+        HashSet<ResourceIdentity> selected = graph.Resources
             .Select(GetIdentity)
             .Where(identity => selectedNamespaces.Contains(identity.Namespace ?? string.Empty))
             .ToHashSet();
+        HashSet<ResourceIdentity> included = [.. selected];
 
         bool changed;
         do
@@ -486,17 +487,11 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                     changed = true;
                 }
 
-                if (relationship.Kind is ResourceRelationshipKind.Reference or ResourceRelationshipKind.GitOps)
+                if (relationship.Kind == ResourceRelationshipKind.GitOps
+                    && selected.Contains(relationship.Target)
+                    && included.Add(relationship.Source))
                 {
-                    if (included.Contains(relationship.Source) && included.Add(relationship.Target))
-                    {
-                        changed = true;
-                    }
-
-                    if (included.Contains(relationship.Target) && included.Add(relationship.Source))
-                    {
-                        changed = true;
-                    }
+                    changed = true;
                 }
             }
         }
@@ -534,17 +529,19 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
             }
 
             if (selectedNamespaces.Contains(relationship.Source.Namespace ?? string.Empty)
-                || string.IsNullOrEmpty(relationship.Source.Namespace)
-                || relationship.Kind is ResourceRelationshipKind.Reference or ResourceRelationshipKind.GitOps
-                    && selectedNamespaces.Contains(relationship.Target.Namespace ?? string.Empty))
+                || string.IsNullOrEmpty(relationship.Source.Namespace))
+            {
+                included.Add(relationship.Source);
+            }
+
+            if (relationship.Kind == ResourceRelationshipKind.GitOps
+                && currentIdentities.Contains(relationship.Target))
             {
                 included.Add(relationship.Source);
             }
 
             if (selectedNamespaces.Contains(relationship.Target.Namespace ?? string.Empty)
-                || string.IsNullOrEmpty(relationship.Target.Namespace)
-                || relationship.Kind is ResourceRelationshipKind.Reference or ResourceRelationshipKind.GitOps
-                    && selectedNamespaces.Contains(relationship.Source.Namespace ?? string.Empty))
+                || string.IsNullOrEmpty(relationship.Target.Namespace))
             {
                 included.Add(relationship.Target);
             }
