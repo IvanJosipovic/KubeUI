@@ -418,15 +418,24 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                     return;
                 }
 
-            ResourceIdentity identity = new(resource.ApiVersion ?? string.Empty, resource.Kind ?? string.Empty, resource.Namespace(), resource.Name() ?? string.Empty, resource.Uid());
             ResourceRelationshipGraph current = _completeGraph;
             HashSet<ResourceIdentity> currentIdentities = current.Resources.Select(GetIdentity).ToHashSet();
+            ResourceIdentity identity = GetIdentity(resource);
             if (RootResource != null
                 && identity != GetIdentity(RootResource)
                 && !delta.Relationships.Any(relationship => currentIdentities.Contains(relationship.Source) || currentIdentities.Contains(relationship.Target)))
             {
                 Run();
                 return;
+            }
+
+            if (RootResource == null)
+            {
+                delta = FilterIncrementalDelta(delta, namespaces, currentIdentities);
+                if (delta.Resources.Count == 0)
+                {
+                    return;
+                }
             }
 
             IReadOnlyList<IKubernetesObject<V1ObjectMeta>> resources = current.Resources
@@ -443,9 +452,92 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                 current.RequiredSeedPrerequisites.Union(delta.RequiredSeedPrerequisites).ToHashSet());
             ResourceRelationshipGraph completeGraph = RootResource is { } root
                 ? FilterToRootResource(merged, root)
-                : merged;
+                : FilterToSelectedNamespaces(merged, namespaces);
             ApplyGraph(completeGraph);
         });
+    }
+
+    private static ResourceRelationshipGraph FilterToSelectedNamespaces(
+        ResourceRelationshipGraph graph,
+        IReadOnlySet<string> selectedNamespaces)
+    {
+        HashSet<ResourceIdentity> included = graph.Resources
+            .Select(GetIdentity)
+            .Where(identity => selectedNamespaces.Contains(identity.Namespace ?? string.Empty))
+            .ToHashSet();
+
+        bool changed;
+        do
+        {
+            changed = false;
+            foreach (ResourceRelationship relationship in graph.Relationships)
+            {
+                if (included.Contains(relationship.Source)
+                    && string.IsNullOrEmpty(relationship.Target.Namespace)
+                    && included.Add(relationship.Target))
+                {
+                    changed = true;
+                }
+
+                if (included.Contains(relationship.Target)
+                    && string.IsNullOrEmpty(relationship.Source.Namespace)
+                    && included.Add(relationship.Source))
+                {
+                    changed = true;
+                }
+            }
+        }
+        while (changed);
+
+        return new ResourceRelationshipGraph(
+            graph.Resources.Where(resource => included.Contains(GetIdentity(resource))).ToArray(),
+            graph.Relationships.Where(relationship => included.Contains(relationship.Source) && included.Contains(relationship.Target)).ToArray(),
+            graph.PendingReferences,
+            graph.RequiredSeedPrerequisites);
+    }
+
+    private static ResourceRelationshipGraph FilterIncrementalDelta(
+        ResourceRelationshipGraph delta,
+        IReadOnlySet<string> selectedNamespaces,
+        IReadOnlySet<ResourceIdentity> currentIdentities)
+    {
+        HashSet<ResourceIdentity> included = delta.Resources
+            .Select(GetIdentity)
+            .Where(identity => selectedNamespaces.Contains(identity.Namespace ?? string.Empty)
+                || string.IsNullOrEmpty(identity.Namespace)
+                    && delta.Relationships.Any(relationship =>
+                        (relationship.Source == identity || relationship.Target == identity)
+                        && (currentIdentities.Contains(relationship.Source)
+                            || currentIdentities.Contains(relationship.Target))))
+            .ToHashSet();
+
+        foreach (ResourceRelationship relationship in delta.Relationships)
+        {
+            bool connectsToCurrent = currentIdentities.Contains(relationship.Source)
+                || currentIdentities.Contains(relationship.Target);
+            if (!connectsToCurrent || relationship.Kind is not (ResourceRelationshipKind.Reference or ResourceRelationshipKind.GitOps))
+            {
+                continue;
+            }
+
+            if (selectedNamespaces.Contains(relationship.Source.Namespace ?? string.Empty)
+                || string.IsNullOrEmpty(relationship.Source.Namespace))
+            {
+                included.Add(relationship.Source);
+            }
+
+            if (selectedNamespaces.Contains(relationship.Target.Namespace ?? string.Empty)
+                || string.IsNullOrEmpty(relationship.Target.Namespace))
+            {
+                included.Add(relationship.Target);
+            }
+        }
+
+        return new ResourceRelationshipGraph(
+            delta.Resources.Where(resource => included.Contains(GetIdentity(resource))).ToArray(),
+            delta.Relationships.Where(relationship => included.Contains(relationship.Source) && included.Contains(relationship.Target)).ToArray(),
+            delta.PendingReferences,
+            delta.RequiredSeedPrerequisites);
     }
 
     private void SeedProviderPrerequisites(ResourceRelationshipGraph graph)
@@ -740,6 +832,10 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         if (root != null)
         {
             graph = FilterToRootResource(graph, root);
+        }
+        else
+        {
+            graph = FilterToSelectedNamespaces(graph, namespaces);
         }
 
         return graph;

@@ -465,6 +465,17 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
         using VisualizationViewModel viewModel = new(builder);
         viewModel.Initialize(cluster);
         await builder.WaitForInitialBuildAsync();
+        DateTime initialGraphDeadline = DateTime.UtcNow.AddSeconds(5);
+        while (!viewModel.Graph!.Resources.Any(resource => resource.Name() == "selected"))
+        {
+            Dispatcher.UIThread.RunJobs();
+            if (DateTime.UtcNow >= initialGraphDeadline)
+            {
+                throw new TimeoutException("Timed out waiting for the initial visualization graph.");
+            }
+
+            await Task.Delay(10);
+        }
 
         await cluster.Runtime.AddOrUpdateResource(new V1Node
         {
@@ -494,6 +505,31 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
         Dispatcher.UIThread.RunJobs();
 
         (await builder.WaitForBuildAsync(2)).SelectedNamespaces.ShouldBe(["other"]);
+    }
+
+    [AvaloniaFact]
+    public async Task full_graph_rebuild_does_not_reintroduce_unselected_namespaced_resources()
+    {
+        using var cluster = await TestCluster.GetAsync();
+        var builder = new NamespaceLeakingBuildRelationshipBuilder();
+        using VisualizationViewModel viewModel = new(builder);
+
+        viewModel.Initialize(cluster);
+        await builder.WaitForBuildAsync();
+        DateTime deadline = DateTime.UtcNow.AddSeconds(5);
+        while (viewModel.Graph == null || viewModel.Graph.Resources.Count == 0)
+        {
+            Dispatcher.UIThread.RunJobs();
+            if (DateTime.UtcNow >= deadline)
+            {
+                throw new TimeoutException("Timed out waiting for the namespace-filtered graph.");
+            }
+
+            await Task.Delay(10);
+        }
+
+        viewModel.Graph.Resources.Select(resource => resource.Name()).ShouldNotContain("unselected");
+        viewModel.Graph.Resources.Select(resource => resource.Name()).ShouldNotContain("unrelated-node");
     }
 
     [AvaloniaFact]
@@ -534,6 +570,60 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
     }
 
     [AvaloniaFact]
+    public async Task repeated_incremental_deltas_do_not_accumulate_resources_from_unselected_namespaces()
+    {
+        using var cluster = await TestCluster.GetAsync();
+        V1Pod selected = CreatePod("selected");
+        V1Pod unrelated = new()
+        {
+            ApiVersion = "v1",
+            Kind = V1Pod.KubeKind,
+            Metadata = new() { Name = "unrelated", NamespaceProperty = "other", Uid = "unrelated" },
+        };
+        await cluster.Runtime.AddOrUpdateResource(selected);
+        await cluster.Runtime.AddOrUpdateResource(unrelated);
+        await cluster.Runtime.AddOrUpdateResource(new V1Node
+        {
+            ApiVersion = "v1",
+            Kind = V1Node.KubeKind,
+            Metadata = new() { Name = "seed-node", Uid = "seed-node" },
+        });
+
+        var builder = new LeakyAdditionRelationshipBuilder();
+        using VisualizationViewModel viewModel = new(builder);
+        viewModel.Initialize(cluster);
+        await builder.WaitForInitialBuildAsync();
+        DateTime initialGraphDeadline = DateTime.UtcNow.AddSeconds(5);
+        while (!viewModel.Graph!.Resources.Any(resource => resource.Name() == "selected"))
+        {
+            Dispatcher.UIThread.RunJobs();
+            if (DateTime.UtcNow >= initialGraphDeadline)
+            {
+                throw new TimeoutException("Timed out waiting for the initial visualization graph.");
+            }
+
+            await Task.Delay(10);
+        }
+
+        viewModel.Graph!.Resources.Select(resource => resource.Name()).ShouldNotContain("unrelated");
+
+        for (int i = 0; i < 3; i++)
+        {
+            await cluster.Runtime.AddOrUpdateResource(new V1Node
+            {
+                ApiVersion = "v1",
+                Kind = V1Node.KubeKind,
+                Metadata = new() { Name = $"node-{i}", Uid = $"node-{i}" },
+            });
+            Dispatcher.UIThread.RunJobs();
+            await builder.WaitForAdditionAsync();
+            Dispatcher.UIThread.RunJobs();
+        }
+
+        viewModel.Graph!.Resources.Select(resource => resource.Name()).ShouldNotContain("unrelated");
+    }
+
+    [AvaloniaFact]
     public async Task seeded_prerequisite_triggers_graph_rebuild()
     {
         using var cluster = await TestCluster.GetAsync();
@@ -547,6 +637,55 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
         await cluster.Runtime.SeedResource(typeof(V1Deployment));
         Dispatcher.UIThread.RunJobs();
         builder.BuildCount.ShouldBeGreaterThan(1);
+    }
+
+    private sealed class LeakyAdditionRelationshipBuilder : IResourceRelationshipBuilder
+    {
+        private readonly ResourceRelationshipBuilder _inner = new();
+        private readonly TaskCompletionSource _initialBuild = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly ConcurrentQueue<TaskCompletionSource> _additions = [];
+
+        public ResourceRelationshipGraph Build(
+            IEnumerable<IKubernetesObject<V1ObjectMeta>> resources,
+            IReadOnlySet<string> selectedNamespaces,
+            bool hideNoise)
+        {
+            ResourceRelationshipGraph graph = _inner.Build(resources, selectedNamespaces, hideNoise);
+            _initialBuild.TrySetResult();
+            return graph;
+        }
+
+        public ResourceRelationshipGraph BuildAdditionDelta(
+            IEnumerable<IKubernetesObject<V1ObjectMeta>> resources,
+            ResourceKey addedResource,
+            IReadOnlySet<string> selectedNamespaces,
+            bool hideNoise)
+        {
+            TaskCompletionSource addition = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            _additions.Enqueue(addition);
+            addition.TrySetResult();
+            return new ResourceRelationshipGraph(resources.ToArray(), []);
+        }
+
+        public async Task WaitForInitialBuildAsync() => await _initialBuild.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
+        public async Task WaitForAdditionAsync()
+        {
+            TaskCompletionSource? addition;
+            DateTime deadline = DateTime.UtcNow.AddSeconds(5);
+            while (!_additions.TryDequeue(out addition))
+            {
+                Dispatcher.UIThread.RunJobs();
+                if (DateTime.UtcNow >= deadline)
+                {
+                    throw new TimeoutException("Timed out waiting for an incremental graph addition.");
+                }
+
+                await Task.Delay(10);
+            }
+
+            await addition.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        }
     }
 
     [AvaloniaFact]
@@ -1189,6 +1328,40 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
             => await _builds.GetOrAdd(buildNumber, _ => new(TaskCreationOptions.RunContinuationsAsynchronously)).Task;
     }
 
+    private sealed class NamespaceLeakingBuildRelationshipBuilder : IResourceRelationshipBuilder
+    {
+        private readonly TaskCompletionSource _build = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public ResourceRelationshipGraph Build(
+            IEnumerable<IKubernetesObject<V1ObjectMeta>> resources,
+            IReadOnlySet<string> selectedNamespaces,
+            bool hideNoise)
+        {
+            _build.TrySetResult();
+            return new ResourceRelationshipGraph(
+                [
+                    CreatePod("selected"),
+                    CreatePod("unselected", "other"),
+                    new V1Node
+                    {
+                        ApiVersion = "v1",
+                        Kind = V1Node.KubeKind,
+                        Metadata = new() { Name = "unrelated-node", Uid = "unrelated-node" },
+                    },
+                ],
+                []);
+        }
+
+        public ResourceRelationshipGraph BuildAdditionDelta(
+            IEnumerable<IKubernetesObject<V1ObjectMeta>> resources,
+            ResourceKey addedResource,
+            IReadOnlySet<string> selectedNamespaces,
+            bool hideNoise)
+            => ResourceRelationshipGraph.Empty;
+
+        public async Task WaitForBuildAsync() => await _build.Task;
+    }
+
     private sealed record BuildInput(IReadOnlyList<string> SelectedNamespaces, bool HideNoise);
 
     private static byte[] CaptureScreenshot(Window window, string path)
@@ -1203,14 +1376,14 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
         return screenshot;
     }
 
-    private static V1Pod CreatePod(string name) => new()
+    private static V1Pod CreatePod(string name, string namespaceName = "default") => new()
     {
         ApiVersion = "v1",
         Kind = V1Pod.KubeKind,
         Metadata = new()
         {
             Name = name,
-            NamespaceProperty = "default",
+            NamespaceProperty = namespaceName,
             Uid = name,
         },
     };
