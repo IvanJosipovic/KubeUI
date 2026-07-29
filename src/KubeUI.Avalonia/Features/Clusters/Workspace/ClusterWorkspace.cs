@@ -90,6 +90,8 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
             activity?.SetStatus(System.Diagnostics.ActivityStatusCode.Error, ex.Message);
             Runtime.LastError = ex.Message;
             Runtime.Status = ClusterStatus.Errored;
+
+            _logger.LogError(ex, "Error connecting to cluster {ClusterName}", Runtime.Name);
         }
     }
 
