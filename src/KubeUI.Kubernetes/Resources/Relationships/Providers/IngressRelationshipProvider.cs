@@ -23,7 +23,7 @@ public sealed class IngressRelationshipProvider : IResourceRelationshipProvider
             context,
             relationships,
             resource,
-            "networking.k8s.io/v1",
+            $"{V1IngressClass.KubeGroup}/{V1IngressClass.KubeApiVersion}",
             V1IngressClass.KubeKind,
             null,
             ingress.Spec?.IngressClassName,

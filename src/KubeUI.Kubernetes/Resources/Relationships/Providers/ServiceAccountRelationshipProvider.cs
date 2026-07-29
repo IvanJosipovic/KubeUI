@@ -23,7 +23,7 @@ public sealed class ServiceAccountRelationshipProvider : IResourceRelationshipPr
         V1PodSpec? podSpec = RelationshipProviderHelpers.PodSpec(resource);
         if (podSpec != null)
         {
-            RelationshipProviderHelpers.AddByName(context, relationships, resource, "v1", V1ServiceAccount.KubeKind, resource.Namespace(), podSpec.ServiceAccountName, ResourceRelationshipKind.Identity);
+            RelationshipProviderHelpers.AddByName(context, relationships, resource, V1ServiceAccount.KubeApiVersion, V1ServiceAccount.KubeKind, resource.Namespace(), podSpec.ServiceAccountName, ResourceRelationshipKind.Identity);
         }
 
         if (resource is V1ServiceAccount serviceAccount)

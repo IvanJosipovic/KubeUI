@@ -16,13 +16,13 @@ public sealed class StorageRelationshipProvider : IResourceRelationshipProvider
     {
         if (resource is V1PersistentVolumeClaim claim)
         {
-            RelationshipProviderHelpers.AddByName(context, relationships, resource, "v1", V1PersistentVolume.KubeKind, null, claim.Spec?.VolumeName, ResourceRelationshipKind.Storage);
-            RelationshipProviderHelpers.AddByName(context, relationships, resource, "storage.k8s.io/v1", V1StorageClass.KubeKind, null, claim.Spec?.StorageClassName, ResourceRelationshipKind.Storage);
+            RelationshipProviderHelpers.AddByName(context, relationships, resource, V1PersistentVolume.KubeApiVersion, V1PersistentVolume.KubeKind, null, claim.Spec?.VolumeName, ResourceRelationshipKind.Storage);
+            RelationshipProviderHelpers.AddByName(context, relationships, resource, $"{V1StorageClass.KubeGroup}/{V1StorageClass.KubeApiVersion}", V1StorageClass.KubeKind, null, claim.Spec?.StorageClassName, ResourceRelationshipKind.Storage);
         }
 
         if (resource is V1PersistentVolume volume)
         {
-            RelationshipProviderHelpers.AddByName(context, relationships, resource, "storage.k8s.io/v1", V1StorageClass.KubeKind, null, volume.Spec?.StorageClassName, ResourceRelationshipKind.Storage);
+            RelationshipProviderHelpers.AddByName(context, relationships, resource, $"{V1StorageClass.KubeGroup}/{V1StorageClass.KubeApiVersion}", V1StorageClass.KubeKind, null, volume.Spec?.StorageClassName, ResourceRelationshipKind.Storage);
         }
     }
 }
