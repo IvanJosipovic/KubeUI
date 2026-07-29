@@ -72,7 +72,46 @@ public sealed class ResourceRelationshipContext
     }
 
     public bool TryGetByGroupAndKind(string apiGroup, string kind, out IReadOnlyList<IKubernetesObject<V1ObjectMeta>> resources)
-        => _resourcesByGroupAndKind.TryGetValue((apiGroup, kind), out resources!);
+    {
+        if (_resourcesByGroupAndKind.TryGetValue((apiGroup, kind), out resources!))
+        {
+            return true;
+        }
+
+        resources = _resourcesByGroupAndKind
+            .Where(entry => string.Equals(entry.Key.Kind, kind, StringComparison.Ordinal))
+            .SelectMany(entry => entry.Value)
+            .ToArray();
+        return resources.Count > 0;
+    }
+
+    public bool TryGetByName(string apiGroup, string kind, string? namespaceName, string? name, out IKubernetesObject<V1ObjectMeta>? resource)
+    {
+        resource = null;
+        return TryGetByGroupAndKind(apiGroup, kind, out IReadOnlyList<IKubernetesObject<V1ObjectMeta>> resources)
+            && (resource = resources.FirstOrDefault(candidate =>
+                string.Equals(candidate.Namespace(), namespaceName, StringComparison.Ordinal)
+                && string.Equals(candidate.Name(), name, StringComparison.Ordinal))) != null;
+    }
+
+    public IEnumerable<IKubernetesObject<V1ObjectMeta>> SelectByLabelSelector(
+        string apiGroup,
+        string kind,
+        V1LabelSelector? selector,
+        string? namespaceName = null)
+    {
+        if (selector == null || !TryGetByGroupAndKind(apiGroup, kind, out IReadOnlyList<IKubernetesObject<V1ObjectMeta>> resources))
+        {
+            return [];
+        }
+
+        return resources.Where(resource =>
+            (namespaceName == null || string.Equals(resource.Namespace(), namespaceName, StringComparison.Ordinal))
+            && MatchesSelector(resource.Metadata?.Labels, selector));
+    }
+
+    public IEnumerable<IKubernetesObject<V1ObjectMeta>> SelectNamespaces(V1LabelSelector? selector)
+        => SelectByLabelSelector(string.Empty, V1Namespace.KubeKind, selector);
 
     public void RecordUnresolved(string apiGroup, string kind, string? namespaceName, string? name, string? apiVersion = null)
     {
@@ -91,6 +130,31 @@ public sealed class ResourceRelationshipContext
     }
 
     internal IReadOnlySet<UnresolvedResourceReference> UnresolvedReferences => _unresolvedReferences;
+
+    private static bool MatchesSelector(IDictionary<string, string>? labels, V1LabelSelector selector)
+    {
+        labels ??= new Dictionary<string, string>();
+
+        if (selector.MatchLabels?.Any(match => !labels.TryGetValue(match.Key, out string? value) || value != match.Value) == true)
+        {
+            return false;
+        }
+
+        foreach (V1LabelSelectorRequirement requirement in selector.MatchExpressions ?? [])
+        {
+            labels.TryGetValue(requirement.Key, out string? value);
+            switch (requirement.OperatorProperty)
+            {
+                case "In" when requirement.Values?.Contains(value) != true:
+                case "NotIn" when requirement.Values?.Contains(value) == true:
+                case "Exists" when value == null:
+                case "DoesNotExist" when value != null:
+                    return false;
+            }
+        }
+
+        return true;
+    }
 
     public ResourceIdentity Identity(IKubernetesObject<V1ObjectMeta> resource)
         => new(resource.ApiVersion ?? string.Empty, resource.Kind ?? string.Empty, resource.Namespace(), resource.Name() ?? string.Empty, resource.Uid());
@@ -131,6 +195,8 @@ public sealed class ResourceRelationshipBuilder : IResourceRelationshipBuilder
             new Providers.CrossplaneUsageRelationshipProvider(),
             new Providers.IngressRelationshipProvider(),
             new Providers.EndpointSliceRelationshipProvider(),
+            new Providers.SelectorRelationshipProvider(),
+            new Providers.ReferencedResourceRelationshipProvider(),
             new Providers.PodTemplateReferenceRelationshipProvider(),
             new Providers.ServiceAccountRelationshipProvider(),
             new Providers.StorageRelationshipProvider(),
@@ -463,7 +529,7 @@ public sealed class ResourceRelationshipBuilder : IResourceRelationshipBuilder
             while (queue.Count > 0)
             {
                 ResourceIdentity current = queue.Dequeue();
-                if (!visited.Add(current))
+                if (current == relationship.Source || !visited.Add(current))
                 {
                     continue;
                 }

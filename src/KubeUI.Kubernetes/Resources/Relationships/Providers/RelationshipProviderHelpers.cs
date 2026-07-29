@@ -35,4 +35,58 @@ internal static class RelationshipProviderHelpers
             context.Add(relationships, source, target, relationshipKind, label);
         }
     }
+
+    public static void AddByTargetReference(
+        ResourceRelationshipContext context,
+        ICollection<ResourceRelationship> relationships,
+        IKubernetesObject<V1ObjectMeta> source,
+        V1ObjectReference? targetReference,
+        string? defaultNamespace,
+        Type targetType,
+        ResourceRelationshipKind relationshipKind)
+    {
+        IKubernetesObject<V1ObjectMeta>? target = null;
+        if (!string.IsNullOrWhiteSpace(targetReference?.Uid))
+        {
+            context.TryGetByUid(targetReference.Uid, out target);
+        }
+
+        if (target == null && targetReference != null)
+        {
+            string apiVersion = string.IsNullOrWhiteSpace(targetReference.ApiVersion)
+                ? V1Pod.KubeApiVersion
+                : targetReference.ApiVersion;
+            context.TryGet(apiVersion, targetReference.Kind ?? string.Empty, targetReference.NamespaceProperty ?? defaultNamespace, targetReference.Name, out target);
+        }
+
+        if (target == null
+            && targetReference != null
+            && context.TryGetByGroupAndKind(string.Empty, string.IsNullOrWhiteSpace(targetReference.Kind) ? V1Pod.KubeKind : targetReference.Kind, out IReadOnlyList<IKubernetesObject<V1ObjectMeta>> candidates))
+        {
+            target = candidates.FirstOrDefault(candidate =>
+                string.Equals(candidate.Namespace(), targetReference.NamespaceProperty ?? defaultNamespace, StringComparison.Ordinal)
+                && string.Equals(candidate.Name(), targetReference.Name, StringComparison.Ordinal));
+        }
+
+        if (target != null && targetType.IsInstanceOfType(target))
+        {
+            context.Add(relationships, source, target, relationshipKind);
+        }
+    }
+
+    public static void AddBySelector(
+        ResourceRelationshipContext context,
+        ICollection<ResourceRelationship> relationships,
+        IKubernetesObject<V1ObjectMeta> source,
+        string apiGroup,
+        string kind,
+        V1LabelSelector? selector,
+        string? namespaceName,
+        ResourceRelationshipKind relationshipKind)
+    {
+        foreach (IKubernetesObject<V1ObjectMeta> target in context.SelectByLabelSelector(apiGroup, kind, selector, namespaceName))
+        {
+            context.Add(relationships, source, target, relationshipKind);
+        }
+    }
 }

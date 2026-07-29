@@ -76,6 +76,7 @@ public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphContr
             DefaultLayoutAlgorithm = LayoutAlgorithmTypeEnum.Tree,
             DefaultOverlapRemovalAlgorithm = OverlapRemovalAlgorithmTypeEnum.FSA,
             DefaultEdgeRoutingAlgorithm = EdgeRoutingAlgorithmTypeEnum.None,
+            EnableParallelEdges = true,
 
             DefaultLayoutAlgorithmParams = new SimpleTreeLayoutParameters
             {

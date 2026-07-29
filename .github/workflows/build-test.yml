@@ -54,14 +54,14 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: test-diagnostics
-          path: tests/**/TestResults/*.dmp
+          path: TestResults/
 
       - name: Test Report
         uses: dorny/test-reporter@v3
         if: (!cancelled())
         with:
           name: KubeUI Tests
-          path: tests/**/TestResults/*.trx
+          path: TestResults/*.trx
           reporter: dotnet-trx
 
       - name: Test Summary
@@ -70,11 +70,11 @@ jobs:
         with:
           check_name: KubeUI Tests
           comment_mode: always
-          files: tests/**/TestResults/*.trx
+          files: TestResults/*.trx
 
       - name: Coverage
         uses: codecov/codecov-action@v7
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: tests/**/TestResults/coverage.cobertura.xml
+          files: TestResults/coverage.cobertura.xml
           fail_ci_if_error: false

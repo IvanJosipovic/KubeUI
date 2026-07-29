@@ -29,7 +29,7 @@ public sealed class ResourceRelationshipBuilderTests
         ResourceRelationshipGraph graph = new ResourceRelationshipBuilder().Build(
             [pod, node],
             new HashSet<string> { "demo" },
-            hideNoise: true);
+            hideNoise: false);
 
         graph.Relationships.ShouldContain(new ResourceRelationship(
             new("v1", V1Pod.KubeKind, "demo", "web", null),
@@ -58,7 +58,6 @@ public sealed class ResourceRelationshipBuilderTests
             [ingress, ingressClass],
             new HashSet<string> { "demo" },
             hideNoise: true);
-
         graph.Relationships.ShouldContain(new ResourceRelationship(
             new("networking.k8s.io/v1", V1Ingress.KubeKind, "demo", "web", null),
             new("networking.k8s.io/v1", V1IngressClass.KubeKind, null, "nginx", null),
@@ -882,6 +881,42 @@ public sealed class ResourceRelationshipBuilderTests
     }
 
     [Fact]
+    public void Relates_flux_helm_release_to_its_kustomization()
+    {
+        TestDynamicResource helmRelease = new()
+        {
+            ApiVersion = "helm.toolkit.fluxcd.io/v2",
+            Kind = "HelmRelease",
+            Metadata = new()
+            {
+                Name = "envoy-envoy-gateway-system-public-5ea56ca9",
+                NamespaceProperty = "envoy-gateway-system",
+                Labels = new Dictionary<string, string>
+                {
+                    ["kustomize.toolkit.fluxcd.io/name"] = "app",
+                    ["kustomize.toolkit.fluxcd.io/namespace"] = "flux-system",
+                },
+            },
+        };
+        TestDynamicResource kustomization = new()
+        {
+            ApiVersion = "kustomize.toolkit.fluxcd.io/v1",
+            Kind = "Kustomization",
+            Metadata = new() { Name = "app", NamespaceProperty = "flux-system" },
+        };
+
+        ResourceRelationshipGraph graph = new ResourceRelationshipBuilder().Build(
+            [helmRelease, kustomization],
+            new HashSet<string> { "envoy-gateway-system" },
+            hideNoise: true);
+
+        graph.Relationships.ShouldContain(new ResourceRelationship(
+            new("kustomize.toolkit.fluxcd.io/v1", "Kustomization", "flux-system", "app", null),
+            new("helm.toolkit.fluxcd.io/v2", "HelmRelease", "envoy-gateway-system", "envoy-envoy-gateway-system-public-5ea56ca9", null),
+            ResourceRelationshipKind.GitOps));
+    }
+
+    [Fact]
     public void Tracks_unresolved_flux_helm_release_from_labels()
     {
         V1Deployment deployment = new()
@@ -978,6 +1013,89 @@ public sealed class ResourceRelationshipBuilderTests
             "Application",
             null,
             "platform-test-data-product"));
+    }
+
+    [Fact]
+    public void Relates_service_to_matching_pods_and_endpoint_slices()
+    {
+        V1Service service = new()
+        {
+            ApiVersion = "v1",
+            Kind = V1Service.KubeKind,
+            Metadata = new() { Name = "web", NamespaceProperty = "demo" },
+            Spec = new() { Selector = new Dictionary<string, string> { ["app"] = "web" } },
+        };
+        V1Pod pod = new()
+        {
+            ApiVersion = "v1",
+            Kind = V1Pod.KubeKind,
+            Metadata = new() { Name = "web-0", NamespaceProperty = "demo", Uid = "pod-uid", Labels = new Dictionary<string, string> { ["app"] = "web" } },
+        };
+        V1EndpointSlice endpointSlice = new()
+        {
+            ApiVersion = "discovery.k8s.io/v1",
+            Kind = V1EndpointSlice.KubeKind,
+            Metadata = new()
+            {
+                Name = "web-abc",
+                NamespaceProperty = "demo",
+                Labels = new Dictionary<string, string> { ["kubernetes.io/service-name"] = "web" },
+            },
+            Endpoints = [new() { TargetRef = new() { ApiVersion = "v1", Kind = V1Pod.KubeKind, Name = "web-0", NamespaceProperty = "demo", Uid = "pod-uid" } }],
+        };
+
+        ResourceRelationshipGraph graph = new ResourceRelationshipBuilder().Build(
+            [service, pod, endpointSlice],
+            new HashSet<string> { "demo" },
+            hideNoise: true);
+        ResourceRelationshipGraph endpointGraph = new ResourceRelationshipBuilder([new EndpointSliceRelationshipProvider()]).Build(
+            [service, pod, endpointSlice],
+            new HashSet<string> { "demo" },
+            hideNoise: true);
+        endpointGraph.Relationships.ShouldContain(new ResourceRelationship(
+            new("discovery.k8s.io/v1", V1EndpointSlice.KubeKind, "demo", "web-abc", null),
+            new("v1", V1Pod.KubeKind, "demo", "web-0", "pod-uid"),
+            ResourceRelationshipKind.Reference));
+        graph.Relationships.ShouldContain(new ResourceRelationship(
+            new("discovery.k8s.io/v1", V1EndpointSlice.KubeKind, "demo", "web-abc", null),
+            new("v1", V1Pod.KubeKind, "demo", "web-0", "pod-uid"),
+            ResourceRelationshipKind.Reference));
+        graph.Relationships.ShouldContain(new ResourceRelationship(
+            new("v1", V1Service.KubeKind, "demo", "web", null),
+            new("v1", V1Pod.KubeKind, "demo", "web-0", "pod-uid"),
+            ResourceRelationshipKind.Selector));
+        graph.Relationships.ShouldContain(new ResourceRelationship(
+            new("v1", V1Service.KubeKind, "demo", "web", null),
+            new("discovery.k8s.io/v1", V1EndpointSlice.KubeKind, "demo", "web-abc", null),
+            ResourceRelationshipKind.Reference));
+    }
+
+    [Fact]
+    public void Relates_pod_disruption_budget_to_matching_pods()
+    {
+        V1PodDisruptionBudget budget = new()
+        {
+            ApiVersion = "policy/v1",
+            Kind = V1PodDisruptionBudget.KubeKind,
+            Metadata = new() { Name = "web", NamespaceProperty = "demo" },
+            Spec = new() { Selector = new V1LabelSelector { MatchExpressions = [new() { Key = "tier", OperatorProperty = "In", Values = ["frontend"] }] } },
+        };
+        V1Pod pod = new()
+        {
+            ApiVersion = "v1",
+            Kind = V1Pod.KubeKind,
+            Metadata = new() { Name = "web-0", NamespaceProperty = "demo", Labels = new Dictionary<string, string> { ["tier"] = "frontend" } },
+        };
+
+        ResourceRelationshipGraph graph = new ResourceRelationshipBuilder().Build(
+            [budget, pod],
+            new HashSet<string> { "demo" },
+            hideNoise: true);
+
+        graph.Relationships.ShouldContain(new ResourceRelationship(
+            new("policy/v1", V1PodDisruptionBudget.KubeKind, "demo", "web", null),
+            new("v1", V1Pod.KubeKind, "demo", "web-0", null),
+            ResourceRelationshipKind.Selector));
     }
 
     private sealed class CrossNamespaceProvider : IResourceRelationshipProvider

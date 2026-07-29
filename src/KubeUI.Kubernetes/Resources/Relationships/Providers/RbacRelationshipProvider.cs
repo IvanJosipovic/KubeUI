@@ -26,7 +26,10 @@ public sealed class RbacRelationshipProvider : IResourceRelationshipProvider
         IEnumerable<dynamic> subjects = roleBinding?.Subjects ?? clusterRoleBinding?.Subjects ?? [];
         foreach (var subject in subjects)
         {
-            RelationshipProviderHelpers.AddByName(context, relationships, resource, V1ServiceAccount.KubeApiVersion, V1ServiceAccount.KubeKind, subject.NamespaceProperty ?? resource.Namespace(), subject.Name, ResourceRelationshipKind.Rbac);
+            if (subject.Kind == V1ServiceAccount.KubeKind)
+            {
+                RelationshipProviderHelpers.AddByName(context, relationships, resource, V1ServiceAccount.KubeApiVersion, V1ServiceAccount.KubeKind, subject.NamespaceProperty ?? resource.Namespace(), subject.Name, ResourceRelationshipKind.Rbac);
+            }
         }
 
         var roleRef = roleBinding?.RoleRef ?? clusterRoleBinding?.RoleRef;
