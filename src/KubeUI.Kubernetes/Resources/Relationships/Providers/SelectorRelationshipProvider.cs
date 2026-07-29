@@ -37,10 +37,6 @@ public sealed class SelectorRelationshipProvider : IResourceRelationshipProvider
                     ToSelector(service.Spec?.Selector),
                     resource.Namespace(),
                     ResourceRelationshipKind.Selector);
-                AddEndpointSlicesForService(service, context, relationships);
-                break;
-            case V1EndpointSlice endpointSlice:
-                AddServiceForEndpointSlice(endpointSlice, context, relationships);
                 break;
             case V1Deployment deployment:
                 AddPodsBySelector(deployment.Spec?.Selector, resource, context, relationships);
@@ -88,51 +84,6 @@ public sealed class SelectorRelationshipProvider : IResourceRelationshipProvider
             selector,
             source.Namespace(),
             ResourceRelationshipKind.Selector);
-
-    private static void AddEndpointSlicesForService(
-        V1Service service,
-        ResourceRelationshipContext context,
-        ICollection<ResourceRelationship> relationships)
-    {
-        string? serviceName = service.Name();
-        if (string.IsNullOrWhiteSpace(serviceName)
-            || !context.TryGetByGroupAndKind("discovery.k8s.io", V1EndpointSlice.KubeKind, out IReadOnlyList<IKubernetesObject<V1ObjectMeta>> endpointSlices))
-        {
-            return;
-        }
-
-        foreach (IKubernetesObject<V1ObjectMeta> candidate in endpointSlices)
-        {
-            if (candidate is V1EndpointSlice endpointSlice
-                && candidate.Namespace() == service.Namespace()
-                && endpointSlice.Metadata?.Labels?.TryGetValue("kubernetes.io/service-name", out string? referencedService) == true
-                && referencedService == serviceName)
-            {
-                context.Add(relationships, service, endpointSlice, ResourceRelationshipKind.Reference);
-            }
-        }
-    }
-
-    private static void AddServiceForEndpointSlice(
-        V1EndpointSlice endpointSlice,
-        ResourceRelationshipContext context,
-        ICollection<ResourceRelationship> relationships)
-    {
-        string? serviceName = endpointSlice.Metadata?.Labels is { } labels
-            && labels.TryGetValue("kubernetes.io/service-name", out string? labelValue)
-                ? labelValue
-                : null;
-        RelationshipProviderHelpers.AddByName(
-            context,
-            relationships,
-            endpointSlice,
-            V1Service.KubeApiVersion,
-            V1Service.KubeKind,
-            endpointSlice.Namespace(),
-            serviceName,
-            ResourceRelationshipKind.Reference);
-
-    }
 
     private static void AddNetworkPolicyTargets(
         V1NetworkPolicy policy,

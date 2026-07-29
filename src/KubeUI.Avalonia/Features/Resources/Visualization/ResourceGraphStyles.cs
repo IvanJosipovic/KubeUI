@@ -53,6 +53,7 @@ internal static class ResourceGraphStyles
             Setters =
             {
                 new Setter(EdgeLabelControl.ForegroundProperty, Brushes.White),
+                new Setter(EdgeLabelControl.AlignToEdgeProperty, true),
                 new Setter(TemplatedControl.TemplateProperty,
                     new FuncControlTemplate<AttachableEdgeLabelControl>((label, _) => new Border
                     {

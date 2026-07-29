@@ -1064,10 +1064,6 @@ public sealed class ResourceRelationshipBuilderTests
             new("v1", V1Service.KubeKind, "demo", "web", null),
             new("v1", V1Pod.KubeKind, "demo", "web-0", "pod-uid"),
             ResourceRelationshipKind.Selector));
-        graph.Relationships.ShouldContain(new ResourceRelationship(
-            new("v1", V1Service.KubeKind, "demo", "web", null),
-            new("discovery.k8s.io/v1", V1EndpointSlice.KubeKind, "demo", "web-abc", null),
-            ResourceRelationshipKind.Reference));
     }
 
     [Fact]
