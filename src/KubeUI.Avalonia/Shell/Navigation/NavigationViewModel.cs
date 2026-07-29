@@ -162,13 +162,19 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
         await ConnectIfIdleAsync(clusterNode).ConfigureAwait(false);
     }
 
-    private async Task ConnectIfIdleAsync(ClusterNavigationNode clusterNode)
+    private Task ConnectIfIdleAsync(ClusterNavigationNode clusterNode)
     {
         if (clusterNode.Cluster.Runtime.Status == ClusterStatus.Connecting)
         {
-            return;
+            return Task.CompletedTask;
         }
 
+        _ = ConnectAndExpandAsync(clusterNode);
+        return Task.CompletedTask;
+    }
+
+    private async Task ConnectAndExpandAsync(ClusterNavigationNode clusterNode)
+    {
         await clusterNode.Cluster.Connect().ConfigureAwait(false);
 
         if (clusterNode.Cluster.Runtime.Connected)
