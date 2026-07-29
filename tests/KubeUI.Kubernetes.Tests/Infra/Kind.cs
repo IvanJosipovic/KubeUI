@@ -15,6 +15,8 @@ public static class Kind
 
     private const string KubernetesVersion = "kindest/node:v1.36.1";
 
+    private static readonly SemaphoreSlim ProcessLock = new(1, 1);
+
     public static string FileName { get; } = "kind" + (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? ".exe" : "");
 
     // Execute local downloaded binary on non-Windows systems
@@ -22,54 +24,78 @@ public static class Kind
 
     public static async Task DownloadClient()
     {
-        if (File.Exists(FileName))
+        await ProcessLock.WaitAsync();
+        try
         {
-            return;
+            if (File.Exists(FileName))
+            {
+                return;
+            }
+
+            using var client = new HttpClient();
+            var arch = RuntimeInformation.ProcessArchitecture == Architecture.Arm64 ? "arm64" : "amd64";
+            var os = RuntimeInformation.IsOSPlatform(OSPlatform.OSX)
+                ? "darwin"
+                : RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "windows" : "linux";
+
+            var url = $"https://kind.sigs.k8s.io/dl/{Version}/kind-{os}-{arch}";
+            var bytes = await client.GetByteArrayAsync(url);
+
+            File.WriteAllBytes(FileName, bytes);
+
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                await Cli.Wrap("chmod")
+                    .WithArguments($"+x ./{FileName}")
+                    .ExecuteAsync();
+            }
         }
-
-        using var client = new HttpClient();
-        var arch = RuntimeInformation.ProcessArchitecture == Architecture.Arm64 ? "arm64" : "amd64";
-        var os = RuntimeInformation.IsOSPlatform(OSPlatform.OSX)
-            ? "darwin"
-            : RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "windows" : "linux";
-
-        var url = $"https://kind.sigs.k8s.io/dl/{Version}/kind-{os}-{arch}";
-        var bytes = await client.GetByteArrayAsync(url);
-
-        File.WriteAllBytes(FileName, bytes);
-
-        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        finally
         {
-            await Cli.Wrap("chmod")
-                .WithArguments($"+x ./{FileName}")
-                .ExecuteAsync();
+            ProcessLock.Release();
         }
     }
 
     public static async Task CreateCluster(string name, string? image = null, string? config = null)
     {
-        var stdErrBuffer = new StringBuilder();
-        image ??= KubernetesVersion;
-        var kubeConfigPath = KubernetesClientConfiguration.KubeConfigDefaultLocation;
+        await ProcessLock.WaitAsync();
+        try
+        {
+            var stdErrBuffer = new StringBuilder();
+            image ??= KubernetesVersion;
+            var kubeConfigPath = KubernetesClientConfiguration.KubeConfigDefaultLocation;
 
-        await Cli.Wrap(Executable)
-            .WithArguments($"create cluster --name {name} --image {image} --kubeconfig \"{kubeConfigPath}\"" + (string.IsNullOrEmpty(config) ? "" : $" --config={config}"))
-            .WithStandardErrorPipe(PipeTarget.ToStringBuilder(stdErrBuffer))
-            .ExecuteAsync();
+            await Cli.Wrap(Executable)
+                .WithArguments($"create cluster --name {name} --image {image} --kubeconfig \"{kubeConfigPath}\"" + (string.IsNullOrEmpty(config) ? "" : $" --config={config}"))
+                .WithStandardErrorPipe(PipeTarget.ToStringBuilder(stdErrBuffer))
+                .ExecuteAsync();
 
-        ThrowIfKindError(stdErrBuffer);
+            ThrowIfKindError(stdErrBuffer);
+        }
+        finally
+        {
+            ProcessLock.Release();
+        }
     }
 
     public static async Task DeleteCluster(string name)
     {
-        var stdErrBuffer = new StringBuilder();
+        await ProcessLock.WaitAsync();
+        try
+        {
+            var stdErrBuffer = new StringBuilder();
 
-        await Cli.Wrap(Executable)
-            .WithArguments($"delete cluster --name {name}")
-            .WithStandardErrorPipe(PipeTarget.ToStringBuilder(stdErrBuffer))
-            .ExecuteAsync();
+            await Cli.Wrap(Executable)
+                .WithArguments($"delete cluster --name {name}")
+                .WithStandardErrorPipe(PipeTarget.ToStringBuilder(stdErrBuffer))
+                .ExecuteAsync();
 
-        ThrowIfKindError(stdErrBuffer);
+            ThrowIfKindError(stdErrBuffer);
+        }
+        finally
+        {
+            ProcessLock.Release();
+        }
     }
 
     public static async Task<string> GetKubeConfig(string name)
