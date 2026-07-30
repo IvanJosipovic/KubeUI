@@ -13,7 +13,8 @@ public sealed class PortForwarderTests
     [Fact]
     public void Start_activates_listener_and_assigns_local_port()
     {
-        var cluster = new TestClusterRuntime();
+        using var scope = new KubernetesTestClusterScope();
+        var cluster = scope.Cluster;
         using var sut = new PortForwarder(cluster, "default");
         sut.SetPod("pod-1", 8080);
 
@@ -26,7 +27,8 @@ public sealed class PortForwarderTests
     [Fact]
     public void Start_with_busy_port_sets_busy_status()
     {
-        var cluster = new TestClusterRuntime();
+        using var scope = new KubernetesTestClusterScope();
+        var cluster = scope.Cluster;
         using var busyListener = new TcpListener(IPAddress.Loopback, 0);
         busyListener.Start();
         var busyPort = ((IPEndPoint)busyListener.LocalEndpoint).Port;
@@ -43,7 +45,8 @@ public sealed class PortForwarderTests
     [Fact]
     public async Task Stop_marks_inactive_and_stops_accepting_connections()
     {
-        var cluster = new TestClusterRuntime();
+        using var scope = new KubernetesTestClusterScope();
+        var cluster = scope.Cluster;
         using var sut = new PortForwarder(cluster, "default");
         sut.SetPod("pod-1", 8080);
         sut.Start();
@@ -55,14 +58,15 @@ public sealed class PortForwarderTests
         await Should.ThrowAsync<SocketException>(async () =>
         {
             using var client = new TcpClient();
-            await client.ConnectAsync(IPAddress.Loopback, localPort);
+            await client.ConnectAsync(IPAddress.Loopback, localPort, TestContext.Current.CancellationToken);
         });
     }
 
     [Fact]
     public async Task Dispose_marks_inactive_and_stops_accepting_connections()
     {
-        var cluster = new TestClusterRuntime();
+        using var scope = new KubernetesTestClusterScope();
+        var cluster = scope.Cluster;
         var sut = new PortForwarder(cluster, "default");
         sut.SetPod("pod-1", 8080);
         sut.Start();
@@ -74,14 +78,15 @@ public sealed class PortForwarderTests
         await Should.ThrowAsync<SocketException>(async () =>
         {
             using var client = new TcpClient();
-            await client.ConnectAsync(IPAddress.Loopback, localPort);
+            await client.ConnectAsync(IPAddress.Loopback, localPort, TestContext.Current.CancellationToken);
         });
     }
 
     [Fact]
     public void Equals_returns_true_for_same_target()
     {
-        var cluster = new TestClusterRuntime();
+        using var scope = new KubernetesTestClusterScope();
+        var cluster = scope.Cluster;
         using var left = new PortForwarder(cluster, "default");
         using var right = new PortForwarder(cluster, "default");
         left.SetService("prometheus", 9090);
@@ -93,7 +98,8 @@ public sealed class PortForwarderTests
     [Fact]
     public void Equals_returns_false_for_different_target()
     {
-        var cluster = new TestClusterRuntime();
+        using var scope = new KubernetesTestClusterScope();
+        var cluster = scope.Cluster;
         using var left = new PortForwarder(cluster, "default");
         using var right = new PortForwarder(cluster, "default");
         left.SetService("prometheus", 9090);
@@ -105,7 +111,8 @@ public sealed class PortForwarderTests
     [Fact]
     public void AddPodPortForward_returns_existing_instance_for_same_target()
     {
-        var cluster = new TestClusterRuntime();
+        using var scope = new KubernetesTestClusterScope();
+        var cluster = scope.Cluster;
 
         using var left = cluster.AddPodPortForward("default", "pod-1", 8080);
         using var right = cluster.AddPodPortForward("default", "pod-1", 8080);
@@ -118,7 +125,8 @@ public sealed class PortForwarderTests
     [Fact]
     public void AddServicePortForward_returns_existing_instance_for_same_target()
     {
-        var cluster = new TestClusterRuntime();
+        using var scope = new KubernetesTestClusterScope();
+        var cluster = scope.Cluster;
 
         using var left = cluster.AddServicePortForward("default", "prometheus", 9090);
         using var right = cluster.AddServicePortForward("default", "prometheus", 9090);
@@ -131,7 +139,8 @@ public sealed class PortForwarderTests
     [Fact]
     public async Task Port_forward_uses_mocked_transport_and_copies_client_bytes()
     {
-        var cluster = new TestClusterRuntime();
+        using var scope = new KubernetesTestClusterScope();
+        var cluster = scope.Cluster;
         using var stream = new CaptureStream();
         var session = new Mock<IPortForwardSession>(MockBehavior.Strict);
         session.SetupGet(x => x.Stream).Returns(stream);
@@ -148,13 +157,13 @@ public sealed class PortForwarderTests
 
         using (var client = new TcpClient())
         {
-            await client.ConnectAsync(IPAddress.Loopback, sut.LocalPort);
-            await client.GetStream().WriteAsync(payload);
+            await client.ConnectAsync(IPAddress.Loopback, sut.LocalPort, TestContext.Current.CancellationToken);
+            await client.GetStream().WriteAsync(payload, TestContext.Current.CancellationToken);
             client.Client.Shutdown(SocketShutdown.Send);
         }
 
-        await WaitForAsync(() => stream.WrittenBytes.SequenceEqual(payload));
-        await WaitForAsync(() => sut.Connections == 0);
+        await WaitForAsync(() => stream.WrittenBytes.SequenceEqual(payload), cancellationToken: TestContext.Current.CancellationToken);
+        await WaitForAsync(() => sut.Connections == 0, cancellationToken: TestContext.Current.CancellationToken);
 
         factory.Verify(x => x.CreateAsync("pod-1", "default", 8080), Times.Once);
         session.VerifyGet(x => x.Stream, Times.AtLeastOnce);
@@ -164,23 +173,30 @@ public sealed class PortForwarderTests
     [Fact]
     public async Task Service_forward_without_endpoint_slice_sets_expected_status()
     {
-        var cluster = new TestClusterRuntime();
+        await using var harness = new KubernetesClusterScenarioHarness();
+        await harness.InitializeAsync(TestContext.Current.CancellationToken);
+        var cluster = harness.Cluster;
+        await cluster.SeedResource<V1Service>(true);
         await cluster.AddOrUpdateResource(CreateService());
 
         using var sut = new PortForwarder(cluster, "default");
         sut.SetService("prometheus", 9090);
         sut.Start();
 
-        await ConnectAsync(sut.LocalPort);
+        await ConnectAsync(sut.LocalPort, TestContext.Current.CancellationToken);
 
-        await WaitForAsync(() => sut.Status == "No endpoint slices found for Service");
-        await WaitForAsync(() => sut.Connections == 0);
+        await WaitForAsync(() => sut.Status == "No endpoint slices found for Service", cancellationToken: TestContext.Current.CancellationToken);
+        await WaitForAsync(() => sut.Connections == 0, cancellationToken: TestContext.Current.CancellationToken);
     }
 
     [Fact]
     public async Task Service_forward_without_matching_port_sets_expected_status()
     {
-        var cluster = new TestClusterRuntime();
+        await using var harness = new KubernetesClusterScenarioHarness();
+        await harness.InitializeAsync(TestContext.Current.CancellationToken);
+        var cluster = harness.Cluster;
+        await cluster.SeedResource<V1Service>(true);
+        await cluster.SeedResource<V1EndpointSlice>(true);
         await cluster.AddOrUpdateResource(CreateService());
         await cluster.AddOrUpdateResource(new V1EndpointSlice
         {
@@ -207,16 +223,20 @@ public sealed class PortForwarderTests
         sut.SetService("prometheus", 9090);
         sut.Start();
 
-        await ConnectAsync(sut.LocalPort);
+        await ConnectAsync(sut.LocalPort, TestContext.Current.CancellationToken);
 
-        await WaitForAsync(() => sut.Status == "No port found for Service");
-        await WaitForAsync(() => sut.Connections == 0);
+        await WaitForAsync(() => sut.Status == "No port found for Service", cancellationToken: TestContext.Current.CancellationToken);
+        await WaitForAsync(() => sut.Connections == 0, cancellationToken: TestContext.Current.CancellationToken);
     }
 
     [Fact]
     public async Task Service_forward_without_ready_pod_sets_expected_status()
     {
-        var cluster = new TestClusterRuntime();
+        await using var harness = new KubernetesClusterScenarioHarness();
+        await harness.InitializeAsync(TestContext.Current.CancellationToken);
+        var cluster = harness.Cluster;
+        await cluster.SeedResource<V1Service>(true);
+        await cluster.SeedResource<V1EndpointSlice>(true);
         await cluster.AddOrUpdateResource(CreateService());
         await cluster.AddOrUpdateResource(new V1EndpointSlice
         {
@@ -259,10 +279,10 @@ public sealed class PortForwarderTests
         sut.SetService("prometheus", 9090);
         sut.Start();
 
-        await ConnectAsync(sut.LocalPort);
+        await ConnectAsync(sut.LocalPort, TestContext.Current.CancellationToken);
 
-        await WaitForAsync(() => sut.Status == "No pods found for Service");
-        await WaitForAsync(() => sut.Connections == 0);
+        await WaitForAsync(() => sut.Status == "No pods found for Service", cancellationToken: TestContext.Current.CancellationToken);
+        await WaitForAsync(() => sut.Connections == 0, cancellationToken: TestContext.Current.CancellationToken);
     }
 
     private static V1Service CreateService()
@@ -288,24 +308,28 @@ public sealed class PortForwarderTests
         };
     }
 
-    private static async Task ConnectAsync(int port)
+    private static async Task ConnectAsync(int port, CancellationToken cancellationToken = default)
     {
         using var client = new TcpClient();
-        await client.ConnectAsync(IPAddress.Loopback, port);
+        cancellationToken = cancellationToken == default ? TestContext.Current.CancellationToken : cancellationToken;
+        await client.ConnectAsync(IPAddress.Loopback, port, cancellationToken);
     }
 
-    private static async Task WaitForAsync(Func<bool> predicate, int timeoutMs = 3000)
+    private static async Task WaitForAsync(Func<bool> predicate, int timeoutMs = 3000, CancellationToken cancellationToken = default)
     {
+        cancellationToken = cancellationToken == default ? TestContext.Current.CancellationToken : cancellationToken;
         var deadline = DateTime.UtcNow.AddMilliseconds(timeoutMs);
 
         while (DateTime.UtcNow < deadline)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             if (predicate())
             {
                 return;
             }
 
-            await Task.Delay(25);
+            using var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(25));
+            await timer.WaitForNextTickAsync(cancellationToken);
         }
 
         predicate().ShouldBeTrue();

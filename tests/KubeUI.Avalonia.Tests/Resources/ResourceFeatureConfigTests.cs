@@ -2,9 +2,11 @@ using System.Collections;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using CommunityToolkit.Mvvm.Input;
+using k8s;
 using k8s.Models;
 using KubeUI.Avalonia.Resources;
 using KubeUI.Avalonia.Tests.Infra;
+using KubeUI.Testing;
 using Shouldly;
 using ClusterRoleBindingPropertiesView = KubeUI.Avalonia.Resources.AccessControl.v1.ClusterRoleBinding.PropertiesView;
 using ClusterRolePropertiesView = KubeUI.Avalonia.Resources.AccessControl.v1.ClusterRole.PropertiesView;
@@ -280,14 +282,20 @@ public sealed class ResourceFeatureConfigTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task cronjob_start_context_menu_creates_job_resource()
     {
-        var runtime = new TestCluster();
+        await using var harness = new KubernetesClusterScenarioHarness();
+        await harness.InitializeAsync(TestContext.Current.CancellationToken);
+        var runtime = harness.Cluster;
+        await runtime.SeedResource<V1Namespace>(true);
+        await runtime.SeedResource<V1CronJob>(true);
+        await runtime.SeedResource<V1Job>(true);
         await runtime.AddOrUpdateResource(new V1Namespace
         {
             Metadata = new() { Name = "volsync" },
         });
 
-        var workspace = runtime.CreateWorkspace();
+        using var workspace = ActivatorUtilities.CreateInstance<ClusterWorkspace>(TestApp.CurrentServices!, runtime);
         await workspace.Connect();
+        await ((Cluster)runtime).UpdateCanI<V1Job>(Verb.Create, "volsync");
         var config = (V1CronJobConfig)workspace.GetResourceConfig<V1CronJob>();
         V1CronJob cronJob = CreateCronJob("volsync", "immich-rclone-backup");
 
@@ -297,27 +305,40 @@ public sealed class ResourceFeatureConfigTests : AvaloniaTestBase
 
         command.CanExecute(commandParameter).ShouldBeTrue();
 
-        await command.ExecuteAsync(commandParameter);
+        await command.ExecuteAsync(commandParameter).WaitAsync(TestContext.Current.CancellationToken);
+        await TestWait.UntilAsync(
+            () => runtime.GetResourceList<V1Job>().Count == 1,
+            TimeSpan.FromSeconds(5),
+            cancellationToken: TestContext.Current.CancellationToken);
 
         V1Job job = runtime.GetResourceList<V1Job>().Single();
         job.Namespace().ShouldBe("volsync");
         job.Name().ShouldStartWith("immich-rclone-backup-manual-");
-        job.Spec.ShouldBeSameAs(cronJob.Spec.JobTemplate.Spec);
+        job.Spec.Template.Spec.Containers.Single().Image.ShouldBe(cronJob.Spec.JobTemplate.Spec.Template.Spec.Containers.Single().Image);
+        job.Spec.Template.Spec.RestartPolicy.ShouldBe(cronJob.Spec.JobTemplate.Spec.Template.Spec.RestartPolicy);
         job.Metadata.Annotations.ShouldContainKeyAndValue("cronjob.kubernetes.io/instantiate", "manual");
     }
 
     [AvaloniaFact]
     public async Task cronjob_start_context_menu_requires_job_create_permission()
     {
-        var runtime = new TestCluster();
-        runtime.SetPermission<V1Job>(Verb.Create, false, "volsync");
+        await using var harness = new KubernetesClusterScenarioHarness();
+        harness.SetPermission<V1Job>(Verb.Create, false);
+        harness.SetPermission<V1Job>(Verb.Create, false, "volsync");
+        await harness.InitializeAsync(TestContext.Current.CancellationToken);
+        var runtime = harness.Cluster;
+        await runtime.SeedResource<V1Namespace>(true);
+        await runtime.SeedResource<V1CronJob>(true);
+        await runtime.SeedResource<V1Job>(true);
         await runtime.AddOrUpdateResource(new V1Namespace
         {
             Metadata = new() { Name = "volsync" },
         });
 
-        var workspace = runtime.CreateWorkspace();
+        using var workspace = ActivatorUtilities.CreateInstance<ClusterWorkspace>(TestApp.CurrentServices!, runtime);
         await workspace.Connect();
+        await ((Cluster)runtime).UpdateCanI<V1Job>(Verb.Create);
+        await ((Cluster)runtime).UpdateCanI<V1Job>(Verb.Create, "volsync");
         var config = (V1CronJobConfig)workspace.GetResourceConfig<V1CronJob>();
         V1CronJob cronJob = CreateCronJob("volsync", "immich-rclone-backup");
 
@@ -331,16 +352,25 @@ public sealed class ResourceFeatureConfigTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task cronjob_start_context_menu_allows_namespace_scoped_job_create_permission()
     {
-        var runtime = new TestCluster();
-        runtime.SetPermission<V1Job>(Verb.Create, false);
-        runtime.SetPermission<V1Job>(Verb.Create, true, "volsync");
+        await using var harness = new KubernetesClusterScenarioHarness();
+        harness.SetPermission<V1Job>(Verb.Create, false);
+        harness.SetPermission<V1Job>(Verb.Create, true, "volsync");
+        await harness.InitializeAsync(TestContext.Current.CancellationToken);
+        var runtime = harness.Cluster;
+        await ((Cluster)runtime).UpdateCanI<V1Job>(Verb.Create);
+        await ((Cluster)runtime).UpdateCanI<V1Job>(Verb.Create, "volsync");
+        await runtime.SeedResource<V1Namespace>(true);
+        await runtime.SeedResource<V1CronJob>(true);
+        await runtime.SeedResource<V1Job>(true);
         await runtime.AddOrUpdateResource(new V1Namespace
         {
             Metadata = new() { Name = "volsync" },
         });
 
-        var workspace = runtime.CreateWorkspace();
+        using var workspace = ActivatorUtilities.CreateInstance<ClusterWorkspace>(TestApp.CurrentServices!, runtime);
         await workspace.Connect();
+        await ((Cluster)runtime).UpdateCanI<V1Job>(Verb.Create);
+        await ((Cluster)runtime).UpdateCanI<V1Job>(Verb.Create, "volsync");
         var config = (V1CronJobConfig)workspace.GetResourceConfig<V1CronJob>();
         V1CronJob cronJob = CreateCronJob("volsync", "immich-rclone-backup");
 

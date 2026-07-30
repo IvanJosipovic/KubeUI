@@ -13,14 +13,10 @@ namespace KubeUI.Avalonia.Tests.Shell.Navigation;
 public sealed class NavigationViewTests : AvaloniaTestBase
 {
     [AvaloniaFact]
-    public void resource_count_assigned_after_template_creation_is_rendered()
+    public async Task resource_count_assigned_after_template_creation_is_rendered()
     {
-        var runtime = new TestCluster
-        {
-            Connected = true,
-            Status = ClusterStatus.Connected,
-        };
-        using var workspace = ActivatorUtilities.CreateInstance<ClusterWorkspace>(TestApp.CurrentServices!, runtime);
+        await using var scope = await KubernetesTestWorkspaceScope.CreateAsync(TestApp.CurrentServices!);
+        var workspace = scope.Workspace;
         using var navigation = TestApp.CurrentServices!.GetRequiredService<NavigationViewModel>();
         var clusterNode = new ClusterNavigationNode(workspace) { IsExpanded = true };
         var podsLink = new ResourceNavigationLink

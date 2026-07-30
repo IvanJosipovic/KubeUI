@@ -2,7 +2,7 @@ using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
 using KubeUI.Avalonia.Shell.Navigation;
 using KubeUI.Avalonia.Tests.Infra;
-using KubeUI.Kubernetes.Tests.Infra;
+using KubeUI.Testing;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Shell.Navigation;
@@ -12,8 +12,8 @@ public sealed class LimitedAccessNavigationTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task limited_access_with_listable_namespace_shows_namespaced_resources_in_navigation()
     {
-        await using var harness = new MockClusterScenarioHarness();
-        await harness.InitializeAsync();
+        await using var harness = new KubernetesClusterScenarioHarness();
+        await harness.InitializeAsync(TestContext.Current.CancellationToken);
 
         var runtime = await harness.CreateLimitedAccessClusterAsync(includeNamespaceFallback: false);
         var services = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
@@ -44,22 +44,25 @@ public sealed class LimitedAccessNavigationTests : AvaloniaTestBase
         podsLink.ShouldNotBeNull();
         deploymentsLink.ShouldNotBeNull();
 
-        await navigation.TreeViewSelectionChangedAsync(podsLink);
-        await navigation.TreeViewSelectionChangedAsync(deploymentsLink);
+        await navigation.TreeViewSelectionChangedAsync(podsLink).WaitAsync(TestContext.Current.CancellationToken);
+        await navigation.TreeViewSelectionChangedAsync(deploymentsLink).WaitAsync(TestContext.Current.CancellationToken);
     }
 
-    private static async Task WaitForAsync(Func<bool> predicate, int timeoutMs)
+    private static async Task WaitForAsync(Func<bool> predicate, int timeoutMs, CancellationToken cancellationToken = default)
     {
+        cancellationToken = cancellationToken == default ? TestContext.Current.CancellationToken : cancellationToken;
         var deadline = DateTime.UtcNow.AddMilliseconds(timeoutMs);
 
         while (DateTime.UtcNow < deadline)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             if (predicate())
             {
                 return;
             }
 
-            await Task.Delay(100);
+            using var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(100));
+            await timer.WaitForNextTickAsync(cancellationToken);
         }
 
         predicate().ShouldBeTrue();

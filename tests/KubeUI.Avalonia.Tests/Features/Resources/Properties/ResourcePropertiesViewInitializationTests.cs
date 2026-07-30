@@ -16,7 +16,8 @@ public sealed class ResourcePropertiesViewInitializationTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task cluster_aware_property_controls_are_initialized_once()
     {
-        var workspace = new TestCluster().CreateWorkspace();
+        await using var scope = await KubernetesTestWorkspaceScope.CreateAsync(TestApp.CurrentServices!);
+        var workspace = scope.Workspace;
         await workspace.Connect();
 
         var services = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
@@ -54,7 +55,8 @@ public sealed class ResourcePropertiesViewInitializationTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task properties_view_populates_on_first_attach()
     {
-        var workspace = new TestCluster().CreateWorkspace();
+        await using var scope = await KubernetesTestWorkspaceScope.CreateAsync(TestApp.CurrentServices!);
+        var workspace = scope.Workspace;
         await workspace.Connect();
 
         var services = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");

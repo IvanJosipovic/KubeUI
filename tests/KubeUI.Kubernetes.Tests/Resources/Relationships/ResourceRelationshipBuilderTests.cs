@@ -265,6 +265,80 @@ public sealed class ResourceRelationshipBuilderTests
     }
 
     [Fact]
+    public void Relates_claims_to_data_sources_using_both_api_shapes()
+    {
+        V1PersistentVolumeClaim snapshotClaim = new()
+        {
+            ApiVersion = V1PersistentVolumeClaim.KubeApiVersion,
+            Kind = V1PersistentVolumeClaim.KubeKind,
+            Metadata = new() { Name = "snapshot-claim", NamespaceProperty = "demo", Uid = "snapshot-claim-uid" },
+            Spec = new()
+            {
+                DataSourceRef = new V1TypedObjectReference
+                {
+                    ApiGroup = "snapshot.storage.k8s.io",
+                    Kind = "VolumeSnapshot",
+                    Name = "snapshot",
+                },
+            },
+        };
+        V1PersistentVolumeClaim claimSource = new()
+        {
+            ApiVersion = V1PersistentVolumeClaim.KubeApiVersion,
+            Kind = V1PersistentVolumeClaim.KubeKind,
+            Metadata = new() { Name = "source-claim", NamespaceProperty = "demo", Uid = "source-claim-uid" },
+            Spec = new()
+            {
+                DataSource = new V1TypedLocalObjectReference
+                {
+                    Kind = V1PersistentVolumeClaim.KubeKind,
+                    Name = "source",
+                },
+            },
+        };
+        TestDynamicResource snapshot = new()
+        {
+            ApiVersion = "snapshot.storage.k8s.io/v1",
+            Kind = "VolumeSnapshot",
+            Metadata = new() { Name = "snapshot", NamespaceProperty = "demo", Uid = "snapshot-uid" },
+        };
+        V1PersistentVolumeClaim source = new()
+        {
+            ApiVersion = V1PersistentVolumeClaim.KubeApiVersion,
+            Kind = V1PersistentVolumeClaim.KubeKind,
+            Metadata = new() { Name = "source", NamespaceProperty = "demo", Uid = "source-uid" },
+        };
+
+        ResourceRelationshipContext context = new(
+            new Dictionary<string, IKubernetesObject<V1ObjectMeta>>
+            {
+                [snapshotClaim.Uid()!] = snapshotClaim,
+                [claimSource.Uid()!] = claimSource,
+                [snapshot.Uid()!] = snapshot,
+                [source.Uid()!] = source,
+            },
+            new Dictionary<ResourceKey, IKubernetesObject<V1ObjectMeta>>
+            {
+                [new(snapshot.ApiVersion!, snapshot.Kind!, snapshot.Namespace(), snapshot.Name()!)] = snapshot,
+                [new(source.ApiVersion!, source.Kind!, source.Namespace(), source.Name()!)] = source,
+            });
+        HashSet<ResourceRelationship> relationships = [];
+
+        StorageRelationshipProvider provider = new();
+        provider.AddRelationships(snapshotClaim, context, relationships);
+        provider.AddRelationships(claimSource, context, relationships);
+
+        relationships.ShouldContain(new ResourceRelationship(
+            new("v1", V1PersistentVolumeClaim.KubeKind, "demo", "snapshot-claim", "snapshot-claim-uid"),
+            new("snapshot.storage.k8s.io/v1", "VolumeSnapshot", "demo", "snapshot", "snapshot-uid"),
+            ResourceRelationshipKind.Storage));
+        relationships.ShouldContain(new ResourceRelationship(
+            new("v1", V1PersistentVolumeClaim.KubeKind, "demo", "source-claim", "source-claim-uid"),
+            new("v1", V1PersistentVolumeClaim.KubeKind, "demo", "source", "source-uid"),
+            ResourceRelationshipKind.Storage));
+    }
+
+    [Fact]
     public void Removes_transitive_relationships_of_any_kind()
     {
         ResourceIdentity first = new("v1", "First", "demo", "first", null);

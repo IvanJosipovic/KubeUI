@@ -29,6 +29,7 @@ using KubeUI.Avalonia.Features.Resources.List.Behaviors;
 using KubeUI.Avalonia.Resources;
 using KubeUI.Avalonia.Shell.Documents.About;
 using KubeUI.Avalonia.Tests.Infra;
+using KubeUI.Testing;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Features.Resources.List;
@@ -69,10 +70,11 @@ public class ResourceListViewModelTests : AvaloniaTestBase
 
     private async Task<ClusterWorkspace> CreateClusterAsync()
     {
-        var cluster = new TestCluster().CreateWorkspace();
+        var scope = await KubernetesTestWorkspaceScope.CreateAsync(TestApp.CurrentServices!);
+        _disposables.Add(scope);
+        var cluster = scope.Workspace;
         await cluster.Connect();
         Dispatcher.UIThread.RunJobs();
-        _disposables.Add(cluster);
         return cluster;
     }
 
@@ -181,6 +183,16 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         return GetCellText(grid, dataGridRow!, column);
     }
 
+    private static string? GetResourceCellText<T>(DataGrid grid, string name, int column)
+        where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    {
+        grid.UpdateLayout();
+        Dispatcher.UIThread.RunJobs();
+        var row = GetAllRows(grid)
+            .FirstOrDefault(item => item.IsVisible && (item.DataContext as T)?.Name() == name);
+        return row is null ? null : GetCellText(grid, row, column);
+    }
+
     private static Point GetRowCenterOnWindow(DataGridRow row, Window window)
     {
         var point = row.TranslatePoint(new Point(row.Bounds.Width / 2, row.Bounds.Height / 2), window);
@@ -208,12 +220,16 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         await AddOrUpdateAsync(cluster, Pod("ns", "a"));
         await AddOrUpdateAsync(cluster, Pod("ns", "b"));
         await AddOrUpdateAsync(cluster, Pod("ns", "c"));
+        await WaitForAsync(() => vm.View.Count == 3, timeoutMs: 5000);
 
         // Select all 3
         vm.SelectionModel.Select(0);
         vm.SelectionModel.Select(1);
         vm.SelectionModel.Select(2);
 
+        await WaitForAsync(
+            () => vm.SelectionModel.SelectedIndexes.SequenceEqual([0, 1, 2]),
+            timeoutMs: 5000);
         vm.SelectionModel.SelectedIndexes.ShouldBe([0, 1, 2]);
 
         // Replace 'b' with a new instance (same key)
@@ -250,14 +266,24 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         await AddOrUpdateAsync(cluster, Pod("ns", "a"));
         await AddOrUpdateAsync(cluster, Pod("ns", "b"));
         await AddOrUpdateAsync(cluster, Pod("ns", "c"));
+        await WaitForAsync(() => vm.View.Count == 3, timeoutMs: 5000);
 
         // Select only middle
         vm.SelectionModel.Select(1);
 
+        await WaitForAsync(
+            () => vm.SelectionModel.SelectedIndexes.SequenceEqual([1]),
+            timeoutMs: 5000);
         vm.SelectionModel.SelectedIndexes.ShouldBe([1]);
 
         // Replace 'b' with new instance (same key)
-        await AddOrUpdateAsync(cluster, Pod("ns", "b"));
+        V1Pod updatedPod = Pod("ns", "b");
+        await AddOrUpdateAsync(cluster, updatedPod);
+
+        await WaitForAsync(
+            () => vm.View.Count == 3,
+            timeoutMs: 5000);
+        await WaitForAsync(() => vm.SelectionModel.SelectedIndexes.SequenceEqual([1]), timeoutMs: 5000);
 
         vm.SelectionModel.SelectedIndexes.ShouldBe([1]);
 
@@ -421,6 +447,7 @@ public class ResourceListViewModelTests : AvaloniaTestBase
 
         await AddOrUpdateAsync(cluster, podA);
         await AddOrUpdateAsync(cluster, podB);
+        await WaitForAsync(() => GetAllRows(grid).Count(row => row.IsVisible) >= 2);
 
         var contextMenu = grid!.ContextMenu;
         contextMenu.ShouldNotBeNull();
@@ -543,6 +570,8 @@ public class ResourceListViewModelTests : AvaloniaTestBase
 
         await AddOrUpdateAsync(cluster, podA);
         await AddOrUpdateAsync(cluster, podB);
+        await WaitForAsync(() => GetAllRows(grid).Count(row => row.IsVisible) == 2 &&
+            GetAllRows(grid).Any(row => row.IsVisible && (row.DataContext as V1Pod)?.Name() == "a"));
 
         vm.SelectionModel.Select(0);
         vm.SelectionModel.Select(1);
@@ -550,7 +579,7 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         var contextMenu = grid!.ContextMenu;
         contextMenu.ShouldNotBeNull();
 
-        var row = GetAllRows(grid).First(x => x.IsVisible && ReferenceEquals(x.DataContext, podA));
+        var row = GetAllRows(grid).First(x => x.IsVisible && (x.DataContext as V1Pod)?.Name() == "a");
         var clickPoint = GetRowCenterOnWindow(row, window);
         window.MouseDown(clickPoint, MouseButton.Right);
         window.MouseUp(clickPoint, MouseButton.Right);
@@ -576,7 +605,7 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         contextMenu.Close();
         Dispatcher.UIThread.RunJobs();
 
-        row = GetAllRows(grid).First(x => x.IsVisible && ReferenceEquals(x.DataContext, podB));
+        row = GetAllRows(grid).First(x => x.IsVisible && (x.DataContext as V1Pod)?.Name() == "b");
         clickPoint = GetRowCenterOnWindow(row, window);
         window.MouseDown(clickPoint, MouseButton.Right);
         window.MouseUp(clickPoint, MouseButton.Right);
@@ -619,6 +648,7 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         await AddOrUpdateAsync(cluster, Event("ns", "a"));
         await AddOrUpdateAsync(cluster, Event("ns", "b"));
         await AddOrUpdateAsync(cluster, Event("ns", "c"));
+        await WaitForAsync(() => vm.View.Count == 3);
 
         vm.View[0].ShouldBeOfType<Corev1Event>().Name().ShouldBe("c");
         vm.View[1].ShouldBeOfType<Corev1Event>().Name().ShouldBe("b");
@@ -632,7 +662,7 @@ public class ResourceListViewModelTests : AvaloniaTestBase
 
         // Replace 'b' with new instance (same key)
         await AddOrUpdateAsync(cluster, Event("ns", "b"));
-        Dispatcher.UIThread.RunJobs();
+        await WaitForAsync(() => vm.View.Count == 3 && vm.View[0].ShouldBeOfType<Corev1Event>().Name() == "b");
 
         vm.View[0].ShouldBeOfType<Corev1Event>().Name().ShouldBe("b");
         vm.View[1].ShouldBeOfType<Corev1Event>().Name().ShouldBe("c");
@@ -667,6 +697,7 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         await AddOrUpdateAsync(cluster, Event("ns", "a"));
         await AddOrUpdateAsync(cluster, Event("ns", "b"));
         await AddOrUpdateAsync(cluster, Event("ns", "c"));
+        await WaitForAsync(() => vm.View.Count == 3);
 
         vm.View[0].ShouldBeOfType<Corev1Event>().Name().ShouldBe("c");
         vm.View[1].ShouldBeOfType<Corev1Event>().Name().ShouldBe("b");
@@ -682,7 +713,7 @@ public class ResourceListViewModelTests : AvaloniaTestBase
 
         // Replace 'b' with new instance (same key)
         await AddOrUpdateAsync(cluster, Event("ns", "b"));
-        Dispatcher.UIThread.RunJobs();
+        await WaitForAsync(() => vm.View.Count == 3 && vm.View[0].ShouldBeOfType<Corev1Event>().Name() == "b");
 
         vm.View[0].ShouldBeOfType<Corev1Event>().Name().ShouldBe("b");
         vm.View[1].ShouldBeOfType<Corev1Event>().Name().ShouldBe("c");
@@ -730,6 +761,7 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         // Mutate in place and trigger DynamicData refresh.
         pod.Metadata.Name = "b";
         await AddOrUpdateAsync(cluster, pod);
+        await WaitForAsync(() => GetFirstRowFirstColumnText(grid, 0, 0)?.Contains("b", StringComparison.OrdinalIgnoreCase) == true);
 
         var after = GetFirstRowFirstColumnText(grid, 0, 0);
         after.ShouldNotBeNull();
@@ -745,6 +777,7 @@ public class ResourceListViewModelTests : AvaloniaTestBase
 
         var vm = GetRequiredService<ResourceListViewModel<V1Namespace>>();
         vm.Initialize(cluster);
+        await cluster.Runtime.SeedResource<V1Namespace>(true);
 
         var view = GetRequiredService<ResourceListView>();
         view.DataContext = vm;
@@ -765,18 +798,31 @@ public class ResourceListViewModelTests : AvaloniaTestBase
 
         await AddOrUpdateAsync(cluster, ns);
 
-        var before = GetFirstRowFirstColumnText(grid, 0, 1);
+        await WaitForAsync(() => vm.View.Cast<V1Namespace>().Any(item => item.Name() == "a"));
+        var before = GetResourceCellText<V1Namespace>(grid, "a", 1);
         before.ShouldNotBeNull();
         before.ShouldBeEmpty();
 
-        ns.Metadata.Labels = new Dictionary<string, string>()
+        var updatedNamespace = new V1Namespace
         {
-            {"test", "value" }
+            Metadata = new V1ObjectMeta
+            {
+                Name = "a",
+                Labels = new Dictionary<string, string> { ["test"] = "value" },
+            }
         };
 
-        await AddOrUpdateAsync(cluster, ns);
+        await AddOrUpdateAsync(cluster, updatedNamespace);
+        await WaitForAsync(() =>
+        {
+            var namespaceIndex = vm.View.Cast<V1Namespace>().ToList().FindIndex(item =>
+                item.Name() == "a" &&
+                item.Metadata.Labels?.TryGetValue("test", out string? value) == true &&
+                value == "value");
+            return namespaceIndex >= 0 && GetResourceCellText<V1Namespace>(grid, "a", 1)?.Contains("test=value", StringComparison.OrdinalIgnoreCase) == true;
+        });
 
-        var after = GetFirstRowFirstColumnText(grid, 0, 1);
+        var after = GetResourceCellText<V1Namespace>(grid, "a", 1);
         after.ShouldNotBeNull();
         after.ShouldContain("test=value");
     }
@@ -796,6 +842,10 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         window.Content = view;
         window.Show();
 
+        await WaitForAsync(() => view.FindControl<DataGrid>("PART_Grid")?.Columns.Count > 0, 5000);
+        vm.SortingModel.Descriptors.Count.ShouldBe(1);
+        ((DataGridControlTemplateColumnDefinition)vm.SortingModel.Descriptors[0].ColumnId).ColumnKey.ShouldBe("last-seen");
+
         var baseTimestamp = DateTime.UtcNow.AddHours(-2);
         for (var i = 0; i < 200; i++)
         {
@@ -803,6 +853,7 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         }
 
         Dispatcher.UIThread.RunJobs();
+        await WaitForAsync(() => vm.View.Count == 200, 5000);
         vm.View.Count.ShouldBe(200);
         await WaitForAsync(() => vm.ItemCount == 200, 5000);
 
@@ -811,10 +862,12 @@ public class ResourceListViewModelTests : AvaloniaTestBase
 
         await AddOrUpdateAsync(cluster, left);
         await AddOrUpdateAsync(cluster, right);
-        Dispatcher.UIThread.RunJobs();
 
-        vm.View.Count.ShouldBe(202);
+        await WaitForAsync(
+            () => vm.View.Count == 202,
+            timeoutMs: 5000);
         await WaitForAsync(() => vm.ItemCount == 202, 5000);
+        await WaitForAsync(() => vm.View[0].ShouldBeOfType<Corev1Event>().Name() == "right", 5000);
         vm.View[0].ShouldBeOfType<Corev1Event>().Name().ShouldBe("right");
 
         for (var i = 0; i < 50; i++)
@@ -830,13 +883,17 @@ public class ResourceListViewModelTests : AvaloniaTestBase
             Dispatcher.UIThread.RunJobs();
 
             vm.View.Count.ShouldBe(202);
-            vm.View[0].ShouldBeOfType<Corev1Event>().Name().ShouldBe("right");
-            vm.View[1].ShouldBeOfType<Corev1Event>().Name().ShouldBe("left");
+            await WaitForAsync(
+                () => vm.View.Count >= 2
+                    && vm.View[0].ShouldBeOfType<Corev1Event>().Name() == "right"
+                    && vm.View[1].ShouldBeOfType<Corev1Event>().Name() == "left",
+                5000);
         }
 
         await AddOrUpdateAsync(cluster, Event("ns", "tail", baseTimestamp.AddHours(200), 999));
         Dispatcher.UIThread.RunJobs();
 
+        await WaitForAsync(() => vm.View.Count == 203, 5000);
         vm.View.Count.ShouldBe(203);
         await WaitForAsync(() => vm.ItemCount == 203, 5000);
         vm.View[0].ShouldBeOfType<Corev1Event>().Name().ShouldBe("tail");
@@ -1075,6 +1132,7 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         }
 
         Dispatcher.UIThread.RunJobs();
+        await WaitForAsync(() => vm.View.Count == 3);
         vm.View.Count.ShouldBe(3);
 
         var nameColumn = vm.ColumnDefinitions.First(column => string.Equals(column.Header?.ToString(), "Name", StringComparison.Ordinal));
@@ -1131,6 +1189,7 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         await AddOrUpdateAsync(countCluster, older);
         await AddOrUpdateAsync(countCluster, newer);
         Dispatcher.UIThread.RunJobs();
+        await WaitForAsync(() => countVm.View.Count == 2);
         countVm.View.Count.ShouldBe(2);
 
         var countColumn = countVm.ColumnDefinitions.First(column => string.Equals(column.Header?.ToString(), "Count", StringComparison.Ordinal));
@@ -1248,6 +1307,7 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         await AddOrUpdateAsync(cluster, Deployment("ns2", "deployment-b"));
 
         Dispatcher.UIThread.RunJobs();
+        await WaitForAsync(() => deploymentVm.View.Count == 1);
 
         deploymentVm.View.Count.ShouldBe(1);
         deploymentVm.View[0].ShouldBeOfType<V1Deployment>().Namespace().ShouldBe("ns1");
@@ -1283,6 +1343,7 @@ public class ResourceListViewModelTests : AvaloniaTestBase
 
         var deploymentVm = GetRequiredService<ResourceListViewModel<V1Deployment>>();
         deploymentVm.Initialize(cluster);
+        await cluster.Runtime.SeedResource<V1Deployment>(true);
         var deploymentView = GetRequiredService<ResourceListView>();
         deploymentView.DataContext = deploymentVm;
 
@@ -1634,6 +1695,7 @@ public class ResourceListViewModelTests : AvaloniaTestBase
 
         await cluster.DeleteResource(Pod("ns1", "a"));
         Dispatcher.UIThread.RunJobs();
+        await WaitForAsync(() => vm.View.Count == 0);
 
         vm.View.Count.ShouldBe(0);
     }
@@ -1654,6 +1716,7 @@ public class ResourceListViewModelTests : AvaloniaTestBase
 
         var window = CreateWindow(content: dockControl);
         var cluster = await CreateClusterAsync();
+        await cluster.DeleteResource(NamespaceResource("default"));
 
         var vm = GetRequiredService<ResourceListViewModel<V1Namespace>>();
         vm.Initialize(cluster);
@@ -1676,6 +1739,7 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         await AddOrUpdateAsync(cluster, nsA);
         await AddOrUpdateAsync(cluster, nsB);
         await AddOrUpdateAsync(cluster, nsC);
+        await WaitForAsync(() => vm.View.Count == 3);
 
         var labelsColumn = vm.ColumnDefinitions.First(x => Equals(x.ColumnKey, "name"));
 
@@ -1689,7 +1753,7 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         factory.SetFocusedDockable(documents, vm);
         Dispatcher.UIThread.RunJobs();
 
-        var view = WaitForValue(() => FindVisibleView<ResourceListView>(window, vm), 3000);
+        var view = await WaitForValueAsync(() => FindVisibleView<ResourceListView>(window, vm), 3000);
         view.ShouldNotBeNull();
 
         vm.View[0].ShouldBeOfType<V1Namespace>().Name().ShouldBe("c");
@@ -1706,7 +1770,7 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         factory.SetFocusedDockable(documents, vm);
         Dispatcher.UIThread.RunJobs();
 
-        var restoredView = WaitForValue(() => FindVisibleView<ResourceListView>(window, vm), 3000);
+        var restoredView = await WaitForValueAsync(() => FindVisibleView<ResourceListView>(window, vm), 3000);
         restoredView.ShouldNotBeNull();
 
         vm.View[0].ShouldBeOfType<V1Namespace>().Name().ShouldBe("c");
@@ -1756,7 +1820,7 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         factory.SetFocusedDockable(documents, vm);
         Dispatcher.UIThread.RunJobs();
 
-        var view = WaitForValue(() => FindVisibleView<ResourceListView>(window, vm), 3000);
+        var view = await WaitForValueAsync(() => FindVisibleView<ResourceListView>(window, vm), 3000);
         view.ShouldNotBeNull();
 
         var grid = view!.FindControl<DataGrid>("PART_Grid");
@@ -1766,14 +1830,7 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         scrollViewer.ShouldNotBeNull();
 
         // Wait until content is scrollable
-        var sw = System.Diagnostics.Stopwatch.StartNew();
-        while (sw.ElapsedMilliseconds < 3000)
-        {
-            Dispatcher.UIThread.RunJobs();
-            if (scrollViewer.Extent.Height > scrollViewer.Viewport.Height)
-                break;
-            System.Threading.Thread.Sleep(10);
-        }
+        await WaitForAsync(() => scrollViewer.Extent.Height > scrollViewer.Viewport.Height, 3000);
 
         scrollViewer.Extent.Height.ShouldBeGreaterThan(scrollViewer.Viewport.Height);
 
@@ -1795,7 +1852,7 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         factory.SetFocusedDockable(documents, vm);
         Dispatcher.UIThread.RunJobs();
 
-        var restoredView = WaitForValue(() => FindVisibleView<ResourceListView>(window, vm), 3000);
+        var restoredView = await WaitForValueAsync(() => FindVisibleView<ResourceListView>(window, vm), 3000);
         restoredView.ShouldNotBeNull();
 
         var restoredGrid = restoredView!.FindControl<DataGrid>("PART_Grid");
@@ -1805,14 +1862,7 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         restoredScrollViewer.ShouldNotBeNull();
 
         // Wait until restored grid is scrollable
-        sw = System.Diagnostics.Stopwatch.StartNew();
-        while (sw.ElapsedMilliseconds < 3000)
-        {
-            Dispatcher.UIThread.RunJobs();
-            if (restoredScrollViewer.Extent.Height > restoredScrollViewer.Viewport.Height)
-                break;
-            System.Threading.Thread.Sleep(10);
-        }
+        await WaitForAsync(() => restoredScrollViewer.Extent.Height > restoredScrollViewer.Viewport.Height, 3000);
 
         Dispatcher.UIThread.RunJobs();
         restoredScrollViewer.Offset.Y.ShouldBe(targetOffset.Y);
@@ -1837,6 +1887,7 @@ public class ResourceListViewModelTests : AvaloniaTestBase
 
         var window = CreateWindow(content: dockControl);
         var cluster = await CreateClusterAsync();
+        await cluster.DeleteResource(NamespaceResource("default"));
 
         var vm = GetRequiredService<ResourceListViewModel<V1Namespace>>();
         vm.Initialize(cluster);
@@ -1869,7 +1920,7 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         factory.SetFocusedDockable(documents, vm);
         Dispatcher.UIThread.RunJobs();
 
-        var view = WaitForValue(() => FindVisibleView<ResourceListView>(window, vm), 3000);
+        var view = await WaitForValueAsync(() => FindVisibleView<ResourceListView>(window, vm), 3000);
         view.ShouldNotBeNull();
 
         // switch away to trigger capture
@@ -1885,9 +1936,8 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         factory.SetFocusedDockable(documents, vm);
         Dispatcher.UIThread.RunJobs();
 
-        var restoredView = WaitForValue(() => FindVisibleView<ResourceListView>(window, vm), 3000);
+        var restoredView = await WaitForValueAsync(() => FindVisibleView<ResourceListView>(window, vm), 3000);
         restoredView.ShouldNotBeNull();
-
         vm.View[0].ShouldBeOfType<V1Namespace>().Name().ShouldBe("a");
         vm.View[1].ShouldBeOfType<V1Namespace>().Name().ShouldBe("b");
         vm.View[2].ShouldBeOfType<V1Namespace>().Name().ShouldBe("c");
@@ -2132,6 +2182,7 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         await AddOrUpdateAsync(cluster, Pod("ns1", "a"));
         await AddOrUpdateAsync(cluster, Pod("ns2", "b"));
         Dispatcher.UIThread.RunJobs();
+        await WaitForAsync(() => vm.View.Count == 2);
 
         vm.View.Count.ShouldBe(2);
 
@@ -2178,6 +2229,7 @@ public class ResourceListViewModelTests : AvaloniaTestBase
 
         await AddOrUpdateAsync(cluster, Pod("ns", "alpha"));
         await AddOrUpdateAsync(cluster, Pod("ns", "beta"));
+        await WaitForAsync(() => vm.View.Count == 2);
 
         vm.View.Count.ShouldBe(2);
 
@@ -2237,18 +2289,18 @@ public class ResourceListViewModelTests : AvaloniaTestBase
                 return;
             }
 
-            await Task.Delay(25);
+            await TestWait.NextPollAsync(TimeSpan.FromMilliseconds(25), TestContext.Current.CancellationToken);
         }
 
         Dispatcher.UIThread.RunJobs();
         predicate().ShouldBeTrue();
     }
 
-    private static T WaitForValue<T>(Func<T?> getter, int timeoutMs = 1000) where T : class
+    private static async Task<T> WaitForValueAsync<T>(Func<T?> getter, int timeoutMs = 1000) where T : class
     {
         T? value = null;
-        var sw = System.Diagnostics.Stopwatch.StartNew();
-        while (sw.ElapsedMilliseconds < timeoutMs)
+        DateTime deadline = DateTime.UtcNow.AddMilliseconds(timeoutMs);
+        while (DateTime.UtcNow < deadline)
         {
             Dispatcher.UIThread.RunJobs();
             value = getter();
@@ -2257,11 +2309,12 @@ public class ResourceListViewModelTests : AvaloniaTestBase
                 return value;
             }
 
-            System.Threading.Thread.Sleep(10);
+            await TestWait.NextPollAsync(TimeSpan.FromMilliseconds(25), TestContext.Current.CancellationToken);
         }
 
+        Dispatcher.UIThread.RunJobs();
         value.ShouldNotBeNull();
-        return value;
+        return value!;
     }
 
     private static IList<string> GetNamespaceFilterValues<T>(ResourceListViewModel<T> vm)

@@ -3,6 +3,7 @@ using Avalonia.Threading;
 using k8s.KubeConfigModels;
 using KubeUI.Avalonia.Shell.Documents.CloudClusters.Aks;
 using KubeUI.Avalonia.Tests.Infra;
+using KubeUI.Testing;
 using Microsoft.Extensions.Logging;
 using Shouldly;
 
@@ -21,11 +22,16 @@ public sealed class ImportAksClusterViewModelTests : AvaloniaTestBase
             TestApp.CurrentServices!.GetRequiredService<ILogger<ImportAksClusterViewModel>>());
 
         await WaitForAsync(() => viewModel.Subscriptions.Count == 1 && viewModel.Clusters.Count == 1);
+        await WaitForAsync(() => !viewModel.IsBusy && viewModel.ImportCommand.CanExecute(null));
 
         viewModel.SelectedCluster.ShouldNotBeNull();
         var clusterName = viewModel.SelectedCluster!.Name;
 
-        viewModel.ImportCommand.Execute(null);
+        await viewModel.ImportCommand.ExecuteAsync(null).WaitAsync(TestContext.Current.CancellationToken);
+        viewModel.StatusMessage.ShouldBe(string.Format(
+            KubeUI.Avalonia.Assets.Resources.ImportAksClusterView_Imported,
+            clusterName));
+        runtimeCatalog.Clusters.Select(x => x.Name).ShouldContain(clusterName);
         await WaitForAsync(() => catalog.Clusters.Any(x => x.Runtime.Name == clusterName));
 
         catalog.Clusters.Any(x => x.Runtime.Name == clusterName).ShouldBeTrue();
@@ -80,7 +86,7 @@ public sealed class ImportAksClusterViewModelTests : AvaloniaTestBase
                 return;
             }
 
-            await Task.Delay(25);
+            await TestWait.NextPollAsync(TimeSpan.FromMilliseconds(25), TestContext.Current.CancellationToken);
         }
 
         Dispatcher.UIThread.RunJobs();

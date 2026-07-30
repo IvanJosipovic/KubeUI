@@ -2,35 +2,22 @@ using System.Text;
 using k8s;
 using k8s.KubeConfigModels;
 using k8s.Models;
-using KubeUI.Avalonia.Infrastructure.DependencyInjection;
+using KubeUI.Testing;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 
-namespace KubeUI.Kubernetes.Tests.Infra;
+namespace KubeUI.Testing;
 
 public sealed class KindClusterScenarioHarness : IClusterScenarioHarness
 {
     private readonly ServiceProvider _services;
-    private readonly TestSettingsService _settingsService;
+    private readonly KubernetesTestSettingsStore _settingsStore = new();
     private string _name = Guid.NewGuid().ToString("N");
+    private readonly string _kubeConfigPath = Path.Combine(Path.GetTempPath(), $"kubeui-kind-{Guid.NewGuid():N}.yaml");
 
     public KindClusterScenarioHarness()
     {
-        var services = new ServiceCollection();
-        services.AddLogging(builder => builder.AddDebug().SetMinimumLevel(LogLevel.Information));
-        services.AddKubeUIAppServices(overrides =>
-        {
-            overrides.Replace(ServiceDescriptor.Singleton<ISettingsService, TestSettingsService>());
-            overrides.RemoveAll<IClusterSettingsStore>();
-            overrides.AddSingleton<IClusterSettingsStore>(sp => sp.GetRequiredService<ISettingsService>().Clusters);
-            overrides.Replace(ServiceDescriptor.Singleton<IHostApplicationLifetime, TestHostApplicationLifetime>());
-        });
-
-        _services = services.BuildServiceProvider();
+        _services = KubernetesTestServices.Build(_settingsStore);
         _services.ConfigureKubeUIKubernetesJsonLogging();
-        _settingsService = (TestSettingsService)_services.GetRequiredService<ISettingsService>();
     }
 
     public IClusterRuntime Cluster { get; private set; } = null!;
@@ -41,14 +28,14 @@ public sealed class KindClusterScenarioHarness : IClusterScenarioHarness
 
     public bool SupportsLimitedAccessScenarios => true;
 
-    public async Task InitializeAsync()
+    public async Task InitializeAsync(CancellationToken cancellationToken = default)
     {
-        await Kind.DownloadClient();
-        await Kind.CreateCluster(_name);
+        await Kind.DownloadClient(cancellationToken).ConfigureAwait(false);
+        await Kind.CreateCluster(_name, kubeConfigPath: _kubeConfigPath, cancellationToken: cancellationToken).ConfigureAwait(false);
 
-        KubeConfig = await Kind.GetK8SConfiguration(_name);
-        Kubernetes = await Kind.GetKubernetesClient(_name);
-        Cluster = await CreateClusterAsync($"kind-{_name}", KubeConfig);
+        KubeConfig = await Kind.GetK8SConfiguration(_name, cancellationToken).ConfigureAwait(false);
+        Kubernetes = await Kind.GetKubernetesClient(_name, cancellationToken).ConfigureAwait(false);
+        Cluster = await CreateClusterAsync($"kind-{_name}", KubeConfig, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<T> CreateDirectAsync<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new()
@@ -74,7 +61,7 @@ public sealed class KindClusterScenarioHarness : IClusterScenarioHarness
 
         await Cluster.ImportYaml(new MemoryStream(Encoding.UTF8.GetBytes(yaml)));
         await Cluster.SeedResource<V1ServiceAccount>(true);
-        await ClusterScenarioAssertions.WaitForResourceAsync<V1ServiceAccount>(Cluster, "my-app", "my-serviceaccount");
+        await WaitForResourceAsync<V1ServiceAccount>(Cluster, "my-app", "my-serviceaccount");
 
         var config = KubeUI.Kubernetes.Serialization.KubernetesYaml.Deserialize<K8SConfiguration>(KubeUI.Kubernetes.Serialization.KubernetesYaml.Serialize(KubeConfig));
         var clusterName = includeNamespaceFallback ? "limited-fallback" : "limited";
@@ -94,8 +81,7 @@ public sealed class KindClusterScenarioHarness : IClusterScenarioHarness
 
         if (includeNamespaceFallback)
         {
-            _settingsService.Settings = new Settings();
-            _settingsService.Settings.GetClusterSettings(limited).Namespaces.Add("my-app");
+            _settingsStore.SetClusterNamespaces(limited, "my-app");
         }
 
         return limited;
@@ -108,6 +94,14 @@ public sealed class KindClusterScenarioHarness : IClusterScenarioHarness
         try
         {
             await Kind.DeleteCluster(_name);
+        }
+        catch
+        {
+        }
+
+        try
+        {
+            File.Delete(_kubeConfigPath);
         }
         catch
         {
@@ -137,13 +131,32 @@ public sealed class KindClusterScenarioHarness : IClusterScenarioHarness
         return token;
     }
 
-    private async Task<IClusterRuntime> CreateClusterAsync(string name, K8SConfiguration config)
+    private static async Task<T?> WaitForResourceAsync<T>(IClusterRuntime cluster, string? @namespace, string name, CancellationToken cancellationToken = default)
+        where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    {
+        var deadline = DateTime.UtcNow.AddSeconds(30);
+        while (DateTime.UtcNow < deadline)
+        {
+            var resource = cluster.GetResource<T>(@namespace, name);
+            if (resource is not null)
+            {
+                return resource;
+            }
+
+            using var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(100));
+            await timer.WaitForNextTickAsync(cancellationToken).ConfigureAwait(false);
+        }
+
+        throw new TimeoutException($"Resource {typeof(T).Name}/{@namespace}/{name} was not observed.");
+    }
+
+    private async Task<IClusterRuntime> CreateClusterAsync(string name, K8SConfiguration config, CancellationToken cancellationToken = default)
     {
         var cluster = _services.GetRequiredService<IClusterRuntime>();
         cluster.Name = name;
         cluster.KubeConfig = config;
         cluster.KubeConfigPath = string.Empty;
-        await cluster.Connect();
+        await cluster.Connect().WaitAsync(cancellationToken).ConfigureAwait(false);
         return cluster;
     }
 

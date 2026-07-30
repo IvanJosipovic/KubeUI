@@ -1,7 +1,7 @@
 using k8s;
 using k8s.Models;
 
-namespace KubeUI.Kubernetes.Tests.Infra;
+namespace KubeUI.Testing;
 
 public interface IClusterScenarioHarness : IAsyncDisposable
 {
@@ -9,7 +9,7 @@ public interface IClusterScenarioHarness : IAsyncDisposable
 
     bool SupportsLimitedAccessScenarios { get; }
 
-    Task InitializeAsync();
+    Task InitializeAsync(CancellationToken cancellationToken = default);
 
     Task<T> CreateDirectAsync<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new();
 

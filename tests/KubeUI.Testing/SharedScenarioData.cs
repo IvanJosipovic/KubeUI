@@ -1,6 +1,6 @@
-namespace KubeUI.Kubernetes.Tests.Infra;
+namespace KubeUI.Testing;
 
-internal static class SharedScenarioData
+public static class SharedScenarioData
 {
     public const string CustomResourceDefinitionYaml = """
 apiVersion: apiextensions.k8s.io/v1

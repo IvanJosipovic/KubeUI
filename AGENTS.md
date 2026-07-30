@@ -50,7 +50,9 @@ Docker
 - All production code must be covered by unit tests; xUnit is required for unit testing.
 - Use integration tests for parsing, IO, and docking layout persistence.
 - Avalonia UI tests and headless UI guidance live in `src/KubeUI.Avalonia/AGENTS.md`.
-- For Avalonia UI bugs, write the failing headless regression test first, confirm the failure reproduces, then implement the fix and rerun the same test before widening scope.
+- For bugs, write the failing regression test first, confirm the failure reproduces, then implement the fix and rerun the same test before widening scope.
+- When running tests, always enable             '--hangdump --hangdump-timeout 1m' so tests don't keep running infinitely
+- Tests should not use Task.Sleep or Delay but wait for specific scenarios or use events
 
 ## 7) Code conventions
 
@@ -59,3 +61,4 @@ Docker
 - All public APIs must be documented and unit-tested.
 - Resource keys in `Resources.resx` must use `{ViewOrControlName}_{Name}` for view/control-owned UI text, `{ResourceConfigName}_{Name}` for resource-list column headers and resource-config actions, or `Shared_{Name}` for labels shared across multiple views, controls, or configs.
 - No hacks or weird workarounds; if you think you need one, ask for guidance.
+- When a new feature is added, update the closest Agents.md with the feature requirements

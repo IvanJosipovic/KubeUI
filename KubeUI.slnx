@@ -10,6 +10,7 @@
   <Folder Name="/Tests/">
     <Project Path="tests/KubeUI.Avalonia.Tests/KubeUI.Avalonia.Tests.csproj" />
     <Project Path="tests/KubeUI.Kubernetes.Tests/KubeUI.Kubernetes.Tests.csproj" />
+    <Project Path="tests/KubeUI.Testing/KubeUI.Testing.csproj" />
   </Folder>
   <Project Path="benchmarks/KubeUI.Benchmarks/KubeUI.Benchmarks.csproj" />
   <Project Path="src/KubeUI.Avalonia/KubeUI.Avalonia.csproj" />

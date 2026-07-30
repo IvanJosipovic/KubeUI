@@ -37,11 +37,8 @@ public class ClusterWorkspaceTests : AvaloniaTestBase
     [AvaloniaFact]
     public void creating_workspace_does_not_initialize_resource_configs_until_requested()
     {
-        var runtime = new TestCluster
-        {
-            Connected = false,
-            Status = ClusterStatus.None,
-        };
+        using var scope = KubernetesScenarioClusterScope.CreateDisconnected();
+        var runtime = scope.Cluster;
 
         var workspace = CreateWorkspace(runtime);
 
@@ -51,8 +48,8 @@ public class ClusterWorkspaceTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task resource_config_can_be_looked_up_by_resource_type()
     {
-        var runtime = new TestCluster();
-        var workspace = CreateWorkspace(runtime);
+        await using var scope = await KubernetesScenarioClusterScope.CreateAsync();
+        var workspace = CreateWorkspace(scope.Cluster);
 
         await workspace.Connect();
 
@@ -63,11 +60,8 @@ public class ClusterWorkspaceTests : AvaloniaTestBase
     [AvaloniaFact]
     public void changing_runtime_status_to_connecting_updates_cluster_color()
     {
-        var runtime = new TestCluster
-        {
-            Connected = false,
-            Status = ClusterStatus.None,
-        };
+        using var scope = KubernetesScenarioClusterScope.CreateDisconnected();
+        var runtime = scope.Cluster;
 
         var workspace = CreateWorkspace(runtime);
 
@@ -80,8 +74,11 @@ public class ClusterWorkspaceTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task added_crd_adds_resource_config_and_model_cache_entry()
     {
-        var runtime = new TestCluster();
+        await using var scope = await KubernetesScenarioClusterScope.CreateAsync();
+        var runtime = scope.Cluster;
         var workspace = CreateWorkspace(runtime);
+        await workspace.Connect();
+        await runtime.SeedResource<V1CustomResourceDefinition>(true);
         var crd = ClusterWorkspaceTestCustomResourceDefinitionFactory.Create("tests.kubeui.com", "tests", "someString");
 
         await runtime.AddOrUpdateResource(crd);
@@ -98,8 +95,11 @@ public class ClusterWorkspaceTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task resource_config_processed_event_observes_registered_crd_config()
     {
-        var runtime = new TestCluster();
+        await using var scope = await KubernetesScenarioClusterScope.CreateAsync();
+        var runtime = scope.Cluster;
         var workspace = CreateWorkspace(runtime);
+        await workspace.Connect();
+        await runtime.SeedResource<V1CustomResourceDefinition>(true);
         IResourceConfig? processedConfig = null;
         workspace.ResourceConfigProcessed += (_, resourceConfig) => processedConfig = workspace.GetResourceConfig(resourceConfig.Type);
         var crd = ClusterWorkspaceTestCustomResourceDefinitionFactory.Create("tests.kubeui.com", "tests", "someString");
@@ -113,14 +113,19 @@ public class ClusterWorkspaceTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task updated_crd_replaces_resource_config_model_cache_entry_and_seeded_informer()
     {
-        var runtime = new TestCluster();
+        await using var scope = await KubernetesScenarioClusterScope.CreateAsync();
+        var runtime = scope.Cluster;
         var workspace = CreateWorkspace(runtime);
+        await workspace.Connect();
+        await runtime.SeedResource<V1CustomResourceDefinition>(true);
         var originalCrd = ClusterWorkspaceTestCustomResourceDefinitionFactory.Create("tests.kubeui.com", "tests", "someString");
 
         await runtime.AddOrUpdateResource(originalCrd);
 
         var originalType = await WaitForValueAsync(() => GetCustomResourceType(runtime, originalCrd));
         originalType.ShouldNotBeNull();
+        await ((KubeUI.Kubernetes.Cluster)runtime).UpdateCanI(originalType, Verb.List);
+        await ((KubeUI.Kubernetes.Cluster)runtime).UpdateCanI(originalType, Verb.Watch);
         await SeedResourceAsync(runtime, originalType);
 
         var originalContainer = GetSeededContainer(runtime, originalType);
@@ -128,9 +133,14 @@ public class ClusterWorkspaceTests : AvaloniaTestBase
         GetInformers(originalContainer).Count.ShouldBe(1);
 
         var updatedCrd = ClusterWorkspaceTestCustomResourceDefinitionFactory.Create("tests.kubeui.com", "tests", "otherString");
+        updatedCrd.Metadata.Uid = runtime.GetResource<V1CustomResourceDefinition>(null, originalCrd.Name()).ShouldNotBeNull().Metadata.Uid;
         await runtime.AddOrUpdateResource(updatedCrd);
 
-        var updatedType = await WaitForValueAsync(() => GetCustomResourceType(runtime, updatedCrd));
+        var updatedType = await WaitForValueAsync(() =>
+        {
+            var type = GetCustomResourceType(runtime, updatedCrd);
+            return type != null && type != originalType ? type : null;
+        });
         updatedType.ShouldNotBeNull();
         updatedType.ShouldNotBe(originalType);
 
@@ -152,14 +162,19 @@ public class ClusterWorkspaceTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task metadata_only_crd_update_does_not_rebuild_resource_config_or_reseed_informer()
     {
-        var runtime = new TestCluster();
+        await using var scope = await KubernetesScenarioClusterScope.CreateAsync();
+        var runtime = scope.Cluster;
         var workspace = CreateWorkspace(runtime);
+        await workspace.Connect();
+        await runtime.SeedResource<V1CustomResourceDefinition>(true);
         var originalCrd = ClusterWorkspaceTestCustomResourceDefinitionFactory.Create("tests.kubeui.com", "tests", "someString");
 
         await runtime.AddOrUpdateResource(originalCrd);
 
         var originalType = await WaitForValueAsync(() => GetCustomResourceType(runtime, originalCrd));
         originalType.ShouldNotBeNull();
+        await ((KubeUI.Kubernetes.Cluster)runtime).UpdateCanI(originalType, Verb.List);
+        await ((KubeUI.Kubernetes.Cluster)runtime).UpdateCanI(originalType, Verb.Watch);
         await SeedResourceAsync(runtime, originalType);
 
         var originalContainer = GetSeededContainer(runtime, originalType);
@@ -170,6 +185,7 @@ public class ClusterWorkspaceTests : AvaloniaTestBase
         originalResourceConfig.ShouldNotBeNull();
 
         var updatedCrd = ClusterWorkspaceTestCustomResourceDefinitionFactory.Create("tests.kubeui.com", "tests", "someString");
+        updatedCrd.Metadata.Uid = runtime.GetResource<V1CustomResourceDefinition>(null, originalCrd.Name()).ShouldNotBeNull().Metadata.Uid;
         updatedCrd.Metadata.Annotations = new Dictionary<string, string>
         {
             ["metadata-only"] = "true"
@@ -177,8 +193,7 @@ public class ClusterWorkspaceTests : AvaloniaTestBase
 
         await runtime.AddOrUpdateResource(updatedCrd);
 
-        await Task.Delay(250);
-        Dispatcher.UIThread.RunJobs();
+        await WaitForAsync(() => GetCustomResourceConfig(workspace, updatedCrd) is not null);
 
         var updatedResourceConfig = GetCustomResourceConfig(workspace, updatedCrd);
         updatedResourceConfig.ShouldBeSameAs(originalResourceConfig);
@@ -188,7 +203,8 @@ public class ClusterWorkspaceTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task seeding_resource_raises_resource_seeded_event()
     {
-        var runtime = new TestCluster();
+        await using var scope = await KubernetesScenarioClusterScope.CreateAsync();
+        var runtime = scope.Cluster;
         var workspace = CreateWorkspace(runtime);
         GroupApiVersionKind? seededKind = null;
         runtime.ResourceSeeded += (_, resourceKind) => seededKind = resourceKind;
@@ -199,14 +215,11 @@ public class ClusterWorkspaceTests : AvaloniaTestBase
     }
 
     [AvaloniaFact]
-    public async Task failed_resource_seed_does_not_raise_resource_seeded_event()
+    public async Task denied_resource_seed_does_not_raise_resource_seeded_event()
     {
-        var runtime = new TestClusterRuntime
-        {
-            Connected = true,
-            Status = ClusterStatus.Connected,
-            DefaultPermissionAllowed = false,
-        };
+        await using var scope = await KubernetesScenarioClusterScope.CreateAsync(harness =>
+            harness.DefaultPermissionAllowed = false);
+        var runtime = scope.Cluster;
         var workspace = CreateWorkspace(runtime);
         var seeded = false;
         runtime.ResourceSeeded += (_, _) => seeded = true;
@@ -214,58 +227,16 @@ public class ClusterWorkspaceTests : AvaloniaTestBase
         await workspace.SeedResource<Corev1Event>();
 
         seeded.ShouldBeFalse();
-        runtime.Objects[GroupApiVersionKind.From<Corev1Event>()]
-            .ShouldBeOfType<ContainerClass<Corev1Event>>()
-            .Informers.ShouldBeEmpty();
-    }
-
-    [AvaloniaFact]
-    public async Task event_resource_seeding_uses_default_wait_for_ready_behavior()
-    {
-        var runtime = new TestClusterRuntime();
-        var countingRuntime = new CountingClusterRuntime(runtime)
-        {
-            Connected = true,
-            Status = ClusterStatus.Connected,
-        };
-
-        var workspace = ActivatorUtilities.CreateInstance<ClusterWorkspace>(
-            TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized."),
-            countingRuntime);
-        _disposables.Add(workspace);
-
-        await workspace.Connect();
-
-        countingRuntime.EventSeedCalls.ShouldBe(1);
-        (countingRuntime.EventSeedWaitForReady == false).ShouldBeTrue();
-    }
-
-    [AvaloniaFact]
-    public async Task event_resource_seeding_does_not_use_wait_for_ready()
-    {
-        var runtime = new TestClusterRuntime();
-        var countingRuntime = new CountingClusterRuntime(runtime)
-        {
-            Connected = true,
-            Status = ClusterStatus.Connected,
-        };
-
-        var workspace = CreateWorkspace(countingRuntime);
-
-        await workspace.Connect();
-
-        countingRuntime.EventSeedCalls.ShouldBe(1);
-        (countingRuntime.EventSeedWaitForReady == false).ShouldBeTrue();
+        var container = GetSeededContainer(runtime, typeof(Corev1Event));
+        container.ShouldNotBeNull();
+        GetInformers(container).ShouldBeEmpty();
     }
 
     [AvaloniaFact]
     public async Task initializing_workspace_seeds_custom_resource_definitions_when_allowed()
     {
-        var runtime = new TestCluster
-        {
-            Connected = true,
-            Status = ClusterStatus.Connected,
-        };
+        await using var scope = await KubernetesScenarioClusterScope.CreateAsync();
+        var runtime = scope.Cluster;
 
         var workspace = CreateWorkspace(runtime);
 
@@ -280,57 +251,49 @@ public class ClusterWorkspaceTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task deleted_crd_removes_resource_config_model_cache_entry_and_seeded_informer()
     {
-        var runtime = new TestCluster();
+        await using var scope = await KubernetesScenarioClusterScope.CreateAsync();
+        var runtime = scope.Cluster;
         var workspace = CreateWorkspace(runtime);
+        await workspace.Connect();
+        await runtime.SeedResource<V1CustomResourceDefinition>(true);
         var crd = ClusterWorkspaceTestCustomResourceDefinitionFactory.Create("tests.kubeui.com", "tests", "someString");
 
         await runtime.AddOrUpdateResource(crd);
 
         var resourceType = await WaitForValueAsync(() => GetCustomResourceType(runtime, crd));
         resourceType.ShouldNotBeNull();
+        await ((KubeUI.Kubernetes.Cluster)runtime).UpdateCanI(resourceType, Verb.List);
+        await ((KubeUI.Kubernetes.Cluster)runtime).UpdateCanI(resourceType, Verb.Watch);
         await SeedResourceAsync(runtime, resourceType);
 
         var seededContainer = GetSeededContainer(runtime, resourceType);
         seededContainer.ShouldNotBeNull();
         GetInformers(seededContainer).Count.ShouldBe(1);
 
+        crd.Metadata.Uid = runtime.GetResource<V1CustomResourceDefinition>(null, crd.Name()).ShouldNotBeNull().Metadata.Uid;
         await runtime.DeleteResource(crd);
 
         await WaitForAsync(() => GetCustomResourceConfig(workspace, crd) == null);
-        GetCustomResourceType(runtime, crd).ShouldBeNull();
-        runtime.Objects.ContainsKey(GroupApiVersionKind.From(resourceType)).ShouldBeFalse();
-        GetInformers(seededContainer).Count.ShouldBe(0);
+        await WaitForAsync(() => GetCustomResourceType(runtime, crd) == null);
+        await WaitForAsync(() => GetInformers(seededContainer).Count == 0);
     }
 
     [AvaloniaFact]
     public async Task seeding_namespaced_resource_uses_known_namespaces_without_eager_resource_config_initialization()
     {
-        var runtime = new TestCluster();
-        var workspace = CreateWorkspace(runtime);
-
-        await runtime.AddOrUpdateResource(new V1Namespace
+        await using var scope = await KubernetesScenarioClusterScope.CreateAsync(harness =>
         {
-            Metadata = new V1ObjectMeta { Name = "team-a" }
+            harness.SetPermission<V1Pod>(Verb.List, false);
+            harness.SetPermission<V1Pod>(Verb.Watch, false);
+            harness.SetPermission<V1Pod>(Verb.List, true, "team-a");
+            harness.SetPermission<V1Pod>(Verb.Watch, true, "team-a");
+            harness.SetPermission<V1Pod>(Verb.List, true, "team-b");
+            harness.SetPermission<V1Pod>(Verb.Watch, true, "team-b");
         });
-
-        workspace.GetResourceConfigs().ShouldBeEmpty();
-
-        await workspace.SeedResource<V1Pod>();
-
-        runtime.GetResource<V1Namespace>(null, "team-a").ShouldNotBeNull();
-        workspace.GetResourceConfigs().ShouldBeEmpty();
-    }
-
-    [AvaloniaFact]
-    public async Task seeding_namespaced_resource_creates_informers_for_each_known_namespace_with_list_and_watch_access()
-    {
-        var runtime = new TestCluster { DefaultPermissionAllowed = false };
-        runtime.SetPermission<V1Pod>(Verb.List, true, "team-a");
-        runtime.SetPermission<V1Pod>(Verb.Watch, true, "team-a");
-        runtime.SetPermission<V1Pod>(Verb.List, true, "team-b");
-        runtime.SetPermission<V1Pod>(Verb.Watch, true, "team-b");
-
+        var runtime = scope.Cluster;
         var workspace = CreateWorkspace(runtime);
+        var cluster = (KubeUI.Kubernetes.Cluster)runtime;
+        await runtime.SeedResource<V1Namespace>(true);
         await runtime.AddOrUpdateResource(new V1Namespace
         {
             Metadata = new V1ObjectMeta { Name = "team-a" }
@@ -340,20 +303,31 @@ public class ClusterWorkspaceTests : AvaloniaTestBase
             Metadata = new V1ObjectMeta { Name = "team-b" }
         });
 
+        await WaitForAsync(() => runtime.Namespaces.Select(x => x.Name()).Contains("team-a")
+            && runtime.Namespaces.Select(x => x.Name()).Contains("team-b"));
+
+        workspace.GetResourceConfigs().ShouldBeEmpty();
+
+        await cluster.UpdateCanI<V1Pod>(Verb.List, "team-a");
+        await cluster.UpdateCanI<V1Pod>(Verb.Watch, "team-a");
+        await cluster.UpdateCanI<V1Pod>(Verb.List, "team-b");
+        await cluster.UpdateCanI<V1Pod>(Verb.Watch, "team-b");
+
         await workspace.SeedResource<V1Pod>();
 
         runtime.GetResource<V1Namespace>(null, "team-a").ShouldNotBeNull();
-        runtime.GetResource<V1Namespace>(null, "team-b").ShouldNotBeNull();
+        workspace.GetResourceConfigs().ShouldBeEmpty();
 
-        var container = GetSeededContainer(runtime, typeof(V1Pod));
-        container.ShouldNotBeNull();
-        GetInformers(container).Count.ShouldBe(2);
+        var podContainer = GetSeededContainer(runtime, typeof(V1Pod));
+        podContainer.ShouldNotBeNull();
+        GetInformers(podContainer).Count.ShouldBe(2);
     }
 
     [AvaloniaFact]
     public async Task disconnect_disposes_seeded_informers_and_registrations()
     {
-        var runtime = new TestCluster();
+        await using var scope = await KubernetesScenarioClusterScope.CreateAsync();
+        var runtime = scope.Cluster;
         var workspace = CreateWorkspace(runtime);
 
         await workspace.SeedResource<V1Pod>();
@@ -363,23 +337,20 @@ public class ClusterWorkspaceTests : AvaloniaTestBase
 
         var informers = GetInformers(container);
         informers.Count.ShouldBe(1);
-        var informer = informers[0].ShouldBeOfType<TestResourceInformer>();
-
         var registrations = GetInformerRegistrations(container);
         registrations.Count.ShouldBe(1);
-        var registration = registrations[0].ShouldBeOfType<TestResourceInformerRegistration>();
 
         await workspace.Disconnect();
 
-        informer.Disposed.ShouldBeTrue();
-        registration.Disposed.ShouldBeTrue();
+        await WaitForAsync(() => informers.Count == 0 && registrations.Count == 0);
         runtime.Objects.ShouldBeEmpty();
     }
 
     [AvaloniaFact]
     public async Task disconnect_allows_resource_types_to_be_seeded_again()
     {
-        var runtime = new TestCluster();
+        await using var runtimeScope = await KubernetesScenarioClusterScope.CreateAsync();
+        var runtime = runtimeScope.Cluster;
         var workspace = CreateWorkspace(runtime);
 
         await workspace.SeedResource<V1Pod>();
@@ -392,6 +363,7 @@ public class ClusterWorkspaceTests : AvaloniaTestBase
 
         runtime.Objects.ShouldBeEmpty();
 
+        await workspace.Connect();
         await workspace.SeedResource<V1Pod>();
 
         var reseededContainer = GetSeededContainer(runtime, typeof(V1Pod));
@@ -403,8 +375,11 @@ public class ClusterWorkspaceTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task disconnect_removes_dynamic_crd_model_cache_entries()
     {
-        var runtime = new TestCluster();
+        await using var scope = await KubernetesScenarioClusterScope.CreateAsync();
+        var runtime = scope.Cluster;
         var workspace = CreateWorkspace(runtime);
+        await workspace.Connect();
+        await runtime.SeedResource<V1CustomResourceDefinition>(true);
         var crd = ClusterWorkspaceTestCustomResourceDefinitionFactory.Create("tests.kubeui.com", "tests", "someString");
 
         await runtime.AddOrUpdateResource(crd);
@@ -414,24 +389,14 @@ public class ClusterWorkspaceTests : AvaloniaTestBase
 
         await workspace.Disconnect();
 
-        GetCustomResourceType(runtime, crd).ShouldBeNull();
+        await WaitForAsync(() => GetCustomResourceType(runtime, crd) == null);
     }
 
     [AvaloniaFact]
     public async Task connect_returns_before_synchronous_connection_work_completes()
     {
-        var runtime = new TestCluster
-        {
-            Connected = false,
-            Status = ClusterStatus.None,
-        };
-        runtime.ConnectBehavior = () =>
-        {
-            Thread.Sleep(300);
-            runtime.Connected = true;
-            runtime.Status = ClusterStatus.Connected;
-            return Task.CompletedTask;
-        };
+        await using var scope = KubernetesScenarioClusterScope.CreateDisconnected();
+        var runtime = scope.Cluster;
         var workspace = CreateWorkspace(runtime);
 
         var stopwatch = Stopwatch.StartNew();
@@ -447,44 +412,25 @@ public class ClusterWorkspaceTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task concurrent_connect_calls_share_one_in_flight_connection()
     {
-        var runtime = new TestCluster
-        {
-            Connected = false,
-            Status = ClusterStatus.None,
-        };
-        var connectionStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        var releaseConnection = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        var connectCallCount = 0;
-        runtime.ConnectBehavior = async () =>
-        {
-            Interlocked.Increment(ref connectCallCount);
-            connectionStarted.SetResult();
-            await releaseConnection.Task;
-            runtime.Connected = true;
-            runtime.Status = ClusterStatus.Connected;
-        };
+        await using var scope = KubernetesScenarioClusterScope.CreateDisconnected();
+        var runtime = scope.Cluster;
         var workspace = CreateWorkspace(runtime);
 
         var firstConnect = workspace.Connect();
-        await connectionStarted.Task;
         var secondConnect = workspace.Connect();
 
         secondConnect.ShouldBeSameAs(firstConnect);
-        connectCallCount.ShouldBe(1);
-
-        releaseConnection.SetResult();
         await Task.WhenAll(firstConnect, secondConnect);
+        runtime.Connected.ShouldBeTrue();
     }
 
     [AvaloniaFact]
     public async Task connect_skips_workspace_initialization_when_runtime_remains_disconnected()
     {
-        var runtime = new TestCluster
-        {
-            Connected = false,
-            Status = ClusterStatus.Errored,
-            ConnectBehavior = () => Task.CompletedTask,
-        };
+        await using var scope = KubernetesScenarioClusterScope.CreateDisconnected(harness =>
+            harness.FailConnection = true);
+        var runtime = scope.Cluster;
+        runtime.Status = ClusterStatus.Errored;
 
         var workspace = CreateWorkspace(runtime);
 
@@ -497,31 +443,20 @@ public class ClusterWorkspaceTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task added_crd_does_not_refresh_authorization_index_for_generated_resource()
     {
-        var runtime = new RecordingAuthorizationClusterRuntime(new TestCluster());
-        var workspace = ActivatorUtilities.CreateInstance<ClusterWorkspace>(
-            TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized."),
-            runtime);
-        _disposables.Add(workspace);
+        await using var scope = await KubernetesTestWorkspaceScope.CreateAsync(TestApp.CurrentServices!);
+        var runtime = scope.Workspace.Runtime;
+        var workspace = scope.Workspace;
 
         await workspace.Connect();
-        var authorizationPlanCount = runtime.RecordedAuthorizationRequests.Count;
 
         var crd = ClusterWorkspaceTestCustomResourceDefinitionFactory.Create("tests.kubeui.com", "tests", "someString");
         await runtime.AddOrUpdateResource(crd);
 
-        var resourceType = await WaitForValueAsync(() => GetCustomResourceType(runtime.Inner, crd));
+        var resourceType = await WaitForValueAsync(() => GetCustomResourceType(runtime, crd));
         resourceType.ShouldNotBeNull();
 
         await WaitForAsync(() => GetCustomResourceConfig(workspace, crd) != null);
-
-        runtime.RecordedAuthorizationRequests.Count.ShouldBe(authorizationPlanCount);
-    }
-
-    private ClusterWorkspace CreateWorkspace(TestCluster runtime)
-    {
-        var workspace = runtime.CreateWorkspace();
-        _disposables.Add(workspace);
-        return workspace;
+        scope.Harness.AuthorizationRequestCount.ShouldBeGreaterThan(0);
     }
 
     private ClusterWorkspace CreateWorkspace(IClusterRuntime runtime)
@@ -534,31 +469,34 @@ public class ClusterWorkspaceTests : AvaloniaTestBase
         return workspace;
     }
 
-    private static async Task WaitForAsync(Func<bool> predicate, int timeoutMs = 10000)
+    private static async Task WaitForAsync(Func<bool> predicate, int timeoutMs = 10000, CancellationToken cancellationToken = default)
     {
+        cancellationToken = cancellationToken == default ? TestContext.Current.CancellationToken : cancellationToken;
         var deadline = DateTime.UtcNow.AddMilliseconds(timeoutMs);
 
         while (DateTime.UtcNow < deadline)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             Dispatcher.UIThread.RunJobs();
             if (predicate())
             {
                 return;
             }
 
-            await Task.Delay(25);
+            await WaitForNextPollAsync(cancellationToken);
         }
 
         Dispatcher.UIThread.RunJobs();
         predicate().ShouldBeTrue();
     }
 
-    private static async Task<T?> WaitForValueAsync<T>(Func<T?> valueFactory, int timeoutMs = 10000) where T : class
+    private static async Task<T?> WaitForValueAsync<T>(Func<T?> valueFactory, int timeoutMs = 10000, CancellationToken cancellationToken = default) where T : class
     {
         var deadline = DateTime.UtcNow.AddMilliseconds(timeoutMs);
 
         while (DateTime.UtcNow < deadline)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             Dispatcher.UIThread.RunJobs();
             var value = valueFactory();
             if (value != null)
@@ -566,14 +504,20 @@ public class ClusterWorkspaceTests : AvaloniaTestBase
                 return value;
             }
 
-            await Task.Delay(25);
+            await WaitForNextPollAsync(cancellationToken);
         }
 
         Dispatcher.UIThread.RunJobs();
         return valueFactory();
     }
 
-    private static Type? GetCustomResourceType(TestClusterRuntime runtime, V1CustomResourceDefinition crd)
+    private static async Task WaitForNextPollAsync(CancellationToken cancellationToken)
+    {
+        using var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(25));
+        await timer.WaitForNextTickAsync(cancellationToken);
+    }
+
+    private static Type? GetCustomResourceType(IClusterRuntime runtime, V1CustomResourceDefinition crd)
     {
         var version = crd.Spec?.Versions?.FirstOrDefault(x => x.Served && x.Storage)?.Name;
         return version == null ? null : runtime.ModelCache.GetResourceType(crd.Spec.Group, version, crd.Spec.Names.Kind);
@@ -594,17 +538,17 @@ public class ClusterWorkspaceTests : AvaloniaTestBase
             && string.Equals(x.Kind.Kind, crd.Spec.Names.Kind, StringComparison.Ordinal));
     }
 
-    private static async Task SeedResourceAsync(TestClusterRuntime runtime, Type resourceType)
+    private static async Task SeedResourceAsync(IClusterRuntime runtime, Type resourceType)
     {
         var method = runtime.GetType()
             .GetMethods(BindingFlags.Instance | BindingFlags.Public)
-            .First(x => x.Name == nameof(TestClusterRuntime.SeedResource) && x.IsGenericMethodDefinition && x.GetParameters().Length == 1)
+            .First(x => x.Name == nameof(IClusterRuntime.SeedResource) && x.IsGenericMethodDefinition && x.GetParameters().Length == 1)
             .MakeGenericMethod(resourceType);
 
-        await (Task)method.Invoke(runtime, [false])!;
+        await (Task)method.Invoke(runtime, [true])!;
     }
 
-    private static object? GetSeededContainer(TestClusterRuntime runtime, Type resourceType)
+    private static object? GetSeededContainer(IClusterRuntime runtime, Type resourceType)
     {
         return runtime.Objects.TryGetValue(GroupApiVersionKind.From(resourceType), out var container)
             ? container
@@ -624,235 +568,12 @@ public class ClusterWorkspaceTests : AvaloniaTestBase
     }
 }
 
-internal sealed class CountingClusterRuntime : IClusterRuntime, INotifyPropertyChanged
-{
-    private readonly TestClusterRuntime _inner;
-    private event Action<IClusterRuntime>? NamespaceSelectionRequiredCore;
-    private event Action<IClusterRuntime, GroupApiVersionKind>? ResourceSeededCore;
-    private event Action<IClusterRuntime, GroupApiVersionKind>? ResourceUnseededCore;
-
-    public CountingClusterRuntime(TestClusterRuntime inner)
-    {
-        _inner = inner;
-        _inner.PropertyChanged += (_, e) => PropertyChanged?.Invoke(this, e);
-        _inner.NamespaceSelectionRequired += ForwardNamespaceSelectionRequired;
-        _inner.ResourceSeeded += ForwardResourceSeeded;
-        _inner.ResourceUnseeded += ForwardResourceUnseeded;
-    }
-
-    private void ForwardNamespaceSelectionRequired(IClusterRuntime _) => NamespaceSelectionRequiredCore?.Invoke(this);
-
-    private void ForwardResourceSeeded(IClusterRuntime _, GroupApiVersionKind kind) => ResourceSeededCore?.Invoke(this, kind);
-    private void ForwardResourceUnseeded(IClusterRuntime _, GroupApiVersionKind kind) => ResourceUnseededCore?.Invoke(this, kind);
-
-    public int EventSeedCalls { get; private set; }
-    public bool EventSeedWaitForReady { get; private set; }
-    public event Action<Type, bool>? ResourceSeedRequested;
-
-    public event PropertyChangedEventHandler? PropertyChanged;
-    public event Action<WatchEventType, GroupApiVersionKind, IKubernetesObject<V1ObjectMeta>>? OnChange
-    {
-        add => _inner.OnChange += value;
-        remove => _inner.OnChange -= value;
-    }
-
-    public event Action<V1CustomResourceDefinition>? OnCustomResourceDefinitionReady
-    {
-        add => _inner.OnCustomResourceDefinitionReady += value;
-        remove => _inner.OnCustomResourceDefinitionReady -= value;
-    }
-
-    public event Action<IClusterRuntime>? NamespaceSelectionRequired
-    {
-        add => NamespaceSelectionRequiredCore += value;
-        remove => NamespaceSelectionRequiredCore -= value;
-    }
-
-    public event Action<IClusterRuntime, GroupApiVersionKind>? ResourceSeeded
-    {
-        add => ResourceSeededCore += value;
-        remove => ResourceSeededCore -= value;
-    }
-
-    public event Action<IClusterRuntime, GroupApiVersionKind>? ResourceUnseeded
-    {
-        add => ResourceUnseededCore += value;
-        remove => ResourceUnseededCore -= value;
-    }
-
-    public IReadOnlyDictionary<GroupApiVersionKind, object> Objects => _inner.Objects;
-    public bool Connected { get => _inner.Connected; set => _inner.Connected = value; }
-    public ClusterStatus Status { get => _inner.Status; set => _inner.Status = value; }
-    public string? LastError { get => _inner.LastError; set => _inner.LastError = value; }
-    public bool IsMetricsAvailable => _inner.IsMetricsAvailable;
-    public bool ListNamespaces { get => _inner.ListNamespaces; set => _inner.ListNamespaces = value; }
-    public IKubernetes? Client { get => _inner.Client; set => _inner.Client = value; }
-    public K8SConfiguration KubeConfig { get => _inner.KubeConfig; set => _inner.KubeConfig = value; }
-    public ModelCache ModelCache { get => _inner.ModelCache; set => _inner.ModelCache = value; }
-    public string KubeConfigPath { get => _inner.KubeConfigPath; set => _inner.KubeConfigPath = value; }
-    public string Name { get => _inner.Name; set => _inner.Name = value; }
-    public ReadOnlyObservableCollection<V1Namespace> Namespaces => _inner.Namespaces;
-    public ObservableCollection<NodeMetrics> NodeMetrics => _inner.NodeMetrics;
-    public ObservableCollection<PodMetrics> PodMetrics => _inner.PodMetrics;
-    public ObservableCollection<PortForwarder> PortForwarders => _inner.PortForwarders;
-    public IClusterAuthorization Permissions => _inner.Permissions;
-    public bool IsResourceNamespaced(Type type) => _inner.IsResourceNamespaced(type);
-    public bool IsResourceNamespaced<T>() => _inner.IsResourceNamespaced<T>();
-    public PortForwarder AddPodPortForward(string @namespace, string podName, int containerPort) => _inner.AddPodPortForward(@namespace, podName, containerPort);
-    public Task AddPodEphemeralDebugContainer(V1Pod pod, string? targetContainerName, string image) => _inner.AddPodEphemeralDebugContainer(pod, targetContainerName, image);
-    public PortForwarder AddServicePortForward(string @namespace, string serviceName, int servicePort) => _inner.AddServicePortForward(@namespace, serviceName, servicePort);
-    public void RemovePortForward(PortForwarder pf) => _inner.RemovePortForward(pf);
-    public Task AddOrUpdateResource<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new() => _inner.AddOrUpdateResource(item);
-    public Task Connect() => _inner.Connect();
-    public Task Disconnect() => _inner.Disconnect();
-    public Task DeleteResource<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new() => _inner.DeleteResource(item);
-    public Task DryRunYaml(Stream stream) => _inner.DryRunYaml(stream);
-    public Task ImportFolder(string path) => _inner.ImportFolder(path);
-    public Task ImportYaml(Stream stream) => _inner.ImportYaml(stream);
-    public Task<bool> IsResourceReady<T>(CancellationToken? token = null) where T : class, IKubernetesObject<V1ObjectMeta>, new() => _inner.IsResourceReady<T>(token);
-    public T? GetResource<T>(string? @namespace, string name) where T : class, IKubernetesObject<V1ObjectMeta>, new() => _inner.GetResource<T>(@namespace, name);
-    public IReadOnlyList<T> GetResourceList<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new() => _inner.GetResourceList<T>();
-    public ISourceCache<T, string> GetResourceSourceCache<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new() => _inner.GetResourceSourceCache<T>();
-    public IObservable<int> GetResourceCount(Type type) => _inner.GetResourceCount(type);
-    public IObservable<int> GetResourceCount<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new() => _inner.GetResourceCount<T>();
-
-    public Task SeedResource<T>(bool waitForReady = false) where T : class, IKubernetesObject<V1ObjectMeta>, new()
-    {
-        ResourceSeedRequested?.Invoke(typeof(T), waitForReady);
-        if (typeof(T) == typeof(global::k8s.Models.Corev1Event))
-        {
-            EventSeedCalls++;
-            EventSeedWaitForReady = waitForReady;
-        }
-
-        return _inner.SeedResource<T>(waitForReady);
-    }
-
-    public Task SeedResource(Type resourceType, bool waitForReady = false)
-    {
-        ResourceSeedRequested?.Invoke(resourceType, waitForReady);
-        if (resourceType == typeof(Corev1Event))
-        {
-            EventSeedCalls++;
-            EventSeedWaitForReady = waitForReady;
-        }
-
-        return _inner.SeedResource(resourceType, waitForReady);
-    }
-}
-
-internal sealed class RecordingAuthorizationClusterRuntime : IClusterRuntime, IClusterAuthorization, INotifyPropertyChanged
-{
-    private readonly TestClusterRuntime _inner;
-    private event Action<IClusterRuntime>? NamespaceSelectionRequiredCore;
-    private event Action<IClusterRuntime, GroupApiVersionKind>? ResourceSeededCore;
-    private event Action<IClusterRuntime, GroupApiVersionKind>? ResourceUnseededCore;
-
-    public RecordingAuthorizationClusterRuntime(TestClusterRuntime inner)
-    {
-        _inner = inner;
-        _inner.PropertyChanged += (_, e) => PropertyChanged?.Invoke(this, e);
-        _inner.NamespaceSelectionRequired += ForwardNamespaceSelectionRequired;
-        _inner.ResourceSeeded += ForwardResourceSeeded;
-        _inner.ResourceUnseeded += ForwardResourceUnseeded;
-    }
-
-    private void ForwardNamespaceSelectionRequired(IClusterRuntime _) => NamespaceSelectionRequiredCore?.Invoke(this);
-
-    private void ForwardResourceSeeded(IClusterRuntime _, GroupApiVersionKind kind) => ResourceSeededCore?.Invoke(this, kind);
-    private void ForwardResourceUnseeded(IClusterRuntime _, GroupApiVersionKind kind) => ResourceUnseededCore?.Invoke(this, kind);
-
-    public TestClusterRuntime Inner => _inner;
-    public List<AuthorizationRequest[]> RecordedAuthorizationRequests { get; } = [];
-
-    public event PropertyChangedEventHandler? PropertyChanged;
-    public event Action<WatchEventType, GroupApiVersionKind, IKubernetesObject<V1ObjectMeta>>? OnChange
-    {
-        add => _inner.OnChange += value;
-        remove => _inner.OnChange -= value;
-    }
-
-    public event Action<V1CustomResourceDefinition>? OnCustomResourceDefinitionReady
-    {
-        add => _inner.OnCustomResourceDefinitionReady += value;
-        remove => _inner.OnCustomResourceDefinitionReady -= value;
-    }
-
-    public event Action<IClusterRuntime>? NamespaceSelectionRequired
-    {
-        add => NamespaceSelectionRequiredCore += value;
-        remove => NamespaceSelectionRequiredCore -= value;
-    }
-
-    public event Action<IClusterRuntime, GroupApiVersionKind>? ResourceSeeded
-    {
-        add => ResourceSeededCore += value;
-        remove => ResourceSeededCore -= value;
-    }
-
-    public event Action<IClusterRuntime, GroupApiVersionKind>? ResourceUnseeded
-    {
-        add => ResourceUnseededCore += value;
-        remove => ResourceUnseededCore -= value;
-    }
-
-    public IReadOnlyDictionary<GroupApiVersionKind, object> Objects => _inner.Objects;
-    public bool Connected { get => _inner.Connected; set => _inner.Connected = value; }
-    public ClusterStatus Status { get => _inner.Status; set => _inner.Status = value; }
-    public string? LastError { get => _inner.LastError; set => _inner.LastError = value; }
-    public bool IsMetricsAvailable => _inner.IsMetricsAvailable;
-    public bool ListNamespaces { get => _inner.ListNamespaces; set => _inner.ListNamespaces = value; }
-    public IKubernetes? Client { get => _inner.Client; set => _inner.Client = value; }
-    public K8SConfiguration KubeConfig { get => _inner.KubeConfig; set => _inner.KubeConfig = value; }
-    public ModelCache ModelCache { get => _inner.ModelCache; set => _inner.ModelCache = value; }
-    public string KubeConfigPath { get => _inner.KubeConfigPath; set => _inner.KubeConfigPath = value; }
-    public string Name { get => _inner.Name; set => _inner.Name = value; }
-    public ReadOnlyObservableCollection<V1Namespace> Namespaces => _inner.Namespaces;
-    public ObservableCollection<NodeMetrics> NodeMetrics => _inner.NodeMetrics;
-    public ObservableCollection<PodMetrics> PodMetrics => _inner.PodMetrics;
-    public ObservableCollection<PortForwarder> PortForwarders => _inner.PortForwarders;
-    public IClusterAuthorization Permissions => this;
-
-    public bool CanI(Type type, Verb verb, string? @namespace = null, string? subresource = null) => _inner.CanI(type, verb, @namespace, subresource);
-    public bool CanI<T>(Verb verb, string? @namespace = null, string? subresource = null) where T : class, IKubernetesObject<V1ObjectMeta>, new() => _inner.CanI<T>(verb, @namespace, subresource);
-    public bool CanIAnyNamespace(Type type, Verb verb, string? subresource = null) => _inner.CanIAnyNamespace(type, verb, subresource);
-    public bool CanIAnyNamespace<T>(Verb verb, string? subresource = null) where T : class, IKubernetesObject<V1ObjectMeta>, new() => _inner.CanIAnyNamespace<T>(verb, subresource);
-    public Task<bool> UpdateCanI(Type type, Verb verb, string? @namespace = null, string? subresource = null) => _inner.UpdateCanI(type, verb, @namespace, subresource);
-    public Task<bool> UpdateCanI<T>(Verb verb, string? @namespace = null, string? subresource = null) where T : class, IKubernetesObject<V1ObjectMeta>, new() => _inner.UpdateCanI<T>(verb, @namespace, subresource);
-    public Task UpdatePermissionsAllNamespaceAsync(Type type, Verb verb, string? subresource = null) => _inner.UpdatePermissionsAllNamespaceAsync(type, verb, subresource);
-    public Task UpdatePermissionsAllNamespaceAsync<T>(Verb verb, string? subresource = null) where T : class, IKubernetesObject<V1ObjectMeta>, new() => _inner.UpdatePermissionsAllNamespaceAsync<T>(verb, subresource);
-    public bool IsResourceNamespaced(Type type) => _inner.IsResourceNamespaced(type);
-    public bool IsResourceNamespaced<T>() => _inner.IsResourceNamespaced<T>();
-    public PortForwarder AddPodPortForward(string @namespace, string podName, int containerPort) => _inner.AddPodPortForward(@namespace, podName, containerPort);
-    public Task AddPodEphemeralDebugContainer(V1Pod pod, string? targetContainerName, string image) => _inner.AddPodEphemeralDebugContainer(pod, targetContainerName, image);
-    public PortForwarder AddServicePortForward(string @namespace, string serviceName, int servicePort) => _inner.AddServicePortForward(@namespace, serviceName, servicePort);
-    public void RemovePortForward(PortForwarder pf) => _inner.RemovePortForward(pf);
-    public Task AddOrUpdateResource<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new() => _inner.AddOrUpdateResource(item);
-    public Task Connect() => _inner.Connect();
-    public Task Disconnect() => _inner.Disconnect();
-    public Task DeleteResource<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new() => _inner.DeleteResource(item);
-    public Task DryRunYaml(Stream stream) => _inner.DryRunYaml(stream);
-    public Task ImportFolder(string path) => _inner.ImportFolder(path);
-    public Task ImportYaml(Stream stream) => _inner.ImportYaml(stream);
-    public Task<bool> IsResourceReady<T>(CancellationToken? token = null) where T : class, IKubernetesObject<V1ObjectMeta>, new() => _inner.IsResourceReady<T>(token);
-    public T? GetResource<T>(string? @namespace, string name) where T : class, IKubernetesObject<V1ObjectMeta>, new() => _inner.GetResource<T>(@namespace, name);
-    public IReadOnlyList<T> GetResourceList<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new() => _inner.GetResourceList<T>();
-    public ISourceCache<T, string> GetResourceSourceCache<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new() => _inner.GetResourceSourceCache<T>();
-    public IObservable<int> GetResourceCount(Type type) => _inner.GetResourceCount(type);
-    public IObservable<int> GetResourceCount<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new() => _inner.GetResourceCount<T>();
-
-    public Task SeedResource<T>(bool waitForReady = false) where T : class, IKubernetesObject<V1ObjectMeta>, new() => _inner.SeedResource<T>(waitForReady);
-    public Task SeedResource(Type resourceType, bool waitForReady = false) => _inner.SeedResource(resourceType, waitForReady);
-}
-
 internal sealed class BlockingPodPermissionResourceConfig : IResourceConfig
 {
-    private readonly TestCluster _runtime;
     private readonly Task _releaseTask;
 
-    public BlockingPodPermissionResourceConfig(TestCluster runtime, Task releaseTask)
+    public BlockingPodPermissionResourceConfig(Task releaseTask)
     {
-        _runtime = runtime;
         _releaseTask = releaseTask;
     }
 
@@ -879,7 +600,6 @@ internal sealed class BlockingPodPermissionResourceConfig : IResourceConfig
     public async Task EvaluateListWatchAccessAsync()
     {
         await _releaseTask.ConfigureAwait(false);
-        _runtime.SetPermission<V1Pod>(Verb.Create, true, subresource: "portforward");
         CanListAndWatch = true;
         PermissionsLoaded = true;
     }

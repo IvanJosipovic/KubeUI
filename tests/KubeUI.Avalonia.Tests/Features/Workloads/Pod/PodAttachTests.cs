@@ -3,8 +3,8 @@ using Avalonia.Headless.XUnit;
 using k8s;
 using k8s.Models;
 using KubeUI.Avalonia.Tests.Infra;
+using KubeUI.Testing;
 using Microsoft.Extensions.Logging;
-using Moq;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Features.Workloads.Pod;
@@ -183,8 +183,11 @@ public sealed class PodAttachTests : AvaloniaTestBase
 
     private static async Task AssertConnectionModeAsync(bool useAttach, ConnectionMethod expectedMethod)
     {
-        var runtime = new TestCluster();
-        var workspace = runtime.CreateWorkspace();
+        var runtime = TestApp.CurrentServices!.GetRequiredService<Cluster>();
+        runtime.Name = "pod-attach-test";
+        runtime.Connected = true;
+        runtime.Status = ClusterStatus.Connected;
+        var workspace = ActivatorUtilities.CreateInstance<ClusterWorkspace>(TestApp.CurrentServices, runtime);
         var settings = TestApp.CurrentServices!.GetRequiredService<KubeUI.Avalonia.Services.Settings.ISettingsService>();
         var logger = TestApp.CurrentServices.GetRequiredService<ILogger<PodConsoleViewModel>>();
 
@@ -207,44 +210,14 @@ public sealed class PodAttachTests : AvaloniaTestBase
             },
         };
 
-        Mock<IKubernetes> client = new();
-        Mock<WebSocket> webSocket = new();
+        using var webSocket = new FakeKubernetesWebSocket();
+        var webSocketBuilder = new FakeKubernetesWebSocketBuilder(_ => webSocket);
+        using var client = new k8s.Kubernetes(new KubernetesClientConfiguration { Host = "http://pod-attach-test" })
+        {
+            CreateWebSocketBuilder = () => webSocketBuilder,
+        };
 
-        client
-            .Setup(x => x.WebSocketNamespacedPodExecAsync(
-                pod.Name(),
-                pod.Namespace(),
-                It.Is<IEnumerable<string>>(command => command.SequenceEqual(new[]
-                {
-                    "sh",
-                    "-c",
-                    "clear; (bash || ash || sh || echo 'No Shell Found!')",
-                })),
-                "app",
-                true,
-                true,
-                true,
-                true,
-                It.IsAny<string>(),
-                It.IsAny<Dictionary<string, List<string>>>(),
-                It.IsAny<CancellationToken>()))
-            .ReturnsAsync(webSocket.Object);
-
-        client
-            .Setup(x => x.WebSocketNamespacedPodAttachAsync(
-                pod.Name(),
-                pod.Namespace(),
-                "app",
-                true,
-                true,
-                true,
-                true,
-                It.IsAny<string>(),
-                It.IsAny<Dictionary<string, List<string>>>(),
-                It.IsAny<CancellationToken>()))
-            .ReturnsAsync(webSocket.Object);
-
-        workspace.Runtime.Client = client.Object;
+        runtime.Client = client;
 
         using PodConsoleViewModel viewModel = new(logger, settings)
         {
@@ -255,64 +228,21 @@ public sealed class PodAttachTests : AvaloniaTestBase
         };
 
         WebSocket result = await viewModel.OpenConnectionAsync();
-        result.ShouldBe(webSocket.Object);
+        result.ShouldBe(webSocket);
 
         if (expectedMethod == ConnectionMethod.Attach)
         {
-            client.Verify(x => x.WebSocketNamespacedPodAttachAsync(
-                pod.Name(),
-                pod.Namespace(),
-                "app",
-                true,
-                true,
-                true,
-                true,
-                It.IsAny<string>(),
-                It.IsAny<Dictionary<string, List<string>>>(),
-                It.IsAny<CancellationToken>()), Times.Once);
-            client.Verify(x => x.WebSocketNamespacedPodExecAsync(
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.IsAny<IEnumerable<string>>(),
-                It.IsAny<string>(),
-                It.IsAny<bool>(),
-                It.IsAny<bool>(),
-                It.IsAny<bool>(),
-                It.IsAny<bool>(),
-                It.IsAny<string>(),
-                It.IsAny<Dictionary<string, List<string>>>(),
-                It.IsAny<CancellationToken>()), Times.Never);
+            webSocketBuilder.ConnectedUris.Count.ShouldBe(1);
+            webSocketBuilder.ConnectedUris[0].AbsolutePath.ShouldBe("/api/v1/namespaces/default/pods/pod-1/attach");
+            webSocketBuilder.ConnectedUris[0].Query.ShouldContain("container=app");
             return;
         }
 
-        client.Verify(x => x.WebSocketNamespacedPodExecAsync(
-            pod.Name(),
-            pod.Namespace(),
-            It.Is<IEnumerable<string>>(command => command.SequenceEqual(new[]
-            {
-                "sh",
-                "-c",
-                "clear; (bash || ash || sh || echo 'No Shell Found!')",
-            })),
-            "app",
-            true,
-            true,
-            true,
-            true,
-            It.IsAny<string>(),
-            It.IsAny<Dictionary<string, List<string>>>(),
-            It.IsAny<CancellationToken>()), Times.Once);
-        client.Verify(x => x.WebSocketNamespacedPodAttachAsync(
-            It.IsAny<string>(),
-            It.IsAny<string>(),
-            It.IsAny<string>(),
-            It.IsAny<bool>(),
-            It.IsAny<bool>(),
-            It.IsAny<bool>(),
-            It.IsAny<bool>(),
-            It.IsAny<string>(),
-            It.IsAny<Dictionary<string, List<string>>>(),
-            It.IsAny<CancellationToken>()), Times.Never);
+        webSocketBuilder.ConnectedUris.Count.ShouldBe(1);
+        webSocketBuilder.ConnectedUris[0].AbsolutePath.ShouldBe("/api/v1/namespaces/default/pods/pod-1/exec");
+        webSocketBuilder.ConnectedUris[0].Query.ShouldContain("command=sh");
+        webSocketBuilder.ConnectedUris[0].Query.ShouldContain("command=-c");
+        webSocketBuilder.ConnectedUris[0].Query.ShouldContain("command=clear%3B");
     }
 
     private enum ConnectionMethod

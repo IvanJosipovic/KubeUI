@@ -80,6 +80,11 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
     [ObservableProperty]
     public partial IKubernetes? Client { get; set; }
 
+    /// <summary>
+    /// Creates the Kubernetes client used by <see cref="Connect"/>.
+    /// </summary>
+    public Func<KubernetesClientConfiguration, IKubernetes>? KubernetesClientFactory { get; set; }
+
     [ObservableProperty]
     public partial ModelCache ModelCache { get; set; }
 
@@ -154,7 +159,15 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
                         InnerHandler = new ResilienceHandler(pipe.Build())
                     };
 
-                    Client = new k8s.Kubernetes(config, handler);
+                    if (KubernetesClientFactory is null)
+                    {
+                        Client = new k8s.Kubernetes(config, handler);
+                    }
+                    else
+                    {
+                        handler.Dispose();
+                        Client = KubernetesClientFactory(config);
+                    }
                     EnsureResourceInformerCancellationTokenSource();
 
                     NativeAPIGroupDiscoveryList = await GetAPIGroupDiscoveryList().ConfigureAwait(true);
@@ -163,7 +176,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
 
                     await UpdateNamespacePermission().ConfigureAwait(true);
 
-                    await SeedResource<V1Namespace>().ConfigureAwait(true);
+                    await SeedResource<V1Namespace>(true).ConfigureAwait(true);
                     var namespaceCache = GetResourceSourceCache<V1Namespace>();
 
                     // Cant list Namespaces
@@ -666,12 +679,14 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
             if (item.Metadata.Uid != null)
             {
                 // update
-                await client.ReplaceAsync<T>(item, item.Name());
+                T updated = await client.ReplaceAsync<T>(item, item.Name());
+                item.Metadata = updated.Metadata;
             }
             else
             {
                 // add
-                await client.CreateAsync<T>(item);
+                T created = await client.CreateAsync<T>(item);
+                item.Metadata = created.Metadata;
             }
         }
         else
@@ -679,12 +694,14 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
             if (item.Metadata.Uid != null)
             {
                 // update namespaced
-                await client.ReplaceNamespacedAsync<T>(item, item.Namespace(), item.Name());
+                T updated = await client.ReplaceNamespacedAsync<T>(item, item.Namespace(), item.Name());
+                item.Metadata = updated.Metadata;
             }
             else
             {
                 // add namespaced
-                await client.CreateNamespacedAsync<T>(item, item.Namespace());
+                T created = await client.CreateNamespacedAsync<T>(item, item.Namespace());
+                item.Metadata = created.Metadata;
             }
         }
     }

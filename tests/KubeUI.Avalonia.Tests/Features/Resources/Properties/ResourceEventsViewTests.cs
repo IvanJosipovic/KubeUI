@@ -5,6 +5,8 @@ using Avalonia.Threading;
 using k8s.Models;
 using KubeUI.Avalonia.Features.Resources.Properties.Controls;
 using KubeUI.Avalonia.Tests.Infra;
+using KubeUI.Testing;
+using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Features.Resources.Properties;
@@ -14,7 +16,9 @@ public sealed class ResourceEventsViewTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task pre_attach_refresh_does_not_throw_when_dispatcher_flushes()
     {
-        var workspace = new TestCluster().CreateWorkspace();
+        await using var harness = new KubernetesClusterScenarioHarness();
+        await harness.InitializeAsync(TestContext.Current.CancellationToken);
+        using var workspace = ActivatorUtilities.CreateInstance<ClusterWorkspace>(TestApp.CurrentServices!, harness.Cluster);
         await workspace.Connect();
         _ = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
 
@@ -47,7 +51,9 @@ public sealed class ResourceEventsViewTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task detached_resource_events_view_does_not_throw_when_data_context_changes()
     {
-        var workspace = new TestCluster().CreateWorkspace();
+        await using var harness = new KubernetesClusterScenarioHarness();
+        await harness.InitializeAsync(TestContext.Current.CancellationToken);
+        using var workspace = ActivatorUtilities.CreateInstance<ClusterWorkspace>(TestApp.CurrentServices!, harness.Cluster);
         await workspace.Connect();
         _ = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
 
@@ -89,7 +95,9 @@ public sealed class ResourceEventsViewTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task refresh_keeps_a_stable_items_source_instance()
     {
-        var workspace = new TestCluster().CreateWorkspace();
+        await using var harness = new KubernetesClusterScenarioHarness();
+        await harness.InitializeAsync(TestContext.Current.CancellationToken);
+        using var workspace = ActivatorUtilities.CreateInstance<ClusterWorkspace>(TestApp.CurrentServices!, harness.Cluster);
         await workspace.Connect();
         _ = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
 
@@ -130,7 +138,9 @@ public sealed class ResourceEventsViewTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task queued_update_during_teardown_does_not_throw()
     {
-        var workspace = new TestCluster().CreateWorkspace();
+        await using var harness = new KubernetesClusterScenarioHarness();
+        await harness.InitializeAsync(TestContext.Current.CancellationToken);
+        using var workspace = ActivatorUtilities.CreateInstance<ClusterWorkspace>(TestApp.CurrentServices!, harness.Cluster);
         await workspace.Connect();
         _ = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
 

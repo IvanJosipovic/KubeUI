@@ -4,7 +4,6 @@ using k8s.Models;
 using KubernetesClient.Informer.Client;
 using KubernetesCRDModelGen;
 using KubeUI.Testing;
-using KubeUI.Kubernetes.Tests.Infra;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Shouldly;
@@ -22,7 +21,7 @@ public sealed class ClusterAuthTests
             loggerFactory,
             new ModelCache(),
             new Generator(),
-            new TestClusterSettingsStore(),
+            new KubernetesTestSettingsStore(),
             new ServiceCollection().BuildServiceProvider());
 
         cluster.CanI(typeof(V1Pod), Verb.Create, subresource: "portforward").ShouldBeFalse();
@@ -31,15 +30,20 @@ public sealed class ClusterAuthTests
     [Fact]
     public async Task cani_any_namespace_uses_namespace_scoped_permission_when_cluster_scope_is_denied()
     {
-        var cluster = new TestClusterRuntime();
+        await using var harness = new KubernetesClusterScenarioHarness();
+        await harness.InitializeAsync(TestContext.Current.CancellationToken);
+        var cluster = (Cluster)harness.Cluster;
 
-        cluster.SetPermission<V1Pod>(Verb.Create, false, subresource: "portforward");
-        cluster.SetPermission<V1Pod>(Verb.Create, true, "my-app", "portforward");
+        harness.SetPermission<V1Pod>(Verb.Create, false, subresource: "portforward");
+        harness.SetPermission<V1Pod>(Verb.Create, true, "my-app", "portforward");
 
         await cluster.AddOrUpdateResource(new V1Namespace
         {
             Metadata = new V1ObjectMeta { Name = "my-app" }
         });
+        await cluster.SeedResource<V1Namespace>(true);
+        await cluster.UpdateCanI<V1Pod>(Verb.Create, subresource: "portforward");
+        await cluster.UpdateCanI<V1Pod>(Verb.Create, "my-app", "portforward");
 
         cluster.CanIAnyNamespace<V1Pod>(Verb.Create, "portforward").ShouldBeTrue();
     }
@@ -53,7 +57,7 @@ public sealed class ClusterAuthTests
             loggerFactory,
             new ModelCache(),
             new Generator(),
-            new TestClusterSettingsStore(),
+            new KubernetesTestSettingsStore(),
             new ServiceCollection().BuildServiceProvider());
         var namespaces = new ObservableCollection<V1Namespace>
         {
@@ -79,7 +83,7 @@ public sealed class ClusterAuthTests
             loggerFactory,
             new ModelCache(),
             new Generator(),
-            new TestClusterSettingsStore(),
+            new KubernetesTestSettingsStore(),
             new ServiceCollection().BuildServiceProvider());
 
         var kind = GroupApiVersionKind.From<V1Pod>();
@@ -116,7 +120,7 @@ public sealed class ClusterAuthTests
             .Select(_ => Task.Run(async () => await container.GetOrCreateSeedTask(SeedAsync).Value))
             .ToArray();
 
-        await seedStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        await seedStarted.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
         seedCount.ShouldBe(1);
 
         releaseSeed.SetResult(null);
@@ -133,7 +137,7 @@ public sealed class ClusterAuthTests
             loggerFactory,
             new ModelCache(),
             new Generator(),
-            new TestClusterSettingsStore(),
+            new KubernetesTestSettingsStore(),
             new ServiceCollection().BuildServiceProvider());
         cluster.Connected = true;
 
@@ -162,28 +166,14 @@ public sealed class ClusterAuthTests
         queueMethod.ShouldNotBeNull();
 
         queueMethod!.Invoke(cluster, [first]);
-        await firstEntered.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        await firstEntered.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
         queueMethod.Invoke(cluster, [second]);
 
-        await Task.Delay(100);
         Volatile.Read(ref readyCount).ShouldBe(1);
 
         releaseFirst.TrySetResult(null);
-        await secondReady.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        await secondReady.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
         readyCount.ShouldBe(2);
     }
 
-    private sealed class TestClusterSettingsStore : IClusterSettingsStore
-    {
-        public IReadOnlyCollection<string> KubeConfigPaths => [];
-
-        public void AddKubeConfigPath(string path)
-        {
-        }
-
-        public IReadOnlyCollection<string> GetClusterNamespaces(IClusterRuntime cluster)
-        {
-            return [];
-        }
-    }
 }

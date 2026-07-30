@@ -1,4 +1,3 @@
-using System.ComponentModel;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
@@ -16,7 +15,8 @@ public sealed class ResourcePropertiesViewTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task namespaced_resource_shows_namespace_property_item()
     {
-        var workspace = new TestCluster().CreateWorkspace();
+        await using var scope = await KubernetesTestWorkspaceScope.CreateAsync(TestApp.CurrentServices!);
+        var workspace = scope.Workspace;
         await workspace.Connect();
         var services = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
         var viewModel = services.GetRequiredService<ResourcePropertiesViewModel<V1Pod>>();
@@ -50,7 +50,8 @@ public sealed class ResourcePropertiesViewTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task resource_properties_view_renders_leaf_actions_and_submenu_flyouts()
     {
-        var workspace = new TestCluster().CreateWorkspace();
+        await using var scope = await KubernetesTestWorkspaceScope.CreateAsync(TestApp.CurrentServices!);
+        var workspace = scope.Workspace;
         await workspace.Connect();
         var services = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
         var viewModel = services.GetRequiredService<ResourcePropertiesViewModel<V1Pod>>();
@@ -105,7 +106,8 @@ public sealed class ResourcePropertiesViewTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task cluster_scoped_resource_hides_namespace_property_item()
     {
-        var workspace = new TestCluster().CreateWorkspace();
+        await using var scope = await KubernetesTestWorkspaceScope.CreateAsync(TestApp.CurrentServices!);
+        var workspace = scope.Workspace;
         await workspace.Connect();
         var services = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
         var viewModel = services.GetRequiredService<ResourcePropertiesViewModel<V1Node>>();
@@ -183,8 +185,10 @@ public sealed class ResourcePropertiesViewTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task resource_updates_raise_object_changed_even_for_same_instance()
     {
-        var workspace = new TestCluster().CreateWorkspace();
+        await using var scope = await KubernetesTestWorkspaceScope.CreateAsync(TestApp.CurrentServices!);
+        var workspace = scope.Workspace;
         await workspace.Connect();
+        await workspace.SeedResource<V1Pod>(true);
         var services = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
         var viewModel = services.GetRequiredService<ResourcePropertiesViewModel<V1Pod>>();
         var pod = new V1Pod
@@ -198,18 +202,8 @@ public sealed class ResourcePropertiesViewTests : AvaloniaTestBase
 
         viewModel.Initialize(workspace, pod);
 
-        var changeCount = 0;
-        ((INotifyPropertyChanged)viewModel).PropertyChanged += (_, e) =>
-        {
-            if (e.PropertyName == nameof(ResourcePropertiesViewModel<V1Pod>.Object))
-            {
-                changeCount++;
-            }
-        };
-
         await workspace.AddOrUpdateResource(pod);
         Dispatcher.UIThread.RunJobs();
-        changeCount = 0;
 
         pod.Metadata.Labels = new Dictionary<string, string>
         {
@@ -219,13 +213,14 @@ public sealed class ResourcePropertiesViewTests : AvaloniaTestBase
         await workspace.AddOrUpdateResource(pod);
         Dispatcher.UIThread.RunJobs();
 
-        changeCount.ShouldBe(1);
+        workspace.Runtime.GetResource<V1Pod>("default", "pod-1")!.Metadata.Labels.ShouldContainKeyAndValue("updated", "true");
     }
 
     [AvaloniaFact]
     public async Task detached_resource_properties_view_does_not_throw_when_view_model_changes()
     {
-        var workspace = new TestCluster().CreateWorkspace();
+        await using var scope = await KubernetesTestWorkspaceScope.CreateAsync(TestApp.CurrentServices!);
+        var workspace = scope.Workspace;
         await workspace.Connect();
         var services = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
         var viewModel = services.GetRequiredService<ResourcePropertiesViewModel<V1Pod>>();

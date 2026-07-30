@@ -11,7 +11,7 @@
     <AnalysisMode>All</AnalysisMode>
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <NoWarn>CS8602,CS8618,CS8625,CS8604,CS8605,CS8600</NoWarn>
-    <WarningsAsErrors>xUnit1031</WarningsAsErrors>
+    <WarningsAsErrors>xUnit1031;xUnit1051</WarningsAsErrors>
     <TestingPlatformDotnetTestSupport>true</TestingPlatformDotnetTestSupport>
   </PropertyGroup>
 
@@ -36,6 +36,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\KubeUI.Avalonia\KubeUI.Avalonia.csproj" />
     <ProjectReference Include="..\..\src\KubeUI.Kubernetes\KubeUI.Kubernetes.csproj" />
+    <ProjectReference Include="..\KubeUI.Testing\KubeUI.Testing.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -46,13 +47,6 @@
 
   <ItemGroup>
     <AvaloniaResource Include="Assets\**" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Compile Include="..\Shared\Infra\TestClusterRuntime.cs" Link="Infra\TestClusterRuntime.cs" />
-    <Compile Include="..\KubeUI.Kubernetes.Tests\Infra\IClusterScenarioHarness.cs" Link="Infra\IClusterScenarioHarness.cs" />
-    <Compile Include="..\KubeUI.Kubernetes.Tests\Infra\MockClusterScenarioHarness.cs" Link="Infra\MockClusterScenarioHarness.cs" />
-    <Compile Include="..\KubeUI.Kubernetes.Tests\Infra\SharedScenarioData.cs" Link="Infra\SharedScenarioData.cs" />
   </ItemGroup>
 
   <ItemGroup>

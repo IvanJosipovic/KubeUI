@@ -9,6 +9,8 @@ using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Styles;
+using KubeUI.Kubernetes;
+using KubeUI.Testing;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using Moq;
@@ -23,6 +25,7 @@ public class TestApp : Application, IServiceProviderHost
     public static ContentDialogSettings? LastContentDialogSettings { get; private set; }
 
     public static TopLevel TopLevel { get; private set; }
+    private string? _testKubeConfigPath;
 
     public IServiceProvider Services => CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
 
@@ -70,6 +73,8 @@ public class TestApp : Application, IServiceProviderHost
     {
         var services = new ServiceCollection();
         services.AddLogging();
+        string kubeConfigPath = Path.Combine(Path.GetTempPath(), $"kubeui-avalonia-{Guid.NewGuid():N}.config");
+        _testKubeConfigPath = kubeConfigPath;
 
         LastContentDialogSettings = null;
         LastNotification = null;
@@ -99,6 +104,8 @@ public class TestApp : Application, IServiceProviderHost
             overrides.Replace(ServiceDescriptor.Singleton<IDialogService>(dialog.Object));
             overrides.Replace(ServiceDescriptor.Singleton<INotificationManager>(notifications.Object));
             overrides.Replace(ServiceDescriptor.Singleton<IFactory>(sp => new DockFactory(sp, sp.GetRequiredService<ILogger<DockFactory>>())));
+            overrides.Replace(ServiceDescriptor.Singleton<IKubeConfigPathProvider>(
+                new KubernetesTestKubeConfigPathProvider(kubeConfigPath)));
         });
 
         var provider = services.BuildServiceProvider();
@@ -134,6 +141,13 @@ public class TestApp : Application, IServiceProviderHost
         {
             disposable.Dispose();
         }
+
+        if (_testKubeConfigPath is { } path)
+        {
+            File.Delete(path);
+            _testKubeConfigPath = null;
+        }
+
         CurrentServices = null;
     }
 

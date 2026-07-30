@@ -4,7 +4,7 @@ using CliWrap;
 using k8s;
 using k8s.KubeConfigModels;
 
-namespace KubeUI.Kubernetes.Tests.Infra;
+namespace KubeUI.Testing;
 
 /// <summary>
 /// Interface for KIND https://github.com/kubernetes-sigs/kind/releases
@@ -22,9 +22,9 @@ public static class Kind
     // Execute local downloaded binary on non-Windows systems
     private static string Executable => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? FileName : $"./{FileName}";
 
-    public static async Task DownloadClient()
+    public static async Task DownloadClient(CancellationToken cancellationToken = default)
     {
-        await ProcessLock.WaitAsync();
+        await ProcessLock.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
             if (File.Exists(FileName))
@@ -39,7 +39,7 @@ public static class Kind
                 : RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "windows" : "linux";
 
             var url = $"https://kind.sigs.k8s.io/dl/{Version}/kind-{os}-{arch}";
-            var bytes = await client.GetByteArrayAsync(url);
+            var bytes = await client.GetByteArrayAsync(url, cancellationToken).ConfigureAwait(false);
 
             File.WriteAllBytes(FileName, bytes);
 
@@ -47,7 +47,7 @@ public static class Kind
             {
                 await Cli.Wrap("chmod")
                     .WithArguments($"+x ./{FileName}")
-                    .ExecuteAsync();
+                    .ExecuteAsync(cancellationToken);
             }
         }
         finally
@@ -56,19 +56,19 @@ public static class Kind
         }
     }
 
-    public static async Task CreateCluster(string name, string? image = null, string? config = null)
+    public static async Task CreateCluster(string name, string? image = null, string? config = null, string? kubeConfigPath = null, CancellationToken cancellationToken = default)
     {
-        await ProcessLock.WaitAsync();
+        await ProcessLock.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
             var stdErrBuffer = new StringBuilder();
             image ??= KubernetesVersion;
-            var kubeConfigPath = KubernetesClientConfiguration.KubeConfigDefaultLocation;
+            kubeConfigPath ??= KubernetesClientConfiguration.KubeConfigDefaultLocation;
 
             await Cli.Wrap(Executable)
                 .WithArguments($"create cluster --name {name} --image {image} --kubeconfig \"{kubeConfigPath}\"" + (string.IsNullOrEmpty(config) ? "" : $" --config={config}"))
                 .WithStandardErrorPipe(PipeTarget.ToStringBuilder(stdErrBuffer))
-                .ExecuteAsync();
+                .ExecuteAsync(cancellationToken);
 
             ThrowIfKindError(stdErrBuffer);
         }
@@ -78,9 +78,9 @@ public static class Kind
         }
     }
 
-    public static async Task DeleteCluster(string name)
+    public static async Task DeleteCluster(string name, CancellationToken cancellationToken = default)
     {
-        await ProcessLock.WaitAsync();
+        await ProcessLock.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
             var stdErrBuffer = new StringBuilder();
@@ -88,7 +88,7 @@ public static class Kind
             await Cli.Wrap(Executable)
                 .WithArguments($"delete cluster --name {name}")
                 .WithStandardErrorPipe(PipeTarget.ToStringBuilder(stdErrBuffer))
-                .ExecuteAsync();
+                .ExecuteAsync(cancellationToken);
 
             ThrowIfKindError(stdErrBuffer);
         }
@@ -98,7 +98,7 @@ public static class Kind
         }
     }
 
-    public static async Task<string> GetKubeConfig(string name)
+    public static async Task<string> GetKubeConfig(string name, CancellationToken cancellationToken = default)
     {
         var stdOutBuffer = new StringBuilder();
         var stdErrBuffer = new StringBuilder();
@@ -107,15 +107,15 @@ public static class Kind
             .WithArguments($"get kubeconfig --name {name}")
             .WithStandardOutputPipe(PipeTarget.ToStringBuilder(stdOutBuffer))
             .WithStandardErrorPipe(PipeTarget.ToStringBuilder(stdErrBuffer))
-            .ExecuteAsync();
+            .ExecuteAsync(cancellationToken);
 
         ThrowIfKindError(stdErrBuffer);
         return stdOutBuffer.ToString();
     }
 
-    public static async Task<K8SConfiguration> GetK8SConfiguration(string name)
+    public static async Task<K8SConfiguration> GetK8SConfiguration(string name, CancellationToken cancellationToken = default)
     {
-        var kubeConfig = KubeUI.Kubernetes.Serialization.KubernetesYaml.Deserialize<K8SConfiguration>(await GetKubeConfig(name));
+        var kubeConfig = KubeUI.Kubernetes.Serialization.KubernetesYaml.Deserialize<K8SConfiguration>(await GetKubeConfig(name, cancellationToken).ConfigureAwait(false));
         if (kubeConfig is null)
         {
             throw new InvalidOperationException($"kind did not return a valid kubeconfig for cluster '{name}'.");
@@ -124,9 +124,9 @@ public static class Kind
         return kubeConfig;
     }
 
-    public static async Task<k8s.Kubernetes> GetKubernetesClient(string name)
+    public static async Task<k8s.Kubernetes> GetKubernetesClient(string name, CancellationToken cancellationToken = default)
     {
-        return new k8s.Kubernetes(KubernetesClientConfiguration.BuildConfigFromConfigObject(await GetK8SConfiguration(name)));
+        return new k8s.Kubernetes(KubernetesClientConfiguration.BuildConfigFromConfigObject(await GetK8SConfiguration(name, cancellationToken).ConfigureAwait(false)));
     }
 
     private static void ThrowIfKindError(StringBuilder stdErrBuffer)

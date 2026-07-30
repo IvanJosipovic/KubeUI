@@ -1,4 +1,3 @@
-using System.Collections.ObjectModel;
 using k8s;
 using k8s.KubeConfigModels;
 using KubeUI.Testing;
@@ -16,12 +15,11 @@ public class ClusterManagerTests
         var dispatcher = new RecordingThreadDispatcher();
         var kubeConfigPath = Path.Combine(Path.GetTempPath(), $"kubeui-{Guid.NewGuid():N}.config");
 
-        var services = new ServiceCollection()
-            .AddSingleton<IThreadDispatcher>(dispatcher)
-            .AddSingleton<IKubeConfigPathProvider>(new TestKubeConfigPathProvider(kubeConfigPath))
-            .AddSingleton<IClusterSettingsStore>(new TestClusterSettingsStore(kubeConfigPath))
-            .AddTransient<IClusterRuntime, TestClusterRuntime>()
-            .BuildServiceProvider();
+        using var services = KubernetesTestServices.Build(new KubernetesTestSettingsStore(kubeConfigPath), collection =>
+        {
+            collection.AddSingleton<IThreadDispatcher>(dispatcher);
+            collection.AddSingleton<IKubeConfigPathProvider>(new TestKubeConfigPathProvider(kubeConfigPath));
+        });
 
         using var manager = new ClusterManager(
             NullLogger<ClusterManager>.Instance,
@@ -42,7 +40,7 @@ public class ClusterManagerTests
             ]
         };
 
-        await Task.Run(() => manager.LoadFromConfig(config));
+        await Task.Run(() => manager.LoadFromConfig(config), TestContext.Current.CancellationToken);
 
         manager.Clusters.ShouldBeEmpty();
         dispatcher.PendingCount.ShouldBeGreaterThan(0);
@@ -59,12 +57,11 @@ public class ClusterManagerTests
     {
         var dispatcher = new RecordingThreadDispatcher();
         var kubeConfigPath = Path.Combine(Path.GetTempPath(), $"kubeui-{Guid.NewGuid():N}.config");
-        var services = new ServiceCollection()
-            .AddSingleton<IThreadDispatcher>(dispatcher)
-            .AddSingleton<IKubeConfigPathProvider>(new TestKubeConfigPathProvider(kubeConfigPath))
-            .AddSingleton<IClusterSettingsStore>(new TestClusterSettingsStore(kubeConfigPath))
-            .AddTransient<IClusterRuntime, TestClusterRuntime>()
-            .BuildServiceProvider();
+        using var services = KubernetesTestServices.Build(new KubernetesTestSettingsStore(kubeConfigPath), collection =>
+        {
+            collection.AddSingleton<IThreadDispatcher>(dispatcher);
+            collection.AddSingleton<IKubeConfigPathProvider>(new TestKubeConfigPathProvider(kubeConfigPath));
+        });
 
         K8SConfiguration existingConfig = CreateKubeConfig("existing-context", "existing-cluster", "existing-user", "https://existing.example.com");
         File.WriteAllText(kubeConfigPath, KubeUI.Kubernetes.Serialization.KubernetesYaml.Serialize(existingConfig));
@@ -104,12 +101,11 @@ public class ClusterManagerTests
     {
         var dispatcher = new RecordingThreadDispatcher();
         var kubeConfigPath = Path.Combine(Path.GetTempPath(), $"kubeui-{Guid.NewGuid():N}.config");
-        var services = new ServiceCollection()
-            .AddSingleton<IThreadDispatcher>(dispatcher)
-            .AddSingleton<IKubeConfigPathProvider>(new TestKubeConfigPathProvider(kubeConfigPath))
-            .AddSingleton<IClusterSettingsStore>(new TestClusterSettingsStore(kubeConfigPath))
-            .AddTransient<IClusterRuntime, TestClusterRuntime>()
-            .BuildServiceProvider();
+        using var services = KubernetesTestServices.Build(new KubernetesTestSettingsStore(kubeConfigPath), collection =>
+        {
+            collection.AddSingleton<IThreadDispatcher>(dispatcher);
+            collection.AddSingleton<IKubeConfigPathProvider>(new TestKubeConfigPathProvider(kubeConfigPath));
+        });
 
         K8SConfiguration config = CreateKubeConfig(
             "clusterUser_test-aks_test-aks",
@@ -174,31 +170,6 @@ public class ClusterManagerTests
 
                 next();
             }
-        }
-    }
-
-    private sealed class TestClusterSettingsStore : IClusterSettingsStore
-    {
-        private readonly Collection<string> _kubeConfigPaths;
-
-        public TestClusterSettingsStore(string kubeConfigPath)
-        {
-            _kubeConfigPaths = [kubeConfigPath];
-        }
-
-        public IReadOnlyCollection<string> KubeConfigPaths => _kubeConfigPaths;
-
-        public void AddKubeConfigPath(string path)
-        {
-            if (!_kubeConfigPaths.Contains(path))
-            {
-                _kubeConfigPaths.Add(path);
-            }
-        }
-
-        public IReadOnlyCollection<string> GetClusterNamespaces(IClusterRuntime cluster)
-        {
-            return [];
         }
     }
 

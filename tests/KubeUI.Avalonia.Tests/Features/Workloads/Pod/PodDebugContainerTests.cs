@@ -1,6 +1,8 @@
 using Avalonia.Headless.XUnit;
 using k8s.Models;
 using KubeUI.Avalonia.Tests.Infra;
+using KubeUI.Testing;
+using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Features.Workloads.Pod;
@@ -10,8 +12,10 @@ public sealed class PodDebugContainerTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task adding_debug_container_uses_cluster_image_and_target_container()
     {
-        var runtime = new TestCluster();
-        var workspace = runtime.CreateWorkspace();
+        await using var harness = new KubernetesClusterScenarioHarness();
+        await harness.InitializeAsync(TestContext.Current.CancellationToken);
+        await harness.Cluster.SeedResource<V1Pod>(true);
+        using var workspace = ActivatorUtilities.CreateInstance<ClusterWorkspace>(TestApp.CurrentServices!, harness.Cluster);
         var settings = TestApp.CurrentServices!.GetRequiredService<ISettingsService>();
         settings.Settings.GetClusterSettings(workspace.Runtime).DebugContainerImage = "example.com/debug:1";
 
@@ -37,7 +41,12 @@ public sealed class PodDebugContainerTests : AvaloniaTestBase
         await workspace.AddOrUpdateResource(pod);
         await workspace.AddPodEphemeralDebugContainer(pod, "app", settings.Settings.GetClusterSettings(workspace.Runtime).DebugContainerImage);
 
-        V1Pod updated = runtime.GetResource<V1Pod>("default", "pod-1").ShouldNotBeNull();
+        await TestWait.UntilAsync(
+            () => harness.Cluster.GetResource<V1Pod>("default", "pod-1")?.Spec?.EphemeralContainers?.Count == 1,
+            TimeSpan.FromSeconds(5),
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        V1Pod updated = harness.Cluster.GetResource<V1Pod>("default", "pod-1").ShouldNotBeNull();
         updated.Spec.EphemeralContainers.ShouldNotBeNull();
         updated.Spec.EphemeralContainers.Count.ShouldBe(1);
         updated.Spec.EphemeralContainers[0].Image.ShouldBe("example.com/debug:1");

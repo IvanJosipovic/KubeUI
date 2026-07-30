@@ -1,6 +1,7 @@
 using k8s.Models;
 using KubeUI.Avalonia.Features.Resources.Properties.Controls;
 using KubeUI.Avalonia.Tests.Infra;
+using KubeUI.Testing;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Controls;
@@ -20,7 +21,9 @@ public sealed class ResourceEventsSelectorTests
     [Fact]
     public async Task SelectRecentEvents_sorts_and_limits_to_five()
     {
-        var runtime = new TestCluster();
+        await using var harness = new KubernetesClusterScenarioHarness();
+        await harness.InitializeAsync(TestContext.Current.CancellationToken);
+        var runtime = harness.Cluster;
         await runtime.SeedResource<Corev1Event>();
 
         var resource = new V1Deployment
@@ -76,6 +79,11 @@ public sealed class ResourceEventsSelectorTests
                 Uid = "other-uid",
             }
         });
+
+        await TestWait.UntilAsync(
+            () => runtime.GetResourceList<Corev1Event>().Count == 7,
+            TimeSpan.FromSeconds(5),
+            cancellationToken: TestContext.Current.CancellationToken);
 
         var results = ResourceEventsSelector.SelectRecentEvents(
             runtime.GetResourceSourceCache<Corev1Event>().Items,

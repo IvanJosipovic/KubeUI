@@ -4,18 +4,18 @@ using System.Text;
 using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
-using KubeUI.Kubernetes.Tests.Infra;
+using KubeUI.Testing;
 using Shouldly;
 
 namespace KubeUI.Kubernetes.Tests;
 
 public abstract class ClusterScenarioAssertions
 {
-    protected abstract Task<IClusterScenarioHarness> CreateHarnessAsync();
+    protected abstract Task<IClusterScenarioHarness> CreateHarnessAsync(KubernetesBackend backend);
 
-    protected async Task CreateObjectCore()
+    protected async Task CreateObjectCore(KubernetesBackend backend)
     {
-        await using var harness = await CreateHarnessAsync();
+        await using var harness = await CreateHarnessAsync(backend);
         await harness.Cluster.SeedResource<V1Namespace>(true);
 
         await harness.Cluster.AddOrUpdateResource(new V1Namespace
@@ -30,9 +30,9 @@ public abstract class ClusterScenarioAssertions
         resource.Name().ShouldBe("test");
     }
 
-    protected async Task CreateNamespacedObjectCore()
+    protected async Task CreateNamespacedObjectCore(KubernetesBackend backend)
     {
-        await using var harness = await CreateHarnessAsync();
+        await using var harness = await CreateHarnessAsync(backend);
         await harness.Cluster.SeedResource<V1Secret>(true);
 
         await harness.Cluster.AddOrUpdateResource(new V1Secret
@@ -56,17 +56,17 @@ public abstract class ClusterScenarioAssertions
         resource.Namespace().ShouldBe("default");
     }
 
-    protected async Task ReadObjectsCore()
+    protected async Task ReadObjectsCore(KubernetesBackend backend)
     {
-        await using var harness = await CreateHarnessAsync();
+        await using var harness = await CreateHarnessAsync(backend);
         await harness.Cluster.SeedResource<V1Namespace>(true);
 
         harness.Cluster.GetResourceList<V1Namespace>().Count.ShouldBeGreaterThan(0);
     }
 
-    protected async Task UpdateObjectCore()
+    protected async Task UpdateObjectCore(KubernetesBackend backend)
     {
-        await using var harness = await CreateHarnessAsync();
+        await using var harness = await CreateHarnessAsync(backend);
         await harness.Cluster.SeedResource<V1Namespace>(true);
 
         var ns = await harness.CreateDirectAsync(new V1Namespace
@@ -80,14 +80,14 @@ public abstract class ClusterScenarioAssertions
 
         await harness.Cluster.AddOrUpdateResource(ns);
 
-        var resource = await WaitForResourceAsync<V1Namespace>(harness.Cluster, null, "test");
+        var resource = await WaitForResourceAsync<V1Namespace>(harness.Cluster, null, "test", predicate: item => item.Metadata.Labels?.TryGetValue("test", out string? value) == true && value == "test");
         resource.ShouldNotBeNull();
         resource.Metadata.Labels["test"].ShouldBe("test");
     }
 
-    protected async Task UpdateNamespacedObjectCore()
+    protected async Task UpdateNamespacedObjectCore(KubernetesBackend backend)
     {
-        await using var harness = await CreateHarnessAsync();
+        await using var harness = await CreateHarnessAsync(backend);
         await harness.Cluster.SeedResource<V1Secret>(true);
 
         var secret = await harness.CreateDirectAsync(new V1Secret
@@ -109,14 +109,14 @@ public abstract class ClusterScenarioAssertions
 
         await harness.Cluster.AddOrUpdateResource(secret);
 
-        var resource = await WaitForResourceAsync<V1Secret>(harness.Cluster, "default", "test");
+        var resource = await WaitForResourceAsync<V1Secret>(harness.Cluster, "default", "test", predicate: item => item.Metadata.Labels?.TryGetValue("test", out string? value) == true && value == "test");
         resource.ShouldNotBeNull();
         resource.Metadata.Labels["test"].ShouldBe("test");
     }
 
-    protected async Task DeleteObjectCore()
+    protected async Task DeleteObjectCore(KubernetesBackend backend)
     {
-        await using var harness = await CreateHarnessAsync();
+        await using var harness = await CreateHarnessAsync(backend);
         await harness.Cluster.SeedResource<V1Namespace>(true);
 
         var ns = await harness.CreateDirectAsync(new V1Namespace
@@ -133,9 +133,9 @@ public abstract class ClusterScenarioAssertions
         harness.Cluster.GetResourceList<V1Namespace>().All(x => x.Name() != "test").ShouldBeTrue();
     }
 
-    protected async Task DeleteNamespacedObjectCore()
+    protected async Task DeleteNamespacedObjectCore(KubernetesBackend backend)
     {
-        await using var harness = await CreateHarnessAsync();
+        await using var harness = await CreateHarnessAsync(backend);
         await harness.Cluster.SeedResource<V1Secret>(true);
 
         var secret = await harness.CreateDirectAsync(new V1Secret
@@ -160,9 +160,9 @@ public abstract class ClusterScenarioAssertions
         harness.Cluster.GetResourceList<V1Secret>().All(x => x.Name() != "test").ShouldBeTrue();
     }
 
-    protected async Task ImportYamlCore()
+    protected async Task ImportYamlCore(KubernetesBackend backend)
     {
-        await using var harness = await CreateHarnessAsync();
+        await using var harness = await CreateHarnessAsync(backend);
         await harness.Cluster.SeedResource<V1Namespace>(true);
 
         var yaml = KubeUI.Kubernetes.Serialization.KubernetesYaml.Serialize(new V1Namespace
@@ -179,9 +179,9 @@ public abstract class ClusterScenarioAssertions
         resource.Name().ShouldBe("test");
     }
 
-    protected async Task HandleCrdCore()
+    protected async Task HandleCrdCore(KubernetesBackend backend)
     {
-        await using var harness = await CreateHarnessAsync();
+        await using var harness = await CreateHarnessAsync(backend);
         await harness.Cluster.SeedResource<V1CustomResourceDefinition>(true);
 
         var crd = KubeUI.Kubernetes.Serialization.KubernetesYaml.Deserialize<V1CustomResourceDefinition>(SharedScenarioData.CustomResourceDefinitionYaml);
@@ -190,6 +190,12 @@ public abstract class ClusterScenarioAssertions
         await WaitForResourceAsync<V1CustomResourceDefinition>(harness.Cluster, null, "tests.kubeui.com");
         var generatedType = await WaitForGeneratedTypeAsync(harness.Cluster, "kubeui.com", "v1beta1", "Test");
         generatedType.ShouldNotBeNull();
+
+        if (harness.Cluster is Cluster generatedCluster)
+        {
+            await generatedCluster.UpdateCanI(generatedType!, Verb.List);
+            await generatedCluster.UpdateCanI(generatedType!, Verb.Watch);
+        }
 
         await harness.Cluster.ImportYaml(new MemoryStream(Encoding.UTF8.GetBytes(SharedScenarioData.CustomResourceYaml)));
 
@@ -214,9 +220,9 @@ public abstract class ClusterScenarioAssertions
         }
     }
 
-    protected async Task RootAccessCanICore()
+    protected async Task RootAccessCanICore(KubernetesBackend backend)
     {
-        await using var harness = await CreateHarnessAsync();
+        await using var harness = await CreateHarnessAsync(backend);
         var cluster = harness.Cluster;
 
         cluster.Permissions.CanI<V1Pod>(Verb.Create).ShouldBeTrue();
@@ -244,9 +250,9 @@ public abstract class ClusterScenarioAssertions
         cluster.Permissions.CanI<V1Pod>(Verb.Create, "default", "portforward").ShouldBeTrue();
     }
 
-    protected async Task LimitedAccessCore(bool includeNamespaceFallback)
+    protected async Task LimitedAccessCore(KubernetesBackend backend, bool includeNamespaceFallback)
     {
-        await using var harness = await CreateHarnessAsync();
+        await using var harness = await CreateHarnessAsync(backend);
         var cluster = await harness.CreateLimitedAccessClusterAsync(includeNamespaceFallback);
 
         await cluster.Connect();
@@ -261,9 +267,9 @@ public abstract class ClusterScenarioAssertions
         secrets[0].Name().ShouldBe("my-serviceaccount");
     }
 
-    protected async Task LimitedAccessCanICore()
+    protected async Task LimitedAccessCanICore(KubernetesBackend backend)
     {
-        await using var harness = await CreateHarnessAsync();
+        await using var harness = await CreateHarnessAsync(backend);
         var cluster = await harness.CreateLimitedAccessClusterAsync(includeNamespaceFallback: true);
 
         await cluster.Connect();
@@ -314,7 +320,24 @@ public abstract class ClusterScenarioAssertions
         cluster.Permissions.CanI<V1Deployment>(Verb.Watch, "my-app").ShouldBeTrue();
     }
 
-    public static async Task<T?> WaitForResourceAsync<T>(IClusterRuntime cluster, string? @namespace, string name, TimeSpan? timeout = null, int pollIntervalMs = 100)
+    protected async Task SeedNamespacedResourceAcrossKnownNamespacesCore(KubernetesBackend backend)
+    {
+        await using var harness = await CreateHarnessAsync(backend);
+        var cluster = harness.Cluster;
+
+        await cluster.SeedResource<V1Namespace>(true);
+        await harness.CreateDirectAsync(new V1Namespace { Metadata = new() { Name = "team-a" } });
+        await harness.CreateDirectAsync(new V1Namespace { Metadata = new() { Name = "team-b" } });
+        await harness.CreateDirectAsync(new V1Pod { Metadata = new() { Name = "pod-a", NamespaceProperty = "team-a" } });
+        await harness.CreateDirectAsync(new V1Pod { Metadata = new() { Name = "pod-b", NamespaceProperty = "team-b" } });
+
+        await cluster.SeedResource<V1Pod>(true);
+
+        var pods = cluster.GetResourceList<V1Pod>();
+        pods.Select(x => x.Namespace()).Order(StringComparer.Ordinal).ShouldBe(["team-a", "team-b"]);
+    }
+
+    public static async Task<T?> WaitForResourceAsync<T>(IClusterRuntime cluster, string? @namespace, string name, TimeSpan? timeout = null, int pollIntervalMs = 100, Func<T, bool>? predicate = null)
         where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
         var effectiveTimeout = timeout ?? TimeSpan.FromSeconds(30);
@@ -323,12 +346,12 @@ public abstract class ClusterScenarioAssertions
         while ((DateTime.UtcNow - start) < effectiveTimeout)
         {
             var resource = cluster.GetResource<T>(@namespace, name);
-            if (resource != null)
+            if (resource != null && (predicate == null || predicate(resource)))
             {
                 return resource;
             }
 
-            await Task.Delay(pollIntervalMs);
+            await WaitForNextPollAsync(pollIntervalMs);
         }
 
         return null;
@@ -347,7 +370,7 @@ public abstract class ClusterScenarioAssertions
                 return;
             }
 
-            await Task.Delay(pollIntervalMs);
+            await WaitForNextPollAsync(pollIntervalMs);
         }
 
         throw new TimeoutException($"Timed out waiting for deletion of {typeof(T).Name} {@namespace}/{name}.");
@@ -366,9 +389,16 @@ public abstract class ClusterScenarioAssertions
                 return type;
             }
 
-            await Task.Delay(pollIntervalMs);
+            await WaitForNextPollAsync(pollIntervalMs);
         }
 
         return null;
+    }
+
+    private static async Task WaitForNextPollAsync(int pollIntervalMs, CancellationToken cancellationToken = default)
+    {
+        cancellationToken = cancellationToken == default ? TestContext.Current.CancellationToken : cancellationToken;
+        using var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(pollIntervalMs));
+        await timer.WaitForNextTickAsync(cancellationToken);
     }
 }

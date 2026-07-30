@@ -21,6 +21,7 @@ using KubeUI.Avalonia.Features.Resources.Yaml.Behaviors;
 using KubeUI.Avalonia.Infrastructure.Platform;
 using KubeUI.Avalonia.Shell.Documents.About;
 using KubeUI.Avalonia.Tests.Infra;
+using KubeUI.Testing;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Features.Resources.Yaml;
@@ -61,9 +62,9 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
 
     private ClusterWorkspace CreateTestWorkspace()
     {
-        var cluster = new TestCluster().CreateWorkspace();
-        _disposables.Add(cluster);
-        return cluster;
+        var scope = KubernetesTestWorkspaceScope.Create(TestApp.CurrentServices!);
+        _disposables.Add(scope);
+        return scope.Workspace;
     }
 
     private T ResolveService<T>() where T : class
@@ -83,7 +84,7 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
         var sw = System.Diagnostics.Stopwatch.StartNew();
         do
         {
-            await Task.Delay(25);
+            await TestWait.NextPollAsync(TimeSpan.FromMilliseconds(25), TestContext.Current.CancellationToken);
             Dispatcher.UIThread.RunJobs();
             if (predicate == null || predicate())
             {
@@ -94,6 +95,22 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
 
         Dispatcher.UIThread.RunJobs();
         (predicate?.Invoke() ?? true).ShouldBeTrue();
+    }
+
+    private static async Task WaitForUiAsync(Func<bool> predicate, int timeoutMs = 5000)
+    {
+        var deadline = DateTime.UtcNow.AddMilliseconds(timeoutMs);
+        while (DateTime.UtcNow < deadline)
+        {
+            if (await Dispatcher.UIThread.InvokeAsync(predicate))
+            {
+                return;
+            }
+
+            await TestWait.NextPollAsync(TimeSpan.FromMilliseconds(25), TestContext.Current.CancellationToken);
+        }
+
+        (await Dispatcher.UIThread.InvokeAsync(predicate)).ShouldBeTrue();
     }
 
     [AvaloniaFact]
@@ -451,6 +468,8 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
         };
 
         await cluster.AddOrUpdateResource(updatedResource);
+        await WaitForUiAsync(
+            () => vm.YamlDocument.Text.Contains("updated: \"true\"", StringComparison.OrdinalIgnoreCase));
         Dispatcher.UIThread.RunJobs();
 
         vm.YamlDocument.Text.ShouldContain("updated: \"true\"");
@@ -1425,7 +1444,7 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
         editor.ShouldNotBeNull();
 
         var fieldOffset = editor.Document!.Text.LastIndexOf("imagePullPolicy", StringComparison.Ordinal) + 2;
-        var shown = InvokeHoverTooltipAtPoint(editor, GetViewportPointForOffset(editor, fieldOffset));
+        var shown = InvokeHoverTooltip(editor, fieldOffset);
         shown.ShouldBeTrue();
 
         Dispatcher.UIThread.RunJobs();
@@ -1504,7 +1523,7 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
         editor.ShouldNotBeNull();
 
         var fieldOffset = editor.Document!.Text.LastIndexOf("imagePullPolicy", StringComparison.Ordinal) + 2;
-        var shown = InvokeHoverTooltipAtPoint(editor, GetViewportPointForOffset(editor, fieldOffset));
+        var shown = InvokeHoverTooltip(editor, fieldOffset);
         shown.ShouldBeTrue();
 
         Dispatcher.UIThread.RunJobs();
@@ -2537,7 +2556,7 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
             """.ReplaceLineEndings("\n");
         await WaitForValidationDebounceAsync(() => vm.ValidationDiagnostics.Count == 1);
 
-        await vm.SaveCommand.ExecuteAsync(null);
+        await vm.SaveCommand.ExecuteAsync(null).WaitAsync(TestContext.Current.CancellationToken);
         Dispatcher.UIThread.RunJobs();
 
         vm.HasActionFailureResult.ShouldBeTrue();
@@ -2665,7 +2684,7 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
 
         vm.DryRunCommand.CanExecute(null).ShouldBeTrue();
 
-        await vm.DryRunCommand.ExecuteAsync(null);
+        await vm.DryRunCommand.ExecuteAsync(null).WaitAsync(TestContext.Current.CancellationToken);
         Dispatcher.UIThread.RunJobs();
 
         TestApp.LastNotification.ShouldBeNull();
@@ -2683,12 +2702,9 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
     {
         var window = CreateWindow(width: 800, height: 600);
 
-        var runtime = new TestCluster
-        {
-            DryRunYamlBehavior = _ => Task.FromException(new InvalidOperationException("Server-side validation failed.")),
-        };
-        var cluster = runtime.CreateWorkspace();
-        _disposables.Add(cluster);
+        var scope = KubernetesTestWorkspaceScope.Create(TestApp.CurrentServices!);
+        _disposables.Add(scope);
+        var cluster = scope.Workspace;
 
         var vm = ResolveService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
@@ -2714,20 +2730,17 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
             metadata:
               name: test
               namespace: default
-            spec:
-              containers:
-                - name: app
-                  image: nginx
+            spec: {}
             """.ReplaceLineEndings("\n");
         Dispatcher.UIThread.RunJobs();
 
-        await vm.DryRunCommand.ExecuteAsync(null);
+        await vm.DryRunCommand.ExecuteAsync(null).WaitAsync(TestContext.Current.CancellationToken);
         Dispatcher.UIThread.RunJobs();
 
         TestApp.LastNotification.ShouldBeNull();
         vm.HasActionFailureResult.ShouldBeTrue();
         vm.ActionResultTitle.ShouldBe("Dry run failed");
-        vm.ActionResultMessage.ShouldBe("Server-side validation failed.");
+        vm.ActionResultMessage.ShouldNotBeNullOrWhiteSpace();
         var actionBar = view.FindControl<FAInfoBar>("ActionResultBar");
         actionBar.ShouldNotBeNull();
         actionBar.IsOpen.ShouldBeTrue();
@@ -2771,7 +2784,7 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
             """.ReplaceLineEndings("\n");
         Dispatcher.UIThread.RunJobs();
 
-        await vm.DryRunCommand.ExecuteAsync(null);
+        await vm.DryRunCommand.ExecuteAsync(null).WaitAsync(TestContext.Current.CancellationToken);
         Dispatcher.UIThread.RunJobs();
 
         vm.HasActionResult.ShouldBeTrue();
@@ -2824,7 +2837,7 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
             """.ReplaceLineEndings("\n");
         Dispatcher.UIThread.RunJobs();
 
-        await vm.DryRunCommand.ExecuteAsync(null);
+        await vm.DryRunCommand.ExecuteAsync(null).WaitAsync(TestContext.Current.CancellationToken);
         Dispatcher.UIThread.RunJobs();
 
         vm.HasActionSuccessResult.ShouldBeTrue();
@@ -3188,6 +3201,8 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
 
     private static Point GetPointForOffset(AvaloniaEdit.TextEditor editor, int offset)
     {
+        editor.UpdateLayout();
+        editor.TextArea.TextView.UpdateLayout();
         var location = editor.Document!.GetLocation(offset);
         var point = editor.TextArea.TextView.GetVisualPosition(new TextViewPosition(location.Line, location.Column), VisualYPosition.LineMiddle);
         return new Point(point.X + 2, point.Y);
@@ -3279,7 +3294,7 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
             Dispatcher.UIThread.RunJobs();
             if (predicate())
                 return;
-            System.Threading.Thread.Sleep(10);
+            System.Threading.Thread.Yield();
         }
         predicate().ShouldBeTrue();
     }

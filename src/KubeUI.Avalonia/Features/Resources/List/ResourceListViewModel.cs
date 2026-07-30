@@ -353,7 +353,8 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         var sortSubject = _sortSubject ?? throw new InvalidOperationException("Sort subject has not been initialized.");
         var filterSubject = _filterSubject ?? throw new InvalidOperationException("Filter subject has not been initialized.");
         var searchSubject = _searchSubject ?? throw new InvalidOperationException("Search subject has not been initialized.");
-
+        _sortingAdapterFactory.UpdateComparer(SortingModel.Descriptors);
+        sortSubject.OnNext(_sortingAdapterFactory.SortComparer);
         _subscription = Objects.Connect()
             .ObserveOn(AvaloniaScheduler.Instance)
             .Filter(filterSubject)

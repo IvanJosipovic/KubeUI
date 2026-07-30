@@ -5,6 +5,8 @@ namespace KubeUI.Kubernetes.Tests;
 
 public sealed class PodEphemeralContainerBuilderTests
 {
+    private const string DefaultDebugContainerImage = "docker.io/library/busybox:latest";
+
     [Fact]
     public void WithDebugContainer_appends_an_ephemeral_container_with_default_shell_command()
     {
@@ -27,12 +29,12 @@ public sealed class PodEphemeralContainerBuilderTests
             },
         };
 
-        V1Pod updated = PodEphemeralContainerBuilder.WithDebugContainer(pod, "app", ClusterSettings.DefaultDebugContainerImage);
+        V1Pod updated = PodEphemeralContainerBuilder.WithDebugContainer(pod, "app", DefaultDebugContainerImage);
 
         updated.ShouldNotBeSameAs(pod);
         updated.Spec.EphemeralContainers.ShouldNotBeNull();
         updated.Spec.EphemeralContainers.Count.ShouldBe(1);
-        updated.Spec.EphemeralContainers[0].Image.ShouldBe(ClusterSettings.DefaultDebugContainerImage);
+        updated.Spec.EphemeralContainers[0].Image.ShouldBe(DefaultDebugContainerImage);
         updated.Spec.EphemeralContainers[0].TargetContainerName.ShouldBe("app");
         updated.Spec.EphemeralContainers[0].Command.ShouldBe(["sh"]);
         updated.Spec.EphemeralContainers[0].Stdin.ShouldBe(true);

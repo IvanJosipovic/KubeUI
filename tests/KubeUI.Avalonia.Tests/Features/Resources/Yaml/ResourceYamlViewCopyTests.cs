@@ -6,6 +6,7 @@ using Avalonia.Interactivity;
 using Avalonia.Threading;
 using k8s.Models;
 using KubeUI.Avalonia.Tests.Infra;
+using KubeUI.Testing;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Features.Resources.Yaml;
@@ -15,7 +16,8 @@ public sealed class ResourceYamlViewCopyTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task Editor_copy_writes_selected_yaml_text_to_the_clipboard()
     {
-        var cluster = new TestCluster().CreateWorkspace();
+        await using var scope = await KubernetesTestWorkspaceScope.CreateAsync(TestApp.CurrentServices!);
+        var cluster = scope.Workspace;
         await cluster.Connect();
 
         var viewModel = TestApp.CurrentServices!.GetRequiredService<ResourceYamlViewModel>();
@@ -70,7 +72,7 @@ public sealed class ResourceYamlViewCopyTests : AvaloniaTestBase
                     break;
                 }
 
-                await Task.Delay(20);
+                await TestWait.NextPollAsync(TimeSpan.FromMilliseconds(20), TestContext.Current.CancellationToken);
             }
 
             copiedText.ShouldBe(editor.Text);
@@ -84,7 +86,8 @@ public sealed class ResourceYamlViewCopyTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task Editor_context_menu_copy_writes_selected_yaml_text_to_the_clipboard()
     {
-        var cluster = new TestCluster().CreateWorkspace();
+        await using var scope = await KubernetesTestWorkspaceScope.CreateAsync(TestApp.CurrentServices!);
+        var cluster = scope.Workspace;
         await cluster.Connect();
 
         var viewModel = TestApp.CurrentServices!.GetRequiredService<ResourceYamlViewModel>();
@@ -143,7 +146,7 @@ public sealed class ResourceYamlViewCopyTests : AvaloniaTestBase
                     break;
                 }
 
-                await Task.Delay(20);
+                await TestWait.NextPollAsync(TimeSpan.FromMilliseconds(20), TestContext.Current.CancellationToken);
             }
 
             copiedText.ShouldBe(editor.Text);

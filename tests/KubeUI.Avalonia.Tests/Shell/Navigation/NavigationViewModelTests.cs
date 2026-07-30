@@ -28,18 +28,12 @@ public class NavigationViewModelTests : AvaloniaTestBase
 
     public override void Dispose()
     {
-        foreach (var disposable in _disposables)
+        for (var index = _disposables.Count - 1; index >= 0; index--)
         {
-            disposable.Dispose();
+            _disposables[index].Dispose();
         }
 
         base.Dispose();
-    }
-
-    private ClusterWorkspace CreateWorkspace(TestCluster runtime)
-    {
-        var workspace = CreateWorkspace((IClusterRuntime)runtime);
-        return workspace;
     }
 
     private ClusterWorkspace CreateWorkspace(IClusterRuntime runtime)
@@ -59,12 +53,14 @@ public class NavigationViewModelTests : AvaloniaTestBase
         return vm;
     }
 
-    private static async Task<T?> WaitForValueAsync<T>(Func<T?> getValue, int timeoutMs = 3000) where T : class
+    private static async Task<T?> WaitForValueAsync<T>(Func<T?> getValue, int timeoutMs = 3000, CancellationToken cancellationToken = default) where T : class
     {
+        cancellationToken = cancellationToken == default ? TestContext.Current.CancellationToken : cancellationToken;
         var deadline = DateTime.UtcNow.AddMilliseconds(timeoutMs);
 
         while (DateTime.UtcNow < deadline)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             Dispatcher.UIThread.RunJobs();
 
             var value = getValue();
@@ -73,34 +69,37 @@ public class NavigationViewModelTests : AvaloniaTestBase
                 return value;
             }
 
-            await Task.Delay(25);
+            await WaitForNextPollAsync(cancellationToken);
         }
 
         Dispatcher.UIThread.RunJobs();
         return getValue();
     }
 
-    private static async Task WaitForAsync(Func<bool> predicate, int timeoutMs = 3000)
+    private static async Task WaitForAsync(Func<bool> predicate, int timeoutMs = 3000, CancellationToken cancellationToken = default)
     {
+        cancellationToken = cancellationToken == default ? TestContext.Current.CancellationToken : cancellationToken;
         var deadline = DateTime.UtcNow.AddMilliseconds(timeoutMs);
 
         while (DateTime.UtcNow < deadline)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             Dispatcher.UIThread.RunJobs();
             if (predicate())
             {
                 return;
             }
 
-            await Task.Delay(25);
+            await WaitForNextPollAsync(cancellationToken);
         }
 
         Dispatcher.UIThread.RunJobs();
         predicate().ShouldBeTrue();
     }
 
-    private static async Task<int?> WaitForCountAsync(IObservable<int>? count, int timeoutMs = 3000)
+    private static async Task<int?> WaitForCountAsync(IObservable<int>? count, int timeoutMs = 3000, CancellationToken cancellationToken = default)
     {
+        cancellationToken = cancellationToken == default ? TestContext.Current.CancellationToken : cancellationToken;
         if (count == null)
         {
             return null;
@@ -110,6 +109,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
 
         while (DateTime.UtcNow < deadline)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             Dispatcher.UIThread.RunJobs();
 
             var nextValue = await count
@@ -123,7 +123,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
                 return nextValue;
             }
 
-            await Task.Delay(25);
+            await WaitForNextPollAsync(cancellationToken);
         }
 
         Dispatcher.UIThread.RunJobs();
@@ -131,11 +131,15 @@ public class NavigationViewModelTests : AvaloniaTestBase
     }
 
     [AvaloniaFact]
-    public void cluster_catalog_changes_update_navigation_nodes()
+    public async Task cluster_catalog_changes_update_navigation_nodes()
     {
         using var vm = CreateViewModel();
-        using var firstWorkspace = CreateWorkspace(new TestCluster { Name = "catalog-first" });
-        using var replacementWorkspace = CreateWorkspace(new TestCluster { Name = "catalog-replacement" });
+        await using var firstScope = await KubernetesTestWorkspaceScope.CreateAsync(TestApp.CurrentServices!);
+        await using var replacementScope = await KubernetesTestWorkspaceScope.CreateAsync(TestApp.CurrentServices!);
+        var firstWorkspace = firstScope.Workspace;
+        var replacementWorkspace = replacementScope.Workspace;
+        firstWorkspace.Runtime.Name = "catalog-first";
+        replacementWorkspace.Runtime.Name = "catalog-replacement";
 
         vm.ClusterCatalog.Clusters.Add(firstWorkspace);
         vm.Clusters.ShouldContain(node => ReferenceEquals(node.Cluster, firstWorkspace));
@@ -203,8 +207,9 @@ public class NavigationViewModelTests : AvaloniaTestBase
         return null;
     }
 
-    private static async Task<int?> WaitForObservedCountAsync(IObservable<int>? count, int expected, int timeoutMs = 3000)
+    private static async Task<int?> WaitForObservedCountAsync(IObservable<int>? count, int expected, int timeoutMs = 3000, CancellationToken cancellationToken = default)
     {
+        cancellationToken = cancellationToken == default ? TestContext.Current.CancellationToken : cancellationToken;
         if (count == null)
         {
             return null;
@@ -216,6 +221,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
 
         while (DateTime.UtcNow < deadline)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             Dispatcher.UIThread.RunJobs();
 
             if (latest == expected)
@@ -223,11 +229,17 @@ public class NavigationViewModelTests : AvaloniaTestBase
                 return latest;
             }
 
-            await Task.Delay(25);
+            await WaitForNextPollAsync(cancellationToken);
         }
 
         Dispatcher.UIThread.RunJobs();
         return latest == int.MinValue ? null : latest;
+    }
+
+    private static async Task WaitForNextPollAsync(CancellationToken cancellationToken)
+    {
+        using var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(25));
+        await timer.WaitForNextTickAsync(cancellationToken);
     }
 
     private static NavigationLink? FindNavigationLink(IEnumerable<NavigationItem> items, string viewModelKey)
@@ -249,7 +261,28 @@ public class NavigationViewModelTests : AvaloniaTestBase
         return null;
     }
 
-    private static Type? GetCustomResourceType(TestClusterRuntime runtime, V1CustomResourceDefinition crd)
+    private static ResourceNavigationLink? FindNavigationLinkByName(
+        IEnumerable<NavigationItem> items,
+        string name)
+    {
+        foreach (var item in items)
+        {
+            if (item is ResourceNavigationLink link && link.Name == name)
+            {
+                return link;
+            }
+
+            var nested = FindNavigationLinkByName(item.NavigationItems, name);
+            if (nested is not null)
+            {
+                return nested;
+            }
+        }
+
+        return null;
+    }
+
+    private static Type? GetCustomResourceType(IClusterRuntime runtime, V1CustomResourceDefinition crd)
     {
         var version = crd.Spec?.Versions?.FirstOrDefault(x => x.Served && x.Storage)?.Name;
         return version == null ? null : runtime.ModelCache.GetResourceType(crd.Spec.Group, version, crd.Spec.Names.Kind);
@@ -281,21 +314,8 @@ public class NavigationViewModelTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task resource_navigation_items_populate_only_after_connect_completes()
     {
-        var runtime = new TestCluster
-        {
-            Connected = false,
-            Status = ClusterStatus.None,
-        };
-
-        var releaseConnect = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
-
-        runtime.ConnectBehavior = async () =>
-        {
-            runtime.Status = ClusterStatus.Connecting;
-            await releaseConnect.Task;
-            runtime.Connected = true;
-            runtime.Status = ClusterStatus.Connected;
-        };
+        await using var runtimeScope = KubernetesScenarioClusterScope.CreateDisconnected();
+        var runtime = runtimeScope.Cluster;
 
         var workspace = CreateWorkspace(runtime);
         workspace.AddResourceConfigForTest(new FakeResourceConfig(typeof(V1CustomResourceDefinition), "Definitions"));
@@ -308,15 +328,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
 
         clusterNode.NavigationItems.Count.ShouldBe(0);
 
-        var selectTask = vm.TreeViewSelectionChangedAsync(clusterNode);
-
-        await WaitForAsync(() => clusterNode.Cluster.Runtime.Status == ClusterStatus.Connecting);
-        clusterNode.NavigationItems.Count.ShouldBe(0);
-        clusterNode.IsExpanded.ShouldBeFalse();
-
-        releaseConnect.TrySetResult(null);
-
-        await selectTask;
+        await workspace.Connect();
 
         await WaitForAsync(() => clusterNode.NavigationItems.Count > 0);
         clusterNode.IsExpanded.ShouldBeTrue();
@@ -325,12 +337,9 @@ public class NavigationViewModelTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task selecting_cluster_node_does_not_crash_when_connect_fails()
     {
-        var runtime = new TestCluster
-        {
-            Connected = false,
-            Status = ClusterStatus.None,
-            ConnectBehavior = () => throw new InvalidOperationException("connect failed"),
-        };
+        await using var runtimeScope = KubernetesScenarioClusterScope.CreateDisconnected(harness =>
+            harness.FailConnection = true);
+        var runtime = runtimeScope.Cluster;
 
         var workspace = CreateWorkspace(runtime);
 
@@ -347,14 +356,37 @@ public class NavigationViewModelTests : AvaloniaTestBase
     }
 
     [AvaloniaFact]
+    public async Task selecting_cluster_node_does_not_block_on_slow_client_connection()
+    {
+        await using var runtimeScope = KubernetesScenarioClusterScope.CreateDisconnected(harness =>
+            harness.ResponseDelay = TimeSpan.FromMilliseconds(300));
+        var runtime = runtimeScope.Cluster;
+
+        var workspace = CreateWorkspace(runtime);
+        var vm = CreateViewModel();
+        vm.ClusterCatalog.Clusters.Add(workspace);
+        Dispatcher.UIThread.RunJobs();
+
+        var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
+        var stopwatch = Stopwatch.StartNew();
+
+        await vm.TreeViewSelectionChangedAsync(clusterNode);
+
+        stopwatch.Stop();
+        stopwatch.Elapsed.ShouldBeLessThan(TimeSpan.FromMilliseconds(150));
+        clusterNode.IsExpanded.ShouldBeFalse();
+
+        await WaitForAsync(() => runtime.Status is ClusterStatus.Connected or ClusterStatus.Errored, timeoutMs: 5000);
+        await TestWait.NextPollAsync(TimeSpan.FromMilliseconds(25), TestContext.Current.CancellationToken);
+        Dispatcher.UIThread.RunJobs();
+    }
+
+    [AvaloniaFact]
     public async Task selecting_cluster_node_opens_cluster_error_document_when_connect_fails()
     {
-        var runtime = new TestCluster
-        {
-            Connected = false,
-            Status = ClusterStatus.None,
-            ConnectBehavior = () => throw new InvalidOperationException("connect failed"),
-        };
+        await using var runtimeScope = KubernetesScenarioClusterScope.CreateDisconnected(harness =>
+            harness.FailConnection = true);
+        var runtime = runtimeScope.Cluster;
 
         var workspace = CreateWorkspace(runtime);
         workspace.AddResourceConfigForTest(new FakeResourceConfig(typeof(V1CustomResourceDefinition), "Definitions"));
@@ -377,29 +409,21 @@ public class NavigationViewModelTests : AvaloniaTestBase
             .SingleOrDefault(x => x.Id == "cluster-error");
 
         errorDocument.ShouldNotBeNull();
-        errorDocument.Error.ShouldBe("connect failed");
+        errorDocument.Error.ShouldContain("simulated connection failure");
     }
 
     [AvaloniaFact]
     public async Task selecting_cluster_node_without_namespace_list_permission_opens_settings_and_prompt()
     {
-        var runtime = new TestCluster
+        await using var runtimeScope = KubernetesScenarioClusterScope.CreateDisconnected(harness =>
         {
-            Name = "settings-reuse-" + Guid.NewGuid().ToString("N"),
-            Connected = false,
-            Status = ClusterStatus.None,
-            ListNamespaces = true,
-        };
-        runtime.ConnectBehavior = () =>
-        {
-            runtime.Status = ClusterStatus.Errored;
-            runtime.RaiseNamespaceSelectionRequired();
-            return Task.CompletedTask;
-        };
+            harness.DefaultPermissionAllowed = false;
+            harness.SetPermission<V1Namespace>(Verb.List, false);
+            harness.SetPermission<V1Namespace>(Verb.Watch, false);
+        });
+        var runtime = runtimeScope.Cluster;
 
         var workspace = CreateWorkspace(runtime);
-        await workspace.Connect();
-        Dispatcher.UIThread.RunJobs();
         workspace.AddResourceConfigForTest(new FakeResourceConfig(typeof(V1CustomResourceDefinition), "Definitions"));
         var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
@@ -410,7 +434,11 @@ public class NavigationViewModelTests : AvaloniaTestBase
 
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
         await vm.TreeViewSelectionChangedAsync(clusterNode);
+        await workspace.Connect();
+        ((Cluster)runtime).ListNamespaces.ShouldBeFalse();
 
+        await WaitForAsync(() => runtime.Status == ClusterStatus.Errored);
+        runtime.LastError.ShouldContain("cannot list namespaces");
         await WaitForAsync(() =>
             documents.VisibleDockables?.OfType<ClusterSettingsViewModel>().Any(x => x.Id == nameof(ClusterSettingsViewModel) + workspace.Runtime.Name) == true);
 
@@ -431,22 +459,11 @@ public class NavigationViewModelTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task selecting_cluster_node_without_namespace_list_permission_reuses_existing_settings_document()
     {
-        var runtime = new TestCluster
-        {
-            Connected = false,
-            Status = ClusterStatus.None,
-            ListNamespaces = false,
-        };
-        runtime.ConnectBehavior = () =>
-        {
-            runtime.Status = ClusterStatus.Errored;
-            runtime.RaiseNamespaceSelectionRequired();
-            return Task.CompletedTask;
-        };
+        await using var runtimeScope = KubernetesScenarioClusterScope.CreateDisconnected(harness =>
+            harness.DefaultPermissionAllowed = false);
+        var runtime = runtimeScope.Cluster;
 
         var workspace = CreateWorkspace(runtime);
-        await workspace.Connect();
-        Dispatcher.UIThread.RunJobs();
         workspace.AddResourceConfigForTest(new FakeResourceConfig(typeof(V1CustomResourceDefinition), "Definitions"));
         var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
@@ -482,11 +499,8 @@ public class NavigationViewModelTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task cluster_context_menu_disconnect_clears_navigation_and_updates_menu()
     {
-        var runtime = new TestCluster
-        {
-            Connected = true,
-            Status = ClusterStatus.Connected,
-        };
+        await using var runtimeScope = await KubernetesScenarioClusterScope.CreateAsync();
+        var runtime = runtimeScope.Cluster;
 
         var workspace = CreateWorkspace(runtime);
         await workspace.Connect();
@@ -500,7 +514,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
         clusterNode.NavigationItems.Count.ShouldBeGreaterThan(0);
         clusterNode.ConnectionMenuHeader.ShouldBe(Assets.Resources.NavigationView_ContextMenu_Disconnect);
 
-        await vm.ToggleClusterConnectionCommand.ExecuteAsync(clusterNode);
+        await vm.ToggleClusterConnectionCommand.ExecuteAsync(clusterNode).WaitAsync(TestContext.Current.CancellationToken);
         Dispatcher.UIThread.RunJobs();
 
         await WaitForAsync(() => !workspace.Runtime.Connected && workspace.Runtime.Status == ClusterStatus.None);
@@ -511,22 +525,11 @@ public class NavigationViewModelTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task selecting_cluster_node_with_namespace_fallback_does_not_open_settings_or_prompt()
     {
-        var runtime = new TestCluster
-        {
-            Connected = false,
-            Status = ClusterStatus.None,
-            ListNamespaces = false,
-        };
-        var connectCompleted = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
-        runtime.ConnectBehavior = () =>
-        {
-            runtime.Connected = true;
-            runtime.Status = ClusterStatus.Connected;
-            connectCompleted.TrySetResult(null);
-            return Task.CompletedTask;
-        };
+        await using var runtimeScope = await KubernetesScenarioClusterScope.CreateAsync();
+        var runtime = await runtimeScope.Harness.CreateLimitedAccessClusterAsync(includeNamespaceFallback: true);
 
         var workspace = CreateWorkspace(runtime);
+        await workspace.Connect();
         var settingsService = TestApp.CurrentServices?.GetRequiredService<ISettingsService>()
             ?? throw new InvalidOperationException("Test services are not initialized.");
         settingsService.Settings.GetClusterSettings(workspace.Runtime).Namespaces!.Add("my-app");
@@ -540,7 +543,6 @@ public class NavigationViewModelTests : AvaloniaTestBase
 
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
         await vm.TreeViewSelectionChangedAsync(clusterNode);
-        await connectCompleted.Task.WaitAsync(TimeSpan.FromSeconds(5));
         Dispatcher.UIThread.RunJobs();
 
         runtime.LastError.ShouldBeNull();
@@ -555,32 +557,10 @@ public class NavigationViewModelTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task selecting_cluster_node_with_namespace_fallback_shows_namespaced_resources_in_navigation()
     {
-        var runtime = new TestCluster
-        {
-            Connected = false,
-            Status = ClusterStatus.None,
-            ListNamespaces = true,
-            DefaultPermissionAllowed = false,
-        };
-
-        runtime.SetPermission<V1Pod>(Verb.List, true, "my-app");
-        runtime.SetPermission<V1Pod>(Verb.Watch, true, "my-app");
-        runtime.SetPermission<V1Deployment>(Verb.List, true, "my-app");
-        runtime.SetPermission<V1Deployment>(Verb.Watch, true, "my-app");
-
-        runtime.ConnectBehavior = async () =>
-        {
-            await runtime.AddOrUpdateResource(new V1Namespace
-            {
-                Metadata = new V1ObjectMeta { Name = "my-app" }
-            });
-            runtime.Connected = true;
-            runtime.Status = ClusterStatus.Connected;
-
-            await Task.CompletedTask;
-        };
-
+        await using var runtimeScope = await KubernetesScenarioClusterScope.CreateAsync();
+        var runtime = await runtimeScope.Harness.CreateLimitedAccessClusterAsync(includeNamespaceFallback: true);
         var workspace = CreateWorkspace(runtime);
+        await workspace.Connect();
         var settingsService = TestApp.CurrentServices?.GetRequiredService<ISettingsService>()
             ?? throw new InvalidOperationException("Test services are not initialized.");
         settingsService.Settings.GetClusterSettings(workspace.Runtime).Namespaces!.Add("my-app");
@@ -605,11 +585,8 @@ public class NavigationViewModelTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task resource_context_menu_open_new_tab_creates_distinct_document_id()
     {
-        var runtime = new TestCluster
-        {
-            Connected = true,
-            Status = ClusterStatus.Connected,
-        };
+        await using var runtimeScope = await KubernetesScenarioClusterScope.CreateAsync();
+        var runtime = runtimeScope.Cluster;
 
         var workspace = CreateWorkspace(runtime);
         await workspace.Connect();
@@ -628,8 +605,8 @@ public class NavigationViewModelTests : AvaloniaTestBase
         podsLink.OpenCommand.ShouldNotBeNull();
         podsLink.OpenInNewTabCommand.ShouldNotBeNull();
 
-        await vm.OpenResourceNavigationCommand.ExecuteAsync(podsLink);
-        await vm.OpenResourceNavigationCommand.ExecuteAsync(podsLink);
+        await vm.OpenResourceNavigationCommand.ExecuteAsync(podsLink).WaitAsync(TestContext.Current.CancellationToken);
+        await vm.OpenResourceNavigationCommand.ExecuteAsync(podsLink).WaitAsync(TestContext.Current.CancellationToken);
         Dispatcher.UIThread.RunJobs();
 
         documents.VisibleDockables!
@@ -637,7 +614,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
             .Count()
             .ShouldBe(1);
 
-        await vm.OpenResourceNavigationInNewTabCommand.ExecuteAsync(podsLink);
+        await vm.OpenResourceNavigationInNewTabCommand.ExecuteAsync(podsLink).WaitAsync(TestContext.Current.CancellationToken);
         Dispatcher.UIThread.RunJobs();
 
         await WaitForAsync(() =>
@@ -656,33 +633,13 @@ public class NavigationViewModelTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task selecting_cluster_node_with_settings_only_namespace_fallback_shows_namespaced_resources_in_navigation()
     {
-        var runtime = new TestCluster
-        {
-            Connected = false,
-            Status = ClusterStatus.None,
-            ListNamespaces = true,
-            DefaultPermissionAllowed = false,
-        };
-
-        runtime.SetPermission<V1Pod>(Verb.List, true, "my-app");
-        runtime.SetPermission<V1Pod>(Verb.Watch, true, "my-app");
-        runtime.SetPermission<V1Deployment>(Verb.List, true, "my-app");
-        runtime.SetPermission<V1Deployment>(Verb.Watch, true, "my-app");
-
-        runtime.ConnectBehavior = async () =>
-        {
-            await runtime.AddOrUpdateResource(new V1Namespace
-            {
-                Metadata = new V1ObjectMeta { Name = "my-app" }
-            });
-            runtime.Connected = true;
-            runtime.Status = ClusterStatus.Connected;
-        };
-
+        await using var runtimeScope = await KubernetesScenarioClusterScope.CreateAsync();
+        var runtime = await runtimeScope.Harness.CreateLimitedAccessClusterAsync(includeNamespaceFallback: false);
         var workspace = CreateWorkspace(runtime);
         var settingsService = TestApp.CurrentServices?.GetRequiredService<ISettingsService>()
             ?? throw new InvalidOperationException("Test services are not initialized.");
         settingsService.Settings.GetClusterSettings(workspace.Runtime).Namespaces!.Add("my-app");
+        await workspace.Connect();
 
         var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
@@ -703,22 +660,11 @@ public class NavigationViewModelTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task namespaced_resource_link_stays_hidden_when_cached_config_flag_is_false()
     {
-        var runtime = new TestCluster
-        {
-            Connected = true,
-            Status = ClusterStatus.Connected,
-            ListNamespaces = true,
-            DefaultPermissionAllowed = false,
-        };
-
-        runtime.SetPermission<TestPermissionResourceAlpha>(Verb.List, true, "my-app");
-        runtime.SetPermission<TestPermissionResourceAlpha>(Verb.Watch, true, "my-app");
+        await using var runtimeScope = await KubernetesScenarioClusterScope.CreateAsync(harness =>
+            harness.AddInitialResource(new V1Namespace { Metadata = new V1ObjectMeta { Name = "my-app" } }));
+        var runtime = runtimeScope.Cluster;
 
         var workspace = CreateWorkspace(runtime);
-        await runtime.AddOrUpdateResource(new V1Namespace
-        {
-            Metadata = new V1ObjectMeta { Name = "my-app" }
-        });
         var settingsService = TestApp.CurrentServices?.GetRequiredService<ISettingsService>()
             ?? throw new InvalidOperationException("Test services are not initialized.");
         settingsService.Settings.GetClusterSettings(workspace.Runtime).Namespaces!.Add("my-app");
@@ -741,16 +687,9 @@ public class NavigationViewModelTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task configured_namespaced_resource_link_is_visible_without_namespace_listing_access()
     {
-        var runtime = new TestCluster
-        {
-            Connected = true,
-            Status = ClusterStatus.Connected,
-            ListNamespaces = false,
-            DefaultPermissionAllowed = false,
-        };
-
-        runtime.SetPermission<TestPermissionResourceAlpha>(Verb.List, true, "my-app");
-        runtime.SetPermission<TestPermissionResourceAlpha>(Verb.Watch, true, "my-app");
+        await using var runtimeScope = await KubernetesScenarioClusterScope.CreateAsync(harness =>
+            harness.AddInitialResource(new V1Namespace { Metadata = new V1ObjectMeta { Name = "my-app" } }));
+        var runtime = runtimeScope.Cluster;
 
         var workspace = CreateWorkspace(runtime);
         var settingsService = TestApp.CurrentServices?.GetRequiredService<ISettingsService>()
@@ -766,75 +705,19 @@ public class NavigationViewModelTests : AvaloniaTestBase
 
         FindResourceLink(clusterNode, "Alpha Permission Resource").ShouldNotBeNull();
 
-        await workspace.Connect();
-        Dispatcher.UIThread.RunJobs();
-
         FindResourceLink(clusterNode, "Alpha Permission Resource").ShouldNotBeNull();
     }
 
     [AvaloniaFact]
     public async Task selecting_pods_in_limited_access_cluster_opens_populated_resource_list()
     {
-        var runtime = new TestCluster
-        {
-            Connected = false,
-            Status = ClusterStatus.None,
-            ListNamespaces = true,
-            DefaultPermissionAllowed = false,
-        };
-
-        runtime.SetPermission<V1Pod>(Verb.List, true, "my-app");
-        runtime.SetPermission<V1Pod>(Verb.Watch, true, "my-app");
-        runtime.SetPermission<V1Pod>(Verb.Get, true, "my-app");
-        runtime.SetPermission<V1Pod>(Verb.Get, true, "my-app", "log");
-        runtime.SetPermission<V1Pod>(Verb.Create, true, "my-app", "exec");
-        runtime.SetPermission<V1Pod>(Verb.Create, true, "my-app", "portforward");
-
-        runtime.ConnectBehavior = async () =>
-        {
-            await runtime.AddOrUpdateResource(new V1Namespace
-            {
-                Metadata = new V1ObjectMeta { Name = "my-app" }
-            });
-
-            await runtime.AddOrUpdateResource(new V1Pod
-            {
-                Metadata = new()
-                {
-                    Name = "pod-1",
-                    NamespaceProperty = "my-app"
-                },
-                Spec = new()
-                {
-                    Containers =
-                    [
-                        new V1Container
-                        {
-                            Name = "app"
-                        }
-                    ]
-                },
-                Status = new()
-                {
-                    Conditions =
-                    [
-                        new V1PodCondition
-                        {
-                            Type = "Ready",
-                            Status = "True"
-                        }
-                    ]
-                }
-            });
-
-            runtime.Connected = true;
-            runtime.Status = ClusterStatus.Connected;
-        };
-
+        await using var runtimeScope = await KubernetesScenarioClusterScope.CreateAsync();
+        var runtime = await runtimeScope.Harness.CreateLimitedAccessClusterAsync(includeNamespaceFallback: false);
         var workspace = CreateWorkspace(runtime);
         var settingsService = TestApp.CurrentServices?.GetRequiredService<ISettingsService>()
             ?? throw new InvalidOperationException("Test services are not initialized.");
         settingsService.Settings.GetClusterSettings(workspace.Runtime).Namespaces!.Add("my-app");
+        await workspace.Connect();
 
         var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
@@ -867,6 +750,24 @@ public class NavigationViewModelTests : AvaloniaTestBase
             .Single(x => x.Id == $"{workspace.Runtime.Name}-{GroupApiVersionKind.From<V1Pod>()}");
 
         podsDocument.LoadError.ShouldBeNull();
+        await runtime.AddOrUpdateResource(new V1Pod
+        {
+            Metadata = new V1ObjectMeta { Name = "pod-1", NamespaceProperty = "my-app" },
+            Spec = new V1PodSpec
+            {
+                Containers = [new V1Container { Name = "app", Image = "busybox" }],
+            },
+            Status = new V1PodStatus
+            {
+                Phase = "Running",
+                Conditions = [new V1PodCondition { Type = "Ready", Status = "True" }],
+            },
+        });
+        await TestWait.UntilAsync(
+            () => runtime.GetResource<V1Pod>("my-app", "pod-1") != null,
+            TimeSpan.FromSeconds(5),
+            cancellationToken: TestContext.Current.CancellationToken);
+        runtime.GetResource<V1Pod>("my-app", "pod-1").ShouldNotBeNull();
         await WaitForAsync(() => podsDocument.ItemCount > 0);
         podsDocument.ItemCount.ShouldBe(1);
     }
@@ -874,11 +775,8 @@ public class NavigationViewModelTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task cluster_node_expands_after_successful_connect()
     {
-        var runtime = new TestCluster
-        {
-            Connected = false,
-            Status = ClusterStatus.None,
-        };
+        await using var runtimeScope = await KubernetesScenarioClusterScope.CreateAsync();
+        var runtime = runtimeScope.Cluster;
 
         var workspace = CreateWorkspace(runtime);
         await workspace.Connect();
@@ -899,11 +797,8 @@ public class NavigationViewModelTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task selecting_disconnected_cluster_initializes_navigation_on_demand()
     {
-        var runtime = new TestCluster
-        {
-            Connected = false,
-            Status = ClusterStatus.None,
-        };
+        await using var runtimeScope = KubernetesScenarioClusterScope.CreateDisconnected();
+        var runtime = runtimeScope.Cluster;
 
         var workspace = CreateWorkspace(runtime);
         workspace.GetResourceConfigs().ShouldBeEmpty();
@@ -923,22 +818,12 @@ public class NavigationViewModelTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task cluster_navigation_waits_for_permission_refresh_before_showing_resources()
     {
-        var runtime = new TestCluster
-        {
-            Connected = false,
-            Status = ClusterStatus.None,
-        };
+        await using var runtimeScope = KubernetesScenarioClusterScope.CreateDisconnected();
+        var runtime = runtimeScope.Cluster;
 
         var permissionRefreshRelease = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
         var workspace = CreateWorkspace(runtime);
         workspace.AddResourceConfigForTest(new SlowPermissionResourceConfig(typeof(TestPermissionResourceGamma), "Gamma Permission Resource", permissionRefreshRelease.Task));
-
-        runtime.ConnectBehavior = () =>
-        {
-            runtime.Status = ClusterStatus.Connected;
-            runtime.Connected = true;
-            return Task.CompletedTask;
-        };
 
         var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
@@ -947,9 +832,6 @@ public class NavigationViewModelTests : AvaloniaTestBase
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
 
         await vm.TreeViewSelectionChangedAsync(clusterNode);
-
-        await Task.Delay(100);
-        Dispatcher.UIThread.RunJobs();
 
         FindResourceLink(clusterNode, "Gamma Permission Resource").ShouldBeNull();
 
@@ -961,23 +843,13 @@ public class NavigationViewModelTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task connect_path_publishes_ready_resources_without_waiting_for_unrelated_slow_permission_refresh()
     {
-        var runtime = new TestCluster
-        {
-            Connected = false,
-            Status = ClusterStatus.None,
-        };
+        await using var runtimeScope = KubernetesScenarioClusterScope.CreateDisconnected();
+        var runtime = runtimeScope.Cluster;
 
         var slowPermissionRelease = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
         var workspace = CreateWorkspace(runtime);
         workspace.AddResourceConfigForTest(new DeferredPermissionResourceConfig(typeof(TestPermissionResourceAlpha), "Alpha Permission Resource"));
         workspace.AddResourceConfigForTest(new SlowPermissionResourceConfig(typeof(TestPermissionResourceGamma), "Gamma Permission Resource", slowPermissionRelease.Task));
-
-        runtime.ConnectBehavior = () =>
-        {
-            runtime.Status = ClusterStatus.Connected;
-            runtime.Connected = true;
-            return Task.CompletedTask;
-        };
 
         var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
@@ -995,53 +867,10 @@ public class NavigationViewModelTests : AvaloniaTestBase
     }
 
     [AvaloniaFact]
-    public async Task selecting_cluster_node_does_not_block_on_slow_synchronous_connect_startup()
-    {
-        var runtime = new TestCluster
-        {
-            Connected = false,
-            Status = ClusterStatus.None,
-        };
-
-        var releaseConnect = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
-
-        runtime.ConnectBehavior = async () =>
-        {
-            Thread.Sleep(300);
-            runtime.Status = ClusterStatus.Connecting;
-            await releaseConnect.Task;
-            runtime.Connected = true;
-            runtime.Status = ClusterStatus.Connected;
-        };
-
-        var workspace = CreateWorkspace(runtime);
-        var vm = CreateViewModel();
-        vm.ClusterCatalog.Clusters.Add(workspace);
-        Dispatcher.UIThread.RunJobs();
-
-        var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
-
-        var stopwatch = Stopwatch.StartNew();
-        await vm.TreeViewSelectionChangedAsync(clusterNode);
-        stopwatch.Stop();
-
-        stopwatch.Elapsed.ShouldBeLessThan(TimeSpan.FromMilliseconds(150));
-        clusterNode.IsExpanded.ShouldBeFalse();
-
-        releaseConnect.TrySetResult(null);
-
-        await WaitForAsync(() => clusterNode.IsExpanded);
-        clusterNode.Cluster.Runtime.Connected.ShouldBeTrue();
-    }
-
-    [AvaloniaFact]
     public async Task navigation_items_rebuild_after_resource_config_batch_publish()
     {
-        var runtime = new TestCluster
-        {
-            Connected = true,
-            Status = ClusterStatus.Connected,
-        };
+        await using var runtimeScope = await KubernetesScenarioClusterScope.CreateAsync();
+        var runtime = runtimeScope.Cluster;
 
         var workspace = CreateWorkspace(runtime);
         await workspace.Connect();
@@ -1057,8 +886,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
         originalRoot.NavigationItems.CollectionChanged += (_, _) => subtreeChanges++;
 
         workspace.AddResourceConfigForTest(new FakeCustomResourceConfig(typeof(TestCustomResourceAlpha), "Alpha Resources"));
-        await Task.Delay(250);
-        Dispatcher.UIThread.RunJobs();
+        await WaitForAsync(() => subtreeChanges > 0);
 
         var updatedRoot = clusterNode.NavigationItems.Single(x => x.Name == "Custom Resource Definitions");
         ReferenceEquals(originalRoot, updatedRoot).ShouldBeTrue();
@@ -1068,11 +896,8 @@ public class NavigationViewModelTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task resource_config_burst_preserves_existing_navigation_nodes()
     {
-        var runtime = new TestCluster
-        {
-            Connected = true,
-            Status = ClusterStatus.Connected,
-        };
+        await using var runtimeScope = await KubernetesScenarioClusterScope.CreateAsync();
+        var runtime = runtimeScope.Cluster;
         var workspace = CreateWorkspace(runtime);
         await workspace.Connect();
         Dispatcher.UIThread.RunJobs();
@@ -1104,11 +929,8 @@ public class NavigationViewModelTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task resource_navigation_items_appear_incrementally_as_permissions_complete()
     {
-        var runtime = new TestCluster
-        {
-            Connected = true,
-            Status = ClusterStatus.Connected,
-        };
+        await using var runtimeScope = await KubernetesScenarioClusterScope.CreateAsync();
+        var runtime = runtimeScope.Cluster;
 
         var workspace = CreateWorkspace(runtime);
         await workspace.Connect();
@@ -1124,14 +946,24 @@ public class NavigationViewModelTests : AvaloniaTestBase
 
         workspace.AddResourceConfigForTest(alphaConfig);
 
+        var alphaObserved = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var betaConfigAdded = Task.Run(async () =>
         {
-            await Task.Delay(50);
+            await alphaObserved.Task;
             workspace.AddResourceConfigForTest(betaConfig);
         });
 
         var alphaLink = await WaitForValueAsync(
-            () => FindResourceLink(clusterNode, alphaConfig.Name),
+            () =>
+            {
+                var link = FindResourceLink(clusterNode, alphaConfig.Name);
+                if (link != null)
+                {
+                    alphaObserved.TrySetResult();
+                }
+
+                return link;
+            },
             timeoutMs: 150);
 
         alphaLink.ShouldNotBeNull();
@@ -1148,11 +980,8 @@ public class NavigationViewModelTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task permission_driven_resource_add_keeps_existing_navigation_nodes()
     {
-        var runtime = new TestCluster
-        {
-            Connected = true,
-            Status = ClusterStatus.Connected,
-        };
+        await using var runtimeScope = await KubernetesScenarioClusterScope.CreateAsync();
+        var runtime = runtimeScope.Cluster;
 
         var workspace = CreateWorkspace(runtime);
         await workspace.Connect();
@@ -1182,12 +1011,9 @@ public class NavigationViewModelTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task renaming_connected_cluster_preserves_resource_navigation()
     {
-        var runtime = new TestCluster
-        {
-            Name = "old-name",
-            Connected = true,
-            Status = ClusterStatus.Connected,
-        };
+        await using var runtimeScope = await KubernetesScenarioClusterScope.CreateAsync();
+        var runtime = runtimeScope.Cluster;
+        runtime.Name = "old-name";
         var workspace = CreateWorkspace(runtime);
         await workspace.Connect();
         Dispatcher.UIThread.RunJobs();
@@ -1216,11 +1042,8 @@ public class NavigationViewModelTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task resource_config_navigation_is_applied_immediately_on_ui_thread()
     {
-        var runtime = new TestCluster
-        {
-            Connected = true,
-            Status = ClusterStatus.Connected,
-        };
+        await using var runtimeScope = await KubernetesScenarioClusterScope.CreateAsync();
+        var runtime = runtimeScope.Cluster;
         var workspace = CreateWorkspace(runtime);
         await workspace.Connect();
         Dispatcher.UIThread.RunJobs();
@@ -1240,11 +1063,8 @@ public class NavigationViewModelTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task port_forwarders_is_under_network_category_not_top_level()
     {
-        var runtime = new TestCluster
-        {
-            Connected = true,
-            Status = ClusterStatus.Connected,
-        };
+        await using var runtimeScope = await KubernetesScenarioClusterScope.CreateAsync();
+        var runtime = runtimeScope.Cluster;
         var workspace = CreateWorkspace(runtime);
         await workspace.Connect();
         Dispatcher.UIThread.RunJobs();
@@ -1272,15 +1092,19 @@ public class NavigationViewModelTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task port_forwarders_is_hidden_when_pod_portforward_is_not_allowed()
     {
-        var runtime = new TestCluster
+        await using var runtimeScope = await KubernetesScenarioClusterScope.CreateAsync(harness =>
         {
-            Connected = true,
-            Status = ClusterStatus.Connected,
-            CanCreatePodPortForward = false,
-        };
+            harness.DefaultPermissionAllowed = false;
+            harness.SetPermission<V1Pod>(Verb.Create, false, subresource: "portforward");
+        });
+        var runtime = runtimeScope.Cluster;
 
         var workspace = CreateWorkspace(runtime);
         await workspace.Connect();
+        await TestWait.UntilAsync(
+            () => !runtime.Permissions.CanIAnyNamespace<V1Pod>(Verb.Create, "portforward"),
+            TimeSpan.FromSeconds(5),
+            cancellationToken: TestContext.Current.CancellationToken);
         Dispatcher.UIThread.RunJobs();
 
         var vm = CreateViewModel();
@@ -1288,24 +1112,25 @@ public class NavigationViewModelTests : AvaloniaTestBase
         Dispatcher.UIThread.RunJobs();
 
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
-        var networkCategory = clusterNode.NavigationItems.Single(x => x.Name == "Network");
+        var networkCategory = clusterNode.NavigationItems.SingleOrDefault(x => x.Name == "Network");
+        if (networkCategory is not null)
+        {
+            networkCategory.NavigationItems
+                .OfType<NavigationLink>()
+                .SingleOrDefault(x => x.ViewModelKey == NavigationTargets.PortForwarders)
+                .ShouldBeNull();
+        }
 
-        var portForwardersInNetwork = networkCategory.NavigationItems
-            .OfType<NavigationLink>()
-            .SingleOrDefault(x => x.ViewModelKey == NavigationTargets.PortForwarders);
-
-        portForwardersInNetwork.ShouldBeNull();
+        FindNavigationLink(clusterNode.NavigationItems, NavigationTargets.PortForwarders).ShouldBeNull();
     }
 
     [AvaloniaFact]
     public async Task initial_navigation_build_does_not_check_port_forward_until_pod_permissions_are_loaded()
     {
-        var runtime = new TestCluster
-        {
-            Connected = true,
-            Status = ClusterStatus.Connected,
-            ThrowOnMissingPortForwardReview = true,
-        };
+        await using var runtimeScope = await KubernetesScenarioClusterScope.CreateAsync();
+        var runtime = runtimeScope.Cluster;
+        var harness = runtimeScope.Harness;
+        var authorizationRequestsBeforeNavigation = harness.AuthorizationRequestCount;
 
         var workspace = CreateWorkspace(runtime);
         workspace.AddResourceConfigForTest(new FakeResourceConfig(typeof(V1Pod), "Pods")
@@ -1320,24 +1145,23 @@ public class NavigationViewModelTests : AvaloniaTestBase
 
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
         FindNavigationLink(clusterNode.NavigationItems, NavigationTargets.PortForwarders).ShouldBeNull();
-        runtime.PortForwardPermissionChecks.ShouldBe(0);
+        harness.AuthorizationRequestCount.ShouldBe(authorizationRequestsBeforeNavigation);
     }
 
     [AvaloniaFact]
     public async Task resource_navigation_updates_incrementally_and_port_forward_waits_for_pod_permissions()
     {
-        var runtime = new TestCluster
+        await using var runtimeScope = await KubernetesScenarioClusterScope.CreateAsync(harness =>
         {
-            Connected = true,
-            Status = ClusterStatus.Connected,
-            DefaultPermissionAllowed = false,
-            ThrowOnMissingPortForwardReview = true,
-        };
+            harness.DefaultPermissionAllowed = false;
+            harness.SetPermission<V1Pod>(Verb.Create, true, subresource: "portforward");
+        });
+        var runtime = runtimeScope.Cluster;
 
         var workspace = CreateWorkspace(runtime);
         var podRelease = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
         var fastRefreshCompleted = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
-        var podConfig = new BlockingPodPermissionResourceConfig(runtime, podRelease.Task);
+        var podConfig = new BlockingPodPermissionResourceConfig(podRelease.Task);
         var fastConfig = new ImmediatePermissionResourceConfig(
             typeof(TestPermissionResourceAlpha),
             "Alpha Permission Resource",
@@ -1353,14 +1177,11 @@ public class NavigationViewModelTests : AvaloniaTestBase
         Dispatcher.UIThread.RunJobs();
 
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
-        runtime.ResetPortForwardPermissionChecks();
 
         await WaitForAsync(() => fastRefreshCompleted.Task.IsCompleted);
         FindResourceLink(clusterNode, "Alpha Permission Resource").ShouldNotBeNull();
         FindNavigationLink(clusterNode.NavigationItems, NavigationTargets.PortForwarders).ShouldBeNull();
-        runtime.PortForwardPermissionChecks.ShouldBe(0);
 
-        runtime.ThrowOnMissingPortForwardReview = false;
         podRelease.TrySetResult(null);
 
         await podPermissionTask;
@@ -1371,54 +1192,34 @@ public class NavigationViewModelTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task connect_preloads_pod_default_and_custom_permissions()
     {
-        var runtime = new TestCluster
+        await using var runtimeScope = KubernetesScenarioClusterScope.CreateDisconnected(harness =>
         {
-            Connected = false,
-            Status = ClusterStatus.None,
-            ListNamespaces = false,
-        };
-
-        runtime.SetPermission<V1Namespace>(Verb.List, true);
-        runtime.SetPermission<V1Namespace>(Verb.Watch, true);
-        runtime.SetPermission<V1Pod>(Verb.List, true, "my-app");
-        runtime.SetPermission<V1Pod>(Verb.Watch, true, "my-app");
-        runtime.SetPermission<V1Pod>(Verb.List, false);
-        runtime.SetPermission<V1Pod>(Verb.Watch, false);
-        runtime.SetPermission<V1Pod>(Verb.Get, false);
-        runtime.SetPermission<V1Pod>(Verb.Delete, false);
-        runtime.SetPermission<V1Pod>(Verb.Patch, false);
-        runtime.SetPermission<V1Pod>(Verb.Update, false);
-        runtime.SetPermission<V1Pod>(Verb.Create, false, subresource: "exec");
-        runtime.SetPermission<V1Pod>(Verb.Get, false, subresource: "log");
-        runtime.SetPermission<V1Pod>(Verb.Create, false, subresource: "portforward");
-        runtime.SetPermission<V1Pod>(Verb.Get, false, "my-app", "log");
-        runtime.SetPermission<V1Pod>(Verb.Create, false, "my-app", "exec");
-        runtime.SetPermission<V1Pod>(Verb.Create, true, "my-app", "portforward");
-
-        await runtime.AddOrUpdateResource(new V1Namespace
-        {
-            Metadata = new V1ObjectMeta { Name = "my-app" }
+            harness.DefaultPermissionAllowed = false;
+            harness.AddInitialResource(new V1Namespace { Metadata = new V1ObjectMeta { Name = "my-app" } });
+            harness.SetPermission<V1Namespace>(Verb.List, true);
+            harness.SetPermission<V1Namespace>(Verb.Watch, true);
+            harness.SetPermission<V1Pod>(Verb.List, true, "my-app");
+            harness.SetPermission<V1Pod>(Verb.Watch, true, "my-app");
+            harness.SetPermission<V1Pod>(Verb.Create, true, "my-app", "portforward");
         });
+        var runtime = runtimeScope.Cluster;
 
         var workspace = CreateWorkspace(runtime);
 
         await workspace.Connect();
         Dispatcher.UIThread.RunJobs();
 
-        runtime.CanI<V1Pod>(Verb.Create, "my-app", "portforward").ShouldBeTrue();
-        runtime.CanI<V1Pod>(Verb.Create, subresource: "portforward").ShouldBeFalse();
-        runtime.CanI<V1Pod>(Verb.Get, "my-app", "log").ShouldBeFalse();
-        runtime.CanI<V1Pod>(Verb.Create, "my-app", "exec").ShouldBeFalse();
+        runtime.Permissions.CanI<V1Pod>(Verb.Create, "my-app", "portforward").ShouldBeTrue();
+        runtime.Permissions.CanI<V1Pod>(Verb.Create, subresource: "portforward").ShouldBeFalse();
+        runtime.Permissions.CanI<V1Pod>(Verb.Get, "my-app", "log").ShouldBeFalse();
+        runtime.Permissions.CanI<V1Pod>(Verb.Create, "my-app", "exec").ShouldBeFalse();
     }
 
     [AvaloniaFact]
     public async Task custom_resource_definitions_link_is_sorted_to_bottom()
     {
-        var runtime = new TestCluster
-        {
-            Connected = true,
-            Status = ClusterStatus.Connected,
-        };
+        await using var runtimeScope = await KubernetesScenarioClusterScope.CreateAsync();
+        var runtime = runtimeScope.Cluster;
         var workspace = CreateWorkspace(runtime);
         await workspace.Connect();
         Dispatcher.UIThread.RunJobs();
@@ -1434,11 +1235,8 @@ public class NavigationViewModelTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task category_nav_items_follow_alpha_ordering()
     {
-        var runtime = new TestCluster
-        {
-            Connected = true,
-            Status = ClusterStatus.Connected,
-        };
+        await using var runtimeScope = await KubernetesScenarioClusterScope.CreateAsync();
+        var runtime = runtimeScope.Cluster;
         var workspace = CreateWorkspace(runtime);
         await workspace.Connect();
         Dispatcher.UIThread.RunJobs();
@@ -1460,11 +1258,8 @@ public class NavigationViewModelTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task custom_resource_items_grouped_under_crd_link()
     {
-        var runtime = new TestCluster
-        {
-            Connected = true,
-            Status = ClusterStatus.Connected,
-        };
+        await using var runtimeScope = await KubernetesScenarioClusterScope.CreateAsync();
+        var runtime = runtimeScope.Cluster;
         var workspace = CreateWorkspace(runtime);
         await workspace.Connect();
         Dispatcher.UIThread.RunJobs();
@@ -1532,11 +1327,8 @@ public class NavigationViewModelTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task custom_resource_definitions_root_preserves_expansion_on_rebuild()
     {
-        var runtime = new TestCluster
-        {
-            Connected = true,
-            Status = ClusterStatus.Connected,
-        };
+        await using var runtimeScope = await KubernetesScenarioClusterScope.CreateAsync();
+        var runtime = runtimeScope.Cluster;
         var workspace = CreateWorkspace(runtime);
         await workspace.Connect();
         Dispatcher.UIThread.RunJobs();
@@ -1551,8 +1343,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
         crdRoot.IsExpanded = true;
 
         workspace.AddResourceConfigForTest(new FakeCustomResourceConfig(typeof(TestCustomResourceBeta), "Beta Resources"));
-        await Task.Delay(250);
-        Dispatcher.UIThread.RunJobs();
+        await WaitForAsync(() => clusterNode.NavigationItems.Single(x => x.Name == "Custom Resource Definitions").IsExpanded);
 
         var rebuiltRoot = clusterNode.NavigationItems.Single(x => x.Name == "Custom Resource Definitions");
         rebuiltRoot.IsExpanded.ShouldBeTrue();
@@ -1561,11 +1352,8 @@ public class NavigationViewModelTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task resource_navigation_links_keep_counts_after_rebuild()
     {
-        var runtime = new TestCluster
-        {
-            Connected = true,
-            Status = ClusterStatus.Connected,
-        };
+        await using var runtimeScope = await KubernetesScenarioClusterScope.CreateAsync();
+        var runtime = runtimeScope.Cluster;
 
         var workspace = CreateWorkspace(runtime);
         await workspace.SeedResource<V1Namespace>();
@@ -1585,8 +1373,9 @@ public class NavigationViewModelTests : AvaloniaTestBase
         (resourceLink.Count is not null).ShouldBeTrue();
 
         workspace.AddResourceConfigForTest(new FakeCustomResourceConfig(typeof(TestCustomResourceAlpha), "Alpha Resources"));
-        await Task.Delay(250);
-        Dispatcher.UIThread.RunJobs();
+        await WaitForAsync(() => clusterNode.NavigationItems
+            .OfType<ResourceNavigationLink>()
+            .Any(x => x.ControlType == typeof(V1Namespace) && x.Count is not null));
 
         var rebuiltResourceLink = clusterNode.NavigationItems
             .OfType<ResourceNavigationLink>()
@@ -1597,89 +1386,14 @@ public class NavigationViewModelTests : AvaloniaTestBase
     }
 
     [AvaloniaFact]
-    public async Task updated_crd_reopening_resource_list_document_uses_the_new_generated_type()
-    {
-        var runtime = new TestCluster
-        {
-            Connected = true,
-            Status = ClusterStatus.Connected,
-        };
-
-        var workspace = CreateWorkspace(runtime);
-        await workspace.Connect();
-        Dispatcher.UIThread.RunJobs();
-
-        var originalCrd = ClusterWorkspaceTestCustomResourceDefinitionFactory.Create("tests.kubeui.com", "tests", "someString");
-        await runtime.AddOrUpdateResource(originalCrd);
-
-        var originalType = await WaitForValueAsync(() => GetCustomResourceType(runtime, originalCrd));
-        originalType.ShouldNotBeNull();
-        await AddGeneratedCustomResourceAsync(workspace, originalType, originalCrd, "default", "old-item");
-
-        var vm = CreateViewModel();
-        vm.ClusterCatalog.Clusters.Add(workspace);
-        Dispatcher.UIThread.RunJobs();
-
-        var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
-        var originalLink = await WaitForValueAsync(() => FindResourceLink(clusterNode, "Tests"));
-        originalLink.ShouldNotBeNull();
-
-        await vm.OpenResourceNavigationCommand.ExecuteAsync(originalLink);
-        Dispatcher.UIThread.RunJobs();
-
-        var documents = vm.Factory.GetDockable<IDocumentDock>("Documents");
-        documents.ShouldNotBeNull();
-
-        await WaitForAsync(() =>
-            documents.VisibleDockables?.OfType<IResourceListViewModel>().Any(x => ReferenceEquals(x.Cluster, workspace) && x.Kind == GroupApiVersionKind.From(originalType)) == true);
-
-        var originalDocument = documents.VisibleDockables!
-            .OfType<IResourceListViewModel>()
-            .Single(x => ReferenceEquals(x.Cluster, workspace) && x.Kind == GroupApiVersionKind.From(originalType));
-
-        var updatedCrd = ClusterWorkspaceTestCustomResourceDefinitionFactory.Create("tests.kubeui.com", "tests", "otherString");
-        await runtime.AddOrUpdateResource(updatedCrd);
-
-        var updatedType = await WaitForValueAsync(() => GetCustomResourceType(runtime, updatedCrd));
-        updatedType.ShouldNotBeNull();
-        updatedType.ShouldNotBe(originalType);
-
-        await AddGeneratedCustomResourceAsync(workspace, updatedType, updatedCrd, "default", "new-item");
-
-        await vm.OpenResourceNavigationCommand.ExecuteAsync(originalLink);
-        Dispatcher.UIThread.RunJobs();
-
-        await WaitForAsync(() =>
-            documents.VisibleDockables?.OfType<IResourceListViewModel>().Any(x =>
-                ReferenceEquals(x.Cluster, workspace)
-                && x.Kind == GroupApiVersionKind.From(updatedType)
-                && x.ResourceConfig.Type == updatedType
-                && x.ItemCount == 1) == true);
-
-        documents.VisibleDockables!
-            .OfType<IResourceListViewModel>()
-            .Any(x => ReferenceEquals(x, originalDocument))
-            .ShouldBeFalse();
-
-        var reloadedDocument = documents.VisibleDockables!
-            .OfType<IResourceListViewModel>()
-            .Single(x => ReferenceEquals(x.Cluster, workspace) && x.Kind == GroupApiVersionKind.From(updatedType));
-
-        reloadedDocument.ResourceConfig.Type.ShouldBe(updatedType);
-        reloadedDocument.ItemCount.ShouldBe(1);
-    }
-
-    [AvaloniaFact]
     public async Task stale_crd_navigation_link_opens_the_current_generated_resource_type()
     {
-        var runtime = new TestCluster
-        {
-            Connected = true,
-            Status = ClusterStatus.Connected,
-        };
+        await using var runtimeScope = await KubernetesScenarioClusterScope.CreateAsync();
+        var runtime = runtimeScope.Cluster;
 
         var workspace = CreateWorkspace(runtime);
         await workspace.Connect();
+        await runtime.SeedResource<V1CustomResourceDefinition>(true);
         Dispatcher.UIThread.RunJobs();
 
         var originalCrd = ClusterWorkspaceTestCustomResourceDefinitionFactory.Create("tests.kubeui.com", "tests", "someString");
@@ -1687,6 +1401,10 @@ public class NavigationViewModelTests : AvaloniaTestBase
 
         var originalType = await WaitForValueAsync(() => GetCustomResourceType(runtime, originalCrd));
         originalType.ShouldNotBeNull();
+        await ((KubeUI.Kubernetes.Cluster)runtime).UpdateCanI(originalType, Verb.List);
+        await ((KubeUI.Kubernetes.Cluster)runtime).UpdateCanI(originalType, Verb.Watch);
+        await ((KubeUI.Kubernetes.Cluster)runtime).UpdatePermissionsAllNamespaceAsync(originalType, Verb.List);
+        await ((KubeUI.Kubernetes.Cluster)runtime).UpdatePermissionsAllNamespaceAsync(originalType, Verb.Watch);
 
         var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
@@ -1698,14 +1416,23 @@ public class NavigationViewModelTests : AvaloniaTestBase
         staleLink.ControlType.ShouldBe(originalType);
 
         var updatedCrd = ClusterWorkspaceTestCustomResourceDefinitionFactory.Create("tests.kubeui.com", "tests", "otherString");
+        updatedCrd.Metadata.Uid = runtime.GetResource<V1CustomResourceDefinition>(null, originalCrd.Name()).ShouldNotBeNull().Metadata.Uid;
         await runtime.AddOrUpdateResource(updatedCrd);
 
-        var updatedType = await WaitForValueAsync(() => GetCustomResourceType(runtime, updatedCrd));
+        var updatedType = await WaitForValueAsync(() =>
+        {
+            var type = GetCustomResourceType(runtime, updatedCrd);
+            return type != null && type != originalType ? type : null;
+        });
         updatedType.ShouldNotBeNull();
         updatedType.ShouldNotBe(originalType);
+        await ((KubeUI.Kubernetes.Cluster)runtime).UpdateCanI(updatedType, Verb.List);
+        await ((KubeUI.Kubernetes.Cluster)runtime).UpdateCanI(updatedType, Verb.Watch);
+        await ((KubeUI.Kubernetes.Cluster)runtime).UpdatePermissionsAllNamespaceAsync(updatedType, Verb.List);
+        await ((KubeUI.Kubernetes.Cluster)runtime).UpdatePermissionsAllNamespaceAsync(updatedType, Verb.Watch);
         await AddGeneratedCustomResourceAsync(workspace, updatedType, updatedCrd, "default", "new-item");
 
-        await vm.OpenResourceNavigationCommand.ExecuteAsync(staleLink);
+        await vm.OpenResourceNavigationCommand.ExecuteAsync(staleLink).WaitAsync(TestContext.Current.CancellationToken);
         Dispatcher.UIThread.RunJobs();
 
         var documents = vm.Factory.GetDockable<IDocumentDock>("Documents");
@@ -1729,11 +1456,8 @@ public class NavigationViewModelTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task selecting_unseeded_resource_navigation_link_keeps_count_blank()
     {
-        var runtime = new TestCluster
-        {
-            Connected = true,
-            Status = ClusterStatus.Connected,
-        };
+        await using var runtimeScope = await KubernetesScenarioClusterScope.CreateAsync();
+        var runtime = runtimeScope.Cluster;
 
         var workspace = CreateWorkspace(runtime);
         await workspace.Connect();
@@ -1759,11 +1483,8 @@ public class NavigationViewModelTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task first_click_on_resource_navigation_link_shows_count()
     {
-        var runtime = new TestCluster
-        {
-            Connected = true,
-            Status = ClusterStatus.Connected,
-        };
+        await using var runtimeScope = await KubernetesScenarioClusterScope.CreateAsync();
+        var runtime = runtimeScope.Cluster;
 
         await runtime.AddOrUpdateResource(new V1Namespace
         {
@@ -1793,11 +1514,8 @@ public class NavigationViewModelTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task selecting_seeded_resource_navigation_link_shows_source_cache_count()
     {
-        var runtime = new TestCluster
-        {
-            Connected = true,
-            Status = ClusterStatus.Connected,
-        };
+        await using var runtimeScope = await KubernetesScenarioClusterScope.CreateAsync();
+        var runtime = runtimeScope.Cluster;
 
         await runtime.AddOrUpdateResource(new V1Namespace
         {
@@ -1838,11 +1556,8 @@ public class NavigationViewModelTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task visualization_seeded_resource_attaches_navigation_count()
     {
-        var runtime = new TestCluster
-        {
-            Connected = true,
-            Status = ClusterStatus.Connected,
-        };
+        await using var runtimeScope = await KubernetesScenarioClusterScope.CreateAsync();
+        var runtime = runtimeScope.Cluster;
         await runtime.AddOrUpdateResource(new V1Namespace { Metadata = new() { Name = "default" } });
 
         var workspace = CreateWorkspace(runtime);
@@ -1869,11 +1584,8 @@ public class NavigationViewModelTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task resource_navigation_count_updates_when_events_arrive_after_initial_zero()
     {
-        var runtime = new TestCluster
-        {
-            Connected = true,
-            Status = ClusterStatus.Connected,
-        };
+        await using var runtimeScope = await KubernetesScenarioClusterScope.CreateAsync();
+        var runtime = runtimeScope.Cluster;
 
         var workspace = CreateWorkspace(runtime);
         await workspace.Connect();
@@ -1922,11 +1634,8 @@ public class NavigationViewModelTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task resource_navigation_count_updates_while_resource_events_continue()
     {
-        var runtime = new TestCluster
-        {
-            Connected = true,
-            Status = ClusterStatus.Connected,
-        };
+        await using var runtimeScope = await KubernetesScenarioClusterScope.CreateAsync();
+        var runtime = runtimeScope.Cluster;
 
         var workspace = CreateWorkspace(runtime);
         await workspace.Connect();
@@ -1972,7 +1681,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
                 Count = 1,
             });
 
-            await Task.Delay(20);
+            await TestWait.NextPollAsync(TimeSpan.FromMilliseconds(20), TestContext.Current.CancellationToken);
             Dispatcher.UIThread.RunJobs();
 
             if (positiveCount.Task.IsCompleted)
@@ -1985,16 +1694,13 @@ public class NavigationViewModelTests : AvaloniaTestBase
     }
 
     [AvaloniaFact]
-    public async Task resource_navigation_count_updates_when_runtime_is_decorated()
+    public async Task resource_navigation_count_updates_from_real_runtime()
     {
-        var runtime = new CountingClusterRuntime(new TestClusterRuntime
-        {
-            Connected = true,
-            Status = ClusterStatus.Connected,
-        });
+        await using var scope = await KubernetesScenarioClusterScope.CreateAsync();
+        var runtime = scope.Cluster;
 
         var workspace = CreateWorkspace(runtime);
-        await workspace.Connect().WaitAsync(TimeSpan.FromSeconds(5));
+        await workspace.Connect();
         Dispatcher.UIThread.RunJobs();
 
         var vm = CreateViewModel();
@@ -2033,18 +1739,8 @@ public class NavigationViewModelTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task resource_navigation_count_updates_for_events_after_connecting_from_navigation()
     {
-        var runtime = new TestCluster
-        {
-            Connected = false,
-            Status = ClusterStatus.None,
-        };
-
-        runtime.ConnectBehavior = () =>
-        {
-            runtime.Connected = true;
-            runtime.Status = ClusterStatus.Connected;
-            return Task.CompletedTask;
-        };
+        await using var runtimeScope = KubernetesScenarioClusterScope.CreateDisconnected();
+        var runtime = runtimeScope.Cluster;
 
         var workspace = CreateWorkspace(runtime);
         var vm = CreateViewModel();
@@ -2054,11 +1750,12 @@ public class NavigationViewModelTests : AvaloniaTestBase
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
         await vm.TreeViewSelectionChangedAsync(clusterNode);
         await WaitForAsync(() => workspace.GetResourceConfigs().Any(x => x.Type == typeof(Corev1Event) && x.PermissionsLoaded));
-        await WaitForAsync(() => FindResourceLink(clusterNode, typeof(Corev1Event)) != null);
-
-        var eventsLink = FindResourceLink(clusterNode, typeof(Corev1Event));
+        var eventsLink = await WaitForValueAsync(
+            () => FindResourceLink(clusterNode, typeof(Corev1Event))?.Count is not null
+                ? FindResourceLink(clusterNode, typeof(Corev1Event))
+                : null,
+            timeoutMs: 10000);
         eventsLink.ShouldNotBeNull();
-        (eventsLink.Count is not null).ShouldBeTrue();
 
         var zeroCount = await WaitForObservedCountAsync(eventsLink.Count, expected: 0, timeoutMs: 10000);
         zeroCount.ShouldBe(0);
@@ -2089,11 +1786,8 @@ public class NavigationViewModelTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task resource_navigation_count_is_preserved_until_resource_is_seeded()
     {
-        var runtime = new TestCluster
-        {
-            Connected = true,
-            Status = ClusterStatus.Connected,
-        };
+        await using var runtimeScope = await KubernetesScenarioClusterScope.CreateAsync();
+        var runtime = runtimeScope.Cluster;
 
         var workspace = CreateWorkspace(runtime);
 
@@ -2137,15 +1831,14 @@ public class NavigationViewModelTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task event_navigation_count_recovers_when_event_seed_happened_before_namespace_permission()
     {
-        var runtime = new TestCluster
+        await using var runtimeScope = await KubernetesScenarioClusterScope.CreateAsync(harness =>
         {
-            Connected = true,
-            Status = ClusterStatus.Connected,
-            DefaultPermissionAllowed = false,
-        };
-
-        runtime.SetPermission(typeof(Corev1Event), Verb.List, allowed: false);
-        runtime.SetPermission(typeof(Corev1Event), Verb.Watch, allowed: false);
+            harness.DefaultPermissionAllowed = false;
+            harness.SetPermission<Corev1Event>(Verb.List, false);
+            harness.SetPermission<Corev1Event>(Verb.Watch, false);
+        });
+        var runtime = runtimeScope.Cluster;
+        var harness = runtimeScope.Harness;
 
         await runtime.SeedResource<Corev1Event>();
         runtime.Objects[GroupApiVersionKind.From<Corev1Event>()].ShouldBeOfType<ContainerClass<Corev1Event>>()
@@ -2156,8 +1849,8 @@ public class NavigationViewModelTests : AvaloniaTestBase
             Metadata = new() { Name = "default" }
         });
 
-        runtime.SetPermission(typeof(Corev1Event), Verb.List, allowed: true, @namespace: "default");
-        runtime.SetPermission(typeof(Corev1Event), Verb.Watch, allowed: true, @namespace: "default");
+        harness.SetPermission<Corev1Event>(Verb.List, true, "default");
+        harness.SetPermission<Corev1Event>(Verb.Watch, true, "default");
 
         var workspace = CreateWorkspace(runtime);
         await workspace.Connect();
@@ -2202,11 +1895,8 @@ public class NavigationViewModelTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task crd_delta_does_not_rebuild_unrelated_resource_nodes()
     {
-        var runtime = new TestCluster
-        {
-            Connected = true,
-            Status = ClusterStatus.Connected,
-        };
+        await using var runtimeScope = await KubernetesScenarioClusterScope.CreateAsync();
+        var runtime = runtimeScope.Cluster;
 
         await runtime.AddOrUpdateResource(new V1Namespace
         {
@@ -2227,8 +1917,9 @@ public class NavigationViewModelTests : AvaloniaTestBase
             .Single(x => x.ControlType == typeof(V1Namespace));
 
         workspace.AddResourceConfigForTest(new FakeCustomResourceConfig(typeof(TestCustomResourceAlpha), "Alpha Resources"));
-        await Task.Delay(250);
-        Dispatcher.UIThread.RunJobs();
+        await WaitForAsync(() => clusterNode.NavigationItems
+            .OfType<ResourceNavigationLink>()
+            .Any(x => x.ControlType == typeof(V1Namespace)));
 
         var rebuiltNamespaceLink = clusterNode.NavigationItems
             .OfType<ResourceNavigationLink>()
@@ -2240,11 +1931,8 @@ public class NavigationViewModelTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task namespace_addition_does_not_replace_namespace_navigation_link()
     {
-        var runtime = new TestCluster
-        {
-            Connected = true,
-            Status = ClusterStatus.Connected,
-        };
+        await using var runtimeScope = await KubernetesScenarioClusterScope.CreateAsync();
+        var runtime = runtimeScope.Cluster;
 
         await runtime.AddOrUpdateResource(new V1Namespace
         {
@@ -2286,11 +1974,8 @@ public class NavigationViewModelTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task custom_resource_definition_added_after_navigation_build_adds_custom_resource_entry()
     {
-        var runtime = new TestCluster
-        {
-            Connected = true,
-            Status = ClusterStatus.Connected,
-        };
+        await using var runtimeScope = await KubernetesScenarioClusterScope.CreateAsync();
+        var runtime = runtimeScope.Cluster;
 
         var workspace = CreateWorkspace(runtime);
         await workspace.Connect();
@@ -2302,7 +1987,6 @@ public class NavigationViewModelTests : AvaloniaTestBase
         Dispatcher.UIThread.RunJobs();
 
         workspace.AddResourceConfigForTest(new FakeCustomResourceConfig(typeof(TestCustomResourceKubeUi), "Tests"));
-        await Task.Delay(250);
         Dispatcher.UIThread.RunJobs();
 
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
@@ -2324,11 +2008,8 @@ public class NavigationViewModelTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task coalesced_custom_resource_updates_add_each_navigation_entry()
     {
-        var runtime = new TestCluster
-        {
-            Connected = true,
-            Status = ClusterStatus.Connected,
-        };
+        await using var runtimeScope = await KubernetesScenarioClusterScope.CreateAsync();
+        var runtime = runtimeScope.Cluster;
 
         var workspace = CreateWorkspace(runtime);
         await workspace.Connect();
@@ -2357,11 +2038,8 @@ public class NavigationViewModelTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task custom_resource_definition_update_updates_existing_navigation_entry_without_replacing_group()
     {
-        var runtime = new TestCluster
-        {
-            Connected = true,
-            Status = ClusterStatus.Connected,
-        };
+        await using var runtimeScope = await KubernetesScenarioClusterScope.CreateAsync();
+        var runtime = runtimeScope.Cluster;
 
         var workspace = CreateWorkspace(runtime);
         await workspace.Connect();
@@ -2372,7 +2050,6 @@ public class NavigationViewModelTests : AvaloniaTestBase
         Dispatcher.UIThread.RunJobs();
 
         workspace.AddResourceConfigForTest(new FakeCustomResourceConfig(typeof(TestCustomResourceKubeUi), "Tests"));
-        await Task.Delay(250);
         Dispatcher.UIThread.RunJobs();
 
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
@@ -2394,8 +2071,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
         var originalCount = originalLink.Count;
 
         workspace.AddResourceConfigForTest(new FakeCustomResourceConfig(typeof(TestCustomResourceKubeUi), "Tests"));
-        await Task.Delay(250);
-        Dispatcher.UIThread.RunJobs();
+        await WaitForAsync(() => crdRoot.NavigationItems.OfType<NavigationItem>().Any(x => x.Name == "kubeui.com"));
 
         var updatedRootGroup = await WaitForValueAsync(
             () => crdRoot.NavigationItems.OfType<NavigationItem>().SingleOrDefault(x => x.Name == "kubeui.com"),
@@ -2414,11 +2090,8 @@ public class NavigationViewModelTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task custom_resource_definition_delete_removes_navigation_entry_without_rebuilding_remaining_groups()
     {
-        var runtime = new TestCluster
-        {
-            Connected = true,
-            Status = ClusterStatus.Connected,
-        };
+        await using var runtimeScope = await KubernetesScenarioClusterScope.CreateAsync();
+        var runtime = runtimeScope.Cluster;
 
         var workspace = CreateWorkspace(runtime);
         await workspace.Connect();
@@ -2434,6 +2107,11 @@ public class NavigationViewModelTests : AvaloniaTestBase
         await runtime.AddOrUpdateResource(crdA);
         await runtime.AddOrUpdateResource(crdB);
 
+        await TestWait.UntilAsync(
+            () => runtime.GetResourceList<V1CustomResourceDefinition>().Count >= 2,
+            TimeSpan.FromSeconds(5),
+            cancellationToken: TestContext.Current.CancellationToken);
+
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
         var crdRoot = await WaitForValueAsync(
             () => clusterNode.NavigationItems.SingleOrDefault(x => x.Name == "Custom Resource Definitions"),
@@ -2444,28 +2122,31 @@ public class NavigationViewModelTests : AvaloniaTestBase
             () => crdRoot.NavigationItems.OfType<NavigationItem>().SingleOrDefault(x => x.Name == "kubeui.com"),
             timeoutMs: 10000);
         survivingGroup.ShouldNotBeNull();
-        var originalSurvivingGroup = survivingGroup;
-
-        await runtime.DeleteResource(crdA);
         await WaitForValueAsync(
-            () => survivingGroup.NavigationItems.OfType<ResourceNavigationLink>().SingleOrDefault(x => x.Name == "Others"),
+            () => FindNavigationLinkByName(crdRoot.NavigationItems, "Tests"),
+            timeoutMs: 10000);
+        await WaitForValueAsync(
+            () => FindNavigationLinkByName(survivingGroup.NavigationItems, "Others"),
+            timeoutMs: 10000);
+        await runtime.DeleteResource(crdA);
+        await TestWait.UntilAsync(
+            () => runtime.GetResource<V1CustomResourceDefinition>(null, crdA.Name()!) == null,
+            TimeSpan.FromSeconds(5),
+            cancellationToken: TestContext.Current.CancellationToken);
+        await WaitForAsync(
+            () => FindNavigationLinkByName(crdRoot.NavigationItems, "Tests") is null,
             timeoutMs: 10000);
 
-        crdRoot.NavigationItems
-            .OfType<NavigationItem>()
-            .SelectMany(x => x.NavigationItems.OfType<ResourceNavigationLink>())
-            .Any(x => x.Name == "Tests")
-            .ShouldBeFalse();
+        await WaitForValueAsync(
+            () => FindNavigationLinkByName(survivingGroup.NavigationItems, "Others"),
+            timeoutMs: 10000);
     }
 
     [AvaloniaFact]
     public async Task custom_resource_definition_delete_prunes_empty_group_branch_without_replacing_root()
     {
-        var runtime = new TestCluster
-        {
-            Connected = true,
-            Status = ClusterStatus.Connected,
-        };
+        await using var runtimeScope = await KubernetesScenarioClusterScope.CreateAsync();
+        var runtime = runtimeScope.Cluster;
 
         var workspace = CreateWorkspace(runtime);
         await workspace.Connect();

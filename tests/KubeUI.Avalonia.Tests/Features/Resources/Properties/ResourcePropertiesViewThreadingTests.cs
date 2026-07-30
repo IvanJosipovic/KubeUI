@@ -11,7 +11,8 @@ public sealed class ResourcePropertiesViewThreadingTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task ClearItems_is_safe_when_invoked_from_background_thread()
     {
-        var workspace = new TestCluster().CreateWorkspace();
+        await using var scope = await KubernetesTestWorkspaceScope.CreateAsync(TestApp.CurrentServices!);
+        var workspace = scope.Workspace;
         await workspace.Connect();
 
         var services = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
