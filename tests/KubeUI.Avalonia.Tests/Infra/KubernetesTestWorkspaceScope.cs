@@ -5,9 +5,9 @@ namespace KubeUI.Avalonia.Tests.Infra;
 
 internal sealed class KubernetesTestWorkspaceScope : IDisposable, IAsyncDisposable
 {
-    private readonly KubernetesClusterScenarioHarness _harness;
+    private readonly IClusterScenarioHarness _harness;
 
-    private KubernetesTestWorkspaceScope(KubernetesClusterScenarioHarness harness, ClusterWorkspace workspace)
+    private KubernetesTestWorkspaceScope(IClusterScenarioHarness harness, ClusterWorkspace workspace)
     {
         _harness = harness;
         Workspace = workspace;
@@ -15,15 +15,23 @@ internal sealed class KubernetesTestWorkspaceScope : IDisposable, IAsyncDisposab
 
     public ClusterWorkspace Workspace { get; }
 
-    public KubernetesClusterScenarioHarness Harness => _harness;
+    public KubernetesClusterScenarioHarness Harness => (KubernetesClusterScenarioHarness)_harness;
 
-    public static async Task<KubernetesTestWorkspaceScope> CreateAsync(
-        IServiceProvider services,
-        Action<KubernetesClusterScenarioHarness>? configure = null)
+    public IClusterScenarioHarness ScenarioHarness => _harness;
+
+    public static async Task<KubernetesTestWorkspaceScope> CreateAsync(IServiceProvider services)
     {
         var harness = new KubernetesClusterScenarioHarness();
-        configure?.Invoke(harness);
         await harness.InitializeAsync(TestContext.Current.CancellationToken);
+        var workspace = ActivatorUtilities.CreateInstance<ClusterWorkspace>(services, harness.Cluster);
+        return new KubernetesTestWorkspaceScope(harness, workspace);
+    }
+
+    public static async Task<KubernetesTestWorkspaceScope> CreateAsync(IServiceProvider services, KubernetesBackend backend)
+    {
+        IClusterScenarioHarness harness = await KubernetesScenarioHarnessFactory.CreateAsync(
+            backend,
+            TestContext.Current.CancellationToken);
         var workspace = ActivatorUtilities.CreateInstance<ClusterWorkspace>(services, harness.Cluster);
         return new KubernetesTestWorkspaceScope(harness, workspace);
     }

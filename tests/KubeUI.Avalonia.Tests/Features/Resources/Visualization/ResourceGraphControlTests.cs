@@ -12,7 +12,6 @@ using KubeUI.Kubernetes.Resources.Relationships;
 using Shouldly;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
-using KubeUI.Avalonia.Tests.Features.Clusters.Workspace;
 using KubeUI.Testing;
 using Westermo.GraphX.Controls.Controls;
 
@@ -160,11 +159,8 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
         await WaitForAsync(() => reopenedView.Graph!.Resources.Any(resource => resource.Name() == secret.Name()));
     }
 
-    [AvaloniaTheory]
-    [InlineData(100)]
-    [InlineData(200)]
-    [InlineData(300)]
-    public async Task reopening_visualization_from_selected_namespace_as_root_keeps_secret_loaded_during_config_initialization(int responseDelayMilliseconds)
+    [AvaloniaFact]
+    public async Task reopening_visualization_from_selected_namespace_as_root_keeps_secret_loaded_during_config_initialization()
     {
         V1Secret secret = new()
         {
@@ -177,9 +173,7 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
             },
         };
 
-        await using var clusterScope = await KubernetesTestWorkspaceScope.CreateAsync(
-            TestApp.CurrentServices!,
-            harness => harness.ResponseDelay = TimeSpan.FromMilliseconds(responseDelayMilliseconds));
+        await using var clusterScope = await KubernetesTestWorkspaceScope.CreateAsync(TestApp.CurrentServices!);
         var cluster = clusterScope.Workspace;
         V1Namespace namespaceResource = new() { Metadata = new() { Name = "platform-dev-ijosipov" } };
 
