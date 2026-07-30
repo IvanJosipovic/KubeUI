@@ -45,10 +45,11 @@ public class ClusterWorkspaceTests : AvaloniaTestBase
         workspace.GetResourceConfigs().ShouldBeEmpty();
     }
 
-    [AvaloniaFact]
-    public async Task resource_config_can_be_looked_up_by_resource_type()
+    [AvaloniaTheory, KubernetesBackendDataAttribute]
+    [Trait("Category", "Kind")]
+    public async Task resource_config_can_be_looked_up_by_resource_type(KubernetesBackend backend)
     {
-        await using var scope = await KubernetesScenarioClusterScope.CreateAsync();
+        await using var scope = await KubernetesScenarioClusterScope.CreateAsync(backend);
         var workspace = CreateWorkspace(scope.Cluster);
 
         await workspace.Connect();
@@ -71,17 +72,18 @@ public class ClusterWorkspaceTests : AvaloniaTestBase
         workspace.ClusterColor.ShouldBe(Brushes.Orange);
     }
 
-    [AvaloniaFact]
-    public async Task added_crd_adds_resource_config_and_model_cache_entry()
+    [AvaloniaTheory, KubernetesBackendDataAttribute]
+    [Trait("Category", "Kind")]
+    public async Task added_crd_adds_resource_config_and_model_cache_entry(KubernetesBackend backend)
     {
-        await using var scope = await KubernetesScenarioClusterScope.CreateAsync();
+        await using var scope = await KubernetesScenarioClusterScope.CreateAsync(backend);
         var runtime = scope.Cluster;
         var workspace = CreateWorkspace(runtime);
         await workspace.Connect();
         await runtime.SeedResource<V1CustomResourceDefinition>(true);
         var crd = ClusterWorkspaceTestCustomResourceDefinitionFactory.Create("tests.kubeui.com", "tests", "someString");
 
-        await runtime.AddOrUpdateResource(crd);
+        await scope.ScenarioHarness.CreateDirectAsync(crd, TestContext.Current.CancellationToken);
 
         var resourceType = await WaitForValueAsync(() => GetCustomResourceType(runtime, crd));
         resourceType.ShouldNotBeNull();
@@ -92,10 +94,11 @@ public class ClusterWorkspaceTests : AvaloniaTestBase
         resourceConfig.IsCustomResource.ShouldBeTrue();
     }
 
-    [AvaloniaFact]
-    public async Task resource_config_processed_event_observes_registered_crd_config()
+    [AvaloniaTheory, KubernetesBackendDataAttribute]
+    [Trait("Category", "Kind")]
+    public async Task resource_config_processed_event_observes_registered_crd_config(KubernetesBackend backend)
     {
-        await using var scope = await KubernetesScenarioClusterScope.CreateAsync();
+        await using var scope = await KubernetesScenarioClusterScope.CreateAsync(backend);
         var runtime = scope.Cluster;
         var workspace = CreateWorkspace(runtime);
         await workspace.Connect();
@@ -104,23 +107,24 @@ public class ClusterWorkspaceTests : AvaloniaTestBase
         workspace.ResourceConfigProcessed += (_, resourceConfig) => processedConfig = workspace.GetResourceConfig(resourceConfig.Type);
         var crd = ClusterWorkspaceTestCustomResourceDefinitionFactory.Create("tests.kubeui.com", "tests", "someString");
 
-        await runtime.AddOrUpdateResource(crd);
+        await scope.ScenarioHarness.CreateDirectAsync(crd, TestContext.Current.CancellationToken);
 
         var resourceConfig = await WaitForValueAsync(() => GetCustomResourceConfig(workspace, crd));
         processedConfig.ShouldBeSameAs(resourceConfig);
     }
 
-    [AvaloniaFact]
-    public async Task updated_crd_replaces_resource_config_model_cache_entry_and_seeded_informer()
+    [AvaloniaTheory, KubernetesBackendDataAttribute]
+    [Trait("Category", "Kind")]
+    public async Task updated_crd_replaces_resource_config_model_cache_entry_and_seeded_informer(KubernetesBackend backend)
     {
-        await using var scope = await KubernetesScenarioClusterScope.CreateAsync();
+        await using var scope = await KubernetesScenarioClusterScope.CreateAsync(backend);
         var runtime = scope.Cluster;
         var workspace = CreateWorkspace(runtime);
         await workspace.Connect();
         await runtime.SeedResource<V1CustomResourceDefinition>(true);
         var originalCrd = ClusterWorkspaceTestCustomResourceDefinitionFactory.Create("tests.kubeui.com", "tests", "someString");
 
-        await runtime.AddOrUpdateResource(originalCrd);
+        await scope.ScenarioHarness.CreateDirectAsync(originalCrd, TestContext.Current.CancellationToken);
 
         var originalType = await WaitForValueAsync(() => GetCustomResourceType(runtime, originalCrd));
         originalType.ShouldNotBeNull();
@@ -134,7 +138,7 @@ public class ClusterWorkspaceTests : AvaloniaTestBase
 
         var updatedCrd = ClusterWorkspaceTestCustomResourceDefinitionFactory.Create("tests.kubeui.com", "tests", "otherString");
         updatedCrd.Metadata.Uid = runtime.GetResource<V1CustomResourceDefinition>(null, originalCrd.Name()).ShouldNotBeNull().Metadata.Uid;
-        await runtime.AddOrUpdateResource(updatedCrd);
+        await scope.ScenarioHarness.ReplaceDirectAsync(updatedCrd, TestContext.Current.CancellationToken);
 
         var updatedType = await WaitForValueAsync(() =>
         {
@@ -159,17 +163,18 @@ public class ClusterWorkspaceTests : AvaloniaTestBase
         GetInformers(updatedContainer).Count.ShouldBe(1);
     }
 
-    [AvaloniaFact]
-    public async Task metadata_only_crd_update_does_not_rebuild_resource_config_or_reseed_informer()
+    [AvaloniaTheory, KubernetesBackendDataAttribute]
+    [Trait("Category", "Kind")]
+    public async Task metadata_only_crd_update_does_not_rebuild_resource_config_or_reseed_informer(KubernetesBackend backend)
     {
-        await using var scope = await KubernetesScenarioClusterScope.CreateAsync();
+        await using var scope = await KubernetesScenarioClusterScope.CreateAsync(backend);
         var runtime = scope.Cluster;
         var workspace = CreateWorkspace(runtime);
         await workspace.Connect();
         await runtime.SeedResource<V1CustomResourceDefinition>(true);
         var originalCrd = ClusterWorkspaceTestCustomResourceDefinitionFactory.Create("tests.kubeui.com", "tests", "someString");
 
-        await runtime.AddOrUpdateResource(originalCrd);
+        await scope.ScenarioHarness.CreateDirectAsync(originalCrd, TestContext.Current.CancellationToken);
 
         var originalType = await WaitForValueAsync(() => GetCustomResourceType(runtime, originalCrd));
         originalType.ShouldNotBeNull();
@@ -191,7 +196,7 @@ public class ClusterWorkspaceTests : AvaloniaTestBase
             ["metadata-only"] = "true"
         };
 
-        await runtime.AddOrUpdateResource(updatedCrd);
+        await scope.ScenarioHarness.ReplaceDirectAsync(updatedCrd, TestContext.Current.CancellationToken);
 
         await WaitForAsync(() => GetCustomResourceConfig(workspace, updatedCrd) is not null);
 
@@ -200,10 +205,11 @@ public class ClusterWorkspaceTests : AvaloniaTestBase
         GetInformers(originalContainer).Count.ShouldBe(1);
     }
 
-    [AvaloniaFact]
-    public async Task seeding_resource_raises_resource_seeded_event()
+    [AvaloniaTheory, KubernetesBackendDataAttribute]
+    [Trait("Category", "Kind")]
+    public async Task seeding_resource_raises_resource_seeded_event(KubernetesBackend backend)
     {
-        await using var scope = await KubernetesScenarioClusterScope.CreateAsync();
+        await using var scope = await KubernetesScenarioClusterScope.CreateAsync(backend);
         var runtime = scope.Cluster;
         var workspace = CreateWorkspace(runtime);
         GroupApiVersionKind? seededKind = null;
@@ -232,10 +238,11 @@ public class ClusterWorkspaceTests : AvaloniaTestBase
         GetInformers(container).ShouldBeEmpty();
     }
 
-    [AvaloniaFact]
-    public async Task initializing_workspace_seeds_custom_resource_definitions_when_allowed()
+    [AvaloniaTheory, KubernetesBackendDataAttribute]
+    [Trait("Category", "Kind")]
+    public async Task initializing_workspace_seeds_custom_resource_definitions_when_allowed(KubernetesBackend backend)
     {
-        await using var scope = await KubernetesScenarioClusterScope.CreateAsync();
+        await using var scope = await KubernetesScenarioClusterScope.CreateAsync(backend);
         var runtime = scope.Cluster;
 
         var workspace = CreateWorkspace(runtime);
@@ -248,17 +255,18 @@ public class ClusterWorkspaceTests : AvaloniaTestBase
             .Informers.Count.ShouldBe(1);
     }
 
-    [AvaloniaFact]
-    public async Task deleted_crd_removes_resource_config_model_cache_entry_and_seeded_informer()
+    [AvaloniaTheory, KubernetesBackendDataAttribute]
+    [Trait("Category", "Kind")]
+    public async Task deleted_crd_removes_resource_config_model_cache_entry_and_seeded_informer(KubernetesBackend backend)
     {
-        await using var scope = await KubernetesScenarioClusterScope.CreateAsync();
+        await using var scope = await KubernetesScenarioClusterScope.CreateAsync(backend);
         var runtime = scope.Cluster;
         var workspace = CreateWorkspace(runtime);
         await workspace.Connect();
         await runtime.SeedResource<V1CustomResourceDefinition>(true);
         var crd = ClusterWorkspaceTestCustomResourceDefinitionFactory.Create("tests.kubeui.com", "tests", "someString");
 
-        await runtime.AddOrUpdateResource(crd);
+        await scope.ScenarioHarness.CreateDirectAsync(crd, TestContext.Current.CancellationToken);
 
         var resourceType = await WaitForValueAsync(() => GetCustomResourceType(runtime, crd));
         resourceType.ShouldNotBeNull();
@@ -271,7 +279,7 @@ public class ClusterWorkspaceTests : AvaloniaTestBase
         GetInformers(seededContainer).Count.ShouldBe(1);
 
         crd.Metadata.Uid = runtime.GetResource<V1CustomResourceDefinition>(null, crd.Name()).ShouldNotBeNull().Metadata.Uid;
-        await runtime.DeleteResource(crd);
+        await scope.ScenarioHarness.DeleteDirectAsync(crd, TestContext.Current.CancellationToken);
 
         await WaitForAsync(() => GetCustomResourceConfig(workspace, crd) == null);
         await WaitForAsync(() => GetCustomResourceType(runtime, crd) == null);
@@ -323,10 +331,11 @@ public class ClusterWorkspaceTests : AvaloniaTestBase
         GetInformers(podContainer).Count.ShouldBe(2);
     }
 
-    [AvaloniaFact]
-    public async Task disconnect_disposes_seeded_informers_and_registrations()
+    [AvaloniaTheory, KubernetesBackendDataAttribute]
+    [Trait("Category", "Kind")]
+    public async Task disconnect_disposes_seeded_informers_and_registrations(KubernetesBackend backend)
     {
-        await using var scope = await KubernetesScenarioClusterScope.CreateAsync();
+        await using var scope = await KubernetesScenarioClusterScope.CreateAsync(backend);
         var runtime = scope.Cluster;
         var workspace = CreateWorkspace(runtime);
 
@@ -346,10 +355,11 @@ public class ClusterWorkspaceTests : AvaloniaTestBase
         runtime.Objects.ShouldBeEmpty();
     }
 
-    [AvaloniaFact]
-    public async Task disconnect_allows_resource_types_to_be_seeded_again()
+    [AvaloniaTheory, KubernetesBackendDataAttribute]
+    [Trait("Category", "Kind")]
+    public async Task disconnect_allows_resource_types_to_be_seeded_again(KubernetesBackend backend)
     {
-        await using var runtimeScope = await KubernetesScenarioClusterScope.CreateAsync();
+        await using var runtimeScope = await KubernetesScenarioClusterScope.CreateAsync(backend);
         var runtime = runtimeScope.Cluster;
         var workspace = CreateWorkspace(runtime);
 
@@ -372,17 +382,18 @@ public class ClusterWorkspaceTests : AvaloniaTestBase
         GetInformerRegistrations(reseededContainer).Count.ShouldBe(1);
     }
 
-    [AvaloniaFact]
-    public async Task disconnect_removes_dynamic_crd_model_cache_entries()
+    [AvaloniaTheory, KubernetesBackendDataAttribute]
+    [Trait("Category", "Kind")]
+    public async Task disconnect_removes_dynamic_crd_model_cache_entries(KubernetesBackend backend)
     {
-        await using var scope = await KubernetesScenarioClusterScope.CreateAsync();
+        await using var scope = await KubernetesScenarioClusterScope.CreateAsync(backend);
         var runtime = scope.Cluster;
         var workspace = CreateWorkspace(runtime);
         await workspace.Connect();
         await runtime.SeedResource<V1CustomResourceDefinition>(true);
         var crd = ClusterWorkspaceTestCustomResourceDefinitionFactory.Create("tests.kubeui.com", "tests", "someString");
 
-        await runtime.AddOrUpdateResource(crd);
+        await scope.ScenarioHarness.CreateDirectAsync(crd, TestContext.Current.CancellationToken);
 
         var resourceType = await WaitForValueAsync(() => GetCustomResourceType(runtime, crd));
         resourceType.ShouldNotBeNull();

@@ -50,6 +50,21 @@ public sealed class KindClusterScenarioHarness : IClusterScenarioHarness
         return await client.CreateNamespacedAsync<T>(item, item.Namespace(), cancellationToken);
     }
 
+    public async Task<T> ReplaceDirectAsync<T>(T item, CancellationToken cancellationToken = default) where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    {
+        using var client = Kubernetes.GetGenericClient<T>();
+        return await client.ReplaceAsync<T>(item, item.Name(), cancellationToken);
+    }
+
+    public async Task DeleteDirectAsync<T>(T item, CancellationToken cancellationToken = default) where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    {
+        using var client = Kubernetes.GetGenericClient<T>();
+        if (string.IsNullOrEmpty(item.Namespace()))
+            await client.DeleteAsync<T>(item.Name(), cancellationToken);
+        else
+            await client.DeleteNamespacedAsync<T>(item.Namespace(), item.Name(), cancellationToken);
+    }
+
     public async Task CreateCustomResourceDefinitionAsync(V1CustomResourceDefinition crd, CancellationToken cancellationToken = default)
     {
         await Kubernetes.CreateCustomResourceDefinitionAsync(crd, cancellationToken: cancellationToken);

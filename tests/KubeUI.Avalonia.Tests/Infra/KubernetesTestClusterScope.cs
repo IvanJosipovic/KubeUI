@@ -6,16 +6,24 @@ namespace KubeUI.Avalonia.Tests.Infra;
 
 internal sealed class KubernetesScenarioClusterScope : IDisposable, IAsyncDisposable
 {
-    private readonly KubernetesClusterScenarioHarness _harness;
+    private readonly IClusterScenarioHarness _harness;
 
-    private KubernetesScenarioClusterScope(KubernetesClusterScenarioHarness harness)
+    private KubernetesScenarioClusterScope(IClusterScenarioHarness harness)
     {
         _harness = harness;
     }
 
     public IClusterRuntime Cluster => _harness.Cluster;
 
-    public KubernetesClusterScenarioHarness Harness => _harness;
+    public KubernetesClusterScenarioHarness Harness => (KubernetesClusterScenarioHarness)_harness;
+
+    public IClusterScenarioHarness ScenarioHarness => _harness;
+
+    public static async Task<KubernetesScenarioClusterScope> CreateAsync(KubernetesBackend backend)
+    {
+        return new KubernetesScenarioClusterScope(
+            await KubernetesScenarioHarnessFactory.CreateAsync(backend, TestContext.Current.CancellationToken));
+    }
 
     [SuppressMessage("Usage", "CA2000")]
     public static KubernetesScenarioClusterScope Create(Action<KubernetesClusterScenarioHarness>? configure = null)
