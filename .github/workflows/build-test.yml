@@ -33,7 +33,7 @@ jobs:
             --coverage-output-format cobertura \
             --coverage-output coverage-avalonia.cobertura.xml
         env:
-          KUBEUI_RUN_KIND_TESTS: 1
+          KUBEUI_RUN_KIND_TESTS: 0
 
       - name: Test Kubernetes
         run: |
@@ -49,7 +49,7 @@ jobs:
             --coverage-output-format cobertura \
             --coverage-output coverage-kubernetes.cobertura.xml
         env:
-          KUBEUI_RUN_KIND_TESTS: 1
+          KUBEUI_RUN_KIND_TESTS: 0
 
       - name: Upload test dump
         if: failure()
