@@ -19,8 +19,10 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
     private readonly ConcurrentDictionary<string, string> _customResourceDefinitionSignatures = new(StringComparer.Ordinal);
     private readonly ConcurrentDictionary<string, long> _customResourceDefinitionGenerations = new(StringComparer.Ordinal);
     private readonly CancellationTokenSource _disposeCancellation = new();
+    private readonly object _connectLock = new();
     private bool _disposed;
     private bool _workspaceStateInitialized;
+    private Task? _connectTask;
 
     private Instrumentation _instrumentation;
 
@@ -62,7 +64,19 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
         return activity;
     }
 
-    public Task Connect() => Task.Run(ConnectCoreAsync);
+    public Task Connect()
+    {
+        lock (_connectLock)
+        {
+            if (_connectTask is { IsCompleted: false })
+            {
+                return _connectTask;
+            }
+
+            _connectTask = Task.Run(ConnectCoreAsync);
+            return _connectTask;
+        }
+    }
 
     private async Task ConnectCoreAsync()
     {

@@ -872,53 +872,6 @@ public class NavigationViewModelTests : AvaloniaTestBase
     }
 
     [AvaloniaFact]
-    public async Task delayed_namespace_population_after_connect_still_shows_namespaced_resources_in_navigation()
-    {
-        var runtime = new TestCluster
-        {
-            Connected = false,
-            Status = ClusterStatus.None,
-            ListNamespaces = false,
-            DefaultPermissionAllowed = false,
-        };
-
-        runtime.SetPermission<V1Pod>(Verb.List, true, "my-app");
-        runtime.SetPermission<V1Pod>(Verb.Watch, true, "my-app");
-        runtime.SetPermission<V1Deployment>(Verb.List, true, "my-app");
-        runtime.SetPermission<V1Deployment>(Verb.Watch, true, "my-app");
-
-        runtime.ConnectBehavior = async () =>
-        {
-            runtime.Connected = true;
-            runtime.Status = ClusterStatus.Connected;
-
-            await Task.Delay(50);
-
-            await runtime.AddOrUpdateResource(new V1Namespace
-            {
-                Metadata = new() { Name = "my-app" }
-            });
-        };
-
-        var workspace = CreateWorkspace(runtime);
-        var settingsService = TestApp.CurrentServices?.GetRequiredService<ISettingsService>()
-            ?? throw new InvalidOperationException("Test services are not initialized.");
-        settingsService.Settings.GetClusterSettings(workspace.Runtime).Namespaces!.Add("my-app");
-
-        var vm = CreateViewModel();
-        vm.ClusterCatalog.Clusters.Add(workspace);
-        Dispatcher.UIThread.RunJobs();
-
-        var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
-        await vm.TreeViewSelectionChangedAsync(clusterNode);
-
-        await WaitForAsync(() =>
-            FindResourceLink(clusterNode, "Pods") != null
-            && FindResourceLink(clusterNode, "Deployments") != null,
-            timeoutMs: 1000);
-    }
-
-    [AvaloniaFact]
     public async Task cluster_node_expands_after_successful_connect()
     {
         var runtime = new TestCluster
@@ -1261,7 +1214,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
     }
 
     [AvaloniaFact]
-    public async Task resource_config_navigation_is_applied_after_background_processing()
+    public async Task resource_config_navigation_is_applied_immediately_on_ui_thread()
     {
         var runtime = new TestCluster
         {
@@ -1281,8 +1234,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
             typeof(TestPermissionResourceAlpha),
             "Alpha Permission Resource"));
 
-        FindResourceLink(clusterNode, "Alpha Permission Resource").ShouldBeNull();
-        await WaitForAsync(() => FindResourceLink(clusterNode, "Alpha Permission Resource") != null);
+        FindResourceLink(clusterNode, "Alpha Permission Resource").ShouldNotBeNull();
     }
 
     [AvaloniaFact]

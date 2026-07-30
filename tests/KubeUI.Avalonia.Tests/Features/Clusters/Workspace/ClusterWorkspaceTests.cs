@@ -445,6 +445,38 @@ public class ClusterWorkspaceTests : AvaloniaTestBase
     }
 
     [AvaloniaFact]
+    public async Task concurrent_connect_calls_share_one_in_flight_connection()
+    {
+        var runtime = new TestCluster
+        {
+            Connected = false,
+            Status = ClusterStatus.None,
+        };
+        var connectionStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseConnection = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var connectCallCount = 0;
+        runtime.ConnectBehavior = async () =>
+        {
+            Interlocked.Increment(ref connectCallCount);
+            connectionStarted.SetResult();
+            await releaseConnection.Task;
+            runtime.Connected = true;
+            runtime.Status = ClusterStatus.Connected;
+        };
+        var workspace = CreateWorkspace(runtime);
+
+        var firstConnect = workspace.Connect();
+        await connectionStarted.Task;
+        var secondConnect = workspace.Connect();
+
+        secondConnect.ShouldBeSameAs(firstConnect);
+        connectCallCount.ShouldBe(1);
+
+        releaseConnection.SetResult();
+        await Task.WhenAll(firstConnect, secondConnect);
+    }
+
+    [AvaloniaFact]
     public async Task connect_skips_workspace_initialization_when_runtime_remains_disconnected()
     {
         var runtime = new TestCluster

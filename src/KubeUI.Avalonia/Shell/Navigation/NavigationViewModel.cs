@@ -36,15 +36,8 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
     public new IFactory Factory => _serviceProvider.GetRequiredService<IFactory>();
     private readonly Dictionary<ClusterWorkspace, ClusterNavigationNode> _clusterNodes = [];
     private readonly Dictionary<IClusterRuntime, ClusterWorkspace> _workspacesByRuntime = [];
-    private readonly object _pendingResourceNavigationUpdatesLock = new();
-    private readonly Dictionary<ClusterWorkspace, HashSet<IResourceConfig>> _pendingResourceNavigationUpdates = [];
-    private readonly HashSet<ClusterWorkspace> _scheduledResourceNavigationUpdates = [];
     private readonly NavigationDocumentService _documentService;
     private readonly IResourceIconService _iconService;
-
-    private sealed record ResourceNavigationUpdateBatch(
-        IResourceConfig[] ProcessedResourceConfigs,
-        IResourceConfig[] ResourceConfigSnapshot);
 
     [ObservableProperty]
     public partial ClusterWorkspaceCatalog ClusterCatalog { get; set; }
@@ -95,11 +88,6 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
 
         _clusterNodes.Clear();
         _workspacesByRuntime.Clear();
-        lock (_pendingResourceNavigationUpdatesLock)
-        {
-            _pendingResourceNavigationUpdates.Clear();
-            _scheduledResourceNavigationUpdates.Clear();
-        }
         Clusters.Clear();
     }
 
@@ -295,12 +283,6 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
 
     private void ReloadClusters()
     {
-        lock (_pendingResourceNavigationUpdatesLock)
-        {
-            _pendingResourceNavigationUpdates.Clear();
-            _scheduledResourceNavigationUpdates.Clear();
-        }
-
         foreach (var cluster in _clusterNodes.Keys.ToList())
         {
             UnsubscribeCluster(cluster);
@@ -342,12 +324,6 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
 
     private void RemoveClusterNode(ClusterWorkspace cluster)
     {
-        lock (_pendingResourceNavigationUpdatesLock)
-        {
-            _pendingResourceNavigationUpdates.Remove(cluster);
-            _scheduledResourceNavigationUpdates.Remove(cluster);
-        }
-
         if (!_clusterNodes.Remove(cluster, out var node))
         {
             return;
@@ -409,73 +385,13 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
 
     private void OnClusterResourceConfigProcessed(ClusterWorkspace cluster, IResourceConfig resourceConfig)
     {
-        var scheduleUpdate = false;
-        lock (_pendingResourceNavigationUpdatesLock)
+        if (Dispatcher.UIThread.CheckAccess())
         {
-            if (!_pendingResourceNavigationUpdates.TryGetValue(cluster, out var resourceConfigs))
-            {
-                resourceConfigs = [];
-                _pendingResourceNavigationUpdates.Add(cluster, resourceConfigs);
-            }
-
-            resourceConfigs.Add(resourceConfig);
-            scheduleUpdate = _scheduledResourceNavigationUpdates.Add(cluster);
-        }
-
-        if (scheduleUpdate)
-        {
-            _ = PrepareAndApplyQueuedResourceNavigationUpdatesAsync(cluster);
-        }
-    }
-
-    private Task PrepareAndApplyQueuedResourceNavigationUpdatesAsync(ClusterWorkspace cluster)
-    {
-        return Task.Run(() =>
-        {
-            IResourceConfig[] resourceConfigs;
-            lock (_pendingResourceNavigationUpdatesLock)
-            {
-                _scheduledResourceNavigationUpdates.Remove(cluster);
-                if (!_pendingResourceNavigationUpdates.Remove(cluster, out var pendingResourceConfigs))
-                {
-                    return;
-                }
-
-                resourceConfigs = pendingResourceConfigs.ToArray();
-            }
-
-            var resourceConfigSnapshot = resourceConfigs.Any(static config =>
-                    config.Type == typeof(V1CustomResourceDefinition) || config.IsCustomResource)
-                ? cluster.GetResourceConfigs().ToArray()
-                : [];
-            var batch = new ResourceNavigationUpdateBatch(resourceConfigs, resourceConfigSnapshot);
-            Dispatcher.UIThread.Post(
-                () => ApplyResourceNavigationUpdateBatch(cluster, batch),
-                DispatcherPriority.Background);
-        });
-    }
-
-    private void ApplyResourceNavigationUpdateBatch(ClusterWorkspace cluster, ResourceNavigationUpdateBatch batch)
-    {
-        if (!_clusterNodes.ContainsKey(cluster)
-            || cluster.Runtime.Status != ClusterStatus.Connected)
-        {
+            ApplyResourceConfigNavigation(cluster, resourceConfig);
             return;
         }
 
-        if (batch.ProcessedResourceConfigs.Length == 1)
-        {
-            ApplyResourceConfigNavigation(
-                cluster,
-                batch.ProcessedResourceConfigs[0],
-                batch.ResourceConfigSnapshot);
-            return;
-        }
-
-        foreach (var resourceConfig in batch.ProcessedResourceConfigs)
-        {
-            ApplyResourceConfigNavigation(cluster, resourceConfig, batch.ResourceConfigSnapshot);
-        }
+        Dispatcher.UIThread.Post(() => ApplyResourceConfigNavigation(cluster, resourceConfig));
     }
 
     private void OnClusterResourceSeeded(IClusterRuntime runtime, GroupApiVersionKind kind)
@@ -539,6 +455,11 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
 
             RemoveNavigationItem(node.NavigationItems, $"{cluster.Runtime.Name}-{removedKind}");
             RemoveEmptyCategories(node.NavigationItems, cluster);
+
+            foreach (var resourceConfig in cluster.GetResourceConfigs())
+            {
+                OnClusterResourceConfigProcessed(cluster, resourceConfig);
+            }
         });
     }
 
@@ -698,17 +619,15 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
         }
     }
 
-    private static bool RemoveNavigationItem(IEnumerable<NavigationItem> items, string id)
+    private static bool RemoveNavigationItem(ObservableCollection<NavigationItem> items, string id)
     {
-        foreach (var item in items.ToList())
+        for (var i = items.Count - 1; i >= 0; i--)
         {
+            var item = items[i];
             if (item.Id == id)
             {
-                if (items is ICollection<NavigationItem> collection)
-                {
-                    collection.Remove(item);
-                    return true;
-                }
+                items.RemoveAt(i);
+                return true;
             }
 
             if (RemoveNavigationItem(item.NavigationItems, id))
