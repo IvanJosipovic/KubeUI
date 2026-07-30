@@ -125,6 +125,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         _suppressResourceTypeChanges = false;
         _suppressResourceChanges = true;
         _resourceChangesSubscription = cluster.Runtime.ConnectResources().Subscribe(OnResourceChange);
+        LoadCurrentResources(cluster.Runtime);
 
         SubscribeToSelectedNamespaces();
         cluster.ResourceConfigProcessed += ResourceConfigProcessed;
@@ -144,6 +145,22 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 
         _suppressResourceChanges = false;
         Run();
+    }
+
+    private void LoadCurrentResources(IClusterRuntime runtime)
+    {
+        foreach (KeyValuePair<GroupApiVersionKind, object> entry in runtime.Objects)
+        {
+            if (entry.Value is not IResourceContainer container)
+            {
+                continue;
+            }
+
+            foreach (IKubernetesObject<V1ObjectMeta> resource in container.Snapshot())
+            {
+                ApplyResourceChange(new ResourceChange(WatchEventType.Added, entry.Key, resource));
+            }
+        }
     }
 
     private void SelectedNamespaces_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e) => Run();

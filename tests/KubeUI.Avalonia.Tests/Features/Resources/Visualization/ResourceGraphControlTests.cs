@@ -160,6 +160,44 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
         await WaitForAsync(() => reopenedView.Graph!.Resources.Any(resource => resource.Name() == secret.Name()));
     }
 
+    [AvaloniaTheory]
+    [InlineData(100)]
+    [InlineData(200)]
+    [InlineData(300)]
+    public async Task reopening_visualization_from_selected_namespace_as_root_keeps_secret_loaded_during_config_initialization(int responseDelayMilliseconds)
+    {
+        V1Secret secret = new()
+        {
+            ApiVersion = V1Secret.KubeApiVersion,
+            Kind = V1Secret.KubeKind,
+            Metadata = new()
+            {
+                Name = "config-loaded-secret",
+                NamespaceProperty = "platform-dev-ijosipov",
+            },
+        };
+
+        await using var clusterScope = await KubernetesTestWorkspaceScope.CreateAsync(
+            TestApp.CurrentServices!,
+            harness => harness.ResponseDelay = TimeSpan.FromMilliseconds(responseDelayMilliseconds));
+        var cluster = clusterScope.Workspace;
+        V1Namespace namespaceResource = new() { Metadata = new() { Name = "platform-dev-ijosipov" } };
+
+        using (VisualizationViewModel firstView = new(new ResourceRelationshipBuilder()))
+        {
+            firstView.Initialize(cluster);
+            firstView.SelectedNamespaces.Add(namespaceResource);
+            clusterScope.Harness.AddInitialResource(secret);
+            await cluster.Runtime.SeedResource<V1Secret>(true);
+            await WaitForAsync(() => firstView.Graph!.Resources.Any(resource => resource.Name() == secret.Name()));
+        }
+
+        using VisualizationViewModel reopenedView = new(new ResourceRelationshipBuilder());
+        reopenedView.Initialize(cluster, namespaceResource);
+
+        await WaitForAsync(() => reopenedView.Graph!.Resources.Any(resource => resource.Name() == secret.Name()));
+    }
+
     [Fact]
     public void root_filter_does_not_expand_downward_from_parents()
     {

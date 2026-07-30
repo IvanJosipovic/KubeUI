@@ -17,9 +17,12 @@ internal sealed class KubernetesTestWorkspaceScope : IDisposable, IAsyncDisposab
 
     public KubernetesClusterScenarioHarness Harness => _harness;
 
-    public static async Task<KubernetesTestWorkspaceScope> CreateAsync(IServiceProvider services)
+    public static async Task<KubernetesTestWorkspaceScope> CreateAsync(
+        IServiceProvider services,
+        Action<KubernetesClusterScenarioHarness>? configure = null)
     {
         var harness = new KubernetesClusterScenarioHarness();
+        configure?.Invoke(harness);
         await harness.InitializeAsync(TestContext.Current.CancellationToken);
         var workspace = ActivatorUtilities.CreateInstance<ClusterWorkspace>(services, harness.Cluster);
         return new KubernetesTestWorkspaceScope(harness, workspace);
