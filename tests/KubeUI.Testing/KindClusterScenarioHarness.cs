@@ -36,6 +36,7 @@ public sealed class KindClusterScenarioHarness : IClusterScenarioHarness
 
         KubeConfig = await Kind.GetK8SConfiguration(_name, cancellationToken).ConfigureAwait(false);
         Kubernetes = await Kind.GetKubernetesClient(_name, cancellationToken).ConfigureAwait(false);
+        await WaitForDefaultServiceAccountAsync(cancellationToken).ConfigureAwait(false);
         Cluster = await CreateClusterAsync(
             $"kind-{_name}",
             KubeConfig,
@@ -58,6 +59,10 @@ public sealed class KindClusterScenarioHarness : IClusterScenarioHarness
     public async Task<T> ReplaceDirectAsync<T>(T item, CancellationToken cancellationToken = default) where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
         using var client = Kubernetes.GetGenericClient<T>();
+        T current = string.IsNullOrEmpty(item.Namespace())
+            ? await client.ReadAsync<T>(item.Name(), cancellationToken)
+            : await client.ReadNamespacedAsync<T>(item.Namespace(), item.Name(), cancellationToken);
+        item.Metadata.ResourceVersion = current.Metadata.ResourceVersion;
         return await client.ReplaceAsync<T>(item, item.Name(), cancellationToken);
     }
 
@@ -193,6 +198,29 @@ public sealed class KindClusterScenarioHarness : IClusterScenarioHarness
         }
 
         throw new TimeoutException($"Resource {typeof(T).Name}/{@namespace}/{name} was not observed.");
+    }
+
+    private async Task WaitForDefaultServiceAccountAsync(CancellationToken cancellationToken)
+    {
+        var deadline = DateTime.UtcNow.AddSeconds(30);
+        while (DateTime.UtcNow < deadline)
+        {
+            try
+            {
+                await Kubernetes.CoreV1.ReadNamespacedServiceAccountAsync(
+                    "default",
+                    "default",
+                    cancellationToken: cancellationToken).ConfigureAwait(false);
+                return;
+            }
+            catch (k8s.Autorest.HttpOperationException exception) when (exception.Response?.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                using var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(100));
+                await timer.WaitForNextTickAsync(cancellationToken).ConfigureAwait(false);
+            }
+        }
+
+        throw new TimeoutException("The Kind cluster did not create the default/default ServiceAccount.");
     }
 
     private async Task<IClusterRuntime> CreateClusterAsync(
