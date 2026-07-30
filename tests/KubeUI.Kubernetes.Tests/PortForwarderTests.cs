@@ -204,6 +204,7 @@ public sealed class PortForwarderTests
         await cluster.AddOrUpdateResource(CreateService());
         await cluster.AddOrUpdateResource(new V1EndpointSlice
         {
+            AddressType = "IPv4",
             Metadata = new V1ObjectMeta
             {
                 Name = "prometheus-slice",
@@ -222,6 +223,7 @@ public sealed class PortForwarderTests
                 },
             ],
         });
+        await ClusterScenarioAssertions.WaitForResourceAsync<V1EndpointSlice>(cluster, "default", "prometheus-slice");
 
         using var sut = new PortForwarder(cluster, "default");
         sut.SetService("prometheus", 9090);
@@ -246,6 +248,7 @@ public sealed class PortForwarderTests
         await cluster.AddOrUpdateResource(CreateService());
         await cluster.AddOrUpdateResource(new V1EndpointSlice
         {
+            AddressType = "IPv4",
             Metadata = new V1ObjectMeta
             {
                 Name = "prometheus-slice",
@@ -267,6 +270,7 @@ public sealed class PortForwarderTests
             [
                 new V1Endpoint
                 {
+                    Addresses = ["192.0.2.1"],
                     Conditions = new V1EndpointConditions
                     {
                         Ready = false,
@@ -280,6 +284,7 @@ public sealed class PortForwarderTests
                 },
             ],
         });
+        await ClusterScenarioAssertions.WaitForResourceAsync<V1EndpointSlice>(cluster, "default", "prometheus-slice");
 
         using var sut = new PortForwarder(cluster, "default");
         sut.SetService("prometheus", 9090);
@@ -287,7 +292,7 @@ public sealed class PortForwarderTests
 
         await ConnectAsync(sut.LocalPort, TestContext.Current.CancellationToken);
 
-        await WaitForAsync(() => sut.Status == "No pods found for Service", cancellationToken: TestContext.Current.CancellationToken);
+        await WaitForAsync(() => sut.Status == "No pods found for Service", timeoutMs: 10000, cancellationToken: TestContext.Current.CancellationToken);
         await WaitForAsync(() => sut.Connections == 0, cancellationToken: TestContext.Current.CancellationToken);
     }
 

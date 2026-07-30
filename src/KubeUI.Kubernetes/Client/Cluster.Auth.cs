@@ -208,6 +208,11 @@ public partial class Cluster
             return false;
         }
 
+        if (Namespaces is null)
+        {
+            return false;
+        }
+
         foreach (var item in Namespaces)
         {
             var @namespace = item.Name();

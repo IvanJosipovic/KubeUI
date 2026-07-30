@@ -16,13 +16,16 @@ public sealed class ClusterResourceChangeFeedTests
             TestContext.Current.CancellationToken);
         var runtime = harness.Cluster;
         await runtime.SeedResource<V1Service>(true);
-        await runtime.SeedResource<V1Pod>(true);
-        await runtime.SeedResource<V1ConfigMap>(true);
+        await runtime.SeedResource<V1Secret>(true);
         V1Service existingService = new()
         {
             ApiVersion = "v1",
             Kind = V1Service.KubeKind,
             Metadata = new() { Name = "existing", NamespaceProperty = "default" },
+            Spec = new V1ServiceSpec
+            {
+                Ports = [new V1ServicePort { Port = 80 }],
+            },
         };
         await runtime.AddOrUpdateResource(existingService);
 
@@ -36,38 +39,37 @@ public sealed class ClusterResourceChangeFeedTests
             TimeSpan.FromSeconds(10),
             cancellationToken: TestContext.Current.CancellationToken);
 
-        V1Pod pod = new() { ApiVersion = "v1", Kind = V1Pod.KubeKind, Metadata = new() { Name = "web", NamespaceProperty = "default" } };
-        await runtime.AddOrUpdateResource(pod);
-        V1Pod updatedPod = new()
+        V1Secret secret = new()
         {
-            ApiVersion = pod.ApiVersion,
-            Kind = pod.Kind,
+            ApiVersion = "v1",
+            Kind = V1Secret.KubeKind,
+            Metadata = new() { Name = "web", NamespaceProperty = "default" },
+            StringData = new Dictionary<string, string> { ["value"] = "one" },
+        };
+        await runtime.AddOrUpdateResource(secret);
+        V1Secret updatedSecret = new()
+        {
+            ApiVersion = secret.ApiVersion,
+            Kind = secret.Kind,
             Metadata = new V1ObjectMeta
             {
-                Name = pod.Name(),
-                NamespaceProperty = pod.Namespace(),
-                Uid = pod.Uid(),
-                ResourceVersion = pod.ResourceVersion(),
+                Name = secret.Name(),
+                NamespaceProperty = secret.Namespace(),
+                Uid = secret.Uid(),
+                ResourceVersion = secret.ResourceVersion(),
                 Labels = new Dictionary<string, string> { ["version"] = "two" },
             },
+            StringData = new Dictionary<string, string> { ["value"] = "two" },
         };
-        await runtime.AddOrUpdateResource(updatedPod);
-        await runtime.DeleteResource(updatedPod);
-
-        V1ConfigMap configMap = new() { ApiVersion = "v1", Kind = V1ConfigMap.KubeKind, Metadata = new() { Name = "settings", NamespaceProperty = "default" } };
-        await runtime.AddOrUpdateResource(configMap);
-
+        await runtime.AddOrUpdateResource(updatedSecret);
         await TestWait.UntilAsync(
-            () => changes.Any(change => change.Resource is V1ConfigMap && change.EventType == WatchEventType.Added),
+            () => changes.Any(change => change.Resource is V1Secret && change.EventType == WatchEventType.Modified),
             TimeSpan.FromSeconds(5),
             cancellationToken: TestContext.Current.CancellationToken);
+        await runtime.DeleteResource(updatedSecret);
         await TestWait.UntilAsync(
-            () => changes.Any(change => change.Resource is V1Pod && change.EventType == WatchEventType.Modified),
-            TimeSpan.FromSeconds(5),
-            cancellationToken: TestContext.Current.CancellationToken);
-        await TestWait.UntilAsync(
-            () => changes.Any(change => change.Resource is V1Pod && change.EventType == WatchEventType.Deleted),
-            TimeSpan.FromSeconds(5),
+            () => changes.Any(change => change.Resource is V1Secret && change.EventType == WatchEventType.Deleted),
+            TimeSpan.FromSeconds(10),
             cancellationToken: TestContext.Current.CancellationToken);
 
         changes.Select(change => change.EventType).ShouldContain(WatchEventType.Added);

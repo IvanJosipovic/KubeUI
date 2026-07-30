@@ -1,7 +1,9 @@
 using System.Collections;
+using System.Net;
 using System.Reflection;
 using System.Text;
 using k8s;
+using k8s.Autorest;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
 using KubeUI.Testing;
@@ -339,8 +341,18 @@ public abstract class ClusterScenarioAssertions
         await cluster.SeedResource<V1Namespace>(true);
         await harness.CreateDirectAsync(new V1Namespace { Metadata = new() { Name = "team-a" } }, TestContext.Current.CancellationToken);
         await harness.CreateDirectAsync(new V1Namespace { Metadata = new() { Name = "team-b" } }, TestContext.Current.CancellationToken);
-        await harness.CreateDirectAsync(new V1Pod { Metadata = new() { Name = "pod-a", NamespaceProperty = "team-a" } }, TestContext.Current.CancellationToken);
-        await harness.CreateDirectAsync(new V1Pod { Metadata = new() { Name = "pod-b", NamespaceProperty = "team-b" } }, TestContext.Current.CancellationToken);
+        await EnsureServiceAccountAsync(harness, "team-a");
+        await EnsureServiceAccountAsync(harness, "team-b");
+        await harness.CreateDirectAsync(new V1Pod
+        {
+            Metadata = new() { Name = "pod-a", NamespaceProperty = "team-a" },
+            Spec = new V1PodSpec { Containers = [new V1Container { Name = "app", Image = "busybox" }] },
+        }, TestContext.Current.CancellationToken);
+        await harness.CreateDirectAsync(new V1Pod
+        {
+            Metadata = new() { Name = "pod-b", NamespaceProperty = "team-b" },
+            Spec = new V1PodSpec { Containers = [new V1Container { Name = "app", Image = "busybox" }] },
+        }, TestContext.Current.CancellationToken);
 
         await cluster.SeedResource<V1Pod>(true);
 
@@ -348,7 +360,25 @@ public abstract class ClusterScenarioAssertions
         await WaitForResourceAsync<V1Pod>(cluster, "team-b", "pod-b");
 
         var pods = cluster.GetResourceList<V1Pod>();
-        pods.Select(x => x.Namespace()).Order(StringComparer.Ordinal).ShouldBe(["team-a", "team-b"]);
+        pods
+            .Where(x => x.Namespace() is "team-a" or "team-b")
+            .Select(x => x.Namespace())
+            .Order(StringComparer.Ordinal)
+            .ShouldBe(["team-a", "team-b"]);
+    }
+
+    private static async Task EnsureServiceAccountAsync(IClusterScenarioHarness harness, string @namespace)
+    {
+        try
+        {
+            await harness.CreateDirectAsync(new V1ServiceAccount
+            {
+                Metadata = new() { Name = "default", NamespaceProperty = @namespace },
+            }, TestContext.Current.CancellationToken);
+        }
+        catch (HttpOperationException exception) when (exception.Response.StatusCode == HttpStatusCode.Conflict)
+        {
+        }
     }
 
     public static async Task<T?> WaitForResourceAsync<T>(IClusterRuntime cluster, string? @namespace, string name, TimeSpan? timeout = null, int pollIntervalMs = 100, Func<T, bool>? predicate = null, CancellationToken cancellationToken = default)

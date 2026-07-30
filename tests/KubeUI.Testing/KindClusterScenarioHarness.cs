@@ -13,6 +13,7 @@ public sealed class KindClusterScenarioHarness : IClusterScenarioHarness
     private readonly KubernetesTestSettingsStore _settingsStore = new();
     private string _name = Guid.NewGuid().ToString("N");
     private readonly string _kubeConfigPath = Path.Combine(Path.GetTempPath(), $"kubeui-kind-{Guid.NewGuid():N}.yaml");
+    private readonly List<KubeUI.Kubernetes.Cluster> _connectedClusters = [];
 
     public KindClusterScenarioHarness()
     {
@@ -35,7 +36,11 @@ public sealed class KindClusterScenarioHarness : IClusterScenarioHarness
 
         KubeConfig = await Kind.GetK8SConfiguration(_name, cancellationToken).ConfigureAwait(false);
         Kubernetes = await Kind.GetKubernetesClient(_name, cancellationToken).ConfigureAwait(false);
-        Cluster = await CreateClusterAsync($"kind-{_name}", KubeConfig, cancellationToken).ConfigureAwait(false);
+        Cluster = await CreateClusterAsync(
+            $"kind-{_name}",
+            KubeConfig,
+            cancellationToken: cancellationToken).ConfigureAwait(false);
+        await PrimePermissionsAsync((KubeUI.Kubernetes.Cluster)Cluster, "default", cancellationToken);
     }
 
     public async Task<T> CreateDirectAsync<T>(T item, CancellationToken cancellationToken = default) where T : class, IKubernetesObject<V1ObjectMeta>, new()
@@ -75,6 +80,9 @@ public sealed class KindClusterScenarioHarness : IClusterScenarioHarness
         var yaml = includeNamespaceFallback ? SharedScenarioData.LimitedAccessNoNamespaceYaml : SharedScenarioData.LimitedAccessYaml;
 
         await Cluster.ImportYaml(new MemoryStream(Encoding.UTF8.GetBytes(yaml))).WaitAsync(cancellationToken);
+        var rootCluster = (KubeUI.Kubernetes.Cluster)Cluster;
+        await rootCluster.UpdateCanI<V1ServiceAccount>(Verb.List).WaitAsync(cancellationToken);
+        await rootCluster.UpdateCanI<V1ServiceAccount>(Verb.Watch).WaitAsync(cancellationToken);
         await Cluster.SeedResource<V1ServiceAccount>(true).WaitAsync(cancellationToken);
         await WaitForResourceAsync<V1ServiceAccount>(Cluster, "my-app", "my-serviceaccount", cancellationToken: cancellationToken);
 
@@ -92,34 +100,56 @@ public sealed class KindClusterScenarioHarness : IClusterScenarioHarness
         user.Name = clusterName;
         user.UserCredentials = new() { Token = token };
 
-        var limited = await CreateClusterAsync(clusterName, config, cancellationToken);
-
-        if (includeNamespaceFallback)
-        {
-            _settingsStore.SetClusterNamespaces(limited, "my-app");
-        }
+        var limited = await CreateClusterAsync(
+            clusterName,
+            config,
+            includeNamespaceFallback ? ["my-app"] : null,
+            cancellationToken);
+        await limited.Connect().WaitAsync(cancellationToken);
+        await PrimePermissionsAsync((KubeUI.Kubernetes.Cluster)limited, "my-app", cancellationToken);
 
         return limited;
     }
 
     public async ValueTask DisposeAsync()
     {
-        await _services.DisposeAsync();
-
         try
         {
-            await Kind.DeleteCluster(_name);
+            foreach (var cluster in _connectedClusters)
+            {
+                try
+                {
+                    await cluster.Disconnect();
+                }
+                catch
+                {
+                }
+            }
         }
-        catch
+        finally
         {
-        }
+            try
+            {
+                await _services.DisposeAsync();
+            }
+            finally
+            {
+                try
+                {
+                    await Kind.DeleteCluster(_name);
+                }
+                catch
+                {
+                }
 
-        try
-        {
-            File.Delete(_kubeConfigPath);
-        }
-        catch
-        {
+                try
+                {
+                    File.Delete(_kubeConfigPath);
+                }
+                catch
+                {
+                }
+            }
         }
     }
 
@@ -165,14 +195,66 @@ public sealed class KindClusterScenarioHarness : IClusterScenarioHarness
         throw new TimeoutException($"Resource {typeof(T).Name}/{@namespace}/{name} was not observed.");
     }
 
-    private async Task<IClusterRuntime> CreateClusterAsync(string name, K8SConfiguration config, CancellationToken cancellationToken = default)
+    private async Task<IClusterRuntime> CreateClusterAsync(
+        string name,
+        K8SConfiguration config,
+        IReadOnlyCollection<string>? fallbackNamespaces = null,
+        CancellationToken cancellationToken = default)
     {
         var cluster = _services.GetRequiredService<IClusterRuntime>();
+        if (cluster is KubeUI.Kubernetes.Cluster concreteCluster)
+        {
+            _connectedClusters.Add(concreteCluster);
+            if (fallbackNamespaces is not null)
+            {
+                _settingsStore.SetClusterNamespaces(concreteCluster, [.. fallbackNamespaces]);
+            }
+        }
+
         cluster.Name = name;
         cluster.KubeConfig = config;
         cluster.KubeConfigPath = string.Empty;
         await cluster.Connect().WaitAsync(cancellationToken).ConfigureAwait(false);
         return cluster;
+    }
+
+    private static async Task PrimePermissionsAsync(
+        KubeUI.Kubernetes.Cluster cluster,
+        string @namespace,
+        CancellationToken cancellationToken)
+    {
+        foreach (var type in new[]
+        {
+            typeof(V1Namespace),
+            typeof(V1Node),
+            typeof(V1Secret),
+            typeof(V1Service),
+            typeof(V1EndpointSlice),
+            typeof(Corev1Event),
+            typeof(V1Pod),
+            typeof(V1Deployment),
+            typeof(V1ServiceAccount),
+            typeof(V1CronJob),
+            typeof(V1Job),
+            typeof(V1CustomResourceDefinition)
+        })
+        {
+            foreach (var verb in Enum.GetValues<Verb>())
+            {
+                await cluster.UpdateCanI(type, verb).WaitAsync(cancellationToken);
+                if (type != typeof(V1Namespace) && type != typeof(V1Node))
+                {
+                    await cluster.UpdateCanI(type, verb, @namespace).WaitAsync(cancellationToken);
+                }
+            }
+        }
+
+        await cluster.UpdateCanI(typeof(V1Pod), Verb.Get, subresource: "log").WaitAsync(cancellationToken);
+        await cluster.UpdateCanI(typeof(V1Pod), Verb.Create, subresource: "exec").WaitAsync(cancellationToken);
+        await cluster.UpdateCanI(typeof(V1Pod), Verb.Create, subresource: "portforward").WaitAsync(cancellationToken);
+        await cluster.UpdateCanI(typeof(V1Pod), Verb.Get, @namespace, "log").WaitAsync(cancellationToken);
+        await cluster.UpdateCanI(typeof(V1Pod), Verb.Create, @namespace, "exec").WaitAsync(cancellationToken);
+        await cluster.UpdateCanI(typeof(V1Pod), Verb.Create, @namespace, "portforward").WaitAsync(cancellationToken);
     }
 
 }
