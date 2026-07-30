@@ -33,7 +33,7 @@ jobs:
             --coverage-output-format cobertura \
             --coverage-output coverage.cobertura.xml
 
-      - name: Test Kubernetes E2E
+      - name: Test Kubernetes
         run: |
           dotnet test \
             --project tests/KubeUI.Kubernetes.Tests/KubeUI.Kubernetes.Tests.csproj \
@@ -46,8 +46,38 @@ jobs:
             --coverage \
             --coverage-output-format cobertura \
             --coverage-output coverage.cobertura.xml
-        env:
-          KUBEUI_RUN_KIND_TESTS: 1
+
+    #   - name: Test Avalonia E2E
+    #     run: |
+    #       dotnet test \
+    #         --project tests/KubeUI.Avalonia.Tests/KubeUI.Avalonia.Tests.csproj \
+    #         --configuration Release \
+    #         --no-build \
+    #         --hangdump \
+    #         --hangdump-timeout 1m \
+    #         --report-xunit-trx \
+    #         --report-xunit-trx-filename test-results.trx \
+    #         --coverage \
+    #         --coverage-output-format cobertura \
+    #         --coverage-output coverage.cobertura.xml
+    #     env:
+    #       KUBEUI_RUN_KIND_TESTS: 1
+
+    #   - name: Test Kubernetes E2E
+    #     run: |
+    #       dotnet test \
+    #         --project tests/KubeUI.Kubernetes.Tests/KubeUI.Kubernetes.Tests.csproj \
+    #         --configuration Release \
+    #         --no-build \
+    #         --hangdump \
+    #         --hangdump-timeout 1m \
+    #         --report-xunit-trx \
+    #         --report-xunit-trx-filename test-results.trx \
+    #         --coverage \
+    #         --coverage-output-format cobertura \
+    #         --coverage-output coverage.cobertura.xml
+    #     env:
+    #       KUBEUI_RUN_KIND_TESTS: 1
 
       - name: Upload test dump
         if: failure()

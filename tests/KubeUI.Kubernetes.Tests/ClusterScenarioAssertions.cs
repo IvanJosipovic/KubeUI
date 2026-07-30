@@ -352,6 +352,7 @@ public abstract class ClusterScenarioAssertions
     public static async Task<T?> WaitForResourceAsync<T>(IClusterRuntime cluster, string? @namespace, string name, TimeSpan? timeout = null, int pollIntervalMs = 100, Func<T, bool>? predicate = null, CancellationToken cancellationToken = default)
         where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
+        cancellationToken = cancellationToken == default ? TestContext.Current.CancellationToken : cancellationToken;
         var effectiveTimeout = timeout ?? TimeSpan.FromSeconds(30);
         var start = DateTime.UtcNow;
 
@@ -372,6 +373,7 @@ public abstract class ClusterScenarioAssertions
     private static async Task WaitForDeletionAsync<T>(IClusterRuntime cluster, string? @namespace, string name, TimeSpan? timeout = null, int pollIntervalMs = 100, CancellationToken cancellationToken = default)
         where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
+        cancellationToken = cancellationToken == default ? TestContext.Current.CancellationToken : cancellationToken;
         var effectiveTimeout = timeout ?? TimeSpan.FromSeconds(30);
         var start = DateTime.UtcNow;
 
@@ -390,6 +392,7 @@ public abstract class ClusterScenarioAssertions
 
     private static async Task<Type?> WaitForGeneratedTypeAsync(IClusterRuntime cluster, string group, string version, string kind, TimeSpan? timeout = null, int pollIntervalMs = 100, CancellationToken cancellationToken = default)
     {
+        cancellationToken = cancellationToken == default ? TestContext.Current.CancellationToken : cancellationToken;
         var effectiveTimeout = timeout ?? TimeSpan.FromSeconds(30);
         var start = DateTime.UtcNow;
 

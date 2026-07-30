@@ -1422,7 +1422,9 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         await AddOrUpdateAsync(cluster, Pod("ns4", "d"));
         await AddOrUpdateAsync(cluster, Pod("ns5", "e"));
 
+        await WaitForAsync(() => vm.View.Count == 5);
         vm.SelectionModel.Select(1);
+        await WaitForAsync(() => vm.SelectedItem is not null);
         vm.SelectedItem.ShouldNotBeNull();
         vm.SelectedItem!.Namespace().ShouldBe("ns2");
 
