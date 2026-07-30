@@ -2,7 +2,6 @@ using Avalonia.Headless.XUnit;
 using Avalonia.Controls;
 using Avalonia.Threading;
 using Avalonia;
-using DynamicData;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using k8s;
@@ -61,10 +60,11 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
         }
     }
 
-    [AvaloniaFact]
-    public async Task visualizing_namespace_links_namespace_selector_and_can_unlink()
+    [AvaloniaTheory, KubernetesBackendDataAttribute]
+    [Trait("Category", "Kind")]
+    public async Task visualizing_namespace_links_namespace_selector_and_can_unlink(KubernetesBackend backend)
     {
-        await using var clusterScope = await KubernetesTestWorkspaceScope.CreateAsync(TestApp.CurrentServices!);
+        await using var clusterScope = await KubernetesTestWorkspaceScope.CreateAsync(TestApp.CurrentServices!, backend);
         var cluster = clusterScope.Workspace;
         V1Namespace namespaceResource = new() { Metadata = new() { Name = "team-a" } };
         await cluster.Runtime.AddOrUpdateResource(namespaceResource);
@@ -92,12 +92,14 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
         viewModel.SelectedNamespaces.Select(x => x.Name()).ShouldNotContain("team-b");
     }
 
-    [AvaloniaFact]
-    public async Task visualizing_selected_namespace_includes_pvc_already_loaded_before_view_initialization()
+    [AvaloniaTheory, KubernetesBackendDataAttribute]
+    [Trait("Category", "Kind")]
+    public async Task visualizing_selected_namespace_includes_pvc_already_loaded_before_view_initialization(KubernetesBackend backend)
     {
-        await using var clusterScope = await KubernetesTestWorkspaceScope.CreateAsync(TestApp.CurrentServices!);
+        await using var clusterScope = await KubernetesTestWorkspaceScope.CreateAsync(TestApp.CurrentServices!, backend);
         var cluster = clusterScope.Workspace;
         V1Namespace namespaceResource = new() { Metadata = new() { Name = "platform-dev-ijosipov" } };
+        await clusterScope.ScenarioHarness.CreateDirectAsync(namespaceResource, TestContext.Current.CancellationToken);
         await cluster.Runtime.SeedResource<V1PersistentVolumeClaim>(true);
 
         V1PersistentVolumeClaim claim = new()
@@ -116,8 +118,18 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
                 StorageClassName = "default",
             },
         };
-        ((DynamicData.SourceCache<V1PersistentVolumeClaim, string>)cluster.Runtime.GetResourceSourceCache<V1PersistentVolumeClaim>()).AddOrUpdate(claim);
-        cluster.Runtime.GetResourceList<V1PersistentVolumeClaim>().ShouldContain(resource => resource.Name() == claim.Name());
+        if (backend == KubernetesBackend.Fake)
+        {
+            cluster.Runtime.GetResourceSourceCache<V1PersistentVolumeClaim>().Edit(cache => cache.AddOrUpdate(claim));
+        }
+        else
+        {
+            await clusterScope.ScenarioHarness.CreateDirectAsync(claim, TestContext.Current.CancellationToken);
+            await TestWait.UntilAsync(
+                () => cluster.Runtime.GetResourceList<V1PersistentVolumeClaim>().Any(resource => resource.Name() == claim.Name()),
+                TimeSpan.FromSeconds(10),
+                cancellationToken: TestContext.Current.CancellationToken);
+        }
 
         using VisualizationViewModel viewModel = new(new ResourceRelationshipBuilder());
         viewModel.Initialize(cluster, namespaceResource);
@@ -127,8 +139,9 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
         viewModel.Graph!.Resources.ShouldContain(resource => resource.Name() == claim.Name());
     }
 
-    [AvaloniaFact]
-    public async Task reopening_visualization_keeps_secret_that_arrived_incrementally()
+    [AvaloniaTheory, KubernetesBackendDataAttribute]
+    [Trait("Category", "Kind")]
+    public async Task reopening_visualization_keeps_secret_that_arrived_incrementally(KubernetesBackend backend)
     {
         V1Secret secret = new()
         {
@@ -141,14 +154,15 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
             },
         };
 
-        await using var clusterScope = await KubernetesTestWorkspaceScope.CreateAsync(TestApp.CurrentServices!);
+        await using var clusterScope = await KubernetesTestWorkspaceScope.CreateAsync(TestApp.CurrentServices!, backend);
         var cluster = clusterScope.Workspace;
         V1Namespace namespaceResource = new() { Metadata = new() { Name = "platform-dev-ijosipov" } };
+        await clusterScope.ScenarioHarness.CreateDirectAsync(namespaceResource, TestContext.Current.CancellationToken);
 
         using (VisualizationViewModel firstView = new(new ResourceRelationshipBuilder()))
         {
             firstView.Initialize(cluster, namespaceResource);
-            clusterScope.Harness.AddInitialResource(secret);
+            await clusterScope.ScenarioHarness.CreateDirectAsync(secret, TestContext.Current.CancellationToken);
             await cluster.Runtime.SeedResource<V1Secret>(true);
             await WaitForAsync(() => firstView.Graph!.Resources.Any(resource => resource.Name() == secret.Name()));
         }
@@ -159,8 +173,9 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
         await WaitForAsync(() => reopenedView.Graph!.Resources.Any(resource => resource.Name() == secret.Name()));
     }
 
-    [AvaloniaFact]
-    public async Task reopening_visualization_from_selected_namespace_as_root_keeps_secret_loaded_during_config_initialization()
+    [AvaloniaTheory, KubernetesBackendDataAttribute]
+    [Trait("Category", "Kind")]
+    public async Task reopening_visualization_from_selected_namespace_as_root_keeps_secret_loaded_during_config_initialization(KubernetesBackend backend)
     {
         V1Secret secret = new()
         {
@@ -173,15 +188,16 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
             },
         };
 
-        await using var clusterScope = await KubernetesTestWorkspaceScope.CreateAsync(TestApp.CurrentServices!);
+        await using var clusterScope = await KubernetesTestWorkspaceScope.CreateAsync(TestApp.CurrentServices!, backend);
         var cluster = clusterScope.Workspace;
         V1Namespace namespaceResource = new() { Metadata = new() { Name = "platform-dev-ijosipov" } };
+        await clusterScope.ScenarioHarness.CreateDirectAsync(namespaceResource, TestContext.Current.CancellationToken);
 
         using (VisualizationViewModel firstView = new(new ResourceRelationshipBuilder()))
         {
             firstView.Initialize(cluster);
             firstView.SelectedNamespaces.Add(namespaceResource);
-            clusterScope.Harness.AddInitialResource(secret);
+            await clusterScope.ScenarioHarness.CreateDirectAsync(secret, TestContext.Current.CancellationToken);
             await cluster.Runtime.SeedResource<V1Secret>(true);
             await WaitForAsync(() => firstView.Graph!.Resources.Any(resource => resource.Name() == secret.Name()));
         }
@@ -516,10 +532,11 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
         viewModel.Graph!.Resources.ShouldBe([pod, service]);
     }
 
-    [AvaloniaFact]
-    public async Task late_incremental_delta_does_not_overwrite_newer_rebuild()
+    [AvaloniaTheory, KubernetesBackendDataAttribute]
+    [Trait("Category", "Kind")]
+    public async Task late_incremental_delta_does_not_overwrite_newer_rebuild(KubernetesBackend backend)
     {
-        await using var clusterScope = await KubernetesTestWorkspaceScope.CreateAsync(TestApp.CurrentServices!);
+        await using var clusterScope = await KubernetesTestWorkspaceScope.CreateAsync(TestApp.CurrentServices!, backend);
         var cluster = clusterScope.Workspace;
         await cluster.SeedResource<V1Pod>(true);
         var builder = new LateAdditionRelationshipBuilder();
@@ -547,10 +564,11 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
         viewModel.Graph!.Resources.ShouldBeEmpty();
     }
 
-    [AvaloniaFact]
-    public async Task modified_resource_rebuilds_changed_relationships_in_visualization_graph()
+    [AvaloniaTheory, KubernetesBackendDataAttribute]
+    [Trait("Category", "Kind")]
+    public async Task modified_resource_rebuilds_changed_relationships_in_visualization_graph(KubernetesBackend backend)
     {
-        await using var clusterScope = await KubernetesTestWorkspaceScope.CreateAsync(TestApp.CurrentServices!);
+        await using var clusterScope = await KubernetesTestWorkspaceScope.CreateAsync(TestApp.CurrentServices!, backend);
         var cluster = clusterScope.Workspace;
         cluster.SelectedNamespaces.Add(new V1Namespace { Metadata = new() { Name = "default" } });
         using VisualizationViewModel viewModel = new(new OwnerRelationshipBuilder());
@@ -635,10 +653,11 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
         },
     };
 
-    [AvaloniaFact]
-    public async Task processed_resource_config_starts_required_seed_without_waiting_for_ready()
+    [AvaloniaTheory, KubernetesBackendDataAttribute]
+    [Trait("Category", "Kind")]
+    public async Task processed_resource_config_starts_required_seed_without_waiting_for_ready(KubernetesBackend backend)
     {
-        await using var scope = await KubernetesTestWorkspaceScope.CreateAsync(TestApp.CurrentServices!);
+        await using var scope = await KubernetesTestWorkspaceScope.CreateAsync(TestApp.CurrentServices!, backend);
         var cluster = scope.Workspace;
         var runtime = cluster.Runtime;
         using VisualizationViewModel viewModel = new(new ResourceRelationshipBuilder());
@@ -649,10 +668,11 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
         runtime.GetResourceSourceCache<Corev1Event>().ShouldNotBeNull();
     }
 
-    [AvaloniaFact]
-    public async Task applying_graph_starts_provider_prerequisite_seed()
+    [AvaloniaTheory, KubernetesBackendDataAttribute]
+    [Trait("Category", "Kind")]
+    public async Task applying_graph_starts_provider_prerequisite_seed(KubernetesBackend backend)
     {
-        await using var scope = await KubernetesTestWorkspaceScope.CreateAsync(TestApp.CurrentServices!);
+        await using var scope = await KubernetesTestWorkspaceScope.CreateAsync(TestApp.CurrentServices!, backend);
         var cluster = scope.Workspace;
         var runtime = cluster.Runtime;
         await cluster.Connect();
@@ -687,10 +707,11 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
         }
     }
 
-    [AvaloniaFact]
-    public async Task added_resource_starts_owner_reference_seed_without_waiting_for_ready()
+    [AvaloniaTheory, KubernetesBackendDataAttribute]
+    [Trait("Category", "Kind")]
+    public async Task added_resource_starts_owner_reference_seed_without_waiting_for_ready(KubernetesBackend backend)
     {
-        await using var scope = await KubernetesTestWorkspaceScope.CreateAsync(TestApp.CurrentServices!);
+        await using var scope = await KubernetesTestWorkspaceScope.CreateAsync(TestApp.CurrentServices!, backend);
         var cluster = scope.Workspace;
         var runtime = cluster.Runtime;
         using VisualizationViewModel viewModel = new(new ResourceRelationshipBuilder());
@@ -719,10 +740,11 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
 
     }
 
-    [AvaloniaFact]
-    public async Task added_unrelated_cluster_scoped_resource_does_not_bypass_namespace_filter()
+    [AvaloniaTheory, KubernetesBackendDataAttribute]
+    [Trait("Category", "Kind")]
+    public async Task added_unrelated_cluster_scoped_resource_does_not_bypass_namespace_filter(KubernetesBackend backend)
     {
-        await using var clusterScope = await KubernetesTestWorkspaceScope.CreateAsync(TestApp.CurrentServices!);
+        await using var clusterScope = await KubernetesTestWorkspaceScope.CreateAsync(TestApp.CurrentServices!, backend);
         var cluster = clusterScope.Workspace;
         cluster.SelectedNamespaces.Add(new V1Namespace { Metadata = new() { Name = "default" } });
         var builder = new AdditionCaptureRelationshipBuilder();
@@ -757,10 +779,11 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
         delta.Resources.ShouldBeEmpty();
     }
 
-    [AvaloniaFact]
-    public async Task changing_selected_namespaces_rebuilds_graph_with_new_namespace_filter()
+    [AvaloniaTheory, KubernetesBackendDataAttribute]
+    [Trait("Category", "Kind")]
+    public async Task changing_selected_namespaces_rebuilds_graph_with_new_namespace_filter(KubernetesBackend backend)
     {
-        await using var clusterScope = await KubernetesTestWorkspaceScope.CreateAsync(TestApp.CurrentServices!);
+        await using var clusterScope = await KubernetesTestWorkspaceScope.CreateAsync(TestApp.CurrentServices!, backend);
         var cluster = clusterScope.Workspace;
         cluster.SelectedNamespaces.Add(new V1Namespace { Metadata = new() { Name = "default" } });
         await cluster.Runtime.AddOrUpdateResource(new V1Namespace { Metadata = new() { Name = "other" } });
@@ -778,10 +801,11 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
             .SelectedNamespaces.ShouldBe(["other"]);
     }
 
-    [AvaloniaFact]
-    public async Task full_graph_rebuild_does_not_reintroduce_unselected_namespaced_resources()
+    [AvaloniaTheory, KubernetesBackendDataAttribute]
+    [Trait("Category", "Kind")]
+    public async Task full_graph_rebuild_does_not_reintroduce_unselected_namespaced_resources(KubernetesBackend backend)
     {
-        await using var clusterScope = await KubernetesTestWorkspaceScope.CreateAsync(TestApp.CurrentServices!);
+        await using var clusterScope = await KubernetesTestWorkspaceScope.CreateAsync(TestApp.CurrentServices!, backend);
         var cluster = clusterScope.Workspace;
         cluster.SelectedNamespaces.Add(new V1Namespace { Metadata = new() { Name = "default" } });
         var builder = new NamespaceLeakingBuildRelationshipBuilder();
@@ -805,10 +829,11 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
         viewModel.Graph.Resources.Select(resource => resource.Name()).ShouldNotContain("unrelated-node");
     }
 
-    [AvaloniaFact]
-    public async Task changing_hide_noise_rebuilds_graph_with_new_noise_filter()
+    [AvaloniaTheory, KubernetesBackendDataAttribute]
+    [Trait("Category", "Kind")]
+    public async Task changing_hide_noise_rebuilds_graph_with_new_noise_filter(KubernetesBackend backend)
     {
-        await using var clusterScope = await KubernetesTestWorkspaceScope.CreateAsync(TestApp.CurrentServices!);
+        await using var clusterScope = await KubernetesTestWorkspaceScope.CreateAsync(TestApp.CurrentServices!, backend);
         var cluster = clusterScope.Workspace;
         cluster.SelectedNamespaces.Add(new V1Namespace { Metadata = new() { Name = "default" } });
         var builder = new BuildCaptureRelationshipBuilder();
@@ -823,10 +848,11 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
         (await builder.WaitForBuildAsync(2)).HideNoise.ShouldBeFalse();
     }
 
-    [AvaloniaFact]
-    public async Task added_unrelated_namespaced_resource_does_not_bypass_namespace_filter()
+    [AvaloniaTheory, KubernetesBackendDataAttribute]
+    [Trait("Category", "Kind")]
+    public async Task added_unrelated_namespaced_resource_does_not_bypass_namespace_filter(KubernetesBackend backend)
     {
-        await using var clusterScope = await KubernetesTestWorkspaceScope.CreateAsync(TestApp.CurrentServices!);
+        await using var clusterScope = await KubernetesTestWorkspaceScope.CreateAsync(TestApp.CurrentServices!, backend);
         var cluster = clusterScope.Workspace;
         cluster.SelectedNamespaces.Add(new V1Namespace { Metadata = new() { Name = "default" } });
         var builder = new AdditionCaptureRelationshipBuilder();
@@ -846,10 +872,11 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
         viewModel.Graph!.Resources.ShouldNotContain(resource => resource.Name() == "unrelated");
     }
 
-    [AvaloniaFact]
-    public async Task repeated_incremental_deltas_do_not_accumulate_resources_from_unselected_namespaces()
+    [AvaloniaTheory, KubernetesBackendDataAttribute]
+    [Trait("Category", "Kind")]
+    public async Task repeated_incremental_deltas_do_not_accumulate_resources_from_unselected_namespaces(KubernetesBackend backend)
     {
-        await using var clusterScope = await KubernetesTestWorkspaceScope.CreateAsync(TestApp.CurrentServices!);
+        await using var clusterScope = await KubernetesTestWorkspaceScope.CreateAsync(TestApp.CurrentServices!, backend);
         var cluster = clusterScope.Workspace;
         V1Pod selected = CreatePod("selected");
         V1Pod unrelated = new()
@@ -898,10 +925,11 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
         viewModel.Graph!.Resources.Select(resource => resource.Name()).ShouldNotContain("unrelated");
     }
 
-    [AvaloniaFact]
-    public async Task seeded_prerequisite_triggers_graph_rebuild()
+    [AvaloniaTheory, KubernetesBackendDataAttribute]
+    [Trait("Category", "Kind")]
+    public async Task seeded_prerequisite_triggers_graph_rebuild(KubernetesBackend backend)
     {
-        await using var clusterScope = await KubernetesTestWorkspaceScope.CreateAsync(TestApp.CurrentServices!);
+        await using var clusterScope = await KubernetesTestWorkspaceScope.CreateAsync(TestApp.CurrentServices!, backend);
         var cluster = clusterScope.Workspace;
         var builder = new BuildCaptureRelationshipBuilder();
         using VisualizationViewModel viewModel = new(builder);
@@ -973,10 +1001,11 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
         }
     }
 
-    [AvaloniaFact]
-    public async Task disposed_view_model_unsubscribes_from_namespace_changes()
+    [AvaloniaTheory, KubernetesBackendDataAttribute]
+    [Trait("Category", "Kind")]
+    public async Task disposed_view_model_unsubscribes_from_namespace_changes(KubernetesBackend backend)
     {
-        await using var clusterScope = await KubernetesTestWorkspaceScope.CreateAsync(TestApp.CurrentServices!);
+        await using var clusterScope = await KubernetesTestWorkspaceScope.CreateAsync(TestApp.CurrentServices!, backend);
         var cluster = clusterScope.Workspace;
         cluster.SelectedNamespaces.Add(new V1Namespace { Metadata = new() { Name = "default" } });
         var builder = new BuildCaptureRelationshipBuilder();
@@ -991,10 +1020,11 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
         builder.BuildCount.ShouldBe(1);
     }
 
-    [AvaloniaFact]
-    public async Task background_resource_changes_are_processed_on_the_ui_thread()
+    [AvaloniaTheory, KubernetesBackendDataAttribute]
+    [Trait("Category", "Kind")]
+    public async Task background_resource_changes_are_processed_on_the_ui_thread(KubernetesBackend backend)
     {
-        await using var clusterScope = await KubernetesTestWorkspaceScope.CreateAsync(TestApp.CurrentServices!);
+        await using var clusterScope = await KubernetesTestWorkspaceScope.CreateAsync(TestApp.CurrentServices!, backend);
         var cluster = clusterScope.Workspace;
         cluster.SelectedNamespaces.Add(new V1Namespace { Metadata = new() { Name = "default" } });
         var builder = new BuildCaptureRelationshipBuilder();
@@ -1014,10 +1044,11 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
         builder.BuildCount.ShouldBeGreaterThan(1);
     }
 
-    [AvaloniaFact]
-    public async Task disposed_view_model_ignores_runtime_resource_changes()
+    [AvaloniaTheory, KubernetesBackendDataAttribute]
+    [Trait("Category", "Kind")]
+    public async Task disposed_view_model_ignores_runtime_resource_changes(KubernetesBackend backend)
     {
-        await using var clusterScope = await KubernetesTestWorkspaceScope.CreateAsync(TestApp.CurrentServices!);
+        await using var clusterScope = await KubernetesTestWorkspaceScope.CreateAsync(TestApp.CurrentServices!, backend);
         var cluster = clusterScope.Workspace;
         cluster.SelectedNamespaces.Add(new V1Namespace { Metadata = new() { Name = "default" } });
         var builder = new BuildCaptureRelationshipBuilder();
