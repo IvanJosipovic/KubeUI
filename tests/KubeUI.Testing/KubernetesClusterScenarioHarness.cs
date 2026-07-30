@@ -115,23 +115,23 @@ public sealed class KubernetesClusterScenarioHarness : IClusterScenarioHarness
         }
     }
 
-    public async Task<T> CreateDirectAsync<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    public async Task<T> CreateDirectAsync<T>(T item, CancellationToken cancellationToken = default) where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
         using var client = Cluster.Client!.GetGenericClient<T>();
         return string.IsNullOrEmpty(item.Namespace())
-            ? await client.CreateAsync<T>(item)
-            : await client.CreateNamespacedAsync<T>(item, item.Namespace());
+            ? await client.CreateAsync<T>(item, cancellationToken)
+            : await client.CreateNamespacedAsync<T>(item, item.Namespace(), cancellationToken);
     }
 
-    public async Task CreateCustomResourceDefinitionAsync(V1CustomResourceDefinition crd)
+    public async Task CreateCustomResourceDefinitionAsync(V1CustomResourceDefinition crd, CancellationToken cancellationToken = default)
     {
         var client = (k8s.Kubernetes)Cluster.Client!;
-        await client.ApiextensionsV1.CreateCustomResourceDefinitionAsync(crd);
+        await client.ApiextensionsV1.CreateCustomResourceDefinitionAsync(crd, cancellationToken: cancellationToken);
     }
 
-    public async Task<IClusterRuntime> CreateLimitedAccessClusterAsync(bool includeNamespaceFallback)
+    public async Task<IClusterRuntime> CreateLimitedAccessClusterAsync(bool includeNamespaceFallback, CancellationToken cancellationToken = default)
     {
-        await EnsureLimitedAccessResourcesAsync();
+        await EnsureLimitedAccessResourcesAsync(cancellationToken);
 
         var api = new FakeKubernetesHttpApi { DefaultPermissionAllowed = false };
         _additionalApis.Add(api);
@@ -157,10 +157,10 @@ public sealed class KubernetesClusterScenarioHarness : IClusterScenarioHarness
         var limited = CreateCluster(api, name);
         _settingsStore.SetClusterNamespaces(limited, LimitedNamespace);
 
-        await limited.Connect();
-        await PrimePermissionsAsync(limited);
-        await limited.SeedResource<V1Node>(true);
-        await limited.SeedResource<V1Secret>(true);
+        await limited.Connect().WaitAsync(cancellationToken);
+        await PrimePermissionsAsync(limited, cancellationToken);
+        await limited.SeedResource<V1Node>(true).WaitAsync(cancellationToken);
+        await limited.SeedResource<V1Secret>(true).WaitAsync(cancellationToken);
         return limited;
     }
 
@@ -189,29 +189,29 @@ public sealed class KubernetesClusterScenarioHarness : IClusterScenarioHarness
         return cluster;
     }
 
-    private async Task EnsureLimitedAccessResourcesAsync()
+    private async Task EnsureLimitedAccessResourcesAsync(CancellationToken cancellationToken)
     {
-        await Cluster.ImportYaml(new MemoryStream(Encoding.UTF8.GetBytes(SharedScenarioData.LimitedAccessYaml)));
-        await Cluster.SeedResource<V1ServiceAccount>(true);
+        await Cluster.ImportYaml(new MemoryStream(Encoding.UTF8.GetBytes(SharedScenarioData.LimitedAccessYaml))).WaitAsync(cancellationToken);
+        await Cluster.SeedResource<V1ServiceAccount>(true).WaitAsync(cancellationToken);
     }
 
-    private static async Task PrimePermissionsAsync(KubeUI.Kubernetes.Cluster cluster)
+    private static async Task PrimePermissionsAsync(KubeUI.Kubernetes.Cluster cluster, CancellationToken cancellationToken)
     {
         foreach (var type in new[] { typeof(V1Namespace), typeof(V1Node), typeof(V1Secret), typeof(V1Service), typeof(V1EndpointSlice), typeof(V1ConfigMap), typeof(Corev1Event), typeof(V1Pod), typeof(V1Deployment), typeof(V1ServiceAccount), typeof(V1CronJob), typeof(V1Job), typeof(V1CustomResourceDefinition) })
         {
             foreach (var verb in Enum.GetValues<Verb>())
             {
-                await cluster.UpdateCanI(type, verb);
+                await cluster.UpdateCanI(type, verb).WaitAsync(cancellationToken);
                 if (type != typeof(V1Namespace) && type != typeof(V1Node))
                 {
-                    await cluster.UpdateCanI(type, verb, LimitedNamespace);
+                    await cluster.UpdateCanI(type, verb, LimitedNamespace).WaitAsync(cancellationToken);
                 }
             }
         }
 
-        await cluster.UpdateCanI(typeof(V1Pod), Verb.Get, LimitedNamespace, "log");
-        await cluster.UpdateCanI(typeof(V1Pod), Verb.Create, LimitedNamespace, "exec");
-        await cluster.UpdateCanI(typeof(V1Pod), Verb.Create, LimitedNamespace, "portforward");
+        await cluster.UpdateCanI(typeof(V1Pod), Verb.Get, LimitedNamespace, "log").WaitAsync(cancellationToken);
+        await cluster.UpdateCanI(typeof(V1Pod), Verb.Create, LimitedNamespace, "exec").WaitAsync(cancellationToken);
+        await cluster.UpdateCanI(typeof(V1Pod), Verb.Create, LimitedNamespace, "portforward").WaitAsync(cancellationToken);
     }
 
     private static void RegisterSupportedResources(FakeKubernetesHttpApi api)

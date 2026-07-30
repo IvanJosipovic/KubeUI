@@ -9,11 +9,13 @@ namespace KubeUI.Avalonia.Tests.Features.Workloads.Pod;
 
 public sealed class PodDebugContainerTests : AvaloniaTestBase
 {
-    [AvaloniaFact]
-    public async Task adding_debug_container_uses_cluster_image_and_target_container()
+    [AvaloniaTheory, KubernetesBackendDataAttribute]
+    [Trait("Category", "Kind")]
+    public async Task adding_debug_container_uses_cluster_image_and_target_container(KubernetesBackend backend)
     {
-        await using var harness = new KubernetesClusterScenarioHarness();
-        await harness.InitializeAsync(TestContext.Current.CancellationToken);
+        await using var harness = await KubernetesScenarioHarnessFactory.CreateAsync(
+            backend,
+            TestContext.Current.CancellationToken);
         await harness.Cluster.SeedResource<V1Pod>(true);
         using var workspace = ActivatorUtilities.CreateInstance<ClusterWorkspace>(TestApp.CurrentServices!, harness.Cluster);
         var settings = TestApp.CurrentServices!.GetRequiredService<ISettingsService>();

@@ -38,34 +38,34 @@ public sealed class KindClusterScenarioHarness : IClusterScenarioHarness
         Cluster = await CreateClusterAsync($"kind-{_name}", KubeConfig, cancellationToken).ConfigureAwait(false);
     }
 
-    public async Task<T> CreateDirectAsync<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    public async Task<T> CreateDirectAsync<T>(T item, CancellationToken cancellationToken = default) where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
         using var client = Kubernetes.GetGenericClient<T>();
 
         if (string.IsNullOrEmpty(item.Namespace()))
         {
-            return await client.CreateAsync<T>(item);
+            return await client.CreateAsync<T>(item, cancellationToken);
         }
 
-        return await client.CreateNamespacedAsync<T>(item, item.Namespace());
+        return await client.CreateNamespacedAsync<T>(item, item.Namespace(), cancellationToken);
     }
 
-    public async Task CreateCustomResourceDefinitionAsync(V1CustomResourceDefinition crd)
+    public async Task CreateCustomResourceDefinitionAsync(V1CustomResourceDefinition crd, CancellationToken cancellationToken = default)
     {
-        await Kubernetes.CreateCustomResourceDefinitionAsync(crd);
+        await Kubernetes.CreateCustomResourceDefinitionAsync(crd, cancellationToken: cancellationToken);
     }
 
-    public async Task<IClusterRuntime> CreateLimitedAccessClusterAsync(bool includeNamespaceFallback)
+    public async Task<IClusterRuntime> CreateLimitedAccessClusterAsync(bool includeNamespaceFallback, CancellationToken cancellationToken = default)
     {
         var yaml = includeNamespaceFallback ? SharedScenarioData.LimitedAccessNoNamespaceYaml : SharedScenarioData.LimitedAccessYaml;
 
-        await Cluster.ImportYaml(new MemoryStream(Encoding.UTF8.GetBytes(yaml)));
-        await Cluster.SeedResource<V1ServiceAccount>(true);
-        await WaitForResourceAsync<V1ServiceAccount>(Cluster, "my-app", "my-serviceaccount");
+        await Cluster.ImportYaml(new MemoryStream(Encoding.UTF8.GetBytes(yaml))).WaitAsync(cancellationToken);
+        await Cluster.SeedResource<V1ServiceAccount>(true).WaitAsync(cancellationToken);
+        await WaitForResourceAsync<V1ServiceAccount>(Cluster, "my-app", "my-serviceaccount", cancellationToken: cancellationToken);
 
         var config = KubeUI.Kubernetes.Serialization.KubernetesYaml.Deserialize<K8SConfiguration>(KubeUI.Kubernetes.Serialization.KubernetesYaml.Serialize(KubeConfig));
         var clusterName = includeNamespaceFallback ? "limited-fallback" : "limited";
-        var token = await CreateServiceAccountTokenAsync("my-app", "my-serviceaccount");
+        var token = await CreateServiceAccountTokenAsync("my-app", "my-serviceaccount", cancellationToken);
 
         config.Clusters.First().Name = clusterName;
         var context = config.Contexts.First();
@@ -77,7 +77,7 @@ public sealed class KindClusterScenarioHarness : IClusterScenarioHarness
         user.Name = clusterName;
         user.UserCredentials = new() { Token = token };
 
-        var limited = await CreateClusterAsync(clusterName, config);
+        var limited = await CreateClusterAsync(clusterName, config, cancellationToken);
 
         if (includeNamespaceFallback)
         {
@@ -108,7 +108,7 @@ public sealed class KindClusterScenarioHarness : IClusterScenarioHarness
         }
     }
 
-    private async Task<string> CreateServiceAccountTokenAsync(string @namespace, string name)
+    private async Task<string> CreateServiceAccountTokenAsync(string @namespace, string name, CancellationToken cancellationToken)
     {
         var tokenRequest = new Authenticationv1TokenRequest
         {
@@ -120,7 +120,7 @@ public sealed class KindClusterScenarioHarness : IClusterScenarioHarness
             }
         };
 
-        var response = await Kubernetes.CoreV1.CreateNamespacedServiceAccountTokenAsync(tokenRequest, name, @namespace);
+        var response = await Kubernetes.CoreV1.CreateNamespacedServiceAccountTokenAsync(tokenRequest, name, @namespace, cancellationToken: cancellationToken);
         var token = response.Status?.Token;
 
         if (string.IsNullOrWhiteSpace(token))

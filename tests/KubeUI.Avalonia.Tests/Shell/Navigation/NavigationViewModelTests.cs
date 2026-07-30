@@ -526,7 +526,9 @@ public class NavigationViewModelTests : AvaloniaTestBase
     public async Task selecting_cluster_node_with_namespace_fallback_does_not_open_settings_or_prompt()
     {
         await using var runtimeScope = await KubernetesScenarioClusterScope.CreateAsync();
-        var runtime = await runtimeScope.Harness.CreateLimitedAccessClusterAsync(includeNamespaceFallback: true);
+        var runtime = await runtimeScope.Harness.CreateLimitedAccessClusterAsync(
+            includeNamespaceFallback: true,
+            cancellationToken: TestContext.Current.CancellationToken);
 
         var workspace = CreateWorkspace(runtime);
         await workspace.Connect();
@@ -558,7 +560,9 @@ public class NavigationViewModelTests : AvaloniaTestBase
     public async Task selecting_cluster_node_with_namespace_fallback_shows_namespaced_resources_in_navigation()
     {
         await using var runtimeScope = await KubernetesScenarioClusterScope.CreateAsync();
-        var runtime = await runtimeScope.Harness.CreateLimitedAccessClusterAsync(includeNamespaceFallback: true);
+        var runtime = await runtimeScope.Harness.CreateLimitedAccessClusterAsync(
+            includeNamespaceFallback: true,
+            cancellationToken: TestContext.Current.CancellationToken);
         var workspace = CreateWorkspace(runtime);
         await workspace.Connect();
         var settingsService = TestApp.CurrentServices?.GetRequiredService<ISettingsService>()
@@ -634,7 +638,9 @@ public class NavigationViewModelTests : AvaloniaTestBase
     public async Task selecting_cluster_node_with_settings_only_namespace_fallback_shows_namespaced_resources_in_navigation()
     {
         await using var runtimeScope = await KubernetesScenarioClusterScope.CreateAsync();
-        var runtime = await runtimeScope.Harness.CreateLimitedAccessClusterAsync(includeNamespaceFallback: false);
+        var runtime = await runtimeScope.Harness.CreateLimitedAccessClusterAsync(
+            includeNamespaceFallback: false,
+            cancellationToken: TestContext.Current.CancellationToken);
         var workspace = CreateWorkspace(runtime);
         var settingsService = TestApp.CurrentServices?.GetRequiredService<ISettingsService>()
             ?? throw new InvalidOperationException("Test services are not initialized.");
@@ -712,7 +718,9 @@ public class NavigationViewModelTests : AvaloniaTestBase
     public async Task selecting_pods_in_limited_access_cluster_opens_populated_resource_list()
     {
         await using var runtimeScope = await KubernetesScenarioClusterScope.CreateAsync();
-        var runtime = await runtimeScope.Harness.CreateLimitedAccessClusterAsync(includeNamespaceFallback: false);
+        var runtime = await runtimeScope.Harness.CreateLimitedAccessClusterAsync(
+            includeNamespaceFallback: false,
+            cancellationToken: TestContext.Current.CancellationToken);
         var workspace = CreateWorkspace(runtime);
         var settingsService = TestApp.CurrentServices?.GetRequiredService<ISettingsService>()
             ?? throw new InvalidOperationException("Test services are not initialized.");

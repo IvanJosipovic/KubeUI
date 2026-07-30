@@ -27,23 +27,16 @@ public sealed class ClusterAuthTests
         cluster.CanI(typeof(V1Pod), Verb.Create, subresource: "portforward").ShouldBeFalse();
     }
 
-    [Fact]
-    public async Task cani_any_namespace_uses_namespace_scoped_permission_when_cluster_scope_is_denied()
+    [Theory, KubernetesBackendDataAttribute]
+    [Trait("Category", "Kind")]
+    public async Task cani_any_namespace_uses_namespace_scoped_permission_when_cluster_scope_is_denied(KubernetesBackend backend)
     {
-        await using var harness = new KubernetesClusterScenarioHarness();
-        await harness.InitializeAsync(TestContext.Current.CancellationToken);
-        var cluster = (Cluster)harness.Cluster;
-
-        harness.SetPermission<V1Pod>(Verb.Create, false, subresource: "portforward");
-        harness.SetPermission<V1Pod>(Verb.Create, true, "my-app", "portforward");
-
-        await cluster.AddOrUpdateResource(new V1Namespace
-        {
-            Metadata = new V1ObjectMeta { Name = "my-app" }
-        });
-        await cluster.SeedResource<V1Namespace>(true);
-        await cluster.UpdateCanI<V1Pod>(Verb.Create, subresource: "portforward");
-        await cluster.UpdateCanI<V1Pod>(Verb.Create, "my-app", "portforward");
+        await using var harness = await KubernetesScenarioHarnessFactory.CreateAsync(
+            backend,
+            TestContext.Current.CancellationToken);
+        var cluster = (Cluster)await harness.CreateLimitedAccessClusterAsync(
+            includeNamespaceFallback: true,
+            cancellationToken: TestContext.Current.CancellationToken);
 
         cluster.CanIAnyNamespace<V1Pod>(Verb.Create, "portforward").ShouldBeTrue();
     }

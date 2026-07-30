@@ -8,7 +8,7 @@ namespace KubeUI.Kubernetes.Tests.Client;
 [Trait("Category", "Kind")]
 public sealed class ClusterResourceChangeFeedTests
 {
-    [Theory, MemberData(nameof(KubernetesBackendData.Enabled), MemberType = typeof(KubernetesBackendData))]
+    [Theory, KubernetesBackendDataAttribute]
     public async Task ConnectResources_tracks_existing_and_late_seeded_source_caches(KubernetesBackend backend)
     {
         await using var harness = await KubernetesScenarioHarnessFactory.CreateAsync(

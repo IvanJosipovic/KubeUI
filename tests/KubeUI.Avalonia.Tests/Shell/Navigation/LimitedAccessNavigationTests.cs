@@ -9,13 +9,17 @@ namespace KubeUI.Avalonia.Tests.Shell.Navigation;
 
 public sealed class LimitedAccessNavigationTests : AvaloniaTestBase
 {
-    [AvaloniaFact]
-    public async Task limited_access_with_listable_namespace_shows_namespaced_resources_in_navigation()
+    [AvaloniaTheory, KubernetesBackendDataAttribute]
+    [Trait("Category", "Kind")]
+    public async Task limited_access_with_listable_namespace_shows_namespaced_resources_in_navigation(KubernetesBackend backend)
     {
-        await using var harness = new KubernetesClusterScenarioHarness();
-        await harness.InitializeAsync(TestContext.Current.CancellationToken);
+        await using var harness = await KubernetesScenarioHarnessFactory.CreateAsync(
+            backend,
+            TestContext.Current.CancellationToken);
 
-        var runtime = await harness.CreateLimitedAccessClusterAsync(includeNamespaceFallback: false);
+        var runtime = await harness.CreateLimitedAccessClusterAsync(
+            includeNamespaceFallback: false,
+            cancellationToken: TestContext.Current.CancellationToken);
         var services = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
         var workspace = ActivatorUtilities.CreateInstance<ClusterWorkspace>(services, runtime);
         var navigation = services.GetRequiredService<NavigationViewModel>();

@@ -11,7 +11,7 @@
 ## Coverage Focus
 - Prefer behavior tests for view models, resource configs, and shared UI behaviors that are easy to drift.
 - Preserve tests when migrating them. If a test asserted an implementation detail through a wrapper, replace it with an observable behavior assertion or add the missing transport scenario; do not silently delete coverage.
-- Exercise both the fake transport and the Kind provider for Kubernetes-client behavior. Local runs use the fake provider; CI enables Kind with `KUBEUI_RUN_KIND_TESTS=1`.
+- Kubernetes-client parity is exercised by the shared fake/Kind matrix. Avalonia tests that exercise HTTP-backed authorization, informer, or limited-access behavior use `AvaloniaTheory` with `[KubernetesBackendData]`; deterministic UI-only and fault-injection tests continue to use the fake transport. Local runs use fake only and CI enables Kind with `KUBEUI_RUN_KIND_TESTS=1`. Matrix rows are displayed with `- fake` or `- kind`.
 - Prefer event/informer completion predicates over fixed sleeps. If polling is unavoidable, centralize it in a cancellable wait helper with a bounded timeout and include the final predicate assertion.
 - Use `KubeUI.Testing.TestWait`/observable predicates for polling. Tests must not use `Task.Delay` or `Thread.Sleep`; synchronous callback-order tests should use explicit task-completion gates so the intended interleaving is deterministic.
 - Async test helpers accept and honor a `CancellationToken`; use `TestContext.Current.CancellationToken` when invoking cancellable APIs and pass cancellation through to HTTP, informer, and wait operations wherever the API supports it.

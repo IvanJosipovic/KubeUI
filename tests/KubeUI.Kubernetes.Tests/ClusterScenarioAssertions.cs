@@ -77,7 +77,7 @@ public abstract class ClusterScenarioAssertions
             ApiVersion = V1Namespace.KubeApiVersion,
             Kind = V1Namespace.KubeKind,
             Metadata = new V1ObjectMeta { Name = "test" }
-        });
+        }, TestContext.Current.CancellationToken);
 
         ns.Metadata.Labels = new Dictionary<string, string> { ["test"] = "test" };
 
@@ -106,7 +106,7 @@ public abstract class ClusterScenarioAssertions
             {
                 ["data1"] = "secret1"
             }
-        });
+        }, TestContext.Current.CancellationToken);
 
         secret.Metadata.Labels = new Dictionary<string, string> { ["test"] = "test" };
 
@@ -127,7 +127,7 @@ public abstract class ClusterScenarioAssertions
             ApiVersion = V1Namespace.KubeApiVersion,
             Kind = V1Namespace.KubeKind,
             Metadata = new V1ObjectMeta { Name = "test" }
-        });
+        }, TestContext.Current.CancellationToken);
 
         await WaitForResourceAsync<V1Namespace>(harness.Cluster, null, "test");
         await harness.Cluster.DeleteResource(ns);
@@ -154,7 +154,7 @@ public abstract class ClusterScenarioAssertions
             {
                 ["data1"] = "secret1"
             }
-        });
+        }, TestContext.Current.CancellationToken);
 
         await WaitForResourceAsync<V1Secret>(harness.Cluster, "default", "test");
         await harness.Cluster.DeleteResource(secret);
@@ -188,7 +188,7 @@ public abstract class ClusterScenarioAssertions
         await harness.Cluster.SeedResource<V1CustomResourceDefinition>(true);
 
         var crd = KubeUI.Kubernetes.Serialization.KubernetesYaml.Deserialize<V1CustomResourceDefinition>(SharedScenarioData.CustomResourceDefinitionYaml);
-        await harness.CreateCustomResourceDefinitionAsync(crd);
+        await harness.CreateCustomResourceDefinitionAsync(crd, TestContext.Current.CancellationToken);
 
         await WaitForResourceAsync<V1CustomResourceDefinition>(harness.Cluster, null, "tests.kubeui.com");
         var generatedType = await WaitForGeneratedTypeAsync(harness.Cluster, "kubeui.com", "v1beta1", "Test");
@@ -259,7 +259,7 @@ public abstract class ClusterScenarioAssertions
     protected async Task LimitedAccessCore(KubernetesBackend backend, bool includeNamespaceFallback)
     {
         await using var harness = await CreateHarnessAsync(backend);
-        var cluster = await harness.CreateLimitedAccessClusterAsync(includeNamespaceFallback);
+        var cluster = await harness.CreateLimitedAccessClusterAsync(includeNamespaceFallback, TestContext.Current.CancellationToken);
 
         await cluster.Connect();
         await cluster.SeedResource<V1Node>(true);
@@ -279,7 +279,9 @@ public abstract class ClusterScenarioAssertions
     protected async Task LimitedAccessCanICore(KubernetesBackend backend)
     {
         await using var harness = await CreateHarnessAsync(backend);
-        var cluster = await harness.CreateLimitedAccessClusterAsync(includeNamespaceFallback: true);
+        var cluster = await harness.CreateLimitedAccessClusterAsync(
+            includeNamespaceFallback: true,
+            cancellationToken: TestContext.Current.CancellationToken);
 
         await cluster.Connect();
         await cluster.SeedResource<V1Pod>(true);
@@ -335,10 +337,10 @@ public abstract class ClusterScenarioAssertions
         var cluster = harness.Cluster;
 
         await cluster.SeedResource<V1Namespace>(true);
-        await harness.CreateDirectAsync(new V1Namespace { Metadata = new() { Name = "team-a" } });
-        await harness.CreateDirectAsync(new V1Namespace { Metadata = new() { Name = "team-b" } });
-        await harness.CreateDirectAsync(new V1Pod { Metadata = new() { Name = "pod-a", NamespaceProperty = "team-a" } });
-        await harness.CreateDirectAsync(new V1Pod { Metadata = new() { Name = "pod-b", NamespaceProperty = "team-b" } });
+        await harness.CreateDirectAsync(new V1Namespace { Metadata = new() { Name = "team-a" } }, TestContext.Current.CancellationToken);
+        await harness.CreateDirectAsync(new V1Namespace { Metadata = new() { Name = "team-b" } }, TestContext.Current.CancellationToken);
+        await harness.CreateDirectAsync(new V1Pod { Metadata = new() { Name = "pod-a", NamespaceProperty = "team-a" } }, TestContext.Current.CancellationToken);
+        await harness.CreateDirectAsync(new V1Pod { Metadata = new() { Name = "pod-b", NamespaceProperty = "team-b" } }, TestContext.Current.CancellationToken);
 
         await cluster.SeedResource<V1Pod>(true);
 

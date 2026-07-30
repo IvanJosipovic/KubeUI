@@ -11,10 +11,10 @@ public interface IClusterScenarioHarness : IAsyncDisposable
 
     Task InitializeAsync(CancellationToken cancellationToken = default);
 
-    Task<T> CreateDirectAsync<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new();
+    Task<T> CreateDirectAsync<T>(T item, CancellationToken cancellationToken = default) where T : class, IKubernetesObject<V1ObjectMeta>, new();
 
-    Task CreateCustomResourceDefinitionAsync(V1CustomResourceDefinition crd);
+    Task CreateCustomResourceDefinitionAsync(V1CustomResourceDefinition crd, CancellationToken cancellationToken = default);
 
-    Task<IClusterRuntime> CreateLimitedAccessClusterAsync(bool includeNamespaceFallback);
+    Task<IClusterRuntime> CreateLimitedAccessClusterAsync(bool includeNamespaceFallback, CancellationToken cancellationToken = default);
 }
 
