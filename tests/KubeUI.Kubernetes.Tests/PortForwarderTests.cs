@@ -223,7 +223,11 @@ public sealed class PortForwarderTests
                 },
             ],
         });
-        await ClusterScenarioAssertions.WaitForResourceAsync<V1EndpointSlice>(cluster, "default", "prometheus-slice");
+        await ClusterScenarioAssertions.WaitForResourceAsync<V1EndpointSlice>(
+            cluster,
+            "default",
+            "prometheus-slice",
+            cancellationToken: TestContext.Current.CancellationToken);
 
         using var sut = new PortForwarder(cluster, "default");
         sut.SetService("prometheus", 9090);
@@ -284,7 +288,11 @@ public sealed class PortForwarderTests
                 },
             ],
         });
-        await ClusterScenarioAssertions.WaitForResourceAsync<V1EndpointSlice>(cluster, "default", "prometheus-slice");
+        await ClusterScenarioAssertions.WaitForResourceAsync<V1EndpointSlice>(
+            cluster,
+            "default",
+            "prometheus-slice",
+            cancellationToken: TestContext.Current.CancellationToken);
 
         using var sut = new PortForwarder(cluster, "default");
         sut.SetService("prometheus", 9090);

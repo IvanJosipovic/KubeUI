@@ -128,6 +128,38 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
         viewModel.Graph!.Resources.ShouldContain(resource => resource.Name() == claim.Name());
     }
 
+    [AvaloniaFact]
+    public async Task reopening_visualization_keeps_secret_that_arrived_incrementally()
+    {
+        V1Secret secret = new()
+        {
+            ApiVersion = V1Secret.KubeApiVersion,
+            Kind = V1Secret.KubeKind,
+            Metadata = new()
+            {
+                Name = "existing-secret",
+                NamespaceProperty = "platform-dev-ijosipov",
+            },
+        };
+
+        await using var clusterScope = await KubernetesTestWorkspaceScope.CreateAsync(TestApp.CurrentServices!);
+        var cluster = clusterScope.Workspace;
+        V1Namespace namespaceResource = new() { Metadata = new() { Name = "platform-dev-ijosipov" } };
+
+        using (VisualizationViewModel firstView = new(new ResourceRelationshipBuilder()))
+        {
+            firstView.Initialize(cluster, namespaceResource);
+            clusterScope.Harness.AddInitialResource(secret);
+            await cluster.Runtime.SeedResource<V1Secret>(true);
+            await WaitForAsync(() => firstView.Graph!.Resources.Any(resource => resource.Name() == secret.Name()));
+        }
+
+        using VisualizationViewModel reopenedView = new(new ResourceRelationshipBuilder());
+        reopenedView.Initialize(cluster, namespaceResource);
+
+        await WaitForAsync(() => reopenedView.Graph!.Resources.Any(resource => resource.Name() == secret.Name()));
+    }
+
     [Fact]
     public void root_filter_does_not_expand_downward_from_parents()
     {

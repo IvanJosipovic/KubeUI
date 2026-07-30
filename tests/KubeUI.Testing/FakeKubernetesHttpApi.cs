@@ -20,13 +20,14 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
     private readonly ConcurrentDictionary<string, bool> _permissions = new(StringComparer.Ordinal);
     private readonly ConcurrentDictionary<string, ConcurrentBag<Channel<byte[]>>> _watchers = new(StringComparer.Ordinal);
     private long _resourceVersion;
-    private int _responseDelayApplied;
-
     public bool DefaultPermissionAllowed { get; set; } = true;
 
     public bool FailConnection { get; set; }
 
-    public TimeSpan ResponseDelay { get; set; }
+    /// <summary>
+    /// Simulated round-trip latency applied to every HTTP request.
+    /// </summary>
+    public TimeSpan ResponseDelay { get; set; } = TimeSpan.FromMilliseconds(50);
 
     public IReadOnlyList<Uri?> RequestUris => _requestUris.ToArray();
 
@@ -83,7 +84,7 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
         _requestUris.Enqueue(request.RequestUri);
         cancellationToken.ThrowIfCancellationRequested();
 
-        if (ResponseDelay > TimeSpan.Zero && Interlocked.Exchange(ref _responseDelayApplied, 1) == 0)
+        if (ResponseDelay > TimeSpan.Zero)
         {
             using var timer = new PeriodicTimer(ResponseDelay);
             await timer.WaitForNextTickAsync(cancellationToken).ConfigureAwait(false);
