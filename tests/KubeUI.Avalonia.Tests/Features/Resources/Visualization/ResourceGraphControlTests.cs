@@ -905,7 +905,9 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
 
         V1Pod background = CreatePod("background");
         await cluster.Runtime.AddOrUpdateResource(background);
-        await Task.Run(() => cluster.Runtime.AddOrUpdateResource(background));
+        await Task.Run(
+            () => cluster.Runtime.AddOrUpdateResource(background),
+            TestContext.Current.CancellationToken);
 
         await WaitForAsync(() => builder.BuildCount > 1);
 

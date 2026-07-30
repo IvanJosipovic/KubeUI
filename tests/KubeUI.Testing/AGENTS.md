@@ -7,3 +7,4 @@
 - Model WebSocket-only operations with the transport fake; do not introduce an HTTP listener or arbitrary socket server for ordinary REST requests.
 - Wait for informer/resource state or explicit task completion, pass `TestContext.Current.CancellationToken`, and never use `Task.Delay` or `Thread.Sleep` in tests.
 - Dispose a harness when initialization fails; the shared factory owns that failure cleanup.
+- Harness APIs and process/transport helpers must accept and forward cancellation tokens; use bounded, predicate-based waits for readiness and cleanup.

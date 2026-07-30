@@ -951,7 +951,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
         {
             await alphaObserved.Task;
             workspace.AddResourceConfigForTest(betaConfig);
-        });
+        }, TestContext.Current.CancellationToken);
 
         var alphaLink = await WaitForValueAsync(
             () =>

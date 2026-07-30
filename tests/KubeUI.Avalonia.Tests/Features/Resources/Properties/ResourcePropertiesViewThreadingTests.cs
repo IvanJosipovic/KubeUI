@@ -48,7 +48,7 @@ public sealed class ResourcePropertiesViewThreadingTests : AvaloniaTestBase
         await Task.Run(() =>
         {
             view.InvokeClear();
-        });
+        }, TestContext.Current.CancellationToken);
 
         // If we reach here without throwing, the invocation was handled safely.
     }

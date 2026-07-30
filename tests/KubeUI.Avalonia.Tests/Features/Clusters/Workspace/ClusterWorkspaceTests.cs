@@ -395,7 +395,8 @@ public class ClusterWorkspaceTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task connect_returns_before_synchronous_connection_work_completes()
     {
-        await using var scope = KubernetesScenarioClusterScope.CreateDisconnected();
+        await using var scope = KubernetesScenarioClusterScope.CreateDisconnected(harness =>
+            harness.ResponseDelay = TimeSpan.FromMilliseconds(300));
         var runtime = scope.Cluster;
         var workspace = CreateWorkspace(runtime);
 

@@ -27,3 +27,5 @@ Tests using Avalonia capabilities should use `[AvaloniaFact]`. Pure model, seria
 - Dispose scenario scopes with `await using`; dispose view models/workspaces owned directly by a test.
 - Keep fake transport behavior in `KubeUI.Testing`, not in individual tests.
 - Avalonia UI tests remain focused on UI behavior; cluster-backed REST/watch/auth parity belongs in the Kubernetes test project's backend matrix. WebSocket URI and local socket mechanics use deterministic transport/session fakes because they test client wiring or local ownership, not cluster state.
+- When replacing a test double, preserve the original observable behavior or strengthen it with a production-runtime regression; do not remove coverage merely to make a test fit the shared harness.
+- Use coverage results to target high-fan-out navigation, resource readiness, relationship, CRD, and transport branches with behavior assertions.

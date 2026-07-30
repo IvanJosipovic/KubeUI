@@ -117,7 +117,9 @@ public sealed class ClusterAuthTests
         }
 
         var requests = Enumerable.Range(0, 32)
-            .Select(_ => Task.Run(async () => await container.GetOrCreateSeedTask(SeedAsync).Value))
+            .Select(_ => Task.Run(
+                async () => await container.GetOrCreateSeedTask(SeedAsync).Value,
+                TestContext.Current.CancellationToken))
             .ToArray();
 
         await seedStarted.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);

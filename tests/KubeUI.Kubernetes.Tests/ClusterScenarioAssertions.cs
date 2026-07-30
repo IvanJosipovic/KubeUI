@@ -61,7 +61,10 @@ public abstract class ClusterScenarioAssertions
         await using var harness = await CreateHarnessAsync(backend);
         await harness.Cluster.SeedResource<V1Namespace>(true);
 
-        harness.Cluster.GetResourceList<V1Namespace>().Count.ShouldBeGreaterThan(0);
+        await TestWait.UntilAsync(
+            () => harness.Cluster.GetResourceList<V1Namespace>().Count > 0,
+            TimeSpan.FromSeconds(5),
+            cancellationToken: TestContext.Current.CancellationToken);
     }
 
     protected async Task UpdateObjectCore(KubernetesBackend backend)
@@ -208,7 +211,10 @@ public abstract class ClusterScenarioAssertions
 
         var kind = harness.Cluster.Objects[GroupApiVersionKind.From(generatedType)];
         var items = kind.GetType().GetProperty("Items")!.GetValue(kind)!;
-        items.GetType().GetProperty("Count")!.GetValue(items).ShouldBe(1);
+        await TestWait.UntilAsync(
+            () => (int)items.GetType().GetProperty("Count")!.GetValue(items)! == 1,
+            TimeSpan.FromSeconds(10),
+            cancellationToken: TestContext.Current.CancellationToken);
 
         foreach (object item in (IList)items.GetType().GetProperty("Items")!.GetValue(items)!)
         {
@@ -258,6 +264,9 @@ public abstract class ClusterScenarioAssertions
         await cluster.Connect();
         await cluster.SeedResource<V1Node>(true);
         await cluster.SeedResource<V1Secret>(true);
+
+        await WaitForResourceAsync<V1Node>(cluster, null, "node-1");
+        await WaitForResourceAsync<V1Secret>(cluster, "my-app", "my-serviceaccount");
 
         cluster.GetResourceList<V1Node>().Count.ShouldBe(1);
 
@@ -333,11 +342,14 @@ public abstract class ClusterScenarioAssertions
 
         await cluster.SeedResource<V1Pod>(true);
 
+        await WaitForResourceAsync<V1Pod>(cluster, "team-a", "pod-a");
+        await WaitForResourceAsync<V1Pod>(cluster, "team-b", "pod-b");
+
         var pods = cluster.GetResourceList<V1Pod>();
         pods.Select(x => x.Namespace()).Order(StringComparer.Ordinal).ShouldBe(["team-a", "team-b"]);
     }
 
-    public static async Task<T?> WaitForResourceAsync<T>(IClusterRuntime cluster, string? @namespace, string name, TimeSpan? timeout = null, int pollIntervalMs = 100, Func<T, bool>? predicate = null)
+    public static async Task<T?> WaitForResourceAsync<T>(IClusterRuntime cluster, string? @namespace, string name, TimeSpan? timeout = null, int pollIntervalMs = 100, Func<T, bool>? predicate = null, CancellationToken cancellationToken = default)
         where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
         var effectiveTimeout = timeout ?? TimeSpan.FromSeconds(30);
@@ -351,13 +363,13 @@ public abstract class ClusterScenarioAssertions
                 return resource;
             }
 
-            await WaitForNextPollAsync(pollIntervalMs);
+            await WaitForNextPollAsync(pollIntervalMs, cancellationToken);
         }
 
         return null;
     }
 
-    private static async Task WaitForDeletionAsync<T>(IClusterRuntime cluster, string? @namespace, string name, TimeSpan? timeout = null, int pollIntervalMs = 100)
+    private static async Task WaitForDeletionAsync<T>(IClusterRuntime cluster, string? @namespace, string name, TimeSpan? timeout = null, int pollIntervalMs = 100, CancellationToken cancellationToken = default)
         where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
         var effectiveTimeout = timeout ?? TimeSpan.FromSeconds(30);
@@ -370,13 +382,13 @@ public abstract class ClusterScenarioAssertions
                 return;
             }
 
-            await WaitForNextPollAsync(pollIntervalMs);
+            await WaitForNextPollAsync(pollIntervalMs, cancellationToken);
         }
 
         throw new TimeoutException($"Timed out waiting for deletion of {typeof(T).Name} {@namespace}/{name}.");
     }
 
-    private static async Task<Type?> WaitForGeneratedTypeAsync(IClusterRuntime cluster, string group, string version, string kind, TimeSpan? timeout = null, int pollIntervalMs = 100)
+    private static async Task<Type?> WaitForGeneratedTypeAsync(IClusterRuntime cluster, string group, string version, string kind, TimeSpan? timeout = null, int pollIntervalMs = 100, CancellationToken cancellationToken = default)
     {
         var effectiveTimeout = timeout ?? TimeSpan.FromSeconds(30);
         var start = DateTime.UtcNow;
@@ -389,7 +401,7 @@ public abstract class ClusterScenarioAssertions
                 return type;
             }
 
-            await WaitForNextPollAsync(pollIntervalMs);
+            await WaitForNextPollAsync(pollIntervalMs, cancellationToken);
         }
 
         return null;

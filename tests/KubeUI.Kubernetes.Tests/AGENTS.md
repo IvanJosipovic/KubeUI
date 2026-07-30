@@ -7,3 +7,5 @@
 - Do not introduce test implementations of `IClusterRuntime`, `IKubernetes`, or `TestClusterRuntime`-style wrappers.
 - Await informer/resource completion and pass `TestContext.Current.CancellationToken`; no `Task.Delay` or `Thread.Sleep` in test code.
 - Mark backend-matrix suites with `[Trait("Category", "Kind")]` so CI can filter cluster-backed coverage while the environment variable controls whether Kind cases are materialized.
+- Preserve behavior when consolidating suites: replace duplicate backend methods with one theory, but keep every meaningful CRUD, watch, authorization, CRD, and namespace-seeding assertion.
+- Add focused regressions for high-fan-out production paths and meaningful branch behavior; do not inflate coverage with implementation-only assertions.

@@ -5,6 +5,7 @@ using Avalonia.VisualTree;
 using k8s.Models;
 using KubeUI.Avalonia.Features.Resources.Properties.Controls;
 using KubeUI.Avalonia.Tests.Infra;
+using KubeUI.Testing;
 using Shouldly;
 using AppResources = KubeUI.Avalonia.Assets.Resources;
 
@@ -204,6 +205,10 @@ public sealed class ResourcePropertiesViewTests : AvaloniaTestBase
 
         await workspace.AddOrUpdateResource(pod);
         Dispatcher.UIThread.RunJobs();
+        await TestWait.UntilAsync(
+            () => workspace.Runtime.GetResource<V1Pod>("default", "pod-1") is not null,
+            TimeSpan.FromSeconds(5),
+            cancellationToken: TestContext.Current.CancellationToken);
 
         pod.Metadata.Labels = new Dictionary<string, string>
         {
@@ -212,6 +217,12 @@ public sealed class ResourcePropertiesViewTests : AvaloniaTestBase
 
         await workspace.AddOrUpdateResource(pod);
         Dispatcher.UIThread.RunJobs();
+
+        await TestWait.UntilAsync(
+            () => workspace.Runtime.GetResource<V1Pod>("default", "pod-1")?.Metadata?.Labels?.TryGetValue("updated", out string? value) == true
+                && value == "true",
+            TimeSpan.FromSeconds(5),
+            cancellationToken: TestContext.Current.CancellationToken);
 
         workspace.Runtime.GetResource<V1Pod>("default", "pod-1")!.Metadata.Labels.ShouldContainKeyAndValue("updated", "true");
     }
