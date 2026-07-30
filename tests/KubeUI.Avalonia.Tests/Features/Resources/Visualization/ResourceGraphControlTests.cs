@@ -2,6 +2,7 @@ using Avalonia.Headless.XUnit;
 using Avalonia.Controls;
 using Avalonia.Threading;
 using Avalonia;
+using DynamicData;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using k8s;
@@ -90,6 +91,41 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
 
         viewModel.SelectedNamespaces.Select(x => x.Name()).ShouldContain("team-a");
         viewModel.SelectedNamespaces.Select(x => x.Name()).ShouldNotContain("team-b");
+    }
+
+    [AvaloniaFact]
+    public async Task visualizing_selected_namespace_includes_pvc_already_loaded_before_view_initialization()
+    {
+        await using var clusterScope = await KubernetesTestWorkspaceScope.CreateAsync(TestApp.CurrentServices!);
+        var cluster = clusterScope.Workspace;
+        V1Namespace namespaceResource = new() { Metadata = new() { Name = "platform-dev-ijosipov" } };
+        await cluster.Runtime.SeedResource<V1PersistentVolumeClaim>(true);
+
+        V1PersistentVolumeClaim claim = new()
+        {
+            ApiVersion = V1PersistentVolumeClaim.KubeApiVersion,
+            Kind = V1PersistentVolumeClaim.KubeKind,
+            Metadata = new()
+            {
+                Name = "unity-unitycatalog-server-db",
+                NamespaceProperty = "platform-dev-ijosipov",
+            },
+            Spec = new()
+            {
+                AccessModes = ["ReadWriteOnce"],
+                Resources = new() { Requests = new Dictionary<string, ResourceQuantity> { ["storage"] = new("1Gi") } },
+                StorageClassName = "default",
+            },
+        };
+        ((DynamicData.SourceCache<V1PersistentVolumeClaim, string>)cluster.Runtime.GetResourceSourceCache<V1PersistentVolumeClaim>()).AddOrUpdate(claim);
+        cluster.Runtime.GetResourceList<V1PersistentVolumeClaim>().ShouldContain(resource => resource.Name() == claim.Name());
+
+        using VisualizationViewModel viewModel = new(new ResourceRelationshipBuilder());
+        viewModel.Initialize(cluster, namespaceResource);
+
+        await WaitForAsync(() => viewModel.Graph!.Resources.Any(resource => resource.Name() == claim.Name()));
+
+        viewModel.Graph!.Resources.ShouldContain(resource => resource.Name() == claim.Name());
     }
 
     [Fact]

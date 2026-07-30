@@ -49,11 +49,6 @@ internal static class ClusterResourceChangeFeed
                 }
             }
 
-            foreach (GroupApiVersionKind kind in runtime.Objects.Keys)
-            {
-                Subscribe(kind);
-            }
-
             void ResourceSeeded(IClusterRuntime sender, GroupApiVersionKind kind)
             {
                 if (ReferenceEquals(sender, runtime))
@@ -80,6 +75,11 @@ internal static class ClusterResourceChangeFeed
 
             runtime.ResourceSeeded += ResourceSeeded;
             runtime.ResourceUnseeded += ResourceUnseeded;
+
+            foreach (GroupApiVersionKind kind in runtime.Objects.Keys)
+            {
+                Subscribe(kind);
+            }
 
             return Disposable.Create(() =>
             {
