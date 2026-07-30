@@ -98,6 +98,33 @@ public sealed class ClusterAuthTests
     }
 
     [Fact]
+    public async Task resource_container_runs_only_one_seed_factory_for_concurrent_requests()
+    {
+        var container = new ContainerClass<V1Pod>();
+        var seedStarted = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseSeed = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var seedCount = 0;
+
+        Task SeedAsync()
+        {
+            Interlocked.Increment(ref seedCount);
+            seedStarted.SetResult(null);
+            return releaseSeed.Task;
+        }
+
+        var requests = Enumerable.Range(0, 32)
+            .Select(_ => Task.Run(async () => await container.GetOrCreateSeedTask(SeedAsync).Value))
+            .ToArray();
+
+        await seedStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        seedCount.ShouldBe(1);
+
+        releaseSeed.SetResult(null);
+        await Task.WhenAll(requests);
+        seedCount.ShouldBe(1);
+    }
+
+    [Fact]
     public async Task custom_resource_definition_processing_is_serialized()
     {
         using var loggerFactory = NullLoggerFactory.Instance;

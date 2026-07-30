@@ -474,6 +474,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
             foreach (ResourceRelationship relationship in graph.Relationships)
             {
                 if (included.Contains(relationship.Source)
+                    && relationship.Kind != ResourceRelationshipKind.GitOps
                     && string.IsNullOrEmpty(relationship.Target.Namespace)
                     && included.Add(relationship.Target))
                 {
@@ -481,6 +482,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                 }
 
                 if (included.Contains(relationship.Target)
+                    && relationship.Kind != ResourceRelationshipKind.GitOps
                     && string.IsNullOrEmpty(relationship.Source.Namespace)
                     && included.Add(relationship.Source))
                 {
@@ -528,8 +530,9 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                 continue;
             }
 
-            if (selectedNamespaces.Contains(relationship.Source.Namespace ?? string.Empty)
-                || string.IsNullOrEmpty(relationship.Source.Namespace))
+            if (relationship.Kind != ResourceRelationshipKind.GitOps
+                && (selectedNamespaces.Contains(relationship.Source.Namespace ?? string.Empty)
+                    || string.IsNullOrEmpty(relationship.Source.Namespace)))
             {
                 included.Add(relationship.Source);
             }
@@ -540,8 +543,9 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                 included.Add(relationship.Source);
             }
 
-            if (selectedNamespaces.Contains(relationship.Target.Namespace ?? string.Empty)
-                || string.IsNullOrEmpty(relationship.Target.Namespace))
+            if (relationship.Kind != ResourceRelationshipKind.GitOps
+                && (selectedNamespaces.Contains(relationship.Target.Namespace ?? string.Empty)
+                    || string.IsNullOrEmpty(relationship.Target.Namespace)))
             {
                 included.Add(relationship.Target);
             }

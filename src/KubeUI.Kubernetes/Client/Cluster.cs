@@ -299,7 +299,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
 
         if (CanI(type, Verb.List) && CanI(type, Verb.Watch))
         {
-            var informer = new ResourceInformer<T>(Client, _serviceProvider.GetRequiredService<IHostApplicationLifetime>(), _loggerFactory.CreateLogger<ResourceInformer<T>>());
+            var informer = new ResourceInformer<T>(Client, _serviceProvider.GetRequiredService<IHostApplicationLifetime>(), _loggerFactory.CreateLogger<ResourceInformer<T>>(), resourceListLimit: 10000);
             container.Informers.Add(informer);
             container.InformerRegistrations.Add(informer.Register(GetResourceInformerCallback<T>()));
             var informerCancellationToken = GetResourceInformerCancellationToken();
@@ -322,7 +322,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
 
                 if (CanI(type, Verb.List, ns) && CanI(type, Verb.Watch, ns))
                 {
-                    var informer = new ResourceInformer<T>(Client, _serviceProvider.GetRequiredService<IHostApplicationLifetime>(), _loggerFactory.CreateLogger<ResourceInformer<T>>(), @namespace: ns);
+                    var informer = new ResourceInformer<T>(Client, _serviceProvider.GetRequiredService<IHostApplicationLifetime>(), _loggerFactory.CreateLogger<ResourceInformer<T>>(), @namespace: ns, resourceListLimit: 10000);
                     container.Informers.Add(informer);
                     container.InformerRegistrations.Add(informer.Register(GetResourceInformerCallback<T>()));
                     var informerCancellationToken = GetResourceInformerCancellationToken();

@@ -223,6 +223,55 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
     }
 
     [Fact]
+    public void selected_namespace_does_not_include_unselected_gitops_cluster_scoped_descendant()
+    {
+        V1Deployment managed = new()
+        {
+            ApiVersion = "apps/v1",
+            Kind = V1Deployment.KubeKind,
+            Metadata = new()
+            {
+                Name = "managed",
+                NamespaceProperty = "workload",
+                Annotations = new Dictionary<string, string>
+                {
+                    ["argocd.argoproj.io/tracking-id"] = "demo-app:apps/Deployment:workload/managed",
+                },
+            },
+        };
+        V1ClusterRole unrelatedClusterResource = new()
+        {
+            ApiVersion = "rbac.authorization.k8s.io/v1",
+            Kind = V1ClusterRole.KubeKind,
+            Metadata = new()
+            {
+                Name = "unrelated-cluster-resource",
+                Annotations = new Dictionary<string, string>
+                {
+                    ["argocd.argoproj.io/tracking-id"] = "demo-app:rbac.authorization.k8s.io/ClusterRole:unrelated-cluster-resource",
+                },
+            },
+        };
+        V1ConfigMap application = new()
+        {
+            ApiVersion = "argoproj.io/v1alpha1",
+            Kind = "Application",
+            Metadata = new() { Name = "demo-app", NamespaceProperty = "argocd" },
+        };
+        ResourceRelationshipGraph graph = new ResourceRelationshipBuilder().Build(
+            [managed, unrelatedClusterResource, application],
+            new HashSet<string>(),
+            hideNoise: true);
+
+        ResourceRelationshipGraph filtered = VisualizationViewModel.FilterToSelectedNamespaces(
+            graph,
+            new HashSet<string> { "workload" });
+
+        filtered.Resources.Select(resource => resource.Name()).ShouldBe(["managed", "demo-app"]);
+        filtered.Resources.Select(resource => resource.Name()).ShouldNotContain("unrelated-cluster-resource");
+    }
+
+    [Fact]
     public void incremental_gitops_application_keeps_both_cross_namespace_endpoints()
     {
         TestDynamicResource managed = new()
