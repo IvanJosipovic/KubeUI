@@ -46,6 +46,22 @@
                 "isDefault": true
             },
             "problemMatcher": []
+        },
+        {
+            "label": "dotnet: test",
+            "type": "shell",
+            "command": "dotnet",
+            "args": [
+                "test",
+                "--no-restore",
+                "-p:WarningLevel=0",
+                "--hangdump",
+                "--hangdump-timeout 1m"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": []
         }
     ]
 }

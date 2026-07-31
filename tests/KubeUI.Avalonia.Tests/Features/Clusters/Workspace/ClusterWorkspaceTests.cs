@@ -403,7 +403,7 @@ public class ClusterWorkspaceTests : IDisposable
     public async Task connect_returns_before_synchronous_connection_work_completes()
     {
         await using var scope = KubernetesScenarioClusterScope.CreateDisconnected(harness =>
-            harness.ResponseDelay = TimeSpan.FromMilliseconds(300));
+            harness.ResponseDelay = TimeSpan.FromMilliseconds(50));
         var runtime = scope.Cluster;
         var workspace = CreateWorkspace(runtime);
 

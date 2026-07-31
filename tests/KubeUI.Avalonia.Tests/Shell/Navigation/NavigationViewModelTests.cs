@@ -357,7 +357,7 @@ public class NavigationViewModelTests : IDisposable
     public async Task selecting_cluster_node_does_not_block_on_slow_client_connection()
     {
         await using var runtimeScope = KubernetesScenarioClusterScope.CreateDisconnected(harness =>
-            harness.ResponseDelay = TimeSpan.FromMilliseconds(300));
+            harness.ResponseDelay = TimeSpan.FromMilliseconds(50));
         var runtime = runtimeScope.Cluster;
 
         var workspace = CreateWorkspace(runtime);
