@@ -1,13 +1,13 @@
 using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Http.Json;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Threading.Channels;
 using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
-using KubeUI.Kubernetes;
 
 namespace KubeUI.Testing;
 
@@ -19,8 +19,13 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
     private readonly ConcurrentDictionary<string, JsonObject> _resources = new(StringComparer.Ordinal);
     private readonly ConcurrentDictionary<string, bool> _permissions = new(StringComparer.Ordinal);
     private readonly ConcurrentDictionary<string, ConcurrentBag<Channel<byte[]>>> _watchers = new(StringComparer.Ordinal);
+    private readonly CancellationTokenSource _shutdownCancellation = new();
     private long _resourceVersion;
     public bool DefaultPermissionAllowed { get; set; } = true;
+
+    public bool UseRoleBasedAuthorization { get; set; }
+
+    public string AuthenticatedUser { get; set; } = "system:admin";
 
     public bool FailConnection { get; set; }
 
@@ -46,8 +51,20 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
         Register<T>();
         var api = GroupApiVersionKind.From<T>();
         var json = ParseObject(KubernetesJson.Serialize(resource));
+        NormalizeSecret(json);
         EnsureMetadata(json, resource.Metadata);
         _resources[ResourceKey(ResourcePath(api, resource.Metadata?.NamespaceProperty, resource.Metadata?.Name))] = json;
+    }
+
+    public void AddYaml(string yaml)
+    {
+        foreach (var resource in KubeUI.Kubernetes.Serialization.KubernetesYaml.LoadAllFromString(yaml))
+        {
+            var add = GetType()
+                .GetMethod(nameof(Add))!
+                .MakeGenericMethod(resource.GetType());
+            add.Invoke(this, [resource]);
+        }
     }
 
     public void SetPermission(string resource, string verb, bool allowed, string? @namespace = null, string? subresource = null)
@@ -61,6 +78,8 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
     /// </summary>
     public void Shutdown()
     {
+        _shutdownCancellation.Cancel();
+
         foreach (ConcurrentBag<Channel<byte[]>> watchers in _watchers.Values)
         {
             foreach (Channel<byte[]> watcher in watchers)
@@ -154,13 +173,16 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
         var attributes = root?["spec"]?["resourceAttributes"]?.AsObject();
         var resource = attributes?["resource"]?.GetValue<string>() ?? string.Empty;
         var verb = attributes?["verb"]?.GetValue<string>() ?? string.Empty;
+        var group = attributes?["group"]?.GetValue<string>() ?? string.Empty;
         var @namespace = attributes?["namespace"]?.GetValue<string>();
         var subresource = attributes?["subresource"]?.GetValue<string>();
         @namespace = string.IsNullOrEmpty(@namespace) ? null : @namespace;
         subresource = string.IsNullOrEmpty(subresource) ? null : subresource;
         var allowed = _permissions.TryGetValue(PermissionKey(resource, verb, @namespace, subresource), out var configured)
             ? configured
-            : DefaultPermissionAllowed;
+            : UseRoleBasedAuthorization
+                ? IsRoleBasedAccessAllowed(group, resource, verb, @namespace, subresource)
+                : DefaultPermissionAllowed;
 
         return Json(new
         {
@@ -225,6 +247,7 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
             }
 
             EnsureMetadata(resource, resource["metadata"]?.Deserialize<V1ObjectMeta>());
+            NormalizeSecret(resource);
             _resources[ResourceKey(collectionKey + "/" + name)] = resource;
             if (route.PluralName == "customresourcedefinitions")
             {
@@ -250,6 +273,7 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
             }
 
             EnsureMetadata(resource, resource["metadata"]?.Deserialize<V1ObjectMeta>());
+            NormalizeSecret(resource);
             _resources[key] = resource;
             PublishWatch(collectionKey, existed ? "MODIFIED" : "ADDED", resource);
             return Json(resource);
@@ -375,10 +399,118 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
         var permissionKey = PermissionKey(route.PluralName, verb, @namespace, route.Subresource);
         return _permissions.TryGetValue(permissionKey, out var configured)
             ? configured
-            : DefaultPermissionAllowed;
+            : UseRoleBasedAuthorization
+                ? IsRoleBasedAccessAllowed(route.Group, route.PluralName, verb, route.Namespace, route.Subresource)
+                : DefaultPermissionAllowed;
+    }
+
+    private bool IsRoleBasedAccessAllowed(string group, string resource, string verb, string? @namespace, string? subresource)
+    {
+        var subject = ParseServiceAccount(AuthenticatedUser);
+        if (subject is null)
+        {
+            return false;
+        }
+
+        foreach (var binding in _resources.Values)
+        {
+            if (string.Equals(binding["kind"]?.GetValue<string>(), "ClusterRoleBinding", StringComparison.Ordinal))
+            {
+                var clusterRoleBinding = binding.Deserialize<V1ClusterRoleBinding>();
+                if (clusterRoleBinding is not null && IsSubjectMatch(clusterRoleBinding.Subjects, subject.Value))
+                {
+                    var role = GetClusterRole(clusterRoleBinding.RoleRef?.Name);
+                    if (role is not null && RulesAllow(role.Rules, group, resource, verb, subresource))
+                    {
+                        return true;
+                    }
+                }
+            }
+            else if (string.Equals(binding["kind"]?.GetValue<string>(), "RoleBinding", StringComparison.Ordinal))
+            {
+                var roleBinding = binding.Deserialize<V1RoleBinding>();
+                if (roleBinding is null
+                    || !string.Equals(roleBinding.Metadata?.NamespaceProperty, @namespace, StringComparison.Ordinal)
+                    || !IsSubjectMatch(roleBinding.Subjects, subject.Value))
+                {
+                    continue;
+                }
+
+                var rules = string.Equals(roleBinding.RoleRef?.Kind, "ClusterRole", StringComparison.Ordinal)
+                    ? GetClusterRole(roleBinding.RoleRef.Name)?.Rules
+                    : GetRole(roleBinding.RoleRef?.Name, roleBinding.Metadata?.NamespaceProperty)?.Rules;
+                if (RulesAllow(rules, group, resource, verb, subresource))
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private V1ClusterRole? GetClusterRole(string? name)
+        => _resources.Values
+            .Where(resource => string.Equals(resource["kind"]?.GetValue<string>(), "ClusterRole", StringComparison.Ordinal))
+            .Select(resource => resource.Deserialize<V1ClusterRole>())
+            .FirstOrDefault(role => string.Equals(role?.Name(), name, StringComparison.Ordinal));
+
+    private V1Role? GetRole(string? name, string? @namespace)
+        => _resources.Values
+            .Where(resource => string.Equals(resource["kind"]?.GetValue<string>(), "Role", StringComparison.Ordinal))
+            .Select(resource => resource.Deserialize<V1Role>())
+            .FirstOrDefault(role => string.Equals(role?.Name(), name, StringComparison.Ordinal)
+                && string.Equals(role.Namespace(), @namespace, StringComparison.Ordinal));
+
+    private static bool IsSubjectMatch(IList<Rbacv1Subject>? subjects, (string Namespace, string Name) subject)
+        => subjects?.Any(item => string.Equals(item.Kind, "ServiceAccount", StringComparison.Ordinal)
+            && string.Equals(item.NamespaceProperty, subject.Namespace, StringComparison.Ordinal)
+            && string.Equals(item.Name, subject.Name, StringComparison.Ordinal)) == true;
+
+    private static bool RulesAllow(IList<V1PolicyRule>? rules, string group, string resource, string verb, string? subresource)
+    {
+        var requestedResource = string.IsNullOrEmpty(subresource) ? resource : resource + "/" + subresource;
+        return rules?.Any(rule => Matches(rule.ApiGroups, group)
+            && Matches(rule.Resources, requestedResource)
+            && Matches(rule.Verbs, verb)) == true;
+    }
+
+    private static bool Matches(IList<string>? values, string value)
+        => values?.Any(item => item == "*" || string.Equals(item, value, StringComparison.Ordinal)) == true;
+
+    private static (string Namespace, string Name)? ParseServiceAccount(string user)
+    {
+        const string prefix = "system:serviceaccount:";
+        if (!user.StartsWith(prefix, StringComparison.Ordinal))
+        {
+            return null;
+        }
+
+        var parts = user[prefix.Length..].Split(':', 2);
+        return parts.Length == 2 ? (parts[0], parts[1]) : null;
     }
 
     private static JsonObject ParseObject(string json) => JsonNode.Parse(json)?.AsObject() ?? throw new InvalidOperationException("Kubernetes JSON was not an object.");
+
+    private static void NormalizeSecret(JsonObject resource)
+    {
+        if (resource["stringData"] is not JsonObject stringData)
+        {
+            return;
+        }
+
+        var data = resource["data"] as JsonObject ?? new JsonObject();
+        foreach (var property in stringData)
+        {
+            if (property.Value is JsonValue value && value.TryGetValue<string>(out var plainText))
+            {
+                data[property.Key] = Convert.ToBase64String(Encoding.UTF8.GetBytes(plainText));
+            }
+        }
+
+        resource["data"] = data;
+        resource.Remove("stringData");
+    }
 
     private static async Task<JsonObject> ReadObjectAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
@@ -424,7 +556,7 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
         }
         var response = new HttpResponseMessage(HttpStatusCode.OK)
         {
-            Content = new StreamContent(new WatchStream(channel, cancellationToken)),
+            Content = new StreamContent(new WatchStream(channel, cancellationToken, _shutdownCancellation.Token)),
         };
         response.Content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/json");
         return response;
@@ -488,7 +620,10 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
         return string.Join('/', parts.Take(namespaceIndex)) + "/" + string.Join('/', parts.Skip(namespaceIndex + 2));
     }
 
-    private sealed class WatchStream(Channel<byte[]> channel, CancellationToken cancellationToken) : Stream
+    private sealed class WatchStream(
+        Channel<byte[]> channel,
+        CancellationToken cancellationToken,
+        CancellationToken shutdownCancellation) : Stream
     {
         private byte[]? _buffer;
         private int _offset;
@@ -502,7 +637,8 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
         public override int Read(byte[] buffer, int offset, int count) => ReadAsync(buffer.AsMemory(offset, count), cancellationToken).GetAwaiter().GetResult();
         public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken token = default)
         {
-            using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, token);
+            using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, token, shutdownCancellation);
+            using var shutdownRegistration = shutdownCancellation.Register(static state => ((Channel<byte[]>)state!).Writer.TryComplete(), channel);
             while (true)
             {
                 if (_buffer is not null && _offset < _buffer.Length)
@@ -513,7 +649,15 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
                     return count;
                 }
 
-                _buffer = await channel.Reader.ReadAsync(linked.Token).ConfigureAwait(false);
+                try
+                {
+                    _buffer = await channel.Reader.ReadAsync(linked.Token).ConfigureAwait(false);
+                }
+                catch (ChannelClosedException)
+                {
+                    return 0;
+                }
+
                 _offset = 0;
             }
         }

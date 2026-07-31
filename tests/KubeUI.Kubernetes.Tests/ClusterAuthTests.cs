@@ -35,7 +35,7 @@ public sealed class ClusterAuthTests
             backend,
             TestContext.Current.CancellationToken);
         var cluster = (Cluster)await harness.CreateLimitedAccessClusterAsync(
-            includeNamespaceFallback: true,
+            SharedScenarioData.LimitedAccessWithNamespaceFallback,
             cancellationToken: TestContext.Current.CancellationToken);
 
         cluster.CanIAnyNamespace<V1Pod>(Verb.Create, "portforward").ShouldBeTrue();

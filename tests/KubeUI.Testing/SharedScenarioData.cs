@@ -2,6 +2,10 @@ namespace KubeUI.Testing;
 
 public static class SharedScenarioData
 {
+  public static LimitedAccessScenario LimitedAccessWithNamespacePermissions => new(LimitedAccessYaml);
+
+  public static LimitedAccessScenario LimitedAccessWithNamespaceFallback => new(LimitedAccessNoNamespaceYaml, ["my-app"]);
+
     public const string CustomResourceDefinitionYaml = """
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition

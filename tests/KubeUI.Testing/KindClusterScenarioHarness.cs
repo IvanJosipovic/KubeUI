@@ -91,7 +91,9 @@ public sealed class KindClusterScenarioHarness : IClusterScenarioHarness
             ? await client.ReadAsync<T>(item.Name(), cancellationToken)
             : await client.ReadNamespacedAsync<T>(item.Namespace(), item.Name(), cancellationToken);
         item.Metadata.ResourceVersion = current.Metadata.ResourceVersion;
-        return await client.ReplaceAsync<T>(item, item.Name(), cancellationToken);
+        return string.IsNullOrEmpty(item.Namespace())
+            ? await client.ReplaceAsync<T>(item, item.Name(), cancellationToken)
+            : await client.ReplaceNamespacedAsync<T>(item, item.Namespace(), item.Name(), cancellationToken);
     }
 
     public async Task DeleteDirectAsync<T>(T item, CancellationToken cancellationToken = default) where T : class, IKubernetesObject<V1ObjectMeta>, new()
@@ -108,11 +110,9 @@ public sealed class KindClusterScenarioHarness : IClusterScenarioHarness
         await Kubernetes.CreateCustomResourceDefinitionAsync(crd, cancellationToken: cancellationToken);
     }
 
-    public async Task<IClusterRuntime> CreateLimitedAccessClusterAsync(bool includeNamespaceFallback, CancellationToken cancellationToken = default)
+    public async Task<IClusterRuntime> CreateLimitedAccessClusterAsync(LimitedAccessScenario scenario, CancellationToken cancellationToken = default)
     {
-        var yaml = includeNamespaceFallback ? SharedScenarioData.LimitedAccessNoNamespaceYaml : SharedScenarioData.LimitedAccessYaml;
-
-        await Cluster.ImportYaml(new MemoryStream(Encoding.UTF8.GetBytes(yaml))).WaitAsync(cancellationToken);
+        await Cluster.ImportYaml(new MemoryStream(Encoding.UTF8.GetBytes(scenario.Yaml))).WaitAsync(cancellationToken);
         var rootCluster = (KubeUI.Kubernetes.Cluster)Cluster;
         await rootCluster.UpdateCanI<V1ServiceAccount>(Verb.List).WaitAsync(cancellationToken);
         await rootCluster.UpdateCanI<V1ServiceAccount>(Verb.Watch).WaitAsync(cancellationToken);
@@ -120,7 +120,7 @@ public sealed class KindClusterScenarioHarness : IClusterScenarioHarness
         await WaitForResourceAsync<V1ServiceAccount>(Cluster, "my-app", "my-serviceaccount", cancellationToken: cancellationToken);
 
         var config = KubeUI.Kubernetes.Serialization.KubernetesYaml.Deserialize<K8SConfiguration>(KubeUI.Kubernetes.Serialization.KubernetesYaml.Serialize(KubeConfig));
-        var clusterName = includeNamespaceFallback ? "limited-fallback" : "limited";
+        var clusterName = scenario.FallbackNamespaces is null ? "limited" : "limited-fallback";
         var token = await CreateServiceAccountTokenAsync("my-app", "my-serviceaccount", cancellationToken);
 
         config.Clusters.First().Name = clusterName;
@@ -136,7 +136,7 @@ public sealed class KindClusterScenarioHarness : IClusterScenarioHarness
         var limited = await CreateClusterAsync(
             clusterName,
             config,
-            includeNamespaceFallback ? ["my-app"] : null,
+            scenario.FallbackNamespaces,
             cancellationToken);
         await PrimePermissionsAsync((KubeUI.Kubernetes.Cluster)limited, ["my-app"], cancellationToken).ConfigureAwait(false);
 

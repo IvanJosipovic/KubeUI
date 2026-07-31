@@ -19,6 +19,8 @@ public interface IClusterScenarioHarness : IAsyncDisposable
 
     Task CreateCustomResourceDefinitionAsync(V1CustomResourceDefinition crd, CancellationToken cancellationToken = default);
 
-    Task<IClusterRuntime> CreateLimitedAccessClusterAsync(bool includeNamespaceFallback, CancellationToken cancellationToken = default);
+    Task<IClusterRuntime> CreateLimitedAccessClusterAsync(LimitedAccessScenario scenario, CancellationToken cancellationToken = default);
 }
+
+public sealed record LimitedAccessScenario(string Yaml, IReadOnlyCollection<string>? FallbackNamespaces = null);
 

@@ -24,7 +24,7 @@ using YamlDotNet.Core.Events;
 
 namespace KubeUI.Kubernetes;
 
-public sealed partial class Cluster : ObservableObject, IClusterRuntime, IClusterAuthorization
+public sealed partial class Cluster : ObservableObject, IClusterRuntime, IClusterAuthorization, IAsyncDisposable
 {
     public IClusterAuthorization Permissions => this;
 
@@ -51,6 +51,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
     private readonly SemaphoreSlim _connectionLimiter = new(1, 1);
     private readonly Channel<V1CustomResourceDefinition> _customResourceDefinitionQueue = Channel.CreateUnbounded<V1CustomResourceDefinition>(
         new UnboundedChannelOptions { SingleReader = true, SingleWriter = false });
+    private readonly Task _customResourceDefinitionTask;
 
     private readonly ConcurrentDictionary<string, string> _customResourceDefinitionSignatures = new(StringComparer.Ordinal);
     private CancellationTokenSource? _resourceInformerCancellationTokenSource = new();
@@ -105,7 +106,15 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
         ModelCache.AddToCache(typeof(V1Deployment).Assembly, kubeAssemblyXmlDoc);
         _settings = settings;
         _serviceProvider = serviceProvider;
-        _ = ProcessCustomResourceDefinitionQueueAsync();
+        _customResourceDefinitionTask = ProcessCustomResourceDefinitionQueueAsync();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        _customResourceDefinitionQueue.Writer.TryComplete();
+        StopResourceInformers();
+        await _customResourceDefinitionTask.ConfigureAwait(false);
+        _connectionLimiter.Dispose();
     }
 
     private Activity? StartClusterActivity(string activityName, ActivityKind activityKind = ActivityKind.Internal)
@@ -243,6 +252,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
         {
             StopMetrics();
             StopPortForwarders();
+
             StopResourceInformers();
             ClearDynamicCustomResourceDefinitions();
             ClearSeededResources();
@@ -315,12 +325,8 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
             var informer = new ResourceInformer<T>(Client, _serviceProvider.GetRequiredService<IHostApplicationLifetime>(), _loggerFactory.CreateLogger<ResourceInformer<T>>(), resourceListLimit: 10000);
             container.Informers.Add(informer);
             container.InformerRegistrations.Add(informer.Register(GetResourceInformerCallback<T>()));
-            var informerCancellationToken = GetResourceInformerCancellationToken();
-            _ = Task.Run(() =>
-            {
-                informer.StartWatching();
-                _ = informer.RunInfinite(informerCancellationToken);
-            });
+            informer.StartWatching();
+            _ = informer.RunInfinite(GetResourceInformerCancellationToken());
         }
         else
         {
@@ -338,13 +344,8 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
                     var informer = new ResourceInformer<T>(Client, _serviceProvider.GetRequiredService<IHostApplicationLifetime>(), _loggerFactory.CreateLogger<ResourceInformer<T>>(), @namespace: ns, resourceListLimit: 10000);
                     container.Informers.Add(informer);
                     container.InformerRegistrations.Add(informer.Register(GetResourceInformerCallback<T>()));
-                    var informerCancellationToken = GetResourceInformerCancellationToken();
-
-                    _ = Task.Run(() =>
-                    {
-                        informer.StartWatching();
-                        _ = informer.RunInfinite(informerCancellationToken);
-                    });
+                    informer.StartWatching();
+                    _ = informer.RunInfinite(GetResourceInformerCancellationToken());
                 }
             }
         }
@@ -1006,6 +1007,18 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
     private void StopResourceInformers()
     {
         _resourceInformerCancellationTokenSource?.Cancel();
+
+        if (Client is IDisposable disposableClient)
+        {
+            disposableClient.Dispose();
+            Client = null;
+        }
+
+        foreach (var container in Objects.Values.OfType<IClearableResourceContainer>())
+        {
+            container.Clear();
+        }
+
         _resourceInformerCancellationTokenSource?.Dispose();
         _resourceInformerCancellationTokenSource = null;
     }

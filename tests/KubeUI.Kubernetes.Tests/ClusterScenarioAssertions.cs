@@ -32,7 +32,7 @@ public abstract class ClusterScenarioAssertions
     {
         await using var harness = await CreateHarnessAsync(backend);
         IClusterRuntime limitedCluster = await harness.CreateLimitedAccessClusterAsync(
-            includeNamespaceFallback: true,
+            SharedScenarioData.LimitedAccessWithNamespaceFallback,
             cancellationToken: TestContext.Current.CancellationToken);
 
         limitedCluster.Permissions.CanI<V1Pod>(Verb.Get).ShouldBeFalse();
@@ -48,7 +48,7 @@ public abstract class ClusterScenarioAssertions
     {
         await using var harness = await CreateHarnessAsync(backend);
         IClusterRuntime limitedCluster = await harness.CreateLimitedAccessClusterAsync(
-            includeNamespaceFallback: true,
+            SharedScenarioData.LimitedAccessWithNamespaceFallback,
             cancellationToken: TestContext.Current.CancellationToken);
 
         limitedCluster.Permissions.CanI<V1Pod>(Verb.Get, "default").ShouldBeFalse();
@@ -65,7 +65,7 @@ public abstract class ClusterScenarioAssertions
         await using var harness = await CreateHarnessAsync(backend);
         IClusterRuntime rootCluster = harness.Cluster;
         IClusterRuntime limitedCluster = await harness.CreateLimitedAccessClusterAsync(
-            includeNamespaceFallback: true,
+            SharedScenarioData.LimitedAccessWithNamespaceFallback,
             cancellationToken: TestContext.Current.CancellationToken);
 
         rootCluster.Permissions.CanI<V1Pod>(Verb.Get, "my-app", "log").ShouldBeTrue();
@@ -99,17 +99,17 @@ public abstract class ClusterScenarioAssertions
                 StringData = new Dictionary<string, string> { ["value"] = "before" },
             },
             TestContext.Current.CancellationToken);
-        createdSecret.StringData!["value"].ShouldBe("before");
+        Encoding.UTF8.GetString(createdSecret.Data!["value"]).ShouldBe("before");
 
-        createdSecret.StringData["value"] = "after";
+        createdSecret.Data["value"] = Encoding.UTF8.GetBytes("after");
         V1Secret replacedSecret = await harness.ReplaceDirectAsync(createdSecret, TestContext.Current.CancellationToken);
-        replacedSecret.StringData!["value"].ShouldBe("after");
+        Encoding.UTF8.GetString(replacedSecret.Data!["value"]).ShouldBe("after");
 
         await harness.DeleteDirectAsync(replacedSecret, TestContext.Current.CancellationToken);
-        (await WaitForResourceAsync<V1Secret>(harness.Cluster, "default", "direct-secret", cancellationToken: TestContext.Current.CancellationToken)).ShouldBeNull();
+        await WaitForDeletionAsync<V1Secret>(harness.Cluster, "default", "direct-secret", cancellationToken: TestContext.Current.CancellationToken);
 
         await harness.DeleteDirectAsync(createdNamespace, TestContext.Current.CancellationToken);
-        (await WaitForResourceAsync<V1Namespace>(harness.Cluster, null, "direct-crud", cancellationToken: TestContext.Current.CancellationToken)).ShouldBeNull();
+        await WaitForDeletionAsync<V1Namespace>(harness.Cluster, null, "direct-crud", cancellationToken: TestContext.Current.CancellationToken);
     }
 
     protected async Task DirectCrudOperationsAreObservedByInformerCacheCore(KubernetesBackend backend)
@@ -137,7 +137,7 @@ public abstract class ClusterScenarioAssertions
         replaced.Data!["state"].ShouldBe("replaced");
 
         await harness.DeleteDirectAsync(replaced, TestContext.Current.CancellationToken);
-        (await WaitForResourceAsync<V1ConfigMap>(harness.Cluster, "default", configMap.Name(), cancellationToken: TestContext.Current.CancellationToken)).ShouldBeNull();
+        await WaitForDeletionAsync<V1ConfigMap>(harness.Cluster, "default", configMap.Name(), cancellationToken: TestContext.Current.CancellationToken);
     }
 
     protected async Task CreateObjectCore(KubernetesBackend backend)
@@ -382,7 +382,10 @@ public abstract class ClusterScenarioAssertions
     protected async Task LimitedAccessCore(KubernetesBackend backend, bool includeNamespaceFallback)
     {
         await using var harness = await CreateHarnessAsync(backend);
-        var cluster = await harness.CreateLimitedAccessClusterAsync(includeNamespaceFallback, TestContext.Current.CancellationToken);
+        var scenario = includeNamespaceFallback
+            ? SharedScenarioData.LimitedAccessWithNamespaceFallback
+            : SharedScenarioData.LimitedAccessWithNamespacePermissions;
+        var cluster = await harness.CreateLimitedAccessClusterAsync(scenario, TestContext.Current.CancellationToken);
 
         await cluster.Connect();
         await cluster.SeedResource<V1Node>(true);
@@ -403,7 +406,7 @@ public abstract class ClusterScenarioAssertions
     {
         await using var harness = await CreateHarnessAsync(backend);
         var cluster = await harness.CreateLimitedAccessClusterAsync(
-            includeNamespaceFallback: true,
+            SharedScenarioData.LimitedAccessWithNamespaceFallback,
             cancellationToken: TestContext.Current.CancellationToken);
 
         await cluster.Connect();

@@ -127,7 +127,9 @@ public sealed class FakeClusterScenarioHarness : IClusterScenarioHarness
     public async Task<T> ReplaceDirectAsync<T>(T item, CancellationToken cancellationToken = default) where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
         using var client = Cluster.Client!.GetGenericClient<T>();
-        return await client.ReplaceAsync<T>(item, item.Name(), cancellationToken);
+        return string.IsNullOrEmpty(item.Namespace())
+            ? await client.ReplaceAsync<T>(item, item.Name(), cancellationToken)
+            : await client.ReplaceNamespacedAsync<T>(item, item.Namespace(), item.Name(), cancellationToken);
     }
 
     public async Task DeleteDirectAsync<T>(T item, CancellationToken cancellationToken = default) where T : class, IKubernetesObject<V1ObjectMeta>, new()
@@ -145,33 +147,27 @@ public sealed class FakeClusterScenarioHarness : IClusterScenarioHarness
         await client.ApiextensionsV1.CreateCustomResourceDefinitionAsync(crd, cancellationToken: cancellationToken);
     }
 
-    public async Task<IClusterRuntime> CreateLimitedAccessClusterAsync(bool includeNamespaceFallback, CancellationToken cancellationToken = default)
+    public async Task<IClusterRuntime> CreateLimitedAccessClusterAsync(LimitedAccessScenario scenario, CancellationToken cancellationToken = default)
     {
-        await EnsureLimitedAccessResourcesAsync(cancellationToken);
+        await EnsureLimitedAccessResourcesAsync(scenario, cancellationToken);
 
-        var api = new FakeKubernetesHttpApi { DefaultPermissionAllowed = false };
+        var api = new FakeKubernetesHttpApi
+        {
+            DefaultPermissionAllowed = false,
+            UseRoleBasedAuthorization = true,
+            AuthenticatedUser = $"system:serviceaccount:{LimitedNamespace}:{LimitedServiceAccountName}",
+        };
         _additionalApis.Add(api);
         RegisterSupportedResources(api);
-        api.SetPermission("namespaces", "list", !includeNamespaceFallback);
-        api.SetPermission("namespaces", "watch", !includeNamespaceFallback);
-        api.Add(new V1Namespace { Metadata = new V1ObjectMeta { Name = LimitedNamespace } });
+        api.AddYaml(scenario.Yaml);
         api.Add(new V1Node { Metadata = new V1ObjectMeta { Name = "node-1" } });
-        api.Add(new V1Secret
-        {
-            Metadata = new V1ObjectMeta { Name = LimitedServiceAccountName, NamespaceProperty = LimitedNamespace },
-            Data = new Dictionary<string, byte[]> { ["token"] = Encoding.UTF8.GetBytes("fake-token") },
-        });
-        ConfigureLimitedPermissions(api);
-        // The real client can establish the secret informer from a
-        // cluster-wide watch even when the test service account is intended
-        // to be consumed in one namespace. The fake transport uses this
-        // route to model that informer bootstrap.
-        api.SetPermission("secrets", "list", true);
-        api.SetPermission("secrets", "watch", true);
 
-        var name = includeNamespaceFallback ? "http-limited-fallback" : "http-limited";
+        var name = scenario.FallbackNamespaces is null ? "http-limited" : "http-limited-fallback";
         var limited = CreateCluster(api, name);
-        _settingsStore.SetClusterNamespaces(limited, LimitedNamespace);
+        if (scenario.FallbackNamespaces is not null)
+        {
+            _settingsStore.SetClusterNamespaces(limited, [.. scenario.FallbackNamespaces]);
+        }
 
         await limited.Connect().WaitAsync(cancellationToken);
         await PrimePermissionsAsync(limited, cancellationToken);
@@ -187,28 +183,28 @@ public sealed class FakeClusterScenarioHarness : IClusterScenarioHarness
             return;
         }
 
-        foreach (var cluster in _connectedClusters)
+        _api.Shutdown();
+        foreach (var api in _additionalApis)
         {
-            try
-            {
-                await cluster.Disconnect();
-            }
-            catch
-            {
-            }
+            api.Shutdown();
         }
 
+        Task[] disconnectTasks = _connectedClusters
+            .Select(cluster => DisconnectAsync(cluster))
+            .ToArray();
+
+        await Task.WhenAll(disconnectTasks);
+        await _services.DisposeAsync();
+    }
+
+    private static async Task DisconnectAsync(KubeUI.Kubernetes.Cluster cluster)
+    {
         try
         {
-            await _services.DisposeAsync();
+            await cluster.Disconnect();
         }
-        finally
+        catch
         {
-            _api.Shutdown();
-            foreach (var api in _additionalApis)
-            {
-                api.Shutdown();
-            }
         }
     }
 
@@ -223,9 +219,9 @@ public sealed class FakeClusterScenarioHarness : IClusterScenarioHarness
         return cluster;
     }
 
-    private async Task EnsureLimitedAccessResourcesAsync(CancellationToken cancellationToken)
+    private async Task EnsureLimitedAccessResourcesAsync(LimitedAccessScenario scenario, CancellationToken cancellationToken)
     {
-        await Cluster.ImportYaml(new MemoryStream(Encoding.UTF8.GetBytes(SharedScenarioData.LimitedAccessYaml))).WaitAsync(cancellationToken);
+        await Cluster.ImportYaml(new MemoryStream(Encoding.UTF8.GetBytes(scenario.Yaml))).WaitAsync(cancellationToken);
         await Cluster.SeedResource<V1ServiceAccount>(true).WaitAsync(cancellationToken);
     }
 
@@ -263,47 +259,11 @@ public sealed class FakeClusterScenarioHarness : IClusterScenarioHarness
         api.Register<V1CronJob>();
         api.Register<V1Job>();
         api.Register<V1CustomResourceDefinition>();
+        api.Register<V1Role>();
+        api.Register<V1RoleBinding>();
+        api.Register<V1ClusterRole>();
+        api.Register<V1ClusterRoleBinding>();
     }
-
-    private static void ConfigureLimitedPermissions(FakeKubernetesHttpApi api)
-    {
-        SetAll(api, typeof(V1Namespace), false);
-        SetAll(api, typeof(V1Pod), false);
-        SetAll(api, typeof(V1Deployment), false);
-
-        Set(api, "nodes", "get", true);
-        Set(api, "nodes", "list", true);
-        Set(api, "nodes", "watch", true);
-        Set(api, "secrets", "get", true, LimitedNamespace);
-        Set(api, "secrets", "list", true, LimitedNamespace);
-        Set(api, "secrets", "watch", true, LimitedNamespace);
-        Set(api, "pods", "delete", true, LimitedNamespace);
-        Set(api, "pods", "get", true, LimitedNamespace);
-        Set(api, "pods", "list", true, LimitedNamespace);
-        Set(api, "pods", "watch", true, LimitedNamespace);
-        Set(api, "pods", "get", true, LimitedNamespace, "log");
-        Set(api, "pods", "create", true, LimitedNamespace, "exec");
-        Set(api, "pods", "create", true, LimitedNamespace, "portforward");
-        Set(api, "deployments", "get", true, LimitedNamespace);
-        Set(api, "deployments", "list", true, LimitedNamespace);
-        Set(api, "deployments", "watch", true, LimitedNamespace);
-    }
-
-    private static void SetAll(FakeKubernetesHttpApi api, Type type, bool allowed)
-    {
-        var definition = GroupApiVersionKind.From(type);
-        foreach (var verb in new[] { "create", "delete", "get", "list", "patch", "update", "watch" })
-        {
-            Set(api, definition.PluralName, verb, allowed);
-        }
-
-        Set(api, definition.PluralName, "get", allowed, subresource: "log");
-        Set(api, definition.PluralName, "create", allowed, subresource: "exec");
-        Set(api, definition.PluralName, "create", allowed, subresource: "portforward");
-    }
-
-    private static void Set(FakeKubernetesHttpApi api, string resource, string verb, bool allowed, string? @namespace = null, string? subresource = null)
-        => api.SetPermission(resource, verb, allowed, @namespace, subresource);
 
     private static K8SConfiguration CreateKubeConfig(string name)
     {

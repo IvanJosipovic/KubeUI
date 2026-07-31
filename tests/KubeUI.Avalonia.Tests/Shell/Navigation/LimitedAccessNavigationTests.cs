@@ -18,7 +18,7 @@ public sealed class LimitedAccessNavigationTests : AvaloniaTestBase
             TestContext.Current.CancellationToken);
 
         var runtime = await harness.CreateLimitedAccessClusterAsync(
-            includeNamespaceFallback: false,
+            SharedScenarioData.LimitedAccessWithNamespacePermissions,
             cancellationToken: TestContext.Current.CancellationToken);
         var services = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
         var workspace = ActivatorUtilities.CreateInstance<ClusterWorkspace>(services, runtime);

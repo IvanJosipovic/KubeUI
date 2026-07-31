@@ -527,7 +527,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
     {
         await using var runtimeScope = await KubernetesScenarioClusterScope.CreateAsync();
         var runtime = await runtimeScope.Harness.CreateLimitedAccessClusterAsync(
-            includeNamespaceFallback: true,
+            SharedScenarioData.LimitedAccessWithNamespaceFallback,
             cancellationToken: TestContext.Current.CancellationToken);
 
         var workspace = CreateWorkspace(runtime);
@@ -561,7 +561,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
     {
         await using var runtimeScope = await KubernetesScenarioClusterScope.CreateAsync();
         var runtime = await runtimeScope.Harness.CreateLimitedAccessClusterAsync(
-            includeNamespaceFallback: true,
+            SharedScenarioData.LimitedAccessWithNamespaceFallback,
             cancellationToken: TestContext.Current.CancellationToken);
         var workspace = CreateWorkspace(runtime);
         await workspace.Connect();
@@ -639,7 +639,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
     {
         await using var runtimeScope = await KubernetesScenarioClusterScope.CreateAsync();
         var runtime = await runtimeScope.Harness.CreateLimitedAccessClusterAsync(
-            includeNamespaceFallback: false,
+            SharedScenarioData.LimitedAccessWithNamespacePermissions,
             cancellationToken: TestContext.Current.CancellationToken);
         var workspace = CreateWorkspace(runtime);
         var settingsService = TestApp.CurrentServices?.GetRequiredService<ISettingsService>()
@@ -719,7 +719,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
     {
         await using var runtimeScope = await KubernetesScenarioClusterScope.CreateAsync();
         var runtime = await runtimeScope.Harness.CreateLimitedAccessClusterAsync(
-            includeNamespaceFallback: false,
+            SharedScenarioData.LimitedAccessWithNamespacePermissions,
             cancellationToken: TestContext.Current.CancellationToken);
         var workspace = CreateWorkspace(runtime);
         var settingsService = TestApp.CurrentServices?.GetRequiredService<ISettingsService>()
