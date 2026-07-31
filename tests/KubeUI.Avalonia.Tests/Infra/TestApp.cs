@@ -136,7 +136,11 @@ public class TestApp : Application, IServiceProviderHost
 
     private void DisposeServices()
     {
-        if (CurrentServices is IDisposable disposable)
+        if (CurrentServices is IAsyncDisposable asyncDisposable)
+        {
+            asyncDisposable.DisposeAsync().AsTask().GetAwaiter().GetResult();
+        }
+        else if (CurrentServices is IDisposable disposable)
         {
             disposable.Dispose();
         }
