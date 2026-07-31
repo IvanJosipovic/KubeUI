@@ -217,7 +217,10 @@ public class ClusterWorkspaceTests : IDisposable
     public async Task denied_resource_seed_does_not_raise_resource_seeded_event()
     {
         await using var scope = await KubernetesScenarioClusterScope.CreateAsync(harness =>
-            harness.DefaultPermissionAllowed = false);
+        {
+            harness.SetPermission<Corev1Event>(Verb.List, false);
+            harness.SetPermission<Corev1Event>(Verb.Watch, false);
+        });
         var runtime = scope.Cluster;
         var workspace = CreateWorkspace(runtime);
         var seeded = false;
