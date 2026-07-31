@@ -1,5 +1,4 @@
 using KubeUI.Testing;
-using KubeUI.Kubernetes;
 using System.Diagnostics.CodeAnalysis;
 
 namespace KubeUI.Avalonia.Tests.Infra;

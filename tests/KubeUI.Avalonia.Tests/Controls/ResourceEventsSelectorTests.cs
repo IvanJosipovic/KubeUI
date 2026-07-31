@@ -1,6 +1,5 @@
 using k8s.Models;
 using KubeUI.Avalonia.Features.Resources.Properties.Controls;
-using KubeUI.Avalonia.Tests.Infra;
 using KubeUI.Testing;
 using Shouldly;
 

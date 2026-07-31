@@ -6,7 +6,6 @@ using k8s.Models;
 using KubeUI.Avalonia.Features.Resources.Properties.Controls;
 using KubeUI.Avalonia.Tests.Infra;
 using KubeUI.Testing;
-using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Features.Resources.Properties;

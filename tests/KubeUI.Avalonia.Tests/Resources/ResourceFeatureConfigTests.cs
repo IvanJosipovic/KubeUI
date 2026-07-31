@@ -2,7 +2,6 @@ using System.Collections;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using CommunityToolkit.Mvvm.Input;
-using k8s;
 using k8s.Models;
 using KubeUI.Avalonia.Resources;
 using KubeUI.Avalonia.Tests.Infra;

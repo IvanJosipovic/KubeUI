@@ -9,7 +9,6 @@ using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Styles;
-using KubeUI.Kubernetes;
 using KubeUI.Testing;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;

@@ -1,6 +1,4 @@
 using System.Collections;
-using System.Collections.ObjectModel;
-using System.ComponentModel;
 using System.Diagnostics;
 using System.Reflection;
 using Avalonia.Headless.XUnit;
@@ -8,9 +6,6 @@ using Avalonia.Media;
 using Avalonia.Styling;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.Input;
-using DynamicData;
-using k8s;
-using k8s.KubeConfigModels;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Resources;
