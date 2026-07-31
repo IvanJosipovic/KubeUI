@@ -28,9 +28,9 @@ public class ClusterWorkspaceTests : IDisposable
     }
 
     [AvaloniaFact]
-    public void creating_workspace_does_not_initialize_resource_configs_until_requested()
+    public async Task creating_workspace_does_not_initialize_resource_configs_until_requested()
     {
-        using var scope = KubernetesScenarioClusterScope.CreateDisconnected();
+        await using var scope = KubernetesScenarioClusterScope.CreateDisconnected();
         var runtime = scope.Cluster;
 
         var workspace = CreateWorkspace(runtime);
@@ -52,9 +52,9 @@ public class ClusterWorkspaceTests : IDisposable
     }
 
     [AvaloniaFact]
-    public void changing_runtime_status_to_connecting_updates_cluster_color()
+    public async Task changing_runtime_status_to_connecting_updates_cluster_color()
     {
-        using var scope = KubernetesScenarioClusterScope.CreateDisconnected();
+        await using var scope = KubernetesScenarioClusterScope.CreateDisconnected();
         var runtime = scope.Cluster;
 
         var workspace = CreateWorkspace(runtime);

@@ -1,5 +1,6 @@
 <Project>
   <PropertyGroup>
+    <TestingPlatformShowTestsFailure>true</TestingPlatformShowTestsFailure>
     <WarningsAsErrors>$(WarningsAsErrors);IDE0005;IDE0052</WarningsAsErrors>
   </PropertyGroup>
 </Project>
