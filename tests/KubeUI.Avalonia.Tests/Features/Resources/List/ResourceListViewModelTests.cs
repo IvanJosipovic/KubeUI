@@ -372,6 +372,7 @@ public class ResourceListViewModelTests : IDisposable
         var contextMenu = grid!.ContextMenu;
         contextMenu.ShouldNotBeNull();
 
+        await WaitForAsync(() => GetAllRows(grid).Any(x => x.IsVisible));
         var row = GetAllRows(grid).First(x => x.IsVisible);
         var clickPoint = GetRowCenterOnWindow(row, window);
 

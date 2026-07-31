@@ -141,6 +141,7 @@ rules:
   apiGroups:
     - ''
   resources:
+    - pods
     - pods/attach
     - pods/exec
     - pods/portforward

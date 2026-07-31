@@ -36,7 +36,9 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
 
     public IReadOnlyList<Uri?> RequestUris => _requestUris.ToArray();
 
-    public int AuthorizationRequestCount { get; private set; }
+    private int _authorizationRequestCount;
+
+    public int AuthorizationRequestCount => Volatile.Read(ref _authorizationRequestCount);
 
     private readonly ConcurrentQueue<Uri?> _requestUris = new();
 
@@ -167,7 +169,7 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
 
     private async Task<HttpResponseMessage> HandleAuthorizationAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
-        AuthorizationRequestCount++;
+        Interlocked.Increment(ref _authorizationRequestCount);
         var body = await request.Content!.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
         var root = JsonNode.Parse(body)?.AsObject();
         var attributes = root?["spec"]?["resourceAttributes"]?.AsObject();

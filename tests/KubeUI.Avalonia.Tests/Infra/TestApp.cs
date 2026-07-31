@@ -1,10 +1,10 @@
 using Avalonia;
-using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Controls.Notifications;
 using Dock.Model.Core;
 using FluentAvalonia.UI.Controls;
 using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
+using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
 using KubeUI.Avalonia.Infrastructure.Presentation;
@@ -36,10 +36,6 @@ public class TestApp : Application, IServiceProviderHost, IDisposable
         ApplyResources(provider);
         InitializeDockFactory(provider);
 
-        if (ApplicationLifetime is IControlledApplicationLifetime controlledLifetime)
-        {
-            controlledLifetime.Exit += OnExit;
-        }
     }
 
     public void Dispose()
@@ -47,11 +43,6 @@ public class TestApp : Application, IServiceProviderHost, IDisposable
         if (Interlocked.Exchange(ref _disposed, 1) == 1)
         {
             return;
-        }
-
-        if (ApplicationLifetime is IControlledApplicationLifetime controlledLifetime)
-        {
-            controlledLifetime.Exit -= OnExit;
         }
 
         if (Services is IAsyncDisposable asyncDisposableServices)
@@ -67,11 +58,6 @@ public class TestApp : Application, IServiceProviderHost, IDisposable
         DialogManager = null;
         Notification = null;
         ContentDialogSettings = null;
-    }
-
-    private void OnExit(object? sender, ControlledApplicationLifetimeExitEventArgs e)
-    {
-        Dispose();
     }
 
     private ServiceProvider BuildServiceProvider()
@@ -105,6 +91,8 @@ public class TestApp : Application, IServiceProviderHost, IDisposable
             overrides.Replace(ServiceDescriptor.Singleton<ISettingsService, TestSettingsService>());
             overrides.RemoveAll<IClusterSettingsStore>();
             overrides.AddSingleton<IClusterSettingsStore>(sp => sp.GetRequiredService<ISettingsService>().Clusters);
+            overrides.RemoveAll<ClusterWorkspaceCatalog>();
+            overrides.AddTransient<ClusterWorkspaceCatalog>();
             overrides.Replace(ServiceDescriptor.Singleton<IDialogService>(dialog.Object));
             overrides.Replace(ServiceDescriptor.Singleton<INotificationManager>(notifications.Object));
             overrides.Replace(ServiceDescriptor.Singleton<IFactory>(sp => new DockFactory(sp, sp.GetRequiredService<ILogger<DockFactory>>())));

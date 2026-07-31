@@ -1760,11 +1760,15 @@ public class NavigationViewModelTests : IDisposable
 
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
         await vm.TreeViewSelectionChangedAsync(clusterNode);
+        await workspace.Connect();
         await WaitForAsync(() => workspace.GetResourceConfigs().Any(x => x.Type == typeof(Corev1Event) && x.PermissionsLoaded));
         var eventsLink = await WaitForValueAsync(
-            () => FindResourceLink(clusterNode, typeof(Corev1Event))?.Count is not null
-                ? FindResourceLink(clusterNode, typeof(Corev1Event))
-                : null,
+            () => FindResourceLink(clusterNode, typeof(Corev1Event)),
+            timeoutMs: 10000);
+        eventsLink.ShouldNotBeNull();
+
+        eventsLink = await WaitForValueAsync(
+            () => eventsLink.Count is not null ? eventsLink : null,
             timeoutMs: 10000);
         eventsLink.ShouldNotBeNull();
 
@@ -1845,8 +1849,10 @@ public class NavigationViewModelTests : IDisposable
         await using var runtimeScope = await KubernetesScenarioClusterScope.CreateAsync(harness =>
         {
             harness.DefaultPermissionAllowed = false;
+            harness.SetPermission<V1Namespace>(Verb.Create, true);
             harness.SetPermission<Corev1Event>(Verb.List, false);
             harness.SetPermission<Corev1Event>(Verb.Watch, false);
+            harness.SetPermission<Corev1Event>(Verb.Create, true, "default");
         });
         var runtime = runtimeScope.Cluster;
         var harness = runtimeScope.Harness;

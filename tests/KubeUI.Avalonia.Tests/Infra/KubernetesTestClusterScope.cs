@@ -3,7 +3,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace KubeUI.Avalonia.Tests.Infra;
 
-internal sealed class KubernetesScenarioClusterScope : IDisposable, IAsyncDisposable
+internal sealed class KubernetesScenarioClusterScope : IAsyncDisposable
 {
     private readonly IClusterScenarioHarness _harness;
 
@@ -50,9 +50,6 @@ internal sealed class KubernetesScenarioClusterScope : IDisposable, IAsyncDispos
         harness.InitializeDisconnected();
         return new KubernetesScenarioClusterScope(harness);
     }
-
-    public void Dispose()
-        => _harness.DisposeAsync().AsTask().GetAwaiter().GetResult();
 
     public ValueTask DisposeAsync()
         => _harness.DisposeAsync();

@@ -289,7 +289,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
             return;
         }
 
-        V1Namespace selectedNamespace = Cluster!.Runtime.Namespaces.FirstOrDefault(x => x.Name() == namespaceName) ?? namespaceResource;
+        V1Namespace selectedNamespace = Cluster!.Runtime.Namespaces.ToArray().FirstOrDefault(x => x.Name() == namespaceName) ?? namespaceResource;
         _localSelectedNamespaces.Clear();
         _localSelectedNamespaces.Add(selectedNamespace);
     }

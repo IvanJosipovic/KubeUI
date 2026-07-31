@@ -77,24 +77,9 @@ public sealed class FakeClusterScenarioHarness : IClusterScenarioHarness
             throw new InvalidOperationException(connected.LastError ?? "The fake Kubernetes cluster did not connect.");
         }
 
-        _api.DefaultPermissionAllowed = configuredDefaultPermission;
-
-        if (Cluster is KubeUI.Kubernetes.Cluster connectedCluster)
-        {
-            foreach (var type in new[] { typeof(V1Namespace), typeof(V1Node), typeof(V1Secret), typeof(V1Service), typeof(V1EndpointSlice), typeof(V1ConfigMap), typeof(Corev1Event), typeof(V1Pod), typeof(V1Deployment), typeof(V1ServiceAccount), typeof(V1CronJob), typeof(V1Job), typeof(V1CustomResourceDefinition) })
-            {
-                foreach (var verb in Enum.GetValues<Verb>())
-                {
-                    await connectedCluster.UpdateCanI(type, verb);
-                }
-            }
-
-            await connectedCluster.UpdateCanI(typeof(V1Pod), Verb.Get, subresource: "log");
-            await connectedCluster.UpdateCanI(typeof(V1Pod), Verb.Create, subresource: "exec");
-            await connectedCluster.UpdateCanI(typeof(V1Pod), Verb.Create, subresource: "portforward");
-        }
-
-
+        // Seed the bootstrap namespace and node while the temporary bootstrap
+        // permission is still enabled. Apply the scenario's permission policy
+        // only after those resources exist.
         await Cluster.AddOrUpdateResource(new V1Namespace
         {
             Metadata = new V1ObjectMeta { Name = "default" },
@@ -103,6 +88,13 @@ public sealed class FakeClusterScenarioHarness : IClusterScenarioHarness
         {
             Metadata = new V1ObjectMeta { Name = "node-1" },
         });
+
+        _api.DefaultPermissionAllowed = configuredDefaultPermission;
+
+        if (Cluster is KubeUI.Kubernetes.Cluster connectedCluster)
+        {
+            await PrimeDefaultPermissionsAsync(connectedCluster, cancellationToken).ConfigureAwait(false);
+        }
 
     }
 
@@ -170,7 +162,7 @@ public sealed class FakeClusterScenarioHarness : IClusterScenarioHarness
         }
 
         await limited.Connect().WaitAsync(cancellationToken);
-        await PrimePermissionsAsync(limited, cancellationToken);
+        await PrimeLimitedPermissionsAsync(limited, cancellationToken);
         await limited.SeedResource<V1Node>(true).WaitAsync(cancellationToken);
         await limited.SeedResource<V1Secret>(true).WaitAsync(cancellationToken);
         return limited;
@@ -225,24 +217,50 @@ public sealed class FakeClusterScenarioHarness : IClusterScenarioHarness
         await Cluster.SeedResource<V1ServiceAccount>(true).WaitAsync(cancellationToken);
     }
 
-    private static async Task PrimePermissionsAsync(KubeUI.Kubernetes.Cluster cluster, CancellationToken cancellationToken)
+    private static async Task PrimeDefaultPermissionsAsync(KubeUI.Kubernetes.Cluster cluster, CancellationToken cancellationToken)
     {
-        foreach (var type in new[] { typeof(V1Namespace), typeof(V1Node), typeof(V1Secret), typeof(V1Service), typeof(V1EndpointSlice), typeof(V1ConfigMap), typeof(Corev1Event), typeof(V1Pod), typeof(V1Deployment), typeof(V1ServiceAccount), typeof(V1CronJob), typeof(V1Job), typeof(V1CustomResourceDefinition) })
+        var permissionRequests = new List<Task>();
+        foreach (var type in SupportedPermissionTypes)
         {
             foreach (var verb in Enum.GetValues<Verb>())
             {
-                await cluster.UpdateCanI(type, verb).WaitAsync(cancellationToken);
+                permissionRequests.Add(cluster.UpdateCanI(type, verb).WaitAsync(cancellationToken));
+            }
+        }
+
+        permissionRequests.Add(cluster.UpdateCanI(typeof(V1Pod), Verb.Get, subresource: "log").WaitAsync(cancellationToken));
+        permissionRequests.Add(cluster.UpdateCanI(typeof(V1Pod), Verb.Create, subresource: "exec").WaitAsync(cancellationToken));
+        permissionRequests.Add(cluster.UpdateCanI(typeof(V1Pod), Verb.Create, subresource: "portforward").WaitAsync(cancellationToken));
+        await Task.WhenAll(permissionRequests).WaitAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async Task PrimeLimitedPermissionsAsync(KubeUI.Kubernetes.Cluster cluster, CancellationToken cancellationToken)
+    {
+        var permissionRequests = new List<Task>();
+        foreach (var type in SupportedPermissionTypes)
+        {
+            foreach (var verb in Enum.GetValues<Verb>())
+            {
+                permissionRequests.Add(cluster.UpdateCanI(type, verb).WaitAsync(cancellationToken));
                 if (type != typeof(V1Namespace) && type != typeof(V1Node))
                 {
-                    await cluster.UpdateCanI(type, verb, LimitedNamespace).WaitAsync(cancellationToken);
+                    permissionRequests.Add(cluster.UpdateCanI(type, verb, LimitedNamespace).WaitAsync(cancellationToken));
                 }
             }
         }
 
-        await cluster.UpdateCanI(typeof(V1Pod), Verb.Get, LimitedNamespace, "log").WaitAsync(cancellationToken);
-        await cluster.UpdateCanI(typeof(V1Pod), Verb.Create, LimitedNamespace, "exec").WaitAsync(cancellationToken);
-        await cluster.UpdateCanI(typeof(V1Pod), Verb.Create, LimitedNamespace, "portforward").WaitAsync(cancellationToken);
+        permissionRequests.Add(cluster.UpdateCanI(typeof(V1Pod), Verb.Get, LimitedNamespace, "log").WaitAsync(cancellationToken));
+        permissionRequests.Add(cluster.UpdateCanI(typeof(V1Pod), Verb.Create, LimitedNamespace, "exec").WaitAsync(cancellationToken));
+        permissionRequests.Add(cluster.UpdateCanI(typeof(V1Pod), Verb.Create, LimitedNamespace, "portforward").WaitAsync(cancellationToken));
+        await Task.WhenAll(permissionRequests).WaitAsync(cancellationToken).ConfigureAwait(false);
     }
+
+    private static readonly Type[] SupportedPermissionTypes =
+    [
+        typeof(V1Namespace), typeof(V1Node), typeof(V1Secret), typeof(V1Service), typeof(V1EndpointSlice),
+        typeof(V1ConfigMap), typeof(Corev1Event), typeof(V1Pod), typeof(V1Deployment), typeof(V1ServiceAccount),
+        typeof(V1CronJob), typeof(V1Job), typeof(V1CustomResourceDefinition)
+    ];
 
     private static void RegisterSupportedResources(FakeKubernetesHttpApi api)
     {
