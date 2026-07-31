@@ -14,8 +14,8 @@ public class V1CustomResourceDefinitionConfigTests
     public void list_crd_command_does_not_throw_when_type_is_unavailable()
     {
         using var scope = new KubernetesTestClusterScope();
-        using var cluster = ActivatorUtilities.CreateInstance<ClusterWorkspace>(TestApp.CurrentServices!, scope.Cluster);
-        var services = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
+        using var cluster = ActivatorUtilities.CreateInstance<ClusterWorkspace>((Application.Current as TestApp)?.Services!, scope.Cluster);
+        var services = (Application.Current as TestApp)?.Services ?? throw new InvalidOperationException("Test services are not initialized.");
         var config = ActivatorUtilities.CreateInstance<V1CustomResourceDefinitionConfig>(services);
         config.Initialize(cluster);
 
@@ -31,8 +31,8 @@ public class V1CustomResourceDefinitionConfigTests
     public void generate_uses_humanized_plural_kind_for_display_name()
     {
         using var scope = new KubernetesTestClusterScope();
-        using var cluster = ActivatorUtilities.CreateInstance<ClusterWorkspace>(TestApp.CurrentServices!, scope.Cluster);
-        var services = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
+        using var cluster = ActivatorUtilities.CreateInstance<ClusterWorkspace>((Application.Current as TestApp)?.Services!, scope.Cluster);
+        var services = (Application.Current as TestApp)?.Services ?? throw new InvalidOperationException("Test services are not initialized.");
         var config = ActivatorUtilities.CreateInstance<CRDResourceConfig<TestCustomResource>>(services);
         config.Initialize(cluster);
 
@@ -84,8 +84,8 @@ public class V1CustomResourceDefinitionConfigTests
     public void crd_printer_column_returns_empty_value_for_missing_annotation_key()
     {
         using var scope = new KubernetesTestClusterScope();
-        using var cluster = ActivatorUtilities.CreateInstance<ClusterWorkspace>(TestApp.CurrentServices!, scope.Cluster);
-        var services = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
+        using var cluster = ActivatorUtilities.CreateInstance<ClusterWorkspace>((Application.Current as TestApp)?.Services!, scope.Cluster);
+        var services = (Application.Current as TestApp)?.Services ?? throw new InvalidOperationException("Test services are not initialized.");
         var config = ActivatorUtilities.CreateInstance<CRDResourceConfig<TestCustomResource>>(services);
         config.Initialize(cluster);
 
@@ -142,8 +142,8 @@ public class V1CustomResourceDefinitionConfigTests
     public void crd_generator_uses_nullable_value_types_for_optional_printer_columns()
     {
         using var scope = new KubernetesTestClusterScope();
-        using var cluster = ActivatorUtilities.CreateInstance<ClusterWorkspace>(TestApp.CurrentServices!, scope.Cluster);
-        var services = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
+        using var cluster = ActivatorUtilities.CreateInstance<ClusterWorkspace>((Application.Current as TestApp)?.Services!, scope.Cluster);
+        var services = (Application.Current as TestApp)?.Services ?? throw new InvalidOperationException("Test services are not initialized.");
         var config = ActivatorUtilities.CreateInstance<CRDResourceConfig<TestCustomResourceWithSpec>>(services);
         config.Initialize(cluster);
 

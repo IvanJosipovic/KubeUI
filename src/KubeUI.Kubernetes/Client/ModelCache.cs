@@ -70,6 +70,17 @@ public sealed class ModelCache
         }
     }
 
+    public void RemoveAllCustomResourceDefinitions()
+    {
+        lock (_gate)
+        {
+            foreach (var assembly in _unloadHandles.Keys.ToList())
+            {
+                RemoveAssemblyUnsafe(assembly);
+            }
+        }
+    }
+
     public Type? GetResourceType(GroupApiVersionKind type)
     {
         return GetResourceType(type.Group, type.ApiVersion, type.Kind);

@@ -68,7 +68,7 @@ public class ResourceListViewModelTests : IDisposable
 
     private async Task<ClusterWorkspace> CreateClusterAsync()
     {
-        var scope = await KubernetesTestWorkspaceScope.CreateAsync(TestApp.CurrentServices!);
+        var scope = await KubernetesTestWorkspaceScope.CreateAsync((Application.Current as TestApp)?.Services!);
         _disposables.Add(scope);
         var cluster = scope.Workspace;
         await cluster.Connect();
@@ -78,7 +78,7 @@ public class ResourceListViewModelTests : IDisposable
 
     private T GetRequiredService<T>() where T : class
     {
-        var services = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
+        var services = (Application.Current as TestApp)?.Services ?? throw new InvalidOperationException("Test services are not initialized.");
         var service = services.GetRequiredService<T>();
         if (service is IDisposable disposable)
         {
@@ -2419,7 +2419,7 @@ internal sealed class FakeDoubleTapResourceListViewModel : IResourceListViewMode
     public GroupApiVersionKind Kind => GroupApiVersionKind.From<V1Pod>();
     public int ItemCount => View.Count;
     public string SearchQuery { get; set; } = string.Empty;
-    public ISettingsService SettingsService => TestApp.CurrentServices?.GetRequiredService<ISettingsService>()
+    public ISettingsService SettingsService => (Application.Current as TestApp)?.Services?.GetRequiredService<ISettingsService>()
         ?? throw new InvalidOperationException("Test services are not initialized.");
     public IResourceConfig ResourceConfig { get; }
     public ObservableCollection<DataGridColumnDefinition> ColumnDefinitions { get; } = [];
@@ -2489,7 +2489,7 @@ internal sealed class FakeContextMenuResourceListViewModel : IResourceListViewMo
     public GroupApiVersionKind Kind => GroupApiVersionKind.From<V1Pod>();
     public int ItemCount => 0;
     public string SearchQuery { get; set; } = string.Empty;
-    public ISettingsService SettingsService => TestApp.CurrentServices?.GetRequiredService<ISettingsService>()
+    public ISettingsService SettingsService => (Application.Current as TestApp)?.Services?.GetRequiredService<ISettingsService>()
         ?? throw new InvalidOperationException("Test services are not initialized.");
     public IResourceConfig ResourceConfig { get; }
     public ObservableCollection<DataGridColumnDefinition> ColumnDefinitions { get; } = [];

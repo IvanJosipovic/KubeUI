@@ -8,6 +8,6 @@ public sealed class ApplicationServiceResolutionTests
     [AvaloniaFact]
     public void TestAppBuilder_initializes_services()
     {
-        TestApp.CurrentServices.ShouldNotBeNull();
+        (Application.Current as TestApp)?.Services.ShouldNotBeNull();
     }
 }

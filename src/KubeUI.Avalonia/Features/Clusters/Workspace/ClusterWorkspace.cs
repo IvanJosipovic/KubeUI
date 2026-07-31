@@ -18,6 +18,7 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
     private readonly ConcurrentDictionary<GroupApiVersionKind, IResourceConfig> _resourceConfigs = new();
     private readonly ConcurrentDictionary<string, string> _customResourceDefinitionSignatures = new(StringComparer.Ordinal);
     private readonly ConcurrentDictionary<string, long> _customResourceDefinitionGenerations = new(StringComparer.Ordinal);
+    private readonly ConcurrentDictionary<Task, byte> _customResourceDefinitionTasks = new();
     private readonly CancellationTokenSource _disposeCancellation = new();
     private readonly object _connectLock = new();
     private bool _disposed;
@@ -172,6 +173,7 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
     public async Task Disconnect()
     {
         await Runtime.Disconnect().ConfigureAwait(false);
+        await Task.WhenAll(_customResourceDefinitionTasks.Keys).ConfigureAwait(false);
         _workspaceStateInitialized = false;
         ResetWorkspaceState();
     }
@@ -418,7 +420,13 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
             1,
             static (_, currentGeneration) => currentGeneration + 1);
 
-        _ = ProcessCustomResourceDefinitionAsync(crd, generation);
+        var task = ProcessCustomResourceDefinitionAsync(crd, generation);
+        _customResourceDefinitionTasks.TryAdd(task, 0);
+        _ = task.ContinueWith(
+            completedTask => _customResourceDefinitionTasks.TryRemove(completedTask, out _),
+            CancellationToken.None,
+            TaskContinuationOptions.ExecuteSynchronously,
+            TaskScheduler.Default);
     }
 
     private async Task ProcessCustomResourceDefinitionAsync(V1CustomResourceDefinition crd, long generation)

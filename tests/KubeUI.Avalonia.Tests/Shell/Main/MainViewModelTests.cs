@@ -13,7 +13,7 @@ public sealed class MainViewModelTests
 {
     private MainViewModel CreateViewModel()
     {
-        return TestApp.CurrentServices?.GetRequiredService<MainViewModel>()
+        return (Application.Current as TestApp)?.Services?.GetRequiredService<MainViewModel>()
             ?? throw new InvalidOperationException("Test services are not initialized.");
     }
 
@@ -21,7 +21,7 @@ public sealed class MainViewModelTests
     public async Task load_aks_clusters_command_opens_docked_aks_assistant()
     {
         var vm = CreateViewModel();
-        var documents = TestApp.CurrentServices!.GetRequiredService<IFactory>().GetDockable<IDocumentDock>("Documents");
+        var documents = (Application.Current as TestApp)?.Services!.GetRequiredService<IFactory>().GetDockable<IDocumentDock>("Documents");
         documents.ShouldNotBeNull();
 
         vm.ImportAksClusterCommand.Execute(null);

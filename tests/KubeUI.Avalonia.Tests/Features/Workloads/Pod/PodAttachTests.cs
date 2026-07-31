@@ -14,7 +14,7 @@ public sealed class PodAttachTests
     [AvaloniaFact]
     public void pod_config_exposes_attach_menu_for_running_containers()
     {
-        var config = TestApp.CurrentServices!.GetRequiredService<V1PodConfig>();
+        var config = (Application.Current as TestApp)?.Services!.GetRequiredService<V1PodConfig>();
         config.CustomPermissions().ShouldContain((Verb.Create, "attach"));
 
         var pod = new V1Pod
@@ -52,7 +52,7 @@ public sealed class PodAttachTests
     [AvaloniaFact]
     public void pod_config_exposes_init_ephemeral_groups_for_debug_and_port_forwarding()
     {
-        var config = TestApp.CurrentServices!.GetRequiredService<V1PodConfig>();
+        var config = (Application.Current as TestApp)?.Services!.GetRequiredService<V1PodConfig>();
 
         var pod = new V1Pod
         {
@@ -148,8 +148,8 @@ public sealed class PodAttachTests
     [AvaloniaFact]
     public void console_input_stops_after_stream_write_aborts()
     {
-        var settings = TestApp.CurrentServices!.GetRequiredService<KubeUI.Avalonia.Services.Settings.ISettingsService>();
-        var logger = TestApp.CurrentServices.GetRequiredService<ILogger<PodConsoleViewModel>>();
+        var settings = (Application.Current as TestApp)?.Services!.GetRequiredService<KubeUI.Avalonia.Services.Settings.ISettingsService>();
+        var logger = (Application.Current as TestApp)?.Services?.GetRequiredService<ILogger<PodConsoleViewModel>>();
         using var stream = new ThrowingWriteStream(new WebSocketException(WebSocketError.InvalidState));
 
         using PodConsoleViewModel viewModel = new(logger, settings);
@@ -166,8 +166,8 @@ public sealed class PodAttachTests
     [AvaloniaFact]
     public void console_resize_stops_after_stream_write_aborts()
     {
-        var settings = TestApp.CurrentServices!.GetRequiredService<KubeUI.Avalonia.Services.Settings.ISettingsService>();
-        var logger = TestApp.CurrentServices.GetRequiredService<ILogger<PodConsoleViewModel>>();
+        var settings = (Application.Current as TestApp)?.Services!.GetRequiredService<KubeUI.Avalonia.Services.Settings.ISettingsService>();
+        var logger = (Application.Current as TestApp)?.Services?.GetRequiredService<ILogger<PodConsoleViewModel>>();
         using var stream = new ThrowingWriteStream(new IOException());
 
         using PodConsoleViewModel viewModel = new(logger, settings);
@@ -188,9 +188,9 @@ public sealed class PodAttachTests
         runtime.Name = "pod-attach-test";
         runtime.Connected = true;
         runtime.Status = ClusterStatus.Connected;
-        using var workspace = ActivatorUtilities.CreateInstance<ClusterWorkspace>(TestApp.CurrentServices, runtime);
-        var settings = TestApp.CurrentServices!.GetRequiredService<KubeUI.Avalonia.Services.Settings.ISettingsService>();
-        var logger = TestApp.CurrentServices.GetRequiredService<ILogger<PodConsoleViewModel>>();
+        using var workspace = ActivatorUtilities.CreateInstance<ClusterWorkspace>((Application.Current as TestApp)?.Services, runtime);
+        var settings = (Application.Current as TestApp)?.Services!.GetRequiredService<KubeUI.Avalonia.Services.Settings.ISettingsService>();
+        var logger = (Application.Current as TestApp)?.Services?.GetRequiredService<ILogger<PodConsoleViewModel>>();
 
         V1Pod pod = new()
         {

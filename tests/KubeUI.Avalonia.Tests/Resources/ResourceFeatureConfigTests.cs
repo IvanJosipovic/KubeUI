@@ -72,7 +72,7 @@ public sealed class ResourceFeatureConfigTests
     private static TConfig ResolveConfig<TConfig>()
         where TConfig : IResourceConfig
     {
-        var services = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
+        var services = (Application.Current as TestApp)?.Services ?? throw new InvalidOperationException("Test services are not initialized.");
         return services.GetRequiredService<TConfig>();
     }
 
@@ -190,7 +190,7 @@ public sealed class ResourceFeatureConfigTests
     [AvaloniaFact]
     public void pod_config_uses_pod_properties_view()
     {
-        var services = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
+        var services = (Application.Current as TestApp)?.Services ?? throw new InvalidOperationException("Test services are not initialized.");
         var config = services.GetRequiredService<V1PodConfig>();
 
         var controls = config.Properties(new V1Pod());
@@ -292,7 +292,7 @@ public sealed class ResourceFeatureConfigTests
             Metadata = new() { Name = "volsync" },
         });
 
-        using var workspace = ActivatorUtilities.CreateInstance<ClusterWorkspace>(TestApp.CurrentServices!, runtime);
+        using var workspace = ActivatorUtilities.CreateInstance<ClusterWorkspace>((Application.Current as TestApp)?.Services!, runtime);
         await workspace.Connect();
         await ((Cluster)runtime).UpdateCanI<V1Job>(Verb.Create, "volsync");
         var config = (V1CronJobConfig)workspace.GetResourceConfig<V1CronJob>();
@@ -334,7 +334,7 @@ public sealed class ResourceFeatureConfigTests
             Metadata = new() { Name = "volsync" },
         });
 
-        using var workspace = ActivatorUtilities.CreateInstance<ClusterWorkspace>(TestApp.CurrentServices!, runtime);
+        using var workspace = ActivatorUtilities.CreateInstance<ClusterWorkspace>((Application.Current as TestApp)?.Services!, runtime);
         await workspace.Connect();
         await ((Cluster)runtime).UpdateCanI<V1Job>(Verb.Create);
         await ((Cluster)runtime).UpdateCanI<V1Job>(Verb.Create, "volsync");
@@ -366,7 +366,7 @@ public sealed class ResourceFeatureConfigTests
             Metadata = new() { Name = "volsync" },
         });
 
-        using var workspace = ActivatorUtilities.CreateInstance<ClusterWorkspace>(TestApp.CurrentServices!, runtime);
+        using var workspace = ActivatorUtilities.CreateInstance<ClusterWorkspace>((Application.Current as TestApp)?.Services!, runtime);
         await workspace.Connect();
         await ((Cluster)runtime).UpdateCanI<V1Job>(Verb.Create);
         await ((Cluster)runtime).UpdateCanI<V1Job>(Verb.Create, "volsync");
@@ -466,7 +466,7 @@ public sealed class ResourceFeatureConfigTests
     [AvaloniaFact]
     public void crd_config_uses_properties_view()
     {
-        var services = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
+        var services = (Application.Current as TestApp)?.Services ?? throw new InvalidOperationException("Test services are not initialized.");
         var config = services.GetRequiredService<V1CustomResourceDefinitionConfig>();
 
         var controls = config.Properties(new V1CustomResourceDefinition());

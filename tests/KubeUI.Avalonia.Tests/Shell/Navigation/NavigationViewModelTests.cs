@@ -37,7 +37,7 @@ public class NavigationViewModelTests : IDisposable
     private ClusterWorkspace CreateWorkspace(IClusterRuntime runtime)
     {
         var workspace = ActivatorUtilities.CreateInstance<ClusterWorkspace>(
-            TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized."),
+            (Application.Current as TestApp)?.Services ?? throw new InvalidOperationException("Test services are not initialized."),
             runtime);
         _disposables.Add(workspace);
         return workspace;
@@ -45,7 +45,7 @@ public class NavigationViewModelTests : IDisposable
 
     private NavigationViewModel CreateViewModel()
     {
-        var vm = TestApp.CurrentServices?.GetRequiredService<NavigationViewModel>()
+        var vm = (Application.Current as TestApp)?.Services?.GetRequiredService<NavigationViewModel>()
             ?? throw new InvalidOperationException("Test services are not initialized.");
         _disposables.Add(vm);
         return vm;
@@ -132,8 +132,8 @@ public class NavigationViewModelTests : IDisposable
     public async Task cluster_catalog_changes_update_navigation_nodes()
     {
         using var vm = CreateViewModel();
-        await using var firstScope = await KubernetesTestWorkspaceScope.CreateAsync(TestApp.CurrentServices!);
-        await using var replacementScope = await KubernetesTestWorkspaceScope.CreateAsync(TestApp.CurrentServices!);
+        await using var firstScope = await KubernetesTestWorkspaceScope.CreateAsync((Application.Current as TestApp)?.Services!);
+        await using var replacementScope = await KubernetesTestWorkspaceScope.CreateAsync((Application.Current as TestApp)?.Services!);
         var firstWorkspace = firstScope.Workspace;
         var replacementWorkspace = replacementScope.Workspace;
         firstWorkspace.Runtime.Name = "catalog-first";
@@ -447,11 +447,11 @@ public class NavigationViewModelTests : IDisposable
         settingsDocument.Cluster.ShouldBe(workspace);
         runtime.Status.ShouldBe(ClusterStatus.Errored);
 
-        TestApp.LastContentDialogSettings.ShouldNotBeNull();
-        TestApp.LastContentDialogSettings.Title.ShouldBe(Assets.Resources.Cluster_Missing_Namespace_Permission_Title);
-        TestApp.LastContentDialogSettings.Content.ShouldBe(Assets.Resources.Cluster_Missing_Namespace_Permission_Content);
-        TestApp.LastContentDialogSettings.PrimaryButtonText.ShouldBe(Assets.Resources.Cluster_Missing_Namespace_Permission_Primary);
-        TestApp.LastContentDialogSettings.DefaultButton.ShouldBe(FAContentDialogButton.Primary);
+        (Application.Current as TestApp)?.ContentDialogSettings.ShouldNotBeNull();
+        (Application.Current as TestApp)?.ContentDialogSettings.Title.ShouldBe(Assets.Resources.Cluster_Missing_Namespace_Permission_Title);
+        (Application.Current as TestApp)?.ContentDialogSettings.Content.ShouldBe(Assets.Resources.Cluster_Missing_Namespace_Permission_Content);
+        (Application.Current as TestApp)?.ContentDialogSettings.PrimaryButtonText.ShouldBe(Assets.Resources.Cluster_Missing_Namespace_Permission_Primary);
+        (Application.Current as TestApp)?.ContentDialogSettings.DefaultButton.ShouldBe(FAContentDialogButton.Primary);
     }
 
     [AvaloniaFact]
@@ -467,7 +467,7 @@ public class NavigationViewModelTests : IDisposable
         vm.ClusterCatalog.Clusters.Add(workspace);
         Dispatcher.UIThread.RunJobs();
 
-        var existingSettings = TestApp.CurrentServices?.GetRequiredService<ClusterSettingsViewModel>()
+        var existingSettings = (Application.Current as TestApp)?.Services?.GetRequiredService<ClusterSettingsViewModel>()
             ?? throw new InvalidOperationException("Test services are not initialized.");
         existingSettings.Initialize(workspace);
         vm.Factory.AddToDocuments(existingSettings);
@@ -530,7 +530,7 @@ public class NavigationViewModelTests : IDisposable
 
         var workspace = CreateWorkspace(runtime);
         await workspace.Connect();
-        var settingsService = TestApp.CurrentServices?.GetRequiredService<ISettingsService>()
+        var settingsService = (Application.Current as TestApp)?.Services?.GetRequiredService<ISettingsService>()
             ?? throw new InvalidOperationException("Test services are not initialized.");
         settingsService.Settings.GetClusterSettings(workspace.Runtime).Namespaces!.Add("my-app");
 
@@ -551,7 +551,7 @@ public class NavigationViewModelTests : IDisposable
             .OfType<ClusterSettingsViewModel>()
             .Any(x => x.Cluster == workspace)
             .ShouldBeFalse();
-        TestApp.LastContentDialogSettings.ShouldBeNull();
+        (Application.Current as TestApp)?.ContentDialogSettings.ShouldBeNull();
     }
 
     [AvaloniaFact]
@@ -563,7 +563,7 @@ public class NavigationViewModelTests : IDisposable
             cancellationToken: TestContext.Current.CancellationToken);
         var workspace = CreateWorkspace(runtime);
         await workspace.Connect();
-        var settingsService = TestApp.CurrentServices?.GetRequiredService<ISettingsService>()
+        var settingsService = (Application.Current as TestApp)?.Services?.GetRequiredService<ISettingsService>()
             ?? throw new InvalidOperationException("Test services are not initialized.");
         settingsService.Settings.GetClusterSettings(workspace.Runtime).Namespaces!.Add("my-app");
 
@@ -640,7 +640,7 @@ public class NavigationViewModelTests : IDisposable
             SharedScenarioData.LimitedAccessWithNamespacePermissions,
             cancellationToken: TestContext.Current.CancellationToken);
         var workspace = CreateWorkspace(runtime);
-        var settingsService = TestApp.CurrentServices?.GetRequiredService<ISettingsService>()
+        var settingsService = (Application.Current as TestApp)?.Services?.GetRequiredService<ISettingsService>()
             ?? throw new InvalidOperationException("Test services are not initialized.");
         settingsService.Settings.GetClusterSettings(workspace.Runtime).Namespaces!.Add("my-app");
         await workspace.Connect();
@@ -669,7 +669,7 @@ public class NavigationViewModelTests : IDisposable
         var runtime = runtimeScope.Cluster;
 
         var workspace = CreateWorkspace(runtime);
-        var settingsService = TestApp.CurrentServices?.GetRequiredService<ISettingsService>()
+        var settingsService = (Application.Current as TestApp)?.Services?.GetRequiredService<ISettingsService>()
             ?? throw new InvalidOperationException("Test services are not initialized.");
         settingsService.Settings.GetClusterSettings(workspace.Runtime).Namespaces!.Add("my-app");
         await workspace.Connect();
@@ -696,7 +696,7 @@ public class NavigationViewModelTests : IDisposable
         var runtime = runtimeScope.Cluster;
 
         var workspace = CreateWorkspace(runtime);
-        var settingsService = TestApp.CurrentServices?.GetRequiredService<ISettingsService>()
+        var settingsService = (Application.Current as TestApp)?.Services?.GetRequiredService<ISettingsService>()
             ?? throw new InvalidOperationException("Test services are not initialized.");
         settingsService.Settings.GetClusterSettings(workspace.Runtime).Namespaces!.Add("my-app");
         workspace.AddResourceConfigForTest(new FakeResourceConfig(typeof(TestPermissionResourceAlpha), "Alpha Permission Resource"));
@@ -720,7 +720,7 @@ public class NavigationViewModelTests : IDisposable
             SharedScenarioData.LimitedAccessWithNamespacePermissions,
             cancellationToken: TestContext.Current.CancellationToken);
         var workspace = CreateWorkspace(runtime);
-        var settingsService = TestApp.CurrentServices?.GetRequiredService<ISettingsService>()
+        var settingsService = (Application.Current as TestApp)?.Services?.GetRequiredService<ISettingsService>()
             ?? throw new InvalidOperationException("Test services are not initialized.");
         settingsService.Settings.GetClusterSettings(workspace.Runtime).Namespaces!.Add("my-app");
         await workspace.Connect();

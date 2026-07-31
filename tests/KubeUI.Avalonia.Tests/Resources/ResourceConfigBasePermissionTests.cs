@@ -11,7 +11,7 @@ public sealed class ResourceConfigBasePermissionTests
     [AvaloniaFact]
     public void permissions_manifest_includes_default_and_custom_permissions()
     {
-        var services = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
+        var services = (Application.Current as TestApp)?.Services ?? throw new InvalidOperationException("Test services are not initialized.");
         var config = new TrackingResourceConfig(services);
 
         config.Permissions().ShouldBe(

@@ -20,7 +20,7 @@ public sealed class LimitedAccessNavigationTests
         var runtime = await harness.CreateLimitedAccessClusterAsync(
             SharedScenarioData.LimitedAccessWithNamespacePermissions,
             cancellationToken: TestContext.Current.CancellationToken);
-        var services = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
+        var services = (Application.Current as TestApp)?.Services ?? throw new InvalidOperationException("Test services are not initialized.");
         using var workspace = ActivatorUtilities.CreateInstance<ClusterWorkspace>(services, runtime);
         var navigation = services.GetRequiredService<NavigationViewModel>();
 

@@ -40,6 +40,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="KubeUI.Benchmarks" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Using Include="Xunit" />
     <Using Include="KubeUI.Avalonia" />
     <Using Include="KubeUI.Kubernetes" />

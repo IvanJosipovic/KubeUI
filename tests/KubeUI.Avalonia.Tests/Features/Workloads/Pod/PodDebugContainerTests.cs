@@ -16,8 +16,8 @@ public sealed class PodDebugContainerTests
             backend,
             TestContext.Current.CancellationToken);
         await harness.Cluster.SeedResource<V1Pod>(true);
-        using var workspace = ActivatorUtilities.CreateInstance<ClusterWorkspace>(TestApp.CurrentServices!, harness.Cluster);
-        var settings = TestApp.CurrentServices!.GetRequiredService<ISettingsService>();
+        using var workspace = ActivatorUtilities.CreateInstance<ClusterWorkspace>((Application.Current as TestApp)?.Services!, harness.Cluster);
+        var settings = (Application.Current as TestApp)?.Services!.GetRequiredService<ISettingsService>();
         settings.Settings.GetClusterSettings(workspace.Runtime).DebugContainerImage = "example.com/debug:1";
 
         V1Pod pod = new()

@@ -60,14 +60,14 @@ public class ResourceYamlViewModelTests : IDisposable
 
     private ClusterWorkspace CreateTestWorkspace()
     {
-        var scope = KubernetesTestWorkspaceScope.Create(TestApp.CurrentServices!);
+        var scope = KubernetesTestWorkspaceScope.Create((Application.Current as TestApp)?.Services!);
         _disposables.Add(scope);
         return scope.Workspace;
     }
 
     private T ResolveService<T>() where T : class
     {
-        var services = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
+        var services = (Application.Current as TestApp)?.Services ?? throw new InvalidOperationException("Test services are not initialized.");
         var service = services.GetRequiredService<T>();
         if (service is IDisposable disposable)
         {
@@ -2565,7 +2565,7 @@ public class ResourceYamlViewModelTests : IDisposable
         actionBar.ShouldNotBeNull();
         actionBar.IsOpen.ShouldBeTrue();
         actionBar.Severity.ShouldBe(FAInfoBarSeverity.Error);
-        TestApp.LastNotification.ShouldBeNull();
+        (Application.Current as TestApp)?.Notification.ShouldBeNull();
     }
 
     [AvaloniaFact]
@@ -2685,7 +2685,7 @@ public class ResourceYamlViewModelTests : IDisposable
         await vm.DryRunCommand.ExecuteAsync(null).WaitAsync(TestContext.Current.CancellationToken);
         Dispatcher.UIThread.RunJobs();
 
-        TestApp.LastNotification.ShouldBeNull();
+        (Application.Current as TestApp)?.Notification.ShouldBeNull();
         vm.HasActionSuccessResult.ShouldBeTrue();
         vm.ActionResultTitle.ShouldBe("Dry run succeeded");
         vm.ActionResultMessage.ShouldBe("The server accepted the manifest using dry-run.");
@@ -2700,7 +2700,7 @@ public class ResourceYamlViewModelTests : IDisposable
     {
         var window = CreateWindow(width: 800, height: 600);
 
-        var scope = KubernetesTestWorkspaceScope.Create(TestApp.CurrentServices!);
+        var scope = KubernetesTestWorkspaceScope.Create((Application.Current as TestApp)?.Services!);
         _disposables.Add(scope);
         var cluster = scope.Workspace;
 
@@ -2735,7 +2735,7 @@ public class ResourceYamlViewModelTests : IDisposable
         await vm.DryRunCommand.ExecuteAsync(null).WaitAsync(TestContext.Current.CancellationToken);
         Dispatcher.UIThread.RunJobs();
 
-        TestApp.LastNotification.ShouldBeNull();
+        (Application.Current as TestApp)?.Notification.ShouldBeNull();
         vm.HasActionFailureResult.ShouldBeTrue();
         vm.ActionResultTitle.ShouldBe("Dry run failed");
         vm.ActionResultMessage.ShouldNotBeNullOrWhiteSpace();

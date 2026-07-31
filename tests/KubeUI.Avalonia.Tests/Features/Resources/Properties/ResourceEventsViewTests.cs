@@ -17,9 +17,9 @@ public sealed class ResourceEventsViewTests
     {
         await using var harness = new FakeClusterScenarioHarness();
         await harness.InitializeAsync(TestContext.Current.CancellationToken);
-        using var workspace = ActivatorUtilities.CreateInstance<ClusterWorkspace>(TestApp.CurrentServices!, harness.Cluster);
+        using var workspace = ActivatorUtilities.CreateInstance<ClusterWorkspace>((Application.Current as TestApp)?.Services!, harness.Cluster);
         await workspace.Connect();
-        _ = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
+        _ = (Application.Current as TestApp)?.Services ?? throw new InvalidOperationException("Test services are not initialized.");
 
         var view = new ResourceEventsView();
         view.Initialize(workspace);
@@ -52,9 +52,9 @@ public sealed class ResourceEventsViewTests
     {
         await using var harness = new FakeClusterScenarioHarness();
         await harness.InitializeAsync(TestContext.Current.CancellationToken);
-        using var workspace = ActivatorUtilities.CreateInstance<ClusterWorkspace>(TestApp.CurrentServices!, harness.Cluster);
+        using var workspace = ActivatorUtilities.CreateInstance<ClusterWorkspace>((Application.Current as TestApp)?.Services!, harness.Cluster);
         await workspace.Connect();
-        _ = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
+        _ = (Application.Current as TestApp)?.Services ?? throw new InvalidOperationException("Test services are not initialized.");
 
         var view = new ResourceEventsView();
         view.Initialize(workspace);
@@ -96,9 +96,9 @@ public sealed class ResourceEventsViewTests
     {
         await using var harness = new FakeClusterScenarioHarness();
         await harness.InitializeAsync(TestContext.Current.CancellationToken);
-        using var workspace = ActivatorUtilities.CreateInstance<ClusterWorkspace>(TestApp.CurrentServices!, harness.Cluster);
+        using var workspace = ActivatorUtilities.CreateInstance<ClusterWorkspace>((Application.Current as TestApp)?.Services!, harness.Cluster);
         await workspace.Connect();
-        _ = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
+        _ = (Application.Current as TestApp)?.Services ?? throw new InvalidOperationException("Test services are not initialized.");
 
         var view = new ResourceEventsView();
         view.Initialize(workspace);
@@ -139,9 +139,9 @@ public sealed class ResourceEventsViewTests
     {
         await using var harness = new FakeClusterScenarioHarness();
         await harness.InitializeAsync(TestContext.Current.CancellationToken);
-        using var workspace = ActivatorUtilities.CreateInstance<ClusterWorkspace>(TestApp.CurrentServices!, harness.Cluster);
+        using var workspace = ActivatorUtilities.CreateInstance<ClusterWorkspace>((Application.Current as TestApp)?.Services!, harness.Cluster);
         await workspace.Connect();
-        _ = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
+        _ = (Application.Current as TestApp)?.Services ?? throw new InvalidOperationException("Test services are not initialized.");
 
         var view = new ResourceEventsView();
         view.Initialize(workspace);

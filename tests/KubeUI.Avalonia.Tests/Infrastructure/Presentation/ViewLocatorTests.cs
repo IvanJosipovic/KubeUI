@@ -13,7 +13,7 @@ public sealed class ViewLocatorTests
     [AvaloniaFact]
     public void Build_ResolvesClusterSettingsViewFromViewModelsNamespace()
     {
-        var services = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
+        var services = (Application.Current as TestApp)?.Services ?? throw new InvalidOperationException("Test services are not initialized.");
         var locator = services.GetRequiredService<ViewLocator>();
         var viewModel = services.GetRequiredService<ClusterSettingsViewModel>();
 
@@ -46,7 +46,7 @@ public sealed class ViewLocatorTests
         });
         listener.Start();
 
-        var services = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
+        var services = (Application.Current as TestApp)?.Services ?? throw new InvalidOperationException("Test services are not initialized.");
         var locator = services.GetRequiredService<ViewLocator>();
         var viewModel = services.GetRequiredService<ResourceListViewModel<V1Pod>>();
 

@@ -451,7 +451,7 @@ public class ClusterWorkspaceTests : IDisposable
     [AvaloniaFact]
     public async Task added_crd_does_not_refresh_authorization_index_for_generated_resource()
     {
-        await using var scope = await KubernetesTestWorkspaceScope.CreateAsync(TestApp.CurrentServices!);
+        await using var scope = await KubernetesTestWorkspaceScope.CreateAsync((Application.Current as TestApp)?.Services!);
         var runtime = scope.Workspace.Runtime;
         var workspace = scope.Workspace;
 
@@ -470,7 +470,7 @@ public class ClusterWorkspaceTests : IDisposable
     private ClusterWorkspace CreateWorkspace(IClusterRuntime runtime)
     {
         var workspace = ActivatorUtilities.CreateInstance<ClusterWorkspace>(
-            TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized."),
+            (Application.Current as TestApp)?.Services ?? throw new InvalidOperationException("Test services are not initialized."),
             runtime);
 
         _disposables.Add(workspace);

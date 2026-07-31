@@ -1040,18 +1040,16 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
 
     private void ClearDynamicCustomResourceDefinitions()
     {
-        var processedCustomResourceDefinitions = new HashSet<string>(StringComparer.Ordinal);
-
         if (Objects.TryGetValue(GroupApiVersionKind.From<V1CustomResourceDefinition>(), out var existing)
             && existing is ContainerClass<V1CustomResourceDefinition> container)
         {
             foreach (var crd in container.Items.Items.ToList())
             {
-                processedCustomResourceDefinitions.Add(GetCustomResourceDefinitionKey(crd));
                 RemoveCustomResourceDefinitionArtifacts(crd);
             }
         }
 
+        ModelCache.RemoveAllCustomResourceDefinitions();
     }
 
     private void ClearSeededResources()

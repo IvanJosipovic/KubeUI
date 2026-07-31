@@ -22,6 +22,7 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="KubeUI.Kubernetes.Tests" />
+    <InternalsVisibleTo Include="KubeUI.Benchmarks" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1,3 +1,4 @@
+global using Avalonia;
 global using KubeUI.Avalonia.Features.Clusters.Error;
 global using KubeUI.Avalonia.Features.Clusters.Settings;
 global using KubeUI.Avalonia.Features.Clusters.Workspace;

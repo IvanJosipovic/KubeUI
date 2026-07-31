@@ -1,28 +1,31 @@
 using Avalonia;
+using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Controls.Notifications;
 using Dock.Model.Core;
 using FluentAvalonia.UI.Controls;
 using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
+using KubeUI.Avalonia.Infrastructure;
+using KubeUI.Avalonia.Infrastructure.DependencyInjection;
 using KubeUI.Avalonia.Infrastructure.Presentation;
+using KubeUI.Avalonia.Infrastructure.Docking;
+using KubeUI.Avalonia.Services.Settings;
+using KubeUI.Kubernetes;
 using KubeUI.Testing;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using Moq;
 
 namespace KubeUI.Avalonia.Tests.Infra;
 
-public class TestApp : Application, IServiceProviderHost
+public class TestApp : Application, IServiceProviderHost, IDisposable
 {
-    public static IServiceProvider? CurrentServices => (Application.Current as TestApp)?.Services;
-    public static Mock<IDialogManager>? DialogManagerMock => (Application.Current as TestApp)?.DialogManager;
-    public static INotification? LastNotification => (Application.Current as TestApp)?.Notification;
-    public static ContentDialogSettings? LastContentDialogSettings => (Application.Current as TestApp)?.ContentDialogSettings;
-
     public IServiceProvider? Services { get; private set; }
     public Mock<IDialogManager>? DialogManager { get; private set; }
     public INotification? Notification { get; private set; }
     public ContentDialogSettings? ContentDialogSettings { get; private set; }
+    private int _disposed;
 
     IServiceProvider IServiceProviderHost.Services => Services ?? throw new InvalidOperationException("Test services are not initialized.");
 
@@ -32,6 +35,43 @@ public class TestApp : Application, IServiceProviderHost
         Services = provider;
         ApplyResources(provider);
         InitializeDockFactory(provider);
+
+        if (ApplicationLifetime is IControlledApplicationLifetime controlledLifetime)
+        {
+            controlledLifetime.Exit += OnExit;
+        }
+    }
+
+    public void Dispose()
+    {
+        if (Interlocked.Exchange(ref _disposed, 1) == 1)
+        {
+            return;
+        }
+
+        if (ApplicationLifetime is IControlledApplicationLifetime controlledLifetime)
+        {
+            controlledLifetime.Exit -= OnExit;
+        }
+
+        if (Services is IAsyncDisposable asyncDisposableServices)
+        {
+            asyncDisposableServices.DisposeAsync().AsTask().GetAwaiter().GetResult();
+        }
+        else if (Services is IDisposable disposableServices)
+        {
+            disposableServices.Dispose();
+        }
+
+        Services = null;
+        DialogManager = null;
+        Notification = null;
+        ContentDialogSettings = null;
+    }
+
+    private void OnExit(object? sender, ControlledApplicationLifetimeExitEventArgs e)
+    {
+        Dispose();
     }
 
     private ServiceProvider BuildServiceProvider()

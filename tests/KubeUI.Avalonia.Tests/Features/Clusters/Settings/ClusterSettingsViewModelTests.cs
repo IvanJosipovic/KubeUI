@@ -12,9 +12,9 @@ public sealed class ClusterSettingsViewModelTests
     public void cluster_settings_default_debug_container_image_is_busybox()
     {
         using var scope = new KubernetesTestClusterScope();
-        using var workspace = ActivatorUtilities.CreateInstance<ClusterWorkspace>(TestApp.CurrentServices!, scope.Cluster);
+        using var workspace = ActivatorUtilities.CreateInstance<ClusterWorkspace>((Application.Current as TestApp)?.Services!, scope.Cluster);
 
-        var settings = TestApp.CurrentServices!.GetRequiredService<ISettingsService>();
+        var settings = (Application.Current as TestApp)?.Services!.GetRequiredService<ISettingsService>();
         settings.Settings.GetClusterSettings(workspace.Runtime).DebugContainerImage.ShouldBe(ClusterSettings.DefaultDebugContainerImage);
     }
 
@@ -22,16 +22,16 @@ public sealed class ClusterSettingsViewModelTests
     public void changing_debug_container_image_updates_persisted_cluster_settings()
     {
         using var scope = new KubernetesTestClusterScope();
-        using var workspace = ActivatorUtilities.CreateInstance<ClusterWorkspace>(TestApp.CurrentServices!, scope.Cluster);
+        using var workspace = ActivatorUtilities.CreateInstance<ClusterWorkspace>((Application.Current as TestApp)?.Services!, scope.Cluster);
         var viewModel = ActivatorUtilities.CreateInstance<ClusterSettingsViewModel>(
-            TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized."));
+            (Application.Current as TestApp)?.Services ?? throw new InvalidOperationException("Test services are not initialized."));
 
         viewModel.Initialize(workspace);
         Dispatcher.UIThread.RunJobs();
 
         viewModel.DebugContainerImage = "example.com/debug:1";
 
-        TestApp.CurrentServices!.GetRequiredService<ISettingsService>()
+        (Application.Current as TestApp)?.Services!.GetRequiredService<ISettingsService>()
             .Settings
             .GetClusterSettings(workspace.Runtime)
             .DebugContainerImage

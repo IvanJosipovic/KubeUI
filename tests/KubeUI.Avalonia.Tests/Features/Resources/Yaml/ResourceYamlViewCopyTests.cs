@@ -16,12 +16,12 @@ public sealed class ResourceYamlViewCopyTests
     [AvaloniaFact]
     public async Task Editor_copy_writes_selected_yaml_text_to_the_clipboard()
     {
-        await using var scope = await KubernetesTestWorkspaceScope.CreateAsync(TestApp.CurrentServices!);
+        await using var scope = await KubernetesTestWorkspaceScope.CreateAsync((Application.Current as TestApp)?.Services!);
         var cluster = scope.Workspace;
         await cluster.Connect();
 
-        var viewModel = TestApp.CurrentServices!.GetRequiredService<ResourceYamlViewModel>();
-        viewModel.Initialize(cluster, new V1Pod
+        var viewModel = (Application.Current as TestApp)?.Services!.GetRequiredService<ResourceYamlViewModel>();
+            viewModel.Initialize(cluster, new V1Pod
         {
             Metadata = new V1ObjectMeta
             {
@@ -86,12 +86,12 @@ public sealed class ResourceYamlViewCopyTests
     [AvaloniaFact]
     public async Task Editor_context_menu_copy_writes_selected_yaml_text_to_the_clipboard()
     {
-        await using var scope = await KubernetesTestWorkspaceScope.CreateAsync(TestApp.CurrentServices!);
+        await using var scope = await KubernetesTestWorkspaceScope.CreateAsync((Application.Current as TestApp)?.Services!);
         var cluster = scope.Workspace;
         await cluster.Connect();
 
-        var viewModel = TestApp.CurrentServices!.GetRequiredService<ResourceYamlViewModel>();
-        viewModel.Initialize(cluster, new V1Pod
+        var viewModel = (Application.Current as TestApp)?.Services!.GetRequiredService<ResourceYamlViewModel>();
+            viewModel.Initialize(cluster, new V1Pod
         {
             Metadata = new V1ObjectMeta
             {
