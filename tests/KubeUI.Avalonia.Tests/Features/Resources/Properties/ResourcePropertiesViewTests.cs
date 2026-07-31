@@ -40,12 +40,19 @@ public sealed class ResourcePropertiesViewTests
             Content = view
         };
 
-        window.Show();
-        Dispatcher.UIThread.RunJobs();
+        try
+        {
+            window.Show();
+            Dispatcher.UIThread.RunJobs();
 
-        var items = view.FindControl<StackPanel>("PART_Items")!.Children.OfType<PropertyItem>().ToList();
+            var items = view.FindControl<StackPanel>("PART_Items")!.Children.OfType<PropertyItem>().ToList();
 
-        items.Any(x => x.Key == AppResources.ResourcePropertiesView_Namespace).ShouldBeTrue();
+            items.Any(x => x.Key == AppResources.ResourcePropertiesView_Namespace).ShouldBeTrue();
+        }
+        finally
+        {
+            window.Close();
+        }
     }
 
     [AvaloniaFact]
@@ -131,12 +138,19 @@ public sealed class ResourcePropertiesViewTests
             Content = view
         };
 
-        window.Show();
-        Dispatcher.UIThread.RunJobs();
+        try
+        {
+            window.Show();
+            Dispatcher.UIThread.RunJobs();
 
-        var items = view.FindControl<StackPanel>("PART_Items")!.Children.OfType<PropertyItem>().ToList();
+            var items = view.FindControl<StackPanel>("PART_Items")!.Children.OfType<PropertyItem>().ToList();
 
-        items.Any(x => x.Key == AppResources.ResourcePropertiesView_Namespace).ShouldBeFalse();
+            items.Any(x => x.Key == AppResources.ResourcePropertiesView_Namespace).ShouldBeFalse();
+        }
+        finally
+        {
+            window.Close();
+        }
     }
 
     [AvaloniaFact]
@@ -172,15 +186,22 @@ public sealed class ResourcePropertiesViewTests
             Content = view,
         };
 
-        window.Show();
-        Dispatcher.UIThread.RunJobs();
-        Dispatcher.UIThread.RunJobs();
+        try
+        {
+            window.Show();
+            Dispatcher.UIThread.RunJobs();
+            Dispatcher.UIThread.RunJobs();
 
-        ExpandableSection section = view.GetVisualDescendants()
-            .OfType<ExpandableSection>()
-            .Single(x => Equals(x.Header, AppResources.PodPropertiesView_EphemeralContainers));
+            ExpandableSection section = view.GetVisualDescendants()
+                .OfType<ExpandableSection>()
+                .Single(x => Equals(x.Header, AppResources.PodPropertiesView_EphemeralContainers));
 
-        section.IsVisible.ShouldBeTrue();
+            section.IsVisible.ShouldBeTrue();
+        }
+        finally
+        {
+            window.Close();
+        }
     }
 
     [AvaloniaFact]

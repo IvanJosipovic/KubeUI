@@ -52,31 +52,38 @@ public sealed class PodContainerCellTests
         };
 
         var window = new Window { Content = view };
-        window.Show();
-        Dispatcher.UIThread.RunJobs();
-        Dispatcher.UIThread.RunJobs();
+        try
+        {
+            window.Show();
+            Dispatcher.UIThread.RunJobs();
+            Dispatcher.UIThread.RunJobs();
 
-        var items = view.ContainerStatuses;
-        items.ShouldNotBeNull();
-        items.Count.ShouldBe(3);
+            var items = view.ContainerStatuses;
+            items.ShouldNotBeNull();
+            items.Count.ShouldBe(3);
 
-        var normal = items.First(i => i.Name == "normal1");
-        normal.Type.ShouldBe("Normal");
-        normal.Status.ShouldBe("Running");
-        normal.Restarts.ShouldBe(2);
-        normal.Image.ShouldBe("normal:image");
+            var normal = items.First(i => i.Name == "normal1");
+            normal.Type.ShouldBe("Normal");
+            normal.Status.ShouldBe("Running");
+            normal.Restarts.ShouldBe(2);
+            normal.Image.ShouldBe("normal:image");
 
-        var init = items.First(i => i.Name == "init1");
-        init.Type.ShouldBe("Init");
-        init.Status.ShouldBe("InitWaiting");
-        init.Restarts.ShouldBe(0);
-        init.Image.ShouldBe("init:image");
+            var init = items.First(i => i.Name == "init1");
+            init.Type.ShouldBe("Init");
+            init.Status.ShouldBe("InitWaiting");
+            init.Restarts.ShouldBe(0);
+            init.Image.ShouldBe("init:image");
 
-        var eph = items.First(i => i.Name == "ephemeral1");
-        eph.Type.ShouldBe("Ephemeral");
-        eph.Status.ShouldBe("CreateContainerConfigError");
-        eph.Restarts.ShouldBe(0);
-        eph.Image.ShouldBe("ephemeral:image");
+            var eph = items.First(i => i.Name == "ephemeral1");
+            eph.Type.ShouldBe("Ephemeral");
+            eph.Status.ShouldBe("CreateContainerConfigError");
+            eph.Restarts.ShouldBe(0);
+            eph.Image.ShouldBe("ephemeral:image");
+        }
+        finally
+        {
+            window.Close();
+        }
     }
 
     [AvaloniaFact]

@@ -183,11 +183,12 @@ public sealed class PodAttachTests
 
     private static async Task AssertConnectionModeAsync(bool useAttach, ConnectionMethod expectedMethod)
     {
-        var runtime = TestApp.CurrentServices!.GetRequiredService<Cluster>();
+        await using var runtimeScope = KubernetesScenarioClusterScope.CreateDisconnected();
+        var runtime = (Cluster)runtimeScope.Cluster;
         runtime.Name = "pod-attach-test";
         runtime.Connected = true;
         runtime.Status = ClusterStatus.Connected;
-        var workspace = ActivatorUtilities.CreateInstance<ClusterWorkspace>(TestApp.CurrentServices, runtime);
+        using var workspace = ActivatorUtilities.CreateInstance<ClusterWorkspace>(TestApp.CurrentServices, runtime);
         var settings = TestApp.CurrentServices!.GetRequiredService<KubeUI.Avalonia.Services.Settings.ISettingsService>();
         var logger = TestApp.CurrentServices.GetRequiredService<ILogger<PodConsoleViewModel>>();
 

@@ -21,7 +21,7 @@ public sealed class LimitedAccessNavigationTests
             SharedScenarioData.LimitedAccessWithNamespacePermissions,
             cancellationToken: TestContext.Current.CancellationToken);
         var services = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
-        var workspace = ActivatorUtilities.CreateInstance<ClusterWorkspace>(services, runtime);
+        using var workspace = ActivatorUtilities.CreateInstance<ClusterWorkspace>(services, runtime);
         var navigation = services.GetRequiredService<NavigationViewModel>();
 
         navigation.ClusterCatalog.Clusters.Add(workspace);

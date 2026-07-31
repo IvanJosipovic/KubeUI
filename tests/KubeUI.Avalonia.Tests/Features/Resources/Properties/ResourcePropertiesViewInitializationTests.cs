@@ -44,12 +44,19 @@ public sealed class ResourcePropertiesViewInitializationTests
             Content = view
         };
 
-        window.Show();
-        Dispatcher.UIThread.RunJobs();
-        Dispatcher.UIThread.RunJobs();
+        try
+        {
+            window.Show();
+            Dispatcher.UIThread.RunJobs();
+            Dispatcher.UIThread.RunJobs();
 
-        trackingConfig.TrackingControl.InitializeCount.ShouldBe(1);
-        view.FindControl<StackPanel>("PART_Items")!.Children.ShouldContain(trackingConfig.TrackingControl);
+            trackingConfig.TrackingControl.InitializeCount.ShouldBe(1);
+            view.FindControl<StackPanel>("PART_Items")!.Children.ShouldContain(trackingConfig.TrackingControl);
+        }
+        finally
+        {
+            window.Close();
+        }
     }
 
     [AvaloniaFact]
@@ -80,14 +87,21 @@ public sealed class ResourcePropertiesViewInitializationTests
             Content = view
         };
 
-        window.Show();
-        Dispatcher.UIThread.RunJobs();
-        Dispatcher.UIThread.RunJobs();
+        try
+        {
+            window.Show();
+            Dispatcher.UIThread.RunJobs();
+            Dispatcher.UIThread.RunJobs();
 
-        var items = view.FindControl<StackPanel>("PART_Items")!.Children.OfType<PropertyItem>().ToList();
+            var items = view.FindControl<StackPanel>("PART_Items")!.Children.OfType<PropertyItem>().ToList();
 
-        items.ShouldNotBeEmpty();
-        items.Any(x => x.Key == AppResources.ResourcePropertiesView_Name).ShouldBeTrue();
+            items.ShouldNotBeEmpty();
+            items.Any(x => x.Key == AppResources.ResourcePropertiesView_Name).ShouldBeTrue();
+        }
+        finally
+        {
+            window.Close();
+        }
     }
 
     private sealed class TrackingResourceConfig : ResourceConfigBase<V1Pod>
