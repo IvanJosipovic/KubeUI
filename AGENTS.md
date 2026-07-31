@@ -51,7 +51,7 @@ Docker
 - Use integration tests for parsing, IO, and docking layout persistence.
 - Avalonia UI tests and headless UI guidance live in `src/KubeUI.Avalonia/AGENTS.md`.
 - For bugs, write the failing regression test first, confirm the failure reproduces, then implement the fix and rerun the same test before widening scope.
-- When running tests, always enable             '--hangdump --hangdump-timeout 1m' so tests don't keep running infinitely
+- Test projects must include `testconfig.json` with HangDump enabled and a `1m` timeout so tests don't keep running indefinitely.
 - Tests should not use Task.Sleep or Delay but wait for specific scenarios or use events
 
 ## 7) Code conventions

@@ -177,10 +177,13 @@ public class ResourceListViewModelTests : AvaloniaTestBase
 
         var rows = GetAllRows(grid).Where(x => x.IsVisible).ToList();
 
-        var dataGridRow = rows[row];
-        dataGridRow.ShouldNotBeNull();
+        if (row >= rows.Count)
+        {
+            return null;
+        }
 
-        return GetCellText(grid, dataGridRow!, column);
+        var dataGridRow = rows[row];
+        return GetCellText(grid, dataGridRow, column);
     }
 
     private static string? GetResourceCellText<T>(DataGrid grid, string name, int column)
@@ -321,8 +324,10 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         };
 
         await AddOrUpdateAsync(cluster, pod);
+        await WaitForAsync(() => vm.View.Count == 1, timeoutMs: 5000);
 
         vm.SelectionModel.Select(0);
+        await WaitForAsync(() => GetAllRows(grid).Any(x => x.IsVisible), timeoutMs: 5000);
 
         var contextMenu = grid!.ContextMenu;
         contextMenu.ShouldNotBeNull();
@@ -753,6 +758,7 @@ public class ResourceListViewModelTests : AvaloniaTestBase
 
         var pod = Pod("ns", "a");
         await AddOrUpdateAsync(cluster, pod);
+        await WaitForAsync(() => vm.View.Count == 1 && GetFirstRowFirstColumnText(grid, 0, 0) is not null, timeoutMs: 5000);
 
         var before = GetFirstRowFirstColumnText(grid, 0, 0);
         before.ShouldNotBeNull();
@@ -1692,6 +1698,7 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         window.Show();
 
         await AddOrUpdateAsync(cluster, Pod("ns1", "a"));
+        await WaitForAsync(() => vm.View.Count == 1, timeoutMs: 5000);
 
         vm.View.Count.ShouldBe(1);
 

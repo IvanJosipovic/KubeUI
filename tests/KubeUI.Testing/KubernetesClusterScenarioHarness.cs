@@ -17,6 +17,8 @@ public sealed class KubernetesClusterScenarioHarness : IClusterScenarioHarness
     private readonly KubernetesTestSettingsStore _settingsStore = new();
     private readonly FakeKubernetesHttpApi _api = new();
     private readonly List<FakeKubernetesHttpApi> _additionalApis = [];
+    private readonly List<KubeUI.Kubernetes.Cluster> _connectedClusters = [];
+    private int _disposeStarted;
 
     public KubernetesClusterScenarioHarness()
     {
@@ -181,22 +183,40 @@ public sealed class KubernetesClusterScenarioHarness : IClusterScenarioHarness
 
     public async ValueTask DisposeAsync()
     {
-        if (Cluster is KubeUI.Kubernetes.Cluster cluster)
+        if (Interlocked.Exchange(ref _disposeStarted, 1) != 0)
         {
-            await cluster.Disconnect();
+            return;
         }
 
-        await _services.DisposeAsync();
-        _api.Shutdown();
-        foreach (var api in _additionalApis)
+        foreach (var cluster in _connectedClusters)
         {
-            api.Shutdown();
+            try
+            {
+                await cluster.Disconnect();
+            }
+            catch
+            {
+            }
+        }
+
+        try
+        {
+            await _services.DisposeAsync();
+        }
+        finally
+        {
+            _api.Shutdown();
+            foreach (var api in _additionalApis)
+            {
+                api.Shutdown();
+            }
         }
     }
 
     private KubeUI.Kubernetes.Cluster CreateCluster(FakeKubernetesHttpApi api, string name)
     {
         var cluster = _services.GetRequiredService<KubeUI.Kubernetes.Cluster>();
+        _connectedClusters.Add(cluster);
         cluster.Name = name;
         cluster.KubeConfig = CreateKubeConfig(name);
         cluster.KubeConfigPath = string.Empty;

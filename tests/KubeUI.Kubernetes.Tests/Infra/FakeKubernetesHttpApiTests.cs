@@ -2,6 +2,8 @@ using k8s;
 using k8s.Models;
 using KubeUI.Testing;
 using Shouldly;
+using System.Net;
+using System.Net.Http.Json;
 
 namespace KubeUI.Kubernetes.Tests.Infra;
 
@@ -49,5 +51,49 @@ public sealed class FakeKubernetesHttpApiTests
 #pragma warning restore xUnit1051
 
         created.Name().ShouldBe("test");
+    }
+
+    [Fact]
+    public async Task ResourceRequestReturnsForbiddenWhenPermissionIsDenied()
+    {
+        using var api = new FakeKubernetesHttpApi();
+        api.Register<V1Namespace>();
+        api.SetPermission("namespaces", "create", false);
+
+        using var client = new HttpClient(api)
+        {
+            BaseAddress = new Uri("http://fake-kubernetes"),
+        };
+
+        using var response = await client.PostAsJsonAsync(
+            "/api/v1/namespaces",
+            new V1Namespace
+            {
+                ApiVersion = V1Namespace.KubeApiVersion,
+                Kind = V1Namespace.KubeKind,
+                Metadata = new V1ObjectMeta { Name = "denied" },
+            },
+            TestContext.Current.CancellationToken);
+
+        response.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
+    public async Task NamespacedResourceRequestUsesNamespacePermission()
+    {
+        using var api = new FakeKubernetesHttpApi();
+        api.Register<V1Pod>();
+        api.SetPermission("pods", "list", false, "restricted");
+
+        using var client = new HttpClient(api)
+        {
+            BaseAddress = new Uri("http://fake-kubernetes"),
+        };
+
+        using var response = await client.GetAsync(
+            "/api/v1/namespaces/restricted/pods",
+            TestContext.Current.CancellationToken);
+
+        response.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
     }
 }

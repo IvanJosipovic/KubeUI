@@ -172,6 +172,11 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
 
     private async Task<HttpResponseMessage> HandleResourceAsync(HttpRequestMessage request, Route route, CancellationToken cancellationToken)
     {
+        if (!IsAllowed(request, route))
+        {
+            return Error(HttpStatusCode.Forbidden, $"forbidden: {request.Method} {route.CollectionPath}");
+        }
+
         var collectionKey = CollectionKey(route);
         var key = ResourceKey(route.ResourceName is null ? collectionKey : collectionKey + "/" + route.ResourceName);
 
@@ -345,6 +350,33 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
 
     private static bool AcceptsApiDiscovery(HttpRequestMessage request) =>
         request.Headers.Accept.Any(value => value.ToString().Contains("apidiscovery.k8s.io", StringComparison.OrdinalIgnoreCase));
+
+    private bool IsAllowed(HttpRequestMessage request, Route route)
+    {
+        if (!_definitions.TryGetValue(DefinitionKey(route.Group, route.ApiVersion, route.PluralName), out var definition))
+        {
+            return true;
+        }
+
+        var verb = request.RequestUri?.Query.Contains("watch=true", StringComparison.OrdinalIgnoreCase) == true
+            ? "watch"
+            : request.Method.Method.ToUpperInvariant() switch
+            {
+                "GET" when route.ResourceName is null => "list",
+                "GET" => "get",
+                "POST" => "create",
+                "PUT" => "update",
+                "PATCH" => "patch",
+                "DELETE" => "delete",
+                _ => request.Method.Method.ToLowerInvariant(),
+            };
+
+        var @namespace = definition.Namespaced ? route.Namespace : null;
+        var permissionKey = PermissionKey(route.PluralName, verb, @namespace, route.Subresource);
+        return _permissions.TryGetValue(permissionKey, out var configured)
+            ? configured
+            : DefaultPermissionAllowed;
+    }
 
     private static JsonObject ParseObject(string json) => JsonNode.Parse(json)?.AsObject() ?? throw new InvalidOperationException("Kubernetes JSON was not an object.");
 
@@ -559,13 +591,18 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
             return null;
         }
 
+        var @namespace = namespaceIndex >= index && parts.Length > namespaceIndex + 1
+            ? parts[namespaceIndex + 1]
+            : null;
         var plural = parts[resourceIndex];
         var collectionPath = "/" + string.Join('/', parts.Take(resourceIndex + 1));
         var name = parts.Length > resourceIndex + 1 ? parts[resourceIndex + 1] : null;
-        return new Route(prefix, apiVersion, plural, collectionPath, name);
+        var subresource = parts.Length > resourceIndex + 2 ? parts[resourceIndex + 2] : null;
+        var group = parts[0] == "apis" ? parts[1] : string.Empty;
+        return new Route(group, prefix, apiVersion, plural, collectionPath, @namespace, name, subresource);
     }
 
     private readonly record struct ResourceDefinition(GroupApiVersionKind Api, bool Namespaced);
 
-    private readonly record struct Route(string Prefix, string ApiVersion, string PluralName, string CollectionPath, string? ResourceName);
+    private readonly record struct Route(string Group, string Prefix, string ApiVersion, string PluralName, string CollectionPath, string? Namespace, string? ResourceName, string? Subresource);
 }

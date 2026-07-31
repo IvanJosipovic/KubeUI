@@ -714,10 +714,22 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
         await using var scope = await KubernetesTestWorkspaceScope.CreateAsync(TestApp.CurrentServices!, backend);
         var cluster = scope.Workspace;
         var runtime = cluster.Runtime;
+        var seedRequested = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        void OnResourceSeeded(IClusterRuntime _, GroupApiVersionKind kind)
+        {
+            if (kind == GroupApiVersionKind.From<V1CustomResourceDefinition>())
+            {
+                seedRequested.TrySetResult(true);
+            }
+        }
+
+        runtime.ResourceSeeded += OnResourceSeeded;
         using VisualizationViewModel viewModel = new(new ResourceRelationshipBuilder());
-        await cluster.Connect();
-        viewModel.Initialize(cluster);
-        await runtime.AddOrUpdateResource(new V1Pod
+        try
+        {
+            await cluster.Connect();
+            viewModel.Initialize(cluster);
+            await runtime.AddOrUpdateResource(new V1Pod
             {
                 ApiVersion = "v1",
                 Kind = V1Pod.KubeKind,
@@ -736,8 +748,21 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
                         },
                     ],
                 },
+                Spec = new()
+                {
+                    Containers =
+                    [
+                        new() { Name = "owned", Image = "busybox" },
+                    ],
+                },
             });
 
+            (await seedRequested.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken)).ShouldBeTrue();
+        }
+        finally
+        {
+            runtime.ResourceSeeded -= OnResourceSeeded;
+        }
     }
 
     [AvaloniaTheory, KubernetesBackendDataAttribute]

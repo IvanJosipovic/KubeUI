@@ -2,7 +2,6 @@ using System.Text;
 using k8s;
 using k8s.KubeConfigModels;
 using k8s.Models;
-using KubeUI.Testing;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace KubeUI.Testing;
@@ -14,6 +13,7 @@ public sealed class KindClusterScenarioHarness : IClusterScenarioHarness
     private string _name = Guid.NewGuid().ToString("N");
     private readonly string _kubeConfigPath = Path.Combine(Path.GetTempPath(), $"kubeui-kind-{Guid.NewGuid():N}.yaml");
     private readonly List<KubeUI.Kubernetes.Cluster> _connectedClusters = [];
+    private int _disposeStarted;
 
     public KindClusterScenarioHarness()
     {
@@ -36,12 +36,44 @@ public sealed class KindClusterScenarioHarness : IClusterScenarioHarness
 
         KubeConfig = await Kind.GetK8SConfiguration(_name, cancellationToken).ConfigureAwait(false);
         Kubernetes = await Kind.GetKubernetesClient(_name, cancellationToken).ConfigureAwait(false);
+        await EnsureClusterAdminAsync(cancellationToken).ConfigureAwait(false);
         await WaitForDefaultServiceAccountAsync(cancellationToken).ConfigureAwait(false);
         Cluster = await CreateClusterAsync(
             $"kind-{_name}",
             KubeConfig,
             cancellationToken: cancellationToken).ConfigureAwait(false);
-        await PrimePermissionsAsync((KubeUI.Kubernetes.Cluster)Cluster, "default", cancellationToken);
+        await PrimePermissionsAsync((KubeUI.Kubernetes.Cluster)Cluster, cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task EnsureClusterAdminAsync(CancellationToken cancellationToken)
+    {
+        var userName = KubeConfig.Users
+            .First(user => user.Name == KubeConfig.Contexts.First(context => context.Name == KubeConfig.CurrentContext).ContextDetails.User)
+            .Name;
+
+        await Kubernetes.CreateClusterRoleBindingAsync(
+            new V1ClusterRoleBinding
+            {
+                ApiVersion = V1ClusterRoleBinding.KubeGroup + "/" + V1ClusterRoleBinding.KubeApiVersion,
+                Kind = V1ClusterRoleBinding.KubeKind,
+                Metadata = new V1ObjectMeta { Name = $"kubeui-{_name}-cluster-admin" },
+                RoleRef = new V1RoleRef
+                {
+                    ApiGroup = V1ClusterRoleBinding.KubeGroup,
+                    Kind = "ClusterRole",
+                    Name = "cluster-admin",
+                },
+                Subjects =
+                [
+                    new Rbacv1Subject
+                    {
+                        ApiGroup = "rbac.authorization.k8s.io",
+                        Kind = "User",
+                        Name = userName,
+                    },
+                ],
+            },
+            cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<T> CreateDirectAsync<T>(T item, CancellationToken cancellationToken = default) where T : class, IKubernetesObject<V1ObjectMeta>, new()
@@ -111,13 +143,37 @@ public sealed class KindClusterScenarioHarness : IClusterScenarioHarness
             includeNamespaceFallback ? ["my-app"] : null,
             cancellationToken);
         await limited.Connect().WaitAsync(cancellationToken);
-        await PrimePermissionsAsync((KubeUI.Kubernetes.Cluster)limited, "my-app", cancellationToken);
+        await PrimePermissionsAsync((KubeUI.Kubernetes.Cluster)limited, cancellationToken).ConfigureAwait(false);
 
         return limited;
     }
 
+    private static async Task PrimePermissionsAsync(KubeUI.Kubernetes.Cluster cluster, CancellationToken cancellationToken)
+    {
+        foreach (var type in new[] { typeof(V1Namespace), typeof(V1Node), typeof(V1Secret), typeof(V1Service), typeof(V1EndpointSlice), typeof(V1ConfigMap), typeof(Corev1Event), typeof(V1Pod), typeof(V1Deployment), typeof(V1ServiceAccount), typeof(V1CronJob), typeof(V1Job), typeof(V1CustomResourceDefinition) })
+        {
+            foreach (var verb in Enum.GetValues<Verb>())
+            {
+                await cluster.UpdateCanI(type, verb).WaitAsync(cancellationToken).ConfigureAwait(false);
+                if (type != typeof(V1Namespace) && type != typeof(V1Node))
+                {
+                    await cluster.UpdateCanI(type, verb, "my-app").WaitAsync(cancellationToken).ConfigureAwait(false);
+                }
+            }
+        }
+
+        await cluster.UpdateCanI(typeof(V1Pod), Verb.Get, "my-app", "log").WaitAsync(cancellationToken).ConfigureAwait(false);
+        await cluster.UpdateCanI(typeof(V1Pod), Verb.Create, "my-app", "exec").WaitAsync(cancellationToken).ConfigureAwait(false);
+        await cluster.UpdateCanI(typeof(V1Pod), Verb.Create, "my-app", "portforward").WaitAsync(cancellationToken).ConfigureAwait(false);
+    }
+
     public async ValueTask DisposeAsync()
     {
+        if (Interlocked.Exchange(ref _disposeStarted, 1) != 0)
+        {
+            return;
+        }
+
         try
         {
             foreach (var cluster in _connectedClusters)
@@ -135,27 +191,62 @@ public sealed class KindClusterScenarioHarness : IClusterScenarioHarness
         {
             try
             {
-                await _services.DisposeAsync();
+                await DeleteClusterAsync();
             }
             finally
             {
                 try
                 {
-                    await Kind.DeleteCluster(_name);
+                    await _services.DisposeAsync();
                 }
-                catch
+                finally
                 {
-                }
-
-                try
-                {
-                    File.Delete(_kubeConfigPath);
-                }
-                catch
-                {
+                    try
+                    {
+                        File.Delete(_kubeConfigPath);
+                    }
+                    catch (IOException exception)
+                    {
+                        Console.Error.WriteLine($"Unable to delete Kind kubeconfig '{_kubeConfigPath}': {exception.Message}");
+                    }
+                    catch (UnauthorizedAccessException exception)
+                    {
+                        Console.Error.WriteLine($"Unable to delete Kind kubeconfig '{_kubeConfigPath}': {exception.Message}");
+                    }
                 }
             }
         }
+    }
+
+    private async Task DeleteClusterAsync()
+    {
+        using var timeout = new CancellationTokenSource(TimeSpan.FromMinutes(2));
+        Exception? lastException = null;
+
+        for (int attempt = 1; attempt <= 3; attempt++)
+        {
+            try
+            {
+                await Kind.DeleteCluster(_name, timeout.Token).ConfigureAwait(false);
+                return;
+            }
+            catch (OperationCanceledException) when (timeout.IsCancellationRequested)
+            {
+                lastException = new TimeoutException($"Timed out deleting Kind cluster '{_name}'.");
+                break;
+            }
+            catch (Exception exception) when (attempt < 3)
+            {
+                lastException = exception;
+                await Task.Delay(TimeSpan.FromSeconds(attempt), timeout.Token).ConfigureAwait(false);
+            }
+            catch (Exception exception)
+            {
+                lastException = exception;
+            }
+        }
+
+        Console.Error.WriteLine($"Unable to delete Kind cluster '{_name}' after retries: {lastException}");
     }
 
     private async Task<string> CreateServiceAccountTokenAsync(string @namespace, string name, CancellationToken cancellationToken)
@@ -244,45 +335,6 @@ public sealed class KindClusterScenarioHarness : IClusterScenarioHarness
         cluster.KubeConfigPath = string.Empty;
         await cluster.Connect().WaitAsync(cancellationToken).ConfigureAwait(false);
         return cluster;
-    }
-
-    private static async Task PrimePermissionsAsync(
-        KubeUI.Kubernetes.Cluster cluster,
-        string @namespace,
-        CancellationToken cancellationToken)
-    {
-        foreach (var type in new[]
-        {
-            typeof(V1Namespace),
-            typeof(V1Node),
-            typeof(V1Secret),
-            typeof(V1Service),
-            typeof(V1EndpointSlice),
-            typeof(Corev1Event),
-            typeof(V1Pod),
-            typeof(V1Deployment),
-            typeof(V1ServiceAccount),
-            typeof(V1CronJob),
-            typeof(V1Job),
-            typeof(V1CustomResourceDefinition)
-        })
-        {
-            foreach (var verb in Enum.GetValues<Verb>())
-            {
-                await cluster.UpdateCanI(type, verb).WaitAsync(cancellationToken);
-                if (type != typeof(V1Namespace) && type != typeof(V1Node))
-                {
-                    await cluster.UpdateCanI(type, verb, @namespace).WaitAsync(cancellationToken);
-                }
-            }
-        }
-
-        await cluster.UpdateCanI(typeof(V1Pod), Verb.Get, subresource: "log").WaitAsync(cancellationToken);
-        await cluster.UpdateCanI(typeof(V1Pod), Verb.Create, subresource: "exec").WaitAsync(cancellationToken);
-        await cluster.UpdateCanI(typeof(V1Pod), Verb.Create, subresource: "portforward").WaitAsync(cancellationToken);
-        await cluster.UpdateCanI(typeof(V1Pod), Verb.Get, @namespace, "log").WaitAsync(cancellationToken);
-        await cluster.UpdateCanI(typeof(V1Pod), Verb.Create, @namespace, "exec").WaitAsync(cancellationToken);
-        await cluster.UpdateCanI(typeof(V1Pod), Verb.Create, @namespace, "portforward").WaitAsync(cancellationToken);
     }
 
 }

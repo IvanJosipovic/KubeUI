@@ -855,8 +855,12 @@ public class NavigationViewModelTests : AvaloniaTestBase
         var runtime = runtimeScope.Cluster;
 
         var slowPermissionRelease = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var alphaPermissionCompleted = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
         var workspace = CreateWorkspace(runtime);
-        workspace.AddResourceConfigForTest(new DeferredPermissionResourceConfig(typeof(TestPermissionResourceAlpha), "Alpha Permission Resource"));
+        workspace.AddResourceConfigForTest(new DeferredPermissionResourceConfig(
+            typeof(TestPermissionResourceAlpha),
+            "Alpha Permission Resource",
+            alphaPermissionCompleted));
         workspace.AddResourceConfigForTest(new SlowPermissionResourceConfig(typeof(TestPermissionResourceGamma), "Gamma Permission Resource", slowPermissionRelease.Task));
 
         var vm = CreateViewModel();
@@ -866,7 +870,8 @@ public class NavigationViewModelTests : AvaloniaTestBase
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
         await vm.TreeViewSelectionChangedAsync(clusterNode);
 
-        await WaitForAsync(() => FindResourceLink(clusterNode, "Alpha Permission Resource") != null, timeoutMs: 250);
+        await alphaPermissionCompleted.Task.WaitAsync(TimeSpan.FromSeconds(3));
+        await WaitForAsync(() => FindResourceLink(clusterNode, "Alpha Permission Resource") != null);
         FindResourceLink(clusterNode, "Gamma Permission Resource").ShouldBeNull();
 
         slowPermissionRelease.TrySetResult(null);
@@ -2370,10 +2375,13 @@ internal class FakeResourceConfig : IResourceConfig
 
 internal sealed class DeferredPermissionResourceConfig : IResourceConfig
 {
-    public DeferredPermissionResourceConfig(Type resourceType, string name)
+    private readonly TaskCompletionSource<object?>? _permissionCompleted;
+
+    public DeferredPermissionResourceConfig(Type resourceType, string name, TaskCompletionSource<object?>? permissionCompleted = null)
     {
         Type = resourceType;
         Name = name;
+        _permissionCompleted = permissionCompleted;
     }
 
     public ClusterWorkspace? Cluster { get; private set; }
@@ -2397,6 +2405,7 @@ internal sealed class DeferredPermissionResourceConfig : IResourceConfig
     {
         CanListAndWatch = true;
         PermissionsLoaded = true;
+        _permissionCompleted?.TrySetResult(null);
         return Task.CompletedTask;
     }
 

@@ -1,6 +1,7 @@
 using System.Runtime.InteropServices;
 using System.Text;
 using CliWrap;
+using CliWrap.Exceptions;
 using k8s;
 using k8s.KubeConfigModels;
 
@@ -17,38 +18,24 @@ public static class Kind
 
     private static readonly SemaphoreSlim ProcessLock = new(1, 1);
 
-    public static string FileName { get; } = "kind" + (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? ".exe" : "");
-
-    // Execute local downloaded binary on non-Windows systems
-    private static string Executable => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? FileName : $"./{FileName}";
+    public static string FileName { get; } = "kind";
 
     public static async Task DownloadClient(CancellationToken cancellationToken = default)
     {
         await ProcessLock.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            if (File.Exists(FileName))
-            {
-                return;
-            }
-
             using var client = new HttpClient();
             var arch = RuntimeInformation.ProcessArchitecture == Architecture.Arm64 ? "arm64" : "amd64";
-            var os = RuntimeInformation.IsOSPlatform(OSPlatform.OSX)
-                ? "darwin"
-                : RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "windows" : "linux";
 
-            var url = $"https://kind.sigs.k8s.io/dl/{Version}/kind-{os}-{arch}";
-            var bytes = await client.GetByteArrayAsync(url, cancellationToken).ConfigureAwait(false);
-
-            File.WriteAllBytes(FileName, bytes);
-
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (!File.Exists(FileName))
             {
-                await Cli.Wrap("chmod")
-                    .WithArguments($"+x ./{FileName}")
-                    .ExecuteAsync(cancellationToken);
+                await DownloadBinaryAsync(client, "linux", arch, FileName, cancellationToken).ConfigureAwait(false);
             }
+
+            await Cli.Wrap("chmod")
+                .WithArguments(["+x", $"./{FileName}"])
+                .ExecuteAsync(cancellationToken).ConfigureAwait(false);
         }
         finally
         {
@@ -65,10 +52,11 @@ public static class Kind
             image ??= KubernetesVersion;
             kubeConfigPath ??= KubernetesClientConfiguration.KubeConfigDefaultLocation;
 
-            await Cli.Wrap(Executable)
-                .WithArguments($"create cluster --name {name} --image {image} --kubeconfig \"{kubeConfigPath}\"" + (string.IsNullOrEmpty(config) ? "" : $" --config={config}"))
-                .WithStandardErrorPipe(PipeTarget.ToStringBuilder(stdErrBuffer))
-                .ExecuteAsync(cancellationToken);
+            await ExecuteKindAsync(
+                BuildCreateArguments(name, image, config, kubeConfigPath),
+                standardOutput: null,
+                standardError: stdErrBuffer,
+                cancellationToken: cancellationToken).ConfigureAwait(false);
 
             ThrowIfKindError(stdErrBuffer);
         }
@@ -85,10 +73,11 @@ public static class Kind
         {
             var stdErrBuffer = new StringBuilder();
 
-            await Cli.Wrap(Executable)
-                .WithArguments($"delete cluster --name {name}")
-                .WithStandardErrorPipe(PipeTarget.ToStringBuilder(stdErrBuffer))
-                .ExecuteAsync(cancellationToken);
+            await ExecuteKindAsync(
+                ["delete", "cluster", "--name", name],
+                standardOutput: null,
+                standardError: stdErrBuffer,
+                cancellationToken: cancellationToken).ConfigureAwait(false);
 
             ThrowIfKindError(stdErrBuffer);
         }
@@ -103,11 +92,11 @@ public static class Kind
         var stdOutBuffer = new StringBuilder();
         var stdErrBuffer = new StringBuilder();
 
-        await Cli.Wrap(Executable)
-            .WithArguments($"get kubeconfig --name {name}")
-            .WithStandardOutputPipe(PipeTarget.ToStringBuilder(stdOutBuffer))
-            .WithStandardErrorPipe(PipeTarget.ToStringBuilder(stdErrBuffer))
-            .ExecuteAsync(cancellationToken);
+        await ExecuteKindAsync(
+            ["get", "kubeconfig", "--name", name],
+            stdOutBuffer,
+            stdErrBuffer,
+            cancellationToken).ConfigureAwait(false);
 
         ThrowIfKindError(stdErrBuffer);
         return stdOutBuffer.ToString();
@@ -138,5 +127,71 @@ public static class Kind
             throw new InvalidOperationException(stdErr);
         }
     }
+
+    private static async Task DownloadBinaryAsync(HttpClient client, string os, string arch, string fileName, CancellationToken cancellationToken)
+    {
+        var url = $"https://kind.sigs.k8s.io/dl/{Version}/kind-{os}-{arch}";
+        var bytes = await client.GetByteArrayAsync(url, cancellationToken).ConfigureAwait(false);
+        await File.WriteAllBytesAsync(fileName, bytes, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static IReadOnlyList<string> BuildCreateArguments(string name, string image, string? config, string kubeConfigPath)
+    {
+        var arguments = new List<string>
+        {
+            "create",
+            "cluster",
+            "--name",
+            name,
+            "--image",
+            image,
+            "--kubeconfig",
+            kubeConfigPath,
+        };
+
+        if (!string.IsNullOrWhiteSpace(config))
+        {
+            arguments.Add("--config");
+            arguments.Add(config);
+        }
+
+        return arguments;
+    }
+
+    private static async Task ExecuteKindAsync(
+        IReadOnlyList<string> arguments,
+        StringBuilder? standardOutput = null,
+        StringBuilder? standardError = null,
+        CancellationToken cancellationToken = default)
+    {
+        var command = Cli.Wrap($"./{FileName}").WithArguments(arguments);
+        if (standardOutput is not null)
+        {
+            command = command.WithStandardOutputPipe(PipeTarget.ToStringBuilder(standardOutput));
+        }
+
+        if (standardError is not null)
+        {
+            command = command.WithStandardErrorPipe(PipeTarget.ToStringBuilder(standardError));
+        }
+
+        try
+        {
+            await command.ExecuteAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch (CommandExecutionException exception)
+        {
+            var output = standardOutput?.ToString();
+            var error = standardError?.ToString();
+            var details = string.Join(
+                Environment.NewLine,
+                new[] { output, error }.Where(static value => !string.IsNullOrWhiteSpace(value)));
+
+            throw new InvalidOperationException(
+                $"Kind command failed: {string.Join(' ', arguments)}{Environment.NewLine}{details}",
+                exception);
+        }
+    }
+
 }
 

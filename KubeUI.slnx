@@ -3,6 +3,7 @@
     <File Path=".editorconfig" />
     <File Path=".releaserc.json" />
     <File Path=".vsconfig" />
+    <File Path="Directory.Build.props" />
     <File Path="docker-compose.yaml" />
     <File Path="global.json" />
     <File Path="README.md" />

@@ -13,13 +13,7 @@ public enum KubernetesBackend
 
 public static class KubernetesBackendData
 {
-    public static bool RunKindTests =>
-        string.Equals(Environment.GetEnvironmentVariable("KUBEUI_RUN_KIND_TESTS"), "1", StringComparison.Ordinal);
-
-    public static IEnumerable<object[]> Enabled =>
-        RunKindTests
-            ? [new object[] { KubernetesBackend.Fake }, new object[] { KubernetesBackend.Kind }]
-            : [new object[] { KubernetesBackend.Fake }];
+    public static bool RunKindTests => true;
 }
 
 public sealed class KubernetesBackendDataAttribute : DataAttribute
