@@ -8,7 +8,7 @@ public static class KubernetesScenarioHarnessFactory
     {
         IClusterScenarioHarness harness = backend switch
         {
-            KubernetesBackend.Fake => new KubernetesClusterScenarioHarness(),
+            KubernetesBackend.Fake => new FakeClusterScenarioHarness(),
             KubernetesBackend.Kind => new KindClusterScenarioHarness(),
             _ => throw new ArgumentOutOfRangeException(nameof(backend), backend, null),
         };

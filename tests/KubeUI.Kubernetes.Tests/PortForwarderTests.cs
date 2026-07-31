@@ -170,7 +170,7 @@ public sealed class PortForwarderTests
         stream.WrittenBytes.ShouldBe(payload);
     }
 
-    [Theory, KubernetesBackendDataAttribute]
+    [Theory, KubernetesBackendData]
     [Trait("Category", "Kind")]
     public async Task Service_forward_without_endpoint_slice_sets_expected_status(KubernetesBackend backend)
     {
@@ -196,7 +196,7 @@ public sealed class PortForwarderTests
         await WaitForAsync(() => sut.Connections == 0, cancellationToken: TestContext.Current.CancellationToken);
     }
 
-    [Theory, KubernetesBackendDataAttribute]
+    [Theory, KubernetesBackendData]
     [Trait("Category", "Kind")]
     public async Task Service_forward_without_matching_port_sets_expected_status(KubernetesBackend backend)
     {
@@ -244,7 +244,7 @@ public sealed class PortForwarderTests
         await WaitForAsync(() => sut.Connections == 0, cancellationToken: TestContext.Current.CancellationToken);
     }
 
-    [Theory, KubernetesBackendDataAttribute]
+    [Theory, KubernetesBackendData]
     [Trait("Category", "Kind")]
     public async Task Service_forward_without_ready_pod_sets_expected_status(KubernetesBackend backend)
     {

@@ -3,12 +3,11 @@ using k8s;
 using k8s.KubeConfigModels;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
-using KubeUI.Testing;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace KubeUI.Testing;
 
-public sealed class KubernetesClusterScenarioHarness : IClusterScenarioHarness
+public sealed class FakeClusterScenarioHarness : IClusterScenarioHarness
 {
     private const string LimitedNamespace = "my-app";
     private const string LimitedServiceAccountName = "my-serviceaccount";
@@ -20,7 +19,7 @@ public sealed class KubernetesClusterScenarioHarness : IClusterScenarioHarness
     private readonly List<KubeUI.Kubernetes.Cluster> _connectedClusters = [];
     private int _disposeStarted;
 
-    public KubernetesClusterScenarioHarness()
+    public FakeClusterScenarioHarness()
     {
         RegisterSupportedResources(_api);
 

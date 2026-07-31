@@ -40,7 +40,7 @@ public class ClusterWorkspaceTests : AvaloniaTestBase
         workspace.GetResourceConfigs().ShouldBeEmpty();
     }
 
-    [AvaloniaTheory, KubernetesBackendDataAttribute]
+    [AvaloniaTheory, KubernetesBackendData]
     [Trait("Category", "Kind")]
     public async Task resource_config_can_be_looked_up_by_resource_type(KubernetesBackend backend)
     {
@@ -67,7 +67,7 @@ public class ClusterWorkspaceTests : AvaloniaTestBase
         workspace.ClusterColor.ShouldBe(Brushes.Orange);
     }
 
-    [AvaloniaTheory, KubernetesBackendDataAttribute]
+    [AvaloniaTheory, KubernetesBackendData]
     [Trait("Category", "Kind")]
     public async Task added_crd_adds_resource_config_and_model_cache_entry(KubernetesBackend backend)
     {
@@ -89,7 +89,7 @@ public class ClusterWorkspaceTests : AvaloniaTestBase
         resourceConfig.IsCustomResource.ShouldBeTrue();
     }
 
-    [AvaloniaTheory, KubernetesBackendDataAttribute]
+    [AvaloniaTheory, KubernetesBackendData]
     [Trait("Category", "Kind")]
     public async Task resource_config_processed_event_observes_registered_crd_config(KubernetesBackend backend)
     {
@@ -108,7 +108,7 @@ public class ClusterWorkspaceTests : AvaloniaTestBase
         processedConfig.ShouldBeSameAs(resourceConfig);
     }
 
-    [AvaloniaTheory, KubernetesBackendDataAttribute]
+    [AvaloniaTheory, KubernetesBackendData]
     [Trait("Category", "Kind")]
     public async Task updated_crd_replaces_resource_config_model_cache_entry_and_seeded_informer(KubernetesBackend backend)
     {
@@ -158,7 +158,7 @@ public class ClusterWorkspaceTests : AvaloniaTestBase
         GetInformers(updatedContainer).Count.ShouldBe(1);
     }
 
-    [AvaloniaTheory, KubernetesBackendDataAttribute]
+    [AvaloniaTheory, KubernetesBackendData]
     [Trait("Category", "Kind")]
     public async Task metadata_only_crd_update_does_not_rebuild_resource_config_or_reseed_informer(KubernetesBackend backend)
     {
@@ -200,7 +200,7 @@ public class ClusterWorkspaceTests : AvaloniaTestBase
         GetInformers(originalContainer).Count.ShouldBe(1);
     }
 
-    [AvaloniaTheory, KubernetesBackendDataAttribute]
+    [AvaloniaTheory, KubernetesBackendData]
     [Trait("Category", "Kind")]
     public async Task seeding_resource_raises_resource_seeded_event(KubernetesBackend backend)
     {
@@ -233,7 +233,7 @@ public class ClusterWorkspaceTests : AvaloniaTestBase
         GetInformers(container).ShouldBeEmpty();
     }
 
-    [AvaloniaTheory, KubernetesBackendDataAttribute]
+    [AvaloniaTheory, KubernetesBackendData]
     [Trait("Category", "Kind")]
     public async Task initializing_workspace_seeds_custom_resource_definitions_when_allowed(KubernetesBackend backend)
     {
@@ -250,7 +250,7 @@ public class ClusterWorkspaceTests : AvaloniaTestBase
             .Informers.Count.ShouldBe(1);
     }
 
-    [AvaloniaTheory, KubernetesBackendDataAttribute]
+    [AvaloniaTheory, KubernetesBackendData]
     [Trait("Category", "Kind")]
     public async Task deleted_crd_removes_resource_config_model_cache_entry_and_seeded_informer(KubernetesBackend backend)
     {
@@ -326,7 +326,7 @@ public class ClusterWorkspaceTests : AvaloniaTestBase
         GetInformers(podContainer).Count.ShouldBe(2);
     }
 
-    [AvaloniaTheory, KubernetesBackendDataAttribute]
+    [AvaloniaTheory, KubernetesBackendData]
     [Trait("Category", "Kind")]
     public async Task disconnect_disposes_seeded_informers_and_registrations(KubernetesBackend backend)
     {
@@ -350,7 +350,7 @@ public class ClusterWorkspaceTests : AvaloniaTestBase
         runtime.Objects.ShouldBeEmpty();
     }
 
-    [AvaloniaTheory, KubernetesBackendDataAttribute]
+    [AvaloniaTheory, KubernetesBackendData]
     [Trait("Category", "Kind")]
     public async Task disconnect_allows_resource_types_to_be_seeded_again(KubernetesBackend backend)
     {
@@ -377,7 +377,7 @@ public class ClusterWorkspaceTests : AvaloniaTestBase
         GetInformerRegistrations(reseededContainer).Count.ShouldBe(1);
     }
 
-    [AvaloniaTheory, KubernetesBackendDataAttribute]
+    [AvaloniaTheory, KubernetesBackendData]
     [Trait("Category", "Kind")]
     public async Task disconnect_removes_dynamic_crd_model_cache_entries(KubernetesBackend backend)
     {

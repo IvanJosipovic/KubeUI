@@ -8,7 +8,7 @@ namespace KubeUI.Avalonia.Tests.Features.Workloads.Pod;
 
 public sealed class PodDebugContainerTests : AvaloniaTestBase
 {
-    [AvaloniaTheory, KubernetesBackendDataAttribute]
+    [AvaloniaTheory, KubernetesBackendData]
     [Trait("Category", "Kind")]
     public async Task adding_debug_container_uses_cluster_image_and_target_container(KubernetesBackend backend)
     {

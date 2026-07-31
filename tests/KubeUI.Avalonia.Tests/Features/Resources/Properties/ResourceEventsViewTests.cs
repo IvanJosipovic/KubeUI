@@ -15,7 +15,7 @@ public sealed class ResourceEventsViewTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task pre_attach_refresh_does_not_throw_when_dispatcher_flushes()
     {
-        await using var harness = new KubernetesClusterScenarioHarness();
+        await using var harness = new FakeClusterScenarioHarness();
         await harness.InitializeAsync(TestContext.Current.CancellationToken);
         using var workspace = ActivatorUtilities.CreateInstance<ClusterWorkspace>(TestApp.CurrentServices!, harness.Cluster);
         await workspace.Connect();
@@ -50,7 +50,7 @@ public sealed class ResourceEventsViewTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task detached_resource_events_view_does_not_throw_when_data_context_changes()
     {
-        await using var harness = new KubernetesClusterScenarioHarness();
+        await using var harness = new FakeClusterScenarioHarness();
         await harness.InitializeAsync(TestContext.Current.CancellationToken);
         using var workspace = ActivatorUtilities.CreateInstance<ClusterWorkspace>(TestApp.CurrentServices!, harness.Cluster);
         await workspace.Connect();
@@ -94,7 +94,7 @@ public sealed class ResourceEventsViewTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task refresh_keeps_a_stable_items_source_instance()
     {
-        await using var harness = new KubernetesClusterScenarioHarness();
+        await using var harness = new FakeClusterScenarioHarness();
         await harness.InitializeAsync(TestContext.Current.CancellationToken);
         using var workspace = ActivatorUtilities.CreateInstance<ClusterWorkspace>(TestApp.CurrentServices!, harness.Cluster);
         await workspace.Connect();
@@ -137,7 +137,7 @@ public sealed class ResourceEventsViewTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task queued_update_during_teardown_does_not_throw()
     {
-        await using var harness = new KubernetesClusterScenarioHarness();
+        await using var harness = new FakeClusterScenarioHarness();
         await harness.InitializeAsync(TestContext.Current.CancellationToken);
         using var workspace = ActivatorUtilities.CreateInstance<ClusterWorkspace>(TestApp.CurrentServices!, harness.Cluster);
         await workspace.Connect();

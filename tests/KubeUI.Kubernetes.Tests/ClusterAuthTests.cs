@@ -27,7 +27,7 @@ public sealed class ClusterAuthTests
         cluster.CanI(typeof(V1Pod), Verb.Create, subresource: "portforward").ShouldBeFalse();
     }
 
-    [Theory, KubernetesBackendDataAttribute]
+    [Theory, KubernetesBackendData]
     [Trait("Category", "Kind")]
     public async Task cani_any_namespace_uses_namespace_scoped_permission_when_cluster_scope_is_denied(KubernetesBackend backend)
     {

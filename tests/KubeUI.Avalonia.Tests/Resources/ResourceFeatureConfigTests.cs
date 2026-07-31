@@ -281,7 +281,7 @@ public sealed class ResourceFeatureConfigTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task cronjob_start_context_menu_creates_job_resource()
     {
-        await using var harness = new KubernetesClusterScenarioHarness();
+        await using var harness = new FakeClusterScenarioHarness();
         await harness.InitializeAsync(TestContext.Current.CancellationToken);
         var runtime = harness.Cluster;
         await runtime.SeedResource<V1Namespace>(true);
@@ -321,7 +321,7 @@ public sealed class ResourceFeatureConfigTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task cronjob_start_context_menu_requires_job_create_permission()
     {
-        await using var harness = new KubernetesClusterScenarioHarness();
+        await using var harness = new FakeClusterScenarioHarness();
         harness.SetPermission<V1Job>(Verb.Create, false);
         harness.SetPermission<V1Job>(Verb.Create, false, "volsync");
         await harness.InitializeAsync(TestContext.Current.CancellationToken);
@@ -351,7 +351,7 @@ public sealed class ResourceFeatureConfigTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task cronjob_start_context_menu_allows_namespace_scoped_job_create_permission()
     {
-        await using var harness = new KubernetesClusterScenarioHarness();
+        await using var harness = new FakeClusterScenarioHarness();
         harness.SetPermission<V1Job>(Verb.Create, false);
         harness.SetPermission<V1Job>(Verb.Create, true, "volsync");
         await harness.InitializeAsync(TestContext.Current.CancellationToken);

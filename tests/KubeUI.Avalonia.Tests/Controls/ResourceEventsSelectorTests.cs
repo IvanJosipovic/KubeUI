@@ -20,7 +20,7 @@ public sealed class ResourceEventsSelectorTests
     [Fact]
     public async Task SelectRecentEvents_sorts_and_limits_to_five()
     {
-        await using var harness = new KubernetesClusterScenarioHarness();
+        await using var harness = new FakeClusterScenarioHarness();
         await harness.InitializeAsync(TestContext.Current.CancellationToken);
         var runtime = harness.Cluster;
         await runtime.SeedResource<Corev1Event>();

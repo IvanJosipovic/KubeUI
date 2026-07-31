@@ -14,7 +14,7 @@ internal sealed class KubernetesScenarioClusterScope : IDisposable, IAsyncDispos
 
     public IClusterRuntime Cluster => _harness.Cluster;
 
-    public KubernetesClusterScenarioHarness Harness => (KubernetesClusterScenarioHarness)_harness;
+    public FakeClusterScenarioHarness Harness => (FakeClusterScenarioHarness)_harness;
 
     public IClusterScenarioHarness ScenarioHarness => _harness;
 
@@ -25,27 +25,27 @@ internal sealed class KubernetesScenarioClusterScope : IDisposable, IAsyncDispos
     }
 
     [SuppressMessage("Usage", "CA2000")]
-    public static KubernetesScenarioClusterScope Create(Action<KubernetesClusterScenarioHarness>? configure = null)
+    public static KubernetesScenarioClusterScope Create(Action<FakeClusterScenarioHarness>? configure = null)
     {
-        var harness = new KubernetesClusterScenarioHarness();
+        var harness = new FakeClusterScenarioHarness();
         configure?.Invoke(harness);
         Task.Run(() => harness.InitializeAsync(TestContext.Current.CancellationToken)).GetAwaiter().GetResult();
         return new KubernetesScenarioClusterScope(harness);
     }
 
     [SuppressMessage("Usage", "CA2000")]
-    public static async Task<KubernetesScenarioClusterScope> CreateAsync(Action<KubernetesClusterScenarioHarness>? configure = null)
+    public static async Task<KubernetesScenarioClusterScope> CreateAsync(Action<FakeClusterScenarioHarness>? configure = null)
     {
-        var harness = new KubernetesClusterScenarioHarness();
+        var harness = new FakeClusterScenarioHarness();
         configure?.Invoke(harness);
         await harness.InitializeAsync(TestContext.Current.CancellationToken);
         return new KubernetesScenarioClusterScope(harness);
     }
 
     [SuppressMessage("Usage", "CA2000")]
-    public static KubernetesScenarioClusterScope CreateDisconnected(Action<KubernetesClusterScenarioHarness>? configure = null)
+    public static KubernetesScenarioClusterScope CreateDisconnected(Action<FakeClusterScenarioHarness>? configure = null)
     {
-        var harness = new KubernetesClusterScenarioHarness();
+        var harness = new FakeClusterScenarioHarness();
         configure?.Invoke(harness);
         harness.InitializeDisconnected();
         return new KubernetesScenarioClusterScope(harness);

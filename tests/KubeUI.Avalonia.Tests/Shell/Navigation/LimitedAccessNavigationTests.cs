@@ -9,7 +9,7 @@ namespace KubeUI.Avalonia.Tests.Shell.Navigation;
 
 public sealed class LimitedAccessNavigationTests : AvaloniaTestBase
 {
-    [AvaloniaTheory, KubernetesBackendDataAttribute]
+    [AvaloniaTheory, KubernetesBackendData]
     [Trait("Category", "Kind")]
     public async Task limited_access_with_listable_namespace_shows_namespaced_resources_in_navigation(KubernetesBackend backend)
     {

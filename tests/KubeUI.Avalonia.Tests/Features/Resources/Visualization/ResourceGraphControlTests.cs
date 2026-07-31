@@ -60,7 +60,7 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
         }
     }
 
-    [AvaloniaTheory, KubernetesBackendDataAttribute]
+    [AvaloniaTheory, KubernetesBackendData]
     [Trait("Category", "Kind")]
     public async Task visualizing_namespace_links_namespace_selector_and_can_unlink(KubernetesBackend backend)
     {
@@ -92,7 +92,7 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
         viewModel.SelectedNamespaces.Select(x => x.Name()).ShouldNotContain("team-b");
     }
 
-    [AvaloniaTheory, KubernetesBackendDataAttribute]
+    [AvaloniaTheory, KubernetesBackendData]
     [Trait("Category", "Kind")]
     public async Task visualizing_selected_namespace_includes_pvc_already_loaded_before_view_initialization(KubernetesBackend backend)
     {
@@ -139,7 +139,7 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
         viewModel.Graph!.Resources.ShouldContain(resource => resource.Name() == claim.Name());
     }
 
-    [AvaloniaTheory, KubernetesBackendDataAttribute]
+    [AvaloniaTheory, KubernetesBackendData]
     [Trait("Category", "Kind")]
     public async Task reopening_visualization_keeps_secret_that_arrived_incrementally(KubernetesBackend backend)
     {
@@ -173,7 +173,7 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
         await WaitForAsync(() => reopenedView.Graph!.Resources.Any(resource => resource.Name() == secret.Name()));
     }
 
-    [AvaloniaTheory, KubernetesBackendDataAttribute]
+    [AvaloniaTheory, KubernetesBackendData]
     [Trait("Category", "Kind")]
     public async Task reopening_visualization_from_selected_namespace_as_root_keeps_secret_loaded_during_config_initialization(KubernetesBackend backend)
     {
@@ -532,7 +532,7 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
         viewModel.Graph!.Resources.ShouldBe([pod, service]);
     }
 
-    [AvaloniaTheory, KubernetesBackendDataAttribute]
+    [AvaloniaTheory, KubernetesBackendData]
     [Trait("Category", "Kind")]
     public async Task late_incremental_delta_does_not_overwrite_newer_rebuild(KubernetesBackend backend)
     {
@@ -564,7 +564,7 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
         viewModel.Graph!.Resources.ShouldBeEmpty();
     }
 
-    [AvaloniaTheory, KubernetesBackendDataAttribute]
+    [AvaloniaTheory, KubernetesBackendData]
     [Trait("Category", "Kind")]
     public async Task modified_resource_rebuilds_changed_relationships_in_visualization_graph(KubernetesBackend backend)
     {
@@ -653,7 +653,7 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
         },
     };
 
-    [AvaloniaTheory, KubernetesBackendDataAttribute]
+    [AvaloniaTheory, KubernetesBackendData]
     [Trait("Category", "Kind")]
     public async Task processed_resource_config_starts_required_seed_without_waiting_for_ready(KubernetesBackend backend)
     {
@@ -668,7 +668,7 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
         runtime.GetResourceSourceCache<Corev1Event>().ShouldNotBeNull();
     }
 
-    [AvaloniaTheory, KubernetesBackendDataAttribute]
+    [AvaloniaTheory, KubernetesBackendData]
     [Trait("Category", "Kind")]
     public async Task applying_graph_starts_provider_prerequisite_seed(KubernetesBackend backend)
     {
@@ -707,7 +707,7 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
         }
     }
 
-    [AvaloniaTheory, KubernetesBackendDataAttribute]
+    [AvaloniaTheory, KubernetesBackendData]
     [Trait("Category", "Kind")]
     public async Task added_resource_starts_owner_reference_seed_without_waiting_for_ready(KubernetesBackend backend)
     {
@@ -765,7 +765,7 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
         }
     }
 
-    [AvaloniaTheory, KubernetesBackendDataAttribute]
+    [AvaloniaTheory, KubernetesBackendData]
     [Trait("Category", "Kind")]
     public async Task added_unrelated_cluster_scoped_resource_does_not_bypass_namespace_filter(KubernetesBackend backend)
     {
@@ -804,7 +804,7 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
         delta.Resources.ShouldBeEmpty();
     }
 
-    [AvaloniaTheory, KubernetesBackendDataAttribute]
+    [AvaloniaTheory, KubernetesBackendData]
     [Trait("Category", "Kind")]
     public async Task changing_selected_namespaces_rebuilds_graph_with_new_namespace_filter(KubernetesBackend backend)
     {
@@ -826,7 +826,7 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
             .SelectedNamespaces.ShouldBe(["other"]);
     }
 
-    [AvaloniaTheory, KubernetesBackendDataAttribute]
+    [AvaloniaTheory, KubernetesBackendData]
     [Trait("Category", "Kind")]
     public async Task full_graph_rebuild_does_not_reintroduce_unselected_namespaced_resources(KubernetesBackend backend)
     {
@@ -854,7 +854,7 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
         viewModel.Graph.Resources.Select(resource => resource.Name()).ShouldNotContain("unrelated-node");
     }
 
-    [AvaloniaTheory, KubernetesBackendDataAttribute]
+    [AvaloniaTheory, KubernetesBackendData]
     [Trait("Category", "Kind")]
     public async Task changing_hide_noise_rebuilds_graph_with_new_noise_filter(KubernetesBackend backend)
     {
@@ -873,7 +873,7 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
         (await builder.WaitForBuildAsync(2)).HideNoise.ShouldBeFalse();
     }
 
-    [AvaloniaTheory, KubernetesBackendDataAttribute]
+    [AvaloniaTheory, KubernetesBackendData]
     [Trait("Category", "Kind")]
     public async Task added_unrelated_namespaced_resource_does_not_bypass_namespace_filter(KubernetesBackend backend)
     {
@@ -897,7 +897,7 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
         viewModel.Graph!.Resources.ShouldNotContain(resource => resource.Name() == "unrelated");
     }
 
-    [AvaloniaTheory, KubernetesBackendDataAttribute]
+    [AvaloniaTheory, KubernetesBackendData]
     [Trait("Category", "Kind")]
     public async Task repeated_incremental_deltas_do_not_accumulate_resources_from_unselected_namespaces(KubernetesBackend backend)
     {
@@ -950,7 +950,7 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
         viewModel.Graph!.Resources.Select(resource => resource.Name()).ShouldNotContain("unrelated");
     }
 
-    [AvaloniaTheory, KubernetesBackendDataAttribute]
+    [AvaloniaTheory, KubernetesBackendData]
     [Trait("Category", "Kind")]
     public async Task seeded_prerequisite_triggers_graph_rebuild(KubernetesBackend backend)
     {
@@ -1026,7 +1026,7 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
         }
     }
 
-    [AvaloniaTheory, KubernetesBackendDataAttribute]
+    [AvaloniaTheory, KubernetesBackendData]
     [Trait("Category", "Kind")]
     public async Task disposed_view_model_unsubscribes_from_namespace_changes(KubernetesBackend backend)
     {
@@ -1045,7 +1045,7 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
         builder.BuildCount.ShouldBe(1);
     }
 
-    [AvaloniaTheory, KubernetesBackendDataAttribute]
+    [AvaloniaTheory, KubernetesBackendData]
     [Trait("Category", "Kind")]
     public async Task background_resource_changes_are_processed_on_the_ui_thread(KubernetesBackend backend)
     {
@@ -1069,7 +1069,7 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
         builder.BuildCount.ShouldBeGreaterThan(1);
     }
 
-    [AvaloniaTheory, KubernetesBackendDataAttribute]
+    [AvaloniaTheory, KubernetesBackendData]
     [Trait("Category", "Kind")]
     public async Task disposed_view_model_ignores_runtime_resource_changes(KubernetesBackend backend)
     {
