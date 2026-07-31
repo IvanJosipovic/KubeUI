@@ -7,10 +7,10 @@
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
     <WarningsAsErrors>xUnit1031;xUnit1051</WarningsAsErrors>
-    <TestingPlatformDotnetTestSupport>true</TestingPlatformDotnetTestSupport>
     <AnalysisLevel>latest</AnalysisLevel>
     <AnalysisMode>All</AnalysisMode>
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <UseMicrosoftTestingPlatformRunner>true</UseMicrosoftTestingPlatformRunner>
   </PropertyGroup>
 
   <ItemGroup>

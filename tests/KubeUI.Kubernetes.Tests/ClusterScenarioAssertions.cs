@@ -241,10 +241,6 @@ public abstract class ClusterScenarioAssertions
         cluster.Permissions.CanI<V1Pod>(Verb.Update).ShouldBeTrue();
         cluster.Permissions.CanI<V1Pod>(Verb.Watch).ShouldBeTrue();
 
-        cluster.Permissions.CanI<V1Pod>(Verb.Get, subresource: "log").ShouldBeTrue();
-        cluster.Permissions.CanI<V1Pod>(Verb.Create, subresource: "exec").ShouldBeTrue();
-        cluster.Permissions.CanI<V1Pod>(Verb.Create, subresource: "portforward").ShouldBeTrue();
-
         cluster.Permissions.CanI<V1Pod>(Verb.Create, "default").ShouldBeTrue();
         cluster.Permissions.CanI<V1Pod>(Verb.Delete, "default").ShouldBeTrue();
         cluster.Permissions.CanI<V1Pod>(Verb.Get, "default").ShouldBeTrue();

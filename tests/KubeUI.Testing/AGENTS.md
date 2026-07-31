@@ -9,4 +9,4 @@
 - Dispose a harness when initialization fails; the shared factory owns that failure cleanup.
 - Harness APIs and process/transport helpers must accept and forward cancellation tokens; use bounded, predicate-based waits for readiness and cleanup.
 - `SeedResource`/CRUD completion and informer observation are separate states; expose or await explicit predicates rather than treating a dispatcher flush as synchronization.
-- Kind-backed suites create isolated Docker clusters per test; run them serially in CI and pre-pull the configured node image so the required one-minute hangdump threshold is reserved for test hangs rather than cluster startup.
+- Kind-backed suites create isolated Docker clusters per test; run them 

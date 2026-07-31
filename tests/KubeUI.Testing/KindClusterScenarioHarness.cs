@@ -42,15 +42,11 @@ public sealed class KindClusterScenarioHarness : IClusterScenarioHarness
             $"kind-{_name}",
             KubeConfig,
             cancellationToken: cancellationToken).ConfigureAwait(false);
-        await PrimePermissionsAsync((KubeUI.Kubernetes.Cluster)Cluster, cancellationToken).ConfigureAwait(false);
+        await PrimePermissionsAsync((KubeUI.Kubernetes.Cluster)Cluster, ["my-app", "default"], cancellationToken).ConfigureAwait(false);
     }
 
     private async Task EnsureClusterAdminAsync(CancellationToken cancellationToken)
     {
-        var userName = KubeConfig.Users
-            .First(user => user.Name == KubeConfig.Contexts.First(context => context.Name == KubeConfig.CurrentContext).ContextDetails.User)
-            .Name;
-
         await Kubernetes.CreateClusterRoleBindingAsync(
             new V1ClusterRoleBinding
             {
@@ -69,7 +65,7 @@ public sealed class KindClusterScenarioHarness : IClusterScenarioHarness
                     {
                         ApiGroup = "rbac.authorization.k8s.io",
                         Kind = "User",
-                        Name = userName,
+                        Name = "kubernetes-admin",
                     },
                 ],
             },
@@ -142,13 +138,12 @@ public sealed class KindClusterScenarioHarness : IClusterScenarioHarness
             config,
             includeNamespaceFallback ? ["my-app"] : null,
             cancellationToken);
-        await limited.Connect().WaitAsync(cancellationToken);
-        await PrimePermissionsAsync((KubeUI.Kubernetes.Cluster)limited, cancellationToken).ConfigureAwait(false);
+        await PrimePermissionsAsync((KubeUI.Kubernetes.Cluster)limited, ["my-app"], cancellationToken).ConfigureAwait(false);
 
         return limited;
     }
 
-    private static async Task PrimePermissionsAsync(KubeUI.Kubernetes.Cluster cluster, CancellationToken cancellationToken)
+    private static async Task PrimePermissionsAsync(KubeUI.Kubernetes.Cluster cluster, IReadOnlyCollection<string> namespaces, CancellationToken cancellationToken)
     {
         foreach (var type in new[] { typeof(V1Namespace), typeof(V1Node), typeof(V1Secret), typeof(V1Service), typeof(V1EndpointSlice), typeof(V1ConfigMap), typeof(Corev1Event), typeof(V1Pod), typeof(V1Deployment), typeof(V1ServiceAccount), typeof(V1CronJob), typeof(V1Job), typeof(V1CustomResourceDefinition) })
         {
@@ -157,14 +152,20 @@ public sealed class KindClusterScenarioHarness : IClusterScenarioHarness
                 await cluster.UpdateCanI(type, verb).WaitAsync(cancellationToken).ConfigureAwait(false);
                 if (type != typeof(V1Namespace) && type != typeof(V1Node))
                 {
-                    await cluster.UpdateCanI(type, verb, "my-app").WaitAsync(cancellationToken).ConfigureAwait(false);
+                    foreach (var @namespace in namespaces)
+                    {
+                        await cluster.UpdateCanI(type, verb, @namespace).WaitAsync(cancellationToken).ConfigureAwait(false);
+                    }
                 }
             }
         }
 
-        await cluster.UpdateCanI(typeof(V1Pod), Verb.Get, "my-app", "log").WaitAsync(cancellationToken).ConfigureAwait(false);
-        await cluster.UpdateCanI(typeof(V1Pod), Verb.Create, "my-app", "exec").WaitAsync(cancellationToken).ConfigureAwait(false);
-        await cluster.UpdateCanI(typeof(V1Pod), Verb.Create, "my-app", "portforward").WaitAsync(cancellationToken).ConfigureAwait(false);
+        foreach (var @namespace in namespaces)
+        {
+            await cluster.UpdateCanI(typeof(V1Pod), Verb.Get, @namespace, "log").WaitAsync(cancellationToken).ConfigureAwait(false);
+            await cluster.UpdateCanI(typeof(V1Pod), Verb.Create, @namespace, "exec").WaitAsync(cancellationToken).ConfigureAwait(false);
+            await cluster.UpdateCanI(typeof(V1Pod), Verb.Create, @namespace, "portforward").WaitAsync(cancellationToken).ConfigureAwait(false);
+        }
     }
 
     public async ValueTask DisposeAsync()
@@ -213,6 +214,7 @@ public sealed class KindClusterScenarioHarness : IClusterScenarioHarness
                     {
                         Console.Error.WriteLine($"Unable to delete Kind kubeconfig '{_kubeConfigPath}': {exception.Message}");
                     }
+
                 }
             }
         }
@@ -338,5 +340,4 @@ public sealed class KindClusterScenarioHarness : IClusterScenarioHarness
     }
 
 }
-
 

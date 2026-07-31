@@ -180,6 +180,11 @@ public sealed class PortForwarderTests
         var cluster = harness.Cluster;
         await cluster.SeedResource<V1Service>(true);
         await cluster.AddOrUpdateResource(CreateService());
+        await ClusterScenarioAssertions.WaitForResourceAsync<V1Service>(
+            cluster,
+            "default",
+            "prometheus",
+            cancellationToken: TestContext.Current.CancellationToken);
 
         using var sut = new PortForwarder(cluster, "default");
         sut.SetService("prometheus", 9090);

@@ -12,7 +12,7 @@
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <NoWarn>CS8602,CS8618,CS8625,CS8604,CS8605,CS8600</NoWarn>
     <WarningsAsErrors>xUnit1031;xUnit1051</WarningsAsErrors>
-    <TestingPlatformDotnetTestSupport>true</TestingPlatformDotnetTestSupport>
+    <UseMicrosoftTestingPlatformRunner>true</UseMicrosoftTestingPlatformRunner>
   </PropertyGroup>
 
   <ItemGroup>

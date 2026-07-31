@@ -38,7 +38,6 @@ jobs:
             --configuration Release \
             --no-build \
             --filter-trait "Category=Kind" \
-            --max-threads 1 \
             --hangdump \
             --hangdump-timeout 1m \
             --report-xunit-trx \
