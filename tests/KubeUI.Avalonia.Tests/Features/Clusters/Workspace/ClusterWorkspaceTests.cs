@@ -15,18 +15,16 @@ using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Features.Clusters.Workspace;
 
-public class ClusterWorkspaceTests : AvaloniaTestBase
+public class ClusterWorkspaceTests : AvaloniaTestBase, IDisposable
 {
     private readonly List<IDisposable> _disposables = [];
 
-    public override void Dispose()
+    public void Dispose()
     {
         foreach (var disposable in _disposables)
         {
             disposable.Dispose();
         }
-
-        base.Dispose();
     }
 
     [AvaloniaFact]
@@ -210,7 +208,7 @@ public class ClusterWorkspaceTests : AvaloniaTestBase
         GroupApiVersionKind? seededKind = null;
         runtime.ResourceSeeded += (_, resourceKind) => seededKind = resourceKind;
 
-        await workspace.SeedResource<V1Pod>();
+        await workspace.Runtime.SeedResource<V1Pod>();
 
         seededKind.ShouldBe(GroupApiVersionKind.From<V1Pod>());
     }
@@ -225,7 +223,7 @@ public class ClusterWorkspaceTests : AvaloniaTestBase
         var seeded = false;
         runtime.ResourceSeeded += (_, _) => seeded = true;
 
-        await workspace.SeedResource<Corev1Event>();
+        await workspace.Runtime.SeedResource<Corev1Event>();
 
         seeded.ShouldBeFalse();
         var container = GetSeededContainer(runtime, typeof(Corev1Event));
@@ -316,7 +314,7 @@ public class ClusterWorkspaceTests : AvaloniaTestBase
         await cluster.UpdateCanI<V1Pod>(Verb.List, "team-b");
         await cluster.UpdateCanI<V1Pod>(Verb.Watch, "team-b");
 
-        await workspace.SeedResource<V1Pod>();
+        await workspace.Runtime.SeedResource<V1Pod>();
 
         runtime.GetResource<V1Namespace>(null, "team-a").ShouldNotBeNull();
         workspace.GetResourceConfigs().ShouldBeEmpty();
@@ -334,7 +332,7 @@ public class ClusterWorkspaceTests : AvaloniaTestBase
         var runtime = scope.Cluster;
         var workspace = CreateWorkspace(runtime);
 
-        await workspace.SeedResource<V1Pod>();
+        await workspace.Runtime.SeedResource<V1Pod>();
 
         var container = GetSeededContainer(runtime, typeof(V1Pod));
         container.ShouldNotBeNull();
@@ -358,7 +356,7 @@ public class ClusterWorkspaceTests : AvaloniaTestBase
         var runtime = runtimeScope.Cluster;
         var workspace = CreateWorkspace(runtime);
 
-        await workspace.SeedResource<V1Pod>();
+        await workspace.Runtime.SeedResource<V1Pod>();
 
         var initialContainer = GetSeededContainer(runtime, typeof(V1Pod));
         initialContainer.ShouldNotBeNull();
@@ -369,7 +367,7 @@ public class ClusterWorkspaceTests : AvaloniaTestBase
         runtime.Objects.ShouldBeEmpty();
 
         await workspace.Connect();
-        await workspace.SeedResource<V1Pod>();
+        await workspace.Runtime.SeedResource<V1Pod>();
 
         var reseededContainer = GetSeededContainer(runtime, typeof(V1Pod));
         reseededContainer.ShouldNotBeNull();

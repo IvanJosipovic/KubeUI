@@ -22,18 +22,16 @@ using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Shell.Navigation;
 
-public class NavigationViewModelTests : AvaloniaTestBase
+public class NavigationViewModelTests : AvaloniaTestBase, IDisposable
 {
     private readonly List<IDisposable> _disposables = [];
 
-    public override void Dispose()
+    public void Dispose()
     {
         for (var index = _disposables.Count - 1; index >= 0; index--)
         {
             _disposables[index].Dispose();
         }
-
-        base.Dispose();
     }
 
     private ClusterWorkspace CreateWorkspace(IClusterRuntime runtime)
@@ -1369,7 +1367,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
         var runtime = runtimeScope.Cluster;
 
         var workspace = CreateWorkspace(runtime);
-        await workspace.SeedResource<V1Namespace>();
+        await workspace.Runtime.SeedResource<V1Namespace>();
         await workspace.Connect();
         Dispatcher.UIThread.RunJobs();
 

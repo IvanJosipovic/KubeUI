@@ -189,7 +189,7 @@ public sealed class ResourcePropertiesViewTests : AvaloniaTestBase
         await using var scope = await KubernetesTestWorkspaceScope.CreateAsync(TestApp.CurrentServices!);
         var workspace = scope.Workspace;
         await workspace.Connect();
-        await workspace.SeedResource<V1Pod>(true);
+        await workspace.Runtime.SeedResource<V1Pod>(true);
         var services = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
         var viewModel = services.GetRequiredService<ResourcePropertiesViewModel<V1Pod>>();
         var pod = new V1Pod
@@ -203,7 +203,7 @@ public sealed class ResourcePropertiesViewTests : AvaloniaTestBase
 
         viewModel.Initialize(workspace, pod);
 
-        await workspace.AddOrUpdateResource(pod);
+        await workspace.Runtime.AddOrUpdateResource(pod);
         Dispatcher.UIThread.RunJobs();
         await TestWait.UntilAsync(
             () => workspace.Runtime.GetResource<V1Pod>("default", "pod-1") is not null,
@@ -215,7 +215,7 @@ public sealed class ResourcePropertiesViewTests : AvaloniaTestBase
             ["updated"] = "true",
         };
 
-        await workspace.AddOrUpdateResource(pod);
+        await workspace.Runtime.AddOrUpdateResource(pod);
         Dispatcher.UIThread.RunJobs();
 
         await TestWait.UntilAsync(

@@ -18,15 +18,18 @@ namespace KubeUI.Avalonia.Tests.Infra;
 
 public class TestApp : Application, IServiceProviderHost
 {
-    public static IServiceProvider? CurrentServices { get; private set; }
-    public static Mock<IDialogManager>? DialogManagerMock { get; private set; }
-    public static INotification? LastNotification { get; private set; }
-    public static ContentDialogSettings? LastContentDialogSettings { get; private set; }
+    public static IServiceProvider? CurrentServices => (Application.Current as TestApp)?.Services;
+    public static Mock<IDialogManager>? DialogManagerMock => (Application.Current as TestApp)?.DialogManager;
+    public static INotification? LastNotification => (Application.Current as TestApp)?.Notification;
+    public static ContentDialogSettings? LastContentDialogSettings => (Application.Current as TestApp)?.ContentDialogSettings;
 
-    public static TopLevel TopLevel { get; private set; }
+    public IServiceProvider? Services { get; private set; }
+    public Mock<IDialogManager>? DialogManager { get; private set; }
+    public INotification? Notification { get; private set; }
+    public ContentDialogSettings? ContentDialogSettings { get; private set; }
     private string? _testKubeConfigPath;
 
-    public IServiceProvider Services => CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
+    IServiceProvider IServiceProviderHost.Services => Services ?? throw new InvalidOperationException("Test services are not initialized.");
 
     public override void Initialize()
     {
@@ -45,16 +48,20 @@ public class TestApp : Application, IServiceProviderHost
         });
     }
 
-    public static void CleanupAfterTest()
+    public static async Task CleanupAfterTestAsync()
     {
-        RunOnUiThread(() =>
+        TestApp? app = null;
+        await RunOnUiThreadAsync(() =>
         {
-            if (Application.Current is TestApp app)
-            {
-                app.CloseOpenWindows();
-                app.DisposeServices();
-            }
+            app = Application.Current as TestApp;
+            app?.CloseOpenWindows();
+            return Task.CompletedTask;
         });
+
+        if (app is not null)
+        {
+            await app.DisposeServicesAsync().ConfigureAwait(false);
+        }
     }
 
     private void ResetServices()
@@ -63,7 +70,7 @@ public class TestApp : Application, IServiceProviderHost
         DisposeServices();
 
         var provider = BuildServiceProvider();
-        CurrentServices = provider;
+        Services = provider;
         ApplyResources(provider);
         InitializeDockFactory(provider);
     }
@@ -75,17 +82,17 @@ public class TestApp : Application, IServiceProviderHost
         string kubeConfigPath = Path.Combine(Path.GetTempPath(), $"kubeui-avalonia-{Guid.NewGuid():N}.config");
         _testKubeConfigPath = kubeConfigPath;
 
-        LastContentDialogSettings = null;
-        LastNotification = null;
+        ContentDialogSettings = null;
+        Notification = null;
 
         var dialogManager = new Mock<IDialogManager>();
         dialogManager.SetupGet(x => x.Logger).Returns((ILogger<IDialogManager>?)null);
         dialogManager.SetupProperty(x => x.AllowConcurrentDialogs);
         dialogManager
             .Setup(x => x.ShowFrameworkDialogAsync(It.IsAny<System.ComponentModel.INotifyPropertyChanged?>(), It.IsAny<ContentDialogSettings>(), It.IsAny<Func<object?, string>?>()))
-            .Callback<System.ComponentModel.INotifyPropertyChanged?, ContentDialogSettings, Func<object?, string>?>((_, settings, _) => LastContentDialogSettings = settings)
+            .Callback<System.ComponentModel.INotifyPropertyChanged?, ContentDialogSettings, Func<object?, string>?>((_, settings, _) => ContentDialogSettings = settings)
             .ReturnsAsync(FAContentDialogResult.Primary);
-        DialogManagerMock = dialogManager;
+        DialogManager = dialogManager;
 
         var dialog = new Mock<IDialogService>();
         dialog.SetupGet(x => x.DialogManager).Returns(dialogManager.Object);
@@ -93,7 +100,7 @@ public class TestApp : Application, IServiceProviderHost
         var notifications = new Mock<INotificationManager>();
         notifications
             .Setup(x => x.Show(It.IsAny<INotification>()))
-            .Callback<INotification>(notification => LastNotification = notification);
+            .Callback<INotification>(notification => Notification = notification);
 
         services.AddKubeUIAppServices(overrides =>
         {
@@ -136,11 +143,11 @@ public class TestApp : Application, IServiceProviderHost
 
     private void DisposeServices()
     {
-        if (CurrentServices is IAsyncDisposable asyncDisposable)
+        if (Services is IAsyncDisposable asyncDisposable)
         {
-            asyncDisposable.DisposeAsync().AsTask().GetAwaiter().GetResult();
+            Task.Run(() => asyncDisposable.DisposeAsync().AsTask()).GetAwaiter().GetResult();
         }
-        else if (CurrentServices is IDisposable disposable)
+        else if (Services is IDisposable disposable)
         {
             disposable.Dispose();
         }
@@ -151,7 +158,27 @@ public class TestApp : Application, IServiceProviderHost
             _testKubeConfigPath = null;
         }
 
-        CurrentServices = null;
+        Services = null;
+    }
+
+    private async Task DisposeServicesAsync()
+    {
+        if (Services is IAsyncDisposable asyncDisposable)
+        {
+            await asyncDisposable.DisposeAsync();
+        }
+        else if (Services is IDisposable disposable)
+        {
+            disposable.Dispose();
+        }
+
+        if (_testKubeConfigPath is { } path)
+        {
+            File.Delete(path);
+            _testKubeConfigPath = null;
+        }
+
+        Services = null;
     }
 
     private void CloseOpenWindows()
@@ -176,5 +203,16 @@ public class TestApp : Application, IServiceProviderHost
         }
 
         Dispatcher.UIThread.InvokeAsync(action).GetAwaiter().GetResult();
+    }
+
+    private static async Task RunOnUiThreadAsync(Func<Task> action)
+    {
+        if (Dispatcher.UIThread.CheckAccess())
+        {
+            await action();
+            return;
+        }
+
+        await Dispatcher.UIThread.InvokeAsync(action);
     }
 }

@@ -538,7 +538,7 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
     {
         await using var clusterScope = await KubernetesTestWorkspaceScope.CreateAsync(TestApp.CurrentServices!, backend);
         var cluster = clusterScope.Workspace;
-        await cluster.SeedResource<V1Pod>(true);
+        await cluster.Runtime.SeedResource<V1Pod>(true);
         var builder = new LateAdditionRelationshipBuilder();
         using VisualizationViewModel viewModel = new(builder);
         cluster.SelectedNamespaces.Clear();
@@ -550,7 +550,7 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
         await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background);
 
         V1Pod pod = CreatePod("late");
-        await cluster.AddOrUpdateResource(pod);
+        await cluster.Runtime.AddOrUpdateResource(pod);
         await builder.WaitForAdditionStartedAsync().WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
 
         viewModel.HideNoise = false;
@@ -580,9 +580,9 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
         V1Deployment secondOwner = CreateDeployment("second-owner");
         V1Pod pod = CreatePodWithOwner("owned-pod", firstOwner);
 
-        await cluster.AddOrUpdateResource(firstOwner);
-        await cluster.AddOrUpdateResource(secondOwner);
-        await cluster.AddOrUpdateResource(pod);
+        await cluster.Runtime.AddOrUpdateResource(firstOwner);
+        await cluster.Runtime.AddOrUpdateResource(secondOwner);
+        await cluster.Runtime.AddOrUpdateResource(pod);
         Dispatcher.UIThread.RunJobs();
 
         ResourceIdentity firstOwnerIdentity = GetIdentity(firstOwner);
@@ -602,7 +602,7 @@ public sealed class ResourceGraphControlTests : AvaloniaTestBase
                 Uid = secondOwner.Uid(),
             },
         ];
-        await cluster.AddOrUpdateResource(pod);
+        await cluster.Runtime.AddOrUpdateResource(pod);
 
         Stopwatch timeout = Stopwatch.StartNew();
         while (timeout.Elapsed < TimeSpan.FromSeconds(5)

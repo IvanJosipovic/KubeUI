@@ -1,15 +1,6 @@
 namespace KubeUI.Avalonia.Tests.Infra;
 
 [Collection("Avalonia")]
-public abstract class AvaloniaTestBase : IDisposable
+public abstract class AvaloniaTestBase
 {
-    protected AvaloniaTestBase()
-    {
-        TestApp.ResetForTest();
-    }
-
-    public virtual void Dispose()
-    {
-        TestApp.CleanupAfterTest();
-    }
 }

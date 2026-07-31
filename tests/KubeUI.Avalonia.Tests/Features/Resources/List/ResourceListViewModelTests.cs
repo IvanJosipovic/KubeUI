@@ -34,12 +34,12 @@ using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Features.Resources.List;
 
-public class ResourceListViewModelTests : AvaloniaTestBase
+public class ResourceListViewModelTests : AvaloniaTestBase, IDisposable
 {
     private readonly List<IDisposable> _disposables = [];
     private readonly List<Window> _windows = [];
 
-    public override void Dispose()
+    public void Dispose()
     {
         foreach (var window in _windows)
         {
@@ -51,8 +51,6 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         {
             disposable.Dispose();
         }
-
-        base.Dispose();
     }
 
     private Window CreateWindow(double width = 1200, double height = 800, object? content = null)
@@ -146,7 +144,7 @@ public class ResourceListViewModelTests : AvaloniaTestBase
 
     private static async Task AddOrUpdateAsync<T>(ClusterWorkspace cluster, T resource) where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
-        await cluster.AddOrUpdateResource(resource);
+        await cluster.Runtime.AddOrUpdateResource(resource);
         Dispatcher.UIThread.RunJobs();
     }
 
@@ -1702,7 +1700,7 @@ public class ResourceListViewModelTests : AvaloniaTestBase
 
         vm.View.Count.ShouldBe(1);
 
-        await cluster.DeleteResource(Pod("ns1", "a"));
+        await cluster.Runtime.DeleteResource(Pod("ns1", "a"));
         Dispatcher.UIThread.RunJobs();
         await WaitForAsync(() => vm.View.Count == 0);
 
@@ -1725,7 +1723,7 @@ public class ResourceListViewModelTests : AvaloniaTestBase
 
         var window = CreateWindow(content: dockControl);
         var cluster = await CreateClusterAsync();
-        await cluster.DeleteResource(NamespaceResource("default"));
+        await cluster.Runtime.DeleteResource(NamespaceResource("default"));
 
         var vm = GetRequiredService<ResourceListViewModel<V1Namespace>>();
         vm.Initialize(cluster);
@@ -1896,7 +1894,7 @@ public class ResourceListViewModelTests : AvaloniaTestBase
 
         var window = CreateWindow(content: dockControl);
         var cluster = await CreateClusterAsync();
-        await cluster.DeleteResource(NamespaceResource("default"));
+        await cluster.Runtime.DeleteResource(NamespaceResource("default"));
 
         var vm = GetRequiredService<ResourceListViewModel<V1Namespace>>();
         vm.Initialize(cluster);

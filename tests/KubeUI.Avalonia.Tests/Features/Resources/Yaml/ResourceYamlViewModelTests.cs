@@ -26,12 +26,12 @@ using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Features.Resources.Yaml;
 
-public class ResourceYamlViewModelTests : AvaloniaTestBase
+public class ResourceYamlViewModelTests : AvaloniaTestBase, IDisposable
 {
     private readonly List<IDisposable> _disposables = [];
     private readonly List<Window> _windows = [];
 
-    public override void Dispose()
+    public void Dispose()
     {
         foreach (var window in _windows)
         {
@@ -43,8 +43,6 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
         {
             disposable.Dispose();
         }
-
-        base.Dispose();
     }
 
     private Window CreateWindow(double width = 1200, double height = 900, object? content = null)
@@ -467,7 +465,7 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
             ["updated"] = "true",
         };
 
-        await cluster.AddOrUpdateResource(updatedResource);
+        await cluster.Runtime.AddOrUpdateResource(updatedResource);
         await WaitForUiAsync(
             () => vm.YamlDocument.Text.Contains("updated: \"true\"", StringComparison.OrdinalIgnoreCase));
         Dispatcher.UIThread.RunJobs();
@@ -3068,7 +3066,7 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
         var specFold = foldingManager.AllFoldings.Single(x => x.Title.TrimEnd() == "spec:");
         specFold.IsFolded = true;
 
-        await cluster.AddOrUpdateResource(CreatePod("test", includeLabels: true, extraEnv: false));
+        await cluster.Runtime.AddOrUpdateResource(CreatePod("test", includeLabels: true, extraEnv: false));
         Dispatcher.UIThread.RunJobs();
 
         foldingManager = GetFoldingManager(behavior);
@@ -3104,7 +3102,7 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
         var metadataFold = foldingManager.AllFoldings.Single(x => x.Title.TrimEnd() == "metadata:");
         metadataFold.IsFolded = true;
 
-        await cluster.AddOrUpdateResource(CreatePod("test", includeLabels: true, extraEnv: true));
+        await cluster.Runtime.AddOrUpdateResource(CreatePod("test", includeLabels: true, extraEnv: true));
         Dispatcher.UIThread.RunJobs();
 
         foldingManager = GetFoldingManager(behavior);
@@ -3140,7 +3138,7 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
         var nestedFold = foldingManager.AllFoldings.Single(x => x.Title.Trim() == "containers:");
         nestedFold.IsFolded = true;
 
-        await cluster.AddOrUpdateResource(CreatePod("test", includeLabels: true, extraEnv: true));
+        await cluster.Runtime.AddOrUpdateResource(CreatePod("test", includeLabels: true, extraEnv: true));
         Dispatcher.UIThread.RunJobs();
 
         foldingManager = GetFoldingManager(behavior);

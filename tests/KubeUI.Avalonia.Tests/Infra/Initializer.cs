@@ -3,11 +3,10 @@ using Avalonia.Headless;
 using KubeUI.Avalonia.Tests.Infra;
 
 [assembly: AvaloniaTestApplication(typeof(TestAppBuilder))]
-[assembly: CollectionBehavior(CollectionBehavior.CollectionPerClass, DisableTestParallelization = false)]
 
 namespace KubeUI.Avalonia.Tests.Infra;
 
-[CollectionDefinition("Avalonia", DisableParallelization = true)]
+[CollectionDefinition("Avalonia")]
 public sealed class AvaloniaTestCollectionDefinition
 {
 }

@@ -51,7 +51,9 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
     private readonly SemaphoreSlim _connectionLimiter = new(1, 1);
     private readonly Channel<V1CustomResourceDefinition> _customResourceDefinitionQueue = Channel.CreateUnbounded<V1CustomResourceDefinition>(
         new UnboundedChannelOptions { SingleReader = true, SingleWriter = false });
+    private readonly CancellationTokenSource _customResourceDefinitionCancellationTokenSource = new();
     private readonly Task _customResourceDefinitionTask;
+    private int _disposeStarted;
 
     private readonly ConcurrentDictionary<string, string> _customResourceDefinitionSignatures = new(StringComparer.Ordinal);
     private CancellationTokenSource? _resourceInformerCancellationTokenSource = new();
@@ -111,9 +113,14 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
 
     public async ValueTask DisposeAsync()
     {
+        if (Interlocked.Exchange(ref _disposeStarted, 1) != 0)
+        {
+            return;
+        }
+
         _customResourceDefinitionQueue.Writer.TryComplete();
+        _customResourceDefinitionCancellationTokenSource.Cancel();
         StopResourceInformers();
-        await _customResourceDefinitionTask.ConfigureAwait(false);
         _connectionLimiter.Dispose();
     }
 
@@ -437,7 +444,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
             nameof(ProcessCustomResourceDefinitionQueueAsync),
             ActivityKind.Consumer);
 
-        await foreach (var crd in _customResourceDefinitionQueue.Reader.ReadAllAsync().ConfigureAwait(false))
+        await foreach (var crd in _customResourceDefinitionQueue.Reader.ReadAllAsync(_customResourceDefinitionCancellationTokenSource.Token).ConfigureAwait(false))
         {
             await ProcessCustomResourceDefinitionAsync(crd).ConfigureAwait(false);
         }

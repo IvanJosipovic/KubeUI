@@ -40,13 +40,13 @@ public sealed class PodDebugContainerTests : AvaloniaTestBase
             },
         };
 
-        await workspace.AddOrUpdateResource(pod);
+        await workspace.Runtime.AddOrUpdateResource(pod);
         await TestWait.UntilAsync(
             () => harness.Cluster.GetResource<V1Pod>("default", "pod-1") is not null,
             TimeSpan.FromSeconds(5),
             cancellationToken: TestContext.Current.CancellationToken);
     V1Pod currentPod = harness.Cluster.GetResource<V1Pod>("default", "pod-1").ShouldNotBeNull();
-    await workspace.AddPodEphemeralDebugContainer(currentPod, "app", settings.Settings.GetClusterSettings(workspace.Runtime).DebugContainerImage);
+    await workspace.Runtime.AddPodEphemeralDebugContainer(currentPod, "app", settings.Settings.GetClusterSettings(workspace.Runtime).DebugContainerImage);
 
         await TestWait.UntilAsync(
             () => harness.Cluster.GetResource<V1Pod>("default", "pod-1")?.Spec?.EphemeralContainers?.Count == 1,

@@ -46,7 +46,7 @@ internal sealed class KubernetesTestWorkspaceScope : IDisposable, IAsyncDisposab
     public void Dispose()
     {
         Workspace.Dispose();
-        _harness.DisposeAsync().AsTask().GetAwaiter().GetResult();
+        Task.Run(() => _harness.DisposeAsync().AsTask()).GetAwaiter().GetResult();
     }
 
     public async ValueTask DisposeAsync()
