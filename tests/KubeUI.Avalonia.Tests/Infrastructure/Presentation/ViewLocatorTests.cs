@@ -8,7 +8,7 @@ using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Infrastructure.Presentation;
 
-public sealed class ViewLocatorTests : AvaloniaTestBase
+public sealed class ViewLocatorTests
 {
     [AvaloniaFact]
     public void Build_ResolvesClusterSettingsViewFromViewModelsNamespace()

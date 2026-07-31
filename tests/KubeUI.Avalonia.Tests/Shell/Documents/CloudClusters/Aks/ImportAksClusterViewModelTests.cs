@@ -9,7 +9,7 @@ using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Shell.Documents.CloudClusters.Aks;
 
-public sealed class ImportAksClusterViewModelTests : AvaloniaTestBase
+public sealed class ImportAksClusterViewModelTests
 {
     [AvaloniaFact]
     public async Task connect_imports_aks_credentials_into_cluster_catalog()

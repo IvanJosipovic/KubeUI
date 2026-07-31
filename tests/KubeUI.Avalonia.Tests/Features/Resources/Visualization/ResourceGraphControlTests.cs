@@ -16,7 +16,7 @@ using Westermo.GraphX.Controls.Controls;
 
 namespace KubeUI.Avalonia.Tests.Features.Resources.Visualization;
 
-public sealed class ResourceGraphControlTests : AvaloniaTestBase
+public sealed class ResourceGraphControlTests
 {
     private static async Task WaitForAsync(Func<bool> predicate, int timeoutMs = 5000, CancellationToken cancellationToken = default)
     {

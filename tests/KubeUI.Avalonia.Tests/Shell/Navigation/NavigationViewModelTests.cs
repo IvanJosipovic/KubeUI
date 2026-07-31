@@ -22,7 +22,7 @@ using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Shell.Navigation;
 
-public class NavigationViewModelTests : AvaloniaTestBase, IDisposable
+public class NavigationViewModelTests : IDisposable
 {
     private readonly List<IDisposable> _disposables = [];
 

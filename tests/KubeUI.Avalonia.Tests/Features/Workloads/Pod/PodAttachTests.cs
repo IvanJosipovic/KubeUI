@@ -9,7 +9,7 @@ using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Features.Workloads.Pod;
 
-public sealed class PodAttachTests : AvaloniaTestBase
+public sealed class PodAttachTests
 {
     [AvaloniaFact]
     public void pod_config_exposes_attach_menu_for_running_containers()

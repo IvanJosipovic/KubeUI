@@ -1,15 +1,11 @@
 using Avalonia;
 using Avalonia.Headless;
+using KubeUI.Avalonia.Styles;
 using KubeUI.Avalonia.Tests.Infra;
 
 [assembly: AvaloniaTestApplication(typeof(TestAppBuilder))]
 
 namespace KubeUI.Avalonia.Tests.Infra;
-
-[CollectionDefinition("Avalonia")]
-public sealed class AvaloniaTestCollectionDefinition
-{
-}
 
 public class TestAppBuilder
 {
@@ -23,6 +19,12 @@ public class TestAppBuilder
             fontManager.AddFontCollection(new CascadiaMonoFontCollection());
         })
         .WithInterFont()
-        .UseSkia();
+        .UseSkia()
+        .AfterSetup(_ =>
+        {
+            var app = (TestApp)Application.Current!;
+            ApplicationThemeStyles.AddTo(app.Styles);
+            app.InitializeServices();
+        });
 }
 

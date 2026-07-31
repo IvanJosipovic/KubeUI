@@ -26,7 +26,7 @@ using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Features.Resources.Yaml;
 
-public class ResourceYamlViewModelTests : AvaloniaTestBase, IDisposable
+public class ResourceYamlViewModelTests : IDisposable
 {
     private readonly List<IDisposable> _disposables = [];
     private readonly List<Window> _windows = [];

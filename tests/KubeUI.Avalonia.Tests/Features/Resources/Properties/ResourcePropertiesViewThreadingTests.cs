@@ -6,7 +6,7 @@ using KubeUI.Avalonia.Tests.Infra;
 
 namespace KubeUI.Avalonia.Tests.Features.Resources.Properties;
 
-public sealed class ResourcePropertiesViewThreadingTests : AvaloniaTestBase
+public sealed class ResourcePropertiesViewThreadingTests
 {
     [AvaloniaFact]
     public async Task ClearItems_is_safe_when_invoked_from_background_thread()

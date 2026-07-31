@@ -10,7 +10,7 @@ using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Shell.Navigation;
 
-public sealed class NavigationViewTests : AvaloniaTestBase
+public sealed class NavigationViewTests
 {
     [AvaloniaFact]
     public async Task resource_count_assigned_after_template_creation_is_rendered()

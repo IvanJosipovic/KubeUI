@@ -6,7 +6,7 @@ using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Resources;
 
-public sealed class ResourceConfigBasePermissionTests : AvaloniaTestBase
+public sealed class ResourceConfigBasePermissionTests
 {
     [AvaloniaFact]
     public void permissions_manifest_includes_default_and_custom_permissions()

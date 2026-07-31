@@ -9,7 +9,7 @@ using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Shell.Main;
 
-public sealed class MainViewModelTests : AvaloniaTestBase
+public sealed class MainViewModelTests
 {
     private MainViewModel CreateViewModel()
     {

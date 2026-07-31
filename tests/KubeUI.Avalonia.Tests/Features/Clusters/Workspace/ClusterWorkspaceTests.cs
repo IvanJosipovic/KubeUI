@@ -15,7 +15,7 @@ using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Features.Clusters.Workspace;
 
-public class ClusterWorkspaceTests : AvaloniaTestBase, IDisposable
+public class ClusterWorkspaceTests : IDisposable
 {
     private readonly List<IDisposable> _disposables = [];
 

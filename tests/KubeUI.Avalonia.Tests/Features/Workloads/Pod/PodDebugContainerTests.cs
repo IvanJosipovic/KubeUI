@@ -6,7 +6,7 @@ using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Features.Workloads.Pod;
 
-public sealed class PodDebugContainerTests : AvaloniaTestBase
+public sealed class PodDebugContainerTests
 {
     [AvaloniaTheory, KubernetesBackendData]
     [Trait("Category", "Kind")]

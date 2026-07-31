@@ -11,7 +11,7 @@ using AppResources = KubeUI.Avalonia.Assets.Resources;
 
 namespace KubeUI.Avalonia.Tests.Features.Resources.Properties;
 
-public sealed class ResourcePropertiesViewTests : AvaloniaTestBase
+public sealed class ResourcePropertiesViewTests
 {
     [AvaloniaFact]
     public async Task namespaced_resource_shows_namespace_property_item()

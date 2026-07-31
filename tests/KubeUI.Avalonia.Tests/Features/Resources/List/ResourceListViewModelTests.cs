@@ -34,7 +34,7 @@ using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Features.Resources.List;
 
-public class ResourceListViewModelTests : AvaloniaTestBase, IDisposable
+public class ResourceListViewModelTests : IDisposable
 {
     private readonly List<IDisposable> _disposables = [];
     private readonly List<Window> _windows = [];

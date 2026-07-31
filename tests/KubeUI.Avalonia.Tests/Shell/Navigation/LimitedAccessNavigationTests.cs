@@ -7,7 +7,7 @@ using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Shell.Navigation;
 
-public sealed class LimitedAccessNavigationTests : AvaloniaTestBase
+public sealed class LimitedAccessNavigationTests
 {
     [AvaloniaTheory, KubernetesBackendData]
     [Trait("Category", "Kind")]

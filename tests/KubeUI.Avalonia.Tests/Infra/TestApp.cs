@@ -1,14 +1,10 @@
 using Avalonia;
-using Avalonia.Controls;
-using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Controls.Notifications;
-using Avalonia.Threading;
 using Dock.Model.Core;
 using FluentAvalonia.UI.Controls;
 using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using KubeUI.Avalonia.Infrastructure.Presentation;
-using KubeUI.Avalonia.Styles;
 using KubeUI.Testing;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
@@ -27,48 +23,11 @@ public class TestApp : Application, IServiceProviderHost
     public Mock<IDialogManager>? DialogManager { get; private set; }
     public INotification? Notification { get; private set; }
     public ContentDialogSettings? ContentDialogSettings { get; private set; }
-    private string? _testKubeConfigPath;
 
     IServiceProvider IServiceProviderHost.Services => Services ?? throw new InvalidOperationException("Test services are not initialized.");
 
-    public override void Initialize()
+    internal void InitializeServices()
     {
-        ApplicationThemeStyles.AddTo(Styles);
-        ResetServices();
-    }
-
-    public static void ResetForTest()
-    {
-        RunOnUiThread(() =>
-        {
-            if (Application.Current is TestApp app)
-            {
-                app.ResetServices();
-            }
-        });
-    }
-
-    public static async Task CleanupAfterTestAsync()
-    {
-        TestApp? app = null;
-        await RunOnUiThreadAsync(() =>
-        {
-            app = Application.Current as TestApp;
-            app?.CloseOpenWindows();
-            return Task.CompletedTask;
-        });
-
-        if (app is not null)
-        {
-            await app.DisposeServicesAsync().ConfigureAwait(false);
-        }
-    }
-
-    private void ResetServices()
-    {
-        CloseOpenWindows();
-        DisposeServices();
-
         var provider = BuildServiceProvider();
         Services = provider;
         ApplyResources(provider);
@@ -80,7 +39,6 @@ public class TestApp : Application, IServiceProviderHost
         var services = new ServiceCollection();
         services.AddLogging();
         string kubeConfigPath = Path.Combine(Path.GetTempPath(), $"kubeui-avalonia-{Guid.NewGuid():N}.config");
-        _testKubeConfigPath = kubeConfigPath;
 
         ContentDialogSettings = null;
         Notification = null;
@@ -141,78 +99,4 @@ public class TestApp : Application, IServiceProviderHost
         factory.InitLayout(layout);
     }
 
-    private void DisposeServices()
-    {
-        if (Services is IAsyncDisposable asyncDisposable)
-        {
-            Task.Run(() => asyncDisposable.DisposeAsync().AsTask()).GetAwaiter().GetResult();
-        }
-        else if (Services is IDisposable disposable)
-        {
-            disposable.Dispose();
-        }
-
-        if (_testKubeConfigPath is { } path)
-        {
-            File.Delete(path);
-            _testKubeConfigPath = null;
-        }
-
-        Services = null;
-    }
-
-    private async Task DisposeServicesAsync()
-    {
-        if (Services is IAsyncDisposable asyncDisposable)
-        {
-            await asyncDisposable.DisposeAsync();
-        }
-        else if (Services is IDisposable disposable)
-        {
-            disposable.Dispose();
-        }
-
-        if (_testKubeConfigPath is { } path)
-        {
-            File.Delete(path);
-            _testKubeConfigPath = null;
-        }
-
-        Services = null;
-    }
-
-    private void CloseOpenWindows()
-    {
-        if (ApplicationLifetime is not IClassicDesktopStyleApplicationLifetime desktop)
-        {
-            return;
-        }
-
-        foreach (var window in desktop.Windows.ToList())
-        {
-            window.Close();
-        }
-    }
-
-    private static void RunOnUiThread(Action action)
-    {
-        if (Dispatcher.UIThread.CheckAccess())
-        {
-            action();
-            return;
-        }
-
-        Dispatcher.UIThread.InvokeAsync(action).GetAwaiter().GetResult();
-    }
-
-    private static async Task RunOnUiThreadAsync(Func<Task> action)
-    {
-        if (Dispatcher.UIThread.CheckAccess())
-        {
-            await action();
-            return;
-        }
-
-        await Dispatcher.UIThread.InvokeAsync(action);
-    }
 }

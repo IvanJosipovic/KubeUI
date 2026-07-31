@@ -6,7 +6,7 @@ using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Features.Resources.Yaml;
 
-public sealed class YamlEditorIntelliSenseTests : AvaloniaTestBase
+public sealed class YamlEditorIntelliSenseTests
 {
     [AvaloniaFact]
     public void DocumentationViewFactory_RendersFieldSummaryOnlyForFieldDocumentation()

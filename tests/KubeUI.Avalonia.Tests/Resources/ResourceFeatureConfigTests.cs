@@ -46,7 +46,7 @@ using ValidatingWebhookConfigurationPropertiesView = KubeUI.Avalonia.Resources.C
 
 namespace KubeUI.Avalonia.Tests.Resources;
 
-public sealed class ResourceFeatureConfigTests : AvaloniaTestBase
+public sealed class ResourceFeatureConfigTests
 {
     private static void AssertProperties<TConfig, TResource, TView>(TResource resource)
         where TConfig : ResourceConfigBase<TResource>

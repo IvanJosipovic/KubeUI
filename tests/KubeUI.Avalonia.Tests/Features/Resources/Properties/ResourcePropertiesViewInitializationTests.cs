@@ -11,7 +11,7 @@ using AppResources = KubeUI.Avalonia.Assets.Resources;
 
 namespace KubeUI.Avalonia.Tests.Features.Resources.Properties;
 
-public sealed class ResourcePropertiesViewInitializationTests : AvaloniaTestBase
+public sealed class ResourcePropertiesViewInitializationTests
 {
     [AvaloniaFact]
     public async Task cluster_aware_property_controls_are_initialized_once()

@@ -11,7 +11,7 @@ using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Features.Resources.Yaml;
 
-public sealed class ResourceYamlViewCopyTests : AvaloniaTestBase
+public sealed class ResourceYamlViewCopyTests
 {
     [AvaloniaFact]
     public async Task Editor_copy_writes_selected_yaml_text_to_the_clipboard()

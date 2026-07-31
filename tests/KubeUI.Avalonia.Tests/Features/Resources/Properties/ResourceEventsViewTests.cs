@@ -10,7 +10,7 @@ using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Features.Resources.Properties;
 
-public sealed class ResourceEventsViewTests : AvaloniaTestBase
+public sealed class ResourceEventsViewTests
 {
     [AvaloniaFact]
     public async Task pre_attach_refresh_does_not_throw_when_dispatcher_flushes()

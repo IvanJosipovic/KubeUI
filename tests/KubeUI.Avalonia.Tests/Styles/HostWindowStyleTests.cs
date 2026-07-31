@@ -9,7 +9,7 @@ using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Styles;
 
-public sealed class HostWindowStyleTests : AvaloniaTestBase
+public sealed class HostWindowStyleTests
 {
     [AvaloniaFact]
     public void floating_host_window_uses_themed_background()

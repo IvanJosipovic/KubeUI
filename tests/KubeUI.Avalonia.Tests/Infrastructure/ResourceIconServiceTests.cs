@@ -8,7 +8,7 @@ using KubeUI.Avalonia.Tests.Infra;
 
 namespace KubeUI.Avalonia.Tests.Infrastructure;
 
-public sealed class ResourceIconServiceTests : AvaloniaTestBase
+public sealed class ResourceIconServiceTests
 {
     [AvaloniaFact]
     public void Known_resource_type_returns_mapped_icon()

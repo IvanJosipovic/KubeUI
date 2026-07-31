@@ -7,7 +7,7 @@ using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Features.Workloads.Pod;
 
-public sealed class PodContainerCellTests : AvaloniaTestBase
+public sealed class PodContainerCellTests
 {
     [AvaloniaFact]
     public async Task Tooltip_viewmodel_contains_type_status_restarts_and_image()

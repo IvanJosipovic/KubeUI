@@ -8,7 +8,7 @@ using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Resources;
 
-public class V1CustomResourceDefinitionConfigTests : AvaloniaTestBase
+public class V1CustomResourceDefinitionConfigTests
 {
     [AvaloniaFact]
     public void list_crd_command_does_not_throw_when_type_is_unavailable()

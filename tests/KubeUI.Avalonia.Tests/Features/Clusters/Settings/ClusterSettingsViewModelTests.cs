@@ -6,7 +6,7 @@ using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Features.Clusters.Settings;
 
-public sealed class ClusterSettingsViewModelTests : AvaloniaTestBase
+public sealed class ClusterSettingsViewModelTests
 {
     [AvaloniaFact]
     public void cluster_settings_default_debug_container_image_is_busybox()
