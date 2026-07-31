@@ -1,5 +1,5 @@
 <Project>
   <PropertyGroup>
-    <WarningsAsErrors>IDE0005</WarningsAsErrors>
+    <WarningsAsErrors>$(WarningsAsErrors);IDE0005;IDE0052</WarningsAsErrors>
   </PropertyGroup>
 </Project>

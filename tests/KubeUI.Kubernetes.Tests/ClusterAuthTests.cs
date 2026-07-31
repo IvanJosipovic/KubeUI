@@ -13,10 +13,10 @@ namespace KubeUI.Kubernetes.Tests;
 public sealed class ClusterAuthTests
 {
     [Fact]
-    public void cani_returns_false_when_permission_review_has_not_been_cached_yet()
+    public async Task cani_returns_false_when_permission_review_has_not_been_cached_yet()
     {
         using var loggerFactory = NullLoggerFactory.Instance;
-        var cluster = new Cluster(
+        await using var cluster = new Cluster(
             NullLogger<Cluster>.Instance,
             loggerFactory,
             new ModelCache(),
@@ -37,6 +37,7 @@ public sealed class ClusterAuthTests
         var cluster = (Cluster)await harness.CreateLimitedAccessClusterAsync(
             SharedScenarioData.LimitedAccessWithNamespaceFallback,
             cancellationToken: TestContext.Current.CancellationToken);
+        await using var disposableCluster = cluster;
 
         cluster.CanIAnyNamespace<V1Pod>(Verb.Create, "portforward").ShouldBeTrue();
     }
@@ -45,7 +46,7 @@ public sealed class ClusterAuthTests
     public async Task globally_allowed_namespaced_permission_skips_namespace_reviews()
     {
         using var loggerFactory = NullLoggerFactory.Instance;
-        var cluster = new Cluster(
+        await using var cluster = new Cluster(
             NullLogger<Cluster>.Instance,
             loggerFactory,
             new ModelCache(),
@@ -68,10 +69,10 @@ public sealed class ClusterAuthTests
     }
 
     [Fact]
-    public void removing_seeded_resource_container_removes_the_container()
+    public async Task removing_seeded_resource_container_removes_the_container()
     {
         using var loggerFactory = NullLoggerFactory.Instance;
-        var cluster = new Cluster(
+        await using var cluster = new Cluster(
             NullLogger<Cluster>.Instance,
             loggerFactory,
             new ModelCache(),
@@ -127,7 +128,7 @@ public sealed class ClusterAuthTests
     public async Task custom_resource_definition_processing_is_serialized()
     {
         using var loggerFactory = NullLoggerFactory.Instance;
-        var cluster = new Cluster(
+        await using var cluster = new Cluster(
             NullLogger<Cluster>.Instance,
             loggerFactory,
             new ModelCache(),

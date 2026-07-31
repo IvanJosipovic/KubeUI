@@ -122,6 +122,14 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
         _customResourceDefinitionCancellationTokenSource.Cancel();
         StopResourceInformers();
         _connectionLimiter.Dispose();
+
+        try
+        {
+            await _customResourceDefinitionTask.ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (_customResourceDefinitionCancellationTokenSource.IsCancellationRequested)
+        {
+        }
     }
 
     private Activity? StartClusterActivity(string activityName, ActivityKind activityKind = ActivityKind.Internal)
