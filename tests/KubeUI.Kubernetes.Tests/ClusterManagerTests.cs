@@ -15,7 +15,7 @@ public class ClusterManagerTests
         var dispatcher = new RecordingThreadDispatcher();
         var kubeConfigPath = Path.Combine(Path.GetTempPath(), $"kubeui-{Guid.NewGuid():N}.config");
 
-        using var services = KubernetesTestServices.Build(new KubernetesTestSettingsStore(kubeConfigPath), collection =>
+        await using var services = KubernetesTestServices.Build(new KubernetesTestSettingsStore(kubeConfigPath), collection =>
         {
             collection.AddSingleton<IThreadDispatcher>(dispatcher);
             collection.AddSingleton<IKubeConfigPathProvider>(new TestKubeConfigPathProvider(kubeConfigPath));
@@ -57,7 +57,7 @@ public class ClusterManagerTests
     {
         var dispatcher = new RecordingThreadDispatcher();
         var kubeConfigPath = Path.Combine(Path.GetTempPath(), $"kubeui-{Guid.NewGuid():N}.config");
-        using var services = KubernetesTestServices.Build(new KubernetesTestSettingsStore(kubeConfigPath), collection =>
+        await using var services = KubernetesTestServices.Build(new KubernetesTestSettingsStore(kubeConfigPath), collection =>
         {
             collection.AddSingleton<IThreadDispatcher>(dispatcher);
             collection.AddSingleton<IKubeConfigPathProvider>(new TestKubeConfigPathProvider(kubeConfigPath));
@@ -101,7 +101,7 @@ public class ClusterManagerTests
     {
         var dispatcher = new RecordingThreadDispatcher();
         var kubeConfigPath = Path.Combine(Path.GetTempPath(), $"kubeui-{Guid.NewGuid():N}.config");
-        using var services = KubernetesTestServices.Build(new KubernetesTestSettingsStore(kubeConfigPath), collection =>
+        await using var services = KubernetesTestServices.Build(new KubernetesTestSettingsStore(kubeConfigPath), collection =>
         {
             collection.AddSingleton<IThreadDispatcher>(dispatcher);
             collection.AddSingleton<IKubeConfigPathProvider>(new TestKubeConfigPathProvider(kubeConfigPath));

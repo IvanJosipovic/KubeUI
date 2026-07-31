@@ -2,7 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace KubeUI.Testing;
 
-public sealed class KubernetesTestClusterScope : IDisposable
+public sealed class KubernetesTestClusterScope : IDisposable, IAsyncDisposable
 {
     private readonly ServiceProvider _services;
 
@@ -16,6 +16,9 @@ public sealed class KubernetesTestClusterScope : IDisposable
 
     public void Dispose()
     {
-        _services.Dispose();
+        DisposeAsync().AsTask().GetAwaiter().GetResult();
     }
+
+    public ValueTask DisposeAsync()
+        => _services.DisposeAsync();
 }
