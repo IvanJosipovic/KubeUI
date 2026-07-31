@@ -14,8 +14,8 @@ namespace KubeUI.Avalonia.Features.Resources.Visualization;
 public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeCluster, IDisposable
 {
     private readonly IResourceRelationshipBuilder _resourceRelationshipBuilder;
-    private readonly Dictionary<ResourceKey, IKubernetesObject<V1ObjectMeta>> _resourcesByKey = [];
-    private readonly Dictionary<string, HashSet<ResourceKey>> _resourcesByOwnerUid = new(StringComparer.Ordinal);
+    private Dictionary<ResourceKey, IKubernetesObject<V1ObjectMeta>> _resourcesByKey = [];
+    private Dictionary<string, HashSet<ResourceKey>> _resourcesByOwnerUid = new(StringComparer.Ordinal);
     private readonly HashSet<Type> _requiredSeedTypes = [];
     private readonly HashSet<UnresolvedResourceReference> _pendingReferences = [];
     private readonly HashSet<string> _knownResourceTypes = new(StringComparer.Ordinal);
@@ -25,9 +25,14 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
     private bool _suppressResourceTypeChanges;
     private IDisposable? _resourceChangesSubscription;
     private CancellationTokenSource? _rebuildCancellation;
+    private CancellationTokenSource? _initializationCancellation;
     private RebuildRequest? _pendingRebuild;
     private bool _rebuildRunning;
     private int _rebuildVersion;
+    private int _filterVersion;
+    private int _graphApplicationVersion;
+    private int _initializationVersion;
+    private readonly List<ResourceChange> _deferredResourceChanges = [];
     private readonly ObservableCollection<V1Namespace> _localSelectedNamespaces = [];
     private ResourceRelationshipGraph _completeGraph = ResourceRelationshipGraph.Empty;
 
@@ -111,8 +116,10 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         SelectRootNamespace(rootResource);
         Id = nameof(VisualizationViewModel) + "-" + cluster.Title + "-" + (rootResource?.Uid() ?? "null");
 
-        _resourcesByKey.Clear();
-        _resourcesByOwnerUid.Clear();
+        _initializationCancellation?.Cancel();
+        int initializationVersion = Interlocked.Increment(ref _initializationVersion);
+        _resourcesByKey = [];
+        _resourcesByOwnerUid = new(StringComparer.Ordinal);
         _requiredSeedTypes.Clear();
         _pendingReferences.Clear();
         _completeGraph = ResourceRelationshipGraph.Empty;
@@ -124,8 +131,8 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         SelectedResourceTypes.Clear();
         _suppressResourceTypeChanges = false;
         _suppressResourceChanges = true;
+        _deferredResourceChanges.Clear();
         _resourceChangesSubscription = cluster.Runtime.ConnectResources().Subscribe(OnResourceChange);
-        LoadCurrentResources(cluster.Runtime);
 
         SubscribeToSelectedNamespaces();
         cluster.ResourceConfigProcessed += ResourceConfigProcessed;
@@ -143,14 +150,64 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 
         }
 
-        _suppressResourceChanges = false;
-        Run();
+        _initializationCancellation = new CancellationTokenSource();
+        _ = LoadCurrentResourcesAsync(cluster.Runtime, initializationVersion, _initializationCancellation.Token);
     }
 
-    private void LoadCurrentResources(IClusterRuntime runtime)
+    private async Task LoadCurrentResourcesAsync(
+        IClusterRuntime runtime,
+        int initializationVersion,
+        CancellationToken cancellationToken)
     {
+        InitialResourceState state;
+        try
+        {
+            state = await Task.Run(() => SnapshotCurrentResources(runtime, cancellationToken), cancellationToken)
+                .ConfigureAwait(false);
+        }
+        catch (OperationCanceledException)
+        {
+            return;
+        }
+
+        await Dispatcher.UIThread.InvokeAsync(() =>
+        {
+            if (_disposed
+                || initializationVersion != _initializationVersion
+                || !ReferenceEquals(Cluster?.Runtime, runtime))
+            {
+                return;
+            }
+
+            _resourcesByKey = state.ResourcesByKey;
+            _resourcesByOwnerUid = state.ResourcesByOwnerUid;
+            foreach (Type resourceType in state.RequiredSeedTypes)
+            {
+                RequireSeed(Cluster!, resourceType);
+            }
+
+            _suppressResourceChanges = false;
+            foreach (ResourceChange change in _deferredResourceChanges)
+            {
+                ApplyResourceChange(change);
+            }
+
+            _deferredResourceChanges.Clear();
+            Run();
+        });
+    }
+
+    private static InitialResourceState SnapshotCurrentResources(
+        IClusterRuntime runtime,
+        CancellationToken cancellationToken)
+    {
+        Dictionary<ResourceKey, IKubernetesObject<V1ObjectMeta>> resourcesByKey = [];
+        Dictionary<string, HashSet<ResourceKey>> resourcesByOwnerUid = new(StringComparer.Ordinal);
+        HashSet<Type> requiredSeedTypes = [];
+
         foreach (KeyValuePair<GroupApiVersionKind, object> entry in runtime.Objects)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             if (entry.Value is not IResourceContainer container)
             {
                 continue;
@@ -158,10 +215,46 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 
             foreach (IKubernetesObject<V1ObjectMeta> resource in container.Snapshot())
             {
-                ApplyResourceChange(new ResourceChange(WatchEventType.Added, entry.Key, resource));
+                ResourceKey key = GetResourceKey(resource);
+                resourcesByKey[key] = resource;
+                foreach (V1OwnerReference owner in resource.Metadata?.OwnerReferences ?? [])
+                {
+                    if (string.IsNullOrWhiteSpace(owner.Uid))
+                    {
+                        continue;
+                    }
+
+                    if (!resourcesByOwnerUid.TryGetValue(owner.Uid, out HashSet<ResourceKey>? ownedResources))
+                    {
+                        ownedResources = [];
+                        resourcesByOwnerUid.Add(owner.Uid, ownedResources);
+                    }
+
+                    ownedResources.Add(key);
+                    if (owner.Kind == V1Namespace.KubeKind || string.IsNullOrWhiteSpace(owner.ApiVersion) || string.IsNullOrWhiteSpace(owner.Kind))
+                    {
+                        continue;
+                    }
+
+                    int slash = owner.ApiVersion.IndexOf('/');
+                    string group = slash < 0 ? string.Empty : owner.ApiVersion[..slash];
+                    string version = slash < 0 ? owner.ApiVersion : owner.ApiVersion[(slash + 1)..];
+                    Type? ownerType = runtime.ModelCache.GetResourceType(group, version, owner.Kind);
+                    if (ownerType != null)
+                    {
+                        requiredSeedTypes.Add(ownerType);
+                    }
+                }
             }
         }
+
+        return new InitialResourceState(resourcesByKey, resourcesByOwnerUid, requiredSeedTypes);
     }
+
+    private sealed record InitialResourceState(
+        Dictionary<ResourceKey, IKubernetesObject<V1ObjectMeta>> ResourcesByKey,
+        Dictionary<string, HashSet<ResourceKey>> ResourcesByOwnerUid,
+        HashSet<Type> RequiredSeedTypes);
 
     private void SelectedNamespaces_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e) => Run();
 
@@ -193,30 +286,186 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 
     internal void ApplyGraph(ResourceRelationshipGraph graph)
     {
-        foreach (UnresolvedResourceReference reference in _pendingReferences.ToArray())
+        _ = ApplyGraphAsync(graph);
+    }
+
+    internal async Task ApplyGraphAsync(ResourceRelationshipGraph graph)
+    {
+        if (!Dispatcher.UIThread.CheckAccess())
+        {
+            await Dispatcher.UIThread.InvokeAsync(() => ApplyGraphAsync(graph));
+            return;
+        }
+
+        HashSet<UnresolvedResourceReference> pendingReferences = _pendingReferences.ToHashSet();
+        HashSet<string> selectedTypes = SelectedResourceTypes.ToHashSet(StringComparer.Ordinal);
+        HashSet<string> excludedTypes = _excludedResourceTypes.ToHashSet(StringComparer.Ordinal);
+        HashSet<string> knownTypes = _knownResourceTypes.ToHashSet(StringComparer.Ordinal);
+        ClusterWorkspace? cluster = Cluster;
+        bool showNotReadyOnly = ShowNotReadyOnly;
+        int applicationVersion = Interlocked.Increment(ref _graphApplicationVersion);
+        Interlocked.Increment(ref _filterVersion);
+        await PrepareGraphApplicationAsync(
+            graph,
+            pendingReferences,
+            selectedTypes,
+            excludedTypes,
+            knownTypes,
+            cluster,
+            showNotReadyOnly,
+            applicationVersion).ConfigureAwait(true);
+    }
+
+    private async Task PrepareGraphApplicationAsync(
+        ResourceRelationshipGraph graph,
+        HashSet<UnresolvedResourceReference> pendingReferences,
+        HashSet<string> selectedTypes,
+        HashSet<string> excludedTypes,
+        HashSet<string> knownTypes,
+        ClusterWorkspace? cluster,
+        bool showNotReadyOnly,
+        int applicationVersion)
+    {
+        GraphApplication application = await Task.Run(() => PrepareGraphApplication(
+            graph,
+            pendingReferences,
+            selectedTypes,
+            excludedTypes,
+            knownTypes,
+            cluster,
+            showNotReadyOnly)).ConfigureAwait(false);
+
+        await Dispatcher.UIThread.InvokeAsync(() =>
+        {
+            if (_disposed
+                || applicationVersion != _graphApplicationVersion
+                || !ReferenceEquals(Cluster, cluster))
+            {
+                return;
+            }
+
+            _pendingReferences.Clear();
+            _pendingReferences.UnionWith(application.PendingReferences);
+            _completeGraph = application.CompleteGraph;
+            UpdateResourceTypes(application.AvailableTypes);
+            foreach (Type resourceType in application.RequiredSeedTypes)
+            {
+                RequireSeed(cluster!, resourceType);
+            }
+
+            Graph = application.FilteredGraph;
+        });
+    }
+
+    private GraphApplication PrepareGraphApplication(
+        ResourceRelationshipGraph graph,
+        HashSet<UnresolvedResourceReference> pendingReferences,
+        IReadOnlySet<string> selectedTypes,
+        IReadOnlySet<string> excludedTypes,
+        IReadOnlySet<string> knownTypes,
+        ClusterWorkspace? cluster,
+        bool showNotReadyOnly)
+    {
+        foreach (UnresolvedResourceReference reference in pendingReferences.ToArray())
         {
             if (graph.Resources.Any(resource => Matches(reference, resource)))
             {
-                _pendingReferences.Remove(reference);
+                pendingReferences.Remove(reference);
             }
         }
 
-        _pendingReferences.UnionWith(graph.PendingReferences);
-        SeedProviderPrerequisites(graph);
-        SeedUnresolvedResourceTypes();
-        _completeGraph = graph;
-        UpdateResourceTypes(graph);
-        ApplyTypeFilter();
-    }
-
-    private void UpdateResourceTypes(ResourceRelationshipGraph graph)
-    {
+        pendingReferences.UnionWith(graph.PendingReferences);
+        HashSet<Type> requiredSeedTypes = FindRequiredSeedTypes(graph, pendingReferences, cluster);
         HashSet<string> availableTypes = graph.Resources
             .Select(resource => resource.Kind)
             .OfType<string>()
             .Where(type => !string.IsNullOrWhiteSpace(type))
             .ToHashSet(StringComparer.Ordinal);
+        HashSet<string> effectiveSelectedTypes = selectedTypes.ToHashSet(StringComparer.Ordinal);
+        foreach (string type in availableTypes)
+        {
+            if (!knownTypes.Contains(type) && !excludedTypes.Contains(type))
+            {
+                effectiveSelectedTypes.Add(type);
+            }
+        }
+        ResourceRelationshipGraph filteredGraph = FilterGraphByTypes(graph, effectiveSelectedTypes, showNotReadyOnly);
+        return new GraphApplication(graph, pendingReferences, requiredSeedTypes, availableTypes, filteredGraph);
+    }
 
+    private static HashSet<Type> FindRequiredSeedTypes(
+        ResourceRelationshipGraph graph,
+        HashSet<UnresolvedResourceReference> pendingReferences,
+        ClusterWorkspace? cluster)
+    {
+        HashSet<Type> requiredSeedTypes = [];
+        if (cluster == null)
+        {
+            return requiredSeedTypes;
+        }
+
+        foreach (ResourceSeedPrerequisite prerequisite in graph.RequiredSeedPrerequisites)
+        {
+            if (prerequisite.Type is { } type)
+            {
+                requiredSeedTypes.Add(type);
+                continue;
+            }
+
+            if (prerequisite.Kind is { } kind)
+            {
+                foreach (IResourceConfig resourceConfig in cluster.GetResourceConfigs())
+                {
+                    if (resourceConfig.Kind == kind)
+                    {
+                        requiredSeedTypes.Add(resourceConfig.Type);
+                    }
+                }
+            }
+        }
+
+        foreach (UnresolvedResourceReference reference in pendingReferences)
+        {
+            foreach (IResourceConfig resourceConfig in cluster.GetResourceConfigs())
+            {
+                if (string.Equals(resourceConfig.Kind.Group, reference.ApiGroup, StringComparison.Ordinal)
+                    && string.Equals(resourceConfig.Kind.Kind, reference.Kind, StringComparison.Ordinal)
+                    && (reference.ApiVersion == null || string.Equals(resourceConfig.Kind.ApiVersion, reference.ApiVersion, StringComparison.Ordinal)))
+                {
+                    requiredSeedTypes.Add(resourceConfig.Type);
+                }
+            }
+        }
+
+        return requiredSeedTypes;
+    }
+
+    private static ResourceRelationshipGraph FilterGraphByTypes(
+        ResourceRelationshipGraph graph,
+        IReadOnlySet<string> selectedTypes,
+        bool showNotReadyOnly)
+    {
+        IReadOnlyList<IKubernetesObject<V1ObjectMeta>> resources = graph.Resources
+            .Where(resource => resource.Kind is string kind && selectedTypes.Contains(kind))
+            .Where(resource => !showNotReadyOnly || ResourceReadiness.IsNotReady(resource))
+            .ToArray();
+        HashSet<ResourceIdentity> identities = resources.Select(GetIdentity).ToHashSet();
+        return new ResourceRelationshipGraph(
+            resources,
+            graph.Relationships.Where(relationship => identities.Contains(relationship.Source) && identities.Contains(relationship.Target)).ToArray(),
+            graph.UnresolvedReferences,
+            graph.RequiredSeedPrerequisites);
+    }
+
+    private sealed record GraphApplication(
+        ResourceRelationshipGraph CompleteGraph,
+        HashSet<UnresolvedResourceReference> PendingReferences,
+        HashSet<Type> RequiredSeedTypes,
+        HashSet<string> AvailableTypes,
+        ResourceRelationshipGraph FilteredGraph);
+
+    private void UpdateResourceTypes(IReadOnlySet<string> availableTypes)
+    {
         _suppressResourceTypeChanges = true;
         try
         {
@@ -251,17 +500,30 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 
     private void ApplyTypeFilter()
     {
+        ResourceRelationshipGraph completeGraph = _completeGraph;
         HashSet<string> selectedTypes = SelectedResourceTypes.ToHashSet(StringComparer.Ordinal);
-        IReadOnlyList<IKubernetesObject<V1ObjectMeta>> resources = _completeGraph.Resources
-            .Where(resource => resource.Kind is string kind && selectedTypes.Contains(kind))
-            .Where(resource => !ShowNotReadyOnly || ResourceReadiness.IsNotReady(resource))
-            .ToArray();
-        HashSet<ResourceIdentity> identities = resources.Select(GetIdentity).ToHashSet();
-        Graph = new ResourceRelationshipGraph(
-            resources,
-            _completeGraph.Relationships.Where(relationship => identities.Contains(relationship.Source) && identities.Contains(relationship.Target)).ToArray(),
-            _completeGraph.UnresolvedReferences,
-            _completeGraph.RequiredSeedPrerequisites);
+        bool showNotReadyOnly = ShowNotReadyOnly;
+        int version = Interlocked.Increment(ref _filterVersion);
+        _ = ApplyTypeFilterAsync(completeGraph, selectedTypes, showNotReadyOnly, version);
+    }
+
+    private async Task ApplyTypeFilterAsync(
+        ResourceRelationshipGraph completeGraph,
+        HashSet<string> selectedTypes,
+        bool showNotReadyOnly,
+        int version)
+    {
+        ResourceRelationshipGraph filteredGraph = await Task.Run(
+            () => FilterGraphByTypes(completeGraph, selectedTypes, showNotReadyOnly)).ConfigureAwait(false);
+        await Dispatcher.UIThread.InvokeAsync(() =>
+        {
+            if (!_disposed
+                && version == _filterVersion
+                && ReferenceEquals(_completeGraph, completeGraph))
+            {
+                Graph = filteredGraph;
+            }
+        }, DispatcherPriority.Background);
     }
 
     partial void OnIsNamespaceSelectionLinkedChanged(bool value)
@@ -319,7 +581,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
     {
         if (Dispatcher.UIThread.CheckAccess())
         {
-            ApplyResourceChange(change);
+            ProcessResourceChangeOnUiThread(change);
             return;
         }
 
@@ -327,9 +589,20 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         {
             if (!_disposed)
             {
-                ApplyResourceChange(change);
+                ProcessResourceChangeOnUiThread(change);
             }
         });
+    }
+
+    private void ProcessResourceChangeOnUiThread(ResourceChange change)
+    {
+        if (_suppressResourceChanges)
+        {
+            _deferredResourceChanges.Add(change);
+            return;
+        }
+
+        ApplyResourceChange(change);
     }
 
     private void ApplyResourceChange(ResourceChange change)
@@ -621,6 +894,12 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 
     private void ResourceConfigProcessed(ClusterWorkspace cluster, IResourceConfig resourceConfig)
     {
+        if (!Dispatcher.UIThread.CheckAccess())
+        {
+            Dispatcher.UIThread.Post(() => ResourceConfigProcessed(cluster, resourceConfig));
+            return;
+        }
+
         if (_disposed || !ReferenceEquals(Cluster, cluster))
         {
             return;
@@ -630,10 +909,10 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
             && resourceConfig.PermissionsLoaded
             && resourceConfig.CanListAndWatch)
         {
-            _ = cluster.Runtime.SeedResource(resourceConfig.Type);
+            _ = SeedResourceOffUiThreadAsync(cluster.Runtime, resourceConfig.Type);
         }
 
-        SeedUnresolvedResourceTypes();
+        ApplyGraph(_completeGraph);
 
         bool ownerReferenceFound = false;
         IReadOnlyList<IKubernetesObject<V1ObjectMeta>> resources = _resourcesByKey.Values.ToArray();
@@ -661,7 +940,18 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         IResourceConfig? resourceConfig = cluster.GetResourceConfig(resourceType);
         if (resourceConfig is { PermissionsLoaded: true, CanListAndWatch: true })
         {
-            _ = cluster.Runtime.SeedResource(resourceType);
+            _ = SeedResourceOffUiThreadAsync(cluster.Runtime, resourceType);
+        }
+    }
+
+    private static async Task SeedResourceOffUiThreadAsync(IClusterRuntime runtime, Type resourceType)
+    {
+        try
+        {
+            await Task.Run(() => runtime.SeedResource(resourceType)).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException)
+        {
         }
     }
 
@@ -1012,7 +1302,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
             {
                 if (canSeed)
                 {
-                    _ = cluster.Runtime.SeedResource(ownerType);
+                    _ = SeedResourceOffUiThreadAsync(cluster.Runtime, ownerType);
                 }
                 else
                 {
@@ -1045,8 +1335,11 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 
         _resourceChangesSubscription?.Dispose();
         _resourceChangesSubscription = null;
+        _initializationCancellation?.Cancel();
+        _initializationCancellation = null;
         _rebuildCancellation?.Cancel();
         _rebuildCancellation = null;
+        _deferredResourceChanges.Clear();
         _requiredSeedTypes.Clear();
     }
 

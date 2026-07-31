@@ -296,8 +296,8 @@ public sealed class ResourceGraphControlTests
         filtered.Resources.Select(resource => resource.Name()).ShouldBe(["database", "database-0", "database-root"]);
     }
 
-    [Fact]
-    public void resource_type_selection_persists_across_graph_updates_and_selects_new_types()
+    [AvaloniaFact]
+    public async Task resource_type_selection_persists_across_graph_updates_and_selects_new_types()
     {
         V1Pod pod = CreatePod("pod");
         V1Service service = new()
@@ -314,15 +314,16 @@ public sealed class ResourceGraphControlTests
         };
 
         using VisualizationViewModel viewModel = new(new ResourceRelationshipBuilder());
-        viewModel.ApplyGraph(new ResourceRelationshipGraph([pod, service], []));
+        await viewModel.ApplyGraphAsync(new ResourceRelationshipGraph([pod, service], []));
 
         viewModel.ResourceTypes.ShouldBe([V1Pod.KubeKind, V1Service.KubeKind]);
         viewModel.SelectedResourceTypes.ShouldBe([V1Pod.KubeKind, V1Service.KubeKind]);
 
         viewModel.SelectedResourceTypes.Remove(V1Pod.KubeKind);
+        await WaitForAsync(() => viewModel.Graph!.Resources.Select(resource => resource.Kind).SequenceEqual([V1Service.KubeKind]));
         viewModel.Graph!.Resources.Select(resource => resource.Kind).ShouldBe([V1Service.KubeKind]);
 
-        viewModel.ApplyGraph(new ResourceRelationshipGraph([pod, service, deployment], []));
+        await viewModel.ApplyGraphAsync(new ResourceRelationshipGraph([pod, service, deployment], []));
 
         viewModel.ResourceTypes.ShouldBe([V1Deployment.KubeKind, V1Pod.KubeKind, V1Service.KubeKind]);
         viewModel.SelectedResourceTypes.ShouldBe([V1Service.KubeKind, V1Deployment.KubeKind]);
@@ -472,8 +473,8 @@ public sealed class ResourceGraphControlTests
             ResourceRelationshipKind.GitOps));
     }
 
-    [Fact]
-    public void not_ready_filter_keeps_only_resources_with_false_conditions()
+    [AvaloniaFact]
+    public async Task not_ready_filter_keeps_only_resources_with_false_conditions()
     {
         V1Pod ready = CreatePod("ready");
         ready.Status = new() { Conditions = [new() { Type = "Ready", Status = "True" }] };
@@ -484,35 +485,37 @@ public sealed class ResourceGraphControlTests
         V1Pod withoutConditions = CreatePod("without-conditions");
 
         using VisualizationViewModel viewModel = new(new ResourceRelationshipBuilder());
-        viewModel.ApplyGraph(new ResourceRelationshipGraph([ready, notReady, unknown, withoutConditions], []));
+        await viewModel.ApplyGraphAsync(new ResourceRelationshipGraph([ready, notReady, unknown, withoutConditions], []));
 
         viewModel.ShowNotReadyOnly = true;
+        await WaitForAsync(() => viewModel.Graph!.Resources.Select(resource => resource.Name()).SequenceEqual(["not-ready"]));
 
         viewModel.Graph!.Resources.Select(resource => resource.Name()).ShouldBe(["not-ready"]);
     }
 
-    [Fact]
-    public void type_filter_preserves_pending_references_and_seed_prerequisites()
+    [AvaloniaFact]
+    public async Task type_filter_preserves_pending_references_and_seed_prerequisites()
     {
         V1Pod pod = CreatePod("pod");
         UnresolvedResourceReference pending = new("apps", "v1", "Deployment", "default", "owner");
         ResourceSeedPrerequisite prerequisite = new(typeof(V1Deployment));
 
         using VisualizationViewModel viewModel = new(new ResourceRelationshipBuilder());
-        viewModel.ApplyGraph(new ResourceRelationshipGraph(
+        await viewModel.ApplyGraphAsync(new ResourceRelationshipGraph(
             [pod],
             [],
             new HashSet<UnresolvedResourceReference> { pending },
             new HashSet<ResourceSeedPrerequisite> { prerequisite }));
 
         viewModel.ShowNotReadyOnly = true;
+        await WaitForAsync(() => viewModel.Graph!.PendingReferences.Contains(pending));
 
         viewModel.Graph!.PendingReferences.ShouldContain(pending);
         viewModel.Graph.RequiredSeedPrerequisites.ShouldContain(prerequisite);
     }
 
-    [Fact]
-    public void resource_type_is_selected_again_after_disappearing_and_reappearing()
+    [AvaloniaFact]
+    public async Task resource_type_is_selected_again_after_disappearing_and_reappearing()
     {
         V1Pod pod = CreatePod("pod");
         V1Service service = new()
@@ -523,9 +526,9 @@ public sealed class ResourceGraphControlTests
         };
 
         using VisualizationViewModel viewModel = new(new ResourceRelationshipBuilder());
-        viewModel.ApplyGraph(new ResourceRelationshipGraph([pod, service], []));
-        viewModel.ApplyGraph(new ResourceRelationshipGraph([service], []));
-        viewModel.ApplyGraph(new ResourceRelationshipGraph([pod, service], []));
+        await viewModel.ApplyGraphAsync(new ResourceRelationshipGraph([pod, service], []));
+        await viewModel.ApplyGraphAsync(new ResourceRelationshipGraph([service], []));
+        await viewModel.ApplyGraphAsync(new ResourceRelationshipGraph([pod, service], []));
 
         viewModel.ResourceTypes.ShouldBe([V1Pod.KubeKind, V1Service.KubeKind]);
         viewModel.SelectedResourceTypes.Order(StringComparer.Ordinal).ShouldBe([V1Pod.KubeKind, V1Service.KubeKind]);
@@ -590,7 +593,7 @@ public sealed class ResourceGraphControlTests
         ResourceIdentity podIdentity = GetIdentity(pod);
         ResourceRelationship initialRelationship = new(firstOwnerIdentity, podIdentity, ResourceRelationshipKind.Owner);
         ResourceRelationship changedRelationship = new(secondOwnerIdentity, podIdentity, ResourceRelationshipKind.Owner);
-        viewModel.ApplyGraph(new ResourceRelationshipGraph([firstOwner, secondOwner, pod], [initialRelationship]));
+        await viewModel.ApplyGraphAsync(new ResourceRelationshipGraph([firstOwner, secondOwner, pod], [initialRelationship]));
 
         pod.Metadata!.OwnerReferences =
         [
@@ -691,7 +694,7 @@ public sealed class ResourceGraphControlTests
         {
             using VisualizationViewModel viewModel = new(new ResourceRelationshipBuilder());
             viewModel.Initialize(cluster);
-            viewModel.ApplyGraph(new ResourceRelationshipGraph(
+            await viewModel.ApplyGraphAsync(new ResourceRelationshipGraph(
                 [],
                 [],
                 SeedPrerequisites: new HashSet<ResourceSeedPrerequisite>
@@ -817,6 +820,7 @@ public sealed class ResourceGraphControlTests
 
         viewModel.Initialize(cluster);
         (await builder.WaitForBuildAsync(1)).SelectedNamespaces.ShouldBe(["default"]);
+        builder.BuildOnUiThread.ShouldBeFalse();
 
         cluster.SelectedNamespaces.Clear();
         cluster.SelectedNamespaces.Add(cluster.Runtime.Namespaces.Single(item => item.Name() == "other"));
@@ -963,7 +967,7 @@ public sealed class ResourceGraphControlTests
         await builder.WaitForBuildAsync(1);
 
         ResourceSeedPrerequisite prerequisite = new(typeof(V1Deployment));
-        viewModel.ApplyGraph(new ResourceRelationshipGraph([], [], SeedPrerequisites: new HashSet<ResourceSeedPrerequisite> { prerequisite }));
+        await viewModel.ApplyGraphAsync(new ResourceRelationshipGraph([], [], SeedPrerequisites: new HashSet<ResourceSeedPrerequisite> { prerequisite }));
         await cluster.Runtime.SeedResource(typeof(V1Deployment));
         await builder.WaitForBuildAsync(2);
     }
@@ -1089,7 +1093,7 @@ public sealed class ResourceGraphControlTests
     }
 
     [Fact]
-    public void graph_skips_relationships_with_missing_vertices()
+    public async Task graph_skips_relationships_with_missing_vertices()
     {
         V1Pod source = CreatePod("source");
         ResourceIdentity sourceIdentity = GetIdentity(source);
@@ -1101,6 +1105,8 @@ public sealed class ResourceGraphControlTests
                 [source],
                 [new ResourceRelationship(sourceIdentity, missingIdentity, ResourceRelationshipKind.Reference)]),
         };
+
+        await WaitForAsync(() => control.Area.LogicCore?.Graph?.VertexCount == 1);
 
         control.Area.LogicCore!.Graph.VertexCount.ShouldBe(1);
         control.Area.LogicCore.Graph.EdgeCount.ShouldBe(0);
@@ -1409,14 +1415,21 @@ public sealed class ResourceGraphControlTests
     {
         private readonly ConcurrentDictionary<int, TaskCompletionSource<BuildInput>> _builds = [];
         private int _buildCount;
+        private int _buildOnUiThread;
 
         public int BuildCount => Volatile.Read(ref _buildCount);
+        public bool BuildOnUiThread => Volatile.Read(ref _buildOnUiThread) != 0;
 
         public ResourceRelationshipGraph Build(
             IEnumerable<IKubernetesObject<V1ObjectMeta>> resources,
             IReadOnlySet<string> selectedNamespaces,
             bool hideNoise)
         {
+            if (Dispatcher.UIThread.CheckAccess())
+            {
+                Interlocked.Exchange(ref _buildOnUiThread, 1);
+            }
+
             int buildNumber = Interlocked.Increment(ref _buildCount);
             _builds.GetOrAdd(buildNumber, _ => new(TaskCreationOptions.RunContinuationsAsynchronously))
                 .TrySetResult(new(selectedNamespaces.Order(StringComparer.Ordinal).ToArray(), hideNoise));

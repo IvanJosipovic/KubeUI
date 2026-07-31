@@ -1,6 +1,7 @@
 using Avalonia.Controls.Templates;
 using k8s;
 using k8s.Models;
+using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
 using KubeUI.Avalonia.Services.Icons;
 using KubeUI.Kubernetes.Resources.Relationships;
@@ -28,10 +29,13 @@ public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphContr
     private readonly Dictionary<ResourceIdentity, ResourceGraphVertex> _vertices = [];
     private VisualizationViewModel? _viewModel;
     private Task? _graphGenerationTask;
+    private CancellationTokenSource? _graphPreparationCancellation;
+    private int _graphPreparationVersion;
     private bool _layoutPending;
     private bool _hasGeneratedGraph;
     private bool _zoomAfterGeneration;
     private bool _isDetached;
+    private bool _rebuildFromAttachment;
 
     public ResourceRelationshipGraph? Graph
     {
@@ -43,18 +47,11 @@ public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphContr
                 return;
             }
 
-            var previous = _graph;
             _graph = value;
             RaisePropertyChanged(GraphProperty, null, value);
 
             if (_isDetached)
             {
-                return;
-            }
-
-            if (previous != null && value != null && _logicCore.Graph != null)
-            {
-                ApplyGraphChanges(value);
                 return;
             }
 
@@ -121,33 +118,101 @@ public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphContr
 
     private void RebuildGraph()
     {
-        BidirectionalGraph<ResourceGraphVertex, ResourceGraphEdge> graph = new();
-        _hasGeneratedGraph = false;
-        _vertices.Clear();
-        if (_graph != null)
+        _graphPreparationCancellation?.Cancel();
+        CancellationTokenSource cancellation = new();
+        _graphPreparationCancellation = cancellation;
+        int version = Interlocked.Increment(ref _graphPreparationVersion);
+        ResourceRelationshipGraph? graph = _graph;
+        ClusterWorkspace? cluster = _viewModel?.Cluster;
+        _ = PrepareGraphAsync(graph, cluster, version, cancellation);
+    }
+
+    private async Task PrepareGraphAsync(
+        ResourceRelationshipGraph? graph,
+        ClusterWorkspace? cluster,
+        int version,
+        CancellationTokenSource cancellation)
+    {
+        PreparedGraph prepared = await Task.Run(
+            () => CreatePreparedGraph(graph, cluster, cancellation.Token),
+            cancellation.Token).ConfigureAwait(false);
+
+        await Dispatcher.UIThread.InvokeAsync(() =>
         {
-            foreach (var resource in _graph.Resources)
+            if (_isDetached
+                || version != _graphPreparationVersion
+                || cancellation.IsCancellationRequested)
             {
-                var vertex = CreateVertex(resource);
+                return;
+            }
+
+            _hasGeneratedGraph = false;
+            bool incremental = VisualRoot != null && _logicCore.Graph != null && !_rebuildFromAttachment;
+            _rebuildFromAttachment = false;
+            if (incremental)
+            {
+                ApplyGraphChanges(_graph ?? ResourceRelationshipGraph.Empty);
+                return;
+            }
+
+            _vertices.Clear();
+            foreach (IKubernetesObject<V1ObjectMeta> resource in prepared.Resources)
+            {
+                ResourceGraphVertex vertex = CreateVertex(resource, prepared.Cluster);
                 _vertices.Add(vertex.Identity, vertex);
+            }
+
+            BidirectionalGraph<ResourceGraphVertex, ResourceGraphEdge> graph = new();
+            foreach (ResourceGraphVertex vertex in _vertices.Values)
+            {
                 graph.AddVertex(vertex);
             }
 
-            foreach (var relationship in _graph.Relationships)
+            foreach (ResourceRelationship relationship in prepared.Relationships)
             {
-                if (TryCreateEdge(relationship, _vertices, out var edge))
+                if (TryCreateEdge(relationship, _vertices, out ResourceGraphEdge? edge))
                 {
                     graph.AddEdge(edge);
                 }
             }
+
+            _logicCore.Graph = graph;
+            if (VisualRoot != null)
+            {
+                QueueGraphGeneration();
+            }
+        }, DispatcherPriority.Background);
+    }
+
+    private PreparedGraph CreatePreparedGraph(
+        ResourceRelationshipGraph? graph,
+        ClusterWorkspace? cluster,
+        CancellationToken cancellationToken)
+    {
+        List<IKubernetesObject<V1ObjectMeta>> resources = [];
+        List<ResourceRelationship> relationships = [];
+        if (graph != null)
+        {
+            foreach (IKubernetesObject<V1ObjectMeta> resource in graph.Resources)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                resources.Add(resource);
+            }
+
+            foreach (ResourceRelationship relationship in graph.Relationships)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                relationships.Add(relationship);
+            }
         }
 
-        _logicCore.Graph = graph;
-        if (VisualRoot != null)
-        {
-            QueueGraphGeneration();
-        }
+        return new PreparedGraph(resources, relationships, cluster);
     }
+
+    private sealed record PreparedGraph(
+        IReadOnlyList<IKubernetesObject<V1ObjectMeta>> Resources,
+        IReadOnlyList<ResourceRelationship> Relationships,
+        ClusterWorkspace? Cluster);
 
     private void ApplyGraphChanges(ResourceRelationshipGraph current)
     {
@@ -210,7 +275,7 @@ public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphContr
                 continue;
             }
 
-            var vertex = CreateVertex(resource);
+            var vertex = CreateVertex(resource, _viewModel?.Cluster);
             structureChanged = true;
             vertices.Add(identity, vertex);
             _area.AddVertexAndData(vertex, _area.ControlFactory.CreateVertexControl(vertex), generateLabel: false);
@@ -245,14 +310,14 @@ public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphContr
     private static ResourceIdentity GetIdentity(IKubernetesObject<V1ObjectMeta> resource)
         => new(resource.ApiVersion ?? string.Empty, resource.Kind ?? string.Empty, resource.Namespace(), resource.Name() ?? string.Empty, resource.Uid());
 
-    private ResourceGraphVertex CreateVertex(IKubernetesObject<V1ObjectMeta> resource)
+    private ResourceGraphVertex CreateVertex(IKubernetesObject<V1ObjectMeta> resource, ClusterWorkspace? cluster)
     {
         var vertex = new ResourceGraphVertex
         {
             Identity = GetIdentity(resource),
             Node = new()
             {
-                Cluster = _viewModel?.Cluster,
+                Cluster = cluster,
                 Resource = resource,
                 Icon = _iconService.GetIcon(resource.GetType()),
             },
@@ -338,6 +403,7 @@ public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphContr
         _isDetached = false;
         if (_graph != null)
         {
+            _rebuildFromAttachment = true;
             RebuildGraph();
         }
     }
@@ -352,6 +418,7 @@ public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphContr
 
     public void Dispose()
     {
+        _graphPreparationCancellation?.Cancel();
         _area.GenerateGraphFinished -= OnGraphLayoutFinished;
         _area.RelayoutFinished -= OnGraphLayoutFinished;
         _area.Dispose();
