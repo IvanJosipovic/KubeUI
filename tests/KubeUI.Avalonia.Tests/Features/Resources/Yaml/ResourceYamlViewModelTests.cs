@@ -2648,6 +2648,7 @@ public class ResourceYamlViewModelTests : IDisposable
         var window = CreateWindow(width: 800, height: 600);
 
         var cluster = CreateTestWorkspace();
+        await cluster.Connect();
         var vm = ResolveService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
@@ -2700,9 +2701,9 @@ public class ResourceYamlViewModelTests : IDisposable
         var window = CreateWindow(width: 800, height: 600);
 
         IServiceProvider services = Application.Current.GetTestServices();
-        TestClusterConfig config = services.GetRequiredService<TestClusterConfig>();
         ClusterWorkspace cluster = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         _disposables.Add(cluster);
+        await cluster.Connect();
 
         var vm = ResolveService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod

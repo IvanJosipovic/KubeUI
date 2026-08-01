@@ -74,15 +74,6 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
         set => _state.ThrowOnConnection = value;
     }
 
-    /// <summary>
-    /// Simulated round-trip latency applied to every HTTP request.
-    /// </summary>
-    public TimeSpan ResponseDelay
-    {
-        get => _state.ResponseDelay;
-        set => _state.ResponseDelay = value;
-    }
-
     public IReadOnlyList<Uri?> RequestUris => _requestUris.ToArray();
 
     private int _authorizationRequestCount;
@@ -164,12 +155,6 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
     {
         _requestUris.Enqueue(request.RequestUri);
         cancellationToken.ThrowIfCancellationRequested();
-
-        if (ResponseDelay > TimeSpan.Zero)
-        {
-            using var timer = new PeriodicTimer(ResponseDelay);
-            await timer.WaitForNextTickAsync(cancellationToken).ConfigureAwait(false);
-        }
 
         if (request.RequestUri is null)
         {
@@ -841,7 +826,6 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
         public ConcurrentDictionary<string, JsonObject> Resources { get; } = new(StringComparer.Ordinal);
         public ConcurrentDictionary<string, ConcurrentBag<Channel<byte[]>>> Watchers { get; } = new(StringComparer.Ordinal);
         public CancellationTokenSource ShutdownCancellation { get; } = new();
-        public TimeSpan ResponseDelay { get; set; } = TimeSpan.FromMilliseconds(50);
         public bool FailConnection { get; set; }
         public bool ThrowOnConnection { get; set; }
         public long ResourceVersion;

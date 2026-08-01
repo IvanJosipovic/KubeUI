@@ -1580,12 +1580,11 @@ public class NavigationViewModelTests : IDisposable
     public async Task visualization_seeded_resource_attaches_navigation_count()
     {
         IServiceProvider services = Application.Current.GetTestServices();
-        TestClusterConfig config = services.GetRequiredService<TestClusterConfig>();
         ClusterWorkspace workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         var runtime = workspace.Runtime;
+        await workspace.Connect();
         await runtime.AddOrUpdateResource(new V1Namespace { Metadata = new() { Name = "default" } });
 
-        await workspace.Connect();
         var navigation = CreateViewModel();
         navigation.ClusterCatalog.Clusters.Add(workspace);
         Dispatcher.UIThread.RunJobs();
@@ -1595,7 +1594,7 @@ public class NavigationViewModelTests : IDisposable
         podsLink.ShouldNotBeNull();
         podsLink.Count.ShouldBeNull();
 
-        using var visualization = new VisualizationViewModel(new ResourceRelationshipBuilder());
+        using var visualization = services.GetRequiredService<VisualizationViewModel>();
         visualization.Initialize(workspace);
         await runtime.SeedResource<V1Pod>();
 
@@ -1928,16 +1927,15 @@ public class NavigationViewModelTests : IDisposable
     public async Task crd_delta_does_not_rebuild_unrelated_resource_nodes()
     {
         IServiceProvider services = Application.Current.GetTestServices();
-        TestClusterConfig config = services.GetRequiredService<TestClusterConfig>();
         ClusterWorkspace workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         var runtime = workspace.Runtime;
 
+        await workspace.Connect();
         await runtime.AddOrUpdateResource(new V1Namespace
         {
             Metadata = new() { Name = "default" }
         });
 
-        await workspace.Connect();
         Dispatcher.UIThread.RunJobs();
 
         var vm = CreateViewModel();
