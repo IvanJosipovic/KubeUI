@@ -18,6 +18,7 @@ public sealed class KubernetesScenarioClusterScope : IAsyncDisposable
 
     public IClusterScenarioHarness ScenarioHarness => _harness;
 
+    [SuppressMessage("Usage", "CA2000", Justification = "The harness ownership is transferred to the returned scope.")]
     public static async Task<KubernetesScenarioClusterScope> CreateAsync(KubernetesBackend backend)
     {
         return new KubernetesScenarioClusterScope(

@@ -10,7 +10,6 @@ using k8s.Models;
 using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Resources;
 using KubeUI.Avalonia.Tests.Infra;
-using KubeUI.Testing.Utilities;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Features.Clusters.Workspace;

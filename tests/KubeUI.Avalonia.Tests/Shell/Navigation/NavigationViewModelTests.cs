@@ -19,7 +19,6 @@ using KubeUI.Avalonia.Shell.Main;
 using KubeUI.Avalonia.Tests.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Tests.Infra;
 using KubeUI.Kubernetes.Resources.Relationships;
-using KubeUI.Testing.Utilities;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Shell.Navigation;

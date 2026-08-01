@@ -8,7 +8,6 @@ using KubeUI.Avalonia.Features.Resources.Visualization;
 using KubeUI.Avalonia.Tests.Infra;
 using KubeUI.Avalonia.Resources;
 using KubeUI.Kubernetes.Resources.Relationships;
-using KubeUI.Testing.Utilities;
 using Shouldly;
 using k8s.Models;
 using KubernetesClient.Informer.Client;

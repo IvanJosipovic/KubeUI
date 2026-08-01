@@ -6,7 +6,6 @@ using k8s;
 using k8s.Autorest;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
-using KubeUI.Testing.Utilities;
 using Shouldly;
 
 namespace KubeUI.Kubernetes.Tests.Clusters.Runtime;

@@ -1,4 +1,5 @@
 using System.Text;
+using System.Diagnostics.CodeAnalysis;
 using k8s;
 using k8s.KubeConfigModels;
 using k8s.Models;
@@ -113,6 +114,7 @@ public sealed class FakeClusterScenarioHarness : IClusterScenarioHarness
             await client.DeleteNamespacedAsync<T>(item.Namespace(), item.Name(), cancellationToken).ConfigureAwait(false);
     }
 
+    [SuppressMessage("Usage", "CA2000", Justification = "The API handler ownership is transferred to the Kubernetes client.")]
     public async Task<IClusterRuntime> CreateLimitedAccessClusterAsync(LimitedAccessScenario scenario, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(scenario);

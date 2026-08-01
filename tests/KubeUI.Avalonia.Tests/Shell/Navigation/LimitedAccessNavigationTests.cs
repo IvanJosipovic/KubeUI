@@ -2,7 +2,6 @@ using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
 using KubeUI.Avalonia.Shell.Navigation;
 using KubeUI.Avalonia.Tests.Infra;
-using KubeUI.Testing.Utilities;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Shell.Navigation;
