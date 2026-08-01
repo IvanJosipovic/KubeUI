@@ -13,26 +13,51 @@ namespace KubeUI.Testing;
 
 public sealed class FakeKubernetesHttpApi : DelegatingHandler
 {
+    private readonly BackendState _state;
+    private readonly ConcurrentDictionary<string, ResourceDefinition> _definitions;
+    private readonly ConcurrentDictionary<string, JsonObject> _resources;
+    private readonly ConcurrentDictionary<string, ConcurrentBag<Channel<byte[]>>> _watchers;
+    private readonly CancellationTokenSource _shutdownCancellation;
     public Task<HttpResponseMessage> HandleAsync(HttpRequestMessage request, CancellationToken cancellationToken = default)
         => SendAsync(request, cancellationToken);
-    private readonly ConcurrentDictionary<string, ResourceDefinition> _definitions = new(StringComparer.Ordinal);
-    private readonly ConcurrentDictionary<string, JsonObject> _resources = new(StringComparer.Ordinal);
     private readonly ConcurrentDictionary<string, bool> _permissions = new(StringComparer.Ordinal);
-    private readonly ConcurrentDictionary<string, ConcurrentBag<Channel<byte[]>>> _watchers = new(StringComparer.Ordinal);
-    private readonly CancellationTokenSource _shutdownCancellation = new();
-    private long _resourceVersion;
+
+    public FakeKubernetesHttpApi()
+        : this(new BackendState())
+    {
+    }
+
+    private FakeKubernetesHttpApi(BackendState state)
+    {
+        _state = state;
+        _definitions = state.Definitions;
+        _resources = state.Resources;
+        _watchers = state.Watchers;
+        _shutdownCancellation = state.ShutdownCancellation;
+    }
+
+    internal FakeKubernetesHttpApi CreateClient() => new(_state);
+
     public bool DefaultPermissionAllowed { get; set; } = true;
 
     public bool UseRoleBasedAuthorization { get; set; }
 
     public string AuthenticatedUser { get; set; } = "system:admin";
 
-    public bool FailConnection { get; set; }
+    public bool FailConnection
+    {
+        get => _state.FailConnection;
+        set => _state.FailConnection = value;
+    }
 
     /// <summary>
     /// Simulated round-trip latency applied to every HTTP request.
     /// </summary>
-    public TimeSpan ResponseDelay { get; set; } = TimeSpan.FromMilliseconds(50);
+    public TimeSpan ResponseDelay
+    {
+        get => _state.ResponseDelay;
+        set => _state.ResponseDelay = value;
+    }
 
     public IReadOnlyList<Uri?> RequestUris => _requestUris.ToArray();
 
@@ -262,16 +287,24 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
         if (request.Method == HttpMethod.Put || request.Method == HttpMethod.Patch)
         {
             var resource = await ReadObjectAsync(request, cancellationToken).ConfigureAwait(false);
-            var existed = _resources.ContainsKey(key);
+            var existed = _resources.TryGetValue(key, out var existingResource);
             if (route.ResourceName is null)
             {
                 return Error(HttpStatusCode.BadRequest, "A resource name is required for updates.");
             }
 
-            if (request.Method == HttpMethod.Patch && _resources.TryGetValue(key, out var existing))
+            if (existed && !string.Equals(
+                    resource["metadata"]?["resourceVersion"]?.GetValue<string>(),
+                    existingResource!["metadata"]?["resourceVersion"]?.GetValue<string>(),
+                    StringComparison.Ordinal))
             {
-                Merge(existing, resource);
-                resource = existing;
+                return Error(HttpStatusCode.Conflict, "The resourceVersion is stale.");
+            }
+
+            if (request.Method == HttpMethod.Patch && existingResource is not null)
+            {
+                Merge(existingResource, resource);
+                resource = existingResource;
             }
 
             EnsureMetadata(resource, resource["metadata"]?.Deserialize<V1ObjectMeta>());
@@ -543,7 +576,7 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
         _ = metadata;
     }
 
-    private string CurrentResourceVersion() => Interlocked.Increment(ref _resourceVersion).ToString(System.Globalization.CultureInfo.InvariantCulture);
+    private string CurrentResourceVersion() => Interlocked.Increment(ref _state.ResourceVersion).ToString(System.Globalization.CultureInfo.InvariantCulture);
 
     private HttpResponseMessage WatchResponse(string collectionKey, CancellationToken cancellationToken)
     {
@@ -749,6 +782,17 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
     }
 
     private readonly record struct ResourceDefinition(GroupApiVersionKind Api, bool Namespaced);
+
+    private sealed class BackendState
+    {
+        public ConcurrentDictionary<string, ResourceDefinition> Definitions { get; } = new(StringComparer.Ordinal);
+        public ConcurrentDictionary<string, JsonObject> Resources { get; } = new(StringComparer.Ordinal);
+        public ConcurrentDictionary<string, ConcurrentBag<Channel<byte[]>>> Watchers { get; } = new(StringComparer.Ordinal);
+        public CancellationTokenSource ShutdownCancellation { get; } = new();
+        public TimeSpan ResponseDelay { get; set; } = TimeSpan.FromMilliseconds(50);
+        public bool FailConnection { get; set; }
+        public long ResourceVersion;
+    }
 
     private readonly record struct Route(string Group, string Prefix, string ApiVersion, string PluralName, string CollectionPath, string? Namespace, string? ResourceName, string? Subresource);
 }

@@ -38,6 +38,7 @@ public sealed class ClusterAuthTests
             SharedScenarioData.LimitedAccessWithNamespaceFallback,
             cancellationToken: TestContext.Current.CancellationToken);
         await using var disposableCluster = cluster;
+        await cluster.Permissions.UpdatePermissionsAllNamespaceAsync<V1Pod>(Verb.Create, "portforward");
 
         cluster.CanIAnyNamespace<V1Pod>(Verb.Create, "portforward").ShouldBeTrue();
     }

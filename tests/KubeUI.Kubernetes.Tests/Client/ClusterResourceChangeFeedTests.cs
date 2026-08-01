@@ -15,6 +15,10 @@ public sealed class ClusterResourceChangeFeedTests
             backend,
             TestContext.Current.CancellationToken);
         var runtime = harness.Cluster;
+        await runtime.Permissions.UpdatePermissionsAllNamespaceAsync<V1Service>(Verb.List);
+        await runtime.Permissions.UpdatePermissionsAllNamespaceAsync<V1Service>(Verb.Watch);
+        await runtime.Permissions.UpdatePermissionsAllNamespaceAsync<V1Secret>(Verb.List);
+        await runtime.Permissions.UpdatePermissionsAllNamespaceAsync<V1Secret>(Verb.Watch);
         await runtime.SeedResource<V1Service>(true);
         await runtime.SeedResource<V1Secret>(true);
         V1Service existingService = new()

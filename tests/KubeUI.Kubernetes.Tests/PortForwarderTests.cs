@@ -178,6 +178,10 @@ public sealed class PortForwarderTests
             backend,
             TestContext.Current.CancellationToken);
         var cluster = harness.Cluster;
+        await cluster.Permissions.UpdatePermissionsAllNamespaceAsync<V1Service>(Verb.List);
+        await cluster.Permissions.UpdatePermissionsAllNamespaceAsync<V1Service>(Verb.Watch);
+        await cluster.Permissions.UpdatePermissionsAllNamespaceAsync<V1EndpointSlice>(Verb.List);
+        await cluster.Permissions.UpdatePermissionsAllNamespaceAsync<V1EndpointSlice>(Verb.Watch);
         await cluster.SeedResource<V1Service>(true);
         await cluster.AddOrUpdateResource(CreateService());
         await ClusterScenarioAssertions.WaitForResourceAsync<V1Service>(
@@ -204,6 +208,10 @@ public sealed class PortForwarderTests
             backend,
             TestContext.Current.CancellationToken);
         var cluster = harness.Cluster;
+        await cluster.Permissions.UpdatePermissionsAllNamespaceAsync<V1Service>(Verb.List);
+        await cluster.Permissions.UpdatePermissionsAllNamespaceAsync<V1Service>(Verb.Watch);
+        await cluster.Permissions.UpdatePermissionsAllNamespaceAsync<V1EndpointSlice>(Verb.List);
+        await cluster.Permissions.UpdatePermissionsAllNamespaceAsync<V1EndpointSlice>(Verb.Watch);
         await cluster.SeedResource<V1Service>(true);
         await cluster.SeedResource<V1EndpointSlice>(true);
         await cluster.AddOrUpdateResource(CreateService());
@@ -252,6 +260,10 @@ public sealed class PortForwarderTests
             backend,
             TestContext.Current.CancellationToken);
         var cluster = harness.Cluster;
+        await cluster.Permissions.UpdatePermissionsAllNamespaceAsync<V1Service>(Verb.List);
+        await cluster.Permissions.UpdatePermissionsAllNamespaceAsync<V1Service>(Verb.Watch);
+        await cluster.Permissions.UpdatePermissionsAllNamespaceAsync<V1EndpointSlice>(Verb.List);
+        await cluster.Permissions.UpdatePermissionsAllNamespaceAsync<V1EndpointSlice>(Verb.Watch);
         await cluster.SeedResource<V1Service>(true);
         await cluster.SeedResource<V1EndpointSlice>(true);
         await cluster.AddOrUpdateResource(CreateService());

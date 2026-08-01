@@ -20,6 +20,10 @@ public sealed class ClusterRuntimeScenarioTests : ClusterScenarioAssertions
     public Task DirectCrudMethodsRoundTripResources(KubernetesBackend backend) => DirectCrudMethodsRoundTripResourcesCore(backend);
     [Theory, KubernetesBackendData]
     public Task DirectCrudOperationsAreObservedByInformerCache(KubernetesBackend backend) => DirectCrudOperationsAreObservedByInformerCacheCore(backend);
+    [Theory, KubernetesBackendData]
+    public Task StaleResourceVersionUpdatesAreRejected(KubernetesBackend backend) => StaleResourceVersionUpdatesAreRejectedCore(backend);
+    [Theory, KubernetesBackendData]
+    public Task ReplaceDirectRefreshesResourceVersion(KubernetesBackend backend) => ReplaceDirectRefreshesResourceVersionCore(backend);
 
     [Theory, KubernetesBackendData]
     public Task CreateObject(KubernetesBackend backend) => CreateObjectCore(backend);

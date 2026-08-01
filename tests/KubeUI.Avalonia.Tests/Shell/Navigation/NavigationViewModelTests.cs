@@ -7,6 +7,7 @@ using Avalonia.Styling;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.Input;
 using Dock.Model.Controls;
+using Dock.Model.Core;
 using FluentAvalonia.UI.Controls;
 using k8s;
 using k8s.Models;
@@ -14,6 +15,7 @@ using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Resources;
 using KubeUI.Avalonia.Features.Resources.Visualization;
 using KubeUI.Avalonia.Shell.Navigation;
+using KubeUI.Avalonia.Shell.Main;
 using KubeUI.Avalonia.Tests.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Tests.Infra;
 using KubeUI.Testing;
@@ -28,6 +30,19 @@ public class NavigationViewModelTests : IDisposable
 
     public void Dispose()
     {
+        var catalog = (Application.Current as TestApp)?.Services?.GetRequiredService<ClusterWorkspaceCatalog>();
+        foreach (var workspace in _disposables.OfType<ClusterWorkspace>().ToList())
+        {
+            catalog?.Clusters.Remove(workspace);
+        }
+
+        var factory = (Application.Current as TestApp)?.Services?.GetRequiredService<IFactory>();
+        var documents = factory?.GetDockable<IDocumentDock>("Documents");
+        foreach (var document in documents?.VisibleDockables?.Where(static dockable => dockable is not HomeViewModel).ToList() ?? [])
+        {
+            factory!.CloseDockable(document);
+        }
+
         for (var index = _disposables.Count - 1; index >= 0; index--)
         {
             _disposables[index].Dispose();
@@ -1165,9 +1180,12 @@ public class NavigationViewModelTests : IDisposable
         await using var runtimeScope = await KubernetesScenarioClusterScope.CreateAsync(harness =>
         {
             harness.DefaultPermissionAllowed = false;
+            harness.SetPermission<V1Namespace>(Verb.List, true);
+            harness.SetPermission<V1Namespace>(Verb.Watch, true);
             harness.SetPermission<V1Pod>(Verb.Create, true, subresource: "portforward");
         });
         var runtime = runtimeScope.Cluster;
+        await runtime.Permissions.UpdatePermissionsAllNamespaceAsync<V1Pod>(Verb.Create, "portforward");
 
         var workspace = CreateWorkspace(runtime);
         var podRelease = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);

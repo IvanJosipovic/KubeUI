@@ -15,13 +15,14 @@ public sealed class FakeClusterScenarioHarness : IClusterScenarioHarness
     private readonly ServiceProvider _services;
     private readonly KubernetesTestSettingsStore _settingsStore = new();
     private readonly FakeKubernetesHttpApi _api = new();
-    private readonly List<FakeKubernetesHttpApi> _additionalApis = [];
     private readonly List<KubeUI.Kubernetes.Cluster> _connectedClusters = [];
     private int _disposeStarted;
 
     public FakeClusterScenarioHarness()
     {
         RegisterSupportedResources(_api);
+        _api.Add(new V1Namespace { Metadata = new V1ObjectMeta { Name = "default" } });
+        _api.Add(new V1Node { Metadata = new V1ObjectMeta { Name = "node-1" } });
 
         _services = KubernetesTestServices.Build(_settingsStore);
         _services.ConfigureKubeUIKubernetesJsonLogging();
@@ -49,8 +50,6 @@ public sealed class FakeClusterScenarioHarness : IClusterScenarioHarness
         set => _api.ResponseDelay = value;
     }
 
-    public bool SupportsLimitedAccessScenarios => true;
-
     public void SetPermission<T>(Verb verb, bool allowed, string? @namespace = null, string? subresource = null)
         where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
@@ -64,38 +63,12 @@ public sealed class FakeClusterScenarioHarness : IClusterScenarioHarness
 
     public async Task InitializeAsync(CancellationToken cancellationToken = default)
     {
-        var configuredDefaultPermission = _api.DefaultPermissionAllowed;
-        // A scenario may intentionally deny namespace discovery, but the
-        // harness still needs to bootstrap the cluster before that policy is
-        // applied. Tests can refresh the specific authorization entries they
-        // are exercising after initialization.
-        _api.DefaultPermissionAllowed = true;
         Cluster = CreateCluster(_api, "http-mock");
         await Cluster.Connect().WaitAsync(cancellationToken).ConfigureAwait(false);
         if (Cluster is KubeUI.Kubernetes.Cluster connected && !connected.Connected)
         {
             throw new InvalidOperationException(connected.LastError ?? "The fake Kubernetes cluster did not connect.");
         }
-
-        // Seed the bootstrap namespace and node while the temporary bootstrap
-        // permission is still enabled. Apply the scenario's permission policy
-        // only after those resources exist.
-        await Cluster.AddOrUpdateResource(new V1Namespace
-        {
-            Metadata = new V1ObjectMeta { Name = "default" },
-        });
-        await Cluster.AddOrUpdateResource(new V1Node
-        {
-            Metadata = new V1ObjectMeta { Name = "node-1" },
-        });
-
-        _api.DefaultPermissionAllowed = configuredDefaultPermission;
-
-        if (Cluster is KubeUI.Kubernetes.Cluster connectedCluster)
-        {
-            await PrimeDefaultPermissionsAsync(connectedCluster, cancellationToken).ConfigureAwait(false);
-        }
-
     }
 
     public void InitializeDisconnected()
@@ -110,49 +83,45 @@ public sealed class FakeClusterScenarioHarness : IClusterScenarioHarness
 
     public async Task<T> CreateDirectAsync<T>(T item, CancellationToken cancellationToken = default) where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
+        ArgumentNullException.ThrowIfNull(item);
         using var client = Cluster.Client!.GetGenericClient<T>();
         return string.IsNullOrEmpty(item.Namespace())
-            ? await client.CreateAsync<T>(item, cancellationToken)
-            : await client.CreateNamespacedAsync<T>(item, item.Namespace(), cancellationToken);
+            ? await client.CreateAsync<T>(item, cancellationToken).ConfigureAwait(false)
+            : await client.CreateNamespacedAsync<T>(item, item.Namespace(), cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<T> ReplaceDirectAsync<T>(T item, CancellationToken cancellationToken = default) where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
+        ArgumentNullException.ThrowIfNull(item);
         using var client = Cluster.Client!.GetGenericClient<T>();
+        T current = string.IsNullOrEmpty(item.Namespace())
+            ? await client.ReadAsync<T>(item.Name(), cancellationToken).ConfigureAwait(false)
+            : await client.ReadNamespacedAsync<T>(item.Namespace(), item.Name(), cancellationToken).ConfigureAwait(false);
+        item.Metadata.ResourceVersion = current.Metadata.ResourceVersion;
         return string.IsNullOrEmpty(item.Namespace())
-            ? await client.ReplaceAsync<T>(item, item.Name(), cancellationToken)
-            : await client.ReplaceNamespacedAsync<T>(item, item.Namespace(), item.Name(), cancellationToken);
+            ? await client.ReplaceAsync<T>(item, item.Name(), cancellationToken).ConfigureAwait(false)
+            : await client.ReplaceNamespacedAsync<T>(item, item.Namespace(), item.Name(), cancellationToken).ConfigureAwait(false);
     }
 
     public async Task DeleteDirectAsync<T>(T item, CancellationToken cancellationToken = default) where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
+        ArgumentNullException.ThrowIfNull(item);
         using var client = Cluster.Client!.GetGenericClient<T>();
         if (string.IsNullOrEmpty(item.Namespace()))
-            await client.DeleteAsync<T>(item.Name(), cancellationToken);
+            await client.DeleteAsync<T>(item.Name(), cancellationToken).ConfigureAwait(false);
         else
-            await client.DeleteNamespacedAsync<T>(item.Namespace(), item.Name(), cancellationToken);
-    }
-
-    public async Task CreateCustomResourceDefinitionAsync(V1CustomResourceDefinition crd, CancellationToken cancellationToken = default)
-    {
-        var client = (k8s.Kubernetes)Cluster.Client!;
-        await client.ApiextensionsV1.CreateCustomResourceDefinitionAsync(crd, cancellationToken: cancellationToken);
+            await client.DeleteNamespacedAsync<T>(item.Namespace(), item.Name(), cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<IClusterRuntime> CreateLimitedAccessClusterAsync(LimitedAccessScenario scenario, CancellationToken cancellationToken = default)
     {
-        await EnsureLimitedAccessResourcesAsync(scenario, cancellationToken);
+        ArgumentNullException.ThrowIfNull(scenario);
+        await EnsureLimitedAccessResourcesAsync(scenario, cancellationToken).ConfigureAwait(false);
 
-        var api = new FakeKubernetesHttpApi
-        {
-            DefaultPermissionAllowed = false,
-            UseRoleBasedAuthorization = true,
-            AuthenticatedUser = $"system:serviceaccount:{LimitedNamespace}:{LimitedServiceAccountName}",
-        };
-        _additionalApis.Add(api);
-        RegisterSupportedResources(api);
-        api.AddYaml(scenario.Yaml);
-        api.Add(new V1Node { Metadata = new V1ObjectMeta { Name = "node-1" } });
+        var api = _api.CreateClient();
+        api.DefaultPermissionAllowed = false;
+        api.UseRoleBasedAuthorization = true;
+        api.AuthenticatedUser = $"system:serviceaccount:{LimitedNamespace}:{LimitedServiceAccountName}";
 
         var name = scenario.FallbackNamespaces is null ? "http-limited" : "http-limited-fallback";
         var limited = CreateCluster(api, name);
@@ -161,10 +130,12 @@ public sealed class FakeClusterScenarioHarness : IClusterScenarioHarness
             _settingsStore.SetClusterNamespaces(limited, [.. scenario.FallbackNamespaces]);
         }
 
-        await limited.Connect().WaitAsync(cancellationToken);
-        await PrimeLimitedPermissionsAsync(limited, cancellationToken);
-        await limited.SeedResource<V1Node>(true).WaitAsync(cancellationToken);
-        await limited.SeedResource<V1Secret>(true).WaitAsync(cancellationToken);
+        await limited.Connect().WaitAsync(cancellationToken).ConfigureAwait(false);
+        if (!limited.Connected)
+        {
+            throw new InvalidOperationException(limited.LastError ?? "The limited fake Kubernetes cluster did not connect.");
+        }
+
         return limited;
     }
 
@@ -176,24 +147,20 @@ public sealed class FakeClusterScenarioHarness : IClusterScenarioHarness
         }
 
         _api.Shutdown();
-        foreach (var api in _additionalApis)
-        {
-            api.Shutdown();
-        }
 
         Task[] disconnectTasks = _connectedClusters
             .Select(cluster => DisconnectAsync(cluster))
             .ToArray();
 
-        await Task.WhenAll(disconnectTasks);
-        await _services.DisposeAsync();
+        await Task.WhenAll(disconnectTasks).ConfigureAwait(false);
+        await _services.DisposeAsync().ConfigureAwait(false);
     }
 
     private static async Task DisconnectAsync(KubeUI.Kubernetes.Cluster cluster)
     {
         try
         {
-            await cluster.Disconnect();
+            await cluster.Disconnect().ConfigureAwait(false);
         }
         catch
         {
@@ -214,53 +181,7 @@ public sealed class FakeClusterScenarioHarness : IClusterScenarioHarness
     private async Task EnsureLimitedAccessResourcesAsync(LimitedAccessScenario scenario, CancellationToken cancellationToken)
     {
         await Cluster.ImportYaml(new MemoryStream(Encoding.UTF8.GetBytes(scenario.Yaml))).WaitAsync(cancellationToken);
-        await Cluster.SeedResource<V1ServiceAccount>(true).WaitAsync(cancellationToken);
     }
-
-    private static async Task PrimeDefaultPermissionsAsync(KubeUI.Kubernetes.Cluster cluster, CancellationToken cancellationToken)
-    {
-        var permissionRequests = new List<Task>();
-        foreach (var type in SupportedPermissionTypes)
-        {
-            foreach (var verb in Enum.GetValues<Verb>())
-            {
-                permissionRequests.Add(cluster.UpdateCanI(type, verb).WaitAsync(cancellationToken));
-            }
-        }
-
-        permissionRequests.Add(cluster.UpdateCanI(typeof(V1Pod), Verb.Get, subresource: "log").WaitAsync(cancellationToken));
-        permissionRequests.Add(cluster.UpdateCanI(typeof(V1Pod), Verb.Create, subresource: "exec").WaitAsync(cancellationToken));
-        permissionRequests.Add(cluster.UpdateCanI(typeof(V1Pod), Verb.Create, subresource: "portforward").WaitAsync(cancellationToken));
-        await Task.WhenAll(permissionRequests).WaitAsync(cancellationToken).ConfigureAwait(false);
-    }
-
-    private static async Task PrimeLimitedPermissionsAsync(KubeUI.Kubernetes.Cluster cluster, CancellationToken cancellationToken)
-    {
-        var permissionRequests = new List<Task>();
-        foreach (var type in SupportedPermissionTypes)
-        {
-            foreach (var verb in Enum.GetValues<Verb>())
-            {
-                permissionRequests.Add(cluster.UpdateCanI(type, verb).WaitAsync(cancellationToken));
-                if (type != typeof(V1Namespace) && type != typeof(V1Node))
-                {
-                    permissionRequests.Add(cluster.UpdateCanI(type, verb, LimitedNamespace).WaitAsync(cancellationToken));
-                }
-            }
-        }
-
-        permissionRequests.Add(cluster.UpdateCanI(typeof(V1Pod), Verb.Get, LimitedNamespace, "log").WaitAsync(cancellationToken));
-        permissionRequests.Add(cluster.UpdateCanI(typeof(V1Pod), Verb.Create, LimitedNamespace, "exec").WaitAsync(cancellationToken));
-        permissionRequests.Add(cluster.UpdateCanI(typeof(V1Pod), Verb.Create, LimitedNamespace, "portforward").WaitAsync(cancellationToken));
-        await Task.WhenAll(permissionRequests).WaitAsync(cancellationToken).ConfigureAwait(false);
-    }
-
-    private static readonly Type[] SupportedPermissionTypes =
-    [
-        typeof(V1Namespace), typeof(V1Node), typeof(V1Secret), typeof(V1Service), typeof(V1EndpointSlice),
-        typeof(V1ConfigMap), typeof(Corev1Event), typeof(V1Pod), typeof(V1Deployment), typeof(V1ServiceAccount),
-        typeof(V1CronJob), typeof(V1Job), typeof(V1CustomResourceDefinition)
-    ];
 
     private static void RegisterSupportedResources(FakeKubernetesHttpApi api)
     {

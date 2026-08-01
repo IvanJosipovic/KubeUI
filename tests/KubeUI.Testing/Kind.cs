@@ -18,7 +18,9 @@ public static class Kind
 
     private static readonly SemaphoreSlim ProcessLock = new(1, 1);
 
-    public static string FileName { get; } = "kind";
+    public static string FileName { get; } = "kind" + (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? ".exe" : "");
+
+    private static string Executable => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? FileName : $"./{FileName}";
 
     public static async Task DownloadClient(CancellationToken cancellationToken = default)
     {
@@ -27,15 +29,21 @@ public static class Kind
         {
             using var client = new HttpClient();
             var arch = RuntimeInformation.ProcessArchitecture == Architecture.Arm64 ? "arm64" : "amd64";
+            var os = RuntimeInformation.IsOSPlatform(OSPlatform.OSX)
+                ? "darwin"
+                : RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "windows" : "linux";
 
             if (!File.Exists(FileName))
             {
-                await DownloadBinaryAsync(client, "linux", arch, FileName, cancellationToken).ConfigureAwait(false);
+                await DownloadBinaryAsync(client, os, arch, FileName, cancellationToken).ConfigureAwait(false);
             }
 
-            await Cli.Wrap("chmod")
-                .WithArguments(["+x", $"./{FileName}"])
-                .ExecuteAsync(cancellationToken).ConfigureAwait(false);
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                await Cli.Wrap("chmod")
+                    .WithArguments(["+x", $"./{FileName}"])
+                    .ExecuteAsync(cancellationToken).ConfigureAwait(false);
+            }
         }
         finally
         {
@@ -113,11 +121,6 @@ public static class Kind
         return kubeConfig;
     }
 
-    public static async Task<k8s.Kubernetes> GetKubernetesClient(string name, CancellationToken cancellationToken = default)
-    {
-        return new k8s.Kubernetes(KubernetesClientConfiguration.BuildConfigFromConfigObject(await GetK8SConfiguration(name, cancellationToken).ConfigureAwait(false)));
-    }
-
     private static void ThrowIfKindError(StringBuilder stdErrBuffer)
     {
         var stdErr = stdErrBuffer.ToString();
@@ -130,12 +133,12 @@ public static class Kind
 
     private static async Task DownloadBinaryAsync(HttpClient client, string os, string arch, string fileName, CancellationToken cancellationToken)
     {
-        var url = $"https://kind.sigs.k8s.io/dl/{Version}/kind-{os}-{arch}";
+        var url = new Uri($"https://kind.sigs.k8s.io/dl/{Version}/kind-{os}-{arch}");
         var bytes = await client.GetByteArrayAsync(url, cancellationToken).ConfigureAwait(false);
         await File.WriteAllBytesAsync(fileName, bytes, cancellationToken).ConfigureAwait(false);
     }
 
-    private static IReadOnlyList<string> BuildCreateArguments(string name, string image, string? config, string kubeConfigPath)
+    private static List<string> BuildCreateArguments(string name, string image, string? config, string kubeConfigPath)
     {
         var arguments = new List<string>
         {
@@ -147,6 +150,8 @@ public static class Kind
             image,
             "--kubeconfig",
             kubeConfigPath,
+            "--wait",
+            "2m"
         };
 
         if (!string.IsNullOrWhiteSpace(config))
@@ -164,7 +169,7 @@ public static class Kind
         StringBuilder? standardError = null,
         CancellationToken cancellationToken = default)
     {
-        var command = Cli.Wrap($"./{FileName}").WithArguments(arguments);
+        var command = Cli.Wrap(Executable).WithArguments(arguments);
         if (standardOutput is not null)
         {
             command = command.WithStandardOutputPipe(PipeTarget.ToStringBuilder(standardOutput));
