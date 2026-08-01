@@ -15,13 +15,12 @@ public sealed class ResourceEventsViewTests
     [AvaloniaFact]
     public async Task pre_attach_refresh_does_not_throw_when_dispatcher_flushes()
     {
-        await using var harness = new FakeClusterScenarioHarness();
-        await harness.InitializeAsync(TestContext.Current.CancellationToken);
-        using var workspace = ActivatorUtilities.CreateInstance<ClusterWorkspace>((Application.Current as TestApp)?.Services!, harness.Cluster);
+        var services = (Application.Current as TestApp)?.Services ?? throw new InvalidOperationException("Test services are not initialized.");
+        await using var scope = await KubernetesTestWorkspaceScope.CreateAsync(services);
+        var workspace = scope.Workspace;
         await workspace.Connect();
-        _ = (Application.Current as TestApp)?.Services ?? throw new InvalidOperationException("Test services are not initialized.");
 
-        var view = new ResourceEventsView();
+        var view = ActivatorUtilities.CreateInstance<ResourceEventsView>(services);
         view.Initialize(workspace);
         view.DataContext = new V1Pod
         {
@@ -50,13 +49,12 @@ public sealed class ResourceEventsViewTests
     [AvaloniaFact]
     public async Task detached_resource_events_view_does_not_throw_when_data_context_changes()
     {
-        await using var harness = new FakeClusterScenarioHarness();
-        await harness.InitializeAsync(TestContext.Current.CancellationToken);
-        using var workspace = ActivatorUtilities.CreateInstance<ClusterWorkspace>((Application.Current as TestApp)?.Services!, harness.Cluster);
+        var services = (Application.Current as TestApp)?.Services ?? throw new InvalidOperationException("Test services are not initialized.");
+        await using var scope = await KubernetesTestWorkspaceScope.CreateAsync(services);
+        var workspace = scope.Workspace;
         await workspace.Connect();
-        _ = (Application.Current as TestApp)?.Services ?? throw new InvalidOperationException("Test services are not initialized.");
 
-        var view = new ResourceEventsView();
+        var view = ActivatorUtilities.CreateInstance<ResourceEventsView>(services);
         view.Initialize(workspace);
 
         var window = new Window
@@ -94,13 +92,12 @@ public sealed class ResourceEventsViewTests
     [AvaloniaFact]
     public async Task refresh_keeps_a_stable_items_source_instance()
     {
-        await using var harness = new FakeClusterScenarioHarness();
-        await harness.InitializeAsync(TestContext.Current.CancellationToken);
-        using var workspace = ActivatorUtilities.CreateInstance<ClusterWorkspace>((Application.Current as TestApp)?.Services!, harness.Cluster);
+        var services = (Application.Current as TestApp)?.Services ?? throw new InvalidOperationException("Test services are not initialized.");
+        await using var scope = await KubernetesTestWorkspaceScope.CreateAsync(services);
+        var workspace = scope.Workspace;
         await workspace.Connect();
-        _ = (Application.Current as TestApp)?.Services ?? throw new InvalidOperationException("Test services are not initialized.");
 
-        var view = new ResourceEventsView();
+        var view = ActivatorUtilities.CreateInstance<ResourceEventsView>(services);
         view.Initialize(workspace);
 
         var window = new Window
@@ -137,13 +134,12 @@ public sealed class ResourceEventsViewTests
     [AvaloniaFact]
     public async Task queued_update_during_teardown_does_not_throw()
     {
-        await using var harness = new FakeClusterScenarioHarness();
-        await harness.InitializeAsync(TestContext.Current.CancellationToken);
-        using var workspace = ActivatorUtilities.CreateInstance<ClusterWorkspace>((Application.Current as TestApp)?.Services!, harness.Cluster);
+        var services = (Application.Current as TestApp)?.Services ?? throw new InvalidOperationException("Test services are not initialized.");
+        await using var scope = await KubernetesTestWorkspaceScope.CreateAsync(services);
+        var workspace = scope.Workspace;
         await workspace.Connect();
-        _ = (Application.Current as TestApp)?.Services ?? throw new InvalidOperationException("Test services are not initialized.");
 
-        var view = new ResourceEventsView();
+        var view = ActivatorUtilities.CreateInstance<ResourceEventsView>(services);
         view.Initialize(workspace);
         view.DataContext = new V1Pod
         {

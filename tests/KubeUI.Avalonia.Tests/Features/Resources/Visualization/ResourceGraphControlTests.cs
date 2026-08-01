@@ -7,6 +7,7 @@ using System.Diagnostics;
 using k8s;
 using KubeUI.Avalonia.Features.Resources.Visualization;
 using KubeUI.Avalonia.Tests.Infra;
+using KubeUI.Avalonia.Resources;
 using KubeUI.Kubernetes.Resources.Relationships;
 using Shouldly;
 using k8s.Models;
@@ -58,6 +59,16 @@ public sealed class ResourceGraphControlTests
 
             await WaitForNextPollAsync();
         }
+    }
+
+    private static async Task ConnectAndWaitForResourceConfigsAsync(ClusterWorkspace cluster, params Type[] resourceTypes)
+    {
+        await cluster.Connect();
+        await WaitForAsync(() => resourceTypes.All(resourceType =>
+        {
+            IResourceConfig resourceConfig = cluster.GetResourceConfig(resourceType);
+            return resourceConfig.PermissionsLoaded && resourceConfig.CanListAndWatch;
+        }));
     }
 
     [AvaloniaTheory, KubernetesBackendData]
@@ -156,6 +167,7 @@ public sealed class ResourceGraphControlTests
 
         await using var clusterScope = await KubernetesTestWorkspaceScope.CreateAsync((Application.Current as TestApp)?.Services!, backend);
         var cluster = clusterScope.Workspace;
+        await ConnectAndWaitForResourceConfigsAsync(cluster, typeof(V1Secret));
         V1Namespace namespaceResource = new() { Metadata = new() { Name = "platform-dev-ijosipov" } };
         await clusterScope.ScenarioHarness.CreateDirectAsync(namespaceResource, TestContext.Current.CancellationToken);
 
@@ -190,6 +202,7 @@ public sealed class ResourceGraphControlTests
 
         await using var clusterScope = await KubernetesTestWorkspaceScope.CreateAsync((Application.Current as TestApp)?.Services!, backend);
         var cluster = clusterScope.Workspace;
+        await ConnectAndWaitForResourceConfigsAsync(cluster, typeof(V1Secret));
         V1Namespace namespaceResource = new() { Metadata = new() { Name = "platform-dev-ijosipov" } };
         await clusterScope.ScenarioHarness.CreateDirectAsync(namespaceResource, TestContext.Current.CancellationToken);
 
@@ -573,6 +586,7 @@ public sealed class ResourceGraphControlTests
     {
         await using var clusterScope = await KubernetesTestWorkspaceScope.CreateAsync((Application.Current as TestApp)?.Services!, backend);
         var cluster = clusterScope.Workspace;
+        await ConnectAndWaitForResourceConfigsAsync(cluster, typeof(V1Deployment), typeof(V1Pod));
         cluster.SelectedNamespaces.Add(new V1Namespace { Metadata = new() { Name = "default" } });
         using VisualizationViewModel viewModel = new(new OwnerRelationshipBuilder());
         await cluster.Runtime.SeedResource<V1Deployment>(true);
@@ -907,6 +921,7 @@ public sealed class ResourceGraphControlTests
     {
         await using var clusterScope = await KubernetesTestWorkspaceScope.CreateAsync((Application.Current as TestApp)?.Services!, backend);
         var cluster = clusterScope.Workspace;
+        await ConnectAndWaitForResourceConfigsAsync(cluster, typeof(V1Pod));
         V1Pod selected = CreatePod("selected");
         V1Pod unrelated = new()
         {
@@ -960,6 +975,13 @@ public sealed class ResourceGraphControlTests
     {
         await using var clusterScope = await KubernetesTestWorkspaceScope.CreateAsync((Application.Current as TestApp)?.Services!, backend);
         var cluster = clusterScope.Workspace;
+        await cluster.Connect();
+        await WaitForAsync(() =>
+        {
+            IResourceConfig deploymentConfig = cluster.GetResourceConfig<V1Deployment>();
+            return deploymentConfig.PermissionsLoaded && deploymentConfig.CanListAndWatch;
+        });
+
         var builder = new BuildCaptureRelationshipBuilder();
         using VisualizationViewModel viewModel = new(builder);
         cluster.SelectedNamespaces.Add(new V1Namespace { Metadata = new() { Name = "default" } });
@@ -1055,6 +1077,7 @@ public sealed class ResourceGraphControlTests
     {
         await using var clusterScope = await KubernetesTestWorkspaceScope.CreateAsync((Application.Current as TestApp)?.Services!, backend);
         var cluster = clusterScope.Workspace;
+        await ConnectAndWaitForResourceConfigsAsync(cluster, typeof(V1Pod));
         cluster.SelectedNamespaces.Add(new V1Namespace { Metadata = new() { Name = "default" } });
         var builder = new BuildCaptureRelationshipBuilder();
         using VisualizationViewModel viewModel = new(builder);
@@ -1099,17 +1122,25 @@ public sealed class ResourceGraphControlTests
         ResourceIdentity sourceIdentity = GetIdentity(source);
         ResourceIdentity missingIdentity = new(V1Pod.KubeApiVersion, V1Pod.KubeKind, "default", "missing", "missing");
 
-        using ResourceGraphControl control = new()
+        ResourceGraphControl control = new()
         {
             Graph = new ResourceRelationshipGraph(
                 [source],
                 [new ResourceRelationship(sourceIdentity, missingIdentity, ResourceRelationshipKind.Reference)]),
         };
 
-        await WaitForAsync(() => control.Area.LogicCore?.Graph?.VertexCount == 1);
+        try
+        {
+            await WaitForAsync(() => control.Area.LogicCore?.Graph?.VertexCount == 1);
 
-        control.Area.LogicCore!.Graph.VertexCount.ShouldBe(1);
-        control.Area.LogicCore.Graph.EdgeCount.ShouldBe(0);
+            control.Area.LogicCore!.Graph.VertexCount.ShouldBe(1);
+            control.Area.LogicCore.Graph.EdgeCount.ShouldBe(0);
+        }
+        finally
+        {
+            Dispatcher.UIThread.Post(control.Dispose);
+            Dispatcher.UIThread.RunJobs();
+        }
     }
 
     [AvaloniaFact]

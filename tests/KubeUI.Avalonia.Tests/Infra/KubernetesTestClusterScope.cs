@@ -14,7 +14,7 @@ internal sealed class KubernetesScenarioClusterScope : IAsyncDisposable
 
     public IClusterRuntime Cluster => _harness.Cluster;
 
-    public FakeClusterScenarioHarness Harness => (FakeClusterScenarioHarness)_harness;
+    public FakeClusterScenarioHarness FakeHarness => (FakeClusterScenarioHarness)_harness;
 
     public IClusterScenarioHarness ScenarioHarness => _harness;
 

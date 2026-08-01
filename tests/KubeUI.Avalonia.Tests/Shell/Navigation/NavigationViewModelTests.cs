@@ -539,7 +539,7 @@ public class NavigationViewModelTests : IDisposable
     public async Task selecting_cluster_node_with_namespace_fallback_does_not_open_settings_or_prompt()
     {
         await using var runtimeScope = await KubernetesScenarioClusterScope.CreateAsync();
-        var runtime = await runtimeScope.Harness.CreateLimitedAccessClusterAsync(
+        var runtime = await runtimeScope.ScenarioHarness.CreateLimitedAccessClusterAsync(
             SharedScenarioData.LimitedAccessWithNamespaceFallback,
             cancellationToken: TestContext.Current.CancellationToken);
 
@@ -573,7 +573,7 @@ public class NavigationViewModelTests : IDisposable
     public async Task selecting_cluster_node_with_namespace_fallback_shows_namespaced_resources_in_navigation()
     {
         await using var runtimeScope = await KubernetesScenarioClusterScope.CreateAsync();
-        var runtime = await runtimeScope.Harness.CreateLimitedAccessClusterAsync(
+        var runtime = await runtimeScope.ScenarioHarness.CreateLimitedAccessClusterAsync(
             SharedScenarioData.LimitedAccessWithNamespaceFallback,
             cancellationToken: TestContext.Current.CancellationToken);
         var workspace = CreateWorkspace(runtime);
@@ -651,7 +651,7 @@ public class NavigationViewModelTests : IDisposable
     public async Task selecting_cluster_node_with_settings_only_namespace_fallback_shows_namespaced_resources_in_navigation()
     {
         await using var runtimeScope = await KubernetesScenarioClusterScope.CreateAsync();
-        var runtime = await runtimeScope.Harness.CreateLimitedAccessClusterAsync(
+        var runtime = await runtimeScope.ScenarioHarness.CreateLimitedAccessClusterAsync(
             SharedScenarioData.LimitedAccessWithNamespacePermissions,
             cancellationToken: TestContext.Current.CancellationToken);
         var workspace = CreateWorkspace(runtime);
@@ -731,7 +731,7 @@ public class NavigationViewModelTests : IDisposable
     public async Task selecting_pods_in_limited_access_cluster_opens_populated_resource_list()
     {
         await using var runtimeScope = await KubernetesScenarioClusterScope.CreateAsync();
-        var runtime = await runtimeScope.Harness.CreateLimitedAccessClusterAsync(
+        var runtime = await runtimeScope.ScenarioHarness.CreateLimitedAccessClusterAsync(
             SharedScenarioData.LimitedAccessWithNamespacePermissions,
             cancellationToken: TestContext.Current.CancellationToken);
         var workspace = CreateWorkspace(runtime);
@@ -1155,7 +1155,7 @@ public class NavigationViewModelTests : IDisposable
     {
         await using var runtimeScope = await KubernetesScenarioClusterScope.CreateAsync();
         var runtime = runtimeScope.Cluster;
-        var harness = runtimeScope.Harness;
+        var harness = runtimeScope.FakeHarness;
         var authorizationRequestsBeforeNavigation = harness.AuthorizationRequestCount;
 
         var workspace = CreateWorkspace(runtime);
@@ -1873,7 +1873,7 @@ public class NavigationViewModelTests : IDisposable
             harness.SetPermission<Corev1Event>(Verb.Create, true, "default");
         });
         var runtime = runtimeScope.Cluster;
-        var harness = runtimeScope.Harness;
+        var harness = runtimeScope.FakeHarness;
 
         await runtime.SeedResource<Corev1Event>();
         runtime.Objects[GroupApiVersionKind.From<Corev1Event>()].ShouldBeOfType<ContainerClass<Corev1Event>>()

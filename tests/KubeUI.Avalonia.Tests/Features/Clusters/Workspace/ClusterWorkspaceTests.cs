@@ -464,7 +464,7 @@ public class ClusterWorkspaceTests : IDisposable
         resourceType.ShouldNotBeNull();
 
         await WaitForAsync(() => GetCustomResourceConfig(workspace, crd) != null);
-        scope.Harness.AuthorizationRequestCount.ShouldBeGreaterThan(0);
+        scope.FakeHarness.AuthorizationRequestCount.ShouldBeGreaterThan(0);
     }
 
     private ClusterWorkspace CreateWorkspace(IClusterRuntime runtime)

@@ -14,7 +14,7 @@ internal sealed class KubernetesTestWorkspaceScope : IDisposable, IAsyncDisposab
 
     public ClusterWorkspace Workspace { get; }
 
-    public FakeClusterScenarioHarness Harness => (FakeClusterScenarioHarness)_harness;
+    public FakeClusterScenarioHarness FakeHarness => (FakeClusterScenarioHarness)_harness;
 
     public IClusterScenarioHarness ScenarioHarness => _harness;
 
@@ -31,6 +31,17 @@ internal sealed class KubernetesTestWorkspaceScope : IDisposable, IAsyncDisposab
         IClusterScenarioHarness harness = await KubernetesScenarioHarnessFactory.CreateAsync(
             backend,
             TestContext.Current.CancellationToken);
+        var workspace = ActivatorUtilities.CreateInstance<ClusterWorkspace>(services, harness.Cluster);
+        return new KubernetesTestWorkspaceScope(harness, workspace);
+    }
+
+    public static async Task<KubernetesTestWorkspaceScope> CreateAsync(
+        IServiceProvider services,
+        Action<FakeClusterScenarioHarness> configure)
+    {
+        var harness = new FakeClusterScenarioHarness();
+        configure(harness);
+        await harness.InitializeAsync(TestContext.Current.CancellationToken);
         var workspace = ActivatorUtilities.CreateInstance<ClusterWorkspace>(services, harness.Cluster);
         return new KubernetesTestWorkspaceScope(harness, workspace);
     }

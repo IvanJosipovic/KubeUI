@@ -12,12 +12,13 @@ public sealed class PodDebugContainerTests
     [Trait("Category", "Kind")]
     public async Task adding_debug_container_uses_cluster_image_and_target_container(KubernetesBackend backend)
     {
-        await using var harness = await KubernetesScenarioHarnessFactory.CreateAsync(
-            backend,
-            TestContext.Current.CancellationToken);
-        await harness.Cluster.SeedResource<V1Pod>(true);
-        using var workspace = ActivatorUtilities.CreateInstance<ClusterWorkspace>((Application.Current as TestApp)?.Services!, harness.Cluster);
-        var settings = (Application.Current as TestApp)?.Services!.GetRequiredService<ISettingsService>();
+        var services = (Application.Current as TestApp)?.Services ?? throw new InvalidOperationException("Test services are not initialized.");
+        await using var scope = await KubernetesTestWorkspaceScope.CreateAsync(services, backend);
+        var runtime = scope.ScenarioHarness.Cluster;
+        var workspace = scope.Workspace;
+        await workspace.Connect();
+        await runtime.SeedResource<V1Pod>(true);
+        var settings = services.GetRequiredService<ISettingsService>();
         settings.Settings.GetClusterSettings(workspace.Runtime).DebugContainerImage = "example.com/debug:1";
 
         V1Pod pod = new()
@@ -42,18 +43,18 @@ public sealed class PodDebugContainerTests
 
         await workspace.Runtime.AddOrUpdateResource(pod);
         await TestWait.UntilAsync(
-            () => harness.Cluster.GetResource<V1Pod>("default", "pod-1") is not null,
+            () => runtime.GetResource<V1Pod>("default", "pod-1") is not null,
             TimeSpan.FromSeconds(5),
             cancellationToken: TestContext.Current.CancellationToken);
-    V1Pod currentPod = harness.Cluster.GetResource<V1Pod>("default", "pod-1").ShouldNotBeNull();
-    await workspace.Runtime.AddPodEphemeralDebugContainer(currentPod, "app", settings.Settings.GetClusterSettings(workspace.Runtime).DebugContainerImage);
+        V1Pod currentPod = runtime.GetResource<V1Pod>("default", "pod-1").ShouldNotBeNull();
+        await workspace.Runtime.AddPodEphemeralDebugContainer(currentPod, "app", settings.Settings.GetClusterSettings(workspace.Runtime).DebugContainerImage);
 
         await TestWait.UntilAsync(
-            () => harness.Cluster.GetResource<V1Pod>("default", "pod-1")?.Spec?.EphemeralContainers?.Count == 1,
+            () => runtime.GetResource<V1Pod>("default", "pod-1")?.Spec?.EphemeralContainers?.Count == 1,
             TimeSpan.FromSeconds(5),
             cancellationToken: TestContext.Current.CancellationToken);
 
-        V1Pod updated = harness.Cluster.GetResource<V1Pod>("default", "pod-1").ShouldNotBeNull();
+        V1Pod updated = runtime.GetResource<V1Pod>("default", "pod-1").ShouldNotBeNull();
         updated.Spec.EphemeralContainers.ShouldNotBeNull();
         updated.Spec.EphemeralContainers.Count.ShouldBe(1);
         updated.Spec.EphemeralContainers[0].Image.ShouldBe("example.com/debug:1");

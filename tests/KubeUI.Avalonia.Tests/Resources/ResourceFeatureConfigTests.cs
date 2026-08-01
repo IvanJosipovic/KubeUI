@@ -281,9 +281,11 @@ public sealed class ResourceFeatureConfigTests
     [AvaloniaFact]
     public async Task cronjob_start_context_menu_creates_job_resource()
     {
-        await using var harness = new FakeClusterScenarioHarness();
-        await harness.InitializeAsync(TestContext.Current.CancellationToken);
-        var runtime = harness.Cluster;
+        var services = (Application.Current as TestApp)?.Services ?? throw new InvalidOperationException("Test services are not initialized.");
+        await using var scope = await KubernetesTestWorkspaceScope.CreateAsync(services);
+        var runtime = scope.ScenarioHarness.Cluster;
+        var workspace = scope.Workspace;
+        await workspace.Connect();
         await runtime.SeedResource<V1Namespace>(true);
         await runtime.SeedResource<V1CronJob>(true);
         await runtime.SeedResource<V1Job>(true);
@@ -292,8 +294,6 @@ public sealed class ResourceFeatureConfigTests
             Metadata = new() { Name = "volsync" },
         });
 
-        using var workspace = ActivatorUtilities.CreateInstance<ClusterWorkspace>((Application.Current as TestApp)?.Services!, runtime);
-        await workspace.Connect();
         await ((Cluster)runtime).UpdateCanI<V1Job>(Verb.Create, "volsync");
         var config = (V1CronJobConfig)workspace.GetResourceConfig<V1CronJob>();
         V1CronJob cronJob = CreateCronJob("volsync", "immich-rclone-backup");
@@ -321,11 +321,15 @@ public sealed class ResourceFeatureConfigTests
     [AvaloniaFact]
     public async Task cronjob_start_context_menu_requires_job_create_permission()
     {
-        await using var harness = new FakeClusterScenarioHarness();
-        harness.SetPermission<V1Job>(Verb.Create, false);
-        harness.SetPermission<V1Job>(Verb.Create, false, "volsync");
-        await harness.InitializeAsync(TestContext.Current.CancellationToken);
-        var runtime = harness.Cluster;
+        var services = (Application.Current as TestApp)?.Services ?? throw new InvalidOperationException("Test services are not initialized.");
+        await using var scope = await KubernetesTestWorkspaceScope.CreateAsync(services, harness =>
+        {
+            harness.SetPermission<V1Job>(Verb.Create, false);
+            harness.SetPermission<V1Job>(Verb.Create, false, "volsync");
+        });
+        var runtime = scope.ScenarioHarness.Cluster;
+        var workspace = scope.Workspace;
+        await workspace.Connect();
         await runtime.SeedResource<V1Namespace>(true);
         await runtime.SeedResource<V1CronJob>(true);
         await runtime.SeedResource<V1Job>(true);
@@ -334,8 +338,6 @@ public sealed class ResourceFeatureConfigTests
             Metadata = new() { Name = "volsync" },
         });
 
-        using var workspace = ActivatorUtilities.CreateInstance<ClusterWorkspace>((Application.Current as TestApp)?.Services!, runtime);
-        await workspace.Connect();
         await ((Cluster)runtime).UpdateCanI<V1Job>(Verb.Create);
         await ((Cluster)runtime).UpdateCanI<V1Job>(Verb.Create, "volsync");
         var config = (V1CronJobConfig)workspace.GetResourceConfig<V1CronJob>();
@@ -351,11 +353,15 @@ public sealed class ResourceFeatureConfigTests
     [AvaloniaFact]
     public async Task cronjob_start_context_menu_allows_namespace_scoped_job_create_permission()
     {
-        await using var harness = new FakeClusterScenarioHarness();
-        harness.SetPermission<V1Job>(Verb.Create, false);
-        harness.SetPermission<V1Job>(Verb.Create, true, "volsync");
-        await harness.InitializeAsync(TestContext.Current.CancellationToken);
-        var runtime = harness.Cluster;
+        var services = (Application.Current as TestApp)?.Services ?? throw new InvalidOperationException("Test services are not initialized.");
+        await using var scope = await KubernetesTestWorkspaceScope.CreateAsync(services, harness =>
+        {
+            harness.SetPermission<V1Job>(Verb.Create, false);
+            harness.SetPermission<V1Job>(Verb.Create, true, "volsync");
+        });
+        var runtime = scope.ScenarioHarness.Cluster;
+        var workspace = scope.Workspace;
+        await workspace.Connect();
         await ((Cluster)runtime).UpdateCanI<V1Job>(Verb.Create);
         await ((Cluster)runtime).UpdateCanI<V1Job>(Verb.Create, "volsync");
         await runtime.SeedResource<V1Namespace>(true);
@@ -366,8 +372,6 @@ public sealed class ResourceFeatureConfigTests
             Metadata = new() { Name = "volsync" },
         });
 
-        using var workspace = ActivatorUtilities.CreateInstance<ClusterWorkspace>((Application.Current as TestApp)?.Services!, runtime);
-        await workspace.Connect();
         await ((Cluster)runtime).UpdateCanI<V1Job>(Verb.Create);
         await ((Cluster)runtime).UpdateCanI<V1Job>(Verb.Create, "volsync");
         var config = (V1CronJobConfig)workspace.GetResourceConfig<V1CronJob>();
