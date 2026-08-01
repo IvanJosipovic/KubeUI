@@ -73,8 +73,8 @@ public partial class App : Application, IServiceProviderHost
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             var mainWindow = Services.GetRequiredService<MainWindow>();
+                desktop.MainWindow = mainWindow;
             mainWindow.DataContext = Services.GetRequiredService<MainViewModel>();
-            desktop.MainWindow = mainWindow;
             TopLevel = desktop.MainWindow;
             desktop.ShutdownRequested += (_, _) => GracefulShutdown();
         }
