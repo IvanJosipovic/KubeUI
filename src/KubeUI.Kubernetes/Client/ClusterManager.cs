@@ -113,13 +113,7 @@ public sealed partial class ClusterManager : ObservableObject, IClusterRuntimeCa
 
                     cluster.Name = item.Name;
                     cluster.KubeConfigPath = config.FileName;
-                    _dispatcher.Invoke(() =>
-                    {
-                        if (!ClusterExists(cluster.Name, cluster.KubeConfigPath))
-                        {
-                            Clusters.Add(cluster);
-                        }
-                    });
+                    AddCluster(cluster);
                 }
 
                 return;
@@ -144,14 +138,21 @@ public sealed partial class ClusterManager : ObservableObject, IClusterRuntimeCa
             cluster.Name = item.Name;
             cluster.KubeConfig = kubeConfig;
             cluster.KubeConfigPath = kubeConfig.FileName;
-            _dispatcher.Invoke(() =>
-            {
-                if (!ClusterExists(cluster.Name, cluster.KubeConfigPath))
-                {
-                    Clusters.Add(cluster);
-                }
-            });
+            AddCluster(cluster);
         }
+    }
+
+    public void AddCluster(IClusterRuntime cluster)
+    {
+        ArgumentNullException.ThrowIfNull(cluster);
+
+        _dispatcher.Invoke(() =>
+        {
+            if (!ClusterExists(cluster.Name, cluster.KubeConfigPath))
+            {
+                Clusters.Add(cluster);
+            }
+        });
     }
 
     public void ImportIntoKubeConfig(K8SConfiguration kubeConfig)
@@ -216,8 +217,11 @@ public sealed partial class ClusterManager : ObservableObject, IClusterRuntimeCa
 
     public void RemoveCluster(IClusterRuntime cluster)
     {
+        ArgumentNullException.ThrowIfNull(cluster);
+
         if (string.IsNullOrEmpty(cluster.KubeConfigPath) || !File.Exists(cluster.KubeConfigPath))
         {
+            _dispatcher.Invoke(() => Clusters.Remove(cluster));
             return;
         }
 

@@ -8,9 +8,8 @@ public sealed class ClusterRuntimeTests : ClusterRuntimeAssertions
     [Fact]
     public async Task DisconnectStopsAllResourceInformerTasks()
     {
-        await using var harness = new FakeClusterScenarioHarness();
-        await harness.InitializeAsync(TestContext.Current.CancellationToken);
-        var cluster = (KubeUI.Kubernetes.Cluster)harness.Cluster;
+        await using var clusterScope = await new TestClusterGenerator().CreateAsync(new TestClusterConfig(), TestContext.Current.CancellationToken);
+        var cluster = clusterScope.Cluster;
 
         await cluster.SeedResource<k8s.Models.V1Pod>(waitForReady: true);
         await cluster.Disconnect();
@@ -18,8 +17,57 @@ public sealed class ClusterRuntimeTests : ClusterRuntimeAssertions
         cluster.ActiveResourceInformerTaskCount.ShouldBe(0);
     }
 
-    protected override async Task<IClusterScenarioHarness> CreateHarnessAsync(KubernetesBackend backend)
-        => await KubernetesScenarioHarnessFactory.CreateAsync(backend, TestContext.Current.CancellationToken);
+    [Fact]
+    public async Task ScenarioSeedsTypedInitialResources()
+    {
+        await using var clusterScope = await new TestClusterGenerator().CreateAsync(
+            new TestClusterConfig
+            {
+                Resources =
+                [
+                    new k8s.Models.V1Namespace
+                    {
+                        Metadata = new k8s.Models.V1ObjectMeta { Name = "scenario" },
+                    },
+                ],
+            });
+
+        using var client = clusterScope.Cluster.Client!.GetGenericClient<k8s.Models.V1Namespace>();
+        var seeded = await client.ReadAsync<k8s.Models.V1Namespace>(
+            "scenario",
+            TestContext.Current.CancellationToken);
+
+        seeded.Metadata.Name.ShouldBe("scenario");
+    }
+
+    [Fact]
+    public async Task ScenarioPermissionsControlProductionAuthorization()
+    {
+        await using var clusterScope = await new TestClusterGenerator().CreateAsync(
+            new TestClusterConfig
+            {
+                AuthenticatedUser = KubernetesRbac.ServiceAccountUser,
+                InitialResources = KubernetesRbac.ClusterWide(
+                    new RbacRule("namespaces", "list"),
+                    new RbacRule("namespaces", "watch"),
+                    new RbacRule("pods", "list"),
+                    new RbacRule("pods", "watch")),
+            });
+        var cluster = clusterScope.Cluster;
+
+        await cluster.UpdateCanI<k8s.Models.V1Pod>(Verb.List);
+        await cluster.UpdateCanI<k8s.Models.V1Pod>(Verb.Watch);
+        await cluster.UpdateCanI<k8s.Models.V1Service>(Verb.List);
+
+        cluster.Permissions.CanIAnyNamespace<k8s.Models.V1Pod>(Verb.List).ShouldBeTrue();
+        cluster.Permissions.CanIAnyNamespace<k8s.Models.V1Pod>(Verb.Watch).ShouldBeTrue();
+        cluster.Permissions.CanIAnyNamespace<k8s.Models.V1Service>(Verb.List).ShouldBeFalse();
+    }
+
+    protected override Task<TestCluster> CreateHarnessAsync(KubernetesBackend backend)
+        => new TestClusterGenerator().CreateAsync(
+            new TestClusterConfig { Type = backend },
+            TestContext.Current.CancellationToken);
 
     [Theory, KubernetesBackendData]
     public Task InitializationExposesConnectedCluster(KubernetesBackend backend) => InitializationExposesConnectedClusterCore(backend);

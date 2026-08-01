@@ -1,3 +1,4 @@
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Notifications;
 using Avalonia.Platform.Storage;
@@ -5,9 +6,18 @@ using Dock.Model.Core;
 using FluentAvalonia.UI.Controls;
 using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
+using KubeUI.Avalonia.Features.Clusters.Workspace;
+using KubeUI.Avalonia.Infrastructure.DependencyInjection;
+using KubeUI.Avalonia.Infrastructure.Docking;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Infrastructure.Platform;
+using KubeUI.Avalonia.Services.Settings;
+using KubeUI.Kubernetes;
+using KubeUI.Testing.Kubernetes.Infrastructure;
+using KubeUI.Kubernetes;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Moq;
 
@@ -58,6 +68,7 @@ public class TestApp : Application, IServiceProviderHost, IDisposable
     {
         var services = new ServiceCollection();
         services.AddLogging();
+        services.AddSingleton<IHostApplicationLifetime, KubernetesTestHostApplicationLifetime>();
         string kubeConfigPath = Path.Combine(Path.GetTempPath(), $"kubeui-avalonia-{Guid.NewGuid():N}.config");
 
         ContentDialogSettings = null;
@@ -82,6 +93,7 @@ public class TestApp : Application, IServiceProviderHost, IDisposable
 
         services.AddKubeUIAppServices(overrides =>
         {
+            overrides.AddKubernetesTestRuntime();
             overrides.Replace(ServiceDescriptor.Singleton<ISettingsService, TestSettingsService>());
             overrides.Replace(ServiceDescriptor.Singleton<ISettingsPersistence, TestSettingsPersistence>());
             overrides.Replace(ServiceDescriptor.Singleton<IPlatformServices, TestPlatformServices>());
@@ -89,7 +101,11 @@ public class TestApp : Application, IServiceProviderHost, IDisposable
             overrides.RemoveAll<IClusterSettingsStore>();
             overrides.AddSingleton<IClusterSettingsStore>(sp => sp.GetRequiredService<ISettingsService>().Clusters);
             overrides.RemoveAll<ClusterWorkspaceCatalog>();
-            overrides.AddTransient<ClusterWorkspaceCatalog>();
+            overrides.AddSingleton<ClusterWorkspaceCatalog>(sp =>
+            {
+                _ = sp.GetRequiredService<IClusterRuntime>();
+                return ActivatorUtilities.CreateInstance<ClusterWorkspaceCatalog>(sp);
+            });
             overrides.Replace(ServiceDescriptor.Singleton<IDialogService>(dialog.Object));
             overrides.Replace(ServiceDescriptor.Singleton<INotificationManager>(notifications.Object));
             overrides.Replace(ServiceDescriptor.Singleton<IFactory>(sp => new DockFactory(sp, sp.GetRequiredService<ILogger<DockFactory>>())));
@@ -162,4 +178,38 @@ public class TestApp : Application, IServiceProviderHost, IDisposable
         public override DateTimeOffset GetUtcNow() => _utcNow;
     }
 
+}
+
+internal static class TestAppClusterRuntimeExtensions
+{
+    public static Task<T> CreateAsync<T>(this IClusterRuntime runtime, T item, CancellationToken cancellationToken = default)
+        where T : class, k8s.IKubernetesObject<k8s.Models.V1ObjectMeta>, new()
+    {
+        using var client = runtime.Client!.GetGenericClient<T>();
+        return string.IsNullOrEmpty(item.Metadata?.NamespaceProperty)
+            ? client.CreateAsync(item, cancellationToken)
+            : client.CreateNamespacedAsync(item, item.Metadata!.NamespaceProperty, cancellationToken);
+    }
+
+    public static async Task<T> ReplaceAsync<T>(this IClusterRuntime runtime, T item, CancellationToken cancellationToken = default)
+        where T : class, k8s.IKubernetesObject<k8s.Models.V1ObjectMeta>, new()
+    {
+        using var client = runtime.Client!.GetGenericClient<T>();
+        T current = string.IsNullOrEmpty(item.Metadata?.NamespaceProperty)
+            ? await client.ReadAsync<T>(item.Metadata!.Name, cancellationToken).ConfigureAwait(false)
+            : await client.ReadNamespacedAsync<T>(item.Metadata.NamespaceProperty, item.Metadata.Name, cancellationToken).ConfigureAwait(false);
+        item.Metadata.ResourceVersion = current.Metadata.ResourceVersion;
+        return string.IsNullOrEmpty(item.Metadata.NamespaceProperty)
+            ? await client.ReplaceAsync(item, item.Metadata.Name, cancellationToken).ConfigureAwait(false)
+            : await client.ReplaceNamespacedAsync(item, item.Metadata.NamespaceProperty, item.Metadata.Name, cancellationToken).ConfigureAwait(false);
+    }
+
+    public static Task DeleteAsync<T>(this IClusterRuntime runtime, T item, CancellationToken cancellationToken = default)
+        where T : class, k8s.IKubernetesObject<k8s.Models.V1ObjectMeta>, new()
+    {
+        using var client = runtime.Client!.GetGenericClient<T>();
+        return string.IsNullOrEmpty(item.Metadata?.NamespaceProperty)
+            ? client.DeleteAsync<T>(item.Metadata!.Name, cancellationToken)
+            : client.DeleteNamespacedAsync<T>(item.Metadata.NamespaceProperty, item.Metadata.Name, cancellationToken);
+    }
 }

@@ -26,7 +26,7 @@ public sealed class ResourceRelationshipBuilderTests
             Metadata = new() { Name = "node-a" },
         };
 
-        ResourceRelationshipGraph graph = new ResourceRelationshipBuilder().Build(
+        var graph = new ResourceRelationshipBuilder().Build(
             [pod, node],
             new HashSet<string> { "demo" },
             hideNoise: false);
@@ -54,7 +54,7 @@ public sealed class ResourceRelationshipBuilderTests
             Metadata = new() { Name = "nginx" },
         };
 
-        ResourceRelationshipGraph graph = new ResourceRelationshipBuilder().Build(
+        var graph = new ResourceRelationshipBuilder().Build(
             [ingress, ingressClass],
             new HashSet<string> { "demo" },
             hideNoise: true);
@@ -67,7 +67,7 @@ public sealed class ResourceRelationshipBuilderTests
     [Fact]
     public void Aggregates_seed_prerequisites_from_relationship_providers()
     {
-        ResourceRelationshipGraph graph = new ResourceRelationshipBuilder().Build(
+        var graph = new ResourceRelationshipBuilder().Build(
             Array.Empty<IKubernetesObject<V1ObjectMeta>>(),
             new HashSet<string>(),
             hideNoise: true);
@@ -125,7 +125,7 @@ public sealed class ResourceRelationshipBuilderTests
             },
         };
 
-        ResourceRelationshipGraph graph = new ResourceRelationshipBuilder().Build(
+        var graph = new ResourceRelationshipBuilder().Build(
             [schema, catalog, usage],
             new HashSet<string> { "platform-test-data-product" },
             hideNoise: true);
@@ -151,7 +151,7 @@ public sealed class ResourceRelationshipBuilderTests
             },
         };
 
-        ResourceRelationshipGraph graph = new ResourceRelationshipBuilder().Build(
+        var graph = new ResourceRelationshipBuilder().Build(
             [usage],
             new HashSet<string> { "platform-test-data-product" },
             hideNoise: true);
@@ -214,7 +214,7 @@ public sealed class ResourceRelationshipBuilderTests
             new("storage.k8s.io/v1", V1StorageClass.KubeKind, null, "fast", "storage-class-uid"),
             ResourceRelationshipKind.Storage));
 
-        ResourceRelationshipGraph graph = new ResourceRelationshipBuilder().Build([storageClass, volume, unrelatedVolume, claim], new HashSet<string> { "demo" }, hideNoise: true);
+        var graph = new ResourceRelationshipBuilder().Build([storageClass, volume, unrelatedVolume, claim], new HashSet<string> { "demo" }, hideNoise: true);
 
         graph.Relationships.ShouldContain(new ResourceRelationship(
             new("v1", V1PersistentVolume.KubeKind, null, "volume", "volume-uid"),
@@ -255,7 +255,7 @@ public sealed class ResourceRelationshipBuilderTests
             Spec = new() { StorageClassName = "fast" },
         };
 
-        ResourceRelationshipGraph graph = new ResourceRelationshipBuilder().Build([storageClass, selectedClaim, otherClaim], new HashSet<string> { "demo" }, hideNoise: true);
+        var graph = new ResourceRelationshipBuilder().Build([storageClass, selectedClaim, otherClaim], new HashSet<string> { "demo" }, hideNoise: true);
 
         graph.Resources.Select(resource => resource.Name()).ShouldBe(["fast", "selected"]);
         graph.Relationships.ShouldContain(new ResourceRelationship(
@@ -345,7 +345,7 @@ public sealed class ResourceRelationshipBuilderTests
         ResourceIdentity second = new("v1", "Second", "demo", "second", null);
         ResourceIdentity third = new("v1", "Third", "demo", "third", null);
 
-        IReadOnlyList<ResourceRelationship> relationships = ResourceRelationshipBuilder.SimplifyRelationships(
+        var relationships = ResourceRelationshipBuilder.SimplifyRelationships(
         [
             new(first, second, ResourceRelationshipKind.Reference),
             new(second, third, ResourceRelationshipKind.Reference),
@@ -395,7 +395,7 @@ public sealed class ResourceRelationshipBuilderTests
             },
         };
 
-        ResourceRelationshipGraph graph = new ResourceRelationshipBuilder().Build([deployment, pod], new HashSet<string> { "demo" }, hideNoise: true);
+        var graph = new ResourceRelationshipBuilder().Build([deployment, pod], new HashSet<string> { "demo" }, hideNoise: true);
 
         graph.Relationships.ShouldContain(new ResourceRelationship(
             new("apps/v1", V1Deployment.KubeKind, "demo", "web", "deployment-uid"),
@@ -463,7 +463,7 @@ public sealed class ResourceRelationshipBuilderTests
             },
         };
 
-        ResourceRelationshipGraph graph = new ResourceRelationshipBuilder().Build(
+        var graph = new ResourceRelationshipBuilder().Build(
             [provider, providerRevision, function, functionRevision, selectedProviderResource, selectedFunctionResource],
             new HashSet<string> { "crossplane-system" },
             hideNoise: true);
@@ -508,7 +508,7 @@ public sealed class ResourceRelationshipBuilderTests
             },
         };
 
-        ResourceRelationshipGraph graph = new ResourceRelationshipBuilder([new PodTemplateReferenceRelationshipProvider()]).Build([configMap, pod], new HashSet<string> { "demo" }, hideNoise: true);
+        var graph = new ResourceRelationshipBuilder([new PodTemplateReferenceRelationshipProvider()]).Build([configMap, pod], new HashSet<string> { "demo" }, hideNoise: true);
 
         graph.Relationships.ShouldBe(
         [
@@ -546,7 +546,7 @@ public sealed class ResourceRelationshipBuilderTests
             new V1CronJob { ApiVersion = "batch/v1", Kind = V1CronJob.KubeKind, Metadata = new() { Name = "cronjob", NamespaceProperty = "demo" }, Spec = new() { JobTemplate = new() { Spec = new() { Template = template } } } },
         ];
 
-        ResourceRelationshipGraph graph = new ResourceRelationshipBuilder().Build([secret, .. consumers], new HashSet<string> { "demo" }, hideNoise: true);
+        var graph = new ResourceRelationshipBuilder().Build([secret, .. consumers], new HashSet<string> { "demo" }, hideNoise: true);
 
         graph.Relationships
             .Where(relationship => relationship.Target.Name == "tls-client")
@@ -597,7 +597,7 @@ public sealed class ResourceRelationshipBuilderTests
             new V1CronJob { ApiVersion = "batch/v1", Kind = V1CronJob.KubeKind, Metadata = new() { Name = "cronjob", NamespaceProperty = "demo" }, Spec = new() { JobTemplate = new() { Spec = new() { Template = template } } } },
         ];
 
-        ResourceRelationshipGraph graph = new ResourceRelationshipBuilder().Build([secret, .. consumers], new HashSet<string> { "demo" }, hideNoise: true);
+        var graph = new ResourceRelationshipBuilder().Build([secret, .. consumers], new HashSet<string> { "demo" }, hideNoise: true);
 
         graph.Relationships
             .Where(relationship => relationship.Target.Name == "azure-app-reg-pwd-secret")
@@ -620,7 +620,7 @@ public sealed class ResourceRelationshipBuilderTests
         ResourceIdentity source = new("v1", V1Pod.KubeKind, "demo", "web", "web-uid");
         ResourceIdentity target = new("v1", V1Service.KubeKind, "demo", "web", "service-uid");
 
-        IReadOnlyList<ResourceRelationship> relationships = ResourceRelationshipBuilder.SimplifyRelationships(
+        var relationships = ResourceRelationshipBuilder.SimplifyRelationships(
         [
             new(source, target, ResourceRelationshipKind.Label, "CONFIG_KEY"),
             new(source, target, ResourceRelationshipKind.Label, "OTHER_CONFIG_KEY"),
@@ -639,7 +639,7 @@ public sealed class ResourceRelationshipBuilderTests
         ResourceIdentity child = new("v1", V1Pod.KubeKind, "demo", "web", "pod-uid");
         ResourceIdentity target = new("v1", V1ConfigMap.KubeKind, "demo", "settings", "settings-uid");
 
-        IReadOnlyList<ResourceRelationship> relationships = ResourceRelationshipBuilder.SimplifyRelationships(
+        var relationships = ResourceRelationshipBuilder.SimplifyRelationships(
         [
             new(owner, child, ResourceRelationshipKind.Owner),
             new(owner, target, ResourceRelationshipKind.Label, "OWNER_LABEL"),
@@ -672,7 +672,7 @@ public sealed class ResourceRelationshipBuilderTests
         V1Pod other = new() { ApiVersion = "v1", Kind = V1Pod.KubeKind, Metadata = new() { Name = "other", NamespaceProperty = "other" } };
         Corev1Event noise = new() { ApiVersion = "v1", Kind = Corev1Event.KubeKind, Metadata = new() { Name = "event", NamespaceProperty = "demo" } };
 
-        ResourceRelationshipGraph graph = new ResourceRelationshipBuilder().Build([selected, completed, failed, other, noise], new HashSet<string> { "demo" }, hideNoise: true);
+        var graph = new ResourceRelationshipBuilder().Build([selected, completed, failed, other, noise], new HashSet<string> { "demo" }, hideNoise: true);
 
         graph.Resources.Select(x => x.Name()).ShouldBe(["selected", "failed"]);
     }
@@ -684,7 +684,7 @@ public sealed class ResourceRelationshipBuilderTests
         V1Pod other = new() { ApiVersion = "v1", Kind = V1Pod.KubeKind, Metadata = new() { Name = "other", NamespaceProperty = "other", Uid = "other-uid" } };
         V1Node unrelated = new() { ApiVersion = "v1", Kind = V1Node.KubeKind, Metadata = new() { Name = "unrelated" } };
 
-        ResourceRelationshipGraph graph = new ResourceRelationshipBuilder().Build([selected, other, unrelated], new HashSet<string> { "demo" }, hideNoise: true);
+        var graph = new ResourceRelationshipBuilder().Build([selected, other, unrelated], new HashSet<string> { "demo" }, hideNoise: true);
 
         graph.Resources.Select(x => x.Name()).ShouldBe(["selected"]);
     }
@@ -696,7 +696,7 @@ public sealed class ResourceRelationshipBuilderTests
         V1Node related = new() { ApiVersion = "v1", Kind = V1Node.KubeKind, Metadata = new() { Name = "related", Uid = "related-uid" } };
         ResourceRelationshipBuilder builder = new([new SelectedToNodeProvider()]);
 
-        ResourceRelationshipGraph delta = builder.BuildAdditionDelta(
+        var delta = builder.BuildAdditionDelta(
             [selected, related],
             new ResourceKey("v1", V1Node.KubeKind, null, "related"),
             new HashSet<string> { "demo" },
@@ -717,7 +717,7 @@ public sealed class ResourceRelationshipBuilderTests
         V1Pod unrelatedChild = new() { ApiVersion = "v1", Kind = V1Pod.KubeKind, Metadata = new() { Name = "unrelated", NamespaceProperty = "other", Uid = "unrelated-uid" } };
         ResourceRelationshipBuilder builder = new([new GlobalParentProvider()]);
 
-        ResourceRelationshipGraph delta = builder.BuildAdditionDelta(
+        var delta = builder.BuildAdditionDelta(
             [selected, parent, unrelatedChild],
             new ResourceKey("v1", V1Node.KubeKind, null, "parent"),
             new HashSet<string>(),
@@ -733,7 +733,7 @@ public sealed class ResourceRelationshipBuilderTests
         V1Pod selected = new() { ApiVersion = "v1", Kind = V1Pod.KubeKind, Metadata = new() { Name = "selected", NamespaceProperty = "demo", Uid = "selected-uid" } };
         V1Pod unrelated = new() { ApiVersion = "v1", Kind = V1Pod.KubeKind, Metadata = new() { Name = "unrelated", NamespaceProperty = "other", Uid = "unrelated-uid" } };
 
-        ResourceRelationshipGraph delta = new ResourceRelationshipBuilder().BuildAdditionDelta(
+        var delta = new ResourceRelationshipBuilder().BuildAdditionDelta(
             [selected, unrelated],
             new ResourceKey("v1", V1Pod.KubeKind, "other", "unrelated"),
             new HashSet<string> { "demo" },
@@ -773,7 +773,7 @@ public sealed class ResourceRelationshipBuilderTests
             },
         };
 
-        ResourceRelationshipGraph graph = new ResourceRelationshipBuilder().Build(
+        var graph = new ResourceRelationshipBuilder().Build(
             [owner, unrelatedChild],
             new HashSet<string> { "demo" },
             hideNoise: true);
@@ -788,7 +788,7 @@ public sealed class ResourceRelationshipBuilderTests
         V1Pod related = new() { ApiVersion = "v1", Kind = V1Pod.KubeKind, Metadata = new() { Name = "related", NamespaceProperty = "other", Uid = "related-uid" } };
 
         ResourceRelationshipBuilder builder = new([new CrossNamespaceProvider()]);
-        ResourceRelationshipGraph graph = builder.Build([selected, related], new HashSet<string> { "demo" }, hideNoise: true);
+        var graph = builder.Build([selected, related], new HashSet<string> { "demo" }, hideNoise: true);
 
         graph.Resources.Select(resource => resource.Name()).ShouldBe(["selected", "related"]);
         graph.Relationships.ShouldContain(new ResourceRelationship(
@@ -818,7 +818,7 @@ public sealed class ResourceRelationshipBuilderTests
             Metadata = new() { Name = "demo-app", NamespaceProperty = "argocd" },
         };
 
-        ResourceRelationshipGraph graph = new ResourceRelationshipBuilder().Build([managed, application], new HashSet<string> { "workload" }, hideNoise: true);
+        var graph = new ResourceRelationshipBuilder().Build([managed, application], new HashSet<string> { "workload" }, hideNoise: true);
 
         graph.Relationships.ShouldContain(new ResourceRelationship(
             new("argoproj.io/v1alpha1", "Application", "argocd", "demo-app", null),
@@ -847,7 +847,7 @@ public sealed class ResourceRelationshipBuilderTests
             Metadata = new() { Name = "demo-app", NamespaceProperty = "argocd" },
         };
 
-        ResourceRelationshipGraph graph = new ResourceRelationshipBuilder().Build([managed, application], new HashSet<string> { "workload" }, hideNoise: true);
+        var graph = new ResourceRelationshipBuilder().Build([managed, application], new HashSet<string> { "workload" }, hideNoise: true);
 
         graph.Relationships.ShouldContain(new ResourceRelationship(
             new("argoproj.io/v1alpha1", "Application", "argocd", "demo-app", null),
@@ -872,7 +872,7 @@ public sealed class ResourceRelationshipBuilderTests
             RoleRef = new() { ApiGroup = "rbac.authorization.k8s.io", Kind = V1Role.KubeKind, Name = "reader" },
         };
 
-        ResourceRelationshipGraph graph = new ResourceRelationshipBuilder().Build([role, binding], new HashSet<string> { "demo" }, hideNoise: true);
+        var graph = new ResourceRelationshipBuilder().Build([role, binding], new HashSet<string> { "demo" }, hideNoise: true);
 
         graph.Relationships.ShouldContain(new ResourceRelationship(
             new("rbac.authorization.k8s.io/v1", V1Role.KubeKind, "demo", "reader", "role-uid"),
@@ -926,7 +926,7 @@ public sealed class ResourceRelationshipBuilderTests
             Metadata = new() { Name = "kustomization-a", NamespaceProperty = "demo", Uid = "kustomize-uid" },
         };
 
-        ResourceRelationshipGraph graph = new ResourceRelationshipBuilder().Build(
+        var graph = new ResourceRelationshipBuilder().Build(
             [helmManaged, kustomizeManaged, helmRelease, kustomization],
             new HashSet<string> { "demo" },
             hideNoise: true);
@@ -972,7 +972,7 @@ public sealed class ResourceRelationshipBuilderTests
             Metadata = new() { Name = "cert-manager", NamespaceProperty = "cert-manager", Uid = "helm-uid" },
         };
 
-        ResourceRelationshipGraph graph = new ResourceRelationshipBuilder().Build(
+        var graph = new ResourceRelationshipBuilder().Build(
             [deployment, helmRelease],
             new HashSet<string> { "cert-manager" },
             hideNoise: true);
@@ -1008,7 +1008,7 @@ public sealed class ResourceRelationshipBuilderTests
             Metadata = new() { Name = "app", NamespaceProperty = "flux-system" },
         };
 
-        ResourceRelationshipGraph graph = new ResourceRelationshipBuilder().Build(
+        var graph = new ResourceRelationshipBuilder().Build(
             [helmRelease, kustomization],
             new HashSet<string> { "envoy-gateway-system" },
             hideNoise: true);
@@ -1038,7 +1038,7 @@ public sealed class ResourceRelationshipBuilderTests
             },
         };
 
-        ResourceRelationshipGraph graph = new ResourceRelationshipBuilder().Build(
+        var graph = new ResourceRelationshipBuilder().Build(
             [deployment],
             new HashSet<string> { "cert-manager" },
             hideNoise: true);
@@ -1076,7 +1076,7 @@ public sealed class ResourceRelationshipBuilderTests
             },
         };
 
-        ResourceRelationshipGraph graph = new ResourceRelationshipBuilder().Build(
+        var graph = new ResourceRelationshipBuilder().Build(
             [deployment],
             new HashSet<string> { "demo" },
             hideNoise: true);
@@ -1105,7 +1105,7 @@ public sealed class ResourceRelationshipBuilderTests
             },
         };
 
-        ResourceRelationshipGraph graph = new ResourceRelationshipBuilder().Build(
+        var graph = new ResourceRelationshipBuilder().Build(
             [dataProduct],
             new HashSet<string> { "platform-test-data-product" },
             hideNoise: true);
@@ -1147,11 +1147,11 @@ public sealed class ResourceRelationshipBuilderTests
             Endpoints = [new() { TargetRef = new() { ApiVersion = "v1", Kind = V1Pod.KubeKind, Name = "web-0", NamespaceProperty = "demo", Uid = "pod-uid" } }],
         };
 
-        ResourceRelationshipGraph graph = new ResourceRelationshipBuilder().Build(
+        var graph = new ResourceRelationshipBuilder().Build(
             [service, pod, endpointSlice],
             new HashSet<string> { "demo" },
             hideNoise: true);
-        ResourceRelationshipGraph endpointGraph = new ResourceRelationshipBuilder([new EndpointSliceRelationshipProvider()]).Build(
+        var endpointGraph = new ResourceRelationshipBuilder([new EndpointSliceRelationshipProvider()]).Build(
             [service, pod, endpointSlice],
             new HashSet<string> { "demo" },
             hideNoise: true);
@@ -1186,7 +1186,7 @@ public sealed class ResourceRelationshipBuilderTests
             Metadata = new() { Name = "web-0", NamespaceProperty = "demo", Labels = new Dictionary<string, string> { ["tier"] = "frontend" } },
         };
 
-        ResourceRelationshipGraph graph = new ResourceRelationshipBuilder().Build(
+        var graph = new ResourceRelationshipBuilder().Build(
             [budget, pod],
             new HashSet<string> { "demo" },
             hideNoise: true);
@@ -1205,7 +1205,7 @@ public sealed class ResourceRelationshipBuilderTests
             ICollection<ResourceRelationship> relationships)
         {
             if (resource.Name() != "selected"
-                || !context.TryGet("v1", V1Pod.KubeKind, "other", "related", out IKubernetesObject<V1ObjectMeta>? related)
+                || !context.TryGet("v1", V1Pod.KubeKind, "other", "related", out var related)
                 || related == null)
             {
                 return;
@@ -1223,7 +1223,7 @@ public sealed class ResourceRelationshipBuilderTests
             ICollection<ResourceRelationship> relationships)
         {
             if (resource.Name() == "selected"
-                && context.TryGet("v1", V1Node.KubeKind, null, "related", out IKubernetesObject<V1ObjectMeta>? related)
+                && context.TryGet("v1", V1Node.KubeKind, null, "related", out var related)
                 && related != null)
             {
                 context.Add(relationships, resource, related, ResourceRelationshipKind.Reference);
@@ -1243,13 +1243,13 @@ public sealed class ResourceRelationshipBuilderTests
                 return;
             }
 
-            if (context.TryGet("v1", V1Pod.KubeKind, "demo", "selected", out IKubernetesObject<V1ObjectMeta>? selected)
+            if (context.TryGet("v1", V1Pod.KubeKind, "demo", "selected", out var selected)
                 && selected != null)
             {
                 context.Add(relationships, resource, selected, ResourceRelationshipKind.Owner);
             }
 
-            if (context.TryGet("v1", V1Pod.KubeKind, "other", "unrelated", out IKubernetesObject<V1ObjectMeta>? unrelated)
+            if (context.TryGet("v1", V1Pod.KubeKind, "other", "unrelated", out var unrelated)
                 && unrelated != null)
             {
                 context.Add(relationships, resource, unrelated, ResourceRelationshipKind.Owner);

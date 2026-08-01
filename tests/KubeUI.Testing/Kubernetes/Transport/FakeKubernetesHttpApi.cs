@@ -34,11 +34,29 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
         _resources = state.Resources;
         _watchers = state.Watchers;
         _shutdownCancellation = state.ShutdownCancellation;
+
+        Register<V1Pod>();
+        Register<V1Deployment>();
+        Register<V1Secret>();
+        Add(new V1Namespace { Metadata = new V1ObjectMeta { Name = "default" } });
+        Add(new V1Node { Metadata = new V1ObjectMeta { Name = "node-1" } });
+        Add(new V1Secret
+        {
+            Metadata = new V1ObjectMeta { Name = "my-serviceaccount", NamespaceProperty = "my-app" },
+            Data = new Dictionary<string, byte[]> { ["token"] = Encoding.UTF8.GetBytes("fake-token") },
+        });
     }
 
-    internal FakeKubernetesHttpApi CreateClient() => new(_state);
-
-    public bool DefaultPermissionAllowed { get; set; } = true;
+    internal FakeKubernetesHttpApi CreateClient(
+        string? authenticatedUser = null,
+        bool? useRoleBasedAuthorization = null)
+    {
+        return new FakeKubernetesHttpApi(_state)
+        {
+            AuthenticatedUser = authenticatedUser ?? AuthenticatedUser,
+            UseRoleBasedAuthorization = useRoleBasedAuthorization ?? UseRoleBasedAuthorization,
+        };
+    }
 
     public bool UseRoleBasedAuthorization { get; set; }
 
@@ -48,6 +66,12 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
     {
         get => _state.FailConnection;
         set => _state.FailConnection = value;
+    }
+
+    public bool ThrowOnConnection
+    {
+        get => _state.ThrowOnConnection;
+        set => _state.ThrowOnConnection = value;
     }
 
     /// <summary>
@@ -83,12 +107,23 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
         _resources[ResourceKey(ResourcePath(api, resource.Metadata?.NamespaceProperty, resource.Metadata?.Name))] = json;
     }
 
+    public void Add(IKubernetesObject resource)
+    {
+        ArgumentNullException.ThrowIfNull(resource);
+
+        var add = GetType()
+            .GetMethods()
+            .Single(method => method.Name == nameof(Add) && method.IsGenericMethodDefinition);
+        add.MakeGenericMethod(resource.GetType()).Invoke(this, new object[] { resource });
+    }
+
     public void AddYaml(string yaml)
     {
         foreach (var resource in KubeUI.Kubernetes.Serialization.KubernetesYaml.LoadAllFromString(yaml))
         {
             var add = GetType()
-                .GetMethod(nameof(Add))!
+                .GetMethods()
+                .Single(method => method.Name == nameof(Add) && method.IsGenericMethodDefinition)
                 .MakeGenericMethod(resource.GetType());
             add.Invoke(this, [resource]);
         }
@@ -142,6 +177,11 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
         }
 
         var path = request.RequestUri.AbsolutePath.TrimEnd('/');
+        if (ThrowOnConnection)
+        {
+            throw new HttpRequestException("simulated connection failure");
+        }
+
         if (FailConnection)
         {
             return SetRequest(request, Error(HttpStatusCode.ServiceUnavailable, "simulated connection failure"));
@@ -209,7 +249,7 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
             ? configured
             : UseRoleBasedAuthorization
                 ? IsRoleBasedAccessAllowed(group, resource, verb, @namespace, subresource)
-                : DefaultPermissionAllowed;
+                : true;
 
         return Json(new
         {
@@ -221,6 +261,8 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
 
     private async Task<HttpResponseMessage> HandleResourceAsync(HttpRequestMessage request, Route route, CancellationToken cancellationToken)
     {
+        EnsureRouteDefinition(route);
+
         if (!IsAllowed(request, route))
         {
             return Error(HttpStatusCode.Forbidden, $"forbidden: {request.Method} {route.CollectionPath}");
@@ -430,14 +472,24 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
                 _ => request.Method.Method.ToLowerInvariant(),
             };
 
-        var @namespace = definition.Namespaced ? route.Namespace : null;
+        var @namespace = route.Namespace;
         var permissionKey = PermissionKey(route.PluralName, verb, @namespace, route.Subresource);
         return _permissions.TryGetValue(permissionKey, out var configured)
             ? configured
             : UseRoleBasedAuthorization
                 ? IsRoleBasedAccessAllowed(route.Group, route.PluralName, verb, route.Namespace, route.Subresource)
-                : DefaultPermissionAllowed;
+                : true;
     }
+
+        private void EnsureRouteDefinition(Route route)
+        {
+            var key = DefinitionKey(route.Group, route.ApiVersion, route.PluralName);
+            _definitions.TryAdd(
+                key,
+                new ResourceDefinition(
+                    new GroupApiVersionKind(route.Group, route.ApiVersion, route.PluralName, route.PluralName),
+                    route.Namespace is not null));
+        }
 
     private bool IsRoleBasedAccessAllowed(string group, string resource, string verb, string? @namespace, string? subresource)
     {
@@ -791,6 +843,7 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
         public CancellationTokenSource ShutdownCancellation { get; } = new();
         public TimeSpan ResponseDelay { get; set; } = TimeSpan.FromMilliseconds(50);
         public bool FailConnection { get; set; }
+        public bool ThrowOnConnection { get; set; }
         public long ResourceVersion;
     }
 

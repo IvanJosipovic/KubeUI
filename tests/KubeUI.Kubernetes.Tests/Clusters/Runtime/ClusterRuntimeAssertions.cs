@@ -12,7 +12,7 @@ namespace KubeUI.Kubernetes.Tests.Clusters.Runtime;
 
 public abstract class ClusterRuntimeAssertions
 {
-    protected abstract Task<IClusterScenarioHarness> CreateHarnessAsync(KubernetesBackend backend);
+    protected abstract Task<TestCluster> CreateHarnessAsync(KubernetesBackend backend);
 
     protected async Task InitializationExposesConnectedClusterCore(KubernetesBackend backend)
     {
@@ -48,8 +48,8 @@ public abstract class ClusterRuntimeAssertions
     protected async Task GlobalPermissionsReflectDeniedAndAllowedOperationsCore(KubernetesBackend backend)
     {
         await using var harness = await CreateHarnessAsync(backend);
-        IClusterRuntime limitedCluster = await harness.CreateLimitedAccessClusterAsync(
-            KubernetesScenarioData.LimitedAccessWithNamespaceFallback,
+        var limitedCluster = await harness.CreateLimitedAccessAsync(
+            KubernetesTestData.LimitedAccessWithNamespaceFallback,
             cancellationToken: TestContext.Current.CancellationToken);
         await RefreshPermissionsAsync<V1Pod>(limitedCluster, Verb.Get, Verb.List, Verb.Watch);
         await RefreshPermissionsAsync<V1Pod>(harness.Cluster, Verb.Get, Verb.List, Verb.Watch);
@@ -66,8 +66,8 @@ public abstract class ClusterRuntimeAssertions
     protected async Task NamespacedPermissionsReflectDeniedAndAllowedOperationsCore(KubernetesBackend backend)
     {
         await using var harness = await CreateHarnessAsync(backend);
-        IClusterRuntime limitedCluster = await harness.CreateLimitedAccessClusterAsync(
-            KubernetesScenarioData.LimitedAccessWithNamespaceFallback,
+        var limitedCluster = await harness.CreateLimitedAccessAsync(
+            KubernetesTestData.LimitedAccessWithNamespaceFallback,
             cancellationToken: TestContext.Current.CancellationToken);
         await RefreshPermissionsAsync<V1Pod>(limitedCluster, Verb.Get, Verb.List, Verb.Watch);
 
@@ -84,8 +84,8 @@ public abstract class ClusterRuntimeAssertions
     {
         await using var harness = await CreateHarnessAsync(backend);
         IClusterRuntime rootCluster = harness.Cluster;
-        IClusterRuntime limitedCluster = await harness.CreateLimitedAccessClusterAsync(
-            KubernetesScenarioData.LimitedAccessWithNamespaceFallback,
+        var limitedCluster = await harness.CreateLimitedAccessAsync(
+            KubernetesTestData.LimitedAccessWithNamespaceFallback,
             cancellationToken: TestContext.Current.CancellationToken);
         await RefreshPermissionsAsync<V1Pod>(rootCluster, (Verb.Get, "log"), (Verb.Create, "exec"), (Verb.Create, "portforward"));
         await RefreshPermissionsAsync<V1Pod>(limitedCluster, (Verb.Get, "log"), (Verb.Create, "exec"), (Verb.Create, "portforward"));
@@ -109,12 +109,12 @@ public abstract class ClusterRuntimeAssertions
         await SeedResourceAsync<V1Namespace>(harness.Cluster);
         await SeedResourceAsync<V1Secret>(harness.Cluster);
 
-        V1Namespace createdNamespace = await harness.CreateDirectAsync(
+        var createdNamespace = await harness.CreateAsync(
             new V1Namespace { Metadata = new V1ObjectMeta { Name = "direct-crud" } },
             TestContext.Current.CancellationToken);
         createdNamespace.Name().ShouldBe("direct-crud");
 
-        V1Secret createdSecret = await harness.CreateDirectAsync(
+        var createdSecret = await harness.CreateAsync(
             new V1Secret
             {
                 Metadata = new V1ObjectMeta { Name = "direct-secret", NamespaceProperty = "default" },
@@ -124,13 +124,13 @@ public abstract class ClusterRuntimeAssertions
         Encoding.UTF8.GetString(createdSecret.Data!["value"]).ShouldBe("before");
 
         createdSecret.Data["value"] = Encoding.UTF8.GetBytes("after");
-        V1Secret replacedSecret = await harness.ReplaceDirectAsync(createdSecret, TestContext.Current.CancellationToken);
+        var replacedSecret = await harness.ReplaceAsync(createdSecret, TestContext.Current.CancellationToken);
         Encoding.UTF8.GetString(replacedSecret.Data!["value"]).ShouldBe("after");
 
-        await harness.DeleteDirectAsync(replacedSecret, TestContext.Current.CancellationToken);
+        await harness.DeleteAsync(replacedSecret, TestContext.Current.CancellationToken);
         await WaitForDeletionAsync<V1Secret>(harness.Cluster, "default", "direct-secret", cancellationToken: TestContext.Current.CancellationToken);
 
-        await harness.DeleteDirectAsync(createdNamespace, TestContext.Current.CancellationToken);
+        await harness.DeleteAsync(createdNamespace, TestContext.Current.CancellationToken);
         await WaitForDeletionAsync<V1Namespace>(harness.Cluster, null, "direct-crud", cancellationToken: TestContext.Current.CancellationToken);
     }
 
@@ -139,7 +139,7 @@ public abstract class ClusterRuntimeAssertions
         await using var harness = await CreateHarnessAsync(backend);
         await SeedResourceAsync<V1ConfigMap>(harness.Cluster);
 
-        V1ConfigMap configMap = await harness.CreateDirectAsync(
+        var configMap = await harness.CreateAsync(
             new V1ConfigMap
             {
                 Metadata = new V1ObjectMeta { Name = "informer-observed", NamespaceProperty = "default" },
@@ -149,8 +149,8 @@ public abstract class ClusterRuntimeAssertions
         (await WaitForResourceAsync<V1ConfigMap>(harness.Cluster, "default", configMap.Name(), cancellationToken: TestContext.Current.CancellationToken)).ShouldNotBeNull();
 
         configMap.Data!["state"] = "replaced";
-        await harness.ReplaceDirectAsync(configMap, TestContext.Current.CancellationToken);
-        V1ConfigMap replaced = (await WaitForResourceAsync<V1ConfigMap>(
+        await harness.ReplaceAsync(configMap, TestContext.Current.CancellationToken);
+        var replaced = (await WaitForResourceAsync<V1ConfigMap>(
             harness.Cluster,
             "default",
             configMap.Name(),
@@ -158,7 +158,7 @@ public abstract class ClusterRuntimeAssertions
             cancellationToken: TestContext.Current.CancellationToken))!;
         replaced.Data!["state"].ShouldBe("replaced");
 
-        await harness.DeleteDirectAsync(replaced, TestContext.Current.CancellationToken);
+        await harness.DeleteAsync(replaced, TestContext.Current.CancellationToken);
         await WaitForDeletionAsync<V1ConfigMap>(harness.Cluster, "default", configMap.Name(), cancellationToken: TestContext.Current.CancellationToken);
     }
 
@@ -167,7 +167,7 @@ public abstract class ClusterRuntimeAssertions
         await using var harness = await CreateHarnessAsync(backend);
         await SeedResourceAsync<V1ConfigMap>(harness.Cluster);
 
-        V1ConfigMap created = await harness.CreateDirectAsync(
+        var created = await harness.CreateAsync(
             new V1ConfigMap
             {
                 Metadata = new V1ObjectMeta { Name = "stale-update", NamespaceProperty = "default" },
@@ -177,7 +177,7 @@ public abstract class ClusterRuntimeAssertions
 
         using var client = harness.Cluster.Client!.GetGenericClient<V1ConfigMap>();
         string staleResourceVersion = created.Metadata.ResourceVersion!;
-        V1ConfigMap externalUpdate = await client.ReadNamespacedAsync<V1ConfigMap>(
+        var externalUpdate = await client.ReadNamespacedAsync<V1ConfigMap>(
             "default",
             created.Name(),
             TestContext.Current.CancellationToken);
@@ -212,7 +212,7 @@ public abstract class ClusterRuntimeAssertions
         await using var harness = await CreateHarnessAsync(backend);
         await SeedResourceAsync<V1ConfigMap>(harness.Cluster);
 
-        V1ConfigMap original = await harness.CreateDirectAsync(
+        var original = await harness.CreateAsync(
             new V1ConfigMap
             {
                 Metadata = new V1ObjectMeta { Name = "refresh-version", NamespaceProperty = "default" },
@@ -221,7 +221,7 @@ public abstract class ClusterRuntimeAssertions
             TestContext.Current.CancellationToken);
 
         using var client = harness.Cluster.Client!.GetGenericClient<V1ConfigMap>();
-        V1ConfigMap externalUpdate = await client.ReadNamespacedAsync<V1ConfigMap>(
+        var externalUpdate = await client.ReadNamespacedAsync<V1ConfigMap>(
             "default",
             original.Name(),
             TestContext.Current.CancellationToken);
@@ -233,7 +233,7 @@ public abstract class ClusterRuntimeAssertions
             TestContext.Current.CancellationToken);
 
         original.Data!["state"] = "harness";
-        V1ConfigMap replaced = await harness.ReplaceDirectAsync(original, TestContext.Current.CancellationToken);
+        var replaced = await harness.ReplaceAsync(original, TestContext.Current.CancellationToken);
 
         replaced.Data!["state"].ShouldBe("harness");
     }
@@ -297,7 +297,7 @@ public abstract class ClusterRuntimeAssertions
         await using var harness = await CreateHarnessAsync(backend);
         await SeedResourceAsync<V1Namespace>(harness.Cluster);
 
-        var ns = await harness.CreateDirectAsync(new V1Namespace
+        var ns = await harness.CreateAsync(new V1Namespace
         {
             ApiVersion = V1Namespace.KubeApiVersion,
             Kind = V1Namespace.KubeKind,
@@ -318,7 +318,7 @@ public abstract class ClusterRuntimeAssertions
         await using var harness = await CreateHarnessAsync(backend);
         await SeedResourceAsync<V1Secret>(harness.Cluster);
 
-        var secret = await harness.CreateDirectAsync(new V1Secret
+        var secret = await harness.CreateAsync(new V1Secret
         {
             ApiVersion = V1Secret.KubeApiVersion,
             Kind = V1Secret.KubeKind,
@@ -347,7 +347,7 @@ public abstract class ClusterRuntimeAssertions
         await using var harness = await CreateHarnessAsync(backend);
         await SeedResourceAsync<V1Namespace>(harness.Cluster);
 
-        var ns = await harness.CreateDirectAsync(new V1Namespace
+        var ns = await harness.CreateAsync(new V1Namespace
         {
             ApiVersion = V1Namespace.KubeApiVersion,
             Kind = V1Namespace.KubeKind,
@@ -366,7 +366,7 @@ public abstract class ClusterRuntimeAssertions
         await using var harness = await CreateHarnessAsync(backend);
         await SeedResourceAsync<V1Secret>(harness.Cluster);
 
-        var secret = await harness.CreateDirectAsync(new V1Secret
+        var secret = await harness.CreateAsync(new V1Secret
         {
             ApiVersion = V1Secret.KubeApiVersion,
             Kind = V1Secret.KubeKind,
@@ -412,8 +412,8 @@ public abstract class ClusterRuntimeAssertions
         await using var harness = await CreateHarnessAsync(backend);
         await SeedResourceAsync<V1CustomResourceDefinition>(harness.Cluster);
 
-        var crd = KubeUI.Kubernetes.Serialization.KubernetesYaml.Deserialize<V1CustomResourceDefinition>(KubernetesScenarioData.CustomResourceDefinitionYaml);
-        await harness.CreateDirectAsync(crd, TestContext.Current.CancellationToken);
+            var crd = KubeUI.Kubernetes.Serialization.KubernetesYaml.Deserialize<V1CustomResourceDefinition>(KubernetesTestData.CustomResourceDefinitionYaml);
+        await harness.CreateAsync(crd, TestContext.Current.CancellationToken);
 
         await WaitForResourceAsync<V1CustomResourceDefinition>(harness.Cluster, null, "tests.kubeui.com");
         var generatedType = await WaitForGeneratedTypeAsync(harness.Cluster, "kubeui.com", "v1beta1", "Test");
@@ -422,7 +422,7 @@ public abstract class ClusterRuntimeAssertions
         await harness.Cluster.Permissions.UpdatePermissionsAllNamespaceAsync(generatedType!, Verb.List);
         await harness.Cluster.Permissions.UpdatePermissionsAllNamespaceAsync(generatedType!, Verb.Watch);
 
-        await harness.Cluster.ImportYaml(new MemoryStream(Encoding.UTF8.GetBytes(KubernetesScenarioData.CustomResourceYaml)));
+            await harness.Cluster.ImportYaml(new MemoryStream(Encoding.UTF8.GetBytes(KubernetesTestData.CustomResourceYaml)));
 
         var seedMethod = harness.Cluster.GetType()
             .GetMethods(BindingFlags.Instance | BindingFlags.Public)
@@ -480,9 +480,9 @@ public abstract class ClusterRuntimeAssertions
     {
         await using var harness = await CreateHarnessAsync(backend);
         var scenario = includeNamespaceFallback
-            ? KubernetesScenarioData.LimitedAccessWithNamespaceFallback
-            : KubernetesScenarioData.LimitedAccessWithNamespacePermissions;
-        var cluster = await harness.CreateLimitedAccessClusterAsync(scenario, TestContext.Current.CancellationToken);
+              ? KubernetesTestData.LimitedAccessWithNamespaceFallback
+              : KubernetesTestData.LimitedAccessWithNamespacePermissions;
+        var cluster = await harness.CreateLimitedAccessAsync(scenario, includeNamespaceFallback, TestContext.Current.CancellationToken);
 
         await cluster.Connect();
         await SeedResourceAsync<V1Node>(cluster);
@@ -502,8 +502,8 @@ public abstract class ClusterRuntimeAssertions
     protected async Task LimitedAccessCanICore(KubernetesBackend backend)
     {
         await using var harness = await CreateHarnessAsync(backend);
-        var cluster = await harness.CreateLimitedAccessClusterAsync(
-            KubernetesScenarioData.LimitedAccessWithNamespaceFallback,
+        var cluster = await harness.CreateLimitedAccessAsync(
+            KubernetesTestData.LimitedAccessWithNamespaceFallback,
             cancellationToken: TestContext.Current.CancellationToken);
 
         await cluster.Connect();
@@ -564,16 +564,16 @@ public abstract class ClusterRuntimeAssertions
         var cluster = harness.Cluster;
 
         await SeedResourceAsync<V1Namespace>(cluster);
-        await harness.CreateDirectAsync(new V1Namespace { Metadata = new() { Name = "team-a" } }, TestContext.Current.CancellationToken);
-        await harness.CreateDirectAsync(new V1Namespace { Metadata = new() { Name = "team-b" } }, TestContext.Current.CancellationToken);
+        await harness.CreateAsync(new V1Namespace { Metadata = new() { Name = "team-a" } }, TestContext.Current.CancellationToken);
+        await harness.CreateAsync(new V1Namespace { Metadata = new() { Name = "team-b" } }, TestContext.Current.CancellationToken);
         await EnsureServiceAccountAsync(harness, "team-a");
         await EnsureServiceAccountAsync(harness, "team-b");
-        await harness.CreateDirectAsync(new V1Pod
+        await harness.CreateAsync(new V1Pod
         {
             Metadata = new() { Name = "pod-a", NamespaceProperty = "team-a" },
             Spec = new V1PodSpec { Containers = [new V1Container { Name = "app", Image = "busybox" }] },
         }, TestContext.Current.CancellationToken);
-        await harness.CreateDirectAsync(new V1Pod
+        await harness.CreateAsync(new V1Pod
         {
             Metadata = new() { Name = "pod-b", NamespaceProperty = "team-b" },
             Spec = new V1PodSpec { Containers = [new V1Container { Name = "app", Image = "busybox" }] },
@@ -592,11 +592,11 @@ public abstract class ClusterRuntimeAssertions
             .ShouldBe(["team-a", "team-b"]);
     }
 
-    private static async Task EnsureServiceAccountAsync(IClusterScenarioHarness harness, string @namespace)
+    private static async Task EnsureServiceAccountAsync(TestCluster harness, string @namespace)
     {
         try
         {
-            await harness.CreateDirectAsync(new V1ServiceAccount
+            await harness.CreateAsync(new V1ServiceAccount
             {
                 Metadata = new() { Name = "default", NamespaceProperty = @namespace },
             }, TestContext.Current.CancellationToken);

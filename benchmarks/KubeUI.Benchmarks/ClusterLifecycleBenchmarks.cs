@@ -1,4 +1,5 @@
 using BenchmarkDotNet.Attributes;
+using KubeUI.Testing.Kubernetes.Bootstrap;
 
 namespace KubeUI.Benchmarks;
 
@@ -21,7 +22,9 @@ public class ClusterLifecycleBenchmarks
     [Benchmark]
     public async Task CreateAndDisposeDisconnectedCluster()
     {
-        await using var scope = new KubernetesTestClusterScope();
+        await using var cluster = await new TestClusterGenerator().CreateAsync(
+            new TestClusterConfig { StartDisconnected = true },
+            CancellationToken.None);
     }
 
     [Benchmark]
@@ -29,7 +32,9 @@ public class ClusterLifecycleBenchmarks
     {
         for (var i = 0; i < 8; i++)
         {
-            await using var scope = new KubernetesTestClusterScope();
+            await using var cluster = await new TestClusterGenerator().CreateAsync(
+                new TestClusterConfig { StartDisconnected = true },
+                CancellationToken.None);
         }
 
         GC.Collect();

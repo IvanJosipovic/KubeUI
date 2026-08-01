@@ -4,10 +4,10 @@
 - Keep tests near the feature or resource behavior they verify.
 - Keep shared Avalonia test setup in `Infra/`.
 - Shared Kubernetes test helpers are imported from `KubeUI.Testing.Kubernetes.Scenarios`, `KubeUI.Testing.Kubernetes.Transport`, and `KubeUI.Testing.Kubernetes.Infrastructure`; polling helpers are in `KubeUI.Testing.Utilities`.
-- Use `KubernetesScenarioClusterScope` for Kubernetes-backed tests. It creates the production `KubeUI.Kubernetes.Cluster` with the real Kubernetes client and fake HTTP/WebSocket transport.
-- Use `KubernetesTestWorkspaceScope` when the test owns both a workspace and its scenario harness.
-- Do not add test-only implementations of `IClusterRuntime`, wrappers around it, or mocks of `IKubernetes`. Configure the shared transport/harness for the scenario instead.
-- Use `CreateDisconnected` only for connection-lifecycle behavior; use the connected scope for resource, informer, authorization, and navigation tests.
+- Use the DI-registered `TestClusterGenerator` with `TestClusterConfig` for Kubernetes-backed tests. It creates the production `KubeUI.Kubernetes.Cluster` with the real Kubernetes client and fake HTTP/WebSocket transport.
+- When a test owns a workspace, create `ClusterWorkspace` directly with the generated `TestCluster.Cluster`.
+- Do not add test-only implementations of `IClusterRuntime`, wrappers around it, or mocks of `IKubernetes`. Configure the generated cluster directly.
+- Set `StartDisconnected` only for connection-lifecycle behavior; use a connected `TestCluster` for resource, informer, authorization, and navigation tests.
 
 ## Coverage Focus
 - Prefer behavior tests for view models, resource configs, and shared UI behaviors that are easy to drift.
@@ -28,6 +28,6 @@ Tests using Avalonia capabilities should use `[AvaloniaFact]`. Pure model, seria
 - Dispose scenario scopes with `await using`; dispose view models/workspaces owned directly by a test.
 - Keep fake transport behavior in `KubeUI.Testing`, not in individual tests.
 - Avalonia UI tests remain focused on UI behavior; cluster-backed REST/watch/auth parity belongs in the Kubernetes test project's backend matrix. WebSocket URI and local socket mechanics use deterministic transport/session fakes because they test client wiring or local ownership, not cluster state.
-- When replacing a test double, preserve the original observable behavior or strengthen it with a production-runtime regression; do not remove coverage merely to make a test fit the shared harness.
+- When replacing a test double, preserve the original observable behavior or strengthen it with a production-runtime regression; do not remove coverage merely to make a test fit the generated cluster.
 - Use coverage results to target high-fan-out navigation, resource readiness, relationship, CRD, and transport branches with behavior assertions.
 - In Release or parallel CI runs, wait for the exact view/cache state after resource mutations and selection changes; `Dispatcher.UIThread.RunJobs()` only drains queued UI work and is not a data-readiness guarantee.

@@ -45,7 +45,7 @@ internal sealed class KubernetesPortForwardSession : IPortForwardSession
         _webSocket = webSocket;
         _demux = new StreamDemuxer(_webSocket, StreamType.PortForward);
         _demux.Start();
-        _stream = _demux.GetStream((byte?)0, (byte?)0);
+        _stream = _demux.GetStream(0, (byte?)0);
     }
 
     public Stream Stream => _stream;

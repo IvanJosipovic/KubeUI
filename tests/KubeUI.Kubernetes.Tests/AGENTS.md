@@ -1,9 +1,9 @@
 # Kubernetes Tests
 
 - Use the production Kubernetes client with `FakeKubernetesHttpApi` for local deterministic tests.
-- Shared scenario tests use `KubernetesScenarioHarnessFactory` and the same assertions against fake and Kind backends; Kind is enabled with `KUBEUI_RUN_KIND_TESTS=1`.
+- Shared backend tests use `TestClusterGenerator` and the same assertions against fake and Kind backends; Kind is enabled with `KUBEUI_RUN_KIND_TESTS=1`.
 - Add `[KubernetesBackendData]` to one test method; do not create separate Fake and Kind test methods. Rows are displayed with the test method name followed by `- fake` or `- kind`.
-- HTTP-backed authorization and limited-access behavior must use the shared backend matrix too; configure the scenario through the harness contract rather than reaching into `FakeKubernetesHttpApi` or constructing the fake harness directly.
+- HTTP-backed authorization and limited-access behavior must use the shared backend matrix too; configure `TestClusterConfig` and the generated client directly rather than constructing test doubles.
 - Keep REST behavior in the fake `DelegatingHandler` and WebSocket-only behavior in the WebSocket transport fake.
 - Do not introduce test implementations of `IClusterRuntime`, `IKubernetes`, or `TestClusterRuntime`-style wrappers.
 - Await informer/resource completion and pass `TestContext.Current.CancellationToken`; no `Task.Delay` or `Thread.Sleep` in test code.

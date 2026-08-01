@@ -11,10 +11,11 @@ public sealed class PodDebugContainerTests
     [Trait("Category", "Kind")]
     public async Task adding_debug_container_uses_cluster_image_and_target_container(KubernetesBackend backend)
     {
-        var services = (Application.Current as TestApp)?.Services ?? throw new InvalidOperationException("Test services are not initialized.");
-        await using var scope = await KubernetesTestWorkspaceScope.CreateAsync(services, backend);
-        var runtime = scope.ScenarioHarness.Cluster;
-        var workspace = scope.Workspace;
+        var services = Application.Current.GetTestServices();
+        TestClusterConfig config = services.GetRequiredService<TestClusterConfig>();
+        config.Type = backend;
+        ClusterWorkspace workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var runtime = workspace.Runtime;
         await workspace.Connect();
         await runtime.SeedResource<V1Pod>(true);
         var settings = services.GetRequiredService<ISettingsService>();

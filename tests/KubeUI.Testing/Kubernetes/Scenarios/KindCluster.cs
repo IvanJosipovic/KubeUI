@@ -10,7 +10,7 @@ namespace KubeUI.Testing.Kubernetes.Scenarios;
 /// <summary>
 /// Interface for KIND https://github.com/kubernetes-sigs/kind/releases
 /// </summary>
-public static class KindCluster
+public static class Kind
 {
     private const string Version = "v0.32.0";
 

@@ -10,10 +10,10 @@ namespace KubeUI.Kubernetes.Tests;
 public sealed class PortForwarderTests
 {
     [Fact]
-    public void Start_activates_listener_and_assigns_local_port()
+    public async Task Start_activates_listener_and_assigns_local_port()
     {
-        using var scope = new KubernetesTestClusterScope();
-        var cluster = scope.Cluster;
+        await using var harness = await new TestClusterGenerator().CreateAsync(new TestClusterConfig(), TestContext.Current.CancellationToken);
+        var cluster = harness.Cluster;
         using var sut = new PortForwarder(cluster, "default");
         sut.SetPod("pod-1", 8080);
 
@@ -24,10 +24,10 @@ public sealed class PortForwarderTests
     }
 
     [Fact]
-    public void Start_with_busy_port_sets_busy_status()
+    public async Task Start_with_busy_port_sets_busy_status()
     {
-        using var scope = new KubernetesTestClusterScope();
-        var cluster = scope.Cluster;
+        await using var harness = await new TestClusterGenerator().CreateAsync(new TestClusterConfig(), TestContext.Current.CancellationToken);
+        var cluster = harness.Cluster;
         using var busyListener = new TcpListener(IPAddress.Loopback, 0);
         busyListener.Start();
         var busyPort = ((IPEndPoint)busyListener.LocalEndpoint).Port;
@@ -44,8 +44,8 @@ public sealed class PortForwarderTests
     [Fact]
     public async Task Stop_marks_inactive_and_stops_accepting_connections()
     {
-        using var scope = new KubernetesTestClusterScope();
-        var cluster = scope.Cluster;
+        await using var harness = await new TestClusterGenerator().CreateAsync(new TestClusterConfig(), TestContext.Current.CancellationToken);
+        var cluster = harness.Cluster;
         using var sut = new PortForwarder(cluster, "default");
         sut.SetPod("pod-1", 8080);
         sut.Start();
@@ -64,8 +64,8 @@ public sealed class PortForwarderTests
     [Fact]
     public async Task Dispose_marks_inactive_and_stops_accepting_connections()
     {
-        using var scope = new KubernetesTestClusterScope();
-        var cluster = scope.Cluster;
+        await using var harness = await new TestClusterGenerator().CreateAsync(new TestClusterConfig(), TestContext.Current.CancellationToken);
+        var cluster = harness.Cluster;
         var sut = new PortForwarder(cluster, "default");
         sut.SetPod("pod-1", 8080);
         sut.Start();
@@ -82,10 +82,10 @@ public sealed class PortForwarderTests
     }
 
     [Fact]
-    public void Equals_returns_true_for_same_target()
+    public async Task Equals_returns_true_for_same_target()
     {
-        using var scope = new KubernetesTestClusterScope();
-        var cluster = scope.Cluster;
+        await using var harness = await new TestClusterGenerator().CreateAsync(new TestClusterConfig(), TestContext.Current.CancellationToken);
+        var cluster = harness.Cluster;
         using var left = new PortForwarder(cluster, "default");
         using var right = new PortForwarder(cluster, "default");
         left.SetService("prometheus", 9090);
@@ -95,10 +95,10 @@ public sealed class PortForwarderTests
     }
 
     [Fact]
-    public void Equals_returns_false_for_different_target()
+    public async Task Equals_returns_false_for_different_target()
     {
-        using var scope = new KubernetesTestClusterScope();
-        var cluster = scope.Cluster;
+        await using var harness = await new TestClusterGenerator().CreateAsync(new TestClusterConfig(), TestContext.Current.CancellationToken);
+        var cluster = harness.Cluster;
         using var left = new PortForwarder(cluster, "default");
         using var right = new PortForwarder(cluster, "default");
         left.SetService("prometheus", 9090);
@@ -108,10 +108,10 @@ public sealed class PortForwarderTests
     }
 
     [Fact]
-    public void AddPodPortForward_returns_existing_instance_for_same_target()
+    public async Task AddPodPortForward_returns_existing_instance_for_same_target()
     {
-        using var scope = new KubernetesTestClusterScope();
-        var cluster = scope.Cluster;
+        await using var harness = await new TestClusterGenerator().CreateAsync(new TestClusterConfig(), TestContext.Current.CancellationToken);
+        var cluster = harness.Cluster;
 
         using var left = cluster.AddPodPortForward("default", "pod-1", 8080);
         using var right = cluster.AddPodPortForward("default", "pod-1", 8080);
@@ -122,10 +122,10 @@ public sealed class PortForwarderTests
     }
 
     [Fact]
-    public void AddServicePortForward_returns_existing_instance_for_same_target()
+    public async Task AddServicePortForward_returns_existing_instance_for_same_target()
     {
-        using var scope = new KubernetesTestClusterScope();
-        var cluster = scope.Cluster;
+        await using var harness = await new TestClusterGenerator().CreateAsync(new TestClusterConfig(), TestContext.Current.CancellationToken);
+        var cluster = harness.Cluster;
 
         using var left = cluster.AddServicePortForward("default", "prometheus", 9090);
         using var right = cluster.AddServicePortForward("default", "prometheus", 9090);
@@ -138,8 +138,8 @@ public sealed class PortForwarderTests
     [Fact]
     public async Task Port_forward_uses_mocked_transport_and_copies_client_bytes()
     {
-        using var scope = new KubernetesTestClusterScope();
-        var cluster = scope.Cluster;
+        await using var harness = await new TestClusterGenerator().CreateAsync(new TestClusterConfig(), TestContext.Current.CancellationToken);
+        var cluster = harness.Cluster;
         using var stream = new CaptureStream();
         var session = new Mock<IPortForwardSession>(MockBehavior.Strict);
         session.SetupGet(x => x.Stream).Returns(stream);
@@ -173,8 +173,8 @@ public sealed class PortForwarderTests
     [Trait("Category", "Kind")]
     public async Task Service_forward_without_endpoint_slice_sets_expected_status(KubernetesBackend backend)
     {
-        await using var harness = await KubernetesScenarioHarnessFactory.CreateAsync(
-            backend,
+        await using var harness = await new TestClusterGenerator().CreateAsync(
+            new TestClusterConfig { Type = backend },
             TestContext.Current.CancellationToken);
         var cluster = harness.Cluster;
         await cluster.Permissions.UpdatePermissionsAllNamespaceAsync<V1Service>(Verb.List);
@@ -203,8 +203,8 @@ public sealed class PortForwarderTests
     [Trait("Category", "Kind")]
     public async Task Service_forward_without_matching_port_sets_expected_status(KubernetesBackend backend)
     {
-        await using var harness = await KubernetesScenarioHarnessFactory.CreateAsync(
-            backend,
+        await using var harness = await new TestClusterGenerator().CreateAsync(
+            new TestClusterConfig { Type = backend },
             TestContext.Current.CancellationToken);
         var cluster = harness.Cluster;
         await cluster.Permissions.UpdatePermissionsAllNamespaceAsync<V1Service>(Verb.List);
@@ -255,8 +255,8 @@ public sealed class PortForwarderTests
     [Trait("Category", "Kind")]
     public async Task Service_forward_without_ready_pod_sets_expected_status(KubernetesBackend backend)
     {
-        await using var harness = await KubernetesScenarioHarnessFactory.CreateAsync(
-            backend,
+        await using var harness = await new TestClusterGenerator().CreateAsync(
+            new TestClusterConfig { Type = backend },
             TestContext.Current.CancellationToken);
         var cluster = harness.Cluster;
         await cluster.Permissions.UpdatePermissionsAllNamespaceAsync<V1Service>(Verb.List);

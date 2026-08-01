@@ -16,11 +16,10 @@ public sealed class ResourcePropertiesViewInitializationTests
     [AvaloniaFact]
     public async Task cluster_aware_property_controls_are_initialized_once()
     {
-        await using var scope = await KubernetesTestWorkspaceScope.CreateAsync((Application.Current as TestApp)?.Services!, KubernetesBackend.Fake);
-        var workspace = scope.Workspace;
+        IServiceProvider services = Application.Current.GetTestServices();
+        ClusterWorkspace workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         await workspace.Connect();
 
-        var services = (Application.Current as TestApp)?.Services ?? throw new InvalidOperationException("Test services are not initialized.");
         var trackingConfig = new TrackingResourceConfig(services);
         trackingConfig.Initialize(workspace);
         var viewModel = services.GetRequiredService<ResourcePropertiesViewModel<V1Pod>>();
@@ -62,11 +61,10 @@ public sealed class ResourcePropertiesViewInitializationTests
     [AvaloniaFact]
     public async Task properties_view_populates_on_first_attach()
     {
-        await using var scope = await KubernetesTestWorkspaceScope.CreateAsync((Application.Current as TestApp)?.Services!, KubernetesBackend.Fake);
-        var workspace = scope.Workspace;
+        IServiceProvider services = Application.Current.GetTestServices();
+        ClusterWorkspace workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         await workspace.Connect();
 
-        var services = (Application.Current as TestApp)?.Services ?? throw new InvalidOperationException("Test services are not initialized.");
         var viewModel = services.GetRequiredService<ResourcePropertiesViewModel<V1Pod>>();
         viewModel.Initialize(workspace, new V1Pod
         {

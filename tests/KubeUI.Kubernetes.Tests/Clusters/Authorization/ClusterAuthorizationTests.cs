@@ -1,5 +1,4 @@
 using System.Reflection;
-using System.Collections.ObjectModel;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
 using KubernetesCRDModelGen;
@@ -11,80 +10,81 @@ namespace KubeUI.Kubernetes.Tests.Clusters.Authorization;
 
 public sealed class ClusterAuthorizationTests
 {
-    [Fact]
-    public async Task cani_returns_false_when_permission_review_has_not_been_cached_yet()
+    [Theory, KubernetesBackendData]
+    [Trait("Category", "Kind")]
+    public async Task cani_returns_false_when_permission_review_has_not_been_cached_yet(KubernetesBackend backend)
     {
-        using var loggerFactory = NullLoggerFactory.Instance;
-        await using var cluster = new Cluster(
-            NullLogger<Cluster>.Instance,
-            loggerFactory,
-            new ModelCache(),
-            new Generator(),
-            new KubernetesTestSettingsStore(),
-            new ServiceCollection().BuildServiceProvider());
+        TestClusterConfig config = new()
+        {
+            Type = backend,
+            StartDisconnected = true,
+        };
+        await using var testCluster = await new TestClusterGenerator().CreateAsync(
+            config,
+            TestContext.Current.CancellationToken);
 
-        cluster.CanI(typeof(V1Pod), Verb.Create, subresource: "portforward").ShouldBeFalse();
+        testCluster.Cluster.CanI(typeof(V1Pod), Verb.Create, subresource: "portforward").ShouldBeFalse();
     }
 
     [Theory, KubernetesBackendData]
     [Trait("Category", "Kind")]
     public async Task cani_any_namespace_uses_namespace_scoped_permission_when_cluster_scope_is_denied(KubernetesBackend backend)
     {
-        await using var harness = await KubernetesScenarioHarnessFactory.CreateAsync(
-            backend,
+        await using var harness = await new TestClusterGenerator().CreateAsync(
+            new TestClusterConfig { Type = backend },
             TestContext.Current.CancellationToken);
-        var cluster = (Cluster)await harness.CreateLimitedAccessClusterAsync(
-            KubernetesScenarioData.LimitedAccessWithNamespaceFallback,
+        var cluster = (Cluster)await harness.CreateLimitedAccessAsync(
+            KubernetesTestData.LimitedAccessWithNamespaceFallback,
+            useNamespaceFallback: true,
             cancellationToken: TestContext.Current.CancellationToken);
-        await using var disposableCluster = cluster;
         await cluster.Permissions.UpdatePermissionsAllNamespaceAsync<V1Pod>(Verb.Create, "portforward");
 
         cluster.CanIAnyNamespace<V1Pod>(Verb.Create, "portforward").ShouldBeTrue();
     }
 
-    [Fact]
-    public async Task globally_allowed_namespaced_permission_skips_namespace_reviews()
+    [Theory, KubernetesBackendData]
+    [Trait("Category", "Kind")]
+    public async Task globally_allowed_namespaced_permission_skips_namespace_reviews(KubernetesBackend backend)
     {
-        using var loggerFactory = NullLoggerFactory.Instance;
-        await using var cluster = new Cluster(
-            NullLogger<Cluster>.Instance,
-            loggerFactory,
-            new ModelCache(),
-            new Generator(),
-            new KubernetesTestSettingsStore(),
-            new ServiceCollection().BuildServiceProvider());
-        var namespaces = new ObservableCollection<V1Namespace>
-        {
-            new() { Metadata = new V1ObjectMeta { Name = "my-app" } }
-        };
-        cluster.Namespaces = new ReadOnlyObservableCollection<V1Namespace>(namespaces);
-
-        var setPermissionResult = typeof(Cluster).GetMethod("SetPermissionResult", BindingFlags.Instance | BindingFlags.NonPublic);
-        setPermissionResult.ShouldNotBeNull();
-        setPermissionResult!.Invoke(cluster, [GroupApiVersionKind.From<V1Pod>(), "list", null, null, true]);
+        await using var harness = await new TestClusterGenerator().CreateAsync(
+            new TestClusterConfig
+            {
+                Type = backend,
+                AuthenticatedUser = KubernetesRbac.ServiceAccountUser,
+                InitialResources =
+                [
+                    (new V1Namespace { Metadata = new V1ObjectMeta { Name = "my-app" } }),
+                    .. KubernetesRbac.ClusterWide(
+                                new RbacRule("namespaces", "list"),
+                                new RbacRule("namespaces", "watch"),
+                                new RbacRule("pods", "list")),
+                ],
+            },
+            TestContext.Current.CancellationToken);
+        var cluster = harness.Cluster;
+        var authorizationRequestsBeforeUpdate = harness.AuthorizationRequestCount;
 
         await cluster.UpdatePermissionsAllNamespaceAsync<V1Pod>(Verb.List);
 
         cluster.CanI<V1Pod>(Verb.List, "my-app").ShouldBeTrue();
+        if (backend == KubernetesBackend.Fake)
+        {
+            harness.AuthorizationRequestCount.ShouldBe(authorizationRequestsBeforeUpdate + 1);
+        }
     }
 
-    [Fact]
-    public async Task removing_seeded_resource_container_removes_the_container()
+    [Theory, KubernetesBackendData]
+    [Trait("Category", "Kind")]
+    public async Task removing_seeded_resource_container_removes_the_container(KubernetesBackend backend)
     {
-        using var loggerFactory = NullLoggerFactory.Instance;
-        await using var cluster = new Cluster(
-            NullLogger<Cluster>.Instance,
-            loggerFactory,
-            new ModelCache(),
-            new Generator(),
-            new KubernetesTestSettingsStore(),
-            new ServiceCollection().BuildServiceProvider());
+        await using var harness = await new TestClusterGenerator().CreateAsync(
+            new TestClusterConfig { Type = backend },
+            TestContext.Current.CancellationToken);
+        var cluster = harness.Cluster;
 
         var kind = GroupApiVersionKind.From<V1Pod>();
-        cluster.Objects[kind] = new ContainerClass<V1Pod>
-        {
-            Initialized = true,
-        };
+        await cluster.SeedResource<V1Pod>(waitForReady: true);
+        cluster.Objects.ContainsKey(kind).ShouldBeTrue();
 
         var invalidateSeededResourceMethod = typeof(Cluster).GetMethod("InvalidateSeededResource", BindingFlags.Instance | BindingFlags.NonPublic);
         invalidateSeededResourceMethod.ShouldNotBeNull();
@@ -137,8 +137,8 @@ public sealed class ClusterAuthorizationTests
             new ServiceCollection().BuildServiceProvider());
         cluster.Connected = true;
 
-        var first = KubeUI.Kubernetes.Serialization.KubernetesYaml.Deserialize<V1CustomResourceDefinition>(KubernetesScenarioData.CustomResourceDefinitionYaml);
-        var second = KubeUI.Kubernetes.Serialization.KubernetesYaml.Deserialize<V1CustomResourceDefinition>(KubernetesScenarioData.CustomResourceDefinitionYaml);
+        var first = KubeUI.Kubernetes.Serialization.KubernetesYaml.Deserialize<V1CustomResourceDefinition>(KubernetesTestData.CustomResourceDefinitionYaml);
+        var second = KubeUI.Kubernetes.Serialization.KubernetesYaml.Deserialize<V1CustomResourceDefinition>(KubernetesTestData.CustomResourceDefinitionYaml);
         second.Spec!.Names!.Kind = "UpdatedTest";
 
         var firstEntered = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);

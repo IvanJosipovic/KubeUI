@@ -1,3 +1,4 @@
+using KubeUI.Avalonia.Services.Settings;
 using Microsoft.Extensions.Logging;
 
 namespace KubeUI.Avalonia.Tests.Infra;

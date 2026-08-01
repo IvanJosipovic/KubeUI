@@ -1,3 +1,6 @@
+# Prompt
+caveman mode
+
 # Engineering Guide (AGENTS)
 
 This document defines the repository-wide architectural and coding rules. For Avalonia-specific UI guidance, see `src/KubeUI.Avalonia/AGENTS.md`.

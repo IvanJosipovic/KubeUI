@@ -58,14 +58,15 @@ public class ResourceYamlViewModelTests : IDisposable
 
     private ClusterWorkspace CreateTestWorkspace()
     {
-        var scope = KubernetesTestWorkspaceScope.CreateFake((Application.Current as TestApp)?.Services!);
-        _disposables.Add(scope);
-        return scope.Workspace;
+        IServiceProvider services = Application.Current.GetTestServices();
+        ClusterWorkspace workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        _disposables.Add(workspace);
+        return workspace;
     }
 
     private T ResolveService<T>() where T : class
     {
-        var services = (Application.Current as TestApp)?.Services ?? throw new InvalidOperationException("Test services are not initialized.");
+        var services = Application.Current.GetTestServices();
         var service = services.GetRequiredService<T>();
         if (service is IDisposable disposable)
         {
@@ -441,7 +442,7 @@ public class ResourceYamlViewModelTests : IDisposable
 
         vm.YamlDocument.Text.ShouldNotContain("updated: \"true\"");
 
-        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        var editor = view.FindControl<TextEditor>("Editor");
         editor.ShouldNotBeNull();
 
         var behavior = Interaction.GetBehaviors(editor).OfType<YamlEditorBehavior>().Single();
@@ -501,7 +502,7 @@ public class ResourceYamlViewModelTests : IDisposable
 
         Dispatcher.UIThread.RunJobs();
 
-        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        var editor = view.FindControl<TextEditor>("Editor");
         editor.ShouldNotBeNull();
 
         var keyBinding = editor.KeyBindings.OfType<KeyBinding>()
@@ -556,7 +557,7 @@ public class ResourceYamlViewModelTests : IDisposable
             """.ReplaceLineEndings("\n");
         Dispatcher.UIThread.RunJobs();
 
-        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        var editor = view.FindControl<TextEditor>("Editor");
         editor.ShouldNotBeNull();
 
         var fieldNameOffset = editor.Document!.Text.IndexOf("spec", StringComparison.Ordinal) + 1;
@@ -617,7 +618,7 @@ public class ResourceYamlViewModelTests : IDisposable
             """.ReplaceLineEndings("\n");
         Dispatcher.UIThread.RunJobs();
 
-        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        var editor = view.FindControl<TextEditor>("Editor");
         editor.ShouldNotBeNull();
 
         var fieldNameOffset = editor.Document!.Text.IndexOf("ownerReferences", StringComparison.Ordinal) + 1;
@@ -676,7 +677,7 @@ public class ResourceYamlViewModelTests : IDisposable
             """.ReplaceLineEndings("\n");
         Dispatcher.UIThread.RunJobs();
 
-        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        var editor = view.FindControl<TextEditor>("Editor");
         editor.ShouldNotBeNull();
 
         var fieldNameOffset = editor.Document.Text.IndexOf("containers", StringComparison.Ordinal) + 1;
@@ -736,7 +737,7 @@ public class ResourceYamlViewModelTests : IDisposable
             """.ReplaceLineEndings("\n");
         Dispatcher.UIThread.RunJobs();
 
-        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        var editor = view.FindControl<TextEditor>("Editor");
         editor.ShouldNotBeNull();
 
         var lineNumber = editor.Document!.GetLineByOffset(editor.Document.Text.IndexOf("ownerReferences", StringComparison.Ordinal)).LineNumber;
@@ -799,7 +800,7 @@ public class ResourceYamlViewModelTests : IDisposable
             """.ReplaceLineEndings("\n");
         Dispatcher.UIThread.RunJobs();
 
-        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        var editor = view.FindControl<TextEditor>("Editor");
         editor.ShouldNotBeNull();
 
         var fieldNameOffset = editor.Document!.Text.IndexOf("imagePullPolicy", StringComparison.Ordinal) + 2;
@@ -862,7 +863,7 @@ public class ResourceYamlViewModelTests : IDisposable
             """.ReplaceLineEndings("\n");
         Dispatcher.UIThread.RunJobs();
 
-        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        var editor = view.FindControl<TextEditor>("Editor");
         editor.ShouldNotBeNull();
 
         var fieldNameOffset = editor.Document!.Text.IndexOf("name: FIRST", StringComparison.Ordinal) + 1;
@@ -922,7 +923,7 @@ public class ResourceYamlViewModelTests : IDisposable
             """.ReplaceLineEndings("\n");
         Dispatcher.UIThread.RunJobs();
 
-        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        var editor = view.FindControl<TextEditor>("Editor");
         editor.ShouldNotBeNull();
 
         var nameOffset = editor.Document!.Text.IndexOf("name: cert-manager", StringComparison.Ordinal) + 1;
@@ -997,7 +998,7 @@ public class ResourceYamlViewModelTests : IDisposable
             """.ReplaceLineEndings("\n");
         Dispatcher.UIThread.RunJobs();
 
-        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        var editor = view.FindControl<TextEditor>("Editor");
         editor.ShouldNotBeNull();
 
         var fieldNameOffset = editor.Document!.Text.IndexOf("containers", StringComparison.Ordinal) + 1;
@@ -1055,7 +1056,7 @@ public class ResourceYamlViewModelTests : IDisposable
             """.ReplaceLineEndings("\n");
         Dispatcher.UIThread.RunJobs();
 
-        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        var editor = view.FindControl<TextEditor>("Editor");
         editor.ShouldNotBeNull();
 
         var colonOffset = editor.Document!.Text.IndexOf("imagePullPolicy:", StringComparison.Ordinal) + "imagePullPolicy".Length;
@@ -1154,7 +1155,7 @@ public class ResourceYamlViewModelTests : IDisposable
             """.ReplaceLineEndings("\n");
         Dispatcher.UIThread.RunJobs();
 
-        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        var editor = view.FindControl<TextEditor>("Editor");
         editor.ShouldNotBeNull();
 
         var fieldNameOffset = editor.Document!.Text.IndexOf("imagePullPolicy", StringComparison.Ordinal) + 2;
@@ -1204,7 +1205,7 @@ public class ResourceYamlViewModelTests : IDisposable
             """.ReplaceLineEndings("\n");
         Dispatcher.UIThread.RunJobs();
 
-        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        var editor = view.FindControl<TextEditor>("Editor");
         editor.ShouldNotBeNull();
 
         var specOffset = editor.Document!.Text.IndexOf("spec", StringComparison.Ordinal) + 1;
@@ -1257,7 +1258,7 @@ public class ResourceYamlViewModelTests : IDisposable
             """.ReplaceLineEndings("\n");
         Dispatcher.UIThread.RunJobs();
 
-        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        var editor = view.FindControl<TextEditor>("Editor");
         editor.ShouldNotBeNull();
 
         var nameOffset = editor.Document!.Text.IndexOf("name: FIRST", StringComparison.Ordinal) + 1;
@@ -1316,7 +1317,7 @@ public class ResourceYamlViewModelTests : IDisposable
             """.ReplaceLineEndings("\n");
         Dispatcher.UIThread.RunJobs();
 
-        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        var editor = view.FindControl<TextEditor>("Editor");
         editor.ShouldNotBeNull();
 
         var fieldOffset = editor.Document!.Text.IndexOf("imagePullPolicy", StringComparison.Ordinal) + 2;
@@ -1364,7 +1365,7 @@ public class ResourceYamlViewModelTests : IDisposable
             """.ReplaceLineEndings("\n");
         Dispatcher.UIThread.RunJobs();
 
-        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        var editor = view.FindControl<TextEditor>("Editor");
         editor.ShouldNotBeNull();
 
         var valueOffset = editor.Document!.Text.IndexOf("IfNotPresent", StringComparison.Ordinal) + 2;
@@ -1436,7 +1437,7 @@ public class ResourceYamlViewModelTests : IDisposable
             """.ReplaceLineEndings("\n");
         Dispatcher.UIThread.RunJobs();
 
-        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        var editor = view.FindControl<TextEditor>("Editor");
         editor.ShouldNotBeNull();
 
         var fieldOffset = editor.Document!.Text.LastIndexOf("imagePullPolicy", StringComparison.Ordinal) + 2;
@@ -1515,7 +1516,7 @@ public class ResourceYamlViewModelTests : IDisposable
             .TrimEnd('\r', '\n');
         Dispatcher.UIThread.RunJobs();
 
-        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        var editor = view.FindControl<TextEditor>("Editor");
         editor.ShouldNotBeNull();
 
         var fieldOffset = editor.Document!.Text.LastIndexOf("imagePullPolicy", StringComparison.Ordinal) + 2;
@@ -1591,7 +1592,7 @@ public class ResourceYamlViewModelTests : IDisposable
             """.ReplaceLineEndings("\n");
         Dispatcher.UIThread.RunJobs();
 
-        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        var editor = view.FindControl<TextEditor>("Editor");
         editor.ShouldNotBeNull();
 
         var scrollViewer = editor.GetScrollViewer();
@@ -1678,7 +1679,7 @@ public class ResourceYamlViewModelTests : IDisposable
             """.ReplaceLineEndings("\n");
         Dispatcher.UIThread.RunJobs();
 
-        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        var editor = view.FindControl<TextEditor>("Editor");
         editor.ShouldNotBeNull();
 
         var scrollViewer = editor.GetScrollViewer();
@@ -1759,7 +1760,7 @@ public class ResourceYamlViewModelTests : IDisposable
             """.ReplaceLineEndings("\n");
         Dispatcher.UIThread.RunJobs();
 
-        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        var editor = view.FindControl<TextEditor>("Editor");
         editor.ShouldNotBeNull();
 
         var scrollViewer = editor.GetScrollViewer();
@@ -1804,7 +1805,7 @@ public class ResourceYamlViewModelTests : IDisposable
 
         Dispatcher.UIThread.RunJobs();
 
-        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        var editor = view.FindControl<TextEditor>("Editor");
         editor.ShouldNotBeNull();
         editor.TextArea.PerformTextInput("\n");
         Dispatcher.UIThread.RunJobs();
@@ -1848,7 +1849,7 @@ public class ResourceYamlViewModelTests : IDisposable
 
         Dispatcher.UIThread.RunJobs();
 
-        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        var editor = view.FindControl<TextEditor>("Editor");
         editor.ShouldNotBeNull();
         editor.CaretOffset = editor.Text.LastIndexOf("containers:", StringComparison.Ordinal) + "containers:".Length;
 
@@ -1901,7 +1902,7 @@ public class ResourceYamlViewModelTests : IDisposable
 
         Dispatcher.UIThread.RunJobs();
 
-        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        var editor = view.FindControl<TextEditor>("Editor");
         editor.ShouldNotBeNull();
         editor.CaretOffset = editor.Text.LastIndexOf("command:", StringComparison.Ordinal) + "command:".Length;
 
@@ -1952,7 +1953,7 @@ public class ResourceYamlViewModelTests : IDisposable
 
         Dispatcher.UIThread.RunJobs();
 
-        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        var editor = view.FindControl<TextEditor>("Editor");
         editor.ShouldNotBeNull();
         editor.CaretOffset = editor.Text.Length;
 
@@ -1999,7 +2000,7 @@ public class ResourceYamlViewModelTests : IDisposable
 
         Dispatcher.UIThread.RunJobs();
 
-        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        var editor = view.FindControl<TextEditor>("Editor");
         editor.ShouldNotBeNull();
         editor.CaretOffset = editor.Text.Length;
 
@@ -2049,7 +2050,7 @@ public class ResourceYamlViewModelTests : IDisposable
 
         Dispatcher.UIThread.RunJobs();
 
-        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        var editor = view.FindControl<TextEditor>("Editor");
         editor.ShouldNotBeNull();
         editor.CaretOffset = editor.Text.Length;
 
@@ -2096,7 +2097,7 @@ public class ResourceYamlViewModelTests : IDisposable
 
         Dispatcher.UIThread.RunJobs();
 
-        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        var editor = view.FindControl<TextEditor>("Editor");
         editor.ShouldNotBeNull();
         editor.CaretOffset = editor.Text.Length;
 
@@ -2166,7 +2167,7 @@ public class ResourceYamlViewModelTests : IDisposable
 
         Dispatcher.UIThread.RunJobs();
 
-        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        var editor = view.FindControl<TextEditor>("Editor");
         editor.ShouldNotBeNull();
         editor.CaretOffset = editor.Text.Length;
 
@@ -2415,7 +2416,7 @@ public class ResourceYamlViewModelTests : IDisposable
         vm.ValidationDiagnostics[0].Message.ShouldNotContain("Exception during serialization");
         vm.ValidationDiagnostics[0].Message.ShouldNotContain("Exception during deserialization");
 
-        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        var editor = view.FindControl<TextEditor>("Editor");
         editor.ShouldNotBeNull();
 
         GetDiagnosticMessages(editor).ShouldContain(message => message.Contains("expected", StringComparison.OrdinalIgnoreCase));
@@ -2469,7 +2470,7 @@ public class ResourceYamlViewModelTests : IDisposable
         vm.ActionResultTitle.ShouldBe("Validation failed");
         vm.ActionResultMessage.ShouldContain("unknownField");
 
-        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        var editor = view.FindControl<TextEditor>("Editor");
         editor.ShouldNotBeNull();
 
         GetDiagnosticMessages(editor).ShouldContain(message => message.Contains("unknownField", StringComparison.OrdinalIgnoreCase));
@@ -2514,7 +2515,7 @@ public class ResourceYamlViewModelTests : IDisposable
         vm.ActionResultTitle.ShouldBe("Validation failed");
         vm.ActionResultMessage.ShouldContain("MadeUpKind");
 
-        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        var editor = view.FindControl<TextEditor>("Editor");
         editor.ShouldNotBeNull();
 
         GetDiagnosticMessages(editor).ShouldContain(message => message.Contains("MadeUpKind", StringComparison.OrdinalIgnoreCase));
@@ -2698,9 +2699,10 @@ public class ResourceYamlViewModelTests : IDisposable
     {
         var window = CreateWindow(width: 800, height: 600);
 
-        var scope = KubernetesTestWorkspaceScope.CreateFake((Application.Current as TestApp)?.Services!);
-        _disposables.Add(scope);
-        var cluster = scope.Workspace;
+        IServiceProvider services = Application.Current.GetTestServices();
+        TestClusterConfig config = services.GetRequiredService<TestClusterConfig>();
+        ClusterWorkspace cluster = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        _disposables.Add(cluster);
 
         var vm = ResolveService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
@@ -2887,7 +2889,7 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public void YamlEditorBehavior_UnindentsEmptyLineByTwoSpaces()
     {
-        var editor = new AvaloniaEdit.TextEditor
+        var editor = new TextEditor
         {
             Document = new TextDocument("        "),
         };
@@ -2903,7 +2905,7 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public void YamlEditorBehavior_DoesNotUnindentNonEmptyLine()
     {
-        var editor = new AvaloniaEdit.TextEditor
+        var editor = new TextEditor
         {
             Document = new TextDocument("      a"),
         };
@@ -2919,7 +2921,7 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public void YamlEditorBehavior_UnindentsEmptyLineForShiftTabPath()
     {
-        var editor = new AvaloniaEdit.TextEditor
+        var editor = new TextEditor
         {
             Document = new TextDocument("    "),
         };
@@ -2935,7 +2937,7 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public void YamlEditorBehavior_UnindentsCurrentLineForShiftTabPath()
     {
-        var editor = new AvaloniaEdit.TextEditor
+        var editor = new TextEditor
         {
             Document = new TextDocument("    value"),
         };
@@ -2951,7 +2953,7 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public void YamlEditorBehavior_IndentsSelectedLinesByTwoSpaces()
     {
-        var editor = new AvaloniaEdit.TextEditor
+        var editor = new TextEditor
         {
             Document = new TextDocument("a\nb\n"),
         };
@@ -2966,7 +2968,7 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public void YamlEditorBehavior_UnindentsSelectedLinesByTwoSpaces()
     {
-        var editor = new AvaloniaEdit.TextEditor
+        var editor = new TextEditor
         {
             Document = new TextDocument("  a\n  b\n"),
         };
@@ -3002,7 +3004,7 @@ public class ResourceYamlViewModelTests : IDisposable
 
         Dispatcher.UIThread.RunJobs();
 
-        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        var editor = view.FindControl<TextEditor>("Editor");
         editor.ShouldNotBeNull();
         editor.Options.IndentationSize.ShouldBe(2);
         editor.Options.ConvertTabsToSpaces.ShouldBeTrue();
@@ -3032,7 +3034,7 @@ public class ResourceYamlViewModelTests : IDisposable
 
         Dispatcher.UIThread.RunJobs();
 
-        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        var editor = view.FindControl<TextEditor>("Editor");
         editor.ShouldNotBeNull();
         editor.Options.AllowScrollBelowDocument.ShouldBeTrue();
     }
@@ -3054,7 +3056,7 @@ public class ResourceYamlViewModelTests : IDisposable
 
         Dispatcher.UIThread.RunJobs();
 
-        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        var editor = view.FindControl<TextEditor>("Editor");
         editor.ShouldNotBeNull();
 
         var behavior = Interaction.GetBehaviors(editor).OfType<YamlEditorBehavior>().Single();
@@ -3090,7 +3092,7 @@ public class ResourceYamlViewModelTests : IDisposable
 
         Dispatcher.UIThread.RunJobs();
 
-        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        var editor = view.FindControl<TextEditor>("Editor");
         editor.ShouldNotBeNull();
 
         var behavior = Interaction.GetBehaviors(editor).OfType<YamlEditorBehavior>().Single();
@@ -3126,7 +3128,7 @@ public class ResourceYamlViewModelTests : IDisposable
 
         Dispatcher.UIThread.RunJobs();
 
-        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        var editor = view.FindControl<TextEditor>("Editor");
         editor.ShouldNotBeNull();
 
         var behavior = Interaction.GetBehaviors(editor).OfType<YamlEditorBehavior>().Single();
@@ -3157,7 +3159,7 @@ public class ResourceYamlViewModelTests : IDisposable
         return field?.GetValue(behavior) as CompletionWindow;
     }
 
-    private static bool InvokeHoverTooltip(AvaloniaEdit.TextEditor editor, int offset, bool onlyWhenOpen = false)
+    private static bool InvokeHoverTooltip(TextEditor editor, int offset, bool onlyWhenOpen = false)
     {
         var behavior = Interaction.GetBehaviors(editor).OfType<YamlHoverToolTipBehavior>().Single();
         var method = typeof(YamlHoverToolTipBehavior).GetMethod("TryShowHoverTooltipAtOffset", BindingFlags.Instance | BindingFlags.NonPublic);
@@ -3165,7 +3167,7 @@ public class ResourceYamlViewModelTests : IDisposable
         return (bool)method.Invoke(behavior, [offset, onlyWhenOpen])!;
     }
 
-    private static bool InvokeHoverTooltipAtPoint(AvaloniaEdit.TextEditor editor, Point point, bool onlyWhenOpen = false)
+    private static bool InvokeHoverTooltipAtPoint(TextEditor editor, Point point, bool onlyWhenOpen = false)
     {
         var behavior = Interaction.GetBehaviors(editor).OfType<YamlHoverToolTipBehavior>().Single();
         var method = typeof(YamlHoverToolTipBehavior).GetMethod("TryShowHoverTooltipAtPoint", BindingFlags.Instance | BindingFlags.NonPublic);
@@ -3173,7 +3175,7 @@ public class ResourceYamlViewModelTests : IDisposable
         return (bool)method.Invoke(behavior, [point, onlyWhenOpen])!;
     }
 
-    private static int? TryGetHoverOffset(AvaloniaEdit.TextEditor editor, Point point)
+    private static int? TryGetHoverOffset(TextEditor editor, Point point)
     {
         var behavior = Interaction.GetBehaviors(editor).OfType<YamlHoverToolTipBehavior>().Single();
         var method = typeof(YamlHoverToolTipBehavior).GetMethod("TryGetPointerOffset", BindingFlags.Instance | BindingFlags.NonPublic);
@@ -3184,7 +3186,7 @@ public class ResourceYamlViewModelTests : IDisposable
         return resolved ? (int)args[1] : null;
     }
 
-    private static object? TryCreateHoverDocumentationTip(AvaloniaEdit.TextEditor editor, int offset)
+    private static object? TryCreateHoverDocumentationTip(TextEditor editor, int offset)
     {
         var behavior = Interaction.GetBehaviors(editor).OfType<YamlHoverToolTipBehavior>().Single();
         var method = typeof(YamlHoverToolTipBehavior).GetMethod("TryCreateDocumentationTip", BindingFlags.Instance | BindingFlags.NonPublic);
@@ -3195,7 +3197,7 @@ public class ResourceYamlViewModelTests : IDisposable
         return created ? args[1] : null;
     }
 
-    private static Point GetPointForOffset(AvaloniaEdit.TextEditor editor, int offset)
+    private static Point GetPointForOffset(TextEditor editor, int offset)
     {
         editor.UpdateLayout();
         editor.TextArea.TextView.UpdateLayout();
@@ -3204,18 +3206,18 @@ public class ResourceYamlViewModelTests : IDisposable
         return new Point(point.X + 2, point.Y);
     }
 
-    private static Point GetViewportPointForOffset(AvaloniaEdit.TextEditor editor, int offset)
+    private static Point GetViewportPointForOffset(TextEditor editor, int offset)
     {
         var point = GetPointForOffset(editor, offset);
         return point - editor.TextArea.TextView.ScrollOffset;
     }
 
-    private static object? GetDocumentationWindow(AvaloniaEdit.TextEditor editor)
+    private static object? GetDocumentationWindow(TextEditor editor)
     {
-        return global::Avalonia.Controls.ToolTip.GetTip(editor);
+        return ToolTip.GetTip(editor);
     }
 
-    private static IReadOnlyList<string> GetDiagnosticMessages(AvaloniaEdit.TextEditor editor)
+    private static IReadOnlyList<string> GetDiagnosticMessages(TextEditor editor)
     {
         var behavior = Interaction.GetBehaviors(editor).OfType<YamlDiagnosticRenderingBehavior>().Single();
         var field = typeof(YamlDiagnosticRenderingBehavior).GetField("_renderer", BindingFlags.Instance | BindingFlags.NonPublic);
@@ -3264,10 +3266,10 @@ public class ResourceYamlViewModelTests : IDisposable
         return pod;
     }
 
-    private static AvaloniaEdit.TextEditor? FindVisibleYamlEditor(Visual root, ResourceYamlViewModel vm)
+    private static TextEditor? FindVisibleYamlEditor(Visual root, ResourceYamlViewModel vm)
     {
         return root.GetVisualDescendants()
-            .OfType<AvaloniaEdit.TextEditor>()
+            .OfType<TextEditor>()
             .FirstOrDefault(editor => editor.IsVisible && ReferenceEquals(editor.DataContext, vm));
     }
 
@@ -3290,7 +3292,7 @@ public class ResourceYamlViewModelTests : IDisposable
             Dispatcher.UIThread.RunJobs();
             if (predicate())
                 return;
-            System.Threading.Thread.Yield();
+            Thread.Yield();
         }
         predicate().ShouldBeTrue();
     }

@@ -3,6 +3,7 @@ using KubeUI.Avalonia.Styles;
 using KubeUI.Avalonia.Tests.Infra;
 
 [assembly: AvaloniaTestApplication(typeof(TestAppBuilder))]
+[assembly: CollectionBehavior(DisableTestParallelization = true)]
 
 namespace KubeUI.Avalonia.Tests.Infra;
 

@@ -1,5 +1,6 @@
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
+using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Shell.Navigation;
 using KubeUI.Avalonia.Tests.Infra;
 using Shouldly;
@@ -12,30 +13,29 @@ public sealed class LimitedAccessNavigationTests
     [Trait("Category", "Kind")]
     public async Task limited_access_with_listable_namespace_shows_namespaced_resources_in_navigation(KubernetesBackend backend)
     {
-        await using var harness = await KubernetesScenarioHarnessFactory.CreateAsync(
-            backend,
-            TestContext.Current.CancellationToken);
+        IServiceProvider services = Application.Current.GetTestServices();
+        TestClusterConfig config = services.GetRequiredService<TestClusterConfig>();
+        config.Type = backend;
+        config.AuthenticatedUser = KubernetesRbac.ServiceAccountUser;
+        config.InitialYaml = KubernetesTestData.LimitedAccessWithNamespacePermissions;
 
-        var runtime = await harness.CreateLimitedAccessClusterAsync(
-            KubernetesScenarioData.LimitedAccessWithNamespacePermissions,
-            cancellationToken: TestContext.Current.CancellationToken);
-        var services = (Application.Current as TestApp)?.Services ?? throw new InvalidOperationException("Test services are not initialized.");
-        using var workspace = ActivatorUtilities.CreateInstance<ClusterWorkspace>(services, runtime);
-        var navigation = services.GetRequiredService<NavigationViewModel>();
-
-        navigation.ClusterCatalog.Clusters.Add(workspace);
+        ClusterWorkspace workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        NavigationViewModel navigation = services.GetRequiredService<NavigationViewModel>();
         await workspace.Connect();
         Dispatcher.UIThread.RunJobs();
 
         var clusterNode = navigation.Clusters.Single(x => x.Cluster == workspace);
         await navigation.TreeViewSelectionChangedAsync(clusterNode);
 
-        await WaitForAsync(() =>
-        {
-            Dispatcher.UIThread.RunJobs();
-            return FindResourceLink(clusterNode, "Pods") != null
-                && FindResourceLink(clusterNode, "Deployments") != null;
-        }, timeoutMs: 30000);
+        await TestWait.UntilAsync(
+            () =>
+            {
+                Dispatcher.UIThread.RunJobs();
+                return FindResourceLink(clusterNode, "Pods") != null
+                    && FindResourceLink(clusterNode, "Deployments") != null;
+            },
+            30000,
+            TestContext.Current.CancellationToken);
 
         workspace.GetResourceConfig<k8s.Models.V1Pod>().PermissionsLoaded.ShouldBeTrue();
         workspace.GetResourceConfig<k8s.Models.V1Pod>().CanListAndWatch.ShouldBeTrue();
@@ -49,14 +49,6 @@ public sealed class LimitedAccessNavigationTests
 
         await navigation.TreeViewSelectionChangedAsync(podsLink).WaitAsync(TestContext.Current.CancellationToken);
         await navigation.TreeViewSelectionChangedAsync(deploymentsLink).WaitAsync(TestContext.Current.CancellationToken);
-    }
-
-    private static async Task WaitForAsync(Func<bool> predicate, int timeoutMs, CancellationToken cancellationToken = default)
-    {
-        await TestWait.UntilAsync(
-            predicate,
-            timeoutMs,
-            cancellationToken == default ? TestContext.Current.CancellationToken : cancellationToken);
     }
 
     private static ResourceNavigationLink? FindResourceLink(ClusterNavigationNode root, string name)

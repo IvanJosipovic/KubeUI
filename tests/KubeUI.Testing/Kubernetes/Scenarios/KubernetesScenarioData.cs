@@ -1,10 +1,10 @@
-namespace KubeUI.Testing.Kubernetes.Scenarios;
+namespace KubeUI.Testing.Kubernetes.Fixtures;
 
-public static class KubernetesScenarioData
+public static class KubernetesTestData
 {
-  public static LimitedAccessScenario LimitedAccessWithNamespacePermissions => new(LimitedAccessYaml);
+  public const string LimitedAccessWithNamespacePermissions = LimitedAccessYaml;
 
-  public static LimitedAccessScenario LimitedAccessWithNamespaceFallback => new(LimitedAccessNoNamespaceYaml, ["my-app"]);
+  public const string LimitedAccessWithNamespaceFallback = LimitedAccessNoNamespaceYaml;
 
     public const string CustomResourceDefinitionYaml = """
 apiVersion: apiextensions.k8s.io/v1

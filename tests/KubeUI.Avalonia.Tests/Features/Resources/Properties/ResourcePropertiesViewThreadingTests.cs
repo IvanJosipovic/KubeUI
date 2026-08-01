@@ -11,11 +11,10 @@ public sealed class ResourcePropertiesViewThreadingTests
     [AvaloniaFact]
     public async Task ClearItems_is_safe_when_invoked_from_background_thread()
     {
-        await using var scope = await KubernetesTestWorkspaceScope.CreateAsync((Application.Current as TestApp)?.Services!, KubernetesBackend.Fake);
-        var workspace = scope.Workspace;
+        IServiceProvider services = Application.Current.GetTestServices();
+        ClusterWorkspace workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         await workspace.Connect();
 
-        var services = (Application.Current as TestApp)?.Services ?? throw new InvalidOperationException("Test services are not initialized.");
         var viewModel = services.GetRequiredService<ResourcePropertiesViewModel<V1Pod>>();
         viewModel.Initialize(workspace, new V1Pod
         {

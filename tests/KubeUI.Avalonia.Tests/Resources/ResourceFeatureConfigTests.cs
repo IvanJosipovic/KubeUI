@@ -49,7 +49,7 @@ public sealed class ResourceFeatureConfigTests
 {
     private static void AssertProperties<TConfig, TResource, TView>(TResource resource)
         where TConfig : ResourceConfigBase<TResource>
-        where TResource : class, k8s.IKubernetesObject<k8s.Models.V1ObjectMeta>, new()
+        where TResource : class, k8s.IKubernetesObject<V1ObjectMeta>, new()
         where TView : Control
     {
         var config = ResolveConfig<TConfig>();
@@ -71,7 +71,7 @@ public sealed class ResourceFeatureConfigTests
     private static TConfig ResolveConfig<TConfig>()
         where TConfig : IResourceConfig
     {
-        var services = (Application.Current as TestApp)?.Services ?? throw new InvalidOperationException("Test services are not initialized.");
+        var services = Application.Current.GetTestServices();
         return services.GetRequiredService<TConfig>();
     }
 
@@ -91,7 +91,7 @@ public sealed class ResourceFeatureConfigTests
     {
         var config = ResolveConfig<V1EventConfig>();
 
-        var lastSeenColumn = config.Columns().Single(x => x.Name == KubeUI.Avalonia.Assets.Resources.V1EventConfig_Last_Seen);
+        var lastSeenColumn = config.Columns().Single(x => x.Name == Assets.Resources.V1EventConfig_Last_Seen);
 
         lastSeenColumn.CustomControl.Name.ShouldBe("EventLastSeenCellView");
     }
@@ -123,7 +123,7 @@ public sealed class ResourceFeatureConfigTests
         };
 
         var action = config.GetDefaultMenuItems(new[] { deployment })
-            .Single(item => item.Title == KubeUI.Avalonia.Assets.Resources.ResourceConfigBase_MenuItem_Visualize);
+            .Single(item => item.Title == Assets.Resources.ResourceConfigBase_MenuItem_Visualize);
 
         action.Command.ShouldNotBeNull();
         action.CommandParameter.ShouldBeAssignableTo<IList>();
@@ -141,7 +141,7 @@ public sealed class ResourceFeatureConfigTests
         };
 
         var action = config.GetDefaultMenuItems(deployments)
-            .Single(item => item.Title == KubeUI.Avalonia.Assets.Resources.ResourceConfigBase_MenuItem_Visualize);
+            .Single(item => item.Title == Assets.Resources.ResourceConfigBase_MenuItem_Visualize);
 
         action.Command!.CanExecute(action.CommandParameter).ShouldBeFalse();
     }
@@ -189,7 +189,7 @@ public sealed class ResourceFeatureConfigTests
     [AvaloniaFact]
     public void pod_config_uses_pod_properties_view()
     {
-        var services = (Application.Current as TestApp)?.Services ?? throw new InvalidOperationException("Test services are not initialized.");
+        var services = Application.Current.GetTestServices();
         var config = services.GetRequiredService<V1PodConfig>();
 
         var controls = config.Properties(new V1Pod());
@@ -280,10 +280,10 @@ public sealed class ResourceFeatureConfigTests
     [AvaloniaFact]
     public async Task cronjob_start_context_menu_creates_job_resource()
     {
-        var services = (Application.Current as TestApp)?.Services ?? throw new InvalidOperationException("Test services are not initialized.");
-        await using var scope = await KubernetesTestWorkspaceScope.CreateAsync(services, KubernetesBackend.Fake);
-        var runtime = scope.ScenarioHarness.Cluster;
-        var workspace = scope.Workspace;
+        var services = Application.Current.GetTestServices();
+        TestClusterConfig clusterConfig = services.GetRequiredService<TestClusterConfig>();
+        ClusterWorkspace workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var runtime = workspace.Runtime;
         await workspace.Connect();
         await runtime.SeedResource<V1Namespace>(true);
         await runtime.SeedResource<V1CronJob>(true);
@@ -320,14 +320,19 @@ public sealed class ResourceFeatureConfigTests
     [AvaloniaFact]
     public async Task cronjob_start_context_menu_requires_job_create_permission()
     {
-        var services = (Application.Current as TestApp)?.Services ?? throw new InvalidOperationException("Test services are not initialized.");
-        await using var scope = await KubernetesTestWorkspaceScope.CreateFakeAsync(services, harness =>
+        var services = Application.Current.GetTestServices();
+        TestClusterConfig clusterConfig = services.GetRequiredService<TestClusterConfig>();
+        clusterConfig.AuthenticatedUser = KubernetesRbac.ServiceAccountUser;
+        clusterConfig.InitialResources = new[]
         {
-            harness.SetPermission<V1Job>(Verb.Create, false);
-            harness.SetPermission<V1Job>(Verb.Create, false, "volsync");
-        });
-        var runtime = scope.ScenarioHarness.Cluster;
-        var workspace = scope.Workspace;
+            (k8s.IKubernetesObject<V1ObjectMeta>)new V1Namespace { Metadata = new V1ObjectMeta { Name = "volsync" } },
+        }
+            .Concat(KubernetesRbac.ClusterWide(
+                new RbacRule("namespaces", "list"),
+                new RbacRule("namespaces", "watch")))
+            .ToArray();
+        ClusterWorkspace workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var runtime = workspace.Runtime;
         await workspace.Connect();
         await runtime.SeedResource<V1Namespace>(true);
         await runtime.SeedResource<V1CronJob>(true);
@@ -352,14 +357,20 @@ public sealed class ResourceFeatureConfigTests
     [AvaloniaFact]
     public async Task cronjob_start_context_menu_allows_namespace_scoped_job_create_permission()
     {
-        var services = (Application.Current as TestApp)?.Services ?? throw new InvalidOperationException("Test services are not initialized.");
-        await using var scope = await KubernetesTestWorkspaceScope.CreateFakeAsync(services, harness =>
+        var services = Application.Current.GetTestServices();
+        TestClusterConfig clusterConfig = services.GetRequiredService<TestClusterConfig>();
+        clusterConfig.AuthenticatedUser = KubernetesRbac.ServiceAccountUser;
+        clusterConfig.InitialResources = new[]
         {
-            harness.SetPermission<V1Job>(Verb.Create, false);
-            harness.SetPermission<V1Job>(Verb.Create, true, "volsync");
-        });
-        var runtime = scope.ScenarioHarness.Cluster;
-        var workspace = scope.Workspace;
+            new V1Namespace { Metadata = new V1ObjectMeta { Name = "volsync" } },
+        }
+            .Concat(KubernetesRbac.ClusterWide(
+                new RbacRule("namespaces", "list"),
+                new RbacRule("namespaces", "watch")))
+            .Concat(KubernetesRbac.InNamespace("volsync", new RbacRule("jobs", "create", "batch")))
+            .ToArray();
+        ClusterWorkspace workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var runtime = workspace.Runtime;
         await workspace.Connect();
         await ((Cluster)runtime).UpdateCanI<V1Job>(Verb.Create);
         await ((Cluster)runtime).UpdateCanI<V1Job>(Verb.Create, "volsync");
@@ -469,7 +480,7 @@ public sealed class ResourceFeatureConfigTests
     [AvaloniaFact]
     public void crd_config_uses_properties_view()
     {
-        var services = (Application.Current as TestApp)?.Services ?? throw new InvalidOperationException("Test services are not initialized.");
+        var services = Application.Current.GetTestServices();
         var config = services.GetRequiredService<V1CustomResourceDefinitionConfig>();
 
         var controls = config.Properties(new V1CustomResourceDefinition());

@@ -66,9 +66,9 @@ public class ResourceListViewModelTests : IDisposable
 
     private async Task<ClusterWorkspace> CreateClusterAsync()
     {
-        var scope = await KubernetesTestWorkspaceScope.CreateAsync((Application.Current as TestApp)?.Services!, KubernetesBackend.Fake);
-        _disposables.Add(scope);
-        var cluster = scope.Workspace;
+        IServiceProvider services = Application.Current.GetTestServices();
+        ClusterWorkspace cluster = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        _disposables.Add(cluster);
         await cluster.Connect();
         Dispatcher.UIThread.RunJobs();
         return cluster;
@@ -76,7 +76,7 @@ public class ResourceListViewModelTests : IDisposable
 
     private T GetRequiredService<T>() where T : class
     {
-        var services = (Application.Current as TestApp)?.Services ?? throw new InvalidOperationException("Test services are not initialized.");
+        var services = Application.Current.GetTestServices();
         var service = services.GetRequiredService<T>();
         if (service is IDisposable disposable)
         {
@@ -946,8 +946,8 @@ public class ResourceListViewModelTests : IDisposable
         var textPanel = textContent.Content.ShouldBeOfType<StackPanel>();
         var textRows = textPanel.Children.OfType<Grid>().ToList();
         textRows.Count.ShouldBeGreaterThanOrEqualTo(2);
-        textRows[0].Children.OfType<TextBlock>().Single().Text.ShouldBe(KubeUI.Avalonia.Assets.Resources.DataGridFilterFlyout_Condition);
-        textRows[1].Children.OfType<TextBlock>().Single().Text.ShouldBe(KubeUI.Avalonia.Assets.Resources.DataGridFilterFlyout_Value);
+        textRows[0].Children.OfType<TextBlock>().Single().Text.ShouldBe(Assets.Resources.DataGridFilterFlyout_Condition);
+        textRows[1].Children.OfType<TextBlock>().Single().Text.ShouldBe(Assets.Resources.DataGridFilterFlyout_Value);
         textPanel.GetVisualDescendants().OfType<ComboBox>().First().HorizontalAlignment.ShouldBe(HorizontalAlignment.Stretch);
         textRows[1].Children.OfType<TextBox>().Single().HorizontalAlignment.ShouldBe(HorizontalAlignment.Stretch);
 
@@ -978,7 +978,7 @@ public class ResourceListViewModelTests : IDisposable
         numericValueInput.HorizontalAlignment.ShouldBe(HorizontalAlignment.Stretch);
         numericRangeInput.HorizontalAlignment.ShouldBe(HorizontalAlignment.Stretch);
         numericValueRow.Children.OfType<TextBlock>().Single().Width.ShouldBe(numericRangeRow.Children.OfType<TextBlock>().Single().Width);
-        numericRows[0].Children.OfType<TextBlock>().Single().Text.ShouldBe(KubeUI.Avalonia.Assets.Resources.DataGridFilterFlyout_Condition);
+        numericRows[0].Children.OfType<TextBlock>().Single().Text.ShouldBe(Assets.Resources.DataGridFilterFlyout_Condition);
 
         var dateCluster = await CreateClusterAsync();
         var dateVm = GetRequiredService<ResourceListViewModel<Corev1Event>>();
@@ -988,15 +988,15 @@ public class ResourceListViewModelTests : IDisposable
         var dateWindow = CreateWindow(content: dateView);
         dateWindow.Show();
 
-        var dateColumn = dateVm.ColumnDefinitions.First(column => string.Equals(column.Header?.ToString(), KubeUI.Avalonia.Assets.Resources.V1EventConfig_Last_Seen, StringComparison.Ordinal));
+        var dateColumn = dateVm.ColumnDefinitions.First(column => string.Equals(column.Header?.ToString(), Assets.Resources.V1EventConfig_Last_Seen, StringComparison.Ordinal));
         var dateFlyout = dateColumn.FilterFlyout.ShouldBeOfType<Flyout>();
         dateFlyout.ShowAt(dateView);
         Dispatcher.UIThread.RunJobs();
         var dateContent = dateFlyout.Content.ShouldBeOfType<DateFilterFlyoutView>();
         var datePanel = dateContent.Content.ShouldBeOfType<StackPanel>();
         var dateRows = datePanel.Children.OfType<Grid>().ToList();
-        dateRows[0].Children.OfType<TextBlock>().Single().Text.ShouldBe(KubeUI.Avalonia.Assets.Resources.DataGridFilterFlyout_Condition);
-        dateRows[1].Children.OfType<TextBlock>().Single().Text.ShouldBe(KubeUI.Avalonia.Assets.Resources.DataGridFilterFlyout_Value);
+        dateRows[0].Children.OfType<TextBlock>().Single().Text.ShouldBe(Assets.Resources.DataGridFilterFlyout_Condition);
+        dateRows[1].Children.OfType<TextBlock>().Single().Text.ShouldBe(Assets.Resources.DataGridFilterFlyout_Value);
         datePanel.GetVisualDescendants().OfType<NumericUpDown>().Count().ShouldBe(1);
         datePanel.GetVisualDescendants().OfType<ComboBox>().Count().ShouldBeGreaterThanOrEqualTo(2);
         datePanel.GetVisualDescendants().OfType<ComboBox>().All(combo => combo.HorizontalAlignment == HorizontalAlignment.Stretch).ShouldBeTrue();
@@ -1013,8 +1013,8 @@ public class ResourceListViewModelTests : IDisposable
         var enumPanel = enumContent.Content.ShouldBeOfType<StackPanel>();
         var enumRows = enumPanel.Children.OfType<Grid>().ToList();
         enumRows.Count.ShouldBe(2);
-        enumRows[0].Children.OfType<TextBlock>().Single().Text.ShouldBe(KubeUI.Avalonia.Assets.Resources.DataGridFilterFlyout_Condition);
-        enumRows[1].Children.OfType<TextBlock>().Single().Text.ShouldBe(KubeUI.Avalonia.Assets.Resources.DataGridFilterFlyout_Value);
+        enumRows[0].Children.OfType<TextBlock>().Single().Text.ShouldBe(Assets.Resources.DataGridFilterFlyout_Condition);
+        enumRows[1].Children.OfType<TextBlock>().Single().Text.ShouldBe(Assets.Resources.DataGridFilterFlyout_Value);
         enumPanel.GetVisualDescendants().OfType<ComboBox>().Count().ShouldBe(2);
         enumPanel.GetVisualDescendants().OfType<ComboBox>().All(combo => combo.HorizontalAlignment == HorizontalAlignment.Stretch).ShouldBeTrue();
     }
@@ -1036,7 +1036,7 @@ public class ResourceListViewModelTests : IDisposable
         window.Show();
 
         var countColumn = vm.ColumnDefinitions.First(column => string.Equals(column.Header?.ToString(), "Count", StringComparison.Ordinal));
-        var lastSeenColumn = vm.ColumnDefinitions.First(column => string.Equals(column.Header?.ToString(), KubeUI.Avalonia.Assets.Resources.V1EventConfig_Last_Seen, StringComparison.Ordinal));
+        var lastSeenColumn = vm.ColumnDefinitions.First(column => string.Equals(column.Header?.ToString(), Assets.Resources.V1EventConfig_Last_Seen, StringComparison.Ordinal));
 
         FilteringDescriptor GetDescriptorForColumn(DataGridColumnDefinition column)
             => vm.FilteringModel.Descriptors.First(descriptor =>
@@ -1200,7 +1200,7 @@ public class ResourceListViewModelTests : IDisposable
         Dispatcher.UIThread.RunJobs();
         countVm.View.Count.ShouldBe(2);
 
-        var lastSeenColumn = countVm.ColumnDefinitions.First(column => string.Equals(column.Header?.ToString(), KubeUI.Avalonia.Assets.Resources.V1EventConfig_Last_Seen, StringComparison.Ordinal));
+        var lastSeenColumn = countVm.ColumnDefinitions.First(column => string.Equals(column.Header?.ToString(), Assets.Resources.V1EventConfig_Last_Seen, StringComparison.Ordinal));
         var hours = GetDateRelativeUnit<ResourceListViewModel<Corev1Event>>(1);
         filterService.ApplyDateFilter(countVm.FilteringModel, lastSeenColumn, lastSeenColumn.ValueType, GetDateOperator(FilteringOperator.GreaterThan), 1d, hours);
         Dispatcher.UIThread.RunJobs();
@@ -2359,7 +2359,7 @@ internal sealed class TestEnumColumnDefinition : IResourceListColumn
     public string Name => "Status";
     public string? Width => null;
     public double MinWidth => 90;
-    public KubeUI.Avalonia.Resources.SortDirection Sort { get; set; } = KubeUI.Avalonia.Resources.SortDirection.None;
+    public Avalonia.Resources.SortDirection Sort { get; set; } = Avalonia.Resources.SortDirection.None;
     public Type CustomControl => typeof(object);
     public Type ItemType => typeof(V1Pod);
     public Type ValueType => typeof(TestFilterStatus);
@@ -2396,8 +2396,7 @@ internal sealed class FakeDoubleTapResourceListViewModel : IResourceListViewMode
     public GroupApiVersionKind Kind => GroupApiVersionKind.From<V1Pod>();
     public int ItemCount => View.Count;
     public string SearchQuery { get; set; } = string.Empty;
-    public ISettingsService SettingsService => (Application.Current as TestApp)?.Services?.GetRequiredService<ISettingsService>()
-        ?? throw new InvalidOperationException("Test services are not initialized.");
+    public ISettingsService SettingsService => Application.Current.GetTestServices().GetRequiredService<ISettingsService>();
     public IResourceConfig ResourceConfig { get; }
     public ObservableCollection<DataGridColumnDefinition> ColumnDefinitions { get; } = [];
     public IDataGridSortingAdapterFactory SortingAdapterFactory => throw new NotImplementedException();
@@ -2410,7 +2409,7 @@ internal sealed class FakeDoubleTapResourceListViewModel : IResourceListViewMode
     public IEnumerable<MenuItemViewModel> GetContextMenuItems(IEnumerable? selectedItems) => [];
     public ISearchModel SearchModel { get; set; } = new SearchModel();
     public IDataGridSearchAdapterFactory SearchAdapterFactory => throw new NotImplementedException();
-    public global::Avalonia.Controls.DataGridState? DataGridRuntimeState { get; set; }
+    public DataGridState? DataGridRuntimeState { get; set; }
 }
 
 internal sealed class FakeDoubleTapResourceConfig : IResourceConfig
@@ -2466,8 +2465,7 @@ internal sealed class FakeContextMenuResourceListViewModel : IResourceListViewMo
     public GroupApiVersionKind Kind => GroupApiVersionKind.From<V1Pod>();
     public int ItemCount => 0;
     public string SearchQuery { get; set; } = string.Empty;
-    public ISettingsService SettingsService => (Application.Current as TestApp)?.Services?.GetRequiredService<ISettingsService>()
-        ?? throw new InvalidOperationException("Test services are not initialized.");
+    public ISettingsService SettingsService => Application.Current.GetTestServices().GetRequiredService<ISettingsService>();
     public IResourceConfig ResourceConfig { get; }
     public ObservableCollection<DataGridColumnDefinition> ColumnDefinitions { get; } = [];
     public IDataGridSortingAdapterFactory SortingAdapterFactory => throw new NotImplementedException();
@@ -2480,5 +2478,5 @@ internal sealed class FakeContextMenuResourceListViewModel : IResourceListViewMo
     public IEnumerable<MenuItemViewModel> GetContextMenuItems(IEnumerable? selectedItems) => [];
     public ISearchModel SearchModel { get; set; } = new SearchModel();
     public IDataGridSearchAdapterFactory SearchAdapterFactory => throw new NotImplementedException();
-    public global::Avalonia.Controls.DataGridState? DataGridRuntimeState { get; set; }
+    public DataGridState? DataGridRuntimeState { get; set; }
 }

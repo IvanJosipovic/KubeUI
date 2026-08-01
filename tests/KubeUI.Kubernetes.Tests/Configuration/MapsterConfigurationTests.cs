@@ -76,7 +76,7 @@ public class MapsterConfigurationTests
         };
         source.Second = source.First;
 
-        ParentDestination destination = source.Adapt<ParentDestination>();
+        var destination = source.Adapt<ParentDestination>();
 
         destination.First.ShouldNotBeNull();
         destination.Second.ShouldNotBeNull();

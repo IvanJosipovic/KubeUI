@@ -10,8 +10,8 @@ public sealed class ClusterResourceChangeFeedTests
     [Theory, KubernetesBackendData]
     public async Task ConnectResources_tracks_existing_and_late_seeded_source_caches(KubernetesBackend backend)
     {
-        await using var harness = await KubernetesScenarioHarnessFactory.CreateAsync(
-            backend,
+        await using var harness = await new TestClusterGenerator().CreateAsync(
+            new TestClusterConfig { Type = backend },
             TestContext.Current.CancellationToken);
         var runtime = harness.Cluster;
         await runtime.Permissions.UpdatePermissionsAllNamespaceAsync<V1Service>(Verb.List);
@@ -33,7 +33,7 @@ public sealed class ClusterResourceChangeFeedTests
         await runtime.AddOrUpdateResource(existingService);
 
         List<ResourceChange> changes = [];
-        using IDisposable subscription = ((IClusterRuntime)runtime).ConnectResources().Subscribe(changes.Add);
+        using var subscription = ((IClusterRuntime)runtime).ConnectResources().Subscribe(changes.Add);
 
         await TestWait.UntilAsync(
             () => changes.Any(change => change.Resource is V1Service service

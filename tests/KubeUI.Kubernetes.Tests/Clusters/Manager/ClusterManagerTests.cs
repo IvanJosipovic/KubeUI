@@ -62,7 +62,7 @@ public class ClusterManagerTests
             collection.AddSingleton<IKubeConfigPathProvider>(new TestKubeConfigPathProvider(kubeConfigPath));
         });
 
-        K8SConfiguration existingConfig = CreateKubeConfig("existing-context", "existing-cluster", "existing-user", "https://existing.example.com");
+        var existingConfig = CreateKubeConfig("existing-context", "existing-cluster", "existing-user", "https://existing.example.com");
         File.WriteAllText(kubeConfigPath, KubeUI.Kubernetes.Serialization.KubernetesYaml.Serialize(existingConfig));
 
         using var manager = new ClusterManager(
@@ -76,7 +76,7 @@ public class ClusterManagerTests
 
         manager.GetCluster("existing-context").ShouldNotBeNull();
 
-        K8SConfiguration importedConfig = CreateKubeConfig("imported-context", "imported-cluster", "imported-user", "https://imported.example.com");
+        var importedConfig = CreateKubeConfig("imported-context", "imported-cluster", "imported-user", "https://imported.example.com");
         string importedYaml = KubeUI.Kubernetes.Serialization.KubernetesYaml.Serialize(importedConfig);
         importedYaml.ShouldContain("imported-context");
         importedYaml.ShouldContain("imported-cluster");
@@ -106,7 +106,7 @@ public class ClusterManagerTests
             collection.AddSingleton<IKubeConfigPathProvider>(new TestKubeConfigPathProvider(kubeConfigPath));
         });
 
-        K8SConfiguration config = CreateKubeConfig(
+        var config = CreateKubeConfig(
             "clusterUser_test-aks_test-aks",
             "test-aks",
             "user-1",

@@ -12,9 +12,8 @@ public sealed class FakeKubernetesHttpApiTests
     public async Task RealClientUsesFakeHttpTransportForCrud()
     {
         using var api = new FakeKubernetesHttpApi();
-        api.Register<V1Namespace>();
 
-        using var client = new k8s.Kubernetes(
+        using var client = KubernetesClientMaterializer.Create(
             new KubernetesClientConfiguration { Host = "http://fake-kubernetes" },
             api);
 
@@ -36,8 +35,7 @@ public sealed class FakeKubernetesHttpApiTests
     public async Task GenericClientUsesFakeHttpTransportForCrud()
     {
         using var api = new FakeKubernetesHttpApi();
-        api.Register<V1Namespace>();
-        using var client = new k8s.Kubernetes(new KubernetesClientConfiguration { Host = "http://fake-kubernetes" }, api);
+        using var client = KubernetesClientMaterializer.Create(new KubernetesClientConfiguration { Host = "http://fake-kubernetes" }, api);
         using var generic = client.GetGenericClient<V1Namespace>();
 
 #pragma warning disable xUnit1051 // GenericClient.CreateAsync does not expose the token parameter by name in this client version.
@@ -81,7 +79,6 @@ public sealed class FakeKubernetesHttpApiTests
     public async Task NamespacedResourceRequestUsesNamespacePermission()
     {
         using var api = new FakeKubernetesHttpApi();
-        api.Register<V1Pod>();
         api.SetPermission("pods", "list", false, "restricted");
 
         using var client = new HttpClient(api)
@@ -94,6 +91,28 @@ public sealed class FakeKubernetesHttpApiTests
             TestContext.Current.CancellationToken);
 
         response.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
+    public async Task RbacResourcesAuthorizeConfiguredServiceAccount()
+    {
+        using var api = new FakeKubernetesHttpApi
+        {
+            UseRoleBasedAuthorization = true,
+            AuthenticatedUser = KubernetesRbac.ServiceAccountUser,
+        };
+        foreach (k8s.IKubernetesObject resource in KubernetesRbac.ClusterWide(new RbacRule("namespaces", "list")))
+        {
+            api.Add(resource);
+        }
+
+        using var client = KubernetesClientMaterializer.Create(
+            new KubernetesClientConfiguration { Host = "http://fake-kubernetes" },
+            api);
+
+        var namespaces = await client.ListNamespaceAsync(cancellationToken: TestContext.Current.CancellationToken);
+
+        namespaces.ShouldNotBeNull();
     }
 
     [Fact]
@@ -123,11 +142,11 @@ public sealed class FakeKubernetesHttpApiTests
         {
             BaseAddress = new Uri("http://fake-kubernetes"),
         };
-        using HttpResponseMessage response = await client.GetAsync(
+        using var response = await client.GetAsync(
             "/api/v1/namespaces/default/pods?watch=true",
             HttpCompletionOption.ResponseHeadersRead,
             TestContext.Current.CancellationToken);
-        using Stream stream = await response.Content.ReadAsStreamAsync(TestContext.Current.CancellationToken);
+        using var stream = await response.Content.ReadAsStreamAsync(TestContext.Current.CancellationToken);
         byte[] buffer = new byte[4096];
 
         (await stream.ReadAsync(buffer, TestContext.Current.CancellationToken)).ShouldBeGreaterThan(0);

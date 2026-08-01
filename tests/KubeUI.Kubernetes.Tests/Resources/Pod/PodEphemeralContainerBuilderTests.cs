@@ -29,7 +29,7 @@ public sealed class PodEphemeralContainerBuilderTests
             },
         };
 
-        V1Pod updated = PodEphemeralContainerBuilder.WithDebugContainer(pod, "app", DefaultDebugContainerImage);
+        var updated = PodEphemeralContainerBuilder.WithDebugContainer(pod, "app", DefaultDebugContainerImage);
 
         updated.ShouldNotBeSameAs(pod);
         updated.Spec.EphemeralContainers.ShouldNotBeNull();
@@ -64,7 +64,7 @@ public sealed class PodEphemeralContainerBuilderTests
             },
         };
 
-        V1Pod updated = PodEphemeralContainerBuilder.WithDebugContainer(pod, null, "example.com/debug:1");
+        var updated = PodEphemeralContainerBuilder.WithDebugContainer(pod, null, "example.com/debug:1");
 
         updated.Spec.EphemeralContainers.ShouldNotBeNull();
         updated.Spec.EphemeralContainers[0].TargetContainerName.ShouldBeNull();
