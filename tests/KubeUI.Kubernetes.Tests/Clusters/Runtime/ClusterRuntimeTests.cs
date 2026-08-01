@@ -10,6 +10,7 @@ public sealed class ClusterRuntimeTests : ClusterRuntimeAssertions
     {
         await using var clusterScope = await new TestClusterGenerator().CreateAsync(new TestClusterConfig(), TestContext.Current.CancellationToken);
         var cluster = clusterScope.Cluster;
+        await cluster.Connect();
 
         await cluster.SeedResource<k8s.Models.V1Pod>(waitForReady: true);
         await cluster.Disconnect();
@@ -31,6 +32,7 @@ public sealed class ClusterRuntimeTests : ClusterRuntimeAssertions
                     },
                 ],
             });
+        await clusterScope.Cluster.Connect();
 
         using var client = clusterScope.Cluster.Client!.GetGenericClient<k8s.Models.V1Namespace>();
         var seeded = await client.ReadAsync<k8s.Models.V1Namespace>(
@@ -54,6 +56,7 @@ public sealed class ClusterRuntimeTests : ClusterRuntimeAssertions
                     new RbacRule("pods", "watch")),
             });
         var cluster = clusterScope.Cluster;
+        await cluster.Connect();
 
         await cluster.UpdateCanI<k8s.Models.V1Pod>(Verb.List);
         await cluster.UpdateCanI<k8s.Models.V1Pod>(Verb.Watch);
@@ -64,10 +67,14 @@ public sealed class ClusterRuntimeTests : ClusterRuntimeAssertions
         cluster.Permissions.CanIAnyNamespace<k8s.Models.V1Service>(Verb.List).ShouldBeFalse();
     }
 
-    protected override Task<TestCluster> CreateHarnessAsync(KubernetesBackend backend)
-        => new TestClusterGenerator().CreateAsync(
+    protected override async Task<TestCluster> CreateHarnessAsync(KubernetesBackend backend)
+    {
+        TestCluster harness = await new TestClusterGenerator().CreateAsync(
             new TestClusterConfig { Type = backend },
             TestContext.Current.CancellationToken);
+        await harness.Cluster.Connect();
+        return harness;
+    }
 
     [Theory, KubernetesBackendData]
     public Task InitializationExposesConnectedCluster(KubernetesBackend backend) => InitializationExposesConnectedClusterCore(backend);

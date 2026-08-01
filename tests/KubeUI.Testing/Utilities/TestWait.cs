@@ -19,7 +19,7 @@ public static class TestWait
     {
         ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(pollInterval, TimeSpan.Zero);
         using var timer = new PeriodicTimer(pollInterval);
-        await timer.WaitForNextTickAsync(cancellationToken).ConfigureAwait(false);
+        await timer.WaitForNextTickAsync(cancellationToken);
     }
 
     public static async Task UntilAsync(
@@ -49,7 +49,7 @@ public static class TestWait
                 }
 
                 var remaining = deadline - DateTime.UtcNow;
-                if (remaining <= TimeSpan.Zero || !await interval.WaitForNextTickAsync(cancellationToken).ConfigureAwait(false))
+                if (remaining <= TimeSpan.Zero || !await interval.WaitForNextTickAsync(cancellationToken))
                 {
                     break;
                 }
@@ -95,7 +95,7 @@ public static class TestWait
                 }
 
                 var remaining = deadline - DateTime.UtcNow;
-                if (remaining <= TimeSpan.Zero || !await interval.WaitForNextTickAsync(cancellationToken).ConfigureAwait(false))
+                if (remaining <= TimeSpan.Zero || !await interval.WaitForNextTickAsync(cancellationToken))
                 {
                     break;
                 }

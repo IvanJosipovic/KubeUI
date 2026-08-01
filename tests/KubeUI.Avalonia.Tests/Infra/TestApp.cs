@@ -37,7 +37,6 @@ public class TestApp : Application, IServiceProviderHost, IDisposable
     {
         var provider = BuildServiceProvider();
         Services = provider;
-        Task.Run(() => provider.GetRequiredService<ClusterWorkspaceCatalog>()).GetAwaiter().GetResult();
         ApplyResources(provider);
         InitializeDockFactory(provider);
 
@@ -52,7 +51,7 @@ public class TestApp : Application, IServiceProviderHost, IDisposable
 
         if (Services is IAsyncDisposable asyncDisposableServices)
         {
-            Task.Run(asyncDisposableServices.DisposeAsync).GetAwaiter().GetResult();
+            asyncDisposableServices.DisposeAsync().AsTask().GetAwaiter().GetResult();
         }
         else if (Services is IDisposable disposableServices)
         {

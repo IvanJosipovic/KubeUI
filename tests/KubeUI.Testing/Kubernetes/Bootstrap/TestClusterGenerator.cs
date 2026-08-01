@@ -222,15 +222,6 @@ public sealed class TestClusterGenerator : IAsyncDisposable
         cluster.KubeConfig = kubeConfig;
         cluster.KubeConfigPath = string.Empty;
         cluster.KubernetesClientFactory = _ => client;
-        if (!config.StartDisconnected)
-        {
-            await cluster.Connect().WaitAsync(cancellationToken).ConfigureAwait(false);
-            if (!cluster.Connected)
-            {
-                throw new InvalidOperationException(cluster.LastError ?? "The generated Kubernetes cluster did not connect.");
-            }
-        }
-
         conditionHandler?.Enable();
 
             Func<CancellationToken, Task>? finalCleanup = cleanup;

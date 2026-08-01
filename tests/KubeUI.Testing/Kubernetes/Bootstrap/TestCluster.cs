@@ -223,6 +223,10 @@ public sealed class TestCluster : IDisposable, IAsyncDisposable
             await cluster.Disconnect().ConfigureAwait(false);
         }
         await Cluster.DisposeAsync().ConfigureAwait(false);
+        if (Client is IDisposable client)
+        {
+            client.Dispose();
+        }
         if (_cleanup is not null)
         {
             await _cleanup(CancellationToken.None).ConfigureAwait(false);

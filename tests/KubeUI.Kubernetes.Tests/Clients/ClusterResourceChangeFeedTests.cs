@@ -14,6 +14,7 @@ public sealed class ClusterResourceChangeFeedTests
             new TestClusterConfig { Type = backend },
             TestContext.Current.CancellationToken);
         var runtime = harness.Cluster;
+        await runtime.Connect();
         await runtime.Permissions.UpdatePermissionsAllNamespaceAsync<V1Service>(Verb.List);
         await runtime.Permissions.UpdatePermissionsAllNamespaceAsync<V1Service>(Verb.Watch);
         await runtime.Permissions.UpdatePermissionsAllNamespaceAsync<V1Secret>(Verb.List);

@@ -23,7 +23,7 @@ public class ClusterLifecycleBenchmarks
     public async Task CreateAndDisposeDisconnectedCluster()
     {
         await using var cluster = await new TestClusterGenerator().CreateAsync(
-            new TestClusterConfig { StartDisconnected = true },
+        new TestClusterConfig(),
             CancellationToken.None);
     }
 
@@ -33,7 +33,7 @@ public class ClusterLifecycleBenchmarks
         for (var i = 0; i < 8; i++)
         {
             await using var cluster = await new TestClusterGenerator().CreateAsync(
-                new TestClusterConfig { StartDisconnected = true },
+                new TestClusterConfig(),
                 CancellationToken.None);
         }
 

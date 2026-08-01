@@ -15,6 +15,7 @@ public sealed class PortForwarderTests
     {
         await using var harness = await new TestClusterGenerator().CreateAsync(new TestClusterConfig(), TestContext.Current.CancellationToken);
         var cluster = harness.Cluster;
+        await cluster.Connect();
         using var sut = new PortForwarder(cluster, "default");
         sut.SetPod("pod-1", 8080);
 
@@ -29,6 +30,7 @@ public sealed class PortForwarderTests
     {
         await using var harness = await new TestClusterGenerator().CreateAsync(new TestClusterConfig(), TestContext.Current.CancellationToken);
         var cluster = harness.Cluster;
+        await cluster.Connect();
         using var busyListener = new TcpListener(IPAddress.Loopback, 0);
         busyListener.Start();
         var busyPort = ((IPEndPoint)busyListener.LocalEndpoint).Port;
@@ -47,6 +49,7 @@ public sealed class PortForwarderTests
     {
         await using var harness = await new TestClusterGenerator().CreateAsync(new TestClusterConfig(), TestContext.Current.CancellationToken);
         var cluster = harness.Cluster;
+        await cluster.Connect();
         using var sut = new PortForwarder(cluster, "default");
         sut.SetPod("pod-1", 8080);
         sut.Start();
@@ -67,6 +70,7 @@ public sealed class PortForwarderTests
     {
         await using var harness = await new TestClusterGenerator().CreateAsync(new TestClusterConfig(), TestContext.Current.CancellationToken);
         var cluster = harness.Cluster;
+        await cluster.Connect();
         var sut = new PortForwarder(cluster, "default");
         sut.SetPod("pod-1", 8080);
         sut.Start();
@@ -87,6 +91,7 @@ public sealed class PortForwarderTests
     {
         await using var harness = await new TestClusterGenerator().CreateAsync(new TestClusterConfig(), TestContext.Current.CancellationToken);
         var cluster = harness.Cluster;
+        await cluster.Connect();
         using var left = new PortForwarder(cluster, "default");
         using var right = new PortForwarder(cluster, "default");
         left.SetService("prometheus", 9090);
@@ -100,6 +105,7 @@ public sealed class PortForwarderTests
     {
         await using var harness = await new TestClusterGenerator().CreateAsync(new TestClusterConfig(), TestContext.Current.CancellationToken);
         var cluster = harness.Cluster;
+        await cluster.Connect();
         using var left = new PortForwarder(cluster, "default");
         using var right = new PortForwarder(cluster, "default");
         left.SetService("prometheus", 9090);
@@ -113,6 +119,7 @@ public sealed class PortForwarderTests
     {
         await using var harness = await new TestClusterGenerator().CreateAsync(new TestClusterConfig(), TestContext.Current.CancellationToken);
         var cluster = harness.Cluster;
+        await cluster.Connect();
 
         using var left = cluster.AddPodPortForward("default", "pod-1", 8080);
         using var right = cluster.AddPodPortForward("default", "pod-1", 8080);
@@ -127,6 +134,7 @@ public sealed class PortForwarderTests
     {
         await using var harness = await new TestClusterGenerator().CreateAsync(new TestClusterConfig(), TestContext.Current.CancellationToken);
         var cluster = harness.Cluster;
+        await cluster.Connect();
 
         using var left = cluster.AddServicePortForward("default", "prometheus", 9090);
         using var right = cluster.AddServicePortForward("default", "prometheus", 9090);
@@ -141,6 +149,7 @@ public sealed class PortForwarderTests
     {
         await using var harness = await new TestClusterGenerator().CreateAsync(new TestClusterConfig(), TestContext.Current.CancellationToken);
         var cluster = harness.Cluster;
+        await cluster.Connect();
         using var stream = new CaptureStream();
         var session = new Mock<IPortForwardSession>(MockBehavior.Strict);
         session.SetupGet(x => x.Stream).Returns(stream);
@@ -178,6 +187,7 @@ public sealed class PortForwarderTests
             new TestClusterConfig { Type = backend },
             TestContext.Current.CancellationToken);
         var cluster = harness.Cluster;
+        await cluster.Connect();
         await cluster.Permissions.UpdatePermissionsAllNamespaceAsync<V1Service>(Verb.List);
         await cluster.Permissions.UpdatePermissionsAllNamespaceAsync<V1Service>(Verb.Watch);
         await cluster.Permissions.UpdatePermissionsAllNamespaceAsync<V1EndpointSlice>(Verb.List);
@@ -208,6 +218,7 @@ public sealed class PortForwarderTests
             new TestClusterConfig { Type = backend },
             TestContext.Current.CancellationToken);
         var cluster = harness.Cluster;
+        await cluster.Connect();
         await cluster.Permissions.UpdatePermissionsAllNamespaceAsync<V1Service>(Verb.List);
         await cluster.Permissions.UpdatePermissionsAllNamespaceAsync<V1Service>(Verb.Watch);
         await cluster.Permissions.UpdatePermissionsAllNamespaceAsync<V1EndpointSlice>(Verb.List);
@@ -260,6 +271,7 @@ public sealed class PortForwarderTests
             new TestClusterConfig { Type = backend },
             TestContext.Current.CancellationToken);
         var cluster = harness.Cluster;
+        await cluster.Connect();
         await cluster.Permissions.UpdatePermissionsAllNamespaceAsync<V1Service>(Verb.List);
         await cluster.Permissions.UpdatePermissionsAllNamespaceAsync<V1Service>(Verb.Watch);
         await cluster.Permissions.UpdatePermissionsAllNamespaceAsync<V1EndpointSlice>(Verb.List);

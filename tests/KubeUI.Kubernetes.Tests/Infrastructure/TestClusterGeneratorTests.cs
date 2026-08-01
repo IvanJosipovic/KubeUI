@@ -140,7 +140,6 @@ public sealed class TestClusterGeneratorTests
                 Type = KubernetesBackend.Kind,
                 Name = "named",
                 KubeConfig = kubeConfig,
-                StartDisconnected = true,
             },
             TestContext.Current.CancellationToken);
 
@@ -175,6 +174,7 @@ public sealed class TestClusterGeneratorTests
         var cluster = await new TestClusterGenerator().CreateAsync(
             CreateConfig(backend, httpHandlers: [handler]),
             TestContext.Current.CancellationToken);
+        await cluster.Cluster.Connect();
 
         await cluster.DisposeAsync();
 

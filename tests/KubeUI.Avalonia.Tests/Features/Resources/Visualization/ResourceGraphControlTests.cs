@@ -67,6 +67,7 @@ public sealed class ResourceGraphControlTests
         config.Type = backend;
         ClusterWorkspace clusterScope = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         var cluster = clusterScope;
+        await cluster.Connect();
         V1Namespace namespaceResource = new() { Metadata = new() { Name = "team-a" } };
         await cluster.Runtime.AddOrUpdateResource(namespaceResource);
 
@@ -102,6 +103,7 @@ public sealed class ResourceGraphControlTests
         config.Type = backend;
         ClusterWorkspace clusterScope = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         var cluster = clusterScope;
+        await cluster.Connect();
         V1Namespace namespaceResource = new() { Metadata = new() { Name = "platform-dev-ijosipov" } };
         await clusterScope.Runtime.CreateAsync(namespaceResource, TestContext.Current.CancellationToken);
         await cluster.Runtime.SeedResource<V1PersistentVolumeClaim>(true);
@@ -556,6 +558,7 @@ public sealed class ResourceGraphControlTests
         config.Type = backend;
         ClusterWorkspace clusterScope = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         var cluster = clusterScope;
+        await cluster.Connect();
         await cluster.Runtime.SeedResource<V1Pod>(true);
         var builder = new LateAdditionRelationshipBuilder();
         using VisualizationViewModel viewModel = new(builder);
@@ -802,6 +805,7 @@ public sealed class ResourceGraphControlTests
         config.Type = backend;
         ClusterWorkspace clusterScope = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         var cluster = clusterScope;
+        await cluster.Connect();
         cluster.SelectedNamespaces.Add(new V1Namespace { Metadata = new() { Name = "default" } });
         var builder = new AdditionCaptureRelationshipBuilder();
         using VisualizationViewModel viewModel = new(builder);
@@ -844,6 +848,7 @@ public sealed class ResourceGraphControlTests
         config.Type = backend;
         ClusterWorkspace clusterScope = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         var cluster = clusterScope;
+        await cluster.Connect();
         cluster.SelectedNamespaces.Add(new V1Namespace { Metadata = new() { Name = "default" } });
         await cluster.Runtime.AddOrUpdateResource(new V1Namespace { Metadata = new() { Name = "other" } });
         var builder = new BuildCaptureRelationshipBuilder();
@@ -870,6 +875,7 @@ public sealed class ResourceGraphControlTests
         config.Type = backend;
         ClusterWorkspace clusterScope = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         var cluster = clusterScope;
+        await cluster.Connect();
         cluster.SelectedNamespaces.Add(new V1Namespace { Metadata = new() { Name = "default" } });
         var builder = new NamespaceLeakingBuildRelationshipBuilder();
         using VisualizationViewModel viewModel = new(builder);
@@ -923,6 +929,7 @@ public sealed class ResourceGraphControlTests
         config.Type = backend;
         ClusterWorkspace clusterScope = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         var cluster = clusterScope;
+        await cluster.Connect();
         cluster.SelectedNamespaces.Add(new V1Namespace { Metadata = new() { Name = "default" } });
         var builder = new AdditionCaptureRelationshipBuilder();
         using VisualizationViewModel viewModel = new(builder);
@@ -1142,6 +1149,7 @@ public sealed class ResourceGraphControlTests
         TestClusterConfig config = services.GetRequiredService<TestClusterConfig>();
         config.Type = backend;
         ClusterWorkspace cluster = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        await cluster.Connect();
         cluster.SelectedNamespaces.Add(new V1Namespace { Metadata = new() { Name = "default" } });
         var builder = new BuildCaptureRelationshipBuilder();
         using VisualizationViewModel viewModel = new(builder);

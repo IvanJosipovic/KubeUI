@@ -31,8 +31,6 @@ public sealed class TestClusterConfig
 
     public bool ThrowOnConnect { get; set; }
 
-    public bool StartDisconnected { get; set; }
-
     public string AuthenticatedUser { get; set; } = "system:admin";
 
     public static TestClusterConfig Fake(
@@ -90,4 +88,3 @@ public sealed class TestClusterConfig
 
     internal TimeSpan EffectiveResponseLatency => ResponseLatency;
 }
-

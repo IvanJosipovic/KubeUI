@@ -1,4 +1,5 @@
 using k8s.Models;
+using Avalonia.Headless.XUnit;
 using KubeUI.Avalonia.Features.Resources.Properties.Controls;
 using KubeUI.Avalonia.Tests.Infra;
 using Shouldly;
@@ -17,13 +18,14 @@ public sealed class ResourceEventsSelectorTests
         EventTimeFormatter.FormatPrettyAge(now.AddHours(-2), now).ShouldBe("2h");
     }
 
-    [Fact]
+    [AvaloniaFact]
     public async Task SelectRecentEvents_sorts_and_limits_to_five()
     {
         IServiceProvider services = Application.Current.GetTestServices();
         TestClusterConfig config = services.GetRequiredService<TestClusterConfig>();
         ClusterWorkspace workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         IClusterRuntime runtime = workspace.Runtime;
+        await workspace.Connect();
         await runtime.Permissions.UpdatePermissionsAllNamespaceAsync<Corev1Event>(Verb.List);
         await runtime.Permissions.UpdatePermissionsAllNamespaceAsync<Corev1Event>(Verb.Watch);
         await runtime.SeedResource<Corev1Event>(true);

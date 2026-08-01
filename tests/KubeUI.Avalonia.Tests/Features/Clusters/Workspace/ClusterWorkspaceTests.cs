@@ -21,7 +21,6 @@ public class ClusterWorkspaceTests
     {
         IServiceProvider services = Application.Current.GetTestServices();
         TestClusterConfig config = services.GetRequiredService<TestClusterConfig>();
-        config.StartDisconnected = true;
         ClusterWorkspace workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
 
         workspace.GetResourceConfigs().ShouldBeEmpty();
@@ -47,7 +46,6 @@ public class ClusterWorkspaceTests
     {
         IServiceProvider services = Application.Current.GetTestServices();
         TestClusterConfig config = services.GetRequiredService<TestClusterConfig>();
-        config.StartDisconnected = true;
         ClusterWorkspace workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         IClusterRuntime runtime = workspace.Runtime;
 
@@ -247,6 +245,7 @@ public class ClusterWorkspaceTests
         config.Type = backend;
         ClusterWorkspace workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         IClusterRuntime runtime = workspace.Runtime;
+        await workspace.Connect();
         GroupApiVersionKind? seededKind = null;
         runtime.ResourceSeeded += (_, resourceKind) => seededKind = resourceKind;
 
@@ -266,6 +265,7 @@ public class ClusterWorkspaceTests
         config.InitialYaml = KubernetesTestData.LimitedAccessWithNamespacePermissions;
         ClusterWorkspace workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         IClusterRuntime runtime = workspace.Runtime;
+        await workspace.Connect();
         var seeded = false;
         runtime.ResourceSeeded += (_, _) => seeded = true;
 
@@ -364,6 +364,7 @@ public class ClusterWorkspaceTests
                     .ToArray();
         ClusterWorkspace workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         IClusterRuntime runtime = workspace.Runtime;
+        await workspace.Connect();
         var cluster = runtime;
         await runtime.SeedResource<V1Namespace>(true);
         await runtime.AddOrUpdateResource(new V1Namespace
@@ -440,6 +441,7 @@ public class ClusterWorkspaceTests
         config.Type = backend;
         ClusterWorkspace workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         IClusterRuntime runtime = workspace.Runtime;
+        await workspace.Connect();
 
         await runtime.Permissions.UpdateCanI<V1Pod>(Verb.List);
         await runtime.Permissions.UpdateCanI<V1Pod>(Verb.Watch);
@@ -517,7 +519,6 @@ public class ClusterWorkspaceTests
     {
         IServiceProvider services = Application.Current.GetTestServices();
         TestClusterConfig config = services.GetRequiredService<TestClusterConfig>();
-        config.StartDisconnected = true;
         var workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
 
         var firstConnect = workspace.Connect();

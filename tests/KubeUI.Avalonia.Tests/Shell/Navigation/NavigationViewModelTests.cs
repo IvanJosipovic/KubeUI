@@ -286,7 +286,6 @@ public class NavigationViewModelTests : IDisposable
     {
         IServiceProvider services = Application.Current.GetTestServices();
         TestClusterConfig config = services.GetRequiredService<TestClusterConfig>();
-        config.StartDisconnected = true;
         ClusterWorkspace workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         var runtime = workspace.Runtime;
 
@@ -312,7 +311,6 @@ public class NavigationViewModelTests : IDisposable
         IServiceProvider services = Application.Current.GetTestServices();
         TestClusterConfig config = services.GetRequiredService<TestClusterConfig>();
         config.ThrowOnConnect = true;
-        config.StartDisconnected = true;
         ClusterWorkspace workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         var runtime = workspace.Runtime;
 
@@ -335,7 +333,6 @@ public class NavigationViewModelTests : IDisposable
         IServiceProvider services = Application.Current.GetTestServices();
         TestClusterConfig config = services.GetRequiredService<TestClusterConfig>();
         config.ResponseLatency = TimeSpan.FromMilliseconds(50);
-        config.StartDisconnected = true;
         ClusterWorkspace workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         var runtime = workspace.Runtime;
 
@@ -363,7 +360,6 @@ public class NavigationViewModelTests : IDisposable
         IServiceProvider services = Application.Current.GetTestServices();
         TestClusterConfig config = services.GetRequiredService<TestClusterConfig>();
         config.ThrowOnConnect = true;
-        config.StartDisconnected = true;
         ClusterWorkspace workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         var runtime = workspace.Runtime;
 
@@ -396,7 +392,6 @@ public class NavigationViewModelTests : IDisposable
         IServiceProvider services = Application.Current.GetTestServices();
         TestClusterConfig config = services.GetRequiredService<TestClusterConfig>();
         config.AuthenticatedUser = KubernetesRbac.ServiceAccountUser;
-        config.StartDisconnected = true;
         ClusterWorkspace workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         var runtime = workspace.Runtime;
 
@@ -437,7 +432,6 @@ public class NavigationViewModelTests : IDisposable
     {
         IServiceProvider services = Application.Current.GetTestServices();
         TestClusterConfig config = services.GetRequiredService<TestClusterConfig>();
-        config.StartDisconnected = true;
         ClusterWorkspace workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         var runtime = workspace.Runtime;
 
@@ -797,7 +791,6 @@ public class NavigationViewModelTests : IDisposable
     {
         IServiceProvider services = Application.Current.GetTestServices();
         TestClusterConfig config = services.GetRequiredService<TestClusterConfig>();
-        config.StartDisconnected = true;
         ClusterWorkspace workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         var runtime = workspace.Runtime;
 
@@ -820,7 +813,6 @@ public class NavigationViewModelTests : IDisposable
     {
         IServiceProvider services = Application.Current.GetTestServices();
         TestClusterConfig config = services.GetRequiredService<TestClusterConfig>();
-        config.StartDisconnected = true;
         ClusterWorkspace workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         var runtime = workspace.Runtime;
 
@@ -847,7 +839,6 @@ public class NavigationViewModelTests : IDisposable
     {
         IServiceProvider services = Application.Current.GetTestServices();
         TestClusterConfig config = services.GetRequiredService<TestClusterConfig>();
-        config.StartDisconnected = true;
         ClusterWorkspace workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         var runtime = workspace.Runtime;
 
@@ -1225,7 +1216,6 @@ public class NavigationViewModelTests : IDisposable
                     new RbacRule("pods", "watch"),
                     new RbacRule("pods", "create", Subresource: "portforward")))
                 .ToArray();
-        config.StartDisconnected = true;
         ClusterWorkspace workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         var runtime = workspace.Runtime;
 
@@ -1778,7 +1768,6 @@ public class NavigationViewModelTests : IDisposable
     {
         IServiceProvider services = Application.Current.GetTestServices();
         TestClusterConfig config = services.GetRequiredService<TestClusterConfig>();
-        config.StartDisconnected = true;
         ClusterWorkspace workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         var runtime = workspace.Runtime;
 

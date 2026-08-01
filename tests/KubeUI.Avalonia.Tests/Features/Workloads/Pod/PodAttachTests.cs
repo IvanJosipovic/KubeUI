@@ -186,7 +186,6 @@ public sealed class PodAttachTests
     {
         IServiceProvider services = Application.Current.GetTestServices();
         TestClusterConfig config = services.GetRequiredService<TestClusterConfig>();
-        config.StartDisconnected = true;
         ClusterWorkspace workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         var runtime = workspace.Runtime;
         runtime.Name = "pod-attach-test";

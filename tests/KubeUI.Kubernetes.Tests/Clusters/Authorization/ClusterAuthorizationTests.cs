@@ -17,7 +17,6 @@ public sealed class ClusterAuthorizationTests
         TestClusterConfig config = new()
         {
             Type = backend,
-            StartDisconnected = true,
         };
         await using var testCluster = await new TestClusterGenerator().CreateAsync(
             config,
@@ -62,6 +61,7 @@ public sealed class ClusterAuthorizationTests
             },
             TestContext.Current.CancellationToken);
         var cluster = harness.Cluster;
+        await cluster.Connect();
         var authorizationRequestsBeforeUpdate = harness.AuthorizationRequestCount;
 
         await cluster.UpdatePermissionsAllNamespaceAsync<V1Pod>(Verb.List);
