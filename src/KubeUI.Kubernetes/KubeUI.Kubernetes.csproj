@@ -5,9 +5,6 @@
     <Nullable>enable</Nullable>
     <LangVersion>preview</LangVersion>
     <DebugType>embedded</DebugType>
-    <AssemblyName>KubeUI.Kubernetes</AssemblyName>
-    <AnalysisLevel>latest</AnalysisLevel>
-    <AnalysisMode>All</AnalysisMode>
   </PropertyGroup>
 
   <ItemGroup>

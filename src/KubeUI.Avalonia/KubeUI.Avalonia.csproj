@@ -6,8 +6,6 @@
     <LangVersion>preview</LangVersion>
     <EnableAvaloniaXamlCompilation>false</EnableAvaloniaXamlCompilation>
     <DebugType>embedded</DebugType>
-    <AnalysisLevel>latest</AnalysisLevel>
-    <AnalysisMode>All</AnalysisMode>
   </PropertyGroup>
 
   <ItemGroup>

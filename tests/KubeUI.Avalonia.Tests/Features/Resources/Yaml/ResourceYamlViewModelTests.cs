@@ -24,18 +24,8 @@ using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Features.Resources.Yaml;
 
-public class ResourceYamlViewModelTests : IDisposable
+public class ResourceYamlViewModelTests
 {
-    private readonly List<IDisposable> TestDisposables = [];
-
-    public void Dispose()
-    {
-        foreach (var disposable in TestDisposables)
-        {
-            disposable.Dispose();
-        }
-    }
-
     private static async Task WaitForValidationDebounceAsync(Func<bool>? predicate = null, int timeoutMs = 2500)
     {
         var sw = System.Diagnostics.Stopwatch.StartNew();
@@ -208,7 +198,7 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public async Task ResourceYamlView_PreservesFoldState_WhenActiveDockableChanges()
     {
-        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var cluster = await Application.Current.CreateClusterAsync();
         var factory = Application.Current.GetRequiredTestService<IFactory>();
         var layout = factory.CreateLayout();
         factory.InitLayout(layout);
@@ -220,7 +210,7 @@ public class ResourceYamlViewModelTests : IDisposable
             Layout = layout,
         };
 
-        var window = TestDisposables.CreateTestWindow(content: dockControl);
+        using var window = Application.Current.CreateTestWindow(content: dockControl);
         window.Show();
 
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
@@ -281,7 +271,7 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public async Task ResourceYamlView_PreservesScrollOffset_WhenActiveDockableChanges()
     {
-        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var cluster = await Application.Current.CreateClusterAsync();
         var factory = Application.Current.GetRequiredTestService<IFactory>();
         var layout = factory.CreateLayout();
         factory.InitLayout(layout);
@@ -293,7 +283,7 @@ public class ResourceYamlViewModelTests : IDisposable
             Layout = layout,
         };
 
-        var window = TestDisposables.CreateTestWindow(content: dockControl);
+        using var window = Application.Current.CreateTestWindow(content: dockControl);
         window.Show();
 
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
@@ -372,9 +362,9 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public async Task ResourceYamlView_PreservesFoldState_WhenResourceIsUpdated()
     {
-        var window = TestDisposables.CreateTestWindow(width: 800, height: 600);
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var cluster = await Application.Current.CreateClusterAsync();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
 
         var resource = new V1Namespace
@@ -440,7 +430,7 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public async Task ResourceYamlView_ShowsCompletion_WhenCompletionIsRequested()
     {
-        var window = TestDisposables.CreateTestWindow(width: 800, height: 600);
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
         var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
@@ -487,7 +477,7 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public void ResourceYamlView_ShowsDocumentationPopupOnHoverOverFieldName()
     {
-        var window = TestDisposables.CreateTestWindow(width: 800, height: 600);
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
         var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
@@ -547,7 +537,7 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public void ResourceYamlView_ShowsDocumentationPopupOnNestedFieldName()
     {
-        var window = TestDisposables.CreateTestWindow(width: 800, height: 600);
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
         var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
@@ -598,7 +588,7 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public void ResourceYamlView_ShowsDocumentationPopupOnFieldNamePastTenthLine()
     {
-        var window = TestDisposables.CreateTestWindow(width: 800, height: 600);
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
         var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
@@ -658,7 +648,7 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public void ResourceYamlView_ShowsDocumentationPopupOnNestedFieldPastTenthLine()
     {
-        var window = TestDisposables.CreateTestWindow(width: 800, height: 600);
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
         var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
@@ -720,7 +710,7 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public void ResourceYamlView_ShowsDocumentationPopupOnKeyAtEndOfLine()
     {
-        var window = TestDisposables.CreateTestWindow(width: 800, height: 600);
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
         var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
@@ -781,7 +771,7 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public void ResourceYamlView_ShowsDocumentationPopupOnSequenceItemFieldName()
     {
-        var window = TestDisposables.CreateTestWindow(width: 800, height: 600);
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
         var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
@@ -844,7 +834,7 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public void ResourceYamlView_UpdatesDocumentationPopupWhenHoverMovesBetweenFields()
     {
-        var window = TestDisposables.CreateTestWindow(width: 800, height: 600);
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
         var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
@@ -916,7 +906,7 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public void ResourceYamlView_ShowsDocumentationPopupAfterBlankLinesAndComments()
     {
-        var window = TestDisposables.CreateTestWindow(width: 800, height: 600);
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
         var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
@@ -979,7 +969,7 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public void ResourceYamlView_DoesNotShowDocumentationPopupOnColonOrValueBoundary()
     {
-        var window = TestDisposables.CreateTestWindow(width: 800, height: 600);
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
         var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
@@ -1036,7 +1026,7 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public void ResourceYamlView_ClosesDocumentationPopupWhenScrolled()
     {
-        var window = TestDisposables.CreateTestWindow(width: 800, height: 600);
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
         var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
@@ -1137,7 +1127,7 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public void ResourceYamlView_ShowsDocumentationPopupFromRenderedPointOnRootField()
     {
-        var window = TestDisposables.CreateTestWindow(width: 800, height: 600);
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
         var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
@@ -1184,7 +1174,7 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public void ResourceYamlView_ShowsDocumentationPopupFromRenderedPointOnNestedSequenceField()
     {
-        var window = TestDisposables.CreateTestWindow(width: 800, height: 600);
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
         var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
@@ -1237,7 +1227,7 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public void ResourceYamlView_ShowsDocumentationPopupFromRenderedPointPastTenthLine()
     {
-        var window = TestDisposables.CreateTestWindow(width: 800, height: 600);
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
         var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
@@ -1297,7 +1287,7 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public void ResourceYamlView_DoesNotShowDocumentationPopupFromRenderedPointOnValue()
     {
-        var window = TestDisposables.CreateTestWindow(width: 800, height: 600);
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
         var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
@@ -1340,7 +1330,7 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public void ResourceYamlView_ShowsDocumentationPopupForImagePullPolicyInCalicoControllerManifest()
     {
-        var window = TestDisposables.CreateTestWindow(width: 800, height: 600);
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
         var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
@@ -1416,7 +1406,7 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public void ResourceYamlView_ShowsDocumentationPopupForImagePullPolicyInCalicoControllerManifestWithoutTrailingNewline()
     {
-        var window = TestDisposables.CreateTestWindow(width: 800, height: 600);
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
         var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
@@ -1495,7 +1485,7 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public void ResourceYamlView_ShowsDocumentationPopupForImagePullPolicyInCalicoControllerManifestAfterScroll()
     {
-        var window = TestDisposables.CreateTestWindow(width: 800, height: 250);
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 250);
 
         var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
@@ -1582,7 +1572,7 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public void ResourceYamlView_ResolvesViewportPointToImagePullPolicyOffsetAfterScroll()
     {
-        var window = TestDisposables.CreateTestWindow(width: 800, height: 250);
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 250);
 
         var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
@@ -1663,7 +1653,7 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public void ResourceYamlView_CreatesDocumentationTipForImagePullPolicyOffsetAfterScroll()
     {
-        var window = TestDisposables.CreateTestWindow(width: 800, height: 250);
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 250);
 
         var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
@@ -1743,7 +1733,7 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public async Task ResourceYamlView_DoesNotShowCompletion_WhenEnterCreatesNewLine()
     {
-        var window = TestDisposables.CreateTestWindow(width: 800, height: 600);
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
         var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
@@ -1778,7 +1768,7 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public async Task ResourceYamlView_InsertsSequenceMarker_WhenEnterIsPressedOnSequenceProperty()
     {
-        var window = TestDisposables.CreateTestWindow(width: 800, height: 600);
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
         var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
@@ -1830,7 +1820,7 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public async Task ResourceYamlView_AlignsNestedSequenceMarker_WhenEnterIsPressedOnSequenceItemProperty()
     {
-        var window = TestDisposables.CreateTestWindow(width: 800, height: 600);
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
         var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
@@ -1884,7 +1874,7 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public async Task ResourceYamlView_ContinuesListItem_WhenEnterIsPressedAtEndOfSequenceEntry()
     {
-        var window = TestDisposables.CreateTestWindow(width: 800, height: 600);
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
         var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
@@ -1932,7 +1922,7 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public async Task ResourceYamlView_ExitsList_WhenEnterIsPressedOnBlankSequenceEntry()
     {
-        var window = TestDisposables.CreateTestWindow(width: 800, height: 600);
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
         var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
@@ -1978,7 +1968,7 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public async Task ResourceYamlView_DoesNotShowCompletion_WhenTypingScalarSequenceItem()
     {
-        var window = TestDisposables.CreateTestWindow(width: 800, height: 600);
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
         var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
@@ -2025,7 +2015,7 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public async Task ResourceYamlView_InsertsStarterSequence_WhenSelectingListCompletion()
     {
-        var window = TestDisposables.CreateTestWindow(width: 800, height: 600);
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
         var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
@@ -2098,7 +2088,7 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public async Task ResourceYamlView_InsertsStarterObjectBlock_WhenSelectingObjectCompletion()
     {
-        var window = TestDisposables.CreateTestWindow(width: 800, height: 600);
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
         var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
@@ -2343,7 +2333,7 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public async Task ResourceYamlView_TracksYamlSyntaxDiagnostics()
     {
-        var window = TestDisposables.CreateTestWindow(width: 800, height: 600);
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
         var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
@@ -2392,7 +2382,7 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public async Task ResourceYamlView_TracksStrictKubernetesDiagnostics()
     {
-        var window = TestDisposables.CreateTestWindow(width: 800, height: 600);
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
         var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
@@ -2439,7 +2429,7 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public async Task ResourceYamlView_TracksUnknownTypeDiagnostics()
     {
-        var window = TestDisposables.CreateTestWindow(width: 800, height: 600);
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
         var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
@@ -2484,7 +2474,7 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public async Task ResourceYamlView_SaveShowsInlineFailure_WhenYamlIsInvalid()
     {
-        var window = TestDisposables.CreateTestWindow(width: 800, height: 600);
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
         var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
@@ -2530,7 +2520,7 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public async Task ResourceYamlView_DisablesSaveAndDryRun_WhenValidationErrorsExist()
     {
-        var window = TestDisposables.CreateTestWindow(width: 800, height: 600);
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
         var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
@@ -2605,7 +2595,7 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public async Task ResourceYamlView_DryRunShowsInlineSuccess_WhenYamlIsValid()
     {
-        var window = TestDisposables.CreateTestWindow(width: 800, height: 600);
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
         var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         await cluster.Connect();
@@ -2658,11 +2648,10 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public async Task ResourceYamlView_DryRunShowsInlineFailure_WhenServerValidationFails()
     {
-        var window = TestDisposables.CreateTestWindow(width: 800, height: 600);
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
         var services = Application.Current.GetTestServices();
         var cluster = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
-        TestDisposables.Add(cluster);
         await cluster.Connect();
 
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
@@ -2709,7 +2698,7 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public async Task ResourceYamlView_KeepsActionResultVisible_WhenYamlChanges()
     {
-        var window = TestDisposables.CreateTestWindow(width: 800, height: 600);
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
         var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
@@ -2762,7 +2751,7 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public async Task ResourceYamlView_ClearsActionResult_WhenDismissed()
     {
-        var window = TestDisposables.CreateTestWindow(width: 800, height: 600);
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
         var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
@@ -2944,7 +2933,7 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public async Task ResourceYamlView_UsesTwoSpaceIndentationOptions()
     {
-        var window = TestDisposables.CreateTestWindow(width: 800, height: 600);
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
         var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
@@ -2975,7 +2964,7 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public async Task ResourceYamlView_LeavesScrollBelowDocumentEnabled()
     {
-        var window = TestDisposables.CreateTestWindow(width: 800, height: 600);
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
         var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
@@ -3003,9 +2992,9 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public async Task ResourceYamlView_PreservesParentFoldState_WhenResourceGrowsAboveFold()
     {
-        var window = TestDisposables.CreateTestWindow(width: 800, height: 600);
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var cluster = await Application.Current.CreateClusterAsync();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         var resource = CreatePod("test", includeLabels: false, extraEnv: false);
         vm.Initialize(cluster, resource);
@@ -3039,9 +3028,9 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public async Task ResourceYamlView_PreservesParentFoldState_WhenResourceGrowsBelowFold()
     {
-        var window = TestDisposables.CreateTestWindow(width: 800, height: 600);
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var cluster = await Application.Current.CreateClusterAsync();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         var resource = CreatePod("test", includeLabels: true, extraEnv: false);
         vm.Initialize(cluster, resource);
@@ -3075,9 +3064,9 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public async Task ResourceYamlView_PreservesNestedFoldState_WhenResourceUpdatesInsideParent()
     {
-        var window = TestDisposables.CreateTestWindow(width: 800, height: 600);
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var cluster = await Application.Current.CreateClusterAsync();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         var resource = CreatePod("test", includeLabels: true, extraEnv: false);
         vm.Initialize(cluster, resource);

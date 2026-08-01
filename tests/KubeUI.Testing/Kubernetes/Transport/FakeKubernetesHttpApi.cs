@@ -35,9 +35,6 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
         _watchers = state.Watchers;
         _shutdownCancellation = state.ShutdownCancellation;
 
-        Register<V1Pod>();
-        Register<V1Deployment>();
-        Register<V1Secret>();
         Add(new V1Namespace { Metadata = new V1ObjectMeta { Name = "default" } });
         Add(new V1Node { Metadata = new V1ObjectMeta { Name = "node-1" } });
         Add(new V1Secret
@@ -85,7 +82,11 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
     public void Register<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
         var api = GroupApiVersionKind.From<T>();
-        _definitions[DefinitionKey(api.Group, api.ApiVersion, api.PluralName)] = new ResourceDefinition(api, IsNamespaced(typeof(T)));
+        var key = DefinitionKey(api.Group, api.ApiVersion, api.PluralName);
+        if (!_definitions.TryGetValue(key, out var existing) || existing.Api.Kind == existing.Api.PluralName)
+        {
+            _definitions[key] = new ResourceDefinition(api, IsNamespaced(typeof(T)));
+        }
     }
 
     public void Add<T>(T resource) where T : class, IKubernetesObject<V1ObjectMeta>, new()
@@ -95,6 +96,7 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
         var json = ParseObject(KubernetesJson.Serialize(resource));
         NormalizeSecret(json);
         EnsureMetadata(json, resource.Metadata);
+        RegisterPolicyResources(json);
         _resources[ResourceKey(ResourcePath(api, resource.Metadata?.NamespaceProperty, resource.Metadata?.Name))] = json;
     }
 
@@ -230,6 +232,7 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
         var subresource = attributes?["subresource"]?.GetValue<string>();
         @namespace = string.IsNullOrEmpty(@namespace) ? null : @namespace;
         subresource = string.IsNullOrEmpty(subresource) ? null : subresource;
+        EnsureRouteDefinition(new Route(group, group.Length == 0 ? "/api" : "/apis", "v1", resource, string.Empty, @namespace, null, subresource));
         var allowed = _permissions.TryGetValue(PermissionKey(resource, verb, @namespace, subresource), out var configured)
             ? configured
             : UseRoleBasedAuthorization
@@ -434,6 +437,73 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
         }
     }
 
+    private void RegisterPolicyResources(JsonObject resource)
+    {
+        var kind = resource["kind"]?.GetValue<string>();
+        if (kind is not ("Role" or "ClusterRole")
+            || resource["rules"] is not JsonArray rules)
+        {
+            return;
+        }
+
+        foreach (var rule in rules.OfType<JsonObject>())
+        {
+            if (rule["resources"] is not JsonArray resources
+                || rule["apiGroups"] is not JsonArray apiGroups)
+            {
+                continue;
+            }
+
+            foreach (var groupNode in apiGroups)
+            {
+                var group = groupNode?.GetValue<string>();
+                if (group is null)
+                {
+                    continue;
+                }
+
+                if (group == "*" && resources.Any(resourceNode => resourceNode?.GetValue<string>() == "*"))
+                {
+                    RegisterPolicyResource(string.Empty, "pods");
+                    RegisterPolicyResource("apps", "deployments");
+                    continue;
+                }
+
+                foreach (var resourceNode in resources)
+                {
+                    var resourceName = resourceNode?.GetValue<string>()?.Split('/')[0];
+                    if (string.IsNullOrWhiteSpace(resourceName) || resourceName == "*")
+                    {
+                        continue;
+                    }
+
+                    RegisterPolicyResource(group, resourceName);
+                }
+            }
+        }
+    }
+
+    private void RegisterPolicyResource(string group, string resourceName)
+    {
+        const string apiVersion = "v1";
+        var key = DefinitionKey(group, apiVersion, resourceName);
+        _definitions.TryAdd(
+            key,
+            new ResourceDefinition(
+                new GroupApiVersionKind(group, apiVersion, InferKind(resourceName), resourceName),
+                IsNamespacedResource(resourceName)));
+    }
+
+    private static bool IsNamespacedResource(string resource)
+        => resource is not ("namespaces"
+            or "nodes"
+            or "persistentvolumes"
+            or "storageclasses"
+            or "customresourcedefinitions"
+            or "clusterroles"
+            or "clusterrolebindings"
+            or "ingressclasses");
+
     private static bool AcceptsApiDiscovery(HttpRequestMessage request) =>
         request.Headers.Accept.Any(value => value.ToString().Contains("apidiscovery.k8s.io", StringComparison.OrdinalIgnoreCase));
 
@@ -466,15 +536,26 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
                 : true;
     }
 
-        private void EnsureRouteDefinition(Route route)
-        {
-            var key = DefinitionKey(route.Group, route.ApiVersion, route.PluralName);
-            _definitions.TryAdd(
-                key,
-                new ResourceDefinition(
-                    new GroupApiVersionKind(route.Group, route.ApiVersion, route.PluralName, route.PluralName),
-                    route.Namespace is not null));
-        }
+    private void EnsureRouteDefinition(Route route)
+    {
+        var key = DefinitionKey(route.Group, route.ApiVersion, route.PluralName);
+        _definitions.TryAdd(
+            key,
+            new ResourceDefinition(
+                new GroupApiVersionKind(route.Group, route.ApiVersion, InferKind(route.PluralName), route.PluralName),
+                route.Namespace is not null));
+    }
+
+    private static string InferKind(string pluralName)
+    {
+        var singularName = pluralName.EndsWith("ies", StringComparison.Ordinal)
+            ? pluralName[..^3] + "y"
+            : pluralName.EndsWith("s", StringComparison.Ordinal)
+                ? pluralName[..^1]
+                : pluralName;
+
+        return char.ToUpperInvariant(singularName[0]) + singularName[1..];
+    }
 
     private bool IsRoleBasedAccessAllowed(string group, string resource, string verb, string? @namespace, string? subresource)
     {

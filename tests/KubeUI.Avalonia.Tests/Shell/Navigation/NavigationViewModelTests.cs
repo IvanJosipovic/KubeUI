@@ -7,7 +7,6 @@ using Avalonia.Styling;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.Input;
 using Dock.Model.Controls;
-using Dock.Model.Core;
 using FluentAvalonia.UI.Controls;
 using k8s;
 using k8s.Models;
@@ -15,44 +14,17 @@ using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Resources;
 using KubeUI.Avalonia.Features.Resources.Visualization;
 using KubeUI.Avalonia.Shell.Navigation;
-using KubeUI.Avalonia.Shell.Main;
 using KubeUI.Avalonia.Tests.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Tests.Infra;
-using KubeUI.Kubernetes.Resources.Relationships;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Shell.Navigation;
 
-public class NavigationViewModelTests : IDisposable
+public class NavigationViewModelTests
 {
-    private readonly List<IDisposable> _disposables = [];
-
-    public void Dispose()
-    {
-        var catalog = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>();
-        foreach (var workspace in _disposables.OfType<ClusterWorkspace>().ToList())
-        {
-            catalog?.Clusters.Remove(workspace);
-        }
-
-        var factory = Application.Current.GetTestServices().GetRequiredService<IFactory>();
-        var documents = factory?.GetDockable<IDocumentDock>("Documents");
-        foreach (var document in documents?.VisibleDockables?.Where(static dockable => dockable is not HomeViewModel).ToList() ?? [])
-        {
-            factory!.CloseDockable(document);
-        }
-
-        for (var index = _disposables.Count - 1; index >= 0; index--)
-        {
-            _disposables[index].Dispose();
-        }
-    }
-
     private NavigationViewModel CreateViewModel()
     {
-        var vm = Application.Current.GetTestServices().GetRequiredService<NavigationViewModel>();
-        _disposables.Add(vm);
-        return vm;
+        return Application.Current.GetTestServices().GetRequiredService<NavigationViewModel>();
     }
 
     private static async Task<T?> WaitForValueAsync<T>(Func<T?> getValue, int timeoutMs = 3000, CancellationToken cancellationToken = default) where T : class
@@ -487,16 +459,15 @@ public class NavigationViewModelTests : IDisposable
     [AvaloniaFact]
     public async Task selecting_cluster_node_with_namespace_fallback_does_not_open_settings_or_prompt()
     {
-        var services = Application.Current.GetTestServices();
-        var config = services.GetRequiredService<TestClusterConfig>();
-        config.AuthenticatedUser = KubernetesRbac.ServiceAccountUser;
-        config.InitialYaml = KubernetesTestData.LimitedAccessWithNamespaceFallback;
-        var workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
-
-        await workspace.Connect();
+        var workspace = await Application.Current.CreateClusterAsync(config =>
+        {
+            config.AuthenticatedUser = KubernetesRbac.ServiceAccountUser;
+            config.InitialYaml = KubernetesTestData.LimitedAccessWithNamespaceFallback;
+        }, connect: false);
         var settingsService = Application.Current.GetTestServices().GetRequiredService<ISettingsService>()
             ?? throw new InvalidOperationException("Test services are not initialized.");
         settingsService.Settings.GetClusterSettings(workspace.Runtime).Namespaces!.Add("my-app");
+        await workspace.Connect();
 
         var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
@@ -599,11 +570,11 @@ public class NavigationViewModelTests : IDisposable
     [AvaloniaFact]
     public async Task selecting_cluster_node_with_settings_only_namespace_fallback_shows_namespaced_resources_in_navigation()
     {
-        var services = Application.Current.GetTestServices();
-        var config = services.GetRequiredService<TestClusterConfig>();
-        config.AuthenticatedUser = KubernetesRbac.ServiceAccountUser;
-        config.InitialYaml = KubernetesTestData.LimitedAccessWithNamespacePermissions;
-        var workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var workspace = await Application.Current.CreateClusterAsync(config =>
+        {
+            config.AuthenticatedUser = KubernetesRbac.ServiceAccountUser;
+            config.InitialYaml = KubernetesTestData.LimitedAccessWithNamespacePermissions;
+        }, connect: false);
         var settingsService = Application.Current.GetTestServices().GetRequiredService<ISettingsService>()
             ?? throw new InvalidOperationException("Test services are not initialized.");
         settingsService.Settings.GetClusterSettings(workspace.Runtime).Namespaces!.Add("my-app");
@@ -628,12 +599,12 @@ public class NavigationViewModelTests : IDisposable
     [AvaloniaFact]
     public async Task namespaced_resource_link_stays_hidden_when_cached_config_flag_is_false()
     {
-        var services = Application.Current.GetTestServices();
-        var config = services.GetRequiredService<TestClusterConfig>();
-        config.InitialResources = [
-                    new V1Namespace { Metadata = new V1ObjectMeta { Name = "my-app" } },
-                ];
-        var workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var workspace = await Application.Current.CreateClusterAsync(config =>
+        {
+            config.InitialResources = [
+                new V1Namespace { Metadata = new V1ObjectMeta { Name = "my-app" } },
+            ];
+        }, connect: false);
 
         var settingsService = Application.Current.GetTestServices().GetRequiredService<ISettingsService>()
             ?? throw new InvalidOperationException("Test services are not initialized.");
@@ -657,12 +628,12 @@ public class NavigationViewModelTests : IDisposable
     [AvaloniaFact]
     public async Task configured_namespaced_resource_link_is_visible_without_namespace_listing_access()
     {
-        var services = Application.Current.GetTestServices();
-        var config = services.GetRequiredService<TestClusterConfig>();
-        config.InitialResources = [
+        var workspace = await Application.Current.CreateClusterAsync(config =>
+        {
+            config.InitialResources = [
                     new V1Namespace { Metadata = new V1ObjectMeta { Name = "my-app" } },
                 ];
-        var workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        }, connect: true);
 
         var settingsService = Application.Current.GetTestServices().GetRequiredService<ISettingsService>()
             ?? throw new InvalidOperationException("Test services are not initialized.");
@@ -750,7 +721,6 @@ public class NavigationViewModelTests : IDisposable
     public async Task cluster_node_expands_after_successful_connect()
     {
         var services = Application.Current.GetTestServices();
-        var config = services.GetRequiredService<TestClusterConfig>();
         var workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
 
         await workspace.Connect();
@@ -990,11 +960,8 @@ public class NavigationViewModelTests : IDisposable
     [AvaloniaFact]
     public async Task renaming_connected_cluster_preserves_resource_navigation()
     {
-        var services = Application.Current.GetTestServices();
-        var config = services.GetRequiredService<TestClusterConfig>();
-        var workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var workspace = await Application.Current.CreateClusterAsync();
         workspace.Runtime.Name = "old-name";
-        await workspace.Connect();
         Dispatcher.UIThread.RunJobs();
 
         var vm = CreateViewModel();
@@ -1127,14 +1094,15 @@ public class NavigationViewModelTests : IDisposable
     [AvaloniaFact]
     public async Task resource_navigation_updates_incrementally_and_port_forward_waits_for_pod_permissions()
     {
-        var services = Application.Current.GetTestServices();
-        var config = services.GetRequiredService<TestClusterConfig>();
-        config.AuthenticatedUser = KubernetesRbac.ServiceAccountUser;
-        config.InitialResources = KubernetesRbac.ClusterWide(
+        var workspace = await Application.Current.CreateClusterAsync(config =>
+        {
+            config.AuthenticatedUser = KubernetesRbac.ServiceAccountUser;
+            config.InitialResources = KubernetesRbac.ClusterWide(
                     new RbacRule("namespaces", "list"),
                     new RbacRule("namespaces", "watch"),
                     new RbacRule("pods", "create", Subresource: "portforward"));
-        var workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        }, connect: false);
+        await workspace.Connect();
         await workspace.Runtime.Permissions.UpdatePermissionsAllNamespaceAsync<V1Pod>(Verb.Create, "portforward");
 
         var podRelease = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -1370,7 +1338,6 @@ public class NavigationViewModelTests : IDisposable
     public async Task stale_crd_navigation_link_opens_the_current_generated_resource_type()
     {
         var services = Application.Current.GetTestServices();
-        var config = services.GetRequiredService<TestClusterConfig>();
         var workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
 
         await workspace.Connect();
@@ -1397,7 +1364,9 @@ public class NavigationViewModelTests : IDisposable
         staleLink.ControlType.ShouldBe(originalType);
 
         var updatedCrd = ClusterWorkspaceTestCustomResourceDefinitionFactory.Create("tests.kubeui.com", "tests", "otherString");
-        updatedCrd.Metadata.Uid = workspace.Runtime.GetResource<V1CustomResourceDefinition>(null, originalCrd.Name()).ShouldNotBeNull().Metadata.Uid;
+        var currentCrd = workspace.Runtime.GetResource<V1CustomResourceDefinition>(null, originalCrd.Name()).ShouldNotBeNull();
+        updatedCrd.Metadata.Uid = currentCrd.Metadata.Uid;
+        updatedCrd.Metadata.ResourceVersion = currentCrd.Metadata.ResourceVersion;
         await workspace.Runtime.AddOrUpdateResource(updatedCrd);
 
         var updatedType = await WaitForValueAsync(() =>
@@ -1815,25 +1784,21 @@ public class NavigationViewModelTests : IDisposable
     [AvaloniaFact]
     public async Task event_navigation_count_recovers_when_event_seed_happened_before_namespace_permission()
     {
-        var services = Application.Current.GetTestServices();
-        var config = services.GetRequiredService<TestClusterConfig>();
-        config.AuthenticatedUser = KubernetesRbac.ServiceAccountUser;
-        config.InitialResources = KubernetesRbac.ClusterWide(
+        var workspace = await Application.Current.CreateClusterAsync(config =>
+        {
+            config.AuthenticatedUser = KubernetesRbac.ServiceAccountUser;
+            config.InitialResources = KubernetesRbac.ClusterWide(
                     new RbacRule("namespaces", "list"),
                     new RbacRule("namespaces", "watch"),
                     new RbacRule("namespaces", "create"),
                     new RbacRule("events", "list"),
-                    new RbacRule("events", "watch"));
-        var workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+                    new RbacRule("events", "watch"),
+                    new RbacRule("events", "create"));
+        }, connect: false);
 
         await workspace.Runtime.SeedResource<Corev1Event>();
         workspace.Runtime.Objects[GroupApiVersionKind.From<Corev1Event>()].ShouldBeOfType<ContainerClass<Corev1Event>>()
             .Informers.Count.ShouldBe(0);
-
-        await workspace.Runtime.AddOrUpdateResource(new V1Namespace
-        {
-            Metadata = new() { Name = "default" }
-        });
 
         await workspace.Connect();
         Dispatcher.UIThread.RunJobs();

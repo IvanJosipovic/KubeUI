@@ -332,11 +332,6 @@ public sealed class ResourceFeatureConfigTests
         await workspace.Runtime.SeedResource<V1Namespace>(true);
         await workspace.Runtime.SeedResource<V1CronJob>(true);
         await workspace.Runtime.SeedResource<V1Job>(true);
-        await workspace.Runtime.AddOrUpdateResource(new V1Namespace
-        {
-            Metadata = new() { Name = "volsync" },
-        });
-
         await ((Cluster)workspace.Runtime).UpdateCanI<V1Job>(Verb.Create);
         await ((Cluster)workspace.Runtime).UpdateCanI<V1Job>(Verb.Create, "volsync");
         var config = (V1CronJobConfig)workspace.GetResourceConfig<V1CronJob>();
@@ -371,11 +366,6 @@ public sealed class ResourceFeatureConfigTests
         await workspace.Runtime.SeedResource<V1Namespace>(true);
         await workspace.Runtime.SeedResource<V1CronJob>(true);
         await workspace.Runtime.SeedResource<V1Job>(true);
-        await workspace.Runtime.AddOrUpdateResource(new V1Namespace
-        {
-            Metadata = new() { Name = "volsync" },
-        });
-
         await ((Cluster)workspace.Runtime).UpdateCanI<V1Job>(Verb.Create);
         await ((Cluster)workspace.Runtime).UpdateCanI<V1Job>(Verb.Create, "volsync");
         var config = (V1CronJobConfig)workspace.GetResourceConfig<V1CronJob>();

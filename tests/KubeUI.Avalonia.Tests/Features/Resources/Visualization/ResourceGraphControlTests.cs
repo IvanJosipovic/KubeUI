@@ -7,6 +7,7 @@ using k8s;
 using KubeUI.Avalonia.Features.Resources.Visualization;
 using KubeUI.Avalonia.Tests.Infra;
 using KubeUI.Avalonia.Resources;
+using KubeUI.Avalonia.Services.Icons;
 using KubeUI.Kubernetes.Resources.Relationships;
 using Shouldly;
 using k8s.Models;
@@ -1120,14 +1121,14 @@ public sealed class ResourceGraphControlTests
         builder.BuildCount.ShouldBe(1);
     }
 
-    [Fact]
+    [AvaloniaFact]
     public async Task graph_skips_relationships_with_missing_vertices()
     {
         var source = CreatePod("source");
         var sourceIdentity = GetIdentity(source);
         ResourceIdentity missingIdentity = new(V1Pod.KubeApiVersion, V1Pod.KubeKind, "default", "missing", "missing");
 
-        using ResourceGraphControl control = new()
+        using ResourceGraphControl control = new(Application.Current.GetRequiredTestService<IResourceIconService>())
         {
             Graph = new ResourceRelationshipGraph(
                 [source],

@@ -315,6 +315,9 @@ public class ClusterWorkspaceTests
                         new V1Namespace { Metadata = new V1ObjectMeta { Name = "team-a" } },
                         new V1Namespace { Metadata = new V1ObjectMeta { Name = "team-b" } },
                     }
+                        .Concat(KubernetesRbac.ClusterWide(
+                            new RbacRule("namespaces", "list"),
+                            new RbacRule("namespaces", "watch")))
                         .Concat(KubernetesRbac.InNamespace("team-a",
                             new RbacRule("pods", "list"),
                             new RbacRule("pods", "watch")))
@@ -322,16 +325,10 @@ public class ClusterWorkspaceTests
                             new RbacRule("pods", "list"),
                             new RbacRule("pods", "watch")))
                         .ToArray();
-        });
+        }, connect: false);
+        workspace.GetResourceConfigs().ShouldBeEmpty();
+        await workspace.Connect();
         await workspace.Runtime.SeedResource<V1Namespace>(true);
-        await workspace.Runtime.AddOrUpdateResource(new V1Namespace
-        {
-            Metadata = new V1ObjectMeta { Name = "team-a" }
-        });
-        await workspace.Runtime.AddOrUpdateResource(new V1Namespace
-        {
-            Metadata = new V1ObjectMeta { Name = "team-b" }
-        });
 
         await TestWait.UntilAsync(
             () => workspace.Runtime.Namespaces.Select(x => x.Name()).Contains("team-a")
@@ -339,8 +336,6 @@ public class ClusterWorkspaceTests
             TimeSpan.FromSeconds(10),
             cancellationToken: TestContext.Current.CancellationToken,
             beforePoll: () => Dispatcher.UIThread.RunJobs());
-
-        workspace.GetResourceConfigs().ShouldBeEmpty();
 
         await workspace.Runtime.Permissions.UpdateCanI<V1Pod>(Verb.List, "team-a");
         await workspace.Runtime.Permissions.UpdateCanI<V1Pod>(Verb.Watch, "team-a");
@@ -350,7 +345,6 @@ public class ClusterWorkspaceTests
         await workspace.Runtime.SeedResource<V1Pod>();
 
         workspace.Runtime.GetResource<V1Namespace>(null, "team-a").ShouldNotBeNull();
-        workspace.GetResourceConfigs().ShouldBeEmpty();
 
         var podContainer = GetSeededContainer(workspace.Runtime, typeof(V1Pod));
         podContainer.ShouldNotBeNull();

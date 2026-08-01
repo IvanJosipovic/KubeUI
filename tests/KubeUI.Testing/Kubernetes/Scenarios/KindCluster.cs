@@ -66,12 +66,28 @@ public static class Kind
         ThrowIfKindError(stdErrBuffer);
     }
 
-    public static async Task DeleteCluster(string name, CancellationToken cancellationToken = default)
+    public static async Task DeleteCluster(
+        string name,
+        string? kubeConfigPath = null,
+        CancellationToken cancellationToken = default)
     {
         var stdErrBuffer = new StringBuilder();
+        var arguments = new List<string>
+        {
+            "delete",
+            "cluster",
+            "--name",
+            name,
+        };
+
+        if (!string.IsNullOrWhiteSpace(kubeConfigPath))
+        {
+            arguments.Add("--kubeconfig");
+            arguments.Add(kubeConfigPath);
+        }
 
         await ExecuteKindAsync(
-            ["delete", "cluster", "--name", name],
+            arguments,
             standardOutput: null,
             standardError: stdErrBuffer,
             cancellationToken: cancellationToken).ConfigureAwait(false);

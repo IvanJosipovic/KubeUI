@@ -9,12 +9,11 @@ using KubeUI.Testing.Kubernetes.Transport;
 
 namespace KubeUI.Testing.Kubernetes.Bootstrap;
 
-public sealed class TestClusterGenerator : IAsyncDisposable
+public sealed class TestClusterGenerator
 {
     private readonly IServiceProvider _services;
     private readonly bool _ownsServices;
     private readonly List<TestCluster> _clusters = [];
-    private int _disposed;
 
     public TestClusterGenerator()
     {
@@ -43,12 +42,6 @@ public sealed class TestClusterGenerator : IAsyncDisposable
             _ => throw new ArgumentOutOfRangeException(nameof(config), config.Type, "Unknown test cluster type."),
         };
 
-        if (Interlocked.CompareExchange(ref _disposed, 0, 0) != 0)
-        {
-            await cluster.DisposeAsync().ConfigureAwait(false);
-            throw new ObjectDisposedException(nameof(TestClusterGenerator));
-        }
-
         lock (_clusters)
         {
             _clusters.Add(cluster);
@@ -72,21 +65,10 @@ public sealed class TestClusterGenerator : IAsyncDisposable
         }
     }
 
-    public async ValueTask DisposeAsync()
-    {
-        if (Interlocked.Exchange(ref _disposed, 1) != 0)
-        {
-            return;
-        }
-
-        await ResetAsync().ConfigureAwait(false);
-
-        if (_ownsServices && _services is IAsyncDisposable disposable)
-        {
-            await disposable.DisposeAsync().ConfigureAwait(false);
-        }
-    }
-
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(
+        "Reliability",
+        "CA2000",
+        Justification = "Client and fake API ownership transfers to the returned TestCluster.")]
     private async Task<TestCluster> CreateFakeAsync(TestClusterConfig config, CancellationToken cancellationToken)
     {
         var api = new FakeKubernetesHttpApi()
@@ -125,6 +107,10 @@ public sealed class TestClusterGenerator : IAsyncDisposable
         return cluster;
     }
 
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(
+        "Reliability",
+        "CA2000",
+        Justification = "Client ownership transfers to the returned TestCluster.")]
     private async Task<TestCluster> CreateNamedAsync(TestClusterConfig config, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(config.Name))
@@ -160,6 +146,10 @@ public sealed class TestClusterGenerator : IAsyncDisposable
         }
     }
 
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(
+        "Reliability",
+        "CA2000",
+        Justification = "Client ownership transfers to the returned TestCluster.")]
     private async Task<TestCluster> CreateKindAsync(TestClusterConfig config, CancellationToken cancellationToken)
     {
         var name = config.Name ?? $"kubeui-test-{Guid.NewGuid():N}";
@@ -320,7 +310,7 @@ public sealed class TestClusterGenerator : IAsyncDisposable
     {
         try
         {
-            await Kind.DeleteCluster(name, cancellationToken).ConfigureAwait(false);
+            await Kind.DeleteCluster(name, kubeConfigPath, cancellationToken).ConfigureAwait(false);
         }
         finally
         {

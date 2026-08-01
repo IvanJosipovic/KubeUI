@@ -38,8 +38,6 @@ public class TestApp : Application, IServiceProviderHost, IDisposable
         var provider = BuildServiceProvider();
         Services = provider;
         ApplyResources(provider);
-        InitializeDockFactory(provider);
-
     }
 
     public void Dispose()
@@ -108,7 +106,13 @@ public class TestApp : Application, IServiceProviderHost, IDisposable
             });
             overrides.Replace(ServiceDescriptor.Singleton(dialog.Object));
             overrides.Replace(ServiceDescriptor.Singleton(notifications.Object));
-            overrides.Replace(ServiceDescriptor.Singleton<IFactory>(sp => new DockFactory(sp, sp.GetRequiredService<ILogger<DockFactory>>())));
+            overrides.Replace(ServiceDescriptor.Singleton<IFactory>(sp =>
+            {
+                var factory = new DockFactory(sp, sp.GetRequiredService<ILogger<DockFactory>>());
+                var layout = factory.CreateLayout();
+                factory.InitLayout(layout);
+                return factory;
+            }));
             overrides.Replace(ServiceDescriptor.Singleton<IKubeConfigPathProvider>(
                 new KubernetesTestKubeConfigPathProvider(kubeConfigPath)));
         });
@@ -131,13 +135,6 @@ public class TestApp : Application, IServiceProviderHost, IDisposable
         }
 
         DataTemplates.Add(provider.GetRequiredService<ViewLocator>());
-    }
-
-    private static void InitializeDockFactory(ServiceProvider provider)
-    {
-        var factory = provider.GetRequiredService<IFactory>();
-        var layout = factory.CreateLayout();
-        factory.InitLayout(layout);
     }
 
     private sealed class TestSettingsPersistence : ISettingsPersistence

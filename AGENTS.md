@@ -56,7 +56,8 @@ Docker
 - For bugs, write the failing regression test first, confirm the failure reproduces, then implement the fix and rerun the same test before widening scope.
 - Run .NET tests with `--hangdump --hangdump-timeout 1m`.
 - Tests should not use Task.Sleep or Delay but wait for specific scenarios or use events
-- When running builds or tests use --tl:off -clp:ErrorsOnly
+- Before running tests run a dotnet build with --tl:off -clp:ErrorsOnly
+- Each Test Method should dispose all objects created, there should never be shared state between tests
 
 ## 7) Code conventions
 

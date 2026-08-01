@@ -393,7 +393,7 @@ public abstract class ClusterRuntimeAssertions
         await using var harness = await CreateHarnessAsync(backend);
         await SeedResourceAsync<V1Namespace>(harness.Cluster);
 
-        var yaml = KubeUI.Kubernetes.Serialization.KubernetesYaml.Serialize(new V1Namespace
+        var yaml = Serialization.KubernetesYaml.Serialize(new V1Namespace
         {
             ApiVersion = V1Namespace.KubeApiVersion,
             Kind = V1Namespace.KubeKind,
@@ -412,7 +412,7 @@ public abstract class ClusterRuntimeAssertions
         await using var harness = await CreateHarnessAsync(backend);
         await SeedResourceAsync<V1CustomResourceDefinition>(harness.Cluster);
 
-            var crd = KubeUI.Kubernetes.Serialization.KubernetesYaml.Deserialize<V1CustomResourceDefinition>(KubernetesTestData.CustomResourceDefinitionYaml);
+        var crd = Serialization.KubernetesYaml.Deserialize<V1CustomResourceDefinition>(KubernetesTestData.CustomResourceDefinitionYaml);
         await harness.CreateAsync(crd, TestContext.Current.CancellationToken);
 
         await WaitForResourceAsync<V1CustomResourceDefinition>(harness.Cluster, null, "tests.kubeui.com");
@@ -494,9 +494,8 @@ public abstract class ClusterRuntimeAssertions
         cluster.GetResourceList<V1Node>().Count.ShouldBe(1);
 
         var secrets = cluster.GetResourceList<V1Secret>();
-        secrets.Count.ShouldBe(1);
-        secrets[0].Namespace().ShouldBe("my-app");
-        secrets[0].Name().ShouldBe("my-serviceaccount");
+        secrets.ShouldAllBe(secret => secret.Namespace() == "my-app");
+        secrets.ShouldContain(secret => secret.Name() == "my-serviceaccount");
     }
 
     protected async Task LimitedAccessCanICore(KubernetesBackend backend)

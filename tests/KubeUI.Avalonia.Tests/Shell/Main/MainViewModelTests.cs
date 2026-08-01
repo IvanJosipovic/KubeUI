@@ -21,7 +21,7 @@ public sealed class MainViewModelTests
     public async Task load_aks_clusters_command_opens_docked_aks_assistant()
     {
         var vm = CreateViewModel();
-        var documents = Application.Current.GetTestServices().GetRequiredService<IFactory>().GetDockable<IDocumentDock>("Documents");
+        var documents = Application.Current.GetRequiredTestService<IFactory>().GetDockable<IDocumentDock>("Documents");
         documents.ShouldNotBeNull();
 
         vm.ImportAksClusterCommand.Execute(null);

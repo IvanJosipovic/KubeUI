@@ -9,7 +9,7 @@ public static class KubernetesTestRuntimeServiceCollectionExtensions
     {
         services.AddSingleton<TestClusterGenerator>();
         services.AddSingleton<TestClusterConfig>();
-        services.AddTransient<IClusterRuntime>(sp =>
+        services.AddSingleton<IClusterRuntime>(sp =>
         {
             var config = sp.GetRequiredService<TestClusterConfig>();
             var generator = sp.GetRequiredService<TestClusterGenerator>();
