@@ -3,6 +3,7 @@ using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Infrastructure.Presentation;
+using KubeUI.Avalonia.Infrastructure.Platform;
 using KubeUI.Avalonia.Services.Settings;
 using KubeUI.Kubernetes;
 
@@ -11,6 +12,7 @@ namespace KubeUI.Avalonia.Resources.Workloads.v1.Pod;
 public sealed partial class PortForwarderListViewModel : ViewModelBase, IInitializeCluster
 {
     private readonly IDialogService _dialogService;
+    private readonly IPlatformServices _platformServices;
 
     [ObservableProperty]
     public partial ISettingsService Settings { get; set; }
@@ -21,10 +23,11 @@ public sealed partial class PortForwarderListViewModel : ViewModelBase, IInitial
     [ObservableProperty]
     public partial PortForwarder? SelectedItem { get; set; }
 
-    public PortForwarderListViewModel(ISettingsService settings, IDialogService dialogService)
+    public PortForwarderListViewModel(ISettingsService settings, IDialogService dialogService, IPlatformServices platformServices)
     {
         Settings = settings;
         _dialogService = dialogService;
+        _platformServices = platformServices;
         Title = Assets.Resources.PortForwarderListView_Title;
     }
 
@@ -56,7 +59,7 @@ public sealed partial class PortForwarderListViewModel : ViewModelBase, IInitial
     [RelayCommand(CanExecute = nameof(CanOpen))]
     private async Task Open(PortForwarder pf)
     {
-        await App.TopLevel!.Launcher.LaunchUriAsync(new Uri($"http://localhost:{pf.LocalPort}"));
+        await _platformServices.LaunchUriAsync(new Uri($"http://localhost:{pf.LocalPort}"));
     }
 
     private bool CanOpen(PortForwarder pf)

@@ -11,7 +11,7 @@ public sealed class ResourcePropertiesViewThreadingTests
     [AvaloniaFact]
     public async Task ClearItems_is_safe_when_invoked_from_background_thread()
     {
-        await using var scope = await KubernetesTestWorkspaceScope.CreateAsync((Application.Current as TestApp)?.Services!);
+        await using var scope = await KubernetesTestWorkspaceScope.CreateAsync((Application.Current as TestApp)?.Services!, KubernetesBackend.Fake);
         var workspace = scope.Workspace;
         await workspace.Connect();
 

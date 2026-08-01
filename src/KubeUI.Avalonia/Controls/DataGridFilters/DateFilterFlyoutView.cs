@@ -13,6 +13,7 @@ internal sealed partial class DateFilterFlyoutView : ViewBase<DateFilterFlyoutCo
         {
             var context = new DateFilterFlyoutContext(
                 title: "Last_Seen",
+                timeProvider: TimeProvider.System,
                 apply: static () => { },
                 clear: static () => { })
             {
@@ -33,7 +34,7 @@ internal sealed partial class DateFilterFlyoutView : ViewBase<DateFilterFlyoutCo
             DataGridFilterFlyoutViewBuilder.CreateTitle(vm),
             DataGridFilterFlyoutViewBuilder.CreateOperatorRow(vm),
             DataGridFilterFlyoutViewBuilder.CreateRow(
-                Assets.Resources.DataGridFilterFlyout_Value,
+                Assets.Resources.DataGridFilterFlyout_Value!,
                 new Grid()
                     .Col(1)
                     .Classes("filter-flyout-composite-editor")

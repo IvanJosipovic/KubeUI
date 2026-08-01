@@ -3,7 +3,6 @@ using Avalonia.Headless.XUnit;
 using k8s;
 using k8s.Models;
 using KubeUI.Avalonia.Tests.Infra;
-using KubeUI.Testing;
 using Microsoft.Extensions.Logging;
 using Shouldly;
 

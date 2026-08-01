@@ -1,4 +1,3 @@
-using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Input.Platform;
@@ -6,7 +5,6 @@ using Avalonia.Interactivity;
 using Avalonia.Threading;
 using k8s.Models;
 using KubeUI.Avalonia.Tests.Infra;
-using KubeUI.Testing;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Features.Resources.Yaml;
@@ -16,7 +14,7 @@ public sealed class ResourceYamlViewCopyTests
     [AvaloniaFact]
     public async Task Editor_copy_writes_selected_yaml_text_to_the_clipboard()
     {
-        await using var scope = await KubernetesTestWorkspaceScope.CreateAsync((Application.Current as TestApp)?.Services!);
+        await using var scope = await KubernetesTestWorkspaceScope.CreateAsync((Application.Current as TestApp)?.Services!, KubernetesBackend.Fake);
         var cluster = scope.Workspace;
         await cluster.Connect();
 
@@ -86,7 +84,7 @@ public sealed class ResourceYamlViewCopyTests
     [AvaloniaFact]
     public async Task Editor_context_menu_copy_writes_selected_yaml_text_to_the_clipboard()
     {
-        await using var scope = await KubernetesTestWorkspaceScope.CreateAsync((Application.Current as TestApp)?.Services!);
+        await using var scope = await KubernetesTestWorkspaceScope.CreateAsync((Application.Current as TestApp)?.Services!, KubernetesBackend.Fake);
         var cluster = scope.Workspace;
         await cluster.Connect();
 

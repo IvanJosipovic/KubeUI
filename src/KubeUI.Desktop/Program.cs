@@ -84,18 +84,18 @@ internal static class Program
             ApplicationName = "KubeUI",
             Args = args
         });
-        var settings = SettingsService.LoadSettingsFromFile();
-
         builder.Logging.SetMinimumLevel(LogLevel.Debug);
 
         builder.Services.AddKubeUIAppServices();
 
-        if (settings.TelemetryEnabled)
+        var settings = SettingsPersistenceLoader.Load();
+
+        if (settings.Settings.TelemetryEnabled)
         {
             builder.Services.AddTelemetry();
         }
 
-        if (settings.LoggingEnabled)
+        if (settings.Settings.LoggingEnabled)
         {
             builder.Services.AddFileLogging();
         }
@@ -108,9 +108,10 @@ internal static class Program
     {
         services.AddLogging(loggingBuilder =>
         {
-            if (SettingsService.EnsureSettingDirExists())
+            string settingsDirectory = SettingsPersistenceLoader.SettingsDirectory;
+            if (SettingsPersistenceLoader.EnsureDirectoryExists())
             {
-                loggingBuilder.AddFile(Path.Combine(SettingsService.GetSettingsPath(), "app.log"), x =>
+                loggingBuilder.AddFile(Path.Combine(settingsDirectory, "app.log"), x =>
                 {
                     x.Append = false;
                     x.FileSizeLimitBytes = 1024L * 1024 * 1024;

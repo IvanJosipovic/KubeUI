@@ -10,7 +10,7 @@ using k8s.Models;
 using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Resources;
 using KubeUI.Avalonia.Tests.Infra;
-using KubeUI.Testing;
+using KubeUI.Testing.Utilities;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Features.Clusters.Workspace;
@@ -78,10 +78,18 @@ public class ClusterWorkspaceTests : IDisposable
 
         await scope.ScenarioHarness.CreateDirectAsync(crd, TestContext.Current.CancellationToken);
 
-        var resourceType = await WaitForValueAsync(() => GetCustomResourceType(runtime, crd));
+        var resourceType = await TestWait.UntilValueAsync(
+            () => GetCustomResourceType(runtime, crd),
+            TimeSpan.FromSeconds(10),
+            cancellationToken: TestContext.Current.CancellationToken,
+            beforePoll: () => Dispatcher.UIThread.RunJobs());
         resourceType.ShouldNotBeNull();
 
-        var resourceConfig = await WaitForValueAsync(() => GetCustomResourceConfig(workspace, crd));
+        var resourceConfig = await TestWait.UntilValueAsync(
+            () => GetCustomResourceConfig(workspace, crd),
+            TimeSpan.FromSeconds(10),
+            cancellationToken: TestContext.Current.CancellationToken,
+            beforePoll: () => Dispatcher.UIThread.RunJobs());
         resourceConfig.ShouldNotBeNull();
         resourceConfig.Type.ShouldBe(resourceType);
         resourceConfig.IsCustomResource.ShouldBeTrue();
@@ -102,7 +110,11 @@ public class ClusterWorkspaceTests : IDisposable
 
         await scope.ScenarioHarness.CreateDirectAsync(crd, TestContext.Current.CancellationToken);
 
-        var resourceConfig = await WaitForValueAsync(() => GetCustomResourceConfig(workspace, crd));
+        var resourceConfig = await TestWait.UntilValueAsync(
+            () => GetCustomResourceConfig(workspace, crd),
+            TimeSpan.FromSeconds(10),
+            cancellationToken: TestContext.Current.CancellationToken,
+            beforePoll: () => Dispatcher.UIThread.RunJobs());
         processedConfig.ShouldBeSameAs(resourceConfig);
     }
 
@@ -119,7 +131,11 @@ public class ClusterWorkspaceTests : IDisposable
 
         await scope.ScenarioHarness.CreateDirectAsync(originalCrd, TestContext.Current.CancellationToken);
 
-        var originalType = await WaitForValueAsync(() => GetCustomResourceType(runtime, originalCrd));
+        var originalType = await TestWait.UntilValueAsync(
+            () => GetCustomResourceType(runtime, originalCrd),
+            TimeSpan.FromSeconds(10),
+            cancellationToken: TestContext.Current.CancellationToken,
+            beforePoll: () => Dispatcher.UIThread.RunJobs());
         originalType.ShouldNotBeNull();
         await ((KubeUI.Kubernetes.Cluster)runtime).UpdateCanI(originalType, Verb.List);
         await ((KubeUI.Kubernetes.Cluster)runtime).UpdateCanI(originalType, Verb.Watch);
@@ -133,23 +149,35 @@ public class ClusterWorkspaceTests : IDisposable
         updatedCrd.Metadata.Uid = runtime.GetResource<V1CustomResourceDefinition>(null, originalCrd.Name()).ShouldNotBeNull().Metadata.Uid;
         await scope.ScenarioHarness.ReplaceDirectAsync(updatedCrd, TestContext.Current.CancellationToken);
 
-        var updatedType = await WaitForValueAsync(() =>
-        {
-            var type = GetCustomResourceType(runtime, updatedCrd);
-            return type != null && type != originalType ? type : null;
-        });
+        var updatedType = await TestWait.UntilValueAsync(
+            () =>
+            {
+                var type = GetCustomResourceType(runtime, updatedCrd);
+                return type != null && type != originalType ? type : null;
+            },
+            TimeSpan.FromSeconds(10),
+            cancellationToken: TestContext.Current.CancellationToken,
+            beforePoll: () => Dispatcher.UIThread.RunJobs());
         updatedType.ShouldNotBeNull();
         updatedType.ShouldNotBe(originalType);
 
-        var updatedResourceConfig = await WaitForValueAsync(() =>
-        {
-            var resourceConfig = GetCustomResourceConfig(workspace, updatedCrd);
-            return resourceConfig?.Type == updatedType ? resourceConfig : null;
-        });
+        var updatedResourceConfig = await TestWait.UntilValueAsync(
+            () =>
+            {
+                var resourceConfig = GetCustomResourceConfig(workspace, updatedCrd);
+                return resourceConfig?.Type == updatedType ? resourceConfig : null;
+            },
+            TimeSpan.FromSeconds(10),
+            cancellationToken: TestContext.Current.CancellationToken,
+            beforePoll: () => Dispatcher.UIThread.RunJobs());
         updatedResourceConfig.ShouldNotBeNull();
         updatedResourceConfig.Type.ShouldBe(updatedType);
 
-        var updatedContainer = await WaitForValueAsync(() => GetSeededContainer(runtime, updatedType));
+        var updatedContainer = await TestWait.UntilValueAsync(
+            () => GetSeededContainer(runtime, updatedType),
+            TimeSpan.FromSeconds(10),
+            cancellationToken: TestContext.Current.CancellationToken,
+            beforePoll: () => Dispatcher.UIThread.RunJobs());
         updatedContainer.ShouldNotBeNull();
         updatedContainer.ShouldNotBeSameAs(originalContainer);
         GetInformers(originalContainer).Count.ShouldBe(0);
@@ -169,7 +197,11 @@ public class ClusterWorkspaceTests : IDisposable
 
         await scope.ScenarioHarness.CreateDirectAsync(originalCrd, TestContext.Current.CancellationToken);
 
-        var originalType = await WaitForValueAsync(() => GetCustomResourceType(runtime, originalCrd));
+        var originalType = await TestWait.UntilValueAsync(
+            () => GetCustomResourceType(runtime, originalCrd),
+            TimeSpan.FromSeconds(10),
+            cancellationToken: TestContext.Current.CancellationToken,
+            beforePoll: () => Dispatcher.UIThread.RunJobs());
         originalType.ShouldNotBeNull();
         await ((KubeUI.Kubernetes.Cluster)runtime).UpdateCanI(originalType, Verb.List);
         await ((KubeUI.Kubernetes.Cluster)runtime).UpdateCanI(originalType, Verb.Watch);
@@ -179,7 +211,11 @@ public class ClusterWorkspaceTests : IDisposable
         originalContainer.ShouldNotBeNull();
         GetInformers(originalContainer).Count.ShouldBe(1);
 
-        var originalResourceConfig = await WaitForValueAsync(() => GetCustomResourceConfig(workspace, originalCrd));
+        var originalResourceConfig = await TestWait.UntilValueAsync(
+            () => GetCustomResourceConfig(workspace, originalCrd),
+            TimeSpan.FromSeconds(10),
+            cancellationToken: TestContext.Current.CancellationToken,
+            beforePoll: () => Dispatcher.UIThread.RunJobs());
         originalResourceConfig.ShouldNotBeNull();
 
         var updatedCrd = ClusterWorkspaceTestCustomResourceDefinitionFactory.Create("tests.kubeui.com", "tests", "someString");
@@ -191,7 +227,11 @@ public class ClusterWorkspaceTests : IDisposable
 
         await scope.ScenarioHarness.ReplaceDirectAsync(updatedCrd, TestContext.Current.CancellationToken);
 
-        await WaitForAsync(() => GetCustomResourceConfig(workspace, updatedCrd) is not null);
+        await TestWait.UntilAsync(
+            () => GetCustomResourceConfig(workspace, updatedCrd) is not null,
+            TimeSpan.FromSeconds(10),
+            cancellationToken: TestContext.Current.CancellationToken,
+            beforePoll: () => Dispatcher.UIThread.RunJobs());
 
         var updatedResourceConfig = GetCustomResourceConfig(workspace, updatedCrd);
         updatedResourceConfig.ShouldBeSameAs(originalResourceConfig);
@@ -208,6 +248,8 @@ public class ClusterWorkspaceTests : IDisposable
         GroupApiVersionKind? seededKind = null;
         runtime.ResourceSeeded += (_, resourceKind) => seededKind = resourceKind;
 
+        await ((KubeUI.Kubernetes.Cluster)runtime).UpdateCanI<V1Pod>(Verb.List);
+        await ((KubeUI.Kubernetes.Cluster)runtime).UpdateCanI<V1Pod>(Verb.Watch);
         await workspace.Runtime.SeedResource<V1Pod>();
 
         seededKind.ShouldBe(GroupApiVersionKind.From<V1Pod>());
@@ -264,7 +306,11 @@ public class ClusterWorkspaceTests : IDisposable
 
         await scope.ScenarioHarness.CreateDirectAsync(crd, TestContext.Current.CancellationToken);
 
-        var resourceType = await WaitForValueAsync(() => GetCustomResourceType(runtime, crd));
+        var resourceType = await TestWait.UntilValueAsync(
+            () => GetCustomResourceType(runtime, crd),
+            TimeSpan.FromSeconds(10),
+            cancellationToken: TestContext.Current.CancellationToken,
+            beforePoll: () => Dispatcher.UIThread.RunJobs());
         resourceType.ShouldNotBeNull();
         await ((KubeUI.Kubernetes.Cluster)runtime).UpdateCanI(resourceType, Verb.List);
         await ((KubeUI.Kubernetes.Cluster)runtime).UpdateCanI(resourceType, Verb.Watch);
@@ -277,9 +323,21 @@ public class ClusterWorkspaceTests : IDisposable
         crd.Metadata.Uid = runtime.GetResource<V1CustomResourceDefinition>(null, crd.Name()).ShouldNotBeNull().Metadata.Uid;
         await scope.ScenarioHarness.DeleteDirectAsync(crd, TestContext.Current.CancellationToken);
 
-        await WaitForAsync(() => GetCustomResourceConfig(workspace, crd) == null);
-        await WaitForAsync(() => GetCustomResourceType(runtime, crd) == null);
-        await WaitForAsync(() => GetInformers(seededContainer).Count == 0);
+        await TestWait.UntilAsync(
+            () => GetCustomResourceConfig(workspace, crd) == null,
+            TimeSpan.FromSeconds(10),
+            cancellationToken: TestContext.Current.CancellationToken,
+            beforePoll: () => Dispatcher.UIThread.RunJobs());
+        await TestWait.UntilAsync(
+            () => GetCustomResourceType(runtime, crd) == null,
+            TimeSpan.FromSeconds(10),
+            cancellationToken: TestContext.Current.CancellationToken,
+            beforePoll: () => Dispatcher.UIThread.RunJobs());
+        await TestWait.UntilAsync(
+            () => GetInformers(seededContainer).Count == 0,
+            TimeSpan.FromSeconds(10),
+            cancellationToken: TestContext.Current.CancellationToken,
+            beforePoll: () => Dispatcher.UIThread.RunJobs());
     }
 
     [AvaloniaFact]
@@ -307,8 +365,12 @@ public class ClusterWorkspaceTests : IDisposable
             Metadata = new V1ObjectMeta { Name = "team-b" }
         });
 
-        await WaitForAsync(() => runtime.Namespaces.Select(x => x.Name()).Contains("team-a")
-            && runtime.Namespaces.Select(x => x.Name()).Contains("team-b"));
+        await TestWait.UntilAsync(
+            () => runtime.Namespaces.Select(x => x.Name()).Contains("team-a")
+                && runtime.Namespaces.Select(x => x.Name()).Contains("team-b"),
+            TimeSpan.FromSeconds(10),
+            cancellationToken: TestContext.Current.CancellationToken,
+            beforePoll: () => Dispatcher.UIThread.RunJobs());
 
         workspace.GetResourceConfigs().ShouldBeEmpty();
 
@@ -335,6 +397,8 @@ public class ClusterWorkspaceTests : IDisposable
         var runtime = scope.Cluster;
         var workspace = CreateWorkspace(runtime);
 
+        await ((KubeUI.Kubernetes.Cluster)runtime).UpdateCanI<V1Pod>(Verb.List);
+        await ((KubeUI.Kubernetes.Cluster)runtime).UpdateCanI<V1Pod>(Verb.Watch);
         await workspace.Runtime.SeedResource<V1Pod>();
 
         var container = GetSeededContainer(runtime, typeof(V1Pod));
@@ -347,7 +411,11 @@ public class ClusterWorkspaceTests : IDisposable
 
         await workspace.Disconnect();
 
-        await WaitForAsync(() => informers.Count == 0 && registrations.Count == 0);
+        await TestWait.UntilAsync(
+            () => informers.Count == 0 && registrations.Count == 0,
+            TimeSpan.FromSeconds(10),
+            cancellationToken: TestContext.Current.CancellationToken,
+            beforePoll: () => Dispatcher.UIThread.RunJobs());
         runtime.Objects.ShouldBeEmpty();
     }
 
@@ -359,6 +427,8 @@ public class ClusterWorkspaceTests : IDisposable
         var runtime = runtimeScope.Cluster;
         var workspace = CreateWorkspace(runtime);
 
+        await ((KubeUI.Kubernetes.Cluster)runtime).UpdateCanI<V1Pod>(Verb.List);
+        await ((KubeUI.Kubernetes.Cluster)runtime).UpdateCanI<V1Pod>(Verb.Watch);
         await workspace.Runtime.SeedResource<V1Pod>();
 
         var initialContainer = GetSeededContainer(runtime, typeof(V1Pod));
@@ -391,19 +461,27 @@ public class ClusterWorkspaceTests : IDisposable
 
         await scope.ScenarioHarness.CreateDirectAsync(crd, TestContext.Current.CancellationToken);
 
-        var resourceType = await WaitForValueAsync(() => GetCustomResourceType(runtime, crd));
+        var resourceType = await TestWait.UntilValueAsync(
+            () => GetCustomResourceType(runtime, crd),
+            TimeSpan.FromSeconds(10),
+            cancellationToken: TestContext.Current.CancellationToken,
+            beforePoll: () => Dispatcher.UIThread.RunJobs());
         resourceType.ShouldNotBeNull();
 
         await workspace.Disconnect();
 
-        await WaitForAsync(() => GetCustomResourceType(runtime, crd) == null);
+        await TestWait.UntilAsync(
+            () => GetCustomResourceType(runtime, crd) == null,
+            TimeSpan.FromSeconds(10),
+            cancellationToken: TestContext.Current.CancellationToken,
+            beforePoll: () => Dispatcher.UIThread.RunJobs());
     }
 
     [AvaloniaFact]
     public async Task connect_returns_before_synchronous_connection_work_completes()
     {
         await using var scope = KubernetesScenarioClusterScope.CreateDisconnected(harness =>
-            harness.ResponseDelay = TimeSpan.FromMilliseconds(50));
+            harness.ResponseDelay = TimeSpan.FromMilliseconds(200));
         var runtime = scope.Cluster;
         var workspace = CreateWorkspace(runtime);
 
@@ -448,10 +526,11 @@ public class ClusterWorkspaceTests : IDisposable
         workspace.GetResourceConfigs().ShouldNotBeEmpty();
     }
 
-    [AvaloniaFact]
-    public async Task added_crd_does_not_refresh_authorization_index_for_generated_resource()
+    [AvaloniaTheory, KubernetesBackendData]
+    [Trait("Category", "Kind")]
+    public async Task added_crd_does_not_refresh_authorization_index_for_generated_resource(KubernetesBackend backend)
     {
-        await using var scope = await KubernetesTestWorkspaceScope.CreateAsync((Application.Current as TestApp)?.Services!);
+        await using var scope = await KubernetesTestWorkspaceScope.CreateAsync((Application.Current as TestApp)?.Services!, backend);
         var runtime = scope.Workspace.Runtime;
         var workspace = scope.Workspace;
 
@@ -460,11 +539,22 @@ public class ClusterWorkspaceTests : IDisposable
         var crd = ClusterWorkspaceTestCustomResourceDefinitionFactory.Create("tests.kubeui.com", "tests", "someString");
         await runtime.AddOrUpdateResource(crd);
 
-        var resourceType = await WaitForValueAsync(() => GetCustomResourceType(runtime, crd));
+        var resourceType = await TestWait.UntilValueAsync(
+            () => GetCustomResourceType(runtime, crd),
+            TimeSpan.FromSeconds(10),
+            cancellationToken: TestContext.Current.CancellationToken,
+            beforePoll: () => Dispatcher.UIThread.RunJobs());
         resourceType.ShouldNotBeNull();
 
-        await WaitForAsync(() => GetCustomResourceConfig(workspace, crd) != null);
-        scope.FakeHarness.AuthorizationRequestCount.ShouldBeGreaterThan(0);
+        await TestWait.UntilAsync(
+            () => GetCustomResourceConfig(workspace, crd) != null,
+            TimeSpan.FromSeconds(10),
+            cancellationToken: TestContext.Current.CancellationToken,
+            beforePoll: () => Dispatcher.UIThread.RunJobs());
+        if (backend == KubernetesBackend.Fake)
+        {
+            scope.FakeHarness.AuthorizationRequestCount.ShouldBeGreaterThan(0);
+        }
     }
 
     private ClusterWorkspace CreateWorkspace(IClusterRuntime runtime)
@@ -475,54 +565,6 @@ public class ClusterWorkspaceTests : IDisposable
 
         _disposables.Add(workspace);
         return workspace;
-    }
-
-    private static async Task WaitForAsync(Func<bool> predicate, int timeoutMs = 10000, CancellationToken cancellationToken = default)
-    {
-        cancellationToken = cancellationToken == default ? TestContext.Current.CancellationToken : cancellationToken;
-        var deadline = DateTime.UtcNow.AddMilliseconds(timeoutMs);
-
-        while (DateTime.UtcNow < deadline)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            Dispatcher.UIThread.RunJobs();
-            if (predicate())
-            {
-                return;
-            }
-
-            await WaitForNextPollAsync(cancellationToken);
-        }
-
-        Dispatcher.UIThread.RunJobs();
-        predicate().ShouldBeTrue();
-    }
-
-    private static async Task<T?> WaitForValueAsync<T>(Func<T?> valueFactory, int timeoutMs = 10000, CancellationToken cancellationToken = default) where T : class
-    {
-        var deadline = DateTime.UtcNow.AddMilliseconds(timeoutMs);
-
-        while (DateTime.UtcNow < deadline)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            Dispatcher.UIThread.RunJobs();
-            var value = valueFactory();
-            if (value != null)
-            {
-                return value;
-            }
-
-            await WaitForNextPollAsync(cancellationToken);
-        }
-
-        Dispatcher.UIThread.RunJobs();
-        return valueFactory();
-    }
-
-    private static async Task WaitForNextPollAsync(CancellationToken cancellationToken)
-    {
-        using var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(25));
-        await timer.WaitForNextTickAsync(cancellationToken);
     }
 
     private static Type? GetCustomResourceType(IClusterRuntime runtime, V1CustomResourceDefinition crd)

@@ -7,6 +7,7 @@ using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using KubeUI.Avalonia.Features.Clusters.Catalog;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Infrastructure.Docking;
+using KubeUI.Avalonia.Infrastructure.Platform;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Options;
 using KubeUI.Avalonia.Services.Settings;
@@ -25,6 +26,7 @@ public sealed partial class MainViewModel : ViewModelBase
     private readonly ILogger<MainViewModel> _logger;
     private readonly IFactory _factory = null!;
     private readonly IClusterRuntimeCatalog _runtimeCatalog;
+    private readonly IPlatformServices _platformServices;
 
     [ObservableProperty]
     private partial ISettingsService SettingsService { get; set; }
@@ -41,7 +43,8 @@ public sealed partial class MainViewModel : ViewModelBase
         ISettingsService settingsService,
         ClusterWorkspaceCatalog clusterCatalog,
         IClusterRuntimeCatalog runtimeCatalog,
-        IDialogService dialogService)
+        IDialogService dialogService,
+        IPlatformServices platformServices)
     {
         _serviceProvider = serviceProvider;
         _logger = logger;
@@ -50,6 +53,7 @@ public sealed partial class MainViewModel : ViewModelBase
         ClusterCatalog = clusterCatalog;
         _runtimeCatalog = runtimeCatalog;
         _dialogService = dialogService;
+        _platformServices = platformServices;
 
         DebugFactoryEvents(_factory);
 
@@ -273,7 +277,7 @@ public sealed partial class MainViewModel : ViewModelBase
     [RelayCommand]
     private async Task LoadKubeConfig()
     {
-        var files = await App.TopLevel.StorageProvider.OpenFilePickerAsync(new()
+        var files = await _platformServices.OpenFilePickerAsync(new()
         {
             Title = Assets.Resources.MainView_Menu_File_LoadKubeConfig_Open,
             AllowMultiple = true,

@@ -4,12 +4,14 @@ using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Features.Resources.Properties.Controls;
 using KubeUI.Avalonia.Infrastructure.Presentation;
+using KubeUI.Avalonia.Infrastructure.Threading;
 
 namespace KubeUI.Avalonia.Resources.Core.v1.Event.Controls;
 
 public sealed partial class EventLastSeenCell : ViewBase<Corev1Event>, IInitializeCluster
 {
-    private static readonly DispatcherTimer s_timer = new(DispatcherPriority.Default);
+    private readonly IUiRefreshClock _refreshClock;
+    private IDisposable? _refreshSubscription;
 
     public ClusterWorkspace? Cluster { get; private set; }
 
@@ -18,14 +20,9 @@ public sealed partial class EventLastSeenCell : ViewBase<Corev1Event>, IInitiali
     [GeneratedDirectProperty]
     public partial string PrettyString { get; set; } = string.Empty;
 
-    public EventLastSeenCell()
+    public EventLastSeenCell(IUiRefreshClock refreshClock)
     {
-        if (!s_timer.IsEnabled)
-        {
-            s_timer.Interval = TimeSpan.FromSeconds(1);
-            s_timer.Start();
-        }
-
+        _refreshClock = refreshClock;
 #if DEBUG
         if (Design.IsDesignMode)
         {
@@ -58,24 +55,20 @@ public sealed partial class EventLastSeenCell : ViewBase<Corev1Event>, IInitiali
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnAttachedToVisualTree(e);
-        s_timer.Tick += Timer_Tick;
+        _refreshSubscription = _refreshClock.Subscribe(SetPrettyString);
     }
 
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnDetachedFromVisualTree(e);
-        s_timer.Tick -= Timer_Tick;
+        _refreshSubscription?.Dispose();
+        _refreshSubscription = null;
     }
 
     protected override void OnUnloaded(RoutedEventArgs e)
     {
         base.OnUnloaded(e);
         Cluster?.Runtime.OnChange -= _cluster_OnChange;
-    }
-
-    private void Timer_Tick(object? sender, EventArgs e)
-    {
-        SetPrettyString();
     }
 
     private void SetPrettyString()

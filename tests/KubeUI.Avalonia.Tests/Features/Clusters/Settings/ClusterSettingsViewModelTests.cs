@@ -1,7 +1,6 @@
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
 using KubeUI.Avalonia.Tests.Infra;
-using KubeUI.Testing;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Features.Clusters.Settings;

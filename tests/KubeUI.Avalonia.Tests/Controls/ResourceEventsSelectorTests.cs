@@ -1,6 +1,5 @@
 using k8s.Models;
 using KubeUI.Avalonia.Features.Resources.Properties.Controls;
-using KubeUI.Testing;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Controls;
@@ -23,7 +22,9 @@ public sealed class ResourceEventsSelectorTests
         await using var harness = new FakeClusterScenarioHarness();
         await harness.InitializeAsync(TestContext.Current.CancellationToken);
         var runtime = harness.Cluster;
-        await runtime.SeedResource<Corev1Event>();
+        await runtime.Permissions.UpdatePermissionsAllNamespaceAsync<Corev1Event>(Verb.List);
+        await runtime.Permissions.UpdatePermissionsAllNamespaceAsync<Corev1Event>(Verb.Watch);
+        await runtime.SeedResource<Corev1Event>(true);
 
         var resource = new V1Deployment
         {
@@ -80,7 +81,7 @@ public sealed class ResourceEventsSelectorTests
         });
 
         await TestWait.UntilAsync(
-            () => runtime.GetResourceList<Corev1Event>().Count == 7,
+            () => runtime.GetResourceSourceCache<Corev1Event>().Items.Count == 7,
             TimeSpan.FromSeconds(5),
             cancellationToken: TestContext.Current.CancellationToken);
 

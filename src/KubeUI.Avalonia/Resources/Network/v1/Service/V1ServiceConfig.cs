@@ -5,6 +5,7 @@ using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using k8s.Models;
 using KubeUI.Avalonia.Features.Resources.Common;
+using KubeUI.Avalonia.Infrastructure.Platform;
 using KubeUI.Kubernetes;
 
 namespace KubeUI.Avalonia.Resources.Network.v1.Service;
@@ -18,9 +19,12 @@ public sealed partial class V1ServiceConfig : ResourceConfigBase<V1Service>
         new(typeof(V1EndpointSlice), Verb.Watch, null),
     ];
 
-    public V1ServiceConfig(IServiceProvider serviceProvider)
+    private readonly IPlatformServices _platformServices;
+
+    public V1ServiceConfig(IServiceProvider serviceProvider, IPlatformServices platformServices)
         : base(serviceProvider)
     {
+        _platformServices = platformServices;
     }
     public override bool IsNamespaced => true;
     public override string Category => Assets.Resources.ResourceConfig_Category_Network!;
@@ -103,7 +107,7 @@ public sealed partial class V1ServiceConfig : ResourceConfigBase<V1Service>
 
             if (result == FAContentDialogResult.Primary)
             {
-                await App.TopLevel!.Launcher.LaunchUriAsync(new Uri($"http://localhost:{pf.LocalPort}"));
+                await _platformServices.LaunchUriAsync(new Uri($"http://localhost:{pf.LocalPort}"));
             }
         }
     }

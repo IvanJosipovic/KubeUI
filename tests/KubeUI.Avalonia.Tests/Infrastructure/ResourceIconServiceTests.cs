@@ -4,7 +4,6 @@ using Avalonia.Media;
 using k8s.Models;
 using Shouldly;
 using KubeUI.Avalonia.Services.Icons;
-using KubeUI.Avalonia.Tests.Infra;
 
 namespace KubeUI.Avalonia.Tests.Infrastructure;
 

@@ -1,5 +1,4 @@
 using BenchmarkDotNet.Attributes;
-using KubeUI.Testing;
 
 namespace KubeUI.Benchmarks;
 

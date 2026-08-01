@@ -5,7 +5,6 @@ using CommunityToolkit.Mvvm.Input;
 using k8s.Models;
 using KubeUI.Avalonia.Resources;
 using KubeUI.Avalonia.Tests.Infra;
-using KubeUI.Testing;
 using Shouldly;
 using ClusterRoleBindingPropertiesView = KubeUI.Avalonia.Resources.AccessControl.v1.ClusterRoleBinding.PropertiesView;
 using ClusterRolePropertiesView = KubeUI.Avalonia.Resources.AccessControl.v1.ClusterRole.PropertiesView;
@@ -282,7 +281,7 @@ public sealed class ResourceFeatureConfigTests
     public async Task cronjob_start_context_menu_creates_job_resource()
     {
         var services = (Application.Current as TestApp)?.Services ?? throw new InvalidOperationException("Test services are not initialized.");
-        await using var scope = await KubernetesTestWorkspaceScope.CreateAsync(services);
+        await using var scope = await KubernetesTestWorkspaceScope.CreateAsync(services, KubernetesBackend.Fake);
         var runtime = scope.ScenarioHarness.Cluster;
         var workspace = scope.Workspace;
         await workspace.Connect();
@@ -322,7 +321,7 @@ public sealed class ResourceFeatureConfigTests
     public async Task cronjob_start_context_menu_requires_job_create_permission()
     {
         var services = (Application.Current as TestApp)?.Services ?? throw new InvalidOperationException("Test services are not initialized.");
-        await using var scope = await KubernetesTestWorkspaceScope.CreateAsync(services, harness =>
+        await using var scope = await KubernetesTestWorkspaceScope.CreateFakeAsync(services, harness =>
         {
             harness.SetPermission<V1Job>(Verb.Create, false);
             harness.SetPermission<V1Job>(Verb.Create, false, "volsync");
@@ -354,7 +353,7 @@ public sealed class ResourceFeatureConfigTests
     public async Task cronjob_start_context_menu_allows_namespace_scoped_job_create_permission()
     {
         var services = (Application.Current as TestApp)?.Services ?? throw new InvalidOperationException("Test services are not initialized.");
-        await using var scope = await KubernetesTestWorkspaceScope.CreateAsync(services, harness =>
+        await using var scope = await KubernetesTestWorkspaceScope.CreateFakeAsync(services, harness =>
         {
             harness.SetPermission<V1Job>(Verb.Create, false);
             harness.SetPermission<V1Job>(Verb.Create, true, "volsync");

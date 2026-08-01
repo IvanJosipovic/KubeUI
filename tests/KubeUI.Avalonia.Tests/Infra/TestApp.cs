@@ -1,17 +1,18 @@
 using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Controls.Notifications;
+using Avalonia.Platform.Storage;
 using Dock.Model.Core;
 using FluentAvalonia.UI.Controls;
 using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
-using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Infrastructure.Docking;
+using KubeUI.Avalonia.Infrastructure.Platform;
 using KubeUI.Avalonia.Services.Settings;
 using KubeUI.Kubernetes;
-using KubeUI.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
@@ -89,6 +90,9 @@ public class TestApp : Application, IServiceProviderHost, IDisposable
         services.AddKubeUIAppServices(overrides =>
         {
             overrides.Replace(ServiceDescriptor.Singleton<ISettingsService, TestSettingsService>());
+            overrides.Replace(ServiceDescriptor.Singleton<ISettingsPersistence, TestSettingsPersistence>());
+            overrides.Replace(ServiceDescriptor.Singleton<IPlatformServices, TestPlatformServices>());
+            overrides.Replace(ServiceDescriptor.Singleton<TimeProvider>(new TestTimeProvider(DateTimeOffset.UnixEpoch)));
             overrides.RemoveAll<IClusterSettingsStore>();
             overrides.AddSingleton<IClusterSettingsStore>(sp => sp.GetRequiredService<ISettingsService>().Clusters);
             overrides.RemoveAll<ClusterWorkspaceCatalog>();
@@ -125,6 +129,44 @@ public class TestApp : Application, IServiceProviderHost, IDisposable
         var factory = provider.GetRequiredService<IFactory>();
         var layout = factory.CreateLayout();
         factory.InitLayout(layout);
+    }
+
+    private sealed class TestSettingsPersistence : ISettingsPersistence
+    {
+        public string SettingsDirectory => Path.Combine(Path.GetTempPath(), "kubeui-tests");
+
+        public bool EnsureDirectoryExists() => true;
+
+        public SettingsPersistenceData Load() => new();
+
+        public void Save(SettingsPersistenceData data)
+        {
+        }
+    }
+
+    private sealed class TestPlatformServices : IPlatformServices
+    {
+        public TopLevel GetRequiredTopLevel() => throw new InvalidOperationException("Test platform does not expose a top level.");
+
+        public Task<bool> LaunchUriAsync(Uri uri) => Task.FromResult(false);
+
+        public Task<IReadOnlyList<IStorageFile>> OpenFilePickerAsync(FilePickerOpenOptions options)
+            => Task.FromResult<IReadOnlyList<IStorageFile>>([]);
+
+        public Task<IReadOnlyList<IStorageFolder>> OpenFolderPickerAsync(FolderPickerOpenOptions options)
+            => Task.FromResult<IReadOnlyList<IStorageFolder>>([]);
+    }
+
+    private sealed class TestTimeProvider : TimeProvider
+    {
+        private readonly DateTimeOffset _utcNow;
+
+        public TestTimeProvider(DateTimeOffset utcNow)
+        {
+            _utcNow = utcNow;
+        }
+
+        public override DateTimeOffset GetUtcNow() => _utcNow;
     }
 
 }

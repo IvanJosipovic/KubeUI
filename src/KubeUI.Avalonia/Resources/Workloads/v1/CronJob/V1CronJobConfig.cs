@@ -8,6 +8,7 @@ namespace KubeUI.Avalonia.Resources.Workloads.v1.CronJob;
 
 public sealed partial class V1CronJobConfig : ResourceConfigBase<V1CronJob>
 {
+    private readonly TimeProvider _timeProvider;
     private const int KubernetesNameMaxLength = 63;
     private const string ManualInstantiateAnnotation = "cronjob.kubernetes.io/instantiate";
 
@@ -16,9 +17,10 @@ public sealed partial class V1CronJobConfig : ResourceConfigBase<V1CronJob>
         new(typeof(V1Job), Verb.Create, null),
     ];
 
-    public V1CronJobConfig(IServiceProvider serviceProvider)
+    public V1CronJobConfig(IServiceProvider serviceProvider, TimeProvider timeProvider)
         : base(serviceProvider)
     {
+        _timeProvider = timeProvider;
     }
     public override bool IsNamespaced => true;
     public override string Category => Assets.Resources.ResourceConfig_Category_Workloads!;
@@ -84,7 +86,7 @@ public sealed partial class V1CronJobConfig : ResourceConfigBase<V1CronJob>
     private async Task Start(IList items)
     {
         var exceptions = new List<Exception>();
-        DateTimeOffset timestamp = DateTimeOffset.UtcNow;
+        DateTimeOffset timestamp = _timeProvider.GetUtcNow();
 
         foreach (V1CronJob cronJob in items.Cast<V1CronJob>().ToList())
         {

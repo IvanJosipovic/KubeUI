@@ -2,7 +2,7 @@ using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
 using KubeUI.Avalonia.Shell.Navigation;
 using KubeUI.Avalonia.Tests.Infra;
-using KubeUI.Testing;
+using KubeUI.Testing.Utilities;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Shell.Navigation;
@@ -18,7 +18,7 @@ public sealed class LimitedAccessNavigationTests
             TestContext.Current.CancellationToken);
 
         var runtime = await harness.CreateLimitedAccessClusterAsync(
-            SharedScenarioData.LimitedAccessWithNamespacePermissions,
+            KubernetesScenarioData.LimitedAccessWithNamespacePermissions,
             cancellationToken: TestContext.Current.CancellationToken);
         var services = (Application.Current as TestApp)?.Services ?? throw new InvalidOperationException("Test services are not initialized.");
         using var workspace = ActivatorUtilities.CreateInstance<ClusterWorkspace>(services, runtime);
@@ -54,22 +54,10 @@ public sealed class LimitedAccessNavigationTests
 
     private static async Task WaitForAsync(Func<bool> predicate, int timeoutMs, CancellationToken cancellationToken = default)
     {
-        cancellationToken = cancellationToken == default ? TestContext.Current.CancellationToken : cancellationToken;
-        var deadline = DateTime.UtcNow.AddMilliseconds(timeoutMs);
-
-        while (DateTime.UtcNow < deadline)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            if (predicate())
-            {
-                return;
-            }
-
-            using var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(100));
-            await timer.WaitForNextTickAsync(cancellationToken);
-        }
-
-        predicate().ShouldBeTrue();
+        await TestWait.UntilAsync(
+            predicate,
+            timeoutMs,
+            cancellationToken == default ? TestContext.Current.CancellationToken : cancellationToken);
     }
 
     private static ResourceNavigationLink? FindResourceLink(ClusterNavigationNode root, string name)

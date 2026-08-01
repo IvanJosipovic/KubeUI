@@ -18,8 +18,8 @@ using KubeUI.Avalonia.Shell.Navigation;
 using KubeUI.Avalonia.Shell.Main;
 using KubeUI.Avalonia.Tests.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Tests.Infra;
-using KubeUI.Testing;
 using KubeUI.Kubernetes.Resources.Relationships;
+using KubeUI.Testing.Utilities;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Shell.Navigation;
@@ -68,46 +68,20 @@ public class NavigationViewModelTests : IDisposable
 
     private static async Task<T?> WaitForValueAsync<T>(Func<T?> getValue, int timeoutMs = 3000, CancellationToken cancellationToken = default) where T : class
     {
-        cancellationToken = cancellationToken == default ? TestContext.Current.CancellationToken : cancellationToken;
-        var deadline = DateTime.UtcNow.AddMilliseconds(timeoutMs);
-
-        while (DateTime.UtcNow < deadline)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            Dispatcher.UIThread.RunJobs();
-
-            var value = getValue();
-            if (value != null)
-            {
-                return value;
-            }
-
-            await WaitForNextPollAsync(cancellationToken);
-        }
-
-        Dispatcher.UIThread.RunJobs();
-        return getValue();
+        return await TestWait.UntilValueAsync(
+            getValue,
+            timeoutMs,
+            cancellationToken == default ? TestContext.Current.CancellationToken : cancellationToken,
+            () => Dispatcher.UIThread.RunJobs());
     }
 
     private static async Task WaitForAsync(Func<bool> predicate, int timeoutMs = 3000, CancellationToken cancellationToken = default)
     {
-        cancellationToken = cancellationToken == default ? TestContext.Current.CancellationToken : cancellationToken;
-        var deadline = DateTime.UtcNow.AddMilliseconds(timeoutMs);
-
-        while (DateTime.UtcNow < deadline)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            Dispatcher.UIThread.RunJobs();
-            if (predicate())
-            {
-                return;
-            }
-
-            await WaitForNextPollAsync(cancellationToken);
-        }
-
-        Dispatcher.UIThread.RunJobs();
-        predicate().ShouldBeTrue();
+        await TestWait.UntilAsync(
+            predicate,
+            timeoutMs,
+            cancellationToken == default ? TestContext.Current.CancellationToken : cancellationToken,
+            () => Dispatcher.UIThread.RunJobs());
     }
 
     private static async Task<int?> WaitForCountAsync(IObservable<int>? count, int timeoutMs = 3000, CancellationToken cancellationToken = default)
@@ -147,8 +121,8 @@ public class NavigationViewModelTests : IDisposable
     public async Task cluster_catalog_changes_update_navigation_nodes()
     {
         using var vm = CreateViewModel();
-        await using var firstScope = await KubernetesTestWorkspaceScope.CreateAsync((Application.Current as TestApp)?.Services!);
-        await using var replacementScope = await KubernetesTestWorkspaceScope.CreateAsync((Application.Current as TestApp)?.Services!);
+        await using var firstScope = await KubernetesTestWorkspaceScope.CreateAsync((Application.Current as TestApp)?.Services!, KubernetesBackend.Fake);
+        await using var replacementScope = await KubernetesTestWorkspaceScope.CreateAsync((Application.Current as TestApp)?.Services!, KubernetesBackend.Fake);
         var firstWorkspace = firstScope.Workspace;
         var replacementWorkspace = replacementScope.Workspace;
         firstWorkspace.Runtime.Name = "catalog-first";
@@ -251,8 +225,7 @@ public class NavigationViewModelTests : IDisposable
 
     private static async Task WaitForNextPollAsync(CancellationToken cancellationToken)
     {
-        using var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(25));
-        await timer.WaitForNextTickAsync(cancellationToken);
+        await TestWait.NextPollAsync(TimeSpan.FromMilliseconds(25), cancellationToken);
     }
 
     private static NavigationLink? FindNavigationLink(IEnumerable<NavigationItem> items, string viewModelKey)
@@ -540,7 +513,7 @@ public class NavigationViewModelTests : IDisposable
     {
         await using var runtimeScope = await KubernetesScenarioClusterScope.CreateAsync();
         var runtime = await runtimeScope.ScenarioHarness.CreateLimitedAccessClusterAsync(
-            SharedScenarioData.LimitedAccessWithNamespaceFallback,
+            KubernetesScenarioData.LimitedAccessWithNamespaceFallback,
             cancellationToken: TestContext.Current.CancellationToken);
 
         var workspace = CreateWorkspace(runtime);
@@ -574,7 +547,7 @@ public class NavigationViewModelTests : IDisposable
     {
         await using var runtimeScope = await KubernetesScenarioClusterScope.CreateAsync();
         var runtime = await runtimeScope.ScenarioHarness.CreateLimitedAccessClusterAsync(
-            SharedScenarioData.LimitedAccessWithNamespaceFallback,
+            KubernetesScenarioData.LimitedAccessWithNamespaceFallback,
             cancellationToken: TestContext.Current.CancellationToken);
         var workspace = CreateWorkspace(runtime);
         await workspace.Connect();
@@ -652,7 +625,7 @@ public class NavigationViewModelTests : IDisposable
     {
         await using var runtimeScope = await KubernetesScenarioClusterScope.CreateAsync();
         var runtime = await runtimeScope.ScenarioHarness.CreateLimitedAccessClusterAsync(
-            SharedScenarioData.LimitedAccessWithNamespacePermissions,
+            KubernetesScenarioData.LimitedAccessWithNamespacePermissions,
             cancellationToken: TestContext.Current.CancellationToken);
         var workspace = CreateWorkspace(runtime);
         var settingsService = (Application.Current as TestApp)?.Services?.GetRequiredService<ISettingsService>()
@@ -732,7 +705,7 @@ public class NavigationViewModelTests : IDisposable
     {
         await using var runtimeScope = await KubernetesScenarioClusterScope.CreateAsync();
         var runtime = await runtimeScope.ScenarioHarness.CreateLimitedAccessClusterAsync(
-            SharedScenarioData.LimitedAccessWithNamespacePermissions,
+            KubernetesScenarioData.LimitedAccessWithNamespacePermissions,
             cancellationToken: TestContext.Current.CancellationToken);
         var workspace = CreateWorkspace(runtime);
         var settingsService = (Application.Current as TestApp)?.Services?.GetRequiredService<ISettingsService>()

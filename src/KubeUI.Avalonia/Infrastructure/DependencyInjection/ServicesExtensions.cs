@@ -5,6 +5,7 @@ using KubeUI.Avalonia.Features.Resources.Yaml;
 using KubeUI.Avalonia.Infrastructure.Logging;
 using KubeUI.Avalonia.Infrastructure.Platform;
 using KubeUI.Avalonia.Infrastructure.Presentation;
+using KubeUI.Avalonia.Infrastructure.Threading;
 using KubeUI.Avalonia.Services.Settings;
 using KubeUI.Avalonia.Services.Icons;
 using KubeUI.Kubernetes;
@@ -23,6 +24,9 @@ public static partial class KubeUIShellServiceCollectionExtensions
     public static IServiceCollection AddKubeUIShellServices(this IServiceCollection services)
     {
         services.AddKubeUIShellGeneratedServices();
+        services.AddSingleton<IPlatformServices, AvaloniaPlatformServices>();
+        services.AddSingleton<IUiRefreshClock, AvaloniaUiRefreshClock>();
+        services.AddSingleton(TimeProvider.System);
         services.AddSingleton<Instrumentation>();
         services.AddSingleton<IYamlValidationService, YamlSyntaxValidationService>();
         services.AddSingleton<ILogSink, LogSink>();
@@ -30,6 +34,7 @@ public static partial class KubeUIShellServiceCollectionExtensions
         services.AddSingleton<DataGridColumnFilterService>();
         services.AddSingleton<DataGridColumnFilterFlyoutFactory>();
         services.AddSingleton<IDataTemplate>(sp => sp.GetRequiredService<ViewLocator>());
+        services.AddSingleton<ISettingsPersistence, FileSettingsPersistence>();
         services.AddSingleton<ISettingsService, SettingsService>();
         services.AddSingleton<IResourceIconService, ResourceIconService>();
         services.AddSingleton<IClusterSettingsStore>(sp => sp.GetRequiredService<ISettingsService>());

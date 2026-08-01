@@ -35,6 +35,13 @@ internal sealed class DataGridColumnFilterDefinition
 
 internal sealed class DataGridColumnFilterService
 {
+    private readonly TimeProvider _timeProvider;
+
+    public DataGridColumnFilterService(TimeProvider timeProvider)
+    {
+        _timeProvider = timeProvider;
+    }
+
     public DataGridColumnFilterDefinition CreateDefinition(
         IResourceListColumn columnDefinition,
         DataGridColumnDefinition column,
@@ -64,6 +71,7 @@ internal sealed class DataGridColumnFilterService
             DateFilterFlyoutContext? context = null;
             context = new DateFilterFlyoutContext(
                 columnDefinition.Name,
+                _timeProvider,
                 apply: () => ApplyDateFilter(filteringModel, column, columnDefinition.ValueType, context!.SelectedOperator, context.Amount, context.SelectedUnit.Unit),
                 clear: () =>
                 {
@@ -443,7 +451,7 @@ internal sealed class DataGridColumnFilterService
     public DateTimeOffset ComputeRelativeDateThreshold(double amount, DateRelativeUnit unit)
     {
         var roundedAmount = Math.Max(1, (int)Math.Round(amount, MidpointRounding.AwayFromZero));
-        var now = DateTimeOffset.UtcNow;
+        var now = _timeProvider.GetUtcNow();
 
         return unit switch
         {

@@ -1,4 +1,3 @@
-using Avalonia;
 using Avalonia.Headless;
 using KubeUI.Avalonia.Styles;
 using KubeUI.Avalonia.Tests.Infra;

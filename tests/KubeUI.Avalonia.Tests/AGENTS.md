@@ -3,6 +3,7 @@
 ## Structure
 - Keep tests near the feature or resource behavior they verify.
 - Keep shared Avalonia test setup in `Infra/`.
+- Shared Kubernetes test helpers are imported from `KubeUI.Testing.Kubernetes.Scenarios`, `KubeUI.Testing.Kubernetes.Transport`, and `KubeUI.Testing.Kubernetes.Infrastructure`; polling helpers are in `KubeUI.Testing.Utilities`.
 - Use `KubernetesScenarioClusterScope` for Kubernetes-backed tests. It creates the production `KubeUI.Kubernetes.Cluster` with the real Kubernetes client and fake HTTP/WebSocket transport.
 - Use `KubernetesTestWorkspaceScope` when the test owns both a workspace and its scenario harness.
 - Do not add test-only implementations of `IClusterRuntime`, wrappers around it, or mocks of `IKubernetes`. Configure the shared transport/harness for the scenario instead.

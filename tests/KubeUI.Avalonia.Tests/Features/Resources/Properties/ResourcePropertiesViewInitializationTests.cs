@@ -16,7 +16,7 @@ public sealed class ResourcePropertiesViewInitializationTests
     [AvaloniaFact]
     public async Task cluster_aware_property_controls_are_initialized_once()
     {
-        await using var scope = await KubernetesTestWorkspaceScope.CreateAsync((Application.Current as TestApp)?.Services!);
+        await using var scope = await KubernetesTestWorkspaceScope.CreateAsync((Application.Current as TestApp)?.Services!, KubernetesBackend.Fake);
         var workspace = scope.Workspace;
         await workspace.Connect();
 
@@ -62,7 +62,7 @@ public sealed class ResourcePropertiesViewInitializationTests
     [AvaloniaFact]
     public async Task properties_view_populates_on_first_attach()
     {
-        await using var scope = await KubernetesTestWorkspaceScope.CreateAsync((Application.Current as TestApp)?.Services!);
+        await using var scope = await KubernetesTestWorkspaceScope.CreateAsync((Application.Current as TestApp)?.Services!, KubernetesBackend.Fake);
         var workspace = scope.Workspace;
         await workspace.Connect();
 

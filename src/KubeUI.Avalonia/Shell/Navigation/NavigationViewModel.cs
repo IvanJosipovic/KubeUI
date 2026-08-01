@@ -38,6 +38,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
     private readonly Dictionary<IClusterRuntime, ClusterWorkspace> _workspacesByRuntime = [];
     private readonly NavigationDocumentService _documentService;
     private readonly IResourceIconService _iconService;
+    private readonly IPlatformServices _platformServices;
 
     [ObservableProperty]
     public partial ClusterWorkspaceCatalog ClusterCatalog { get; set; }
@@ -51,12 +52,14 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
         IDialogService dialogService,
         ClusterWorkspaceCatalog clusterCatalog,
         IServiceProvider serviceProvider,
-        IResourceIconService iconService)
+        IResourceIconService iconService,
+        IPlatformServices platformServices)
     {
         _logger = logger;
         _notificationManager = notificationManager;
         _serviceProvider = serviceProvider;
         _iconService = iconService;
+        _platformServices = platformServices;
         _dialogService = dialogService;
         ClusterCatalog = clusterCatalog;
         _documentService = new NavigationDocumentService(
@@ -835,7 +838,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
     {
         if (link.ViewModelKey == "load-yaml")
         {
-            var files = await TopLevelAccessor.GetRequired().StorageProvider.OpenFilePickerAsync(new()
+            var files = await _platformServices.OpenFilePickerAsync(new()
             {
                 Title = Assets.Resources.NavigationView_LoadYaml,
                 AllowMultiple = true,
@@ -857,7 +860,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
         }
         else if (link.ViewModelKey == "load-folder")
         {
-            var folders = await TopLevelAccessor.GetRequired().StorageProvider.OpenFolderPickerAsync(new()
+            var folders = await _platformServices.OpenFolderPickerAsync(new()
             {
                 Title = Assets.Resources.NavigationView_LoadFolder,
                 AllowMultiple = false

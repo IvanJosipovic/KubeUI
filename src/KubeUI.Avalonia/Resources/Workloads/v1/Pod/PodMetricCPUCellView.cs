@@ -1,6 +1,7 @@
 using k8s.Models;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Infrastructure.Presentation;
+using KubeUI.Avalonia.Infrastructure.Threading;
 
 namespace KubeUI.Avalonia.Resources.Workloads.v1.Pod;
 
@@ -8,18 +9,15 @@ public partial class PodMetricCPUCellView : ViewBase<V1Pod>, IInitializeCluster
 {
     public ClusterWorkspace? Cluster { get; private set; }
 
-    private static readonly DispatcherTimer s_timer = new(DispatcherPriority.Default);
+    private readonly IUiRefreshClock _refreshClock;
+    private IDisposable? _refreshSubscription;
 
     [GeneratedDirectProperty]
     public partial string PrettyString { get; set; } = string.Empty;
 
-    public PodMetricCPUCellView()
+    public PodMetricCPUCellView(IUiRefreshClock refreshClock)
     {
-        if (!s_timer.IsEnabled)
-        {
-            s_timer.Interval = TimeSpan.FromSeconds(1);
-            s_timer.Start();
-        }
+        _refreshClock = refreshClock;
     }
 
     protected override object Build(V1Pod vm)
@@ -40,8 +38,6 @@ public partial class PodMetricCPUCellView : ViewBase<V1Pod>, IInitializeCluster
         base.OnDataContextChanged(e);
         Update();
     }
-
-    private void Timer_Tick(object? sender, EventArgs e) => Update();
 
     private void Update()
     {
@@ -65,13 +61,14 @@ public partial class PodMetricCPUCellView : ViewBase<V1Pod>, IInitializeCluster
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnAttachedToVisualTree(e);
-        s_timer.Tick += Timer_Tick;
+        _refreshSubscription = _refreshClock.Subscribe(Update);
     }
 
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnDetachedFromVisualTree(e);
-        s_timer.Tick -= Timer_Tick;
+        _refreshSubscription?.Dispose();
+        _refreshSubscription = null;
     }
 
     public void Initialize(ClusterWorkspace cluster)

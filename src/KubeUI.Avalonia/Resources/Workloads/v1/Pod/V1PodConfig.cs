@@ -7,6 +7,7 @@ using k8s.Models;
 using KubeUI.Avalonia.Features.Resources.Common;
 using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Infrastructure.Docking;
+using KubeUI.Avalonia.Infrastructure.Platform;
 using KubeUI.Avalonia.Options;
 using KubeUI.Avalonia.Services.Settings;
 using KubeUI.Kubernetes;
@@ -15,9 +16,12 @@ namespace KubeUI.Avalonia.Resources.Workloads.v1.Pod;
 
 public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
 {
-    public V1PodConfig(IServiceProvider serviceProvider)
+    private readonly IPlatformServices _platformServices;
+
+    public V1PodConfig(IServiceProvider serviceProvider, IPlatformServices platformServices)
         : base(serviceProvider)
     {
+        _platformServices = platformServices;
     }
 
     public override bool IsNamespaced => true;
@@ -550,7 +554,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
 
             if (result == FAContentDialogResult.Primary)
             {
-                await App.TopLevel!.Launcher.LaunchUriAsync(new Uri($"http://localhost:{pf.LocalPort}"));
+                await _platformServices.LaunchUriAsync(new Uri($"http://localhost:{pf.LocalPort}"));
             }
         }
     }

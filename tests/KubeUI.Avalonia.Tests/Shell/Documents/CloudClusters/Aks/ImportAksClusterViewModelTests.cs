@@ -3,7 +3,6 @@ using Avalonia.Threading;
 using k8s.KubeConfigModels;
 using KubeUI.Avalonia.Shell.Documents.CloudClusters.Aks;
 using KubeUI.Avalonia.Tests.Infra;
-using KubeUI.Testing;
 using Microsoft.Extensions.Logging;
 using Shouldly;
 
@@ -76,21 +75,11 @@ public sealed class ImportAksClusterViewModelTests
 
     private static async Task WaitForAsync(Func<bool> predicate, int timeoutMs = 3000)
     {
-        var deadline = DateTime.UtcNow.AddMilliseconds(timeoutMs);
-
-        while (DateTime.UtcNow < deadline)
-        {
-            Dispatcher.UIThread.RunJobs();
-            if (predicate())
-            {
-                return;
-            }
-
-            await TestWait.NextPollAsync(TimeSpan.FromMilliseconds(25), TestContext.Current.CancellationToken);
-        }
-
-        Dispatcher.UIThread.RunJobs();
-        predicate().ShouldBeTrue();
+        await TestWait.UntilAsync(
+            predicate,
+            timeoutMs,
+            TestContext.Current.CancellationToken,
+            () => Dispatcher.UIThread.RunJobs());
     }
 
     private sealed class FakeAksClusterService : IAksClusterService

@@ -15,7 +15,7 @@ public sealed class NavigationViewTests
     [AvaloniaFact]
     public async Task resource_count_assigned_after_template_creation_is_rendered()
     {
-        await using var scope = await KubernetesTestWorkspaceScope.CreateAsync((Application.Current as TestApp)?.Services!);
+        await using var scope = await KubernetesTestWorkspaceScope.CreateAsync((Application.Current as TestApp)?.Services!, KubernetesBackend.Fake);
         var workspace = scope.Workspace;
         using var navigation = (Application.Current as TestApp)?.Services!.GetRequiredService<NavigationViewModel>();
         var clusterNode = new ClusterNavigationNode(workspace) { IsExpanded = true };

@@ -1,7 +1,6 @@
 using Avalonia.Headless.XUnit;
 using Avalonia.Controls;
 using Avalonia.Threading;
-using Avalonia;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using k8s;
@@ -9,10 +8,10 @@ using KubeUI.Avalonia.Features.Resources.Visualization;
 using KubeUI.Avalonia.Tests.Infra;
 using KubeUI.Avalonia.Resources;
 using KubeUI.Kubernetes.Resources.Relationships;
+using KubeUI.Testing.Utilities;
 using Shouldly;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
-using KubeUI.Testing;
 using Westermo.GraphX.Controls.Controls;
 
 namespace KubeUI.Avalonia.Tests.Features.Resources.Visualization;
@@ -21,29 +20,18 @@ public sealed class ResourceGraphControlTests
 {
     private static async Task WaitForAsync(Func<bool> predicate, int timeoutMs = 5000, CancellationToken cancellationToken = default)
     {
-        cancellationToken = cancellationToken == default ? TestContext.Current.CancellationToken : cancellationToken;
-        var deadline = DateTime.UtcNow.AddMilliseconds(timeoutMs);
-        while (DateTime.UtcNow < deadline)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            Dispatcher.UIThread.RunJobs();
-            if (predicate())
-            {
-                return;
-            }
-
-            await WaitForNextPollAsync(cancellationToken);
-        }
-
-        Dispatcher.UIThread.RunJobs();
-        predicate().ShouldBeTrue();
+        await TestWait.UntilAsync(
+            predicate,
+            timeoutMs,
+            cancellationToken == default ? TestContext.Current.CancellationToken : cancellationToken,
+            () => Dispatcher.UIThread.RunJobs());
     }
 
     private static async Task WaitForNextPollAsync(CancellationToken cancellationToken = default)
     {
-        cancellationToken = cancellationToken == default ? TestContext.Current.CancellationToken : cancellationToken;
-        using var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(10));
-        await timer.WaitForNextTickAsync(cancellationToken);
+        await TestWait.NextPollAsync(
+            TimeSpan.FromMilliseconds(10),
+            cancellationToken == default ? TestContext.Current.CancellationToken : cancellationToken);
     }
 
     private static async Task WaitForSignalAsync(Task signal, string description)

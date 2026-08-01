@@ -1,5 +1,3 @@
-using KubeUI.Testing;
-
 namespace KubeUI.Avalonia.Tests.Infra;
 
 internal sealed class KubernetesTestWorkspaceScope : IDisposable, IAsyncDisposable
@@ -18,35 +16,27 @@ internal sealed class KubernetesTestWorkspaceScope : IDisposable, IAsyncDisposab
 
     public IClusterScenarioHarness ScenarioHarness => _harness;
 
-    public static async Task<KubernetesTestWorkspaceScope> CreateAsync(IServiceProvider services)
-    {
-        var harness = new FakeClusterScenarioHarness();
-        await harness.InitializeAsync(TestContext.Current.CancellationToken);
-        var workspace = ActivatorUtilities.CreateInstance<ClusterWorkspace>(services, harness.Cluster);
-        return new KubernetesTestWorkspaceScope(harness, workspace);
-    }
-
     public static async Task<KubernetesTestWorkspaceScope> CreateAsync(IServiceProvider services, KubernetesBackend backend)
     {
         IClusterScenarioHarness harness = await KubernetesScenarioHarnessFactory.CreateAsync(
             backend,
-            TestContext.Current.CancellationToken);
+            TestContext.Current.CancellationToken).ConfigureAwait(false);
         var workspace = ActivatorUtilities.CreateInstance<ClusterWorkspace>(services, harness.Cluster);
         return new KubernetesTestWorkspaceScope(harness, workspace);
     }
 
-    public static async Task<KubernetesTestWorkspaceScope> CreateAsync(
+    public static async Task<KubernetesTestWorkspaceScope> CreateFakeAsync(
         IServiceProvider services,
         Action<FakeClusterScenarioHarness> configure)
     {
         var harness = new FakeClusterScenarioHarness();
         configure(harness);
-        await harness.InitializeAsync(TestContext.Current.CancellationToken);
+        await harness.InitializeAsync(TestContext.Current.CancellationToken).ConfigureAwait(false);
         var workspace = ActivatorUtilities.CreateInstance<ClusterWorkspace>(services, harness.Cluster);
         return new KubernetesTestWorkspaceScope(harness, workspace);
     }
 
-    public static KubernetesTestWorkspaceScope Create(IServiceProvider services)
+    public static KubernetesTestWorkspaceScope CreateFake(IServiceProvider services)
     {
         var harness = new FakeClusterScenarioHarness();
         Task.Run(() => harness.InitializeAsync(TestContext.Current.CancellationToken)).GetAwaiter().GetResult();
@@ -63,6 +53,6 @@ internal sealed class KubernetesTestWorkspaceScope : IDisposable, IAsyncDisposab
     public async ValueTask DisposeAsync()
     {
         Workspace.Dispose();
-        await _harness.DisposeAsync();
+        await _harness.DisposeAsync().ConfigureAwait(false);
     }
 }

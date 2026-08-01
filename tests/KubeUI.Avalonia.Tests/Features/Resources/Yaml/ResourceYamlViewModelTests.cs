@@ -1,5 +1,4 @@
 using System.Reflection;
-using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Headless.XUnit;
@@ -21,7 +20,6 @@ using KubeUI.Avalonia.Features.Resources.Yaml.Behaviors;
 using KubeUI.Avalonia.Infrastructure.Platform;
 using KubeUI.Avalonia.Shell.Documents.About;
 using KubeUI.Avalonia.Tests.Infra;
-using KubeUI.Testing;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Features.Resources.Yaml;
@@ -60,7 +58,7 @@ public class ResourceYamlViewModelTests : IDisposable
 
     private ClusterWorkspace CreateTestWorkspace()
     {
-        var scope = KubernetesTestWorkspaceScope.Create((Application.Current as TestApp)?.Services!);
+        var scope = KubernetesTestWorkspaceScope.CreateFake((Application.Current as TestApp)?.Services!);
         _disposables.Add(scope);
         return scope.Workspace;
     }
@@ -2700,7 +2698,7 @@ public class ResourceYamlViewModelTests : IDisposable
     {
         var window = CreateWindow(width: 800, height: 600);
 
-        var scope = KubernetesTestWorkspaceScope.Create((Application.Current as TestApp)?.Services!);
+        var scope = KubernetesTestWorkspaceScope.CreateFake((Application.Current as TestApp)?.Services!);
         _disposables.Add(scope);
         var cluster = scope.Workspace;
 

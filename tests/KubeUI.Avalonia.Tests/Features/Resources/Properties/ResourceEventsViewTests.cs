@@ -5,7 +5,6 @@ using Avalonia.Threading;
 using k8s.Models;
 using KubeUI.Avalonia.Features.Resources.Properties.Controls;
 using KubeUI.Avalonia.Tests.Infra;
-using KubeUI.Testing;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Features.Resources.Properties;
@@ -16,7 +15,7 @@ public sealed class ResourceEventsViewTests
     public async Task pre_attach_refresh_does_not_throw_when_dispatcher_flushes()
     {
         var services = (Application.Current as TestApp)?.Services ?? throw new InvalidOperationException("Test services are not initialized.");
-        await using var scope = await KubernetesTestWorkspaceScope.CreateAsync(services);
+        await using var scope = await KubernetesTestWorkspaceScope.CreateAsync(services, KubernetesBackend.Fake);
         var workspace = scope.Workspace;
         await workspace.Connect();
 
@@ -50,7 +49,7 @@ public sealed class ResourceEventsViewTests
     public async Task detached_resource_events_view_does_not_throw_when_data_context_changes()
     {
         var services = (Application.Current as TestApp)?.Services ?? throw new InvalidOperationException("Test services are not initialized.");
-        await using var scope = await KubernetesTestWorkspaceScope.CreateAsync(services);
+        await using var scope = await KubernetesTestWorkspaceScope.CreateAsync(services, KubernetesBackend.Fake);
         var workspace = scope.Workspace;
         await workspace.Connect();
 
@@ -93,7 +92,7 @@ public sealed class ResourceEventsViewTests
     public async Task refresh_keeps_a_stable_items_source_instance()
     {
         var services = (Application.Current as TestApp)?.Services ?? throw new InvalidOperationException("Test services are not initialized.");
-        await using var scope = await KubernetesTestWorkspaceScope.CreateAsync(services);
+        await using var scope = await KubernetesTestWorkspaceScope.CreateAsync(services, KubernetesBackend.Fake);
         var workspace = scope.Workspace;
         await workspace.Connect();
 
@@ -135,7 +134,7 @@ public sealed class ResourceEventsViewTests
     public async Task queued_update_during_teardown_does_not_throw()
     {
         var services = (Application.Current as TestApp)?.Services ?? throw new InvalidOperationException("Test services are not initialized.");
-        await using var scope = await KubernetesTestWorkspaceScope.CreateAsync(services);
+        await using var scope = await KubernetesTestWorkspaceScope.CreateAsync(services, KubernetesBackend.Fake);
         var workspace = scope.Workspace;
         await workspace.Connect();
 

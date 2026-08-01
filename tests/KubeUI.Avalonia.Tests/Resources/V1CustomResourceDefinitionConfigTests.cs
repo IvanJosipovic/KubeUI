@@ -3,7 +3,6 @@ using k8s.Models;
 using KubeUI.Avalonia.Resources;
 using KubeUI.Avalonia.Tests.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Tests.Infra;
-using KubeUI.Testing;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Resources;

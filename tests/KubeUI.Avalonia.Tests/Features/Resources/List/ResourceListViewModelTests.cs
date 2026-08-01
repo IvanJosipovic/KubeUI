@@ -2,7 +2,6 @@ using System.Collections;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Reflection;
-using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.DataGridFiltering;
 using Avalonia.Controls.DataGridSearching;
@@ -29,7 +28,6 @@ using KubeUI.Avalonia.Features.Resources.List.Behaviors;
 using KubeUI.Avalonia.Resources;
 using KubeUI.Avalonia.Shell.Documents.About;
 using KubeUI.Avalonia.Tests.Infra;
-using KubeUI.Testing;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Features.Resources.List;
@@ -68,7 +66,7 @@ public class ResourceListViewModelTests : IDisposable
 
     private async Task<ClusterWorkspace> CreateClusterAsync()
     {
-        var scope = await KubernetesTestWorkspaceScope.CreateAsync((Application.Current as TestApp)?.Services!);
+        var scope = await KubernetesTestWorkspaceScope.CreateAsync((Application.Current as TestApp)?.Services!, KubernetesBackend.Fake);
         _disposables.Add(scope);
         var cluster = scope.Workspace;
         await cluster.Connect();
@@ -2287,42 +2285,20 @@ public class ResourceListViewModelTests : IDisposable
 
     private static async Task WaitForAsync(Func<bool> predicate, int timeoutMs = 1000)
     {
-        var deadline = DateTime.UtcNow.AddMilliseconds(timeoutMs);
-
-        while (DateTime.UtcNow < deadline)
-        {
-            Dispatcher.UIThread.RunJobs();
-            if (predicate())
-            {
-                return;
-            }
-
-            await TestWait.NextPollAsync(TimeSpan.FromMilliseconds(25), TestContext.Current.CancellationToken);
-        }
-
-        Dispatcher.UIThread.RunJobs();
-        predicate().ShouldBeTrue();
+        await TestWait.UntilAsync(
+            predicate,
+            timeoutMs,
+            TestContext.Current.CancellationToken,
+            () => Dispatcher.UIThread.RunJobs());
     }
 
     private static async Task<T> WaitForValueAsync<T>(Func<T?> getter, int timeoutMs = 1000) where T : class
     {
-        T? value = null;
-        DateTime deadline = DateTime.UtcNow.AddMilliseconds(timeoutMs);
-        while (DateTime.UtcNow < deadline)
-        {
-            Dispatcher.UIThread.RunJobs();
-            value = getter();
-            if (value != null)
-            {
-                return value;
-            }
-
-            await TestWait.NextPollAsync(TimeSpan.FromMilliseconds(25), TestContext.Current.CancellationToken);
-        }
-
-        Dispatcher.UIThread.RunJobs();
-        value.ShouldNotBeNull();
-        return value!;
+        return (await TestWait.UntilValueAsync(
+            getter,
+            timeoutMs,
+            TestContext.Current.CancellationToken,
+            () => Dispatcher.UIThread.RunJobs())).ShouldNotBeNull()!;
     }
 
     private static IList<string> GetNamespaceFilterValues<T>(ResourceListViewModel<T> vm)

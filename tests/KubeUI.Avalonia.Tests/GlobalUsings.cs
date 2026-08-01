@@ -46,3 +46,7 @@ global using KubeUI.Avalonia.Resources.Workloads.v1.ReplicaSet;
 global using KubeUI.Avalonia.Resources.Workloads.v1.StatefulSet;
 global using KubeUI.Avalonia.Services.Settings;
 global using Microsoft.Extensions.DependencyInjection;
+global using KubeUI.Testing.Kubernetes.Infrastructure;
+global using KubeUI.Testing.Kubernetes.Scenarios;
+global using KubeUI.Testing.Kubernetes.Transport;
+global using KubeUI.Testing.Utilities;
