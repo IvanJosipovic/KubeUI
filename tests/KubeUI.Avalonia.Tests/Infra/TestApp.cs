@@ -37,6 +37,7 @@ public class TestApp : Application, IServiceProviderHost, IDisposable
     {
         var provider = BuildServiceProvider();
         Services = provider;
+        Task.Run(() => provider.GetRequiredService<ClusterWorkspaceCatalog>()).GetAwaiter().GetResult();
         ApplyResources(provider);
         InitializeDockFactory(provider);
 
@@ -51,7 +52,7 @@ public class TestApp : Application, IServiceProviderHost, IDisposable
 
         if (Services is IAsyncDisposable asyncDisposableServices)
         {
-            asyncDisposableServices.DisposeAsync().AsTask().GetAwaiter().GetResult();
+            Task.Run(asyncDisposableServices.DisposeAsync).GetAwaiter().GetResult();
         }
         else if (Services is IDisposable disposableServices)
         {
@@ -99,15 +100,15 @@ public class TestApp : Application, IServiceProviderHost, IDisposable
             overrides.Replace(ServiceDescriptor.Singleton<IPlatformServices, TestPlatformServices>());
             overrides.Replace(ServiceDescriptor.Singleton<TimeProvider>(new TestTimeProvider(DateTimeOffset.UnixEpoch)));
             overrides.RemoveAll<IClusterSettingsStore>();
-            overrides.AddSingleton<IClusterSettingsStore>(sp => sp.GetRequiredService<ISettingsService>().Clusters);
+            overrides.AddSingleton(sp => sp.GetRequiredService<ISettingsService>().Clusters);
             overrides.RemoveAll<ClusterWorkspaceCatalog>();
-            overrides.AddSingleton<ClusterWorkspaceCatalog>(sp =>
+            overrides.AddSingleton(sp =>
             {
                 _ = sp.GetRequiredService<IClusterRuntime>();
                 return ActivatorUtilities.CreateInstance<ClusterWorkspaceCatalog>(sp);
             });
-            overrides.Replace(ServiceDescriptor.Singleton<IDialogService>(dialog.Object));
-            overrides.Replace(ServiceDescriptor.Singleton<INotificationManager>(notifications.Object));
+            overrides.Replace(ServiceDescriptor.Singleton(dialog.Object));
+            overrides.Replace(ServiceDescriptor.Singleton(notifications.Object));
             overrides.Replace(ServiceDescriptor.Singleton<IFactory>(sp => new DockFactory(sp, sp.GetRequiredService<ILogger<DockFactory>>())));
             overrides.Replace(ServiceDescriptor.Singleton<IKubeConfigPathProvider>(
                 new KubernetesTestKubeConfigPathProvider(kubeConfigPath)));

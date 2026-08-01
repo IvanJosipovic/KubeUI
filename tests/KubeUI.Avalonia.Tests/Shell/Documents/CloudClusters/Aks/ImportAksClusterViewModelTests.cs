@@ -13,12 +13,13 @@ public sealed class ImportAksClusterViewModelTests
     [AvaloniaFact]
     public async Task connect_imports_aks_credentials_into_cluster_catalog()
     {
-        var catalog = (Application.Current as TestApp)?.Services!.GetRequiredService<ClusterWorkspaceCatalog>();
-        var runtimeCatalog = (Application.Current as TestApp)?.Services!.GetRequiredService<IClusterRuntimeCatalog>();
+        var services = Application.Current.GetTestServices();
+        var catalog = services.GetRequiredService<ClusterWorkspaceCatalog>();
+        var runtimeCatalog = services.GetRequiredService<IClusterRuntimeCatalog>();
         var viewModel = new ImportAksClusterViewModel(
             new FakeAksClusterService(),
             runtimeCatalog,
-            (Application.Current as TestApp)?.Services!.GetRequiredService<ILogger<ImportAksClusterViewModel>>());
+            services.GetRequiredService<ILogger<ImportAksClusterViewModel>>());
 
         await WaitForAsync(() => viewModel.Subscriptions.Count == 1 && viewModel.Clusters.Count == 1);
         await WaitForAsync(() => !viewModel.IsBusy && viewModel.ImportCommand.CanExecute(null));
@@ -39,12 +40,13 @@ public sealed class ImportAksClusterViewModelTests
     [AvaloniaFact]
     public async Task refresh_shows_empty_state_when_no_subscriptions_are_available()
     {
-        var catalog = (Application.Current as TestApp)?.Services!.GetRequiredService<ClusterWorkspaceCatalog>();
-        var runtimeCatalog = (Application.Current as TestApp)?.Services!.GetRequiredService<IClusterRuntimeCatalog>();
+        var services = Application.Current.GetTestServices();
+        var catalog = services.GetRequiredService<ClusterWorkspaceCatalog>();
+        var runtimeCatalog = services.GetRequiredService<IClusterRuntimeCatalog>();
         var viewModel = new ImportAksClusterViewModel(
             new EmptyAksClusterService(),
             runtimeCatalog,
-            (Application.Current as TestApp)?.Services!.GetRequiredService<ILogger<ImportAksClusterViewModel>>());
+            services.GetRequiredService<ILogger<ImportAksClusterViewModel>>());
 
         await WaitForAsync(() => viewModel.StatusMessage == Assets.Resources.ImportAksClusterView_NoSubscriptions);
 
@@ -57,12 +59,13 @@ public sealed class ImportAksClusterViewModelTests
     [AvaloniaFact]
     public async Task refresh_is_disabled_while_busy()
     {
-        var catalog = (Application.Current as TestApp)?.Services!.GetRequiredService<ClusterWorkspaceCatalog>();
-        var runtimeCatalog = (Application.Current as TestApp)?.Services!.GetRequiredService<IClusterRuntimeCatalog>();
+        var services = Application.Current.GetTestServices();
+        var catalog = services.GetRequiredService<ClusterWorkspaceCatalog>();
+        var runtimeCatalog = services.GetRequiredService<IClusterRuntimeCatalog>();
         var viewModel = new ImportAksClusterViewModel(
             new EmptyAksClusterService(),
             runtimeCatalog,
-            (Application.Current as TestApp)?.Services!.GetRequiredService<ILogger<ImportAksClusterViewModel>>());
+            services.GetRequiredService<ILogger<ImportAksClusterViewModel>>());
 
         await WaitForAsync(() => viewModel.StatusMessage == Assets.Resources.ImportAksClusterView_NoSubscriptions);
 
