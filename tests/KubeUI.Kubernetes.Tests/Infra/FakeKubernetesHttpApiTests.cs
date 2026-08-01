@@ -96,4 +96,45 @@ public sealed class FakeKubernetesHttpApiTests
 
         response.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
     }
+
+    [Fact]
+    public async Task RequestCancellationStopsDelayedResponse()
+    {
+        using var api = new FakeKubernetesHttpApi { ResponseDelay = TimeSpan.FromMinutes(1) };
+        api.Register<V1Namespace>();
+
+        using var client = new HttpClient(api)
+        {
+            BaseAddress = new Uri("http://fake-kubernetes"),
+        };
+        using var cancellation = new CancellationTokenSource();
+        cancellation.Cancel();
+
+        await Should.ThrowAsync<OperationCanceledException>(
+            () => client.GetAsync("/api/v1/namespaces", cancellation.Token));
+    }
+
+    [Fact]
+    public async Task ShutdownClosesOutstandingWatchStreams()
+    {
+        using var api = new FakeKubernetesHttpApi();
+        api.Register<V1Pod>();
+
+        using var client = new HttpClient(api)
+        {
+            BaseAddress = new Uri("http://fake-kubernetes"),
+        };
+        using HttpResponseMessage response = await client.GetAsync(
+            "/api/v1/namespaces/default/pods?watch=true",
+            HttpCompletionOption.ResponseHeadersRead,
+            TestContext.Current.CancellationToken);
+        using Stream stream = await response.Content.ReadAsStreamAsync(TestContext.Current.CancellationToken);
+        byte[] buffer = new byte[4096];
+
+        (await stream.ReadAsync(buffer, TestContext.Current.CancellationToken)).ShouldBeGreaterThan(0);
+        api.Shutdown();
+
+        await Should.ThrowAsync<OperationCanceledException>(
+            () => stream.ReadAsync(buffer, TestContext.Current.CancellationToken).AsTask());
+    }
 }

@@ -29,6 +29,23 @@ public abstract class ClusterScenarioAssertions
         harness.Cluster.Permissions.CanI<V1Pod>(Verb.List, "default").ShouldBeTrue();
     }
 
+    protected async Task DisconnectAndReconnectRestoresClusterCore(KubernetesBackend backend)
+    {
+        await using var harness = await CreateHarnessAsync(backend);
+        IClusterRuntime cluster = harness.Cluster;
+
+        await cluster.Disconnect();
+
+        cluster.Connected.ShouldBeFalse();
+        cluster.Client.ShouldBeNull();
+
+        await cluster.Connect();
+
+        cluster.Connected.ShouldBeTrue();
+        cluster.Client.ShouldNotBeNull();
+        cluster.Status.ShouldBe(ClusterStatus.Connected);
+    }
+
     protected async Task GlobalPermissionsReflectDeniedAndAllowedOperationsCore(KubernetesBackend backend)
     {
         await using var harness = await CreateHarnessAsync(backend);

@@ -11,6 +11,8 @@ public sealed class ClusterRuntimeScenarioTests : ClusterScenarioAssertions
     [Theory, KubernetesBackendData]
     public Task InitializationExposesConnectedCluster(KubernetesBackend backend) => InitializationExposesConnectedClusterCore(backend);
     [Theory, KubernetesBackendData]
+    public Task DisconnectAndReconnectRestoresCluster(KubernetesBackend backend) => DisconnectAndReconnectRestoresClusterCore(backend);
+    [Theory, KubernetesBackendData]
     public Task GlobalPermissionsReflectDeniedAndAllowedOperations(KubernetesBackend backend) => GlobalPermissionsReflectDeniedAndAllowedOperationsCore(backend);
     [Theory, KubernetesBackendData]
     public Task NamespacedPermissionsReflectDeniedAndAllowedOperations(KubernetesBackend backend) => NamespacedPermissionsReflectDeniedAndAllowedOperationsCore(backend);
