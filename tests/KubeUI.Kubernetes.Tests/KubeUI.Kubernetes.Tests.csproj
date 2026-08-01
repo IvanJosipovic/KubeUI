@@ -6,7 +6,7 @@
     <LangVersion>latest</LangVersion>
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
-    <WarningsAsErrors>xUnit1031;xUnit1051</WarningsAsErrors>
+    <WarningsAsErrors>$(WarningsAsErrors);xUnit1031;xUnit1051</WarningsAsErrors>
     <AnalysisLevel>latest</AnalysisLevel>
     <AnalysisMode>All</AnalysisMode>
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>

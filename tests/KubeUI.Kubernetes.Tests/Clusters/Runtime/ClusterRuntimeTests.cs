@@ -1,8 +1,23 @@
 namespace KubeUI.Kubernetes.Tests.Clusters.Runtime;
 
+using Shouldly;
+
 [Trait("Category", "Kind")]
 public sealed class ClusterRuntimeTests : ClusterRuntimeAssertions
 {
+    [Fact]
+    public async Task DisconnectStopsAllResourceInformerTasks()
+    {
+        await using var harness = new FakeClusterScenarioHarness();
+        await harness.InitializeAsync(TestContext.Current.CancellationToken);
+        var cluster = (KubeUI.Kubernetes.Cluster)harness.Cluster;
+
+        await cluster.SeedResource<k8s.Models.V1Pod>(waitForReady: true);
+        await cluster.Disconnect();
+
+        cluster.ActiveResourceInformerTaskCount.ShouldBe(0);
+    }
+
     protected override async Task<IClusterScenarioHarness> CreateHarnessAsync(KubernetesBackend backend)
         => await KubernetesScenarioHarnessFactory.CreateAsync(backend, TestContext.Current.CancellationToken);
 

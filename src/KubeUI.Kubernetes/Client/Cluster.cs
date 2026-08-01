@@ -57,8 +57,11 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
 
     private readonly ConcurrentDictionary<string, string> _customResourceDefinitionSignatures = new(StringComparer.Ordinal);
     private CancellationTokenSource? _resourceInformerCancellationTokenSource = new();
+    private ConcurrentBag<Task> _resourceInformerTasks = [];
 
     public ConcurrentDictionary<GroupApiVersionKind, object> Objects { get; } = [];
+
+    internal int ActiveResourceInformerTaskCount => _resourceInformerTasks.Count(static task => !task.IsCompleted);
 
     IReadOnlyDictionary<GroupApiVersionKind, object> IClusterRuntime.Objects => Objects;
 
@@ -120,7 +123,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
 
         _customResourceDefinitionQueue.Writer.TryComplete();
         _customResourceDefinitionCancellationTokenSource.Cancel();
-        StopResourceInformers();
+        await StopResourceInformersAsync().ConfigureAwait(false);
         _connectionLimiter.Dispose();
 
         try
@@ -268,7 +271,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
             StopMetrics();
             StopPortForwarders();
 
-            StopResourceInformers();
+            await StopResourceInformersAsync().ConfigureAwait(false);
             ClearDynamicCustomResourceDefinitions();
             ClearSeededResources();
 
@@ -360,7 +363,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
                     container.Informers.Add(informer);
                     container.InformerRegistrations.Add(informer.Register(GetResourceInformerCallback<T>()));
                     informer.StartWatching();
-                    _ = informer.RunInfinite(GetResourceInformerCancellationToken());
+                    _resourceInformerTasks.Add(informer.RunInfinite(GetResourceInformerCancellationToken()));
                 }
             }
         }
@@ -1019,9 +1022,10 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
         IsMetricsAvailable = false;
     }
 
-    private void StopResourceInformers()
+    private async Task StopResourceInformersAsync()
     {
-        _resourceInformerCancellationTokenSource?.Cancel();
+        var cancellationTokenSource = Interlocked.Exchange(ref _resourceInformerCancellationTokenSource, null);
+        cancellationTokenSource?.Cancel();
 
         if (Client is IDisposable disposableClient)
         {
@@ -1029,13 +1033,22 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
             Client = null;
         }
 
+        Task[] informerTasks = Interlocked.Exchange(ref _resourceInformerTasks, []).ToArray();
+        try
+        {
+            using var shutdownTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+            await Task.WhenAll(informerTasks).WaitAsync(shutdownTimeout.Token).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (cancellationTokenSource?.IsCancellationRequested == true)
+        {
+        }
+
         foreach (var container in Objects.Values.OfType<IClearableResourceContainer>())
         {
             container.Clear();
         }
 
-        _resourceInformerCancellationTokenSource?.Dispose();
-        _resourceInformerCancellationTokenSource = null;
+        cancellationTokenSource?.Dispose();
     }
 
     private void ClearDynamicCustomResourceDefinitions()

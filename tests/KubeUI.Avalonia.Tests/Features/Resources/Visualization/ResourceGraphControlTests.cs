@@ -1078,7 +1078,7 @@ public sealed class ResourceGraphControlTests
             () => cluster.Runtime.AddOrUpdateResource(background),
             TestContext.Current.CancellationToken);
 
-        await WaitForAsync(() => builder.BuildCount > 1);
+        await WaitForAsync(() => builder.BuildCount > 1, cancellationToken: TestContext.Current.CancellationToken);
 
         builder.BuildCount.ShouldBeGreaterThan(1);
     }
@@ -1109,7 +1109,7 @@ public sealed class ResourceGraphControlTests
         ResourceIdentity sourceIdentity = GetIdentity(source);
         ResourceIdentity missingIdentity = new(V1Pod.KubeApiVersion, V1Pod.KubeKind, "default", "missing", "missing");
 
-        ResourceGraphControl control = new()
+        using ResourceGraphControl control = new()
         {
             Graph = new ResourceRelationshipGraph(
                 [source],
@@ -1118,7 +1118,7 @@ public sealed class ResourceGraphControlTests
 
         try
         {
-            await WaitForAsync(() => control.Area.LogicCore?.Graph?.VertexCount == 1);
+            await WaitForAsync(() => control.Area.LogicCore?.Graph?.VertexCount == 1, cancellationToken: TestContext.Current.CancellationToken);
 
             control.Area.LogicCore!.Graph.VertexCount.ShouldBe(1);
             control.Area.LogicCore.Graph.EdgeCount.ShouldBe(0);

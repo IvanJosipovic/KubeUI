@@ -163,7 +163,7 @@ public sealed class KindClusterScenarioHarness : IClusterScenarioHarness
             return;
         }
 
-        using var timeout = new CancellationTokenSource(TimeSpan.FromMinutes(2));
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(45));
         Exception? lastException = null;
 
         for (int attempt = 1; attempt <= 3; attempt++)
