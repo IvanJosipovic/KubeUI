@@ -245,8 +245,8 @@ public sealed class ResourceFeatureConfigTests
     [AvaloniaFact]
     public void cronjob_config_start_menu_creates_job_from_cronjob_template()
     {
-        V1CronJob cronJob = CreateCronJob("volsync", "immich-rclone-backup");
-        V1Job job = V1CronJobConfig.CreateJobFromCronJob(cronJob, new DateTimeOffset(2026, 5, 15, 13, 14, 15, TimeSpan.Zero));
+        var cronJob = CreateCronJob("volsync", "immich-rclone-backup");
+        var job = V1CronJobConfig.CreateJobFromCronJob(cronJob, new DateTimeOffset(2026, 5, 15, 13, 14, 15, TimeSpan.Zero));
 
         job.ApiVersion.ShouldBe("batch/v1");
         job.Kind.ShouldBe("Job");
@@ -257,7 +257,7 @@ public sealed class ResourceFeatureConfigTests
         job.Metadata.Annotations.ShouldContainKeyAndValue("template", "backup");
         job.Metadata.Annotations.ShouldContainKeyAndValue("cronjob.kubernetes.io/instantiate", "manual");
 
-        V1OwnerReference ownerReference = job.Metadata.OwnerReferences.Single();
+        var ownerReference = job.Metadata.OwnerReferences.Single();
         ownerReference.ApiVersion.ShouldBe("batch/v1");
         ownerReference.Kind.ShouldBe("CronJob");
         ownerReference.Name.ShouldBe("immich-rclone-backup");
@@ -269,10 +269,10 @@ public sealed class ResourceFeatureConfigTests
     [AvaloniaFact]
     public void cronjob_config_start_menu_matches_kubectl_annotation_precedence()
     {
-        V1CronJob cronJob = CreateCronJob("volsync", "immich-rclone-backup");
+        var cronJob = CreateCronJob("volsync", "immich-rclone-backup");
         cronJob.Spec.JobTemplate.Metadata.Annotations["cronjob.kubernetes.io/instantiate"] = "template";
 
-        V1Job job = V1CronJobConfig.CreateJobFromCronJob(cronJob, new DateTimeOffset(2026, 5, 15, 13, 14, 15, TimeSpan.Zero));
+        var job = V1CronJobConfig.CreateJobFromCronJob(cronJob, new DateTimeOffset(2026, 5, 15, 13, 14, 15, TimeSpan.Zero));
 
         job.Metadata.Annotations.ShouldContainKeyAndValue("cronjob.kubernetes.io/instantiate", "template");
     }
@@ -280,24 +280,20 @@ public sealed class ResourceFeatureConfigTests
     [AvaloniaFact]
     public async Task cronjob_start_context_menu_creates_job_resource()
     {
-        var services = Application.Current.GetTestServices();
-        TestClusterConfig clusterConfig = services.GetRequiredService<TestClusterConfig>();
-        ClusterWorkspace workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
-        var runtime = workspace.Runtime;
-        await workspace.Connect();
-        await runtime.SeedResource<V1Namespace>(true);
-        await runtime.SeedResource<V1CronJob>(true);
-        await runtime.SeedResource<V1Job>(true);
-        await runtime.AddOrUpdateResource(new V1Namespace
+        var workspace = await Application.Current.CreateClusterAsync();
+        await workspace.Runtime.SeedResource<V1Namespace>(true);
+        await workspace.Runtime.SeedResource<V1CronJob>(true);
+        await workspace.Runtime.SeedResource<V1Job>(true);
+        await workspace.Runtime.AddOrUpdateResource(new V1Namespace
         {
             Metadata = new() { Name = "volsync" },
         });
 
-        await ((Cluster)runtime).UpdateCanI<V1Job>(Verb.Create, "volsync");
+        await ((Cluster)workspace.Runtime).UpdateCanI<V1Job>(Verb.Create, "volsync");
         var config = (V1CronJobConfig)workspace.GetResourceConfig<V1CronJob>();
-        V1CronJob cronJob = CreateCronJob("volsync", "immich-rclone-backup");
+        var cronJob = CreateCronJob("volsync", "immich-rclone-backup");
 
-        MenuItemViewModel startItem = config.GetCustomMenuItems(new[] { cronJob }).Single(item => item.Title == "Start");
+        var startItem = config.GetCustomMenuItems(new[] { cronJob }).Single(item => item.Title == "Start");
         var command = startItem.Command.ShouldBeAssignableTo<IAsyncRelayCommand>();
         var commandParameter = startItem.CommandParameter.ShouldBeAssignableTo<IList>();
 
@@ -305,11 +301,11 @@ public sealed class ResourceFeatureConfigTests
 
         await command.ExecuteAsync(commandParameter).WaitAsync(TestContext.Current.CancellationToken);
         await TestWait.UntilAsync(
-            () => runtime.GetResourceList<V1Job>().Count == 1,
+            () => workspace.Runtime.GetResourceList<V1Job>().Count == 1,
             TimeSpan.FromSeconds(5),
             cancellationToken: TestContext.Current.CancellationToken);
 
-        V1Job job = runtime.GetResourceList<V1Job>().Single();
+        var job = workspace.Runtime.GetResourceList<V1Job>().Single();
         job.Namespace().ShouldBe("volsync");
         job.Name().ShouldStartWith("immich-rclone-backup-manual-");
         job.Spec.Template.Spec.Containers.Single().Image.ShouldBe(cronJob.Spec.JobTemplate.Spec.Template.Spec.Containers.Single().Image);
@@ -321,7 +317,7 @@ public sealed class ResourceFeatureConfigTests
     public async Task cronjob_start_context_menu_requires_job_create_permission()
     {
         var services = Application.Current.GetTestServices();
-        TestClusterConfig clusterConfig = services.GetRequiredService<TestClusterConfig>();
+        var clusterConfig = services.GetRequiredService<TestClusterConfig>();
         clusterConfig.AuthenticatedUser = KubernetesRbac.ServiceAccountUser;
         clusterConfig.InitialResources = new[]
         {
@@ -331,23 +327,22 @@ public sealed class ResourceFeatureConfigTests
                 new RbacRule("namespaces", "list"),
                 new RbacRule("namespaces", "watch")))
             .ToArray();
-        ClusterWorkspace workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
-        var runtime = workspace.Runtime;
+        var workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         await workspace.Connect();
-        await runtime.SeedResource<V1Namespace>(true);
-        await runtime.SeedResource<V1CronJob>(true);
-        await runtime.SeedResource<V1Job>(true);
-        await runtime.AddOrUpdateResource(new V1Namespace
+        await workspace.Runtime.SeedResource<V1Namespace>(true);
+        await workspace.Runtime.SeedResource<V1CronJob>(true);
+        await workspace.Runtime.SeedResource<V1Job>(true);
+        await workspace.Runtime.AddOrUpdateResource(new V1Namespace
         {
             Metadata = new() { Name = "volsync" },
         });
 
-        await ((Cluster)runtime).UpdateCanI<V1Job>(Verb.Create);
-        await ((Cluster)runtime).UpdateCanI<V1Job>(Verb.Create, "volsync");
+        await ((Cluster)workspace.Runtime).UpdateCanI<V1Job>(Verb.Create);
+        await ((Cluster)workspace.Runtime).UpdateCanI<V1Job>(Verb.Create, "volsync");
         var config = (V1CronJobConfig)workspace.GetResourceConfig<V1CronJob>();
-        V1CronJob cronJob = CreateCronJob("volsync", "immich-rclone-backup");
+        var cronJob = CreateCronJob("volsync", "immich-rclone-backup");
 
-        MenuItemViewModel startItem = config.GetCustomMenuItems(new[] { cronJob }).Single(item => item.Title == "Start");
+        var startItem = config.GetCustomMenuItems(new[] { cronJob }).Single(item => item.Title == "Start");
         var command = startItem.Command.ShouldBeAssignableTo<IAsyncRelayCommand>();
         var commandParameter = startItem.CommandParameter.ShouldBeAssignableTo<IList>();
 
@@ -358,7 +353,7 @@ public sealed class ResourceFeatureConfigTests
     public async Task cronjob_start_context_menu_allows_namespace_scoped_job_create_permission()
     {
         var services = Application.Current.GetTestServices();
-        TestClusterConfig clusterConfig = services.GetRequiredService<TestClusterConfig>();
+        var clusterConfig = services.GetRequiredService<TestClusterConfig>();
         clusterConfig.AuthenticatedUser = KubernetesRbac.ServiceAccountUser;
         clusterConfig.InitialResources = new[]
         {
@@ -369,25 +364,24 @@ public sealed class ResourceFeatureConfigTests
                 new RbacRule("namespaces", "watch")))
             .Concat(KubernetesRbac.InNamespace("volsync", new RbacRule("jobs", "create", "batch")))
             .ToArray();
-        ClusterWorkspace workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
-        var runtime = workspace.Runtime;
+        var workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         await workspace.Connect();
-        await ((Cluster)runtime).UpdateCanI<V1Job>(Verb.Create);
-        await ((Cluster)runtime).UpdateCanI<V1Job>(Verb.Create, "volsync");
-        await runtime.SeedResource<V1Namespace>(true);
-        await runtime.SeedResource<V1CronJob>(true);
-        await runtime.SeedResource<V1Job>(true);
-        await runtime.AddOrUpdateResource(new V1Namespace
+        await ((Cluster)workspace.Runtime).UpdateCanI<V1Job>(Verb.Create);
+        await ((Cluster)workspace.Runtime).UpdateCanI<V1Job>(Verb.Create, "volsync");
+        await workspace.Runtime.SeedResource<V1Namespace>(true);
+        await workspace.Runtime.SeedResource<V1CronJob>(true);
+        await workspace.Runtime.SeedResource<V1Job>(true);
+        await workspace.Runtime.AddOrUpdateResource(new V1Namespace
         {
             Metadata = new() { Name = "volsync" },
         });
 
-        await ((Cluster)runtime).UpdateCanI<V1Job>(Verb.Create);
-        await ((Cluster)runtime).UpdateCanI<V1Job>(Verb.Create, "volsync");
+        await ((Cluster)workspace.Runtime).UpdateCanI<V1Job>(Verb.Create);
+        await ((Cluster)workspace.Runtime).UpdateCanI<V1Job>(Verb.Create, "volsync");
         var config = (V1CronJobConfig)workspace.GetResourceConfig<V1CronJob>();
-        V1CronJob cronJob = CreateCronJob("volsync", "immich-rclone-backup");
+        var cronJob = CreateCronJob("volsync", "immich-rclone-backup");
 
-        MenuItemViewModel startItem = config.GetCustomMenuItems(new[] { cronJob }).Single(item => item.Title == "Start");
+        var startItem = config.GetCustomMenuItems(new[] { cronJob }).Single(item => item.Title == "Start");
         var command = startItem.Command.ShouldBeAssignableTo<IAsyncRelayCommand>();
         var commandParameter = startItem.CommandParameter.ShouldBeAssignableTo<IList>();
 

@@ -7,7 +7,6 @@ namespace KubeUI.Avalonia.Services.Settings;
 
 public class SettingsService : ObservableObject, ISettingsService, IClusterSettingsStore
 {
-    private readonly ILogger<SettingsService> _logger;
     private readonly ISettingsPersistence _persistence;
     private AppSettings? _settings;
     private AppAppearanceSettings? _appearance;
@@ -68,7 +67,7 @@ public class SettingsService : ObservableObject, ISettingsService, IClusterSetti
 
     public SettingsService(ILogger<SettingsService> logger, ISettingsPersistence persistence)
     {
-        _logger = logger;
+        _ = logger;
         _persistence = persistence;
     }
 

@@ -1,6 +1,6 @@
 <Project>
   <PropertyGroup>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <TestingPlatformShowTestsFailure>true</TestingPlatformShowTestsFailure>
-    <WarningsAsErrors>$(WarningsAsErrors);IDE0001;IDE0004;IDE0005;IDE0052;IDE0059</WarningsAsErrors>
   </PropertyGroup>
 </Project>

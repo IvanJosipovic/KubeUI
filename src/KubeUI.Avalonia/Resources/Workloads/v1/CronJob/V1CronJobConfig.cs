@@ -86,13 +86,13 @@ public sealed partial class V1CronJobConfig : ResourceConfigBase<V1CronJob>
     private async Task Start(IList items)
     {
         var exceptions = new List<Exception>();
-        DateTimeOffset timestamp = _timeProvider.GetUtcNow();
+        var timestamp = _timeProvider.GetUtcNow();
 
-        foreach (V1CronJob cronJob in items.Cast<V1CronJob>().ToList())
+        foreach (var cronJob in items.Cast<V1CronJob>().ToList())
         {
             try
             {
-                V1Job job = CreateJobFromCronJob(cronJob, timestamp);
+                var job = CreateJobFromCronJob(cronJob, timestamp);
                 await Cluster.Runtime.AddOrUpdateResource(job).ConfigureAwait(false);
             }
             catch (Exception ex)
@@ -151,7 +151,7 @@ public sealed partial class V1CronJobConfig : ResourceConfigBase<V1CronJob>
             Annotations = annotations,
         };
 
-        string? uid = cronJob.Uid();
+        var uid = cronJob.Uid();
         if (!string.IsNullOrWhiteSpace(uid))
         {
             metadata.OwnerReferences =
@@ -178,9 +178,9 @@ public sealed partial class V1CronJobConfig : ResourceConfigBase<V1CronJob>
 
     private static string BuildManualJobName(V1CronJob cronJob, DateTimeOffset timestamp)
     {
-        string suffix = $"-manual-{timestamp:yyyyMMddHHmmssfffffff}";
-        string baseName = cronJob.Name();
-        int maxBaseLength = KubernetesNameMaxLength - suffix.Length;
+        var suffix = $"-manual-{timestamp:yyyyMMddHHmmssfffffff}";
+        var baseName = cronJob.Name();
+        var maxBaseLength = KubernetesNameMaxLength - suffix.Length;
 
         if (baseName.Length > maxBaseLength)
         {

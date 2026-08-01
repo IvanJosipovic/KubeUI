@@ -13,16 +13,15 @@ public sealed class LimitedAccessNavigationTests
     [Trait("Category", "Kind")]
     public async Task limited_access_with_listable_namespace_shows_namespaced_resources_in_navigation(KubernetesBackend backend)
     {
-        IServiceProvider services = Application.Current.GetTestServices();
-        TestClusterConfig config = services.GetRequiredService<TestClusterConfig>();
-        config.Type = backend;
-        config.AuthenticatedUser = KubernetesRbac.ServiceAccountUser;
-        config.InitialYaml = KubernetesTestData.LimitedAccessWithNamespacePermissions;
+        var services = Application.Current.GetTestServices();
+        var workspace = await Application.Current.CreateClusterAsync(config =>
+        {
+            config.Type = backend;
+            config.AuthenticatedUser = KubernetesRbac.ServiceAccountUser;
+            config.InitialYaml = KubernetesTestData.LimitedAccessWithNamespacePermissions;
+        });
 
-        ClusterWorkspace workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
-        NavigationViewModel navigation = services.GetRequiredService<NavigationViewModel>();
-        await workspace.Connect();
-        Dispatcher.UIThread.RunJobs();
+        var navigation = services.GetRequiredService<NavigationViewModel>();
 
         var clusterNode = navigation.Clusters.Single(x => x.Cluster == workspace);
         await navigation.TreeViewSelectionChangedAsync(clusterNode);

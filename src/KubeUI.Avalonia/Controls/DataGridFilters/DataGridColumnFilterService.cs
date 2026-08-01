@@ -175,7 +175,7 @@ internal sealed class DataGridColumnFilterService
 
     public void ApplyNumericFilter(IFilteringModel filteringModel, DataGridColumnDefinition column, FilterOperatorChoice filterOperator, double? value, double? secondValue)
     {
-        FilteringOperator effectiveOperator = filterOperator.Operator;
+        var effectiveOperator = filterOperator.Operator;
 
         if (filterOperator.Operator == FilteringOperator.Between)
         {
@@ -309,7 +309,7 @@ internal sealed class DataGridColumnFilterService
         double value,
         double? secondValue)
     {
-        CultureInfo culture = CultureInfo.InvariantCulture;
+        var culture = CultureInfo.InvariantCulture;
         return customId switch
         {
             FilterOperatorId.NumericNotBetween => item => secondValue.HasValue && !Between(GetColumnValue(column, item), [value, secondValue.Value], culture),
@@ -326,7 +326,7 @@ internal sealed class DataGridColumnFilterService
         FilterOperatorId customId,
         object value)
     {
-        CultureInfo culture = CultureInfo.InvariantCulture;
+        var culture = CultureInfo.InvariantCulture;
         return customId switch
         {
             FilterOperatorId.DateNotNewerThan => item => Compare(GetColumnValue(column, item), value, culture) <= 0,

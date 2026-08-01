@@ -33,8 +33,8 @@ public static class SettingsPersistenceLoader
         {
             if (File.Exists(settingsFilePath))
             {
-                using FileStream json = File.OpenRead(settingsFilePath);
-                SettingsPersistenceData? settings = JsonSerializer.Deserialize(
+                using var json = File.OpenRead(settingsFilePath);
+                var settings = JsonSerializer.Deserialize(
                     json,
                     SettingsPersistenceSourceGenerationContext.Default.SettingsPersistenceData);
                 if (settings is not null)

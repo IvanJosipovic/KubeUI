@@ -16,9 +16,8 @@ public sealed class ResourcePropertiesViewInitializationTests
     [AvaloniaFact]
     public async Task cluster_aware_property_controls_are_initialized_once()
     {
-        IServiceProvider services = Application.Current.GetTestServices();
-        ClusterWorkspace workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
-        await workspace.Connect();
+        var services = Application.Current.GetTestServices();
+        var workspace = await Application.Current.CreateClusterAsync();
 
         var trackingConfig = new TrackingResourceConfig(services);
         trackingConfig.Initialize(workspace);
@@ -61,9 +60,8 @@ public sealed class ResourcePropertiesViewInitializationTests
     [AvaloniaFact]
     public async Task properties_view_populates_on_first_attach()
     {
-        IServiceProvider services = Application.Current.GetTestServices();
-        ClusterWorkspace workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
-        await workspace.Connect();
+        var services = Application.Current.GetTestServices();
+        var workspace = await Application.Current.CreateClusterAsync();
 
         var viewModel = services.GetRequiredService<ResourcePropertiesViewModel<V1Pod>>();
         viewModel.Initialize(workspace, new V1Pod

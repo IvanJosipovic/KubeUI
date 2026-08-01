@@ -812,7 +812,7 @@ public sealed class DynamicDataFilteringAdapterFactory<T> : IDataGridFilteringAd
 
         return item =>
         {
-            for (int i = 0; i < compiled.Count; i++)
+            for (var i = 0; i < compiled.Count; i++)
             {
                 if (!compiled[i](item))
                 {
@@ -1193,7 +1193,7 @@ public sealed class DynamicDataSearchAdapterFactory<T> : IDataGridSearchAdapterF
 
         return item =>
         {
-            for (int i = 0; i < compiled.Count; i++)
+            for (var i = 0; i < compiled.Count; i++)
             {
                 if (compiled[i](item))
                 {
@@ -1393,7 +1393,7 @@ public sealed class DynamicDataSearchAdapterFactory<T> : IDataGridSearchAdapterF
             }
 
             var comparison = descriptor.Comparison ?? StringComparison.OrdinalIgnoreCase;
-            bool any = descriptor.TermMode == SearchTermCombineMode.Any;
+            var any = descriptor.TermMode == SearchTermCombineMode.Any;
 
             foreach (var term in terms)
             {
@@ -1454,10 +1454,10 @@ public sealed class DynamicDataSearchAdapterFactory<T> : IDataGridSearchAdapterF
                 return false;
             }
 
-            int startIndex = 0;
+            var startIndex = 0;
             while (startIndex < text.Length)
             {
-                int index = text.IndexOf(term, startIndex, comparison);
+                var index = text.IndexOf(term, startIndex, comparison);
                 if (index < 0)
                 {
                     break;
@@ -1481,9 +1481,9 @@ public sealed class DynamicDataSearchAdapterFactory<T> : IDataGridSearchAdapterF
                 return true;
             }
 
-            bool startBoundary = start == 0 || !IsWordChar(text[start - 1]);
-            int endIndex = start + length;
-            bool endBoundary = endIndex >= text.Length || !IsWordChar(text[endIndex]);
+            var startBoundary = start == 0 || !IsWordChar(text[start - 1]);
+            var endIndex = start + length;
+            var endBoundary = endIndex >= text.Length || !IsWordChar(text[endIndex]);
 
             return startBoundary && endBoundary;
         }
@@ -1502,7 +1502,7 @@ public sealed class DynamicDataSearchAdapterFactory<T> : IDataGridSearchAdapterF
             }
 
             var builder = new StringBuilder();
-            bool inQuote = false;
+            var inQuote = false;
 
             foreach (var ch in query)
             {
@@ -1549,7 +1549,7 @@ public sealed class DynamicDataSearchAdapterFactory<T> : IDataGridSearchAdapterF
             }
 
             var chars = new List<char>();
-            for (int i = 0; i < text.Length; i++)
+            for (var i = 0; i < text.Length; i++)
             {
                 var ch = text[i];
                 if (ignoreDiacritics)
@@ -1576,12 +1576,12 @@ public sealed class DynamicDataSearchAdapterFactory<T> : IDataGridSearchAdapterF
             }
 
             var builder = new StringBuilder();
-            bool wasWhitespace = false;
+            var wasWhitespace = false;
 
-            for (int i = 0; i < chars.Count; i++)
+            for (var i = 0; i < chars.Count; i++)
             {
                 var ch = chars[i];
-                bool isWhitespace = char.IsWhiteSpace(ch);
+                var isWhitespace = char.IsWhiteSpace(ch);
                 if (isWhitespace)
                 {
                     if (wasWhitespace)

@@ -12,12 +12,8 @@ public sealed class PodDebugContainerTests
     public async Task adding_debug_container_uses_cluster_image_and_target_container(KubernetesBackend backend)
     {
         var services = Application.Current.GetTestServices();
-        TestClusterConfig config = services.GetRequiredService<TestClusterConfig>();
-        config.Type = backend;
-        ClusterWorkspace workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
-        var runtime = workspace.Runtime;
-        await workspace.Connect();
-        await runtime.SeedResource<V1Pod>(true);
+        var workspace = await Application.Current.CreateClusterAsync(config => config.Type = backend);
+        await workspace.Runtime.SeedResource<V1Pod>(true);
         var settings = services.GetRequiredService<ISettingsService>();
         settings.Settings.GetClusterSettings(workspace.Runtime).DebugContainerImage = "example.com/debug:1";
 
@@ -43,18 +39,18 @@ public sealed class PodDebugContainerTests
 
         await workspace.Runtime.AddOrUpdateResource(pod);
         await TestWait.UntilAsync(
-            () => runtime.GetResource<V1Pod>("default", "pod-1") is not null,
+            () => workspace.Runtime.GetResource<V1Pod>("default", "pod-1") is not null,
             TimeSpan.FromSeconds(5),
             cancellationToken: TestContext.Current.CancellationToken);
-        V1Pod currentPod = runtime.GetResource<V1Pod>("default", "pod-1").ShouldNotBeNull();
+        var currentPod = workspace.Runtime.GetResource<V1Pod>("default", "pod-1").ShouldNotBeNull();
         await workspace.Runtime.AddPodEphemeralDebugContainer(currentPod, "app", settings.Settings.GetClusterSettings(workspace.Runtime).DebugContainerImage);
 
         await TestWait.UntilAsync(
-            () => runtime.GetResource<V1Pod>("default", "pod-1")?.Spec?.EphemeralContainers?.Count == 1,
+            () => workspace.Runtime.GetResource<V1Pod>("default", "pod-1")?.Spec?.EphemeralContainers?.Count == 1,
             TimeSpan.FromSeconds(5),
             cancellationToken: TestContext.Current.CancellationToken);
 
-        V1Pod updated = runtime.GetResource<V1Pod>("default", "pod-1").ShouldNotBeNull();
+        var updated = workspace.Runtime.GetResource<V1Pod>("default", "pod-1").ShouldNotBeNull();
         updated.Spec.EphemeralContainers.ShouldNotBeNull();
         updated.Spec.EphemeralContainers.Count.ShouldBe(1);
         updated.Spec.EphemeralContainers[0].Image.ShouldBe("example.com/debug:1");

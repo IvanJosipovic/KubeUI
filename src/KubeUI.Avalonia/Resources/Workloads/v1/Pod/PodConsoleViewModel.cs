@@ -91,13 +91,13 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
     private async Task ReadConsoleOutputAsync(Stream consoleOutput, CancellationToken cancellationToken)
     {
         const int bufferSize = 4096;
-        byte[] buffer = new byte[bufferSize];
+        var buffer = new byte[bufferSize];
 
         while (!cancellationToken.IsCancellationRequested && consoleOutput.CanRead)
         {
             try
             {
-                int bytesRead = await consoleOutput.ReadAsync(buffer.AsMemory(0, bufferSize), cancellationToken).ConfigureAwait(false);
+                var bytesRead = await consoleOutput.ReadAsync(buffer.AsMemory(0, bufferSize), cancellationToken).ConfigureAwait(false);
 
                 if (bytesRead <= 0)
                 {

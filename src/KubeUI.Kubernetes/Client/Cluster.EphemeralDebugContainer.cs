@@ -13,14 +13,14 @@ public partial class Cluster
             throw new InvalidOperationException("Cluster client is not connected.");
         }
 
-        string namespaceName = pod.Namespace();
-        string podName = pod.Name();
+        var namespaceName = pod.Namespace();
+        var podName = pod.Name();
         if (string.IsNullOrWhiteSpace(namespaceName) || string.IsNullOrWhiteSpace(podName))
         {
             throw new InvalidOperationException("Pod must have a name and namespace.");
         }
 
-        V1Pod updatedPod = PodEphemeralContainerBuilder.WithDebugContainer(pod, targetContainerName, image);
+        var updatedPod = PodEphemeralContainerBuilder.WithDebugContainer(pod, targetContainerName, image);
 
         await Client.CoreV1.ReplaceNamespacedPodEphemeralcontainersWithHttpMessagesAsync(updatedPod, podName, namespaceName).ConfigureAwait(false);
     }

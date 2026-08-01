@@ -14,7 +14,7 @@ internal static class ClusterResourceChangeFeed
         {
             Dictionary<GroupApiVersionKind, IDisposable> subscriptions = [];
             object sync = new();
-            bool disposed = false;
+            var disposed = false;
 
             void Subscribe(GroupApiVersionKind kind)
             {
@@ -26,13 +26,13 @@ internal static class ClusterResourceChangeFeed
                     }
                 }
 
-                if (!runtime.Objects.TryGetValue(kind, out object? value) || value is not IResourceContainer container)
+                if (!runtime.Objects.TryGetValue(kind, out var value) || value is not IResourceContainer container)
                 {
                     return;
                 }
 
-                IDisposable subscription = container.ConnectChanges(kind).Subscribe(observer.OnNext, observer.OnError);
-                foreach (IKubernetesObject<V1ObjectMeta> resource in container.Snapshot())
+                var subscription = container.ConnectChanges(kind).Subscribe(observer.OnNext, observer.OnError);
+                foreach (var resource in container.Snapshot())
                 {
                     observer.OnNext(new ResourceChange(WatchEventType.Added, kind, resource));
                 }
@@ -76,7 +76,7 @@ internal static class ClusterResourceChangeFeed
             runtime.ResourceSeeded += ResourceSeeded;
             runtime.ResourceUnseeded += ResourceUnseeded;
 
-            foreach (GroupApiVersionKind kind in runtime.Objects.Keys)
+            foreach (var kind in runtime.Objects.Keys)
             {
                 Subscribe(kind);
             }
@@ -97,7 +97,7 @@ internal static class ClusterResourceChangeFeed
                     subscriptions.Clear();
                 }
 
-                foreach (IDisposable subscription in activeSubscriptions)
+                foreach (var subscription in activeSubscriptions)
                 {
                     subscription.Dispose();
                 }

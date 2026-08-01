@@ -14,9 +14,8 @@ public sealed class ResourceYamlViewCopyTests
     [AvaloniaFact]
     public async Task Editor_copy_writes_selected_yaml_text_to_the_clipboard()
     {
-        IServiceProvider services = Application.Current.GetTestServices();
-        ClusterWorkspace cluster = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
-        await cluster.Connect();
+        var services = Application.Current.GetTestServices();
+        using var cluster = await Application.Current.CreateClusterAsync();
 
         var viewModel = services.GetRequiredService<ResourceYamlViewModel>();
             viewModel.Initialize(cluster, new V1Pod
@@ -84,9 +83,8 @@ public sealed class ResourceYamlViewCopyTests
     [AvaloniaFact]
     public async Task Editor_context_menu_copy_writes_selected_yaml_text_to_the_clipboard()
     {
-        IServiceProvider services = Application.Current.GetTestServices();
-        ClusterWorkspace cluster = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
-        await cluster.Connect();
+        var services = Application.Current.GetTestServices();
+        using var cluster = await Application.Current.CreateClusterAsync();
 
         var viewModel = services.GetRequiredService<ResourceYamlViewModel>();
             viewModel.Initialize(cluster, new V1Pod

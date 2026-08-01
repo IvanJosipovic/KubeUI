@@ -16,7 +16,7 @@ public static class Kind
 
     private const string KubernetesVersion = "kindest/node:v1.36.1";
 
-    private static readonly SemaphoreSlim ProcessLock = new(1, 1);
+    private static readonly SemaphoreSlim DownloadLock = new(1, 1);
 
     public static string FileName { get; } = "kind" + (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? ".exe" : "");
 
@@ -24,7 +24,7 @@ public static class Kind
 
     public static async Task DownloadClient(CancellationToken cancellationToken = default)
     {
-        await ProcessLock.WaitAsync(cancellationToken).ConfigureAwait(false);
+        await DownloadLock.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
             using var client = new HttpClient();
@@ -47,52 +47,36 @@ public static class Kind
         }
         finally
         {
-            ProcessLock.Release();
+            DownloadLock.Release();
         }
     }
 
     public static async Task CreateCluster(string name, string? image = null, string? config = null, string? kubeConfigPath = null, CancellationToken cancellationToken = default)
     {
-        await ProcessLock.WaitAsync(cancellationToken).ConfigureAwait(false);
-        try
-        {
-            var stdErrBuffer = new StringBuilder();
-            image ??= KubernetesVersion;
-            kubeConfigPath ??= KubernetesClientConfiguration.KubeConfigDefaultLocation;
+        var stdErrBuffer = new StringBuilder();
+        image ??= KubernetesVersion;
+        kubeConfigPath ??= KubernetesClientConfiguration.KubeConfigDefaultLocation;
 
-            await ExecuteKindAsync(
-                BuildCreateArguments(name, image, config, kubeConfigPath),
-                standardOutput: null,
-                standardError: stdErrBuffer,
-                cancellationToken: cancellationToken).ConfigureAwait(false);
+        await ExecuteKindAsync(
+            BuildCreateArguments(name, image, config, kubeConfigPath),
+            standardOutput: null,
+            standardError: stdErrBuffer,
+            cancellationToken: cancellationToken).ConfigureAwait(false);
 
-            ThrowIfKindError(stdErrBuffer);
-        }
-        finally
-        {
-            ProcessLock.Release();
-        }
+        ThrowIfKindError(stdErrBuffer);
     }
 
     public static async Task DeleteCluster(string name, CancellationToken cancellationToken = default)
     {
-        await ProcessLock.WaitAsync(cancellationToken).ConfigureAwait(false);
-        try
-        {
-            var stdErrBuffer = new StringBuilder();
+        var stdErrBuffer = new StringBuilder();
 
-            await ExecuteKindAsync(
-                ["delete", "cluster", "--name", name],
-                standardOutput: null,
-                standardError: stdErrBuffer,
-                cancellationToken: cancellationToken).ConfigureAwait(false);
+        await ExecuteKindAsync(
+            ["delete", "cluster", "--name", name],
+            standardOutput: null,
+            standardError: stdErrBuffer,
+            cancellationToken: cancellationToken).ConfigureAwait(false);
 
-            ThrowIfKindError(stdErrBuffer);
-        }
-        finally
-        {
-            ProcessLock.Release();
-        }
+        ThrowIfKindError(stdErrBuffer);
     }
 
     public static async Task<string> GetKubeConfig(string name, CancellationToken cancellationToken = default)
@@ -199,4 +183,3 @@ public static class Kind
     }
 
 }
-

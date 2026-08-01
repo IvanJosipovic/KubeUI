@@ -16,8 +16,8 @@ public sealed class RbacRelationshipProvider : IResourceRelationshipProvider
 
     public void AddRelationships(IKubernetesObject<V1ObjectMeta> resource, ResourceRelationshipContext context, ICollection<ResourceRelationship> relationships)
     {
-        V1RoleBinding? roleBinding = resource as V1RoleBinding;
-        V1ClusterRoleBinding? clusterRoleBinding = resource as V1ClusterRoleBinding;
+        var roleBinding = resource as V1RoleBinding;
+        var clusterRoleBinding = resource as V1ClusterRoleBinding;
         if (roleBinding == null && clusterRoleBinding == null)
         {
             return;
@@ -38,14 +38,14 @@ public sealed class RbacRelationshipProvider : IResourceRelationshipProvider
             return;
         }
 
-        string? namespaceName = roleBinding != null ? resource.Namespace() : null;
-        string? apiVersion = roleRef.ApiGroup == "rbac.authorization.k8s.io" ? "rbac.authorization.k8s.io/v1" : null;
+        var namespaceName = roleBinding != null ? resource.Namespace() : null;
+        var apiVersion = roleRef.ApiGroup == "rbac.authorization.k8s.io" ? "rbac.authorization.k8s.io/v1" : null;
         if (apiVersion == null)
         {
             return;
         }
 
-        if (context.TryGet(apiVersion, roleRef.Kind, namespaceName, roleRef.Name, out IKubernetesObject<V1ObjectMeta>? role)
+        if (context.TryGet(apiVersion, roleRef.Kind, namespaceName, roleRef.Name, out var role)
             && role != null)
         {
             context.Add(relationships, role, resource, ResourceRelationshipKind.Rbac);

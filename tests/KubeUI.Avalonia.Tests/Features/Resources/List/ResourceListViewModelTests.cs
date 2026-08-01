@@ -34,56 +34,14 @@ namespace KubeUI.Avalonia.Tests.Features.Resources.List;
 
 public class ResourceListViewModelTests : IDisposable
 {
-    private readonly List<IDisposable> _disposables = [];
-    private readonly List<Window> _windows = [];
+    private readonly List<IDisposable> TestDisposables = [];
 
     public void Dispose()
     {
-        foreach (var window in _windows)
-        {
-            window.Content = null;
-            window.Close();
-        }
-
-        foreach (var disposable in _disposables)
+        foreach (var disposable in TestDisposables)
         {
             disposable.Dispose();
         }
-    }
-
-    private Window CreateWindow(double width = 1200, double height = 800, object? content = null)
-    {
-        var window = new Window
-        {
-            Width = width,
-            Height = height,
-            Content = content,
-        };
-
-        _windows.Add(window);
-        return window;
-    }
-
-    private async Task<ClusterWorkspace> CreateClusterAsync()
-    {
-        IServiceProvider services = Application.Current.GetTestServices();
-        ClusterWorkspace cluster = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
-        _disposables.Add(cluster);
-        await cluster.Connect();
-        Dispatcher.UIThread.RunJobs();
-        return cluster;
-    }
-
-    private T GetRequiredService<T>() where T : class
-    {
-        var services = Application.Current.GetTestServices();
-        var service = services.GetRequiredService<T>();
-        if (service is IDisposable disposable)
-        {
-            _disposables.Add(disposable);
-        }
-
-        return service;
     }
 
     private static V1Pod Pod(string ns, string name)
@@ -203,13 +161,13 @@ public class ResourceListViewModelTests : IDisposable
     [AvaloniaFact(DisplayName = "All select update middle")]
     public async Task all_select_update_middle_preserves_all_selected()
     {
-        var window = CreateWindow();
-        var cluster = await CreateClusterAsync();
+        var window = TestDisposables.CreateTestWindow();
+        var cluster = await Application.Current.CreateClusterAsync(TestDisposables);
 
-        var vm = GetRequiredService<ResourceListViewModel<V1Pod>>();
+        var vm = Application.Current.GetRequiredTestService<ResourceListViewModel<V1Pod>>();
         vm.Initialize(cluster);
 
-        var view = GetRequiredService<ResourceListView>();
+        var view = Application.Current.GetRequiredTestService<ResourceListView>();
         view.DataContext = vm;
 
         window.Content = view;
@@ -249,13 +207,13 @@ public class ResourceListViewModelTests : IDisposable
     [AvaloniaFact(DisplayName = "Single select update middle")]
     public async Task single_select_update__preserves_only_selected()
     {
-        var window = CreateWindow();
-        var cluster = await CreateClusterAsync();
+        var window = TestDisposables.CreateTestWindow();
+        var cluster = await Application.Current.CreateClusterAsync(TestDisposables);
 
-        var vm = GetRequiredService<ResourceListViewModel<V1Pod>>();
+        var vm = Application.Current.GetRequiredTestService<ResourceListViewModel<V1Pod>>();
         vm.Initialize(cluster);
 
-        var view = GetRequiredService<ResourceListView>();
+        var view = Application.Current.GetRequiredTestService<ResourceListView>();
         view.DataContext = vm;
 
         window.Content = view;
@@ -276,7 +234,7 @@ public class ResourceListViewModelTests : IDisposable
         vm.SelectionModel.SelectedIndexes.ShouldBe([1]);
 
         // Replace 'b' with new instance (same key)
-        V1Pod updatedPod = Pod("ns", "b");
+        var updatedPod = Pod("ns", "b");
         await AddOrUpdateAsync(cluster, updatedPod);
 
         await WaitForAsync(
@@ -298,13 +256,13 @@ public class ResourceListViewModelTests : IDisposable
     [AvaloniaFact(DisplayName = "Selected item right click populates context menu")]
     public async Task selected_item_right_click_populates_context_menu()
     {
-        var window = CreateWindow();
-        var cluster = await CreateClusterAsync();
+        var window = TestDisposables.CreateTestWindow();
+        var cluster = await Application.Current.CreateClusterAsync(TestDisposables);
 
-        var vm = GetRequiredService<ResourceListViewModel<V1Pod>>();
+        var vm = Application.Current.GetRequiredTestService<ResourceListViewModel<V1Pod>>();
         vm.Initialize(cluster);
 
-        var view = GetRequiredService<ResourceListView>();
+        var view = Application.Current.GetRequiredTestService<ResourceListView>();
         view.DataContext = vm;
 
         window.Content = view;
@@ -344,13 +302,13 @@ public class ResourceListViewModelTests : IDisposable
     [AvaloniaFact(DisplayName = "First right click enables context menu actions for the clicked row")]
     public async Task first_right_click_enables_context_menu_actions_for_the_clicked_row()
     {
-        var window = CreateWindow();
-        var cluster = await CreateClusterAsync();
+        var window = TestDisposables.CreateTestWindow();
+        var cluster = await Application.Current.CreateClusterAsync(TestDisposables);
 
-        var vm = GetRequiredService<ResourceListViewModel<V1Pod>>();
+        var vm = Application.Current.GetRequiredTestService<ResourceListViewModel<V1Pod>>();
         vm.Initialize(cluster);
 
-        var view = GetRequiredService<ResourceListView>();
+        var view = Application.Current.GetRequiredTestService<ResourceListView>();
         view.DataContext = vm;
 
         window.Content = view;
@@ -420,13 +378,13 @@ public class ResourceListViewModelTests : IDisposable
     [AvaloniaFact(DisplayName = "Right click context menu follows the clicked row in the grid")]
     public async Task right_click_context_menu_follows_the_clicked_row_in_the_grid()
     {
-        var window = CreateWindow();
-        var cluster = await CreateClusterAsync();
+        var window = TestDisposables.CreateTestWindow();
+        var cluster = await Application.Current.CreateClusterAsync(TestDisposables);
 
-        var vm = GetRequiredService<ResourceListViewModel<V1Pod>>();
+        var vm = Application.Current.GetRequiredTestService<ResourceListViewModel<V1Pod>>();
         vm.Initialize(cluster);
 
-        var view = GetRequiredService<ResourceListView>();
+        var view = Application.Current.GetRequiredTestService<ResourceListView>();
         view.DataContext = vm;
 
         window.Content = view;
@@ -502,13 +460,13 @@ public class ResourceListViewModelTests : IDisposable
     [AvaloniaFact(DisplayName = "Multi select right click populates context menu")]
     public async Task multi_select_right_click_populates_context_menu()
     {
-        var window = CreateWindow();
-        var cluster = await CreateClusterAsync();
+        var window = TestDisposables.CreateTestWindow();
+        var cluster = await Application.Current.CreateClusterAsync(TestDisposables);
 
-        var vm = GetRequiredService<ResourceListViewModel<V1Pod>>();
+        var vm = Application.Current.GetRequiredTestService<ResourceListViewModel<V1Pod>>();
         vm.Initialize(cluster);
 
-        var view = GetRequiredService<ResourceListView>();
+        var view = Application.Current.GetRequiredTestService<ResourceListView>();
         view.DataContext = vm;
 
         window.Content = view;
@@ -543,13 +501,13 @@ public class ResourceListViewModelTests : IDisposable
     [AvaloniaFact(DisplayName = "Multi select right click uses the full selection")]
     public async Task multi_select_right_click_uses_the_full_selection()
     {
-        var window = CreateWindow();
-        var cluster = await CreateClusterAsync();
+        var window = TestDisposables.CreateTestWindow();
+        var cluster = await Application.Current.CreateClusterAsync(TestDisposables);
 
-        var vm = GetRequiredService<ResourceListViewModel<V1Pod>>();
+        var vm = Application.Current.GetRequiredTestService<ResourceListViewModel<V1Pod>>();
         vm.Initialize(cluster);
 
-        var view = GetRequiredService<ResourceListView>();
+        var view = Application.Current.GetRequiredTestService<ResourceListView>();
         view.DataContext = vm;
 
         window.Content = view;
@@ -634,13 +592,13 @@ public class ResourceListViewModelTests : IDisposable
     [AvaloniaFact(DisplayName = "Single select with sort due to update")]
     public async Task single_select_with_sort_preserves_only_selected()
     {
-        var window = CreateWindow();
-        var cluster = await CreateClusterAsync();
+        var window = TestDisposables.CreateTestWindow();
+        var cluster = await Application.Current.CreateClusterAsync(TestDisposables);
 
-        var vm = GetRequiredService<ResourceListViewModel<Corev1Event>>();
+        var vm = Application.Current.GetRequiredTestService<ResourceListViewModel<Corev1Event>>();
         vm.Initialize(cluster);
 
-        var view = GetRequiredService<ResourceListView>();
+        var view = Application.Current.GetRequiredTestService<ResourceListView>();
         view.DataContext = vm;
 
         window.Content = view;
@@ -683,13 +641,13 @@ public class ResourceListViewModelTests : IDisposable
     [AvaloniaFact(DisplayName = "All select with sort due to update")]
     public async Task all_select_with_sort_preserves_all_selected()
     {
-        var window = CreateWindow();
-        var cluster = await CreateClusterAsync();
+        var window = TestDisposables.CreateTestWindow();
+        var cluster = await Application.Current.CreateClusterAsync(TestDisposables);
 
-        var vm = GetRequiredService<ResourceListViewModel<Corev1Event>>();
+        var vm = Application.Current.GetRequiredTestService<ResourceListViewModel<Corev1Event>>();
         vm.Initialize(cluster);
 
-        var view = GetRequiredService<ResourceListView>();
+        var view = Application.Current.GetRequiredTestService<ResourceListView>();
         view.DataContext = vm;
 
         window.Content = view;
@@ -736,14 +694,14 @@ public class ResourceListViewModelTests : IDisposable
     [AvaloniaFact(DisplayName = "Update check DataGrid Text update")]
     public async Task UpdateResourceTextBox()
     {
-        var window = CreateWindow();
+        var window = TestDisposables.CreateTestWindow();
 
-        var cluster = await CreateClusterAsync();
+        var cluster = await Application.Current.CreateClusterAsync(TestDisposables);
 
-        var vm = GetRequiredService<ResourceListViewModel<V1Pod>>();
+        var vm = Application.Current.GetRequiredTestService<ResourceListViewModel<V1Pod>>();
         vm.Initialize(cluster);
 
-        var view = GetRequiredService<ResourceListView>();
+        var view = Application.Current.GetRequiredTestService<ResourceListView>();
         view.DataContext = vm;
 
         window.Content = view;
@@ -774,15 +732,15 @@ public class ResourceListViewModelTests : IDisposable
     [AvaloniaFact(DisplayName = "Update check DataGrid Text update2")]
     public async Task UpdateResourceTextBox2()
     {
-        var window = CreateWindow();
+        var window = TestDisposables.CreateTestWindow();
 
-        var cluster = await CreateClusterAsync();
+        var cluster = await Application.Current.CreateClusterAsync(TestDisposables);
 
-        var vm = GetRequiredService<ResourceListViewModel<V1Namespace>>();
+        var vm = Application.Current.GetRequiredTestService<ResourceListViewModel<V1Namespace>>();
         vm.Initialize(cluster);
         await cluster.Runtime.SeedResource<V1Namespace>(true);
 
-        var view = GetRequiredService<ResourceListView>();
+        var view = Application.Current.GetRequiredTestService<ResourceListView>();
         view.DataContext = vm;
 
         window.Content = view;
@@ -820,7 +778,7 @@ public class ResourceListViewModelTests : IDisposable
         {
             var namespaceIndex = vm.View.Cast<V1Namespace>().ToList().FindIndex(item =>
                 item.Name() == "a" &&
-                item.Metadata.Labels?.TryGetValue("test", out string? value) == true &&
+                item.Metadata.Labels?.TryGetValue("test", out var value) == true &&
                 value == "value");
             return namespaceIndex >= 0 && GetResourceCellText<V1Namespace>(grid, "a", 1)?.Contains("test=value", StringComparison.OrdinalIgnoreCase) == true;
         });
@@ -833,13 +791,13 @@ public class ResourceListViewModelTests : IDisposable
     [AvaloniaFact(DisplayName = "Mutable sort updates keep the resource list live")]
     public async Task mutable_sort_updates_keep_the_resource_list_live()
     {
-        var window = CreateWindow();
-        var cluster = await CreateClusterAsync();
+        var window = TestDisposables.CreateTestWindow();
+        var cluster = await Application.Current.CreateClusterAsync(TestDisposables);
 
-        var vm = GetRequiredService<ResourceListViewModel<Corev1Event>>();
+        var vm = Application.Current.GetRequiredTestService<ResourceListViewModel<Corev1Event>>();
         vm.Initialize(cluster);
 
-        var view = GetRequiredService<ResourceListView>();
+        var view = Application.Current.GetRequiredTestService<ResourceListView>();
         view.DataContext = vm;
 
         window.Content = view;
@@ -905,13 +863,13 @@ public class ResourceListViewModelTests : IDisposable
     [AvaloniaFact(DisplayName = "Resource list columns expose filter buttons")]
     public async Task resource_list_columns_expose_filter_buttons()
     {
-        var window = CreateWindow();
-        var cluster = await CreateClusterAsync();
+        var window = TestDisposables.CreateTestWindow();
+        var cluster = await Application.Current.CreateClusterAsync(TestDisposables);
 
-        var vm = GetRequiredService<ResourceListViewModel<V1Pod>>();
+        var vm = Application.Current.GetRequiredTestService<ResourceListViewModel<V1Pod>>();
         vm.Initialize(cluster);
 
-        var view = GetRequiredService<ResourceListView>();
+        var view = Application.Current.GetRequiredTestService<ResourceListView>();
         view.DataContext = vm;
 
         window.Content = view;
@@ -928,14 +886,14 @@ public class ResourceListViewModelTests : IDisposable
     [AvaloniaFact(DisplayName = "Resource list filter flyout rows align editors")]
     public async Task resource_list_filter_flyout_rows_align_editors()
     {
-        var flyoutFactory = GetRequiredService<DataGridColumnFilterFlyoutFactory>();
+        var flyoutFactory = Application.Current.GetRequiredTestService<DataGridColumnFilterFlyoutFactory>();
 
-        var textCluster = await CreateClusterAsync();
-        var textVm = GetRequiredService<ResourceListViewModel<V1Pod>>();
+        var textCluster = await Application.Current.CreateClusterAsync(TestDisposables);
+        var textVm = Application.Current.GetRequiredTestService<ResourceListViewModel<V1Pod>>();
         textVm.Initialize(textCluster);
-        var textView = GetRequiredService<ResourceListView>();
+        var textView = Application.Current.GetRequiredTestService<ResourceListView>();
         textView.DataContext = textVm;
-        var textWindow = CreateWindow(content: textView);
+        var textWindow = TestDisposables.CreateTestWindow(content: textView);
         textWindow.Show();
 
         var textColumn = textVm.ColumnDefinitions.First(column => column.ValueType == typeof(string));
@@ -951,12 +909,12 @@ public class ResourceListViewModelTests : IDisposable
         textPanel.GetVisualDescendants().OfType<ComboBox>().First().HorizontalAlignment.ShouldBe(HorizontalAlignment.Stretch);
         textRows[1].Children.OfType<TextBox>().Single().HorizontalAlignment.ShouldBe(HorizontalAlignment.Stretch);
 
-        var numericCluster = await CreateClusterAsync();
-        var numericVm = GetRequiredService<ResourceListViewModel<Corev1Event>>();
+        var numericCluster = await Application.Current.CreateClusterAsync(TestDisposables);
+        var numericVm = Application.Current.GetRequiredTestService<ResourceListViewModel<Corev1Event>>();
         numericVm.Initialize(numericCluster);
-        var numericView = GetRequiredService<ResourceListView>();
+        var numericView = Application.Current.GetRequiredTestService<ResourceListView>();
         numericView.DataContext = numericVm;
-        var numericWindow = CreateWindow(content: numericView);
+        var numericWindow = TestDisposables.CreateTestWindow(content: numericView);
         numericWindow.Show();
 
         var numericColumn = numericVm.ColumnDefinitions.First(column => string.Equals(column.Header?.ToString(), "Count", StringComparison.Ordinal));
@@ -980,12 +938,12 @@ public class ResourceListViewModelTests : IDisposable
         numericValueRow.Children.OfType<TextBlock>().Single().Width.ShouldBe(numericRangeRow.Children.OfType<TextBlock>().Single().Width);
         numericRows[0].Children.OfType<TextBlock>().Single().Text.ShouldBe(Assets.Resources.DataGridFilterFlyout_Condition);
 
-        var dateCluster = await CreateClusterAsync();
-        var dateVm = GetRequiredService<ResourceListViewModel<Corev1Event>>();
+        var dateCluster = await Application.Current.CreateClusterAsync(TestDisposables);
+        var dateVm = Application.Current.GetRequiredTestService<ResourceListViewModel<Corev1Event>>();
         dateVm.Initialize(dateCluster);
-        var dateView = GetRequiredService<ResourceListView>();
+        var dateView = Application.Current.GetRequiredTestService<ResourceListView>();
         dateView.DataContext = dateVm;
-        var dateWindow = CreateWindow(content: dateView);
+        var dateWindow = TestDisposables.CreateTestWindow(content: dateView);
         dateWindow.Show();
 
         var dateColumn = dateVm.ColumnDefinitions.First(column => string.Equals(column.Header?.ToString(), Assets.Resources.V1EventConfig_Last_Seen, StringComparison.Ordinal));
@@ -1005,7 +963,7 @@ public class ResourceListViewModelTests : IDisposable
         var enumDataGridColumn = new DataGridControlTemplateColumnDefinition();
         var enumFlyout = flyoutFactory.Create(enumColumnDefinition, enumDataGridColumn, new FilteringModel()).ShouldBeOfType<Flyout>();
         var enumHost = new Button();
-        var enumWindow = CreateWindow(content: enumHost);
+        var enumWindow = TestDisposables.CreateTestWindow(content: enumHost);
         enumWindow.Show();
         enumFlyout.ShowAt(enumHost);
         Dispatcher.UIThread.RunJobs();
@@ -1022,14 +980,14 @@ public class ResourceListViewModelTests : IDisposable
     [AvaloniaFact(DisplayName = "Resource list numeric and date filters support comparison operators")]
     public async Task resource_list_numeric_and_date_filters_support_comparison_operators()
     {
-        var window = CreateWindow();
-        var cluster = await CreateClusterAsync();
-        var filterService = GetRequiredService<DataGridColumnFilterService>();
+        var window = TestDisposables.CreateTestWindow();
+        var cluster = await Application.Current.CreateClusterAsync(TestDisposables);
+        var filterService = Application.Current.GetRequiredTestService<DataGridColumnFilterService>();
 
-        var vm = GetRequiredService<ResourceListViewModel<Corev1Event>>();
+        var vm = Application.Current.GetRequiredTestService<ResourceListViewModel<Corev1Event>>();
         vm.Initialize(cluster);
 
-        var view = GetRequiredService<ResourceListView>();
+        var view = Application.Current.GetRequiredTestService<ResourceListView>();
         view.DataContext = vm;
 
         window.Content = view;
@@ -1109,14 +1067,14 @@ public class ResourceListViewModelTests : IDisposable
     [AvaloniaFact(DisplayName = "Resource list filters update the live view")]
     public async Task resource_list_filters_update_the_live_view()
     {
-        var window = CreateWindow();
-        var cluster = await CreateClusterAsync();
-        var filterService = GetRequiredService<DataGridColumnFilterService>();
+        var window = TestDisposables.CreateTestWindow();
+        var cluster = await Application.Current.CreateClusterAsync(TestDisposables);
+        var filterService = Application.Current.GetRequiredTestService<DataGridColumnFilterService>();
 
-        var vm = GetRequiredService<ResourceListViewModel<V1Pod>>();
+        var vm = Application.Current.GetRequiredTestService<ResourceListViewModel<V1Pod>>();
         vm.Initialize(cluster);
 
-        var view = GetRequiredService<ResourceListView>();
+        var view = Application.Current.GetRequiredTestService<ResourceListView>();
         view.DataContext = vm;
 
         window.Content = view;
@@ -1155,14 +1113,14 @@ public class ResourceListViewModelTests : IDisposable
         vm.View.Count.ShouldBe(2);
         vm.View.OfType<V1Pod>().Select(pod => pod.Name()).ShouldBe(["beta", "gamma"]);
 
-        var countCluster = await CreateClusterAsync();
-        var countVm = GetRequiredService<ResourceListViewModel<Corev1Event>>();
+        var countCluster = await Application.Current.CreateClusterAsync(TestDisposables);
+        var countVm = Application.Current.GetRequiredTestService<ResourceListViewModel<Corev1Event>>();
         countVm.Initialize(countCluster);
 
-        var countView = GetRequiredService<ResourceListView>();
+        var countView = Application.Current.GetRequiredTestService<ResourceListView>();
         countView.DataContext = countVm;
 
-        var countWindow = CreateWindow(content: countView);
+        var countWindow = TestDisposables.CreateTestWindow(content: countView);
         countWindow.Show();
 
         var older = new Corev1Event
@@ -1212,13 +1170,13 @@ public class ResourceListViewModelTests : IDisposable
     [AvaloniaFact(DisplayName = "Text filter flyout apply command updates the live view")]
     public async Task text_filter_flyout_apply_command_updates_the_live_view()
     {
-        var window = CreateWindow();
-        var cluster = await CreateClusterAsync();
+        var window = TestDisposables.CreateTestWindow();
+        var cluster = await Application.Current.CreateClusterAsync(TestDisposables);
 
-        var vm = GetRequiredService<ResourceListViewModel<V1Pod>>();
+        var vm = Application.Current.GetRequiredTestService<ResourceListViewModel<V1Pod>>();
         vm.Initialize(cluster);
 
-        var view = GetRequiredService<ResourceListView>();
+        var view = Application.Current.GetRequiredTestService<ResourceListView>();
         view.DataContext = vm;
         window.Content = view;
         window.Show();
@@ -1254,13 +1212,13 @@ public class ResourceListViewModelTests : IDisposable
     [AvaloniaFact(DisplayName = "Namespace filter preserves selection when included")]
     public async Task namespace_filter_preserves_selection_when_included()
     {
-        var window = CreateWindow();
-        var cluster = await CreateClusterAsync();
+        var window = TestDisposables.CreateTestWindow();
+        var cluster = await Application.Current.CreateClusterAsync(TestDisposables);
 
-        var vm = GetRequiredService<ResourceListViewModel<V1Pod>>();
+        var vm = Application.Current.GetRequiredTestService<ResourceListViewModel<V1Pod>>();
         vm.Initialize(cluster);
 
-        var view = GetRequiredService<ResourceListView>();
+        var view = Application.Current.GetRequiredTestService<ResourceListView>();
         view.DataContext = vm;
 
         window.Content = view;
@@ -1282,13 +1240,13 @@ public class ResourceListViewModelTests : IDisposable
     [AvaloniaFact(DisplayName = "Namespace filter applies when opening another resource list")]
     public async Task namespace_filter_applies_when_opening_another_resource_list()
     {
-        var window = CreateWindow();
-        var cluster = await CreateClusterAsync();
+        var window = TestDisposables.CreateTestWindow();
+        var cluster = await Application.Current.CreateClusterAsync(TestDisposables);
 
-        var podVm = GetRequiredService<ResourceListViewModel<V1Pod>>();
+        var podVm = Application.Current.GetRequiredTestService<ResourceListViewModel<V1Pod>>();
         podVm.Initialize(cluster);
 
-        var view = GetRequiredService<ResourceListView>();
+        var view = Application.Current.GetRequiredTestService<ResourceListView>();
         view.DataContext = podVm;
         window.Content = view;
         window.Show();
@@ -1300,7 +1258,7 @@ public class ResourceListViewModelTests : IDisposable
         podVm.SelectedNamespaces.Add(NamespaceResource("ns1"));
         Dispatcher.UIThread.RunJobs();
 
-        var deploymentVm = GetRequiredService<ResourceListViewModel<V1Deployment>>();
+        var deploymentVm = Application.Current.GetRequiredTestService<ResourceListViewModel<V1Deployment>>();
         deploymentVm.Initialize(cluster);
         deploymentVm.IsNamespaceSelectionLinked = podVm.IsNamespaceSelectionLinked;
         deploymentVm.SelectedNamespaces.Add(podVm.SelectedNamespaces[0]);
@@ -1319,12 +1277,12 @@ public class ResourceListViewModelTests : IDisposable
     [AvaloniaFact(DisplayName = "Reopening a list does not restore stale managed filters")]
     public async Task reopening_list_does_not_restore_stale_managed_filters()
     {
-        var window = CreateWindow();
-        var cluster = await CreateClusterAsync();
+        var window = TestDisposables.CreateTestWindow();
+        var cluster = await Application.Current.CreateClusterAsync(TestDisposables);
 
-        var podVm = GetRequiredService<ResourceListViewModel<V1Pod>>();
+        var podVm = Application.Current.GetRequiredTestService<ResourceListViewModel<V1Pod>>();
         podVm.Initialize(cluster);
-        var podView = GetRequiredService<ResourceListView>();
+        var podView = Application.Current.GetRequiredTestService<ResourceListView>();
         podView.DataContext = podVm;
 
         window.Content = podView;
@@ -1338,16 +1296,16 @@ public class ResourceListViewModelTests : IDisposable
         podVm.View.Count.ShouldBe(1);
         GetNamespaceFilterValues(podVm).ShouldBe(["a"]);
 
-        var filterService = GetRequiredService<DataGridColumnFilterService>();
+        var filterService = Application.Current.GetRequiredTestService<DataGridColumnFilterService>();
         var nameColumn = podVm.ColumnDefinitions.First(column => Equals(column.ColumnKey, "name"));
         filterService.ApplyTextFilter(podVm.FilteringModel, nameColumn, GetTextOperator(FilteringOperator.Contains), "pod-a");
         podVm.SearchQuery = "pod-a";
         Dispatcher.UIThread.RunJobs();
 
-        var deploymentVm = GetRequiredService<ResourceListViewModel<V1Deployment>>();
+        var deploymentVm = Application.Current.GetRequiredTestService<ResourceListViewModel<V1Deployment>>();
         deploymentVm.Initialize(cluster);
         await cluster.Runtime.SeedResource<V1Deployment>(true);
-        var deploymentView = GetRequiredService<ResourceListView>();
+        var deploymentView = Application.Current.GetRequiredTestService<ResourceListView>();
         deploymentView.DataContext = deploymentVm;
 
         window.Content = deploymentView;
@@ -1375,12 +1333,12 @@ public class ResourceListViewModelTests : IDisposable
     [AvaloniaFact(DisplayName = "Reattaching a list preserves the current namespace scope filter")]
     public async Task reattaching_list_preserves_current_namespace_scope_filter()
     {
-        var window = CreateWindow();
-        var cluster = await CreateClusterAsync();
+        var window = TestDisposables.CreateTestWindow();
+        var cluster = await Application.Current.CreateClusterAsync(TestDisposables);
 
-        var vm = GetRequiredService<ResourceListViewModel<V1Pod>>();
+        var vm = Application.Current.GetRequiredTestService<ResourceListViewModel<V1Pod>>();
         vm.Initialize(cluster);
-        var view = GetRequiredService<ResourceListView>();
+        var view = Application.Current.GetRequiredTestService<ResourceListView>();
         view.DataContext = vm;
 
         window.Content = view;
@@ -1407,13 +1365,13 @@ public class ResourceListViewModelTests : IDisposable
     [AvaloniaFact(DisplayName = "Namespace filter clears item when selection filtered out")]
     public async Task namespace_filter_clears_item_when_selection_filtered_out()
     {
-        var window = CreateWindow();
-        var cluster = await CreateClusterAsync();
+        var window = TestDisposables.CreateTestWindow();
+        var cluster = await Application.Current.CreateClusterAsync(TestDisposables);
 
-        var vm = GetRequiredService<ResourceListViewModel<V1Pod>>();
+        var vm = Application.Current.GetRequiredTestService<ResourceListViewModel<V1Pod>>();
         vm.Initialize(cluster);
 
-        var view = GetRequiredService<ResourceListView>();
+        var view = Application.Current.GetRequiredTestService<ResourceListView>();
         view.DataContext = vm;
 
         window.Content = view;
@@ -1441,13 +1399,13 @@ public class ResourceListViewModelTests : IDisposable
     [AvaloniaFact(DisplayName = "Namespace filter updates context menu selection")]
     public async Task namespace_filter_updates_context_menu_selection()
     {
-        var window = CreateWindow();
-        var cluster = await CreateClusterAsync();
+        var window = TestDisposables.CreateTestWindow();
+        var cluster = await Application.Current.CreateClusterAsync(TestDisposables);
 
-        var vm = GetRequiredService<ResourceListViewModel<V1Pod>>();
+        var vm = Application.Current.GetRequiredTestService<ResourceListViewModel<V1Pod>>();
         vm.Initialize(cluster);
 
-        var view = GetRequiredService<ResourceListView>();
+        var view = Application.Current.GetRequiredTestService<ResourceListView>();
         view.DataContext = vm;
 
         window.Content = view;
@@ -1497,10 +1455,10 @@ public class ResourceListViewModelTests : IDisposable
     [AvaloniaFact(DisplayName = "Resource list enum filters render a selector")]
     public async Task resource_list_enum_filters_render_a_selector()
     {
-        var filterService = GetRequiredService<DataGridColumnFilterService>();
-        var flyoutFactory = GetRequiredService<DataGridColumnFilterFlyoutFactory>();
-        var vm = GetRequiredService<ResourceListViewModel<V1Pod>>();
-        var cluster = await CreateClusterAsync();
+        var filterService = Application.Current.GetRequiredTestService<DataGridColumnFilterService>();
+        var flyoutFactory = Application.Current.GetRequiredTestService<DataGridColumnFilterFlyoutFactory>();
+        var vm = Application.Current.GetRequiredTestService<ResourceListViewModel<V1Pod>>();
+        var cluster = await Application.Current.CreateClusterAsync(TestDisposables);
         vm.Initialize(cluster);
 
         var column = new TestEnumColumnDefinition();
@@ -1508,7 +1466,7 @@ public class ResourceListViewModelTests : IDisposable
 
         var flyout = flyoutFactory.Create(column, dataGridColumn, vm.FilteringModel).ShouldBeOfType<Flyout>();
         var host = new Button();
-        var window = CreateWindow(content: host);
+        var window = TestDisposables.CreateTestWindow(content: host);
         window.Show();
         flyout.ShowAt(host);
         Dispatcher.UIThread.RunJobs();
@@ -1539,10 +1497,10 @@ public class ResourceListViewModelTests : IDisposable
     [AvaloniaFact(DisplayName = "Namespace filter is linked to cluster by default")]
     public async Task namespace_filter_is_linked_to_cluster_by_default()
     {
-        var cluster = await CreateClusterAsync();
+        var cluster = await Application.Current.CreateClusterAsync(TestDisposables);
         cluster.SelectedNamespaces.Add(NamespaceResource("team-a"));
 
-        var vm = GetRequiredService<ResourceListViewModel<V1Pod>>();
+        var vm = Application.Current.GetRequiredTestService<ResourceListViewModel<V1Pod>>();
         vm.Initialize(cluster);
 
         vm.IsNamespaceSelectionLinked.ShouldBeTrue();
@@ -1558,10 +1516,10 @@ public class ResourceListViewModelTests : IDisposable
     [AvaloniaFact(DisplayName = "Namespace filter can be decoupled from cluster selection")]
     public async Task namespace_filter_can_be_decoupled_from_cluster_selection()
     {
-        var cluster = await CreateClusterAsync();
+        var cluster = await Application.Current.CreateClusterAsync(TestDisposables);
         cluster.SelectedNamespaces.Add(NamespaceResource("team-a"));
 
-        var vm = GetRequiredService<ResourceListViewModel<V1Pod>>();
+        var vm = Application.Current.GetRequiredTestService<ResourceListViewModel<V1Pod>>();
         vm.Initialize(cluster);
 
         vm.IsNamespaceSelectionLinked = false;
@@ -1585,10 +1543,10 @@ public class ResourceListViewModelTests : IDisposable
     [AvaloniaFact(DisplayName = "Namespace filter relinks back to cluster selection")]
     public async Task namespace_filter_relinks_back_to_cluster_selection()
     {
-        var cluster = await CreateClusterAsync();
+        var cluster = await Application.Current.CreateClusterAsync(TestDisposables);
         cluster.SelectedNamespaces.Add(NamespaceResource("team-a"));
 
-        var vm = GetRequiredService<ResourceListViewModel<V1Pod>>();
+        var vm = Application.Current.GetRequiredTestService<ResourceListViewModel<V1Pod>>();
         vm.Initialize(cluster);
         vm.IsNamespaceSelectionLinked = false;
         vm.SelectedNamespaces.Clear();
@@ -1606,14 +1564,14 @@ public class ResourceListViewModelTests : IDisposable
     [AvaloniaFact(DisplayName = "Clearing namespace column filter preserves namespace scope filter")]
     public async Task clearing_namespace_column_filter_preserves_namespace_scope_filter()
     {
-        var window = CreateWindow();
-        var cluster = await CreateClusterAsync();
-        var filterService = GetRequiredService<DataGridColumnFilterService>();
+        var window = TestDisposables.CreateTestWindow();
+        var cluster = await Application.Current.CreateClusterAsync(TestDisposables);
+        var filterService = Application.Current.GetRequiredTestService<DataGridColumnFilterService>();
 
-        var vm = GetRequiredService<ResourceListViewModel<V1Pod>>();
+        var vm = Application.Current.GetRequiredTestService<ResourceListViewModel<V1Pod>>();
         vm.Initialize(cluster);
 
-        var view = GetRequiredService<ResourceListView>();
+        var view = Application.Current.GetRequiredTestService<ResourceListView>();
         view.DataContext = vm;
 
         window.Content = view;
@@ -1649,9 +1607,9 @@ public class ResourceListViewModelTests : IDisposable
     [AvaloniaFact(DisplayName = "Pod-specific actions are hidden for multi-select")]
     public async Task pod_specific_actions_are_hidden_for_multi_select()
     {
-        var cluster = await CreateClusterAsync();
+        var cluster = await Application.Current.CreateClusterAsync(TestDisposables);
 
-        var vm = GetRequiredService<ResourceListViewModel<V1Pod>>();
+        var vm = Application.Current.GetRequiredTestService<ResourceListViewModel<V1Pod>>();
         vm.Initialize(cluster);
 
         var podA = Pod("ns1", "a");
@@ -1681,14 +1639,14 @@ public class ResourceListViewModelTests : IDisposable
     [AvaloniaFact(DisplayName = "Delete Resource")]
     public async Task delete_resource()
     {
-        var window = CreateWindow();
+        var window = TestDisposables.CreateTestWindow();
 
-        var cluster = await CreateClusterAsync();
+        var cluster = await Application.Current.CreateClusterAsync(TestDisposables);
 
-        var vm = GetRequiredService<ResourceListViewModel<V1Pod>>();
+        var vm = Application.Current.GetRequiredTestService<ResourceListViewModel<V1Pod>>();
         vm.Initialize(cluster);
 
-        var view = GetRequiredService<ResourceListView>();
+        var view = Application.Current.GetRequiredTestService<ResourceListView>();
         view.DataContext = vm;
 
         window.Content = view;
@@ -1709,7 +1667,7 @@ public class ResourceListViewModelTests : IDisposable
     [AvaloniaFact(DisplayName = "Reattach keeps only saved sort descriptors")]
     public async Task reattach_keeps_only_saved_sort_descriptors()
     {
-        var factory = GetRequiredService<IFactory>();
+        var factory = Application.Current.GetRequiredTestService<IFactory>();
         var layout = factory.CreateLayout();
         factory.InitLayout(layout);
         var documents = factory.GetDockable<IDocumentDock>("Documents");
@@ -1720,16 +1678,16 @@ public class ResourceListViewModelTests : IDisposable
             Layout = layout,
         };
 
-        var window = CreateWindow(content: dockControl);
-        var cluster = await CreateClusterAsync();
+        var window = TestDisposables.CreateTestWindow(content: dockControl);
+        var cluster = await Application.Current.CreateClusterAsync(TestDisposables);
         await cluster.Runtime.DeleteResource(NamespaceResource("default"));
 
-        var vm = GetRequiredService<ResourceListViewModel<V1Namespace>>();
+        var vm = Application.Current.GetRequiredTestService<ResourceListViewModel<V1Namespace>>();
         vm.Initialize(cluster);
 
         window.Show();
 
-        var otherDockable = GetRequiredService<AboutViewModel>();
+        var otherDockable = Application.Current.GetRequiredTestService<AboutViewModel>();
         otherDockable.Id = nameof(AboutViewModel);
 
         factory.AddToDocuments(vm);
@@ -1789,7 +1747,7 @@ public class ResourceListViewModelTests : IDisposable
     [AvaloniaFact(DisplayName = "Switching document tabs preserves DataGrid scroll offset")]
     public async Task switching_document_tabs_preserves_datagrid_scroll_offset()
     {
-        var factory = GetRequiredService<IFactory>();
+        var factory = Application.Current.GetRequiredTestService<IFactory>();
         var layout = factory.CreateLayout();
         factory.InitLayout(layout);
         var documents = factory.GetDockable<IDocumentDock>("Documents");
@@ -1800,15 +1758,15 @@ public class ResourceListViewModelTests : IDisposable
             Layout = layout,
         };
 
-        var window = CreateWindow(height: 900, content: dockControl);
-        var cluster = await CreateClusterAsync();
+        var window = TestDisposables.CreateTestWindow(height: 900, content: dockControl);
+        var cluster = await Application.Current.CreateClusterAsync(TestDisposables);
 
-        var vm = GetRequiredService<ResourceListViewModel<V1Pod>>();
+        var vm = Application.Current.GetRequiredTestService<ResourceListViewModel<V1Pod>>();
         vm.Initialize(cluster);
 
         window.Show();
 
-        var otherDockable = GetRequiredService<AboutViewModel>();
+        var otherDockable = Application.Current.GetRequiredTestService<AboutViewModel>();
         otherDockable.Id = nameof(AboutViewModel);
 
         factory.AddToDocuments(vm);
@@ -1880,7 +1838,7 @@ public class ResourceListViewModelTests : IDisposable
     [AvaloniaFact(DisplayName = "Reattach captures runtime state and restores on reattach")]
     public async Task reattach_captures_runtime_state_and_restores_on_reattach()
     {
-        var factory = GetRequiredService<IFactory>();
+        var factory = Application.Current.GetRequiredTestService<IFactory>();
         var layout = factory.CreateLayout();
         factory.InitLayout(layout);
         var documents = factory.GetDockable<IDocumentDock>("Documents");
@@ -1891,16 +1849,16 @@ public class ResourceListViewModelTests : IDisposable
             Layout = layout,
         };
 
-        var window = CreateWindow(content: dockControl);
-        var cluster = await CreateClusterAsync();
+        var window = TestDisposables.CreateTestWindow(content: dockControl);
+        var cluster = await Application.Current.CreateClusterAsync(TestDisposables);
         await cluster.Runtime.DeleteResource(NamespaceResource("default"));
 
-        var vm = GetRequiredService<ResourceListViewModel<V1Namespace>>();
+        var vm = Application.Current.GetRequiredTestService<ResourceListViewModel<V1Namespace>>();
         vm.Initialize(cluster);
 
         window.Show();
 
-        var otherDockable = GetRequiredService<AboutViewModel>();
+        var otherDockable = Application.Current.GetRequiredTestService<AboutViewModel>();
         otherDockable.Id = nameof(AboutViewModel);
 
         factory.AddToDocuments(vm);
@@ -1954,13 +1912,13 @@ public class ResourceListViewModelTests : IDisposable
     [AvaloniaFact(DisplayName = "Restoring DataGrid state preserves column widths")]
     public async Task restoring_datagrid_state_preserves_column_widths()
     {
-        var window = CreateWindow();
-        var cluster = await CreateClusterAsync();
+        var window = TestDisposables.CreateTestWindow();
+        var cluster = await Application.Current.CreateClusterAsync(TestDisposables);
 
-        var vm = GetRequiredService<ResourceListViewModel<V1Pod>>();
+        var vm = Application.Current.GetRequiredTestService<ResourceListViewModel<V1Pod>>();
         vm.Initialize(cluster);
 
-        var view = GetRequiredService<ResourceListView>();
+        var view = Application.Current.GetRequiredTestService<ResourceListView>();
         view.DataContext = vm;
         window.Content = view;
         window.Show();
@@ -1986,7 +1944,7 @@ public class ResourceListViewModelTests : IDisposable
         window.Content = null;
         Dispatcher.UIThread.RunJobs();
 
-        var restoredView = GetRequiredService<ResourceListView>();
+        var restoredView = Application.Current.GetRequiredTestService<ResourceListView>();
         restoredView.DataContext = vm;
         window.Content = restoredView;
         Dispatcher.UIThread.RunJobs();
@@ -2004,13 +1962,13 @@ public class ResourceListViewModelTests : IDisposable
     [AvaloniaFact(DisplayName = "Restoring DataGrid state enforces the grid minimum column width")]
     public async Task restoring_datagrid_state_enforces_grid_minimum_column_width()
     {
-        var window = CreateWindow();
-        var cluster = await CreateClusterAsync();
+        var window = TestDisposables.CreateTestWindow();
+        var cluster = await Application.Current.CreateClusterAsync(TestDisposables);
 
-        var vm = GetRequiredService<ResourceListViewModel<V1Pod>>();
+        var vm = Application.Current.GetRequiredTestService<ResourceListViewModel<V1Pod>>();
         vm.Initialize(cluster);
 
-        var view = GetRequiredService<ResourceListView>();
+        var view = Application.Current.GetRequiredTestService<ResourceListView>();
         view.DataContext = vm;
         window.Content = view;
         window.Show();
@@ -2033,7 +1991,7 @@ public class ResourceListViewModelTests : IDisposable
             FrozenColumnCountRight = vm.DataGridRuntimeState.Columns.FrozenColumnCountRight
         };
 
-        var restoredView = GetRequiredService<ResourceListView>();
+        var restoredView = Application.Current.GetRequiredTestService<ResourceListView>();
         restoredView.DataContext = vm;
         window.Content = restoredView;
         Dispatcher.UIThread.RunJobs();
@@ -2050,13 +2008,13 @@ public class ResourceListViewModelTests : IDisposable
     [AvaloniaFact(DisplayName = "Restoring DataGrid state handles DataContext assigned after attachment")]
     public async Task restoring_datagrid_state_handles_datacontext_assigned_after_attachment()
     {
-        var window = CreateWindow();
-        var cluster = await CreateClusterAsync();
+        var window = TestDisposables.CreateTestWindow();
+        var cluster = await Application.Current.CreateClusterAsync(TestDisposables);
 
-        var vm = GetRequiredService<ResourceListViewModel<V1Pod>>();
+        var vm = Application.Current.GetRequiredTestService<ResourceListViewModel<V1Pod>>();
         vm.Initialize(cluster);
 
-        var view = GetRequiredService<ResourceListView>();
+        var view = Application.Current.GetRequiredTestService<ResourceListView>();
         view.DataContext = vm;
         window.Content = view;
         window.Show();
@@ -2074,11 +2032,11 @@ public class ResourceListViewModelTests : IDisposable
         Dispatcher.UIThread.RunJobs();
         vm.DataGridRuntimeState.ShouldNotBeNull();
 
-        var replacementVm = GetRequiredService<ResourceListViewModel<V1Pod>>();
+        var replacementVm = Application.Current.GetRequiredTestService<ResourceListViewModel<V1Pod>>();
         replacementVm.Initialize(cluster);
         replacementVm.DataGridRuntimeState = vm.DataGridRuntimeState;
 
-        var restoredView = GetRequiredService<ResourceListView>();
+        var restoredView = Application.Current.GetRequiredTestService<ResourceListView>();
         restoredView.DataContext = vm;
         window.Content = restoredView;
         Dispatcher.UIThread.RunJobs();
@@ -2094,13 +2052,13 @@ public class ResourceListViewModelTests : IDisposable
     [AvaloniaFact(DisplayName = "Saving DataGrid state preserves column width changes when scroll state is unavailable")]
     public async Task saving_datagrid_state_preserves_column_width_changes_when_scroll_state_is_unavailable()
     {
-        var window = CreateWindow();
-        var cluster = await CreateClusterAsync();
+        var window = TestDisposables.CreateTestWindow();
+        var cluster = await Application.Current.CreateClusterAsync(TestDisposables);
 
-        var vm = GetRequiredService<ResourceListViewModel<V1Pod>>();
+        var vm = Application.Current.GetRequiredTestService<ResourceListViewModel<V1Pod>>();
         vm.Initialize(cluster);
 
-        var view = GetRequiredService<ResourceListView>();
+        var view = Application.Current.GetRequiredTestService<ResourceListView>();
         view.DataContext = vm;
         window.Content = view;
         window.Show();
@@ -2118,7 +2076,7 @@ public class ResourceListViewModelTests : IDisposable
         vm.DataGridRuntimeState.ShouldNotBeNull();
         vm.DataGridRuntimeState!.Scroll = new DataGridScrollState();
 
-        var changedView = GetRequiredService<ResourceListView>();
+        var changedView = Application.Current.GetRequiredTestService<ResourceListView>();
         changedView.DataContext = vm;
         window.Content = changedView;
         Dispatcher.UIThread.RunJobs();
@@ -2132,7 +2090,7 @@ public class ResourceListViewModelTests : IDisposable
         window.Content = null;
         Dispatcher.UIThread.RunJobs();
 
-        var restoredView = GetRequiredService<ResourceListView>();
+        var restoredView = Application.Current.GetRequiredTestService<ResourceListView>();
         restoredView.DataContext = vm;
         window.Content = restoredView;
         Dispatcher.UIThread.RunJobs();
@@ -2145,15 +2103,15 @@ public class ResourceListViewModelTests : IDisposable
     [AvaloniaFact(DisplayName = "Namespace filter initializes from selected namespaces")]
     public async Task namespace_filter_initializes_from_selected_namespaces()
     {
-        var window = CreateWindow();
-        var cluster = await CreateClusterAsync();
+        var window = TestDisposables.CreateTestWindow();
+        var cluster = await Application.Current.CreateClusterAsync(TestDisposables);
 
         cluster.SelectedNamespaces.Add(NamespaceResource("default"));
 
-        var vm = GetRequiredService<ResourceListViewModel<V1Pod>>();
+        var vm = Application.Current.GetRequiredTestService<ResourceListViewModel<V1Pod>>();
         vm.Initialize(cluster);
 
-        var view = GetRequiredService<ResourceListView>();
+        var view = Application.Current.GetRequiredTestService<ResourceListView>();
         view.DataContext = vm;
 
         window.Content = view;
@@ -2170,16 +2128,16 @@ public class ResourceListViewModelTests : IDisposable
     [AvaloniaFact(DisplayName = "Namespace selector filters the resource list")]
     public async Task namespace_selector_filters_the_resource_list()
     {
-        var window = CreateWindow();
-        var cluster = await CreateClusterAsync();
+        var window = TestDisposables.CreateTestWindow();
+        var cluster = await Application.Current.CreateClusterAsync(TestDisposables);
 
         await AddOrUpdateAsync(cluster, NamespaceResource("ns1"));
         await AddOrUpdateAsync(cluster, NamespaceResource("ns2"));
 
-        var vm = GetRequiredService<ResourceListViewModel<V1Pod>>();
+        var vm = Application.Current.GetRequiredTestService<ResourceListViewModel<V1Pod>>();
         vm.Initialize(cluster);
 
-        var view = GetRequiredService<ResourceListView>();
+        var view = Application.Current.GetRequiredTestService<ResourceListView>();
         view.DataContext = vm;
 
         window.Content = view;
@@ -2228,9 +2186,9 @@ public class ResourceListViewModelTests : IDisposable
     [AvaloniaFact(DisplayName = "Search query is debounced before filtering view")]
     public async Task search_query_is_debounced_before_filtering_view()
     {
-        var cluster = await CreateClusterAsync();
+        var cluster = await Application.Current.CreateClusterAsync(TestDisposables);
 
-        var vm = GetRequiredService<ResourceListViewModel<V1Pod>>();
+        var vm = Application.Current.GetRequiredTestService<ResourceListViewModel<V1Pod>>();
         vm.Initialize(cluster);
 
         await AddOrUpdateAsync(cluster, Pod("ns", "alpha"));
@@ -2396,7 +2354,7 @@ internal sealed class FakeDoubleTapResourceListViewModel : IResourceListViewMode
     public GroupApiVersionKind Kind => GroupApiVersionKind.From<V1Pod>();
     public int ItemCount => View.Count;
     public string SearchQuery { get; set; } = string.Empty;
-    public ISettingsService SettingsService => Application.Current.GetTestServices().GetRequiredService<ISettingsService>();
+    public ISettingsService SettingsService => Application.Current.GetRequiredTestService<ISettingsService>();
     public IResourceConfig ResourceConfig { get; }
     public ObservableCollection<DataGridColumnDefinition> ColumnDefinitions { get; } = [];
     public IDataGridSortingAdapterFactory SortingAdapterFactory => throw new NotImplementedException();
@@ -2465,7 +2423,7 @@ internal sealed class FakeContextMenuResourceListViewModel : IResourceListViewMo
     public GroupApiVersionKind Kind => GroupApiVersionKind.From<V1Pod>();
     public int ItemCount => 0;
     public string SearchQuery { get; set; } = string.Empty;
-    public ISettingsService SettingsService => Application.Current.GetTestServices().GetRequiredService<ISettingsService>();
+    public ISettingsService SettingsService => Application.Current.GetRequiredTestService<ISettingsService>();
     public IResourceConfig ResourceConfig { get; }
     public ObservableCollection<DataGridColumnDefinition> ColumnDefinitions { get; } = [];
     public IDataGridSortingAdapterFactory SortingAdapterFactory => throw new NotImplementedException();

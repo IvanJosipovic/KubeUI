@@ -17,7 +17,7 @@ jobs:
           global-json-file: global.json
 
       - name: Build
-        run: dotnet build --configuration Release -p:WarningLevel=0
+        run: dotnet build --configuration Release --tl:off -clp:ErrorsOnly
 
       - name: Test
         run: |

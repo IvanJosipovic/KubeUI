@@ -31,7 +31,7 @@ public sealed class AksClusterService : IAksClusterService
     /// <inheritdoc />
     public async Task<AksAuthenticationStatus> GetAuthenticationStatusAsync(CancellationToken cancellationToken = default)
     {
-        AccessToken? azureCliToken = await TryGetTokenAsync(_azureCliCredential, cancellationToken).ConfigureAwait(false);
+        var azureCliToken = await TryGetTokenAsync(_azureCliCredential, cancellationToken).ConfigureAwait(false);
 
         return new AksAuthenticationStatus
         {
@@ -44,12 +44,12 @@ public sealed class AksClusterService : IAksClusterService
     /// <inheritdoc />
     public async Task<IReadOnlyList<AksSubscriptionInfo>> GetSubscriptionsAsync(CancellationToken cancellationToken = default)
     {
-        ArmClient armClient = CreateArmClient();
+        var armClient = CreateArmClient();
         List<AksSubscriptionInfo> result = [];
 
-        SubscriptionCollection subscriptions = armClient.GetSubscriptions();
+        var subscriptions = armClient.GetSubscriptions();
 
-        await foreach (SubscriptionResource subscription in subscriptions.GetAllAsync(cancellationToken).ConfigureAwait(false))
+        await foreach (var subscription in subscriptions.GetAllAsync(cancellationToken).ConfigureAwait(false))
         {
             result.Add(new AksSubscriptionInfo
             {
@@ -75,9 +75,9 @@ public sealed class AksClusterService : IAksClusterService
 
         await foreach (var resourceGroup in subscription.GetResourceGroups().GetAllAsync(cancellationToken: cancellationToken).ConfigureAwait(false))
         {
-            ContainerServiceManagedClusterCollection clusters = resourceGroup.GetContainerServiceManagedClusters();
+            var clusters = resourceGroup.GetContainerServiceManagedClusters();
 
-            await foreach (ContainerServiceManagedClusterResource cluster in clusters.GetAllAsync(cancellationToken: cancellationToken).ConfigureAwait(false))
+            await foreach (var cluster in clusters.GetAllAsync(cancellationToken: cancellationToken).ConfigureAwait(false))
             {
                 result.Add(new AksClusterInfo
                 {
@@ -110,13 +110,13 @@ public sealed class AksClusterService : IAksClusterService
             ? await clusterResource.GetClusterAdminCredentialsAsync(cluster.Fqdn, cancellationToken).ConfigureAwait(false)
             : await clusterResource.GetClusterUserCredentialsAsync(cluster.Fqdn, KubeConfigFormat.Exec, cancellationToken).ConfigureAwait(false);
 
-        ManagedClusterCredential? firstKubeConfig = response.Value.Kubeconfigs.FirstOrDefault();
+        var firstKubeConfig = response.Value.Kubeconfigs.FirstOrDefault();
         if (firstKubeConfig?.Value == null)
         {
             throw new InvalidOperationException("AKS did not return any kubeconfig data.");
         }
 
-        string decodedConfig = Encoding.UTF8.GetString(firstKubeConfig.Value);
+        var decodedConfig = Encoding.UTF8.GetString(firstKubeConfig.Value);
         var kubeConfig = Serialization.KubernetesYaml.Deserialize<K8SConfiguration>(decodedConfig);
         kubeConfig.FileName = string.Empty;
         NormalizeKubeConfigNames(kubeConfig, cluster.Name);
@@ -137,7 +137,7 @@ public sealed class AksClusterService : IAksClusterService
             return;
         }
 
-        foreach (Context context in kubeConfig.Contexts)
+        foreach (var context in kubeConfig.Contexts)
         {
             context.Name = clusterName;
 
@@ -147,7 +147,7 @@ public sealed class AksClusterService : IAksClusterService
             }
         }
 
-        foreach (k8s.KubeConfigModels.Cluster configuredCluster in kubeConfig.Clusters)
+        foreach (var configuredCluster in kubeConfig.Clusters)
         {
             configuredCluster.Name = clusterName;
         }
@@ -183,7 +183,7 @@ public sealed class AksClusterService : IAksClusterService
 
     private static string? TryGetJwtClaim(string jwt, string claimName)
     {
-        string[] parts = jwt.Split('.');
+        var parts = jwt.Split('.');
         if (parts.Length < 2)
         {
             return null;
@@ -191,17 +191,17 @@ public sealed class AksClusterService : IAksClusterService
 
         try
         {
-            string payload = parts[1];
+            var payload = parts[1];
             payload = payload.Replace('-', '+').Replace('_', '/');
-            int padding = (4 - payload.Length % 4) % 4;
+            var padding = (4 - payload.Length % 4) % 4;
             if (padding > 0)
             {
                 payload = payload + new string('=', padding);
             }
 
-            byte[] bytes = Convert.FromBase64String(payload);
-            using JsonDocument document = JsonDocument.Parse(bytes);
-            if (document.RootElement.TryGetProperty(claimName, out JsonElement claim))
+            var bytes = Convert.FromBase64String(payload);
+            using var document = JsonDocument.Parse(bytes);
+            if (document.RootElement.TryGetProperty(claimName, out var claim))
             {
                 return claim.GetString();
             }

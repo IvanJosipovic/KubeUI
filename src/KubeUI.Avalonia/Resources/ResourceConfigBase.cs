@@ -396,7 +396,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
 
         var result = await _dialogService.ShowContentDialogAsync(this, settings);
 
-        string sRestartControllerPatch = $$"""
+        var sRestartControllerPatch = $$"""
                 {
                     "spec": {
                         "template": {

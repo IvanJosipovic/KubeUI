@@ -25,7 +25,7 @@ public partial class Cluster
 
             var nodeMetricslist = await Client.GetKubernetesNodesMetricsAsync();
             NodeMetrics.Clear();
-            foreach (NodeMetrics item in nodeMetricslist.Items.OfType<NodeMetrics>())
+            foreach (var item in nodeMetricslist.Items.OfType<NodeMetrics>())
             {
                 NodeMetrics.Add(item);
             }
@@ -34,7 +34,7 @@ public partial class Cluster
 
             var podMetricsList = await Client.GetKubernetesPodsMetricsAsync();
             PodMetrics.Clear();
-            foreach (PodMetrics item in podMetricsList.Items.OfType<PodMetrics>())
+            foreach (var item in podMetricsList.Items.OfType<PodMetrics>())
             {
                 PodMetrics.Add(item);
             }

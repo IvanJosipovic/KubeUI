@@ -77,14 +77,14 @@ public class ClusterManagerTests
         manager.GetCluster("existing-context").ShouldNotBeNull();
 
         var importedConfig = CreateKubeConfig("imported-context", "imported-cluster", "imported-user", "https://imported.example.com");
-        string importedYaml = KubeUI.Kubernetes.Serialization.KubernetesYaml.Serialize(importedConfig);
+        var importedYaml = KubeUI.Kubernetes.Serialization.KubernetesYaml.Serialize(importedConfig);
         importedYaml.ShouldContain("imported-context");
         importedYaml.ShouldContain("imported-cluster");
 
         manager.ImportIntoKubeConfig(importedConfig);
         dispatcher.Drain();
 
-        string rawYaml = File.ReadAllText(kubeConfigPath);
+        var rawYaml = File.ReadAllText(kubeConfigPath);
         rawYaml.ShouldContain("imported-context");
         rawYaml.ShouldContain("imported-cluster");
 

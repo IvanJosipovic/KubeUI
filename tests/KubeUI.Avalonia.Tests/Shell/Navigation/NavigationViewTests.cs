@@ -15,9 +15,9 @@ public sealed class NavigationViewTests
     [AvaloniaFact]
     public async Task resource_count_assigned_after_template_creation_is_rendered()
     {
-        IServiceProvider services = Application.Current.GetTestServices();
-        TestClusterConfig config = services.GetRequiredService<TestClusterConfig>();
-        ClusterWorkspace workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var services = Application.Current.GetTestServices();
+        var config = services.GetRequiredService<TestClusterConfig>();
+        var workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         using var navigation = services.GetRequiredService<NavigationViewModel>();
         var clusterNode = new ClusterNavigationNode(workspace) { IsExpanded = true };
         var podsLink = new ResourceNavigationLink

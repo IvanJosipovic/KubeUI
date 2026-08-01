@@ -14,9 +14,8 @@ public sealed class ResourceEventsViewTests
     [AvaloniaFact]
     public async Task pre_attach_refresh_does_not_throw_when_dispatcher_flushes()
     {
+        using var workspace = await Application.Current.CreateClusterAsync();
         var services = Application.Current.GetTestServices();
-        ClusterWorkspace workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
-        await workspace.Connect();
 
         var view = ActivatorUtilities.CreateInstance<ResourceEventsView>(services);
         view.Initialize(workspace);
@@ -47,9 +46,8 @@ public sealed class ResourceEventsViewTests
     [AvaloniaFact]
     public async Task detached_resource_events_view_does_not_throw_when_data_context_changes()
     {
+        using var workspace = await Application.Current.CreateClusterAsync();
         var services = Application.Current.GetTestServices();
-        ClusterWorkspace workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
-        await workspace.Connect();
 
         var view = ActivatorUtilities.CreateInstance<ResourceEventsView>(services);
         view.Initialize(workspace);
@@ -89,9 +87,8 @@ public sealed class ResourceEventsViewTests
     [AvaloniaFact]
     public async Task refresh_keeps_a_stable_items_source_instance()
     {
+        using var workspace = await Application.Current.CreateClusterAsync();
         var services = Application.Current.GetTestServices();
-        ClusterWorkspace workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
-        await workspace.Connect();
 
         var view = ActivatorUtilities.CreateInstance<ResourceEventsView>(services);
         view.Initialize(workspace);
@@ -130,9 +127,8 @@ public sealed class ResourceEventsViewTests
     [AvaloniaFact]
     public async Task queued_update_during_teardown_does_not_throw()
     {
+        using var workspace = await Application.Current.CreateClusterAsync();
         var services = Application.Current.GetTestServices();
-        ClusterWorkspace workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
-        await workspace.Connect();
 
         var view = ActivatorUtilities.CreateInstance<ResourceEventsView>(services);
         view.Initialize(workspace);

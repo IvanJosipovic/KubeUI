@@ -33,7 +33,7 @@ internal sealed class FileSettingsPersistence : ISettingsPersistence
     {
         try
         {
-            string directory = SettingsDirectory;
+            var directory = SettingsDirectory;
             if (!EnsureDirectoryExists())
             {
                 return;

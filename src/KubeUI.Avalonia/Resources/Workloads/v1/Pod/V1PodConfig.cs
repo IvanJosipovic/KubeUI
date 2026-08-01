@@ -493,8 +493,8 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
             return;
         }
 
-        string? targetContainerName = parameters.Count > 1 ? GetContainerName(parameters[1]) : null;
-        string debugContainerImage = ServiceProvider.GetRequiredService<ISettingsService>()
+        var targetContainerName = parameters.Count > 1 ? GetContainerName(parameters[1]) : null;
+        var debugContainerImage = ServiceProvider.GetRequiredService<ISettingsService>()
             .Settings
             .GetClusterSettings(Cluster.Runtime)
             .DebugContainerImage;

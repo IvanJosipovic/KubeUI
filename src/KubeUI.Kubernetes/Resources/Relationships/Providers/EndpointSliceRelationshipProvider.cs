@@ -18,29 +18,29 @@ public sealed class EndpointSliceRelationshipProvider : IResourceRelationshipPro
             return;
         }
 
-        foreach (V1Endpoint endpoint in endpointSlice.Endpoints ?? [])
+        foreach (var endpoint in endpointSlice.Endpoints ?? [])
         {
-            V1ObjectReference? targetReference = endpoint.TargetRef;
+            var targetReference = endpoint.TargetRef;
             if (targetReference == null)
             {
                 continue;
             }
 
-            string? targetName = targetReference.Name;
+            var targetName = targetReference.Name;
             if (string.IsNullOrWhiteSpace(targetName))
             {
                 continue;
             }
 
-            string? targetNamespace = string.IsNullOrWhiteSpace(targetReference.NamespaceProperty)
+            var targetNamespace = string.IsNullOrWhiteSpace(targetReference.NamespaceProperty)
                 ? endpointSlice.Namespace()
                 : targetReference.NamespaceProperty;
-            if (!context.TryGetByGroupAndKind(string.Empty, V1Pod.KubeKind, out IReadOnlyList<IKubernetesObject<V1ObjectMeta>> pods))
+            if (!context.TryGetByGroupAndKind(string.Empty, V1Pod.KubeKind, out var pods))
             {
                 continue;
             }
 
-            IKubernetesObject<V1ObjectMeta>? target = pods.FirstOrDefault(pod => pod is V1Pod
+            var target = pods.FirstOrDefault(pod => pod is V1Pod
                 && string.Equals(pod.Name(), targetName, StringComparison.Ordinal)
                 && string.Equals(pod.Namespace(), targetNamespace, StringComparison.Ordinal));
             if (target is V1Pod)

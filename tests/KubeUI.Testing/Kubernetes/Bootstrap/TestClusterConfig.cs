@@ -27,7 +27,7 @@ public sealed class TestClusterConfig
 
     public Action<SocketsHttpHandler>? FirstMessageHandlerSetup { get; set; }
 
-    public TimeSpan ResponseLatency { get; set; } = TimeSpan.FromMilliseconds(50);
+    public TimeSpan ResponseLatency { get; set; }
 
     public bool ThrowOnConnect { get; set; }
 

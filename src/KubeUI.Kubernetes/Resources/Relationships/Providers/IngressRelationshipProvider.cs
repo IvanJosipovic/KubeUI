@@ -29,7 +29,7 @@ public sealed class IngressRelationshipProvider : IResourceRelationshipProvider
             ingress.Spec?.IngressClassName,
             ResourceRelationshipKind.Reference);
 
-        foreach (V1HTTPIngressPath path in ingress.Spec?.Rules?.SelectMany(x => x.Http?.Paths ?? []) ?? [])
+        foreach (var path in ingress.Spec?.Rules?.SelectMany(x => x.Http?.Paths ?? []) ?? [])
         {
             RelationshipProviderHelpers.AddByName(context, relationships, resource, "v1", V1Service.KubeKind, resource.Namespace(), path.Backend?.Service?.Name, ResourceRelationshipKind.Reference);
         }

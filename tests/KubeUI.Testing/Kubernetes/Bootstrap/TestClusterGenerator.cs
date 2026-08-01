@@ -34,7 +34,7 @@ public sealed class TestClusterGenerator : IAsyncDisposable
         ArgumentNullException.ThrowIfNull(config);
         cancellationToken.ThrowIfCancellationRequested();
 
-        TestCluster cluster = config.Type switch
+        var cluster = config.Type switch
         {
             KubernetesBackend.Fake => await CreateFakeAsync(config, cancellationToken).ConfigureAwait(false),
             KubernetesBackend.Kind => config.KubeConfig is null
@@ -66,7 +66,7 @@ public sealed class TestClusterGenerator : IAsyncDisposable
             _clusters.Clear();
         }
 
-        for (int index = clusters.Length - 1; index >= 0; index--)
+        for (var index = clusters.Length - 1; index >= 0; index--)
         {
             await clusters[index].DisposeAsync().ConfigureAwait(false);
         }
@@ -105,21 +105,21 @@ public sealed class TestClusterGenerator : IAsyncDisposable
             api.AddYaml(config.InitialYaml);
         }
 
-        K8SConfiguration kubeConfig = CreateFakeKubeConfig();
-        KubernetesClientConfiguration clientConfig = KubernetesClientConfiguration.BuildConfigFromConfigObject(
+        var kubeConfig = CreateFakeKubeConfig();
+        var clientConfig = KubernetesClientConfiguration.BuildConfigFromConfigObject(
             kubeConfig,
             kubeConfig.CurrentContext,
             masterUrl: "http://fake-kubernetes");
-        IReadOnlyCollection<DelegatingHandler> handlers = CreateHttpHandlers(config, out TestConditionHandler conditionHandler);
-        IKubernetes client = CreateClient(clientConfig, api, handlers);
-        TestCluster cluster = await CreateTestClusterAsync(client, kubeConfig, clientConfig, config, cancellationToken, _ =>
+        var handlers = CreateHttpHandlers(config, out _);
+        var client = CreateClient(clientConfig, api, handlers);
+        var cluster = await CreateTestClusterAsync(client, kubeConfig, clientConfig, config, cancellationToken, _ =>
         {
             api.Shutdown();
             return Task.CompletedTask;
-        }, api, conditionHandler).ConfigureAwait(false);
+        }, api).ConfigureAwait(false);
         cluster.Cluster.KubernetesClientFactory = configuration =>
         {
-            IReadOnlyCollection<DelegatingHandler> reconnectHandlers = CreateHttpHandlers(config, out _);
+            var reconnectHandlers = CreateHttpHandlers(config, out _);
             return CreateClient(configuration, api, reconnectHandlers);
         };
         return cluster;
@@ -132,15 +132,15 @@ public sealed class TestClusterGenerator : IAsyncDisposable
             throw new ArgumentException("A named kubeconfig cluster requires Name.", nameof(config));
         }
 
-        K8SConfiguration kubeConfig = config.KubeConfig
+        var kubeConfig = config.KubeConfig
             ?? throw new ArgumentException("A named kubeconfig cluster requires KubeConfig.", nameof(config));
-        KubernetesClientConfiguration clientConfig = KubernetesClientConfiguration.BuildConfigFromConfigObject(
+        var clientConfig = KubernetesClientConfiguration.BuildConfigFromConfigObject(
             kubeConfig,
             config.Name,
             masterUrl: null);
         clientConfig.FirstMessageHandlerSetup = config.FirstMessageHandlerSetup;
-        IReadOnlyCollection<DelegatingHandler> handlers = CreateHttpHandlers(config, out TestConditionHandler conditionHandler);
-        IKubernetes client = CreateClient(clientConfig, terminalHandler: null, handlers);
+        var handlers = CreateHttpHandlers(config, out _);
+        var client = CreateClient(clientConfig, terminalHandler: null, handlers);
         try
         {
             await ApplyResourcesAsync(client, config.InitialResources, cancellationToken).ConfigureAwait(false);
@@ -149,9 +149,9 @@ public sealed class TestClusterGenerator : IAsyncDisposable
             ApplyImpersonation(kubeConfig, config.AuthenticatedUser);
             clientConfig = KubernetesClientConfiguration.BuildConfigFromConfigObject(kubeConfig, config.Name, masterUrl: null);
             clientConfig.FirstMessageHandlerSetup = config.FirstMessageHandlerSetup;
-            handlers = CreateHttpHandlers(config, out conditionHandler);
+            handlers = CreateHttpHandlers(config, out _);
             client = CreateClient(clientConfig, terminalHandler: null, handlers);
-            return await CreateTestClusterAsync(client, kubeConfig, clientConfig, config, cancellationToken, conditionHandler: conditionHandler).ConfigureAwait(false);
+            return await CreateTestClusterAsync(client, kubeConfig, clientConfig, config, cancellationToken).ConfigureAwait(false);
         }
         catch
         {
@@ -162,19 +162,19 @@ public sealed class TestClusterGenerator : IAsyncDisposable
 
     private async Task<TestCluster> CreateKindAsync(TestClusterConfig config, CancellationToken cancellationToken)
     {
-        string name = config.Name ?? $"kubeui-test-{Guid.NewGuid():N}";
-        string kubeConfigPath = Path.Combine(Path.GetTempPath(), $"{name}-{Guid.NewGuid():N}.yaml");
-
-        await Kind.DownloadClient(cancellationToken).ConfigureAwait(false);
-        await Kind.CreateCluster(name, kubeConfigPath: kubeConfigPath, cancellationToken: cancellationToken).ConfigureAwait(false);
+        var name = config.Name ?? $"kubeui-test-{Guid.NewGuid():N}";
+        var kubeConfigPath = Path.Combine(Path.GetTempPath(), $"{name}-{Guid.NewGuid():N}.yaml");
 
         try
         {
-            K8SConfiguration kubeConfig = await Kind.GetK8SConfiguration(name, cancellationToken).ConfigureAwait(false);
-            KubernetesClientConfiguration clientConfig = KubernetesClientConfiguration.BuildConfigFromConfigObject(kubeConfig, null, null);
+            await Kind.DownloadClient(cancellationToken).ConfigureAwait(false);
+            await Kind.CreateCluster(name, kubeConfigPath: kubeConfigPath, cancellationToken: cancellationToken).ConfigureAwait(false);
+
+            var kubeConfig = await Kind.GetK8SConfiguration(name, cancellationToken).ConfigureAwait(false);
+            var clientConfig = KubernetesClientConfiguration.BuildConfigFromConfigObject(kubeConfig, null, null);
             clientConfig.FirstMessageHandlerSetup = config.FirstMessageHandlerSetup;
-            IReadOnlyCollection<DelegatingHandler> handlers = CreateHttpHandlers(config, out TestConditionHandler conditionHandler, includeConfiguredHandlers: false);
-            IKubernetes client = CreateClient(clientConfig, terminalHandler: null, handlers);
+            var handlers = CreateHttpHandlers(config, out _, includeConfiguredHandlers: false);
+            var client = CreateClient(clientConfig, terminalHandler: null, handlers);
             try
             {
                 await ApplyResourcesAsync(client, config.InitialResources, cancellationToken).ConfigureAwait(false);
@@ -183,7 +183,7 @@ public sealed class TestClusterGenerator : IAsyncDisposable
                 ApplyImpersonation(kubeConfig, config.AuthenticatedUser);
                 clientConfig = KubernetesClientConfiguration.BuildConfigFromConfigObject(kubeConfig, null, null);
                 clientConfig.FirstMessageHandlerSetup = config.FirstMessageHandlerSetup;
-                handlers = CreateHttpHandlers(config, out conditionHandler);
+                handlers = CreateHttpHandlers(config, out _);
                 client = CreateClient(clientConfig, terminalHandler: null, handlers);
                 return await CreateTestClusterAsync(
                     client,
@@ -191,8 +191,7 @@ public sealed class TestClusterGenerator : IAsyncDisposable
                     clientConfig,
                     config,
                     cancellationToken,
-                    token => CleanupKindAsync(name, kubeConfigPath, token),
-                    conditionHandler: conditionHandler).ConfigureAwait(false);
+                    token => CleanupKindAsync(name, kubeConfigPath, token)).ConfigureAwait(false);
             }
             catch
             {
@@ -214,17 +213,17 @@ public sealed class TestClusterGenerator : IAsyncDisposable
         TestClusterConfig config,
         CancellationToken cancellationToken,
         Func<CancellationToken, Task>? cleanup = null,
-        FakeKubernetesHttpApi? fakeApi = null,
-        TestConditionHandler? conditionHandler = null)
+        FakeKubernetesHttpApi? fakeApi = null)
     {
+        _ = config;
+        _ = cancellationToken;
         var cluster = _services.GetRequiredService<KubeUI.Kubernetes.Cluster>();
         cluster.Name = clientConfiguration.CurrentContext ?? "test";
         cluster.KubeConfig = kubeConfig;
         cluster.KubeConfigPath = string.Empty;
         cluster.KubernetesClientFactory = _ => client;
-        conditionHandler?.Enable();
 
-            Func<CancellationToken, Task>? finalCleanup = cleanup;
+            var finalCleanup = cleanup;
             if (_ownsServices)
             {
                 finalCleanup = async token =>
@@ -254,10 +253,10 @@ public sealed class TestClusterGenerator : IAsyncDisposable
             return new k8s.Kubernetes(configuration, handlers.ToArray());
         }
 
-        DelegatingHandler? pipeline = terminalHandler;
-        for (int index = handlers.Count - 1; index >= 0; index--)
+        var pipeline = terminalHandler;
+        for (var index = handlers.Count - 1; index >= 0; index--)
         {
-            DelegatingHandler handler = handlers.ElementAt(index);
+            var handler = handlers.ElementAt(index);
             if (handler.InnerHandler is not null)
             {
                 throw new InvalidOperationException("A test HTTP handler must not already have an InnerHandler.");
@@ -310,10 +309,10 @@ public sealed class TestClusterGenerator : IAsyncDisposable
             return;
         }
 
-        string currentContext = kubeConfig.CurrentContext
+        var currentContext = kubeConfig.CurrentContext
             ?? throw new InvalidOperationException("The kubeconfig has no current context.");
-        Context context = kubeConfig.Contexts.First(item => item.Name == currentContext);
-        User user = kubeConfig.Users.First(item => item.Name == context.ContextDetails.User);
+        var context = kubeConfig.Contexts.First(item => item.Name == currentContext);
+        var user = kubeConfig.Users.First(item => item.Name == context.ContextDetails.User);
         user.UserCredentials.Impersonate = authenticatedUser;
     }
 
@@ -343,12 +342,12 @@ public sealed class TestClusterGenerator : IAsyncDisposable
         IEnumerable<IKubernetesObject> resources,
         CancellationToken cancellationToken)
     {
-        MethodInfo createMethod = typeof(TestClusterGenerator)
+        var createMethod = typeof(TestClusterGenerator)
             .GetMethod(nameof(CreateResourceAsync), BindingFlags.Static | BindingFlags.NonPublic)!;
 
-        foreach (IKubernetesObject resource in resources)
+        foreach (var resource in resources)
         {
-            Task createTask = (Task)createMethod
+            var createTask = (Task)createMethod
                 .MakeGenericMethod(resource.GetType())
                 .Invoke(null, [client, resource, cancellationToken])!;
             await createTask.ConfigureAwait(false);

@@ -21,7 +21,7 @@ public sealed class HostWindowStyleTests
 
         Dispatcher.UIThread.RunJobs();
 
-        bool found = Application.Current!.TryFindResource("SystemRegionBrush", out object? brush);
+        var found = Application.Current!.TryFindResource("SystemRegionBrush", out var brush);
         found.ShouldBeTrue();
         brush.ShouldBeOfType<SolidColorBrush>();
         window.Background.ShouldBeOfType<SolidColorBrush>();

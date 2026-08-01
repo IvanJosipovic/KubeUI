@@ -41,17 +41,17 @@ internal static class ResourceReadiness
 
     private static bool IsCustomResourceNotReady(object resource)
     {
-        PropertyInfo? statusProperty = resource.GetType().GetProperty("Status");
-        object? status = statusProperty?.GetValue(resource);
-        PropertyInfo? conditionsProperty = status?.GetType().GetProperty("Conditions");
+        var statusProperty = resource.GetType().GetProperty("Status");
+        var status = statusProperty?.GetValue(resource);
+        var conditionsProperty = status?.GetType().GetProperty("Conditions");
         if (conditionsProperty?.GetValue(status) is not IEnumerable conditions)
         {
             return false;
         }
 
-        foreach (object? condition in conditions)
+        foreach (var condition in conditions)
         {
-            PropertyInfo? conditionStatusProperty = condition?.GetType().GetProperty("Status");
+            var conditionStatusProperty = condition?.GetType().GetProperty("Status");
             if (conditionStatusProperty?.GetValue(condition) is string conditionStatus
                 && string.Equals(conditionStatus, "False", StringComparison.OrdinalIgnoreCase))
             {

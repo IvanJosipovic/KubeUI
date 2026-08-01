@@ -349,7 +349,7 @@ internal sealed class DateFilterFlyoutContext : ColumnFilterFlyoutContextBase
 
     private static RelativeAmount InferRelativeAmount(DateTimeOffset threshold, DateTimeOffset now)
     {
-        TimeSpan difference = now - threshold;
+        var difference = now - threshold;
         if (difference < TimeSpan.Zero)
         {
             difference = difference.Negate();

@@ -88,7 +88,7 @@ public sealed class ResourceRelationshipContext
     public bool TryGetByName(string apiGroup, string kind, string? namespaceName, string? name, out IKubernetesObject<V1ObjectMeta>? resource)
     {
         resource = null;
-        return TryGetByGroupAndKind(apiGroup, kind, out IReadOnlyList<IKubernetesObject<V1ObjectMeta>> resources)
+        return TryGetByGroupAndKind(apiGroup, kind, out var resources)
             && (resource = resources.FirstOrDefault(candidate =>
                 string.Equals(candidate.Namespace(), namespaceName, StringComparison.Ordinal)
                 && string.Equals(candidate.Name(), name, StringComparison.Ordinal))) != null;
@@ -100,7 +100,7 @@ public sealed class ResourceRelationshipContext
         V1LabelSelector? selector,
         string? namespaceName = null)
     {
-        if (selector == null || !TryGetByGroupAndKind(apiGroup, kind, out IReadOnlyList<IKubernetesObject<V1ObjectMeta>> resources))
+        if (selector == null || !TryGetByGroupAndKind(apiGroup, kind, out var resources))
         {
             return [];
         }
@@ -123,9 +123,9 @@ public sealed class ResourceRelationshipContext
 
     internal void RecordUnresolvedApiVersion(string apiVersion, string kind, string? namespaceName, string? name)
     {
-        int slash = apiVersion.IndexOf('/');
-        string apiGroup = slash < 0 ? string.Empty : apiVersion[..slash];
-        string version = slash < 0 ? apiVersion : apiVersion[(slash + 1)..];
+        var slash = apiVersion.IndexOf('/');
+        var apiGroup = slash < 0 ? string.Empty : apiVersion[..slash];
+        var version = slash < 0 ? apiVersion : apiVersion[(slash + 1)..];
         RecordUnresolved(apiGroup, kind, namespaceName, name, version);
     }
 
@@ -135,14 +135,14 @@ public sealed class ResourceRelationshipContext
     {
         labels ??= new Dictionary<string, string>();
 
-        if (selector.MatchLabels?.Any(match => !labels.TryGetValue(match.Key, out string? value) || value != match.Value) == true)
+        if (selector.MatchLabels?.Any(match => !labels.TryGetValue(match.Key, out var value) || value != match.Value) == true)
         {
             return false;
         }
 
-        foreach (V1LabelSelectorRequirement requirement in selector.MatchExpressions ?? [])
+        foreach (var requirement in selector.MatchExpressions ?? [])
         {
-            labels.TryGetValue(requirement.Key, out string? value);
+            labels.TryGetValue(requirement.Key, out var value);
             switch (requirement.OperatorProperty)
             {
                 case "In" when requirement.Values?.Contains(value) != true:
@@ -215,9 +215,9 @@ public sealed class ResourceRelationshipBuilder : IResourceRelationshipBuilder
         ArgumentNullException.ThrowIfNull(selectedNamespaces);
 
         List<IKubernetesObject<V1ObjectMeta>> visible = [];
-        foreach (IKubernetesObject<V1ObjectMeta> resource in resources)
+        foreach (var resource in resources)
         {
-            string? namespaceName = resource.Namespace();
+            var namespaceName = resource.Namespace();
             if (hideNoise && (resource is Corev1Event
                 || resource is V1ReplicaSet replicaSet && replicaSet.Status?.Replicas == 0
                 || resource is V1Pod pod && pod.Status?.Phase == "Succeeded"))
@@ -231,17 +231,17 @@ public sealed class ResourceRelationshipBuilder : IResourceRelationshipBuilder
         Dictionary<string, IKubernetesObject<V1ObjectMeta>> byUid = new(StringComparer.Ordinal);
         Dictionary<ResourceKey, IKubernetesObject<V1ObjectMeta>> byKey = [];
         Dictionary<(string ApiGroup, string Kind), List<IKubernetesObject<V1ObjectMeta>>> byGroupAndKind = [];
-        foreach (IKubernetesObject<V1ObjectMeta> resource in visible)
+        foreach (var resource in visible)
         {
-            string? uid = resource.Uid();
+            var uid = resource.Uid();
             if (!string.IsNullOrWhiteSpace(uid))
             {
                 byUid.TryAdd(uid, resource);
             }
 
             byKey.TryAdd(new(resource.ApiVersion ?? string.Empty, resource.Kind ?? string.Empty, resource.Namespace(), resource.Name() ?? string.Empty), resource);
-            string apiGroup = GetApiGroup(resource.ApiVersion);
-            if (!byGroupAndKind.TryGetValue((apiGroup, resource.Kind ?? string.Empty), out List<IKubernetesObject<V1ObjectMeta>>? groupKindResources))
+            var apiGroup = GetApiGroup(resource.ApiVersion);
+            if (!byGroupAndKind.TryGetValue((apiGroup, resource.Kind ?? string.Empty), out var groupKindResources))
             {
                 groupKindResources = [];
                 byGroupAndKind.Add((apiGroup, resource.Kind ?? string.Empty), groupKindResources);
@@ -256,22 +256,22 @@ public sealed class ResourceRelationshipBuilder : IResourceRelationshipBuilder
             byGroupAndKind.ToDictionary(x => x.Key, x => (IReadOnlyList<IKubernetesObject<V1ObjectMeta>>)x.Value));
         HashSet<ResourceSeedPrerequisite> seedPrerequisites = [.. _providers.SelectMany(provider => provider.SeedPrerequisites)];
         HashSet<ResourceRelationship> relationshipSet = [];
-        foreach (IKubernetesObject<V1ObjectMeta> resource in visible)
+        foreach (var resource in visible)
         {
-            foreach (IResourceRelationshipProvider provider in _providers)
+            foreach (var provider in _providers)
             {
                 provider.AddRelationships(resource, context, relationshipSet);
             }
         }
 
-        IReadOnlyList<ResourceRelationship> relationships = SimplifyRelationships(relationshipSet);
+        var relationships = SimplifyRelationships(relationshipSet);
         if (selectedNamespaces.Count == 0)
         {
             return new ResourceRelationshipGraph(visible, relationships, context.UnresolvedReferences, seedPrerequisites);
         }
 
         HashSet<ResourceIdentity> included = [];
-        foreach (IKubernetesObject<V1ObjectMeta> resource in visible)
+        foreach (var resource in visible)
         {
             if (selectedNamespaces.Contains(resource.Namespace() ?? string.Empty))
             {
@@ -287,7 +287,7 @@ public sealed class ResourceRelationshipBuilder : IResourceRelationshipBuilder
         bool changed;
         Dictionary<ResourceIdentity, List<ResourceRelationship>> targetsBySource = [];
         Dictionary<ResourceIdentity, List<ResourceRelationship>> relationshipsByTarget = [];
-        foreach (ResourceRelationship relationship in relationships)
+        foreach (var relationship in relationships)
         {
             targetsBySource.TryAdd(relationship.Source, []);
             targetsBySource[relationship.Source].Add(relationship);
@@ -307,16 +307,16 @@ public sealed class ResourceRelationshipBuilder : IResourceRelationshipBuilder
         do
         {
             changed = false;
-            foreach (ResourceIdentity source in included.ToArray())
+            foreach (var source in included.ToArray())
             {
-                if (!targetsBySource.TryGetValue(source, out List<ResourceRelationship>? outgoingRelationships))
+                if (!targetsBySource.TryGetValue(source, out var outgoingRelationships))
                 {
                     continue;
                 }
 
-                foreach (ResourceRelationship relationship in outgoingRelationships)
+                foreach (var relationship in outgoingRelationships)
                 {
-                    ResourceIdentity target = relationship.Target;
+                    var target = relationship.Target;
                     if (CanTraverse(relationship, source, target) && included.Add(target))
                     {
                         changed = true;
@@ -324,14 +324,14 @@ public sealed class ResourceRelationshipBuilder : IResourceRelationshipBuilder
                 }
             }
 
-            foreach (ResourceIdentity target in included.ToArray())
+            foreach (var target in included.ToArray())
             {
-                if (!relationshipsByTarget.TryGetValue(target, out List<ResourceRelationship>? incomingRelationships))
+                if (!relationshipsByTarget.TryGetValue(target, out var incomingRelationships))
                 {
                     continue;
                 }
 
-                foreach (ResourceRelationship relationship in incomingRelationships)
+                foreach (var relationship in incomingRelationships)
                 {
                     if (CanTraverseBackwards(relationship, target) && included.Add(relationship.Source))
                     {
@@ -360,8 +360,8 @@ public sealed class ResourceRelationshipBuilder : IResourceRelationshipBuilder
         ArgumentNullException.ThrowIfNull(resources);
         ArgumentNullException.ThrowIfNull(selectedNamespaces);
 
-        ResourceRelationshipGraph graph = Build(resources, selectedNamespaces, hideNoise);
-        IKubernetesObject<V1ObjectMeta>? added = graph.Resources.FirstOrDefault(resource =>
+        var graph = Build(resources, selectedNamespaces, hideNoise);
+        var added = graph.Resources.FirstOrDefault(resource =>
             new ResourceKey(resource.ApiVersion ?? string.Empty, resource.Kind ?? string.Empty, resource.Namespace(), resource.Name() ?? string.Empty) == addedResource);
         if (added == null)
         {
@@ -373,8 +373,8 @@ public sealed class ResourceRelationshipBuilder : IResourceRelationshipBuilder
         Queue<ResourceIdentity> parents = new([addedIdentity]);
         while (parents.Count > 0)
         {
-            ResourceIdentity current = parents.Dequeue();
-            foreach (ResourceRelationship relationship in graph.Relationships)
+            var current = parents.Dequeue();
+            foreach (var relationship in graph.Relationships)
             {
                 if (relationship.Target == current
                     && (current == addedIdentity || CanTraverseBackwards(relationship, current))
@@ -390,13 +390,13 @@ public sealed class ResourceRelationshipBuilder : IResourceRelationshipBuilder
         HashSet<ResourceIdentity> visitedDescendants = [];
         while (descendants.Count > 0)
         {
-            ResourceIdentity current = descendants.Dequeue();
+            var current = descendants.Dequeue();
             if (!visitedDescendants.Add(current) || current != addedIdentity && ancestors.Contains(current))
             {
                 continue;
             }
 
-            foreach (ResourceRelationship relationship in graph.Relationships)
+            foreach (var relationship in graph.Relationships)
             {
                 if (relationship.Source == current
                     && CanTraverse(relationship, relationship.Source, relationship.Target)
@@ -444,7 +444,7 @@ public sealed class ResourceRelationshipBuilder : IResourceRelationshipBuilder
 
         List<ResourceRelationship> unique = [];
         HashSet<(ResourceIdentity Source, ResourceIdentity Target, ResourceRelationshipKind Kind, string? Label)> seen = [];
-        foreach (ResourceRelationship relationship in relationships)
+        foreach (var relationship in relationships)
         {
             if (seen.Add((relationship.Source, relationship.Target, relationship.Kind, relationship.Label)))
             {
@@ -459,7 +459,7 @@ public sealed class ResourceRelationshipBuilder : IResourceRelationshipBuilder
 
         Dictionary<ResourceIdentity, List<ResourceIdentity>> ownerChildren = [];
         Dictionary<ResourceIdentity, HashSet<ResourceIdentity>> sourcesByTarget = [];
-        foreach (ResourceRelationship relationship in unique)
+        foreach (var relationship in unique)
         {
             if (relationship.Kind == ResourceRelationshipKind.Owner)
             {
@@ -474,11 +474,11 @@ public sealed class ResourceRelationshipBuilder : IResourceRelationshipBuilder
         }
 
         HashSet<(ResourceIdentity Source, ResourceIdentity Target)> remove = [];
-        foreach ((ResourceIdentity target, HashSet<ResourceIdentity> sources) in sourcesByTarget)
+        foreach ((var target, var sources) in sourcesByTarget)
         {
-            foreach (ResourceIdentity source in sources)
+            foreach (var source in sources)
             {
-                if (!ownerChildren.TryGetValue(source, out List<ResourceIdentity>? children))
+                if (!ownerChildren.TryGetValue(source, out var children))
                 {
                     continue;
                 }
@@ -487,7 +487,7 @@ public sealed class ResourceRelationshipBuilder : IResourceRelationshipBuilder
                 HashSet<ResourceIdentity> visited = [];
                 while (queue.Count > 0)
                 {
-                    ResourceIdentity descendant = queue.Dequeue();
+                    var descendant = queue.Dequeue();
                     if (!visited.Add(descendant))
                     {
                         continue;
@@ -500,7 +500,7 @@ public sealed class ResourceRelationshipBuilder : IResourceRelationshipBuilder
 
                     if (ownerChildren.TryGetValue(descendant, out children))
                     {
-                        foreach (ResourceIdentity child in children)
+                        foreach (var child in children)
                         {
                             queue.Enqueue(child);
                         }
@@ -510,16 +510,16 @@ public sealed class ResourceRelationshipBuilder : IResourceRelationshipBuilder
         }
 
         Dictionary<(ResourceIdentity Source, ResourceRelationshipKind Kind, string? Label), List<ResourceIdentity>> relationshipTargets = [];
-        foreach (ResourceRelationship relationship in unique)
+        foreach (var relationship in unique)
         {
             relationshipTargets.TryAdd((relationship.Source, relationship.Kind, relationship.Label), []);
             relationshipTargets[(relationship.Source, relationship.Kind, relationship.Label)].Add(relationship.Target);
         }
 
         HashSet<ResourceRelationship> transitive = [];
-        foreach (ResourceRelationship relationship in unique)
+        foreach (var relationship in unique)
         {
-            if (!relationshipTargets.TryGetValue((relationship.Source, relationship.Kind, relationship.Label), out List<ResourceIdentity>? initialTargets))
+            if (!relationshipTargets.TryGetValue((relationship.Source, relationship.Kind, relationship.Label), out var initialTargets))
             {
                 continue;
             }
@@ -528,7 +528,7 @@ public sealed class ResourceRelationshipBuilder : IResourceRelationshipBuilder
             HashSet<ResourceIdentity> visited = [];
             while (queue.Count > 0)
             {
-                ResourceIdentity current = queue.Dequeue();
+                var current = queue.Dequeue();
                 if (current == relationship.Source || !visited.Add(current))
                 {
                     continue;
@@ -540,9 +540,9 @@ public sealed class ResourceRelationshipBuilder : IResourceRelationshipBuilder
                     break;
                 }
 
-                if (relationshipTargets.TryGetValue((current, relationship.Kind, relationship.Label), out List<ResourceIdentity>? nextTargets))
+                if (relationshipTargets.TryGetValue((current, relationship.Kind, relationship.Label), out var nextTargets))
                 {
-                    foreach (ResourceIdentity target in nextTargets)
+                    foreach (var target in nextTargets)
                     {
                         queue.Enqueue(target);
                     }
@@ -557,7 +557,7 @@ public sealed class ResourceRelationshipBuilder : IResourceRelationshipBuilder
 
     private static string GetApiGroup(string? apiVersion)
     {
-        int slash = apiVersion?.IndexOf('/') ?? -1;
+        var slash = apiVersion?.IndexOf('/') ?? -1;
         return slash < 0 ? string.Empty : apiVersion![..slash];
     }
 }

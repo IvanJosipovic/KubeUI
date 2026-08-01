@@ -7,9 +7,9 @@ public sealed class OwnerReferenceRelationshipProvider : IResourceRelationshipPr
 {
     public void AddRelationships(IKubernetesObject<V1ObjectMeta> resource, ResourceRelationshipContext context, ICollection<ResourceRelationship> relationships)
     {
-        foreach (V1OwnerReference owner in resource.Metadata?.OwnerReferences ?? [])
+        foreach (var owner in resource.Metadata?.OwnerReferences ?? [])
         {
-            if (owner.Kind == V1Namespace.KubeKind || !context.TryGetByUid(owner.Uid, out IKubernetesObject<V1ObjectMeta>? target) || target == null)
+            if (owner.Kind == V1Namespace.KubeKind || !context.TryGetByUid(owner.Uid, out var target) || target == null)
             {
                 continue;
             }

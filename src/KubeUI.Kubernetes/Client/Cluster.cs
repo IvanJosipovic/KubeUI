@@ -336,7 +336,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
         var type = typeof(T);
         var kind = GroupApiVersionKind.From<T>();
 
-        ContainerClass<T> container = (ContainerClass<T>)Objects.GetOrAdd(kind, _ => new ContainerClass<T>());
+        var container = (ContainerClass<T>)Objects.GetOrAdd(kind, _ => new ContainerClass<T>());
 
         if (CanI(type, Verb.List) && CanI(type, Verb.Watch))
         {
@@ -355,7 +355,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
 
             foreach (var item in GetResourceList<V1Namespace>())
             {
-                string ns = item.Name();
+                var ns = item.Name();
 
                 if (CanI(type, Verb.List, ns) && CanI(type, Verb.Watch, ns))
                 {
@@ -698,13 +698,13 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
             if (item.Metadata.Uid != null)
             {
                 // update
-                T updated = await client.ReplaceAsync<T>(item, item.Name());
+                var updated = await client.ReplaceAsync<T>(item, item.Name());
                 item.Metadata = updated.Metadata;
             }
             else
             {
                 // add
-                T created = await client.CreateAsync<T>(item);
+                var created = await client.CreateAsync<T>(item);
                 item.Metadata = created.Metadata;
             }
         }
@@ -713,13 +713,13 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
             if (item.Metadata.Uid != null)
             {
                 // update namespaced
-                T updated = await client.ReplaceNamespacedAsync<T>(item, item.Namespace(), item.Name());
+                var updated = await client.ReplaceNamespacedAsync<T>(item, item.Namespace(), item.Name());
                 item.Metadata = updated.Metadata;
             }
             else
             {
                 // add namespaced
-                T created = await client.CreateNamespacedAsync<T>(item, item.Namespace());
+                var created = await client.CreateNamespacedAsync<T>(item, item.Namespace());
                 item.Metadata = created.Metadata;
             }
         }
@@ -1033,7 +1033,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
             Client = null;
         }
 
-        Task[] informerTasks = Interlocked.Exchange(ref _resourceInformerTasks, []).ToArray();
+        var informerTasks = Interlocked.Exchange(ref _resourceInformerTasks, []).ToArray();
         try
         {
             using var shutdownTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));

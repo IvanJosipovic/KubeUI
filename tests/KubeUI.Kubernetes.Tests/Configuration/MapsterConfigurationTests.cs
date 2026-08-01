@@ -21,7 +21,7 @@ public class MapsterConfigurationTests
     {
         new ServiceCollection().AddKubeUIKubernetesServices();
 
-        V1Pod source = new V1Pod
+        var source = new V1Pod
         {
             ApiVersion = V1Pod.KubeApiVersion,
             Kind = V1Pod.KubeKind,
@@ -57,7 +57,7 @@ public class MapsterConfigurationTests
             },
         };
 
-        V1Pod destination = new V1Pod();
+        var destination = new V1Pod();
 
         Should.NotThrow(() => source.Adapt(destination));
     }
@@ -67,7 +67,7 @@ public class MapsterConfigurationTests
     {
         new ServiceCollection().AddKubeUIKubernetesServices();
 
-        ParentSource source = new ParentSource
+        var source = new ParentSource
         {
             First = new ChildSource
             {

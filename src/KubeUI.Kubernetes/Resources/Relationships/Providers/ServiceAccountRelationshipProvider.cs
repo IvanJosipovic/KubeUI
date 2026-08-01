@@ -20,7 +20,7 @@ public sealed class ServiceAccountRelationshipProvider : IResourceRelationshipPr
 
     public void AddRelationships(IKubernetesObject<V1ObjectMeta> resource, ResourceRelationshipContext context, ICollection<ResourceRelationship> relationships)
     {
-        V1PodSpec? podSpec = RelationshipProviderHelpers.PodSpec(resource);
+        var podSpec = RelationshipProviderHelpers.PodSpec(resource);
         if (podSpec != null)
         {
             RelationshipProviderHelpers.AddByName(context, relationships, resource, V1ServiceAccount.KubeApiVersion, V1ServiceAccount.KubeKind, resource.Namespace(), podSpec.ServiceAccountName, ResourceRelationshipKind.Identity);
@@ -28,9 +28,9 @@ public sealed class ServiceAccountRelationshipProvider : IResourceRelationshipPr
 
         if (resource is V1ServiceAccount serviceAccount)
         {
-            foreach (V1ObjectReference secret in serviceAccount.Secrets ?? [])
+            foreach (var secret in serviceAccount.Secrets ?? [])
             {
-                if (context.TryGetByUid(secret.Uid, out IKubernetesObject<V1ObjectMeta>? target) && target is V1Secret && target.Namespace() == resource.Namespace())
+                if (context.TryGetByUid(secret.Uid, out var target) && target is V1Secret && target.Namespace() == resource.Namespace())
                 {
                     context.Add(relationships, resource, target, ResourceRelationshipKind.Identity);
                 }

@@ -23,8 +23,8 @@ public sealed class GitOpsRelationshipProvider : IResourceRelationshipProvider
 
     private static void AddArgo(ResourceRelationshipContext context, ICollection<ResourceRelationship> relationships, IKubernetesObject<V1ObjectMeta> resource)
     {
-        string? trackingId = TryGet(resource.Metadata?.Annotations, "argocd.argoproj.io/tracking-id");
-        string? name = trackingId?.Split(':', 2).FirstOrDefault()
+        var trackingId = TryGet(resource.Metadata?.Annotations, "argocd.argoproj.io/tracking-id");
+        var name = trackingId?.Split(':', 2).FirstOrDefault()
             ?? TryGet(resource.Metadata?.Annotations, "argocd.argoproj.io/instance")
             ?? TryGet(resource.Metadata?.Labels, "argocd.argoproj.io/instance");
         if (string.IsNullOrWhiteSpace(name))
@@ -32,9 +32,9 @@ public sealed class GitOpsRelationshipProvider : IResourceRelationshipProvider
             return;
         }
 
-        if (context.TryGetByGroupAndKind("argoproj.io", "Application", out IReadOnlyList<IKubernetesObject<V1ObjectMeta>> applications))
+        if (context.TryGetByGroupAndKind("argoproj.io", "Application", out var applications))
         {
-            foreach (IKubernetesObject<V1ObjectMeta> application in applications)
+            foreach (var application in applications)
             {
                 if (application.ApiVersion != "argoproj.io/v1alpha1"
                     || application.Name() != name
@@ -53,20 +53,20 @@ public sealed class GitOpsRelationshipProvider : IResourceRelationshipProvider
 
     private static void AddFlux(ResourceRelationshipContext context, ICollection<ResourceRelationship> relationships, IKubernetesObject<V1ObjectMeta> resource, string nameKey, string namespaceKey, string apiGroup, string kind)
     {
-        string? name = TryGet(resource.Metadata?.Labels, nameKey);
-        string? namespaceName = TryGet(resource.Metadata?.Labels, namespaceKey);
+        var name = TryGet(resource.Metadata?.Labels, nameKey);
+        var namespaceName = TryGet(resource.Metadata?.Labels, namespaceKey);
         if (name == null)
         {
             return;
         }
 
-        if (!context.TryGetByGroupAndKind(apiGroup, kind, out IReadOnlyList<IKubernetesObject<V1ObjectMeta>> controllers))
+        if (!context.TryGetByGroupAndKind(apiGroup, kind, out var controllers))
         {
             context.RecordUnresolved(apiGroup, kind, namespaceName, name);
             return;
         }
 
-        foreach (IKubernetesObject<V1ObjectMeta> controller in controllers)
+        foreach (var controller in controllers)
         {
             if (controller.Namespace() != namespaceName
                 || controller.Name() != name
@@ -83,5 +83,5 @@ public sealed class GitOpsRelationshipProvider : IResourceRelationshipProvider
     }
 
     private static string? TryGet(IDictionary<string, string>? values, string key)
-        => values != null && values.TryGetValue(key, out string? value) ? value : null;
+        => values != null && values.TryGetValue(key, out var value) ? value : null;
 }

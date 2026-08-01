@@ -538,7 +538,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
         IReadOnlyCollection<IResourceConfig>? resourceConfigs = null)
     {
         var configs = resourceConfigs ?? cluster.GetResourceConfigs().ToArray();
-        IResourceConfig? definition = cluster.GetResourceConfig(typeof(V1CustomResourceDefinition));
+        var definition = cluster.GetResourceConfig(typeof(V1CustomResourceDefinition));
         var rootId = $"{cluster.Runtime.Name}-custom-resource-definitions";
         var root = node.NavigationItems.FirstOrDefault(item => item.Id == rootId);
 
@@ -596,7 +596,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
         var id = $"{node.Cluster.Runtime.Name}-{NavigationTargets.PortForwarders}";
         RemoveNavigationItem(node.NavigationItems, id);
 
-        IResourceConfig? podConfig = node.Cluster.GetResourceConfig(typeof(V1Pod));
+        var podConfig = node.Cluster.GetResourceConfig(typeof(V1Pod));
         if (podConfig is not { PermissionsLoaded: true, CanListAndWatch: true }
             || !CanCreatePortForward(node.Cluster))
         {

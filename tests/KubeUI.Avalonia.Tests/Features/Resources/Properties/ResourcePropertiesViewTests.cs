@@ -15,9 +15,8 @@ public sealed class ResourcePropertiesViewTests
     [AvaloniaFact]
     public async Task namespaced_resource_shows_namespace_property_item()
     {
-        IServiceProvider services = Application.Current.GetTestServices();
-        ClusterWorkspace workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
-        await workspace.Connect();
+        var services = Application.Current.GetTestServices();
+        var workspace = await Application.Current.CreateClusterAsync();
         var viewModel = services.GetRequiredService<ResourcePropertiesViewModel<V1Pod>>();
         viewModel.Initialize(workspace, new V1Pod
         {
@@ -56,9 +55,8 @@ public sealed class ResourcePropertiesViewTests
     [AvaloniaFact]
     public async Task resource_properties_view_renders_leaf_actions_and_submenu_flyouts()
     {
-        IServiceProvider services = Application.Current.GetTestServices();
-        ClusterWorkspace workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
-        await workspace.Connect();
+        var services = Application.Current.GetTestServices();
+        var workspace = await Application.Current.CreateClusterAsync();
         var viewModel = services.GetRequiredService<ResourcePropertiesViewModel<V1Pod>>();
         viewModel.Initialize(workspace, new V1Pod
         {
@@ -111,9 +109,8 @@ public sealed class ResourcePropertiesViewTests
     [AvaloniaFact]
     public async Task cluster_scoped_resource_hides_namespace_property_item()
     {
-        IServiceProvider services = Application.Current.GetTestServices();
-        ClusterWorkspace workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
-        await workspace.Connect();
+        var services = Application.Current.GetTestServices();
+        var workspace = await Application.Current.CreateClusterAsync();
         var viewModel = services.GetRequiredService<ResourcePropertiesViewModel<V1Node>>();
         viewModel.Initialize(workspace, new V1Node
         {
@@ -188,7 +185,7 @@ public sealed class ResourcePropertiesViewTests
             Dispatcher.UIThread.RunJobs();
             Dispatcher.UIThread.RunJobs();
 
-            ExpandableSection section = view.GetVisualDescendants()
+            var section = view.GetVisualDescendants()
                 .OfType<ExpandableSection>()
                 .Single(x => Equals(x.Header, AppResources.PodPropertiesView_EphemeralContainers));
 
@@ -203,9 +200,8 @@ public sealed class ResourcePropertiesViewTests
     [AvaloniaFact]
     public async Task resource_updates_raise_object_changed_even_for_same_instance()
     {
-        IServiceProvider services = Application.Current.GetTestServices();
-        ClusterWorkspace workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
-        await workspace.Connect();
+        var services = Application.Current.GetTestServices();
+        var workspace = await Application.Current.CreateClusterAsync();
         await workspace.Runtime.SeedResource<V1Pod>(true);
         var viewModel = services.GetRequiredService<ResourcePropertiesViewModel<V1Pod>>();
         var pod = new V1Pod
@@ -235,7 +231,7 @@ public sealed class ResourcePropertiesViewTests
         Dispatcher.UIThread.RunJobs();
 
         await TestWait.UntilAsync(
-            () => workspace.Runtime.GetResource<V1Pod>("default", "pod-1")?.Metadata?.Labels?.TryGetValue("updated", out string? value) == true
+            () => workspace.Runtime.GetResource<V1Pod>("default", "pod-1")?.Metadata?.Labels?.TryGetValue("updated", out var value) == true
                 && value == "true",
             TimeSpan.FromSeconds(5),
             cancellationToken: TestContext.Current.CancellationToken);
@@ -246,9 +242,8 @@ public sealed class ResourcePropertiesViewTests
     [AvaloniaFact]
     public async Task detached_resource_properties_view_does_not_throw_when_view_model_changes()
     {
-        IServiceProvider services = Application.Current.GetTestServices();
-        ClusterWorkspace workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
-        await workspace.Connect();
+        var services = Application.Current.GetTestServices();
+        var workspace = await Application.Current.CreateClusterAsync();
         var viewModel = services.GetRequiredService<ResourcePropertiesViewModel<V1Pod>>();
         viewModel.Initialize(workspace, new V1Pod
         {

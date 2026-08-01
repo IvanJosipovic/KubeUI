@@ -30,7 +30,7 @@ public sealed class ReferencedResourceRelationshipProvider : IResourceRelationsh
             AddScaleTarget(horizontalPodAutoscaler, context, relationships);
         }
 
-        V1PodSpec? podSpec = RelationshipProviderHelpers.PodSpec(resource);
+        var podSpec = RelationshipProviderHelpers.PodSpec(resource);
         if (podSpec != null)
         {
             RelationshipProviderHelpers.AddByName(context, relationships, resource, V1PriorityClass.KubeApiVersion, V1PriorityClass.KubeKind, null, podSpec.PriorityClassName, ResourceRelationshipKind.Reference);
@@ -40,7 +40,7 @@ public sealed class ReferencedResourceRelationshipProvider : IResourceRelationsh
 
         if (resource is V1ValidatingWebhookConfiguration validating)
         {
-            foreach (V1ValidatingWebhook webhook in validating.Webhooks ?? [])
+            foreach (var webhook in validating.Webhooks ?? [])
             {
                 AddWebhookService(resource, webhook.ClientConfig?.Service, context, relationships);
             }
@@ -48,7 +48,7 @@ public sealed class ReferencedResourceRelationshipProvider : IResourceRelationsh
 
         if (resource is V1MutatingWebhookConfiguration mutating)
         {
-            foreach (V1MutatingWebhook webhook in mutating.Webhooks ?? [])
+            foreach (var webhook in mutating.Webhooks ?? [])
             {
                 AddWebhookService(resource, webhook.ClientConfig?.Service, context, relationships);
             }
@@ -57,7 +57,7 @@ public sealed class ReferencedResourceRelationshipProvider : IResourceRelationsh
 
     private static void AddScaleTarget(V2HorizontalPodAutoscaler autoscaler, ResourceRelationshipContext context, ICollection<ResourceRelationship> relationships)
     {
-        V2CrossVersionObjectReference? targetReference = autoscaler.Spec?.ScaleTargetRef;
+        var targetReference = autoscaler.Spec?.ScaleTargetRef;
         if (targetReference == null)
         {
             return;
@@ -68,7 +68,7 @@ public sealed class ReferencedResourceRelationshipProvider : IResourceRelationsh
 
     private static void AddProjectedVolumeReferences(IKubernetesObject<V1ObjectMeta> resource, V1PodSpec podSpec, ResourceRelationshipContext context, ICollection<ResourceRelationship> relationships)
     {
-        foreach (V1VolumeProjection projection in (podSpec.Volumes ?? []).SelectMany(static volume => volume.Projected?.Sources ?? []))
+        foreach (var projection in (podSpec.Volumes ?? []).SelectMany(static volume => volume.Projected?.Sources ?? []))
         {
             RelationshipProviderHelpers.AddByName(context, relationships, resource, V1ConfigMap.KubeApiVersion, V1ConfigMap.KubeKind, resource.Namespace(), projection.ConfigMap?.Name, ResourceRelationshipKind.Reference);
             RelationshipProviderHelpers.AddByName(context, relationships, resource, V1Secret.KubeApiVersion, V1Secret.KubeKind, resource.Namespace(), projection.Secret?.Name, ResourceRelationshipKind.Reference);

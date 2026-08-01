@@ -129,7 +129,7 @@ public sealed class YamlSyntaxValidationService : IYamlValidationService
 
     private static bool TryGetExceptionLocation(Exception exception, out YamlDiagnosticLocation location)
     {
-        for (Exception? current = exception; current != null; current = current.InnerException)
+        for (var current = exception; current != null; current = current.InnerException)
         {
             if (!TryGetMarkLocation(current, "Start", out var startLine, out var startColumn))
             {

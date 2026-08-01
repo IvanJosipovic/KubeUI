@@ -36,7 +36,8 @@
                 "build",
                 "src/KubeUI.Desktop/KubeUI.Desktop.csproj",
                 "--no-restore",
-                "-p:WarningLevel=0"
+                "--tl:off",
+                "-clp:ErrorsOnly"
             ],
             "options": {
                 "cwd": "${workspaceFolder}"
@@ -54,7 +55,8 @@
             "args": [
                 "test",
                 "--no-restore",
-                "-p:WarningLevel=0",
+                "--tl:off",
+                "-clp:ErrorsOnly",
                 "--hangdump",
                 "--hangdump-timeout 1m"
             ],

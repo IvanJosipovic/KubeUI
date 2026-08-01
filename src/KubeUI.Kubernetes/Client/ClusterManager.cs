@@ -159,8 +159,8 @@ public sealed partial class ClusterManager : ObservableObject, IClusterRuntimeCa
     {
         ArgumentNullException.ThrowIfNull(kubeConfig);
 
-        string path = _kubeConfigPathProvider.DefaultPath;
-        K8SConfiguration existing = File.Exists(path)
+        var path = _kubeConfigPathProvider.DefaultPath;
+        var existing = File.Exists(path)
             ? Serialization.KubernetesYaml.Deserialize<K8SConfiguration>(File.ReadAllText(path))
             : new K8SConfiguration();
 
@@ -179,13 +179,13 @@ public sealed partial class ClusterManager : ObservableObject, IClusterRuntimeCa
             FileName = path
         };
 
-        string directory = Path.GetDirectoryName(path) ?? string.Empty;
+        var directory = Path.GetDirectoryName(path) ?? string.Empty;
         if (!string.IsNullOrWhiteSpace(directory))
         {
             Directory.CreateDirectory(directory);
         }
 
-        string yaml = KubernetesYaml.Serialize(merged);
+        var yaml = KubernetesYaml.Serialize(merged);
         File.WriteAllText(path, yaml);
 
         LoadFromConfigFromPath(path);
@@ -317,9 +317,9 @@ public sealed partial class ClusterManager : ObservableObject, IClusterRuntimeCa
 
         if (existing is not null)
         {
-            foreach (T item in existing)
+            foreach (var item in existing)
             {
-                string name = getName(item);
+                var name = getName(item);
                 if (!string.IsNullOrWhiteSpace(name))
                 {
                     merged[name] = item;
@@ -329,9 +329,9 @@ public sealed partial class ClusterManager : ObservableObject, IClusterRuntimeCa
 
         if (imported is not null)
         {
-            foreach (T item in imported)
+            foreach (var item in imported)
             {
-                string name = getName(item);
+                var name = getName(item);
                 if (!string.IsNullOrWhiteSpace(name))
                 {
                     merged[name] = item;

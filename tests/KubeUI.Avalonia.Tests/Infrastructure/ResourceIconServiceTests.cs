@@ -14,9 +14,9 @@ public sealed class ResourceIconServiceTests
     {
         ResourceIconService service = new();
 
-        IImage icon = service.GetIcon(typeof(V1Pod));
+        var icon = service.GetIcon(typeof(V1Pod));
 
-        SvgImage svgIcon = icon.ShouldBeOfType<SvgImage>();
+        var svgIcon = icon.ShouldBeOfType<SvgImage>();
         svgIcon.Source.ShouldNotBeNull();
         svgIcon.Source!.Path.ShouldBe("/Assets/kube/resources/unlabeled/pod.svg");
     }
@@ -26,9 +26,9 @@ public sealed class ResourceIconServiceTests
     {
         ResourceIconService service = new();
 
-        IImage icon = service.GetIcon(typeof(V1Alertmanager));
+        var icon = service.GetIcon(typeof(V1Alertmanager));
 
-        SvgImage svgIcon = icon.ShouldBeOfType<SvgImage>();
+        var svgIcon = icon.ShouldBeOfType<SvgImage>();
         svgIcon.Source.ShouldNotBeNull();
         svgIcon.Source!.Path.ShouldBeNull();
         svgIcon.Source.Picture.ShouldNotBeNull();
@@ -39,8 +39,8 @@ public sealed class ResourceIconServiceTests
     {
         ResourceIconService service = new();
 
-        IImage first = service.GetIcon(typeof(V1Alertmanager));
-        IImage second = service.GetIcon(typeof(V1Alertmanager));
+        var first = service.GetIcon(typeof(V1Alertmanager));
+        var second = service.GetIcon(typeof(V1Alertmanager));
 
         first.ShouldNotBeSameAs(second);
         first.ShouldBeOfType<SvgImage>().Source.ShouldBeSameAs(second.ShouldBeOfType<SvgImage>().Source);

@@ -19,7 +19,7 @@ public sealed class AvaloniaUiRefreshClock : IUiRefreshClock
     {
         ArgumentNullException.ThrowIfNull(callback);
 
-        long subscriptionId = ++_nextSubscriptionId;
+        var subscriptionId = ++_nextSubscriptionId;
         _callbacks.Add(subscriptionId, callback);
         if (_callbacks.Count == 1)
         {
@@ -31,7 +31,7 @@ public sealed class AvaloniaUiRefreshClock : IUiRefreshClock
 
     private void Timer_Tick(object? sender, EventArgs e)
     {
-        foreach (Action callback in _callbacks.Values.ToArray())
+        foreach (var callback in _callbacks.Values.ToArray())
         {
             callback();
         }

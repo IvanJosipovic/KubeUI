@@ -14,7 +14,7 @@ public abstract partial class ResourcePropertiesViewBase<T> : UserControl
 
     protected void Reload()
     {
-        StackPanel? items = this.FindControl<StackPanel>("PART_Items");
+        var items = this.FindControl<StackPanel>("PART_Items");
         if (items == null)
         {
             return;
@@ -34,7 +34,7 @@ public abstract partial class ResourcePropertiesViewBase<T> : UserControl
 
     protected void Append(params Control[] controls)
     {
-        StackPanel? items = this.FindControl<StackPanel>("PART_Items");
+        var items = this.FindControl<StackPanel>("PART_Items");
         if (items == null)
         {
             return;

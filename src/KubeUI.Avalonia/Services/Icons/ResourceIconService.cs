@@ -56,29 +56,29 @@ public sealed partial class ResourceIconService : IResourceIconService
 
     private static SvgSource CreateSource(Type resourceType)
     {
-        if (IconPaths.TryGetValue(resourceType, out string? path))
+        if (IconPaths.TryGetValue(resourceType, out var path))
         {
             return new SvgSource(AppUri) { Path = path };
         }
 
-        using Stream stream = AssetLoader.Open(new Uri(BlankIconPath, UriKind.Relative), AppUri)
+        using var stream = AssetLoader.Open(new Uri(BlankIconPath, UriKind.Relative), AppUri)
             ?? throw new InvalidOperationException($"Unable to load resource icon '{BlankIconPath}'.");
         using StreamReader reader = new(stream);
-        string blankSvg = reader.ReadToEnd();
-        string initials = GetInitials(GetResourceKind(resourceType));
-        string fontSize = initials.Length switch
+        var blankSvg = reader.ReadToEnd();
+        var initials = GetInitials(GetResourceKind(resourceType));
+        var fontSize = initials.Length switch
         {
             1 => "14",
             2 => "10",
             _ => "8",
         };
-        string generatedSvg = blankSvg.Replace("</svg>", $"<text x=\"9\" y=\"9.5\" text-anchor=\"middle\" dominant-baseline=\"middle\" font-family=\"Cascadia Mono\" font-size=\"{fontSize}\" font-weight=\"bold\" fill=\"#ffffff\">{initials}</text></svg>", StringComparison.OrdinalIgnoreCase);
+        var generatedSvg = blankSvg.Replace("</svg>", $"<text x=\"9\" y=\"9.5\" text-anchor=\"middle\" dominant-baseline=\"middle\" font-family=\"Cascadia Mono\" font-size=\"{fontSize}\" font-weight=\"bold\" fill=\"#ffffff\">{initials}</text></svg>", StringComparison.OrdinalIgnoreCase);
         return SvgSource.LoadFromSvg(generatedSvg) ?? throw new InvalidOperationException("Unable to generate a resource icon.");
     }
 
     private static string GetInitials(string typeName)
     {
-        MatchCollection words = PascalCaseWordRegex().Matches(typeName);
+        var words = PascalCaseWordRegex().Matches(typeName);
         if (words.Count > 1)
         {
             return string.Concat(words.Cast<Match>().Take(3).Select(match => match.Value[0])).ToUpperInvariant();
@@ -89,7 +89,7 @@ public sealed partial class ResourceIconService : IResourceIconService
 
     private static string GetResourceKind(Type resourceType)
     {
-        FieldInfo? kindField = resourceType.GetField("KubeKind", BindingFlags.Public | BindingFlags.Static);
+        var kindField = resourceType.GetField("KubeKind", BindingFlags.Public | BindingFlags.Static);
         return kindField?.GetValue(null) as string ?? resourceType.Name;
     }
 

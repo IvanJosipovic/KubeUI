@@ -194,7 +194,7 @@ public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
 
         try
         {
-            byte[] byteArray = Encoding.UTF8.GetBytes(YamlDocument.Text);
+            var byteArray = Encoding.UTF8.GetBytes(YamlDocument.Text);
             await using MemoryStream stream = new(byteArray);
             await Cluster!.Runtime.ImportYaml(stream);
             SetActionResult(true, Assets.Resources.ResourceYamlView_SaveSucceeded, Assets.Resources.ResourceYamlView_SaveSucceededMessage);
@@ -226,7 +226,7 @@ public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
 
         try
         {
-            byte[] byteArray = Encoding.UTF8.GetBytes(YamlDocument.Text);
+            var byteArray = Encoding.UTF8.GetBytes(YamlDocument.Text);
             await using MemoryStream stream = new(byteArray);
             await Cluster!.Runtime.DryRunYaml(stream);
             SetActionResult(true, Assets.Resources.ResourceYamlView_DryRunSucceeded, Assets.Resources.ResourceYamlView_DryRunSucceededMessage);

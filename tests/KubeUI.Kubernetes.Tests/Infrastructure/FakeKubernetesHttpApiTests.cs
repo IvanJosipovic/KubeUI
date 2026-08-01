@@ -118,10 +118,14 @@ public sealed class FakeKubernetesHttpApiTests
     [Fact]
     public async Task RequestCancellationStopsDelayedResponse()
     {
-        using var api = new FakeKubernetesHttpApi { ResponseDelay = TimeSpan.FromMinutes(1) };
+        using var api = new FakeKubernetesHttpApi();
+        using var conditionHandler = new TestConditionHandler(TimeSpan.FromMinutes(1), throwOnConnect: false)
+        {
+            InnerHandler = api,
+        };
         api.Register<V1Namespace>();
 
-        using var client = new HttpClient(api)
+        using var client = new HttpClient(conditionHandler)
         {
             BaseAddress = new Uri("http://fake-kubernetes"),
         };
@@ -147,7 +151,7 @@ public sealed class FakeKubernetesHttpApiTests
             HttpCompletionOption.ResponseHeadersRead,
             TestContext.Current.CancellationToken);
         using var stream = await response.Content.ReadAsStreamAsync(TestContext.Current.CancellationToken);
-        byte[] buffer = new byte[4096];
+        var buffer = new byte[4096];
 
         (await stream.ReadAsync(buffer, TestContext.Current.CancellationToken)).ShouldBeGreaterThan(0);
         api.Shutdown();

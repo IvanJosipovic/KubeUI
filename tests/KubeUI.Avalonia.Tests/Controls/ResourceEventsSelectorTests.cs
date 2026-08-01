@@ -21,14 +21,10 @@ public sealed class ResourceEventsSelectorTests
     [AvaloniaFact]
     public async Task SelectRecentEvents_sorts_and_limits_to_five()
     {
-        IServiceProvider services = Application.Current.GetTestServices();
-        TestClusterConfig config = services.GetRequiredService<TestClusterConfig>();
-        ClusterWorkspace workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
-        IClusterRuntime runtime = workspace.Runtime;
-        await workspace.Connect();
-        await runtime.Permissions.UpdatePermissionsAllNamespaceAsync<Corev1Event>(Verb.List);
-        await runtime.Permissions.UpdatePermissionsAllNamespaceAsync<Corev1Event>(Verb.Watch);
-        await runtime.SeedResource<Corev1Event>(true);
+        using var workspace = await Application.Current.CreateClusterAsync();
+        await workspace.Runtime.Permissions.UpdatePermissionsAllNamespaceAsync<Corev1Event>(Verb.List);
+        await workspace.Runtime.Permissions.UpdatePermissionsAllNamespaceAsync<Corev1Event>(Verb.Watch);
+        await workspace.Runtime.SeedResource<Corev1Event>(true);
 
         var resource = new V1Deployment
         {
@@ -44,7 +40,7 @@ public sealed class ResourceEventsSelectorTests
 
         for (var i = 0; i < 6; i++)
         {
-            await runtime.AddOrUpdateResource(new Corev1Event
+            await workspace.Runtime.AddOrUpdateResource(new Corev1Event
             {
                 Metadata = new()
                 {
@@ -69,7 +65,7 @@ public sealed class ResourceEventsSelectorTests
             });
         }
 
-        await runtime.AddOrUpdateResource(new Corev1Event
+        await workspace.Runtime.AddOrUpdateResource(new Corev1Event
         {
             Metadata = new()
             {
@@ -85,12 +81,12 @@ public sealed class ResourceEventsSelectorTests
         });
 
         await TestWait.UntilAsync(
-            () => runtime.GetResourceSourceCache<Corev1Event>().Items.Count == 7,
+            () => workspace.Runtime.GetResourceSourceCache<Corev1Event>().Items.Count == 7,
             TimeSpan.FromSeconds(5),
             cancellationToken: TestContext.Current.CancellationToken);
 
         var results = ResourceEventsSelector.SelectRecentEvents(
-            runtime.GetResourceSourceCache<Corev1Event>().Items,
+            workspace.Runtime.GetResourceSourceCache<Corev1Event>().Items,
             resource,
             now);
 

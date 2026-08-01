@@ -11,10 +11,10 @@ public static class KubernetesTestRuntimeServiceCollectionExtensions
         services.AddSingleton<TestClusterConfig>();
         services.AddTransient<IClusterRuntime>(sp =>
         {
-            TestClusterConfig config = sp.GetRequiredService<TestClusterConfig>();
-            TestClusterGenerator generator = sp.GetRequiredService<TestClusterGenerator>();
-            ClusterManager manager = sp.GetRequiredService<ClusterManager>();
-            TestCluster cluster = generator.CreateAsync(config).GetAwaiter().GetResult();
+            var config = sp.GetRequiredService<TestClusterConfig>();
+            var generator = sp.GetRequiredService<TestClusterGenerator>();
+            var manager = sp.GetRequiredService<ClusterManager>();
+            var cluster = generator.CreateAsync(config).GetAwaiter().GetResult();
             manager.AddCluster(cluster.Cluster);
             return cluster.Cluster;
         });

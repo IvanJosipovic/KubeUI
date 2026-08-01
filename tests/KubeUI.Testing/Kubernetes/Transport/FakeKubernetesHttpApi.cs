@@ -133,9 +133,9 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
     {
         _shutdownCancellation.Cancel();
 
-        foreach (ConcurrentBag<Channel<byte[]>> watchers in _watchers.Values)
+        foreach (var watchers in _watchers.Values)
         {
-            foreach (Channel<byte[]> watcher in watchers)
+            foreach (var watcher in watchers)
             {
                 watcher.Writer.TryComplete();
             }
@@ -439,7 +439,7 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
 
     private bool IsAllowed(HttpRequestMessage request, Route route)
     {
-        if (!_definitions.TryGetValue(DefinitionKey(route.Group, route.ApiVersion, route.PluralName), out var definition))
+        if (!_definitions.TryGetValue(DefinitionKey(route.Group, route.ApiVersion, route.PluralName), out _))
         {
             return true;
         }

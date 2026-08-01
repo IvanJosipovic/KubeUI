@@ -93,7 +93,7 @@ public sealed partial class CertificateItemView : UserControl, IDeclarativeViewB
     private static string GetExpiryValue(X509Certificate2 cert)
     {
         var expires = cert.NotAfter.ToLocalTime();
-        int days = (expires - DateTime.Now).Days;
+        var days = (expires - DateTime.Now).Days;
         return $"{expires} (Valid:{days} days)";
     }
 
@@ -125,11 +125,11 @@ public sealed partial class CertificateItemView : UserControl, IDeclarativeViewB
 
         ClearAll();
 
-        string text = Encoding.UTF8.GetString(Bytes);
+        var text = Encoding.UTF8.GetString(Bytes);
         Span<byte> buffer = stackalloc byte[Encoding.UTF8.GetByteCount(text)];
-        byte[] bytes = Bytes;
+        var bytes = Bytes;
 
-        if (Convert.TryFromBase64String(text, buffer, out int decodedBytes))
+        if (Convert.TryFromBase64String(text, buffer, out var decodedBytes))
         {
             text = Encoding.UTF8.GetString(buffer[..decodedBytes]);
             bytes = Encoding.UTF8.GetBytes(text);
@@ -138,43 +138,43 @@ public sealed partial class CertificateItemView : UserControl, IDeclarativeViewB
         TryAdd(() => Certificates.Add(X509CertificateLoader.LoadCertificate(bytes)));
         TryAdd(() =>
         {
-            RSA key = RSA.Create();
+            var key = RSA.Create();
             key.ImportRSAPrivateKey(bytes, out _);
             Rsa.Add(key);
         });
         TryAdd(() =>
         {
-            RSA key = RSA.Create();
+            var key = RSA.Create();
             key.ImportFromPem(Encoding.UTF8.GetString(bytes));
             Rsa.Add(key);
         });
         TryAdd(() =>
         {
-            RSA key = RSA.Create();
+            var key = RSA.Create();
             key.ImportPkcs8PrivateKey(bytes, out _);
             Rsa.Add(key);
         });
         TryAdd(() =>
         {
-            RSA key = RSA.Create();
+            var key = RSA.Create();
             key.ImportRSAPublicKey(bytes, out _);
             Rsa.Add(key);
         });
         TryAdd(() =>
         {
-            RSA key = RSA.Create();
+            var key = RSA.Create();
             key.ImportSubjectPublicKeyInfo(bytes, out _);
             Rsa.Add(key);
         });
         TryAdd(() =>
         {
-            ECDsa key = ECDsa.Create();
+            var key = ECDsa.Create();
             key.ImportECPrivateKey(bytes, out _);
             Ecdsa.Add(key);
         });
         TryAdd(() =>
         {
-            ECDsa key = ECDsa.Create();
+            var key = ECDsa.Create();
             key.ImportFromPem(Encoding.UTF8.GetString(bytes));
             Ecdsa.Add(key);
         });

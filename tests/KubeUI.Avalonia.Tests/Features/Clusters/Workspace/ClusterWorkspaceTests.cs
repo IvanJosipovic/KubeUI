@@ -19,9 +19,7 @@ public class ClusterWorkspaceTests
     [AvaloniaFact]
     public async Task creating_workspace_does_not_initialize_resource_configs_until_requested()
     {
-        IServiceProvider services = Application.Current.GetTestServices();
-        TestClusterConfig config = services.GetRequiredService<TestClusterConfig>();
-        ClusterWorkspace workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var workspace = await Application.Current.CreateClusterAsync(connect: false);
 
         workspace.GetResourceConfigs().ShouldBeEmpty();
     }
@@ -30,26 +28,19 @@ public class ClusterWorkspaceTests
     [Trait("Category", "Kind")]
     public async Task resource_config_can_be_looked_up_by_resource_type(KubernetesBackend backend)
     {
-        IServiceProvider services = Application.Current.GetTestServices();
-        TestClusterConfig config = services.GetRequiredService<TestClusterConfig>();
-        config.Type = backend;
-        ClusterWorkspace workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var workspace = await Application.Current.CreateClusterAsync(
+            config => config.Type = backend);
 
-        await workspace.Connect();
-
-        IResourceConfig expected = workspace.GetResourceConfig<V1Pod>();
+        var expected = workspace.GetResourceConfig<V1Pod>();
         workspace.GetResourceConfig(typeof(V1Pod)).ShouldBeSameAs(expected);
     }
 
     [AvaloniaFact]
     public async Task changing_runtime_status_to_connecting_updates_cluster_color()
     {
-        IServiceProvider services = Application.Current.GetTestServices();
-        TestClusterConfig config = services.GetRequiredService<TestClusterConfig>();
-        ClusterWorkspace workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
-        IClusterRuntime runtime = workspace.Runtime;
+        var workspace = await Application.Current.CreateClusterAsync(connect: false);
 
-        runtime.Status = ClusterStatus.Connecting;
+        workspace.Runtime.Status = ClusterStatus.Connecting;
         Dispatcher.UIThread.RunJobs();
 
         workspace.ClusterColor.ShouldBe(Brushes.Orange);
@@ -59,19 +50,15 @@ public class ClusterWorkspaceTests
     [Trait("Category", "Kind")]
     public async Task added_crd_adds_resource_config_and_model_cache_entry(KubernetesBackend backend)
     {
-        IServiceProvider services = Application.Current.GetTestServices();
-        TestClusterConfig config = services.GetRequiredService<TestClusterConfig>();
-        config.Type = backend;
-        ClusterWorkspace workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
-        IClusterRuntime runtime = workspace.Runtime;
-        await workspace.Connect();
-        await runtime.SeedResource<V1CustomResourceDefinition>(true);
+        var workspace = await Application.Current.CreateClusterAsync(
+            config => config.Type = backend);
+        await workspace.Runtime.SeedResource<V1CustomResourceDefinition>(true);
         var crd = ClusterWorkspaceTestCustomResourceDefinitionFactory.Create("tests.kubeui.com", "tests", "someString");
 
-        await runtime.CreateAsync(crd, TestContext.Current.CancellationToken);
+        await workspace.Runtime.CreateAsync(crd, TestContext.Current.CancellationToken);
 
         var resourceType = await TestWait.UntilValueAsync(
-            () => GetCustomResourceType(runtime, crd),
+            () => GetCustomResourceType(workspace.Runtime, crd),
             TimeSpan.FromSeconds(10),
             cancellationToken: TestContext.Current.CancellationToken,
             beforePoll: () => Dispatcher.UIThread.RunJobs());
@@ -91,18 +78,14 @@ public class ClusterWorkspaceTests
     [Trait("Category", "Kind")]
     public async Task resource_config_processed_event_observes_registered_crd_config(KubernetesBackend backend)
     {
-        IServiceProvider services = Application.Current.GetTestServices();
-        TestClusterConfig config = services.GetRequiredService<TestClusterConfig>();
-        config.Type = backend;
-        ClusterWorkspace workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
-        IClusterRuntime runtime = workspace.Runtime;
-        await workspace.Connect();
-        await runtime.SeedResource<V1CustomResourceDefinition>(true);
+        var workspace = await Application.Current.CreateClusterAsync(
+            config => config.Type = backend);
+        await workspace.Runtime.SeedResource<V1CustomResourceDefinition>(true);
         IResourceConfig? processedConfig = null;
         workspace.ResourceConfigProcessed += (_, resourceConfig) => processedConfig = workspace.GetResourceConfig(resourceConfig.Type);
         var crd = ClusterWorkspaceTestCustomResourceDefinitionFactory.Create("tests.kubeui.com", "tests", "someString");
 
-        await runtime.CreateAsync(crd, TestContext.Current.CancellationToken);
+        await workspace.Runtime.CreateAsync(crd, TestContext.Current.CancellationToken);
 
         var resourceConfig = await TestWait.UntilValueAsync(
             () => GetCustomResourceConfig(workspace, crd),
@@ -116,39 +99,35 @@ public class ClusterWorkspaceTests
     [Trait("Category", "Kind")]
     public async Task updated_crd_replaces_resource_config_model_cache_entry_and_seeded_informer(KubernetesBackend backend)
     {
-        IServiceProvider services = Application.Current.GetTestServices();
-        TestClusterConfig config = services.GetRequiredService<TestClusterConfig>();
-        config.Type = backend;
-        ClusterWorkspace workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
-        IClusterRuntime runtime = workspace.Runtime;
-        await workspace.Connect();
-        await runtime.SeedResource<V1CustomResourceDefinition>(true);
+        var workspace = await Application.Current.CreateClusterAsync(
+            config => config.Type = backend);
+        await workspace.Runtime.SeedResource<V1CustomResourceDefinition>(true);
         var originalCrd = ClusterWorkspaceTestCustomResourceDefinitionFactory.Create("tests.kubeui.com", "tests", "someString");
 
-        await runtime.CreateAsync(originalCrd, TestContext.Current.CancellationToken);
+        await workspace.Runtime.CreateAsync(originalCrd, TestContext.Current.CancellationToken);
 
         var originalType = await TestWait.UntilValueAsync(
-            () => GetCustomResourceType(runtime, originalCrd),
+            () => GetCustomResourceType(workspace.Runtime, originalCrd),
             TimeSpan.FromSeconds(10),
             cancellationToken: TestContext.Current.CancellationToken,
             beforePoll: () => Dispatcher.UIThread.RunJobs());
         originalType.ShouldNotBeNull();
-        await runtime.Permissions.UpdateCanI(originalType, Verb.List);
-        await runtime.Permissions.UpdateCanI(originalType, Verb.Watch);
-        await SeedResourceAsync(runtime, originalType);
+        await workspace.Runtime.Permissions.UpdateCanI(originalType, Verb.List);
+        await workspace.Runtime.Permissions.UpdateCanI(originalType, Verb.Watch);
+        await SeedResourceAsync(workspace.Runtime, originalType);
 
-        var originalContainer = GetSeededContainer(runtime, originalType);
+        var originalContainer = GetSeededContainer(workspace.Runtime, originalType);
         originalContainer.ShouldNotBeNull();
         GetInformers(originalContainer).Count.ShouldBe(1);
 
         var updatedCrd = ClusterWorkspaceTestCustomResourceDefinitionFactory.Create("tests.kubeui.com", "tests", "otherString");
-        updatedCrd.Metadata.Uid = runtime.GetResource<V1CustomResourceDefinition>(null, originalCrd.Name()).ShouldNotBeNull().Metadata.Uid;
-        await runtime.ReplaceAsync(updatedCrd, TestContext.Current.CancellationToken);
+        updatedCrd.Metadata.Uid = workspace.Runtime.GetResource<V1CustomResourceDefinition>(null, originalCrd.Name()).ShouldNotBeNull().Metadata.Uid;
+        await workspace.Runtime.ReplaceAsync(updatedCrd, TestContext.Current.CancellationToken);
 
         var updatedType = await TestWait.UntilValueAsync(
             () =>
             {
-                var type = GetCustomResourceType(runtime, updatedCrd);
+                var type = GetCustomResourceType(workspace.Runtime, updatedCrd);
                 return type != null && type != originalType ? type : null;
             },
             TimeSpan.FromSeconds(10),
@@ -170,7 +149,7 @@ public class ClusterWorkspaceTests
         updatedResourceConfig.Type.ShouldBe(updatedType);
 
         var updatedContainer = await TestWait.UntilValueAsync(
-            () => GetSeededContainer(runtime, updatedType),
+            () => GetSeededContainer(workspace.Runtime, updatedType),
             TimeSpan.FromSeconds(10),
             cancellationToken: TestContext.Current.CancellationToken,
             beforePoll: () => Dispatcher.UIThread.RunJobs());
@@ -184,28 +163,24 @@ public class ClusterWorkspaceTests
     [Trait("Category", "Kind")]
     public async Task metadata_only_crd_update_does_not_rebuild_resource_config_or_reseed_informer(KubernetesBackend backend)
     {
-        IServiceProvider services = Application.Current.GetTestServices();
-        TestClusterConfig config = services.GetRequiredService<TestClusterConfig>();
-        config.Type = backend;
-        ClusterWorkspace workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
-        IClusterRuntime runtime = workspace.Runtime;
-        await workspace.Connect();
-        await runtime.SeedResource<V1CustomResourceDefinition>(true);
+        var workspace = await Application.Current.CreateClusterAsync(
+            config => config.Type = backend);
+        await workspace.Runtime.SeedResource<V1CustomResourceDefinition>(true);
         var originalCrd = ClusterWorkspaceTestCustomResourceDefinitionFactory.Create("tests.kubeui.com", "tests", "someString");
 
-        await runtime.CreateAsync(originalCrd, TestContext.Current.CancellationToken);
+        await workspace.Runtime.CreateAsync(originalCrd, TestContext.Current.CancellationToken);
 
         var originalType = await TestWait.UntilValueAsync(
-            () => GetCustomResourceType(runtime, originalCrd),
+            () => GetCustomResourceType(workspace.Runtime, originalCrd),
             TimeSpan.FromSeconds(10),
             cancellationToken: TestContext.Current.CancellationToken,
             beforePoll: () => Dispatcher.UIThread.RunJobs());
         originalType.ShouldNotBeNull();
-        await runtime.Permissions.UpdateCanI(originalType, Verb.List);
-        await runtime.Permissions.UpdateCanI(originalType, Verb.Watch);
-        await SeedResourceAsync(runtime, originalType);
+        await workspace.Runtime.Permissions.UpdateCanI(originalType, Verb.List);
+        await workspace.Runtime.Permissions.UpdateCanI(originalType, Verb.Watch);
+        await SeedResourceAsync(workspace.Runtime, originalType);
 
-        var originalContainer = GetSeededContainer(runtime, originalType);
+        var originalContainer = GetSeededContainer(workspace.Runtime, originalType);
         originalContainer.ShouldNotBeNull();
         GetInformers(originalContainer).Count.ShouldBe(1);
 
@@ -217,13 +192,13 @@ public class ClusterWorkspaceTests
         originalResourceConfig.ShouldNotBeNull();
 
         var updatedCrd = ClusterWorkspaceTestCustomResourceDefinitionFactory.Create("tests.kubeui.com", "tests", "someString");
-        updatedCrd.Metadata.Uid = runtime.GetResource<V1CustomResourceDefinition>(null, originalCrd.Name()).ShouldNotBeNull().Metadata.Uid;
+        updatedCrd.Metadata.Uid = workspace.Runtime.GetResource<V1CustomResourceDefinition>(null, originalCrd.Name()).ShouldNotBeNull().Metadata.Uid;
         updatedCrd.Metadata.Annotations = new Dictionary<string, string>
         {
             ["metadata-only"] = "true"
         };
 
-        await runtime.ReplaceAsync(updatedCrd, TestContext.Current.CancellationToken);
+        await workspace.Runtime.ReplaceAsync(updatedCrd, TestContext.Current.CancellationToken);
 
         await TestWait.UntilAsync(
             () => GetCustomResourceConfig(workspace, updatedCrd) is not null,
@@ -240,17 +215,13 @@ public class ClusterWorkspaceTests
     [Trait("Category", "Kind")]
     public async Task seeding_resource_raises_resource_seeded_event(KubernetesBackend backend)
     {
-        IServiceProvider services = Application.Current.GetTestServices();
-        TestClusterConfig config = services.GetRequiredService<TestClusterConfig>();
-        config.Type = backend;
-        ClusterWorkspace workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
-        IClusterRuntime runtime = workspace.Runtime;
-        await workspace.Connect();
+        var workspace = await Application.Current.CreateClusterAsync(
+            config => config.Type = backend);
         GroupApiVersionKind? seededKind = null;
-        runtime.ResourceSeeded += (_, resourceKind) => seededKind = resourceKind;
+        workspace.Runtime.ResourceSeeded += (_, resourceKind) => seededKind = resourceKind;
 
-        await runtime.Permissions.UpdateCanI<V1Pod>(Verb.List);
-        await runtime.Permissions.UpdateCanI<V1Pod>(Verb.Watch);
+        await workspace.Runtime.Permissions.UpdateCanI<V1Pod>(Verb.List);
+        await workspace.Runtime.Permissions.UpdateCanI<V1Pod>(Verb.Watch);
         await workspace.Runtime.SeedResource<V1Pod>();
 
         seededKind.ShouldBe(GroupApiVersionKind.From<V1Pod>());
@@ -259,20 +230,18 @@ public class ClusterWorkspaceTests
     [AvaloniaFact]
     public async Task denied_resource_seed_does_not_raise_resource_seeded_event()
     {
-        IServiceProvider services = Application.Current.GetTestServices();
-        TestClusterConfig config = services.GetRequiredService<TestClusterConfig>();
-        config.AuthenticatedUser = KubernetesRbac.ServiceAccountUser;
-        config.InitialYaml = KubernetesTestData.LimitedAccessWithNamespacePermissions;
-        ClusterWorkspace workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
-        IClusterRuntime runtime = workspace.Runtime;
-        await workspace.Connect();
+        var workspace = await Application.Current.CreateClusterAsync(config =>
+        {
+            config.AuthenticatedUser = KubernetesRbac.ServiceAccountUser;
+            config.InitialYaml = KubernetesTestData.LimitedAccessWithNamespacePermissions;
+        });
         var seeded = false;
-        runtime.ResourceSeeded += (_, _) => seeded = true;
+        workspace.Runtime.ResourceSeeded += (_, _) => seeded = true;
 
         await workspace.Runtime.SeedResource<Corev1Event>();
 
         seeded.ShouldBeFalse();
-        var container = GetSeededContainer(runtime, typeof(Corev1Event));
+        var container = GetSeededContainer(workspace.Runtime, typeof(Corev1Event));
         container.ShouldNotBeNull();
         GetInformers(container).ShouldBeEmpty();
     }
@@ -281,16 +250,11 @@ public class ClusterWorkspaceTests
     [Trait("Category", "Kind")]
     public async Task initializing_workspace_seeds_custom_resource_definitions_when_allowed(KubernetesBackend backend)
     {
-        IServiceProvider services = Application.Current.GetTestServices();
-        TestClusterConfig config = services.GetRequiredService<TestClusterConfig>();
-        config.Type = backend;
-        ClusterWorkspace workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
-        IClusterRuntime runtime = workspace.Runtime;
-
-        await workspace.Connect();
+        var workspace = await Application.Current.CreateClusterAsync(
+            config => config.Type = backend);
 
         var kind = GroupApiVersionKind.From<V1CustomResourceDefinition>();
-        runtime.Objects.TryGetValue(kind, out var container).ShouldBeTrue();
+        workspace.Runtime.Objects.TryGetValue(kind, out var container).ShouldBeTrue();
         container.ShouldBeOfType<ContainerClass<V1CustomResourceDefinition>>()
             .Informers.Count.ShouldBe(1);
     }
@@ -299,33 +263,29 @@ public class ClusterWorkspaceTests
     [Trait("Category", "Kind")]
     public async Task deleted_crd_removes_resource_config_model_cache_entry_and_seeded_informer(KubernetesBackend backend)
     {
-        IServiceProvider services = Application.Current.GetTestServices();
-        TestClusterConfig config = services.GetRequiredService<TestClusterConfig>();
-        config.Type = backend;
-        ClusterWorkspace workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
-        IClusterRuntime runtime = workspace.Runtime;
-        await workspace.Connect();
-        await runtime.SeedResource<V1CustomResourceDefinition>(true);
+        var workspace = await Application.Current.CreateClusterAsync(
+            config => config.Type = backend);
+        await workspace.Runtime.SeedResource<V1CustomResourceDefinition>(true);
         var crd = ClusterWorkspaceTestCustomResourceDefinitionFactory.Create("tests.kubeui.com", "tests", "someString");
 
-        await runtime.CreateAsync(crd, TestContext.Current.CancellationToken);
+        await workspace.Runtime.CreateAsync(crd, TestContext.Current.CancellationToken);
 
         var resourceType = await TestWait.UntilValueAsync(
-            () => GetCustomResourceType(runtime, crd),
+            () => GetCustomResourceType(workspace.Runtime, crd),
             TimeSpan.FromSeconds(10),
             cancellationToken: TestContext.Current.CancellationToken,
             beforePoll: () => Dispatcher.UIThread.RunJobs());
         resourceType.ShouldNotBeNull();
-        await runtime.Permissions.UpdateCanI(resourceType, Verb.List);
-        await runtime.Permissions.UpdateCanI(resourceType, Verb.Watch);
-        await SeedResourceAsync(runtime, resourceType);
+        await workspace.Runtime.Permissions.UpdateCanI(resourceType, Verb.List);
+        await workspace.Runtime.Permissions.UpdateCanI(resourceType, Verb.Watch);
+        await SeedResourceAsync(workspace.Runtime, resourceType);
 
-        var seededContainer = GetSeededContainer(runtime, resourceType);
+        var seededContainer = GetSeededContainer(workspace.Runtime, resourceType);
         seededContainer.ShouldNotBeNull();
         GetInformers(seededContainer).Count.ShouldBe(1);
 
-        crd.Metadata.Uid = runtime.GetResource<V1CustomResourceDefinition>(null, crd.Name()).ShouldNotBeNull().Metadata.Uid;
-        await runtime.DeleteAsync(crd, TestContext.Current.CancellationToken);
+        crd.Metadata.Uid = workspace.Runtime.GetResource<V1CustomResourceDefinition>(null, crd.Name()).ShouldNotBeNull().Metadata.Uid;
+        await workspace.Runtime.DeleteAsync(crd, TestContext.Current.CancellationToken);
 
         await TestWait.UntilAsync(
             () => GetCustomResourceConfig(workspace, crd) == null,
@@ -333,7 +293,7 @@ public class ClusterWorkspaceTests
             cancellationToken: TestContext.Current.CancellationToken,
             beforePoll: () => Dispatcher.UIThread.RunJobs());
         await TestWait.UntilAsync(
-            () => GetCustomResourceType(runtime, crd) == null,
+            () => GetCustomResourceType(workspace.Runtime, crd) == null,
             TimeSpan.FromSeconds(10),
             cancellationToken: TestContext.Current.CancellationToken,
             beforePoll: () => Dispatcher.UIThread.RunJobs());
@@ -347,55 +307,52 @@ public class ClusterWorkspaceTests
     [AvaloniaFact]
     public async Task seeding_namespaced_resource_uses_known_namespaces_without_eager_resource_config_initialization()
     {
-        IServiceProvider services = Application.Current.GetTestServices();
-        TestClusterConfig config = services.GetRequiredService<TestClusterConfig>();
-        config.AuthenticatedUser = KubernetesRbac.ServiceAccountUser;
-        config.InitialResources = new[]
-                {
-                    new V1Namespace { Metadata = new V1ObjectMeta { Name = "team-a" } },
-                    new V1Namespace { Metadata = new V1ObjectMeta { Name = "team-b" } },
-                }
-                    .Concat(KubernetesRbac.InNamespace("team-a",
-                        new RbacRule("pods", "list"),
-                        new RbacRule("pods", "watch")))
-                    .Concat(KubernetesRbac.InNamespace("team-b",
-                        new RbacRule("pods", "list"),
-                        new RbacRule("pods", "watch")))
-                    .ToArray();
-        ClusterWorkspace workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
-        IClusterRuntime runtime = workspace.Runtime;
-        await workspace.Connect();
-        var cluster = runtime;
-        await runtime.SeedResource<V1Namespace>(true);
-        await runtime.AddOrUpdateResource(new V1Namespace
+        var workspace = await Application.Current.CreateClusterAsync(config =>
+        {
+            config.AuthenticatedUser = KubernetesRbac.ServiceAccountUser;
+            config.InitialResources = new[]
+                    {
+                        new V1Namespace { Metadata = new V1ObjectMeta { Name = "team-a" } },
+                        new V1Namespace { Metadata = new V1ObjectMeta { Name = "team-b" } },
+                    }
+                        .Concat(KubernetesRbac.InNamespace("team-a",
+                            new RbacRule("pods", "list"),
+                            new RbacRule("pods", "watch")))
+                        .Concat(KubernetesRbac.InNamespace("team-b",
+                            new RbacRule("pods", "list"),
+                            new RbacRule("pods", "watch")))
+                        .ToArray();
+        });
+        await workspace.Runtime.SeedResource<V1Namespace>(true);
+        await workspace.Runtime.AddOrUpdateResource(new V1Namespace
         {
             Metadata = new V1ObjectMeta { Name = "team-a" }
         });
-        await runtime.AddOrUpdateResource(new V1Namespace
+        await workspace.Runtime.AddOrUpdateResource(new V1Namespace
         {
             Metadata = new V1ObjectMeta { Name = "team-b" }
         });
 
         await TestWait.UntilAsync(
-            () => runtime.Namespaces.Select(x => x.Name()).Contains("team-a")
-                && runtime.Namespaces.Select(x => x.Name()).Contains("team-b"),
+            () => workspace.Runtime.Namespaces.Select(x => x.Name()).Contains("team-a")
+                && workspace.Runtime.Namespaces.Select(x => x.Name()).Contains("team-b"),
             TimeSpan.FromSeconds(10),
             cancellationToken: TestContext.Current.CancellationToken,
             beforePoll: () => Dispatcher.UIThread.RunJobs());
 
         workspace.GetResourceConfigs().ShouldBeEmpty();
 
-        await cluster.Permissions.UpdateCanI<V1Pod>(Verb.List, "team-a");
-        await cluster.Permissions.UpdateCanI<V1Pod>(Verb.Watch, "team-a");
-        await cluster.Permissions.UpdateCanI<V1Pod>(Verb.List, "team-b");
-        await cluster.Permissions.UpdateCanI<V1Pod>(Verb.Watch, "team-b");
+        await workspace.Runtime.Permissions.UpdateCanI<V1Pod>(Verb.List, "team-a");
+        await workspace.Runtime.Permissions.UpdateCanI<V1Pod>(Verb.Watch, "team-a");
+        await workspace.Runtime.Permissions.UpdateCanI<V1Pod>(Verb.List, "team-b");
+        await workspace.Runtime.Permissions.UpdateCanI<V1Pod>(Verb.Watch, "team-b");
 
         await workspace.Runtime.SeedResource<V1Pod>();
 
-        runtime.GetResource<V1Namespace>(null, "team-a").ShouldNotBeNull();
+        workspace.Runtime.GetResource<V1Namespace>(null, "team-a").ShouldNotBeNull();
         workspace.GetResourceConfigs().ShouldBeEmpty();
 
-        var podContainer = GetSeededContainer(runtime, typeof(V1Pod));
+        var podContainer = GetSeededContainer(workspace.Runtime, typeof(V1Pod));
         podContainer.ShouldNotBeNull();
         GetInformers(podContainer).Count.ShouldBe(2);
     }
@@ -404,17 +361,14 @@ public class ClusterWorkspaceTests
     [Trait("Category", "Kind")]
     public async Task disconnect_disposes_seeded_informers_and_registrations(KubernetesBackend backend)
     {
-        IServiceProvider services = Application.Current.GetTestServices();
-        TestClusterConfig config = services.GetRequiredService<TestClusterConfig>();
-        config.Type = backend;
-        ClusterWorkspace workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
-        IClusterRuntime runtime = workspace.Runtime;
+        var workspace = await Application.Current.CreateClusterAsync(
+            config => config.Type = backend);
 
-        await runtime.Permissions.UpdateCanI<V1Pod>(Verb.List);
-        await runtime.Permissions.UpdateCanI<V1Pod>(Verb.Watch);
+        await workspace.Runtime.Permissions.UpdateCanI<V1Pod>(Verb.List);
+        await workspace.Runtime.Permissions.UpdateCanI<V1Pod>(Verb.Watch);
         await workspace.Runtime.SeedResource<V1Pod>();
 
-        var container = GetSeededContainer(runtime, typeof(V1Pod));
+        var container = GetSeededContainer(workspace.Runtime, typeof(V1Pod));
         container.ShouldNotBeNull();
 
         var informers = GetInformers(container);
@@ -429,36 +383,32 @@ public class ClusterWorkspaceTests
             TimeSpan.FromSeconds(10),
             cancellationToken: TestContext.Current.CancellationToken,
             beforePoll: () => Dispatcher.UIThread.RunJobs());
-        runtime.Objects.ShouldBeEmpty();
+        workspace.Runtime.Objects.ShouldBeEmpty();
     }
 
     [AvaloniaTheory, KubernetesBackendData]
     [Trait("Category", "Kind")]
     public async Task disconnect_allows_resource_types_to_be_seeded_again(KubernetesBackend backend)
     {
-        IServiceProvider services = Application.Current.GetTestServices();
-        TestClusterConfig config = services.GetRequiredService<TestClusterConfig>();
-        config.Type = backend;
-        ClusterWorkspace workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
-        IClusterRuntime runtime = workspace.Runtime;
-        await workspace.Connect();
+        var workspace = await Application.Current.CreateClusterAsync(
+            config => config.Type = backend);
 
-        await runtime.Permissions.UpdateCanI<V1Pod>(Verb.List);
-        await runtime.Permissions.UpdateCanI<V1Pod>(Verb.Watch);
+        await workspace.Runtime.Permissions.UpdateCanI<V1Pod>(Verb.List);
+        await workspace.Runtime.Permissions.UpdateCanI<V1Pod>(Verb.Watch);
         await workspace.Runtime.SeedResource<V1Pod>();
 
-        var initialContainer = GetSeededContainer(runtime, typeof(V1Pod));
+        var initialContainer = GetSeededContainer(workspace.Runtime, typeof(V1Pod));
         initialContainer.ShouldNotBeNull();
         GetInformers(initialContainer).Count.ShouldBe(1);
 
         await workspace.Disconnect();
 
-        runtime.Objects.ShouldBeEmpty();
+        workspace.Runtime.Objects.ShouldBeEmpty();
 
         await workspace.Connect();
         await workspace.Runtime.SeedResource<V1Pod>();
 
-        var reseededContainer = GetSeededContainer(runtime, typeof(V1Pod));
+        var reseededContainer = GetSeededContainer(workspace.Runtime, typeof(V1Pod));
         reseededContainer.ShouldNotBeNull();
         GetInformers(reseededContainer).Count.ShouldBe(1);
         GetInformerRegistrations(reseededContainer).Count.ShouldBe(1);
@@ -468,19 +418,15 @@ public class ClusterWorkspaceTests
     [Trait("Category", "Kind")]
     public async Task disconnect_removes_dynamic_crd_model_cache_entries(KubernetesBackend backend)
     {
-        IServiceProvider services = Application.Current.GetTestServices();
-        TestClusterConfig config = services.GetRequiredService<TestClusterConfig>();
-        config.Type = backend;
-        ClusterWorkspace workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
-        IClusterRuntime runtime = workspace.Runtime;
-        await workspace.Connect();
-        await runtime.SeedResource<V1CustomResourceDefinition>(true);
+        var workspace = await Application.Current.CreateClusterAsync(
+            config => config.Type = backend);
+        await workspace.Runtime.SeedResource<V1CustomResourceDefinition>(true);
         var crd = ClusterWorkspaceTestCustomResourceDefinitionFactory.Create("tests.kubeui.com", "tests", "someString");
 
-        await runtime.CreateAsync(crd, TestContext.Current.CancellationToken);
+        await workspace.Runtime.CreateAsync(crd, TestContext.Current.CancellationToken);
 
         var resourceType = await TestWait.UntilValueAsync(
-            () => GetCustomResourceType(runtime, crd),
+            () => GetCustomResourceType(workspace.Runtime, crd),
             TimeSpan.FromSeconds(10),
             cancellationToken: TestContext.Current.CancellationToken,
             beforePoll: () => Dispatcher.UIThread.RunJobs());
@@ -489,7 +435,7 @@ public class ClusterWorkspaceTests
         await workspace.Disconnect();
 
         await TestWait.UntilAsync(
-            () => GetCustomResourceType(runtime, crd) == null,
+            () => GetCustomResourceType(workspace.Runtime, crd) == null,
             TimeSpan.FromSeconds(10),
             cancellationToken: TestContext.Current.CancellationToken,
             beforePoll: () => Dispatcher.UIThread.RunJobs());
@@ -498,11 +444,9 @@ public class ClusterWorkspaceTests
     [AvaloniaFact]
     public async Task connect_returns_before_synchronous_connection_work_completes()
     {
-        IServiceProvider services = Application.Current.GetTestServices();
-        TestClusterConfig config = services.GetRequiredService<TestClusterConfig>();
-        config.ResponseLatency = TimeSpan.FromMilliseconds(200);
-        ClusterWorkspace workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
-        IClusterRuntime runtime = workspace.Runtime;
+        var workspace = await Application.Current.CreateClusterAsync(
+            config => config.ResponseLatency = TimeSpan.FromMilliseconds(200),
+            connect: false);
 
         var stopwatch = Stopwatch.StartNew();
         var connectTask = workspace.Connect();
@@ -511,15 +455,13 @@ public class ClusterWorkspaceTests
         stopwatch.Elapsed.ShouldBeLessThan(TimeSpan.FromMilliseconds(150));
 
         await connectTask;
-        runtime.Connected.ShouldBeTrue();
+        workspace.Runtime.Connected.ShouldBeTrue();
     }
 
     [AvaloniaFact]
     public async Task concurrent_connect_calls_share_one_in_flight_connection()
     {
-        IServiceProvider services = Application.Current.GetTestServices();
-        TestClusterConfig config = services.GetRequiredService<TestClusterConfig>();
-        var workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var workspace = await Application.Current.CreateClusterAsync(connect: false);
 
         var firstConnect = workspace.Connect();
         var secondConnect = workspace.Connect();
@@ -532,16 +474,14 @@ public class ClusterWorkspaceTests
     [AvaloniaFact]
     public async Task connect_skips_workspace_initialization_when_runtime_remains_disconnected()
     {
-        IServiceProvider services = Application.Current.GetTestServices();
-        TestClusterConfig config = services.GetRequiredService<TestClusterConfig>();
-        config.ThrowOnConnect = true;
-        ClusterWorkspace workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
-        IClusterRuntime runtime = workspace.Runtime;
-        runtime.Status = ClusterStatus.Errored;
+        var workspace = await Application.Current.CreateClusterAsync(
+            config => config.ThrowOnConnect = true,
+            connect: false);
+        workspace.Runtime.Status = ClusterStatus.Errored;
 
         await workspace.Connect();
 
-        runtime.Connected.ShouldBeFalse();
+        workspace.Runtime.Connected.ShouldBeFalse();
         workspace.GetResourceConfigs().ShouldNotBeEmpty();
     }
 
@@ -549,19 +489,14 @@ public class ClusterWorkspaceTests
     [Trait("Category", "Kind")]
     public async Task added_crd_does_not_refresh_authorization_index_for_generated_resource(KubernetesBackend backend)
     {
-        IServiceProvider services = Application.Current.GetTestServices();
-        TestClusterConfig config = services.GetRequiredService<TestClusterConfig>();
-        config.Type = backend;
-        ClusterWorkspace workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
-        var runtime = workspace.Runtime;
-
-        await workspace.Connect();
+        var workspace = await Application.Current.CreateClusterAsync(
+            config => config.Type = backend);
 
         var crd = ClusterWorkspaceTestCustomResourceDefinitionFactory.Create("tests.kubeui.com", "tests", "someString");
-        await runtime.AddOrUpdateResource(crd);
+        await workspace.Runtime.AddOrUpdateResource(crd);
 
         var resourceType = await TestWait.UntilValueAsync(
-            () => GetCustomResourceType(runtime, crd),
+            () => GetCustomResourceType(workspace.Runtime, crd),
             TimeSpan.FromSeconds(10),
             cancellationToken: TestContext.Current.CancellationToken,
             beforePoll: () => Dispatcher.UIThread.RunJobs());

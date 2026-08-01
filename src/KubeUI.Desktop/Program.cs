@@ -108,7 +108,7 @@ internal static class Program
     {
         services.AddLogging(loggingBuilder =>
         {
-            string settingsDirectory = SettingsPersistenceLoader.SettingsDirectory;
+            var settingsDirectory = SettingsPersistenceLoader.SettingsDirectory;
             if (SettingsPersistenceLoader.EnsureDirectoryExists())
             {
                 loggingBuilder.AddFile(Path.Combine(settingsDirectory, "app.log"), x =>

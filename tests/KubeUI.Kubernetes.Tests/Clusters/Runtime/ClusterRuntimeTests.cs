@@ -31,7 +31,8 @@ public sealed class ClusterRuntimeTests : ClusterRuntimeAssertions
                         Metadata = new k8s.Models.V1ObjectMeta { Name = "scenario" },
                     },
                 ],
-            });
+            },
+            TestContext.Current.CancellationToken);
         await clusterScope.Cluster.Connect();
 
         using var client = clusterScope.Cluster.Client!.GetGenericClient<k8s.Models.V1Namespace>();
@@ -54,7 +55,8 @@ public sealed class ClusterRuntimeTests : ClusterRuntimeAssertions
                     new RbacRule("namespaces", "watch"),
                     new RbacRule("pods", "list"),
                     new RbacRule("pods", "watch")),
-            });
+            },
+            TestContext.Current.CancellationToken);
         var cluster = clusterScope.Cluster;
         await cluster.Connect();
 
@@ -69,7 +71,7 @@ public sealed class ClusterRuntimeTests : ClusterRuntimeAssertions
 
     protected override async Task<TestCluster> CreateHarnessAsync(KubernetesBackend backend)
     {
-        TestCluster harness = await new TestClusterGenerator().CreateAsync(
+        var harness = await new TestClusterGenerator().CreateAsync(
             new TestClusterConfig { Type = backend },
             TestContext.Current.CancellationToken);
         await harness.Cluster.Connect();

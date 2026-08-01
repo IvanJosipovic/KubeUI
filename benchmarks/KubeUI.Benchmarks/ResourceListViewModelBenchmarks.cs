@@ -18,7 +18,6 @@ namespace KubeUI.Benchmarks;
 public class ResourceListViewModelBenchmarks
 {
     private IReadOnlyDictionary<string, IResourceListColumn> _columnsByKey = null!;
-    private IReadOnlyList<IResourceListColumn> _orderedColumns = null!;
     private IReadOnlyList<SortingDescriptor> _sortDescriptors = null!;
     private IReadOnlyList<FilteringDescriptor> _filterDescriptors = null!;
     private IReadOnlyList<SearchDescriptor> _searchAllDescriptors = null!;
@@ -43,7 +42,6 @@ public class ResourceListViewModelBenchmarks
     public void Setup()
     {
         var columns = BuildColumns(ColumnCount);
-        _orderedColumns = columns;
         var columnsByKey = new Dictionary<string, IResourceListColumn>(columns.Count, StringComparer.OrdinalIgnoreCase);
         for (var i = 0; i < columns.Count; i++)
         {

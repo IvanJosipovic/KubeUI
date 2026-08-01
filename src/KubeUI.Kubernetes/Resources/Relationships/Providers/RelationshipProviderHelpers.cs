@@ -29,7 +29,7 @@ internal static class RelationshipProviderHelpers
         ResourceRelationshipKind relationshipKind,
         string? label = null)
     {
-        if (context.TryGet(apiVersion, kind, namespaceName, name, out IKubernetesObject<V1ObjectMeta>? target)
+        if (context.TryGet(apiVersion, kind, namespaceName, name, out var target)
             && target != null)
         {
             context.Add(relationships, source, target, relationshipKind, label);
@@ -53,7 +53,7 @@ internal static class RelationshipProviderHelpers
 
         if (target == null && targetReference != null)
         {
-            string apiVersion = string.IsNullOrWhiteSpace(targetReference.ApiVersion)
+            var apiVersion = string.IsNullOrWhiteSpace(targetReference.ApiVersion)
                 ? V1Pod.KubeApiVersion
                 : targetReference.ApiVersion;
             context.TryGet(apiVersion, targetReference.Kind ?? string.Empty, targetReference.NamespaceProperty ?? defaultNamespace, targetReference.Name, out target);
@@ -61,7 +61,7 @@ internal static class RelationshipProviderHelpers
 
         if (target == null
             && targetReference != null
-            && context.TryGetByGroupAndKind(string.Empty, string.IsNullOrWhiteSpace(targetReference.Kind) ? V1Pod.KubeKind : targetReference.Kind, out IReadOnlyList<IKubernetesObject<V1ObjectMeta>> candidates))
+            && context.TryGetByGroupAndKind(string.Empty, string.IsNullOrWhiteSpace(targetReference.Kind) ? V1Pod.KubeKind : targetReference.Kind, out var candidates))
         {
             target = candidates.FirstOrDefault(candidate =>
                 string.Equals(candidate.Namespace(), targetReference.NamespaceProperty ?? defaultNamespace, StringComparison.Ordinal)
@@ -84,7 +84,7 @@ internal static class RelationshipProviderHelpers
         string? namespaceName,
         ResourceRelationshipKind relationshipKind)
     {
-        foreach (IKubernetesObject<V1ObjectMeta> target in context.SelectByLabelSelector(apiGroup, kind, selector, namespaceName))
+        foreach (var target in context.SelectByLabelSelector(apiGroup, kind, selector, namespaceName))
         {
             context.Add(relationships, source, target, relationshipKind);
         }

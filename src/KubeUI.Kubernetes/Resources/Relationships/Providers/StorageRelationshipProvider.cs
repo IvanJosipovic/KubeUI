@@ -28,11 +28,11 @@ public sealed class StorageRelationshipProvider : IResourceRelationshipProvider
 
         if (resource is V1PersistentVolumeClaim claimWithDataSource)
         {
-            string? apiVersion = claimWithDataSource.Spec?.DataSourceRef?.ApiGroup is { Length: > 0 } group
+            var apiVersion = claimWithDataSource.Spec?.DataSourceRef?.ApiGroup is { Length: > 0 } group
                 ? $"{group}/v1"
                 : claimWithDataSource.Spec?.DataSource?.Kind == V1PersistentVolumeClaim.KubeKind ? V1PersistentVolumeClaim.KubeApiVersion : null;
-            string? kind = claimWithDataSource.Spec?.DataSourceRef?.Kind ?? claimWithDataSource.Spec?.DataSource?.Kind;
-            string? name = claimWithDataSource.Spec?.DataSourceRef?.Name ?? claimWithDataSource.Spec?.DataSource?.Name;
+            var kind = claimWithDataSource.Spec?.DataSourceRef?.Kind ?? claimWithDataSource.Spec?.DataSource?.Kind;
+            var name = claimWithDataSource.Spec?.DataSourceRef?.Name ?? claimWithDataSource.Spec?.DataSource?.Name;
             if (apiVersion != null && kind != null)
             {
                 RelationshipProviderHelpers.AddByName(context, relationships, resource, apiVersion, kind, claimWithDataSource.Namespace(), name, ResourceRelationshipKind.Storage);

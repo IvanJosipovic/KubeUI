@@ -37,12 +37,12 @@ public sealed class PodAttachTests
             }
         };
 
-        List<MenuItemViewModel> items = config.GetCustomMenuItems(new[] { pod }).ToList();
-        MenuItemViewModel attachMenu = items.Single(x => x.Title?.Equals("Attach") == true);
+        var items = config.GetCustomMenuItems(new[] { pod }).ToList();
+        var attachMenu = items.Single(x => x.Title?.Equals("Attach") == true);
 
         attachMenu.Items.ShouldNotBeNull();
 
-        List<MenuItemViewModel> attachGroups = attachMenu.Items.Cast<MenuItemViewModel>().ToList();
+        var attachGroups = attachMenu.Items.Cast<MenuItemViewModel>().ToList();
         attachGroups.Select(x => x.Title).ShouldContain("Init");
         attachGroups.Select(x => x.Title).ShouldContain("Normal");
         attachGroups.Select(x => x.Title).ShouldContain("Ephemeral");
@@ -108,16 +108,16 @@ public sealed class PodAttachTests
             }
         };
 
-        List<MenuItemViewModel> items = config.GetCustomMenuItems(new[] { pod }).ToList();
+        var items = config.GetCustomMenuItems(new[] { pod }).ToList();
 
         MenuItemViewModel debugMenu = items.Single(x => x.Title == Assets.Resources.V1PodConfig_DebugContainer);
-        List<MenuItemViewModel> debugGroups = debugMenu.Items!.Cast<MenuItemViewModel>().ToList();
+        var debugGroups = debugMenu.Items!.Cast<MenuItemViewModel>().ToList();
         debugGroups.Select(x => x.Title).ShouldContain("Init");
         debugGroups.Select(x => x.Title).ShouldContain("Normal");
         debugGroups.Select(x => x.Title).ShouldContain("Ephemeral");
 
-        MenuItemViewModel portForwardMenu = items.Single(x => x.Title == "Port Forwarding");
-        List<MenuItemViewModel> portForwardGroups = portForwardMenu.Items!.Cast<MenuItemViewModel>().ToList();
+        var portForwardMenu = items.Single(x => x.Title == "Port Forwarding");
+        var portForwardGroups = portForwardMenu.Items!.Cast<MenuItemViewModel>().ToList();
         portForwardGroups.Select(x => x.Title).ShouldContain("Init");
         portForwardGroups.Select(x => x.Title).ShouldContain("Normal");
         portForwardGroups.Select(x => x.Title).ShouldContain("Ephemeral");
@@ -184,13 +184,12 @@ public sealed class PodAttachTests
 
     private static async Task AssertConnectionModeAsync(bool useAttach, ConnectionMethod expectedMethod)
     {
-        IServiceProvider services = Application.Current.GetTestServices();
-        TestClusterConfig config = services.GetRequiredService<TestClusterConfig>();
-        ClusterWorkspace workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
-        var runtime = workspace.Runtime;
-        runtime.Name = "pod-attach-test";
-        runtime.Connected = true;
-        runtime.Status = ClusterStatus.Connected;
+        var services = Application.Current.GetTestServices();
+        var config = services.GetRequiredService<TestClusterConfig>();
+        var workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        workspace.Runtime.Name = "pod-attach-test";
+        workspace.Runtime.Connected = true;
+        workspace.Runtime.Status = ClusterStatus.Connected;
         var settings = services.GetRequiredService<ISettingsService>();
         var logger = services.GetRequiredService<ILogger<PodConsoleViewModel>>();
 
@@ -220,7 +219,7 @@ public sealed class PodAttachTests
             CreateWebSocketBuilder = () => webSocketBuilder,
         };
 
-        runtime.Client = client;
+        workspace.Runtime.Client = client;
 
         using PodConsoleViewModel viewModel = new(logger, settings)
         {
@@ -230,7 +229,7 @@ public sealed class PodAttachTests
             UseAttach = useAttach,
         };
 
-        WebSocket result = await viewModel.OpenConnectionAsync();
+        var result = await viewModel.OpenConnectionAsync();
         result.ShouldBe(webSocket);
 
         if (expectedMethod == ConnectionMethod.Attach)

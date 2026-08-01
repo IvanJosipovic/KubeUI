@@ -69,7 +69,7 @@ public class TestApp : Application, IServiceProviderHost, IDisposable
         var services = new ServiceCollection();
         services.AddLogging();
         services.AddSingleton<IHostApplicationLifetime, KubernetesTestHostApplicationLifetime>();
-        string kubeConfigPath = Path.Combine(Path.GetTempPath(), $"kubeui-avalonia-{Guid.NewGuid():N}.config");
+        var kubeConfigPath = Path.Combine(Path.GetTempPath(), $"kubeui-avalonia-{Guid.NewGuid():N}.config");
 
         ContentDialogSettings = null;
         Notification = null;
@@ -195,7 +195,7 @@ internal static class TestAppClusterRuntimeExtensions
         where T : class, k8s.IKubernetesObject<k8s.Models.V1ObjectMeta>, new()
     {
         using var client = runtime.Client!.GetGenericClient<T>();
-        T current = string.IsNullOrEmpty(item.Metadata?.NamespaceProperty)
+        var current = string.IsNullOrEmpty(item.Metadata?.NamespaceProperty)
             ? await client.ReadAsync<T>(item.Metadata!.Name, cancellationToken).ConfigureAwait(false)
             : await client.ReadNamespacedAsync<T>(item.Metadata.NamespaceProperty, item.Metadata.Name, cancellationToken).ConfigureAwait(false);
         item.Metadata.ResourceVersion = current.Metadata.ResourceVersion;

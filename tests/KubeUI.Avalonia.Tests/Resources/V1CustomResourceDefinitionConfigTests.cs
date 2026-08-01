@@ -12,9 +12,8 @@ public class V1CustomResourceDefinitionConfigTests
     [AvaloniaFact]
     public async Task list_crd_command_does_not_throw_when_type_is_unavailable()
     {
-        IServiceProvider services = Application.Current.GetTestServices();
-        TestClusterConfig clusterConfig = services.GetRequiredService<TestClusterConfig>();
-        ClusterWorkspace cluster = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var services = Application.Current.GetTestServices();
+        var cluster = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         var config = ActivatorUtilities.CreateInstance<V1CustomResourceDefinitionConfig>(services);
         config.Initialize(cluster);
 
@@ -29,9 +28,9 @@ public class V1CustomResourceDefinitionConfigTests
     [AvaloniaFact]
     public async Task generate_uses_humanized_plural_kind_for_display_name()
     {
-        IServiceProvider services = Application.Current.GetTestServices();
-        TestClusterConfig clusterConfig = services.GetRequiredService<TestClusterConfig>();
-        ClusterWorkspace cluster = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var services = Application.Current.GetTestServices();
+
+        var cluster = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         var config = ActivatorUtilities.CreateInstance<CRDResourceConfig<TestCustomResource>>(services);
         config.Initialize(cluster);
 
@@ -82,9 +81,8 @@ public class V1CustomResourceDefinitionConfigTests
     [AvaloniaFact]
     public async Task crd_printer_column_returns_empty_value_for_missing_annotation_key()
     {
-        IServiceProvider services = Application.Current.GetTestServices();
-        TestClusterConfig clusterConfig = services.GetRequiredService<TestClusterConfig>();
-        ClusterWorkspace cluster = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var services = Application.Current.GetTestServices();
+        var cluster = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         var config = ActivatorUtilities.CreateInstance<CRDResourceConfig<TestCustomResource>>(services);
         config.Initialize(cluster);
 
@@ -140,9 +138,9 @@ public class V1CustomResourceDefinitionConfigTests
     [AvaloniaFact]
     public async Task crd_generator_uses_nullable_value_types_for_optional_printer_columns()
     {
-        IServiceProvider services = Application.Current.GetTestServices();
-        TestClusterConfig clusterConfig = services.GetRequiredService<TestClusterConfig>();
-        ClusterWorkspace cluster = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var services = Application.Current.GetTestServices();
+        var clusterConfig = services.GetRequiredService<TestClusterConfig>();
+        var cluster = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         var config = ActivatorUtilities.CreateInstance<CRDResourceConfig<TestCustomResourceWithSpec>>(services);
         config.Initialize(cluster);
 

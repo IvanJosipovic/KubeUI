@@ -35,7 +35,7 @@ public sealed class ResourceGraphControlTests
 
     private static async Task WaitForSignalAsync(Task signal, string description)
     {
-        DateTime deadline = DateTime.UtcNow.AddSeconds(5);
+        var deadline = DateTime.UtcNow.AddSeconds(5);
         while (!signal.IsCompleted)
         {
             Dispatcher.UIThread.RunJobs();
@@ -53,7 +53,7 @@ public sealed class ResourceGraphControlTests
         await cluster.Connect();
         await WaitForAsync(() => resourceTypes.All(resourceType =>
         {
-            IResourceConfig resourceConfig = cluster.GetResourceConfig(resourceType);
+            var resourceConfig = cluster.GetResourceConfig(resourceType);
             return resourceConfig.PermissionsLoaded && resourceConfig.CanListAndWatch;
         }));
     }
@@ -62,12 +62,7 @@ public sealed class ResourceGraphControlTests
     [Trait("Category", "Kind")]
     public async Task visualizing_namespace_links_namespace_selector_and_can_unlink(KubernetesBackend backend)
     {
-        IServiceProvider services = Application.Current.GetTestServices();
-        TestClusterConfig config = services.GetRequiredService<TestClusterConfig>();
-        config.Type = backend;
-        ClusterWorkspace clusterScope = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
-        var cluster = clusterScope;
-        await cluster.Connect();
+        var cluster = await Application.Current.CreateClusterAsync(config => config.Type = backend);
         V1Namespace namespaceResource = new() { Metadata = new() { Name = "team-a" } };
         await cluster.Runtime.AddOrUpdateResource(namespaceResource);
 
@@ -98,14 +93,9 @@ public sealed class ResourceGraphControlTests
     [Trait("Category", "Kind")]
     public async Task visualizing_selected_namespace_includes_pvc_already_loaded_before_view_initialization(KubernetesBackend backend)
     {
-        IServiceProvider services = Application.Current.GetTestServices();
-        TestClusterConfig config = services.GetRequiredService<TestClusterConfig>();
-        config.Type = backend;
-        ClusterWorkspace clusterScope = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
-        var cluster = clusterScope;
-        await cluster.Connect();
+        var cluster = await Application.Current.CreateClusterAsync(config => config.Type = backend);
         V1Namespace namespaceResource = new() { Metadata = new() { Name = "platform-dev-ijosipov" } };
-        await clusterScope.Runtime.CreateAsync(namespaceResource, TestContext.Current.CancellationToken);
+        await cluster.Runtime.CreateAsync(namespaceResource, TestContext.Current.CancellationToken);
         await cluster.Runtime.SeedResource<V1PersistentVolumeClaim>(true);
 
         V1PersistentVolumeClaim claim = new()
@@ -130,7 +120,7 @@ public sealed class ResourceGraphControlTests
         }
         else
         {
-            await clusterScope.Runtime.CreateAsync(claim, TestContext.Current.CancellationToken);
+            await cluster.Runtime.CreateAsync(claim, TestContext.Current.CancellationToken);
             await TestWait.UntilAsync(
                 () => cluster.Runtime.GetResourceList<V1PersistentVolumeClaim>().Any(resource => resource.Name() == claim.Name()),
                 TimeSpan.FromSeconds(10),
@@ -160,19 +150,19 @@ public sealed class ResourceGraphControlTests
             },
         };
 
-        IServiceProvider services = Application.Current.GetTestServices();
-        TestClusterConfig config = services.GetRequiredService<TestClusterConfig>();
+        var services = Application.Current.GetTestServices();
+        var config = services.GetRequiredService<TestClusterConfig>();
         config.Type = backend;
-        ClusterWorkspace clusterScope = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
-        var cluster = clusterScope;
+        var cluster = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+
         await ConnectAndWaitForResourceConfigsAsync(cluster, typeof(V1Secret));
         V1Namespace namespaceResource = new() { Metadata = new() { Name = "platform-dev-ijosipov" } };
-        await clusterScope.Runtime.CreateAsync(namespaceResource, TestContext.Current.CancellationToken);
+        await cluster.Runtime.CreateAsync(namespaceResource, TestContext.Current.CancellationToken);
 
         using (VisualizationViewModel firstView = new(new ResourceRelationshipBuilder()))
         {
             firstView.Initialize(cluster, namespaceResource);
-            await clusterScope.Runtime.CreateAsync(secret, TestContext.Current.CancellationToken);
+            await cluster.Runtime.CreateAsync(secret, TestContext.Current.CancellationToken);
             await cluster.Runtime.SeedResource<V1Secret>(true);
             await WaitForAsync(() => firstView.Graph!.Resources.Any(resource => resource.Name() == secret.Name()));
         }
@@ -198,20 +188,20 @@ public sealed class ResourceGraphControlTests
             },
         };
 
-        IServiceProvider services = Application.Current.GetTestServices();
-        TestClusterConfig config = services.GetRequiredService<TestClusterConfig>();
+        var services = Application.Current.GetTestServices();
+        var config = services.GetRequiredService<TestClusterConfig>();
         config.Type = backend;
-        ClusterWorkspace clusterScope = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
-        var cluster = clusterScope;
+        var cluster = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+
         await ConnectAndWaitForResourceConfigsAsync(cluster, typeof(V1Secret));
         V1Namespace namespaceResource = new() { Metadata = new() { Name = "platform-dev-ijosipov" } };
-        await clusterScope.Runtime.CreateAsync(namespaceResource, TestContext.Current.CancellationToken);
+        await cluster.Runtime.CreateAsync(namespaceResource, TestContext.Current.CancellationToken);
 
         using (VisualizationViewModel firstView = new(new ResourceRelationshipBuilder()))
         {
             firstView.Initialize(cluster);
             firstView.SelectedNamespaces.Add(namespaceResource);
-            await clusterScope.Runtime.CreateAsync(secret, TestContext.Current.CancellationToken);
+            await cluster.Runtime.CreateAsync(secret, TestContext.Current.CancellationToken);
             await cluster.Runtime.SeedResource<V1Secret>(true);
             await WaitForAsync(() => firstView.Graph!.Resources.Any(resource => resource.Name() == secret.Name()));
         }
@@ -241,7 +231,7 @@ public sealed class ResourceGraphControlTests
                 new(GetIdentity(root), GetIdentity(child), ResourceRelationshipKind.Owner),
             ]);
 
-        ResourceRelationshipGraph filtered = VisualizationViewModel.FilterToRootResource(graph, root);
+        var filtered = VisualizationViewModel.FilterToRootResource(graph, root);
 
         filtered.Resources.Select(resource => resource.Name()).ShouldBe(["grandparent", "parent", "root", "child"]);
     }
@@ -260,7 +250,7 @@ public sealed class ResourceGraphControlTests
                 new(GetIdentity(childParent), GetIdentity(child), ResourceRelationshipKind.Owner),
             ]);
 
-        ResourceRelationshipGraph filtered = VisualizationViewModel.FilterToRootResource(graph, root);
+        var filtered = VisualizationViewModel.FilterToRootResource(graph, root);
 
         filtered.Resources.Select(resource => resource.Name()).ShouldBe(["root", "child"]);
     }
@@ -298,14 +288,14 @@ public sealed class ResourceGraphControlTests
             Endpoints = [new() { TargetRef = new() { ApiVersion = "v1", Kind = V1Pod.KubeKind, Name = "database-1", NamespaceProperty = "authentik", Uid = "sibling-pod-uid" } }],
         };
 
-        ResourceRelationshipGraph graph = new ResourceRelationshipBuilder().Build([service, pod, siblingPod, root, sibling], new HashSet<string>(), hideNoise: true);
-        ResourceRelationshipGraph delta = new ResourceRelationshipBuilder().BuildAdditionDelta(
+        var graph = new ResourceRelationshipBuilder().Build([service, pod, siblingPod, root, sibling], new HashSet<string>(), hideNoise: true);
+        var delta = new ResourceRelationshipBuilder().BuildAdditionDelta(
             [service, pod, siblingPod, root, sibling],
             new ResourceKey("discovery.k8s.io/v1", V1EndpointSlice.KubeKind, "authentik", "database-root"),
             new HashSet<string>(),
             hideNoise: true);
         delta.Resources.Select(resource => resource.Name()).ShouldBe(["database", "database-0", "database-root"]);
-        ResourceRelationshipGraph filtered = VisualizationViewModel.FilterToRootResource(graph, root);
+        var filtered = VisualizationViewModel.FilterToRootResource(graph, root);
 
         filtered.Resources.Select(resource => resource.Name()).ShouldBe(["database", "database-0", "database-root"]);
     }
@@ -313,7 +303,7 @@ public sealed class ResourceGraphControlTests
     [AvaloniaFact]
     public async Task resource_type_selection_persists_across_graph_updates_and_selects_new_types()
     {
-        V1Pod pod = CreatePod("pod");
+        var pod = CreatePod("pod");
         V1Service service = new()
         {
             ApiVersion = "v1",
@@ -381,12 +371,12 @@ public sealed class ResourceGraphControlTests
                 },
             },
         };
-        ResourceRelationshipGraph graph = new ResourceRelationshipBuilder().Build(
+        var graph = new ResourceRelationshipBuilder().Build(
             [managed, application, unrelatedManaged],
             new HashSet<string>(),
             hideNoise: true);
 
-        ResourceRelationshipGraph filtered = VisualizationViewModel.FilterToSelectedNamespaces(
+        var filtered = VisualizationViewModel.FilterToSelectedNamespaces(
             graph,
             new HashSet<string> { "workload" });
 
@@ -433,12 +423,12 @@ public sealed class ResourceGraphControlTests
             Kind = "Application",
             Metadata = new() { Name = "demo-app", NamespaceProperty = "argocd" },
         };
-        ResourceRelationshipGraph graph = new ResourceRelationshipBuilder().Build(
+        var graph = new ResourceRelationshipBuilder().Build(
             [managed, unrelatedClusterResource, application],
             new HashSet<string>(),
             hideNoise: true);
 
-        ResourceRelationshipGraph filtered = VisualizationViewModel.FilterToSelectedNamespaces(
+        var filtered = VisualizationViewModel.FilterToSelectedNamespaces(
             graph,
             new HashSet<string> { "workload" });
 
@@ -469,13 +459,13 @@ public sealed class ResourceGraphControlTests
             Kind = "Application",
             Metadata = new() { Name = "crossplane-providers", NamespaceProperty = "argocd" },
         };
-        ResourceRelationshipGraph delta = new ResourceRelationshipBuilder().BuildAdditionDelta(
+        var delta = new ResourceRelationshipBuilder().BuildAdditionDelta(
             [managed, application],
             new ResourceKey("argoproj.io/v1alpha1", "Application", "argocd", "crossplane-providers"),
             new HashSet<string> { "crossplane-system" },
             hideNoise: true);
 
-        ResourceRelationshipGraph filtered = VisualizationViewModel.FilterIncrementalDelta(
+        var filtered = VisualizationViewModel.FilterIncrementalDelta(
             delta,
             new HashSet<string> { "crossplane-system" },
             new HashSet<ResourceIdentity> { new("pkg.crossplane.io/v1", "Provider", "crossplane-system", "provider-databricks", null) });
@@ -490,13 +480,13 @@ public sealed class ResourceGraphControlTests
     [AvaloniaFact]
     public async Task not_ready_filter_keeps_only_resources_with_false_conditions()
     {
-        V1Pod ready = CreatePod("ready");
+        var ready = CreatePod("ready");
         ready.Status = new() { Conditions = [new() { Type = "Ready", Status = "True" }] };
-        V1Pod notReady = CreatePod("not-ready");
+        var notReady = CreatePod("not-ready");
         notReady.Status = new() { Conditions = [new() { Type = "Ready", Status = "False" }] };
-        V1Pod unknown = CreatePod("unknown");
+        var unknown = CreatePod("unknown");
         unknown.Status = new() { Conditions = [new() { Type = "Ready", Status = "Unknown" }] };
-        V1Pod withoutConditions = CreatePod("without-conditions");
+        var withoutConditions = CreatePod("without-conditions");
 
         using VisualizationViewModel viewModel = new(new ResourceRelationshipBuilder());
         await viewModel.ApplyGraphAsync(new ResourceRelationshipGraph([ready, notReady, unknown, withoutConditions], []));
@@ -510,7 +500,7 @@ public sealed class ResourceGraphControlTests
     [AvaloniaFact]
     public async Task type_filter_preserves_pending_references_and_seed_prerequisites()
     {
-        V1Pod pod = CreatePod("pod");
+        var pod = CreatePod("pod");
         UnresolvedResourceReference pending = new("apps", "v1", "Deployment", "default", "owner");
         ResourceSeedPrerequisite prerequisite = new(typeof(V1Deployment));
 
@@ -531,7 +521,7 @@ public sealed class ResourceGraphControlTests
     [AvaloniaFact]
     public async Task resource_type_is_selected_again_after_disappearing_and_reappearing()
     {
-        V1Pod pod = CreatePod("pod");
+        var pod = CreatePod("pod");
         V1Service service = new()
         {
             ApiVersion = "v1",
@@ -553,12 +543,7 @@ public sealed class ResourceGraphControlTests
     [Trait("Category", "Kind")]
     public async Task late_incremental_delta_does_not_overwrite_newer_rebuild(KubernetesBackend backend)
     {
-        IServiceProvider services = Application.Current.GetTestServices();
-        TestClusterConfig config = services.GetRequiredService<TestClusterConfig>();
-        config.Type = backend;
-        ClusterWorkspace clusterScope = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
-        var cluster = clusterScope;
-        await cluster.Connect();
+        var cluster = await Application.Current.CreateClusterAsync(config => config.Type = backend);
         await cluster.Runtime.SeedResource<V1Pod>(true);
         var builder = new LateAdditionRelationshipBuilder();
         using VisualizationViewModel viewModel = new(builder);
@@ -570,7 +555,7 @@ public sealed class ResourceGraphControlTests
         Dispatcher.UIThread.RunJobs();
         await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background);
 
-        V1Pod pod = CreatePod("late");
+        var pod = CreatePod("late");
         await cluster.Runtime.AddOrUpdateResource(pod);
         await builder.WaitForAdditionStartedAsync().WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
 
@@ -589,11 +574,11 @@ public sealed class ResourceGraphControlTests
     [Trait("Category", "Kind")]
     public async Task modified_resource_rebuilds_changed_relationships_in_visualization_graph(KubernetesBackend backend)
     {
-        IServiceProvider services = Application.Current.GetTestServices();
-        TestClusterConfig config = services.GetRequiredService<TestClusterConfig>();
+        var services = Application.Current.GetTestServices();
+        var config = services.GetRequiredService<TestClusterConfig>();
         config.Type = backend;
-        ClusterWorkspace clusterScope = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
-        var cluster = clusterScope;
+        var cluster = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+
         await ConnectAndWaitForResourceConfigsAsync(cluster, typeof(V1Deployment), typeof(V1Pod));
         cluster.SelectedNamespaces.Add(new V1Namespace { Metadata = new() { Name = "default" } });
         using VisualizationViewModel viewModel = new(new OwnerRelationshipBuilder());
@@ -601,18 +586,18 @@ public sealed class ResourceGraphControlTests
         await cluster.Runtime.SeedResource<V1Pod>(true);
         viewModel.Initialize(cluster);
 
-        V1Deployment firstOwner = CreateDeployment("first-owner");
-        V1Deployment secondOwner = CreateDeployment("second-owner");
-        V1Pod pod = CreatePodWithOwner("owned-pod", firstOwner);
+        var firstOwner = CreateDeployment("first-owner");
+        var secondOwner = CreateDeployment("second-owner");
+        var pod = CreatePodWithOwner("owned-pod", firstOwner);
 
         await cluster.Runtime.AddOrUpdateResource(firstOwner);
         await cluster.Runtime.AddOrUpdateResource(secondOwner);
         await cluster.Runtime.AddOrUpdateResource(pod);
         Dispatcher.UIThread.RunJobs();
 
-        ResourceIdentity firstOwnerIdentity = GetIdentity(firstOwner);
-        ResourceIdentity secondOwnerIdentity = GetIdentity(secondOwner);
-        ResourceIdentity podIdentity = GetIdentity(pod);
+        var firstOwnerIdentity = GetIdentity(firstOwner);
+        var secondOwnerIdentity = GetIdentity(secondOwner);
+        var podIdentity = GetIdentity(pod);
         ResourceRelationship initialRelationship = new(firstOwnerIdentity, podIdentity, ResourceRelationshipKind.Owner);
         ResourceRelationship changedRelationship = new(secondOwnerIdentity, podIdentity, ResourceRelationshipKind.Owner);
         await viewModel.ApplyGraphAsync(new ResourceRelationshipGraph([firstOwner, secondOwner, pod], [initialRelationship]));
@@ -629,7 +614,7 @@ public sealed class ResourceGraphControlTests
         ];
         await cluster.Runtime.AddOrUpdateResource(pod);
 
-        Stopwatch timeout = Stopwatch.StartNew();
+        var timeout = Stopwatch.StartNew();
         while (timeout.Elapsed < TimeSpan.FromSeconds(5)
             && !viewModel.Graph!.Relationships.Contains(changedRelationship))
         {
@@ -682,28 +667,26 @@ public sealed class ResourceGraphControlTests
     [Trait("Category", "Kind")]
     public async Task processed_resource_config_starts_required_seed_without_waiting_for_ready(KubernetesBackend backend)
     {
-        IServiceProvider services = Application.Current.GetTestServices();
-        TestClusterConfig config = services.GetRequiredService<TestClusterConfig>();
+        var services = Application.Current.GetTestServices();
+        var config = services.GetRequiredService<TestClusterConfig>();
         config.Type = backend;
-        ClusterWorkspace cluster = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
-        var runtime = cluster.Runtime;
+        var cluster = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         using VisualizationViewModel viewModel = new(new ResourceRelationshipBuilder());
 
         viewModel.Initialize(cluster);
 
         await cluster.Connect();
-        runtime.GetResourceSourceCache<Corev1Event>().ShouldNotBeNull();
+        cluster.Runtime.GetResourceSourceCache<Corev1Event>().ShouldNotBeNull();
     }
 
     [AvaloniaTheory, KubernetesBackendData]
     [Trait("Category", "Kind")]
     public async Task applying_graph_starts_provider_prerequisite_seed(KubernetesBackend backend)
     {
-        IServiceProvider services = Application.Current.GetTestServices();
-        TestClusterConfig config = services.GetRequiredService<TestClusterConfig>();
+        var services = Application.Current.GetTestServices();
+        var config = services.GetRequiredService<TestClusterConfig>();
         config.Type = backend;
-        ClusterWorkspace cluster = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
-        var runtime = cluster.Runtime;
+        var cluster = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         await cluster.Connect();
 
         var seedRequested = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -715,7 +698,7 @@ public sealed class ResourceGraphControlTests
             }
         }
 
-        runtime.ResourceSeeded += OnResourceSeeded;
+        cluster.Runtime.ResourceSeeded += OnResourceSeeded;
         try
         {
             using VisualizationViewModel viewModel = new(new ResourceRelationshipBuilder());
@@ -732,7 +715,7 @@ public sealed class ResourceGraphControlTests
         }
         finally
         {
-            runtime.ResourceSeeded -= OnResourceSeeded;
+            cluster.Runtime.ResourceSeeded -= OnResourceSeeded;
         }
     }
 
@@ -740,11 +723,10 @@ public sealed class ResourceGraphControlTests
     [Trait("Category", "Kind")]
     public async Task added_resource_starts_owner_reference_seed_without_waiting_for_ready(KubernetesBackend backend)
     {
-        IServiceProvider services = Application.Current.GetTestServices();
-        TestClusterConfig config = services.GetRequiredService<TestClusterConfig>();
+        var services = Application.Current.GetTestServices();
+        var config = services.GetRequiredService<TestClusterConfig>();
         config.Type = backend;
-        ClusterWorkspace cluster = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
-        var runtime = cluster.Runtime;
+        var cluster = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         var seedRequested = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
         void OnResourceSeeded(IClusterRuntime _, GroupApiVersionKind kind)
         {
@@ -754,13 +736,13 @@ public sealed class ResourceGraphControlTests
             }
         }
 
-        runtime.ResourceSeeded += OnResourceSeeded;
+        cluster.Runtime.ResourceSeeded += OnResourceSeeded;
         using VisualizationViewModel viewModel = new(new ResourceRelationshipBuilder());
         try
         {
             await cluster.Connect();
             viewModel.Initialize(cluster);
-            await runtime.AddOrUpdateResource(new V1Pod
+            await cluster.Runtime.AddOrUpdateResource(new V1Pod
             {
                 ApiVersion = "v1",
                 Kind = V1Pod.KubeKind,
@@ -792,7 +774,7 @@ public sealed class ResourceGraphControlTests
         }
         finally
         {
-            runtime.ResourceSeeded -= OnResourceSeeded;
+            cluster.Runtime.ResourceSeeded -= OnResourceSeeded;
         }
     }
 
@@ -800,12 +782,7 @@ public sealed class ResourceGraphControlTests
     [Trait("Category", "Kind")]
     public async Task added_unrelated_cluster_scoped_resource_does_not_bypass_namespace_filter(KubernetesBackend backend)
     {
-        IServiceProvider services = Application.Current.GetTestServices();
-        TestClusterConfig config = services.GetRequiredService<TestClusterConfig>();
-        config.Type = backend;
-        ClusterWorkspace clusterScope = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
-        var cluster = clusterScope;
-        await cluster.Connect();
+        var cluster = await Application.Current.CreateClusterAsync(config => config.Type = backend);
         cluster.SelectedNamespaces.Add(new V1Namespace { Metadata = new() { Name = "default" } });
         var builder = new AdditionCaptureRelationshipBuilder();
         using VisualizationViewModel viewModel = new(builder);
@@ -813,7 +790,7 @@ public sealed class ResourceGraphControlTests
         viewModel.Initialize(cluster);
         Dispatcher.UIThread.RunJobs();
         await builder.WaitForInitialBuildAsync();
-        DateTime initialGraphDeadline = DateTime.UtcNow.AddSeconds(5);
+        var initialGraphDeadline = DateTime.UtcNow.AddSeconds(5);
         while (!viewModel.Graph!.Resources.Any(resource => resource.Name() == "selected"))
         {
             Dispatcher.UIThread.RunJobs();
@@ -834,7 +811,7 @@ public sealed class ResourceGraphControlTests
             Metadata = new() { Name = "unrelated-node", Uid = "unrelated-node" },
         });
 
-        ResourceRelationshipGraph delta = await builder.WaitForAdditionAsync();
+        var delta = await builder.WaitForAdditionAsync();
 
         delta.Resources.ShouldBeEmpty();
     }
@@ -843,12 +820,7 @@ public sealed class ResourceGraphControlTests
     [Trait("Category", "Kind")]
     public async Task changing_selected_namespaces_rebuilds_graph_with_new_namespace_filter(KubernetesBackend backend)
     {
-        IServiceProvider services = Application.Current.GetTestServices();
-        TestClusterConfig config = services.GetRequiredService<TestClusterConfig>();
-        config.Type = backend;
-        ClusterWorkspace clusterScope = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
-        var cluster = clusterScope;
-        await cluster.Connect();
+        var cluster = await Application.Current.CreateClusterAsync(config => config.Type = backend);
         cluster.SelectedNamespaces.Add(new V1Namespace { Metadata = new() { Name = "default" } });
         await cluster.Runtime.AddOrUpdateResource(new V1Namespace { Metadata = new() { Name = "other" } });
         var builder = new BuildCaptureRelationshipBuilder();
@@ -870,19 +842,14 @@ public sealed class ResourceGraphControlTests
     [Trait("Category", "Kind")]
     public async Task full_graph_rebuild_does_not_reintroduce_unselected_namespaced_resources(KubernetesBackend backend)
     {
-        IServiceProvider services = Application.Current.GetTestServices();
-        TestClusterConfig config = services.GetRequiredService<TestClusterConfig>();
-        config.Type = backend;
-        ClusterWorkspace clusterScope = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
-        var cluster = clusterScope;
-        await cluster.Connect();
+        var cluster = await Application.Current.CreateClusterAsync(config => config.Type = backend);
         cluster.SelectedNamespaces.Add(new V1Namespace { Metadata = new() { Name = "default" } });
         var builder = new NamespaceLeakingBuildRelationshipBuilder();
         using VisualizationViewModel viewModel = new(builder);
 
         viewModel.Initialize(cluster);
         await builder.WaitForBuildAsync();
-        DateTime deadline = DateTime.UtcNow.AddSeconds(5);
+        var deadline = DateTime.UtcNow.AddSeconds(5);
         while (viewModel.Graph == null || viewModel.Graph.Resources.Count == 0)
         {
             Dispatcher.UIThread.RunJobs();
@@ -902,11 +869,11 @@ public sealed class ResourceGraphControlTests
     [Trait("Category", "Kind")]
     public async Task changing_hide_noise_rebuilds_graph_with_new_noise_filter(KubernetesBackend backend)
     {
-        IServiceProvider services = Application.Current.GetTestServices();
-        TestClusterConfig config = services.GetRequiredService<TestClusterConfig>();
+        var services = Application.Current.GetTestServices();
+        var config = services.GetRequiredService<TestClusterConfig>();
         config.Type = backend;
-        ClusterWorkspace clusterScope = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
-        var cluster = clusterScope;
+        var cluster = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+
         cluster.SelectedNamespaces.Add(new V1Namespace { Metadata = new() { Name = "default" } });
         var builder = new BuildCaptureRelationshipBuilder();
         using VisualizationViewModel viewModel = new(builder);
@@ -924,12 +891,7 @@ public sealed class ResourceGraphControlTests
     [Trait("Category", "Kind")]
     public async Task added_unrelated_namespaced_resource_does_not_bypass_namespace_filter(KubernetesBackend backend)
     {
-        IServiceProvider services = Application.Current.GetTestServices();
-        TestClusterConfig config = services.GetRequiredService<TestClusterConfig>();
-        config.Type = backend;
-        ClusterWorkspace clusterScope = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
-        var cluster = clusterScope;
-        await cluster.Connect();
+        var cluster = await Application.Current.CreateClusterAsync(config => config.Type = backend);
         cluster.SelectedNamespaces.Add(new V1Namespace { Metadata = new() { Name = "default" } });
         var builder = new AdditionCaptureRelationshipBuilder();
         using VisualizationViewModel viewModel = new(builder);
@@ -952,13 +914,13 @@ public sealed class ResourceGraphControlTests
     [Trait("Category", "Kind")]
     public async Task repeated_incremental_deltas_do_not_accumulate_resources_from_unselected_namespaces(KubernetesBackend backend)
     {
-        IServiceProvider services = Application.Current.GetTestServices();
-        TestClusterConfig config = services.GetRequiredService<TestClusterConfig>();
+        var services = Application.Current.GetTestServices();
+        var config = services.GetRequiredService<TestClusterConfig>();
         config.Type = backend;
-        ClusterWorkspace clusterScope = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
-        var cluster = clusterScope;
+        var cluster = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+
         await ConnectAndWaitForResourceConfigsAsync(cluster, typeof(V1Pod));
-        V1Pod selected = CreatePod("selected");
+        var selected = CreatePod("selected");
         V1Pod unrelated = new()
         {
             ApiVersion = "v1",
@@ -980,7 +942,7 @@ public sealed class ResourceGraphControlTests
         viewModel.Initialize(cluster);
         cluster.SelectedNamespaces.Add(cluster.Runtime.Namespaces.Single(namespaceResource => namespaceResource.Name() == "default"));
         await builder.WaitForInitialBuildAsync();
-        DateTime initialGraphDeadline = DateTime.UtcNow.AddSeconds(5);
+        var initialGraphDeadline = DateTime.UtcNow.AddSeconds(5);
         while (!viewModel.Graph!.Resources.Any(resource => resource.Name() == "selected"))
         {
             Dispatcher.UIThread.RunJobs();
@@ -994,7 +956,7 @@ public sealed class ResourceGraphControlTests
 
         viewModel.Graph!.Resources.Select(resource => resource.Name()).ShouldNotContain("unrelated");
 
-        for (int i = 0; i < 3; i++)
+        for (var i = 0; i < 3; i++)
         {
             await cluster.Runtime.AddOrUpdateResource(CreatePod($"incremental-{i}"));
             Dispatcher.UIThread.RunJobs();
@@ -1009,15 +971,10 @@ public sealed class ResourceGraphControlTests
     [Trait("Category", "Kind")]
     public async Task seeded_prerequisite_triggers_graph_rebuild(KubernetesBackend backend)
     {
-        IServiceProvider services = Application.Current.GetTestServices();
-        TestClusterConfig config = services.GetRequiredService<TestClusterConfig>();
-        config.Type = backend;
-        ClusterWorkspace clusterScope = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
-        var cluster = clusterScope;
-        await cluster.Connect();
+        var cluster = await Application.Current.CreateClusterAsync(config => config.Type = backend);
         await WaitForAsync(() =>
         {
-            IResourceConfig deploymentConfig = cluster.GetResourceConfig<V1Deployment>();
+            var deploymentConfig = cluster.GetResourceConfig<V1Deployment>();
             return deploymentConfig.PermissionsLoaded && deploymentConfig.CanListAndWatch;
         });
 
@@ -1075,7 +1032,7 @@ public sealed class ResourceGraphControlTests
         public async Task WaitForAdditionAsync()
         {
             TaskCompletionSource? addition;
-            DateTime deadline = DateTime.UtcNow.AddSeconds(5);
+            var deadline = DateTime.UtcNow.AddSeconds(5);
             while (!_additions.TryDequeue(out addition))
             {
                 Dispatcher.UIThread.RunJobs();
@@ -1095,11 +1052,11 @@ public sealed class ResourceGraphControlTests
     [Trait("Category", "Kind")]
     public async Task disposed_view_model_unsubscribes_from_namespace_changes(KubernetesBackend backend)
     {
-        IServiceProvider services = Application.Current.GetTestServices();
-        TestClusterConfig config = services.GetRequiredService<TestClusterConfig>();
+        var services = Application.Current.GetTestServices();
+        var config = services.GetRequiredService<TestClusterConfig>();
         config.Type = backend;
-        ClusterWorkspace clusterScope = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
-        var cluster = clusterScope;
+        var cluster = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+
         cluster.SelectedNamespaces.Add(new V1Namespace { Metadata = new() { Name = "default" } });
         var builder = new BuildCaptureRelationshipBuilder();
         using VisualizationViewModel viewModel = new(builder);
@@ -1117,11 +1074,11 @@ public sealed class ResourceGraphControlTests
     [Trait("Category", "Kind")]
     public async Task background_resource_changes_are_processed_on_the_ui_thread(KubernetesBackend backend)
     {
-        IServiceProvider services = Application.Current.GetTestServices();
-        TestClusterConfig config = services.GetRequiredService<TestClusterConfig>();
+        var services = Application.Current.GetTestServices();
+        var config = services.GetRequiredService<TestClusterConfig>();
         config.Type = backend;
-        ClusterWorkspace clusterScope = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
-        var cluster = clusterScope;
+        var cluster = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+
         await ConnectAndWaitForResourceConfigsAsync(cluster, typeof(V1Pod));
         cluster.SelectedNamespaces.Add(new V1Namespace { Metadata = new() { Name = "default" } });
         var builder = new BuildCaptureRelationshipBuilder();
@@ -1130,7 +1087,7 @@ public sealed class ResourceGraphControlTests
         viewModel.Initialize(cluster);
         await builder.WaitForBuildAsync(1);
 
-        V1Pod background = CreatePod("background");
+        var background = CreatePod("background");
         await cluster.Runtime.AddOrUpdateResource(background);
         await Task.Run(
             () => cluster.Runtime.AddOrUpdateResource(background),
@@ -1145,10 +1102,10 @@ public sealed class ResourceGraphControlTests
     [Trait("Category", "Kind")]
     public async Task disposed_view_model_ignores_runtime_resource_changes(KubernetesBackend backend)
     {
-        IServiceProvider services = Application.Current.GetTestServices();
-        TestClusterConfig config = services.GetRequiredService<TestClusterConfig>();
+        var services = Application.Current.GetTestServices();
+        var config = services.GetRequiredService<TestClusterConfig>();
         config.Type = backend;
-        ClusterWorkspace cluster = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var cluster = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         await cluster.Connect();
         cluster.SelectedNamespaces.Add(new V1Namespace { Metadata = new() { Name = "default" } });
         var builder = new BuildCaptureRelationshipBuilder();
@@ -1166,8 +1123,8 @@ public sealed class ResourceGraphControlTests
     [Fact]
     public async Task graph_skips_relationships_with_missing_vertices()
     {
-        V1Pod source = CreatePod("source");
-        ResourceIdentity sourceIdentity = GetIdentity(source);
+        var source = CreatePod("source");
+        var sourceIdentity = GetIdentity(source);
         ResourceIdentity missingIdentity = new(V1Pod.KubeApiVersion, V1Pod.KubeKind, "default", "missing", "missing");
 
         using ResourceGraphControl control = new()
@@ -1209,8 +1166,8 @@ public sealed class ResourceGraphControlTests
             control.Graph = new ResourceRelationshipGraph([first, second], []);
             await WaitForAsync(() => control.Area.VertexList.Count == 2);
 
-            VertexControl[] vertices = control.Area.VertexList.Values.ToArray();
-            Rect[] bounds = vertices
+            var vertices = control.Area.VertexList.Values.ToArray();
+            var bounds = vertices
                 .Select(vertex => new Rect(vertex.GetPosition(final: true), vertex.Bounds.Size))
                 .ToArray();
 
@@ -1279,16 +1236,16 @@ public sealed class ResourceGraphControlTests
             IReadOnlySet<string> selectedNamespaces,
             bool hideNoise)
         {
-            IKubernetesObject<V1ObjectMeta>[] resourceArray = resources.ToArray();
-            Dictionary<string, IKubernetesObject<V1ObjectMeta>> resourcesByUid = resourceArray
+            var resourceArray = resources.ToArray();
+            var resourcesByUid = resourceArray
                 .Where(resource => resource.Uid() is not null)
                 .ToDictionary(resource => resource.Uid()!, StringComparer.Ordinal);
             List<ResourceRelationship> relationships = [];
-            foreach (IKubernetesObject<V1ObjectMeta> resource in resourceArray)
+            foreach (var resource in resourceArray)
             {
-                foreach (V1OwnerReference owner in resource.Metadata?.OwnerReferences ?? [])
+                foreach (var owner in resource.Metadata?.OwnerReferences ?? [])
                 {
-                    if (owner.Uid is not null && resourcesByUid.TryGetValue(owner.Uid, out IKubernetesObject<V1ObjectMeta>? ownerResource))
+                    if (owner.Uid is not null && resourcesByUid.TryGetValue(owner.Uid, out var ownerResource))
                     {
                         relationships.Add(new(
                             GetIdentity(ownerResource),
@@ -1339,7 +1296,7 @@ public sealed class ResourceGraphControlTests
 
         public async Task WaitForInitialBuildAsync()
         {
-            DateTime deadline = DateTime.UtcNow.AddSeconds(5);
+            var deadline = DateTime.UtcNow.AddSeconds(5);
             while (!_initialBuild.Task.IsCompleted)
             {
                 Dispatcher.UIThread.RunJobs();
@@ -1391,14 +1348,14 @@ public sealed class ResourceGraphControlTests
             IReadOnlySet<string> selectedNamespaces,
             bool hideNoise)
         {
-            ResourceRelationshipGraph graph = _inner.BuildAdditionDelta(resources, addedResource, selectedNamespaces, hideNoise);
+            var graph = _inner.BuildAdditionDelta(resources, addedResource, selectedNamespaces, hideNoise);
             _addition.TrySetResult(graph);
             return graph;
         }
 
         public async Task WaitForInitialBuildAsync()
         {
-            DateTime deadline = DateTime.UtcNow.AddSeconds(5);
+            var deadline = DateTime.UtcNow.AddSeconds(5);
             while (!_initialBuild.Task.IsCompleted)
             {
                 Dispatcher.UIThread.RunJobs();
@@ -1457,7 +1414,7 @@ public sealed class ResourceGraphControlTests
             _additionStarted.TrySetResult();
             _releaseAddition.Task.GetAwaiter().GetResult();
             _additionCompleted.TrySetResult();
-            IKubernetesObject<V1ObjectMeta>? resource = resources.SingleOrDefault(item => item.Name() == addedResource.Name);
+            var resource = resources.SingleOrDefault(item => item.Name() == addedResource.Name);
             return resource == null
                 ? ResourceRelationshipGraph.Empty
                 : new ResourceRelationshipGraph([resource], []);
@@ -1465,7 +1422,7 @@ public sealed class ResourceGraphControlTests
 
         public async Task WaitForInitialBuildAsync()
         {
-            DateTime deadline = DateTime.UtcNow.AddSeconds(5);
+            var deadline = DateTime.UtcNow.AddSeconds(5);
             while (!_initialBuild.Task.IsCompleted)
             {
                 Dispatcher.UIThread.RunJobs();
@@ -1509,7 +1466,7 @@ public sealed class ResourceGraphControlTests
                 Interlocked.Exchange(ref _buildOnUiThread, 1);
             }
 
-            int buildNumber = Interlocked.Increment(ref _buildCount);
+            var buildNumber = Interlocked.Increment(ref _buildCount);
             _builds.GetOrAdd(buildNumber, _ => new(TaskCreationOptions.RunContinuationsAsynchronously))
                 .TrySetResult(new(selectedNamespaces.Order(StringComparer.Ordinal).ToArray(), hideNoise));
             return ResourceRelationshipGraph.Empty;
@@ -1524,7 +1481,7 @@ public sealed class ResourceGraphControlTests
 
         public async Task<BuildInput> WaitForBuildAsync(int buildNumber)
         {
-            Task<BuildInput> build = _builds.GetOrAdd(buildNumber, _ => new(TaskCreationOptions.RunContinuationsAsynchronously)).Task;
+            var build = _builds.GetOrAdd(buildNumber, _ => new(TaskCreationOptions.RunContinuationsAsynchronously)).Task;
             await WaitForAsync(() => build.IsCompleted);
             return await build.WaitAsync(TestContext.Current.CancellationToken);
         }

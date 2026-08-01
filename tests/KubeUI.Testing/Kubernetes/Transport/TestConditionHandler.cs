@@ -4,7 +4,6 @@ internal sealed class TestConditionHandler : DelegatingHandler
 {
     private readonly TimeSpan _responseLatency;
     private readonly bool _throwOnConnect;
-    private int _enabled;
 
     public TestConditionHandler(TimeSpan responseLatency, bool throwOnConnect)
     {
@@ -12,13 +11,11 @@ internal sealed class TestConditionHandler : DelegatingHandler
         _throwOnConnect = throwOnConnect;
     }
 
-    public void Enable() => Volatile.Write(ref _enabled, 1);
-
     protected override async Task<HttpResponseMessage> SendAsync(
         HttpRequestMessage request,
         CancellationToken cancellationToken)
     {
-        if (Volatile.Read(ref _enabled) == 0)
+        if (_responseLatency <= TimeSpan.Zero && !_throwOnConnect)
         {
             return await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
         }

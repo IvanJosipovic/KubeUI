@@ -68,25 +68,29 @@ public sealed class TestCluster : IDisposable, IAsyncDisposable
             _fakeApi.AddYaml(yaml);
 
             const string name = "http-limited";
-            K8SConfiguration kubeConfig = CloneKubeConfig(name);
+            var kubeConfig = CloneKubeConfig(name);
             KubernetesClientConfiguration configuration = new() { Host = "http://fake-kubernetes" };
-            IKubernetes client = new k8s.Kubernetes(
+#pragma warning disable CA2000 // Ownership is transferred to the created cluster.
+            var client = new k8s.Kubernetes(
                 configuration,
                 _fakeApi.CreateClient(KubernetesRbac.ServiceAccountUser, useRoleBasedAuthorization: true));
+#pragma warning restore CA2000
             return await CreateAdditionalClusterAsync(client, kubeConfig, name, useNamespaceFallback, cancellationToken).ConfigureAwait(false);
         }
 
         await ApplyYamlAsync(Client, yaml, cancellationToken).ConfigureAwait(false);
         const string kindName = "http-limited";
-        K8SConfiguration kindKubeConfig = CloneKubeConfig(kindName);
+        var kindKubeConfig = CloneKubeConfig(kindName);
         Context context = kindKubeConfig.Contexts.First(context => context.Name == kindName);
         User user = kindKubeConfig.Users.First(user => user.Name == context.ContextDetails.User);
         user.UserCredentials.Impersonate = KubernetesRbac.ServiceAccountUser;
-        KubernetesClientConfiguration kindConfiguration = KubernetesClientConfiguration.BuildConfigFromConfigObject(
+        var kindConfiguration = KubernetesClientConfiguration.BuildConfigFromConfigObject(
             kindKubeConfig,
             kindName,
             masterUrl: null);
-        IKubernetes kindClient = new k8s.Kubernetes(kindConfiguration);
+#pragma warning disable CA2000 // Ownership is transferred to the created cluster.
+        var kindClient = new k8s.Kubernetes(kindConfiguration);
+#pragma warning restore CA2000
         return await CreateAdditionalClusterAsync(kindClient, kindKubeConfig, kindName, useNamespaceFallback, cancellationToken).ConfigureAwait(false);
     }
 
@@ -97,7 +101,8 @@ public sealed class TestCluster : IDisposable, IAsyncDisposable
         bool useNamespaceFallback,
         CancellationToken cancellationToken)
     {
-        KubeUI.Kubernetes.Cluster cluster = _services.GetRequiredService<KubeUI.Kubernetes.Cluster>();
+        _ = useNamespaceFallback;
+        var cluster = _services.GetRequiredService<KubeUI.Kubernetes.Cluster>();
         cluster.Name = name;
         cluster.KubeConfig = kubeConfig;
         cluster.KubeConfigPath = string.Empty;
@@ -115,14 +120,14 @@ public sealed class TestCluster : IDisposable, IAsyncDisposable
 
     private K8SConfiguration CloneKubeConfig(string name)
     {
-        K8SConfiguration kubeConfig = KubeUI.Kubernetes.Serialization.KubernetesYaml.Deserialize<K8SConfiguration>(
+        var kubeConfig = KubeUI.Kubernetes.Serialization.KubernetesYaml.Deserialize<K8SConfiguration>(
             KubeUI.Kubernetes.Serialization.KubernetesYaml.Serialize(KubeConfig))
             ?? throw new InvalidOperationException("Unable to clone the kubeconfig.");
-        string currentContext = kubeConfig.CurrentContext
+        var currentContext = kubeConfig.CurrentContext
             ?? throw new InvalidOperationException("The kubeconfig has no current context.");
-        Context context = kubeConfig.Contexts.First(item => item.Name == currentContext);
-        string currentUser = context.ContextDetails.User;
-        User user = kubeConfig.Users.First(item => item.Name == currentUser);
+        var context = kubeConfig.Contexts.First(item => item.Name == currentContext);
+        var currentUser = context.ContextDetails.User;
+        var user = kubeConfig.Users.First(item => item.Name == currentUser);
 
         kubeConfig.CurrentContext = name;
         context.Name = name;
@@ -138,12 +143,12 @@ public sealed class TestCluster : IDisposable, IAsyncDisposable
 
     private static async Task ApplyYamlAsync(IKubernetes client, string yaml, CancellationToken cancellationToken)
     {
-        MethodInfo createMethod = typeof(TestCluster)
+        var createMethod = typeof(TestCluster)
             .GetMethod(nameof(CreateResourceAsync), BindingFlags.Static | BindingFlags.NonPublic)!;
 
-        foreach (IKubernetesObject resource in KubeUI.Kubernetes.Serialization.KubernetesYaml.LoadAllFromString(yaml).Cast<IKubernetesObject>())
+        foreach (var resource in KubeUI.Kubernetes.Serialization.KubernetesYaml.LoadAllFromString(yaml).Cast<IKubernetesObject>())
         {
-            Task createTask = (Task)createMethod
+            var createTask = (Task)createMethod
                 .MakeGenericMethod(resource.GetType())
                 .Invoke(null, [client, resource, cancellationToken])!;
             await createTask.ConfigureAwait(false);
@@ -181,7 +186,7 @@ public sealed class TestCluster : IDisposable, IAsyncDisposable
     {
         ArgumentNullException.ThrowIfNull(item);
         using var client = Cluster.Client!.GetGenericClient<T>();
-        T current = string.IsNullOrEmpty(item.Namespace())
+        var current = string.IsNullOrEmpty(item.Namespace())
             ? await client.ReadAsync<T>(item.Name(), cancellationToken).ConfigureAwait(false)
             : await client.ReadNamespacedAsync<T>(item.Namespace(), item.Name(), cancellationToken).ConfigureAwait(false);
         item.Metadata.ResourceVersion = current.Metadata.ResourceVersion;
@@ -218,7 +223,7 @@ public sealed class TestCluster : IDisposable, IAsyncDisposable
         }
 
         _runtimeCatalog?.RemoveCluster(Cluster);
-        foreach (KubeUI.Kubernetes.Cluster cluster in _additionalClusters)
+        foreach (var cluster in _additionalClusters)
         {
             await cluster.Disconnect().ConfigureAwait(false);
         }

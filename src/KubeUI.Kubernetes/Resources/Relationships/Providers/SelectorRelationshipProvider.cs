@@ -90,7 +90,7 @@ public sealed class SelectorRelationshipProvider : IResourceRelationshipProvider
         ResourceRelationshipContext context,
         ICollection<ResourceRelationship> relationships)
     {
-        foreach (V1NetworkPolicyPeer peer in (policy.Spec?.Ingress ?? []).SelectMany(static rule => rule.FromProperty ?? [])
+        foreach (var peer in (policy.Spec?.Ingress ?? []).SelectMany(static rule => rule.FromProperty ?? [])
             .Concat((policy.Spec?.Egress ?? []).SelectMany(static rule => rule.To ?? [])))
         {
             if (peer.PodSelector == null && peer.NamespaceSelector == null)
@@ -98,11 +98,11 @@ public sealed class SelectorRelationshipProvider : IResourceRelationshipProvider
                 continue;
             }
 
-            IEnumerable<string?> namespaces = peer.NamespaceSelector == null
+            var namespaces = peer.NamespaceSelector == null
                 ? [policy.Namespace()]
                 : context.SelectNamespaces(peer.NamespaceSelector).Select(static namespaceResource => namespaceResource.Name());
 
-            foreach (string? namespaceName in namespaces)
+            foreach (var namespaceName in namespaces)
             {
                 RelationshipProviderHelpers.AddBySelector(
                     context,

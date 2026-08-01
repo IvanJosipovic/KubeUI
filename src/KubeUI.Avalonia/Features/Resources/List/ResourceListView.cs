@@ -85,7 +85,7 @@ public partial class ResourceListView : ViewBase<IResourceListViewModel>
 
     private static DataGridState PrepareStateForRestore(DataGrid grid, DataGridState state)
     {
-        DataGridState sanitizedState = RemoveNamespaceScopeFilter(state);
+        var sanitizedState = RemoveNamespaceScopeFilter(state);
         IReadOnlyList<FilteringDescriptor> currentNamespaceDescriptors = grid.FilteringModel.Descriptors
             .Where(IsNamespaceScopeFilter)
             .ToArray();

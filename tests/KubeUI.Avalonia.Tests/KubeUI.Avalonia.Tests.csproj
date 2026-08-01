@@ -9,7 +9,6 @@
     <IsTestProject>true</IsTestProject>
     <AnalysisLevel>latest</AnalysisLevel>
     <AnalysisMode>All</AnalysisMode>
-    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <NoWarn>CS8602,CS8618,CS8625,CS8604,CS8605,CS8600</NoWarn>
     <WarningsAsErrors>$(WarningsAsErrors);xUnit1031;xUnit1051</WarningsAsErrors>
     <UseMicrosoftTestingPlatformRunner>true</UseMicrosoftTestingPlatformRunner>

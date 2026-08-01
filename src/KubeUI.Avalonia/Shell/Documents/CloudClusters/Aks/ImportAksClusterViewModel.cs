@@ -66,7 +66,7 @@ public sealed partial class ImportAksClusterViewModel : ViewModelBase
         {
             var authenticationStatus = await _aksClusterService.GetAuthenticationStatusAsync().ConfigureAwait(false);
 
-            string statusText = authenticationStatus.AzureCliSignedIn
+            var statusText = authenticationStatus.AzureCliSignedIn
                 ? Assets.Resources.ImportAksClusterView_AzureCliSignedIn
                 : Assets.Resources.ImportAksClusterView_AzureCliNotSignedIn;
 

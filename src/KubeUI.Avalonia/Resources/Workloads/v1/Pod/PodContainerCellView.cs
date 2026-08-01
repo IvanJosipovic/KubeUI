@@ -142,7 +142,7 @@ public partial class PodContainerCellView : ViewBase<V1Pod>, IInitializeCluster
             {
                 foreach (var status in pod.Status.ContainerStatuses)
                 {
-                    string? image = pod.Spec?.Containers?.FirstOrDefault(c => c.Name == status.Name)?.Image;
+                    var image = pod.Spec?.Containers?.FirstOrDefault(c => c.Name == status.Name)?.Image;
                     ContainerStatuses.Add(CreateViewModel(status, "Normal", null, image));
                 }
             }
@@ -151,7 +151,7 @@ public partial class PodContainerCellView : ViewBase<V1Pod>, IInitializeCluster
             {
                 foreach (var status in pod.Status.InitContainerStatuses)
                 {
-                    string? image = pod.Spec?.InitContainers?.FirstOrDefault(c => c.Name == status.Name)?.Image;
+                    var image = pod.Spec?.InitContainers?.FirstOrDefault(c => c.Name == status.Name)?.Image;
                     ContainerStatuses.Add(CreateViewModel(status, "Init", "init", image));
                 }
             }
@@ -160,7 +160,7 @@ public partial class PodContainerCellView : ViewBase<V1Pod>, IInitializeCluster
             {
                 foreach (var status in pod.Status.EphemeralContainerStatuses)
                 {
-                    string? image = pod.Spec?.EphemeralContainers?.FirstOrDefault(c => c.Name == status.Name)?.Image;
+                    var image = pod.Spec?.EphemeralContainers?.FirstOrDefault(c => c.Name == status.Name)?.Image;
                     ContainerStatuses.Add(CreateViewModel(status, "Ephemeral", "ephemeral", image));
                 }
             }
@@ -198,8 +198,8 @@ public partial class PodContainerCellView : ViewBase<V1Pod>, IInitializeCluster
             if (status.State?.Waiting != null)
             {
                 var waiting = status.State.Waiting;
-                string? reason = !string.IsNullOrWhiteSpace(waiting.Reason) ? waiting.Reason : null;
-                string? msg = !string.IsNullOrWhiteSpace(waiting.Message) ? waiting.Message : null;
+                var reason = !string.IsNullOrWhiteSpace(waiting.Reason) ? waiting.Reason : null;
+                var msg = !string.IsNullOrWhiteSpace(waiting.Message) ? waiting.Message : null;
                 return reason ?? msg ?? "Waiting";
             }
 

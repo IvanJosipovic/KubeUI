@@ -121,9 +121,9 @@ public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphContr
         _graphPreparationCancellation?.Cancel();
         CancellationTokenSource cancellation = new();
         _graphPreparationCancellation = cancellation;
-        int version = Interlocked.Increment(ref _graphPreparationVersion);
-        ResourceRelationshipGraph? graph = _graph;
-        ClusterWorkspace? cluster = _viewModel?.Cluster;
+        var version = Interlocked.Increment(ref _graphPreparationVersion);
+        var graph = _graph;
+        var cluster = _viewModel?.Cluster;
         _ = PrepareGraphAsync(graph, cluster, version, cancellation);
     }
 
@@ -133,7 +133,7 @@ public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphContr
         int version,
         CancellationTokenSource cancellation)
     {
-        PreparedGraph prepared = await Task.Run(
+        var prepared = await Task.Run(
             () => CreatePreparedGraph(graph, cluster, cancellation.Token),
             cancellation.Token).ConfigureAwait(false);
 
@@ -147,7 +147,7 @@ public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphContr
             }
 
             _hasGeneratedGraph = false;
-            bool incremental = VisualRoot != null && _logicCore.Graph != null && !_rebuildFromAttachment;
+            var incremental = VisualRoot != null && _logicCore.Graph != null && !_rebuildFromAttachment;
             _rebuildFromAttachment = false;
             if (incremental)
             {
@@ -156,21 +156,21 @@ public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphContr
             }
 
             _vertices.Clear();
-            foreach (IKubernetesObject<V1ObjectMeta> resource in prepared.Resources)
+            foreach (var resource in prepared.Resources)
             {
-                ResourceGraphVertex vertex = CreateVertex(resource, prepared.Cluster);
+                var vertex = CreateVertex(resource, prepared.Cluster);
                 _vertices.Add(vertex.Identity, vertex);
             }
 
             BidirectionalGraph<ResourceGraphVertex, ResourceGraphEdge> graph = new();
-            foreach (ResourceGraphVertex vertex in _vertices.Values)
+            foreach (var vertex in _vertices.Values)
             {
                 graph.AddVertex(vertex);
             }
 
-            foreach (ResourceRelationship relationship in prepared.Relationships)
+            foreach (var relationship in prepared.Relationships)
             {
-                if (TryCreateEdge(relationship, _vertices, out ResourceGraphEdge? edge))
+                if (TryCreateEdge(relationship, _vertices, out var edge))
                 {
                     graph.AddEdge(edge);
                 }
@@ -193,13 +193,13 @@ public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphContr
         List<ResourceRelationship> relationships = [];
         if (graph != null)
         {
-            foreach (IKubernetesObject<V1ObjectMeta> resource in graph.Resources)
+            foreach (var resource in graph.Resources)
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 resources.Add(resource);
             }
 
-            foreach (ResourceRelationship relationship in graph.Relationships)
+            foreach (var relationship in graph.Relationships)
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 relationships.Add(relationship);
@@ -233,7 +233,7 @@ public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphContr
             existingRelationships.Add(edge.Relationship);
         }
 
-        bool structureChanged = false;
+        var structureChanged = false;
 
         foreach (var vertex in vertices.Values.Where(vertex => !desiredIdentities.Contains(vertex.Identity)).ToArray())
         {
@@ -371,7 +371,7 @@ public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphContr
         while (_layoutPending && VisualRoot != null)
         {
             _layoutPending = false;
-            bool initialGeneration = !_hasGeneratedGraph;
+            var initialGeneration = !_hasGeneratedGraph;
             _zoomAfterGeneration |= initialGeneration;
 
             if (!initialGeneration)

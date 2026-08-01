@@ -14,7 +14,7 @@ public sealed class TestClusterGeneratorTests
         using RecordingHandler handler = new();
         Action<SocketsHttpHandler> setup = socket => socket.PooledConnectionLifetime = TimeSpan.FromMinutes(2);
 
-        TestClusterConfig fake = TestClusterConfig.Fake(
+        var fake = TestClusterConfig.Fake(
             [resource],
             [handler],
             TimeSpan.FromSeconds(3),

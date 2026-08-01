@@ -27,7 +27,7 @@ public sealed class YamlEditorScrollBehavior : Behavior<TextEditor>
             return true;
         }
 
-        if (!TryGetServices(out IServiceProvider services))
+        if (!TryGetServices(out var services))
         {
             return false;
         }

@@ -28,14 +28,14 @@ public sealed class CrossplaneUsageRelationshipProvider : IResourceRelationshipP
             return;
         }
 
-        UsageAccessors? accessors = GetAccessors(resource.GetType());
-        object? spec = accessors?.Spec.GetValue(resource);
+        var accessors = GetAccessors(resource.GetType());
+        var spec = accessors?.Spec.GetValue(resource);
         if (accessors == null
             || spec == null
-            || !TryReadReference(accessors.By, spec, out ResourceReference by)
-            || !TryReadReference(accessors.Of, spec, out ResourceReference of)
-            || !context.TryGet(by.ApiVersion, by.Kind, resource.Namespace(), by.Name, out IKubernetesObject<V1ObjectMeta>? source)
-            || !context.TryGet(of.ApiVersion, of.Kind, resource.Namespace(), of.Name, out IKubernetesObject<V1ObjectMeta>? target)
+            || !TryReadReference(accessors.By, spec, out var by)
+            || !TryReadReference(accessors.Of, spec, out var of)
+            || !context.TryGet(by.ApiVersion, by.Kind, resource.Namespace(), by.Name, out var source)
+            || !context.TryGet(of.ApiVersion, of.Kind, resource.Namespace(), of.Name, out var target)
             || source == null
             || target == null)
         {
@@ -47,12 +47,12 @@ public sealed class CrossplaneUsageRelationshipProvider : IResourceRelationshipP
 
     private static UsageAccessors? GetAccessors(Type resourceType)
     {
-        if (AccessorsByType.TryGetValue(resourceType, out UsageAccessors? accessors))
+        if (AccessorsByType.TryGetValue(resourceType, out var accessors))
         {
             return accessors;
         }
 
-        UsageAccessors? created = UsageAccessors.Create(resourceType);
+        var created = UsageAccessors.Create(resourceType);
         if (created != null)
         {
             AccessorsByType.Add(resourceType, created);
@@ -67,16 +67,16 @@ public sealed class CrossplaneUsageRelationshipProvider : IResourceRelationshipP
         out ResourceReference reference)
     {
         reference = default;
-        object? value = accessors.Reference.GetValue(spec);
+        var value = accessors.Reference.GetValue(spec);
         if (value == null)
         {
             return false;
         }
 
-        object? resourceRef = accessors.ResourceRef.GetValue(value);
-        string? apiVersion = accessors.ApiVersion.GetValue(value) as string;
-        string? kind = accessors.Kind.GetValue(value) as string;
-        string? name = resourceRef == null ? null : accessors.Name.GetValue(resourceRef) as string;
+        var resourceRef = accessors.ResourceRef.GetValue(value);
+        var apiVersion = accessors.ApiVersion.GetValue(value) as string;
+        var kind = accessors.Kind.GetValue(value) as string;
+        var name = resourceRef == null ? null : accessors.Name.GetValue(resourceRef) as string;
         if (string.IsNullOrWhiteSpace(apiVersion)
             || string.IsNullOrWhiteSpace(kind)
             || string.IsNullOrWhiteSpace(name))
@@ -98,14 +98,14 @@ public sealed class CrossplaneUsageRelationshipProvider : IResourceRelationshipP
 
         public static UsageAccessors? Create(Type resourceType)
         {
-            PropertyInfo? spec = resourceType.GetProperty("Spec", BindingFlags.Instance | BindingFlags.Public);
+            var spec = resourceType.GetProperty("Spec", BindingFlags.Instance | BindingFlags.Public);
             if (spec == null)
             {
                 return null;
             }
 
-            ReferenceAccessors? by = ReferenceAccessors.Create(spec.PropertyType, "By");
-            ReferenceAccessors? of = ReferenceAccessors.Create(spec.PropertyType, "Of");
+            var by = ReferenceAccessors.Create(spec.PropertyType, "By");
+            var of = ReferenceAccessors.Create(spec.PropertyType, "Of");
             return by == null || of == null ? null : new UsageAccessors { Spec = spec, By = by, Of = of };
         }
     }
@@ -120,16 +120,16 @@ public sealed class CrossplaneUsageRelationshipProvider : IResourceRelationshipP
 
         public static ReferenceAccessors? Create(Type specType, string referenceName)
         {
-            PropertyInfo? reference = specType.GetProperty(referenceName, BindingFlags.Instance | BindingFlags.Public);
+            var reference = specType.GetProperty(referenceName, BindingFlags.Instance | BindingFlags.Public);
             if (reference == null)
             {
                 return null;
             }
 
-            PropertyInfo? apiVersion = reference.PropertyType.GetProperty("ApiVersion", BindingFlags.Instance | BindingFlags.Public);
-            PropertyInfo? kind = reference.PropertyType.GetProperty("Kind", BindingFlags.Instance | BindingFlags.Public);
-            PropertyInfo? resourceRef = reference.PropertyType.GetProperty("ResourceRef", BindingFlags.Instance | BindingFlags.Public);
-            PropertyInfo? name = resourceRef?.PropertyType.GetProperty("Name", BindingFlags.Instance | BindingFlags.Public);
+            var apiVersion = reference.PropertyType.GetProperty("ApiVersion", BindingFlags.Instance | BindingFlags.Public);
+            var kind = reference.PropertyType.GetProperty("Kind", BindingFlags.Instance | BindingFlags.Public);
+            var resourceRef = reference.PropertyType.GetProperty("ResourceRef", BindingFlags.Instance | BindingFlags.Public);
+            var name = resourceRef?.PropertyType.GetProperty("Name", BindingFlags.Instance | BindingFlags.Public);
             return apiVersion == null || kind == null || resourceRef == null || name == null
                 ? null
                 : new ReferenceAccessors { Reference = reference, ApiVersion = apiVersion, Kind = kind, ResourceRef = resourceRef, Name = name };

@@ -26,54 +26,14 @@ namespace KubeUI.Avalonia.Tests.Features.Resources.Yaml;
 
 public class ResourceYamlViewModelTests : IDisposable
 {
-    private readonly List<IDisposable> _disposables = [];
-    private readonly List<Window> _windows = [];
+    private readonly List<IDisposable> TestDisposables = [];
 
     public void Dispose()
     {
-        foreach (var window in _windows)
-        {
-            window.Content = null;
-            window.Close();
-        }
-
-        foreach (var disposable in _disposables)
+        foreach (var disposable in TestDisposables)
         {
             disposable.Dispose();
         }
-    }
-
-    private Window CreateWindow(double width = 1200, double height = 900, object? content = null)
-    {
-        var window = new Window
-        {
-            Content = content,
-            Width = width,
-            Height = height,
-        };
-
-        _windows.Add(window);
-        return window;
-    }
-
-    private ClusterWorkspace CreateTestWorkspace()
-    {
-        IServiceProvider services = Application.Current.GetTestServices();
-        ClusterWorkspace workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
-        _disposables.Add(workspace);
-        return workspace;
-    }
-
-    private T ResolveService<T>() where T : class
-    {
-        var services = Application.Current.GetTestServices();
-        var service = services.GetRequiredService<T>();
-        if (service is IDisposable disposable)
-        {
-            _disposables.Add(disposable);
-        }
-
-        return service;
     }
 
     private static async Task WaitForValidationDebounceAsync(Func<bool>? predicate = null, int timeoutMs = 2500)
@@ -248,8 +208,8 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public async Task ResourceYamlView_PreservesFoldState_WhenActiveDockableChanges()
     {
-        var cluster = CreateTestWorkspace();
-        var factory = ResolveService<IFactory>();
+        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var factory = Application.Current.GetRequiredTestService<IFactory>();
         var layout = factory.CreateLayout();
         factory.InitLayout(layout);
         var documents = factory.GetDockable<IDocumentDock>("Documents");
@@ -260,10 +220,10 @@ public class ResourceYamlViewModelTests : IDisposable
             Layout = layout,
         };
 
-        var window = CreateWindow(content: dockControl);
+        var window = TestDisposables.CreateTestWindow(content: dockControl);
         window.Show();
 
-        var vm = ResolveService<ResourceYamlViewModel>();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Namespace
         {
             Metadata = new V1ObjectMeta
@@ -272,7 +232,7 @@ public class ResourceYamlViewModelTests : IDisposable
             },
         });
 
-        var otherDockable = ResolveService<AboutViewModel>();
+        var otherDockable = Application.Current.GetRequiredTestService<AboutViewModel>();
         otherDockable.Id = nameof(AboutViewModel);
 
         factory.AddToDocuments(vm);
@@ -321,8 +281,8 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public async Task ResourceYamlView_PreservesScrollOffset_WhenActiveDockableChanges()
     {
-        var cluster = CreateTestWorkspace();
-        var factory = ResolveService<IFactory>();
+        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var factory = Application.Current.GetRequiredTestService<IFactory>();
         var layout = factory.CreateLayout();
         factory.InitLayout(layout);
         var documents = factory.GetDockable<IDocumentDock>("Documents");
@@ -333,14 +293,14 @@ public class ResourceYamlViewModelTests : IDisposable
             Layout = layout,
         };
 
-        var window = CreateWindow(content: dockControl);
+        var window = TestDisposables.CreateTestWindow(content: dockControl);
         window.Show();
 
-        var vm = ResolveService<ResourceYamlViewModel>();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Namespace { Metadata = new V1ObjectMeta { Name = "test" } });
         vm.YamlDocument.Text = string.Join('\n', Enumerable.Range(0, 400).Select(i => $"line{i}: value"));
 
-        var otherDockable = ResolveService<AboutViewModel>();
+        var otherDockable = Application.Current.GetRequiredTestService<AboutViewModel>();
         otherDockable.Id = nameof(AboutViewModel);
 
         factory.AddToDocuments(vm);
@@ -412,10 +372,10 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public async Task ResourceYamlView_PreservesFoldState_WhenResourceIsUpdated()
     {
-        var window = CreateWindow(width: 800, height: 600);
+        var window = TestDisposables.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = CreateTestWorkspace();
-        var vm = ResolveService<ResourceYamlViewModel>();
+        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
 
         var resource = new V1Namespace
         {
@@ -427,7 +387,7 @@ public class ResourceYamlViewModelTests : IDisposable
 
         vm.Initialize(cluster, resource);
 
-        var view = ResolveService<ResourceYamlView>();
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
         view.DataContext = vm;
         window.Content = view;
         window.Show();
@@ -480,10 +440,10 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public async Task ResourceYamlView_ShowsCompletion_WhenCompletionIsRequested()
     {
-        var window = CreateWindow(width: 800, height: 600);
+        var window = TestDisposables.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = CreateTestWorkspace();
-        var vm = ResolveService<ResourceYamlViewModel>();
+        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
             Metadata = new V1ObjectMeta
@@ -495,7 +455,7 @@ public class ResourceYamlViewModelTests : IDisposable
         vm.ValidationDebounceDelay = TimeSpan.Zero;
         vm.EditMode = true;
 
-        var view = ResolveService<ResourceYamlView>();
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
         view.DataContext = vm;
         window.Content = view;
         window.Show();
@@ -527,10 +487,10 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public void ResourceYamlView_ShowsDocumentationPopupOnHoverOverFieldName()
     {
-        var window = CreateWindow(width: 800, height: 600);
+        var window = TestDisposables.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = CreateTestWorkspace();
-        var vm = ResolveService<ResourceYamlViewModel>();
+        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
             Metadata = new V1ObjectMeta
@@ -540,7 +500,7 @@ public class ResourceYamlViewModelTests : IDisposable
             },
         });
 
-        var view = ResolveService<ResourceYamlView>();
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
         view.DataContext = vm;
         window.Content = view;
         window.Show();
@@ -587,10 +547,10 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public void ResourceYamlView_ShowsDocumentationPopupOnNestedFieldName()
     {
-        var window = CreateWindow(width: 800, height: 600);
+        var window = TestDisposables.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = CreateTestWorkspace();
-        var vm = ResolveService<ResourceYamlViewModel>();
+        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
             Metadata = new V1ObjectMeta
@@ -600,7 +560,7 @@ public class ResourceYamlViewModelTests : IDisposable
             },
         });
 
-        var view = ResolveService<ResourceYamlView>();
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
         view.DataContext = vm;
         window.Content = view;
         window.Show();
@@ -638,10 +598,10 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public void ResourceYamlView_ShowsDocumentationPopupOnFieldNamePastTenthLine()
     {
-        var window = CreateWindow(width: 800, height: 600);
+        var window = TestDisposables.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = CreateTestWorkspace();
-        var vm = ResolveService<ResourceYamlViewModel>();
+        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
             Metadata = new V1ObjectMeta
@@ -651,7 +611,7 @@ public class ResourceYamlViewModelTests : IDisposable
             },
         });
 
-        var view = ResolveService<ResourceYamlView>();
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
         view.DataContext = vm;
         window.Content = view;
         window.Show();
@@ -698,10 +658,10 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public void ResourceYamlView_ShowsDocumentationPopupOnNestedFieldPastTenthLine()
     {
-        var window = CreateWindow(width: 800, height: 600);
+        var window = TestDisposables.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = CreateTestWorkspace();
-        var vm = ResolveService<ResourceYamlViewModel>();
+        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
             Metadata = new V1ObjectMeta
@@ -711,7 +671,7 @@ public class ResourceYamlViewModelTests : IDisposable
             },
         });
 
-        var view = ResolveService<ResourceYamlView>();
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
         view.DataContext = vm;
         window.Content = view;
         window.Show();
@@ -760,10 +720,10 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public void ResourceYamlView_ShowsDocumentationPopupOnKeyAtEndOfLine()
     {
-        var window = CreateWindow(width: 800, height: 600);
+        var window = TestDisposables.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = CreateTestWorkspace();
-        var vm = ResolveService<ResourceYamlViewModel>();
+        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
             Metadata = new V1ObjectMeta
@@ -773,7 +733,7 @@ public class ResourceYamlViewModelTests : IDisposable
             },
         });
 
-        var view = ResolveService<ResourceYamlView>();
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
         view.DataContext = vm;
         window.Content = view;
         window.Show();
@@ -821,10 +781,10 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public void ResourceYamlView_ShowsDocumentationPopupOnSequenceItemFieldName()
     {
-        var window = CreateWindow(width: 800, height: 600);
+        var window = TestDisposables.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = CreateTestWorkspace();
-        var vm = ResolveService<ResourceYamlViewModel>();
+        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
             Metadata = new V1ObjectMeta
@@ -834,7 +794,7 @@ public class ResourceYamlViewModelTests : IDisposable
             },
         });
 
-        var view = ResolveService<ResourceYamlView>();
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
         view.DataContext = vm;
         window.Content = view;
         window.Show();
@@ -884,10 +844,10 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public void ResourceYamlView_UpdatesDocumentationPopupWhenHoverMovesBetweenFields()
     {
-        var window = CreateWindow(width: 800, height: 600);
+        var window = TestDisposables.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = CreateTestWorkspace();
-        var vm = ResolveService<ResourceYamlViewModel>();
+        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
             Metadata = new V1ObjectMeta
@@ -897,7 +857,7 @@ public class ResourceYamlViewModelTests : IDisposable
             },
         });
 
-        var view = ResolveService<ResourceYamlView>();
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
         view.DataContext = vm;
         window.Content = view;
         window.Show();
@@ -956,10 +916,10 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public void ResourceYamlView_ShowsDocumentationPopupAfterBlankLinesAndComments()
     {
-        var window = CreateWindow(width: 800, height: 600);
+        var window = TestDisposables.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = CreateTestWorkspace();
-        var vm = ResolveService<ResourceYamlViewModel>();
+        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
             Metadata = new V1ObjectMeta
@@ -969,7 +929,7 @@ public class ResourceYamlViewModelTests : IDisposable
             },
         });
 
-        var view = ResolveService<ResourceYamlView>();
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
         view.DataContext = vm;
         window.Content = view;
         window.Show();
@@ -1019,10 +979,10 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public void ResourceYamlView_DoesNotShowDocumentationPopupOnColonOrValueBoundary()
     {
-        var window = CreateWindow(width: 800, height: 600);
+        var window = TestDisposables.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = CreateTestWorkspace();
-        var vm = ResolveService<ResourceYamlViewModel>();
+        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
             Metadata = new V1ObjectMeta
@@ -1032,7 +992,7 @@ public class ResourceYamlViewModelTests : IDisposable
             },
         });
 
-        var view = ResolveService<ResourceYamlView>();
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
         view.DataContext = vm;
         window.Content = view;
         window.Show();
@@ -1076,10 +1036,10 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public void ResourceYamlView_ClosesDocumentationPopupWhenScrolled()
     {
-        var window = CreateWindow(width: 800, height: 600);
+        var window = TestDisposables.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = CreateTestWorkspace();
-        var vm = ResolveService<ResourceYamlViewModel>();
+        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
             Metadata = new V1ObjectMeta
@@ -1089,7 +1049,7 @@ public class ResourceYamlViewModelTests : IDisposable
             },
         });
 
-        var view = ResolveService<ResourceYamlView>();
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
         view.DataContext = vm;
         window.Content = view;
         window.Show();
@@ -1177,10 +1137,10 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public void ResourceYamlView_ShowsDocumentationPopupFromRenderedPointOnRootField()
     {
-        var window = CreateWindow(width: 800, height: 600);
+        var window = TestDisposables.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = CreateTestWorkspace();
-        var vm = ResolveService<ResourceYamlViewModel>();
+        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
             Metadata = new V1ObjectMeta
@@ -1190,7 +1150,7 @@ public class ResourceYamlViewModelTests : IDisposable
             },
         });
 
-        var view = ResolveService<ResourceYamlView>();
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
         view.DataContext = vm;
         window.Content = view;
         window.Show();
@@ -1224,10 +1184,10 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public void ResourceYamlView_ShowsDocumentationPopupFromRenderedPointOnNestedSequenceField()
     {
-        var window = CreateWindow(width: 800, height: 600);
+        var window = TestDisposables.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = CreateTestWorkspace();
-        var vm = ResolveService<ResourceYamlViewModel>();
+        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
             Metadata = new V1ObjectMeta
@@ -1237,7 +1197,7 @@ public class ResourceYamlViewModelTests : IDisposable
             },
         });
 
-        var view = ResolveService<ResourceYamlView>();
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
         view.DataContext = vm;
         window.Content = view;
         window.Show();
@@ -1277,10 +1237,10 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public void ResourceYamlView_ShowsDocumentationPopupFromRenderedPointPastTenthLine()
     {
-        var window = CreateWindow(width: 800, height: 600);
+        var window = TestDisposables.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = CreateTestWorkspace();
-        var vm = ResolveService<ResourceYamlViewModel>();
+        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
             Metadata = new V1ObjectMeta
@@ -1290,7 +1250,7 @@ public class ResourceYamlViewModelTests : IDisposable
             },
         });
 
-        var view = ResolveService<ResourceYamlView>();
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
         view.DataContext = vm;
         window.Content = view;
         window.Show();
@@ -1337,10 +1297,10 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public void ResourceYamlView_DoesNotShowDocumentationPopupFromRenderedPointOnValue()
     {
-        var window = CreateWindow(width: 800, height: 600);
+        var window = TestDisposables.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = CreateTestWorkspace();
-        var vm = ResolveService<ResourceYamlViewModel>();
+        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
             Metadata = new V1ObjectMeta
@@ -1350,7 +1310,7 @@ public class ResourceYamlViewModelTests : IDisposable
             },
         });
 
-        var view = ResolveService<ResourceYamlView>();
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
         view.DataContext = vm;
         window.Content = view;
         window.Show();
@@ -1380,10 +1340,10 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public void ResourceYamlView_ShowsDocumentationPopupForImagePullPolicyInCalicoControllerManifest()
     {
-        var window = CreateWindow(width: 800, height: 600);
+        var window = TestDisposables.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = CreateTestWorkspace();
-        var vm = ResolveService<ResourceYamlViewModel>();
+        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
             Metadata = new V1ObjectMeta
@@ -1393,7 +1353,7 @@ public class ResourceYamlViewModelTests : IDisposable
             },
         });
 
-        var view = ResolveService<ResourceYamlView>();
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
         view.DataContext = vm;
         window.Content = view;
         window.Show();
@@ -1456,10 +1416,10 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public void ResourceYamlView_ShowsDocumentationPopupForImagePullPolicyInCalicoControllerManifestWithoutTrailingNewline()
     {
-        var window = CreateWindow(width: 800, height: 600);
+        var window = TestDisposables.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = CreateTestWorkspace();
-        var vm = ResolveService<ResourceYamlViewModel>();
+        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
             Metadata = new V1ObjectMeta
@@ -1469,7 +1429,7 @@ public class ResourceYamlViewModelTests : IDisposable
             },
         });
 
-        var view = ResolveService<ResourceYamlView>();
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
         view.DataContext = vm;
         window.Content = view;
         window.Show();
@@ -1535,10 +1495,10 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public void ResourceYamlView_ShowsDocumentationPopupForImagePullPolicyInCalicoControllerManifestAfterScroll()
     {
-        var window = CreateWindow(width: 800, height: 250);
+        var window = TestDisposables.CreateTestWindow(width: 800, height: 250);
 
-        var cluster = CreateTestWorkspace();
-        var vm = ResolveService<ResourceYamlViewModel>();
+        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
             Metadata = new V1ObjectMeta
@@ -1548,7 +1508,7 @@ public class ResourceYamlViewModelTests : IDisposable
             },
         });
 
-        var view = ResolveService<ResourceYamlView>();
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
         view.DataContext = vm;
         window.Content = view;
         window.Show();
@@ -1622,10 +1582,10 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public void ResourceYamlView_ResolvesViewportPointToImagePullPolicyOffsetAfterScroll()
     {
-        var window = CreateWindow(width: 800, height: 250);
+        var window = TestDisposables.CreateTestWindow(width: 800, height: 250);
 
-        var cluster = CreateTestWorkspace();
-        var vm = ResolveService<ResourceYamlViewModel>();
+        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
             Metadata = new V1ObjectMeta
@@ -1635,7 +1595,7 @@ public class ResourceYamlViewModelTests : IDisposable
             },
         });
 
-        var view = ResolveService<ResourceYamlView>();
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
         view.DataContext = vm;
         window.Content = view;
         window.Show();
@@ -1703,10 +1663,10 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public void ResourceYamlView_CreatesDocumentationTipForImagePullPolicyOffsetAfterScroll()
     {
-        var window = CreateWindow(width: 800, height: 250);
+        var window = TestDisposables.CreateTestWindow(width: 800, height: 250);
 
-        var cluster = CreateTestWorkspace();
-        var vm = ResolveService<ResourceYamlViewModel>();
+        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
             Metadata = new V1ObjectMeta
@@ -1716,7 +1676,7 @@ public class ResourceYamlViewModelTests : IDisposable
             },
         });
 
-        var view = ResolveService<ResourceYamlView>();
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
         view.DataContext = vm;
         window.Content = view;
         window.Show();
@@ -1783,10 +1743,10 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public async Task ResourceYamlView_DoesNotShowCompletion_WhenEnterCreatesNewLine()
     {
-        var window = CreateWindow(width: 800, height: 600);
+        var window = TestDisposables.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = CreateTestWorkspace();
-        var vm = ResolveService<ResourceYamlViewModel>();
+        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
             Metadata = new V1ObjectMeta
@@ -1798,7 +1758,7 @@ public class ResourceYamlViewModelTests : IDisposable
         vm.ValidationDebounceDelay = TimeSpan.Zero;
         vm.EditMode = true;
 
-        var view = ResolveService<ResourceYamlView>();
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
         view.DataContext = vm;
         window.Content = view;
         window.Show();
@@ -1818,10 +1778,10 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public async Task ResourceYamlView_InsertsSequenceMarker_WhenEnterIsPressedOnSequenceProperty()
     {
-        var window = CreateWindow(width: 800, height: 600);
+        var window = TestDisposables.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = CreateTestWorkspace();
-        var vm = ResolveService<ResourceYamlViewModel>();
+        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
             Metadata = new V1ObjectMeta
@@ -1842,7 +1802,7 @@ public class ResourceYamlViewModelTests : IDisposable
               containers:
             """.ReplaceLineEndings("\n");
 
-        var view = ResolveService<ResourceYamlView>();
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
         view.DataContext = vm;
         window.Content = view;
         window.Show();
@@ -1870,10 +1830,10 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public async Task ResourceYamlView_AlignsNestedSequenceMarker_WhenEnterIsPressedOnSequenceItemProperty()
     {
-        var window = CreateWindow(width: 800, height: 600);
+        var window = TestDisposables.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = CreateTestWorkspace();
-        var vm = ResolveService<ResourceYamlViewModel>();
+        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
             Metadata = new V1ObjectMeta
@@ -1895,7 +1855,7 @@ public class ResourceYamlViewModelTests : IDisposable
                 - command:
             """.ReplaceLineEndings("\n");
 
-        var view = ResolveService<ResourceYamlView>();
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
         view.DataContext = vm;
         window.Content = view;
         window.Show();
@@ -1924,10 +1884,10 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public async Task ResourceYamlView_ContinuesListItem_WhenEnterIsPressedAtEndOfSequenceEntry()
     {
-        var window = CreateWindow(width: 800, height: 600);
+        var window = TestDisposables.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = CreateTestWorkspace();
-        var vm = ResolveService<ResourceYamlViewModel>();
+        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
             Metadata = new V1ObjectMeta
@@ -1946,7 +1906,7 @@ public class ResourceYamlViewModelTests : IDisposable
                 - test
             """.ReplaceLineEndings("\n");
 
-        var view = ResolveService<ResourceYamlView>();
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
         view.DataContext = vm;
         window.Content = view;
         window.Show();
@@ -1972,10 +1932,10 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public async Task ResourceYamlView_ExitsList_WhenEnterIsPressedOnBlankSequenceEntry()
     {
-        var window = CreateWindow(width: 800, height: 600);
+        var window = TestDisposables.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = CreateTestWorkspace();
-        var vm = ResolveService<ResourceYamlViewModel>();
+        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
             Metadata = new V1ObjectMeta
@@ -1993,7 +1953,7 @@ public class ResourceYamlViewModelTests : IDisposable
                 -
             """.ReplaceLineEndings("\n");
 
-        var view = ResolveService<ResourceYamlView>();
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
         view.DataContext = vm;
         window.Content = view;
         window.Show();
@@ -2018,10 +1978,10 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public async Task ResourceYamlView_DoesNotShowCompletion_WhenTypingScalarSequenceItem()
     {
-        var window = CreateWindow(width: 800, height: 600);
+        var window = TestDisposables.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = CreateTestWorkspace();
-        var vm = ResolveService<ResourceYamlViewModel>();
+        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
             Metadata = new V1ObjectMeta
@@ -2043,7 +2003,7 @@ public class ResourceYamlViewModelTests : IDisposable
                   -
             """.ReplaceLineEndings("\n");
 
-        var view = ResolveService<ResourceYamlView>();
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
         view.DataContext = vm;
         window.Content = view;
         window.Show();
@@ -2065,10 +2025,10 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public async Task ResourceYamlView_InsertsStarterSequence_WhenSelectingListCompletion()
     {
-        var window = CreateWindow(width: 800, height: 600);
+        var window = TestDisposables.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = CreateTestWorkspace();
-        var vm = ResolveService<ResourceYamlViewModel>();
+        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
             Metadata = new V1ObjectMeta
@@ -2090,7 +2050,7 @@ public class ResourceYamlViewModelTests : IDisposable
                   ar
             """.ReplaceLineEndings("\n");
 
-        var view = ResolveService<ResourceYamlView>();
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
         view.DataContext = vm;
         window.Content = view;
         window.Show();
@@ -2138,10 +2098,10 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public async Task ResourceYamlView_InsertsStarterObjectBlock_WhenSelectingObjectCompletion()
     {
-        var window = CreateWindow(width: 800, height: 600);
+        var window = TestDisposables.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = CreateTestWorkspace();
-        var vm = ResolveService<ResourceYamlViewModel>();
+        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
             Metadata = new V1ObjectMeta
@@ -2160,7 +2120,7 @@ public class ResourceYamlViewModelTests : IDisposable
             sp
             """.ReplaceLineEndings("\n");
 
-        var view = ResolveService<ResourceYamlView>();
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
         view.DataContext = vm;
         window.Content = view;
         window.Show();
@@ -2205,7 +2165,7 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public void YamlSyntaxValidationService_ReturnsDiagnostic_ForMalformedYaml()
     {
-        var service = ResolveService<IYamlValidationService>();
+        var service = Application.Current.GetRequiredTestService<IYamlValidationService>();
 
         var diagnostics = service.Validate("""
             apiVersion: v1
@@ -2224,8 +2184,8 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public void YamlSyntaxValidationService_ReturnsDiagnostic_ForUnknownKubernetesField()
     {
-        var service = ResolveService<IYamlValidationService>();
-        var cluster = CreateTestWorkspace();
+        var service = Application.Current.GetRequiredTestService<IYamlValidationService>();
+        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
 
         var diagnostics = service.Validate("""
             apiVersion: v1
@@ -2245,8 +2205,8 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public void YamlSyntaxValidationService_AnchorsTypedScalarConversionError_ToValue()
     {
-        var service = ResolveService<IYamlValidationService>();
-        var cluster = CreateTestWorkspace();
+        var service = Application.Current.GetRequiredTestService<IYamlValidationService>();
+        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
 
         var diagnostics = service.Validate("""
             apiVersion: v1
@@ -2363,7 +2323,7 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public void YamlSyntaxValidationService_AnchorsUnknownTypeDiagnostic_ToKindHeader()
     {
-        var service = ResolveService<IYamlValidationService>();
+        var service = Application.Current.GetRequiredTestService<IYamlValidationService>();
 
         var diagnostics = service.Validate("""
             apiVersion: example.io/v1
@@ -2383,10 +2343,10 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public async Task ResourceYamlView_TracksYamlSyntaxDiagnostics()
     {
-        var window = CreateWindow(width: 800, height: 600);
+        var window = TestDisposables.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = CreateTestWorkspace();
-        var vm = ResolveService<ResourceYamlViewModel>();
+        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
             Metadata = new V1ObjectMeta
@@ -2397,7 +2357,7 @@ public class ResourceYamlViewModelTests : IDisposable
         });
         vm.EditMode = true;
 
-        var view = ResolveService<ResourceYamlView>();
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
         view.DataContext = vm;
         window.Content = view;
         window.Show();
@@ -2432,10 +2392,10 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public async Task ResourceYamlView_TracksStrictKubernetesDiagnostics()
     {
-        var window = CreateWindow(width: 800, height: 600);
+        var window = TestDisposables.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = CreateTestWorkspace();
-        var vm = ResolveService<ResourceYamlViewModel>();
+        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
             Metadata = new V1ObjectMeta
@@ -2446,7 +2406,7 @@ public class ResourceYamlViewModelTests : IDisposable
         });
         vm.EditMode = true;
 
-        var view = ResolveService<ResourceYamlView>();
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
         view.DataContext = vm;
         window.Content = view;
         window.Show();
@@ -2479,10 +2439,10 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public async Task ResourceYamlView_TracksUnknownTypeDiagnostics()
     {
-        var window = CreateWindow(width: 800, height: 600);
+        var window = TestDisposables.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = CreateTestWorkspace();
-        var vm = ResolveService<ResourceYamlViewModel>();
+        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
             Metadata = new V1ObjectMeta
@@ -2493,7 +2453,7 @@ public class ResourceYamlViewModelTests : IDisposable
         });
         vm.EditMode = true;
 
-        var view = ResolveService<ResourceYamlView>();
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
         view.DataContext = vm;
         window.Content = view;
         window.Show();
@@ -2524,10 +2484,10 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public async Task ResourceYamlView_SaveShowsInlineFailure_WhenYamlIsInvalid()
     {
-        var window = CreateWindow(width: 800, height: 600);
+        var window = TestDisposables.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = CreateTestWorkspace();
-        var vm = ResolveService<ResourceYamlViewModel>();
+        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
             Metadata = new V1ObjectMeta
@@ -2538,7 +2498,7 @@ public class ResourceYamlViewModelTests : IDisposable
         });
         vm.EditMode = true;
 
-        var view = ResolveService<ResourceYamlView>();
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
         view.DataContext = vm;
         window.Content = view;
         window.Show();
@@ -2570,10 +2530,10 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public async Task ResourceYamlView_DisablesSaveAndDryRun_WhenValidationErrorsExist()
     {
-        var window = CreateWindow(width: 800, height: 600);
+        var window = TestDisposables.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = CreateTestWorkspace();
-        var vm = ResolveService<ResourceYamlViewModel>();
+        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
             Metadata = new V1ObjectMeta
@@ -2584,7 +2544,7 @@ public class ResourceYamlViewModelTests : IDisposable
         });
         vm.EditMode = true;
 
-        var view = ResolveService<ResourceYamlView>();
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
         view.DataContext = vm;
         window.Content = view;
         window.Show();
@@ -2610,8 +2570,8 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public async Task ResourceYamlView_DebouncesValidationWhileTypingInvalidYaml()
     {
-        var cluster = CreateTestWorkspace();
-        var vm = ResolveService<ResourceYamlViewModel>();
+        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
             Metadata = new V1ObjectMeta
@@ -2645,11 +2605,11 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public async Task ResourceYamlView_DryRunShowsInlineSuccess_WhenYamlIsValid()
     {
-        var window = CreateWindow(width: 800, height: 600);
+        var window = TestDisposables.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = CreateTestWorkspace();
+        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         await cluster.Connect();
-        var vm = ResolveService<ResourceYamlViewModel>();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
             Metadata = new V1ObjectMeta
@@ -2660,7 +2620,7 @@ public class ResourceYamlViewModelTests : IDisposable
         });
         vm.EditMode = true;
 
-        var view = ResolveService<ResourceYamlView>();
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
         view.DataContext = vm;
         window.Content = view;
         window.Show();
@@ -2698,14 +2658,14 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public async Task ResourceYamlView_DryRunShowsInlineFailure_WhenServerValidationFails()
     {
-        var window = CreateWindow(width: 800, height: 600);
+        var window = TestDisposables.CreateTestWindow(width: 800, height: 600);
 
-        IServiceProvider services = Application.Current.GetTestServices();
-        ClusterWorkspace cluster = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
-        _disposables.Add(cluster);
+        var services = Application.Current.GetTestServices();
+        var cluster = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        TestDisposables.Add(cluster);
         await cluster.Connect();
 
-        var vm = ResolveService<ResourceYamlViewModel>();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
             Metadata = new V1ObjectMeta
@@ -2716,7 +2676,7 @@ public class ResourceYamlViewModelTests : IDisposable
         });
         vm.EditMode = true;
 
-        var view = ResolveService<ResourceYamlView>();
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
         view.DataContext = vm;
         window.Content = view;
         window.Show();
@@ -2749,10 +2709,10 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public async Task ResourceYamlView_KeepsActionResultVisible_WhenYamlChanges()
     {
-        var window = CreateWindow(width: 800, height: 600);
+        var window = TestDisposables.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = CreateTestWorkspace();
-        var vm = ResolveService<ResourceYamlViewModel>();
+        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
             Metadata = new V1ObjectMeta
@@ -2763,7 +2723,7 @@ public class ResourceYamlViewModelTests : IDisposable
         });
         vm.EditMode = true;
 
-        var view = ResolveService<ResourceYamlView>();
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
         view.DataContext = vm;
         window.Content = view;
         window.Show();
@@ -2802,10 +2762,10 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public async Task ResourceYamlView_ClearsActionResult_WhenDismissed()
     {
-        var window = CreateWindow(width: 800, height: 600);
+        var window = TestDisposables.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = CreateTestWorkspace();
-        var vm = ResolveService<ResourceYamlViewModel>();
+        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
             Metadata = new V1ObjectMeta
@@ -2816,7 +2776,7 @@ public class ResourceYamlViewModelTests : IDisposable
         });
         vm.EditMode = true;
 
-        var view = ResolveService<ResourceYamlView>();
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
         view.DataContext = vm;
         window.Content = view;
         window.Show();
@@ -2858,8 +2818,8 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public void ResourceYamlView_HidesActionResultBar_WhenThereIsNoMessage()
     {
-        var vm = ResolveService<ResourceYamlViewModel>();
-        var view = ResolveService<ResourceYamlView>();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
         view.DataContext = vm;
 
         var actionBar = view.FindControl<FAInfoBar>("ActionResultBar");
@@ -2871,8 +2831,8 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public void ResourceYamlView_HideNoisyFieldsToggle_BindsDirectlyToViewModel()
     {
-        var vm = ResolveService<ResourceYamlViewModel>();
-        var view = ResolveService<ResourceYamlView>();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
         view.DataContext = vm;
 
         var toggleButton = view.FindControl<ToggleButton>("HideNoisyFieldsToggle");
@@ -2984,10 +2944,10 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public async Task ResourceYamlView_UsesTwoSpaceIndentationOptions()
     {
-        var window = CreateWindow(width: 800, height: 600);
+        var window = TestDisposables.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = CreateTestWorkspace();
-        var vm = ResolveService<ResourceYamlViewModel>();
+        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
             Metadata = new V1ObjectMeta
@@ -2998,7 +2958,7 @@ public class ResourceYamlViewModelTests : IDisposable
         });
         vm.EditMode = true;
 
-        var view = ResolveService<ResourceYamlView>();
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
         view.DataContext = vm;
         window.Content = view;
         window.Show();
@@ -3015,10 +2975,10 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public async Task ResourceYamlView_LeavesScrollBelowDocumentEnabled()
     {
-        var window = CreateWindow(width: 800, height: 600);
+        var window = TestDisposables.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = CreateTestWorkspace();
-        var vm = ResolveService<ResourceYamlViewModel>();
+        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
             Metadata = new V1ObjectMeta
@@ -3028,7 +2988,7 @@ public class ResourceYamlViewModelTests : IDisposable
             },
         });
 
-        var view = ResolveService<ResourceYamlView>();
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
         view.DataContext = vm;
         window.Content = view;
         window.Show();
@@ -3043,14 +3003,14 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public async Task ResourceYamlView_PreservesParentFoldState_WhenResourceGrowsAboveFold()
     {
-        var window = CreateWindow(width: 800, height: 600);
+        var window = TestDisposables.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = CreateTestWorkspace();
-        var vm = ResolveService<ResourceYamlViewModel>();
+        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         var resource = CreatePod("test", includeLabels: false, extraEnv: false);
         vm.Initialize(cluster, resource);
 
-        var view = ResolveService<ResourceYamlView>();
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
         view.DataContext = vm;
         window.Content = view;
         window.Show();
@@ -3079,14 +3039,14 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public async Task ResourceYamlView_PreservesParentFoldState_WhenResourceGrowsBelowFold()
     {
-        var window = CreateWindow(width: 800, height: 600);
+        var window = TestDisposables.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = CreateTestWorkspace();
-        var vm = ResolveService<ResourceYamlViewModel>();
+        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         var resource = CreatePod("test", includeLabels: true, extraEnv: false);
         vm.Initialize(cluster, resource);
 
-        var view = ResolveService<ResourceYamlView>();
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
         view.DataContext = vm;
         window.Content = view;
         window.Show();
@@ -3115,14 +3075,14 @@ public class ResourceYamlViewModelTests : IDisposable
     [AvaloniaFact]
     public async Task ResourceYamlView_PreservesNestedFoldState_WhenResourceUpdatesInsideParent()
     {
-        var window = CreateWindow(width: 800, height: 600);
+        var window = TestDisposables.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = CreateTestWorkspace();
-        var vm = ResolveService<ResourceYamlViewModel>();
+        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         var resource = CreatePod("test", includeLabels: true, extraEnv: false);
         vm.Initialize(cluster, resource);
 
-        var view = ResolveService<ResourceYamlView>();
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
         view.DataContext = vm;
         window.Content = view;
         window.Show();

@@ -24,7 +24,7 @@ internal sealed class KubernetesPortForwardSessionFactory : IPortForwardSessionF
 
     public async Task<IPortForwardSession> CreateAsync(string podName, string @namespace, int port)
     {
-        WebSocket webSocket = await _cluster.Client!.WebSocketNamespacedPodPortForwardAsync(
+        var webSocket = await _cluster.Client!.WebSocketNamespacedPodPortForwardAsync(
             podName,
             @namespace,
             [port],

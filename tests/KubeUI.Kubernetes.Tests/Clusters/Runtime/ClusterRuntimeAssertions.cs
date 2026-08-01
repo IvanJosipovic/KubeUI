@@ -154,7 +154,7 @@ public abstract class ClusterRuntimeAssertions
             harness.Cluster,
             "default",
             configMap.Name(),
-            predicate: item => item.Data?.TryGetValue("state", out string? value) == true && value == "replaced",
+            predicate: item => item.Data?.TryGetValue("state", out var value) == true && value == "replaced",
             cancellationToken: TestContext.Current.CancellationToken))!;
         replaced.Data!["state"].ShouldBe("replaced");
 
@@ -176,7 +176,7 @@ public abstract class ClusterRuntimeAssertions
             TestContext.Current.CancellationToken);
 
         using var client = harness.Cluster.Client!.GetGenericClient<V1ConfigMap>();
-        string staleResourceVersion = created.Metadata.ResourceVersion!;
+        var staleResourceVersion = created.Metadata.ResourceVersion!;
         var externalUpdate = await client.ReadNamespacedAsync<V1ConfigMap>(
             "default",
             created.Name(),
@@ -308,7 +308,7 @@ public abstract class ClusterRuntimeAssertions
 
         await harness.Cluster.AddOrUpdateResource(ns);
 
-        var resource = await WaitForResourceAsync<V1Namespace>(harness.Cluster, null, "test", predicate: item => item.Metadata.Labels?.TryGetValue("test", out string? value) == true && value == "test");
+        var resource = await WaitForResourceAsync<V1Namespace>(harness.Cluster, null, "test", predicate: item => item.Metadata.Labels?.TryGetValue("test", out var value) == true && value == "test");
         resource.ShouldNotBeNull();
         resource.Metadata.Labels["test"].ShouldBe("test");
     }
@@ -337,7 +337,7 @@ public abstract class ClusterRuntimeAssertions
 
         await harness.Cluster.AddOrUpdateResource(secret);
 
-        var resource = await WaitForResourceAsync<V1Secret>(harness.Cluster, "default", "test", predicate: item => item.Metadata.Labels?.TryGetValue("test", out string? value) == true && value == "test");
+        var resource = await WaitForResourceAsync<V1Secret>(harness.Cluster, "default", "test", predicate: item => item.Metadata.Labels?.TryGetValue("test", out var value) == true && value == "test");
         resource.ShouldNotBeNull();
         resource.Metadata.Labels["test"].ShouldBe("test");
     }
@@ -438,7 +438,7 @@ public abstract class ClusterRuntimeAssertions
             TimeSpan.FromSeconds(10),
             cancellationToken: TestContext.Current.CancellationToken);
 
-        foreach (object item in (IList)items.GetType().GetProperty("Items")!.GetValue(items)!)
+        foreach (var item in (IList)items.GetType().GetProperty("Items")!.GetValue(items)!)
         {
             var obj = (IKubernetesObject<V1ObjectMeta>)item;
             obj.Name().ShouldBe("test1");
