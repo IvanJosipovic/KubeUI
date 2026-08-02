@@ -16,9 +16,7 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<ClusterWorkspace> _logger;
     private readonly ConcurrentDictionary<GroupApiVersionKind, IResourceConfig> _resourceConfigs = new();
-    private readonly ConcurrentDictionary<string, string> _customResourceDefinitionSignatures = new(StringComparer.Ordinal);
     private readonly ConcurrentDictionary<string, long> _customResourceDefinitionGenerations = new(StringComparer.Ordinal);
-    private readonly ConcurrentDictionary<Task, byte> _customResourceDefinitionTasks = new();
     private readonly CancellationTokenSource _disposeCancellation = new();
     private readonly object _connectLock = new();
     private bool _disposed;
@@ -173,7 +171,6 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
     public async Task Disconnect()
     {
         await Runtime.Disconnect().ConfigureAwait(false);
-        await Task.WhenAll(_customResourceDefinitionTasks.Keys).ConfigureAwait(false);
         _workspaceStateInitialized = false;
         ResetWorkspaceState();
     }
@@ -390,7 +387,6 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
             _resourceConfigs.TryRemove(removedKind, out _);
         }
 
-        _customResourceDefinitionSignatures.Clear();
         _customResourceDefinitionGenerations.Clear();
 
         foreach (var removedKind in removedCustomResourceKinds)
@@ -413,20 +409,14 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
         }
     }
 
-    private void HandleCustomResourceDefinitionReady(V1CustomResourceDefinition crd)
+    private Task HandleCustomResourceDefinitionReady(V1CustomResourceDefinition crd)
     {
         var generation = _customResourceDefinitionGenerations.AddOrUpdate(
             crd.Name(),
             1,
             static (_, currentGeneration) => currentGeneration + 1);
 
-        var task = ProcessCustomResourceDefinitionAsync(crd, generation);
-        _customResourceDefinitionTasks.TryAdd(task, 0);
-        _ = task.ContinueWith(
-            completedTask => _customResourceDefinitionTasks.TryRemove(completedTask, out _),
-            CancellationToken.None,
-            TaskContinuationOptions.ExecuteSynchronously,
-            TaskScheduler.Default);
+        return ProcessCustomResourceDefinitionAsync(crd, generation);
     }
 
     private async Task ProcessCustomResourceDefinitionAsync(V1CustomResourceDefinition crd, long generation)
@@ -436,13 +426,6 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
 
         try
         {
-            var signature = GetCustomResourceDefinitionSignature(crd);
-            if (_customResourceDefinitionSignatures.TryGetValue(crd.Name(), out var existingSignature)
-                && string.Equals(existingSignature, signature, StringComparison.Ordinal))
-            {
-                return;
-            }
-
             var builtConfig = await BuildCustomResourceConfigAsync(crd).ConfigureAwait(false);
             if (builtConfig == null)
             {
@@ -455,7 +438,6 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
                 return;
             }
 
-            _customResourceDefinitionSignatures[crd.Name()] = signature;
             _resourceConfigs[builtConfig.Kind] = builtConfig;
             ProcessResourceConfigPermissionsUpdated(builtConfig);
         }
@@ -475,7 +457,6 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
             crd.Name(),
             1,
             static (_, currentGeneration) => currentGeneration + 1);
-        _customResourceDefinitionSignatures.TryRemove(crd.Name(), out _);
         var removedKind = TryResolveCustomResourceKind(crd);
         if (removedKind == null)
         {
@@ -512,11 +493,6 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
         }
 
         return null;
-    }
-
-    private static string GetCustomResourceDefinitionSignature(V1CustomResourceDefinition crd)
-    {
-        return KubernetesJson.Serialize(crd.Spec);
     }
 
     private void NotifyCustomResourceDefinitionRemoved(GroupApiVersionKind kind)

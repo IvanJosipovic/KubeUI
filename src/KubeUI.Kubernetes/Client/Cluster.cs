@@ -46,7 +46,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
     public event Action<IClusterRuntime>? NamespaceSelectionRequired;
     public event Action<IClusterRuntime, GroupApiVersionKind>? ResourceSeeded;
     public event Action<IClusterRuntime, GroupApiVersionKind>? ResourceUnseeded;
-    public event Action<V1CustomResourceDefinition>? OnCustomResourceDefinitionReady;
+    public event Func<V1CustomResourceDefinition, Task>? OnCustomResourceDefinitionReady;
 
     private readonly SemaphoreSlim _connectionLimiter = new(1, 1);
     private readonly Channel<V1CustomResourceDefinition> _customResourceDefinitionQueue = Channel.CreateUnbounded<V1CustomResourceDefinition>(
@@ -475,7 +475,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
 
             if (await ProcessNewCRD(crd).ConfigureAwait(false))
             {
-                OnCustomResourceDefinitionReady?.Invoke(crd);
+                await NotifyCustomResourceDefinitionReadyAsync(crd).ConfigureAwait(false);
             }
         }
         catch (Exception ex)
@@ -483,6 +483,23 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
             activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
             _logger.LogError(ex, "Error processing CRD {name}", crd.Name());
         }
+    }
+
+    private async Task NotifyCustomResourceDefinitionReadyAsync(V1CustomResourceDefinition crd)
+    {
+        Delegate[]? handlers = OnCustomResourceDefinitionReady?.GetInvocationList();
+        if (handlers is null)
+        {
+            return;
+        }
+
+        var tasks = new Task[handlers.Length];
+        for (var index = 0; index < handlers.Length; index++)
+        {
+            tasks[index] = ((Func<V1CustomResourceDefinition, Task>)handlers[index])(crd);
+        }
+
+        await Task.WhenAll(tasks).ConfigureAwait(false);
     }
 
     private async Task RefreshApiGroupDiscoveryListAsync()

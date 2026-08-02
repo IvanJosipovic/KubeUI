@@ -32,7 +32,7 @@ public interface IClusterRuntime
     event Action<IClusterRuntime>? NamespaceSelectionRequired;
     event Action<IClusterRuntime, GroupApiVersionKind>? ResourceSeeded;
     event Action<IClusterRuntime, GroupApiVersionKind>? ResourceUnseeded;
-    event Action<V1CustomResourceDefinition>? OnCustomResourceDefinitionReady;
+    event Func<V1CustomResourceDefinition, Task>? OnCustomResourceDefinitionReady;
     IKubernetes? Client { get; set; }
     K8SConfiguration KubeConfig { get; set; }
     ModelCache ModelCache { get; set; }

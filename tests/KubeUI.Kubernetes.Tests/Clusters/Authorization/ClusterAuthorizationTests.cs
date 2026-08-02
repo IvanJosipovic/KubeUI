@@ -153,12 +153,12 @@ public sealed class ClusterAuthorizationTests
         var releaseFirst = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
         var secondReady = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
         var readyCount = 0;
-        cluster.OnCustomResourceDefinitionReady += crd =>
+        cluster.OnCustomResourceDefinitionReady += async crd =>
         {
             if (Interlocked.Increment(ref readyCount) == 1)
             {
                 firstEntered.TrySetResult(null);
-                releaseFirst.Task.GetAwaiter().GetResult();
+                await releaseFirst.Task.WaitAsync(TestContext.Current.CancellationToken);
             }
             else
             {
