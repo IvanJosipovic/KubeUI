@@ -3,7 +3,9 @@ using System.Reflection;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Markup.Declarative;
+#if DEBUG
 using Declarative.Avalonia.AgentTools;
+#endif
 using KubeUI.Avalonia;
 using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
