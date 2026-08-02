@@ -372,9 +372,15 @@ public sealed class TestClusterGenerator
 
     private static async Task CleanupKindAsync(string name, string kubeConfigPath, CancellationToken cancellationToken)
     {
+        using var cleanupCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        cleanupCancellation.CancelAfter(TimeSpan.FromSeconds(30));
+
         try
         {
-            await Kind.DeleteCluster(name, kubeConfigPath, cancellationToken).ConfigureAwait(false);
+            await Kind.DeleteCluster(name, kubeConfigPath, cleanupCancellation.Token).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
         }
         finally
         {
