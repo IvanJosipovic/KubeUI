@@ -335,7 +335,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
             cluster,
             showNotReadyOnly)).ConfigureAwait(false);
 
-        await Dispatcher.UIThread.InvokeAsync(() =>
+        await Dispatcher.UIThread.InvokeAsync(async () =>
         {
             if (_disposed
                 || applicationVersion != _graphApplicationVersion
@@ -690,7 +690,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
             buildNamespaces,
             hideNoise)).ConfigureAwait(false);
 
-        await Dispatcher.UIThread.InvokeAsync(() =>
+        await Dispatcher.UIThread.InvokeAsync(async () =>
         {
             if (_disposed
                 || changeVersion != _rebuildVersion
@@ -743,7 +743,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
             var completeGraph = RootResource is { } root
                 ? FilterToRootResource(merged, root)
                 : FilterToSelectedNamespaces(merged, namespaces);
-            ApplyGraph(completeGraph);
+            await ApplyGraphAsync(completeGraph);
         });
     }
 
@@ -1070,7 +1070,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 
                 if (!_disposed && !cancellation.IsCancellationRequested && request.Version == _rebuildVersion)
                 {
-                    ApplyGraph(graph);
+                    await ApplyGraphAsync(graph);
                 }
             }
             catch (OperationCanceledException) when (cancellation.IsCancellationRequested)

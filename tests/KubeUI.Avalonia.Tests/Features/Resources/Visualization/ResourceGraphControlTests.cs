@@ -610,17 +610,27 @@ public sealed class ResourceGraphControlTests
             TimeSpan.FromSeconds(5),
             cancellationToken: TestContext.Current.CancellationToken);
         pod = cluster.Runtime.GetResource<V1Pod>("default", "owned-pod").ShouldNotBeNull();
-        pod.Metadata!.OwnerReferences =
-        [
-            new()
-            {
-                ApiVersion = secondOwner.ApiVersion,
-                Kind = secondOwner.Kind,
-                Name = secondOwner.Name(),
-                Uid = secondOwner.Uid(),
-            },
-        ];
-        await cluster.Runtime.AddOrUpdateResource(pod);
+        await cluster.Runtime.Client!.GetGenericClient<V1Pod>().PatchNamespacedAsync<V1Pod>(
+            new V1Patch(
+                KubernetesJson.Serialize(new
+                {
+                    metadata = new
+                    {
+                        ownerReferences = new[]
+                        {
+                            new
+                            {
+                                apiVersion = secondOwner.ApiVersion,
+                                kind = secondOwner.Kind,
+                                name = secondOwner.Name(),
+                                uid = secondOwner.Uid(),
+                            },
+                        },
+                    },
+                }),
+                V1Patch.PatchType.MergePatch),
+            "default",
+            pod.Name());
 
         var timeout = Stopwatch.StartNew();
         while (timeout.Elapsed < TimeSpan.FromSeconds(5)
@@ -918,11 +928,23 @@ public sealed class ResourceGraphControlTests
         viewModel.Initialize(cluster);
         await builder.WaitForInitialBuildAsync();
 
+        await cluster.Runtime.AddOrUpdateResource(new V1Namespace
+        {
+            Metadata = new() { Name = "other" },
+        });
+
         await cluster.Runtime.AddOrUpdateResource(new V1Pod
         {
             ApiVersion = "v1",
             Kind = V1Pod.KubeKind,
             Metadata = new() { Name = "unrelated", NamespaceProperty = "other" },
+            Spec = new()
+            {
+                Containers =
+                [
+                    new() { Name = "unrelated", Image = "busybox" },
+                ],
+            },
         });
 
         Dispatcher.UIThread.RunJobs();
@@ -1118,19 +1140,20 @@ public sealed class ResourceGraphControlTests
             () => cluster.Runtime.GetResource<V1Pod>("default", "background") is not null,
             TimeSpan.FromSeconds(5),
             cancellationToken: TestContext.Current.CancellationToken);
-        var backgroundUpdate = await cluster.Runtime.Client!.CoreV1.ReadNamespacedPodAsync(
-            "background",
-            "default",
-            cancellationToken: TestContext.Current.CancellationToken);
-        backgroundUpdate = backgroundUpdate with
-        {
-            Metadata = backgroundUpdate.Metadata with
-            {
-                Labels = new Dictionary<string, string> { ["updated"] = "true" },
-            },
-        };
         await Task.Run(
-            () => cluster.Runtime.AddOrUpdateResource(backgroundUpdate),
+            () => cluster.Runtime.Client!.GetGenericClient<V1Pod>().PatchNamespacedAsync<V1Pod>(
+                new V1Patch(
+                    KubernetesJson.Serialize(new
+                    {
+                        metadata = new
+                        {
+                            labels = new Dictionary<string, string> { ["updated"] = "true" },
+                        },
+                    }),
+                    V1Patch.PatchType.MergePatch),
+                "default",
+                "background",
+                TestContext.Current.CancellationToken),
             TestContext.Current.CancellationToken);
 
         await WaitForAsync(() => builder.BuildCount > 1, cancellationToken: TestContext.Current.CancellationToken);

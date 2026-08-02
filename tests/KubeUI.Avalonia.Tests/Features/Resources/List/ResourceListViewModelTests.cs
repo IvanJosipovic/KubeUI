@@ -467,6 +467,7 @@ public class ResourceListViewModelTests
 
         await AddOrUpdateAsync(cluster, Pod("ns", "a"));
         await AddOrUpdateAsync(cluster, Pod("ns", "b"));
+        await WaitForAsync(() => GetAllRows(grid).Count(row => row.IsVisible) == 2);
 
         vm.SelectionModel.Select(0);
         vm.SelectionModel.Select(1);
