@@ -3,6 +3,7 @@ using System.Reflection;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Markup.Declarative;
+using Declarative.Avalonia.AgentTools;
 using KubeUI.Avalonia;
 using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
@@ -45,6 +46,11 @@ internal static class Program
             .UseViewInitializationStrategy(ViewInitializationStrategy.Lazy)
 #if DEBUG
             .UseHotReload()
+            .UseAgentInspector(o =>
+            {
+                o.EnableInteraction = true;
+                o.Services = host.Services;
+            })
 #endif
             ;
 

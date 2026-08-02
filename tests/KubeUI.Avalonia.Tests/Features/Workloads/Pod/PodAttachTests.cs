@@ -110,7 +110,7 @@ public sealed class PodAttachTests
 
         var items = config.GetCustomMenuItems(new[] { pod }).ToList();
 
-        MenuItemViewModel debugMenu = items.Single(x => x.Title == Assets.Resources.V1PodConfig_DebugContainer);
+        var debugMenu = items.Single(x => x.Title == Assets.Resources.V1PodConfig_DebugContainer);
         var debugGroups = debugMenu.Items!.Cast<MenuItemViewModel>().ToList();
         debugGroups.Select(x => x.Title).ShouldContain("Init");
         debugGroups.Select(x => x.Title).ShouldContain("Normal");

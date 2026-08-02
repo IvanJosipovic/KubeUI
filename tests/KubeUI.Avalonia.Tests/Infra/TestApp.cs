@@ -8,16 +8,15 @@ using FluentAvalonia.UI.Controls;
 using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
-using KubeUI.Avalonia.Infrastructure.DependencyInjection;
-using KubeUI.Avalonia.Infrastructure.Docking;
 using KubeUI.Avalonia.Infrastructure.Platform;
 using KubeUI.Avalonia.Infrastructure.Presentation;
+using KubeUI.Avalonia.Infrastructure.DependencyInjection;
+using KubeUI.Avalonia.Infrastructure.Docking;
 using KubeUI.Avalonia.Services.Settings;
 using KubeUI.Kubernetes;
-using KubeUI.Kubernetes;
 using KubeUI.Testing.Kubernetes.Infrastructure;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Moq;
@@ -68,6 +67,7 @@ public class TestApp : Application, IServiceProviderHost, IDisposable
         DialogManager = null;
         Notification = null;
         ContentDialogSettings = null;
+        GC.SuppressFinalize(this);
     }
 
     private ServiceProvider BuildServiceProvider()

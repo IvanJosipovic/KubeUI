@@ -90,10 +90,6 @@ public partial class App : Application, IServiceProviderHost
         Services.GetRequiredService<ISettingsService>().ApplySettings();
 
         base.OnFrameworkInitializationCompleted();
-
-#if DEBUG
-        this.AttachDevTools();
-#endif
     }
 
     private void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)

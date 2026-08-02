@@ -487,7 +487,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
 
     private async Task NotifyCustomResourceDefinitionReadyAsync(V1CustomResourceDefinition crd)
     {
-        Delegate[]? handlers = OnCustomResourceDefinitionReady?.GetInvocationList();
+        var handlers = OnCustomResourceDefinitionReady?.GetInvocationList();
         if (handlers is null)
         {
             return;

@@ -1,8 +1,12 @@
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
+using Dock.Model.Controls;
+using Dock.Model.Core;
 using k8s.Models;
+using KubeUI.Avalonia.Features.Resources.Properties;
 using KubeUI.Avalonia.Features.Resources.Properties.Controls;
+using KubeUI.Avalonia.Infrastructure.Docking;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Resources;
 using KubeUI.Avalonia.Tests.Infra;
@@ -98,6 +102,38 @@ public sealed class ResourcePropertiesViewInitializationTests
         {
             window.Close();
         }
+    }
+
+    [AvaloniaFact]
+    public async Task viewing_another_resource_replaces_existing_properties_view()
+    {
+        var services = Application.Current.GetTestServices();
+        var factory = services.GetRequiredService<IFactory>();
+        var layout = factory.CreateLayout();
+        factory.InitLayout(layout);
+        var rightDock = factory.GetDockable<IToolDock>("RightDock")!;
+        var workspace = await Application.Current.CreateClusterAsync();
+        var config = (ResourceConfigBase<V1Pod>)workspace.GetResourceConfig<V1Pod>();
+        var podA = new V1Pod
+        {
+            Metadata = new V1ObjectMeta { Name = "pod-a", NamespaceProperty = "default" },
+        };
+        var podB = new V1Pod
+        {
+            Metadata = new V1ObjectMeta { Name = "pod-b", NamespaceProperty = "default" },
+        };
+
+        config.View(new[] { podA });
+        var firstView = rightDock.VisibleDockables!.Single()
+            .ShouldBeOfType<ResourcePropertiesViewModel<V1Pod>>();
+
+        config.View(new[] { podB });
+
+        rightDock.VisibleDockables.ShouldHaveSingleItem();
+        var secondView = rightDock.VisibleDockables.Single()
+            .ShouldBeOfType<ResourcePropertiesViewModel<V1Pod>>();
+        secondView.ShouldNotBeSameAs(firstView);
+        secondView.Object.ShouldBeSameAs(podB);
     }
 
     private sealed class TrackingResourceConfig : ResourceConfigBase<V1Pod>

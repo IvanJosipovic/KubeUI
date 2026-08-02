@@ -9,6 +9,10 @@ public static class FactoryExtensions
     {
         return factory.Find(x => string.Equals(x.Id, id, StringComparison.Ordinal)).FirstOrDefault()
             ?? factory.GetDockable<IDocumentDock>("Documents")?.VisibleDockables?
+                .FirstOrDefault(x => string.Equals(x.Id, id, StringComparison.Ordinal))
+            ?? factory.GetDockable<IToolDock>("RightDock")?.VisibleDockables?
+                .FirstOrDefault(x => string.Equals(x.Id, id, StringComparison.Ordinal))
+            ?? factory.GetDockable<IToolDock>("BottomDock")?.VisibleDockables?
                 .FirstOrDefault(x => string.Equals(x.Id, id, StringComparison.Ordinal));
     }
 

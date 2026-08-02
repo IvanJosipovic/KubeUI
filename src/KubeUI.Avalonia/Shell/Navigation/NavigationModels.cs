@@ -38,8 +38,8 @@ public partial class ClusterNavigationNode : NavigationItem, IDisposable
     public ClusterWorkspace Cluster { get; }
 
     public string ConnectionMenuHeader => Cluster.Runtime.Connected
-        ? Avalonia.Assets.Resources.NavigationView_ContextMenu_Disconnect!
-        : Avalonia.Assets.Resources.NavigationView_ContextMenu_Connect!;
+        ? Assets.Resources.NavigationView_ContextMenu_Disconnect!
+        : Assets.Resources.NavigationView_ContextMenu_Connect!;
 
     public Icon ConnectionMenuIcon => Cluster.Runtime.Connected
         ? Icon.Dismiss
@@ -158,6 +158,8 @@ public partial class ClusterNavigationNode : NavigationItem, IDisposable
         {
             runtime.PropertyChanged -= OnRuntimePropertyChanged;
         }
+
+        GC.SuppressFinalize(this);
     }
 }
 

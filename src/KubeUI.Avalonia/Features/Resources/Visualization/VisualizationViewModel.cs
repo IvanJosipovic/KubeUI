@@ -80,14 +80,14 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
     {
         _resourceRelationshipBuilder = new ResourceRelationshipBuilder();
         SelectedResourceTypes.CollectionChanged += SelectedResourceTypes_CollectionChanged;
-        Title = Assets.Resources.VisualizationView_Title;
+        Title = Assets.Resources.VisualizationView_Title!;
     }
 
     internal VisualizationViewModel(IResourceRelationshipBuilder resourceRelationshipBuilder)
     {
         _resourceRelationshipBuilder = resourceRelationshipBuilder;
         SelectedResourceTypes.CollectionChanged += SelectedResourceTypes_CollectionChanged;
-        Title = Assets.Resources.VisualizationView_Title;
+        Title = Assets.Resources.VisualizationView_Title!;
     }
 
     protected override void OnPropertyChanged(PropertyChangedEventArgs e)
@@ -360,9 +360,9 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
     private GraphApplication PrepareGraphApplication(
         ResourceRelationshipGraph graph,
         HashSet<UnresolvedResourceReference> pendingReferences,
-        IReadOnlySet<string> selectedTypes,
-        IReadOnlySet<string> excludedTypes,
-        IReadOnlySet<string> knownTypes,
+        HashSet<string> selectedTypes,
+        HashSet<string> excludedTypes,
+        HashSet<string> knownTypes,
         ClusterWorkspace? cluster,
         bool showNotReadyOnly)
     {
@@ -442,7 +442,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 
     private static ResourceRelationshipGraph FilterGraphByTypes(
         ResourceRelationshipGraph graph,
-        IReadOnlySet<string> selectedTypes,
+        HashSet<string> selectedTypes,
         bool showNotReadyOnly)
     {
         IReadOnlyList<IKubernetesObject<V1ObjectMeta>> resources = graph.Resources
@@ -464,7 +464,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         HashSet<string> AvailableTypes,
         ResourceRelationshipGraph FilteredGraph);
 
-    private void UpdateResourceTypes(IReadOnlySet<string> availableTypes)
+    private void UpdateResourceTypes(HashSet<string> availableTypes)
     {
         _suppressResourceTypeChanges = true;
         try
@@ -546,14 +546,13 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 
     private void SelectRootNamespace(IKubernetesObject<V1ObjectMeta>? rootResource)
     {
-        if (rootResource is not V1Namespace namespaceResource || namespaceResource.Name() is not string namespaceName)
+        if (rootResource is not V1Namespace namespaceResource)
         {
             return;
         }
 
-        var selectedNamespace = Cluster!.Runtime.Namespaces.ToArray().FirstOrDefault(x => x.Name() == namespaceName) ?? namespaceResource;
         _localSelectedNamespaces.Clear();
-        _localSelectedNamespaces.Add(selectedNamespace);
+        _localSelectedNamespaces.Add(namespaceResource);
     }
 
     private static void CopyNamespaces(IEnumerable<V1Namespace> source, ObservableCollection<V1Namespace> target)
