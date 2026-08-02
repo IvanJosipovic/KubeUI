@@ -153,7 +153,7 @@ public sealed class ClusterAuthorizationTests
         var releaseFirst = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
         var secondReady = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
         var readyCount = 0;
-        cluster.OnCustomResourceDefinitionReady += async crd =>
+        Func<V1CustomResourceDefinition, Task> handler = async crd =>
         {
             if (Interlocked.Increment(ref readyCount) == 1)
             {
@@ -165,6 +165,7 @@ public sealed class ClusterAuthorizationTests
                 secondReady.TrySetResult(null);
             }
         };
+        cluster.OnCustomResourceDefinitionReady += handler;
 
         var queueMethod = typeof(Cluster).GetMethod("QueueCustomResourceDefinition", BindingFlags.Instance | BindingFlags.NonPublic);
         queueMethod.ShouldNotBeNull();
@@ -178,6 +179,7 @@ public sealed class ClusterAuthorizationTests
         releaseFirst.TrySetResult(null);
         await secondReady.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
         readyCount.ShouldBe(2);
+        cluster.OnCustomResourceDefinitionReady -= handler;
     }
 
 }

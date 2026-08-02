@@ -16,7 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="CliWrap" Version="3.10.3" />
+    <PackageReference Include="CliWrap" Version="3.10.4" />
     <PackageReference Include="Microsoft.Testing.Extensions.HangDump" Version="2.3.3" />
     <PackageReference Include="Microsoft.Testing.Platform.MSBuild" Version="2.3.3" />
     <PackageReference Include="Moq" Version="4.20.72" />

@@ -21,7 +21,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Avalonia.Desktop" Version="12.0.5" />
+    <PackageReference Include="Avalonia.Desktop" Version="12.1.1" />
   </ItemGroup>
 
   <ItemGroup>
@@ -31,12 +31,7 @@
 
   <Target Name="DisableAnalyzers" BeforeTargets="CoreCompile">
     <ItemGroup>
-      <Analyzer Remove="@(Analyzer)"
-                Condition="'%(Filename)' == 'Avalonia.Markup.Declarative.SourceGenerator' Or
-                           '%(Filename)' == 'Avalonia.Generators' Or
-                           '%(Filename)' == 'Avalonia.Analyzers.VisualBasic' or
-                           '%(Filename)' == 'Avalonia.Analyzers.CSharp' or
-                           '%(Filename)' == 'CommunityToolkit.Mvvm.SourceGenerators'" />
+      <Analyzer Remove="@(Analyzer)" Condition="'%(Filename)' == 'Avalonia.Markup.Declarative.SourceGenerator' Or&#xD;&#xA;                           '%(Filename)' == 'Avalonia.Generators' Or&#xD;&#xA;                           '%(Filename)' == 'Avalonia.Analyzers.VisualBasic' or&#xD;&#xA;                           '%(Filename)' == 'Avalonia.Analyzers.CSharp' or&#xD;&#xA;                           '%(Filename)' == 'CommunityToolkit.Mvvm.SourceGenerators'" />
     </ItemGroup>
   </Target>
 </Project>
