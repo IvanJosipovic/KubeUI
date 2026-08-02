@@ -1,10 +1,10 @@
-using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Presenters;
+using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Templates;
-using Westermo.GraphX.Controls.Controls;
-using Westermo.GraphX.Controls.Behaviours;
 using QuikGraph;
 using Westermo.GraphX.Common.Enums;
+using Westermo.GraphX.Controls.Behaviours;
+using Westermo.GraphX.Controls.Controls;
 using Westermo.GraphX.Controls.Controls.EdgeLabels;
 using Westermo.GraphX.Controls.Controls.EdgePointers;
 using Path = Avalonia.Controls.Shapes.Path;
@@ -52,7 +52,7 @@ internal static class ResourceGraphStyles
         {
             Setters =
             {
-                new Setter(EdgeLabelControl.ForegroundProperty, Brushes.White),
+                new Setter(TemplatedControl.ForegroundProperty, Brushes.White),
                 new Setter(EdgeLabelControl.AlignToEdgeProperty, true),
                 new Setter(TemplatedControl.TemplateProperty,
                     new FuncControlTemplate<AttachableEdgeLabelControl>((label, _) => new Border

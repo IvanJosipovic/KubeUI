@@ -15,7 +15,7 @@ using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Trace;
 
-[assembly: GenerateMarkupExtensionsForAssembly(typeof(Avalonia.Controls.DataGrid))]
+[assembly: GenerateMarkupExtensionsForAssembly(typeof(DataGrid))]
 [assembly: GenerateMarkupExtensionsForAssembly(typeof(Avalonia.Skia.SkiaPlatform))]
 [assembly: GenerateMarkupExtensionsForAssembly(typeof(Avalonia.Svg.Skia.SvgImage))]
 [assembly: GenerateMarkupExtensionsForAssembly(typeof(Avalonia.Xaml.Interactions.Core.DataTrigger))]
@@ -73,10 +73,13 @@ public partial class App : Application, IServiceProviderHost
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             var mainWindow = Services.GetRequiredService<MainWindow>();
-                desktop.MainWindow = mainWindow;
-            mainWindow.DataContext = Services.GetRequiredService<MainViewModel>();
+            desktop.MainWindow = mainWindow;
+            var mainViewModel = Services.GetRequiredService<MainViewModel>();
+            mainWindow.DataContext = mainViewModel;
             TopLevel = desktop.MainWindow;
             desktop.ShutdownRequested += (_, _) => GracefulShutdown();
+
+            Dispatcher.UIThread.Post(mainViewModel.Initialize, DispatcherPriority.Background);
         }
         else if (ApplicationLifetime is ISingleViewApplicationLifetime singleViewPlatform)
         {

@@ -83,13 +83,35 @@ public sealed class TestCluster : IDisposable, IAsyncDisposable
         var kindKubeConfig = CloneKubeConfig(kindName);
         Context context = kindKubeConfig.Contexts.First(context => context.Name == kindName);
         User user = kindKubeConfig.Users.First(user => user.Name == context.ContextDetails.User);
-        user.UserCredentials.Impersonate = KubernetesRbac.ServiceAccountUser;
+        var tokenResponse = await Client.CoreV1.CreateNamespacedServiceAccountTokenAsync(
+            new Authenticationv1TokenRequest
+            {
+                ApiVersion = "authentication.k8s.io/v1",
+                Kind = "TokenRequest",
+                Spec = new V1TokenRequestSpec
+                {
+                    ExpirationSeconds = 3600,
+                },
+            },
+            KubernetesRbac.ServiceAccountName,
+            KubernetesRbac.ServiceAccountNamespace,
+            cancellationToken: cancellationToken).ConfigureAwait(false);
+        user.UserCredentials.Impersonate = null;
+        user.UserCredentials.Token = tokenResponse.Status?.Token
+            ?? throw new InvalidOperationException("Kind returned an empty service-account token.");
+        user.UserCredentials.ClientCertificateData = null;
+        user.UserCredentials.ClientKeyData = null;
+        user.UserCredentials.ClientCertificate = null;
+        user.UserCredentials.ClientKey = null;
+        user.UserCredentials.UserName = null;
+        user.UserCredentials.Password = null;
         var kindConfiguration = KubernetesClientConfiguration.BuildConfigFromConfigObject(
             kindKubeConfig,
             kindName,
             masterUrl: null);
 #pragma warning disable CA2000 // Ownership is transferred to the created cluster.
-        var kindClient = new k8s.Kubernetes(kindConfiguration);
+        var kindClient = new k8s.Kubernetes(
+            kindConfiguration);
 #pragma warning restore CA2000
         return await CreateAdditionalClusterAsync(kindClient, kindKubeConfig, kindName, useNamespaceFallback, cancellationToken).ConfigureAwait(false);
     }

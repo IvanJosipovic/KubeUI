@@ -102,7 +102,7 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
         }
         catch (Exception ex)
         {
-            activity?.SetStatus(System.Diagnostics.ActivityStatusCode.Error, ex.Message);
+            activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
             Runtime.LastError = ex.Message;
             Runtime.Status = ClusterStatus.Errored;
 
@@ -271,7 +271,7 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Activity.Current?.SetStatus(System.Diagnostics.ActivityStatusCode.Error, ex.Message);
+            Activity.Current?.SetStatus(ActivityStatusCode.Error, ex.Message);
             _logger.LogDebug(ex, "Unable to evaluate permissions for {Kind}", resourceConfig.Kind);
         }
 
@@ -464,7 +464,7 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
         }
         catch (Exception ex)
         {
-            activity?.SetStatus(System.Diagnostics.ActivityStatusCode.Error, ex.Message);
+            activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
             _logger.LogError(ex, "Error processing custom resource definition {Crd}", crd.Name());
         }
     }

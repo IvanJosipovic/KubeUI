@@ -18,7 +18,7 @@ public sealed class ResourceYamlViewCopyTests
         using var cluster = await Application.Current.CreateClusterAsync();
 
         var viewModel = services.GetRequiredService<ResourceYamlViewModel>();
-            viewModel.Initialize(cluster, new V1Pod
+        viewModel.Initialize(cluster, new V1Pod
         {
             Metadata = new V1ObjectMeta
             {
@@ -87,7 +87,7 @@ public sealed class ResourceYamlViewCopyTests
         using var cluster = await Application.Current.CreateClusterAsync();
 
         var viewModel = services.GetRequiredService<ResourceYamlViewModel>();
-            viewModel.Initialize(cluster, new V1Pod
+        viewModel.Initialize(cluster, new V1Pod
         {
             Metadata = new V1ObjectMeta
             {

@@ -8,6 +8,7 @@ internal sealed class FileSettingsPersistence : ISettingsPersistence
     public string SettingsDirectory => SettingsPersistenceLoader.SettingsDirectory;
 
     private readonly ILogger<FileSettingsPersistence> _logger;
+    private SettingsPersistenceData? _data;
 
     public FileSettingsPersistence(ILogger<FileSettingsPersistence> logger)
     {
@@ -16,7 +17,7 @@ internal sealed class FileSettingsPersistence : ISettingsPersistence
 
     public SettingsPersistenceData Load()
     {
-        return SettingsPersistenceLoader.Load(_logger);
+        return _data ??= SettingsPersistenceLoader.Load(_logger);
     }
 
     public bool EnsureDirectoryExists()
@@ -42,6 +43,7 @@ internal sealed class FileSettingsPersistence : ISettingsPersistence
             File.WriteAllText(
                 SettingsPersistenceLoader.SettingsFilePath,
                 JsonSerializer.Serialize(data, SettingsPersistenceSourceGenerationContext.Default.SettingsPersistenceData));
+            _data = data;
         }
         catch (Exception ex)
         {

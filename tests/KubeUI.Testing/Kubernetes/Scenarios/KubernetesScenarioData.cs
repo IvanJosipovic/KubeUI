@@ -2,9 +2,9 @@ namespace KubeUI.Testing.Kubernetes.Fixtures;
 
 public static class KubernetesTestData
 {
-  public const string LimitedAccessWithNamespacePermissions = LimitedAccessYaml;
+    public const string LimitedAccessWithNamespacePermissions = LimitedAccessYaml;
 
-  public const string LimitedAccessWithNamespaceFallback = LimitedAccessNoNamespaceYaml;
+    public const string LimitedAccessWithNamespaceFallback = LimitedAccessNoNamespaceYaml;
 
     public const string CustomResourceDefinitionYaml = """
 apiVersion: apiextensions.k8s.io/v1

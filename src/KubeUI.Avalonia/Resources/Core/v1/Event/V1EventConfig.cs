@@ -73,7 +73,7 @@ public sealed partial class V1EventConfig : ResourceConfigBase<Corev1Event>
     public override Style[] ListStyle() =>
     [
         new Style(x => x.OfType<DataGridRow>())
-            .Setter(DataGridRow.ForegroundProperty, CompiledBinding.Create<Corev1Event, object>(x => x.Type,
+            .Setter(global::Avalonia.Controls.Primitives.TemplatedControl.ForegroundProperty, CompiledBinding.Create<Corev1Event, object>(x => x.Type,
                 converter: new FuncValueConverter<string, IBrush>(y =>
                 {
                     if (string.Equals(y, "Warning", StringComparison.Ordinal))

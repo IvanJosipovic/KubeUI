@@ -1,18 +1,16 @@
-using Avalonia.Headless.XUnit;
-using Avalonia.Controls;
-using Avalonia.Threading;
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using Avalonia.Controls;
+using Avalonia.Headless.XUnit;
+using Avalonia.Threading;
 using k8s;
-using KubeUI.Avalonia.Features.Resources.Visualization;
-using KubeUI.Avalonia.Tests.Infra;
-using KubeUI.Avalonia.Resources;
-using KubeUI.Avalonia.Services.Icons;
-using KubeUI.Kubernetes.Resources.Relationships;
-using Shouldly;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
-using Westermo.GraphX.Controls.Controls;
+using KubeUI.Avalonia.Features.Resources.Visualization;
+using KubeUI.Avalonia.Services.Icons;
+using KubeUI.Avalonia.Tests.Infra;
+using KubeUI.Kubernetes.Resources.Relationships;
+using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Features.Resources.Visualization;
 
@@ -557,6 +555,7 @@ public sealed class ResourceGraphControlTests
         await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background);
 
         var pod = CreatePod("late");
+        pod.Metadata.Uid = null;
         await cluster.Runtime.AddOrUpdateResource(pod);
         await builder.WaitForAdditionStartedAsync().WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
 
@@ -589,10 +588,13 @@ public sealed class ResourceGraphControlTests
 
         var firstOwner = CreateDeployment("first-owner");
         var secondOwner = CreateDeployment("second-owner");
-        var pod = CreatePodWithOwner("owned-pod", firstOwner);
+        firstOwner.Metadata.Uid = null;
+        secondOwner.Metadata.Uid = null;
 
         await cluster.Runtime.AddOrUpdateResource(firstOwner);
         await cluster.Runtime.AddOrUpdateResource(secondOwner);
+        var pod = CreatePodWithOwner("owned-pod", firstOwner);
+        pod.Metadata.Uid = null;
         await cluster.Runtime.AddOrUpdateResource(pod);
         Dispatcher.UIThread.RunJobs();
 
@@ -603,6 +605,11 @@ public sealed class ResourceGraphControlTests
         ResourceRelationship changedRelationship = new(secondOwnerIdentity, podIdentity, ResourceRelationshipKind.Owner);
         await viewModel.ApplyGraphAsync(new ResourceRelationshipGraph([firstOwner, secondOwner, pod], [initialRelationship]));
 
+        await TestWait.UntilAsync(
+            () => cluster.Runtime.GetResource<V1Pod>("default", "owned-pod") is not null,
+            TimeSpan.FromSeconds(5),
+            cancellationToken: TestContext.Current.CancellationToken);
+        pod = cluster.Runtime.GetResource<V1Pod>("default", "owned-pod").ShouldNotBeNull();
         pod.Metadata!.OwnerReferences =
         [
             new()
@@ -639,6 +646,16 @@ public sealed class ResourceGraphControlTests
             Name = name,
             NamespaceProperty = "default",
             Uid = name,
+            Labels = new Dictionary<string, string> { ["app"] = name },
+        },
+        Spec = new()
+        {
+            Selector = new V1LabelSelector { MatchLabels = new Dictionary<string, string> { ["app"] = name } },
+            Template = new V1PodTemplateSpec
+            {
+                Metadata = new V1ObjectMeta { Labels = new Dictionary<string, string> { ["app"] = name } },
+                Spec = new V1PodSpec { Containers = [new V1Container { Name = "app", Image = "example/app:1" }] },
+            },
         },
     };
 
@@ -662,6 +679,7 @@ public sealed class ResourceGraphControlTests
                 },
             ],
         },
+        Spec = new V1PodSpec { Containers = [new V1Container { Name = "app", Image = "example/app:1" }] },
     };
 
     [AvaloniaTheory, KubernetesBackendData]
@@ -809,7 +827,7 @@ public sealed class ResourceGraphControlTests
         {
             ApiVersion = "v1",
             Kind = V1Node.KubeKind,
-            Metadata = new() { Name = "unrelated-node", Uid = "unrelated-node" },
+            Metadata = new() { Name = "unrelated-node" },
         });
 
         var delta = await builder.WaitForAdditionAsync();
@@ -904,7 +922,7 @@ public sealed class ResourceGraphControlTests
         {
             ApiVersion = "v1",
             Kind = V1Pod.KubeKind,
-            Metadata = new() { Name = "unrelated", NamespaceProperty = "other", Uid = "unrelated" },
+            Metadata = new() { Name = "unrelated", NamespaceProperty = "other" },
         });
 
         Dispatcher.UIThread.RunJobs();
@@ -922,11 +940,14 @@ public sealed class ResourceGraphControlTests
 
         await ConnectAndWaitForResourceConfigsAsync(cluster, typeof(V1Pod));
         var selected = CreatePod("selected");
+        selected.Metadata.Uid = null;
+        await cluster.Runtime.AddOrUpdateResource(new V1Namespace { Metadata = new() { Name = "other" } });
         V1Pod unrelated = new()
         {
             ApiVersion = "v1",
             Kind = V1Pod.KubeKind,
-            Metadata = new() { Name = "unrelated", NamespaceProperty = "other", Uid = "unrelated" },
+            Metadata = new() { Name = "unrelated", NamespaceProperty = "other" },
+            Spec = new() { Containers = [new V1Container { Name = "app", Image = "example/app:1" }] },
         };
         await cluster.Runtime.AddOrUpdateResource(selected);
         await cluster.Runtime.AddOrUpdateResource(unrelated);
@@ -934,7 +955,7 @@ public sealed class ResourceGraphControlTests
         {
             ApiVersion = "v1",
             Kind = V1Node.KubeKind,
-            Metadata = new() { Name = "seed-node", Uid = "seed-node" },
+            Metadata = new() { Name = "seed-node" },
         });
         await cluster.Runtime.SeedResource<V1Pod>(true);
 
@@ -959,7 +980,9 @@ public sealed class ResourceGraphControlTests
 
         for (var i = 0; i < 3; i++)
         {
-            await cluster.Runtime.AddOrUpdateResource(CreatePod($"incremental-{i}"));
+            var incremental = CreatePod($"incremental-{i}");
+            incremental.Metadata.Uid = null;
+            await cluster.Runtime.AddOrUpdateResource(incremental);
             Dispatcher.UIThread.RunJobs();
             await builder.WaitForAdditionAsync();
             Dispatcher.UIThread.RunJobs();
@@ -1089,9 +1112,25 @@ public sealed class ResourceGraphControlTests
         await builder.WaitForBuildAsync(1);
 
         var background = CreatePod("background");
+        background.Metadata.Uid = null;
         await cluster.Runtime.AddOrUpdateResource(background);
+        await TestWait.UntilAsync(
+            () => cluster.Runtime.GetResource<V1Pod>("default", "background") is not null,
+            TimeSpan.FromSeconds(5),
+            cancellationToken: TestContext.Current.CancellationToken);
+        var backgroundUpdate = await cluster.Runtime.Client!.CoreV1.ReadNamespacedPodAsync(
+            "background",
+            "default",
+            cancellationToken: TestContext.Current.CancellationToken);
+        backgroundUpdate = backgroundUpdate with
+        {
+            Metadata = backgroundUpdate.Metadata with
+            {
+                Labels = new Dictionary<string, string> { ["updated"] = "true" },
+            },
+        };
         await Task.Run(
-            () => cluster.Runtime.AddOrUpdateResource(background),
+            () => cluster.Runtime.AddOrUpdateResource(backgroundUpdate),
             TestContext.Current.CancellationToken);
 
         await WaitForAsync(() => builder.BuildCount > 1, cancellationToken: TestContext.Current.CancellationToken);
@@ -1115,7 +1154,9 @@ public sealed class ResourceGraphControlTests
         await builder.WaitForBuildAsync(1);
 
         viewModel.Dispose();
-        await cluster.Runtime.AddOrUpdateResource(CreatePod("after-dispose"));
+        var afterDispose = CreatePod("after-dispose");
+        afterDispose.Metadata.Uid = null;
+        await cluster.Runtime.AddOrUpdateResource(afterDispose);
         Dispatcher.UIThread.RunJobs();
 
         builder.BuildCount.ShouldBe(1);
@@ -1547,6 +1588,17 @@ public sealed class ResourceGraphControlTests
             Name = name,
             NamespaceProperty = namespaceName,
             Uid = name,
+        },
+        Spec = new()
+        {
+            Containers =
+            [
+                new V1Container
+                {
+                    Name = "app",
+                    Image = "example.com/app:1",
+                },
+            ],
         },
     };
 

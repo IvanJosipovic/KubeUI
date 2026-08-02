@@ -112,7 +112,7 @@ public partial class CRDResourceConfig<T> : ResourceConfigBase<T>, ICustomResour
                     {
                         var exp = JsonPathLINQ.JsonPath.GetExpression<T, Enum>(item.JsonPath, true);
 
-                        var colDef = CreateColumn<string>(item.Name, TransformToFuncOfString(exp.Body, exp.Parameters).Compile());
+                        var colDef = CreateColumn(item.Name, TransformToFuncOfString(exp.Body, exp.Parameters).Compile());
 
                         _columns.Add(colDef);
                     }
@@ -233,12 +233,12 @@ public partial class CRDResourceConfig<T> : ResourceConfigBase<T>, ICustomResour
                 bodyAsString = Expression.Condition(
                     Expression.Equal(expression, Expression.Constant(null, expression.Type)),
                     Expression.Constant(string.Empty),
-                    Expression.Call(expression, nameof(object.ToString), Type.EmptyTypes)
+                    Expression.Call(expression, nameof(ToString), Type.EmptyTypes)
                 );
             }
             else
             {
-                bodyAsString = Expression.Call(expression, nameof(object.ToString), Type.EmptyTypes);
+                bodyAsString = Expression.Call(expression, nameof(ToString), Type.EmptyTypes);
             }
 
             // Create a new lambda expression

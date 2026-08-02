@@ -25,9 +25,6 @@ internal static class Program
 {
     public static ActivitySource Source { get; } = new ActivitySource("com.KubeUI.Desktop", "1.0.0");
 
-    private static readonly object s_hostLock = new();
-    private static IHost? s_host;
-
     [STAThread]
     public static void Main(string[] args)
     {
@@ -35,46 +32,27 @@ internal static class Program
 
         EnsureMacOsPath();
 
-        s_host = EnsureHostInitialized();
+        var host = CreateHostBuilder(args).Build();
+        host.Services.ConfigureKubeUIKubernetesJsonLogging();
+        host.Start();
 
-        var builder = AppBuilder.Configure(() => new App(s_host.Services))
+        var builder = AppBuilder.Configure(() => new App(host.Services))
             .UsePlatformDetect()
             .ConfigureFonts(fontManager => fontManager.AddFontCollection(new CascadiaMonoFontCollection()))
             .WithInterFont()
-            .UseServiceProvider(s_host.Services)
-            .UseComponentControlFactory(type => (Control)ActivatorUtilities.CreateInstance(s_host.Services, type))
+            .UseServiceProvider(host.Services)
+            .UseComponentControlFactory(type => (Control)ActivatorUtilities.CreateInstance(host.Services, type))
             .UseViewInitializationStrategy(ViewInitializationStrategy.Lazy)
 #if DEBUG
             .UseHotReload()
 #endif
             ;
 
-        builder.StartWithClassicDesktopLifetime(args, ShutdownMode.OnLastWindowClose);
+        builder.StartWithClassicDesktopLifetime(args);
 
-        s_host.StopAsync().GetAwaiter().GetResult();
+        host.WaitForShutdown();
 
-        s_host.Dispose();
-        s_host = null;
-    }
-
-    private static IHost EnsureHostInitialized()
-    {
-        if (s_host != null)
-        {
-            return s_host;
-        }
-
-        lock (s_hostLock)
-        {
-            if (s_host == null)
-            {
-                s_host = CreateHostBuilder(Environment.GetCommandLineArgs()).Build();
-                s_host.Services.ConfigureKubeUIKubernetesJsonLogging();
-                s_host.StartAsync().GetAwaiter().GetResult();
-            }
-        }
-
-        return s_host;
+        host.Dispose();
     }
 
     private static HostApplicationBuilder CreateHostBuilder(string[] args)
@@ -86,9 +64,8 @@ internal static class Program
         });
         builder.Logging.SetMinimumLevel(LogLevel.Debug);
 
-        builder.Services.AddKubeUIAppServices();
-
         var settings = SettingsPersistenceLoader.Load();
+        builder.Services.AddKubeUIAppServices();
 
         if (settings.Settings.TelemetryEnabled)
         {
@@ -182,7 +159,7 @@ internal static class Program
             {
                 tracingProvider
                     .AddSource(Source.Name)
-                    .AddSource(KubeUI.Kubernetes.Client.KubeInstrumentation.SourceName)
+                    .AddSource(Kubernetes.Client.KubeInstrumentation.SourceName)
                     .AddSource(Instrumentation.SourceName)
                     .AddHttpClientInstrumentation()
                     .AddOtlpExporter(e =>

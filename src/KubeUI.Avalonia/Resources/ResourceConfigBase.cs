@@ -303,7 +303,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
             {
                 try
                 {
-                    await Cluster.Runtime.DeleteResource<T>(item);
+                    await Cluster.Runtime.DeleteResource(item);
                 }
                 catch (JsonException ex)
                 {
@@ -418,7 +418,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
             {
                 try
                 {
-                    using var genClient = KubeUI.Kubernetes.KubernetesClientExtensions.GetGenericClient(Cluster.Runtime.Client, item);
+                    using var genClient = KubernetesClientExtensions.GetGenericClient(Cluster.Runtime.Client, item);
 
                     await genClient.PatchNamespacedAsync<T>(new V1Patch(sRestartControllerPatch, V1Patch.PatchType.MergePatch), item.Metadata.NamespaceProperty, item.Metadata.Name);
                 }

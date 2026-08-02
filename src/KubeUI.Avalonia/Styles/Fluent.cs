@@ -26,66 +26,66 @@ public sealed class Fluent : AvaloniaStyles
             .Setter(DocumentControl.HeaderTemplateProperty, new FuncDataTemplate<IDockable>((dockable, _) => CreateDocumentHeader(dockable!), false)));
 
         Add(new Style(x => x.OfType<HostWindow>().Class(":toolwindow"))
-            .Setter(HostWindow.BackgroundProperty, new DynamicResourceExtension("SystemRegionBrush"))
-            .Setter(HostWindow.OpacityProperty, 1d)
-            .Setter(HostWindow.RequestedThemeVariantProperty, CompiledBinding.Create<Application, ThemeVariant?>(x => x.RequestedThemeVariant, source: Application.Current))
-            .Setter(HostWindow.TransparencyLevelHintProperty, new[] { WindowTransparencyLevel.None }));
+            .Setter(global::Avalonia.Controls.Primitives.TemplatedControl.BackgroundProperty, new DynamicResourceExtension("SystemRegionBrush"))
+            .Setter(Visual.OpacityProperty, 1d)
+            .Setter(TopLevel.RequestedThemeVariantProperty, CompiledBinding.Create<Application, ThemeVariant?>(x => x.RequestedThemeVariant, source: Application.Current))
+            .Setter(TopLevel.TransparencyLevelHintProperty, new[] { WindowTransparencyLevel.None }));
 
         Add(new Style<DataGrid>()
             .Setter(DataGrid.RowHeightProperty, new DynamicResourceExtension("DataGridRowHeight"))
-            .Setter(DataGrid.FontSizeProperty, new DynamicResourceExtension("DataGridFontSize")));
+            .Setter(global::Avalonia.Controls.Primitives.TemplatedControl.FontSizeProperty, new DynamicResourceExtension("DataGridFontSize")));
 
         Add(new Style<DataGridColumnHeader>()
-            .Setter(DataGridColumnHeader.FontSizeProperty, new DynamicResourceExtension("DataGridFontSize"))
-            .Setter(DataGridColumnHeader.MinHeightProperty, new DynamicResourceExtension("DataGridColumnHeaderMinHeight")));
+            .Setter(global::Avalonia.Controls.Primitives.TemplatedControl.FontSizeProperty, new DynamicResourceExtension("DataGridFontSize"))
+            .Setter(Layoutable.MinHeightProperty, new DynamicResourceExtension("DataGridColumnHeaderMinHeight")));
 
         Add(new Style(x => x.OfType<DataGrid>().Descendant().Name("CellTextBlock"))
             .Setter(TextBlock.MaxLinesProperty, 1)
             .Setter(TextBlock.FontSizeProperty, new DynamicResourceExtension("DataGridFontSize")));
 
         Add(new Style(x => x.OfType<StackPanel>().Class("filter-flyout-root"))
-            .Setter(StackPanel.MinWidthProperty, 296d)
-            .Setter(StackPanel.MaxWidthProperty, 296d)
-            .Setter(StackPanel.HorizontalAlignmentProperty, HorizontalAlignment.Left)
-            .Setter(StackPanel.VerticalAlignmentProperty, VerticalAlignment.Top)
+            .Setter(Layoutable.MinWidthProperty, 296d)
+            .Setter(Layoutable.MaxWidthProperty, 296d)
+            .Setter(Layoutable.HorizontalAlignmentProperty, HorizontalAlignment.Left)
+            .Setter(Layoutable.VerticalAlignmentProperty, VerticalAlignment.Top)
             .Setter(StackPanel.SpacingProperty, 8d)
-            .Setter(StackPanel.MarginProperty, new Thickness(4)));
+            .Setter(Layoutable.MarginProperty, new Thickness(4)));
 
         Add(new Style(x => x.OfType<TextBlock>().Class("filter-flyout-title"))
             .Setter(TextBlock.FontWeightProperty, FontWeight.SemiBold));
 
         Add(new Style(x => x.OfType<Grid>().Class("filter-flyout-row"))
             .Setter(Grid.ColumnSpacingProperty, 8d)
-            .Setter(Grid.HorizontalAlignmentProperty, HorizontalAlignment.Stretch));
+            .Setter(Layoutable.HorizontalAlignmentProperty, HorizontalAlignment.Stretch));
 
         Add(new Style(x => x.OfType<TextBlock>().Class("filter-flyout-label"))
-            .Setter(TextBlock.WidthProperty, 72d)
-            .Setter(TextBlock.VerticalAlignmentProperty, VerticalAlignment.Center));
+            .Setter(Layoutable.WidthProperty, 72d)
+            .Setter(Layoutable.VerticalAlignmentProperty, VerticalAlignment.Center));
 
         Add(new Style(x => x.OfType<ComboBox>().Class("filter-flyout-editor"))
-            .Setter(ComboBox.HorizontalAlignmentProperty, HorizontalAlignment.Stretch));
+            .Setter(Layoutable.HorizontalAlignmentProperty, HorizontalAlignment.Stretch));
 
         Add(new Style(x => x.OfType<TextBox>().Class("filter-flyout-editor"))
-            .Setter(TextBox.HorizontalAlignmentProperty, HorizontalAlignment.Stretch));
+            .Setter(Layoutable.HorizontalAlignmentProperty, HorizontalAlignment.Stretch));
 
         Add(new Style(x => x.OfType<NumericUpDown>().Class("filter-flyout-editor"))
-            .Setter(NumericUpDown.HorizontalAlignmentProperty, HorizontalAlignment.Stretch));
+            .Setter(Layoutable.HorizontalAlignmentProperty, HorizontalAlignment.Stretch));
 
         Add(new Style(x => x.OfType<Grid>().Class("filter-flyout-composite-editor"))
-            .Setter(Grid.HorizontalAlignmentProperty, HorizontalAlignment.Stretch));
+            .Setter(Layoutable.HorizontalAlignmentProperty, HorizontalAlignment.Stretch));
 
         Add(new Style(x => x.OfType<StackPanel>().Class("filter-flyout-actions"))
             .Setter(StackPanel.OrientationProperty, LayoutOrientation.Horizontal)
-            .Setter(StackPanel.HorizontalAlignmentProperty, HorizontalAlignment.Right)
+            .Setter(Layoutable.HorizontalAlignmentProperty, HorizontalAlignment.Right)
             .Setter(StackPanel.SpacingProperty, 6d));
 
         Add(new Style(x => x.OfType<Button>().Class("filter-flyout-action"))
             .Setter(Layoutable.MinWidthProperty, 76d));
 
         Add(new Style<MultiComboBoxItem>()
-            .Setter(MultiComboBoxItem.PaddingProperty, new Thickness(4, 2, 4, 2))
-            .Setter(MultiComboBoxItem.WidthProperty, 200d)
-            .Setter(MultiComboBoxItem.MinHeightProperty, 22d));
+            .Setter(global::Avalonia.Controls.Primitives.TemplatedControl.PaddingProperty, new Thickness(4, 2, 4, 2))
+            .Setter(Layoutable.WidthProperty, 200d)
+            .Setter(Layoutable.MinHeightProperty, 22d));
 
         Add(new Style<MultiComboBoxSelectedItemList>()
             .Setter(Interaction.BehaviorsProperty,
@@ -108,11 +108,11 @@ public sealed class Fluent : AvaloniaStyles
             BasedOn = Application.Current!.FindResource(typeof(FlyoutPresenter)) as ControlTheme,
         };
 
-        theme.Setters.Add(new Setter(ContentControl.PaddingProperty, new Thickness(0)));
-        theme.Setters.Add(new Setter(ContentControl.MinWidthProperty, 0d));
-        theme.Setters.Add(new Setter(ContentControl.MinHeightProperty, 0d));
-        theme.Setters.Add(new Setter(ContentControl.HorizontalAlignmentProperty, HorizontalAlignment.Left));
-        theme.Setters.Add(new Setter(ContentControl.VerticalAlignmentProperty, VerticalAlignment.Top));
+        theme.Setters.Add(new Setter(global::Avalonia.Controls.Primitives.TemplatedControl.PaddingProperty, new Thickness(0)));
+        theme.Setters.Add(new Setter(Layoutable.MinWidthProperty, 0d));
+        theme.Setters.Add(new Setter(Layoutable.MinHeightProperty, 0d));
+        theme.Setters.Add(new Setter(Layoutable.HorizontalAlignmentProperty, HorizontalAlignment.Left));
+        theme.Setters.Add(new Setter(Layoutable.VerticalAlignmentProperty, VerticalAlignment.Top));
 
         return theme;
     }

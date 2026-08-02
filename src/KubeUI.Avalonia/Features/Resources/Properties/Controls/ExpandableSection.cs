@@ -25,7 +25,7 @@ public partial class ExpandableSection : Expander, IDeclarativeViewBase
                 panel.Children.Add(new PropertyItem() { Key = "Name" + i, Value = "myValue" + i });
             }
 
-            base.IsExpanded = true;
+            IsExpanded = true;
         }
 #endif
     }

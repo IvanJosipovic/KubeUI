@@ -63,7 +63,7 @@ public class ClusterManagerTests
         });
 
         var existingConfig = CreateKubeConfig("existing-context", "existing-cluster", "existing-user", "https://existing.example.com");
-        File.WriteAllText(kubeConfigPath, KubeUI.Kubernetes.Serialization.KubernetesYaml.Serialize(existingConfig));
+        File.WriteAllText(kubeConfigPath, Serialization.KubernetesYaml.Serialize(existingConfig));
 
         using var manager = new ClusterManager(
             NullLogger<ClusterManager>.Instance,
@@ -72,12 +72,12 @@ public class ClusterManagerTests
             dispatcher,
             services.GetRequiredService<IKubeConfigPathProvider>());
 
+        await manager.LoadClustersAsync(TestContext.Current.CancellationToken);
         dispatcher.Drain();
-
         manager.GetCluster("existing-context").ShouldNotBeNull();
 
         var importedConfig = CreateKubeConfig("imported-context", "imported-cluster", "imported-user", "https://imported.example.com");
-        var importedYaml = KubeUI.Kubernetes.Serialization.KubernetesYaml.Serialize(importedConfig);
+        var importedYaml = Serialization.KubernetesYaml.Serialize(importedConfig);
         importedYaml.ShouldContain("imported-context");
         importedYaml.ShouldContain("imported-cluster");
 
@@ -113,7 +113,7 @@ public class ClusterManagerTests
             "https://test-aks.example.com");
 
         config.FileName = kubeConfigPath;
-        File.WriteAllText(kubeConfigPath, KubeUI.Kubernetes.Serialization.KubernetesYaml.Serialize(config));
+        File.WriteAllText(kubeConfigPath, Serialization.KubernetesYaml.Serialize(config));
 
         using var manager = new ClusterManager(
             NullLogger<ClusterManager>.Instance,
@@ -122,6 +122,7 @@ public class ClusterManagerTests
             dispatcher,
             services.GetRequiredService<IKubeConfigPathProvider>());
 
+        await manager.LoadClustersAsync(TestContext.Current.CancellationToken);
         dispatcher.Drain();
 
         var cluster = manager.GetCluster("clusterUser_test-aks_test-aks");

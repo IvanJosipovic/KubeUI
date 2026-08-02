@@ -61,7 +61,7 @@ public static class KubernetesTestServiceProvider
         var services = new ServiceCollection();
         services.AddLogging(builder => builder.AddDebug().SetMinimumLevel(LogLevel.Information));
         services.AddSingleton<IHostApplicationLifetime, KubernetesTestHostApplicationLifetime>();
-        services.AddSingleton<IClusterSettingsStore>(settings);
+        services.AddSingleton(settings);
         services.AddKubeUIKubernetesServices();
         configure?.Invoke(services);
         return services.BuildServiceProvider();

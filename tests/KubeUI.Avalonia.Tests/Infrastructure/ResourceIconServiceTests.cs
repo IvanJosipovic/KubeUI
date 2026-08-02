@@ -1,9 +1,8 @@
-using Avalonia.Svg.Skia;
 using Avalonia.Headless.XUnit;
-using Avalonia.Media;
+using Avalonia.Svg.Skia;
 using k8s.Models;
-using Shouldly;
 using KubeUI.Avalonia.Services.Icons;
+using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Infrastructure;
 

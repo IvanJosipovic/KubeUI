@@ -2701,6 +2701,7 @@ public class ResourceYamlViewModelTests
         using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
         var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        await cluster.Connect();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
@@ -2754,6 +2755,7 @@ public class ResourceYamlViewModelTests
         using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
         var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        await cluster.Connect();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {

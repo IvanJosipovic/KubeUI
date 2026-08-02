@@ -33,7 +33,7 @@ public sealed partial class PodLogsView : ViewBase<PodLogsViewModel>
         var textEditor = new TextEditor()
             .Row(1)
             .OnTextChanged((_) => TextEditorControl_TextChanged())
-            .BindValue(TextEditor.BackgroundProperty, new DynamicResourceExtension("SystemAltHighColor"))
+            .BindValue(TemplatedControl.BackgroundProperty, new DynamicResourceExtension("SystemAltHighColor"))
             .Document(vm, x => x.Logs)
             .FontSize(vm, x => x.SettingsService.Appearance.FontSize)
             .WordWrap(vm, x => x.WordWrap)

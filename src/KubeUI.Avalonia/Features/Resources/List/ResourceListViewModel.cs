@@ -865,7 +865,7 @@ public sealed class DynamicDataFilteringAdapterFactory<T> : IDataGridFilteringAd
             }
         }
 
-        var culture = descriptor.Culture ?? System.Globalization.CultureInfo.InvariantCulture;
+        var culture = descriptor.Culture ?? CultureInfo.InvariantCulture;
         var stringComparison = descriptor.StringComparisonMode ?? StringComparison.OrdinalIgnoreCase;
         var values = descriptor.Values;
         var value = descriptor.Value;
@@ -1009,7 +1009,7 @@ public sealed class DynamicDataFilteringAdapterFactory<T> : IDataGridFilteringAd
         return source is string s && target is string t && s.EndsWith(t, comparison);
     }
 
-    private static int Compare(object? left, object? right, System.Globalization.CultureInfo culture)
+    private static int Compare(object? left, object? right, CultureInfo culture)
     {
         if (left == null && right == null)
         {
@@ -1057,7 +1057,7 @@ public sealed class DynamicDataFilteringAdapterFactory<T> : IDataGridFilteringAd
         }
     }
 
-    private static bool Between(object? source, IReadOnlyList<object?>? values, System.Globalization.CultureInfo culture)
+    private static bool Between(object? source, IReadOnlyList<object?>? values, CultureInfo culture)
     {
         if (values == null || values.Count < 2)
         {
@@ -1085,7 +1085,7 @@ public sealed class DynamicDataFilteringAdapterFactory<T> : IDataGridFilteringAd
         return false;
     }
 
-    private static object? ChangeType(object? value, Type targetType, System.Globalization.CultureInfo culture)
+    private static object? ChangeType(object? value, Type targetType, CultureInfo culture)
     {
         if (value == null)
         {

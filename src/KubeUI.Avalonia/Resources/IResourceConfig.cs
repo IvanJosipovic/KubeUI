@@ -1,8 +1,8 @@
+using k8s.Models;
 using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Features.Resources.Common;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Kubernetes;
-using k8s.Models;
 
 namespace KubeUI.Avalonia.Resources
 {

@@ -8,11 +8,11 @@ using KubeUI.Kubernetes.Resources.Relationships;
 using QuikGraph;
 using Westermo.GraphX.Common.Enums;
 using Westermo.GraphX.Controls.Controls;
-using Westermo.GraphX.Logic.Models;
 using Westermo.GraphX.Controls.Controls.ZoomControl;
+using Westermo.GraphX.Controls.Models.Interfaces;
 using Westermo.GraphX.Logic.Algorithms.LayoutAlgorithms;
 using Westermo.GraphX.Logic.Algorithms.OverlapRemoval;
-using Westermo.GraphX.Controls.Models.Interfaces;
+using Westermo.GraphX.Logic.Models;
 
 namespace KubeUI.Avalonia.Features.Resources.Visualization;
 

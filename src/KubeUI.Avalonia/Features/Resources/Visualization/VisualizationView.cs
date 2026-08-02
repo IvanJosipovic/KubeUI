@@ -98,21 +98,21 @@ public sealed partial class VisualizationView : ViewBase<VisualizationViewModel>
     {
         return new ResourceGraphControl()
             .Row(1)
-            .BindValue(ResourceGraphControl.GraphProperty, CompiledBinding.Create<VisualizationViewModel, KubeUI.Kubernetes.Resources.Relationships.ResourceRelationshipGraph?>(x => x.Graph, source: vm));
+            .BindValue(ResourceGraphControl.GraphProperty, CompiledBinding.Create<VisualizationViewModel, Kubernetes.Resources.Relationships.ResourceRelationshipGraph?>(x => x.Graph, source: vm));
     }
 
     internal static Border CreateResourceNode(ResourceNodeViewModel node)
     {
 
         var content = new MultiBinding
-            {
-                StringFormat = "{0}\n{1}",
-                Bindings =
+        {
+            StringFormat = "{0}\n{1}",
+            Bindings =
                 {
                     CompiledBinding.Create<ResourceNodeViewModel, string?>(x => x.Resource.Kind, node),
                     CompiledBinding.Create<ResourceNodeViewModel, string?>(x => x.Resource.Metadata.Name, node)
                 }
-            };
+        };
 
         return new Border()
             .BorderBrush(Brushes.Transparent)

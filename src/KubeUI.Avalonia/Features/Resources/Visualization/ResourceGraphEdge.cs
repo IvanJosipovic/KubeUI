@@ -3,7 +3,7 @@ using Westermo.GraphX.Common.Models;
 
 namespace KubeUI.Avalonia.Features.Resources.Visualization;
 
-public sealed class ResourceGraphEdge: EdgeBase<ResourceGraphVertex>
+public sealed class ResourceGraphEdge : EdgeBase<ResourceGraphVertex>
 {
     public ResourceGraphEdge(ResourceGraphVertex source, ResourceGraphVertex target, ResourceRelationship relationship)
         : base(source, target)

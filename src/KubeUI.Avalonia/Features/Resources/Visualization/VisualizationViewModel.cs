@@ -702,11 +702,11 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                 return;
             }
 
-                if (_rebuildRunning || _pendingRebuild != null)
-                {
-                    Run();
-                    return;
-                }
+            if (_rebuildRunning || _pendingRebuild != null)
+            {
+                Run();
+                return;
+            }
 
             var current = _completeGraph;
             var currentIdentities = current.Resources.Select(GetIdentity).ToHashSet();

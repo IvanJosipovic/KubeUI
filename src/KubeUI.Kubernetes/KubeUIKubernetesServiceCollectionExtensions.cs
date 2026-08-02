@@ -24,6 +24,7 @@ public static class KubeUIKubernetesServiceCollectionExtensions
         services.AddTransient<IClusterRuntime>(sp => sp.GetRequiredService<Cluster>());
         services.AddSingleton<ClusterManager>();
         services.AddSingleton<IClusterRuntimeCatalog>(sp => sp.GetRequiredService<ClusterManager>());
+        services.AddHostedService<ClusterManagerStartupService>();
         services.AddSingleton<IGenerator, Generator>();
         return services;
     }

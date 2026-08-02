@@ -1,6 +1,6 @@
-using Shouldly;
 using k8s;
 using k8s.Models;
+using Shouldly;
 
 namespace KubeUI.Kubernetes.Tests.Clients;
 

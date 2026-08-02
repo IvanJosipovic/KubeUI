@@ -348,7 +348,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
         {
             containerName = container.Name;
         }
-        else if (parameters[1] is k8s.Models.V1EphemeralContainer ephemeral)
+        else if (parameters[1] is V1EphemeralContainer ephemeral)
         {
             containerName = ephemeral.Name;
         }
@@ -385,7 +385,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
             return false;
         }
 
-        if (parameters?[0] is V1Pod pod && (parameters?[1] is V1Container || parameters?[1] is k8s.Models.V1EphemeralContainer))
+        if (parameters?[0] is V1Pod pod && (parameters?[1] is V1Container || parameters?[1] is V1EphemeralContainer))
         {
             return Cluster.Runtime.Permissions.CanI<V1Pod>(Verb.Get, pod.Namespace(), "log");
         }
@@ -407,7 +407,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
         {
             containerName = container.Name;
         }
-        else if (parameters[1] is k8s.Models.V1EphemeralContainer ephemeral)
+        else if (parameters[1] is V1EphemeralContainer ephemeral)
         {
             containerName = ephemeral.Name;
         }
@@ -445,7 +445,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
         {
             containerName = container.Name;
         }
-        else if (parameters[1] is k8s.Models.V1EphemeralContainer ephemeral)
+        else if (parameters[1] is V1EphemeralContainer ephemeral)
         {
             containerName = ephemeral.Name;
         }
@@ -477,7 +477,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
             return false;
         }
 
-        if (parameters?[0] is V1Pod pod && (parameters?[1] is V1Container || parameters?[1] is k8s.Models.V1EphemeralContainer))
+        if (parameters?[0] is V1Pod pod && (parameters?[1] is V1Container || parameters?[1] is V1EphemeralContainer))
         {
             return Cluster.Runtime.Permissions.CanI<V1Pod>(Verb.Create, pod.Namespace(), subResource);
         }
@@ -578,7 +578,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
 
     private static bool IsContainerTarget(object? value)
     {
-        return value is V1Container || value is k8s.Models.V1EphemeralContainer || value is string;
+        return value is V1Container || value is V1EphemeralContainer || value is string;
     }
 
     private static string? GetContainerName(object? value)
@@ -586,7 +586,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
         return value switch
         {
             V1Container container => container.Name,
-            k8s.Models.V1EphemeralContainer ephemeralContainer => ephemeralContainer.Name,
+            V1EphemeralContainer ephemeralContainer => ephemeralContainer.Name,
             string containerName => containerName,
             _ => null,
         };

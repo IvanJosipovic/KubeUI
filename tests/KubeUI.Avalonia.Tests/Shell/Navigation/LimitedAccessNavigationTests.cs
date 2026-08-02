@@ -1,6 +1,5 @@
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
-using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Shell.Navigation;
 using KubeUI.Avalonia.Tests.Infra;
 using Shouldly;

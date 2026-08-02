@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Notifications;
 using Avalonia.Platform.Storage;
+using Avalonia.Threading;
 using Dock.Model.Core;
 using FluentAvalonia.UI.Controls;
 using HanumanInstitute.MvvmDialogs;
@@ -9,12 +10,12 @@ using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
 using KubeUI.Avalonia.Infrastructure.Docking;
-using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Infrastructure.Platform;
+using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Services.Settings;
 using KubeUI.Kubernetes;
-using KubeUI.Testing.Kubernetes.Infrastructure;
 using KubeUI.Kubernetes;
+using KubeUI.Testing.Kubernetes.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
@@ -38,6 +39,13 @@ public class TestApp : Application, IServiceProviderHost, IDisposable
         var provider = BuildServiceProvider();
         Services = provider;
         ApplyResources(provider);
+        Dispatcher.UIThread.ShutdownFinished += OnDispatcherShutdownFinished;
+    }
+
+    private void OnDispatcherShutdownFinished(object? sender, EventArgs e)
+    {
+        Dispatcher.UIThread.ShutdownFinished -= OnDispatcherShutdownFinished;
+        Dispose();
     }
 
     public void Dispose()

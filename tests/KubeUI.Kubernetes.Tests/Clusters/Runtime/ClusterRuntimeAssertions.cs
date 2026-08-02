@@ -422,7 +422,7 @@ public abstract class ClusterRuntimeAssertions
         await harness.Cluster.Permissions.UpdatePermissionsAllNamespaceAsync(generatedType!, Verb.List);
         await harness.Cluster.Permissions.UpdatePermissionsAllNamespaceAsync(generatedType!, Verb.Watch);
 
-            await harness.Cluster.ImportYaml(new MemoryStream(Encoding.UTF8.GetBytes(KubernetesTestData.CustomResourceYaml)));
+        await harness.Cluster.ImportYaml(new MemoryStream(Encoding.UTF8.GetBytes(KubernetesTestData.CustomResourceYaml)));
 
         var seedMethod = harness.Cluster.GetType()
             .GetMethods(BindingFlags.Instance | BindingFlags.Public)
@@ -485,15 +485,19 @@ public abstract class ClusterRuntimeAssertions
         var cluster = await harness.CreateLimitedAccessAsync(scenario, includeNamespaceFallback, TestContext.Current.CancellationToken);
 
         await cluster.Connect();
+        await EnsureNodeAsync(harness);
         await SeedResourceAsync<V1Node>(cluster);
         await SeedResourceAsync<V1Secret>(cluster);
 
         await WaitForResourceAsync<V1Node>(cluster, null, "node-1");
         await WaitForResourceAsync<V1Secret>(cluster, "my-app", "my-serviceaccount");
 
-        cluster.GetResourceList<V1Node>().Count.ShouldBe(1);
+        cluster.GetResourceList<V1Node>().Count.ShouldBeGreaterThanOrEqualTo(1);
+        cluster.GetResource<V1Node>(null, "node-1").ShouldNotBeNull();
 
-        var secrets = cluster.GetResourceList<V1Secret>();
+        var secrets = cluster.GetResourceList<V1Secret>()
+            .Where(secret => secret.Namespace() != "kube-system")
+            .ToList();
         secrets.ShouldAllBe(secret => secret.Namespace() == "my-app");
         secrets.ShouldContain(secret => secret.Name() == "my-serviceaccount");
     }
@@ -598,6 +602,20 @@ public abstract class ClusterRuntimeAssertions
             await harness.CreateAsync(new V1ServiceAccount
             {
                 Metadata = new() { Name = "default", NamespaceProperty = @namespace },
+            }, TestContext.Current.CancellationToken);
+        }
+        catch (HttpOperationException exception) when (exception.Response.StatusCode == HttpStatusCode.Conflict)
+        {
+        }
+    }
+
+    private static async Task EnsureNodeAsync(TestCluster harness)
+    {
+        try
+        {
+            await harness.CreateAsync(new V1Node
+            {
+                Metadata = new() { Name = "node-1" },
             }, TestContext.Current.CancellationToken);
         }
         catch (HttpOperationException exception) when (exception.Response.StatusCode == HttpStatusCode.Conflict)

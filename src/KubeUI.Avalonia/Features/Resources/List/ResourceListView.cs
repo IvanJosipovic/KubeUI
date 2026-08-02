@@ -11,10 +11,10 @@ using k8s.Models;
 using KubeUI.Avalonia.Controls.DataGridFilters;
 using KubeUI.Avalonia.Features.Resources.Common;
 using KubeUI.Avalonia.Features.Resources.List.Behaviors;
+using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
 using KubeUI.Avalonia.Resources;
 using Ursa.Controls;
-using KubeUI.Avalonia.Infrastructure;
 
 namespace KubeUI.Avalonia.Features.Resources.List;
 
@@ -244,14 +244,14 @@ public partial class ResourceListView : ViewBase<IResourceListViewModel>
         var contextMenu = new ContextMenu()
             .Styles(
                 new Style<MenuItem>()
-                    .Setter(MenuItem.IsVisibleProperty, CompiledBinding.Create<MenuItemViewModel, bool>(x => x.IsVisible))
+                    .Setter(IsVisibleProperty, CompiledBinding.Create<MenuItemViewModel, bool>(x => x.IsVisible))
                     .Setter(HeaderedItemsControl.HeaderProperty, CompiledBinding.Create<MenuItemViewModel, string?>(x => x.Title))
                     .Setter(MenuItem.CommandProperty, CompiledBinding.Create<MenuItemViewModel, ICommand?>(x => x.Command))
                     .Setter(MenuItem.CommandParameterProperty, CompiledBinding.Create<MenuItemViewModel, object?>(x => x.CommandParameter))
                     .Setter(ItemsControl.ItemsSourceProperty, CompiledBinding.Create<MenuItemViewModel, IEnumerable?>(x => x.Items))
-                    .Setter(Control.TagProperty, CompiledBinding.Create<MenuItemViewModel, bool>(x => x.IsSeparator))
+                    .Setter(TagProperty, CompiledBinding.Create<MenuItemViewModel, bool>(x => x.IsSeparator))
                     .Setter(MenuItem.IconProperty, new Binding { Converter = MenuItemIconConverter.Instance }),
-                new Style<MenuItem>(x => x.PropertyEquals(Control.TagProperty, true))
+                new Style<MenuItem>(x => x.PropertyEquals(TagProperty, true))
                     .Setter(TemplatedControl.TemplateProperty, new FuncControlTemplate((_, _) => new Separator())));
 
         return contextMenu;

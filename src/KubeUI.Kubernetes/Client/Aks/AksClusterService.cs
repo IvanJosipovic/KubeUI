@@ -5,7 +5,6 @@ using Azure.Identity;
 using Azure.ResourceManager;
 using Azure.ResourceManager.ContainerService;
 using Azure.ResourceManager.ContainerService.Models;
-using Azure.ResourceManager.Resources;
 using k8s.KubeConfigModels;
 
 namespace KubeUI.Kubernetes;

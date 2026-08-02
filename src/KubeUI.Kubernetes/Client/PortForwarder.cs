@@ -436,6 +436,11 @@ public partial class PortForwarder : ObservableObject, IEquatable<PortForwarder>
     {
         Stop();
     }
+
+    public override bool Equals(object obj)
+    {
+        return Equals(obj as PortForwarder);
+    }
 }
 #pragma warning restore RCS1075
 

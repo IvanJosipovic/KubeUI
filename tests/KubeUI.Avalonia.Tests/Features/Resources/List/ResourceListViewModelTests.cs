@@ -330,7 +330,7 @@ public class ResourceListViewModelTests
         var items = contextMenu.ItemsSource as IEnumerable<MenuItemViewModel>;
         items.ShouldNotBeNull();
 
-            var viewItem = items!.First(item => item.Title == "View");
+        var viewItem = items!.First(item => item.Title == "View");
         var commandParameter = viewItem.CommandParameter as IList;
 
         commandParameter.ShouldNotBeNull();
@@ -483,7 +483,7 @@ public class ResourceListViewModelTests
         var items = contextMenu.ItemsSource as IEnumerable<MenuItemViewModel>;
         items.ShouldNotBeNull();
 
-            var headers = items!.Select(item => item.Title).ToList();
+        var headers = items!.Select(item => item.Title).ToList();
         headers.ShouldContain("View");
         headers.ShouldContain("Delete");
     }
@@ -538,7 +538,7 @@ public class ResourceListViewModelTests
         var items = contextMenu.ItemsSource as IEnumerable<MenuItemViewModel>;
         items.ShouldNotBeNull();
 
-            var deleteItem = items!.First(item => item.Title == "Delete");
+        var deleteItem = items!.First(item => item.Title == "Delete");
         var commandParameter = deleteItem.CommandParameter as IList;
 
         commandParameter.ShouldNotBeNull();
@@ -548,7 +548,7 @@ public class ResourceListViewModelTests
         deleteItem.Command.ShouldNotBeNull();
         deleteItem.Command!.CanExecute(commandParameter).ShouldBeTrue();
 
-            var viewItem = items.First(item => item.Title == "View");
+        var viewItem = items.First(item => item.Title == "View");
         viewItem.Command.ShouldNotBeNull();
         viewItem.Command!.CanExecute(commandParameter).ShouldBeFalse();
 
@@ -564,7 +564,7 @@ public class ResourceListViewModelTests
         items = contextMenu.ItemsSource as IEnumerable<MenuItemViewModel>;
         items.ShouldNotBeNull();
 
-            deleteItem = items!.First(item => item.Title == "Delete");
+        deleteItem = items!.First(item => item.Title == "Delete");
         commandParameter = deleteItem.CommandParameter as IList;
 
         commandParameter.ShouldNotBeNull();
@@ -574,7 +574,7 @@ public class ResourceListViewModelTests
         deleteItem.Command.ShouldNotBeNull();
         deleteItem.Command!.CanExecute(commandParameter).ShouldBeTrue();
 
-            viewItem = items.First(item => item.Title == "View");
+        viewItem = items.First(item => item.Title == "View");
         viewItem.Command.ShouldNotBeNull();
         viewItem.Command!.CanExecute(commandParameter).ShouldBeFalse();
     }
@@ -712,7 +712,7 @@ public class ResourceListViewModelTests
         // Mutate in place and trigger DynamicData refresh.
         pod.Metadata.Name = "b";
         await AddOrUpdateAsync(cluster, pod);
-        await WaitForAsync(() => GetFirstRowFirstColumnText(grid, 0, 0)?.Contains("b", StringComparison.OrdinalIgnoreCase) == true);
+        await WaitForAsync(() => GetFirstRowFirstColumnText(grid, 0, 0)?.Contains('b', StringComparison.OrdinalIgnoreCase) == true);
 
         var after = GetFirstRowFirstColumnText(grid, 0, 0);
         after.ShouldNotBeNull();

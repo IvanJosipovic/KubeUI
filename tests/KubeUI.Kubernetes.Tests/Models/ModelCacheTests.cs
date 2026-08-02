@@ -87,7 +87,7 @@ public class ModelCacheTests
     {
         var cache = new ModelCache();
         var xml = new XmlDocument();
-        using var stream = typeof(KubernetesCRDModelGen.Generator).Assembly.GetManifestResourceStream("runtime.KubernetesClient.xml");
+        using var stream = typeof(Generator).Assembly.GetManifestResourceStream("runtime.KubernetesClient.xml");
         stream.ShouldNotBeNull();
         xml.Load(stream);
         cache.AddToCache(typeof(V1Pod).Assembly, xml);

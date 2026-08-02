@@ -6,8 +6,8 @@ using KubeUI.Avalonia.Infrastructure.Logging;
 using KubeUI.Avalonia.Infrastructure.Platform;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Infrastructure.Threading;
-using KubeUI.Avalonia.Services.Settings;
 using KubeUI.Avalonia.Services.Icons;
+using KubeUI.Avalonia.Services.Settings;
 using KubeUI.Kubernetes;
 using ServiceScan.SourceGenerator;
 

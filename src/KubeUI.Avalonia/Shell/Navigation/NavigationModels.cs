@@ -38,8 +38,8 @@ public partial class ClusterNavigationNode : NavigationItem, IDisposable
     public ClusterWorkspace Cluster { get; }
 
     public string ConnectionMenuHeader => Cluster.Runtime.Connected
-        ? KubeUI.Avalonia.Assets.Resources.NavigationView_ContextMenu_Disconnect!
-        : KubeUI.Avalonia.Assets.Resources.NavigationView_ContextMenu_Connect!;
+        ? Avalonia.Assets.Resources.NavigationView_ContextMenu_Disconnect!
+        : Avalonia.Assets.Resources.NavigationView_ContextMenu_Connect!;
 
     public Icon ConnectionMenuIcon => Cluster.Runtime.Connected
         ? Icon.Dismiss

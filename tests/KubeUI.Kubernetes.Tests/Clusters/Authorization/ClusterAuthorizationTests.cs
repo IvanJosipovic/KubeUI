@@ -53,6 +53,14 @@ public sealed class ClusterAuthorizationTests
                 InitialResources =
                 [
                     (new V1Namespace { Metadata = new V1ObjectMeta { Name = "my-app" } }),
+                    (new V1ServiceAccount
+                    {
+                        Metadata = new V1ObjectMeta
+                        {
+                            Name = KubernetesRbac.ServiceAccountName,
+                            NamespaceProperty = KubernetesRbac.ServiceAccountNamespace,
+                        },
+                    }),
                     .. KubernetesRbac.ClusterWide(
                                 new RbacRule("namespaces", "list"),
                                 new RbacRule("namespaces", "watch"),
@@ -137,8 +145,8 @@ public sealed class ClusterAuthorizationTests
             new ServiceCollection().BuildServiceProvider());
         cluster.Connected = true;
 
-        var first = KubeUI.Kubernetes.Serialization.KubernetesYaml.Deserialize<V1CustomResourceDefinition>(KubernetesTestData.CustomResourceDefinitionYaml);
-        var second = KubeUI.Kubernetes.Serialization.KubernetesYaml.Deserialize<V1CustomResourceDefinition>(KubernetesTestData.CustomResourceDefinitionYaml);
+        var first = Serialization.KubernetesYaml.Deserialize<V1CustomResourceDefinition>(KubernetesTestData.CustomResourceDefinitionYaml);
+        var second = Serialization.KubernetesYaml.Deserialize<V1CustomResourceDefinition>(KubernetesTestData.CustomResourceDefinitionYaml);
         second.Spec!.Names!.Kind = "UpdatedTest";
 
         var firstEntered = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);

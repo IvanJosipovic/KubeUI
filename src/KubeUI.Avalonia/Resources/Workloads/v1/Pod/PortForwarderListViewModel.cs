@@ -2,8 +2,8 @@ using FluentAvalonia.UI.Controls;
 using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
-using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Infrastructure.Platform;
+using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Services.Settings;
 using KubeUI.Kubernetes;
 

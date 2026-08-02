@@ -1,8 +1,8 @@
+using System.Net;
+using System.Net.Http.Json;
 using k8s;
 using k8s.Models;
 using Shouldly;
-using System.Net;
-using System.Net.Http.Json;
 
 namespace KubeUI.Kubernetes.Tests.Infrastructure;
 
@@ -101,7 +101,7 @@ public sealed class FakeKubernetesHttpApiTests
             UseRoleBasedAuthorization = true,
             AuthenticatedUser = KubernetesRbac.ServiceAccountUser,
         };
-        foreach (k8s.IKubernetesObject resource in KubernetesRbac.ClusterWide(new RbacRule("namespaces", "list")))
+        foreach (IKubernetesObject resource in KubernetesRbac.ClusterWide(new RbacRule("namespaces", "list")))
         {
             api.Add(resource);
         }

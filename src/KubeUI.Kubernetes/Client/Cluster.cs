@@ -698,13 +698,13 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
             if (item.Metadata.Uid != null)
             {
                 // update
-                var updated = await client.ReplaceAsync<T>(item, item.Name());
+                var updated = await client.ReplaceAsync(item, item.Name());
                 item.Metadata = updated.Metadata;
             }
             else
             {
                 // add
-                var created = await client.CreateAsync<T>(item);
+                var created = await client.CreateAsync(item);
                 item.Metadata = created.Metadata;
             }
         }
@@ -713,13 +713,13 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
             if (item.Metadata.Uid != null)
             {
                 // update namespaced
-                var updated = await client.ReplaceNamespacedAsync<T>(item, item.Namespace(), item.Name());
+                var updated = await client.ReplaceNamespacedAsync(item, item.Namespace(), item.Name());
                 item.Metadata = updated.Metadata;
             }
             else
             {
                 // add namespaced
-                var created = await client.CreateNamespacedAsync<T>(item, item.Namespace());
+                var created = await client.CreateNamespacedAsync(item, item.Namespace());
                 item.Metadata = created.Metadata;
             }
         }
@@ -981,7 +981,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
         //SendRequest(string relativeUri, HttpMethod method, IReadOnlyDictionary<string, IReadOnlyList<string>> customHeaders, T body, CancellationToken cancellationToken)
         var resp = await (Task<HttpResponseMessage>)gen.Invoke(Client, [$"/{(native ? "api" : "apis")}?timeout=32s", HttpMethod.Get, headers, null, CancellationToken.None]);
 
-        return await resp.Content.ReadFromJsonAsync<V2beta1APIGroupDiscoveryList>(CustomSourceGenerationContext.Default.V2beta1APIGroupDiscoveryList).ConfigureAwait(false)
+        return await resp.Content.ReadFromJsonAsync(CustomSourceGenerationContext.Default.V2beta1APIGroupDiscoveryList).ConfigureAwait(false)
             ?? throw new InvalidOperationException("API group discovery response was empty.");
     }
 

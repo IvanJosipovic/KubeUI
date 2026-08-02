@@ -323,10 +323,11 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
                 return Error(HttpStatusCode.BadRequest, "A resource name is required for updates.");
             }
 
-            if (existed && !string.Equals(
-                    resource["metadata"]?["resourceVersion"]?.GetValue<string>(),
-                    existingResource!["metadata"]?["resourceVersion"]?.GetValue<string>(),
-                    StringComparison.Ordinal))
+            var resourceVersion = resource["metadata"]?["resourceVersion"]?.GetValue<string>();
+            if (existed && resourceVersion is not null && !string.Equals(
+                resourceVersion,
+                existingResource!["metadata"]?["resourceVersion"]?.GetValue<string>(),
+                StringComparison.Ordinal))
             {
                 return Error(HttpStatusCode.Conflict, "The resourceVersion is stale.");
             }
@@ -378,7 +379,7 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
                         .Select(x => new JsonObject
                         {
                             ["resource"] = x.Api.PluralName,
-                             ["responseKind"] = new JsonObject { ["kind"] = x.Api.Kind },
+                            ["responseKind"] = new JsonObject { ["kind"] = x.Api.Kind },
                             ["scope"] = x.Namespaced ? "Namespaced" : "Cluster",
                             ["verbs"] = new JsonArray("create", "delete", "get", "list", "patch", "update", "watch"),
                         }).ToArray()),
@@ -550,7 +551,7 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
     {
         var singularName = pluralName.EndsWith("ies", StringComparison.Ordinal)
             ? pluralName[..^3] + "y"
-            : pluralName.EndsWith("s", StringComparison.Ordinal)
+            : pluralName.EndsWith('s')
                 ? pluralName[..^1]
                 : pluralName;
 

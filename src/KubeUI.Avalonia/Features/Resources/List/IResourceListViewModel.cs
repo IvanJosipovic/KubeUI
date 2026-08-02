@@ -22,7 +22,7 @@ namespace KubeUI.Avalonia.Features.Resources.List
         ISettingsService SettingsService { get; }
         IResourceConfig ResourceConfig { get; }
         ObservableCollection<DataGridColumnDefinition> ColumnDefinitions { get; }
-    IDataGridSortingAdapterFactory SortingAdapterFactory { get; }
+        IDataGridSortingAdapterFactory SortingAdapterFactory { get; }
         ISortingModel SortingModel { get; set; }
         IDataGridFilteringAdapterFactory FilteringAdapterFactory { get; }
         IFilteringModel FilteringModel { get; set; }

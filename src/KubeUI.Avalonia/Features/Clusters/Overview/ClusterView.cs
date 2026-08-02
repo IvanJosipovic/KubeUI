@@ -108,7 +108,7 @@ public sealed partial class ClusterView : ViewBase<ClusterViewModel>
             .InitialRotation(-90)
             .LegendPosition(LegendPosition.Bottom)
             .MaxAngle(270)
-            .BindValue(PieChart.MaxValueProperty, maxValueBinding)
+            .BindValue(LiveChartsGeneratedCode.SourceGenPieChart.MaxValueProperty, maxValueBinding)
             .Title(new XamlDrawnLabelVisual
             {
                 Paint = new SolidColorPaint(SKColor.Parse(ClusterViewModel.TextColor)),

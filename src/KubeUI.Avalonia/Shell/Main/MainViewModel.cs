@@ -24,7 +24,7 @@ public sealed partial class MainViewModel : ViewModelBase
 {
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<MainViewModel> _logger;
-    private readonly IFactory _factory = null!;
+    private readonly IFactory _factory;
     private readonly IClusterRuntimeCatalog _runtimeCatalog;
     private readonly IPlatformServices _platformServices;
 
@@ -35,6 +35,7 @@ public sealed partial class MainViewModel : ViewModelBase
     public partial ClusterWorkspaceCatalog ClusterCatalog { get; set; }
 
     private readonly IDialogService _dialogService;
+    private int _initialized;
 
     public MainViewModel(
         IServiceProvider serviceProvider,
@@ -54,13 +55,21 @@ public sealed partial class MainViewModel : ViewModelBase
         _runtimeCatalog = runtimeCatalog;
         _dialogService = dialogService;
         _platformServices = platformServices;
+    }
+
+    internal void Initialize()
+    {
+        if (Interlocked.Exchange(ref _initialized, 1) != 0)
+        {
+            return;
+        }
 
         DebugFactoryEvents(_factory);
 
-        Layout = _factory?.CreateLayout();
+        Layout = _factory.CreateLayout();
         if (Layout is not null)
         {
-            _factory?.InitLayout(Layout);
+            _factory.InitLayout(Layout);
         }
 
         _ = Task.Run(CheckForUpdates);
@@ -356,4 +365,3 @@ public sealed partial class MainViewModel : ViewModelBase
         }
     }
 }
-

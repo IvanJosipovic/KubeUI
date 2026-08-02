@@ -3,8 +3,8 @@ using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Infrastructure.Presentation;
-using KubeUI.Kubernetes;
 using KubeUI.Avalonia.Services.Settings;
+using KubeUI.Kubernetes;
 
 namespace KubeUI.Avalonia.Features.Clusters.Catalog;
 
