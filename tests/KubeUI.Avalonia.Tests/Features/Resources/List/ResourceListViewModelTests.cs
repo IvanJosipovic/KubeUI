@@ -1089,9 +1089,8 @@ public class ResourceListViewModelTests
 
         var nameColumn = vm.ColumnDefinitions.First(column => string.Equals(column.Header?.ToString(), "Name", StringComparison.Ordinal));
         filterService.ApplyTextFilter(vm.FilteringModel, nameColumn, GetTextOperator(FilteringOperator.Contains), "alp");
-        Dispatcher.UIThread.RunJobs();
+        await WaitForAsync(() => vm.View.Count == 1);
 
-        vm.View.Count.ShouldBe(1);
         ((V1Pod)vm.View[0]).Name().ShouldBe("alpha");
 
         filterService.ApplyTextFilter(
@@ -1099,9 +1098,8 @@ public class ResourceListViewModelTests
             nameColumn,
             ResourceListFilterFlyoutOptions.TextOperators.First(option => option.CustomId == FilterOperatorId.TextNotContains),
             "alp");
-        Dispatcher.UIThread.RunJobs();
+        await WaitForAsync(() => vm.View.Count == 2);
 
-        vm.View.Count.ShouldBe(2);
         vm.View.OfType<V1Pod>().Select(pod => pod.Name()).ShouldBe(["beta", "gamma"]);
 
         var countCluster = await Application.Current.CreateClusterAsync();
@@ -1185,17 +1183,15 @@ public class ResourceListViewModelTests
         flyoutContext.SelectedOperator = ResourceListFilterFlyoutOptions.TextOperators.First(option => option.Operator == FilteringOperator.Contains && (option.CustomId is null || !FilterOperatorIdCatalog.UsesCustomDescriptor(option.CustomId.Value)));
         flyoutContext.Query = "alp";
         flyoutContext.ApplyCommand.Execute(null);
-        Dispatcher.UIThread.RunJobs();
+        await WaitForAsync(() => vm.View.Count == 1);
 
-        vm.View.Count.ShouldBe(1);
         ((V1Pod)vm.View[0]).Name().ShouldBe("alpha");
 
         flyoutContext.SelectedOperator = ResourceListFilterFlyoutOptions.TextOperators.First(option => option.CustomId == FilterOperatorId.TextNotContains);
         flyoutContext.Query = "alp";
         flyoutContext.ApplyCommand.Execute(null);
-        Dispatcher.UIThread.RunJobs();
+        await WaitForAsync(() => vm.View.Count == 2);
 
-        vm.View.Count.ShouldBe(2);
         vm.View.OfType<V1Pod>().Select(pod => pod.Name()).ShouldBe(["beta", "gamma"]);
     }
 
@@ -1282,8 +1278,7 @@ public class ResourceListViewModelTests
         await AddOrUpdateAsync(cluster, Pod("b", "pod-b"));
 
         cluster.SelectedNamespaces.Add(NamespaceResource("a"));
-        Dispatcher.UIThread.RunJobs();
-        podVm.View.Count.ShouldBe(1);
+        await WaitForAsync(() => podVm.View.Count == 1);
         GetNamespaceFilterValues(podVm).ShouldBe(["a"]);
 
         var filterService = Application.Current.GetRequiredTestService<DataGridColumnFilterService>();
@@ -1338,8 +1333,7 @@ public class ResourceListViewModelTests
         await AddOrUpdateAsync(cluster, Pod("b", "pod-b"));
 
         cluster.SelectedNamespaces.Add(NamespaceResource("a"));
-        Dispatcher.UIThread.RunJobs();
-        vm.View.Count.ShouldBe(1);
+        await WaitForAsync(() => vm.View.Count == 1);
         GetNamespaceFilterValues(vm).ShouldBe(["a"]);
 
         window.Content = null;
@@ -1573,25 +1567,22 @@ public class ResourceListViewModelTests
 
         cluster.SelectedNamespaces.Add(NamespaceResource("ns1"));
         cluster.SelectedNamespaces.Add(NamespaceResource("ns2"));
-        Dispatcher.UIThread.RunJobs();
+        await WaitForAsync(() => vm.View.Count == 2);
 
-        vm.View.Count.ShouldBe(2);
         GetNamespaceFilterValues(vm).ShouldBe(["ns1", "ns2"]);
 
         var namespaceColumn = vm.ColumnDefinitions.First(column => string.Equals(column.ColumnKey?.ToString(), "namespace", StringComparison.OrdinalIgnoreCase));
         filterService.ApplyTextFilter(vm.FilteringModel, namespaceColumn, GetTextOperator(FilteringOperator.Contains), "ns1");
-        Dispatcher.UIThread.RunJobs();
+        await WaitForAsync(() => vm.View.Count == 1);
 
         vm.FilteringModel.Descriptors.Count.ShouldBe(2);
-        vm.View.Count.ShouldBe(1);
         ((V1Pod)vm.View[0]).Namespace().ShouldBe("ns1");
 
         filterService.ClearColumnFilter(vm.FilteringModel, namespaceColumn);
-        Dispatcher.UIThread.RunJobs();
+        await WaitForAsync(() => vm.View.Count == 2);
 
         vm.FilteringModel.Descriptors.Count.ShouldBe(1);
         GetNamespaceFilterValues(vm).ShouldBe(["ns1", "ns2"]);
-        vm.View.Count.ShouldBe(2);
     }
 
     [AvaloniaFact(DisplayName = "Pod-specific actions are hidden for multi-select")]
@@ -2156,7 +2147,7 @@ public class ResourceListViewModelTests
         Dispatcher.UIThread.RunJobs();
 
         vm.SelectedNamespaces.Select(x => x.Name()).ShouldBe(["ns1"]);
-        vm.View.Count.ShouldBe(1);
+        await WaitForAsync(() => vm.View.Count == 1);
         vm.View[0].ShouldBeOfType<V1Pod>().Namespace().ShouldBe("ns1");
         grid!.ItemsSource.ShouldBeSameAs(vm.View);
 
