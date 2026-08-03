@@ -17,15 +17,19 @@ internal static class TestApplicationExtensions
         bool connect = true)
     {
         var services = application.GetTestServices();
-        configure?.Invoke(services.GetRequiredService<TestClusterConfig>());
+        var config = services.GetRequiredService<TestClusterConfig>();
+        configure?.Invoke(config);
+        var cluster = await services.GetRequiredService<TestClusterGenerator>()
+            .CreateAsync(config, TestContext.Current.CancellationToken);
+        services.GetRequiredService<ClusterManager>().AddCluster(cluster.Cluster);
 
-        var cluster = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         if (connect)
         {
-            await cluster.Connect();
+            await workspace.Connect();
         }
 
-        return cluster;
+        return workspace;
     }
 
     public static T GetRequiredTestService<T>(this Application? application)

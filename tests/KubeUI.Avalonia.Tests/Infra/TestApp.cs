@@ -41,13 +41,19 @@ public class TestApp : Application, IServiceProviderHost, IDisposable
         Dispatcher.UIThread.ShutdownFinished += OnDispatcherShutdownFinished;
     }
 
-    private void OnDispatcherShutdownFinished(object? sender, EventArgs e)
+    private async void OnDispatcherShutdownFinished(object? sender, EventArgs e)
     {
         Dispatcher.UIThread.ShutdownFinished -= OnDispatcherShutdownFinished;
-        Dispose();
+        await DisposeAsync().ConfigureAwait(false);
     }
 
     public void Dispose()
+    {
+        DisposeAsync().GetAwaiter().GetResult();
+        GC.SuppressFinalize(this);
+    }
+
+    private async Task DisposeAsync()
     {
         if (Interlocked.Exchange(ref _disposed, 1) == 1)
         {
@@ -56,7 +62,7 @@ public class TestApp : Application, IServiceProviderHost, IDisposable
 
         if (Services is IAsyncDisposable asyncDisposableServices)
         {
-            asyncDisposableServices.DisposeAsync().AsTask().GetAwaiter().GetResult();
+            await asyncDisposableServices.DisposeAsync().ConfigureAwait(false);
         }
         else if (Services is IDisposable disposableServices)
         {
@@ -67,7 +73,6 @@ public class TestApp : Application, IServiceProviderHost, IDisposable
         DialogManager = null;
         Notification = null;
         ContentDialogSettings = null;
-        GC.SuppressFinalize(this);
     }
 
     private ServiceProvider BuildServiceProvider()
@@ -109,7 +114,7 @@ public class TestApp : Application, IServiceProviderHost, IDisposable
             overrides.RemoveAll<ClusterWorkspaceCatalog>();
             overrides.AddSingleton(sp =>
             {
-                _ = sp.GetRequiredService<IClusterRuntime>();
+                _ = sp.GetRequiredService<TestClusterGeneratorCleanup>();
                 return ActivatorUtilities.CreateInstance<ClusterWorkspaceCatalog>(sp);
             });
             overrides.Replace(ServiceDescriptor.Singleton(dialog.Object));
