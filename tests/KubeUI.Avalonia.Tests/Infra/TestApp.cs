@@ -115,6 +115,18 @@ public class TestApp : Application, IServiceProviderHost, IDisposable
             overrides.AddSingleton(sp =>
             {
                 _ = sp.GetRequiredService<TestClusterGeneratorCleanup>();
+                var config = sp.GetRequiredService<TestClusterConfig>();
+                if (config.Type == KubernetesBackend.Fake)
+                {
+                    var manager = sp.GetRequiredService<ClusterManager>();
+                    if (manager.Clusters.Count == 0)
+                    {
+                        var generator = sp.GetRequiredService<TestClusterGenerator>();
+                        var cluster = generator.CreateAsync(config).GetAwaiter().GetResult();
+                        manager.AddCluster(cluster.Cluster);
+                    }
+                }
+
                 return ActivatorUtilities.CreateInstance<ClusterWorkspaceCatalog>(sp);
             });
             overrides.Replace(ServiceDescriptor.Singleton(dialog.Object));
