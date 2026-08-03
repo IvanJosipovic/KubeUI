@@ -149,10 +149,9 @@ public sealed class ResourceGraphControlTests
             },
         };
 
-        var services = Application.Current.GetTestServices();
-        var config = services.GetRequiredService<TestClusterConfig>();
-        config.Type = backend;
-        var cluster = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var cluster = await Application.Current.CreateClusterAsync(
+            config => config.Type = backend,
+            connect: false);
 
         await ConnectAndWaitForResourceConfigsAsync(cluster, typeof(V1Secret));
         V1Namespace namespaceResource = new() { Metadata = new() { Name = "platform-dev-ijosipov" } };
@@ -187,10 +186,9 @@ public sealed class ResourceGraphControlTests
             },
         };
 
-        var services = Application.Current.GetTestServices();
-        var config = services.GetRequiredService<TestClusterConfig>();
-        config.Type = backend;
-        var cluster = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var cluster = await Application.Current.CreateClusterAsync(
+            config => config.Type = backend,
+            connect: false);
 
         await ConnectAndWaitForResourceConfigsAsync(cluster, typeof(V1Secret));
         V1Namespace namespaceResource = new() { Metadata = new() { Name = "platform-dev-ijosipov" } };
@@ -574,10 +572,9 @@ public sealed class ResourceGraphControlTests
     [Trait("Category", "Kind")]
     public async Task modified_resource_rebuilds_changed_relationships_in_visualization_graph(KubernetesBackend backend)
     {
-        var services = Application.Current.GetTestServices();
-        var config = services.GetRequiredService<TestClusterConfig>();
-        config.Type = backend;
-        var cluster = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var cluster = await Application.Current.CreateClusterAsync(
+            config => config.Type = backend,
+            connect: false);
 
         await ConnectAndWaitForResourceConfigsAsync(cluster, typeof(V1Deployment), typeof(V1Pod));
         cluster.SelectedNamespaces.Add(new V1Namespace { Metadata = new() { Name = "default" } });
@@ -696,10 +693,9 @@ public sealed class ResourceGraphControlTests
     [Trait("Category", "Kind")]
     public async Task processed_resource_config_starts_required_seed_without_waiting_for_ready(KubernetesBackend backend)
     {
-        var services = Application.Current.GetTestServices();
-        var config = services.GetRequiredService<TestClusterConfig>();
-        config.Type = backend;
-        var cluster = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var cluster = await Application.Current.CreateClusterAsync(
+            config => config.Type = backend,
+            connect: false);
         using VisualizationViewModel viewModel = new(new ResourceRelationshipBuilder());
 
         viewModel.Initialize(cluster);
@@ -712,10 +708,9 @@ public sealed class ResourceGraphControlTests
     [Trait("Category", "Kind")]
     public async Task applying_graph_starts_provider_prerequisite_seed(KubernetesBackend backend)
     {
-        var services = Application.Current.GetTestServices();
-        var config = services.GetRequiredService<TestClusterConfig>();
-        config.Type = backend;
-        var cluster = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var cluster = await Application.Current.CreateClusterAsync(
+            config => config.Type = backend,
+            connect: false);
         await cluster.Connect();
 
         var seedRequested = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -752,10 +747,9 @@ public sealed class ResourceGraphControlTests
     [Trait("Category", "Kind")]
     public async Task added_resource_starts_owner_reference_seed_without_waiting_for_ready(KubernetesBackend backend)
     {
-        var services = Application.Current.GetTestServices();
-        var config = services.GetRequiredService<TestClusterConfig>();
-        config.Type = backend;
-        var cluster = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var cluster = await Application.Current.CreateClusterAsync(
+            config => config.Type = backend,
+            connect: false);
         var seedRequested = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
         void OnResourceSeeded(IClusterRuntime _, GroupApiVersionKind kind)
         {
@@ -898,10 +892,7 @@ public sealed class ResourceGraphControlTests
     [Trait("Category", "Kind")]
     public async Task changing_hide_noise_rebuilds_graph_with_new_noise_filter(KubernetesBackend backend)
     {
-        var services = Application.Current.GetTestServices();
-        var config = services.GetRequiredService<TestClusterConfig>();
-        config.Type = backend;
-        var cluster = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var cluster = await Application.Current.CreateClusterAsync(config => config.Type = backend);
 
         cluster.SelectedNamespaces.Add(new V1Namespace { Metadata = new() { Name = "default" } });
         var builder = new BuildCaptureRelationshipBuilder();
@@ -955,10 +946,9 @@ public sealed class ResourceGraphControlTests
     [Trait("Category", "Kind")]
     public async Task repeated_incremental_deltas_do_not_accumulate_resources_from_unselected_namespaces(KubernetesBackend backend)
     {
-        var services = Application.Current.GetTestServices();
-        var config = services.GetRequiredService<TestClusterConfig>();
-        config.Type = backend;
-        var cluster = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var cluster = await Application.Current.CreateClusterAsync(
+            config => config.Type = backend,
+            connect: false);
 
         await ConnectAndWaitForResourceConfigsAsync(cluster, typeof(V1Pod));
         var selected = CreatePod("selected");
@@ -1098,10 +1088,7 @@ public sealed class ResourceGraphControlTests
     [Trait("Category", "Kind")]
     public async Task disposed_view_model_unsubscribes_from_namespace_changes(KubernetesBackend backend)
     {
-        var services = Application.Current.GetTestServices();
-        var config = services.GetRequiredService<TestClusterConfig>();
-        config.Type = backend;
-        var cluster = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var cluster = await Application.Current.CreateClusterAsync(config => config.Type = backend);
 
         cluster.SelectedNamespaces.Add(new V1Namespace { Metadata = new() { Name = "default" } });
         var builder = new BuildCaptureRelationshipBuilder();
@@ -1120,10 +1107,9 @@ public sealed class ResourceGraphControlTests
     [Trait("Category", "Kind")]
     public async Task background_resource_changes_are_processed_on_the_ui_thread(KubernetesBackend backend)
     {
-        var services = Application.Current.GetTestServices();
-        var config = services.GetRequiredService<TestClusterConfig>();
-        config.Type = backend;
-        var cluster = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var cluster = await Application.Current.CreateClusterAsync(
+            config => config.Type = backend,
+            connect: false);
 
         await ConnectAndWaitForResourceConfigsAsync(cluster, typeof(V1Pod));
         cluster.SelectedNamespaces.Add(new V1Namespace { Metadata = new() { Name = "default" } });
@@ -1165,10 +1151,9 @@ public sealed class ResourceGraphControlTests
     [Trait("Category", "Kind")]
     public async Task disposed_view_model_ignores_runtime_resource_changes(KubernetesBackend backend)
     {
-        var services = Application.Current.GetTestServices();
-        var config = services.GetRequiredService<TestClusterConfig>();
-        config.Type = backend;
-        var cluster = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var cluster = await Application.Current.CreateClusterAsync(
+            config => config.Type = backend,
+            connect: false);
         await cluster.Connect();
         cluster.SelectedNamespaces.Add(new V1Namespace { Metadata = new() { Name = "default" } });
         var builder = new BuildCaptureRelationshipBuilder();
