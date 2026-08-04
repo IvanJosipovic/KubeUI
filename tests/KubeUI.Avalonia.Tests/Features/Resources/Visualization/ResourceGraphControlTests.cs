@@ -16,6 +16,38 @@ namespace KubeUI.Avalonia.Tests.Features.Resources.Visualization;
 
 public sealed class ResourceGraphControlTests
 {
+    [Fact]
+    public void Served_seed_prerequisite_matches_same_group_and_kind_across_api_versions()
+    {
+        var prerequisite = new GroupApiVersionKind("gateway.networking.k8s.io", "v1", "HTTPRoute", "httproutes");
+        var servedVersion = new GroupApiVersionKind("gateway.networking.k8s.io", "v1beta1", "HTTPRoute", "httproutes");
+        var differentKind = new GroupApiVersionKind("gateway.networking.k8s.io", "v1beta1", "Gateway", "gateways");
+        var differentGroup = new GroupApiVersionKind("example.io", "v1", "HTTPRoute", "httproutes");
+
+        VisualizationViewModel.MatchesSeedKind(prerequisite, servedVersion).ShouldBeTrue();
+        VisualizationViewModel.MatchesSeedKind(prerequisite, differentKind).ShouldBeFalse();
+        VisualizationViewModel.MatchesSeedKind(prerequisite, differentGroup).ShouldBeFalse();
+    }
+
+    [Fact]
+    public void Resource_seed_prerequisite_disables_served_version_fallback_by_default()
+    {
+        var prerequisite = new ResourceSeedPrerequisite(
+            new GroupApiVersionKind("example.io", "v1", "Widget", "widgets"));
+
+        prerequisite.AllowServedVersionFallback.ShouldBeFalse();
+    }
+
+    [Fact]
+    public void Resource_seed_prerequisite_can_enable_served_version_fallback()
+    {
+        var prerequisite = new ResourceSeedPrerequisite(
+            new GroupApiVersionKind("example.io", "v1", "Widget", "widgets"),
+            allowServedVersionFallback: true);
+
+        prerequisite.AllowServedVersionFallback.ShouldBeTrue();
+    }
+
     private static async Task WaitForAsync(Func<bool> predicate, int timeoutMs = 5000, CancellationToken cancellationToken = default)
     {
         await TestWait.UntilAsync(
@@ -431,6 +463,68 @@ public sealed class ResourceGraphControlTests
 
         filtered.Resources.Select(resource => resource.Name()).ShouldBe(["managed", "demo-app"]);
         filtered.Resources.Select(resource => resource.Name()).ShouldNotContain("unrelated-cluster-resource");
+    }
+
+    [Fact]
+    public void selected_namespace_does_not_expand_through_cluster_scoped_resources()
+    {
+        V1ConfigMap selected = new()
+        {
+            ApiVersion = "v1",
+            Kind = V1ConfigMap.KubeKind,
+            Metadata = new() { Name = "selected", NamespaceProperty = "crossplane-system", Uid = "selected-uid" },
+        };
+        V1ClusterRole direct = new()
+        {
+            ApiVersion = "rbac.authorization.k8s.io/v1",
+            Kind = V1ClusterRole.KubeKind,
+            Metadata = new() { Name = "direct", Uid = "direct-uid" },
+        };
+        V1ClusterRole unrelated = new()
+        {
+            ApiVersion = "rbac.authorization.k8s.io/v1",
+            Kind = V1ClusterRole.KubeKind,
+            Metadata = new() { Name = "unrelated", Uid = "unrelated-uid" },
+        };
+
+        ResourceRelationshipGraph graph = new(
+            [selected, direct, unrelated],
+            [
+                new(GetIdentity(selected), GetIdentity(direct), ResourceRelationshipKind.Reference),
+                new(GetIdentity(direct), GetIdentity(unrelated), ResourceRelationshipKind.Owner),
+            ]);
+
+        var filtered = VisualizationViewModel.FilterToSelectedNamespaces(
+            graph,
+            new HashSet<string> { "crossplane-system" });
+
+        filtered.Resources.Select(resource => resource.Name()).ShouldBe(["selected", "direct"]);
+    }
+
+    [Fact]
+    public void selected_namespace_keeps_cross_namespace_gateway_parent()
+    {
+        TestDynamicResource route = new()
+        {
+            ApiVersion = "gateway.networking.k8s.io/v1",
+            Kind = "HTTPRoute",
+            Metadata = new() { Name = "frigate", NamespaceProperty = "frigate" },
+        };
+        TestDynamicResource gateway = new()
+        {
+            ApiVersion = "gateway.networking.k8s.io/v1",
+            Kind = "Gateway",
+            Metadata = new() { Name = "public", NamespaceProperty = "envoy-gateway-system" },
+        };
+        ResourceRelationshipGraph graph = new(
+            [route, gateway],
+            [new(GetIdentity(route), GetIdentity(gateway), ResourceRelationshipKind.Reference)]);
+
+        var filtered = VisualizationViewModel.FilterToSelectedNamespaces(
+            graph,
+            new HashSet<string> { "frigate" });
+
+        filtered.Resources.Select(resource => resource.Name()).ShouldBe(["frigate", "public"]);
     }
 
     [Fact]
@@ -1194,6 +1288,100 @@ public sealed class ResourceGraphControlTests
         finally
         {
             Dispatcher.UIThread.Post(control.Dispose);
+            Dispatcher.UIThread.RunJobs();
+        }
+    }
+
+    [Fact]
+    public void graph_omits_transitive_owner_edge()
+    {
+        ResourceIdentity revision = new("pkg.crossplane.io/v1", "FunctionRevision", "", "revision", "revision");
+        ResourceIdentity deployment = new("apps/v1", V1Deployment.KubeKind, "crossplane-system", "deployment", "deployment");
+        ResourceIdentity replicaSet = new("apps/v1", V1ReplicaSet.KubeKind, "crossplane-system", "replicaset", "replicaset");
+        ResourceIdentity pod = new("v1", V1Pod.KubeKind, "crossplane-system", "pod", "pod");
+
+        var filtered = ResourceGraphControl.RemoveTransitiveOwnerRelationships(
+        [
+            new(revision, deployment, ResourceRelationshipKind.Owner),
+            new(deployment, replicaSet, ResourceRelationshipKind.Owner),
+            new(replicaSet, pod, ResourceRelationshipKind.Owner),
+            new(revision, pod, ResourceRelationshipKind.Owner),
+        ]);
+
+        filtered.ShouldBe(
+        [
+            new(revision, deployment, ResourceRelationshipKind.Owner),
+            new(deployment, replicaSet, ResourceRelationshipKind.Owner),
+            new(replicaSet, pod, ResourceRelationshipKind.Owner),
+        ]);
+    }
+
+    [AvaloniaFact]
+    public async Task incremental_graph_update_omits_transitive_owner_edge()
+    {
+        V1Pod revision = new()
+        {
+            ApiVersion = "pkg.crossplane.io/v1",
+            Kind = "FunctionRevision",
+            Metadata = new() { Name = "revision", NamespaceProperty = "crossplane-system", Uid = "revision" },
+        };
+        V1Pod deployment = new()
+        {
+            ApiVersion = "apps/v1",
+            Kind = V1Deployment.KubeKind,
+            Metadata = new() { Name = "deployment", NamespaceProperty = "crossplane-system", Uid = "deployment" },
+        };
+        V1Pod replicaSet = new()
+        {
+            ApiVersion = "apps/v1",
+            Kind = V1ReplicaSet.KubeKind,
+            Metadata = new() { Name = "replicaset", NamespaceProperty = "crossplane-system", Uid = "replicaset" },
+        };
+        V1Pod pod = new()
+        {
+            ApiVersion = "v1",
+            Kind = V1Pod.KubeKind,
+            Metadata = new() { Name = "pod", NamespaceProperty = "crossplane-system", Uid = "pod" },
+        };
+        V1Pod newlyAddedPod = new()
+        {
+            ApiVersion = "v1",
+            Kind = V1Pod.KubeKind,
+            Metadata = new() { Name = "newly-added-pod", NamespaceProperty = "crossplane-system", Uid = "newly-added-pod" },
+        };
+
+        var revisionIdentity = GetIdentity(revision);
+        var deploymentIdentity = GetIdentity(deployment);
+        var replicaSetIdentity = GetIdentity(replicaSet);
+        var podIdentity = GetIdentity(pod);
+        ResourceRelationship[] ownershipChain =
+        [
+            new(revisionIdentity, deploymentIdentity, ResourceRelationshipKind.Owner),
+            new(deploymentIdentity, replicaSetIdentity, ResourceRelationshipKind.Owner),
+            new(replicaSetIdentity, podIdentity, ResourceRelationshipKind.Owner),
+        ];
+
+        using ResourceGraphControl control = new(Application.Current.GetRequiredTestService<IResourceIconService>());
+        Window window = new() { Width = 800, Height = 600, Content = control };
+        try
+        {
+            control.Graph = new ResourceRelationshipGraph([revision, deployment, replicaSet, pod], ownershipChain);
+            window.Show();
+            await WaitForAsync(() => control.Area.LogicCore?.Graph?.EdgeCount == ownershipChain.Length, cancellationToken: TestContext.Current.CancellationToken);
+
+            control.Graph = new ResourceRelationshipGraph(
+                [revision, deployment, replicaSet, pod, newlyAddedPod],
+                [.. ownershipChain, new(revisionIdentity, podIdentity, ResourceRelationshipKind.Owner)]);
+
+            await WaitForAsync(() => control.Area.LogicCore?.Graph?.VertexCount == 5, cancellationToken: TestContext.Current.CancellationToken);
+
+            control.Area.LogicCore!.Graph.Edges
+                .Select(edge => edge.Relationship)
+                .ShouldBe(ownershipChain);
+        }
+        finally
+        {
+            window.Close();
             Dispatcher.UIThread.RunJobs();
         }
     }

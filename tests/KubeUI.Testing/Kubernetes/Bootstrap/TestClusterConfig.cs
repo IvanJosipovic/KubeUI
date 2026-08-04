@@ -66,6 +66,20 @@ public sealed class TestClusterConfig
             FirstMessageHandlerSetup = firstMessageHandlerSetup,
         };
 
+    public static TestClusterConfig Live(
+        string name,
+        Action<SocketsHttpHandler>? firstMessageHandlerSetup = null)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(name);
+
+        return new()
+        {
+            Type = KubernetesBackend.Live,
+            Name = name,
+            FirstMessageHandlerSetup = firstMessageHandlerSetup,
+        };
+    }
+
     public static TestClusterConfig Named(
         string name,
         K8SConfiguration kubeConfig,

@@ -148,7 +148,7 @@ public partial class App : Application, IServiceProviderHost
         e.Handled = true;
     }
 
-    private void GracefulShutdown()
+    internal void GracefulShutdown()
     {
         if (Interlocked.Exchange(ref _shutdownRequested, 1) == 1)
         {

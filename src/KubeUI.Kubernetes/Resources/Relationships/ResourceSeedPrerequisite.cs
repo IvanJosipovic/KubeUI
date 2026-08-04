@@ -9,15 +9,19 @@ public readonly record struct ResourceSeedPrerequisite
         ArgumentNullException.ThrowIfNull(type);
         Type = type;
         Kind = null;
+        AllowServedVersionFallback = false;
     }
 
-    public ResourceSeedPrerequisite(GroupApiVersionKind kind)
+    public ResourceSeedPrerequisite(GroupApiVersionKind kind, bool allowServedVersionFallback = false)
     {
         Type = null;
         Kind = kind;
+        AllowServedVersionFallback = allowServedVersionFallback;
     }
 
     public Type? Type { get; }
 
     public GroupApiVersionKind? Kind { get; }
+
+    public bool AllowServedVersionFallback { get; }
 }

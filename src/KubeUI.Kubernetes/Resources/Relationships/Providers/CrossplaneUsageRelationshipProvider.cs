@@ -2,19 +2,18 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using k8s;
 using k8s.Models;
-using KubernetesClient.Informer.Client;
 
 namespace KubeUI.Kubernetes.Resources.Relationships.Providers;
 
 public sealed class CrossplaneUsageRelationshipProvider : IResourceRelationshipProvider
 {
-    private const string UsageApiVersion = "protection.crossplane.io/v1beta1";
+    private const string UsageApiGroup = "protection.crossplane.io";
     private const string UsageKind = "Usage";
     private static readonly ConditionalWeakTable<Type, UsageAccessors> AccessorsByType = new();
 
     public IEnumerable<ResourceSeedPrerequisite> SeedPrerequisites =>
     [
-        new(new GroupApiVersionKind("protection.crossplane.io", "v1beta1", UsageKind, "usages")),
+        new(new(UsageApiGroup, "v1beta1", UsageKind, "usages"), allowServedVersionFallback: true),
     ];
 
     public void AddRelationships(
@@ -22,7 +21,7 @@ public sealed class CrossplaneUsageRelationshipProvider : IResourceRelationshipP
         ResourceRelationshipContext context,
         ICollection<ResourceRelationship> relationships)
     {
-        if (!string.Equals(resource.ApiVersion, UsageApiVersion, StringComparison.Ordinal)
+        if (!string.Equals(GetApiGroup(resource.ApiVersion), UsageApiGroup, StringComparison.Ordinal)
             || !string.Equals(resource.Kind, UsageKind, StringComparison.Ordinal))
         {
             return;
@@ -34,8 +33,8 @@ public sealed class CrossplaneUsageRelationshipProvider : IResourceRelationshipP
             || spec == null
             || !TryReadReference(accessors.By, spec, out var by)
             || !TryReadReference(accessors.Of, spec, out var of)
-            || !context.TryGet(by.ApiVersion, by.Kind, resource.Namespace(), by.Name, out var source)
-            || !context.TryGet(of.ApiVersion, of.Kind, resource.Namespace(), of.Name, out var target)
+            || !context.TryGetByName(GetApiGroup(by.ApiVersion), by.Kind, resource.Namespace(), by.Name, out var source)
+            || !context.TryGetByName(GetApiGroup(of.ApiVersion), of.Kind, resource.Namespace(), of.Name, out var target)
             || source == null
             || target == null)
         {
@@ -86,6 +85,17 @@ public sealed class CrossplaneUsageRelationshipProvider : IResourceRelationshipP
 
         reference = new ResourceReference(apiVersion, kind, name);
         return true;
+    }
+
+    private static string GetApiGroup(string? apiVersion)
+    {
+        if (string.IsNullOrWhiteSpace(apiVersion))
+        {
+            return string.Empty;
+        }
+
+        var separator = apiVersion.IndexOf('/');
+        return separator < 0 ? string.Empty : apiVersion[..separator];
     }
 
     private readonly record struct ResourceReference(string ApiVersion, string Kind, string Name);

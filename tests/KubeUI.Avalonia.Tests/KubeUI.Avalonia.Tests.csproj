@@ -32,6 +32,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\KubeUI.Avalonia\KubeUI.Avalonia.csproj" />
+    <ProjectReference Include="..\..\src\KubeUI.Desktop\KubeUI.Desktop.csproj" />
     <ProjectReference Include="..\..\src\KubeUI.Kubernetes\KubeUI.Kubernetes.csproj" />
     <ProjectReference Include="..\KubeUI.Testing\KubeUI.Testing.csproj" />
   </ItemGroup>

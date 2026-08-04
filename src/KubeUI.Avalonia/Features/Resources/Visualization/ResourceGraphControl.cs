@@ -199,7 +199,7 @@ public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphContr
                 resources.Add(resource);
             }
 
-            foreach (var relationship in graph.Relationships)
+            foreach (var relationship in RemoveTransitiveOwnerRelationships(graph.Relationships))
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 relationships.Add(relationship);
@@ -207,6 +207,66 @@ public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphContr
         }
 
         return new PreparedGraph(resources, relationships, cluster);
+    }
+
+    internal static IReadOnlyList<ResourceRelationship> RemoveTransitiveOwnerRelationships(
+        IReadOnlyList<ResourceRelationship> relationships)
+    {
+        Dictionary<ResourceIdentity, List<ResourceIdentity>> childrenByOwner = [];
+        foreach (var relationship in relationships)
+        {
+            if (relationship.Kind != ResourceRelationshipKind.Owner)
+            {
+                continue;
+            }
+
+            childrenByOwner.TryAdd(relationship.Source, []);
+            childrenByOwner[relationship.Source].Add(relationship.Target);
+        }
+
+        var result = new List<ResourceRelationship>(relationships.Count);
+        foreach (var relationship in relationships)
+        {
+            if (relationship.Kind != ResourceRelationshipKind.Owner
+                || !childrenByOwner.TryGetValue(relationship.Source, out var children))
+            {
+                result.Add(relationship);
+                continue;
+            }
+
+            var descendants = new Queue<ResourceIdentity>(children.Where(child => child != relationship.Target));
+            var visited = new HashSet<ResourceIdentity>();
+            var isTransitive = false;
+            while (descendants.Count > 0)
+            {
+                var current = descendants.Dequeue();
+                if (!visited.Add(current))
+                {
+                    continue;
+                }
+
+                if (current == relationship.Target)
+                {
+                    isTransitive = true;
+                    break;
+                }
+
+                if (childrenByOwner.TryGetValue(current, out var currentChildren))
+                {
+                    foreach (var child in currentChildren)
+                    {
+                        descendants.Enqueue(child);
+                    }
+                }
+            }
+
+            if (!isTransitive)
+            {
+                result.Add(relationship);
+            }
+        }
+
+        return result;
     }
 
     private sealed record PreparedGraph(
@@ -218,14 +278,15 @@ public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphContr
     {
         var graph = _logicCore.Graph;
         var vertices = _vertices;
+        var relationships = RemoveTransitiveOwnerRelationships(current.Relationships);
         HashSet<ResourceIdentity> desiredIdentities = new(current.Resources.Count);
         foreach (var resource in current.Resources)
         {
             desiredIdentities.Add(GetIdentity(resource));
         }
 
-        HashSet<ResourceRelationship> desiredRelationships = new(current.Relationships.Count);
-        desiredRelationships.UnionWith(current.Relationships);
+        HashSet<ResourceRelationship> desiredRelationships = new(relationships.Count);
+        desiredRelationships.UnionWith(relationships);
 
         HashSet<ResourceRelationship> existingRelationships = new(graph.EdgeCount);
         foreach (var edge in graph.Edges)
@@ -281,7 +342,7 @@ public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphContr
             _area.AddVertexAndData(vertex, _area.ControlFactory.CreateVertexControl(vertex), generateLabel: false);
         }
 
-        foreach (var relationship in current.Relationships)
+        foreach (var relationship in relationships)
         {
             if (!existingRelationships.Add(relationship)
                 || !vertices.TryGetValue(relationship.Source, out var source)

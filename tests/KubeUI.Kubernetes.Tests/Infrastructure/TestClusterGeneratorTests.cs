@@ -28,6 +28,32 @@ public sealed class TestClusterGeneratorTests
         fake.FirstMessageHandlerSetup.ShouldBeSameAs(setup);
     }
 
+    [Fact]
+    public void LiveFactoryRequiresAnExplicitClusterName()
+    {
+        Should.Throw<ArgumentException>(() => TestClusterConfig.Live(" "));
+    }
+
+    [Fact]
+    public void LiveConfigurationSelectsTheRequestedContext()
+    {
+        var kubeConfig = CreateNamedKubeConfig();
+
+        var clientConfiguration = LiveKubernetesConfiguration.CreateClientConfiguration(kubeConfig, "named");
+
+        clientConfiguration.CurrentContext.ShouldBe("named");
+        clientConfiguration.Host.ShouldBe("https://named.example.test");
+    }
+
+    [Fact]
+    public void LiveConfigurationRequiresTheRequestedContext()
+    {
+        var kubeConfig = CreateNamedKubeConfig();
+
+        Should.Throw<InvalidOperationException>(
+            () => LiveKubernetesConfiguration.CreateClientConfiguration(kubeConfig, "missing"));
+    }
+
     [Theory, KubernetesBackendData]
     [Trait("Category", "Kind")]
     public async Task CreatesRealClientAndSeedsDifferentResourceTypes(KubernetesBackend backend)
@@ -196,6 +222,25 @@ public sealed class TestClusterGeneratorTests
             },
             _ => throw new ArgumentOutOfRangeException(nameof(backend), backend, null),
         };
+
+    private static K8SConfiguration CreateNamedKubeConfig() => new()
+    {
+        ApiVersion = "v1",
+        Kind = "Config",
+        CurrentContext = "default",
+        Clusters =
+        [
+            new k8s.KubeConfigModels.Cluster
+            {
+                Name = "named-cluster",
+                ClusterEndpoint = new ClusterEndpoint { Server = "https://named.example.test" },
+            },
+        ],
+        Users =
+        [new User { Name = "named-user", UserCredentials = new UserCredentials { Token = "named" } }],
+        Contexts =
+        [new Context { Name = "named", ContextDetails = new ContextDetails { Cluster = "named-cluster", User = "named-user" } }],
+    };
 
     private sealed class RecordingHandler : DelegatingHandler
     {

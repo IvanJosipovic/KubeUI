@@ -414,12 +414,24 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 
             if (prerequisite.Kind is { } kind)
             {
-                foreach (var resourceConfig in cluster.GetResourceConfigs())
+                var matchingConfigs = cluster.GetResourceConfigs()
+                    .Where(resourceConfig => resourceConfig.Kind == kind
+                        || prerequisite.AllowServedVersionFallback && MatchesSeedKind(kind, resourceConfig.Kind))
+                    .ToArray();
+
+                if (matchingConfigs.Length == 0 || !prerequisite.AllowServedVersionFallback)
                 {
-                    if (resourceConfig.Kind == kind)
+                    foreach (var resourceConfig in matchingConfigs)
                     {
                         requiredSeedTypes.Add(resourceConfig.Type);
                     }
+                }
+                else
+                {
+                    var selectedConfig = matchingConfigs
+                        .OrderByDescending(resourceConfig => resourceConfig.Kind.ApiVersion, ApiVersionComparer.Instance)
+                        .First();
+                    requiredSeedTypes.Add(selectedConfig.Type);
                 }
             }
         }
@@ -438,6 +450,53 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         }
 
         return requiredSeedTypes;
+    }
+
+    internal static bool MatchesSeedKind(GroupApiVersionKind prerequisite, GroupApiVersionKind resourceKind)
+        => prerequisite == resourceKind
+            || string.Equals(prerequisite.Group, resourceKind.Group, StringComparison.Ordinal)
+                && string.Equals(prerequisite.Kind, resourceKind.Kind, StringComparison.Ordinal);
+
+    private sealed class ApiVersionComparer : IComparer<string>
+    {
+        public static ApiVersionComparer Instance { get; } = new();
+
+        public int Compare(string? x, string? y)
+        {
+            var xVersion = Parse(x);
+            var yVersion = Parse(y);
+            var comparison = xVersion.Major.CompareTo(yVersion.Major);
+            if (comparison != 0)
+            {
+                return comparison;
+            }
+
+            comparison = xVersion.Stage.CompareTo(yVersion.Stage);
+            return comparison != 0 ? comparison : xVersion.Minor.CompareTo(yVersion.Minor);
+        }
+
+        private static (int Major, int Stage, int Minor) Parse(string? apiVersion)
+        {
+            if (string.IsNullOrWhiteSpace(apiVersion))
+            {
+                return (0, 0, 0);
+            }
+
+            var version = apiVersion.AsSpan();
+            var majorEnd = 1;
+            while (majorEnd < version.Length && char.IsDigit(version[majorEnd]))
+            {
+                majorEnd++;
+            }
+
+            _ = int.TryParse(version[1..majorEnd], out var major);
+            var stage = version[majorEnd..].StartsWith("beta", StringComparison.Ordinal) ? 1
+                : version[majorEnd..].StartsWith("alpha", StringComparison.Ordinal) ? 0
+                : 2;
+            var minorStart = stage == 2 ? majorEnd : majorEnd + (stage == 1 ? 4 : 5);
+            _ = int.TryParse(version[minorStart..], out var minor);
+            return (major, stage, minor);
+        }
     }
 
     private static ResourceRelationshipGraph FilterGraphByTypes(
@@ -756,37 +815,32 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
             .ToHashSet();
         HashSet<ResourceIdentity> included = [.. selected];
 
-        bool changed;
-        do
+        foreach (var relationship in graph.Relationships)
         {
-            changed = false;
-            foreach (var relationship in graph.Relationships)
+            if (relationship.Kind == ResourceRelationshipKind.GitOps
+                && selected.Contains(relationship.Target))
             {
-                if (included.Contains(relationship.Source)
-                    && relationship.Kind != ResourceRelationshipKind.GitOps
-                    && string.IsNullOrEmpty(relationship.Target.Namespace)
-                    && included.Add(relationship.Target))
-                {
-                    changed = true;
-                }
+                included.Add(relationship.Source);
+                continue;
+            }
 
-                if (included.Contains(relationship.Target)
-                    && relationship.Kind != ResourceRelationshipKind.GitOps
-                    && string.IsNullOrEmpty(relationship.Source.Namespace)
-                    && included.Add(relationship.Source))
-                {
-                    changed = true;
-                }
+            if (relationship.Kind == ResourceRelationshipKind.GitOps)
+            {
+                continue;
+            }
 
-                if (relationship.Kind == ResourceRelationshipKind.GitOps
-                    && selected.Contains(relationship.Target)
-                    && included.Add(relationship.Source))
-                {
-                    changed = true;
-                }
+            if (selected.Contains(relationship.Source)
+                && relationship.Kind == ResourceRelationshipKind.Reference)
+            {
+                included.Add(relationship.Target);
+            }
+
+            if (selected.Contains(relationship.Target)
+                && relationship.Kind == ResourceRelationshipKind.Reference)
+            {
+                included.Add(relationship.Source);
             }
         }
-        while (changed);
 
         return new ResourceRelationshipGraph(
             graph.Resources.Where(resource => included.Contains(GetIdentity(resource))).ToArray(),
@@ -852,7 +906,9 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         if (_disposed || Cluster?.Runtime != runtime || !_completeGraph.RequiredSeedPrerequisites.Any(prerequisite =>
                 prerequisite.Type is { } type
                     ? GroupApiVersionKind.From(type) == kind
-                    : prerequisite.Kind == kind))
+                    : prerequisite.Kind is { } prerequisiteKind
+                        && (prerequisiteKind == kind
+                            || prerequisite.AllowServedVersionFallback && MatchesSeedKind(prerequisiteKind, kind))))
         {
             return;
         }

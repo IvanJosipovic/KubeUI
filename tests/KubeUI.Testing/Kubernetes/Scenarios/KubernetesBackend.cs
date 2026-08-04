@@ -9,6 +9,7 @@ public enum KubernetesBackend
 {
     Fake,
     Kind,
+    Live,
 }
 
 public static class KubernetesBackendData
@@ -42,6 +43,7 @@ public sealed class KubernetesBackendDataAttribute : DataAttribute
     {
         KubernetesBackend.Fake => "fake",
         KubernetesBackend.Kind => "kind",
+        KubernetesBackend.Live => "live",
         _ => throw new ArgumentOutOfRangeException(nameof(backend), backend, "Unknown Kubernetes backend")
     };
 }

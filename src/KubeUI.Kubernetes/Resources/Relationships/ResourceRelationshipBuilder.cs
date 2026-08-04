@@ -193,6 +193,7 @@ public sealed class ResourceRelationshipBuilder : IResourceRelationshipBuilder
         [
             new Providers.OwnerReferenceRelationshipProvider(),
             new Providers.CrossplaneUsageRelationshipProvider(),
+            new Providers.GatewayApiRelationshipProvider(),
             new Providers.IngressRelationshipProvider(),
             new Providers.EndpointSliceRelationshipProvider(),
             new Providers.SelectorRelationshipProvider(),

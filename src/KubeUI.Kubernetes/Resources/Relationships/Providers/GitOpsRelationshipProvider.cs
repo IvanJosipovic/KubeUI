@@ -1,6 +1,5 @@
 using k8s;
 using k8s.Models;
-using KubernetesClient.Informer.Client;
 
 namespace KubeUI.Kubernetes.Resources.Relationships.Providers;
 
@@ -8,9 +7,9 @@ public sealed class GitOpsRelationshipProvider : IResourceRelationshipProvider
 {
     public IEnumerable<ResourceSeedPrerequisite> SeedPrerequisites =>
     [
-        new(new GroupApiVersionKind("argoproj.io", "v1alpha1", "Application", "applications")),
-        new(new GroupApiVersionKind("kustomize.toolkit.fluxcd.io", "v1", "Kustomization", "kustomizations")),
-        new(new GroupApiVersionKind("helm.toolkit.fluxcd.io", "v2", "HelmRelease", "helmreleases")),
+        new(new ("argoproj.io", "v1alpha1", "Application", "applications"), allowServedVersionFallback: true),
+        new(new ("kustomize.toolkit.fluxcd.io", "v1", "Kustomization", "kustomizations"), allowServedVersionFallback: true),
+        new(new ("helm.toolkit.fluxcd.io", "v2", "HelmRelease", "helmreleases"), allowServedVersionFallback: true),
     ];
 
     public void AddRelationships(IKubernetesObject<V1ObjectMeta> resource, ResourceRelationshipContext context, ICollection<ResourceRelationship> relationships)
@@ -36,8 +35,7 @@ public sealed class GitOpsRelationshipProvider : IResourceRelationshipProvider
         {
             foreach (var application in applications)
             {
-                if (application.ApiVersion != "argoproj.io/v1alpha1"
-                    || application.Name() != name
+                if (application.Name() != name
                     || ReferenceEquals(application, resource))
                 {
                     continue;
@@ -48,7 +46,7 @@ public sealed class GitOpsRelationshipProvider : IResourceRelationshipProvider
             }
         }
 
-        context.RecordUnresolved("argoproj.io", "Application", null, name, "v1alpha1");
+        context.RecordUnresolved("argoproj.io", "Application", null, name);
     }
 
     private static void AddFlux(ResourceRelationshipContext context, ICollection<ResourceRelationship> relationships, IKubernetesObject<V1ObjectMeta> resource, string nameKey, string namespaceKey, string apiGroup, string kind)

@@ -2,7 +2,9 @@ using System.Diagnostics;
 using System.Reflection;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Declarative;
+using Avalonia.Threading;
 #if DEBUG
 using Declarative.Avalonia.AgentTools;
 #endif
@@ -39,22 +41,7 @@ internal static class Program
         host.Services.ConfigureKubeUIKubernetesJsonLogging();
         host.Start();
 
-        var builder = AppBuilder.Configure(() => new App(host.Services))
-            .UsePlatformDetect()
-            .ConfigureFonts(fontManager => fontManager.AddFontCollection(new CascadiaMonoFontCollection()))
-            .WithInterFont()
-            .UseServiceProvider(host.Services)
-            .UseComponentControlFactory(type => (Control)ActivatorUtilities.CreateInstance(host.Services, type))
-            .UseViewInitializationStrategy(ViewInitializationStrategy.Lazy)
-#if DEBUG
-            .UseHotReload()
-            .UseAgentInspector(o =>
-            {
-                o.EnableInteraction = true;
-                o.Services = host.Services;
-            })
-#endif
-            ;
+        var builder = CreateAppBuilder(host.Services);
 
         builder.StartWithClassicDesktopLifetime(args);
 
@@ -63,7 +50,49 @@ internal static class Program
         host.Dispose();
     }
 
-    private static HostApplicationBuilder CreateHostBuilder(string[] args)
+    internal static AppBuilder CreateAppBuilder(IServiceProvider services)
+    {
+        RegisterAvaloniaShutdown(services);
+
+        return AppBuilder.Configure(() => new App(services))
+            .UsePlatformDetect()
+            .ConfigureFonts(fontManager => fontManager.AddFontCollection(new CascadiaMonoFontCollection()))
+            .WithInterFont()
+            .UseServiceProvider(services)
+            .UseComponentControlFactory(type => (Control)ActivatorUtilities.CreateInstance(services, type))
+            .UseViewInitializationStrategy(ViewInitializationStrategy.Lazy)
+#if DEBUG
+            .UseHotReload()
+            .UseAgentInspector(o =>
+            {
+                o.EnableInteraction = true;
+                o.Services = services;
+            })
+#endif
+            ;
+    }
+
+    internal static void RegisterAvaloniaShutdown(IServiceProvider services, Action? shutdownAvalonia = null)
+    {
+        shutdownAvalonia ??= static () =>
+        {
+            static void ShutdownAvalonia()
+            {
+                if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+                    desktop.TryShutdown();
+            }
+
+            if (Dispatcher.UIThread.CheckAccess())
+                ShutdownAvalonia();
+            else
+                Dispatcher.UIThread.Post(ShutdownAvalonia);
+
+        };
+
+        services.GetRequiredService<IHostApplicationLifetime>().ApplicationStopping.Register(shutdownAvalonia);
+    }
+
+    internal static HostApplicationBuilder CreateHostBuilder(string[] args, bool includeOptionalServices = true)
     {
         var builder = Host.CreateEmptyApplicationBuilder(new HostApplicationBuilderSettings()
         {
@@ -75,12 +104,12 @@ internal static class Program
         var settings = SettingsPersistenceLoader.Load();
         builder.Services.AddKubeUIAppServices();
 
-        if (settings.Settings.TelemetryEnabled)
+        if (includeOptionalServices && settings.Settings.TelemetryEnabled)
         {
             builder.Services.AddTelemetry();
         }
 
-        if (settings.Settings.LoggingEnabled)
+        if (includeOptionalServices && settings.Settings.LoggingEnabled)
         {
             builder.Services.AddFileLogging();
         }

@@ -4,6 +4,7 @@ using KubernetesClient.Informer.Client;
 using KubeUI.Kubernetes.Resources.Relationships;
 using KubeUI.Kubernetes.Resources.Relationships.Providers;
 using Shouldly;
+using System.Text.Json.Serialization;
 
 namespace KubeUI.Kubernetes.Tests.Resources.Relationships;
 
@@ -34,6 +35,31 @@ public sealed class ResourceRelationshipBuilderTests
         graph.Relationships.ShouldContain(new ResourceRelationship(
             new("v1", V1Pod.KubeKind, "demo", "web", null),
             new("v1", V1Node.KubeKind, null, "node-a", null),
+            ResourceRelationshipKind.Reference));
+    }
+
+    [Fact]
+    public void Relates_listener_set_to_its_parent_gateway()
+    {
+        TestListenerSet listenerSet = new()
+        {
+            ApiVersion = "gateway.networking.k8s.io/v1",
+            Kind = "ListenerSet",
+            Metadata = new() { Name = "additional", NamespaceProperty = "demo" },
+            Spec = new() { ParentRef = new() { Name = "public" } },
+        };
+        TestGateway gateway = new()
+        {
+            ApiVersion = "gateway.networking.k8s.io/v1",
+            Kind = "Gateway",
+            Metadata = new() { Name = "public", NamespaceProperty = "demo" },
+        };
+
+        var graph = new ResourceRelationshipBuilder().Build([listenerSet, gateway], new HashSet<string> { "demo" }, hideNoise: true);
+
+        graph.Relationships.ShouldContain(new ResourceRelationship(
+            new("gateway.networking.k8s.io/v1", "ListenerSet", "demo", "additional", null),
+            new("gateway.networking.k8s.io/v1", "Gateway", "demo", "public", null),
             ResourceRelationshipKind.Reference));
     }
 
@@ -96,6 +122,300 @@ public sealed class ResourceRelationshipBuilderTests
             new GroupApiVersionKind("kustomize.toolkit.fluxcd.io", "v1", "Kustomization", "kustomizations")));
         graph.RequiredSeedPrerequisites.ShouldContain(new ResourceSeedPrerequisite(
             new GroupApiVersionKind("helm.toolkit.fluxcd.io", "v2", "HelmRelease", "helmreleases")));
+        graph.RequiredSeedPrerequisites.ShouldContain(new ResourceSeedPrerequisite(
+            new GroupApiVersionKind("gateway.networking.k8s.io", "v1", "GatewayClass", "gatewayclasses")));
+        graph.RequiredSeedPrerequisites.ShouldContain(new ResourceSeedPrerequisite(
+            new GroupApiVersionKind("gateway.networking.k8s.io", "v1", "Gateway", "gateways")));
+        graph.RequiredSeedPrerequisites.ShouldContain(new ResourceSeedPrerequisite(
+            new GroupApiVersionKind("gateway.networking.k8s.io", "v1", "HTTPRoute", "httproutes")));
+        graph.RequiredSeedPrerequisites.ShouldContain(new ResourceSeedPrerequisite(
+            new GroupApiVersionKind("gateway.networking.k8s.io", "v1", "GRPCRoute", "grpcroutes")));
+        graph.RequiredSeedPrerequisites.ShouldContain(new ResourceSeedPrerequisite(
+            new GroupApiVersionKind("gateway.networking.k8s.io", "v1", "BackendTLSPolicy", "backendtlspolicies")));
+        graph.RequiredSeedPrerequisites.ShouldContain(new ResourceSeedPrerequisite(
+            new GroupApiVersionKind("gateway.networking.k8s.io", "v1", "ListenerSet", "listenersets")));
+        graph.RequiredSeedPrerequisites.ShouldContain(new ResourceSeedPrerequisite(
+            new GroupApiVersionKind("gateway.networking.k8s.io", "v1", "ReferenceGrant", "referencegrants")));
+        graph.RequiredSeedPrerequisites.ShouldContain(new ResourceSeedPrerequisite(
+            new GroupApiVersionKind("gateway.networking.k8s.io", "v1", "TCPRoute", "tcproutes")));
+        graph.RequiredSeedPrerequisites.ShouldContain(new ResourceSeedPrerequisite(
+            new GroupApiVersionKind("gateway.networking.k8s.io", "v1", "TLSRoute", "tlsroutes")));
+        graph.RequiredSeedPrerequisites.ShouldContain(new ResourceSeedPrerequisite(
+            new GroupApiVersionKind("gateway.networking.k8s.io", "v1", "UDPRoute", "udproutes")));
+    }
+
+    [Fact]
+    public void Relates_gateway_to_cluster_scoped_gateway_class_when_namespace_is_selected()
+    {
+        TestGateway gateway = new()
+        {
+            ApiVersion = "gateway.networking.k8s.io/v1",
+            Kind = "Gateway",
+            Metadata = new() { Name = "public", NamespaceProperty = "demo" },
+            Spec = new() { GatewayClassName = "standard" },
+        };
+        TestGatewayClass gatewayClass = new()
+        {
+            ApiVersion = "gateway.networking.k8s.io/v1",
+            Kind = "GatewayClass",
+            Metadata = new() { Name = "standard" },
+        };
+
+        var graph = new ResourceRelationshipBuilder().Build([gateway, gatewayClass], new HashSet<string> { "demo" }, hideNoise: true);
+
+        graph.Relationships.ShouldContain(new ResourceRelationship(
+            new("gateway.networking.k8s.io/v1", "Gateway", "demo", "public", null),
+            new("gateway.networking.k8s.io/v1", "GatewayClass", null, "standard", null),
+            ResourceRelationshipKind.Reference));
+    }
+
+    [Theory]
+    [InlineData("HTTPRoute", "v1")]
+    [InlineData("GRPCRoute", "v1")]
+    [InlineData("TCPRoute", "v1")]
+    [InlineData("TLSRoute", "v1")]
+    [InlineData("UDPRoute", "v1")]
+    public void Relates_routes_to_parent_gateway_and_default_service_backend(string kind, string version)
+    {
+        TestRoute route = new()
+        {
+            ApiVersion = $"gateway.networking.k8s.io/{version}",
+            Kind = kind,
+            Metadata = new() { Name = "route", NamespaceProperty = "demo" },
+            Spec = new()
+            {
+                ParentRefs = new List<TestGatewayReference> { new() { Name = "public", SectionName = "https", Port = 8443 } },
+                Rules = new List<TestRouteRule> { new() { BackendRefs = new List<TestBackendReference> { new() { Name = "web", Port = 8080 } } } },
+            },
+        };
+        TestGateway gateway = new()
+        {
+            ApiVersion = "gateway.networking.k8s.io/v1",
+            Kind = "Gateway",
+            Metadata = new() { Name = "public", NamespaceProperty = "demo" },
+        };
+        V1Service service = new()
+        {
+            ApiVersion = "v1",
+            Kind = V1Service.KubeKind,
+            Metadata = new() { Name = "web", NamespaceProperty = "demo" },
+        };
+
+        var graph = new ResourceRelationshipBuilder().Build([route, gateway, service], new HashSet<string> { "demo" }, hideNoise: true);
+
+        graph.Relationships.ShouldContain(new ResourceRelationship(
+            new($"gateway.networking.k8s.io/{version}", kind, "demo", "route", null),
+            new("gateway.networking.k8s.io/v1", "Gateway", "demo", "public", null),
+            ResourceRelationshipKind.Reference,
+            "sectionName=https, port=8443"));
+        graph.Relationships.ShouldContain(new ResourceRelationship(
+            new($"gateway.networking.k8s.io/{version}", kind, "demo", "route", null),
+            new("v1", V1Service.KubeKind, "demo", "web", null),
+            ResourceRelationshipKind.Reference,
+            "port=8080"));
+    }
+
+    [Fact]
+    public void Relates_http_route_to_gateway_in_explicit_parent_namespace()
+    {
+        TestRoute route = new()
+        {
+            ApiVersion = "gateway.networking.k8s.io/v1",
+            Kind = "HTTPRoute",
+            Metadata = new() { Name = "frigate", NamespaceProperty = "frigate" },
+            Spec = new()
+            {
+                ParentRefs = new List<TestGatewayReference>
+                {
+                    new()
+                    {
+                        Group = "gateway.networking.k8s.io",
+                        Kind = "Gateway",
+                        Namespace = "envoy-gateway-system",
+                        Name = "public",
+                    },
+                },
+            },
+        };
+        TestGateway gateway = new()
+        {
+            ApiVersion = "gateway.networking.k8s.io/v1",
+            Kind = "Gateway",
+            Metadata = new() { Name = "public", NamespaceProperty = "envoy-gateway-system" },
+        };
+
+        var graph = new ResourceRelationshipBuilder().Build(
+            [route, gateway],
+            new HashSet<string> { "frigate", "envoy-gateway-system" },
+            hideNoise: true);
+
+        graph.Relationships.ShouldContain(new ResourceRelationship(
+            new("gateway.networking.k8s.io/v1", "HTTPRoute", "frigate", "frigate", null),
+            new("gateway.networking.k8s.io/v1", "Gateway", "envoy-gateway-system", "public", null),
+            ResourceRelationshipKind.Reference));
+    }
+
+    [Theory]
+    [InlineData("BackendTLSPolicy", "v1")]
+    public void Relates_explicit_cross_namespace_and_policy_targets_without_group_collisions(string policyKind, string policyVersion)
+    {
+        TestRoute route = new()
+        {
+            ApiVersion = "gateway.networking.k8s.io/v1",
+            Kind = "HTTPRoute",
+            Metadata = new() { Name = "route", NamespaceProperty = "demo" },
+            Spec = new()
+            {
+                ParentRefs = new List<TestGatewayReference> { new() { Group = "example.io", Kind = "Gateway", Namespace = "shared", Name = "public" } },
+                Rules = new List<TestRouteRule> { new() { BackendRefs = new List<TestBackendReference> { new() { Group = "apps.example.io", Kind = "Database", Namespace = "other", Name = "web" } } } },
+            },
+        };
+        TestPolicy policy = new()
+        {
+            ApiVersion = $"gateway.networking.k8s.io/{policyVersion}",
+            Kind = policyKind,
+            Metadata = new() { Name = "policy", NamespaceProperty = "demo" },
+            Spec = new() { TargetRefs = new List<TestGatewayReference> { new() { Group = "apps.example.io", Kind = "Database", Namespace = "other", Name = "web", SectionName = "tls" } } },
+        };
+        var gateway = CreateResource("example.io/v1", "Gateway", "shared", "public");
+        var database = CreateResource("apps.example.io/v1", "Database", "other", "web");
+        var wrongGroup = CreateResource("v1", "Database", "other", "web");
+        var wrongNamespace = CreateResource("apps.example.io/v1", "Database", "demo", "web");
+
+        var graph = new ResourceRelationshipBuilder().Build(
+            [route, policy, gateway, database, wrongGroup, wrongNamespace],
+            new HashSet<string> { "demo" },
+            hideNoise: true);
+
+        graph.Relationships.ShouldContain(new ResourceRelationship(
+            new("gateway.networking.k8s.io/v1", "HTTPRoute", "demo", "route", null),
+            new("example.io/v1", "Gateway", "shared", "public", null),
+            ResourceRelationshipKind.Reference));
+        graph.Relationships.ShouldContain(new ResourceRelationship(
+            new("gateway.networking.k8s.io/v1", "HTTPRoute", "demo", "route", null),
+            new("apps.example.io/v1", "Database", "other", "web", null),
+            ResourceRelationshipKind.Reference));
+        graph.Relationships.ShouldContain(new ResourceRelationship(
+            new($"gateway.networking.k8s.io/{policyVersion}", policyKind, "demo", "policy", null),
+            new("apps.example.io/v1", "Database", "other", "web", null),
+            ResourceRelationshipKind.Reference,
+            "sectionName=tls"));
+        graph.Relationships.Count.ShouldBe(3);
+    }
+
+    [Fact]
+    public void Relates_explicit_cross_namespace_references_without_falling_back_to_source_namespace()
+    {
+        TestRoute route = new()
+        {
+            ApiVersion = "gateway.networking.k8s.io/v1",
+            Kind = "HTTPRoute",
+            Metadata = new() { Name = "route", NamespaceProperty = "demo" },
+            Spec = new()
+            {
+                ParentRefs = new List<TestGatewayReference> { new() { Name = "public", Namespace = "shared" } },
+                Rules = new List<TestRouteRule> { new() { BackendRefs = new List<TestBackendReference> { new() { Name = "web", Namespace = "other" } } } },
+            },
+        };
+        TestGateway gateway = new()
+        {
+            ApiVersion = "gateway.networking.k8s.io/v1",
+            Kind = "Gateway",
+            Metadata = new() { Name = "public", NamespaceProperty = "shared" },
+        };
+        V1Service crossNamespaceService = new()
+        {
+            ApiVersion = "v1",
+            Kind = V1Service.KubeKind,
+            Metadata = new() { Name = "web", NamespaceProperty = "other" },
+        };
+        V1Service sameNamespaceService = new()
+        {
+            ApiVersion = "v1",
+            Kind = V1Service.KubeKind,
+            Metadata = new() { Name = "web", NamespaceProperty = "demo" },
+        };
+
+        var graph = new ResourceRelationshipBuilder().Build(
+            [route, gateway, crossNamespaceService, sameNamespaceService],
+            new HashSet<string> { "demo" },
+            hideNoise: true);
+
+        graph.Relationships.ShouldContain(new ResourceRelationship(
+            new("gateway.networking.k8s.io/v1", "HTTPRoute", "demo", "route", null),
+            new("gateway.networking.k8s.io/v1", "Gateway", "shared", "public", null),
+            ResourceRelationshipKind.Reference));
+        graph.Relationships.ShouldContain(new ResourceRelationship(
+            new("gateway.networking.k8s.io/v1", "HTTPRoute", "demo", "route", null),
+            new("v1", V1Service.KubeKind, "other", "web", null),
+            ResourceRelationshipKind.Reference));
+        graph.Relationships.ShouldNotContain(new ResourceRelationship(
+            new("gateway.networking.k8s.io/v1", "HTTPRoute", "demo", "route", null),
+            new("v1", V1Service.KubeKind, "demo", "web", null),
+            ResourceRelationshipKind.Reference));
+    }
+
+    [Fact]
+    public void Records_unresolved_gateway_references_and_tolerates_malformed_or_status_only_models()
+    {
+        TestRoute unresolved = new()
+        {
+            ApiVersion = "gateway.networking.k8s.io/v1",
+            Kind = "HTTPRoute",
+            Metadata = new() { Name = "route", NamespaceProperty = "demo" },
+            Spec = new() { ParentRefs = new List<TestGatewayReference> { new() { Name = "missing" } } },
+        };
+        TestRoute statusOnly = new()
+        {
+            ApiVersion = "gateway.networking.k8s.io/v1",
+            Kind = "HTTPRoute",
+            Metadata = new() { Name = "status", NamespaceProperty = "demo" },
+            Spec = null,
+        };
+        TestUnsupportedRoute malformed = new()
+        {
+            ApiVersion = "gateway.networking.k8s.io/v1",
+            Kind = "HTTPRoute",
+            Metadata = new() { Name = "malformed", NamespaceProperty = "demo" },
+        };
+
+        var graph = new ResourceRelationshipBuilder().Build([unresolved, statusOnly, malformed], new HashSet<string> { "demo" }, hideNoise: true);
+
+        graph.PendingReferences.ShouldContain(new UnresolvedResourceReference(
+            "gateway.networking.k8s.io", null, "Gateway", "demo", "missing"));
+        graph.Relationships.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public void Coalesces_repeated_gateway_references()
+    {
+        TestRoute route = new()
+        {
+            ApiVersion = "gateway.networking.k8s.io/v1",
+            Kind = "HTTPRoute",
+            Metadata = new() { Name = "route", NamespaceProperty = "demo" },
+            Spec = new()
+            {
+                ParentRefs = new List<TestGatewayReference> { new() { Name = "public" }, new() { Name = "public" } },
+                Rules = new List<TestRouteRule> { new() { BackendRefs = new List<TestBackendReference> { new() { Name = "web" }, new() { Name = "web" } } } },
+            },
+        };
+        TestGateway gateway = new()
+        {
+            ApiVersion = "gateway.networking.k8s.io/v1",
+            Kind = "Gateway",
+            Metadata = new() { Name = "public", NamespaceProperty = "demo" },
+        };
+        V1Service service = new()
+        {
+            ApiVersion = "v1",
+            Kind = V1Service.KubeKind,
+            Metadata = new() { Name = "web", NamespaceProperty = "demo" },
+        };
+
+        var graph = new ResourceRelationshipBuilder().Build([route, gateway, service], new HashSet<string> { "demo" }, hideNoise: true);
+
+        graph.Relationships.Count.ShouldBe(2);
     }
 
     [Fact]
@@ -121,6 +441,50 @@ public sealed class ResourceRelationshipBuilderTests
             Spec = new()
             {
                 By = CreateReference("Schema", "schema"),
+                Of = CreateReference("Catalog", "catalog"),
+            },
+        };
+
+        var graph = new ResourceRelationshipBuilder().Build(
+            [schema, catalog, usage],
+            new HashSet<string> { "platform-test-data-product" },
+            hideNoise: true);
+
+        graph.Relationships.ShouldContain(new ResourceRelationship(
+            new(schema.ApiVersion!, schema.Kind!, schema.Namespace(), schema.Name()!, schema.Uid()),
+            new(catalog.ApiVersion!, catalog.Kind!, catalog.Namespace(), catalog.Name()!, catalog.Uid()),
+            ResourceRelationshipKind.Reference,
+            "uses"));
+    }
+
+    [Fact]
+    public void Relates_crossplane_usage_across_served_api_versions()
+    {
+        TestDynamicResource schema = new()
+        {
+            ApiVersion = "unity.databricks.m.crossplane.io/v1beta1",
+            Kind = "Schema",
+            Metadata = new() { NamespaceProperty = "platform-test-data-product", Name = "schema", Uid = "schema-uid" },
+        };
+        TestDynamicResource catalog = new()
+        {
+            ApiVersion = "unity.databricks.m.crossplane.io/v1",
+            Kind = "Catalog",
+            Metadata = new() { NamespaceProperty = "platform-test-data-product", Name = "catalog", Uid = "catalog-uid" },
+        };
+        TestDynamicUsage usage = new()
+        {
+            ApiVersion = "protection.crossplane.io/v1alpha1",
+            Kind = "Usage",
+            Metadata = new() { NamespaceProperty = "platform-test-data-product", Name = "usage", Uid = "usage-uid" },
+            Spec = new()
+            {
+                By = new()
+                {
+                    ApiVersion = "unity.databricks.m.crossplane.io/v1",
+                    Kind = "Schema",
+                    ResourceRef = new() { Name = "schema" },
+                },
                 Of = CreateReference("Catalog", "catalog"),
             },
         };
@@ -813,7 +1177,7 @@ public sealed class ResourceRelationshipBuilderTests
         };
         V1ConfigMap application = new()
         {
-            ApiVersion = "argoproj.io/v1alpha1",
+            ApiVersion = "argoproj.io/v1beta1",
             Kind = "Application",
             Metadata = new() { Name = "demo-app", NamespaceProperty = "argocd" },
         };
@@ -821,7 +1185,7 @@ public sealed class ResourceRelationshipBuilderTests
         var graph = new ResourceRelationshipBuilder().Build([managed, application], new HashSet<string> { "workload" }, hideNoise: true);
 
         graph.Relationships.ShouldContain(new ResourceRelationship(
-            new("argoproj.io/v1alpha1", "Application", "argocd", "demo-app", null),
+            new("argoproj.io/v1beta1", "Application", "argocd", "demo-app", null),
             new("v1", V1Pod.KubeKind, "workload", "managed", null),
             ResourceRelationshipKind.GitOps));
     }
@@ -1082,7 +1446,7 @@ public sealed class ResourceRelationshipBuilderTests
             hideNoise: true);
 
         graph.PendingReferences.Count.ShouldBe(3);
-        graph.PendingReferences.ShouldContain(new UnresolvedResourceReference("argoproj.io", "v1alpha1", "Application", null, "demo-app"));
+        graph.PendingReferences.ShouldContain(new UnresolvedResourceReference("argoproj.io", null, "Application", null, "demo-app"));
         graph.PendingReferences.ShouldContain(new UnresolvedResourceReference("helm.toolkit.fluxcd.io", null, "HelmRelease", "demo", "release-a"));
         graph.PendingReferences.ShouldContain(new UnresolvedResourceReference("kustomize.toolkit.fluxcd.io", null, "Kustomization", "demo", "kustomization-a"));
     }
@@ -1112,7 +1476,7 @@ public sealed class ResourceRelationshipBuilderTests
 
         graph.PendingReferences.ShouldContain(new UnresolvedResourceReference(
             "argoproj.io",
-            "v1alpha1",
+            null,
             "Application",
             null,
             "platform-test-data-product"));
@@ -1285,5 +1649,99 @@ public sealed class ResourceRelationshipBuilderTests
     private sealed class TestDynamicResourceReference
     {
         public string? Name { get; set; }
+    }
+
+    private static TestDynamicResource CreateResource(string apiVersion, string kind, string? namespaceName, string name)
+        => new()
+        {
+            ApiVersion = apiVersion,
+            Kind = kind,
+            Metadata = new() { NamespaceProperty = namespaceName, Name = name },
+        };
+
+    private sealed class TestGateway : TestDynamicResource
+    {
+        [JsonIgnore]
+        public TestGatewaySpec? Spec { get; set; }
+    }
+
+    private sealed class TestGatewayClass : TestDynamicResource
+    {
+    }
+
+    private sealed class TestListenerSet : TestDynamicResource
+    {
+        [JsonIgnore]
+        public TestListenerSetSpec? Spec { get; set; }
+    }
+
+    private sealed class TestListenerSetSpec
+    {
+        public TestGatewayReference? ParentRef { get; set; }
+    }
+
+    private class TestRoute : TestDynamicResource
+    {
+        [JsonIgnore]
+        public TestRouteSpec? Spec { get; set; }
+    }
+
+    private sealed class TestUnsupportedRoute : TestRoute
+    {
+        [JsonIgnore]
+        public new TestUnsupportedSpec Spec { get; set; } = new();
+    }
+
+    private sealed class TestPolicy : TestDynamicResource
+    {
+        [JsonIgnore]
+        public TestPolicySpec? Spec { get; set; }
+    }
+
+    private sealed class TestGatewaySpec
+    {
+        public string? GatewayClassName { get; set; }
+    }
+
+    private sealed class TestRouteSpec
+    {
+        public List<TestGatewayReference>? ParentRefs { get; set; }
+        public List<TestRouteRule>? Rules { get; set; }
+    }
+
+    private sealed class TestRouteRule
+    {
+        public List<TestBackendReference>? BackendRefs { get; set; }
+        public List<TestRouteMatch>? Matches { get; set; }
+    }
+
+    private sealed class TestRouteMatch
+    {
+        public List<TestBackendReference>? BackendRefs { get; set; }
+    }
+
+    private class TestGatewayReference
+    {
+        public string? Group { get; set; }
+        public string? Kind { get; set; }
+        public string? Namespace { get; set; }
+        public string? Name { get; set; }
+        public string? SectionName { get; set; }
+        public int? Port { get; set; }
+    }
+
+    private sealed class TestBackendReference : TestGatewayReference
+    {
+        public TestBackendReference? BackendRef { get; set; }
+    }
+
+    private sealed class TestPolicySpec
+    {
+        public List<TestGatewayReference>? TargetRefs { get; set; }
+    }
+
+    private sealed class TestUnsupportedSpec
+    {
+        public object? Status { get; set; }
     }
 }

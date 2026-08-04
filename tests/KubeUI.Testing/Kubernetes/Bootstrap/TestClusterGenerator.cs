@@ -37,6 +37,7 @@ public sealed class TestClusterGenerator
             KubernetesBackend.Kind => config.KubeConfig is null
                 ? await CreateKindAsync(config, cancellationToken).ConfigureAwait(false)
                 : await CreateNamedAsync(config, cancellationToken).ConfigureAwait(false),
+            KubernetesBackend.Live => await CreateLiveAsync(config, cancellationToken).ConfigureAwait(false),
             _ => throw new ArgumentOutOfRangeException(nameof(config), config.Type, "Unknown test cluster type."),
         };
 
@@ -46,6 +47,75 @@ public sealed class TestClusterGenerator
         }
 
         return cluster;
+    }
+
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(
+        "Reliability",
+        "CA2000",
+        Justification = "Client ownership transfers to the returned TestCluster.")]
+    private async Task<TestCluster> CreateLiveAsync(TestClusterConfig config, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(config.Name))
+        {
+            throw new ArgumentException("A live kubeconfig cluster requires Name.", nameof(config));
+        }
+
+        K8SConfiguration kubeConfig;
+        try
+        {
+            kubeConfig = KubernetesClientConfiguration.LoadKubeConfig(
+                kubeconfigPath: null,
+                useRelativePaths: true);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or k8s.Exceptions.KubeConfigException)
+        {
+            throw new InvalidOperationException(
+                $"Unable to load the default host kubeconfig for live cluster '{config.Name}'.",
+                exception);
+        }
+
+        KubernetesClientConfiguration clientConfig;
+        try
+        {
+            clientConfig = LiveKubernetesConfiguration.CreateClientConfiguration(
+                kubeConfig,
+                config.Name);
+        }
+        catch (Exception exception) when (exception is InvalidOperationException or ArgumentException or k8s.Exceptions.KubeConfigException)
+        {
+            throw new InvalidOperationException(
+                $"Unable to create a Kubernetes client for live cluster '{config.Name}'.",
+                exception);
+        }
+
+        clientConfig.FirstMessageHandlerSetup = config.FirstMessageHandlerSetup;
+        var client = new k8s.Kubernetes(clientConfig);
+        TestCluster? testCluster = null;
+        try
+        {
+            testCluster = await CreateTestClusterAsync(
+                client,
+                kubeConfig,
+                clientConfig,
+                config,
+                cancellationToken,
+                clientFactory: configuration => new k8s.Kubernetes(configuration)).ConfigureAwait(false);
+            await testCluster.Cluster.Connect().WaitAsync(cancellationToken).ConfigureAwait(false);
+            return testCluster;
+        }
+        catch
+        {
+            if (testCluster is not null)
+            {
+                await testCluster.DisposeAsync().ConfigureAwait(false);
+            }
+            else
+            {
+                client.Dispose();
+            }
+
+            throw;
+        }
     }
 
     public async ValueTask ResetAsync()
