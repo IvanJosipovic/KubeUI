@@ -328,7 +328,7 @@ public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphContr
             var identity = GetIdentity(resource);
             if (vertices.TryGetValue(identity, out var existingVertex))
             {
-                if (!ReferenceEquals(existingVertex.Node.Resource, resource))
+                if (existingVertex.Node.HasResourceChanged(resource))
                 {
                     existingVertex.Node.UpdateResource(resource);
                 }
@@ -488,11 +488,18 @@ public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphContr
 
     public EdgeControl CreateEdgeControl(VertexControl source, VertexControl target, object edge, bool showArrows = true, bool isVisible = true)
     {
-        return new EdgeControl(source, target, edge, showArrows)
+        var control = new EdgeControl(source, target, edge, showArrows)
         {
             RootArea = _area,
             IsVisible = isVisible,
         };
+
+        if (edge is ResourceGraphEdge resourceEdge)
+        {
+            control.Classes.Add(resourceEdge.ThemeClass);
+        }
+
+        return control;
     }
 
     public VertexControl CreateVertexControl(object vertexData)

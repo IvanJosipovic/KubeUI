@@ -1,13 +1,28 @@
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
+using Avalonia.Media;
+using System.Globalization;
 using Avalonia.Threading;
 using k8s.Models;
+using KubeUI.Avalonia.Converters;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Features.Workloads.Pod;
 
 public sealed class PodContainerCellTests
 {
+    [AvaloniaFact]
+    public void container_status_brush_resolves_from_application_theme_resources()
+    {
+        var brush = ContainerStatusToBrushConverter.Instance().Convert(
+            new V1ContainerStatus { Name = "web", Ready = true, Started = true },
+            typeof(IBrush),
+            null,
+            CultureInfo.InvariantCulture);
+
+        brush.ShouldBeAssignableTo<IBrush>();
+    }
+
     [AvaloniaFact]
     public async Task Tooltip_viewmodel_contains_type_status_restarts_and_image()
     {

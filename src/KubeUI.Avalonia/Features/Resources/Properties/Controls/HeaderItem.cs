@@ -12,8 +12,8 @@ public partial class HeaderItem : UserControl, IDeclarativeViewBase
         Content = new Border()
             .MinHeight(28)
             .Padding(10, 0, 10, 0)
-            .BindValue(Border.BackgroundProperty, new DynamicResourceExtension("SystemAltHighColor"))
-            .BindValue(Border.BorderBrushProperty, new DynamicResourceExtension("SystemAltHighColor"))
+            .Background(new DynamicResourceExtension("SystemAltHighColor"))
+            .BorderBrush(new DynamicResourceExtension("SystemAltHighColor"))
             .BorderThickness(0, 0, 0, 1)
             .Child(
                 new SelectableTextBlock()

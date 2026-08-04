@@ -19,18 +19,18 @@ public sealed class ResourceGraphEdge : EdgeBase<ResourceGraphVertex>
 
     public string RelationshipName => Relationship.Kind.ToString();
 
-    public IBrush Brush => Relationship.Kind switch
+    internal string ThemeClass => Relationship.Kind switch
     {
-        ResourceRelationshipKind.Owner => Brushes.DodgerBlue,
-        ResourceRelationshipKind.Reference => Brushes.LightGray,
-        ResourceRelationshipKind.Selector => Brushes.MediumPurple,
-        ResourceRelationshipKind.Label => Brushes.Orange,
-        ResourceRelationshipKind.Storage => Brushes.Teal,
-        ResourceRelationshipKind.Identity => Brushes.ForestGreen,
-        ResourceRelationshipKind.Rbac => Brushes.Crimson,
-        ResourceRelationshipKind.Event => Brushes.Goldenrod,
-        ResourceRelationshipKind.GitOps => Brushes.HotPink,
-        _ => Brushes.LightGray,
+        ResourceRelationshipKind.Owner => "RelationshipOwner",
+        ResourceRelationshipKind.Reference => "RelationshipReference",
+        ResourceRelationshipKind.Selector => "RelationshipSelector",
+        ResourceRelationshipKind.Label => "RelationshipLabel",
+        ResourceRelationshipKind.Storage => "RelationshipStorage",
+        ResourceRelationshipKind.Identity => "RelationshipIdentity",
+        ResourceRelationshipKind.Rbac => "RelationshipRbac",
+        ResourceRelationshipKind.Event => "RelationshipEvent",
+        ResourceRelationshipKind.GitOps => "RelationshipGitOps",
+        _ => "RelationshipDefault",
     };
 
     public override string ToString()

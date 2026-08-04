@@ -1,7 +1,6 @@
 using Avalonia.Collections;
 using k8s.Models;
 using KubeUI.Avalonia.Features.Resources.List;
-using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
 using LiveChartsCore;
 using LiveChartsCore.Kernel;
@@ -108,7 +107,7 @@ public sealed partial class ClusterView : ViewBase<ClusterViewModel>
             .InitialRotation(-90)
             .LegendPosition(LegendPosition.Bottom)
             .MaxAngle(270)
-            .BindValue(LiveChartsGeneratedCode.SourceGenPieChart.MaxValueProperty, maxValueBinding)
+            .MaxValue(maxValueBinding)
             .Title(new XamlDrawnLabelVisual
             {
                 Paint = new SolidColorPaint(SKColor.Parse(ClusterViewModel.TextColor)),

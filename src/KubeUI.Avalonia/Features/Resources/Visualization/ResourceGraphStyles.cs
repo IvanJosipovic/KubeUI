@@ -1,6 +1,7 @@
 using Avalonia.Controls.Presenters;
 using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Templates;
+using Avalonia.Markup.Xaml.MarkupExtensions;
 using QuikGraph;
 using Westermo.GraphX.Common.Enums;
 using Westermo.GraphX.Controls.Behaviours;
@@ -16,60 +17,61 @@ internal static class ResourceGraphStyles
 {
     public static void Apply(GraphArea<ResourceGraphVertex, ResourceGraphEdge, BidirectionalGraph<ResourceGraphVertex, ResourceGraphEdge>> area)
     {
-        area.Styles.Add(new Style(s => s.OfType<EdgeControl>())
-        {
-            Setters =
-            {
-                new Setter(EdgeControl.StrokeThicknessProperty, 1d),
-                new Setter(Visual.OpacityProperty, 0.5d),
-                new Setter(
-                    TemplatedControl.ForegroundProperty,
-                    CompiledBinding.Create<ResourceGraphEdge, IBrush>(edge => edge.Brush)),
-                new Setter(
-                    ToolTip.TipProperty,
-                    CompiledBinding.Create<ResourceGraphEdge, string>(edge => edge.RelationshipName)),
-                // GraphX exposes only a single ShowArrows switch. Its default template therefore renders
-                // arrows at both ends; use a target-only template for directed Kubernetes relationships.
-                new Setter(TemplatedControl.TemplateProperty, CreateDirectedEdgeTemplate()),
-            },
-        });
+        area.Styles.Add(new Style<EdgeControl>(s => s.OfType<EdgeControl>())
+            .Setter(EdgeControl.StrokeThicknessProperty, 1d)
+            .Opacity(0.5d)
+            .Setter(
+                ToolTip.TipProperty,
+                CompiledBinding.Create<ResourceGraphEdge, string>(edge => edge.RelationshipName))
+            // GraphX exposes only a single ShowArrows switch. Its default template therefore renders
+            // arrows at both ends; use a target-only template for directed Kubernetes relationships.
+            .Template(CreateDirectedEdgeTemplate()));
 
-        area.Styles.Add(new Style(s => s.OfType<VertexControl>())
-        {
-            Setters =
-            {
-                new Setter(TemplatedControl.BackgroundProperty, Brushes.Transparent),
-                new Setter(TemplatedControl.PaddingProperty, new Thickness(0)),
-                new Setter(TemplatedControl.BorderBrushProperty, Brushes.Transparent),
-                new Setter(TemplatedControl.BorderThicknessProperty, new Thickness(0)),
-                new Setter(DragBehaviour.IsDragEnabledProperty, true),
-                new Setter(DragBehaviour.UpdateEdgesOnMoveProperty, true),
-                new Setter(VertexControlBase.VertexShapeProperty, VertexShape.Rectangle),
-            },
-        });
+        AddRelationshipStyle(area, "RelationshipOwner", "VisualizationRelationshipOwnerBrush");
+        AddRelationshipStyle(area, "RelationshipReference", "VisualizationRelationshipReferenceBrush");
+        AddRelationshipStyle(area, "RelationshipSelector", "VisualizationRelationshipSelectorBrush");
+        AddRelationshipStyle(area, "RelationshipLabel", "VisualizationRelationshipLabelBrush");
+        AddRelationshipStyle(area, "RelationshipStorage", "VisualizationRelationshipStorageBrush");
+        AddRelationshipStyle(area, "RelationshipIdentity", "VisualizationRelationshipIdentityBrush");
+        AddRelationshipStyle(area, "RelationshipRbac", "VisualizationRelationshipRbacBrush");
+        AddRelationshipStyle(area, "RelationshipEvent", "VisualizationRelationshipEventBrush");
+        AddRelationshipStyle(area, "RelationshipGitOps", "VisualizationRelationshipGitOpsBrush");
+        AddRelationshipStyle(area, "RelationshipDefault", "VisualizationRelationshipDefaultBrush");
 
-        area.Styles.Add(new Style(s => s.OfType<AttachableEdgeLabelControl>())
-        {
-            Setters =
-            {
-                new Setter(TemplatedControl.ForegroundProperty, Brushes.White),
-                new Setter(EdgeLabelControl.AlignToEdgeProperty, true),
-                new Setter(TemplatedControl.TemplateProperty,
-                    new FuncControlTemplate<AttachableEdgeLabelControl>((label, _) => new Border
-                    {
-                        Background = Brushes.Transparent,
-                        BorderBrush = Brushes.Transparent,
-                        BorderThickness = new Thickness(0),
-                        CornerRadius = new CornerRadius(0),
-                        Child = new ContentPresenter
-                        {
-                            Content = label.AttachNode?.Edge,
-                            //Margin = new Thickness(3),
-                        },
-                    })),
-            },
-        });
+        area.Styles.Add(new Style<VertexControl>(s => s.OfType<VertexControl>())
+            .Background(Brushes.Transparent)
+            .Padding(new Thickness(0))
+            .BorderBrush(Brushes.Transparent)
+            .BorderThickness(new Thickness(0))
+            .Setter(DragBehaviour.IsDragEnabledProperty, true)
+            .Setter(DragBehaviour.UpdateEdgesOnMoveProperty, true)
+            .Setter(VertexControlBase.VertexShapeProperty, VertexShape.Rectangle));
 
+        area.Styles.Add(new Style<AttachableEdgeLabelControl>(s => s.OfType<AttachableEdgeLabelControl>())
+            .Foreground(new DynamicResourceExtension("SystemBaseHighColor"))
+            .Setter(EdgeLabelControl.AlignToEdgeProperty, true)
+            .Template(new FuncControlTemplate<AttachableEdgeLabelControl>((label, _) => new Border
+            {
+                Background = Brushes.Transparent,
+                BorderBrush = Brushes.Transparent,
+                BorderThickness = new Thickness(0),
+                CornerRadius = new CornerRadius(0),
+                Child = new ContentPresenter
+                {
+                    Content = label.AttachNode?.Edge,
+                    //Margin = new Thickness(3),
+                },
+            })));
+
+    }
+
+    private static void AddRelationshipStyle(
+        GraphArea<ResourceGraphVertex, ResourceGraphEdge, BidirectionalGraph<ResourceGraphVertex, ResourceGraphEdge>> area,
+        string className,
+        string resourceKey)
+    {
+        area.Styles.Add(new Style<EdgeControl>(s => s.OfType<EdgeControl>().Class(className))
+            .Foreground(new DynamicResourceExtension(resourceKey)));
     }
 
     private static FuncControlTemplate<EdgeControl> CreateDirectedEdgeTemplate()

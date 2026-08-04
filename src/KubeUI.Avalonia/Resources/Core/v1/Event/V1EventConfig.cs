@@ -2,6 +2,7 @@ using Avalonia.Data.Converters;
 using k8s.Models;
 using KubeUI.Avalonia.Features.Resources.Properties.Controls;
 using KubeUI.Avalonia.Resources.Core.v1.Event.Controls;
+using KubeUI.Avalonia.Styles;
 
 namespace KubeUI.Avalonia.Resources.Core.v1.Event;
 
@@ -72,22 +73,17 @@ public sealed partial class V1EventConfig : ResourceConfigBase<Corev1Event>
 
     public override Style[] ListStyle() =>
     [
-        new Style(x => x.OfType<DataGridRow>())
-            .Setter(global::Avalonia.Controls.Primitives.TemplatedControl.ForegroundProperty, CompiledBinding.Create<Corev1Event, object>(x => x.Type,
+        new Style<DataGridRow>(x => x.OfType<DataGridRow>())
+            .Foreground(CompiledBinding.Create<Corev1Event, object>(x => x.Type,
                 converter: new FuncValueConverter<string, IBrush>(y =>
                 {
                     if (string.Equals(y, "Warning", StringComparison.Ordinal))
                     {
-                        return Brushes.Red;
+                        return ApplicationBrushResources.GetBrush("SystemControlErrorTextForegroundBrush");
                     }
 
-                    if (Application.Current.ActualThemeVariant == ThemeVariant.Light)
-                    {
-                        return Brushes.Black; //todo reference style
-                    }
-
-                    return Brushes.White; //todo reference style));
-
+                    return ApplicationBrushResources.GetBrush("SystemBaseHighColor");
                 })))
     ];
+
 }

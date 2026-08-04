@@ -52,18 +52,3 @@ public sealed class PropertyItemValueConverter : IValueConverter
     public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
         => throw new NotSupportedException();
 }
-
-public sealed class EventWarningForegroundConverter : IValueConverter
-{
-    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
-    {
-        var isWarning = value is bool flag
-            ? flag
-            : string.Equals(value?.ToString(), "Warning", StringComparison.Ordinal);
-
-        return isWarning ? Brushes.Red : AvaloniaProperty.UnsetValue;
-    }
-
-    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
-        => throw new NotSupportedException();
-}

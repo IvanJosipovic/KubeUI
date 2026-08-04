@@ -45,7 +45,7 @@ public partial class CollectionItem : UserControl, IDeclarativeViewBase
     private Border CreateContent()
     {
         return new Border()
-            .BindValue(Border.BorderBrushProperty, new DynamicResourceExtension("SystemAltHighColor"))
+            .BorderBrush(new DynamicResourceExtension("SystemAltHighColor"))
             .BorderThickness(0, 0, 0, 1)
             .Child(
                 new Grid()

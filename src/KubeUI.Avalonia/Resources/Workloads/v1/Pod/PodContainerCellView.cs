@@ -1,6 +1,7 @@
 using System.Globalization;
 using Avalonia.Controls.Shapes;
 using Avalonia.Controls.Templates;
+using Avalonia.Markup.Xaml.MarkupExtensions;
 using Avalonia.Markup.Xaml.Templates;
 using k8s;
 using k8s.Models;
@@ -100,7 +101,7 @@ public partial class PodContainerCellView : ViewBase<V1Pod>, IInitializeCluster
                     .Fill(vm.Brush)
                     .Width(10)
                     .Height(10)
-                    .Stroke(Brushes.Gray)
+                    .Stroke(new DynamicResourceExtension("SubtleOutlineBrush"))
                     .StrokeThickness(1)
                     .Margin(0, 0, 4, 0)
                     .ToolTip_Tip(

@@ -202,14 +202,6 @@ public static class Utilities
             || ex.Message.Contains("Exception during serialization", StringComparison.Ordinal);
     }
 
-
-    public static T BindValue<T>(this T control, AvaloniaProperty prop, BindingBase binding) where T : AvaloniaObject
-    {
-        control.Bind(prop, binding);
-
-        return control;
-    }
-
     public static T Behaviors<T>(this T obj, params BehaviorCollection behaviorCollection) where T : AvaloniaObject
     {
         var collection = obj.GetValue(Interaction.BehaviorsProperty);

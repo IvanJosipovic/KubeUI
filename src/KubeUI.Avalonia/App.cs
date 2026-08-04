@@ -63,7 +63,7 @@ public partial class App : Application, IServiceProviderHost
 
     public override void Initialize()
     {
-        ApplicationThemeStyles.AddTo(Styles);
+        Styles.Add(new Fluent());
 
         Services.GetRequiredService<Instrumentation>().AppOpened.Add(1);
     }

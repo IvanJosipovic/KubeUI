@@ -2,6 +2,7 @@ using System.Reflection;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using k8s.Models;
 using KubeUI.Avalonia.Features.Resources.Properties.Controls;
 using KubeUI.Avalonia.Tests.Infra;
@@ -11,6 +12,43 @@ namespace KubeUI.Avalonia.Tests.Features.Resources.Properties;
 
 public sealed class ResourceEventsViewTests
 {
+    [AvaloniaFact]
+    public void event_card_uses_compact_event_layout_and_theme_foreground()
+    {
+        var createEventCard = typeof(ResourceEventsView).GetMethod(
+            "CreateEventCard",
+            BindingFlags.Static | BindingFlags.NonPublic);
+        createEventCard.ShouldNotBeNull();
+
+        var card = createEventCard.Invoke(
+            null,
+            [new ResourceEventItem(
+                "Container started",
+                "kubelet r720",
+                1,
+                "spec.containers{rclone}",
+                "32m ago",
+                false)]).ShouldBeOfType<Border>();
+
+        var window = new Window { Content = card };
+        window.Show();
+        Dispatcher.UIThread.RunJobs();
+
+        var headline = window.GetVisualDescendants()
+            .OfType<TextBlock>()
+            .Single(text => text.Text == "Container started");
+
+        headline.Foreground.ShouldNotBeNull();
+
+        window.GetVisualDescendants()
+            .OfType<PropertyItem>()
+            .Count()
+            .ShouldBe(4);
+
+        window.Close();
+        Dispatcher.UIThread.RunJobs();
+    }
+
     [AvaloniaFact]
     public async Task pre_attach_refresh_does_not_throw_when_dispatcher_flushes()
     {

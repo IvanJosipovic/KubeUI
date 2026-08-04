@@ -2,6 +2,9 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
+using Avalonia.Markup.Xaml.MarkupExtensions;
+using Avalonia.Markup.Declarative;
+using Avalonia.Styling;
 using Avalonia.Threading;
 using k8s;
 using k8s.Models;
@@ -46,6 +49,123 @@ public sealed class ResourceGraphControlTests
             allowServedVersionFallback: true);
 
         prerequisite.AllowServedVersionFallback.ShouldBeTrue();
+    }
+
+    [AvaloniaFact]
+    public async Task updating_resource_node_raises_a_short_lived_update_signal()
+    {
+        ResourceNodeViewModel node = new()
+        {
+            Resource = new V1Pod { Metadata = new V1ObjectMeta { Name = "pod" } },
+            Icon = null!,
+        };
+
+        node.UpdateResource(new V1Pod { Metadata = new V1ObjectMeta { Name = "pod" } });
+
+        node.IsUpdated.ShouldBeTrue();
+        await WaitForAsync(() => !node.IsUpdated, timeoutMs: 2000);
+        node.IsUpdated.ShouldBeFalse();
+    }
+
+    [Fact]
+    public void resource_version_change_is_detected_when_resource_instance_is_reused()
+    {
+        var resource = new V1Pod
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "pod",
+                ResourceVersion = "1",
+            },
+        };
+        var node = new ResourceNodeViewModel
+        {
+            Resource = resource,
+            Icon = null!,
+        };
+
+        resource.Metadata.ResourceVersion = "2";
+
+        node.HasResourceChanged(resource).ShouldBeTrue();
+    }
+
+    [AvaloniaFact]
+    public void updated_resource_node_resolves_the_dynamic_theme_background()
+    {
+        ResourceNodeViewModel node = new()
+        {
+            Resource = new V1Pod { Metadata = new V1ObjectMeta { Name = "pod" } },
+            Icon = null!,
+        };
+        Window window = new()
+        {
+            Content = VisualizationView.CreateResourceNode(node),
+        };
+
+        try
+        {
+            window.Show();
+            node.UpdateResource(new V1Pod { Metadata = new V1ObjectMeta { Name = "pod" } });
+            Dispatcher.UIThread.RunJobs();
+
+            var nodeBorder = window.Content.ShouldBeOfType<Border>();
+            var nodeGrid = nodeBorder.Child.ShouldBeOfType<Grid>();
+            var flashBorder = nodeGrid.Children[0].ShouldBeOfType<Border>();
+
+            flashBorder.Background.ShouldNotBeNull();
+            flashBorder.Opacity.ShouldBeGreaterThan(0d);
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    [AvaloniaFact]
+    public void visualization_theme_resources_resolve_in_light_variant()
+        => AssertVisualizationThemeResourcesResolve(ThemeVariant.Light);
+
+    [AvaloniaFact]
+    public void visualization_theme_resources_resolve_in_dark_variant()
+        => AssertVisualizationThemeResourcesResolve(ThemeVariant.Dark);
+
+    private static void AssertVisualizationThemeResourcesResolve(ThemeVariant themeVariant)
+    {
+        var application = Application.Current!;
+        var originalThemeVariant = application.RequestedThemeVariant;
+        var keys = new[]
+        {
+            "VisualizationRelationshipOwnerBrush",
+            "VisualizationRelationshipReferenceBrush",
+            "VisualizationRelationshipSelectorBrush",
+            "VisualizationRelationshipLabelBrush",
+            "VisualizationRelationshipStorageBrush",
+            "VisualizationRelationshipIdentityBrush",
+            "VisualizationRelationshipRbacBrush",
+            "VisualizationRelationshipEventBrush",
+            "VisualizationRelationshipGitOpsBrush",
+            "VisualizationRelationshipDefaultBrush",
+        };
+        var grid = new Grid();
+        foreach (var key in keys)
+        {
+            grid.Children.Add(new Border().BindValue(Border.BackgroundProperty, new DynamicResourceExtension(key)));
+        }
+
+        var window = new Window { Content = grid };
+        try
+        {
+            application.RequestedThemeVariant = themeVariant;
+            window.Show();
+            Dispatcher.UIThread.RunJobs();
+
+            grid.Children.Cast<Border>().Select(border => border.Background).ShouldAllBe(value => value != null);
+        }
+        finally
+        {
+            window.Close();
+            application.RequestedThemeVariant = originalThemeVariant;
+        }
     }
 
     private static async Task WaitForAsync(Func<bool> predicate, int timeoutMs = 5000, CancellationToken cancellationToken = default)

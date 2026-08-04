@@ -1,11 +1,11 @@
 using System.Reactive.Linq;
 using Avalonia.Controls.Templates;
 using Avalonia.Data.Converters;
+using Avalonia.Markup.Xaml.MarkupExtensions;
 using DynamicData;
 using DynamicData.Binding;
 using k8s;
 using k8s.Models;
-using KubeUI.Avalonia.Converters;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Infrastructure.Threading;
@@ -16,7 +16,6 @@ public sealed partial class ResourceEventsView : UserControl, IInitializeCluster
 {
     public ClusterWorkspace? Cluster { get; private set; }
 
-    private static readonly EventWarningForegroundConverter EventWarningForegroundConverter = new();
     private static readonly FuncValueConverter<bool, bool> NotConverter = new(value => !value);
     private readonly DispatcherTimer _timer = new(DispatcherPriority.Background);
     private static readonly IReadOnlyList<ResourceEventItem> EmptyItems = Array.Empty<ResourceEventItem>();
@@ -40,7 +39,7 @@ public sealed partial class ResourceEventsView : UserControl, IInitializeCluster
         Content = CreateContent();
         Items = EmptyItems;
         _matchedEvents = _emptyEvents;
-        _timer.Interval = TimeSpan.FromSeconds(1);
+        _timer.Interval = TimeSpan.FromSeconds(30);
         _timer.Tick += Timer_Tick;
     }
 
@@ -71,14 +70,9 @@ public sealed partial class ResourceEventsView : UserControl, IInitializeCluster
             .Classes("card")
             .Child(
                 new StackPanel()
-                    .Spacing(2)
+                    .Spacing(6)
                     .Children(
-                        new TextBlock()
-                            .FontWeight(FontWeight.SemiBold)
-                            .Foreground(item, x => x.IsWarning, BindingMode.OneWay, EventWarningForegroundConverter)
-                            .IsVisible(item.HasMessage)
-                            .Text(item.Message)
-                            .TextWrapping(TextWrapping.Wrap),
+                        CreateEventMessage(item),
                         new StackPanel()
                             .Spacing(0)
                             .Children(
@@ -94,6 +88,22 @@ public sealed partial class ResourceEventsView : UserControl, IInitializeCluster
                                 new PropertyItem()
                                     .Key(Assets.Resources.ResourceEventsView_LastSeen)
                                     .Value(item.LastSeen))));
+    }
+
+    private static Border CreateEventMessage(ResourceEventItem item)
+    {
+        return new Border()
+            .IsVisible(item.HasMessage)
+            .BorderBrush(new DynamicResourceExtension("SystemControlErrorTextForegroundBrush"))
+            .BorderThickness(item.IsWarning ? new Thickness(3, 0, 0, 0) : new Thickness(0))
+            .Padding(item.IsWarning ? new Thickness(8, 0, 0, 0) : new Thickness(0))
+            .Child(
+                new SelectableTextBlock()
+                    .FontWeight(FontWeight.SemiBold)
+                    .Foreground(new DynamicResourceExtension(
+                        item.IsWarning ? "SystemControlErrorTextForegroundBrush" : "SystemBaseHighBrush"))
+                    .Text(item.Message)
+                    .TextWrapping(TextWrapping.Wrap));
     }
 
     protected override void OnDataContextChanged(EventArgs e)

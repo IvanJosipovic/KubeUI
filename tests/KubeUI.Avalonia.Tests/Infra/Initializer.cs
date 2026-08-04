@@ -21,7 +21,7 @@ public class TestAppBuilder
         .AfterSetup(_ =>
         {
             var app = (TestApp)Application.Current!;
-            ApplicationThemeStyles.AddTo(app.Styles);
+            app.Styles.Add(new Fluent());
             app.InitializeServices();
         });
 }

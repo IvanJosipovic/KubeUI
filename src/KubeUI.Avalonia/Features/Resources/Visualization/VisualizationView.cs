@@ -1,20 +1,23 @@
 using System.Diagnostics.CodeAnalysis;
+using Avalonia.Animation;
 using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Templates;
 using Avalonia.Data.Converters;
+using Avalonia.Markup.Xaml.MarkupExtensions;
 using FluentIcons.Avalonia;
 using FluentIcons.Common;
 using k8s.Models;
 using KubeUI.Avalonia.Features.Resources.Common;
-using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
 
 namespace KubeUI.Avalonia.Features.Resources.Visualization;
 
 public sealed partial class VisualizationView : ViewBase<VisualizationViewModel>
 {
-    private static readonly FuncValueConverter<bool, IBrush> NotReadyBorderBrushConverter = new(
-        isNotReady => isNotReady ? Brushes.Orange : Brushes.Transparent);
+    private static readonly FuncValueConverter<bool, double> NotReadyBorderOpacityConverter = new(
+        isNotReady => isNotReady ? 1d : 0d);
+    private static readonly FuncValueConverter<bool, double> UpdateFlashOpacityConverter = new(
+        isUpdated => isUpdated ? 1d : 0d);
 
     public VisualizationView()
     {
@@ -50,7 +53,7 @@ public sealed partial class VisualizationView : ViewBase<VisualizationViewModel>
                     .Content(new FluentIcon().Icon(Icon.Warning)),
                 new Label()
                     .VerticalContentAlignment(VerticalAlignment.Center)
-                    .BindValue(ContentControl.ContentProperty, CompiledBinding.Create<VisualizationViewModel, int>(x => x.Graph!.Resources.Count,
+                    .Content(CompiledBinding.Create<VisualizationViewModel, int>(x => x.Graph!.Resources.Count,
                         source: vm,
                         stringFormat: Assets.Resources.VisualizationView_ItemsFormat)),
                 new Label()
@@ -117,30 +120,53 @@ public sealed partial class VisualizationView : ViewBase<VisualizationViewModel>
         return new Border()
             .BorderBrush(Brushes.Transparent)
             .BorderThickness(2)
-            .BindValue(Border.BorderBrushProperty, CompiledBinding.Create<ResourceNodeViewModel, bool>(
-                x => x.IsNotReady,
-                source: node,
-                converter: NotReadyBorderBrushConverter))
             .Child(
-                new StackPanel()
-                    .BindValue(ToolTip.TipProperty, content)
+                new Grid()
                     .Width(128)
                     .Height(128)
-                    .ContextFlyout(ResourceActionPresenter.CreateFlyout(node.ContextMenuItems))
                     .Children(
-                        new Image()
-                            .Width(64)
-                            .Height(64)
-                            .Source(node, x => x.Icon, BindingMode.OneWay),
-                        new TextBlock()
-                            .TextAlignment(TextAlignment.Center)
-                            .TextWrapping(TextWrapping.Wrap)
-                            .Text(node, x => x.Resource.Kind),
-                        new TextBlock()
-                            .TextAlignment(TextAlignment.Center)
-                            .TextWrapping(TextWrapping.Wrap)
-                            .Text(node, x => x.Resource.Metadata.Name)
-                    ));
+                        new Border
+                        {
+                            Transitions = new Transitions
+                            {
+                                new DoubleTransition
+                                {
+                                    Property = OpacityProperty,
+                                    Duration = TimeSpan.FromMilliseconds(250),
+                                },
+                            },
+                        }
+                            .Background(new DynamicResourceExtension("SystemBaseMediumHighColor"))
+                            .Opacity(CompiledBinding.Create<ResourceNodeViewModel, bool>(
+                                x => x.IsUpdated,
+                                source: node,
+                                converter: UpdateFlashOpacityConverter)),
+                        new Border
+                        {
+                            BorderThickness = new Thickness(2),
+                        }
+                            .BorderBrush(new DynamicResourceExtension("SystemChromeHighColor"))
+                            .Opacity(CompiledBinding.Create<ResourceNodeViewModel, bool>(
+                                x => x.IsNotReady,
+                                source: node,
+                                converter: NotReadyBorderOpacityConverter)),
+                        new StackPanel()
+                            .ToolTip_Tip(content)
+                            .ContextFlyout(ResourceActionPresenter.CreateFlyout(node.ContextMenuItems))
+                            .Children(
+                                new Image()
+                                    .Width(64)
+                                    .Height(64)
+                                    .Source(node, x => x.Icon, BindingMode.OneWay),
+                                new TextBlock()
+                                    .TextAlignment(TextAlignment.Center)
+                                    .TextWrapping(TextWrapping.Wrap)
+                                    .Text(node, x => x.Resource.Kind),
+                                new TextBlock()
+                                    .TextAlignment(TextAlignment.Center)
+                                    .TextWrapping(TextWrapping.Wrap)
+                                    .Text(node, x => x.Resource.Metadata.Name)
+                            )));
     }
 
     private async Task InitializeDesignTimeDataAsync()

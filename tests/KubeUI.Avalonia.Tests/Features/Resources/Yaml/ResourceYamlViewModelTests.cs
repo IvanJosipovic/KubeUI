@@ -475,6 +475,123 @@ public class ResourceYamlViewModelTests
     }
 
     [AvaloniaFact]
+    public void ResourceYamlView_DoesNotShowEmptyCompletion_WhenTypedPrefixHasNoMatches()
+    {
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
+
+        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
+        vm.Initialize(cluster, new V1Pod
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "test",
+                NamespaceProperty = "default",
+            },
+        });
+        vm.EditMode = true;
+        vm.YamlDocument.Text = "metadata:\n  name: temp\n  sdsdsds";
+
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
+        view.DataContext = vm;
+        window.Content = view;
+        window.Show();
+
+        Dispatcher.UIThread.RunJobs();
+
+        var editor = view.FindControl<TextEditor>("Editor");
+        editor.ShouldNotBeNull();
+        editor.CaretOffset = editor.Text.Length;
+        editor.TextArea.PerformTextInput("s");
+        Dispatcher.UIThread.RunJobs();
+
+        var behavior = Interaction.GetBehaviors(editor).OfType<YamlEditorBehavior>().Single();
+        GetCompletionWindow(behavior).ShouldBeNull();
+    }
+
+    [AvaloniaFact]
+    public void ResourceYamlView_ClosesCompletion_WhenTextIsDeleted()
+    {
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
+
+        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
+        vm.Initialize(cluster, new V1Pod
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "test",
+                NamespaceProperty = "default",
+            },
+        });
+        vm.EditMode = true;
+
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
+        view.DataContext = vm;
+        window.Content = view;
+        window.Show();
+
+        Dispatcher.UIThread.RunJobs();
+
+        var editor = view.FindControl<TextEditor>("Editor");
+        editor.ShouldNotBeNull();
+        var behavior = Interaction.GetBehaviors(editor).OfType<YamlEditorBehavior>().Single();
+
+        vm.RequestCompletionCommand.Execute(null);
+        Dispatcher.UIThread.RunJobs();
+        GetCompletionWindow(behavior).ShouldNotBeNull();
+
+        editor.Document!.Remove(0, 1);
+        Dispatcher.UIThread.RunJobs();
+
+        GetCompletionWindow(behavior).ShouldBeNull();
+    }
+
+    [AvaloniaFact]
+    public async Task ResourceYamlView_DebouncesFoldingUpdates_WhenTextChanges()
+    {
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
+
+        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
+        vm.Initialize(cluster, new V1Pod
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "test",
+                NamespaceProperty = "default",
+            },
+        });
+
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
+        view.DataContext = vm;
+        window.Content = view;
+        window.Show();
+
+        Dispatcher.UIThread.RunJobs();
+
+        var editor = view.FindControl<TextEditor>("Editor");
+        editor.ShouldNotBeNull();
+        var behavior = Interaction.GetBehaviors(editor).OfType<YamlEditorBehavior>().Single();
+        var foldingManager = GetFoldingManager(behavior);
+        foldingManager.ShouldNotBeNull();
+        var initialTitles = foldingManager.AllFoldings.Select(folding => folding.Title).ToArray();
+
+        vm.YamlDocument.Text = "root:\n  nested:\n    value: test";
+        Dispatcher.UIThread.RunJobs();
+
+        var timerField = typeof(YamlEditorBehavior).GetField("_foldingUpdateTimer", BindingFlags.Instance | BindingFlags.NonPublic);
+        var timer = timerField?.GetValue(behavior) as DispatcherTimer;
+        timer.ShouldNotBeNull();
+        timer!.IsEnabled.ShouldBeTrue();
+        foldingManager.AllFoldings.Select(folding => folding.Title).ShouldBe(initialTitles);
+
+        await WaitForUiAsync(
+            () => foldingManager.AllFoldings.Any(folding => folding.Title.TrimEnd() == "root:"),
+            timeoutMs: 1000);
+    }
+
+    [AvaloniaFact]
     public void ResourceYamlView_ShowsDocumentationPopupOnHoverOverFieldName()
     {
         using var window = Application.Current.CreateTestWindow(width: 800, height: 600);

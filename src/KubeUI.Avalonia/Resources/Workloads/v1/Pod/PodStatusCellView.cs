@@ -3,6 +3,7 @@ using k8s.Models;
 using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Infrastructure.Presentation;
+using KubeUI.Avalonia.Styles;
 using AppResources = KubeUI.Avalonia.Assets.Resources;
 
 namespace KubeUI.Avalonia.Resources.Workloads.v1.Pod;
@@ -19,7 +20,7 @@ public sealed partial class PodStatusCellView : ViewBase<V1Pod>, IInitializeClus
     public partial string PrettyString { get; set; } = string.Empty;
 
     [GeneratedDirectProperty]
-    public partial IBrush Color { get; set; } = new SolidColorBrush(Colors.Orange);
+    public partial IBrush Color { get; set; } = ApplicationBrushResources.GetBrush("PodStatusWarningBrush");
 
     protected override object Build(V1Pod vm)
     {
@@ -70,14 +71,14 @@ public sealed partial class PodStatusCellView : ViewBase<V1Pod>, IInitializeClus
 
             Color = PrettyString switch
             {
-                var status when status == AppResources.PodStatusCell_PodCompleted || status == AppResources.PodStatusCell_Running => new SolidColorBrush(Colors.LimeGreen),
-                _ => new SolidColorBrush(Colors.Orange),
+                var status when status == AppResources.PodStatusCell_PodCompleted || status == AppResources.PodStatusCell_Running => ApplicationBrushResources.GetBrush("PodStatusReadyBrush"),
+                _ => ApplicationBrushResources.GetBrush("PodStatusWarningBrush"),
             };
         }
         else
         {
             PrettyString = string.Empty;
-            Color = new SolidColorBrush(Colors.Orange);
+            Color = ApplicationBrushResources.GetBrush("PodStatusWarningBrush");
         }
     }
 
