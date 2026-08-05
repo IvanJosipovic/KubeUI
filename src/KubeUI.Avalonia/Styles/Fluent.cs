@@ -1,6 +1,8 @@
 using System.Globalization;
 using Avalonia.Controls.Shapes;
 using Avalonia.Controls.Templates;
+using Avalonia.Controls.Documents;
+using Avalonia.Media;
 using Avalonia.Markup.Xaml.MarkupExtensions;
 using Avalonia.Markup.Xaml.Styling;
 using Avalonia.Themes.Fluent;
@@ -31,6 +33,7 @@ public sealed class Fluent : AvaloniaStyles
         Add(new GraphXFluentTheme());
         Add(new FluentAvaloniaTheme());
         Add(CreateFluentTheme());
+        Add(CreateTypographyResources());
         Add(CreateThemeResourceStyles(CreateSemanticLightResources(), CreateSemanticDarkResources()));
         Add(CreateThemeResourceStyles(CreateVisualizationLightResources(), CreateVisualizationDarkResources()));
         Add(CreateStyleInclude("avares://Avalonia.Controls.DataGrid/Themes/Fluent.v2.xaml"));
@@ -92,6 +95,27 @@ public sealed class Fluent : AvaloniaStyles
                 }
             }
         };
+    }
+
+    private static AvaloniaStyles CreateTypographyResources()
+    {
+        var styles = new AvaloniaStyles
+        {
+            Resources = new ResourceDictionary
+            {
+                [Typography.AppFontFamilyResourceKey] = new FontFamily(Typography.AppFontFamilyName),
+                [Typography.AppFontSizeResourceKey] = Typography.DefaultAppFontSize,
+                [Typography.CodeFontFamilyResourceKey] = new FontFamily(Typography.CodeFontFamilyName),
+                [Typography.CodeFontSizeResourceKey] = Typography.DefaultCodeFontSize,
+                [Typography.TitleFontSizeResourceKey] = Typography.DefaultTitleFontSize
+            }
+        };
+
+        styles.Add(new Style<Control>()
+            .Setter(TextElement.FontFamilyProperty, new DynamicResourceExtension(Typography.AppFontFamilyResourceKey))
+            .Setter(TextElement.FontSizeProperty, new DynamicResourceExtension(Typography.AppFontSizeResourceKey)));
+
+        return styles;
     }
 
     private static ResourceDictionary CreateSemanticLightResources() => new()

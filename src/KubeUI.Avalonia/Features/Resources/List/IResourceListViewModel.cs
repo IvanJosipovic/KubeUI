@@ -7,7 +7,6 @@ using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Features.Resources.Common;
 using KubeUI.Avalonia.Resources;
-using KubeUI.Avalonia.Services.Settings;
 
 namespace KubeUI.Avalonia.Features.Resources.List
 {
@@ -19,7 +18,6 @@ namespace KubeUI.Avalonia.Features.Resources.List
         GroupApiVersionKind Kind { get; }
         int ItemCount { get; }
         string SearchQuery { get; set; }
-        ISettingsService SettingsService { get; }
         IResourceConfig ResourceConfig { get; }
         ObservableCollection<DataGridColumnDefinition> ColumnDefinitions { get; }
         IDataGridSortingAdapterFactory SortingAdapterFactory { get; }

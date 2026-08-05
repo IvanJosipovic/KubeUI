@@ -2,7 +2,6 @@ using k8s.Models;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Features.Resources.List;
 using KubeUI.Avalonia.Infrastructure.Presentation;
-using KubeUI.Avalonia.Services.Settings;
 using LiveChartsCore.Defaults;
 using LiveChartsCore.Kernel;
 
@@ -11,21 +10,16 @@ namespace KubeUI.Avalonia.Features.Clusters.Overview;
 public sealed partial class ClusterViewModel : ViewModelBase, IInitializeCluster, INotifyPropertyChanged
 {
     [ObservableProperty]
-    public partial ISettingsService Settings { get; set; }
-
-    [ObservableProperty]
     public partial ClusterWorkspace? Cluster { get; set; }
 
     [ObservableProperty]
     public partial ResourceListViewModel<Corev1Event> EventsVM { get; set; }
 
     public ClusterViewModel(
-        ResourceListViewModel<Corev1Event> eventsVm,
-        ISettingsService settings)
+        ResourceListViewModel<Corev1Event> eventsVm)
     {
         Title = Assets.Resources.ClusterView_Title;
         EventsVM = eventsVm;
-        Settings = settings;
     }
 
     [ObservableProperty]

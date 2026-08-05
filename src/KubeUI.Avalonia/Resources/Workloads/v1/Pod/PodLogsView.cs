@@ -5,6 +5,7 @@ using AvaloniaEdit;
 using FluentIcons.Avalonia;
 using FluentIcons.Common;
 using KubeUI.Avalonia.Infrastructure.Platform;
+using KubeUI.Avalonia.Styles;
 using TextMateSharp.Grammars;
 using static AvaloniaEdit.TextMate.TextMate;
 
@@ -35,9 +36,9 @@ public sealed partial class PodLogsView : ViewBase<PodLogsViewModel>
             .OnTextChanged((_) => TextEditorControl_TextChanged())
             .Background(new DynamicResourceExtension("SystemAltHighColor"))
             .Document(vm, x => x.Logs)
-            .FontSize(vm, x => x.SettingsService.Appearance.FontSize)
+            .FontSize(new DynamicResourceExtension(Typography.CodeFontSizeResourceKey))
             .WordWrap(vm, x => x.WordWrap)
-            .FontFamily(new FontFamily("Cascadia Mono"))
+            .FontFamily(new DynamicResourceExtension(Typography.CodeFontFamilyResourceKey))
             .FontWeight(FontWeight.Normal)
             .HorizontalScrollBarVisibility(ScrollBarVisibility.Auto)
             .IsReadOnly(true)

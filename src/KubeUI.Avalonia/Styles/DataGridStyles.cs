@@ -14,15 +14,15 @@ internal static class DataGridStyles
 
         styles.Add(new Style<DataGrid>()
             .RowHeight(new DynamicResourceExtension("DataGridRowHeight"))
-            .FontSize(new DynamicResourceExtension("DataGridFontSize")));
+            .FontSize(new DynamicResourceExtension(Typography.AppFontSizeResourceKey)));
 
         styles.Add(new Style<DataGridColumnHeader>()
-            .FontSize(new DynamicResourceExtension("DataGridFontSize"))
+            .FontSize(new DynamicResourceExtension(Typography.AppFontSizeResourceKey))
             .MinHeight(new DynamicResourceExtension("DataGridColumnHeaderMinHeight")));
 
         styles.Add(new Style<TextBlock>(x => x.OfType<DataGrid>().Descendant().Name("CellTextBlock"))
             .MaxLines(1)
-            .FontSize(new DynamicResourceExtension("DataGridFontSize")));
+            .FontSize(new DynamicResourceExtension(Typography.AppFontSizeResourceKey)));
 
         styles.Add(new Style<StackPanel>(x => x.OfType<StackPanel>().Class("filter-flyout-root"))
             .MinWidth(296d)

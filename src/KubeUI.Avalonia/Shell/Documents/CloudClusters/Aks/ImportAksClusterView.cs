@@ -1,6 +1,9 @@
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
 using KubeUI.Kubernetes;
 
+using Avalonia.Markup.Xaml.MarkupExtensions;
+using KubeUI.Avalonia.Styles;
+
 namespace KubeUI.Avalonia.Shell.Documents.CloudClusters.Aks;
 
 public sealed class ImportAksClusterView : ViewBase<ImportAksClusterViewModel>
@@ -21,7 +24,7 @@ public sealed class ImportAksClusterView : ViewBase<ImportAksClusterViewModel>
             .Spacing(12)
             .Children(
                 new TextBlock()
-                    .FontSize(24)
+                    .FontSize(new DynamicResourceExtension(Typography.TitleFontSizeResourceKey))
                     .Text(vm, x => x.Title),
                 new TextBlock()
                     .Text(Assets.Resources.ImportAksClusterView_Description)
@@ -65,7 +68,6 @@ public sealed class ImportAksClusterView : ViewBase<ImportAksClusterViewModel>
                                         new TextBlock()
                                             .Text(subscription, x => x.DisplayName),
                                         new TextBlock()
-                                            .FontSize(11)
                                             .Opacity(0.65)
                                             .Text(subscription, x => x.SubscriptionId))),
                         new TextBlock()
@@ -86,11 +88,9 @@ public sealed class ImportAksClusterView : ViewBase<ImportAksClusterViewModel>
                                         new TextBlock()
                                             .Text(cluster, x => x.Name),
                                         new TextBlock()
-                                            .FontSize(11)
                                             .Opacity(0.65)
                                             .Text(cluster, x => x.ResourceGroupName, BindingMode.OneWay, Converters.Converters.StringFormat(Assets.Resources.ImportAksClusterView_ResourceGroupFormat)),
                                         new TextBlock()
-                                            .FontSize(11)
                                             .Opacity(0.65)
                                             .Text(cluster, x => x.KubernetesVersion, BindingMode.OneWay, Converters.Converters.StringFormat(Assets.Resources.ImportAksClusterView_VersionFormat)))),
                         new StackPanel()

@@ -1,5 +1,8 @@
 ﻿using Avalonia.Svg.Skia;
 
+using Avalonia.Markup.Xaml.MarkupExtensions;
+using KubeUI.Avalonia.Styles;
+
 namespace KubeUI.Avalonia.Shell.Documents.About;
 
 public sealed class AboutView() : ViewBase<AboutViewModel>()
@@ -17,7 +20,7 @@ public sealed class AboutView() : ViewBase<AboutViewModel>()
                             .Source(SvgSource.Load("avares://KubeUI.Avalonia/Assets/kube/infrastructure_components/unlabeled/control-plane.svg"))),
                 new TextBlock()
                     .HorizontalAlignment(HorizontalAlignment.Center)
-                    .FontSize(24)
+                    .FontSize(new DynamicResourceExtension(Typography.TitleFontSizeResourceKey))
                     .Text(Assets.Resources.MainWindow_Title),
                 new TextBlock()
                     .HorizontalAlignment(HorizontalAlignment.Center)

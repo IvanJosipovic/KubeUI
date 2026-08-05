@@ -3,6 +3,7 @@ using Avalonia.Data.Converters;
 using Avalonia.Input;
 using Avalonia.Markup.Xaml.MarkupExtensions;
 using Avalonia.Xaml.Interactions.Core;
+using KubeUI.Avalonia.Styles;
 using AvaloniaEdit;
 using FluentAvalonia.UI.Controls;
 using FluentIcons.Avalonia;
@@ -110,8 +111,8 @@ public sealed partial class ResourceYamlView : ViewBase<ResourceYamlViewModel>
         var editor = new TextEditor()
             .Row(2)
             .Background(new DynamicResourceExtension("SystemAltHighColor"))
-            .FontFamily(new FontFamily("Cascadia Mono"))
-            .FontSize(vm, x => x.Settings.Appearance.ConsoleFontSize)
+            .FontFamily(new DynamicResourceExtension(Typography.CodeFontFamilyResourceKey))
+            .FontSize(new DynamicResourceExtension(Typography.CodeFontSizeResourceKey))
             .FontWeight(FontWeight.Normal)
             .HorizontalScrollBarVisibility(ScrollBarVisibility.Auto)
             .IsReadOnly(vm, x => x.EditMode, BindingMode.OneWay, NotConverter)

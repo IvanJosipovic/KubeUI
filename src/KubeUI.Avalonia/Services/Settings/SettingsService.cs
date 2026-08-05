@@ -1,4 +1,5 @@
 using KubeUI.Avalonia.Options;
+using KubeUI.Avalonia.Styles;
 using KubeUI.Kubernetes;
 using AppAppearanceSettings = KubeUI.Avalonia.Options.AppearanceSettings;
 using AppSettings = KubeUI.Avalonia.Options.Settings;
@@ -122,7 +123,8 @@ public class SettingsService : ObservableObject, ISettingsService, IClusterSetti
         {
             Application.Current.Resources["DataGridRowHeight"] = Convert.ToDouble(Appearance.ListRowHeight);
             Application.Current.Resources["DataGridColumnHeaderMinHeight"] = Convert.ToDouble(Appearance.ListRowHeight + 4m);
-            Application.Current.Resources["DataGridFontSize"] = Convert.ToDouble(Appearance.FontSize);
+            Application.Current.Resources[Typography.AppFontSizeResourceKey] = Convert.ToDouble(Appearance.FontSize);
+            Application.Current.Resources[Typography.CodeFontSizeResourceKey] = Convert.ToDouble(Appearance.ConsoleFontSize);
         }
 
         App.TopLevel?.FontSize = Convert.ToDouble(Appearance.FontSize);

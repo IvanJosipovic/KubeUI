@@ -3,14 +3,11 @@ using k8s;
 using k8s.Models;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Infrastructure.Presentation;
-using KubeUI.Avalonia.Services.Settings;
 
 namespace KubeUI.Avalonia.Resources.Workloads.v1.Pod;
 
 public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
 {
-    public ISettingsService SettingsService { get; }
-
     private readonly ILogger<PodLogsViewModel> _logger;
 
     [ObservableProperty]
@@ -48,10 +45,9 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
 
     private bool _isConnected;
 
-    public PodLogsViewModel(ILogger<PodLogsViewModel> logger, ISettingsService settingsService)
+    public PodLogsViewModel(ILogger<PodLogsViewModel> logger)
     {
         _logger = logger;
-        SettingsService = settingsService;
         Title = Assets.Resources.PodLogsView_Title;
     }
 
@@ -127,5 +123,4 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
         _streamReader?.Dispose();
     }
 }
-
 

@@ -9,6 +9,9 @@ using LiveChartsCore.SkiaSharpView.Avalonia;
 using LiveChartsCore.SkiaSharpView.Painting;
 using SkiaSharp;
 
+using Avalonia.Markup.Xaml.MarkupExtensions;
+using KubeUI.Avalonia.Styles;
+
 namespace KubeUI.Avalonia.Features.Clusters.Overview;
 
 public sealed partial class ClusterView : ViewBase<ClusterViewModel>
@@ -42,7 +45,7 @@ public sealed partial class ClusterView : ViewBase<ClusterViewModel>
                     .Children(
                         new TextBlock()
                             .Row(0)
-                            .FontSize(25)
+                            .FontSize(new DynamicResourceExtension(Typography.TitleFontSizeResourceKey))
                             .Text(Assets.Resources.ClusterView_Events),
                         new ResourceListView()
                             .Row(1)

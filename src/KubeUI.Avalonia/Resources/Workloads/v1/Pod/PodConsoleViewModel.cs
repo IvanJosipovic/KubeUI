@@ -7,7 +7,6 @@ using k8s.Models;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Infrastructure.Platform;
 using KubeUI.Avalonia.Infrastructure.Presentation;
-using KubeUI.Avalonia.Services.Settings;
 using SvcSystems.UI.Terminal;
 
 namespace KubeUI.Avalonia.Resources.Workloads.v1.Pod;
@@ -16,10 +15,8 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
 {
     private readonly ILogger<PodConsoleViewModel> _logger;
 
-
-    public PodConsoleViewModel(ILogger<PodConsoleViewModel> logger, ISettingsService settings)
+    public PodConsoleViewModel(ILogger<PodConsoleViewModel> logger)
     {
-        _ = settings;
         _logger = logger;
         Title = Assets.Resources.PodConsoleView_Title;
 
@@ -44,9 +41,6 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
 
     [ObservableProperty]
     public partial double Height { get; set; }
-
-    [ObservableProperty]
-    public partial string FontFamily { get; set; } = "Cascadia Mono";
 
     [ObservableProperty]
     public partial TerminalControlModel Model { get; set; } = new();

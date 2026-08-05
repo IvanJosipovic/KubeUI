@@ -4,7 +4,6 @@ using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Infrastructure.Platform;
 using KubeUI.Avalonia.Infrastructure.Presentation;
-using KubeUI.Avalonia.Services.Settings;
 using KubeUI.Kubernetes;
 
 namespace KubeUI.Avalonia.Resources.Workloads.v1.Pod;
@@ -15,17 +14,13 @@ public sealed partial class PortForwarderListViewModel : ViewModelBase, IInitial
     private readonly IPlatformServices _platformServices;
 
     [ObservableProperty]
-    public partial ISettingsService Settings { get; set; }
-
-    [ObservableProperty]
     public partial ClusterWorkspace Cluster { get; set; }
 
     [ObservableProperty]
     public partial PortForwarder? SelectedItem { get; set; }
 
-    public PortForwarderListViewModel(ISettingsService settings, IDialogService dialogService, IPlatformServices platformServices)
+    public PortForwarderListViewModel(IDialogService dialogService, IPlatformServices platformServices)
     {
-        Settings = settings;
         _dialogService = dialogService;
         _platformServices = platformServices;
         Title = Assets.Resources.PortForwarderListView_Title;
@@ -73,4 +68,3 @@ public sealed partial class PortForwarderListViewModel : ViewModelBase, IInitial
         Id = cluster.Runtime.Name + nameof(PortForwarderListViewModel);
     }
 }
-

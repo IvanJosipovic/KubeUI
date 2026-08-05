@@ -14,6 +14,7 @@ using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
 using KubeUI.Avalonia.Infrastructure.Docking;
 using KubeUI.Avalonia.Services.Settings;
+using KubeUI.Avalonia.Styles;
 using KubeUI.Kubernetes;
 using KubeUI.Testing.Kubernetes.Scenarios;
 using KubeUI.Testing.Kubernetes.Infrastructure;
@@ -154,7 +155,8 @@ public class TestApp : Application, IServiceProviderHost, IDisposable
         Resources["AppearanceSettings"] = provider.GetRequiredService<ISettingsService>().Appearance;
         Resources["DataGridRowHeight"] = Convert.ToDouble(provider.GetRequiredService<ISettingsService>().Appearance.ListRowHeight);
         Resources["DataGridColumnHeaderMinHeight"] = Convert.ToDouble(provider.GetRequiredService<ISettingsService>().Appearance.ListRowHeight + 4m);
-        Resources["DataGridFontSize"] = Convert.ToDouble(provider.GetRequiredService<ISettingsService>().Appearance.FontSize);
+        Resources[Typography.AppFontSizeResourceKey] = Convert.ToDouble(provider.GetRequiredService<ISettingsService>().Appearance.FontSize);
+        Resources[Typography.CodeFontSizeResourceKey] = Convert.ToDouble(provider.GetRequiredService<ISettingsService>().Appearance.ConsoleFontSize);
 
         foreach (var existingViewLocator in DataTemplates.OfType<ViewLocator>().ToList())
         {

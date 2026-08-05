@@ -1,5 +1,8 @@
 using Avalonia.Svg.Skia;
 
+using Avalonia.Markup.Xaml.MarkupExtensions;
+using KubeUI.Avalonia.Styles;
+
 namespace KubeUI.Avalonia.Shell.Main;
 
 public sealed class HomeView() : ViewBase<HomeViewModel>
@@ -19,6 +22,6 @@ public sealed class HomeView() : ViewBase<HomeViewModel>
                 new TextBlock()
                     .Margin(0, 5, 0, 0)
                     .HorizontalAlignment(HorizontalAlignment.Center)
-                    .FontSize(24)
+                    .FontSize(new DynamicResourceExtension(Typography.TitleFontSizeResourceKey))
                     .Text(Assets.Resources.HomeView_Header));
 }

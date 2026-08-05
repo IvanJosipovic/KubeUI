@@ -49,10 +49,6 @@ public partial class App : Application, IServiceProviderHost
         _logger = Services.GetRequiredService<ILogger<App>>();
         _hostApplicationLifetime = Services.GetRequiredService<IHostApplicationLifetime>();
 
-        Resources["AppearanceSettings"] = Services.GetRequiredService<ISettingsService>().Appearance;
-        Resources["DataGridRowHeight"] = Convert.ToDouble(Services.GetRequiredService<ISettingsService>().Appearance.ListRowHeight);
-        Resources["DataGridColumnHeaderMinHeight"] = Convert.ToDouble(Services.GetRequiredService<ISettingsService>().Appearance.ListRowHeight + 4m);
-        Resources["DataGridFontSize"] = Convert.ToDouble(Services.GetRequiredService<ISettingsService>().Appearance.FontSize);
         DataTemplates.Add(Services.GetRequiredService<ViewLocator>());
 
         AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;

@@ -1,4 +1,6 @@
+using Avalonia.Markup.Xaml.MarkupExtensions;
 using KubeUI.Avalonia.Infrastructure;
+using KubeUI.Avalonia.Styles;
 using KubeUI.Avalonia.Resources.Workloads.v1.Pod.Behaviors;
 using SvcSystems.UI.Terminal;
 
@@ -27,6 +29,8 @@ public sealed class PodConsoleView : ViewBase<PodConsoleViewModel>
                             .Content($"{vm.Object?.Metadata?.NamespaceProperty}/{vm.Object?.Metadata?.Name}/{vm.ContainerName}")),
                 new TerminalControl()
                     .Model(vm, x => x.Model)
+                    .FontFamily(new DynamicResourceExtension(Typography.CodeFontFamilyResourceKey))
+                    .FontSize(new DynamicResourceExtension(Typography.CodeFontSizeResourceKey))
                     .RightClickAction(RightClickAction.CopyOrPaste)
                     .Row(1));
     }

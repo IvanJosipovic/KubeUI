@@ -3,7 +3,6 @@ using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Infrastructure.Presentation;
-using KubeUI.Avalonia.Services.Settings;
 using KubeUI.Kubernetes;
 
 namespace KubeUI.Avalonia.Features.Clusters.Catalog;
@@ -16,18 +15,13 @@ public sealed partial class ClusterListViewModel : ViewModelBase
     [ObservableProperty]
     public partial ClusterWorkspaceCatalog ClusterCatalog { get; set; }
 
-    [ObservableProperty]
-    public partial ISettingsService Settings { get; set; }
-
     public ClusterListViewModel(
         ClusterWorkspaceCatalog clusterCatalog,
         IClusterRuntimeCatalog runtimeCatalog,
-        ISettingsService settings,
         IDialogService dialogService)
     {
         ClusterCatalog = clusterCatalog;
         _runtimeCatalog = runtimeCatalog;
-        Settings = settings;
         _dialogService = dialogService;
 
         Title = Assets.Resources.ClusterListView_Title!;

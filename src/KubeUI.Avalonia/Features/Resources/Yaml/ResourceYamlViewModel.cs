@@ -8,7 +8,6 @@ using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Infrastructure.Presentation;
-using KubeUI.Avalonia.Services.Settings;
 using KubeUI.Kubernetes;
 using KubeUI.Kubernetes.Serialization;
 
@@ -61,9 +60,6 @@ public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
     public partial IEnumerable<NewFolding> AllFoldings { get; set; }
 
     [ObservableProperty]
-    public partial ISettingsService Settings { get; set; }
-
-    [ObservableProperty]
     public partial IReadOnlyList<YamlDiagnostic> ValidationDiagnostics { get; set; } = [];
 
     [ObservableProperty]
@@ -90,14 +86,12 @@ public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
     public ResourceYamlViewModel(
         ILogger<ResourceYamlViewModel> logger,
         IKubernetesYamlSerializer yamlSerializer,
-        IYamlValidationService yamlValidationService,
-        ISettingsService settings)
+        IYamlValidationService yamlValidationService)
     {
         Title = Assets.Resources.ResourceYamlView_Title;
         _logger = logger;
         _yamlSerializer = yamlSerializer;
         _yamlValidationService = yamlValidationService;
-        Settings = settings;
         AttachValidationDocument(YamlDocument);
     }
 
@@ -416,4 +410,3 @@ public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
         ActionResultSuccess = false;
     }
 }
-

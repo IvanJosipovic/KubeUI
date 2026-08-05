@@ -147,6 +147,46 @@ public class ResourceListViewModelTests
         return point!.Value;
     }
 
+    [AvaloniaFact(DisplayName = "Shift arrow selection contracts when moving back", Skip = "Not yet fixed upstream")]
+    public async Task shift_arrow_selection_contracts_when_moving_back()
+    {
+        using var window = Application.Current.CreateTestWindow();
+        var cluster = await Application.Current.CreateClusterAsync();
+
+        var vm = Application.Current.GetRequiredTestService<ResourceListViewModel<V1Pod>>();
+        vm.Initialize(cluster);
+
+        var view = Application.Current.GetRequiredTestService<ResourceListView>();
+        view.DataContext = vm;
+        window.Content = view;
+        window.Show();
+
+        for (var index = 0; index < 6; index++)
+        {
+            await AddOrUpdateAsync(cluster, Pod("ns", $"pod-{index}"));
+        }
+
+        var grid = view.FindControl<DataGrid>("PART_Grid");
+        grid.ShouldNotBeNull();
+        await WaitForAsync(() => GetAllRows(grid!).Count(row => row.IsVisible) == 6, timeoutMs: 5000);
+
+        var firstRow = GetAllRows(grid!).Single(row => row.IsVisible && row.DataContext is V1Pod pod && pod.Name() == "pod-0");
+        var firstRowPoint = GetRowCenterOnWindow(firstRow, window);
+        window.MouseDown(firstRowPoint, MouseButton.Left);
+        window.MouseUp(firstRowPoint, MouseButton.Left);
+
+        for (var index = 0; index < 4; index++)
+        {
+            window.KeyPress(Key.Down, RawInputModifiers.Shift, PhysicalKey.ArrowDown, null);
+        }
+
+        vm.SelectionModel.SelectedIndexes.ShouldBe([0, 1, 2, 3, 4]);
+
+        window.KeyPress(Key.Up, RawInputModifiers.Shift, PhysicalKey.ArrowUp, null);
+
+        vm.SelectionModel.SelectedIndexes.ShouldBe([0, 1, 2, 3]);
+    }
+
 
     [AvaloniaFact(DisplayName = "All select update middle")]
     public async Task all_select_update_middle_preserves_all_selected()
@@ -2336,7 +2376,6 @@ internal sealed class FakeDoubleTapResourceListViewModel : IResourceListViewMode
     public GroupApiVersionKind Kind => GroupApiVersionKind.From<V1Pod>();
     public int ItemCount => View.Count;
     public string SearchQuery { get; set; } = string.Empty;
-    public ISettingsService SettingsService => Application.Current.GetRequiredTestService<ISettingsService>();
     public IResourceConfig ResourceConfig { get; }
     public ObservableCollection<DataGridColumnDefinition> ColumnDefinitions { get; } = [];
     public IDataGridSortingAdapterFactory SortingAdapterFactory => throw new NotImplementedException();
@@ -2405,7 +2444,6 @@ internal sealed class FakeContextMenuResourceListViewModel : IResourceListViewMo
     public GroupApiVersionKind Kind => GroupApiVersionKind.From<V1Pod>();
     public int ItemCount => 0;
     public string SearchQuery { get; set; } = string.Empty;
-    public ISettingsService SettingsService => Application.Current.GetRequiredTestService<ISettingsService>();
     public IResourceConfig ResourceConfig { get; }
     public ObservableCollection<DataGridColumnDefinition> ColumnDefinitions { get; } = [];
     public IDataGridSortingAdapterFactory SortingAdapterFactory => throw new NotImplementedException();

@@ -5,6 +5,8 @@ using Avalonia.Platform;
 using Avalonia.Svg.Skia;
 using k8s.Models;
 
+using KubeUI.Avalonia.Styles;
+
 namespace KubeUI.Avalonia.Services.Icons;
 
 public sealed partial class ResourceIconService : IResourceIconService
@@ -68,11 +70,11 @@ public sealed partial class ResourceIconService : IResourceIconService
         var initials = GetInitials(GetResourceKind(resourceType));
         var fontSize = initials.Length switch
         {
-            1 => "14",
-            2 => "10",
-            _ => "8",
+            1 => Typography.IconFontSizeOneCharacter,
+            2 => Typography.IconFontSizeTwoCharacters,
+            _ => Typography.IconFontSizeThreeOrMoreCharacters,
         };
-        var generatedSvg = blankSvg.Replace("</svg>", $"<text x=\"9\" y=\"9.5\" text-anchor=\"middle\" dominant-baseline=\"middle\" font-family=\"Cascadia Mono\" font-size=\"{fontSize}\" font-weight=\"bold\" fill=\"#ffffff\">{initials}</text></svg>", StringComparison.OrdinalIgnoreCase);
+        var generatedSvg = blankSvg.Replace("</svg>", $"<text x=\"9\" y=\"9.5\" text-anchor=\"middle\" dominant-baseline=\"middle\" font-family=\"{Typography.CodeFontFamilyName}\" font-size=\"{fontSize}\" font-weight=\"bold\" fill=\"#ffffff\">{initials}</text></svg>", StringComparison.OrdinalIgnoreCase);
         return SvgSource.LoadFromSvg(generatedSvg) ?? throw new InvalidOperationException("Unable to generate a resource icon.");
     }
 

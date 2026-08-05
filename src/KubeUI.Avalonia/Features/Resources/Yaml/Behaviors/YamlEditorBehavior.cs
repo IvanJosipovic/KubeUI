@@ -1,4 +1,5 @@
 using Avalonia.Input;
+using Avalonia.Markup.Xaml.MarkupExtensions;
 using Avalonia.Xaml.Interactivity;
 using AvaloniaEdit;
 using AvaloniaEdit.CodeCompletion;
@@ -8,6 +9,7 @@ using AvaloniaEdit.Folding;
 using AvaloniaEdit.Indentation;
 using AvaloniaEdit.TextMate;
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
+using KubeUI.Avalonia.Styles;
 using TextMateSharp.Grammars;
 using static AvaloniaEdit.TextMate.TextMate;
 
@@ -691,6 +693,9 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
         if (_completionWindow == null)
         {
             _completionWindow = new CompletionWindow(AssociatedObject.TextArea);
+            _completionWindow.CompletionList
+                .FontFamily(new DynamicResourceExtension(Typography.CodeFontFamilyResourceKey))
+                .FontSize(new DynamicResourceExtension(Typography.CodeFontSizeResourceKey));
             _completionWindow.Closed += CompletionWindow_Closed;
         }
         else

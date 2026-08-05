@@ -24,7 +24,6 @@ using KubeUI.Avalonia.Infrastructure.DataGrid;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Infrastructure.Threading;
 using KubeUI.Avalonia.Resources;
-using KubeUI.Avalonia.Services.Settings;
 using SortDirection = KubeUI.Avalonia.Resources.SortDirection;
 
 namespace KubeUI.Avalonia.Features.Resources.List;
@@ -38,8 +37,6 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     private readonly ILogger<ResourceListViewModel<T>> _logger;
 
     private static readonly IComparer s_noopSortComparer = Comparer<object>.Create(static (_, _) => 0);
-
-    public ISettingsService SettingsService { get; }
 
     [ObservableProperty]
     public partial ClusterWorkspace Cluster { get; set; }
@@ -143,11 +140,10 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     public ObservableCollection<V1Namespace> SelectedNamespaces
         => IsNamespaceSelectionLinked && Cluster != null ? Cluster.SelectedNamespaces : _localSelectedNamespaces;
 
-    public ResourceListViewModel(IServiceProvider serviceProvider, ILogger<ResourceListViewModel<T>> logger, ISettingsService settingsService)
+    public ResourceListViewModel(IServiceProvider serviceProvider, ILogger<ResourceListViewModel<T>> logger)
     {
         _serviceProvider = serviceProvider;
         _logger = logger;
-        SettingsService = settingsService;
 
         _searchQuerySubscription = _searchQueryChanges
             .Throttle(SearchDebounceDelay)

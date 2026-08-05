@@ -1,5 +1,8 @@
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
 
+using Avalonia.Markup.Xaml.MarkupExtensions;
+using KubeUI.Avalonia.Styles;
+
 namespace KubeUI.Avalonia.Features.Clusters.Settings;
 
 public sealed class ClusterSettingsView : ViewBase<ClusterSettingsViewModel>
@@ -20,7 +23,7 @@ public sealed class ClusterSettingsView : ViewBase<ClusterSettingsViewModel>
             .Margin(10, 0, 0, 0)
             .Children(
                 new TextBlock()
-                    .FontSize(25)
+                    .FontSize(new DynamicResourceExtension(Typography.TitleFontSizeResourceKey))
                     .Text(vm, x => x.Cluster.Runtime.Name, BindingMode.OneWay, Converters.Converters.StringFormat(Assets.Resources.ClusterSettingsView_TitleFormat)),
                 CreateNamespacesRow(vm),
                 CreateDebugContainerImageRow(vm));

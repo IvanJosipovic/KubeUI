@@ -148,11 +148,10 @@ public sealed class PodAttachTests
     public void console_input_stops_after_stream_write_aborts()
     {
         var services = Application.Current.GetTestServices();
-        var settings = services.GetRequiredService<ISettingsService>();
         var logger = services.GetRequiredService<ILogger<PodConsoleViewModel>>();
         using var stream = new ThrowingWriteStream(new WebSocketException(WebSocketError.InvalidState));
 
-        using PodConsoleViewModel viewModel = new(logger, settings);
+        using PodConsoleViewModel viewModel = new(logger);
         viewModel.SetStreamsForTesting(stream: stream);
 
         viewModel.WriteInput("ls"u8.ToArray());
@@ -167,11 +166,10 @@ public sealed class PodAttachTests
     public void console_resize_stops_after_stream_write_aborts()
     {
         var services = Application.Current.GetTestServices();
-        var settings = services.GetRequiredService<ISettingsService>();
         var logger = services.GetRequiredService<ILogger<PodConsoleViewModel>>();
         using var stream = new ThrowingWriteStream(new IOException());
 
-        using PodConsoleViewModel viewModel = new(logger, settings);
+        using PodConsoleViewModel viewModel = new(logger);
         viewModel.SetStreamsForTesting(refreshStream: stream);
 
         viewModel.SendResize(80, 24);
@@ -190,7 +188,6 @@ public sealed class PodAttachTests
         workspace.Runtime.Name = "pod-attach-test";
         workspace.Runtime.Connected = true;
         workspace.Runtime.Status = ClusterStatus.Connected;
-        var settings = services.GetRequiredService<ISettingsService>();
         var logger = services.GetRequiredService<ILogger<PodConsoleViewModel>>();
 
         V1Pod pod = new()
@@ -221,7 +218,7 @@ public sealed class PodAttachTests
 
         workspace.Runtime.Client = client;
 
-        using PodConsoleViewModel viewModel = new(logger, settings)
+        using PodConsoleViewModel viewModel = new(logger)
         {
             Cluster = workspace,
             Object = pod,
