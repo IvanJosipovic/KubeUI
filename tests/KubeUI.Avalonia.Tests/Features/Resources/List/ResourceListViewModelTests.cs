@@ -147,7 +147,7 @@ public class ResourceListViewModelTests
         return point!.Value;
     }
 
-    [AvaloniaFact(DisplayName = "Shift arrow selection contracts when moving back", Skip = "Not yet fixed upstream")]
+    [AvaloniaFact(DisplayName = "Shift arrow selection contracts when moving back")]
     public async Task shift_arrow_selection_contracts_when_moving_back()
     {
         using var window = Application.Current.CreateTestWindow();
