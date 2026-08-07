@@ -264,7 +264,8 @@ public sealed class ClusterCrdModelCatalog
 
     private static string CreateYamlKey(GroupApiVersionKind key)
     {
-        return $"{key.Group}/{key.ApiVersion}/{key.Kind}";
+        var groupPrefix = string.IsNullOrEmpty(key.Group) ? string.Empty : $"{key.Group}/";
+        return $"{groupPrefix}{key.ApiVersion}/{key.Kind}";
     }
 
     private static string CreateMemberDocumentationKey(Type type, char prefix, string name)
