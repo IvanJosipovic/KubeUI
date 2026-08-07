@@ -101,7 +101,10 @@ internal static class Program
         services.GetRequiredService<IHostApplicationLifetime>().ApplicationStopping.Register(shutdownAvalonia);
     }
 
-    internal static HostApplicationBuilder CreateHostBuilder(string[] args, bool includeOptionalServices = true)
+    internal static HostApplicationBuilder CreateHostBuilder(
+        string[] args,
+        bool includeOptionalServices = true,
+        Action<IServiceCollection>? configureServices = null)
     {
         var builder = Host.CreateEmptyApplicationBuilder(new HostApplicationBuilderSettings()
         {
@@ -123,6 +126,7 @@ internal static class Program
             builder.Services.AddFileLogging();
         }
 
+        configureServices?.Invoke(builder.Services);
         builder.Services.AddSingleton<ServiceDescriptor[]>([.. builder.Services]);
         return builder;
     }

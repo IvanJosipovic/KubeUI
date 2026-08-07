@@ -17,11 +17,5 @@ public class TestAppBuilder
             fontManager.AddFontCollection(new CascadiaMonoFontCollection());
         })
         .WithInterFont()
-        .UseSkia()
-        .AfterSetup(_ =>
-        {
-            var app = (TestApp)Application.Current!;
-            app.Styles.Add(new Fluent());
-            app.InitializeServices();
-        });
+        .UseSkia();
 }

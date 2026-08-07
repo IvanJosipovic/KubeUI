@@ -18,6 +18,7 @@ using KubeUI.Avalonia.Styles;
 using KubeUI.Kubernetes;
 using KubeUI.Testing.Kubernetes.Scenarios;
 using KubeUI.Testing.Kubernetes.Infrastructure;
+using KubeUI.Desktop;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -26,21 +27,18 @@ using Moq;
 
 namespace KubeUI.Avalonia.Tests.Infra;
 
-public class TestApp : Application, IServiceProviderHost, IDisposable
+public class TestApp : App, IDisposable
 {
-    public IServiceProvider? Services { get; private set; }
     public Mock<IDialogManager>? DialogManager { get; private set; }
     public INotification? Notification { get; private set; }
     public ContentDialogSettings? ContentDialogSettings { get; private set; }
+    private IHost? _host;
     private int _disposed;
 
-    IServiceProvider IServiceProviderHost.Services => Services ?? throw new InvalidOperationException("Test services are not initialized.");
-
-    internal void InitializeServices()
+    public TestApp()
     {
-        var provider = BuildServiceProvider();
-        Services = provider;
-        ApplyResources(provider);
+        _host = BuildHost();
+        InitializeApplication(_host.Services);
         Dispatcher.UIThread.ShutdownFinished += OnDispatcherShutdownFinished;
     }
 
@@ -63,26 +61,25 @@ public class TestApp : Application, IServiceProviderHost, IDisposable
             return;
         }
 
-        if (Services is IAsyncDisposable asyncDisposableServices)
+        DisposeApplication();
+
+        if (_host is IAsyncDisposable asyncDisposableHost)
         {
-            await asyncDisposableServices.DisposeAsync().ConfigureAwait(false);
+            await asyncDisposableHost.DisposeAsync().ConfigureAwait(false);
         }
-        else if (Services is IDisposable disposableServices)
+        else if (_host is IDisposable disposableHost)
         {
-            disposableServices.Dispose();
+            disposableHost.Dispose();
         }
 
-        Services = null;
+        _host = null;
         DialogManager = null;
         Notification = null;
         ContentDialogSettings = null;
     }
 
-    private ServiceProvider BuildServiceProvider()
+    private IHost BuildHost()
     {
-        var services = new ServiceCollection();
-        services.AddLogging();
-        services.AddSingleton<IHostApplicationLifetime, KubernetesTestHostApplicationLifetime>();
         var kubeConfigPath = Path.Combine(Path.GetTempPath(), $"kubeui-avalonia-{Guid.NewGuid():N}.config");
 
         ContentDialogSettings = null;
@@ -105,17 +102,17 @@ public class TestApp : Application, IServiceProviderHost, IDisposable
             .Setup(x => x.Show(It.IsAny<INotification>()))
             .Callback<INotification>(notification => Notification = notification);
 
-        services.AddKubeUIAppServices(overrides =>
+        var builder = Program.CreateHostBuilder([], includeOptionalServices: false, configureServices: services =>
         {
-            overrides.AddKubernetesTestRuntime();
-            overrides.Replace(ServiceDescriptor.Singleton<ISettingsService, TestSettingsService>());
-            overrides.Replace(ServiceDescriptor.Singleton<ISettingsPersistence, TestSettingsPersistence>());
-            overrides.Replace(ServiceDescriptor.Singleton<IPlatformServices, TestPlatformServices>());
-            overrides.Replace(ServiceDescriptor.Singleton<TimeProvider>(new TestTimeProvider(DateTimeOffset.UnixEpoch)));
-            overrides.RemoveAll<IClusterSettingsStore>();
-            overrides.AddSingleton(sp => sp.GetRequiredService<ISettingsService>().Clusters);
-            overrides.RemoveAll<ClusterWorkspaceCatalog>();
-            overrides.AddSingleton(sp =>
+            services.AddKubernetesTestRuntime();
+            services.Replace(ServiceDescriptor.Singleton<ISettingsService, TestSettingsService>());
+            services.Replace(ServiceDescriptor.Singleton<ISettingsPersistence, TestSettingsPersistence>());
+            services.Replace(ServiceDescriptor.Singleton<IPlatformServices, TestPlatformServices>());
+            services.Replace(ServiceDescriptor.Singleton<TimeProvider>(new TestTimeProvider(DateTimeOffset.UnixEpoch)));
+            services.RemoveAll<IClusterSettingsStore>();
+            services.AddSingleton(sp => sp.GetRequiredService<ISettingsService>().Clusters);
+            services.RemoveAll<ClusterWorkspaceCatalog>();
+            services.AddSingleton(sp =>
             {
                 _ = sp.GetRequiredService<TestClusterGeneratorCleanup>();
                 var config = sp.GetRequiredService<TestClusterConfig>();
@@ -132,38 +129,22 @@ public class TestApp : Application, IServiceProviderHost, IDisposable
 
                 return ActivatorUtilities.CreateInstance<ClusterWorkspaceCatalog>(sp);
             });
-            overrides.Replace(ServiceDescriptor.Singleton(dialog.Object));
-            overrides.Replace(ServiceDescriptor.Singleton(notifications.Object));
-            overrides.Replace(ServiceDescriptor.Singleton<IFactory>(sp =>
+            services.Replace(ServiceDescriptor.Singleton(dialog.Object));
+            services.Replace(ServiceDescriptor.Singleton(notifications.Object));
+            services.Replace(ServiceDescriptor.Singleton<IFactory>(sp =>
             {
                 var factory = new DockFactory(sp, sp.GetRequiredService<ILogger<DockFactory>>());
                 var layout = factory.CreateLayout();
                 factory.InitLayout(layout);
                 return factory;
             }));
-            overrides.Replace(ServiceDescriptor.Singleton<IKubeConfigPathProvider>(
+            services.Replace(ServiceDescriptor.Singleton<IKubeConfigPathProvider>(
                 new KubernetesTestKubeConfigPathProvider(kubeConfigPath)));
         });
 
-        var provider = services.BuildServiceProvider();
-        provider.ConfigureKubeUIKubernetesJsonLogging();
-        return provider;
-    }
-
-    private void ApplyResources(ServiceProvider provider)
-    {
-        Resources["AppearanceSettings"] = provider.GetRequiredService<ISettingsService>().Appearance;
-        Resources["DataGridRowHeight"] = Convert.ToDouble(provider.GetRequiredService<ISettingsService>().Appearance.ListRowHeight);
-        Resources["DataGridColumnHeaderMinHeight"] = Convert.ToDouble(provider.GetRequiredService<ISettingsService>().Appearance.ListRowHeight + 4m);
-        Resources[Typography.AppFontSizeResourceKey] = Convert.ToDouble(provider.GetRequiredService<ISettingsService>().Appearance.FontSize);
-        Resources[Typography.CodeFontSizeResourceKey] = Convert.ToDouble(provider.GetRequiredService<ISettingsService>().Appearance.ConsoleFontSize);
-
-        foreach (var existingViewLocator in DataTemplates.OfType<ViewLocator>().ToList())
-        {
-            DataTemplates.Remove(existingViewLocator);
-        }
-
-        DataTemplates.Add(provider.GetRequiredService<ViewLocator>());
+        var host = builder.Build();
+        host.Services.ConfigureKubeUIKubernetesJsonLogging();
+        return host;
     }
 
     private sealed class TestSettingsPersistence : ISettingsPersistence

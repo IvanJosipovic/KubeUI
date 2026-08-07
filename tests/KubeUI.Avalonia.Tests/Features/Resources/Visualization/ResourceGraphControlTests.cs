@@ -90,7 +90,7 @@ public sealed class ResourceGraphControlTests
     }
 
     [AvaloniaFact]
-    public void updated_resource_node_resolves_the_dynamic_theme_background()
+    public async Task updated_resource_node_resolves_the_dynamic_theme_background()
     {
         ResourceNodeViewModel node = new()
         {
@@ -106,14 +106,13 @@ public sealed class ResourceGraphControlTests
         {
             window.Show();
             node.UpdateResource(new V1Pod { Metadata = new V1ObjectMeta { Name = "pod" } });
-            Dispatcher.UIThread.RunJobs();
 
             var nodeBorder = window.Content.ShouldBeOfType<Border>();
             var nodeGrid = nodeBorder.Child.ShouldBeOfType<Grid>();
             var flashBorder = nodeGrid.Children[0].ShouldBeOfType<Border>();
 
             flashBorder.Background.ShouldNotBeNull();
-            flashBorder.Opacity.ShouldBeGreaterThan(0d);
+            await WaitForAsync(() => flashBorder.Opacity > 0d);
         }
         finally
         {

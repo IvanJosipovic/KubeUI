@@ -1,4 +1,5 @@
 using Avalonia.Headless.XUnit;
+using KubeUI.Avalonia;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Infra;
@@ -9,5 +10,6 @@ public sealed class ApplicationServiceResolutionTests
     public void TestAppBuilder_initializes_services()
     {
         Application.Current.GetTestServices().ShouldNotBeNull();
+        Application.Current.ShouldBeAssignableTo<App>();
     }
 }

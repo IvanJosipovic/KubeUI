@@ -36,12 +36,21 @@ public partial class App : Application, IServiceProviderHost
 {
     public static TopLevel? TopLevel { get; private set; }
 
-    public IServiceProvider Services { get; }
-    private readonly ILogger<App> _logger;
-    private readonly IHostApplicationLifetime _hostApplicationLifetime;
+    public IServiceProvider Services { get; private set; } = null!;
+    private ILogger<App> _logger = null!;
+    private IHostApplicationLifetime _hostApplicationLifetime = null!;
     private int _shutdownRequested;
 
     public App(IServiceProvider serviceProvider)
+    {
+        InitializeApplication(serviceProvider);
+    }
+
+    protected App()
+    {
+    }
+
+    protected void InitializeApplication(IServiceProvider serviceProvider)
     {
         Name = "KubeUI";
 
@@ -55,6 +64,14 @@ public partial class App : Application, IServiceProviderHost
         Dispatcher.UIThread.UnhandledException += OnUnhandledException;
         TaskScheduler.UnobservedTaskException += TaskScheduler_UnobservedTaskException;
         KubernetesClientConfiguration.ExecStdError += KubernetesClientConfiguration_ExecStdError;
+    }
+
+    protected void DisposeApplication()
+    {
+        AppDomain.CurrentDomain.UnhandledException -= CurrentDomain_UnhandledException;
+        Dispatcher.UIThread.UnhandledException -= OnUnhandledException;
+        TaskScheduler.UnobservedTaskException -= TaskScheduler_UnobservedTaskException;
+        KubernetesClientConfiguration.ExecStdError -= KubernetesClientConfiguration_ExecStdError;
     }
 
     public override void Initialize()
