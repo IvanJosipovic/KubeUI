@@ -26,6 +26,17 @@ public class V1CustomResourceDefinitionConfigTests
     }
 
     [AvaloniaFact]
+    public void list_items_action_has_list_icon()
+    {
+        var services = Application.Current.GetTestServices();
+        var config = ActivatorUtilities.CreateInstance<V1CustomResourceDefinitionConfig>(services);
+
+        var action = config.GetCustomMenuItems(Array.Empty<V1CustomResourceDefinition>()).Single();
+
+        action.FluentIcon.ShouldBe(FluentIcons.Common.Icon.AppsList);
+    }
+
+    [AvaloniaFact]
     public async Task generate_uses_humanized_plural_kind_for_display_name()
     {
         var services = Application.Current.GetTestServices();

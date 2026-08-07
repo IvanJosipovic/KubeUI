@@ -1,4 +1,5 @@
 using Dock.Model.Core;
+using FluentIcons.Common;
 using k8s.Models;
 using KubeUI.Avalonia.Features.Resources.Common;
 using KubeUI.Avalonia.Features.Resources.List;
@@ -63,6 +64,7 @@ public sealed partial class V1CustomResourceDefinitionConfig : ResourceConfigBas
             new()
             {
                 Title = Assets.Resources.V1CustomResourceDefinitionConfig_MenuItem_ViewItems,
+                FluentIcon = Icon.AppsList,
                 Command = ListCRDCommand,
                 CommandParameter = selectedItem
             },
