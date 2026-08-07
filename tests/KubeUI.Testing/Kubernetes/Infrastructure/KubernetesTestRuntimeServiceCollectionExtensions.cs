@@ -17,7 +17,30 @@ public static class KubernetesTestRuntimeServiceCollectionExtensions
     }
 }
 
-public sealed class TestClusterGeneratorCleanup(TestClusterGenerator generator) : IAsyncDisposable
+public sealed class TestClusterGeneratorCleanup : IAsyncDisposable
 {
-    public ValueTask DisposeAsync() => generator.ResetAsync();
+    private readonly TestClusterGenerator _generator;
+    private int _disposed;
+
+    public TestClusterGeneratorCleanup(TestClusterGenerator generator)
+    {
+        _generator = generator;
+        AppDomain.CurrentDomain.ProcessExit += OnProcessExit;
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (Interlocked.Exchange(ref _disposed, 1) != 0)
+        {
+            return;
+        }
+
+        AppDomain.CurrentDomain.ProcessExit -= OnProcessExit;
+        await _generator.ResetAsync().ConfigureAwait(false);
+    }
+
+    private void OnProcessExit(object? sender, EventArgs e)
+    {
+        DisposeAsync().AsTask().GetAwaiter().GetResult();
+    }
 }

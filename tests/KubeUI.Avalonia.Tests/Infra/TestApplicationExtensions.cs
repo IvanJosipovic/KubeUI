@@ -23,7 +23,8 @@ internal static class TestApplicationExtensions
             .CreateAsync(config, TestContext.Current.CancellationToken);
         services.GetRequiredService<ClusterManager>().AddCluster(cluster.Cluster);
 
-        var workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().GetCluster(cluster.Cluster.Name)
+            ?? throw new InvalidOperationException($"Cluster workspace '{cluster.Cluster.Name}' was not created.");
         if (connect)
         {
             await workspace.Connect();
