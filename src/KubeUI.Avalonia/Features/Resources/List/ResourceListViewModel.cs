@@ -502,7 +502,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                 _logger.LogError(ex, "Error creating Control");
                 return new TextBlock { Text = ex.Message };
             }
-        }, supportsRecycling: true);
+        }, supportsRecycling: false);
     }
 
     private static DataGridColumnDefinitionOptions BuildColumnOptions(IResourceListColumn columnDefinition)
@@ -534,7 +534,19 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
 
     private void FilteringModelOnFilteringChanged(object? sender, FilteringChangedEventArgs e)
     {
-        _filteringAdapterFactory.UpdateFilter(e.NewDescriptors);
+        var descriptors = e.NewDescriptors;
+        if (ResourceConfig?.IsNamespaced == true
+            && SelectedNamespaces.Count > 0
+            && !descriptors.Any(descriptor => string.Equals(
+                descriptor.ColumnId?.ToString(),
+                NamespaceScopeFilterId,
+                StringComparison.Ordinal)))
+        {
+            SetNamespaceFilter();
+            descriptors = FilteringModel.Descriptors;
+        }
+
+        _filteringAdapterFactory.UpdateFilter(descriptors);
         var filterSubject = _filterSubject ?? throw new InvalidOperationException("Filter subject has not been initialized.");
         filterSubject.OnNext(_filteringAdapterFactory.FilterPredicate);
     }

@@ -40,7 +40,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
                     Key = "containers",
                     Name = Assets.Resources.V1PodConfig_Containers!,
                     CustomControl = typeof(PodContainerCellView),
-                    Field = x => x.Spec.Containers.Count + ((x.Spec.InitContainers?.Count) ?? 0),
+                    Field = x => (x.Spec?.Containers?.Count ?? 0) + (x.Spec?.InitContainers?.Count ?? 0),
                     Width = nameof(DataGridLengthUnitType.SizeToCells)
                 },
                 NamespaceColumn(),

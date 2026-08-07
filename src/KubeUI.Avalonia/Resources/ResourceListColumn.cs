@@ -33,7 +33,11 @@ public class ResourceListColumn<T, TValue> : IResourceListColumn where T : class
     public IDataGridColumnValueAccessor ValueAccessor => _valueAccessor ??= new LambdaColumnValueAccessor(GetFieldAccessor());
 
     public Func<object, IComparable?> SortKey =>
-        o => GetFieldValue((T)o) as IComparable;
+        o => GetFieldValue((T)o) switch
+        {
+            IComparable comparable => comparable,
+            _ => null
+        };
 
     public Func<object, string> DisplayValue =>
         o =>

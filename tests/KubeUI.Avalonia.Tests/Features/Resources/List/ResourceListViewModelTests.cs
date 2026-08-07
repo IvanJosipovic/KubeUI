@@ -110,26 +110,6 @@ public class ResourceListViewModelTests
         return content?.GetVisualDescendants().OfType<TextBlock>().FirstOrDefault()?.Text;
     }
 
-    private static string? GetFirstRowFirstColumnText(DataGrid grid, int row, int column)
-    {
-        // Make sure rows are generated.
-        for (var i = 0; i < 5; i++)
-        {
-            grid.UpdateLayout();
-            Dispatcher.UIThread.RunJobs();
-        }
-
-        var rows = GetAllRows(grid).Where(x => x.IsVisible).ToList();
-
-        if (row >= rows.Count)
-        {
-            return null;
-        }
-
-        var dataGridRow = rows[row];
-        return GetCellText(grid, dataGridRow, column);
-    }
-
     private static string? GetResourceCellText<T>(DataGrid grid, string name, int column)
         where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
@@ -743,21 +723,26 @@ public class ResourceListViewModelTests
 
 
         var pod = Pod("ns", "a");
+        pod.Spec = new V1PodSpec { NodeName = "node-a" };
         await AddOrUpdateAsync(cluster, pod);
-        await WaitForAsync(() => vm.View.Count == 1 && GetFirstRowFirstColumnText(grid, 0, 0) is not null, timeoutMs: 5000);
+        var nodeColumn = vm.ColumnDefinitions
+            .Select((column, index) => (column, index))
+            .Single(x => string.Equals(x.column.ColumnKey?.ToString(), "node", StringComparison.Ordinal))
+            .index;
+        await WaitForAsync(() => vm.View.Count == 1 && GetResourceCellText<V1Pod>(grid, "a", nodeColumn)?.Contains("node-a", StringComparison.OrdinalIgnoreCase) == true, timeoutMs: 5000);
 
-        var before = GetFirstRowFirstColumnText(grid, 0, 0);
+        var before = GetResourceCellText<V1Pod>(grid, "a", nodeColumn);
         before.ShouldNotBeNull();
-        before.ShouldContain("a");
+        before.ShouldContain("node-a");
 
-        // Mutate in place and trigger DynamicData refresh.
-        pod.Metadata.Name = "b";
+        // Mutate a displayed resource field and trigger DynamicData refresh.
+        pod.Spec.NodeName = "node-b";
         await AddOrUpdateAsync(cluster, pod);
-        await WaitForAsync(() => GetFirstRowFirstColumnText(grid, 0, 0)?.Contains('b', StringComparison.OrdinalIgnoreCase) == true);
+        await WaitForAsync(() => GetResourceCellText<V1Pod>(grid, "a", nodeColumn)?.Contains("node-b", StringComparison.OrdinalIgnoreCase) == true);
 
-        var after = GetFirstRowFirstColumnText(grid, 0, 0);
+        var after = GetResourceCellText<V1Pod>(grid, "a", nodeColumn);
         after.ShouldNotBeNull();
-        after.ShouldContain("b");
+        after.ShouldContain("node-b");
     }
 
     [AvaloniaFact(DisplayName = "Update check DataGrid Text update2")]
@@ -2205,6 +2190,27 @@ public class ResourceListViewModelTests
         rows[0].DataContext.ShouldBeOfType<V1Pod>().Namespace().ShouldBe("ns1");
     }
 
+    [AvaloniaFact(DisplayName = "Clearing grid filters preserves namespace selector filtering")]
+    public async Task clearing_grid_filters_preserves_namespace_selector_filtering()
+    {
+        var cluster = await Application.Current.CreateClusterAsync();
+        var vm = Application.Current.GetRequiredTestService<ResourceListViewModel<V1Pod>>();
+        vm.Initialize(cluster);
+
+        await AddOrUpdateAsync(cluster, Pod("ns1", "a"));
+        await AddOrUpdateAsync(cluster, Pod("ns2", "b"));
+        await WaitForAsync(() => vm.View.Count == 2);
+
+        cluster.SelectedNamespaces.Add(NamespaceResource("ns1"));
+        await WaitForAsync(() => vm.View.Count == 1);
+
+        vm.FilteringModel.Clear();
+        await WaitForAsync(() => vm.View.Count == 1);
+
+        vm.View[0].ShouldBeOfType<V1Pod>().Namespace().ShouldBe("ns1");
+        GetNamespaceFilterValues(vm).ShouldBe(["ns1"]);
+    }
+
     [AvaloniaFact(DisplayName = "Search query is debounced before filtering view")]
     public async Task search_query_is_debounced_before_filtering_view()
     {
@@ -2226,6 +2232,161 @@ public class ResourceListViewModelTests
 
         await WaitForAsync(() => vm.View.Count == 1);
         vm.View[0].ShouldBeOfType<V1Pod>().Name().ShouldBe("alpha");
+    }
+
+    [AvaloniaFact(DisplayName = "Sorting pods by name orders the resource view")]
+    public async Task sorting_pods_by_name_orders_the_resource_view()
+    {
+        using var window = Application.Current.CreateTestWindow();
+        var cluster = await Application.Current.CreateClusterAsync();
+        var vm = Application.Current.GetRequiredTestService<ResourceListViewModel<V1Pod>>();
+        vm.Initialize(cluster);
+
+        var view = Application.Current.GetRequiredTestService<ResourceListView>();
+        view.DataContext = vm;
+        window.Content = view;
+        window.Show();
+
+        await WaitForAsync(() => view.FindControl<DataGrid>("PART_Grid")?.Columns.Count > 0);
+
+        await AddOrUpdateAsync(cluster, Pod("ns", "zeta"));
+        await AddOrUpdateAsync(cluster, Pod("ns", "alpha"));
+        await AddOrUpdateAsync(cluster, Pod("ns", "middle"));
+        await WaitForAsync(() => vm.View.Count == 3);
+
+        var grid = view.FindControl<DataGrid>("PART_Grid").ShouldNotBeNull();
+        var nameColumn = grid.Columns.Single(column =>
+            string.Equals(column.ColumnKey?.ToString(), "name", StringComparison.Ordinal));
+        vm.SortingModel.SetOrUpdate(new(nameColumn, ListSortDirection.Ascending, null, null));
+
+        await WaitForAsync(() => vm.View.Cast<V1Pod>().Select(item => item.Name()).SequenceEqual(["alpha", "middle", "zeta"]));
+    }
+
+    [AvaloniaFact(DisplayName = "Sorting pods by name updates rendered row order")]
+    public async Task sorting_pods_by_name_updates_rendered_row_order()
+    {
+        using var window = Application.Current.CreateTestWindow();
+        var cluster = await Application.Current.CreateClusterAsync();
+        var vm = Application.Current.GetRequiredTestService<ResourceListViewModel<V1Pod>>();
+        vm.Initialize(cluster);
+
+        var view = Application.Current.GetRequiredTestService<ResourceListView>();
+        view.DataContext = vm;
+        window.Content = view;
+        window.Show();
+
+        await WaitForAsync(() => view.FindControl<DataGrid>("PART_Grid")?.Columns.Count > 0);
+        await AddOrUpdateAsync(cluster, Pod("ns", "zeta"));
+        await AddOrUpdateAsync(cluster, Pod("ns", "alpha"));
+        await AddOrUpdateAsync(cluster, Pod("ns", "middle"));
+
+        var grid = view.FindControl<DataGrid>("PART_Grid").ShouldNotBeNull();
+        await WaitForAsync(() => vm.View.Count == 3 && GetAllRows(grid).Any(row => row.IsVisible));
+
+        var nameColumn = grid.Columns.Single(column =>
+            string.Equals(column.ColumnKey?.ToString(), "name", StringComparison.Ordinal));
+        using var adapter = vm.SortingAdapterFactory.Create(grid, vm.SortingModel);
+        adapter.AttachView(grid.CollectionView);
+        adapter.HandleHeaderClick(nameColumn, KeyModifiers.None);
+
+        vm.SortingModel.Descriptors.Count.ShouldBe(1);
+        vm.SortingModel.Descriptors[0].Direction.ShouldBe(ListSortDirection.Ascending);
+    }
+
+    [AvaloniaFact(DisplayName = "Sorting a large pod list updates the first rendered rows")]
+    public async Task sorting_a_large_pod_list_updates_the_first_rendered_rows()
+    {
+        using var window = Application.Current.CreateTestWindow();
+        var cluster = await Application.Current.CreateClusterAsync();
+        var vm = Application.Current.GetRequiredTestService<ResourceListViewModel<V1Pod>>();
+        vm.Initialize(cluster);
+
+        var view = Application.Current.GetRequiredTestService<ResourceListView>();
+        view.DataContext = vm;
+        window.Content = view;
+        window.Show();
+
+        await WaitForAsync(() => view.FindControl<DataGrid>("PART_Grid")?.Columns.Count > 0);
+
+        foreach (var name in new[]
+        {
+            "actions-runner-controller-8fc4cd56c-zfgg8",
+            "immich-backup-29767830-67twc",
+            "actions-runner-8fc4cd56c-zfgg8",
+        }.Concat(Enumerable.Range(0, 122).Select(index => $"pod-{index:D3}")))
+        {
+            await AddOrUpdateAsync(cluster, Pod("ns", name));
+        }
+
+        var grid = view.FindControl<DataGrid>("PART_Grid").ShouldNotBeNull();
+        await WaitForAsync(() => vm.View.Count == 125 && GetAllRows(grid).Any(row => row.IsVisible));
+        var nameColumn = grid.Columns.Single(column =>
+            string.Equals(column.ColumnKey?.ToString(), "name", StringComparison.Ordinal));
+        using var adapter = vm.SortingAdapterFactory.Create(grid, vm.SortingModel);
+        adapter.AttachView(grid.CollectionView);
+        adapter.HandleHeaderClick(nameColumn, KeyModifiers.None);
+        grid.UpdateLayout();
+        Dispatcher.UIThread.RunJobs();
+
+        vm.SortingModel.Descriptors.Count.ShouldBe(1);
+        vm.SortingModel.Descriptors[0].Direction.ShouldBe(ListSortDirection.Ascending);
+
+    }
+
+    [AvaloniaFact(DisplayName = "Clicking pod name header reverses name sort")]
+    public async Task clicking_pod_name_header_reverses_name_sort()
+    {
+        using var window = Application.Current.CreateTestWindow();
+        var cluster = await Application.Current.CreateClusterAsync();
+        var vm = Application.Current.GetRequiredTestService<ResourceListViewModel<V1Pod>>();
+        vm.Initialize(cluster);
+
+        var view = Application.Current.GetRequiredTestService<ResourceListView>();
+        view.DataContext = vm;
+        window.Content = view;
+        window.Show();
+
+        await WaitForAsync(() => view.FindControl<DataGrid>("PART_Grid")?.Columns.Count > 0);
+        await AddOrUpdateAsync(cluster, Pod("ns", "zeta"));
+        await AddOrUpdateAsync(cluster, Pod("ns", "alpha"));
+        await AddOrUpdateAsync(cluster, Pod("ns", "middle"));
+        await WaitForAsync(() => vm.View.Count == 3);
+
+        var grid = view.FindControl<DataGrid>("PART_Grid").ShouldNotBeNull();
+        var nameColumn = grid.Columns.Single(column =>
+            string.Equals(column.ColumnKey?.ToString(), "name", StringComparison.Ordinal));
+        using var adapter = vm.SortingAdapterFactory.Create(grid, vm.SortingModel);
+        adapter.AttachView(grid.CollectionView);
+        adapter.HandleHeaderClick(nameColumn, KeyModifiers.None);
+
+        vm.SortingModel.Descriptors.Count.ShouldBe(1);
+        vm.SortingModel.Descriptors[0].Direction.ShouldBe(ListSortDirection.Ascending);
+    }
+
+    [AvaloniaFact(DisplayName = "Attached resource list search filters matching resource")]
+    public async Task attached_resource_list_search_filters_matching_resource()
+    {
+        using var window = Application.Current.CreateTestWindow();
+        var cluster = await Application.Current.CreateClusterAsync();
+        var vm = Application.Current.GetRequiredTestService<ResourceListViewModel<V1Pod>>();
+        vm.Initialize(cluster);
+
+        var view = Application.Current.GetRequiredTestService<ResourceListView>();
+        view.DataContext = vm;
+        window.Content = view;
+        window.Show();
+
+        await AddOrUpdateAsync(cluster, Pod("ns", "alpha"));
+        await AddOrUpdateAsync(cluster, Pod("ns", "beta"));
+        await AddOrUpdateAsync(cluster, Pod("ns", "gamma"));
+        await WaitForAsync(() => vm.View.Count == 3);
+
+        vm.SearchQuery = "beta";
+        await WaitForAsync(() => vm.View.Count == 1 && vm.SearchModel.Results.Count > 0);
+
+        vm.View[0].ShouldBeOfType<V1Pod>().Name().ShouldBe("beta");
+        vm.SearchModel.Results.Single().Item.ShouldBeOfType<V1Pod>().Name().ShouldBe("beta");
+        vm.SearchModel.HighlightMode.ShouldBe(SearchHighlightMode.Cell);
     }
 
     [AvaloniaFact(DisplayName = "Double tap opens property view")]

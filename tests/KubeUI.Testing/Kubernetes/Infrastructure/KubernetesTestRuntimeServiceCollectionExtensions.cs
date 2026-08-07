@@ -11,9 +11,7 @@ public static class KubernetesTestRuntimeServiceCollectionExtensions
         services.AddSingleton<TestClusterGeneratorCleanup>();
         services.AddSingleton<TestClusterConfig>();
         services.AddSingleton<IClusterRuntime>(sp =>
-        {
-            return sp.GetRequiredService<ClusterManager>().Clusters.Single();
-        });
+            sp.GetService<ClusterManager>()!.Clusters.Single());
 
         return services;
     }

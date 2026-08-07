@@ -107,7 +107,8 @@ public sealed class Fluent : AvaloniaStyles
                 [Typography.AppFontSizeResourceKey] = Typography.DefaultAppFontSize,
                 [Typography.CodeFontFamilyResourceKey] = new FontFamily(Typography.CodeFontFamilyName),
                 [Typography.CodeFontSizeResourceKey] = Typography.DefaultCodeFontSize,
-                [Typography.TitleFontSizeResourceKey] = Typography.DefaultTitleFontSize
+                [Typography.TitleFontSizeResourceKey] = Typography.DefaultTitleFontSize,
+                [Typography.MetadataFontSizeResourceKey] = Typography.DefaultMetadataFontSize
             }
         };
 

@@ -13,6 +13,7 @@ internal static class Typography
     internal const double DefaultAppFontSize = 13d;
     internal const double DefaultCodeFontSize = 12d;
     internal const double DefaultTitleFontSize = 24d;
+    internal const double DefaultMetadataFontSize = 11d;
     internal const string IconFontSizeOneCharacter = "14";
     internal const string IconFontSizeTwoCharacters = "10";
     internal const string IconFontSizeThreeOrMoreCharacters = "8";

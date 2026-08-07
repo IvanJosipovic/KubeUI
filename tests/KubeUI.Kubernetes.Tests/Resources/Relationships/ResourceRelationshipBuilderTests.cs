@@ -115,33 +115,47 @@ public sealed class ResourceRelationshipBuilderTests
         graph.RequiredSeedPrerequisites.ShouldContain(new ResourceSeedPrerequisite(typeof(V1Role)));
         graph.RequiredSeedPrerequisites.ShouldContain(new ResourceSeedPrerequisite(typeof(V1ClusterRole)));
         graph.RequiredSeedPrerequisites.ShouldContain(new ResourceSeedPrerequisite(
-            new GroupApiVersionKind("protection.crossplane.io", "v1beta1", "Usage", "usages")));
+            new GroupApiVersionKind("protection.crossplane.io", "v1beta1", "Usage", "usages"),
+            allowServedVersionFallback: true));
         graph.RequiredSeedPrerequisites.ShouldContain(new ResourceSeedPrerequisite(
-            new GroupApiVersionKind("argoproj.io", "v1alpha1", "Application", "applications")));
+            new GroupApiVersionKind("argoproj.io", "v1alpha1", "Application", "applications"),
+            allowServedVersionFallback: true));
         graph.RequiredSeedPrerequisites.ShouldContain(new ResourceSeedPrerequisite(
-            new GroupApiVersionKind("kustomize.toolkit.fluxcd.io", "v1", "Kustomization", "kustomizations")));
+            new GroupApiVersionKind("kustomize.toolkit.fluxcd.io", "v1", "Kustomization", "kustomizations"),
+            allowServedVersionFallback: true));
         graph.RequiredSeedPrerequisites.ShouldContain(new ResourceSeedPrerequisite(
-            new GroupApiVersionKind("helm.toolkit.fluxcd.io", "v2", "HelmRelease", "helmreleases")));
+            new GroupApiVersionKind("helm.toolkit.fluxcd.io", "v2", "HelmRelease", "helmreleases"),
+            allowServedVersionFallback: true));
         graph.RequiredSeedPrerequisites.ShouldContain(new ResourceSeedPrerequisite(
-            new GroupApiVersionKind("gateway.networking.k8s.io", "v1", "GatewayClass", "gatewayclasses")));
+            new GroupApiVersionKind("gateway.networking.k8s.io", "v1", "GatewayClass", "gatewayclasses"),
+            allowServedVersionFallback: true));
         graph.RequiredSeedPrerequisites.ShouldContain(new ResourceSeedPrerequisite(
-            new GroupApiVersionKind("gateway.networking.k8s.io", "v1", "Gateway", "gateways")));
+            new GroupApiVersionKind("gateway.networking.k8s.io", "v1", "Gateway", "gateways"),
+            allowServedVersionFallback: true));
         graph.RequiredSeedPrerequisites.ShouldContain(new ResourceSeedPrerequisite(
-            new GroupApiVersionKind("gateway.networking.k8s.io", "v1", "HTTPRoute", "httproutes")));
+            new GroupApiVersionKind("gateway.networking.k8s.io", "v1", "HTTPRoute", "httproutes"),
+            allowServedVersionFallback: true));
         graph.RequiredSeedPrerequisites.ShouldContain(new ResourceSeedPrerequisite(
-            new GroupApiVersionKind("gateway.networking.k8s.io", "v1", "GRPCRoute", "grpcroutes")));
+            new GroupApiVersionKind("gateway.networking.k8s.io", "v1", "GRPCRoute", "grpcroutes"),
+            allowServedVersionFallback: true));
         graph.RequiredSeedPrerequisites.ShouldContain(new ResourceSeedPrerequisite(
-            new GroupApiVersionKind("gateway.networking.k8s.io", "v1", "BackendTLSPolicy", "backendtlspolicies")));
+            new GroupApiVersionKind("gateway.networking.k8s.io", "v1", "BackendTLSPolicy", "backendtlspolicies"),
+            allowServedVersionFallback: true));
         graph.RequiredSeedPrerequisites.ShouldContain(new ResourceSeedPrerequisite(
-            new GroupApiVersionKind("gateway.networking.k8s.io", "v1", "ListenerSet", "listenersets")));
+            new GroupApiVersionKind("gateway.networking.k8s.io", "v1", "ListenerSet", "listenersets"),
+            allowServedVersionFallback: true));
         graph.RequiredSeedPrerequisites.ShouldContain(new ResourceSeedPrerequisite(
-            new GroupApiVersionKind("gateway.networking.k8s.io", "v1", "ReferenceGrant", "referencegrants")));
+            new GroupApiVersionKind("gateway.networking.k8s.io", "v1", "ReferenceGrant", "referencegrants"),
+            allowServedVersionFallback: true));
         graph.RequiredSeedPrerequisites.ShouldContain(new ResourceSeedPrerequisite(
-            new GroupApiVersionKind("gateway.networking.k8s.io", "v1", "TCPRoute", "tcproutes")));
+            new GroupApiVersionKind("gateway.networking.k8s.io", "v1", "TCPRoute", "tcproutes"),
+            allowServedVersionFallback: true));
         graph.RequiredSeedPrerequisites.ShouldContain(new ResourceSeedPrerequisite(
-            new GroupApiVersionKind("gateway.networking.k8s.io", "v1", "TLSRoute", "tlsroutes")));
+            new GroupApiVersionKind("gateway.networking.k8s.io", "v1", "TLSRoute", "tlsroutes"),
+            allowServedVersionFallback: true));
         graph.RequiredSeedPrerequisites.ShouldContain(new ResourceSeedPrerequisite(
-            new GroupApiVersionKind("gateway.networking.k8s.io", "v1", "UDPRoute", "udproutes")));
+            new GroupApiVersionKind("gateway.networking.k8s.io", "v1", "UDPRoute", "udproutes"),
+            allowServedVersionFallback: true));
     }
 
     [Fact]
@@ -1304,11 +1318,14 @@ public sealed class ResourceRelationshipBuilderTests
             new("v1", V1ConfigMap.KubeKind, "demo", "kustomize-managed", null),
             ResourceRelationshipKind.GitOps));
         graph.RequiredSeedPrerequisites.ShouldContain(new ResourceSeedPrerequisite(
-            new GroupApiVersionKind("argoproj.io", "v1alpha1", "Application", "applications")));
+            new GroupApiVersionKind("argoproj.io", "v1alpha1", "Application", "applications"),
+            allowServedVersionFallback: true));
         graph.RequiredSeedPrerequisites.ShouldContain(new ResourceSeedPrerequisite(
-            new GroupApiVersionKind("kustomize.toolkit.fluxcd.io", "v1", "Kustomization", "kustomizations")));
+            new GroupApiVersionKind("kustomize.toolkit.fluxcd.io", "v1", "Kustomization", "kustomizations"),
+            allowServedVersionFallback: true));
         graph.RequiredSeedPrerequisites.ShouldContain(new ResourceSeedPrerequisite(
-            new GroupApiVersionKind("helm.toolkit.fluxcd.io", "v2", "HelmRelease", "helmreleases")));
+            new GroupApiVersionKind("helm.toolkit.fluxcd.io", "v2", "HelmRelease", "helmreleases"),
+            allowServedVersionFallback: true));
     }
 
     [Fact]
