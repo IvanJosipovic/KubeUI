@@ -227,7 +227,7 @@ public class NavigationViewModelTests
     private static Type? GetCustomResourceType(IClusterRuntime runtime, V1CustomResourceDefinition crd)
     {
         var version = crd.Spec?.Versions?.FirstOrDefault(x => x.Served && x.Storage)?.Name;
-        return version == null ? null : runtime.ModelCache.GetResourceType(crd.Spec.Group, version, crd.Spec.Names.Kind);
+        return version == null ? null : runtime.ModelCatalog.GetResourceType(crd.Spec.Group, version, crd.Spec.Names.Kind);
     }
 
     private static async Task AddGeneratedCustomResourceAsync(ClusterWorkspace cluster, Type resourceType, V1CustomResourceDefinition crd, string @namespace, string name)

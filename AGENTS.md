@@ -55,7 +55,6 @@ Docker
 - Avalonia UI tests and headless UI guidance live in `src/KubeUI.Avalonia/AGENTS.md`.
 - For bugs, write the failing regression test first, confirm the failure reproduces, then implement the fix and rerun the same test before widening scope.
 - Every requested new feature implies corresponding tests; implementation is incomplete until those tests are added or updated and pass.
-- Run .NET tests with `--hangdump --hangdump-timeout 1m`.
 - Tests should not use Task.Sleep or Delay but wait for specific scenarios or use events
 - Before running tests run a dotnet build with --tl:off -clp:ErrorsOnly
 - Each Test Method should dispose all objects created, there should never be shared state between tests

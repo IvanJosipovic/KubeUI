@@ -375,7 +375,7 @@ public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
 
     private void ValidateYamlDocument()
     {
-        ValidationDiagnostics = _yamlValidationService.Validate(YamlDocument.Text, Cluster?.Runtime.ModelCache);
+        ValidationDiagnostics = _yamlValidationService.Validate(YamlDocument.Text, Cluster?.Runtime.ModelCatalog);
 
         if (ValidationDiagnostics.Count > 0)
         {

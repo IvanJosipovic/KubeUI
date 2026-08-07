@@ -8,7 +8,7 @@ namespace KubeUI.Avalonia.Features.Resources.Yaml;
 
 public sealed class YamlSyntaxValidationService : IYamlValidationService
 {
-    public IReadOnlyList<YamlDiagnostic> Validate(string yaml, ModelCache? modelCache = null)
+    public IReadOnlyList<YamlDiagnostic> Validate(string yaml, ClusterModelCatalog? modelCache = null)
     {
         if (string.IsNullOrWhiteSpace(yaml))
         {
@@ -17,7 +17,7 @@ public sealed class YamlSyntaxValidationService : IYamlValidationService
 
         try
         {
-            KubernetesYamlSerializer.LoadAllFromString(yaml, modelCache?.TypeCache, strict: true);
+            KubernetesYamlSerializer.LoadAllFromString(yaml, modelCache?.GetYamlTypeMap(), strict: true);
 
             return [];
         }

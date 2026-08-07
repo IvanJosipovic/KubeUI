@@ -657,7 +657,7 @@ public abstract class ClusterScenarioAssertions
     private static async Task<Type?> WaitForGeneratedTypeAsync(IClusterRuntime cluster, string group, string version, string kind, TimeSpan? timeout = null, int pollIntervalMs = 100, CancellationToken cancellationToken = default)
     {
         return await TestWait.UntilValueAsync(
-            () => cluster.ModelCache.GetResourceType(group, version, kind),
+            () => cluster.ModelCatalog.GetResourceType(group, version, kind),
             timeout ?? TimeSpan.FromSeconds(30),
             TimeSpan.FromMilliseconds(pollIntervalMs),
             cancellationToken == default ? TestContext.Current.CancellationToken : cancellationToken);

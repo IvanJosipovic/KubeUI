@@ -4,5 +4,5 @@ namespace KubeUI.Avalonia.Features.Resources.Yaml;
 
 public interface IYamlValidationService
 {
-    IReadOnlyList<YamlDiagnostic> Validate(string yaml, ModelCache? modelCache = null);
+    IReadOnlyList<YamlDiagnostic> Validate(string yaml, ClusterModelCatalog? modelCache = null);
 }

@@ -5,7 +5,6 @@ using System.Reactive.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Channels;
-using System.Xml;
 using DynamicData;
 using DynamicData.Binding;
 using DynamicData.Kernel;
@@ -92,23 +91,20 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
     public Func<KubernetesClientConfiguration, IKubernetes>? KubernetesClientFactory { get; set; }
 
     [ObservableProperty]
-    public partial ModelCache ModelCache { get; set; }
+    public partial ClusterModelCatalog ModelCatalog { get; set; }
 
     [ObservableProperty]
     public partial ReadOnlyObservableCollection<V1Namespace> Namespaces { get; set; }
 
-    public Cluster(ILogger<Cluster> logger, ILoggerFactory loggerFactory, ModelCache modelCache, IGenerator generator, IClusterSettingsStore settings, IServiceProvider serviceProvider)
+    public Cluster(ILogger<Cluster> logger, ILoggerFactory loggerFactory, ClusterModelCatalog modelCatalog, IGenerator generator, IClusterSettingsStore settings, IServiceProvider serviceProvider)
     {
         _loggerFactory = loggerFactory;
         _logger = logger;
         _portForwardSessionFactory = new KubernetesPortForwardSessionFactory(this);
-        ModelCache = modelCache;
+        ModelCatalog = modelCatalog;
         _generator = generator;
         _generator.SetEnumSupport(false);
 
-        var kubeAssemblyXmlDoc = new XmlDocument();
-        kubeAssemblyXmlDoc.Load(typeof(Generator).Assembly.GetManifestResourceStream("runtime.KubernetesClient.xml"));
-        ModelCache.AddToCache(typeof(V1Deployment).Assembly, kubeAssemblyXmlDoc);
         _settings = settings;
         _serviceProvider = serviceProvider;
         _customResourceDefinitionTask = ProcessCustomResourceDefinitionQueueAsync();
@@ -555,7 +551,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
             return false;
         }
 
-        var (previousType, currentType) = ModelCache.ReplaceCustomResourceDefinition(crd, result.Assembly, result.XmlDocumentation, result.UnloadHandle);
+        var (previousType, currentType) = ModelCatalog.ReplaceCustomResourceDefinition(crd, result.Assembly, result.XmlDocumentation, result.UnloadHandle);
         if (currentType == null)
         {
             _logger.LogWarning("Unable to resolve generated type for CRD {name}", crd.Name());
@@ -574,7 +570,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
     private void RemoveCustomResourceDefinitionArtifacts(V1CustomResourceDefinition crd)
     {
         _customResourceDefinitionSignatures.TryRemove(GetCustomResourceDefinitionKey(crd), out _);
-        var removedType = ModelCache.RemoveCustomResourceDefinition(crd);
+        var removedType = ModelCatalog.RemoveCustomResourceDefinition(crd);
         if (removedType != null)
         {
             InvalidateSeededResource(removedType);
@@ -761,7 +757,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
             var obj = Serialization.KubernetesYaml.Deserialize<KubernetesObject>(yaml);
             try
             {
-                var type = ModelCache.GetResourceType(obj.ApiGroup(), obj.ApiGroupVersion(), obj.Kind);
+                var type = ModelCatalog.GetResourceType(obj.ApiGroup(), obj.ApiGroupVersion(), obj.Kind);
 
                 if (type == null)
                 {
@@ -807,7 +803,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
             var obj = Serialization.KubernetesYaml.Deserialize<KubernetesObject>(yaml);
             try
             {
-                var type = ModelCache.GetResourceType(obj.ApiGroup(), obj.ApiGroupVersion(), obj.Kind);
+                var type = ModelCatalog.GetResourceType(obj.ApiGroup(), obj.ApiGroupVersion(), obj.Kind);
 
                 if (type == null)
                 {
@@ -1079,7 +1075,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
             }
         }
 
-        ModelCache.RemoveAllCustomResourceDefinitions();
+        ModelCatalog.RemoveAllCustomResourceDefinitions();
     }
 
     private void ClearSeededResources()

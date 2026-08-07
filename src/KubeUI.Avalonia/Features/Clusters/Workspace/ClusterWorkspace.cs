@@ -286,7 +286,7 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
             return null;
         }
 
-        var resourceType = Runtime.ModelCache.GetResourceType(crd.Spec.Group, version.Name, crd.Spec.Names.Kind);
+        var resourceType = Runtime.ModelCatalog.GetResourceType(crd.Spec.Group, version.Name, crd.Spec.Names.Kind);
         if (resourceType == null)
         {
             return null;
@@ -476,7 +476,7 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
             return null;
         }
 
-        var resourceType = Runtime.ModelCache.GetResourceType(crd.Spec.Group, version.Name, crd.Spec.Names.Kind);
+        var resourceType = Runtime.ModelCatalog.GetResourceType(crd.Spec.Group, version.Name, crd.Spec.Names.Kind);
         if (resourceType != null)
         {
             return GroupApiVersionKind.From(resourceType);

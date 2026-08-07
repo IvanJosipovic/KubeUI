@@ -2302,7 +2302,7 @@ public class ResourceYamlViewModelTests
               namespace: default
             spec:
               unknownField: value
-            """.ReplaceLineEndings("\n"), cluster.Runtime.ModelCache);
+            """.ReplaceLineEndings("\n"), cluster.Runtime.ModelCatalog);
 
         diagnostics.Count.ShouldBe(1);
         diagnostics[0].Severity.ShouldBe(YamlDiagnosticSeverity.Error);
@@ -2323,7 +2323,7 @@ public class ResourceYamlViewModelTests
               namespace: default
             spec:
               activeDeadlineSeconds: a
-            """.ReplaceLineEndings("\n"), cluster.Runtime.ModelCache);
+            """.ReplaceLineEndings("\n"), cluster.Runtime.ModelCatalog);
 
         diagnostics.Count.ShouldBe(1);
         diagnostics[0].Severity.ShouldBe(YamlDiagnosticSeverity.Error);

@@ -35,7 +35,7 @@ public interface IClusterRuntime
     event Func<V1CustomResourceDefinition, Task>? OnCustomResourceDefinitionReady;
     IKubernetes? Client { get; set; }
     K8SConfiguration KubeConfig { get; set; }
-    ModelCache ModelCache { get; set; }
+    ClusterModelCatalog ModelCatalog { get; set; }
     string KubeConfigPath { get; set; }
     string Name { get; set; }
     ReadOnlyObservableCollection<V1Namespace> Namespaces { get; }
