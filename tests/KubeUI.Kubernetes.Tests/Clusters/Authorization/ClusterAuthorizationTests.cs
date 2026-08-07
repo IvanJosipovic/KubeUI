@@ -167,19 +167,26 @@ public sealed class ClusterAuthorizationTests
         };
         cluster.OnCustomResourceDefinitionReady += handler;
 
-        var queueMethod = typeof(Cluster).GetMethod("QueueCustomResourceDefinition", BindingFlags.Instance | BindingFlags.NonPublic);
-        queueMethod.ShouldNotBeNull();
+        try
+        {
+            var queueMethod = typeof(Cluster).GetMethod("QueueCustomResourceDefinition", BindingFlags.Instance | BindingFlags.NonPublic);
+            queueMethod.ShouldNotBeNull();
 
-        queueMethod!.Invoke(cluster, [first]);
-        await firstEntered.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
-        queueMethod.Invoke(cluster, [second]);
+            queueMethod!.Invoke(cluster, [first]);
+            await firstEntered.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
+            queueMethod.Invoke(cluster, [second]);
 
-        Volatile.Read(ref readyCount).ShouldBe(1);
+            Volatile.Read(ref readyCount).ShouldBe(1);
 
-        releaseFirst.TrySetResult(null);
-        await secondReady.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
-        readyCount.ShouldBe(2);
-        cluster.OnCustomResourceDefinitionReady -= handler;
+            releaseFirst.TrySetResult(null);
+            await secondReady.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
+            readyCount.ShouldBe(2);
+        }
+        finally
+        {
+            releaseFirst.TrySetResult(null);
+            cluster.OnCustomResourceDefinitionReady -= handler;
+        }
     }
 
 }
