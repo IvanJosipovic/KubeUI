@@ -842,6 +842,25 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
             }
         }
 
+        bool changed;
+        do
+        {
+            changed = false;
+            foreach (var relationship in graph.Relationships)
+            {
+                if (relationship.Kind != ResourceRelationshipKind.Owner
+                    || !included.Contains(relationship.Target)
+                    || (!string.IsNullOrEmpty(relationship.Source.Namespace)
+                        && !selectedNamespaces.Contains(relationship.Source.Namespace)))
+                {
+                    continue;
+                }
+
+                changed |= included.Add(relationship.Source);
+            }
+        }
+        while (changed);
+
         return new ResourceRelationshipGraph(
             graph.Resources.Where(resource => included.Contains(GetIdentity(resource))).ToArray(),
             graph.Relationships.Where(relationship => included.Contains(relationship.Source) && included.Contains(relationship.Target)).ToArray(),
@@ -893,6 +912,25 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                 included.Add(relationship.Target);
             }
         }
+
+        bool changed;
+        do
+        {
+            changed = false;
+            foreach (var relationship in delta.Relationships)
+            {
+                if (relationship.Kind != ResourceRelationshipKind.Owner
+                    || !included.Contains(relationship.Target)
+                    || (!string.IsNullOrEmpty(relationship.Source.Namespace)
+                        && !selectedNamespaces.Contains(relationship.Source.Namespace)))
+                {
+                    continue;
+                }
+
+                changed |= included.Add(relationship.Source);
+            }
+        }
+        while (changed);
 
         return new ResourceRelationshipGraph(
             delta.Resources.Where(resource => included.Contains(GetIdentity(resource))).ToArray(),

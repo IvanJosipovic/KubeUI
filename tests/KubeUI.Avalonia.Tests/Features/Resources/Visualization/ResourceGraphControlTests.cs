@@ -620,6 +620,62 @@ public sealed class ResourceGraphControlTests
         filtered.Resources.Select(resource => resource.Name()).ShouldBe(["selected", "direct"]);
     }
 
+    [AvaloniaFact]
+    public void selected_crossplane_namespace_keeps_live_provider_and_function_owner_chains()
+    {
+        TestDynamicResource provider = new()
+        {
+            ApiVersion = "pkg.crossplane.io/v1",
+            Kind = "Provider",
+            Metadata = new() { Name = "provider-databricks", Uid = "provider-databricks-uid" },
+        };
+        TestDynamicResource providerRevision = new()
+        {
+            ApiVersion = "pkg.crossplane.io/v1",
+            Kind = "ProviderRevision",
+            Metadata = new() { Name = "provider-databricks-5bec9d044d7e", Uid = "provider-revision-uid" },
+        };
+        TestDynamicResource function = new()
+        {
+            ApiVersion = "pkg.crossplane.io/v1beta1",
+            Kind = "Function",
+            Metadata = new() { Name = "function-go-templating", Uid = "function-uid" },
+        };
+        TestDynamicResource functionRevision = new()
+        {
+            ApiVersion = "pkg.crossplane.io/v1beta1",
+            Kind = "FunctionRevision",
+            Metadata = new() { Name = "function-go-templating-117c9a95eb57", Uid = "function-revision-uid" },
+        };
+        V1Deployment providerDeployment = CreateDeployment("provider-databricks-5bec9d044d7e");
+        providerDeployment.Metadata.NamespaceProperty = "crossplane-system";
+        V1Deployment functionDeployment = CreateDeployment("function-go-templating-117c9a95eb57");
+        functionDeployment.Metadata.NamespaceProperty = "crossplane-system";
+
+        ResourceRelationshipGraph graph = new(
+            [provider, providerRevision, function, functionRevision, providerDeployment, functionDeployment],
+            [
+                new(GetIdentity(provider), GetIdentity(providerRevision), ResourceRelationshipKind.Owner),
+                new(GetIdentity(providerRevision), GetIdentity(providerDeployment), ResourceRelationshipKind.Owner),
+                new(GetIdentity(function), GetIdentity(functionRevision), ResourceRelationshipKind.Owner),
+                new(GetIdentity(functionRevision), GetIdentity(functionDeployment), ResourceRelationshipKind.Owner),
+            ]);
+
+        var filtered = VisualizationViewModel.FilterToSelectedNamespaces(
+            graph,
+            new HashSet<string> { "crossplane-system" });
+
+        filtered.Resources.Select(resource => $"{resource.Kind}/{resource.Name()}").ShouldBe(
+        [
+            "Provider/provider-databricks",
+            "ProviderRevision/provider-databricks-5bec9d044d7e",
+            "Function/function-go-templating",
+            "FunctionRevision/function-go-templating-117c9a95eb57",
+            "Deployment/provider-databricks-5bec9d044d7e",
+            "Deployment/function-go-templating-117c9a95eb57",
+        ]);
+    }
+
     [Fact]
     public void selected_namespace_keeps_cross_namespace_gateway_parent()
     {
