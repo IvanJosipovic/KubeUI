@@ -39,7 +39,7 @@ internal static class ResourceEventsSelector
 
         List<(Corev1Event Event, DateTime Timestamp)> matches = [];
 
-        foreach (Corev1Event @event in events)
+        foreach (var @event in events)
         {
             if (!MatchesResource(@event, resource))
             {
@@ -111,8 +111,8 @@ internal static class ResourceEventsSelector
 
     private static string FormatSource(Corev1Event @event)
     {
-        string? component = @event.Source?.Component ?? @event.ReportingComponent;
-        string? host = @event.Source?.Host ?? @event.ReportingInstance;
+        var component = @event.Source?.Component ?? @event.ReportingComponent;
+        var host = @event.Source?.Host ?? @event.ReportingInstance;
 
         if (string.IsNullOrWhiteSpace(component))
         {

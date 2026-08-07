@@ -1,4 +1,3 @@
-using System.Collections.ObjectModel;
 using System.Diagnostics;
 using k8s;
 using k8s.KubeConfigModels;
@@ -42,8 +41,6 @@ public sealed partial class ClusterManager : ObservableObject, IClusterRuntimeCa
         _kubeConfigPathProvider = kubeConfigPathProvider;
 
         KubernetesClientConfiguration.ExecStdError += KubernetesClientConfiguration_ExecStdError;
-
-        LoadClusters();
     }
 
     private void KubernetesClientConfiguration_ExecStdError(object? sender, DataReceivedEventArgs e)
@@ -57,13 +54,17 @@ public sealed partial class ClusterManager : ObservableObject, IClusterRuntimeCa
         _logger.LogError("Cluster ExecStdError: {data}", e.Data);
     }
 
-    private void LoadClusters()
+    internal async Task LoadClustersAsync(CancellationToken cancellationToken)
     {
         if (!_settings.KubeConfigPaths.Contains(_kubeConfigPathProvider.DefaultPath))
         {
             try
             {
-                LoadFromConfigFromPath(_kubeConfigPathProvider.DefaultPath);
+                await LoadFromConfigFromPathAsync(_kubeConfigPathProvider.DefaultPath, cancellationToken).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                return;
             }
             catch (Exception ex)
             {
@@ -71,17 +72,56 @@ public sealed partial class ClusterManager : ObservableObject, IClusterRuntimeCa
             }
         }
 
-        foreach (var config in _settings.KubeConfigPaths)
+        foreach (var config in _settings.KubeConfigPaths.ToArray())
         {
             try
             {
-                LoadFromConfigFromPath(config);
+                await LoadFromConfigFromPathAsync(config, cancellationToken).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                return;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error Loading Clusters from KubeConfig: {Config}", config);
             }
         }
+    }
+
+    private async Task LoadFromConfigFromPathAsync(string path, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(path);
+
+        if (!File.Exists(path))
+        {
+            return;
+        }
+
+        lock (_syncRoot)
+        {
+            _settings.AddKubeConfigPath(path);
+        }
+
+        WatchKubeConfig(path);
+
+        var count = 0;
+
+        do
+        {
+            try
+            {
+                var config = await Task.Run(() => KubernetesClientConfiguration.LoadKubeConfig(path), cancellationToken).ConfigureAwait(false);
+                AddClustersFromConfig(config);
+                return;
+            }
+            catch (IOException ex)
+            {
+                _logger.LogError(ex, "Unable to open Kube Config {Path}", path);
+                await Task.Delay(1000, cancellationToken).ConfigureAwait(false);
+                count++;
+            }
+        } while (count <= 5);
     }
 
     public void LoadFromConfigFromPath(string path)
@@ -107,22 +147,7 @@ public sealed partial class ClusterManager : ObservableObject, IClusterRuntimeCa
             try
             {
                 var config = KubernetesClientConfiguration.LoadKubeConfig(path);
-
-                foreach (var item in config.Contexts)
-                {
-                    var cluster = _serviceProvider.GetRequiredService<IClusterRuntime>();
-
-                    cluster.Name = item.Name;
-                    cluster.KubeConfigPath = config.FileName;
-                    _dispatcher.Invoke(() =>
-                    {
-                        if (!ClusterExists(cluster.Name, cluster.KubeConfigPath))
-                        {
-                            Clusters.Add(cluster);
-                        }
-                    });
-                }
-
+                AddClustersFromConfig(config);
                 return;
             }
             catch (IOException ex)
@@ -138,6 +163,11 @@ public sealed partial class ClusterManager : ObservableObject, IClusterRuntimeCa
     {
         ArgumentNullException.ThrowIfNull(kubeConfig);
 
+        AddClustersFromConfig(kubeConfig);
+    }
+
+    private void AddClustersFromConfig(K8SConfiguration kubeConfig)
+    {
         foreach (var item in kubeConfig.Contexts)
         {
             var cluster = _serviceProvider.GetRequiredService<IClusterRuntime>();
@@ -145,22 +175,29 @@ public sealed partial class ClusterManager : ObservableObject, IClusterRuntimeCa
             cluster.Name = item.Name;
             cluster.KubeConfig = kubeConfig;
             cluster.KubeConfigPath = kubeConfig.FileName;
-            _dispatcher.Invoke(() =>
-            {
-                if (!ClusterExists(cluster.Name, cluster.KubeConfigPath))
-                {
-                    Clusters.Add(cluster);
-                }
-            });
+            AddCluster(cluster);
         }
+    }
+
+    public void AddCluster(IClusterRuntime cluster)
+    {
+        ArgumentNullException.ThrowIfNull(cluster);
+
+        _dispatcher.Invoke(() =>
+        {
+            if (!ClusterExists(cluster.Name, cluster.KubeConfigPath))
+            {
+                Clusters.Add(cluster);
+            }
+        });
     }
 
     public void ImportIntoKubeConfig(K8SConfiguration kubeConfig)
     {
         ArgumentNullException.ThrowIfNull(kubeConfig);
 
-        string path = _kubeConfigPathProvider.DefaultPath;
-        K8SConfiguration existing = File.Exists(path)
+        var path = _kubeConfigPathProvider.DefaultPath;
+        var existing = File.Exists(path)
             ? Serialization.KubernetesYaml.Deserialize<K8SConfiguration>(File.ReadAllText(path))
             : new K8SConfiguration();
 
@@ -179,13 +216,13 @@ public sealed partial class ClusterManager : ObservableObject, IClusterRuntimeCa
             FileName = path
         };
 
-        string directory = Path.GetDirectoryName(path) ?? string.Empty;
+        var directory = Path.GetDirectoryName(path) ?? string.Empty;
         if (!string.IsNullOrWhiteSpace(directory))
         {
             Directory.CreateDirectory(directory);
         }
 
-        string yaml = KubernetesYaml.Serialize(merged);
+        var yaml = KubernetesYaml.Serialize(merged);
         File.WriteAllText(path, yaml);
 
         LoadFromConfigFromPath(path);
@@ -217,8 +254,11 @@ public sealed partial class ClusterManager : ObservableObject, IClusterRuntimeCa
 
     public void RemoveCluster(IClusterRuntime cluster)
     {
+        ArgumentNullException.ThrowIfNull(cluster);
+
         if (string.IsNullOrEmpty(cluster.KubeConfigPath) || !File.Exists(cluster.KubeConfigPath))
         {
+            _dispatcher.Invoke(() => Clusters.Remove(cluster));
             return;
         }
 
@@ -245,10 +285,10 @@ public sealed partial class ClusterManager : ObservableObject, IClusterRuntimeCa
 
             if (!string.IsNullOrWhiteSpace(context.ContextDetails?.User))
             {
-                ((List<k8s.KubeConfigModels.User>)config.Users).RemoveAll(c => c.Name == context.ContextDetails.User);
+                ((List<User>)config.Users).RemoveAll(c => c.Name == context.ContextDetails.User);
             }
 
-            ((List<k8s.KubeConfigModels.Context>)config.Contexts).Remove(context);
+            ((List<Context>)config.Contexts).Remove(context);
 
             var yaml = KubernetesYaml.Serialize(config);
             File.WriteAllText(cluster.KubeConfigPath, yaml);
@@ -314,9 +354,9 @@ public sealed partial class ClusterManager : ObservableObject, IClusterRuntimeCa
 
         if (existing is not null)
         {
-            foreach (T item in existing)
+            foreach (var item in existing)
             {
-                string name = getName(item);
+                var name = getName(item);
                 if (!string.IsNullOrWhiteSpace(name))
                 {
                     merged[name] = item;
@@ -326,9 +366,9 @@ public sealed partial class ClusterManager : ObservableObject, IClusterRuntimeCa
 
         if (imported is not null)
         {
-            foreach (T item in imported)
+            foreach (var item in imported)
             {
-                string name = getName(item);
+                var name = getName(item);
                 if (!string.IsNullOrWhiteSpace(name))
                 {
                     merged[name] = item;
@@ -349,4 +389,3 @@ public sealed partial class ClusterManager : ObservableObject, IClusterRuntimeCa
         }
     }
 }
-

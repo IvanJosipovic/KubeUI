@@ -1,15 +1,13 @@
-using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Media;
 using Avalonia.Threading;
 using Dock.Avalonia.Controls;
-using KubeUI.Avalonia.Tests.Infra;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Styles;
 
-public sealed class HostWindowStyleTests : AvaloniaTestBase
+public sealed class HostWindowStyleTests
 {
     [AvaloniaFact]
     public void floating_host_window_uses_themed_background()
@@ -23,7 +21,7 @@ public sealed class HostWindowStyleTests : AvaloniaTestBase
 
         Dispatcher.UIThread.RunJobs();
 
-        bool found = Application.Current!.TryFindResource("SystemRegionBrush", out object? brush);
+        var found = Application.Current!.TryFindResource("SystemRegionBrush", out var brush);
         found.ShouldBeTrue();
         brush.ShouldBeOfType<SolidColorBrush>();
         window.Background.ShouldBeOfType<SolidColorBrush>();

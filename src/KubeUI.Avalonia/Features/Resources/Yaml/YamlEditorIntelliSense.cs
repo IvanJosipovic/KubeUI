@@ -1,12 +1,9 @@
-using System.Collections;
-using System.Collections.ObjectModel;
-using System.ComponentModel;
-using Avalonia;
-using Avalonia.Controls;
-using Avalonia.Media;
+using Avalonia.Controls.Documents;
+using Avalonia.Markup.Xaml.MarkupExtensions;
 using AvaloniaEdit.CodeCompletion;
 using AvaloniaEdit.Document;
 using AvaloniaEdit.Editing;
+using KubeUI.Avalonia.Styles;
 
 namespace KubeUI.Avalonia.Features.Resources.Yaml;
 
@@ -139,14 +136,17 @@ internal static class YamlDocumentationViewFactory
             TextWrapping = TextWrapping.Wrap,
         });
 
-        panel.Children.Add(new TextBlock
+        var typeText = new TextBlock
         {
             Text = FormatTypeDisplayName(documentation.Type),
-            FontSize = 12,
             Opacity = 0.78,
             TextWrapping = TextWrapping.Wrap,
             TextAlignment = TextAlignment.Left,
-        });
+        };
+        typeText
+            .FontFamily(new DynamicResourceExtension(Typography.CodeFontFamilyResourceKey))
+            .FontSize(new DynamicResourceExtension(Typography.CodeFontSizeResourceKey));
+        panel.Children.Add(typeText);
 
         if (!string.IsNullOrWhiteSpace(documentation.PropertySummary))
         {

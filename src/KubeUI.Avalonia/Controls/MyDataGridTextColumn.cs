@@ -3,7 +3,7 @@ namespace KubeUI.Avalonia.Controls;
 /// <summary>
 /// Custom DataGridTextColumn that binds the tooltip of the generated element to the column's binding.
 /// </summary>
-public class MyDataGridTextColumn : DataGridTextColumn
+public class MyDataGridTextColumn : DataGridTextColumn, IDeclarativeViewBase
 {
     protected override Control GenerateElement(DataGridCell cell, object dataItem)
     {

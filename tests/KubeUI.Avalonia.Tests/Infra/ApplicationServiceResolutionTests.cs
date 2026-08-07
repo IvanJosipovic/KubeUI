@@ -1,12 +1,15 @@
+using Avalonia.Headless.XUnit;
+using KubeUI.Avalonia;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Infra;
 
-public sealed class ApplicationServiceResolutionTests : AvaloniaTestBase
+public sealed class ApplicationServiceResolutionTests
 {
-    [Fact]
-    public void ResetForTest_initializes_services_without_throwing()
+    [AvaloniaFact]
+    public void TestAppBuilder_initializes_services()
     {
-        Should.NotThrow(TestApp.ResetForTest);
+        Application.Current.GetTestServices().ShouldNotBeNull();
+        Application.Current.ShouldBeAssignableTo<App>();
     }
 }

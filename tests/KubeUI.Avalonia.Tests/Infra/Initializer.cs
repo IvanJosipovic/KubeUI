@@ -1,11 +1,8 @@
-using Avalonia;
 using Avalonia.Headless;
-using KubeUI.Avalonia.Assets;
+using KubeUI.Avalonia.Styles;
 using KubeUI.Avalonia.Tests.Infra;
 
 [assembly: AvaloniaTestApplication(typeof(TestAppBuilder))]
-[assembly: CollectionBehavior(CollectionBehavior.CollectionPerAssembly, DisableTestParallelization = true)]
-
 namespace KubeUI.Avalonia.Tests.Infra;
 
 public class TestAppBuilder
@@ -22,4 +19,3 @@ public class TestAppBuilder
         .WithInterFont()
         .UseSkia();
 }
-

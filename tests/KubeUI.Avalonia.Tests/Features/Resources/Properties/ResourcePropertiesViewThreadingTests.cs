@@ -1,26 +1,19 @@
-using System.Reflection;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
 using k8s.Models;
-using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
-using KubeUI.Avalonia.Features.Resources.Properties.ViewModels;
-using KubeUI.Avalonia.Features.Resources.Properties.Views;
 using KubeUI.Avalonia.Tests.Infra;
-using Microsoft.Extensions.DependencyInjection;
-using Xunit;
 
 namespace KubeUI.Avalonia.Tests.Features.Resources.Properties;
 
-public sealed class ResourcePropertiesViewThreadingTests : AvaloniaTestBase
+public sealed class ResourcePropertiesViewThreadingTests
 {
     [AvaloniaFact]
     public async Task ClearItems_is_safe_when_invoked_from_background_thread()
     {
-        var workspace = new TestCluster().CreateWorkspace();
-        await workspace.EnsureWorkspaceStateInitializedAsync();
+        var services = Application.Current.GetTestServices();
+        var workspace = await Application.Current.CreateClusterAsync();
 
-        var services = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
         var viewModel = services.GetRequiredService<ResourcePropertiesViewModel<V1Pod>>();
         viewModel.Initialize(workspace, new V1Pod
         {
@@ -53,13 +46,13 @@ public sealed class ResourcePropertiesViewThreadingTests : AvaloniaTestBase
         await Task.Run(() =>
         {
             view.InvokeClear();
-        });
+        }, TestContext.Current.CancellationToken);
 
         // If we reach here without throwing, the invocation was handled safely.
     }
 }
 
-internal sealed class TestableResourcePropertiesView : ResourcePropertiesView
+internal sealed class TestableResourcePropertiesView : ResourcePropertiesView<V1Pod>
 {
     public void InvokeClear() => ClearItems();
 }

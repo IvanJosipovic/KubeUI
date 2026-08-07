@@ -1,18 +1,28 @@
-using System.Collections.Generic;
-using System.Linq;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
+using Avalonia.Media;
+using System.Globalization;
 using Avalonia.Threading;
 using k8s.Models;
-using KubeUI.Avalonia.Resources.Workloads.v1.Pod.Controls;
-using KubeUI.Avalonia.Tests.Infra;
+using KubeUI.Avalonia.Converters;
 using Shouldly;
-using Xunit;
 
 namespace KubeUI.Avalonia.Tests.Features.Workloads.Pod;
 
-public sealed class PodContainerCellTests : AvaloniaTestBase
+public sealed class PodContainerCellTests
 {
+    [AvaloniaFact]
+    public void container_status_brush_resolves_from_application_theme_resources()
+    {
+        var brush = ContainerStatusToBrushConverter.Instance().Convert(
+            new V1ContainerStatus { Name = "web", Ready = true, Started = true },
+            typeof(IBrush),
+            null,
+            CultureInfo.InvariantCulture);
+
+        brush.ShouldBeAssignableTo<IBrush>();
+    }
+
     [AvaloniaFact]
     public async Task Tooltip_viewmodel_contains_type_status_restarts_and_image()
     {
@@ -50,37 +60,44 @@ public sealed class PodContainerCellTests : AvaloniaTestBase
             }
         };
 
-        var view = new PodContainerCell
+        var view = new PodContainerCellView
         {
             DataContext = pod
         };
 
         var window = new Window { Content = view };
-        window.Show();
-        Dispatcher.UIThread.RunJobs();
-        Dispatcher.UIThread.RunJobs();
+        try
+        {
+            window.Show();
+            Dispatcher.UIThread.RunJobs();
+            Dispatcher.UIThread.RunJobs();
 
-        var items = view.ContainerStatuses;
-        items.ShouldNotBeNull();
-        items.Count.ShouldBe(3);
+            var items = view.ContainerStatuses;
+            items.ShouldNotBeNull();
+            items.Count.ShouldBe(3);
 
-        var normal = items.First(i => i.Name == "normal1");
-        normal.Type.ShouldBe("Normal");
-        normal.Status.ShouldBe("Running");
-        normal.Restarts.ShouldBe(2);
-        normal.Image.ShouldBe("normal:image");
+            var normal = items.First(i => i.Name == "normal1");
+            normal.Type.ShouldBe("Normal");
+            normal.Status.ShouldBe("Running");
+            normal.Restarts.ShouldBe(2);
+            normal.Image.ShouldBe("normal:image");
 
-        var init = items.First(i => i.Name == "init1");
-        init.Type.ShouldBe("Init");
-        init.Status.ShouldBe("InitWaiting");
-        init.Restarts.ShouldBe(0);
-        init.Image.ShouldBe("init:image");
+            var init = items.First(i => i.Name == "init1");
+            init.Type.ShouldBe("Init");
+            init.Status.ShouldBe("InitWaiting");
+            init.Restarts.ShouldBe(0);
+            init.Image.ShouldBe("init:image");
 
-        var eph = items.First(i => i.Name == "ephemeral1");
-        eph.Type.ShouldBe("Ephemeral");
-        eph.Status.ShouldBe("CreateContainerConfigError");
-        eph.Restarts.ShouldBe(0);
-        eph.Image.ShouldBe("ephemeral:image");
+            var eph = items.First(i => i.Name == "ephemeral1");
+            eph.Type.ShouldBe("Ephemeral");
+            eph.Status.ShouldBe("CreateContainerConfigError");
+            eph.Restarts.ShouldBe(0);
+            eph.Image.ShouldBe("ephemeral:image");
+        }
+        finally
+        {
+            window.Close();
+        }
     }
 
     [AvaloniaFact]
@@ -108,7 +125,7 @@ public sealed class PodContainerCellTests : AvaloniaTestBase
             }
         };
 
-        var view = new PodContainerCell
+        var view = new PodContainerCellView
         {
             DataContext = firstPod
         };

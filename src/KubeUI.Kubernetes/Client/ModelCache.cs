@@ -70,6 +70,17 @@ public sealed class ModelCache
         }
     }
 
+    public void RemoveAllCustomResourceDefinitions()
+    {
+        lock (_gate)
+        {
+            foreach (var assembly in _unloadHandles.Keys.ToList())
+            {
+                RemoveAssemblyUnsafe(assembly);
+            }
+        }
+    }
+
     public Type? GetResourceType(GroupApiVersionKind type)
     {
         return GetResourceType(type.Group, type.ApiVersion, type.Kind);
@@ -131,11 +142,6 @@ public sealed class ModelCache
     public XmlElement? GetDocumentation(Type type)
     {
         return GetDocumentation(type, 'T', string.Empty);
-    }
-
-    private void AddAssemblyUnsafe(Assembly assembly, XmlDocument xmlDocument)
-    {
-        AddAssemblyUnsafe(assembly, xmlDocument, null);
     }
 
     private void AddAssemblyUnsafe(Assembly assembly, XmlDocument xmlDocument, GeneratedAssemblyUnloadHandle? unloadHandle)
@@ -209,4 +215,3 @@ public sealed class ModelCache
         return (type.FullName ?? type.Name).Replace('+', '.');
     }
 }
-

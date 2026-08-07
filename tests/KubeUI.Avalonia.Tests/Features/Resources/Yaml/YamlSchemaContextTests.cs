@@ -3,7 +3,6 @@ using System.Text.Json.Serialization;
 using System.Xml;
 using AvaloniaEdit.Document;
 using k8s.Models;
-using KubeUI.Kubernetes;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Features.Resources.Yaml;

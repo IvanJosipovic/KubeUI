@@ -1,8 +1,5 @@
 #nullable enable
 
-using System;
-using System.Collections;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.Globalization;
 using Avalonia.Controls;
@@ -10,9 +7,8 @@ using Avalonia.Controls.DataGridFiltering;
 using Avalonia.Controls.DataGridSearching;
 using Avalonia.Controls.DataGridSorting;
 using BenchmarkDotNet.Attributes;
-using BenchmarkDotNet.Jobs;
 using k8s.Models;
-using KubeUI.Avalonia.Features.Resources.List.ViewModels;
+using KubeUI.Avalonia.Features.Resources.List;
 using KubeUI.Avalonia.Resources;
 
 namespace KubeUI.Benchmarks;
@@ -22,7 +18,6 @@ namespace KubeUI.Benchmarks;
 public class ResourceListViewModelBenchmarks
 {
     private IReadOnlyDictionary<string, IResourceListColumn> _columnsByKey = null!;
-    private IReadOnlyList<IResourceListColumn> _orderedColumns = null!;
     private IReadOnlyList<SortingDescriptor> _sortDescriptors = null!;
     private IReadOnlyList<FilteringDescriptor> _filterDescriptors = null!;
     private IReadOnlyList<SearchDescriptor> _searchAllDescriptors = null!;
@@ -47,7 +42,6 @@ public class ResourceListViewModelBenchmarks
     public void Setup()
     {
         var columns = BuildColumns(ColumnCount);
-        _orderedColumns = columns;
         var columnsByKey = new Dictionary<string, IResourceListColumn>(columns.Count, StringComparer.OrdinalIgnoreCase);
         for (var i = 0; i < columns.Count; i++)
         {
@@ -269,6 +263,8 @@ public class ResourceListViewModelBenchmarks
         public string Name { get; }
 
         public string? Width { get; } = null;
+
+        public double MinWidth { get; } = 90;
 
         public SortDirection Sort { get; set; } = SortDirection.None;
 

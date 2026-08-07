@@ -1,9 +1,17 @@
+using System.Diagnostics;
 using System.Reflection;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Markup.Declarative;
+using Avalonia.Threading;
+#if DEBUG
+using Declarative.Avalonia.AgentTools;
+#endif
 using KubeUI.Avalonia;
-using KubeUI.Avalonia.Assets;
+using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
+using KubeUI.Avalonia.Infrastructure.Platform;
 using KubeUI.Avalonia.Services.Settings;
 using KubeUI.Kubernetes;
 using Microsoft.Extensions.DependencyInjection;
@@ -20,8 +28,7 @@ namespace KubeUI.Desktop;
 
 internal static class Program
 {
-    private static readonly object HostLock = new();
-    private static IHost? _host;
+    public static ActivitySource Source { get; } = new ActivitySource("com.KubeUI.Desktop", "1.0.0");
 
     [STAThread]
     public static void Main(string[] args)
@@ -30,61 +37,96 @@ internal static class Program
 
         EnsureMacOsPath();
 
-        EnsureHostInitialized();
+        var host = CreateHostBuilder(args).Build();
+        host.Services.ConfigureKubeUIKubernetesJsonLogging();
+        host.Start();
 
-        BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
+        var builder = CreateAppBuilder(host.Services);
 
-        _host.StopAsync().GetAwaiter().GetResult();
+        builder.StartWithClassicDesktopLifetime(args);
 
-        _host.Dispose();
-        _host = null;
+        host.WaitForShutdown();
+
+        host.Dispose();
     }
 
-    public static AppBuilder BuildAvaloniaApp()
-            => AppBuilder.Configure(() => new App(EnsureHostInitialized().Services))
+    internal static AppBuilder CreateAppBuilder(
+        IServiceProvider services,
+        Func<AppBuilder, AppBuilder>? configurePlatform = null,
+        bool enableDevelopmentTools = true)
+    {
+        RegisterAvaloniaShutdown(services);
+
+        var builder = AppBuilder.Configure(() => new App(services));
+        builder = (configurePlatform ?? (static builder => builder.UsePlatformDetect()))(builder);
+
+        builder = builder
             .ConfigureFonts(fontManager => fontManager.AddFontCollection(new CascadiaMonoFontCollection()))
             .WithInterFont()
-            .UsePlatformDetect();
-
-    private static IHost EnsureHostInitialized()
-    {
-        if (_host != null)
+            .UseServiceProvider(services)
+            .UseComponentControlFactory(type => (Control)ActivatorUtilities.CreateInstance(services, type))
+            .UseViewInitializationStrategy(ViewInitializationStrategy.Lazy);
+#if DEBUG
+        if (enableDevelopmentTools)
         {
-            return _host;
+            builder = builder
+                .UseHotReload()
+                .UseAgentInspector(o =>
+                {
+                    o.EnableInteraction = true;
+                    o.Services = services;
+                });
         }
-
-        lock (HostLock)
-        {
-            if (_host == null)
-            {
-                _host = CreateHostBuilder(Environment.GetCommandLineArgs()).Build();
-                _host.Services.ConfigureKubeUIKubernetesJsonLogging();
-                _host.StartAsync().GetAwaiter().GetResult();
-            }
-        }
-
-        return _host;
+#endif
+        return builder;
     }
 
-    private static HostApplicationBuilder CreateHostBuilder(string[] args)
+    internal static void RegisterAvaloniaShutdown(IServiceProvider services, Action? shutdownAvalonia = null)
     {
-        var builder = Host.CreateApplicationBuilder(args);
-        var settings = SettingsService.LoadSettingsFromFile();
+        shutdownAvalonia ??= static () =>
+        {
+            static void ShutdownAvalonia()
+            {
+                if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+                    desktop.TryShutdown();
+            }
 
+            if (Dispatcher.UIThread.CheckAccess())
+                ShutdownAvalonia();
+            else
+                Dispatcher.UIThread.Post(ShutdownAvalonia);
+
+        };
+
+        services.GetRequiredService<IHostApplicationLifetime>().ApplicationStopping.Register(shutdownAvalonia);
+    }
+
+    internal static HostApplicationBuilder CreateHostBuilder(
+        string[] args,
+        bool includeOptionalServices = true,
+        Action<IServiceCollection>? configureServices = null)
+    {
+        var builder = Host.CreateEmptyApplicationBuilder(new HostApplicationBuilderSettings()
+        {
+            ApplicationName = "KubeUI",
+            Args = args
+        });
         builder.Logging.SetMinimumLevel(LogLevel.Debug);
 
+        var settings = SettingsPersistenceLoader.Load();
         builder.Services.AddKubeUIAppServices();
 
-        if (settings.TelemetryEnabled)
+        if (includeOptionalServices && settings.Settings.TelemetryEnabled)
         {
             builder.Services.AddTelemetry();
         }
 
-        if (settings.LoggingEnabled)
+        if (includeOptionalServices && settings.Settings.LoggingEnabled)
         {
             builder.Services.AddFileLogging();
         }
 
+        configureServices?.Invoke(builder.Services);
         builder.Services.AddSingleton<ServiceDescriptor[]>([.. builder.Services]);
         return builder;
     }
@@ -93,9 +135,10 @@ internal static class Program
     {
         services.AddLogging(loggingBuilder =>
         {
-            if (SettingsService.EnsureSettingDirExists())
+            var settingsDirectory = SettingsPersistenceLoader.SettingsDirectory;
+            if (SettingsPersistenceLoader.EnsureDirectoryExists())
             {
-                loggingBuilder.AddFile(Path.Combine(SettingsService.GetSettingsPath(), "app.log"), x =>
+                loggingBuilder.AddFile(Path.Combine(settingsDirectory, "app.log"), x =>
                 {
                     x.Append = false;
                     x.FileSizeLimitBytes = 1024L * 1024 * 1024;
@@ -165,6 +208,9 @@ internal static class Program
             .WithTracing(tracingProvider =>
             {
                 tracingProvider
+                    .AddSource(Source.Name)
+                    .AddSource(Kubernetes.Client.KubeInstrumentation.SourceName)
+                    .AddSource(Instrumentation.SourceName)
                     .AddHttpClientInstrumentation()
                     .AddOtlpExporter(e =>
                     {

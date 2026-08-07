@@ -1,6 +1,4 @@
-using Avalonia.Controls;
 using k8s.Models;
-using KubeUI.Avalonia.Resources.AccessControl.v1.ClusterRole.Views;
 
 namespace KubeUI.Avalonia.Resources.AccessControl.v1.ClusterRole;
 
@@ -23,4 +21,3 @@ public sealed partial class V1ClusterRoleConfig : ResourceConfigBase<V1ClusterRo
 
     public override Control[] Properties(V1ClusterRole resource) => [new PropertiesView()];
 }
-

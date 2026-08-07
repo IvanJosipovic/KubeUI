@@ -35,6 +35,13 @@ internal sealed class DataGridColumnFilterDefinition
 
 internal sealed class DataGridColumnFilterService
 {
+    private readonly TimeProvider _timeProvider;
+
+    public DataGridColumnFilterService(TimeProvider timeProvider)
+    {
+        _timeProvider = timeProvider;
+    }
+
     public DataGridColumnFilterDefinition CreateDefinition(
         IResourceListColumn columnDefinition,
         DataGridColumnDefinition column,
@@ -64,6 +71,7 @@ internal sealed class DataGridColumnFilterService
             DateFilterFlyoutContext? context = null;
             context = new DateFilterFlyoutContext(
                 columnDefinition.Name,
+                _timeProvider,
                 apply: () => ApplyDateFilter(filteringModel, column, columnDefinition.ValueType, context!.SelectedOperator, context.Amount, context.SelectedUnit.Unit),
                 clear: () =>
                 {
@@ -167,7 +175,7 @@ internal sealed class DataGridColumnFilterService
 
     public void ApplyNumericFilter(IFilteringModel filteringModel, DataGridColumnDefinition column, FilterOperatorChoice filterOperator, double? value, double? secondValue)
     {
-        FilteringOperator effectiveOperator = filterOperator.Operator;
+        var effectiveOperator = filterOperator.Operator;
 
         if (filterOperator.Operator == FilteringOperator.Between)
         {
@@ -301,7 +309,7 @@ internal sealed class DataGridColumnFilterService
         double value,
         double? secondValue)
     {
-        CultureInfo culture = CultureInfo.InvariantCulture;
+        var culture = CultureInfo.InvariantCulture;
         return customId switch
         {
             FilterOperatorId.NumericNotBetween => item => secondValue.HasValue && !Between(GetColumnValue(column, item), [value, secondValue.Value], culture),
@@ -318,7 +326,7 @@ internal sealed class DataGridColumnFilterService
         FilterOperatorId customId,
         object value)
     {
-        CultureInfo culture = CultureInfo.InvariantCulture;
+        var culture = CultureInfo.InvariantCulture;
         return customId switch
         {
             FilterOperatorId.DateNotNewerThan => item => Compare(GetColumnValue(column, item), value, culture) <= 0,
@@ -443,7 +451,7 @@ internal sealed class DataGridColumnFilterService
     public DateTimeOffset ComputeRelativeDateThreshold(double amount, DateRelativeUnit unit)
     {
         var roundedAmount = Math.Max(1, (int)Math.Round(amount, MidpointRounding.AwayFromZero));
-        var now = DateTimeOffset.UtcNow;
+        var now = _timeProvider.GetUtcNow();
 
         return unit switch
         {

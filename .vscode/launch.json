@@ -1,14 +1,16 @@
 {
     "version": "0.2.0",
     "configurations": [
-        {
-            "name": "Launch Desktop",
-            "type": "dotnet",
-            "request": "launch",
-            "projectPath": "${workspaceFolder}/src/KubeUI.Desktop/KubeUI.Desktop.csproj",
-            "args": [],
-            "cwd": "${workspaceFolder}/src/KubeUI.Desktop",
-            "stopAtEntry": false
-        }
+      {
+        "name": "Launch Desktop",
+        "type": "coreclr",
+        "request": "launch",
+        "preLaunchTask": "dotnet: build Desktop",
+        "program": "${workspaceFolder}/src/KubeUI.Desktop/bin/Debug/net10.0/KubeUI.Desktop.dll",
+        "args": [],
+        "cwd": "${workspaceFolder}",
+        "stopAtEntry": false,
+        "console": "internalConsole"
+      }
     ]
 }

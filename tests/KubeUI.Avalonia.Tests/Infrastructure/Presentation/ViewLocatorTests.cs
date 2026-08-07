@@ -3,12 +3,25 @@ using Avalonia.Headless.XUnit;
 using k8s.Models;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Tests.Infra;
+using KubeUI.Kubernetes.Client;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Infrastructure.Presentation;
 
-public sealed class ViewLocatorTests : AvaloniaTestBase
+public sealed class ViewLocatorTests
 {
+    [AvaloniaFact]
+    public void Build_ResolvesClusterSettingsViewFromViewModelsNamespace()
+    {
+        var services = Application.Current.GetTestServices();
+        var locator = services.GetRequiredService<ViewLocator>();
+        var viewModel = services.GetRequiredService<ClusterSettingsViewModel>();
+
+        var view = locator.Build(viewModel);
+
+        view.ShouldBeOfType<ClusterSettingsView>();
+    }
+
     [AvaloniaFact]
     public void Build_EmitsGenericResourceListViewMetricName()
     {
@@ -16,7 +29,7 @@ public sealed class ViewLocatorTests : AvaloniaTestBase
         using var listener = new MeterListener();
         listener.InstrumentPublished = (instrument, meterListener) =>
         {
-            if (instrument.Meter.Name == Instrumentation.MeterName && instrument.Name == Instrumentation.MeterName + "_view_opened")
+            if (instrument.Meter.Name == KubeInstrumentation.MeterName && instrument.Name == KubeInstrumentation.MeterName + "_view_opened")
             {
                 meterListener.EnableMeasurementEvents(instrument);
             }
@@ -33,7 +46,7 @@ public sealed class ViewLocatorTests : AvaloniaTestBase
         });
         listener.Start();
 
-        var services = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
+        var services = Application.Current.GetTestServices();
         var locator = services.GetRequiredService<ViewLocator>();
         var viewModel = services.GetRequiredService<ResourceListViewModel<V1Pod>>();
 

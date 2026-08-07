@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using System.Reflection;
 using System.Text;
 using System.Text.Json.Serialization;
@@ -373,7 +372,8 @@ internal static class YamlSchemaContext
     private static bool IsSequenceEntry(string lineText)
     {
         var trimmed = lineText.TrimStart();
-        return trimmed == "-" || trimmed.StartsWith("- ", StringComparison.Ordinal);
+        return trimmed == "-"
+            || (trimmed.Length > 1 && trimmed[0] == '-');
     }
 
     private static bool TryExtractKey(string trimmedLine, out string key, out string valuePart)
@@ -663,12 +663,12 @@ internal static class YamlSchemaContext
             return null;
         }
 
-        if (typeof(System.Collections.IDictionary).IsAssignableFrom(normalizedType))
+        if (typeof(IDictionary).IsAssignableFrom(normalizedType))
         {
             return null;
         }
 
-        if (typeof(System.Collections.IEnumerable).IsAssignableFrom(normalizedType) && normalizedType != typeof(string))
+        if (typeof(IEnumerable).IsAssignableFrom(normalizedType) && normalizedType != typeof(string))
         {
             var itemType = GetSequenceItemType(normalizedType);
             return CanEnumerateProperties(itemType) ? itemType : null;
@@ -681,8 +681,8 @@ internal static class YamlSchemaContext
     {
         var normalizedType = NormalizeType(type);
         return normalizedType != typeof(string)
-            && typeof(System.Collections.IEnumerable).IsAssignableFrom(normalizedType)
-            && !typeof(System.Collections.IDictionary).IsAssignableFrom(normalizedType);
+            && typeof(IEnumerable).IsAssignableFrom(normalizedType)
+            && !typeof(IDictionary).IsAssignableFrom(normalizedType);
     }
 
     private static bool RequiresNestedBlock(Type type)
@@ -699,7 +699,7 @@ internal static class YamlSchemaContext
             && type != typeof(DateTime)
             && type != typeof(DateTimeOffset)
             && type != typeof(Guid)
-            && !typeof(System.Collections.IDictionary).IsAssignableFrom(type);
+            && !typeof(IDictionary).IsAssignableFrom(type);
     }
 
     private static int CountIndent(string line)

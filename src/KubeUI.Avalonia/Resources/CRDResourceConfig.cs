@@ -8,7 +8,7 @@ using k8s.Models;
 
 namespace KubeUI.Avalonia.Resources;
 
-public partial class CRDResourceConfig<T> : ResourceConfigBase<T> where T : class, IKubernetesObject<V1ObjectMeta>, new()
+public partial class CRDResourceConfig<T> : ResourceConfigBase<T>, ICustomResourceConfig where T : class, IKubernetesObject<V1ObjectMeta>, new()
 {
     private bool _showNamespaces = true;
     private string? _generatedName;
@@ -62,7 +62,7 @@ public partial class CRDResourceConfig<T> : ResourceConfigBase<T> where T : clas
 
                     if (item.Type == "string")
                     {
-                        var exp = JsonPathLINQ.JsonPath.GetExpression<T, string>(item.JsonPath, true);
+                        var exp = JsonPathLINQ.JsonPath.GetExpression<T, string?>(item.JsonPath, true);
 
                         var colDef = CreateColumn(item.Name, exp);
 
@@ -112,7 +112,7 @@ public partial class CRDResourceConfig<T> : ResourceConfigBase<T> where T : clas
                     {
                         var exp = JsonPathLINQ.JsonPath.GetExpression<T, Enum>(item.JsonPath, true);
 
-                        var colDef = CreateColumn<string>(item.Name, TransformToFuncOfString(exp.Body, exp.Parameters).Compile());
+                        var colDef = CreateColumn(item.Name, TransformToFuncOfString(exp.Body, exp.Parameters).Compile());
 
                         _columns.Add(colDef);
                     }
@@ -233,12 +233,12 @@ public partial class CRDResourceConfig<T> : ResourceConfigBase<T> where T : clas
                 bodyAsString = Expression.Condition(
                     Expression.Equal(expression, Expression.Constant(null, expression.Type)),
                     Expression.Constant(string.Empty),
-                    Expression.Call(expression, nameof(object.ToString), Type.EmptyTypes)
+                    Expression.Call(expression, nameof(ToString), Type.EmptyTypes)
                 );
             }
             else
             {
-                bodyAsString = Expression.Call(expression, nameof(object.ToString), Type.EmptyTypes);
+                bodyAsString = Expression.Call(expression, nameof(ToString), Type.EmptyTypes);
             }
 
             // Create a new lambda expression

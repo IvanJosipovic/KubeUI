@@ -1,5 +1,4 @@
 using Avalonia.Collections;
-using Avalonia.Controls;
 using FluentAvalonia.UI.Controls;
 using FluentIcons.Common;
 using HanumanInstitute.MvvmDialogs;
@@ -7,23 +6,22 @@ using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using k8s.Models;
 using KubeUI.Avalonia.Features.Resources.Common;
 using KubeUI.Avalonia.Infrastructure;
-using KubeUI.Avalonia.Infrastructure.DependencyInjection;
 using KubeUI.Avalonia.Infrastructure.Docking;
+using KubeUI.Avalonia.Infrastructure.Platform;
 using KubeUI.Avalonia.Options;
-using KubeUI.Avalonia.Resources.Workloads.v1.Pod.Controls;
-using KubeUI.Avalonia.Resources.Workloads.v1.Pod.ViewModels;
-using KubeUI.Avalonia.Resources.Workloads.v1.Pod.Views;
 using KubeUI.Avalonia.Services.Settings;
 using KubeUI.Kubernetes;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace KubeUI.Avalonia.Resources.Workloads.v1.Pod;
 
 public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
 {
-    public V1PodConfig(IServiceProvider serviceProvider)
+    private readonly IPlatformServices _platformServices;
+
+    public V1PodConfig(IServiceProvider serviceProvider, IPlatformServices platformServices)
         : base(serviceProvider)
     {
+        _platformServices = platformServices;
     }
 
     public override bool IsNamespaced => true;
@@ -41,8 +39,8 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
                 {
                     Key = "containers",
                     Name = Assets.Resources.V1PodConfig_Containers!,
-                    CustomControl = typeof(PodContainerCell),
-                    Field = x => x.Spec.Containers.Count + ((x.Spec.InitContainers?.Count) ?? 0),
+                    CustomControl = typeof(PodContainerCellView),
+                    Field = x => (x.Spec?.Containers?.Count ?? 0) + (x.Spec?.InitContainers?.Count ?? 0),
                     Width = nameof(DataGridLengthUnitType.SizeToCells)
                 },
                 NamespaceColumn(),
@@ -50,7 +48,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
                 {
                     Key = "restarts",
                     Name = Assets.Resources.V1PodConfig_Restarts!,
-                    Field = x => x.Status.ContainerStatuses?.Sum(x => x.RestartCount) ?? 0,
+                    Field = x => x?.Status?.ContainerStatuses?.Sum(x => x.RestartCount) ?? 0,
                     Width = nameof(DataGridLengthUnitType.SizeToHeader)
                 },
                 new ResourceListColumn<V1Pod, string>()
@@ -64,14 +62,14 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
                 {
                     Key = "node",
                     Name = Assets.Resources.V1PodConfig_Node!,
-                    Field = x => x.Spec.NodeName ?? "",
+                    Field = x => x?.Spec?.NodeName ?? "",
                     Width = nameof(DataGridLengthUnitType.SizeToHeader)
                 },
                 new ResourceListColumn<V1Pod, string>()
                 {
                     Key = "qos",
                     Name = Assets.Resources.V1PodConfig_QoS!,
-                    Field = x => x.Status.QosClass ?? "",
+                    Field = x => x?.Status?.QosClass ?? "",
                     Width = nameof(DataGridLengthUnitType.SizeToCells)
                 },
                 AgeColumn(),
@@ -80,27 +78,27 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
                     Key = "status",
                     Name = Assets.Resources.V1PodConfig_Status!,
                     Field = x => x.Status?.Conditions?.FirstOrDefault(x => x.Type == "Ready")?.Status == "True" ? "Running" : x.Status?.Conditions?.FirstOrDefault(x => x.Type == "Ready")?.Reason ?? "Unknown",
-                    CustomControl = typeof(PodStatusCell),
+                    CustomControl = typeof(PodStatusCellView),
                     Width = nameof(DataGridLengthUnitType.SizeToHeader)
                 },
             ];
 
-        if (Cluster.IsMetricsAvailable)
+        if (Cluster.Runtime.IsMetricsAvailable)
         {
             cols.Insert(3, new ResourceListColumn<V1Pod, decimal>()
             {
                 Key = "cpu",
                 Name = Assets.Resources.V1PodConfig_CPU!,
-                CustomControl = typeof(PodMetricCPUCell),
-                Field = x => Cluster.PodMetrics.FirstOrDefault(y => y.Name() == x.Name() && y.Namespace() == x.Namespace())?.Containers.Sum(z => z.Usage["cpu"]) ?? 0,
+                CustomControl = typeof(PodMetricCPUCellView),
+                Field = x => Cluster.Runtime.PodMetrics.FirstOrDefault(y => y.Name() == x.Name() && y.Namespace() == x.Namespace())?.Containers.Sum(z => z.Usage["cpu"]) ?? 0,
                 Width = "80"
             });
             cols.Insert(4, new ResourceListColumn<V1Pod, decimal>()
             {
                 Key = "memory",
                 Name = Assets.Resources.V1PodConfig_Memory!,
-                CustomControl = typeof(PodMetricMemoryCell),
-                Field = x => Cluster.PodMetrics.FirstOrDefault(y => y.Name() == x.Name() && y.Namespace() == x.Namespace())?.Containers.Sum(z => z.Usage["memory"]) ?? 0,
+                CustomControl = typeof(PodMetricMemoryCellView),
+                Field = x => Cluster.Runtime.PodMetrics.FirstOrDefault(y => y.Name() == x.Name() && y.Namespace() == x.Namespace())?.Containers.Sum(z => z.Usage["memory"]) ?? 0,
                 Width = "80"
             });
         }
@@ -124,72 +122,72 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
         return [
             new()
             {
-                Header = "View Console",
+                Title = Assets.Resources.V1PodConfig_MenuItem_ViewConsole,
                 FluentIcon = Icon.Desktop,
                 Items = selectedItem == null ? null : new AvaloniaList<MenuItemViewModel>([
                     new()
                     {
-                        Header = "Init",
-                        Items = new AvaloniaList<MenuItemViewModel>(initContainers.Select(c => new MenuItemViewModel()
+                        Title = Assets.Resources.V1PodConfig_MenuItem_Init,
+                        Items = [.. initContainers.Select(c => new MenuItemViewModel()
                         {
-                            Header = c.Name,
+                            Title = c.Name,
                             Command = ViewConsoleCommand,
                             CommandParameter = new ArrayList { selectedItem, c },
-                        }).ToList()),
+                        }).ToList()],
                     },
                     new()
                     {
-                        Header = "Normal",
-                        Items = new AvaloniaList<MenuItemViewModel>(containers.Select(c => new MenuItemViewModel()
+                        Title = Assets.Resources.V1PodConfig_MenuItem_Normal,
+                        Items = [.. containers.Select(c => new MenuItemViewModel()
                         {
-                            Header = c.Name,
+                            Title = c.Name,
                             Command = ViewConsoleCommand,
                             CommandParameter = new ArrayList { selectedItem, c },
-                        }).ToList()),
+                        }).ToList()],
                     },
                     new()
                     {
-                        Header = "Ephemeral",
-                        Items = new AvaloniaList<MenuItemViewModel>(ephemeralContainers.Select(c => new MenuItemViewModel()
+                        Title = Assets.Resources.V1PodConfig_MenuItem_Ephemeral,
+                        Items = [.. ephemeralContainers.Select(c => new MenuItemViewModel()
                         {
-                            Header = c.Name,
+                            Title = c.Name,
                             Command = ViewConsoleCommand,
                             CommandParameter = new ArrayList { selectedItem, c },
-                        }).ToList()),
+                        }).ToList()],
                     },
                 ]),
             },
             new()
             {
-                Header = "Attach",
+                Title = Assets.Resources.V1PodConfig_MenuItem_Attach,
                 FluentIcon = Icon.Link,
                 Items = selectedItem == null ? null : new AvaloniaList<MenuItemViewModel>([
                     new()
                     {
-                        Header = "Init",
+                        Title = Assets.Resources.V1PodConfig_MenuItem_Init,
                         Items = [.. initContainers.Select(c => new MenuItemViewModel()
                         {
-                            Header = c.Name,
+                            Title = c.Name,
                             Command = AttachConsoleCommand,
                             CommandParameter = new ArrayList { selectedItem, c },
                         }).ToList()],
                     },
                     new()
                     {
-                        Header = "Normal",
+                        Title = Assets.Resources.V1PodConfig_MenuItem_Normal,
                         Items = [.. containers.Select(c => new MenuItemViewModel()
                         {
-                            Header = c.Name,
+                            Title = c.Name,
                             Command = AttachConsoleCommand,
                             CommandParameter = new ArrayList { selectedItem, c },
                         }).ToList()],
                     },
                     new()
                     {
-                        Header = "Ephemeral",
+                        Title = Assets.Resources.V1PodConfig_MenuItem_Ephemeral,
                         Items = [.. ephemeralContainers.Select(c => new MenuItemViewModel()
                         {
-                            Header = c.Name,
+                            Title = c.Name,
                             Command = AttachConsoleCommand,
                             CommandParameter = new ArrayList { selectedItem, c },
                         }).ToList()],
@@ -198,78 +196,78 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
             },
             new()
             {
-                Header = "View Logs",
+                Title = Assets.Resources.V1PodConfig_MenuItem_ViewLogs,
                 FluentIcon = Icon.TextDescription,
                 Items = selectedItem == null ? null : new AvaloniaList<MenuItemViewModel>([
                     new()
                     {
-                        Header = "Init",
-                        Items = new AvaloniaList<MenuItemViewModel>(initContainers.Select(c => new MenuItemViewModel()
+                        Title = Assets.Resources.V1PodConfig_MenuItem_Init,
+                        Items = [.. initContainers.Select(c => new MenuItemViewModel()
                         {
-                            Header = c.Name,
+                            Title = c.Name,
                             Command = ViewLogsCommand,
                             CommandParameter = new ArrayList { selectedItem, c },
-                        }).ToList()),
+                        }).ToList()],
                     },
                     new()
                     {
-                        Header = "Normal",
-                        Items = new AvaloniaList<MenuItemViewModel>(containers.Select(c => new MenuItemViewModel()
+                        Title = Assets.Resources.V1PodConfig_MenuItem_Normal,
+                        Items = [.. containers.Select(c => new MenuItemViewModel()
                         {
-                            Header = c.Name,
+                            Title = c.Name,
                             Command = ViewLogsCommand,
                             CommandParameter = new ArrayList { selectedItem, c },
-                        }).ToList()),
+                        }).ToList()],
                     },
                     new()
                     {
-                        Header = "Ephemeral",
-                        Items = new AvaloniaList<MenuItemViewModel>(ephemeralContainers.Select(c => new MenuItemViewModel()
+                        Title = Assets.Resources.V1PodConfig_MenuItem_Ephemeral,
+                        Items = [.. ephemeralContainers.Select(c => new MenuItemViewModel()
                         {
-                            Header = c.Name,
+                            Title = c.Name,
                             Command = ViewLogsCommand,
                             CommandParameter = new ArrayList { selectedItem, c },
-                        }).ToList()),
+                        }).ToList()],
                     },
                 ]),
             },
             new()
             {
-                Header = Assets.Resources.V1PodConfig_DebugContainer,
+                Title = Assets.Resources.V1PodConfig_DebugContainer,
                 FluentIcon = Icon.Code,
                 Items = selectedItem == null ? null : new AvaloniaList<MenuItemViewModel>([
                     new()
                     {
-                        Header = Assets.Resources.V1PodConfig_DebugContainer_Pod,
+                        Title = Assets.Resources.V1PodConfig_DebugContainer_Pod,
                         Command = DebugContainerCommand,
                         CommandParameter = new ArrayList { selectedItem },
                     },
                     new()
                     {
-                        Header = "Init",
+                        Title = Assets.Resources.V1PodConfig_MenuItem_Init,
                         Items = [.. initContainers.Select(c => new MenuItemViewModel()
                         {
-                            Header = c.Name,
+                            Title = c.Name,
                             Command = DebugContainerCommand,
                             CommandParameter = new ArrayList { selectedItem, c },
                         }).ToList()],
                     },
                     new()
                     {
-                        Header = "Normal",
+                        Title = Assets.Resources.V1PodConfig_MenuItem_Normal,
                         Items = [.. containers.Select(c => new MenuItemViewModel()
                         {
-                            Header = c.Name,
+                            Title = c.Name,
                             Command = DebugContainerCommand,
                             CommandParameter = new ArrayList { selectedItem, c },
                         }).ToList()],
                     },
                     new()
                     {
-                        Header = "Ephemeral",
+                        Title = Assets.Resources.V1PodConfig_MenuItem_Ephemeral,
                         Items = [.. ephemeralContainers.Select(c => new MenuItemViewModel()
                         {
-                            Header = c.Name,
+                            Title = c.Name,
                             Command = DebugContainerCommand,
                             CommandParameter = new ArrayList { selectedItem, c },
                         }).ToList()],
@@ -278,18 +276,18 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
             },
             new()
             {
-                Header = "Port Forwarding",
+                Title = Assets.Resources.V1PodConfig_MenuItem_PortForwarding,
                 FluentIcon = Icon.CloudFlow,
                 Items = selectedItem == null ? null : new AvaloniaList<MenuItemViewModel>([
                     new()
                     {
-                        Header = "Init",
+                        Title = Assets.Resources.V1PodConfig_MenuItem_Init,
                         Items = [.. initContainers.Select(c => new MenuItemViewModel()
                         {
-                            Header = c.Name,
+                            Title = c.Name,
                             Items = [.. c.Ports?.Select(p => new MenuItemViewModel()
                             {
-                                Header = $"{p.Name} - {p.ContainerPort}",
+                                Title = $"{p.Name} - {p.ContainerPort}",
                                 Command = PortForwardCommand,
                                 CommandParameter = new ArrayList { selectedItem, p },
                             }).ToList() ?? []],
@@ -297,13 +295,13 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
                     },
                     new()
                     {
-                        Header = "Normal",
+                        Title = Assets.Resources.V1PodConfig_MenuItem_Normal,
                         Items = [.. containers.Select(c => new MenuItemViewModel()
                         {
-                            Header = c.Name,
+                            Title = c.Name,
                             Items = [.. c.Ports?.Select(p => new MenuItemViewModel()
                             {
-                                Header = $"{p.Name} - {p.ContainerPort}",
+                                Title = $"{p.Name} - {p.ContainerPort}",
                                 Command = PortForwardCommand,
                                 CommandParameter = new ArrayList { selectedItem, p },
                             }).ToList() ?? []],
@@ -311,13 +309,13 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
                     },
                     new()
                     {
-                        Header = "Ephemeral",
+                        Title = Assets.Resources.V1PodConfig_MenuItem_Ephemeral,
                         Items = [.. ephemeralContainers.Select(c => new MenuItemViewModel()
                         {
-                            Header = c.Name,
+                            Title = c.Name,
                             Items = [.. c.Ports?.Select(p => new MenuItemViewModel()
                             {
-                                Header = $"{p.Name} - {p.ContainerPort}",
+                            Title = string.Format(Assets.Resources.V1PodConfig_MenuItem_PortFormat, p.Name, p.ContainerPort),
                                 Command = PortForwardCommand,
                                 CommandParameter = new ArrayList { selectedItem, p },
                             }).ToList() ?? []],
@@ -350,7 +348,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
         {
             containerName = container.Name;
         }
-        else if (parameters[1] is k8s.Models.V1EphemeralContainer ephemeral)
+        else if (parameters[1] is V1EphemeralContainer ephemeral)
         {
             containerName = ephemeral.Name;
         }
@@ -364,7 +362,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
         vm.Cluster = Cluster;
         vm.Object = pod;
         vm.ContainerName = containerName;
-        vm.Id = $"{nameof(ViewLogs)}-{Cluster.Name}-{pod.Namespace()} - {pod.Name()}-{containerName}";
+        vm.Id = $"{nameof(ViewLogs)}-{Cluster.Runtime.Name}-{pod.Namespace()} - {pod.Name()}-{containerName}";
 
         if (_factory.AddToBottom(vm))
         {
@@ -387,9 +385,9 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
             return false;
         }
 
-        if (parameters?[0] is V1Pod pod && (parameters?[1] is V1Container || parameters?[1] is k8s.Models.V1EphemeralContainer))
+        if (parameters?[0] is V1Pod pod && (parameters?[1] is V1Container || parameters?[1] is V1EphemeralContainer))
         {
-            return Cluster.CanI<V1Pod>(Verb.Get, pod.Namespace(), "log");
+            return Cluster.Runtime.Permissions.CanI<V1Pod>(Verb.Get, pod.Namespace(), "log");
         }
 
         return false;
@@ -409,7 +407,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
         {
             containerName = container.Name;
         }
-        else if (parameters[1] is k8s.Models.V1EphemeralContainer ephemeral)
+        else if (parameters[1] is V1EphemeralContainer ephemeral)
         {
             containerName = ephemeral.Name;
         }
@@ -423,7 +421,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
         vm.Cluster = Cluster;
         vm.Object = pod;
         vm.ContainerName = containerName;
-        vm.Id = $"{nameof(ViewConsole)}-{Cluster.Name}-{pod.Namespace()}-{pod.Name()}-{containerName}";
+        vm.Id = $"{nameof(ViewConsole)}-{Cluster.Runtime.Name}-{pod.Namespace()}-{pod.Name()}-{containerName}";
 
         _factory.AddToBottom(vm);
     }
@@ -447,7 +445,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
         {
             containerName = container.Name;
         }
-        else if (parameters[1] is k8s.Models.V1EphemeralContainer ephemeral)
+        else if (parameters[1] is V1EphemeralContainer ephemeral)
         {
             containerName = ephemeral.Name;
         }
@@ -462,7 +460,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
         vm.Object = pod;
         vm.ContainerName = containerName;
         vm.UseAttach = true;
-        vm.Id = $"{nameof(AttachConsole)}-{Cluster.Name}-{pod.Namespace()}-{pod.Name()}-{containerName}";
+        vm.Id = $"{nameof(AttachConsole)}-{Cluster.Runtime.Name}-{pod.Namespace()}-{pod.Name()}-{containerName}";
 
         _factory.AddToBottom(vm);
     }
@@ -479,9 +477,9 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
             return false;
         }
 
-        if (parameters?[0] is V1Pod pod && (parameters?[1] is V1Container || parameters?[1] is k8s.Models.V1EphemeralContainer))
+        if (parameters?[0] is V1Pod pod && (parameters?[1] is V1Container || parameters?[1] is V1EphemeralContainer))
         {
-            return Cluster.CanI<V1Pod>(Verb.Create, pod.Namespace(), subResource);
+            return Cluster.Runtime.Permissions.CanI<V1Pod>(Verb.Create, pod.Namespace(), subResource);
         }
 
         return false;
@@ -495,10 +493,10 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
             return;
         }
 
-        string? targetContainerName = parameters.Count > 1 ? GetContainerName(parameters[1]) : null;
-        string debugContainerImage = ServiceProvider.GetRequiredService<ISettingsService>()
+        var targetContainerName = parameters.Count > 1 ? GetContainerName(parameters[1]) : null;
+        var debugContainerImage = ServiceProvider.GetRequiredService<ISettingsService>()
             .Settings
-            .GetClusterSettings(Cluster)
+            .GetClusterSettings(Cluster.Runtime)
             .DebugContainerImage;
 
         if (string.IsNullOrWhiteSpace(debugContainerImage))
@@ -508,7 +506,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
 
         try
         {
-            await Cluster.AddPodEphemeralDebugContainer(pod, targetContainerName, debugContainerImage);
+            await Cluster.Runtime.AddPodEphemeralDebugContainer(pod, targetContainerName, debugContainerImage);
         }
         catch (Exception ex)
         {
@@ -533,7 +531,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
             return false;
         }
 
-        return Cluster.CanI<V1Pod>(Verb.Update, pod.Namespace(), "ephemeralcontainers");
+        return Cluster.Runtime.Permissions.CanI<V1Pod>(Verb.Update, pod.Namespace(), "ephemeralcontainers");
     }
 
     [RelayCommand(CanExecute = nameof(CanPortForward))]
@@ -541,7 +539,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
     {
         if (parameters[0] is V1Pod pod && parameters[1] is V1ContainerPort containerPort)
         {
-            var pf = Cluster.AddPodPortForward(pod.Namespace(), pod.Name(), containerPort.ContainerPort);
+            var pf = Cluster.Runtime.AddPodPortForward(pod.Namespace(), pod.Name(), containerPort.ContainerPort);
 
             ContentDialogSettings settings = new()
             {
@@ -556,7 +554,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
 
             if (result == FAContentDialogResult.Primary)
             {
-                await App.TopLevel!.Launcher.LaunchUriAsync(new Uri($"http://localhost:{pf.LocalPort}"));
+                await _platformServices.LaunchUriAsync(new Uri($"http://localhost:{pf.LocalPort}"));
             }
         }
     }
@@ -572,7 +570,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
         {
             return containerPort.ContainerPort > 0 &&
                    containerPort.Protocol == "TCP" &&
-                   Cluster.CanI<V1Pod>(Verb.Create, pod.Namespace(), "portforward");
+                   Cluster.Runtime.Permissions.CanI<V1Pod>(Verb.Create, pod.Namespace(), "portforward");
         }
 
         return false;
@@ -580,7 +578,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
 
     private static bool IsContainerTarget(object? value)
     {
-        return value is V1Container || value is k8s.Models.V1EphemeralContainer || value is string;
+        return value is V1Container || value is V1EphemeralContainer || value is string;
     }
 
     private static string? GetContainerName(object? value)
@@ -588,7 +586,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
         return value switch
         {
             V1Container container => container.Name,
-            k8s.Models.V1EphemeralContainer ephemeralContainer => ephemeralContainer.Name,
+            V1EphemeralContainer ephemeralContainer => ephemeralContainer.Name,
             string containerName => containerName,
             _ => null,
         };
@@ -596,4 +594,3 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
 
     public override Control[] Properties(V1Pod resource) => [new PropertiesView()];
 }
-
