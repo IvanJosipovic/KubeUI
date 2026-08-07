@@ -23,7 +23,6 @@ public class TestAppLifecycleBenchmarks
     public void CreateAndDisposeTestApp()
     {
         using var app = new TestApp();
-        app.InitializeServices();
     }
 
     [Benchmark]
@@ -32,7 +31,6 @@ public class TestAppLifecycleBenchmarks
         for (var i = 0; i < 8; i++)
         {
             using var app = new TestApp();
-            app.InitializeServices();
         }
 
         GC.Collect();
