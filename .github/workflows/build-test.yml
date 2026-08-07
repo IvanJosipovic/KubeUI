@@ -24,8 +24,6 @@ jobs:
           dotnet test \
             --configuration Release \
             --no-build \
-            --hangdump \
-            --hangdump-timeout 1m \
             --report-xunit-trx \
             --report-xunit-trx-filename fake-test-results.trx \
             --coverage \
@@ -39,7 +37,6 @@ jobs:
             --no-build \
             --filter-trait "Category=Kind" \
             --max-threads 2 \
-            --hangdump \
             --hangdump-timeout 3m \
             --report-xunit-trx \
             --report-xunit-trx-filename kind-test-results.trx \

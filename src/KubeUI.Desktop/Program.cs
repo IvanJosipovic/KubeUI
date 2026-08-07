@@ -50,12 +50,14 @@ internal static class Program
         host.Dispose();
     }
 
-    internal static AppBuilder CreateAppBuilder(IServiceProvider services)
+    internal static AppBuilder CreateAppBuilder(IServiceProvider services, Func<AppBuilder, AppBuilder>? configurePlatform = null)
     {
         RegisterAvaloniaShutdown(services);
 
-        return AppBuilder.Configure(() => new App(services))
-            .UsePlatformDetect()
+        var builder = AppBuilder.Configure(() => new App(services));
+        builder = (configurePlatform ?? (static builder => builder.UsePlatformDetect()))(builder);
+
+        return builder
             .ConfigureFonts(fontManager => fontManager.AddFontCollection(new CascadiaMonoFontCollection()))
             .WithInterFont()
             .UseServiceProvider(services)

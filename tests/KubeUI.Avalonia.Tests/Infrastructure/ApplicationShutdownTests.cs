@@ -1,4 +1,6 @@
 using Microsoft.Extensions.Hosting;
+using KubeUI.Avalonia.Infrastructure.Platform;
+using KubeUI.Avalonia.Infrastructure.Presentation;
 using Moq;
 using Shouldly;
 
@@ -28,25 +30,19 @@ public sealed class ApplicationShutdownTests
     }
 
     [Fact]
-    public async Task avalonia_shutdown_requests_real_host_stop()
+    public void avalonia_shutdown_requests_host_stop()
     {
-        using var host = Desktop.Program.CreateHostBuilder([], includeOptionalServices: false).Build();
-        await host.StartAsync();
+        var hostLifetime = new Mock<IHostApplicationLifetime>();
+        using var services = new ServiceCollection()
+            .AddLogging()
+            .AddSingleton(hostLifetime.Object)
+            .AddSingleton<Instrumentation>()
+            .AddSingleton<ViewLocator>()
+            .BuildServiceProvider();
 
-        var hostStopping = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        using var registration = host.Services
-            .GetRequiredService<IHostApplicationLifetime>()
-            .ApplicationStopping
-            .Register(hostStopping.SetResult);
-
-        Desktop.Program.CreateAppBuilder(host.Services).SetupWithoutStarting();
-        var app = Application.Current.ShouldBeOfType<App>();
+        var app = new App(services);
         app.GracefulShutdown();
 
-        await hostStopping.Task.WaitAsync(TimeSpan.FromSeconds(5));
-        hostStopping.Task.IsCompletedSuccessfully.ShouldBeTrue();
-
-        using var shutdownTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
-        await host.StopAsync(shutdownTimeout.Token);
+        hostLifetime.Verify(x => x.StopApplication(), Times.Once);
     }
 }

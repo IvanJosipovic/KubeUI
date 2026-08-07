@@ -9,6 +9,7 @@
 
     <UseMicrosoftTestingPlatformRunner>true</UseMicrosoftTestingPlatformRunner>
     <TestingPlatformDotnetTestSupport>true</TestingPlatformDotnetTestSupport>
+    <TestingPlatformCommandLineArguments>--hangdump --hangdump-timeout 1m</TestingPlatformCommandLineArguments>
   </PropertyGroup>
 
   <ItemGroup>
