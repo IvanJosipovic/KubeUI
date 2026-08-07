@@ -33,7 +33,7 @@ public class ClusterCrdModelCatalogTests
 
         var secondMap = cache.GetYamlTypeMap();
         secondMap.ShouldNotBeSameAs(firstMap);
-        secondMap["/v1/Pod"].ShouldBe(typeof(V1Pod));
+        secondMap["v1/Pod"].ShouldBe(typeof(V1Pod));
     }
 
     [Fact]
