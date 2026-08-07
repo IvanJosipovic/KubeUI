@@ -37,7 +37,6 @@ jobs:
             --no-build \
             --filter-trait "Category=Kind" \
             --max-threads 2 \
-            --hangdump-timeout 3m \
             --report-xunit-trx \
             --report-xunit-trx-filename kind-test-results.trx \
             --coverage \

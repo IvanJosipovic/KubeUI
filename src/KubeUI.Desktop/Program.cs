@@ -50,28 +50,35 @@ internal static class Program
         host.Dispose();
     }
 
-    internal static AppBuilder CreateAppBuilder(IServiceProvider services, Func<AppBuilder, AppBuilder>? configurePlatform = null)
+    internal static AppBuilder CreateAppBuilder(
+        IServiceProvider services,
+        Func<AppBuilder, AppBuilder>? configurePlatform = null,
+        bool enableDevelopmentTools = true)
     {
         RegisterAvaloniaShutdown(services);
 
         var builder = AppBuilder.Configure(() => new App(services));
         builder = (configurePlatform ?? (static builder => builder.UsePlatformDetect()))(builder);
 
-        return builder
+        builder = builder
             .ConfigureFonts(fontManager => fontManager.AddFontCollection(new CascadiaMonoFontCollection()))
             .WithInterFont()
             .UseServiceProvider(services)
             .UseComponentControlFactory(type => (Control)ActivatorUtilities.CreateInstance(services, type))
-            .UseViewInitializationStrategy(ViewInitializationStrategy.Lazy)
+            .UseViewInitializationStrategy(ViewInitializationStrategy.Lazy);
 #if DEBUG
-            .UseHotReload()
-            .UseAgentInspector(o =>
-            {
-                o.EnableInteraction = true;
-                o.Services = services;
-            })
+        if (enableDevelopmentTools)
+        {
+            builder = builder
+                .UseHotReload()
+                .UseAgentInspector(o =>
+                {
+                    o.EnableInteraction = true;
+                    o.Services = services;
+                });
+        }
 #endif
-            ;
+        return builder;
     }
 
     internal static void RegisterAvaloniaShutdown(IServiceProvider services, Action? shutdownAvalonia = null)
