@@ -409,6 +409,17 @@ public abstract class ClusterRuntimeAssertions
             {
                 Name = "imported-pod",
                 NamespaceProperty = "default"
+            },
+            Spec = new V1PodSpec
+            {
+                Containers =
+                [
+                    new V1Container
+                    {
+                        Name = "app",
+                        Image = "busybox:1.36"
+                    }
+                ]
             }
         });
         var crdYaml = KubernetesTestData.CustomResourceDefinitionYaml;
