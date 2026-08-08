@@ -69,8 +69,8 @@ public sealed class PodContainerCellTests
         try
         {
             window.Show();
-            Dispatcher.UIThread.RunJobs();
-            Dispatcher.UIThread.RunJobs();
+            await TestApplicationExtensions.WaitForUiAsync();
+            await TestApplicationExtensions.WaitForUiAsync();
 
             var items = view.ContainerStatuses;
             items.ShouldNotBeNull();
@@ -132,13 +132,13 @@ public sealed class PodContainerCellTests
 
         var window = new Window { Content = view };
         window.Show();
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var statusesBeforeRefresh = view.ContainerStatuses;
         statusesBeforeRefresh.ShouldNotBeNull();
 
         view.DataContext = secondPod;
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         view.ContainerStatuses.ShouldBeSameAs(statusesBeforeRefresh);
         view.ContainerStatuses.Count.ShouldBe(1);

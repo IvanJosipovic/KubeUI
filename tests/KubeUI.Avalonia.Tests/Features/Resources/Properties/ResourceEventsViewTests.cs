@@ -66,7 +66,7 @@ public sealed class ResourceEventsViewTests
             }
         };
 
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var window = new Window
         {
@@ -74,11 +74,11 @@ public sealed class ResourceEventsViewTests
         };
 
         window.Show();
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         window.Content = null;
         window.Close();
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
     }
 
     [AvaloniaFact]
@@ -104,11 +104,11 @@ public sealed class ResourceEventsViewTests
                 NamespaceProperty = "default",
             }
         };
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         window.Content = null;
         window.Close();
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         view.DataContext = new V1Pod
         {
@@ -119,7 +119,7 @@ public sealed class ResourceEventsViewTests
             }
         };
 
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
     }
 
     [AvaloniaFact]
@@ -146,7 +146,7 @@ public sealed class ResourceEventsViewTests
             }
         };
 
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var itemsBeforeRefresh = view.Items;
 
@@ -154,7 +154,7 @@ public sealed class ResourceEventsViewTests
         refreshMethod.ShouldNotBeNull();
         refreshMethod.Invoke(view, null);
 
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         view.Items.ShouldBeSameAs(itemsBeforeRefresh);
 
@@ -185,7 +185,7 @@ public sealed class ResourceEventsViewTests
         };
 
         window.Show();
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var updateItemsMethod = typeof(ResourceEventsView).GetMethod("UpdateItems", BindingFlags.Instance | BindingFlags.NonPublic);
         updateItemsMethod.ShouldNotBeNull();
@@ -209,6 +209,6 @@ public sealed class ResourceEventsViewTests
         window.Content = null;
         window.Close();
 
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
     }
 }

@@ -47,8 +47,8 @@ public sealed class ResourcePropertiesViewInitializationTests
         try
         {
             window.Show();
-            Dispatcher.UIThread.RunJobs();
-            Dispatcher.UIThread.RunJobs();
+            await TestApplicationExtensions.WaitForUiAsync();
+            await TestApplicationExtensions.WaitForUiAsync();
 
             trackingConfig.TrackingControl.InitializeCount.ShouldBe(1);
             view.FindControl<StackPanel>("PART_Items")!.Children.ShouldContain(trackingConfig.TrackingControl);
@@ -88,8 +88,8 @@ public sealed class ResourcePropertiesViewInitializationTests
         try
         {
             window.Show();
-            Dispatcher.UIThread.RunJobs();
-            Dispatcher.UIThread.RunJobs();
+            await TestApplicationExtensions.WaitForUiAsync();
+            await TestApplicationExtensions.WaitForUiAsync();
 
             var items = view.FindControl<StackPanel>("PART_Items")!.Children.OfType<PropertyItem>().ToList();
 

@@ -24,7 +24,7 @@ public sealed class ClusterSettingsViewModelTests
         var viewModel = services.GetRequiredService<ClusterSettingsViewModel>();
 
         viewModel.Initialize(workspace);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         viewModel.DebugContainerImage = "example.com/debug:1";
 

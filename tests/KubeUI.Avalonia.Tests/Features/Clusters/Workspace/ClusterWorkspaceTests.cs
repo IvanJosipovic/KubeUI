@@ -41,7 +41,7 @@ public class ClusterWorkspaceTests
         var workspace = await Application.Current.CreateClusterAsync(connect: false);
 
         workspace.Runtime.Status = ClusterStatus.Connecting;
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         workspace.ClusterColor.ShouldBe(Brushes.Orange);
     }
