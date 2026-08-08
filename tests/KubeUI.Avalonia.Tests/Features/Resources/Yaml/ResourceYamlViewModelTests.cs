@@ -2289,6 +2289,23 @@ public class ResourceYamlViewModelTests
     }
 
     [AvaloniaFact]
+    public void YamlSyntaxValidationService_AcceptsBuiltInPodWithClusterModelCatalog()
+    {
+        var service = Application.Current.GetRequiredTestService<IYamlValidationService>();
+        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+
+        var diagnostics = service.Validate("""
+            apiVersion: v1
+            kind: Pod
+            metadata:
+              name: test
+              namespace: default
+            """.ReplaceLineEndings("\n"), cluster.Runtime.ModelCatalog);
+
+        diagnostics.ShouldBeEmpty();
+    }
+
+    [AvaloniaFact]
     public void YamlSyntaxValidationService_ReturnsDiagnostic_ForUnknownKubernetesField()
     {
         var service = Application.Current.GetRequiredTestService<IYamlValidationService>();

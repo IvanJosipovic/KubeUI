@@ -91,11 +91,23 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
     public Func<KubernetesClientConfiguration, IKubernetes>? KubernetesClientFactory { get; set; }
 
     [ObservableProperty]
+    /// <summary>
+    /// Gets or sets the model catalog used to resolve built-in and cluster-specific resource models.
+    /// </summary>
     public partial ClusterModelCatalog ModelCatalog { get; set; }
 
     [ObservableProperty]
     public partial ReadOnlyObservableCollection<V1Namespace> Namespaces { get; set; }
 
+    /// <summary>
+    /// Initializes a cluster runtime and its model catalog.
+    /// </summary>
+    /// <param name="logger">The cluster logger.</param>
+    /// <param name="loggerFactory">The logger factory used by resource informers.</param>
+    /// <param name="modelCatalog">The model catalog owned by this cluster.</param>
+    /// <param name="generator">The custom-resource model generator.</param>
+    /// <param name="settings">The cluster settings store.</param>
+    /// <param name="serviceProvider">The application service provider.</param>
     public Cluster(ILogger<Cluster> logger, ILoggerFactory loggerFactory, ClusterModelCatalog modelCatalog, IGenerator generator, IClusterSettingsStore settings, IServiceProvider serviceProvider)
     {
         _loggerFactory = loggerFactory;

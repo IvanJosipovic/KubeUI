@@ -34,6 +34,15 @@ public sealed class KubernetesModelCatalog
         return GetResourceType(CreateKey(group, version, kind));
     }
 
+    /// <summary>
+    /// Gets YAML resource keys for the built-in Kubernetes model types.
+    /// </summary>
+    /// <returns>A map from YAML resource keys to model types.</returns>
+    public IReadOnlyDictionary<string, Type> GetYamlTypeMap()
+    {
+        return _types.ToDictionary(pair => CreateYamlKey(pair.Key), pair => pair.Value, StringComparer.Ordinal);
+    }
+
     public XmlElement? GetDocumentation(MemberInfo memberInfo)
     {
         return _documentation.TryGetValue(
@@ -112,6 +121,12 @@ public sealed class KubernetesModelCatalog
     private static GroupApiVersionKind CreateKey(string group, string version, string kind)
     {
         return new GroupApiVersionKind(group, version, kind, string.Empty);
+    }
+
+    private static string CreateYamlKey(GroupApiVersionKind key)
+    {
+        var groupPrefix = string.IsNullOrEmpty(key.Group) ? string.Empty : $"{key.Group}/";
+        return $"{groupPrefix}{key.ApiVersion}/{key.Kind}";
     }
 
     private static string CreateMemberDocumentationKey(Type? type, char prefix, string name)

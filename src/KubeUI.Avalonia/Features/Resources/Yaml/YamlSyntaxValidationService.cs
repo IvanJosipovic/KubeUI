@@ -8,7 +8,13 @@ namespace KubeUI.Avalonia.Features.Resources.Yaml;
 
 public sealed class YamlSyntaxValidationService : IYamlValidationService
 {
-    public IReadOnlyList<YamlDiagnostic> Validate(string yaml, ClusterModelCatalog? modelCache = null)
+    /// <summary>
+    /// Validates YAML using the optional cluster model catalog for custom-resource resolution.
+    /// </summary>
+    /// <param name="yaml">The YAML document to validate.</param>
+    /// <param name="modelCatalog">An optional cluster model catalog used for custom-resource types.</param>
+    /// <returns>The validation diagnostics; an empty list indicates valid YAML.</returns>
+    public IReadOnlyList<YamlDiagnostic> Validate(string yaml, ClusterModelCatalog? modelCatalog = null)
     {
         if (string.IsNullOrWhiteSpace(yaml))
         {
@@ -17,7 +23,8 @@ public sealed class YamlSyntaxValidationService : IYamlValidationService
 
         try
         {
-            KubernetesYamlSerializer.LoadAllFromString(yaml, modelCache?.GetYamlTypeMap(), strict: true);
+            var typeMap = modelCatalog?.GetYamlTypeMap().ToDictionary(pair => pair.Key, pair => pair.Value);
+            KubernetesYamlSerializer.LoadAllFromString(yaml, typeMap, strict: true);
 
             return [];
         }

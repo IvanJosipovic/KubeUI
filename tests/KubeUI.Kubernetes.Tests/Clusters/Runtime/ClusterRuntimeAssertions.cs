@@ -392,19 +392,73 @@ public abstract class ClusterRuntimeAssertions
     {
         await using var harness = await CreateHarnessAsync(backend);
         await SeedResourceAsync<V1Namespace>(harness.Cluster);
+        await SeedResourceAsync<V1Pod>(harness.Cluster);
+        await SeedResourceAsync<V1CustomResourceDefinition>(harness.Cluster);
 
-        var yaml = Serialization.KubernetesYaml.Serialize(new V1Namespace
+        var namespaceYaml = Serialization.KubernetesYaml.Serialize(new V1Namespace
         {
             ApiVersion = V1Namespace.KubeApiVersion,
             Kind = V1Namespace.KubeKind,
             Metadata = new V1ObjectMeta { Name = "test" }
         });
+        var podYaml = Serialization.KubernetesYaml.Serialize(new V1Pod
+        {
+            ApiVersion = V1Pod.KubeApiVersion,
+            Kind = V1Pod.KubeKind,
+            Metadata = new V1ObjectMeta
+            {
+                Name = "imported-pod",
+                NamespaceProperty = "default"
+            }
+        });
+        var crdYaml = KubernetesTestData.CustomResourceDefinitionYaml;
 
-        await harness.Cluster.ImportYaml(new MemoryStream(Encoding.UTF8.GetBytes(yaml)));
+        await harness.Cluster.ImportYaml(new MemoryStream(Encoding.UTF8.GetBytes(
+            $"{namespaceYaml}\n---\n{podYaml}\n---\n{crdYaml}")));
 
         var resource = await WaitForResourceAsync<V1Namespace>(harness.Cluster, null, "test");
         resource.ShouldNotBeNull();
         resource.Name().ShouldBe("test");
+
+        var pod = await WaitForResourceAsync<V1Pod>(harness.Cluster, "default", "imported-pod");
+        pod.ShouldNotBeNull();
+        pod.Name().ShouldBe("imported-pod");
+
+        var crd = await WaitForResourceAsync<V1CustomResourceDefinition>(
+            harness.Cluster,
+            null,
+            "tests.kubeui.com");
+        crd.ShouldNotBeNull();
+        crd.Name().ShouldBe("tests.kubeui.com");
+
+        var generatedType = await WaitForGeneratedTypeAsync(harness.Cluster, "kubeui.com", "v1beta1", "Test");
+        generatedType.ShouldNotBeNull();
+
+        await harness.Cluster.Permissions.UpdatePermissionsAllNamespaceAsync(generatedType!, Verb.List);
+        await harness.Cluster.Permissions.UpdatePermissionsAllNamespaceAsync(generatedType!, Verb.Watch);
+        await harness.Cluster.ImportYaml(new MemoryStream(Encoding.UTF8.GetBytes(KubernetesTestData.CustomResourceYaml)));
+
+        var seedMethod = harness.Cluster.GetType()
+            .GetMethods(BindingFlags.Instance | BindingFlags.Public)
+            .Single(method => method.Name == nameof(IClusterRuntime.SeedResource)
+                && method.IsGenericMethodDefinition
+                && method.GetParameters().Length == 1);
+        await (Task)seedMethod.MakeGenericMethod(generatedType!).Invoke(harness.Cluster, [true])!;
+
+        var kind = harness.Cluster.Objects[GroupApiVersionKind.From(generatedType)];
+        var items = kind.GetType().GetProperty("Items")!.GetValue(kind)!;
+        await TestWait.UntilAsync(
+            () => (int)items.GetType().GetProperty("Count")!.GetValue(items)! == 1,
+            TimeSpan.FromSeconds(10),
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        var importedInstance = ((IList)items.GetType().GetProperty("Items")!.GetValue(items)!).Cast<object>().Single();
+        var importedObject = (IKubernetesObject<V1ObjectMeta>)importedInstance;
+        importedObject.Name().ShouldBe("test1");
+        importedObject.Namespace().ShouldBe("default");
+        importedInstance.GetType().GetProperty("Spec")!.GetValue(importedInstance)!
+            .GetType().GetProperty("SomeString")!.GetValue(importedInstance.GetType().GetProperty("Spec")!.GetValue(importedInstance))
+            .ShouldBe("myValue");
     }
 
     protected async Task HandleCrdCore(KubernetesBackend backend)
