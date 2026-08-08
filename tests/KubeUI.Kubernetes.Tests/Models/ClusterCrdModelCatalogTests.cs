@@ -1,35 +1,55 @@
 using System.Xml;
 using k8s.Models;
+using KubernetesClient.Informer.Client;
 using KubernetesCRDModelGen;
 using KubeUI.Kubernetes.Serialization;
 using Shouldly;
 
 namespace KubeUI.Kubernetes.Tests.Models;
 
-public class ModelCacheTests
+public class ClusterCrdModelCatalogTests
 {
     [Fact]
     public void AddToCache_PopulatesTypeCache()
     {
-        var cache = new ModelCache();
+        var cache = new ClusterCrdModelCatalog();
 
         cache.AddToCache(typeof(V1Pod).Assembly, new XmlDocument());
 
         cache.GetResourceType(string.Empty, V1Pod.KubeApiVersion, V1Pod.KubeKind).ShouldBe(typeof(V1Pod));
+        cache.GetResourceType(new GroupApiVersionKind(string.Empty, V1Pod.KubeApiVersion, V1Pod.KubeKind, "pods"))
+            .ShouldBe(typeof(V1Pod));
+    }
+
+    [Fact]
+    public void GetYamlTypeMap_IsLazyAndInvalidatedWhenAssemblyAdded()
+    {
+        var cache = new ClusterCrdModelCatalog();
+
+        var firstMap = cache.GetYamlTypeMap();
+        firstMap.ShouldBeEmpty();
+
+        cache.AddToCache(typeof(V1Pod).Assembly, new XmlDocument());
+
+        var secondMap = cache.GetYamlTypeMap();
+        secondMap.ShouldNotBeSameAs(firstMap);
+        secondMap["v1/Pod"].ShouldBe(typeof(V1Pod));
     }
 
     [Fact]
     public void AddToCache_IgnoresDuplicateAssemblies()
     {
-        var cache = new ModelCache();
+        var cache = new ClusterCrdModelCatalog();
         var xml1 = new XmlDocument();
         var xml2 = new XmlDocument();
+        xml1.LoadXml($"<doc><members><member name=\"T:{typeof(V1Pod).FullName}\"><summary>first</summary></member></members></doc>");
+        xml2.LoadXml($"<doc><members><member name=\"T:{typeof(V1Pod).FullName}\"><summary>second</summary></member></members></doc>");
 
         cache.AddToCache(typeof(V1Pod).Assembly, xml1);
         cache.AddToCache(typeof(V1Pod).Assembly, xml2);
 
-        cache.Cache.Count.ShouldBe(1);
-        cache.Cache[typeof(V1Pod).Assembly].ShouldBe(xml1);
+        cache.GetDocumentation(typeof(V1Pod))?.SelectSingleNode("summary")?.InnerText.ShouldBe("first");
+        cache.GetResourceType(string.Empty, V1Pod.KubeApiVersion, V1Pod.KubeKind).ShouldBe(typeof(V1Pod));
     }
 
     [Fact]
@@ -57,7 +77,7 @@ public class ModelCacheTests
     [Fact]
     public void GetDocumentation_ReturnsXmlForGeneratedNestedCrdMember()
     {
-        var cache = new ModelCache();
+        var cache = new ClusterCrdModelCatalog();
         var xml = new XmlDocument();
         xml.LoadXml($$"""
             <doc>
@@ -83,9 +103,9 @@ public class ModelCacheTests
         documentation.SelectSingleNode("summary")?.InnerText.ShouldContain("Some string description.");
     }
 
-    private static ModelCache CreateModelCache()
+    private static ClusterCrdModelCatalog CreateModelCache()
     {
-        var cache = new ModelCache();
+        var cache = new ClusterCrdModelCatalog();
         var xml = new XmlDocument();
         using var stream = typeof(Generator).Assembly.GetManifestResourceStream("runtime.KubernetesClient.xml");
         stream.ShouldNotBeNull();
@@ -207,8 +227,10 @@ spec:
         result.XmlDocumentation.ShouldNotBeNull();
         result.UnloadHandle.ShouldNotBeNull();
 
-        var cache = new ModelCache();
+        var cache = new ClusterCrdModelCatalog();
         cache.ReplaceCustomResourceDefinition(crd, result.Assembly!, result.XmlDocumentation!, result.UnloadHandle);
+
+        cache.GetYamlTypeMap()["example.com/v1/Widget"].ShouldNotBeNull();
 
         result.UnloadHandle!.IsUnloaded.ShouldBeFalse();
 
@@ -216,7 +238,7 @@ spec:
 
         result.UnloadHandle.IsUnloaded.ShouldBeTrue();
         cache.CheckIfCRDExists(crd).ShouldBeFalse();
+        cache.GetYamlTypeMap().ShouldNotContainKey("example.com/v1/Widget");
     }
 
 }
-

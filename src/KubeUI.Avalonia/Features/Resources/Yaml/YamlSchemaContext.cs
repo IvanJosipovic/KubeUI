@@ -11,7 +11,7 @@ internal static class YamlSchemaContext
 {
     private const int IndentationSize = 2;
 
-    public static YamlContextResult Resolve(TextDocument document, int offset, Type rootType, ModelCache modelCache)
+    public static YamlContextResult Resolve(TextDocument document, int offset, Type rootType, ClusterModelCatalog modelCache)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(rootType);
@@ -67,7 +67,7 @@ internal static class YamlSchemaContext
             suggestions);
     }
 
-    public static bool TryCreateSequenceEntryInsertion(TextDocument document, int offset, Type rootType, ModelCache modelCache, out string insertionText)
+    public static bool TryCreateSequenceEntryInsertion(TextDocument document, int offset, Type rootType, ClusterModelCatalog modelCache, out string insertionText)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(rootType);
@@ -233,7 +233,7 @@ internal static class YamlSchemaContext
         string lineText,
         YamlFrame frame,
         Type containerType,
-        ModelCache modelCache,
+        ClusterModelCatalog modelCache,
         out YamlContextResult context)
     {
         context = default!;
@@ -424,7 +424,7 @@ internal static class YamlSchemaContext
 
     private static IReadOnlyList<YamlCompletionItemInfo> GetCompletionItems(
         Type containerType,
-        ModelCache modelCache,
+        ClusterModelCatalog modelCache,
         IReadOnlySet<string>? usedKeys = null)
     {
         var normalizedType = NormalizeType(containerType);
@@ -443,7 +443,7 @@ internal static class YamlSchemaContext
             .ToArray();
     }
 
-    private static YamlCompletionItemInfo? CreateCompletionItem(PropertyInfo property, ModelCache modelCache)
+    private static YamlCompletionItemInfo? CreateCompletionItem(PropertyInfo property, ClusterModelCatalog modelCache)
     {
         var yamlName = GetYamlPropertyName(property);
         if (string.IsNullOrWhiteSpace(yamlName))
@@ -479,7 +479,7 @@ internal static class YamlSchemaContext
         return null;
     }
 
-    private static YamlDocumentationInfo? BuildDocumentation(MemberInfo? member, Type fallbackType, ModelCache modelCache)
+    private static YamlDocumentationInfo? BuildDocumentation(MemberInfo? member, Type fallbackType, ClusterModelCatalog modelCache)
     {
         if (member is PropertyInfo property)
         {

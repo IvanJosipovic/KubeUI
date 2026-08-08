@@ -461,7 +461,7 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
                 AssociatedObject.Document,
                 AssociatedObject.CaretOffset,
                 _currentViewModel.Object.GetType(),
-                _currentViewModel.Cluster.Runtime.ModelCache,
+                _currentViewModel.Cluster.Runtime.ModelCatalog,
                 out var insertionText))
         {
             return false;
@@ -678,7 +678,7 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
             AssociatedObject.Document,
             AssociatedObject.CaretOffset,
             _currentViewModel.Object.GetType(),
-            _currentViewModel.Cluster.Runtime.ModelCache);
+            _currentViewModel.Cluster.Runtime.ModelCatalog);
 
         var completionItems = context.CompletionItems
             .Where(item => item.Text.StartsWith(context.Key.Prefix, StringComparison.OrdinalIgnoreCase))

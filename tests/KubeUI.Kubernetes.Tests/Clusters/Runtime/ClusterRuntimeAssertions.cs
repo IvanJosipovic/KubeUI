@@ -391,26 +391,76 @@ public abstract class ClusterRuntimeAssertions
     protected async Task ImportYamlCore(KubernetesBackend backend)
     {
         await using var harness = await CreateHarnessAsync(backend);
-        await SeedResourceAsync<V1Namespace>(harness.Cluster);
+        try
+        {
+            await SeedResourceAsync<V1Namespace>(harness.Cluster);
+            await SeedResourceAsync<V1Pod>(harness.Cluster);
+            await SeedResourceAsync<V1CustomResourceDefinition>(harness.Cluster);
 
-        var yaml = Serialization.KubernetesYaml.Serialize(new V1Namespace
+        var namespaceYaml = Serialization.KubernetesYaml.Serialize(new V1Namespace
         {
             ApiVersion = V1Namespace.KubeApiVersion,
             Kind = V1Namespace.KubeKind,
             Metadata = new V1ObjectMeta { Name = "test" }
         });
+        var podYaml = Serialization.KubernetesYaml.Serialize(new V1Pod
+        {
+            ApiVersion = V1Pod.KubeApiVersion,
+            Kind = V1Pod.KubeKind,
+            Metadata = new V1ObjectMeta
+            {
+                Name = "imported-pod",
+                NamespaceProperty = "default"
+            },
+            Spec = new V1PodSpec
+            {
+                Containers =
+                [
+                    new V1Container
+                    {
+                        Name = "app",
+                        Image = "busybox:1.36"
+                    }
+                ]
+            }
+        });
+        var crdYaml = KubernetesTestData.CustomResourceDefinitionYaml;
 
-        await harness.Cluster.ImportYaml(new MemoryStream(Encoding.UTF8.GetBytes(yaml)));
+        using var yamlStream = new MemoryStream(Encoding.UTF8.GetBytes(
+            $"{namespaceYaml}\n---\n{podYaml}\n---\n{crdYaml}"));
+        await harness.Cluster.ImportYaml(yamlStream);
 
         var resource = await WaitForResourceAsync<V1Namespace>(harness.Cluster, null, "test");
         resource.ShouldNotBeNull();
         resource.Name().ShouldBe("test");
+
+        var pod = await WaitForResourceAsync<V1Pod>(harness.Cluster, "default", "imported-pod");
+        pod.ShouldNotBeNull();
+        pod.Name().ShouldBe("imported-pod");
+
+        var crd = await WaitForResourceAsync<V1CustomResourceDefinition>(
+            harness.Cluster,
+            null,
+            "tests.kubeui.com");
+        crd.ShouldNotBeNull();
+        crd.Name().ShouldBe("tests.kubeui.com");
+
+        var generatedType = await WaitForGeneratedTypeAsync(harness.Cluster, "kubeui.com", "v1beta1", "Test");
+        generatedType.ShouldNotBeNull();
+
+        }
+        finally
+        {
+            await harness.Cluster.Disconnect();
+        }
     }
 
-    protected async Task HandleCrdCore(KubernetesBackend backend)
+    protected async Task ImportYamlCrdInstanceCore(KubernetesBackend backend)
     {
         await using var harness = await CreateHarnessAsync(backend);
-        await SeedResourceAsync<V1CustomResourceDefinition>(harness.Cluster);
+        try
+        {
+            await SeedResourceAsync<V1CustomResourceDefinition>(harness.Cluster);
 
         var crd = Serialization.KubernetesYaml.Deserialize<V1CustomResourceDefinition>(KubernetesTestData.CustomResourceDefinitionYaml);
         await harness.CreateAsync(crd, TestContext.Current.CancellationToken);
@@ -445,6 +495,12 @@ public abstract class ClusterRuntimeAssertions
             obj.Namespace().ShouldBe("default");
             var spec = obj.GetType().GetProperty("Spec")!.GetValue(obj)!;
             spec.GetType().GetProperty("SomeString")!.GetValue(spec).ShouldBe("myValue");
+        }
+
+        }
+        finally
+        {
+            await harness.Cluster.Disconnect();
         }
     }
 
@@ -674,7 +730,7 @@ public abstract class ClusterRuntimeAssertions
     private static async Task<Type?> WaitForGeneratedTypeAsync(IClusterRuntime cluster, string group, string version, string kind, TimeSpan? timeout = null, int pollIntervalMs = 100, CancellationToken cancellationToken = default)
     {
         return await TestWait.UntilValueAsync(
-            () => cluster.ModelCache.GetResourceType(group, version, kind),
+            () => cluster.ModelCatalog.GetResourceType(group, version, kind),
             timeout ?? TimeSpan.FromSeconds(30),
             TimeSpan.FromMilliseconds(pollIntervalMs),
             cancellationToken == default ? TestContext.Current.CancellationToken : cancellationToken);

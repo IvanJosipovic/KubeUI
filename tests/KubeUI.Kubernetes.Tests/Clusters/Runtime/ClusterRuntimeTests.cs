@@ -114,7 +114,7 @@ public sealed class ClusterRuntimeTests : ClusterRuntimeAssertions
     [Theory, KubernetesBackendData]
     public Task ImportYaml(KubernetesBackend backend) => ImportYamlCore(backend);
     [Theory, KubernetesBackendData]
-    public Task HandleCRD(KubernetesBackend backend) => HandleCrdCore(backend);
+    public Task ImportYamlCrdInstance(KubernetesBackend backend) => ImportYamlCrdInstanceCore(backend);
     [Theory, KubernetesBackendData]
     public Task RootAccessCanI(KubernetesBackend backend) => RootAccessCanICore(backend);
     [Theory, KubernetesBackendData]

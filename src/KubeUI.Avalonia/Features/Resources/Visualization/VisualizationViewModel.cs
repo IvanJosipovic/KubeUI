@@ -239,7 +239,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                     var slash = owner.ApiVersion.IndexOf('/');
                     var group = slash < 0 ? string.Empty : owner.ApiVersion[..slash];
                     var version = slash < 0 ? owner.ApiVersion : owner.ApiVersion[(slash + 1)..];
-                    var ownerType = runtime.ModelCache.GetResourceType(group, version, owner.Kind);
+                    var ownerType = runtime.ModelCatalog.GetResourceType(group, version, owner.Kind);
                     if (ownerType != null)
                     {
                         requiredSeedTypes.Add(ownerType);
@@ -1304,7 +1304,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
             var slash = owner.ApiVersion.IndexOf('/');
             var group = slash < 0 ? string.Empty : owner.ApiVersion[..slash];
             var version = slash < 0 ? owner.ApiVersion : owner.ApiVersion[(slash + 1)..];
-            var type = cluster.Runtime.ModelCache.GetResourceType(group, version, owner.Kind);
+            var type = cluster.Runtime.ModelCatalog.GetResourceType(group, version, owner.Kind);
             if (type != null)
             {
                 RequireSeed(cluster, type);

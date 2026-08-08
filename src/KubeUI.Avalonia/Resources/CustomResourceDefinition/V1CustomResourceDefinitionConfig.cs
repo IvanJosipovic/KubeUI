@@ -86,7 +86,7 @@ public sealed partial class V1CustomResourceDefinitionConfig : ResourceConfigBas
             return;
         }
 
-        var type = Cluster.Runtime.ModelCache.GetResourceType(spec.Group, version.Name, spec.Names.Kind);
+        var type = Cluster.Runtime.ModelCatalog.GetResourceType(spec.Group, version.Name, spec.Names.Kind);
         if (type == null)
         {
             return;
@@ -118,7 +118,7 @@ public sealed partial class V1CustomResourceDefinitionConfig : ResourceConfigBas
             return false;
         }
 
-        var type = Cluster.Runtime.ModelCache.GetResourceType(spec.Group, version.Name, spec.Names.Kind);
+        var type = Cluster.Runtime.ModelCatalog.GetResourceType(spec.Group, version.Name, spec.Names.Kind);
         if (type == null)
         {
             return false;

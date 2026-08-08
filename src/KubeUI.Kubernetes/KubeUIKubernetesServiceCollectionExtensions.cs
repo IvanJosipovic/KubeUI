@@ -17,7 +17,8 @@ public static class KubeUIKubernetesServiceCollectionExtensions
         ConfigureKubeUIKubernetesJson();
         services.AddSingleton<IThreadDispatcher, ImmediateThreadDispatcher>();
         services.AddSingleton<IKubeConfigPathProvider, DefaultKubeConfigPathProvider>();
-        services.AddTransient<ModelCache>();
+        services.AddSingleton<KubernetesModelCatalog>();
+        services.AddTransient<ClusterModelCatalog>();
         services.AddSingleton<IKubernetesYamlSerializer, KubernetesYamlSerializer>();
         services.AddSingleton<IAksClusterService, AksClusterService>();
         services.AddTransient<Cluster>();

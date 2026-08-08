@@ -1,3 +1,4 @@
+using System.Collections.Frozen;
 using k8s.Models;
 using KubeUI.Kubernetes.Serialization;
 using Shouldly;
@@ -70,5 +71,23 @@ public class KubernetesYamlTests
             """.ReplaceLineEndings("\n");
 
         Should.Throw<YamlException>(() => KubernetesYaml.Deserialize(yaml, typeof(V1Pod), strict: true));
+    }
+
+    [Fact]
+    public void LoadAllFromStringAcceptsFrozenTypeMap()
+    {
+        var typeMap = new Dictionary<string, Type>
+        {
+            ["v1/Pod"] = typeof(V1Pod),
+        }.ToFrozenDictionary(StringComparer.Ordinal);
+
+        var objects = KubernetesYaml.LoadAllFromString("""
+            apiVersion: v1
+            kind: Pod
+            metadata:
+              name: test
+            """.ReplaceLineEndings("\n"), typeMap, strict: true);
+
+        objects.Single().ShouldBeOfType<V1Pod>();
     }
 }

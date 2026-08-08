@@ -139,7 +139,7 @@ public sealed class ClusterAuthorizationTests
         await using var cluster = new Cluster(
             NullLogger<Cluster>.Instance,
             loggerFactory,
-            new ModelCache(),
+            new ClusterModelCatalog(new KubernetesModelCatalog()),
             new Generator(),
             new KubernetesTestSettingsStore(),
             new ServiceCollection().BuildServiceProvider());
