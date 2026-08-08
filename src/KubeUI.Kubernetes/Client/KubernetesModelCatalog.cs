@@ -10,6 +10,7 @@ namespace KubeUI.Kubernetes;
 public sealed class KubernetesModelCatalog
 {
     private readonly FrozenDictionary<GroupApiVersionKind, Type> _types;
+    private readonly FrozenDictionary<string, Type> _yamlTypeMap;
     private readonly FrozenDictionary<string, XmlElement> _documentation;
 
     public KubernetesModelCatalog()
@@ -20,6 +21,10 @@ public sealed class KubernetesModelCatalog
         xmlDocumentation.Load(stream);
 
         _types = GetTypes(typeof(V1Deployment).Assembly).ToFrozenDictionary();
+        _yamlTypeMap = _types.ToFrozenDictionary(
+            pair => CreateYamlKey(pair.Key),
+            pair => pair.Value,
+            StringComparer.Ordinal);
         _documentation = GetDocumentationIndex(xmlDocumentation).ToFrozenDictionary(StringComparer.Ordinal);
     }
 
@@ -38,9 +43,9 @@ public sealed class KubernetesModelCatalog
     /// Gets YAML resource keys for the built-in Kubernetes model types.
     /// </summary>
     /// <returns>A map from YAML resource keys to model types.</returns>
-    public IReadOnlyDictionary<string, Type> GetYamlTypeMap()
+    public FrozenDictionary<string, Type> GetYamlTypeMap()
     {
-        return _types.ToDictionary(pair => CreateYamlKey(pair.Key), pair => pair.Value, StringComparer.Ordinal);
+        return _yamlTypeMap;
     }
 
     public XmlElement? GetDocumentation(MemberInfo memberInfo)

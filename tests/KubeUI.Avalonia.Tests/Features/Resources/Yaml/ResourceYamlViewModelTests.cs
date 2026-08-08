@@ -16,10 +16,12 @@ using Dock.Model.Controls;
 using Dock.Model.Core;
 using FluentAvalonia.UI.Controls;
 using k8s.Models;
+using KubernetesCRDModelGen;
 using KubeUI.Avalonia.Features.Resources.Yaml.Behaviors;
 using KubeUI.Avalonia.Infrastructure.Platform;
 using KubeUI.Avalonia.Shell.Documents.About;
 using KubeUI.Avalonia.Tests.Infra;
+using KubeUI.Kubernetes.Serialization;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Features.Resources.Yaml;
@@ -2289,20 +2291,36 @@ public class ResourceYamlViewModelTests
     }
 
     [AvaloniaFact]
-    public void YamlSyntaxValidationService_AcceptsBuiltInPodWithClusterModelCatalog()
+    public void YamlSyntaxValidationService_AcceptsCrdInstanceWithGeneratedModel()
     {
         var service = Application.Current.GetRequiredTestService<IYamlValidationService>();
         var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
 
-        var diagnostics = service.Validate("""
-            apiVersion: v1
-            kind: Pod
-            metadata:
-              name: test
-              namespace: default
-            """.ReplaceLineEndings("\n"), cluster.Runtime.ModelCatalog);
+        var crd = KubernetesYaml.Deserialize<V1CustomResourceDefinition>(KubernetesTestData.CustomResourceDefinitionYaml);
+        var generated = new Generator().GenerateAssembly(crd, "KubeUI.Avalonia.Tests.Models");
+        generated.Success.ShouldBeTrue();
+        generated.Assembly.ShouldNotBeNull();
+        generated.XmlDocumentation.ShouldNotBeNull();
 
-        diagnostics.ShouldBeEmpty();
+        try
+        {
+            cluster.Runtime.ModelCatalog.ReplaceCustomResourceDefinition(
+                crd,
+                generated.Assembly!,
+                generated.XmlDocumentation!,
+                generated.UnloadHandle);
+
+            var generatedType = cluster.Runtime.ModelCatalog.GetResourceType("kubeui.com", "v1beta1", "Test");
+            generatedType.ShouldNotBeNull();
+
+            var diagnostics = service.Validate(KubernetesTestData.CustomResourceYaml, cluster.Runtime.ModelCatalog);
+
+            diagnostics.ShouldBeEmpty();
+        }
+        finally
+        {
+            cluster.Runtime.ModelCatalog.RemoveCustomResourceDefinition(crd);
+        }
     }
 
     [AvaloniaFact]

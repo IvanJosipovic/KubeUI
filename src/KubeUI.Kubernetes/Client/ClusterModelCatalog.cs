@@ -1,3 +1,4 @@
+using System.Collections.Frozen;
 using System.Reflection;
 using System.Xml;
 using KubernetesCRDModelGen;
@@ -12,6 +13,9 @@ namespace KubeUI.Kubernetes;
 public sealed class ClusterModelCatalog
 {
     private readonly KubernetesModelCatalog _sharedCatalog;
+    private readonly Lock _gate = new();
+    private FrozenDictionary<string, Type>? _yamlTypeMap;
+    private FrozenDictionary<string, Type>? _crdYamlTypeMap;
 
     /// <summary>
     /// Gets the catalog containing models generated for the connected cluster's CRDs.
@@ -60,15 +64,25 @@ public sealed class ClusterModelCatalog
     /// Gets the YAML type mappings for models registered in the cluster CRD catalog.
     /// </summary>
     /// <returns>A map from YAML resource keys to model types.</returns>
-    public IReadOnlyDictionary<string, Type> GetYamlTypeMap()
+    public FrozenDictionary<string, Type> GetYamlTypeMap()
     {
-        var map = new Dictionary<string, Type>(_sharedCatalog.GetYamlTypeMap());
-        foreach (var pair in CrdModels.GetYamlTypeMap())
+        lock (_gate)
         {
-            map[pair.Key] = pair.Value;
-        }
+            var crdYamlTypeMap = CrdModels.GetYamlTypeMap();
+            if (_yamlTypeMap is not null && ReferenceEquals(_crdYamlTypeMap, crdYamlTypeMap))
+            {
+                return _yamlTypeMap;
+            }
 
-        return map;
+            var map = new Dictionary<string, Type>(_sharedCatalog.GetYamlTypeMap(), StringComparer.Ordinal);
+            foreach (var pair in crdYamlTypeMap)
+            {
+                map[pair.Key] = pair.Value;
+            }
+
+            _crdYamlTypeMap = crdYamlTypeMap;
+            return _yamlTypeMap = map.ToFrozenDictionary(StringComparer.Ordinal);
+        }
     }
 
     /// <summary>

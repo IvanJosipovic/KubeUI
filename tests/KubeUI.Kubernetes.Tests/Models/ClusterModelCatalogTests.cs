@@ -1,3 +1,4 @@
+using System.Collections.Frozen;
 using System.Xml;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
@@ -34,6 +35,18 @@ public sealed class ClusterModelCatalogTests
     }
 
     [Fact]
+    public void GetYamlTypeMapReusesFrozenMap()
+    {
+        var catalog = new ClusterModelCatalog(new KubernetesModelCatalog());
+
+        var firstMap = catalog.GetYamlTypeMap();
+        var secondMap = catalog.GetYamlTypeMap();
+
+        firstMap.ShouldBeAssignableTo<FrozenDictionary<string, Type>>();
+        secondMap.ShouldBeSameAs(firstMap);
+    }
+
+    [Fact]
     public void GetYamlTypeMapIncludesCrdModels()
     {
         var crd = (V1CustomResourceDefinition)KubernetesYaml.LoadAllFromString("""
@@ -65,6 +78,7 @@ public sealed class ClusterModelCatalogTests
         generated.XmlDocumentation.ShouldNotBeNull();
 
         var catalog = new ClusterModelCatalog(new KubernetesModelCatalog());
+        var builtInMap = catalog.GetYamlTypeMap();
         catalog.CrdModels.ReplaceCustomResourceDefinition(
             crd,
             generated.Assembly!,
@@ -73,7 +87,9 @@ public sealed class ClusterModelCatalogTests
 
         var crdType = catalog.CrdModels.GetResourceType("example.com", "v1", "Widget");
         crdType.ShouldNotBeNull();
-        catalog.GetYamlTypeMap()["example.com/v1/Widget"].ShouldBe(crdType);
+        var map = catalog.GetYamlTypeMap();
+        map.ShouldNotBeSameAs(builtInMap);
+        map["example.com/v1/Widget"].ShouldBe(crdType);
     }
 
     [Fact]

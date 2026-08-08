@@ -1,5 +1,6 @@
 using System.Reflection;
 using System.Text;
+using System.Collections.Frozen;
 using k8s;
 using k8s.Models;
 using YamlDotNet.Core;
@@ -155,6 +156,13 @@ public static class KubernetesYaml
         return LoadAllFromString(content, typeMap, strict);
     }
 
+    public static async Task<List<object>> LoadAllFromStreamAsync(Stream stream, FrozenDictionary<string, Type> typeMap, bool strict)
+    {
+        using var reader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, bufferSize: 1024, leaveOpen: true);
+        var content = await reader.ReadToEndAsync().ConfigureAwait(false);
+        return LoadAllFromString(content, typeMap, strict);
+    }
+
     /// <summary>
     /// Load a collection of objects from a file asynchronously
     /// </summary>
@@ -176,6 +184,12 @@ public static class KubernetesYaml
         return await LoadAllFromStreamAsync(fileStream, typeMap, strict).ConfigureAwait(false);
     }
 
+    public static async Task<List<object>> LoadAllFromFileAsync(string fileName, FrozenDictionary<string, Type> typeMap, bool strict)
+    {
+        await using var fileStream = File.OpenRead(fileName);
+        return await LoadAllFromStreamAsync(fileStream, typeMap, strict).ConfigureAwait(false);
+    }
+
     /// <summary>
     /// Load a collection of objects from a string
     /// </summary>
@@ -189,9 +203,25 @@ public static class KubernetesYaml
     /// <returns>collection of objects</returns>
     public static List<object> LoadAllFromString(string content, IDictionary<string, Type>? typeMap = null, bool strict = false)
     {
+        return LoadAllFromStringCore(content, typeMap, strict);
+    }
+
+    public static List<object> LoadAllFromString(string content, FrozenDictionary<string, Type> typeMap, bool strict)
+    {
+        return LoadAllFromStringCore(content, typeMap, strict);
+    }
+
+    private static List<object> LoadAllFromStringCore(string content, IEnumerable<KeyValuePair<string, Type>>? typeMap, bool strict)
+    {
         var mergedTypeMap = new Dictionary<string, Type>(ModelTypeMap);
         // merge in KVPs from typeMap, overriding any in ModelTypeMap
-        typeMap?.ToList().ForEach(x => mergedTypeMap[x.Key] = x.Value);
+        if (typeMap is not null)
+        {
+            foreach (var pair in typeMap)
+            {
+                mergedTypeMap[pair.Key] = pair.Value;
+            }
+        }
 
         var types = new List<Type>();
         var parser = new MergingParser(new Parser(new StringReader(content)));

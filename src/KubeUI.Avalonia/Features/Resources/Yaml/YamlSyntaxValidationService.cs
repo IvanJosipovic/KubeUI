@@ -23,7 +23,7 @@ public sealed class YamlSyntaxValidationService : IYamlValidationService
 
         try
         {
-            var typeMap = modelCatalog?.GetYamlTypeMap().ToDictionary(pair => pair.Key, pair => pair.Value);
+            var typeMap = modelCatalog?.GetYamlTypeMap();
             KubernetesYamlSerializer.LoadAllFromString(yaml, typeMap, strict: true);
 
             return [];

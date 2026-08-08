@@ -18,7 +18,7 @@ public sealed class ClusterCrdModelCatalog
         ImmutableDictionary<Assembly, AssemblyEntry>.Empty;
     private ImmutableDictionary<string, Assembly> _assembliesByIdentity =
         ImmutableDictionary<string, Assembly>.Empty.WithComparers(StringComparer.Ordinal);
-    private Dictionary<string, Type>? _yamlTypeMap;
+    private FrozenDictionary<string, Type>? _yamlTypeMap;
 
     public void AddToCache(Assembly assembly, XmlDocument xmlDocument, GeneratedAssemblyUnloadHandle? unloadHandle = null)
     {
@@ -98,7 +98,7 @@ public sealed class ClusterCrdModelCatalog
         return GetResourceType(CreateKey(group, version, kind));
     }
 
-    public IReadOnlyDictionary<string, Type> GetYamlTypeMap()
+    public FrozenDictionary<string, Type> GetYamlTypeMap()
     {
         lock (_gate)
         {
@@ -185,7 +185,7 @@ public sealed class ClusterCrdModelCatalog
         entry.UnloadHandle?.Dispose();
     }
 
-    private Dictionary<string, Type> BuildYamlTypeMap()
+    private FrozenDictionary<string, Type> BuildYamlTypeMap()
     {
         var map = new Dictionary<string, Type>(_types.Count, StringComparer.Ordinal);
         foreach (var pair in _types)
@@ -193,7 +193,7 @@ public sealed class ClusterCrdModelCatalog
             map[CreateYamlKey(pair.Key)] = pair.Value;
         }
 
-        return map;
+        return map.ToFrozenDictionary(StringComparer.Ordinal);
     }
 
     private XmlElement? GetDocumentation(Type? type, char prefix, string name)

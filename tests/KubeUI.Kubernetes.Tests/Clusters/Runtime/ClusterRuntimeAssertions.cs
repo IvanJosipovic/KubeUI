@@ -426,8 +426,9 @@ public abstract class ClusterRuntimeAssertions
         });
         var crdYaml = KubernetesTestData.CustomResourceDefinitionYaml;
 
-        await harness.Cluster.ImportYaml(new MemoryStream(Encoding.UTF8.GetBytes(
-            $"{namespaceYaml}\n---\n{podYaml}\n---\n{crdYaml}")));
+        using var yamlStream = new MemoryStream(Encoding.UTF8.GetBytes(
+            $"{namespaceYaml}\n---\n{podYaml}\n---\n{crdYaml}"));
+        await harness.Cluster.ImportYaml(yamlStream);
 
         var resource = await WaitForResourceAsync<V1Namespace>(harness.Cluster, null, "test");
         resource.ShouldNotBeNull();
@@ -443,6 +444,9 @@ public abstract class ClusterRuntimeAssertions
             "tests.kubeui.com");
         crd.ShouldNotBeNull();
         crd.Name().ShouldBe("tests.kubeui.com");
+
+        var generatedType = await WaitForGeneratedTypeAsync(harness.Cluster, "kubeui.com", "v1beta1", "Test");
+        generatedType.ShouldNotBeNull();
 
         }
         finally
