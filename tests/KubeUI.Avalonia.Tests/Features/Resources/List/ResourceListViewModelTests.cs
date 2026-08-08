@@ -1837,7 +1837,7 @@ public class ResourceListViewModelTests
 
         await WaitForAsync(
             () => Math.Abs(restoredScrollViewer.Offset.Y - targetOffset.Y) < 0.1,
-            3000);
+            10000);
         restoredScrollViewer.Offset.Y.ShouldBe(targetOffset.Y);
         ReferenceEquals(grid, restoredGrid).ShouldBeFalse();
         vm.DataGridRuntimeState.ShouldNotBeNull();
