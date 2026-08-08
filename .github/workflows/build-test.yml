@@ -36,7 +36,7 @@ jobs:
             --configuration Release \
             --no-build \
             --filter-trait "Category=Kind" \
-            --max-threads 4 \
+            --max-threads 2 \
             --report-xunit-trx \
             --report-xunit-trx-filename kind-test-results.trx \
             --coverage \
