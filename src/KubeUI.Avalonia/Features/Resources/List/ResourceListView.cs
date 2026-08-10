@@ -5,6 +5,7 @@ using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Templates;
 using Avalonia.Data.Converters;
 using Avalonia.Input;
+using Avalonia.Threading;
 using FluentIcons.Avalonia;
 using FluentIcons.Common;
 using k8s.Models;
@@ -37,7 +38,17 @@ public partial class ResourceListView : ViewBase<IResourceListViewModel>
 
         if (_grid is DataGrid grid && DataContext is IResourceListViewModel vm && vm.DataGridRuntimeState is { } state)
         {
-            grid.RestoreState(PrepareStateForRestore(grid, state), RestoredStateSections, CreateStateOptions(grid));
+            Dispatcher.UIThread.Post(
+                static state =>
+                {
+                    var (view, grid, vm, dataGridState) = ((ResourceListView View, DataGrid Grid, IResourceListViewModel ViewModel, DataGridState State))state!;
+                    if (view._grid == grid && ReferenceEquals(view.DataContext, vm) && view.VisualRoot is not null)
+                    {
+                        grid.RestoreState(PrepareStateForRestore(grid, dataGridState), RestoredStateSections, CreateStateOptions(grid));
+                    }
+                },
+                (this, grid, vm, state),
+                DispatcherPriority.Loaded);
         }
     }
 
