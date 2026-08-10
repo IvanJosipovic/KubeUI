@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using System.Reflection;
 using System.Text;
 using System.Text.Json.Serialization;
@@ -12,7 +11,7 @@ internal static class YamlSchemaContext
 {
     private const int IndentationSize = 2;
 
-    public static YamlContextResult Resolve(TextDocument document, int offset, Type rootType, ModelCache modelCache)
+    public static YamlContextResult Resolve(TextDocument document, int offset, Type rootType, ClusterModelCatalog modelCache)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(rootType);
@@ -68,7 +67,7 @@ internal static class YamlSchemaContext
             suggestions);
     }
 
-    public static bool TryCreateSequenceEntryInsertion(TextDocument document, int offset, Type rootType, ModelCache modelCache, out string insertionText)
+    public static bool TryCreateSequenceEntryInsertion(TextDocument document, int offset, Type rootType, ClusterModelCatalog modelCache, out string insertionText)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(rootType);
@@ -234,7 +233,7 @@ internal static class YamlSchemaContext
         string lineText,
         YamlFrame frame,
         Type containerType,
-        ModelCache modelCache,
+        ClusterModelCatalog modelCache,
         out YamlContextResult context)
     {
         context = default!;
@@ -373,7 +372,8 @@ internal static class YamlSchemaContext
     private static bool IsSequenceEntry(string lineText)
     {
         var trimmed = lineText.TrimStart();
-        return trimmed == "-" || trimmed.StartsWith("- ", StringComparison.Ordinal);
+        return trimmed == "-"
+            || (trimmed.Length > 1 && trimmed[0] == '-');
     }
 
     private static bool TryExtractKey(string trimmedLine, out string key, out string valuePart)
@@ -424,7 +424,7 @@ internal static class YamlSchemaContext
 
     private static IReadOnlyList<YamlCompletionItemInfo> GetCompletionItems(
         Type containerType,
-        ModelCache modelCache,
+        ClusterModelCatalog modelCache,
         IReadOnlySet<string>? usedKeys = null)
     {
         var normalizedType = NormalizeType(containerType);
@@ -443,7 +443,7 @@ internal static class YamlSchemaContext
             .ToArray();
     }
 
-    private static YamlCompletionItemInfo? CreateCompletionItem(PropertyInfo property, ModelCache modelCache)
+    private static YamlCompletionItemInfo? CreateCompletionItem(PropertyInfo property, ClusterModelCatalog modelCache)
     {
         var yamlName = GetYamlPropertyName(property);
         if (string.IsNullOrWhiteSpace(yamlName))
@@ -479,7 +479,7 @@ internal static class YamlSchemaContext
         return null;
     }
 
-    private static YamlDocumentationInfo? BuildDocumentation(MemberInfo? member, Type fallbackType, ModelCache modelCache)
+    private static YamlDocumentationInfo? BuildDocumentation(MemberInfo? member, Type fallbackType, ClusterModelCatalog modelCache)
     {
         if (member is PropertyInfo property)
         {
@@ -663,12 +663,12 @@ internal static class YamlSchemaContext
             return null;
         }
 
-        if (typeof(System.Collections.IDictionary).IsAssignableFrom(normalizedType))
+        if (typeof(IDictionary).IsAssignableFrom(normalizedType))
         {
             return null;
         }
 
-        if (typeof(System.Collections.IEnumerable).IsAssignableFrom(normalizedType) && normalizedType != typeof(string))
+        if (typeof(IEnumerable).IsAssignableFrom(normalizedType) && normalizedType != typeof(string))
         {
             var itemType = GetSequenceItemType(normalizedType);
             return CanEnumerateProperties(itemType) ? itemType : null;
@@ -681,8 +681,8 @@ internal static class YamlSchemaContext
     {
         var normalizedType = NormalizeType(type);
         return normalizedType != typeof(string)
-            && typeof(System.Collections.IEnumerable).IsAssignableFrom(normalizedType)
-            && !typeof(System.Collections.IDictionary).IsAssignableFrom(normalizedType);
+            && typeof(IEnumerable).IsAssignableFrom(normalizedType)
+            && !typeof(IDictionary).IsAssignableFrom(normalizedType);
     }
 
     private static bool RequiresNestedBlock(Type type)
@@ -699,7 +699,7 @@ internal static class YamlSchemaContext
             && type != typeof(DateTime)
             && type != typeof(DateTimeOffset)
             && type != typeof(Guid)
-            && !typeof(System.Collections.IDictionary).IsAssignableFrom(type);
+            && !typeof(IDictionary).IsAssignableFrom(type);
     }
 
     private static int CountIndent(string line)

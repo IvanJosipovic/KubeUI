@@ -1,21 +1,21 @@
 using Avalonia.Headless.XUnit;
 using k8s.Models;
-using KubeUI.Avalonia.Services.Settings;
 using KubeUI.Avalonia.Tests.Infra;
-using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Features.Workloads.Pod;
 
-public sealed class PodDebugContainerTests : AvaloniaTestBase
+public sealed class PodDebugContainerTests
 {
-    [AvaloniaFact]
-    public async Task adding_debug_container_uses_cluster_image_and_target_container()
+    [AvaloniaTheory, KubernetesBackendData]
+    [Trait("Category", "Kind")]
+    public async Task adding_debug_container_uses_cluster_image_and_target_container(KubernetesBackend backend)
     {
-        var runtime = new TestCluster();
-        var workspace = runtime.CreateWorkspace();
-        var settings = TestApp.CurrentServices!.GetRequiredService<ISettingsService>();
-        settings.Settings.GetClusterSettings(workspace).DebugContainerImage = "example.com/debug:1";
+        var services = Application.Current.GetTestServices();
+        var workspace = await Application.Current.CreateClusterAsync(config => config.Type = backend);
+        await workspace.Runtime.SeedResource<V1Pod>(true);
+        var settings = services.GetRequiredService<ISettingsService>();
+        settings.Settings.GetClusterSettings(workspace.Runtime).DebugContainerImage = "example.com/debug:1";
 
         V1Pod pod = new()
         {
@@ -31,15 +31,26 @@ public sealed class PodDebugContainerTests : AvaloniaTestBase
                     new V1Container
                     {
                         Name = "app",
+                        Image = "example.com/app:1",
                     },
                 ],
             },
         };
 
-        await workspace.AddOrUpdateResource(pod);
-        await workspace.AddPodEphemeralDebugContainer(pod, "app", settings.Settings.GetClusterSettings(workspace).DebugContainerImage);
+        await workspace.Runtime.AddOrUpdateResource(pod);
+        await TestWait.UntilAsync(
+            () => workspace.Runtime.GetResource<V1Pod>("default", "pod-1") is not null,
+            TimeSpan.FromSeconds(5),
+            cancellationToken: TestContext.Current.CancellationToken);
+        var currentPod = workspace.Runtime.GetResource<V1Pod>("default", "pod-1").ShouldNotBeNull();
+        await workspace.Runtime.AddPodEphemeralDebugContainer(currentPod, "app", settings.Settings.GetClusterSettings(workspace.Runtime).DebugContainerImage);
 
-        V1Pod updated = runtime.GetResource<V1Pod>("default", "pod-1").ShouldNotBeNull();
+        await TestWait.UntilAsync(
+            () => workspace.Runtime.GetResource<V1Pod>("default", "pod-1")?.Spec?.EphemeralContainers?.Count == 1,
+            TimeSpan.FromSeconds(5),
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        var updated = workspace.Runtime.GetResource<V1Pod>("default", "pod-1").ShouldNotBeNull();
         updated.Spec.EphemeralContainers.ShouldNotBeNull();
         updated.Spec.EphemeralContainers.Count.ShouldBe(1);
         updated.Spec.EphemeralContainers[0].Image.ShouldBe("example.com/debug:1");

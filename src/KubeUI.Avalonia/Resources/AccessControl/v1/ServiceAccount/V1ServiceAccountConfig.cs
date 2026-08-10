@@ -1,6 +1,4 @@
-using Avalonia.Controls;
 using k8s.Models;
-using KubeUI.Avalonia.Resources.AccessControl.v1.ServiceAccount.Views;
 
 namespace KubeUI.Avalonia.Resources.AccessControl.v1.ServiceAccount;
 
@@ -26,4 +24,3 @@ public sealed partial class V1ServiceAccountConfig : ResourceConfigBase<V1Servic
 
     public override Control[] Properties(V1ServiceAccount resource) => [new PropertiesView()];
 }
-

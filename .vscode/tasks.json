@@ -9,7 +9,7 @@
                 "format",
                 "KubeUI.slnx",
                 "--verbosity",
-                "minimal"
+                "Minimal"
             ],
             "options": {
                 "cwd": "${workspaceFolder}"
@@ -17,17 +17,11 @@
             "problemMatcher": []
         },
         {
-            "label": "XAML Styler: Format KubeUI.Avalonia",
+            "label": "dotnet: restore",
             "type": "shell",
             "command": "dotnet",
             "args": [
-                "dnx",
-                "XamlStyler.Console",
-                "-r",
-                "-d",
-                "src\\KubeUI.Avalonia",
-                "-c",
-                "Settings.XamlStyler"
+                "restore"
             ],
             "options": {
                 "cwd": "${workspaceFolder}"
@@ -35,21 +29,15 @@
             "problemMatcher": []
         },
         {
-            "label": "format: all",
-            "dependsOn": [
-                "dotnet: format solution",
-                "XAML Styler: Format KubeUI.Avalonia"
-            ],
-            "dependsOrder": "sequence",
-            "problemMatcher": []
-        },
-        {
-            "label": "dotnet: build solution",
+            "label": "dotnet: build Desktop",
             "type": "shell",
             "command": "dotnet",
             "args": [
                 "build",
-                "KubeUI.slnx"
+                "src/KubeUI.Desktop/KubeUI.Desktop.csproj",
+                "--no-restore",
+                "--tl:off",
+                "-clp:ErrorsOnly"
             ],
             "options": {
                 "cwd": "${workspaceFolder}"
@@ -57,6 +45,23 @@
             "group": {
                 "kind": "build",
                 "isDefault": true
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "dotnet: test",
+            "type": "shell",
+            "command": "dotnet",
+            "args": [
+                "test",
+                "--no-restore",
+                "--tl:off",
+                "-clp:ErrorsOnly",
+                "--hangdump",
+                "--hangdump-timeout 1m"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
             },
             "problemMatcher": []
         }

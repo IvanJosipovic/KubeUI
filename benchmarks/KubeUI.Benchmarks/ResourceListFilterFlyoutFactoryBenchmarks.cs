@@ -1,14 +1,12 @@
-using System;
 using System.Globalization;
 using System.Reflection;
 using Avalonia.Controls;
 using Avalonia.Controls.DataGridFiltering;
 using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Engines;
-using BenchmarkDotNet.Jobs;
 using k8s.Models;
+using KubeUI.Avalonia.Features.Resources.List;
 using KubeUI.Avalonia.Features.Resources.List.Controls;
-using KubeUI.Avalonia.Features.Resources.List.Views;
 using KubeUI.Avalonia.Resources;
 using Microsoft.VSDiagnostics;
 
@@ -75,6 +73,7 @@ public class ResourceListFilterFlyoutFactoryBenchmarks
         public string Key { get; }
         public string Name { get; }
         public string? Width => null;
+        public double MinWidth => 90;
         public SortDirection Sort { get; set; }
         public Type CustomControl { get; }
         public Type ItemType => typeof(V1Pod);

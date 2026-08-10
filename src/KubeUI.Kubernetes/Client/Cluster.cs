@@ -1,10 +1,11 @@
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Net.Http.Json;
 using System.Reactive.Linq;
 using System.Reflection;
-using System.Xml;
+using System.Text;
+using System.Threading.Channels;
 using DynamicData;
-using DynamicData.Aggregation;
 using DynamicData.Binding;
 using DynamicData.Kernel;
 using k8s;
@@ -12,7 +13,7 @@ using k8s.KubeConfigModels;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
 using KubernetesCRDModelGen;
-using KubeUI.Kubernetes;
+using KubeUI.Kubernetes.Client;
 using Mapster;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Http.Resilience;
@@ -22,9 +23,10 @@ using YamlDotNet.Core.Events;
 
 namespace KubeUI.Kubernetes;
 
-public sealed partial class Cluster : ObservableObject, IClusterRuntime
+public sealed partial class Cluster : ObservableObject, IClusterRuntime, IClusterAuthorization, IAsyncDisposable
 {
-    private const int MaxQueuedCustomResourceDefinitionsPerBatch = 25;
+    public IClusterAuthorization Permissions => this;
+
     private ILoggerFactory _loggerFactory;
 
     private ILogger<Cluster> _logger;
@@ -40,17 +42,25 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime
     public V2beta1APIGroupDiscoveryList APIGroupDiscoveryList { get; private set; }
 
     public event Action<WatchEventType, GroupApiVersionKind, IKubernetesObject<V1ObjectMeta>>? OnChange;
-    public event Action<V1CustomResourceDefinition>? OnCustomResourceDefinitionReady;
+    public event Action<IClusterRuntime>? NamespaceSelectionRequired;
+    public event Action<IClusterRuntime, GroupApiVersionKind>? ResourceSeeded;
+    public event Action<IClusterRuntime, GroupApiVersionKind>? ResourceUnseeded;
+    public event Func<V1CustomResourceDefinition, Task>? OnCustomResourceDefinitionReady;
 
     private readonly SemaphoreSlim _connectionLimiter = new(1, 1);
+    private readonly Channel<V1CustomResourceDefinition> _customResourceDefinitionQueue = Channel.CreateUnbounded<V1CustomResourceDefinition>(
+        new UnboundedChannelOptions { SingleReader = true, SingleWriter = false });
+    private readonly CancellationTokenSource _customResourceDefinitionCancellationTokenSource = new();
+    private readonly Task _customResourceDefinitionTask;
+    private int _disposeStarted;
 
-    private readonly ConcurrentDictionary<GroupApiVersionKind, Lazy<Task>> _seedTasks = new();
-    private readonly SemaphoreSlim _customResourceDefinitionSignal = new(0);
-    private readonly ConcurrentDictionary<string, V1CustomResourceDefinition> _pendingCustomResourceDefinitions = new(StringComparer.Ordinal);
     private readonly ConcurrentDictionary<string, string> _customResourceDefinitionSignatures = new(StringComparer.Ordinal);
     private CancellationTokenSource? _resourceInformerCancellationTokenSource = new();
+    private ConcurrentBag<Task> _resourceInformerTasks = [];
 
     public ConcurrentDictionary<GroupApiVersionKind, object> Objects { get; } = [];
+
+    internal int ActiveResourceInformerTaskCount => _resourceInformerTasks.Count(static task => !task.IsCompleted);
 
     IReadOnlyDictionary<GroupApiVersionKind, object> IClusterRuntime.Objects => Objects;
 
@@ -70,40 +80,80 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime
     public partial string? LastError { get; set; }
 
     [ObservableProperty]
-    public partial bool RequiresNamespaceSelectionPrompt { get; set; }
-
-    [ObservableProperty]
     public partial bool Connected { get; set; }
 
     [ObservableProperty]
     public partial IKubernetes? Client { get; set; }
 
+    /// <summary>
+    /// Creates the Kubernetes client used by <see cref="Connect"/>.
+    /// </summary>
+    public Func<KubernetesClientConfiguration, IKubernetes>? KubernetesClientFactory { get; set; }
+
     [ObservableProperty]
-    public partial ModelCache ModelCache { get; set; }
+    /// <summary>
+    /// Gets or sets the model catalog used to resolve built-in and cluster-specific resource models.
+    /// </summary>
+    public partial ClusterModelCatalog ModelCatalog { get; set; }
 
     [ObservableProperty]
     public partial ReadOnlyObservableCollection<V1Namespace> Namespaces { get; set; }
 
-    public Cluster(ILogger<Cluster> logger, ILoggerFactory loggerFactory, ModelCache modelCache, IGenerator generator, IClusterSettingsStore settings, IServiceProvider serviceProvider)
+    /// <summary>
+    /// Initializes a cluster runtime and its model catalog.
+    /// </summary>
+    /// <param name="logger">The cluster logger.</param>
+    /// <param name="loggerFactory">The logger factory used by resource informers.</param>
+    /// <param name="modelCatalog">The model catalog owned by this cluster.</param>
+    /// <param name="generator">The custom-resource model generator.</param>
+    /// <param name="settings">The cluster settings store.</param>
+    /// <param name="serviceProvider">The application service provider.</param>
+    public Cluster(ILogger<Cluster> logger, ILoggerFactory loggerFactory, ClusterModelCatalog modelCatalog, IGenerator generator, IClusterSettingsStore settings, IServiceProvider serviceProvider)
     {
         _loggerFactory = loggerFactory;
         _logger = logger;
         _portForwardSessionFactory = new KubernetesPortForwardSessionFactory(this);
-        ModelCache = modelCache;
+        ModelCatalog = modelCatalog;
         _generator = generator;
         _generator.SetEnumSupport(false);
 
-        var kubeAssemblyXmlDoc = new XmlDocument();
-        kubeAssemblyXmlDoc.Load(typeof(Generator).Assembly.GetManifestResourceStream("runtime.KubernetesClient.xml"));
-        ModelCache.AddToCache(typeof(V1Deployment).Assembly, kubeAssemblyXmlDoc);
         _settings = settings;
         _serviceProvider = serviceProvider;
+        _customResourceDefinitionTask = ProcessCustomResourceDefinitionQueueAsync();
+    }
 
-        _ = Task.Run(ProcessQueuedCustomResourceDefinitionsAsync);
+    public async ValueTask DisposeAsync()
+    {
+        if (Interlocked.Exchange(ref _disposeStarted, 1) != 0)
+        {
+            return;
+        }
+
+        _customResourceDefinitionQueue.Writer.TryComplete();
+        _customResourceDefinitionCancellationTokenSource.Cancel();
+        await StopResourceInformersAsync().ConfigureAwait(false);
+        _connectionLimiter.Dispose();
+
+        try
+        {
+            await _customResourceDefinitionTask.ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (_customResourceDefinitionCancellationTokenSource.IsCancellationRequested)
+        {
+        }
+    }
+
+    private Activity? StartClusterActivity(string activityName, ActivityKind activityKind = ActivityKind.Internal)
+    {
+        var activity = KubeInstrumentation.Source.StartActivity(activityName, activityKind);
+        activity?.SetTag("kubernetes.cluster.name", Name);
+        return activity;
     }
 
     public async Task Connect()
     {
+        using var activity = StartClusterActivity(nameof(Connect));
+
         await _connectionLimiter.WaitAsync();
         _logger.LogInformation("Connecting to {name}", Name);
 
@@ -115,7 +165,6 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime
                 {
                     Status = ClusterStatus.Connecting;
                     LastError = null;
-                    RequiresNamespaceSelectionPrompt = false;
                     ResetAuthorizationIndex();
                     KubernetesClientConfiguration config;
 
@@ -145,16 +194,24 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime
                         InnerHandler = new ResilienceHandler(pipe.Build())
                     };
 
-                    Client = new k8s.Kubernetes(config);
+                    if (KubernetesClientFactory is null)
+                    {
+                        Client = new k8s.Kubernetes(config, handler);
+                    }
+                    else
+                    {
+                        handler.Dispose();
+                        Client = KubernetesClientFactory(config);
+                    }
                     EnsureResourceInformerCancellationTokenSource();
 
-                    NativeAPIGroupDiscoveryList = await GetAPIGroupDiscoveryList();
+                    NativeAPIGroupDiscoveryList = await GetAPIGroupDiscoveryList().ConfigureAwait(true);
 
-                    APIGroupDiscoveryList = await GetAPIGroupDiscoveryList(false);
+                    APIGroupDiscoveryList = await GetAPIGroupDiscoveryList(false).ConfigureAwait(true);
 
-                    await UpdateNamespacePermission();
+                    await UpdateNamespacePermission().ConfigureAwait(true);
 
-                    await SeedResource<V1Namespace>();
+                    await SeedResource<V1Namespace>(true).ConfigureAwait(true);
                     var namespaceCache = GetResourceSourceCache<V1Namespace>();
 
                     // Cant list Namespaces
@@ -167,7 +224,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime
                             Connected = false;
                             Status = ClusterStatus.Errored;
                             LastError = "Unable to connect because the cluster cannot list namespaces and no fallback namespaces are configured.";
-                            RequiresNamespaceSelectionPrompt = true;
+                            NamespaceSelectionRequired?.Invoke(this);
                             _logger.LogWarning(
                                 "Cluster {Name} cannot list namespaces and has no configured namespace fallback.",
                                 Name);
@@ -190,19 +247,18 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime
                     Connected = true;
                     Status = ClusterStatus.Connected;
                     LastError = null;
-                    RequiresNamespaceSelectionPrompt = false;
 
-                    await InitMetrics();
+                    await InitMetrics().ConfigureAwait(false);
                 }
                 catch (Exception ex)
                 {
+                    activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
                     _logger.LogError(ex, "Error connecting to {name}", Name);
 
                     Connected = false;
 
                     Status = ClusterStatus.Errored;
                     LastError = ex.Message;
-                    RequiresNamespaceSelectionPrompt = false;
                 }
             }
         }
@@ -213,48 +269,49 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime
         }
     }
 
-    public Task Disconnect()
+    public async Task Disconnect()
     {
+        await _connectionLimiter.WaitAsync().ConfigureAwait(false);
         _logger.LogInformation("Disconnecting from {name}", Name);
 
-        StopMetrics();
-        StopPortForwarders();
-        StopResourceInformers();
-        ClearDynamicCustomResourceDefinitions();
-        ClearSeededResources();
-        ClearSeedTasks();
-
-        if (Client is IDisposable disposableClient)
+        try
         {
-            disposableClient.Dispose();
+            StopMetrics();
+            StopPortForwarders();
+
+            await StopResourceInformersAsync().ConfigureAwait(false);
+            ClearDynamicCustomResourceDefinitions();
+            ClearSeededResources();
+
+            if (Client is IDisposable disposableClient)
+            {
+                disposableClient.Dispose();
+            }
+
+            Client = null;
+            Connected = false;
+            Status = ClusterStatus.None;
+            LastError = null;
+            ResetAuthorizationIndex();
+        }
+        finally
+        {
+            _connectionLimiter.Release();
         }
 
-        Client = null;
-        Connected = false;
-        Status = ClusterStatus.None;
-        LastError = null;
-        RequiresNamespaceSelectionPrompt = false;
-        ResetAuthorizationIndex();
-
         _logger.LogInformation("Disconnected from {name}", Name);
-        return Task.CompletedTask;
     }
 
     public async Task SeedResource<T>(bool waitForReady = false) where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
+        using var activity = StartClusterActivity(nameof(SeedResource) + "<" + typeof(T).Name + ">");
+
         var type = typeof(T);
         var kind = GroupApiVersionKind.From<T>();
-        var createdSeedTask = false;
-        if (!_seedTasks.TryGetValue(kind, out var seedTask))
-        {
-            var newSeedTask = new Lazy<Task>(() => SeedResourceCoreAsync<T>(), LazyThreadSafetyMode.ExecutionAndPublication);
-            seedTask = _seedTasks.GetOrAdd(kind, newSeedTask);
-            createdSeedTask = ReferenceEquals(seedTask, newSeedTask);
-        }
+        var container = (ContainerClass<T>)Objects.GetOrAdd(kind, _ => new ContainerClass<T>());
+        var seedTask = container.GetOrCreateSeedTask(() => SeedResourceCoreAsync<T>());
 
-        _logger.LogDebug(
-            createdSeedTask ? "Seed requested for {type}; scheduling initialization." : "Seed requested for {type}; initialization already pending or completed.",
-            type);
+        _logger.LogDebug("Seed requested for {type}.", type);
 
         try
         {
@@ -262,10 +319,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime
         }
         catch
         {
-            if (_seedTasks.TryGetValue(kind, out var current) && ReferenceEquals(current, seedTask))
-            {
-                _seedTasks.TryRemove(kind, out _);
-            }
+            container.RemoveSeedTask(seedTask);
 
             throw;
         }
@@ -277,16 +331,9 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime
             _logger.LogDebug("Resource readiness reached for {type}.", typeof(T));
         }
 
-        if (Objects.TryGetValue(kind, out var obj)
-            && obj is ContainerClass<T> container
-            && container.Informers.Count == 0)
+        if (!container.IsSeeded)
         {
-            container.Initialized = false;
-
-            if (_seedTasks.TryGetValue(kind, out var current) && ReferenceEquals(current, seedTask))
-            {
-                _seedTasks.TryRemove(kind, out _);
-            }
+            container.RemoveSeedTask(seedTask);
         }
     }
 
@@ -297,20 +344,15 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime
         var type = typeof(T);
         var kind = GroupApiVersionKind.From<T>();
 
-        ContainerClass<T> container = (ContainerClass<T>)Objects.GetOrAdd(kind, _ => new ContainerClass<T>());
-        container.Initialized = true;
+        var container = (ContainerClass<T>)Objects.GetOrAdd(kind, _ => new ContainerClass<T>());
 
-        if (await UpdateCanI(type, Verb.List).ConfigureAwait(false) && await UpdateCanI(type, Verb.Watch).ConfigureAwait(false))
+        if (CanI(type, Verb.List) && CanI(type, Verb.Watch))
         {
-            var informer = new ResourceInformer<T>(Client, _serviceProvider.GetRequiredService<IHostApplicationLifetime>(), _loggerFactory.CreateLogger<ResourceInformer<T>>());
+            var informer = new ResourceInformer<T>(Client, _serviceProvider.GetRequiredService<IHostApplicationLifetime>(), _loggerFactory.CreateLogger<ResourceInformer<T>>(), resourceListLimit: 10000);
             container.Informers.Add(informer);
             container.InformerRegistrations.Add(informer.Register(GetResourceInformerCallback<T>()));
-            var informerCancellationToken = GetResourceInformerCancellationToken();
-            _ = Task.Run(() =>
-            {
-                informer.StartWatching();
-                _ = informer.RunInfinite(informerCancellationToken);
-            });
+            informer.StartWatching();
+            _ = informer.RunInfinite(GetResourceInformerCancellationToken());
         }
         else
         {
@@ -321,25 +363,25 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime
 
             foreach (var item in GetResourceList<V1Namespace>())
             {
-                string ns = item.Name();
+                var ns = item.Name();
 
-                if (await UpdateCanI(type, Verb.List, ns).ConfigureAwait(false) && await UpdateCanI(type, Verb.Watch, ns).ConfigureAwait(false))
+                if (CanI(type, Verb.List, ns) && CanI(type, Verb.Watch, ns))
                 {
-                    var informer = new ResourceInformer<T>(Client, _serviceProvider.GetRequiredService<IHostApplicationLifetime>(), _loggerFactory.CreateLogger<ResourceInformer<T>>(), @namespace: ns);
+                    var informer = new ResourceInformer<T>(Client, _serviceProvider.GetRequiredService<IHostApplicationLifetime>(), _loggerFactory.CreateLogger<ResourceInformer<T>>(), @namespace: ns, resourceListLimit: 10000);
                     container.Informers.Add(informer);
                     container.InformerRegistrations.Add(informer.Register(GetResourceInformerCallback<T>()));
-                    var informerCancellationToken = GetResourceInformerCancellationToken();
-
-                    _ = Task.Run(() =>
-                    {
-                        informer.StartWatching();
-                        _ = informer.RunInfinite(informerCancellationToken);
-                    });
+                    informer.StartWatching();
+                    _resourceInformerTasks.Add(informer.RunInfinite(GetResourceInformerCancellationToken()));
                 }
             }
         }
 
         _logger.LogDebug("Finished seed initialization for {type}.", typeof(T));
+
+        if (container.IsSeeded)
+        {
+            ResourceSeeded?.Invoke(this, kind);
+        }
     }
 
     private ResourceInformerCallback<T> GetResourceInformerCallback<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
@@ -389,9 +431,8 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime
                         items.Remove(item);
                         if (item is V1CustomResourceDefinition crd2)
                         {
-                            RemoveQueuedCustomResourceDefinition(crd2);
                             RemoveCustomResourceDefinitionArtifacts(crd2);
-                            _ = Task.Run(RefreshApiGroupDiscoveryListAsync);
+                            _ = RefreshApiGroupDiscoveryListAsync();
                         }
                         break;
                 }
@@ -399,17 +440,6 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime
                 OnChange?.Invoke(eventType, kind, item);
             });
         });
-    }
-
-    private void QueueCustomResourceDefinition(V1CustomResourceDefinition crd)
-    {
-        _pendingCustomResourceDefinitions[GetCustomResourceDefinitionKey(crd)] = crd;
-        _customResourceDefinitionSignal.Release();
-    }
-
-    private void RemoveQueuedCustomResourceDefinition(V1CustomResourceDefinition crd)
-    {
-        _pendingCustomResourceDefinitions.TryRemove(GetCustomResourceDefinitionKey(crd), out _);
     }
 
     private static string GetCustomResourceDefinitionKey(V1CustomResourceDefinition crd)
@@ -422,48 +452,62 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime
         return KubernetesJson.Serialize(crd.Spec);
     }
 
-    private async Task ProcessQueuedCustomResourceDefinitionsAsync()
+    private void QueueCustomResourceDefinition(V1CustomResourceDefinition crd)
     {
-        while (true)
+        _customResourceDefinitionQueue.Writer.TryWrite(crd);
+    }
+
+    private async Task ProcessCustomResourceDefinitionQueueAsync()
+    {
+        using var activity = StartClusterActivity(
+            nameof(ProcessCustomResourceDefinitionQueueAsync),
+            ActivityKind.Consumer);
+
+        await foreach (var crd in _customResourceDefinitionQueue.Reader.ReadAllAsync(_customResourceDefinitionCancellationTokenSource.Token).ConfigureAwait(false))
         {
-            await _customResourceDefinitionSignal.WaitAsync().ConfigureAwait(false);
-
-            var processed = 0;
-
-            while (processed < MaxQueuedCustomResourceDefinitionsPerBatch && TryTakeQueuedCustomResourceDefinition(out var crd))
-            {
-                processed++;
-
-                try
-                {
-                    _logger.LogInformation("Processing queued CRD {name}", crd.Name());
-
-                    if (await ProcessNewCRD(crd).ConfigureAwait(false))
-                    {
-                        OnCustomResourceDefinitionReady?.Invoke(crd);
-                        _logger.LogInformation("Completed processing queued CRD {name}", crd.Name());
-                    }
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Error processing queued CRD {name}", crd.Name());
-                }
-            }
+            await ProcessCustomResourceDefinitionAsync(crd).ConfigureAwait(false);
         }
     }
 
-    private bool TryTakeQueuedCustomResourceDefinition(out V1CustomResourceDefinition crd)
+    private async Task ProcessCustomResourceDefinitionAsync(V1CustomResourceDefinition crd)
     {
-        foreach (var pending in _pendingCustomResourceDefinitions)
+        using var activity = StartClusterActivity(nameof(ProcessCustomResourceDefinitionAsync));
+        activity?.SetTag("kubernetes.crd.name", crd.Name());
+
+        try
         {
-            if (_pendingCustomResourceDefinitions.TryRemove(pending.Key, out crd))
+            if (!Connected)
             {
-                return true;
+                return;
+            }
+
+            if (await ProcessNewCRD(crd).ConfigureAwait(false))
+            {
+                await NotifyCustomResourceDefinitionReadyAsync(crd).ConfigureAwait(false);
             }
         }
+        catch (Exception ex)
+        {
+            activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
+            _logger.LogError(ex, "Error processing CRD {name}", crd.Name());
+        }
+    }
 
-        crd = null!;
-        return false;
+    private async Task NotifyCustomResourceDefinitionReadyAsync(V1CustomResourceDefinition crd)
+    {
+        var handlers = OnCustomResourceDefinitionReady?.GetInvocationList();
+        if (handlers is null)
+        {
+            return;
+        }
+
+        var tasks = new Task[handlers.Length];
+        for (var index = 0; index < handlers.Length; index++)
+        {
+            tasks[index] = ((Func<V1CustomResourceDefinition, Task>)handlers[index])(crd);
+        }
+
+        await Task.WhenAll(tasks).ConfigureAwait(false);
     }
 
     private async Task RefreshApiGroupDiscoveryListAsync()
@@ -474,12 +518,16 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime
         }
         catch (Exception ex)
         {
+            Activity.Current?.SetStatus(ActivityStatusCode.Error, ex.Message);
             _logger.LogError(ex, "Unable to refresh API discovery for cluster {name}", Name);
         }
     }
 
     private async Task<bool> ProcessNewCRD(V1CustomResourceDefinition crd)
     {
+        using var activity = StartClusterActivity(nameof(ProcessNewCRD));
+        activity?.SetTag("kubernetes.crd.name", crd.Name());
+
         var key = GetCustomResourceDefinitionKey(crd);
         var signature = GetCustomResourceDefinitionSignature(crd);
 
@@ -490,7 +538,10 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime
             return false;
         }
 
+        using var generationActivity = StartClusterActivity("GenerateCustomResourceDefinitionAssembly");
+        generationActivity?.SetTag("kubernetes.crd.name", crd.Name());
         var result = _generator.GenerateAssembly(crd, "KubeUI.Models");
+        generationActivity?.Stop();
 
         if (!result.Success || result.Assembly == null || result.XmlDocumentation == null)
         {
@@ -512,7 +563,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime
             return false;
         }
 
-        var (previousType, currentType) = ModelCache.ReplaceCustomResourceDefinition(crd, result.Assembly, result.XmlDocumentation, result.UnloadHandle);
+        var (previousType, currentType) = ModelCatalog.ReplaceCustomResourceDefinition(crd, result.Assembly, result.XmlDocumentation, result.UnloadHandle);
         if (currentType == null)
         {
             _logger.LogWarning("Unable to resolve generated type for CRD {name}", crd.Name());
@@ -531,7 +582,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime
     private void RemoveCustomResourceDefinitionArtifacts(V1CustomResourceDefinition crd)
     {
         _customResourceDefinitionSignatures.TryRemove(GetCustomResourceDefinitionKey(crd), out _);
-        var removedType = ModelCache.RemoveCustomResourceDefinition(crd);
+        var removedType = ModelCatalog.RemoveCustomResourceDefinition(crd);
         if (removedType != null)
         {
             InvalidateSeededResource(removedType);
@@ -540,24 +591,29 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime
 
     private async Task ReplaceCustomResourceDefinitionArtifactsAsync(Type? previousType, Type currentType)
     {
+        using var activity = StartClusterActivity(nameof(ReplaceCustomResourceDefinitionArtifactsAsync));
+        activity?.SetTag("kubernetes.resource.type", currentType.Name);
+        activity?.SetTag("kubernetes.previous_resource.type", previousType?.Name);
+
         var invalidatedSeedState = previousType != null && InvalidateSeededResource(previousType);
         if (!invalidatedSeedState)
         {
             return;
         }
 
-        await SeedResourceAsync(currentType).ConfigureAwait(false);
+        await SeedResource(currentType).ConfigureAwait(false);
     }
 
     private bool InvalidateSeededResource(Type resourceType)
     {
         var kind = GroupApiVersionKind.From(resourceType);
-        var removedSeedTask = _seedTasks.TryRemove(kind, out _);
 
         if (!Objects.TryRemove(kind, out var existingContainer))
         {
-            return removedSeedTask;
+            return false;
         }
+
+        ResourceUnseeded?.Invoke(this, kind);
 
         if (existingContainer is IClearableResourceContainer resourceContainer)
         {
@@ -567,8 +623,10 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime
         return true;
     }
 
-    private Task SeedResourceAsync(Type resourceType, bool waitForReady = false)
+    public Task SeedResource(Type resourceType, bool waitForReady = false)
     {
+        ArgumentNullException.ThrowIfNull(resourceType);
+
         var method = GetType()
             .GetMethods(BindingFlags.Instance | BindingFlags.Public)
             .First(x => x.Name == nameof(SeedResource) && x.IsGenericMethodDefinition && x.GetParameters().Length == 1)
@@ -665,12 +723,14 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime
             if (item.Metadata.Uid != null)
             {
                 // update
-                await client.ReplaceAsync<T>(item, item.Name());
+                var updated = await client.ReplaceAsync(item, item.Name());
+                item.Metadata = updated.Metadata;
             }
             else
             {
                 // add
-                await client.CreateAsync<T>(item);
+                var created = await client.CreateAsync(item);
+                item.Metadata = created.Metadata;
             }
         }
         else
@@ -678,12 +738,14 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime
             if (item.Metadata.Uid != null)
             {
                 // update namespaced
-                await client.ReplaceNamespacedAsync<T>(item, item.Namespace(), item.Name());
+                var updated = await client.ReplaceNamespacedAsync(item, item.Namespace(), item.Name());
+                item.Metadata = updated.Metadata;
             }
             else
             {
                 // add namespaced
-                await client.CreateNamespacedAsync<T>(item, item.Namespace());
+                var created = await client.CreateNamespacedAsync(item, item.Namespace());
+                item.Metadata = created.Metadata;
             }
         }
     }
@@ -693,7 +755,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime
         var dryRunMethod = GetType().GetMethods(BindingFlags.Instance | BindingFlags.NonPublic)
             .First(x => x.Name == nameof(DryRunResourceAsync) && x.IsGenericMethod && x.GetParameters().Length == 1);
 
-        var reader = new StreamReader(stream);
+        using var reader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, bufferSize: 1024, leaveOpen: true);
         var parser = new Parser(new StringReader(reader.ReadToEnd()));
         parser.Consume<StreamStart>();
 
@@ -707,7 +769,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime
             var obj = Serialization.KubernetesYaml.Deserialize<KubernetesObject>(yaml);
             try
             {
-                var type = ModelCache.GetResourceType(obj.ApiGroup(), obj.ApiGroupVersion(), obj.Kind);
+                var type = ModelCatalog.GetResourceType(obj.ApiGroup(), obj.ApiGroupVersion(), obj.Kind);
 
                 if (type == null)
                 {
@@ -739,7 +801,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime
     {
         var mi = GetType().GetMethods().First(x => x.Name == nameof(AddOrUpdateResource) && x.IsGenericMethod && x.GetParameters().Length == 1);
 
-        var reader = new StreamReader(stream);
+        using var reader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, bufferSize: 1024, leaveOpen: true);
         var parser = new Parser(new StringReader(reader.ReadToEnd()));
         parser.Consume<StreamStart>();
 
@@ -753,7 +815,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime
             var obj = Serialization.KubernetesYaml.Deserialize<KubernetesObject>(yaml);
             try
             {
-                var type = ModelCache.GetResourceType(obj.ApiGroup(), obj.ApiGroupVersion(), obj.Kind);
+                var type = ModelCatalog.GetResourceType(obj.ApiGroup(), obj.ApiGroupVersion(), obj.Kind);
 
                 if (type == null)
                 {
@@ -797,7 +859,8 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime
             {
                 try
                 {
-                    await ImportYaml(file.OpenRead());
+                    await using var stream = file.OpenRead();
+                    await ImportYaml(stream);
                 }
                 catch (Exception ex)
                 {
@@ -929,6 +992,8 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime
 
     private async Task<V2beta1APIGroupDiscoveryList> GetAPIGroupDiscoveryList(bool native = true)
     {
+        using var activity = StartClusterActivity(nameof(GetAPIGroupDiscoveryList) + (native ? "Native" : ""));
+
         var mi = typeof(k8s.Kubernetes).GetMethod("SendRequest", BindingFlags.NonPublic | BindingFlags.Instance);
 
         var gen = mi.MakeGenericMethod([typeof(V2beta1APIGroupDiscoveryList)]);
@@ -941,7 +1006,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime
         //SendRequest(string relativeUri, HttpMethod method, IReadOnlyDictionary<string, IReadOnlyList<string>> customHeaders, T body, CancellationToken cancellationToken)
         var resp = await (Task<HttpResponseMessage>)gen.Invoke(Client, [$"/{(native ? "api" : "apis")}?timeout=32s", HttpMethod.Get, headers, null, CancellationToken.None]);
 
-        return await resp.Content.ReadFromJsonAsync<V2beta1APIGroupDiscoveryList>(CustomSourceGenerationContext.Default.V2beta1APIGroupDiscoveryList).ConfigureAwait(false)
+        return await resp.Content.ReadFromJsonAsync(CustomSourceGenerationContext.Default.V2beta1APIGroupDiscoveryList).ConfigureAwait(false)
             ?? throw new InvalidOperationException("API group discovery response was empty.");
     }
 
@@ -982,60 +1047,62 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime
         IsMetricsAvailable = false;
     }
 
-    private void StopResourceInformers()
+    private async Task StopResourceInformersAsync()
     {
-        _resourceInformerCancellationTokenSource?.Cancel();
-        _resourceInformerCancellationTokenSource?.Dispose();
-        _resourceInformerCancellationTokenSource = null;
+        var cancellationTokenSource = Interlocked.Exchange(ref _resourceInformerCancellationTokenSource, null);
+        cancellationTokenSource?.Cancel();
+
+        if (Client is IDisposable disposableClient)
+        {
+            disposableClient.Dispose();
+            Client = null;
+        }
+
+        var informerTasks = Interlocked.Exchange(ref _resourceInformerTasks, []).ToArray();
+        try
+        {
+            using var shutdownTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+            await Task.WhenAll(informerTasks).WaitAsync(shutdownTimeout.Token).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (cancellationTokenSource?.IsCancellationRequested == true)
+        {
+        }
+
+        foreach (var container in Objects.Values.OfType<IClearableResourceContainer>())
+        {
+            container.Clear();
+        }
+
+        cancellationTokenSource?.Dispose();
     }
 
     private void ClearDynamicCustomResourceDefinitions()
     {
-        var processedCustomResourceDefinitions = new HashSet<string>(StringComparer.Ordinal);
-
         if (Objects.TryGetValue(GroupApiVersionKind.From<V1CustomResourceDefinition>(), out var existing)
             && existing is ContainerClass<V1CustomResourceDefinition> container)
         {
             foreach (var crd in container.Items.Items.ToList())
             {
-                processedCustomResourceDefinitions.Add(GetCustomResourceDefinitionKey(crd));
                 RemoveCustomResourceDefinitionArtifacts(crd);
             }
         }
 
-        foreach (var pending in _pendingCustomResourceDefinitions.Values.ToList())
-        {
-            if (!processedCustomResourceDefinitions.Add(GetCustomResourceDefinitionKey(pending)))
-            {
-                continue;
-            }
-
-            RemoveCustomResourceDefinitionArtifacts(pending);
-        }
-
-        _pendingCustomResourceDefinitions.Clear();
-
-        while (_customResourceDefinitionSignal.Wait(0))
-        {
-        }
+        ModelCatalog.RemoveAllCustomResourceDefinitions();
     }
 
     private void ClearSeededResources()
     {
-        foreach (var container in Objects.Values)
+        foreach (var pair in Objects)
         {
-            if (container is IClearableResourceContainer resourceContainer)
+            ResourceUnseeded?.Invoke(this, pair.Key);
+
+            if (pair.Value is IClearableResourceContainer resourceContainer)
             {
                 ClearResourceContainer(resourceContainer);
             }
         }
 
         Objects.Clear();
-    }
-
-    private void ClearSeedTasks()
-    {
-        _seedTasks.Clear();
     }
 
     private static void ClearResourceContainer(IClearableResourceContainer container)
@@ -1058,37 +1125,50 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime
         }
     }
 
-    private static void DisposeInformerRegistrations(IList<IResourceInformerRegistration> registrations)
-    {
-        foreach (var registration in registrations)
-        {
-            registration.Dispose();
-        }
-
-        registrations.Clear();
-    }
-
-    private static void DisposeInformers(IList<IResourceInformer> informers)
-    {
-        foreach (var informer in informers.OfType<IDisposable>())
-        {
-            informer.Dispose();
-        }
-
-        informers.Clear();
-    }
 }
 
-public interface IClearableResourceContainer
+public interface IResourceContainer
+{
+    int InformerCount { get; }
+    bool IsSeeded { get; }
+    IObservable<ResourceChange> ConnectChanges(GroupApiVersionKind kind);
+    IReadOnlyList<IKubernetesObject<V1ObjectMeta>> Snapshot();
+}
+
+public interface IClearableResourceContainer : IResourceContainer
 {
     void Clear();
 }
 
 public partial class ContainerClass<T> : ObservableObject, IClearableResourceContainer where T : class, IKubernetesObject<V1ObjectMeta>, new()
 {
+    private Lazy<Task>? _seedTask;
+
     public Type Type { get; } = typeof(T);
 
+    public int InformerCount => Informers.Count;
+
+    public bool IsSeeded => InformerCount > 0;
+
     public ISourceCache<T, string> Items { get; } = new SourceCache<T, string>(x => x.Namespace() + "/" + x.Name());
+
+    public IObservable<ResourceChange> ConnectChanges(GroupApiVersionKind kind)
+    {
+        return Items.Connect()
+            .SelectMany(changes => changes)
+            .Select(change => new ResourceChange(
+                change.Reason switch
+                {
+                    ChangeReason.Add => WatchEventType.Added,
+                    ChangeReason.Remove => WatchEventType.Deleted,
+                    _ => WatchEventType.Modified,
+                },
+                kind,
+                change.Current));
+    }
+
+    public IReadOnlyList<IKubernetesObject<V1ObjectMeta>> Snapshot()
+        => Items.Items.Cast<IKubernetesObject<V1ObjectMeta>>().ToArray();
 
     [ObservableProperty]
     public partial List<IResourceInformer> Informers { get; set; } = [];
@@ -1098,6 +1178,22 @@ public partial class ContainerClass<T> : ObservableObject, IClearableResourceCon
 
     [ObservableProperty]
     public partial bool Initialized { get; set; }
+
+    internal Lazy<Task> GetOrCreateSeedTask(Func<Task> seedFactory)
+    {
+        var newSeedTask = new Lazy<Task>(seedFactory, LazyThreadSafetyMode.ExecutionAndPublication);
+        var seedTask = Interlocked.CompareExchange(ref _seedTask, newSeedTask, null) ?? newSeedTask;
+        Initialized = true;
+        return seedTask;
+    }
+
+    internal void RemoveSeedTask(Lazy<Task> seedTask)
+    {
+        if (ReferenceEquals(Interlocked.CompareExchange(ref _seedTask, null, seedTask), seedTask))
+        {
+            Initialized = false;
+        }
+    }
 
     public void Clear()
     {
@@ -1115,6 +1211,7 @@ public partial class ContainerClass<T> : ObservableObject, IClearableResourceCon
 
         Informers.Clear();
         Items.Clear();
+        Interlocked.Exchange(ref _seedTask, null);
         Initialized = false;
     }
 }

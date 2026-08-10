@@ -2,6 +2,7 @@ using System.Reflection;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using k8s.Models;
 using KubeUI.Avalonia.Features.Resources.Properties.Controls;
 using KubeUI.Avalonia.Tests.Infra;
@@ -9,16 +10,52 @@ using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Features.Resources.Properties;
 
-public sealed class ResourceEventsViewTests : AvaloniaTestBase
+public sealed class ResourceEventsViewTests
 {
+    [AvaloniaFact]
+    public void event_card_uses_compact_event_layout_and_theme_foreground()
+    {
+        var createEventCard = typeof(ResourceEventsView).GetMethod(
+            "CreateEventCard",
+            BindingFlags.Static | BindingFlags.NonPublic);
+        createEventCard.ShouldNotBeNull();
+
+        var card = createEventCard.Invoke(
+            null,
+            [new ResourceEventItem(
+                "Container started",
+                "kubelet r720",
+                1,
+                "spec.containers{rclone}",
+                "32m ago",
+                false)]).ShouldBeOfType<Border>();
+
+        var window = new Window { Content = card };
+        window.Show();
+        Dispatcher.UIThread.RunJobs();
+
+        var headline = window.GetVisualDescendants()
+            .OfType<TextBlock>()
+            .Single(text => text.Text == "Container started");
+
+        headline.Foreground.ShouldNotBeNull();
+
+        window.GetVisualDescendants()
+            .OfType<PropertyItem>()
+            .Count()
+            .ShouldBe(4);
+
+        window.Close();
+        Dispatcher.UIThread.RunJobs();
+    }
+
     [AvaloniaFact]
     public async Task pre_attach_refresh_does_not_throw_when_dispatcher_flushes()
     {
-        var workspace = new TestCluster().CreateWorkspace();
-        await workspace.EnsureWorkspaceStateInitializedAsync();
-        _ = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
+        using var workspace = await Application.Current.CreateClusterAsync();
+        var services = Application.Current.GetTestServices();
 
-        var view = new ResourceEventsView();
+        var view = ActivatorUtilities.CreateInstance<ResourceEventsView>(services);
         view.Initialize(workspace);
         view.DataContext = new V1Pod
         {
@@ -47,11 +84,10 @@ public sealed class ResourceEventsViewTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task detached_resource_events_view_does_not_throw_when_data_context_changes()
     {
-        var workspace = new TestCluster().CreateWorkspace();
-        await workspace.EnsureWorkspaceStateInitializedAsync();
-        _ = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
+        using var workspace = await Application.Current.CreateClusterAsync();
+        var services = Application.Current.GetTestServices();
 
-        var view = new ResourceEventsView();
+        var view = ActivatorUtilities.CreateInstance<ResourceEventsView>(services);
         view.Initialize(workspace);
 
         var window = new Window
@@ -89,11 +125,10 @@ public sealed class ResourceEventsViewTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task refresh_keeps_a_stable_items_source_instance()
     {
-        var workspace = new TestCluster().CreateWorkspace();
-        await workspace.EnsureWorkspaceStateInitializedAsync();
-        _ = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
+        using var workspace = await Application.Current.CreateClusterAsync();
+        var services = Application.Current.GetTestServices();
 
-        var view = new ResourceEventsView();
+        var view = ActivatorUtilities.CreateInstance<ResourceEventsView>(services);
         view.Initialize(workspace);
 
         var window = new Window
@@ -130,11 +165,10 @@ public sealed class ResourceEventsViewTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task queued_update_during_teardown_does_not_throw()
     {
-        var workspace = new TestCluster().CreateWorkspace();
-        await workspace.EnsureWorkspaceStateInitializedAsync();
-        _ = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
+        using var workspace = await Application.Current.CreateClusterAsync();
+        var services = Application.Current.GetTestServices();
 
-        var view = new ResourceEventsView();
+        var view = ActivatorUtilities.CreateInstance<ResourceEventsView>(services);
         view.Initialize(workspace);
         view.DataContext = new V1Pod
         {

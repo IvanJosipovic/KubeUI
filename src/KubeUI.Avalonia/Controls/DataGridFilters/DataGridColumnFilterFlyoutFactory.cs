@@ -1,6 +1,5 @@
 using Avalonia.Controls.DataGridFiltering;
 using Avalonia.Controls.Primitives;
-using Avalonia.Styling;
 using KubeUI.Avalonia.Resources;
 
 namespace KubeUI.Avalonia.Controls.DataGridFilters;
@@ -33,6 +32,7 @@ internal sealed class DataGridColumnFilterFlyoutFactory
         if (Application.Current?.TryFindResource("DataGridFilterFlyoutPresenterTheme", out var presenterTheme) == true &&
             presenterTheme is ControlTheme controlTheme)
         {
+            controlTheme.BasedOn ??= Application.Current.FindResource(typeof(FlyoutPresenter)) as ControlTheme;
             flyout.FlyoutPresenterTheme = controlTheme;
         }
 

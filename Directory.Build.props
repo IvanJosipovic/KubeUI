@@ -1,5 +1,8 @@
 <Project>
   <PropertyGroup>
-    <WarningsAsErrors>$(WarningsAsErrors);CS4014</WarningsAsErrors>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <AnalysisMode>Recommended</AnalysisMode>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <TestingPlatformShowTestsFailure>true</TestingPlatformShowTestsFailure>
   </PropertyGroup>
 </Project>

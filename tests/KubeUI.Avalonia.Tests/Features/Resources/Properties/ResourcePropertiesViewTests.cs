@@ -1,28 +1,22 @@
-using System.Collections.Generic;
-using System.ComponentModel;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using k8s.Models;
 using KubeUI.Avalonia.Features.Resources.Properties.Controls;
-using KubeUI.Avalonia.Features.Resources.Properties.ViewModels;
-using KubeUI.Avalonia.Features.Resources.Properties.Views;
 using KubeUI.Avalonia.Tests.Infra;
-using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 using AppResources = KubeUI.Avalonia.Assets.Resources;
 
 namespace KubeUI.Avalonia.Tests.Features.Resources.Properties;
 
-public sealed class ResourcePropertiesViewTests : AvaloniaTestBase
+public sealed class ResourcePropertiesViewTests
 {
     [AvaloniaFact]
     public async Task namespaced_resource_shows_namespace_property_item()
     {
-        var workspace = new TestCluster().CreateWorkspace();
-        await workspace.EnsureWorkspaceStateInitializedAsync();
-        var services = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
+        var services = Application.Current.GetTestServices();
+        var workspace = await Application.Current.CreateClusterAsync();
         var viewModel = services.GetRequiredService<ResourcePropertiesViewModel<V1Pod>>();
         viewModel.Initialize(workspace, new V1Pod
         {
@@ -33,7 +27,58 @@ public sealed class ResourcePropertiesViewTests : AvaloniaTestBase
             }
         });
 
-        var view = new ResourcePropertiesView
+        var view = new ResourcePropertiesView<V1Pod>
+        {
+            DataContext = viewModel
+        };
+
+        var window = new Window
+        {
+            Content = view
+        };
+
+        try
+        {
+            window.Show();
+            Dispatcher.UIThread.RunJobs();
+
+            var items = view.FindControl<StackPanel>("PART_Items")!.Children.OfType<PropertyItem>().ToList();
+
+            items.Any(x => x.Key == AppResources.ResourcePropertiesView_Namespace).ShouldBeTrue();
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task resource_properties_view_renders_leaf_actions_and_submenu_flyouts()
+    {
+        var services = Application.Current.GetTestServices();
+        var workspace = await Application.Current.CreateClusterAsync();
+        var viewModel = services.GetRequiredService<ResourcePropertiesViewModel<V1Pod>>();
+        viewModel.Initialize(workspace, new V1Pod
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "pod-1",
+                NamespaceProperty = "default",
+            },
+            Spec = new V1PodSpec
+            {
+                Containers =
+                [
+                    new V1Container
+                    {
+                        Name = "app",
+                        Image = "example/app:1",
+                    }
+                ]
+            }
+        });
+
+        var view = new ResourcePropertiesView<V1Pod>
         {
             DataContext = viewModel
         };
@@ -46,17 +91,26 @@ public sealed class ResourcePropertiesViewTests : AvaloniaTestBase
         window.Show();
         Dispatcher.UIThread.RunJobs();
 
-        var items = view.FindControl<StackPanel>("PART_Items")!.Children.OfType<PropertyItem>().ToList();
+        var buttons = view.FindControl<StackPanel>("PART_Actions")!.Children.OfType<Button>().ToList();
 
-        items.Any(x => x.Key == AppResources.ResourcePropertiesView_Namespace).ShouldBeTrue();
+        viewModel.Actions.Single(action => action.Title == "View").ShowInPropertiesView.ShouldBeFalse();
+        buttons.Any(button => Equals(ToolTip.GetTip(button), "View")).ShouldBeFalse();
+        buttons.Any(button => button.Command != null && button.Flyout == null).ShouldBeTrue();
+        var submenus = buttons.Select(button => button.Flyout).OfType<MenuFlyout>().ToList();
+        submenus.Count.ShouldBeGreaterThan(1);
+        var submenu = submenus[0];
+        var submenuItems = submenu.Items.OfType<MenuItem>().ToList();
+        submenuItems.ShouldNotBeEmpty();
+        submenuItems.Any(item => item.Items.OfType<MenuItem>().Any()).ShouldBeTrue();
+
+        window.Close();
     }
 
     [AvaloniaFact]
     public async Task cluster_scoped_resource_hides_namespace_property_item()
     {
-        var workspace = new TestCluster().CreateWorkspace();
-        await workspace.EnsureWorkspaceStateInitializedAsync();
-        var services = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
+        var services = Application.Current.GetTestServices();
+        var workspace = await Application.Current.CreateClusterAsync();
         var viewModel = services.GetRequiredService<ResourcePropertiesViewModel<V1Node>>();
         viewModel.Initialize(workspace, new V1Node
         {
@@ -67,7 +121,7 @@ public sealed class ResourcePropertiesViewTests : AvaloniaTestBase
             }
         });
 
-        var view = new ResourcePropertiesView
+        var view = new ResourcePropertiesView<V1Node>
         {
             DataContext = viewModel
         };
@@ -77,12 +131,19 @@ public sealed class ResourcePropertiesViewTests : AvaloniaTestBase
             Content = view
         };
 
-        window.Show();
-        Dispatcher.UIThread.RunJobs();
+        try
+        {
+            window.Show();
+            Dispatcher.UIThread.RunJobs();
 
-        var items = view.FindControl<StackPanel>("PART_Items")!.Children.OfType<PropertyItem>().ToList();
+            var items = view.FindControl<StackPanel>("PART_Items")!.Children.OfType<PropertyItem>().ToList();
 
-        items.Any(x => x.Key == AppResources.ResourcePropertiesView_Namespace).ShouldBeFalse();
+            items.Any(x => x.Key == AppResources.ResourcePropertiesView_Namespace).ShouldBeFalse();
+        }
+        finally
+        {
+            window.Close();
+        }
     }
 
     [AvaloniaFact]
@@ -108,7 +169,7 @@ public sealed class ResourcePropertiesViewTests : AvaloniaTestBase
             },
         };
 
-        var view = new KubeUI.Avalonia.Resources.Workloads.v1.Pod.Views.PropertiesView
+        var view = new Avalonia.Resources.Workloads.v1.Pod.PropertiesView
         {
             DataContext = pod,
         };
@@ -118,23 +179,30 @@ public sealed class ResourcePropertiesViewTests : AvaloniaTestBase
             Content = view,
         };
 
-        window.Show();
-        Dispatcher.UIThread.RunJobs();
-        Dispatcher.UIThread.RunJobs();
+        try
+        {
+            window.Show();
+            Dispatcher.UIThread.RunJobs();
+            Dispatcher.UIThread.RunJobs();
 
-        ExpandableSection section = view.GetVisualDescendants()
-            .OfType<ExpandableSection>()
-            .Single(x => Equals(x.Header, AppResources.PodPropertiesView_EphemeralContainers));
+            var section = view.GetVisualDescendants()
+                .OfType<ExpandableSection>()
+                .Single(x => Equals(x.Header, AppResources.PodPropertiesView_EphemeralContainers));
 
-        section.IsVisible.ShouldBeTrue();
+            section.IsVisible.ShouldBeTrue();
+        }
+        finally
+        {
+            window.Close();
+        }
     }
 
     [AvaloniaFact]
     public async Task resource_updates_raise_object_changed_even_for_same_instance()
     {
-        var workspace = new TestCluster().CreateWorkspace();
-        await workspace.EnsureWorkspaceStateInitializedAsync();
-        var services = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
+        var services = Application.Current.GetTestServices();
+        var workspace = await Application.Current.CreateClusterAsync();
+        await workspace.Runtime.SeedResource<V1Pod>(true);
         var viewModel = services.GetRequiredService<ResourcePropertiesViewModel<V1Pod>>();
         var pod = new V1Pod
         {
@@ -147,36 +215,35 @@ public sealed class ResourcePropertiesViewTests : AvaloniaTestBase
 
         viewModel.Initialize(workspace, pod);
 
-        var changeCount = 0;
-        ((INotifyPropertyChanged)viewModel).PropertyChanged += (_, e) =>
-        {
-            if (e.PropertyName == nameof(ResourcePropertiesViewModel<V1Pod>.Object))
-            {
-                changeCount++;
-            }
-        };
-
-        await workspace.AddOrUpdateResource(pod);
+        await workspace.Runtime.AddOrUpdateResource(pod);
         Dispatcher.UIThread.RunJobs();
-        changeCount = 0;
+        await TestWait.UntilAsync(
+            () => workspace.Runtime.GetResource<V1Pod>("default", "pod-1") is not null,
+            TimeSpan.FromSeconds(5),
+            cancellationToken: TestContext.Current.CancellationToken);
 
         pod.Metadata.Labels = new Dictionary<string, string>
         {
             ["updated"] = "true",
         };
 
-        await workspace.AddOrUpdateResource(pod);
+        await workspace.Runtime.AddOrUpdateResource(pod);
         Dispatcher.UIThread.RunJobs();
 
-        changeCount.ShouldBe(1);
+        await TestWait.UntilAsync(
+            () => workspace.Runtime.GetResource<V1Pod>("default", "pod-1")?.Metadata?.Labels?.TryGetValue("updated", out var value) == true
+                && value == "true",
+            TimeSpan.FromSeconds(5),
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        workspace.Runtime.GetResource<V1Pod>("default", "pod-1")!.Metadata.Labels.ShouldContainKeyAndValue("updated", "true");
     }
 
     [AvaloniaFact]
     public async Task detached_resource_properties_view_does_not_throw_when_view_model_changes()
     {
-        var workspace = new TestCluster().CreateWorkspace();
-        await workspace.EnsureWorkspaceStateInitializedAsync();
-        var services = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
+        var services = Application.Current.GetTestServices();
+        var workspace = await Application.Current.CreateClusterAsync();
         var viewModel = services.GetRequiredService<ResourcePropertiesViewModel<V1Pod>>();
         viewModel.Initialize(workspace, new V1Pod
         {
@@ -187,7 +254,7 @@ public sealed class ResourcePropertiesViewTests : AvaloniaTestBase
             }
         });
 
-        var view = new ResourcePropertiesView
+        var view = new ResourcePropertiesView<V1Pod>
         {
             DataContext = viewModel,
         };

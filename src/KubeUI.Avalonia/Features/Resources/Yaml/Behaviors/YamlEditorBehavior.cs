@@ -1,7 +1,5 @@
-using System.ComponentModel;
-using Avalonia;
 using Avalonia.Input;
-using Avalonia.Styling;
+using Avalonia.Markup.Xaml.MarkupExtensions;
 using Avalonia.Xaml.Interactivity;
 using AvaloniaEdit;
 using AvaloniaEdit.CodeCompletion;
@@ -10,13 +8,8 @@ using AvaloniaEdit.Editing;
 using AvaloniaEdit.Folding;
 using AvaloniaEdit.Indentation;
 using AvaloniaEdit.TextMate;
-using KubeUI.Avalonia;
-using KubeUI.Avalonia.Features.Resources.Yaml.ViewModels;
-using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
-using KubeUI.Kubernetes;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
+using KubeUI.Avalonia.Styles;
 using TextMateSharp.Grammars;
 using static AvaloniaEdit.TextMate.TextMate;
 
@@ -72,9 +65,9 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
     private FoldingManager? _foldingManager;
     private ResourceYamlViewModel? _currentViewModel;
     private readonly Dictionary<string, Queue<bool>> _savedFoldStates = new(StringComparer.Ordinal);
-    private bool _isRefreshingFromViewModel;
     private CompletionWindow? _completionWindow;
     private EditorInputHandler? _editorInputHandler;
+    private DispatcherTimer? _foldingUpdateTimer;
 
     protected override void OnAttached()
     {
@@ -106,6 +99,11 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
             TryIndentSelection,
             TryUnindentSelection);
         AssociatedObject.TextArea.PushStackedInputHandler(_editorInputHandler);
+        _foldingUpdateTimer = new DispatcherTimer
+        {
+            Interval = TimeSpan.FromMilliseconds(150),
+        };
+        _foldingUpdateTimer.Tick += FoldingUpdateTimerOnTick;
 
         if (AssociatedObject.DataContext is ResourceYamlViewModel vm)
         {
@@ -212,6 +210,13 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
             }
         }
 
+        if (_foldingUpdateTimer != null)
+        {
+            _foldingUpdateTimer.Stop();
+            _foldingUpdateTimer.Tick -= FoldingUpdateTimerOnTick;
+            _foldingUpdateTimer = null;
+        }
+
         Application.Current!.ActualThemeVariantChanged -= ThemeChanged;
         CloseCompletionWindow();
 
@@ -249,13 +254,25 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
 
     private void Editor_TextChanged(object? sender, EventArgs e)
     {
-        if (!_isRefreshingFromViewModel)
+        CloseCompletionWindow();
+        ScheduleFoldingUpdate();
+    }
+
+    private void ScheduleFoldingUpdate()
+    {
+        if (_foldingUpdateTimer == null)
         {
-            PersistFoldingState(_currentViewModel);
+            return;
         }
 
+        _foldingUpdateTimer.Stop();
+        _foldingUpdateTimer.Start();
+    }
+
+    private void FoldingUpdateTimerOnTick(object? sender, EventArgs e)
+    {
+        _foldingUpdateTimer?.Stop();
         UpdateFoldings();
-        _isRefreshingFromViewModel = false;
     }
 
     private void PersistFoldingState(ResourceYamlViewModel? vm, bool persistToViewModel = false)
@@ -315,7 +332,6 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
             or nameof(ResourceYamlViewModel.HideNoisyFields))
         {
             PersistFoldingState(_currentViewModel);
-            _isRefreshingFromViewModel = true;
         }
     }
 
@@ -445,7 +461,7 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
                 AssociatedObject.Document,
                 AssociatedObject.CaretOffset,
                 _currentViewModel.Object.GetType(),
-                _currentViewModel.Cluster.ModelCache,
+                _currentViewModel.Cluster.Runtime.ModelCatalog,
                 out var insertionText))
         {
             return false;
@@ -662,9 +678,13 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
             AssociatedObject.Document,
             AssociatedObject.CaretOffset,
             _currentViewModel.Object.GetType(),
-            _currentViewModel.Cluster.ModelCache);
+            _currentViewModel.Cluster.Runtime.ModelCatalog);
 
-        if (context.CompletionItems.Count == 0)
+        var completionItems = context.CompletionItems
+            .Where(item => item.Text.StartsWith(context.Key.Prefix, StringComparison.OrdinalIgnoreCase))
+            .ToArray();
+
+        if (completionItems.Length == 0)
         {
             CloseCompletionWindow();
             return;
@@ -673,6 +693,9 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
         if (_completionWindow == null)
         {
             _completionWindow = new CompletionWindow(AssociatedObject.TextArea);
+            _completionWindow.CompletionList
+                .FontFamily(new DynamicResourceExtension(Typography.CodeFontFamilyResourceKey))
+                .FontSize(new DynamicResourceExtension(Typography.CodeFontSizeResourceKey));
             _completionWindow.Closed += CompletionWindow_Closed;
         }
         else
@@ -683,7 +706,7 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
         _completionWindow.StartOffset = context.Key.StartOffset;
         _completionWindow.EndOffset = Math.Max(context.Key.StartOffset, context.Key.EndOffset);
 
-        foreach (var item in context.CompletionItems)
+        foreach (var item in completionItems)
         {
             _completionWindow.CompletionList.CompletionData.Add(new YamlCompletionData(item));
         }

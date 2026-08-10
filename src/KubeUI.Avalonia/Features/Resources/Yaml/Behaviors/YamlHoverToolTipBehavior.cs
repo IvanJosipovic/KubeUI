@@ -1,14 +1,7 @@
-using System.ComponentModel;
-using Avalonia;
-using Avalonia.Controls;
-using Avalonia.Controls.Primitives;
 using Avalonia.Input;
-using Avalonia.Threading;
 using Avalonia.Xaml.Interactivity;
 using AvaloniaEdit;
-using AvaloniaEdit.Document;
-using KubeUI.Avalonia.Features.Resources.Yaml.ViewModels;
-using KubeUI.Avalonia.Resources.Workloads.v1.Pod.Views;
+using KubeUI.Avalonia.Infrastructure.Platform;
 
 namespace KubeUI.Avalonia.Features.Resources.Yaml.Behaviors;
 
@@ -286,9 +279,9 @@ public sealed class YamlHoverToolTipBehavior : Behavior<TextEditor>
             AssociatedObject.Document,
             offset,
             _currentViewModel.Object.GetType(),
-            _currentViewModel.Cluster.ModelCache);
+            _currentViewModel.Cluster.Runtime.ModelCatalog);
 
-        if (context.Documentation == null || context.CurrentProperty == null || !IsWithinFieldName(AssociatedObject.Document, offset, context))
+        if (context.Documentation == null || context.CurrentProperty == null || !IsWithinFieldName(offset, context))
         {
             return false;
         }
@@ -363,9 +356,8 @@ public sealed class YamlHoverToolTipBehavior : Behavior<TextEditor>
         return true;
     }
 
-    private static bool IsWithinFieldName(TextDocument document, int offset, YamlContextResult context)
+    private static bool IsWithinFieldName(int offset, YamlContextResult context)
     {
-        _ = document;
         return offset >= context.Key.StartOffset && offset <= context.Key.EndOffset;
     }
 }

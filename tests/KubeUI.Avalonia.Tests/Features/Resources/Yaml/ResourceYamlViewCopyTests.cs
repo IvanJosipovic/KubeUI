@@ -1,26 +1,23 @@
-using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Input.Platform;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
 using k8s.Models;
-using KubeUI.Avalonia.Infrastructure.DependencyInjection;
 using KubeUI.Avalonia.Tests.Infra;
-using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Features.Resources.Yaml;
 
-public sealed class ResourceYamlViewCopyTests : AvaloniaTestBase
+public sealed class ResourceYamlViewCopyTests
 {
     [AvaloniaFact]
     public async Task Editor_copy_writes_selected_yaml_text_to_the_clipboard()
     {
-        var cluster = new TestCluster().CreateWorkspace();
-        await cluster.EnsureWorkspaceStateInitializedAsync();
+        var services = Application.Current.GetTestServices();
+        using var cluster = await Application.Current.CreateClusterAsync();
 
-        var viewModel = TestApp.CurrentServices!.GetRequiredService<ResourceYamlViewModel>();
+        var viewModel = services.GetRequiredService<ResourceYamlViewModel>();
         viewModel.Initialize(cluster, new V1Pod
         {
             Metadata = new V1ObjectMeta
@@ -72,7 +69,7 @@ public sealed class ResourceYamlViewCopyTests : AvaloniaTestBase
                     break;
                 }
 
-                await Task.Delay(20);
+                await TestWait.NextPollAsync(TimeSpan.FromMilliseconds(20), TestContext.Current.CancellationToken);
             }
 
             copiedText.ShouldBe(editor.Text);
@@ -86,10 +83,10 @@ public sealed class ResourceYamlViewCopyTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task Editor_context_menu_copy_writes_selected_yaml_text_to_the_clipboard()
     {
-        var cluster = new TestCluster().CreateWorkspace();
-        await cluster.EnsureWorkspaceStateInitializedAsync();
+        var services = Application.Current.GetTestServices();
+        using var cluster = await Application.Current.CreateClusterAsync();
 
-        var viewModel = TestApp.CurrentServices!.GetRequiredService<ResourceYamlViewModel>();
+        var viewModel = services.GetRequiredService<ResourceYamlViewModel>();
         viewModel.Initialize(cluster, new V1Pod
         {
             Metadata = new V1ObjectMeta
@@ -145,7 +142,7 @@ public sealed class ResourceYamlViewCopyTests : AvaloniaTestBase
                     break;
                 }
 
-                await Task.Delay(20);
+                await TestWait.NextPollAsync(TimeSpan.FromMilliseconds(20), TestContext.Current.CancellationToken);
             }
 
             copiedText.ShouldBe(editor.Text);

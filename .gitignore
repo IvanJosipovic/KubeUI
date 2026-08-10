@@ -404,3 +404,4 @@ packed
 *.lscache
 
 .dotnet
+.testagent

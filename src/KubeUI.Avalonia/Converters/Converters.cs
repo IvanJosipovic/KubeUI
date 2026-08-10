@@ -1,9 +1,5 @@
 using System.Globalization;
 using Avalonia.Data.Converters;
-using Avalonia.Media;
-using k8s;
-using k8s.Models;
-using KubeUI.Avalonia.Infrastructure;
 
 namespace KubeUI.Avalonia.Converters;
 
@@ -12,21 +8,21 @@ namespace KubeUI.Avalonia.Converters;
 /// </summary>
 public static class Converters
 {
-    /// <summary>
-    /// A value converter that returns the Controller Name if value is a IKubernetesObject<V1ObjectMeta>
-    /// </summary>
-    public static readonly IValueConverter ObjectOwnerName =
-        new FuncValueConverter<object, string>(value =>
+    public static readonly IValueConverter NotNull = new FuncValueConverter<object?, bool>((x) => x != null && x != AvaloniaProperty.UnsetValue);
+
+    public static readonly IValueConverter IsNull = new FuncValueConverter<object?, bool>((x) => x == null || x == AvaloniaProperty.UnsetValue);
+
+    public static IValueConverter StringFormat(string Format)
+    {
+        return new FuncValueConverter<object?, string>(value =>
         {
-            if (value is IKubernetesObject<V1ObjectMeta> obj)
+            if (value != null && value != AvaloniaProperty.UnsetValue)
             {
-                return obj.Metadata.OwnerReferences?.FirstOrDefault(x => x.Controller == true)?.Name ?? "N/A";
+                return string.Format(Format, value);
             }
-
-            return "N/A";
+            return string.Empty;
         });
-
-    public static readonly IValueConverter NotNull = new FuncValueConverter<object, bool>((x) => x != null && x != AvaloniaProperty.UnsetValue);
+    }
 }
 
 public sealed class PropertyItemValueConverter : IValueConverter
@@ -51,21 +47,6 @@ public sealed class PropertyItemValueConverter : IValueConverter
         }
 
         return value.ToString() ?? string.Empty;
-    }
-
-    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
-        => throw new NotSupportedException();
-}
-
-public sealed class EventWarningForegroundConverter : IValueConverter
-{
-    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
-    {
-        var isWarning = value is bool flag
-            ? flag
-            : string.Equals(value?.ToString(), "Warning", StringComparison.Ordinal);
-
-        return isWarning ? Brushes.Red : AvaloniaProperty.UnsetValue;
     }
 
     public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)

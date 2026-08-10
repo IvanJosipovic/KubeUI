@@ -3,14 +3,13 @@ using System.Text.Json.Serialization;
 using System.Xml;
 using AvaloniaEdit.Document;
 using k8s.Models;
-using KubeUI.Kubernetes;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Features.Resources.Yaml;
 
 public class YamlSchemaContextTests
 {
-    private static readonly ModelCache s_modelCache = CreateModelCache();
+    private static readonly ClusterModelCatalog s_modelCache = CreateModelCache();
 
     [Fact]
     public void Resolve_UsesJsonPropertyNameForRootCompletions()
@@ -688,23 +687,23 @@ public class YamlSchemaContextTests
         insertionText.ShouldBeEmpty();
     }
 
-    private static ModelCache CreateModelCache()
+    private static ClusterModelCatalog CreateModelCache()
     {
-        var cache = new ModelCache();
+        var cache = new ClusterModelCatalog(new KubernetesModelCatalog());
         var xml = new XmlDocument();
         using var stream = typeof(KubernetesCRDModelGen.Generator).Assembly.GetManifestResourceStream("runtime.KubernetesClient.xml");
         stream.ShouldNotBeNull();
         xml.Load(stream);
-        cache.AddToCache(typeof(V1Pod).Assembly, xml);
+        cache.CrdModels.AddToCache(typeof(V1Pod).Assembly, xml);
         return cache;
     }
 
-    private static ModelCache CreateModelCacheWithXml(string xmlContent, Assembly assembly)
+    private static ClusterModelCatalog CreateModelCacheWithXml(string xmlContent, Assembly assembly)
     {
-        var cache = new ModelCache();
+        var cache = new ClusterModelCatalog(new KubernetesModelCatalog());
         var xml = new XmlDocument();
         xml.LoadXml(xmlContent);
-        cache.AddToCache(assembly, xml);
+        cache.CrdModels.AddToCache(assembly, xml);
         return cache;
     }
 
