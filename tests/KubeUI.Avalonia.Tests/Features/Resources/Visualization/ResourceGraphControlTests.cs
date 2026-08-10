@@ -188,7 +188,7 @@ public sealed class ResourceGraphControlTests
         var deadline = DateTime.UtcNow.AddSeconds(5);
         while (!signal.IsCompleted)
         {
-            Dispatcher.UIThread.RunJobs();
+            await TestApplicationExtensions.WaitForUiAsync();
             if (DateTime.UtcNow >= deadline)
             {
                 throw new TimeoutException($"Timed out waiting for {description}.");
@@ -227,13 +227,13 @@ public sealed class ResourceGraphControlTests
         cluster.SelectedNamespaces.Select(x => x.Name()).ShouldNotContain("team-a");
 
         viewModel.IsNamespaceSelectionLinked = false;
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         ReferenceEquals(viewModel.SelectedNamespaces, cluster.SelectedNamespaces).ShouldBeFalse();
         viewModel.SelectedNamespaces.Select(x => x.Name()).ShouldContain("team-a");
 
         cluster.SelectedNamespaces.Add(new V1Namespace { Metadata = new() { Name = "team-b" } });
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         viewModel.SelectedNamespaces.Select(x => x.Name()).ShouldContain("team-a");
         viewModel.SelectedNamespaces.Select(x => x.Name()).ShouldNotContain("team-b");
@@ -816,9 +816,9 @@ public sealed class ResourceGraphControlTests
         cluster.SelectedNamespaces.Clear();
         cluster.SelectedNamespaces.Add(new V1Namespace { Metadata = new() { Name = "default" } });
         viewModel.Initialize(cluster);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
         await builder.WaitForInitialBuildAsync().WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
         await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background);
 
         var pod = CreatePod("late");
@@ -828,11 +828,11 @@ public sealed class ResourceGraphControlTests
 
         viewModel.HideNoise = false;
         await builder.WaitForSecondBuildAsync().WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
         viewModel.Graph!.Resources.ShouldBeEmpty();
 
         await builder.WaitForAdditionCompletedAsync().WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         viewModel.Graph!.Resources.ShouldBeEmpty();
     }
@@ -862,7 +862,7 @@ public sealed class ResourceGraphControlTests
         var pod = CreatePodWithOwner("owned-pod", firstOwner);
         pod.Metadata.Uid = null;
         await cluster.Runtime.AddOrUpdateResource(pod);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var firstOwnerIdentity = GetIdentity(firstOwner);
         var secondOwnerIdentity = GetIdentity(secondOwner);
@@ -902,7 +902,7 @@ public sealed class ResourceGraphControlTests
         while (timeout.Elapsed < TimeSpan.FromSeconds(5)
             && !viewModel.Graph!.Relationships.Contains(changedRelationship))
         {
-            Dispatcher.UIThread.RunJobs();
+            await TestApplicationExtensions.WaitForUiAsync();
             await WaitForNextPollAsync();
         }
 
@@ -1080,12 +1080,12 @@ public sealed class ResourceGraphControlTests
         using VisualizationViewModel viewModel = new(builder);
         await cluster.Runtime.SeedResource<V1Node>(true);
         viewModel.Initialize(cluster);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
         await builder.WaitForInitialBuildAsync();
         var initialGraphDeadline = DateTime.UtcNow.AddSeconds(5);
         while (!viewModel.Graph!.Resources.Any(resource => resource.Name() == "selected"))
         {
-            Dispatcher.UIThread.RunJobs();
+            await TestApplicationExtensions.WaitForUiAsync();
             if (DateTime.UtcNow >= initialGraphDeadline)
             {
                 throw new TimeoutException("Timed out waiting for the initial visualization graph.");
@@ -1124,7 +1124,7 @@ public sealed class ResourceGraphControlTests
 
         cluster.SelectedNamespaces.Clear();
         cluster.SelectedNamespaces.Add(cluster.Runtime.Namespaces.Single(item => item.Name() == "other"));
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         (await builder.WaitForBuildAsync(input => input.SelectedNamespaces.SequenceEqual(["other"])))
             .SelectedNamespaces.ShouldBe(["other"]);
@@ -1144,7 +1144,7 @@ public sealed class ResourceGraphControlTests
         var deadline = DateTime.UtcNow.AddSeconds(5);
         while (viewModel.Graph == null || viewModel.Graph.Resources.Count == 0)
         {
-            Dispatcher.UIThread.RunJobs();
+            await TestApplicationExtensions.WaitForUiAsync();
             if (DateTime.UtcNow >= deadline)
             {
                 throw new TimeoutException("Timed out waiting for the namespace-filtered graph.");
@@ -1171,7 +1171,7 @@ public sealed class ResourceGraphControlTests
         (await builder.WaitForBuildAsync(1)).HideNoise.ShouldBeTrue();
 
         viewModel.HideNoise = false;
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         (await builder.WaitForBuildAsync(2)).HideNoise.ShouldBeFalse();
     }
@@ -1207,7 +1207,7 @@ public sealed class ResourceGraphControlTests
             },
         });
 
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
         viewModel.Graph!.Resources.ShouldNotContain(resource => resource.Name() == "unrelated");
     }
 
@@ -1248,7 +1248,7 @@ public sealed class ResourceGraphControlTests
         var initialGraphDeadline = DateTime.UtcNow.AddSeconds(5);
         while (!viewModel.Graph!.Resources.Any(resource => resource.Name() == "selected"))
         {
-            Dispatcher.UIThread.RunJobs();
+            await TestApplicationExtensions.WaitForUiAsync();
             if (DateTime.UtcNow >= initialGraphDeadline)
             {
                 throw new TimeoutException("Timed out waiting for the initial visualization graph.");
@@ -1268,9 +1268,9 @@ public sealed class ResourceGraphControlTests
                 () => cluster.Runtime.GetResource<V1Pod>("default", incremental.Name()) is not null,
                 TimeSpan.FromSeconds(5),
                 cancellationToken: TestContext.Current.CancellationToken);
-            Dispatcher.UIThread.RunJobs();
+            await TestApplicationExtensions.WaitForUiAsync();
             await builder.WaitForAdditionAsync();
-            Dispatcher.UIThread.RunJobs();
+            await TestApplicationExtensions.WaitForUiAsync();
         }
 
         viewModel.Graph!.Resources.Select(resource => resource.Name()).ShouldNotContain("unrelated");
@@ -1344,7 +1344,7 @@ public sealed class ResourceGraphControlTests
             var deadline = DateTime.UtcNow.AddSeconds(5);
             while (!_additions.TryDequeue(out addition))
             {
-                Dispatcher.UIThread.RunJobs();
+                await TestApplicationExtensions.WaitForUiAsync();
                 if (DateTime.UtcNow >= deadline)
                 {
                     throw new TimeoutException("Timed out waiting for an incremental graph addition.");
@@ -1371,7 +1371,7 @@ public sealed class ResourceGraphControlTests
 
         viewModel.Dispose();
         cluster.SelectedNamespaces.Add(new V1Namespace { Metadata = new() { Name = "other" } });
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         builder.BuildCount.ShouldBe(1);
     }
@@ -1438,7 +1438,7 @@ public sealed class ResourceGraphControlTests
         var afterDispose = CreatePod("after-dispose");
         afterDispose.Metadata.Uid = null;
         await cluster.Runtime.AddOrUpdateResource(afterDispose);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         builder.BuildCount.ShouldBe(1);
     }
@@ -1467,7 +1467,7 @@ public sealed class ResourceGraphControlTests
         finally
         {
             Dispatcher.UIThread.Post(control.Dispose);
-            Dispatcher.UIThread.RunJobs();
+            await TestApplicationExtensions.WaitForUiAsync();
         }
     }
 
@@ -1561,7 +1561,7 @@ public sealed class ResourceGraphControlTests
         finally
         {
             window.Close();
-            Dispatcher.UIThread.RunJobs();
+            await TestApplicationExtensions.WaitForUiAsync();
         }
     }
 
@@ -1716,7 +1716,7 @@ public sealed class ResourceGraphControlTests
             var deadline = DateTime.UtcNow.AddSeconds(5);
             while (!_initialBuild.Task.IsCompleted)
             {
-                Dispatcher.UIThread.RunJobs();
+                await TestApplicationExtensions.WaitForUiAsync();
                 if (DateTime.UtcNow >= deadline)
                 {
                     throw new TimeoutException("Timed out waiting for the initial visualization build.");
@@ -1775,7 +1775,7 @@ public sealed class ResourceGraphControlTests
             var deadline = DateTime.UtcNow.AddSeconds(5);
             while (!_initialBuild.Task.IsCompleted)
             {
-                Dispatcher.UIThread.RunJobs();
+                await TestApplicationExtensions.WaitForUiAsync();
                 if (DateTime.UtcNow >= deadline)
                 {
                     throw new TimeoutException("Timed out waiting for the initial visualization build.");
@@ -1842,7 +1842,7 @@ public sealed class ResourceGraphControlTests
             var deadline = DateTime.UtcNow.AddSeconds(5);
             while (!_initialBuild.Task.IsCompleted)
             {
-                Dispatcher.UIThread.RunJobs();
+                await TestApplicationExtensions.WaitForUiAsync();
                 if (DateTime.UtcNow >= deadline)
                 {
                     throw new TimeoutException("Timed out waiting for the initial visualization build.");

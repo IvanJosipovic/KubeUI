@@ -58,7 +58,7 @@ public class NavigationViewModelTests
         while (DateTime.UtcNow < deadline)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            Dispatcher.UIThread.RunJobs();
+            await TestApplicationExtensions.WaitForUiAsync();
 
             var nextValue = await count
                 .Take(1)
@@ -74,7 +74,7 @@ public class NavigationViewModelTests
             await WaitForNextPollAsync(cancellationToken);
         }
 
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
         return null;
     }
 
@@ -165,7 +165,7 @@ public class NavigationViewModelTests
         while (DateTime.UtcNow < deadline)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            Dispatcher.UIThread.RunJobs();
+            await TestApplicationExtensions.WaitForUiAsync();
 
             if (latest == expected)
             {
@@ -175,7 +175,7 @@ public class NavigationViewModelTests
             await WaitForNextPollAsync(cancellationToken);
         }
 
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
         return latest == int.MinValue ? null : latest;
     }
 
@@ -250,7 +250,7 @@ public class NavigationViewModelTests
             .MakeGenericMethod(resourceType);
 
         await (Task)addOrUpdateMethod.Invoke(cluster.Runtime, [resource])!;
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
     }
 
     [AvaloniaFact]
@@ -263,7 +263,7 @@ public class NavigationViewModelTests
 
         var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
 
@@ -286,7 +286,7 @@ public class NavigationViewModelTests
 
         var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
 
@@ -306,7 +306,7 @@ public class NavigationViewModelTests
 
         var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
         var stopwatch = Stopwatch.StartNew();
@@ -319,7 +319,7 @@ public class NavigationViewModelTests
 
         await WaitForAsync(() => workspace.Runtime.Status is ClusterStatus.Connected or ClusterStatus.Errored, timeoutMs: 5000);
         await TestWait.NextPollAsync(TimeSpan.FromMilliseconds(25), TestContext.Current.CancellationToken);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
     }
 
     [AvaloniaFact]
@@ -333,7 +333,7 @@ public class NavigationViewModelTests
         workspace.AddResourceConfigForTest(new FakeResourceConfig(typeof(V1CustomResourceDefinition), "Definitions"));
         var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var documents = vm.Factory.GetDockable<IDocumentDock>("Documents");
         documents.ShouldNotBeNull();
@@ -364,7 +364,7 @@ public class NavigationViewModelTests
         workspace.AddResourceConfigForTest(new FakeResourceConfig(typeof(V1CustomResourceDefinition), "Definitions"));
         var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var documents = vm.Factory.GetDockable<IDocumentDock>("Documents");
         documents.ShouldNotBeNull();
@@ -402,13 +402,13 @@ public class NavigationViewModelTests
         workspace.AddResourceConfigForTest(new FakeResourceConfig(typeof(V1CustomResourceDefinition), "Definitions"));
         var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var existingSettings = Application.Current.GetTestServices().GetRequiredService<ClusterSettingsViewModel>()
             ?? throw new InvalidOperationException("Test services are not initialized.");
         existingSettings.Initialize(workspace);
         vm.Factory.AddToDocuments(existingSettings);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var documents = vm.Factory.GetDockable<IDocumentDock>("Documents");
         documents.ShouldNotBeNull();
@@ -438,18 +438,18 @@ public class NavigationViewModelTests
         var workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
 
         await workspace.Connect();
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
         clusterNode.NavigationItems.Count.ShouldBeGreaterThan(0);
         clusterNode.ConnectionMenuHeader.ShouldBe(Assets.Resources.NavigationView_ContextMenu_Disconnect);
 
         await vm.ToggleClusterConnectionCommand.ExecuteAsync(clusterNode).WaitAsync(TestContext.Current.CancellationToken);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         await WaitForAsync(() => !workspace.Runtime.Connected && workspace.Runtime.Status == ClusterStatus.None);
         clusterNode.NavigationItems.Count.ShouldBe(0);
@@ -471,14 +471,14 @@ public class NavigationViewModelTests
 
         var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var documents = vm.Factory.GetDockable<IDocumentDock>("Documents");
         documents.ShouldNotBeNull();
 
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
         await vm.TreeViewSelectionChangedAsync(clusterNode);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         workspace.Runtime.LastError.ShouldBeNull();
         workspace.Runtime.Status.ShouldBe(ClusterStatus.Connected);
@@ -504,7 +504,7 @@ public class NavigationViewModelTests
 
         var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
         await vm.TreeViewSelectionChangedAsync(clusterNode);
@@ -527,11 +527,11 @@ public class NavigationViewModelTests
         var workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
 
         await workspace.Connect();
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var documents = vm.Factory.GetDockable<IDocumentDock>("Documents");
         documents.ShouldNotBeNull();
@@ -544,7 +544,7 @@ public class NavigationViewModelTests
 
         await vm.OpenResourceNavigationCommand.ExecuteAsync(podsLink).WaitAsync(TestContext.Current.CancellationToken);
         await vm.OpenResourceNavigationCommand.ExecuteAsync(podsLink).WaitAsync(TestContext.Current.CancellationToken);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         documents.VisibleDockables!
             .OfType<ResourceListViewModel<V1Pod>>()
@@ -552,7 +552,7 @@ public class NavigationViewModelTests
             .ShouldBe(1);
 
         await vm.OpenResourceNavigationInNewTabCommand.ExecuteAsync(podsLink).WaitAsync(TestContext.Current.CancellationToken);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         await WaitForAsync(() =>
             documents.VisibleDockables?.OfType<ResourceListViewModel<V1Pod>>().Count() == 2);
@@ -582,7 +582,7 @@ public class NavigationViewModelTests
 
         var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
         await vm.TreeViewSelectionChangedAsync(clusterNode);
@@ -610,7 +610,7 @@ public class NavigationViewModelTests
             ?? throw new InvalidOperationException("Test services are not initialized.");
         settingsService.Settings.GetClusterSettings(workspace.Runtime).Namespaces!.Add("my-app");
         await workspace.Connect();
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         workspace.AddResourceConfigForTest(new FakeResourceConfig(
             typeof(TestPermissionResourceAlpha),
@@ -619,7 +619,7 @@ public class NavigationViewModelTests
 
         var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
         FindResourceLink(clusterNode, "Alpha Permission Resource").ShouldBeNull();
@@ -642,7 +642,7 @@ public class NavigationViewModelTests
 
         var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
 
@@ -666,7 +666,7 @@ public class NavigationViewModelTests
 
         var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var documents = vm.Factory.GetDockable<IDocumentDock>("Documents");
         documents.ShouldNotBeNull();
@@ -724,11 +724,11 @@ public class NavigationViewModelTests
         var workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
 
         await workspace.Connect();
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
         clusterNode.IsExpanded.ShouldBeFalse();
@@ -749,7 +749,7 @@ public class NavigationViewModelTests
 
         var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
 
@@ -771,7 +771,7 @@ public class NavigationViewModelTests
 
         var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
 
@@ -801,7 +801,7 @@ public class NavigationViewModelTests
 
         var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
         await vm.TreeViewSelectionChangedAsync(clusterNode);
@@ -823,11 +823,11 @@ public class NavigationViewModelTests
         var workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
 
         await workspace.Connect();
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
         var originalRoot = clusterNode.NavigationItems.Single(x => x.Name == "Custom Resource Definitions");
@@ -849,11 +849,11 @@ public class NavigationViewModelTests
         var config = services.GetRequiredService<TestClusterConfig>();
         var workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         await workspace.Connect();
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
         var originalNamespaceLink = clusterNode.NavigationItems
@@ -883,11 +883,11 @@ public class NavigationViewModelTests
         var workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
 
         await workspace.Connect();
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
         var alphaConfig = new FakeResourceConfig(typeof(TestPermissionResourceAlpha), "Alpha Permission Resource");
@@ -934,11 +934,11 @@ public class NavigationViewModelTests
         var workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
 
         await workspace.Connect();
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
         var originalNamespaceLink = clusterNode.NavigationItems
@@ -962,11 +962,11 @@ public class NavigationViewModelTests
     {
         var workspace = await Application.Current.CreateClusterAsync();
         workspace.Runtime.Name = "old-name";
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         workspace.AddResourceConfigForTest(new FakeResourceConfig(
             typeof(TestPermissionResourceAlpha),
@@ -992,11 +992,11 @@ public class NavigationViewModelTests
         var config = services.GetRequiredService<TestClusterConfig>();
         var workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         await workspace.Connect();
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
 
         workspace.AddResourceConfigForTest(new FakeResourceConfig(
@@ -1013,11 +1013,11 @@ public class NavigationViewModelTests
         var config = services.GetRequiredService<TestClusterConfig>();
         var workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         await workspace.Connect();
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
 
@@ -1051,11 +1051,11 @@ public class NavigationViewModelTests
             () => !workspace.Runtime.Permissions.CanIAnyNamespace<V1Pod>(Verb.Create, "portforward"),
             TimeSpan.FromSeconds(5),
             cancellationToken: TestContext.Current.CancellationToken);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
         var networkCategory = clusterNode.NavigationItems.SingleOrDefault(x => x.Name == "Network");
@@ -1085,7 +1085,7 @@ public class NavigationViewModelTests
 
         var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
         FindNavigationLink(clusterNode.NavigationItems, NavigationTargets.PortForwarders).ShouldBeNull();
@@ -1120,7 +1120,7 @@ public class NavigationViewModelTests
 
         var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
 
@@ -1157,7 +1157,7 @@ public class NavigationViewModelTests
 
 
         await workspace.Connect();
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         workspace.Runtime.Permissions.CanI<V1Pod>(Verb.Create, "my-app", "portforward").ShouldBeTrue();
         workspace.Runtime.Permissions.CanI<V1Pod>(Verb.Create, subresource: "portforward").ShouldBeFalse();
@@ -1172,11 +1172,11 @@ public class NavigationViewModelTests
         var config = services.GetRequiredService<TestClusterConfig>();
         var workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         await workspace.Connect();
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
         clusterNode.NavigationItems.Last().Name.ShouldBe("Custom Resource Definitions");
@@ -1189,11 +1189,11 @@ public class NavigationViewModelTests
         var config = services.GetRequiredService<TestClusterConfig>();
         var workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         await workspace.Connect();
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
         var categoriesByName = clusterNode.NavigationItems
@@ -1212,7 +1212,7 @@ public class NavigationViewModelTests
         var config = services.GetRequiredService<TestClusterConfig>();
         var workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         await workspace.Connect();
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         workspace.AddResourceConfigForTest(new FakeCustomResourceConfig(typeof(TestCustomResourceAlpha), "Alpha Resources"));
         workspace.AddResourceConfigForTest(new FakeCustomResourceConfig(typeof(TestCustomResourceBeta), "Beta Resources"));
@@ -1220,7 +1220,7 @@ public class NavigationViewModelTests
 
         var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
         var crdRoot = clusterNode.NavigationItems
@@ -1281,12 +1281,12 @@ public class NavigationViewModelTests
         var config = services.GetRequiredService<TestClusterConfig>();
         var workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         await workspace.Connect();
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
         workspace.AddResourceConfigForTest(new FakeCustomResourceConfig(typeof(TestCustomResourceAlpha), "Alpha Resources"));
 
         var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
         var crdRoot = clusterNode.NavigationItems.Single(x => x.Name == "Custom Resource Definitions");
@@ -1307,11 +1307,11 @@ public class NavigationViewModelTests
         var workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
 
         await workspace.Connect();
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
         var resourceLink = clusterNode.NavigationItems
@@ -1342,7 +1342,7 @@ public class NavigationViewModelTests
 
         await workspace.Connect();
         await workspace.Runtime.SeedResource<V1CustomResourceDefinition>(true);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var originalCrd = ClusterWorkspaceTestCustomResourceDefinitionFactory.Create("tests.kubeui.com", "tests", "someString");
         await workspace.Runtime.AddOrUpdateResource(originalCrd);
@@ -1356,7 +1356,7 @@ public class NavigationViewModelTests
 
         var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
         var staleLink = await WaitForValueAsync(() => FindResourceLink(clusterNode, "Tests"));
@@ -1383,7 +1383,7 @@ public class NavigationViewModelTests
         await AddGeneratedCustomResourceAsync(workspace, updatedType, updatedCrd, "default", "new-item");
 
         await vm.OpenResourceNavigationCommand.ExecuteAsync(staleLink).WaitAsync(TestContext.Current.CancellationToken);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var documents = vm.Factory.GetDockable<IDocumentDock>("Documents");
         documents.ShouldNotBeNull();
@@ -1411,11 +1411,11 @@ public class NavigationViewModelTests
         var workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
 
         await workspace.Connect();
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
         var podsLink = FindResourceLink(clusterNode, "Pods");
@@ -1443,11 +1443,11 @@ public class NavigationViewModelTests
             Metadata = new() { Name = "default" }
         });
 
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
         var podsLink = await WaitForValueAsync(() => FindResourceLink(clusterNode, "Pods"));
@@ -1474,11 +1474,11 @@ public class NavigationViewModelTests
             Metadata = new() { Name = "default" }
         });
 
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
         var podsLink = FindResourceLink(clusterNode, "Pods");
@@ -1513,7 +1513,7 @@ public class NavigationViewModelTests
 
         var navigation = CreateViewModel();
         navigation.ClusterCatalog.Clusters.Add(workspace);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var clusterNode = navigation.Clusters.Single(x => x.Cluster == workspace);
         var podsLink = await WaitForValueAsync(() => FindResourceLink(clusterNode, typeof(V1Pod)));
@@ -1538,11 +1538,11 @@ public class NavigationViewModelTests
         var workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
 
         await workspace.Connect();
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
         var eventsLink = await WaitForValueAsync(() => FindResourceLink(clusterNode, typeof(Corev1Event)));
@@ -1588,11 +1588,11 @@ public class NavigationViewModelTests
         var workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
 
         await workspace.Connect();
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
         var eventsLink = await WaitForValueAsync(() => FindResourceLink(clusterNode, typeof(Corev1Event)));
@@ -1631,7 +1631,7 @@ public class NavigationViewModelTests
             });
 
             await TestWait.NextPollAsync(TimeSpan.FromMilliseconds(20), TestContext.Current.CancellationToken);
-            Dispatcher.UIThread.RunJobs();
+            await TestApplicationExtensions.WaitForUiAsync();
 
             if (positiveCount.Task.IsCompleted)
             {
@@ -1650,11 +1650,11 @@ public class NavigationViewModelTests
         var workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
 
         await workspace.Connect();
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
         var eventsLink = await WaitForValueAsync(() => FindResourceLink(clusterNode, typeof(Corev1Event)));
@@ -1694,7 +1694,7 @@ public class NavigationViewModelTests
 
         var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
         await vm.TreeViewSelectionChangedAsync(clusterNode);
@@ -1801,14 +1801,14 @@ public class NavigationViewModelTests
             .Informers.Count.ShouldBe(0);
 
         await workspace.Connect();
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         workspace.Runtime.Objects[GroupApiVersionKind.From<Corev1Event>()].ShouldBeOfType<ContainerClass<Corev1Event>>()
             .Informers.Count.ShouldBe(1);
 
         var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
         var eventsLink = await WaitForValueAsync(() => FindResourceLink(clusterNode, typeof(Corev1Event)));
@@ -1851,11 +1851,11 @@ public class NavigationViewModelTests
             Metadata = new() { Name = "default" }
         });
 
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
         var namespaceLink = clusterNode.NavigationItems
@@ -1887,11 +1887,11 @@ public class NavigationViewModelTests
             Metadata = new() { Name = "default" }
         });
 
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
         var namespaceLink = clusterNode.NavigationItems
@@ -1925,15 +1925,15 @@ public class NavigationViewModelTests
         var workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
 
         await workspace.Connect();
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
         workspace.AddResourceConfigForTest(new FakeResourceConfig(typeof(V1CustomResourceDefinition), "Definitions"));
 
         var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         workspace.AddResourceConfigForTest(new FakeCustomResourceConfig(typeof(TestCustomResourceKubeUi), "Tests"));
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
         var testsLink = await WaitForValueAsync(
@@ -1959,12 +1959,12 @@ public class NavigationViewModelTests
         var workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
 
         await workspace.Connect();
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
         workspace.AddResourceConfigForTest(new FakeResourceConfig(typeof(V1CustomResourceDefinition), "Definitions"));
 
         var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         workspace.AddResourceConfigForTest(new FakeCustomResourceConfig(typeof(TestCustomResourceAlpha), "Alpha"));
         workspace.AddResourceConfigForTest(new FakeCustomResourceConfig(typeof(TestCustomResourceBeta), "Beta"));
@@ -1989,14 +1989,14 @@ public class NavigationViewModelTests
         var workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
 
         await workspace.Connect();
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
         workspace.AddResourceConfigForTest(new FakeResourceConfig(typeof(V1CustomResourceDefinition), "Definitions"));
         var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         workspace.AddResourceConfigForTest(new FakeCustomResourceConfig(typeof(TestCustomResourceKubeUi), "Tests"));
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
         var crdRoot = await WaitForValueAsync(
@@ -2041,11 +2041,11 @@ public class NavigationViewModelTests
         var workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
 
         await workspace.Connect();
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
         workspace.AddResourceConfigForTest(new FakeResourceConfig(typeof(V1CustomResourceDefinition), "Definitions"));
         var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var crdA = NavigationTestCustomResourceDefinitionFactory.Create("tests.kubeui.com", "Tests", "someString");
         var crdB = NavigationTestCustomResourceDefinitionFactory.Create("others.kubeui.com", "Others", "otherString");
@@ -2096,11 +2096,11 @@ public class NavigationViewModelTests
         var workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
 
         await workspace.Connect();
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
         workspace.AddResourceConfigForTest(new FakeResourceConfig(typeof(V1CustomResourceDefinition), "Definitions"));
         var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var crd = NavigationTestCustomResourceDefinitionFactory.Create(
             name: "widgets.alpha.kubeui.com",

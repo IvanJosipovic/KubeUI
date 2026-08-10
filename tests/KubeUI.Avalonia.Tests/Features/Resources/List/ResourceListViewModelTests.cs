@@ -91,7 +91,7 @@ public class ResourceListViewModelTests
     private static async Task AddOrUpdateAsync<T>(ClusterWorkspace cluster, T resource) where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
         await cluster.Runtime.AddOrUpdateResource(resource);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
     }
 
     private static IEnumerable<DataGridRow> GetAllRows(DataGrid grid)
@@ -300,7 +300,7 @@ public class ResourceListViewModelTests
         var clickPoint = GetRowCenterOnWindow(row, window);
         window.MouseDown(clickPoint, MouseButton.Right);
         window.MouseUp(clickPoint, MouseButton.Right);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var items = contextMenu.ItemsSource as IEnumerable<MenuItemViewModel>;
         items.ShouldNotBeNull();
@@ -460,7 +460,7 @@ public class ResourceListViewModelTests
             ((V1Pod)commandItems[0]!).Name().ShouldBe(expectedName);
 
             contextMenu.Close();
-            Dispatcher.UIThread.RunJobs();
+            await TestApplicationExtensions.WaitForUiAsync();
         }
 
         await AssertMenuTargetsRowAsync(rowA, "a");
@@ -499,7 +499,7 @@ public class ResourceListViewModelTests
         var clickPoint = GetRowCenterOnWindow(row, window);
         window.MouseDown(clickPoint, MouseButton.Right);
         window.MouseUp(clickPoint, MouseButton.Right);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var items = contextMenu.ItemsSource as IEnumerable<MenuItemViewModel>;
         items.ShouldNotBeNull();
@@ -554,7 +554,7 @@ public class ResourceListViewModelTests
         var clickPoint = GetRowCenterOnWindow(row, window);
         window.MouseDown(clickPoint, MouseButton.Right);
         window.MouseUp(clickPoint, MouseButton.Right);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var items = contextMenu.ItemsSource as IEnumerable<MenuItemViewModel>;
         items.ShouldNotBeNull();
@@ -574,13 +574,13 @@ public class ResourceListViewModelTests
         viewItem.Command!.CanExecute(commandParameter).ShouldBeFalse();
 
         contextMenu.Close();
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         row = GetAllRows(grid).First(x => x.IsVisible && (x.DataContext as V1Pod)?.Name() == "b");
         clickPoint = GetRowCenterOnWindow(row, window);
         window.MouseDown(clickPoint, MouseButton.Right);
         window.MouseUp(clickPoint, MouseButton.Right);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         items = contextMenu.ItemsSource as IEnumerable<MenuItemViewModel>;
         items.ShouldNotBeNull();
@@ -829,7 +829,7 @@ public class ResourceListViewModelTests
             await AddOrUpdateAsync(cluster, Event("ns", $"seed-{i}", baseTimestamp.AddMinutes(i), i));
         }
 
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
         await WaitForAsync(() => vm.View.Count == 200, 5000);
         vm.View.Count.ShouldBe(200);
         await WaitForAsync(() => vm.ItemCount == 200, 5000);
@@ -857,7 +857,7 @@ public class ResourceListViewModelTests
             right.Count = i + 20;
             await AddOrUpdateAsync(cluster, right);
 
-            Dispatcher.UIThread.RunJobs();
+            await TestApplicationExtensions.WaitForUiAsync();
 
             vm.View.Count.ShouldBe(202);
             await WaitForAsync(
@@ -868,7 +868,7 @@ public class ResourceListViewModelTests
         }
 
         await AddOrUpdateAsync(cluster, Event("ns", "tail", baseTimestamp.AddHours(200), 999));
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         await WaitForAsync(() => vm.View.Count == 203, 5000);
         vm.View.Count.ShouldBe(203);
@@ -915,7 +915,7 @@ public class ResourceListViewModelTests
         var textColumn = textVm.ColumnDefinitions.First(column => column.ValueType == typeof(string));
         var textFlyout = textColumn.FilterFlyout.ShouldBeOfType<Flyout>();
         textFlyout.ShowAt(textView);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
         var textContent = textFlyout.Content.ShouldBeOfType<TextFilterFlyoutView>();
         var textPanel = textContent.Content.ShouldBeOfType<StackPanel>();
         var textRows = textPanel.Children.OfType<Grid>().ToList();
@@ -936,7 +936,7 @@ public class ResourceListViewModelTests
         var numericColumn = numericVm.ColumnDefinitions.First(column => string.Equals(column.Header?.ToString(), "Count", StringComparison.Ordinal));
         var numericFlyout = numericColumn.FilterFlyout.ShouldBeOfType<Flyout>();
         numericFlyout.ShowAt(numericView);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
         var numericContent = numericFlyout.Content.ShouldBeOfType<NumericFilterFlyoutView>();
         var numericRows = numericContent.Content.ShouldBeOfType<StackPanel>().Children.OfType<Grid>().ToList();
 
@@ -965,7 +965,7 @@ public class ResourceListViewModelTests
         var dateColumn = dateVm.ColumnDefinitions.First(column => string.Equals(column.Header?.ToString(), Assets.Resources.V1EventConfig_Last_Seen, StringComparison.Ordinal));
         var dateFlyout = dateColumn.FilterFlyout.ShouldBeOfType<Flyout>();
         dateFlyout.ShowAt(dateView);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
         var dateContent = dateFlyout.Content.ShouldBeOfType<DateFilterFlyoutView>();
         var datePanel = dateContent.Content.ShouldBeOfType<StackPanel>();
         var dateRows = datePanel.Children.OfType<Grid>().ToList();
@@ -982,7 +982,7 @@ public class ResourceListViewModelTests
         using var enumWindow = Application.Current.CreateTestWindow(content: enumHost);
         enumWindow.Show();
         enumFlyout.ShowAt(enumHost);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
         var enumContent = enumFlyout.Content.ShouldBeOfType<EnumFilterFlyoutView>();
         var enumPanel = enumContent.Content.ShouldBeOfType<StackPanel>();
         var enumRows = enumPanel.Children.OfType<Grid>().ToList();
@@ -1108,7 +1108,7 @@ public class ResourceListViewModelTests
             await AddOrUpdateAsync(cluster, pod);
         }
 
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
         await WaitForAsync(() => vm.View.Count == 3);
         vm.View.Count.ShouldBe(3);
 
@@ -1163,19 +1163,19 @@ public class ResourceListViewModelTests
 
         await AddOrUpdateAsync(countCluster, older);
         await AddOrUpdateAsync(countCluster, newer);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
         await WaitForAsync(() => countVm.View.Count == 2);
         countVm.View.Count.ShouldBe(2);
 
         var countColumn = countVm.ColumnDefinitions.First(column => string.Equals(column.Header?.ToString(), "Count", StringComparison.Ordinal));
         filterService.ApplyNumericFilter(countVm.FilteringModel, countColumn, GetNumericOperator(FilteringOperator.GreaterThan), 0d, null);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
         countVm.View.Count.ShouldBe(2);
 
         var lastSeenColumn = countVm.ColumnDefinitions.First(column => string.Equals(column.Header?.ToString(), Assets.Resources.V1EventConfig_Last_Seen, StringComparison.Ordinal));
         var hours = GetDateRelativeUnit<ResourceListViewModel<Corev1Event>>(1);
         filterService.ApplyDateFilter(countVm.FilteringModel, lastSeenColumn, lastSeenColumn.ValueType, GetDateOperator(FilteringOperator.GreaterThan), 1d, hours);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
         await WaitForAsync(() => countVm.View.Count == 1);
         ((Corev1Event)countVm.View[0]).Name().ShouldBe("newer");
     }
@@ -1197,12 +1197,12 @@ public class ResourceListViewModelTests
         await AddOrUpdateAsync(cluster, Pod("ns", "alpha"));
         await AddOrUpdateAsync(cluster, Pod("ns", "beta"));
         await AddOrUpdateAsync(cluster, Pod("ns", "gamma"));
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var nameColumn = vm.ColumnDefinitions.First(column => string.Equals(column.Header?.ToString(), "Name", StringComparison.Ordinal));
         var flyout = (Flyout)nameColumn.FilterFlyout!;
         flyout.ShowAt(view);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
         var flyoutContext = flyout.Content.ShouldBeOfType<TextFilterFlyoutView>().DataContext.ShouldBeOfType<TextFilterFlyoutContext>();
 
         flyoutContext.SelectedOperator = ResourceListFilterFlyoutOptions.TextOperators.First(option => option.Operator == FilteringOperator.Contains && (option.CustomId is null || !FilterOperatorIdCatalog.UsesCustomDescriptor(option.CustomId.Value)));
@@ -1241,7 +1241,7 @@ public class ResourceListViewModelTests
         vm.SelectionModel.Select(0);
 
         cluster.SelectedNamespaces.Add(NamespaceResource("ns1"));
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         vm.SelectedItem.ShouldNotBeNull();
         vm.SelectedItem!.Namespace().ShouldBe("ns1");
@@ -1267,7 +1267,7 @@ public class ResourceListViewModelTests
 
         podVm.IsNamespaceSelectionLinked = false;
         podVm.SelectedNamespaces.Add(NamespaceResource("ns1"));
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var deploymentVm = Application.Current.GetRequiredTestService<ResourceListViewModel<V1Deployment>>();
         deploymentVm.Initialize(cluster);
@@ -1278,7 +1278,7 @@ public class ResourceListViewModelTests
         await AddOrUpdateAsync(cluster, Deployment("ns1", "deployment-a"));
         await AddOrUpdateAsync(cluster, Deployment("ns2", "deployment-b"));
 
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
         await WaitForAsync(() => deploymentVm.View.Count == 1);
 
         deploymentVm.View.Count.ShouldBe(1);
@@ -1310,7 +1310,7 @@ public class ResourceListViewModelTests
         var nameColumn = podVm.ColumnDefinitions.First(column => Equals(column.ColumnKey, "name"));
         filterService.ApplyTextFilter(podVm.FilteringModel, nameColumn, GetTextOperator(FilteringOperator.Contains), "pod-a");
         podVm.SearchQuery = "pod-a";
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var deploymentVm = Application.Current.GetRequiredTestService<ResourceListViewModel<V1Deployment>>();
         deploymentVm.Initialize(cluster);
@@ -1319,19 +1319,19 @@ public class ResourceListViewModelTests
         deploymentView.DataContext = deploymentVm;
 
         window.Content = deploymentView;
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         cluster.SelectedNamespaces.Clear();
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
         podVm.SelectedNamespaces.ShouldBeEmpty();
         podVm.FilteringModel.Descriptors.ShouldNotContain(descriptor => Equals(descriptor.ColumnId, ResourceListViewModel<V1Pod>.NamespaceScopeFilterId));
         podVm.FilteringModel.Descriptors.ShouldContain(descriptor => Equals(descriptor.ColumnId, nameColumn));
 
         podVm.SearchQuery = string.Empty;
         podVm.FilteringModel.Clear();
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
         window.Content = podView;
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         podVm.SelectedNamespaces.ShouldBeEmpty();
         podVm.FilteringModel.Descriptors.ShouldNotContain(descriptor => Equals(descriptor.ColumnId, ResourceListViewModel<V1Pod>.NamespaceScopeFilterId));
@@ -1362,9 +1362,9 @@ public class ResourceListViewModelTests
         GetNamespaceFilterValues(vm).ShouldBe(["a"]);
 
         window.Content = null;
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
         window.Content = view;
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         vm.SelectedNamespaces.Select(namespaceResource => namespaceResource.Name()).ShouldBe(["a"]);
         GetNamespaceFilterValues(vm).ShouldBe(["a"]);
@@ -1399,7 +1399,7 @@ public class ResourceListViewModelTests
         vm.SelectedItem!.Namespace().ShouldBe("ns2");
 
         cluster.SelectedNamespaces.Add(NamespaceResource("ns4"));
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         vm.SelectionModel.SelectedIndexes.ShouldBeEmpty();
         vm.SelectedItem?.ShouldBeNull();
@@ -1455,7 +1455,7 @@ public class ResourceListViewModelTests
         vm.SelectionModel.Select(1);
 
         cluster.SelectedNamespaces.Add(NamespaceResource("ns4"));
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var portForwardMenu = vm.GetContextMenuItems(vm.SelectionModel.SelectedItems).FirstOrDefault(x => x.Title == "Port Forwarding");
         portForwardMenu.ShouldBeNull();
@@ -1478,7 +1478,7 @@ public class ResourceListViewModelTests
         using var window = Application.Current.CreateTestWindow(content: host);
         window.Show();
         flyout.ShowAt(host);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
         var content = flyout.Content.ShouldBeOfType<EnumFilterFlyoutView>();
 
         var enumComboBoxes = content.Content.ShouldBeOfType<StackPanel>().GetVisualDescendants().OfType<ComboBox>().ToList();
@@ -1516,7 +1516,7 @@ public class ResourceListViewModelTests
         ReferenceEquals(vm.SelectedNamespaces, cluster.SelectedNamespaces).ShouldBeTrue();
 
         cluster.SelectedNamespaces.Add(NamespaceResource("team-b"));
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         vm.SelectedNamespaces.Select(x => x.Name()).ShouldBe(["team-a", "team-b"]);
         GetNamespaceFilterValues(vm).ShouldBe(["team-a", "team-b"]);
@@ -1532,18 +1532,18 @@ public class ResourceListViewModelTests
         vm.Initialize(cluster);
 
         vm.IsNamespaceSelectionLinked = false;
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         ReferenceEquals(vm.SelectedNamespaces, cluster.SelectedNamespaces).ShouldBeFalse();
         vm.SelectedNamespaces.Select(x => x.Name()).ShouldBe(["team-a"]);
 
         cluster.SelectedNamespaces.Add(NamespaceResource("team-b"));
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         vm.SelectedNamespaces.Select(x => x.Name()).ShouldBe(["team-a"]);
 
         vm.SelectedNamespaces.Add(NamespaceResource("team-c"));
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         cluster.SelectedNamespaces.Select(x => x.Name()).ShouldBe(["team-a", "team-b"]);
         GetNamespaceFilterValues(vm).ShouldBe(["team-a", "team-c"]);
@@ -1560,10 +1560,10 @@ public class ResourceListViewModelTests
         vm.IsNamespaceSelectionLinked = false;
         vm.SelectedNamespaces.Clear();
         vm.SelectedNamespaces.Add(NamespaceResource("team-local"));
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         vm.IsNamespaceSelectionLinked = true;
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         ReferenceEquals(vm.SelectedNamespaces, cluster.SelectedNamespaces).ShouldBeTrue();
         vm.SelectedNamespaces.Select(x => x.Name()).ShouldBe(["team-a"]);
@@ -1664,7 +1664,7 @@ public class ResourceListViewModelTests
         vm.View.Count.ShouldBe(1);
 
         await cluster.Runtime.DeleteResource(Pod("ns1", "a"));
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
         await WaitForAsync(() => vm.View.Count == 0);
 
         vm.View.Count.ShouldBe(0);
@@ -1716,11 +1716,11 @@ public class ResourceListViewModelTests
 
         vm.SortingModel.SetOrUpdate(new(labelsColumn, ListSortDirection.Descending, null, labelsColumn.CustomSortComparer));
 
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         factory.SetActiveDockable(vm);
         factory.SetFocusedDockable(documents, vm);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var view = await WaitForValueAsync(() => FindVisibleView<ResourceListView>(window, vm), 3000);
         view.ShouldNotBeNull();
@@ -1734,11 +1734,11 @@ public class ResourceListViewModelTests
 
         factory.SetActiveDockable(otherDockable);
         factory.SetFocusedDockable(documents, otherDockable);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         factory.SetActiveDockable(vm);
         factory.SetFocusedDockable(documents, vm);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var restoredView = await WaitForValueAsync(() => FindVisibleView<ResourceListView>(window, vm), 3000);
         restoredView.ShouldNotBeNull();
@@ -1785,11 +1785,11 @@ public class ResourceListViewModelTests
             await AddOrUpdateAsync(cluster, Pod("ns", i.ToString()));
         }
 
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         factory.SetActiveDockable(vm);
         factory.SetFocusedDockable(documents, vm);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var view = await WaitForValueAsync(() => FindVisibleView<ResourceListView>(window, vm), 3000);
         view.ShouldNotBeNull();
@@ -1807,12 +1807,12 @@ public class ResourceListViewModelTests
 
         var targetOffset = new Vector(0, Math.Max(0, scrollViewer.Extent.Height - scrollViewer.Viewport.Height));
         scrollViewer.Offset = targetOffset;
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         // switch away to trigger capture
         factory.SetActiveDockable(otherDockable);
         factory.SetFocusedDockable(documents, otherDockable);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         vm.DataGridRuntimeState.ShouldNotBeNull();
         vm.DataGridRuntimeState!.Scroll.ShouldNotBeNull();
@@ -1821,7 +1821,7 @@ public class ResourceListViewModelTests
         // switch back and ensure restore
         factory.SetActiveDockable(vm);
         factory.SetFocusedDockable(documents, vm);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var restoredView = await WaitForValueAsync(() => FindVisibleView<ResourceListView>(window, vm), 3000);
         restoredView.ShouldNotBeNull();
@@ -1835,7 +1835,9 @@ public class ResourceListViewModelTests
         // Wait until restored grid is scrollable
         await WaitForAsync(() => restoredScrollViewer.Extent.Height > restoredScrollViewer.Viewport.Height, 3000);
 
-        Dispatcher.UIThread.RunJobs();
+        await WaitForAsync(
+            () => Math.Abs(restoredScrollViewer.Offset.Y - targetOffset.Y) < 0.1,
+            10000);
         restoredScrollViewer.Offset.Y.ShouldBe(targetOffset.Y);
         ReferenceEquals(grid, restoredGrid).ShouldBeFalse();
         vm.DataGridRuntimeState.ShouldNotBeNull();
@@ -1878,17 +1880,21 @@ public class ResourceListViewModelTests
         await AddOrUpdateAsync(cluster, nsB);
         await AddOrUpdateAsync(cluster, nsC);
 
+        await WaitForAsync(
+            () => vm.View.OfType<V1Namespace>().Count(item => item.Name() is "a" or "b" or "c") == 3,
+            3000);
+
         var labelsColumn = vm.ColumnDefinitions.First(x => Equals(x.ColumnKey, "labels"));
 
         vm.SortingModel.Clear();
 
         vm.SortingModel.SetOrUpdate(new(labelsColumn, ListSortDirection.Descending, null, labelsColumn.CustomSortComparer));
 
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         factory.SetActiveDockable(vm);
         factory.SetFocusedDockable(documents, vm);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var view = await WaitForValueAsync(() => FindVisibleView<ResourceListView>(window, vm), 3000);
         view.ShouldNotBeNull();
@@ -1896,7 +1902,7 @@ public class ResourceListViewModelTests
         // switch away to trigger capture
         factory.SetActiveDockable(otherDockable);
         factory.SetFocusedDockable(documents, otherDockable);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         // runtime snapshot should be captured on VM by behavior
         vm.DataGridRuntimeState.ShouldNotBeNull();
@@ -1904,10 +1910,16 @@ public class ResourceListViewModelTests
         // switch back and ensure restore
         factory.SetActiveDockable(vm);
         factory.SetFocusedDockable(documents, vm);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var restoredView = await WaitForValueAsync(() => FindVisibleView<ResourceListView>(window, vm), 3000);
         restoredView.ShouldNotBeNull();
+        await WaitForAsync(
+            () => vm.View.OfType<V1Namespace>()
+                .Where(item => item.Name() is "a" or "b" or "c")
+                .Select(item => item.Name())
+                .SequenceEqual(["a", "b", "c"]),
+            3000);
         var sortedNamespaces = vm.View.OfType<V1Namespace>()
             .Where(item => item.Name() is "a" or "b" or "c")
             .ToArray();
@@ -1929,7 +1941,7 @@ public class ResourceListViewModelTests
         view.DataContext = vm;
         window.Content = view;
         window.Show();
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var grid = view.FindControl<DataGrid>("PART_Grid");
         grid.ShouldNotBeNull();
@@ -1942,19 +1954,19 @@ public class ResourceListViewModelTests
         }
 
         grid.UpdateLayout();
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var widths = columns.ToDictionary(
             column => column.ColumnKey ?? column.Header!,
             column => column.Width.DisplayValue);
 
         window.Content = null;
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var restoredView = Application.Current.GetRequiredTestService<ResourceListView>();
         restoredView.DataContext = vm;
         window.Content = restoredView;
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var restoredGrid = restoredView.FindControl<DataGrid>("PART_Grid");
         restoredGrid.ShouldNotBeNull();
@@ -1979,13 +1991,13 @@ public class ResourceListViewModelTests
         view.DataContext = vm;
         window.Content = view;
         window.Show();
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var grid = view.FindControl<DataGrid>("PART_Grid");
         grid.ShouldNotBeNull();
         grid.Columns.First().MinWidth.ShouldBe(90);
         window.Content = null;
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         vm.DataGridRuntimeState.ShouldNotBeNull();
         vm.DataGridRuntimeState!.Columns.ShouldNotBeNull();
@@ -2001,7 +2013,7 @@ public class ResourceListViewModelTests
         var restoredView = Application.Current.GetRequiredTestService<ResourceListView>();
         restoredView.DataContext = vm;
         window.Content = restoredView;
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var restoredGrid = restoredView.FindControl<DataGrid>("PART_Grid");
         restoredGrid.ShouldNotBeNull();
@@ -2025,18 +2037,18 @@ public class ResourceListViewModelTests
         view.DataContext = vm;
         window.Content = view;
         window.Show();
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var grid = view.FindControl<DataGrid>("PART_Grid");
         grid.ShouldNotBeNull();
         var column = grid.Columns.First();
         column.Width = new DataGridLength(180);
         grid.UpdateLayout();
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
         var originalWidth = column.Width.DisplayValue;
 
         window.Content = null;
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
         vm.DataGridRuntimeState.ShouldNotBeNull();
 
         var replacementVm = Application.Current.GetRequiredTestService<ResourceListViewModel<V1Pod>>();
@@ -2046,10 +2058,10 @@ public class ResourceListViewModelTests
         var restoredView = Application.Current.GetRequiredTestService<ResourceListView>();
         restoredView.DataContext = vm;
         window.Content = restoredView;
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         restoredView.DataContext = replacementVm;
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var restoredGrid = restoredView.FindControl<DataGrid>("PART_Grid");
         restoredGrid.ShouldNotBeNull();
@@ -2069,38 +2081,38 @@ public class ResourceListViewModelTests
         view.DataContext = vm;
         window.Content = view;
         window.Show();
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var grid = view.FindControl<DataGrid>("PART_Grid");
         grid.ShouldNotBeNull();
         var column = grid.Columns.First();
         column.Width = new DataGridLength(180);
         grid.UpdateLayout();
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         window.Content = null;
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
         vm.DataGridRuntimeState.ShouldNotBeNull();
         vm.DataGridRuntimeState!.Scroll = new DataGridScrollState();
 
         var changedView = Application.Current.GetRequiredTestService<ResourceListView>();
         changedView.DataContext = vm;
         window.Content = changedView;
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var changedGrid = changedView.FindControl<DataGrid>("PART_Grid");
         changedGrid.ShouldNotBeNull();
         changedGrid.Columns.First().Width = new DataGridLength(240);
         changedGrid.UpdateLayout();
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         window.Content = null;
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var restoredView = Application.Current.GetRequiredTestService<ResourceListView>();
         restoredView.DataContext = vm;
         window.Content = restoredView;
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var restoredGrid = restoredView.FindControl<DataGrid>("PART_Grid");
         restoredGrid.ShouldNotBeNull();
@@ -2124,7 +2136,7 @@ public class ResourceListViewModelTests
         window.Content = view;
         window.Show();
 
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         vm.FilteringModel.Descriptors.Count.ShouldBe(1);
         var descriptor = vm.FilteringModel.Descriptors[0];
@@ -2152,7 +2164,7 @@ public class ResourceListViewModelTests
 
         await AddOrUpdateAsync(cluster, Pod("ns1", "a"));
         await AddOrUpdateAsync(cluster, Pod("ns2", "b"));
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
         await WaitForAsync(() => vm.View.Count == 2);
 
         vm.View.Count.ShouldBe(2);
@@ -2164,12 +2176,12 @@ public class ResourceListViewModelTests
 
         var ns1 = cluster.Runtime.Namespaces.Single(x => x.Name() == "ns1");
         selector.IsDropDownOpen = true;
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var item = selector.ContainerFromItem(ns1).ShouldBeOfType<Ursa.Controls.MultiComboBoxItem>();
         item.IsSelected = true;
         selector.IsDropDownOpen = false;
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         vm.SelectedNamespaces.Select(x => x.Name()).ShouldBe(["ns1"]);
         await WaitForAsync(() => vm.View.Count == 1);
@@ -2179,7 +2191,7 @@ public class ResourceListViewModelTests
         for (var i = 0; i < 5; i++)
         {
             grid.UpdateLayout();
-            Dispatcher.UIThread.RunJobs();
+            await TestApplicationExtensions.WaitForUiAsync();
         }
 
         var allRows = GetAllRows(grid).ToList();
@@ -2226,7 +2238,7 @@ public class ResourceListViewModelTests
         vm.View.Count.ShouldBe(2);
 
         vm.SearchQuery = "alpha";
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         vm.View.Count.ShouldBe(2);
 
@@ -2326,7 +2338,7 @@ public class ResourceListViewModelTests
         adapter.AttachView(grid.CollectionView);
         adapter.HandleHeaderClick(nameColumn, KeyModifiers.None);
         grid.UpdateLayout();
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         vm.SortingModel.Descriptors.Count.ShouldBe(1);
         vm.SortingModel.Descriptors[0].Direction.ShouldBe(ListSortDirection.Ascending);

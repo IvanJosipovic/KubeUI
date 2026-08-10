@@ -43,17 +43,17 @@ public sealed class ResourceYamlViewCopyTests
             window.Show();
             window.Measure(Size.Infinity);
             window.Arrange(new Rect(window.DesiredSize));
-            Dispatcher.UIThread.RunJobs();
-            Dispatcher.UIThread.RunJobs();
+            await TestApplicationExtensions.WaitForUiAsync();
+            await TestApplicationExtensions.WaitForUiAsync();
 
             var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
             editor.ShouldNotBeNull();
 
             editor.Select(0, editor.Text.Length);
-            Dispatcher.UIThread.RunJobs();
+            await TestApplicationExtensions.WaitForUiAsync();
 
             editor.Copy();
-            Dispatcher.UIThread.RunJobs();
+            await TestApplicationExtensions.WaitForUiAsync();
 
             var clipboard = TopLevel.GetTopLevel(window)?.Clipboard;
             clipboard.ShouldNotBeNull();
@@ -62,7 +62,7 @@ public sealed class ResourceYamlViewCopyTests
             var stopwatch = System.Diagnostics.Stopwatch.StartNew();
             while (stopwatch.ElapsedMilliseconds < 2000)
             {
-                Dispatcher.UIThread.RunJobs();
+                await TestApplicationExtensions.WaitForUiAsync();
                 copiedText = await clipboard!.TryGetTextAsync();
                 if (copiedText == editor.Text)
                 {
@@ -112,21 +112,21 @@ public sealed class ResourceYamlViewCopyTests
             window.Show();
             window.Measure(Size.Infinity);
             window.Arrange(new Rect(window.DesiredSize));
-            Dispatcher.UIThread.RunJobs();
-            Dispatcher.UIThread.RunJobs();
+            await TestApplicationExtensions.WaitForUiAsync();
+            await TestApplicationExtensions.WaitForUiAsync();
 
             var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
             editor.ShouldNotBeNull();
 
             editor.Select(0, editor.Text.Length);
-            Dispatcher.UIThread.RunJobs();
+            await TestApplicationExtensions.WaitForUiAsync();
 
             var contextMenu = editor.ContextMenu.ShouldBeOfType<ContextMenu>();
             var copyMenuItem = contextMenu.Items.OfType<MenuItem>()
                 .Single(item => string.Equals(item.Header?.ToString(), "Copy", StringComparison.Ordinal));
 
             copyMenuItem.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
-            Dispatcher.UIThread.RunJobs();
+            await TestApplicationExtensions.WaitForUiAsync();
 
             var clipboard = TopLevel.GetTopLevel(window)?.Clipboard;
             clipboard.ShouldNotBeNull();
@@ -135,7 +135,7 @@ public sealed class ResourceYamlViewCopyTests
             var stopwatch = System.Diagnostics.Stopwatch.StartNew();
             while (stopwatch.ElapsedMilliseconds < 2000)
             {
-                Dispatcher.UIThread.RunJobs();
+                await TestApplicationExtensions.WaitForUiAsync();
                 copiedText = await clipboard!.TryGetTextAsync();
                 if (copiedText == editor.Text)
                 {

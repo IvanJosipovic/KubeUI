@@ -25,7 +25,7 @@ public sealed class MainViewModelTests
         documents.ShouldNotBeNull();
 
         vm.ImportAksClusterCommand.Execute(null);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         documents.VisibleDockables!
             .OfType<ImportAksClusterViewModel>()

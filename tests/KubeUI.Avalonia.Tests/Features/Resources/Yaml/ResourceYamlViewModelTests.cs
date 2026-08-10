@@ -34,7 +34,7 @@ public class ResourceYamlViewModelTests
         do
         {
             await TestWait.NextPollAsync(TimeSpan.FromMilliseconds(25), TestContext.Current.CancellationToken);
-            Dispatcher.UIThread.RunJobs();
+            await TestApplicationExtensions.WaitForUiAsync();
             if (predicate == null || predicate())
             {
                 return;
@@ -42,7 +42,7 @@ public class ResourceYamlViewModelTests
         }
         while (sw.ElapsedMilliseconds < timeoutMs);
 
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
         (predicate?.Invoke() ?? true).ShouldBeTrue();
     }
 
@@ -236,13 +236,13 @@ public class ResourceYamlViewModelTests
                 child: value
             """.ReplaceLineEndings("\n");
 
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         factory.SetActiveDockable(vm);
         factory.SetFocusedDockable(documents, vm);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
-        var editor = WaitForValue(() => FindVisibleYamlEditor(window, vm), 3000);
+        var editor = await WaitForValueAsync(() => FindVisibleYamlEditor(window, vm), 3000);
         editor.ShouldNotBeNull();
 
         var behavior = Interaction.GetBehaviors(editor).OfType<YamlEditorBehavior>().Single();
@@ -254,13 +254,13 @@ public class ResourceYamlViewModelTests
 
         factory.SetActiveDockable(otherDockable);
         factory.SetFocusedDockable(documents, otherDockable);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         factory.SetActiveDockable(vm);
         factory.SetFocusedDockable(documents, vm);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
-        var restoredEditor = WaitForValue(() => FindVisibleYamlEditor(window, vm), 3000);
+        var restoredEditor = await WaitForValueAsync(() => FindVisibleYamlEditor(window, vm), 3000);
         restoredEditor.ShouldNotBeNull();
 
         behavior = Interaction.GetBehaviors(restoredEditor).OfType<YamlEditorBehavior>().Single();
@@ -298,64 +298,50 @@ public class ResourceYamlViewModelTests
         factory.AddToDocuments(vm);
         factory.AddToDocuments(otherDockable);
 
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         factory.SetActiveDockable(vm);
         factory.SetFocusedDockable(documents, vm);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
-        var editor = WaitForValue(() => FindVisibleYamlEditor(window, vm), 3000);
+        var editor = await WaitForValueAsync(() => FindVisibleYamlEditor(window, vm), 3000);
         editor.ShouldNotBeNull();
 
         var scrollViewer = editor.GetScrollViewer();
         scrollViewer.ShouldNotBeNull();
 
-        WaitFor(() =>
+        await WaitForAsync(() =>
         {
-            Dispatcher.UIThread.RunJobs();
             return scrollViewer.Extent.Height > scrollViewer.Viewport.Height;
         }, 3000);
 
         var targetOffset = new Vector(0, Math.Max(0, scrollViewer.Extent.Height - scrollViewer.Viewport.Height));
         scrollViewer.Offset = targetOffset;
-        Dispatcher.UIThread.RunJobs();
-        WaitFor(() => vm.ScrollOffset == targetOffset, 3000);
+        await TestApplicationExtensions.WaitForUiAsync();
+        await WaitForAsync(() => vm.ScrollOffset == targetOffset, 3000);
 
         factory.SetActiveDockable(otherDockable);
         factory.SetFocusedDockable(documents, otherDockable);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         vm.ScrollOffset.ShouldBe(targetOffset);
 
         factory.SetActiveDockable(vm);
         factory.SetFocusedDockable(documents, vm);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
-        var restoredEditor = WaitForValue(() => FindVisibleYamlEditor(window, vm), 3000);
+        var restoredEditor = await WaitForValueAsync(() => FindVisibleYamlEditor(window, vm), 3000);
         restoredEditor.ShouldNotBeNull();
 
         var restoredScrollViewer = restoredEditor.GetScrollViewer();
         restoredScrollViewer.ShouldNotBeNull();
 
-        WaitFor(() =>
+        await WaitForAsync(() =>
         {
-            Dispatcher.UIThread.RunJobs();
             return restoredScrollViewer.Extent.Height > restoredScrollViewer.Viewport.Height;
         }, 3000);
 
-        var restored = SpinWait.SpinUntil(() =>
-        {
-            Dispatcher.UIThread.RunJobs();
-            return restoredScrollViewer.Offset == targetOffset;
-        }, 3000);
-
-        if (!restored)
-        {
-            throw new ShouldAssertException(
-                $"Expected restored offset {targetOffset} but got {restoredScrollViewer.Offset}. "
-                + $"Saved view-model offset is {vm.ScrollOffset}. "
-                + $"Dock reused editor instance: {ReferenceEquals(editor, restoredEditor)}.");
-        }
+        await WaitForAsync(() => restoredScrollViewer.Offset == targetOffset, 3000);
 
         vm.ScrollOffset.ShouldBe(targetOffset);
 
@@ -390,7 +376,7 @@ public class ResourceYamlViewModelTests
                 child: value
             """.ReplaceLineEndings("\n");
 
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         vm.YamlDocument.Text.ShouldNotContain("updated: \"true\"");
 
@@ -419,7 +405,7 @@ public class ResourceYamlViewModelTests
         await cluster.Runtime.AddOrUpdateResource(updatedResource);
         await WaitForUiAsync(
             () => vm.YamlDocument.Text.Contains("updated: \"true\"", StringComparison.OrdinalIgnoreCase));
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         vm.YamlDocument.Text.ShouldContain("updated: \"true\"");
 
@@ -452,7 +438,7 @@ public class ResourceYamlViewModelTests
         window.Content = view;
         window.Show();
 
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var editor = view.FindControl<TextEditor>("Editor");
         editor.ShouldNotBeNull();
@@ -468,7 +454,7 @@ public class ResourceYamlViewModelTests
             });
 
         vm.RequestCompletionCommand.Execute(null);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var behavior = Interaction.GetBehaviors(editor).OfType<YamlEditorBehavior>().Single();
         var completionWindow = GetCompletionWindow(behavior);
@@ -570,7 +556,7 @@ public class ResourceYamlViewModelTests
         window.Content = view;
         window.Show();
 
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var editor = view.FindControl<TextEditor>("Editor");
         editor.ShouldNotBeNull();
@@ -580,7 +566,7 @@ public class ResourceYamlViewModelTests
         var initialTitles = foldingManager.AllFoldings.Select(folding => folding.Title).ToArray();
 
         vm.YamlDocument.Text = "root:\n  nested:\n    value: test";
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var timerField = typeof(YamlEditorBehavior).GetField("_foldingUpdateTimer", BindingFlags.Instance | BindingFlags.NonPublic);
         var timer = timerField?.GetValue(behavior) as DispatcherTimer;
@@ -1602,7 +1588,7 @@ public class ResourceYamlViewModelTests
     }
 
     [AvaloniaFact]
-    public void ResourceYamlView_ShowsDocumentationPopupForImagePullPolicyInCalicoControllerManifestAfterScroll()
+    public async Task ResourceYamlView_ShowsDocumentationPopupForImagePullPolicyInCalicoControllerManifestAfterScroll()
     {
         using var window = Application.Current.CreateTestWindow(width: 800, height: 250);
 
@@ -1666,9 +1652,8 @@ public class ResourceYamlViewModelTests
 
         var scrollViewer = editor.GetScrollViewer();
         scrollViewer.ShouldNotBeNull();
-        WaitFor(() =>
+        await WaitForAsync(() =>
         {
-            Dispatcher.UIThread.RunJobs();
             return scrollViewer.Extent.Height > scrollViewer.Viewport.Height;
         }, 3000);
 
@@ -1689,7 +1674,7 @@ public class ResourceYamlViewModelTests
     }
 
     [AvaloniaFact]
-    public void ResourceYamlView_ResolvesViewportPointToImagePullPolicyOffsetAfterScroll()
+    public async Task ResourceYamlView_ResolvesViewportPointToImagePullPolicyOffsetAfterScroll()
     {
         using var window = Application.Current.CreateTestWindow(width: 800, height: 250);
 
@@ -1753,9 +1738,8 @@ public class ResourceYamlViewModelTests
 
         var scrollViewer = editor.GetScrollViewer();
         scrollViewer.ShouldNotBeNull();
-        WaitFor(() =>
+        await WaitForAsync(() =>
         {
-            Dispatcher.UIThread.RunJobs();
             return scrollViewer.Extent.Height > scrollViewer.Viewport.Height;
         }, 3000);
 
@@ -1770,7 +1754,7 @@ public class ResourceYamlViewModelTests
     }
 
     [AvaloniaFact]
-    public void ResourceYamlView_CreatesDocumentationTipForImagePullPolicyOffsetAfterScroll()
+    public async Task ResourceYamlView_CreatesDocumentationTipForImagePullPolicyOffsetAfterScroll()
     {
         using var window = Application.Current.CreateTestWindow(width: 800, height: 250);
 
@@ -1834,9 +1818,8 @@ public class ResourceYamlViewModelTests
 
         var scrollViewer = editor.GetScrollViewer();
         scrollViewer.ShouldNotBeNull();
-        WaitFor(() =>
+        await WaitForAsync(() =>
         {
-            Dispatcher.UIThread.RunJobs();
             return scrollViewer.Extent.Height > scrollViewer.Viewport.Height;
         }, 3000);
 
@@ -1872,12 +1855,12 @@ public class ResourceYamlViewModelTests
         window.Content = view;
         window.Show();
 
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var editor = view.FindControl<TextEditor>("Editor");
         editor.ShouldNotBeNull();
         editor.TextArea.PerformTextInput("\n");
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var behavior = Interaction.GetBehaviors(editor).OfType<YamlEditorBehavior>().Single();
         var completionWindow = GetCompletionWindow(behavior);
@@ -1916,14 +1899,14 @@ public class ResourceYamlViewModelTests
         window.Content = view;
         window.Show();
 
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var editor = view.FindControl<TextEditor>("Editor");
         editor.ShouldNotBeNull();
         editor.CaretOffset = editor.Text.LastIndexOf("containers:", StringComparison.Ordinal) + "containers:".Length;
 
         editor.TextArea.PerformTextInput("\n");
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         editor.Text.ShouldBe(
             "apiVersion: v1\n"
@@ -1969,14 +1952,14 @@ public class ResourceYamlViewModelTests
         window.Content = view;
         window.Show();
 
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var editor = view.FindControl<TextEditor>("Editor");
         editor.ShouldNotBeNull();
         editor.CaretOffset = editor.Text.LastIndexOf("command:", StringComparison.Ordinal) + "command:".Length;
 
         editor.TextArea.PerformTextInput("\n");
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         editor.Text.ShouldBe(
             "apiVersion: v1\n"
@@ -2020,14 +2003,14 @@ public class ResourceYamlViewModelTests
         window.Content = view;
         window.Show();
 
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var editor = view.FindControl<TextEditor>("Editor");
         editor.ShouldNotBeNull();
         editor.CaretOffset = editor.Text.Length;
 
         editor.TextArea.PerformTextInput("\n");
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         editor.Text.ShouldBe(
             "apiVersion: v1\n"
@@ -2067,14 +2050,14 @@ public class ResourceYamlViewModelTests
         window.Content = view;
         window.Show();
 
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var editor = view.FindControl<TextEditor>("Editor");
         editor.ShouldNotBeNull();
         editor.CaretOffset = editor.Text.Length;
 
         editor.TextArea.PerformTextInput("\n");
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         editor.Text.ShouldBe(
             "apiVersion: v1\n"
@@ -2117,14 +2100,14 @@ public class ResourceYamlViewModelTests
         window.Content = view;
         window.Show();
 
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var editor = view.FindControl<TextEditor>("Editor");
         editor.ShouldNotBeNull();
         editor.CaretOffset = editor.Text.Length;
 
         editor.TextArea.PerformTextInput("s");
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var behavior = Interaction.GetBehaviors(editor).OfType<YamlEditorBehavior>().Single();
         var completionWindow = GetCompletionWindow(behavior);
@@ -2164,14 +2147,14 @@ public class ResourceYamlViewModelTests
         window.Content = view;
         window.Show();
 
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var editor = view.FindControl<TextEditor>("Editor");
         editor.ShouldNotBeNull();
         editor.CaretOffset = editor.Text.Length;
 
         vm.RequestCompletionCommand.Execute(null);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var behavior = Interaction.GetBehaviors(editor).OfType<YamlEditorBehavior>().Single();
         var completionWindow = GetCompletionWindow(behavior);
@@ -2189,7 +2172,7 @@ public class ResourceYamlViewModelTests
                 Length = completionWindow.EndOffset - completionWindow.StartOffset,
             },
             EventArgs.Empty);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         editor.Text.ShouldBe(
             "apiVersion: v1\n"
@@ -2234,14 +2217,14 @@ public class ResourceYamlViewModelTests
         window.Content = view;
         window.Show();
 
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var editor = view.FindControl<TextEditor>("Editor");
         editor.ShouldNotBeNull();
         editor.CaretOffset = editor.Text.Length;
 
         vm.RequestCompletionCommand.Execute(null);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var behavior = Interaction.GetBehaviors(editor).OfType<YamlEditorBehavior>().Single();
         var completionWindow = GetCompletionWindow(behavior);
@@ -2259,7 +2242,7 @@ public class ResourceYamlViewModelTests
                 Length = completionWindow.EndOffset - completionWindow.StartOffset,
             },
             EventArgs.Empty);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         editor.Text.ShouldBe(
             "apiVersion: v1\n"
@@ -2504,7 +2487,7 @@ public class ResourceYamlViewModelTests
         window.Content = view;
         window.Show();
 
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         vm.YamlDocument.Text = """
             apiVersion: v1
@@ -2553,7 +2536,7 @@ public class ResourceYamlViewModelTests
         window.Content = view;
         window.Show();
 
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         vm.YamlDocument.Text = """
             apiVersion: v1
@@ -2600,7 +2583,7 @@ public class ResourceYamlViewModelTests
         window.Content = view;
         window.Show();
 
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         vm.YamlDocument.Text = """
             apiVersion: example.io/v1
@@ -2645,7 +2628,7 @@ public class ResourceYamlViewModelTests
         window.Content = view;
         window.Show();
 
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         vm.YamlDocument.Text = """
             apiVersion: v1
@@ -2656,7 +2639,7 @@ public class ResourceYamlViewModelTests
         await WaitForValidationDebounceAsync(() => vm.ValidationDiagnostics.Count == 1);
 
         await vm.SaveCommand.ExecuteAsync(null).WaitAsync(TestContext.Current.CancellationToken);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         vm.HasActionFailureResult.ShouldBeTrue();
         vm.ActionResultTitle.ShouldBe("Save failed");
@@ -2691,7 +2674,7 @@ public class ResourceYamlViewModelTests
         window.Content = view;
         window.Show();
 
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         vm.YamlDocument.Text = """
             apiVersion: v1
@@ -2733,7 +2716,7 @@ public class ResourceYamlViewModelTests
               namespace: default
               labels: [test
             """.ReplaceLineEndings("\n");
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         vm.ValidationDiagnostics.ShouldBeEmpty();
         vm.HasActionResult.ShouldBeFalse();
@@ -2767,7 +2750,7 @@ public class ResourceYamlViewModelTests
         window.Content = view;
         window.Show();
 
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         vm.YamlDocument.Text = """
             apiVersion: v1
@@ -2780,12 +2763,12 @@ public class ResourceYamlViewModelTests
                 - name: app
                   image: nginx
             """.ReplaceLineEndings("\n");
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         vm.DryRunCommand.CanExecute(null).ShouldBeTrue();
 
         await vm.DryRunCommand.ExecuteAsync(null).WaitAsync(TestContext.Current.CancellationToken);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         (Application.Current as TestApp)?.Notification.ShouldBeNull();
         vm.HasActionSuccessResult.ShouldBeTrue();
@@ -2822,7 +2805,7 @@ public class ResourceYamlViewModelTests
         window.Content = view;
         window.Show();
 
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         vm.YamlDocument.Text = """
             apiVersion: v1
@@ -2832,10 +2815,10 @@ public class ResourceYamlViewModelTests
               namespace: default
             spec: {}
             """.ReplaceLineEndings("\n");
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         await vm.DryRunCommand.ExecuteAsync(null).WaitAsync(TestContext.Current.CancellationToken);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         (Application.Current as TestApp)?.Notification.ShouldBeNull();
         vm.HasActionFailureResult.ShouldBeTrue();
@@ -2870,7 +2853,7 @@ public class ResourceYamlViewModelTests
         window.Content = view;
         window.Show();
 
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         vm.YamlDocument.Text = """
             apiVersion: v1
@@ -2883,15 +2866,15 @@ public class ResourceYamlViewModelTests
                 - name: app
                   image: nginx
             """.ReplaceLineEndings("\n");
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         await vm.DryRunCommand.ExecuteAsync(null).WaitAsync(TestContext.Current.CancellationToken);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         vm.HasActionResult.ShouldBeTrue();
 
         vm.YamlDocument.Insert(vm.YamlDocument.TextLength, "\n# note");
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         vm.HasActionResult.ShouldBeTrue();
         vm.ActionResultTitle.ShouldBe("Dry run succeeded");
@@ -2924,7 +2907,7 @@ public class ResourceYamlViewModelTests
         window.Content = view;
         window.Show();
 
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         vm.YamlDocument.Text = """
             apiVersion: v1
@@ -2937,10 +2920,10 @@ public class ResourceYamlViewModelTests
                 - name: app
                   image: nginx
             """.ReplaceLineEndings("\n");
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         await vm.DryRunCommand.ExecuteAsync(null).WaitAsync(TestContext.Current.CancellationToken);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         vm.HasActionSuccessResult.ShouldBeTrue();
         vm.DismissActionResultCommand.CanExecute(null).ShouldBeTrue();
@@ -2950,7 +2933,7 @@ public class ResourceYamlViewModelTests
         actionBar.IsClosable.ShouldBeTrue();
 
         vm.DismissActionResultCommand.Execute(null);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         vm.HasActionResult.ShouldBeFalse();
         vm.DismissActionResultCommand.CanExecute(null).ShouldBeFalse();
@@ -3106,7 +3089,7 @@ public class ResourceYamlViewModelTests
         window.Content = view;
         window.Show();
 
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var editor = view.FindControl<TextEditor>("Editor");
         editor.ShouldNotBeNull();
@@ -3136,7 +3119,7 @@ public class ResourceYamlViewModelTests
         window.Content = view;
         window.Show();
 
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var editor = view.FindControl<TextEditor>("Editor");
         editor.ShouldNotBeNull();
@@ -3158,7 +3141,7 @@ public class ResourceYamlViewModelTests
         window.Content = view;
         window.Show();
 
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var editor = view.FindControl<TextEditor>("Editor");
         editor.ShouldNotBeNull();
@@ -3171,7 +3154,7 @@ public class ResourceYamlViewModelTests
         specFold.IsFolded = true;
 
         await cluster.Runtime.AddOrUpdateResource(CreatePod("test", includeLabels: true, extraEnv: false));
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         foldingManager = GetFoldingManager(behavior);
         foldingManager.ShouldNotBeNull();
@@ -3194,7 +3177,7 @@ public class ResourceYamlViewModelTests
         window.Content = view;
         window.Show();
 
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var editor = view.FindControl<TextEditor>("Editor");
         editor.ShouldNotBeNull();
@@ -3207,7 +3190,7 @@ public class ResourceYamlViewModelTests
         metadataFold.IsFolded = true;
 
         await cluster.Runtime.AddOrUpdateResource(CreatePod("test", includeLabels: true, extraEnv: true));
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         foldingManager = GetFoldingManager(behavior);
         foldingManager.ShouldNotBeNull();
@@ -3230,7 +3213,7 @@ public class ResourceYamlViewModelTests
         window.Content = view;
         window.Show();
 
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var editor = view.FindControl<TextEditor>("Editor");
         editor.ShouldNotBeNull();
@@ -3243,7 +3226,7 @@ public class ResourceYamlViewModelTests
         nestedFold.IsFolded = true;
 
         await cluster.Runtime.AddOrUpdateResource(CreatePod("test", includeLabels: true, extraEnv: true));
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         foldingManager = GetFoldingManager(behavior);
         foldingManager.ShouldNotBeNull();
@@ -3377,10 +3360,10 @@ public class ResourceYamlViewModelTests
             .FirstOrDefault(editor => editor.IsVisible && ReferenceEquals(editor.DataContext, vm));
     }
 
-    private static T WaitForValue<T>(Func<T?> getter, int timeoutMs = 1000) where T : class
+    private static async Task<T> WaitForValueAsync<T>(Func<T?> getter, int timeoutMs = 1000) where T : class
     {
         T? value = null;
-        WaitFor(() =>
+        await WaitForAsync(() =>
         {
             value = getter();
             return value != null;
@@ -3388,15 +3371,15 @@ public class ResourceYamlViewModelTests
         return value!;
     }
 
-    private static void WaitFor(Func<bool> predicate, int timeoutMs = 1000)
+    private static async Task WaitForAsync(Func<bool> predicate, int timeoutMs = 1000)
     {
-        var sw = System.Diagnostics.Stopwatch.StartNew();
-        while (sw.ElapsedMilliseconds < timeoutMs)
+        var deadline = DateTime.UtcNow.AddMilliseconds(timeoutMs);
+        while (DateTime.UtcNow < deadline)
         {
-            Dispatcher.UIThread.RunJobs();
+            await TestApplicationExtensions.WaitForUiAsync();
             if (predicate())
                 return;
-            Thread.Yield();
+            await TestWait.NextPollAsync(TimeSpan.FromMilliseconds(25), TestContext.Current.CancellationToken);
         }
         predicate().ShouldBeTrue();
     }

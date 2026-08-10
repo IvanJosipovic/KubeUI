@@ -40,7 +40,7 @@ public sealed class ResourcePropertiesViewTests
         try
         {
             window.Show();
-            Dispatcher.UIThread.RunJobs();
+            await TestApplicationExtensions.WaitForUiAsync();
 
             var items = view.FindControl<StackPanel>("PART_Items")!.Children.OfType<PropertyItem>().ToList();
 
@@ -89,7 +89,7 @@ public sealed class ResourcePropertiesViewTests
         };
 
         window.Show();
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var buttons = view.FindControl<StackPanel>("PART_Actions")!.Children.OfType<Button>().ToList();
 
@@ -134,7 +134,7 @@ public sealed class ResourcePropertiesViewTests
         try
         {
             window.Show();
-            Dispatcher.UIThread.RunJobs();
+            await TestApplicationExtensions.WaitForUiAsync();
 
             var items = view.FindControl<StackPanel>("PART_Items")!.Children.OfType<PropertyItem>().ToList();
 
@@ -182,8 +182,8 @@ public sealed class ResourcePropertiesViewTests
         try
         {
             window.Show();
-            Dispatcher.UIThread.RunJobs();
-            Dispatcher.UIThread.RunJobs();
+            await TestApplicationExtensions.WaitForUiAsync();
+            await TestApplicationExtensions.WaitForUiAsync();
 
             var section = view.GetVisualDescendants()
                 .OfType<ExpandableSection>()
@@ -216,7 +216,7 @@ public sealed class ResourcePropertiesViewTests
         viewModel.Initialize(workspace, pod);
 
         await workspace.Runtime.AddOrUpdateResource(pod);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
         await TestWait.UntilAsync(
             () => workspace.Runtime.GetResource<V1Pod>("default", "pod-1") is not null,
             TimeSpan.FromSeconds(5),
@@ -228,7 +228,7 @@ public sealed class ResourcePropertiesViewTests
         };
 
         await workspace.Runtime.AddOrUpdateResource(pod);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         await TestWait.UntilAsync(
             () => workspace.Runtime.GetResource<V1Pod>("default", "pod-1")?.Metadata?.Labels?.TryGetValue("updated", out var value) == true
@@ -265,11 +265,11 @@ public sealed class ResourcePropertiesViewTests
         };
 
         window.Show();
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         window.Content = null;
         window.Close();
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         viewModel.Object = new V1Pod
         {
@@ -280,6 +280,6 @@ public sealed class ResourcePropertiesViewTests
             }
         };
 
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
     }
 }
