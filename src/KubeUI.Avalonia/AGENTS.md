@@ -78,6 +78,7 @@ References:
 
 ## 9) Code conventions
 
+- Keep this file focused on rules shared across Avalonia features. Create a nested `AGENTS.md` for feature-specific requirements when a feature has distinct architecture, UI, or testing rules, and update that file whenever the feature changes.
 - No code-behind event handlers.
 - Avoid static state except truly immutable constants.
 - Prefer explicit types where clarity is improved; avoid `var` in public APIs.
