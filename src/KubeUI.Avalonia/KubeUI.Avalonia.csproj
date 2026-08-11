@@ -48,16 +48,17 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="$(BaseIntermediateOutputPath)\Resources.Designer.cs"
+             Condition="'$(DesignTimeBuild)' == 'true'"
+             AutoGen="true"
+             DesignTime="true"
+             Visible="false" />
     <EmbeddedResource Update="Assets\Resources.resx">
       <StronglyTypedLanguage>CSharp</StronglyTypedLanguage>
       <StronglyTypedNamespace>KubeUI.Avalonia.Assets</StronglyTypedNamespace>
       <StronglyTypedClassName>Resources</StronglyTypedClassName>
       <StronglyTypedFileName>$(BaseIntermediateOutputPath)\Resources.Designer.cs</StronglyTypedFileName>
     </EmbeddedResource>
-    <Compile Include="$(BaseIntermediateOutputPath)\Resources.Designer.cs"
-            AutoGen="true"
-            DesignTime="true"
-            Visible="false" />
   </ItemGroup>
 
   <ItemGroup>
