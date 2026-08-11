@@ -1,9 +1,23 @@
 using Avalonia.Controls;
+using Avalonia.Threading;
 
 namespace KubeUI.Avalonia.Tests.Infra;
 
 internal static class TestApplicationExtensions
 {
+    public static async Task WaitForUiAsync(CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        Dispatcher.UIThread.RunJobs();
+        var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        Dispatcher.UIThread.Post(
+            static state => ((TaskCompletionSource)state!).TrySetResult(),
+            completion,
+            DispatcherPriority.Background);
+        await completion.Task.WaitAsync(cancellationToken);
+        cancellationToken.ThrowIfCancellationRequested();
+    }
+
     public static IServiceProvider GetTestServices(this Application? application)
     {
         return application is IServiceProviderHost host

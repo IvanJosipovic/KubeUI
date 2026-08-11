@@ -45,6 +45,7 @@ global using KubeUI.Avalonia.Resources.Workloads.v1.Pod;
 global using KubeUI.Avalonia.Resources.Workloads.v1.ReplicaSet;
 global using KubeUI.Avalonia.Resources.Workloads.v1.StatefulSet;
 global using KubeUI.Avalonia.Services.Settings;
+global using KubeUI.Avalonia.Tests.Infra;
 global using KubeUI.Testing.Kubernetes.Bootstrap;
 global using KubeUI.Testing.Kubernetes.Fixtures;
 global using KubeUI.Testing.Kubernetes.Infrastructure;

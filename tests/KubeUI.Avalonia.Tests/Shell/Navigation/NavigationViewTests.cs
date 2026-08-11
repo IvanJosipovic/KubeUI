@@ -33,12 +33,12 @@ public sealed class NavigationViewTests
         var view = new NavigationView { DataContext = navigation };
         var window = new Window { Content = view };
         window.Show();
-        Dispatcher.UIThread.RunJobs();
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         podsLink.Count = Observable.Return(3);
-        Dispatcher.UIThread.RunJobs();
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         view.GetVisualDescendants().OfType<TextBlock>().Select(text => text.Text).ShouldContain("3");
 

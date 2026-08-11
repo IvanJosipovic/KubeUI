@@ -35,12 +35,12 @@ public sealed class ResourcePropertiesViewThreadingTests
         };
 
         window.Show();
-        Dispatcher.UIThread.RunJobs();
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         // Close the window to detach the view from the visual tree
         window.Close();
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         // Invoke ClearItems via a public wrapper from a background thread to simulate the race.
         await Task.Run(() =>
