@@ -78,12 +78,13 @@ public partial class App : Application, IServiceProviderHost
 
     public override void Initialize()
     {
-        Styles.Add(new Fluent());
+        var fluent = new Fluent();
+        Styles.Add(fluent);
         Resources.MergedDictionaries.Add(new ResourceInclude(new Uri("avares://LiveMarkdown.Avalonia/Defaults.axaml"))
         {
             Source = new Uri("avares://LiveMarkdown.Avalonia/Defaults.axaml")
         });
-        Resources.MergedDictionaries.Add(Fluent.CreateMarkdownResourceOverrides());
+        Resources.MergedDictionaries.Add(fluent.CreateMarkdownResourceOverrides());
 
         Services.GetRequiredService<Instrumentation>().AppOpened.Add(1);
     }

@@ -25,8 +25,8 @@ public sealed class Fluent : AvaloniaStyles
 {
     private static readonly CultureInfo s_locale = CultureInfo.CurrentUICulture;
     private static readonly Uri s_baseUri = new("avares://KubeUI.Avalonia");
-    private static readonly ColorPaletteResources s_lightPalette = CreateLightPalette();
-    private static readonly ColorPaletteResources s_darkPalette = CreateDarkPalette();
+    private readonly ColorPaletteResources _lightPalette = CreateLightPalette();
+    private readonly ColorPaletteResources _darkPalette = CreateDarkPalette();
 
     public Fluent()
     {
@@ -70,15 +70,15 @@ public sealed class Fluent : AvaloniaStyles
             .TransparencyLevelHint([WindowTransparencyLevel.None]));
     }
 
-    private static FluentTheme CreateFluentTheme()
+    private FluentTheme CreateFluentTheme()
     {
         var theme = new FluentTheme
         {
             DensityStyle = DensityStyle.Compact
         };
 
-        theme.Palettes.Add(ThemeVariant.Light, s_lightPalette);
-        theme.Palettes.Add(ThemeVariant.Dark, s_darkPalette);
+        theme.Palettes.Add(ThemeVariant.Light, _lightPalette);
+        theme.Palettes.Add(ThemeVariant.Dark, _darkPalette);
 
         return theme;
     }
@@ -158,7 +158,7 @@ public sealed class Fluent : AvaloniaStyles
         ["SubtleOutlineBrush"] = Brush("#9E9E9E"),
     };
 
-    internal static ResourceDictionary CreateMarkdownResourceOverrides() => new()
+    internal ResourceDictionary CreateMarkdownResourceOverrides() => new()
     {
         ThemeDictionaries =
         {
@@ -167,29 +167,29 @@ public sealed class Fluent : AvaloniaStyles
         }
     };
 
-    private static ResourceDictionary CreateMarkdownLightResources()
+    private ResourceDictionary CreateMarkdownLightResources()
     {
         return new()
         {
-            ["BorderColor"] = s_lightPalette.BaseMediumLow,
-            ["ForegroundColor"] = s_lightPalette.BaseHigh,
-            ["CardBackgroundColor"] = s_lightPalette.RegionColor,
-            ["SecondaryCardBackgroundColor"] = s_lightPalette.BaseLow,
-            ["CodeInlineColor"] = s_lightPalette.BaseMediumHigh,
-            ["QuoteBorderColor"] = s_lightPalette.BaseMediumLow,
+            ["BorderColor"] = _lightPalette.BaseMediumLow,
+            ["ForegroundColor"] = _lightPalette.BaseHigh,
+            ["CardBackgroundColor"] = _lightPalette.RegionColor,
+            ["SecondaryCardBackgroundColor"] = _lightPalette.BaseLow,
+            ["CodeInlineColor"] = _lightPalette.BaseMediumHigh,
+            ["QuoteBorderColor"] = _lightPalette.BaseMediumLow,
         };
     }
 
-    private static ResourceDictionary CreateMarkdownDarkResources()
+    private ResourceDictionary CreateMarkdownDarkResources()
     {
         return new()
         {
-            ["BorderColor"] = s_darkPalette.BaseMediumLow,
-            ["ForegroundColor"] = s_darkPalette.BaseHigh,
-            ["CardBackgroundColor"] = s_darkPalette.RegionColor,
-            ["SecondaryCardBackgroundColor"] = s_darkPalette.BaseLow,
-            ["CodeInlineColor"] = s_darkPalette.BaseMediumHigh,
-            ["QuoteBorderColor"] = s_darkPalette.BaseMediumLow,
+            ["BorderColor"] = _darkPalette.BaseMediumLow,
+            ["ForegroundColor"] = _darkPalette.BaseHigh,
+            ["CardBackgroundColor"] = _darkPalette.RegionColor,
+            ["SecondaryCardBackgroundColor"] = _darkPalette.BaseLow,
+            ["CodeInlineColor"] = _darkPalette.BaseMediumHigh,
+            ["QuoteBorderColor"] = _darkPalette.BaseMediumLow,
         };
     }
 

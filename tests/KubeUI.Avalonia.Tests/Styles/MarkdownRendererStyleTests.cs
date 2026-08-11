@@ -3,12 +3,23 @@ using Avalonia.Headless.XUnit;
 using Avalonia.Media;
 using Avalonia.Styling;
 using Avalonia.Threading;
+using KubeUI.Avalonia.Styles;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Styles;
 
 public sealed class MarkdownRendererStyleTests
 {
+    [AvaloniaFact]
+    public void creating_a_second_fluent_style_does_not_reuse_palette_resources()
+    {
+        var application = Application.Current!;
+        var styles = new Fluent();
+
+        application.Styles.Add(styles);
+        application.Styles.Remove(styles);
+    }
+
     [AvaloniaFact]
     public void markdown_colors_follow_fluent_theme_variants()
     {
