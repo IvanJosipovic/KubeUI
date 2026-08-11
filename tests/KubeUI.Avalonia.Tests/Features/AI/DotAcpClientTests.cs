@@ -362,13 +362,14 @@ public sealed class DotAcpClientTests
     [Fact]
     public async Task acp_process_exposes_stderr_without_mixing_it_into_protocol_output()
     {
+        var (command, arguments) = GetEchoCommand("kubeui-stderr", standardError: true);
         await using var process = new AcpProcess(
             new AcpAgentDefinition
             {
                 Id = "stderr-test",
                 Name = "stderr test",
-                Executable = Environment.GetEnvironmentVariable("ComSpec") ?? "cmd.exe",
-                Arguments = ["/c", "echo kubeui-stderr 1>&2"]
+                Executable = command,
+                Arguments = arguments
             },
             new AgentSessionOptions());
         var error = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -385,12 +386,13 @@ public sealed class DotAcpClientTests
     [Fact]
     public async Task terminal_callbacks_start_capture_wait_and_release_a_permissioned_process()
     {
+        var (command, arguments) = GetEchoCommand("kubeui-terminal");
         var events = Channel.CreateUnbounded<AgentEvent>();
         var client = new DotAcpClient(events.Writer, new AllowAgentPermissionService());
         var terminal = await client.CreateTerminalAsync(new CreateTerminalRequest
         {
-            Command = Environment.GetEnvironmentVariable("ComSpec") ?? "cmd.exe",
-            Args = ["/c", "echo kubeui-terminal"],
+            Command = command,
+            Args = arguments,
             OutputByteLimit = 1024
         });
 
@@ -400,6 +402,14 @@ public sealed class DotAcpClientTests
         completed.ExitCode.ShouldBe(0u);
         output.Output.ShouldContain("kubeui-terminal");
         await client.ReleaseTerminalAsync(new ReleaseTerminalRequest { TerminalId = terminal.TerminalId });
+    }
+
+    private static (string Command, string[] Arguments) GetEchoCommand(string text, bool standardError = false)
+    {
+        var commandLine = standardError ? $"echo {text} 1>&2" : $"echo {text}";
+        return OperatingSystem.IsWindows()
+            ? (Environment.GetEnvironmentVariable("ComSpec") ?? "cmd.exe", ["/c", commandLine])
+            : ("/bin/sh", ["-c", commandLine]);
     }
 
     [Fact]

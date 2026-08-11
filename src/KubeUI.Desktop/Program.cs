@@ -116,7 +116,8 @@ internal static class Program
         string[] args,
         bool includeOptionalServices = true,
         Action<IServiceCollection>? configureServices = null,
-        int? mcpPortOverride = null)
+        int? mcpPortOverride = null,
+        bool? mcpEnabledOverride = null)
     {
         var builder = WebApplication.CreateSlimBuilder(new WebApplicationOptions
         {
@@ -128,7 +129,7 @@ internal static class Program
         var settings = SettingsPersistenceLoader.Load();
         builder.Services.AddKubeUIAppServices();
 
-        if (settings.Settings.McpServerEnabled)
+        if (mcpEnabledOverride ?? settings.Settings.McpServerEnabled)
         {
             builder.Services.AddMcpServer()
                 .WithHttpTransport(options => options.Stateless = true)

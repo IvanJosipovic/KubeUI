@@ -35,7 +35,7 @@ public sealed class McpServerHostTests
             services.Replace(ServiceDescriptor.Singleton(new Mock<IMcpClusterSession>(MockBehavior.Strict).Object));
             services.Replace(ServiceDescriptor.Singleton(new Mock<IKubernetesYamlSerializer>(MockBehavior.Strict).Object));
             services.Replace(ServiceDescriptor.Singleton(new Mock<IAgentPermissionService>(MockBehavior.Strict).Object));
-        }, mcpPortOverride: port);
+        }, mcpPortOverride: port, mcpEnabledOverride: true);
         using var application = Program.CreateAndConfigureMcpEndpoint(builder);
 
         try
@@ -96,7 +96,7 @@ public sealed class McpServerHostTests
             services.Replace(ServiceDescriptor.Singleton(new Mock<IKubernetesYamlSerializer>(MockBehavior.Strict).Object));
             services.Replace(ServiceDescriptor.Singleton(new Mock<IAgentPermissionService>(MockBehavior.Strict).Object));
             services.Replace(ServiceDescriptor.Singleton<IResourceNavigationService>(navigation.Object));
-        }, mcpPortOverride: port);
+        }, mcpPortOverride: port, mcpEnabledOverride: true);
         using var application = Program.CreateAndConfigureMcpEndpoint(builder);
 
         try
