@@ -101,10 +101,24 @@ public sealed class AcpAgent : IAgent
         }
         catch (Exception exception)
         {
+            RecordException(activity, exception);
             var formattedException = AcpErrorFormatter.IsAcpError(exception)
                 ? AcpErrorFormatter.Format(exception)
                 : null;
-            connection?.Dispose();
+            if (connection is not null)
+            {
+                var completion = connection.Completion;
+                connection.Dispose();
+                try
+                {
+                    await completion.ConfigureAwait(false);
+                }
+                catch (Exception completionException)
+                {
+                    RecordException(activity, completionException);
+                    // Preserve original ACP failure while observing connection shutdown failure.
+                }
+            }
             await process.DisposeAsync().ConfigureAwait(false);
             if (formattedException is not null)
                 throw new InvalidOperationException(formattedException, exception);
@@ -114,7 +128,16 @@ public sealed class AcpAgent : IAgent
 
     private IAcpProcess CreateProcess(AgentSessionOptions options) => new AcpProcess(_definition, options);
 
-    private static DomainAgentCapabilities MapCapabilities(dotacp.protocol.InitializeResponse result)
+    private static void RecordException(Activity? activity, Exception exception)
+    {
+        if (activity is null)
+            return;
+
+        activity.SetStatus(ActivityStatusCode.Error, exception.Message);
+        activity.AddException(exception);
+    }
+
+    private static DomainAgentCapabilities MapCapabilities(ProtocolInitializeResponse result)
     {
         // These capabilities are provided by the KubeUI ACP client callbacks;
         // MCP is additionally gated by the agent's negotiated advertisement.

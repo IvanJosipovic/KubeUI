@@ -145,12 +145,28 @@ public sealed class AcpAgentIntegrationTests
     [Fact]
     public async Task acp_agent_rejects_malformed_protocol_messages()
     {
+        var activities = new ConcurrentBag<Activity>();
+        using var listener = new ActivityListener
+        {
+            ShouldListenTo = source => source.Name == AgentActivitySource.SourceName,
+            Sample = static (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllData,
+            ActivityStopped = activities.Add
+        };
+        ActivitySource.AddActivityListener(listener);
+
         var agent = new AcpAgent(
             new AcpAgentDefinition { Id = "malformed", Name = "Malformed ACP", Executable = "unused" },
             () => new MalformedAcpProcess());
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
 
         await Should.ThrowAsync<Exception>(() => agent.CreateSessionAsync(new AgentSessionOptions(), timeout.Token));
+
+        var activity = activities.Single(item => item.OperationName == "ai.agent.start");
+        activity.Status.ShouldBe(ActivityStatusCode.Error);
+        activity.Events.ShouldContain(item =>
+            item.Name == "exception"
+            && item.Tags.Any(tag => tag.Key == "exception.type")
+            && item.Tags.Any(tag => tag.Key == "exception.message"));
     }
 
     [Fact]
