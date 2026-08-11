@@ -9,14 +9,18 @@ using Avalonia.Threading;
 using Declarative.Avalonia.AgentTools;
 #endif
 using KubeUI.Avalonia;
+using KubeUI.AI.Diagnostics;
 using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
+using KubeUI.Avalonia.Infrastructure.Mcp;
 using KubeUI.Avalonia.Infrastructure.Platform;
 using KubeUI.Avalonia.Services.Settings;
 using KubeUI.Kubernetes;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
 using NReco.Logging.File;
 using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
@@ -38,16 +42,24 @@ internal static class Program
         EnsureMacOsPath();
 
         var host = CreateHostBuilder(args).Build();
+        ConfigureMcpEndpoint(host);
         host.Services.ConfigureKubeUIKubernetesJsonLogging();
         host.Start();
 
         var builder = CreateAppBuilder(host.Services);
 
-        builder.StartWithClassicDesktopLifetime(args);
-
-        host.WaitForShutdown();
-
-        host.Dispose();
+        try
+        {
+            builder.StartWithClassicDesktopLifetime(args);
+        }
+        finally
+        {
+            Task.Run(async () =>
+            {
+                await host.StopAsync().ConfigureAwait(false);
+                await host.DisposeAsync().ConfigureAwait(false);
+            }).GetAwaiter().GetResult();
+        }
     }
 
     internal static AppBuilder CreateAppBuilder(
@@ -95,18 +107,18 @@ internal static class Program
                 ShutdownAvalonia();
             else
                 Dispatcher.UIThread.Post(ShutdownAvalonia);
-
         };
 
         services.GetRequiredService<IHostApplicationLifetime>().ApplicationStopping.Register(shutdownAvalonia);
     }
 
-    internal static HostApplicationBuilder CreateHostBuilder(
+    internal static WebApplicationBuilder CreateHostBuilder(
         string[] args,
         bool includeOptionalServices = true,
-        Action<IServiceCollection>? configureServices = null)
+        Action<IServiceCollection>? configureServices = null,
+        int? mcpPortOverride = null)
     {
-        var builder = Host.CreateEmptyApplicationBuilder(new HostApplicationBuilderSettings()
+        var builder = WebApplication.CreateSlimBuilder(new WebApplicationOptions
         {
             ApplicationName = "KubeUI",
             Args = args
@@ -115,6 +127,15 @@ internal static class Program
 
         var settings = SettingsPersistenceLoader.Load();
         builder.Services.AddKubeUIAppServices();
+
+        if (settings.Settings.McpServerEnabled)
+        {
+            builder.Services.AddMcpServer()
+                .WithHttpTransport(options => options.Stateless = true)
+                .WithTools<McpTools>();
+            var port = mcpPortOverride ?? McpServerConfiguration.GetValidatedPort(settings.Settings);
+            builder.WebHost.ConfigureKestrel(options => options.ListenLocalhost(port));
+        }
 
         if (includeOptionalServices && settings.Settings.TelemetryEnabled)
         {
@@ -129,6 +150,22 @@ internal static class Program
         configureServices?.Invoke(builder.Services);
         builder.Services.AddSingleton<ServiceDescriptor[]>([.. builder.Services]);
         return builder;
+    }
+
+    internal static void ConfigureMcpEndpoint(WebApplication application)
+    {
+        var settings = application.Services.GetRequiredService<ISettingsService>().Settings;
+        if (settings.McpServerEnabled)
+        {
+            application.MapMcp(McpServerConfiguration.Path);
+        }
+    }
+
+    internal static WebApplication CreateAndConfigureMcpEndpoint(WebApplicationBuilder builder)
+    {
+        var application = builder.Build();
+        ConfigureMcpEndpoint(application);
+        return application;
     }
 
     private static IServiceCollection AddFileLogging(this IServiceCollection services)
@@ -209,6 +246,7 @@ internal static class Program
             {
                 tracingProvider
                     .AddSource(Source.Name)
+                    .AddSource(AgentActivitySource.SourceName)
                     .AddSource(Kubernetes.Client.KubeInstrumentation.SourceName)
                     .AddSource(Instrumentation.SourceName)
                     .AddHttpClientInstrumentation()

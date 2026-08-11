@@ -23,6 +23,8 @@ using KubeUI.Avalonia.Features.Resources.List.Controls;
 using KubeUI.Avalonia.Infrastructure.DataGrid;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Infrastructure.Threading;
+using KubeUI.Avalonia.Features.AI;
+using KubeUI.AI.Agents;
 using KubeUI.Avalonia.Resources;
 using SortDirection = KubeUI.Avalonia.Resources.SortDirection;
 
@@ -35,6 +37,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     internal const string NamespaceScopePropertyPath = "namespace_scope";
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<ResourceListViewModel<T>> _logger;
+    private readonly IAgentContextService _agentContextService;
 
     private static readonly IComparer s_noopSortComparer = Comparer<object>.Create(static (_, _) => 0);
 
@@ -140,10 +143,14 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     public ObservableCollection<V1Namespace> SelectedNamespaces
         => IsNamespaceSelectionLinked && Cluster != null ? Cluster.SelectedNamespaces : _localSelectedNamespaces;
 
-    public ResourceListViewModel(IServiceProvider serviceProvider, ILogger<ResourceListViewModel<T>> logger)
+    public ResourceListViewModel(
+        IServiceProvider serviceProvider,
+        ILogger<ResourceListViewModel<T>> logger,
+        IAgentContextService agentContextService)
     {
         _serviceProvider = serviceProvider;
         _logger = logger;
+        _agentContextService = agentContextService;
 
         _searchQuerySubscription = _searchQueryChanges
             .Throttle(SearchDebounceDelay)
@@ -299,6 +306,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
 
     public void Dispose()
     {
+        _agentContextService.ClearContext(this);
         _subscription?.Dispose();
         _countSubscription?.Dispose();
         _searchQuerySubscription.Dispose();
@@ -555,6 +563,20 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     {
         OnPropertyChanged(nameof(SelectedItem));
         OnPropertyChanged(nameof(SelectedItems));
+        var selectedItems = SelectedItems;
+        _agentContextService.SetContext(this, selectedItems is null || selectedItems.Count == 0
+            ? null
+            : new AgentContext
+            {
+                Namespace = selectedItems[0].Metadata?.NamespaceProperty,
+                SelectedResources = selectedItems
+                    .Select(selected => new KubernetesResourceReference(
+                        Kind.GroupApiVersion,
+                        Kind.Kind,
+                        selected.Metadata?.Name ?? string.Empty,
+                        selected.Metadata?.NamespaceProperty))
+                    .ToArray()
+            });
     }
 
     // Runtime DataGrid state captured from ProDataGrid (in-memory snapshot)

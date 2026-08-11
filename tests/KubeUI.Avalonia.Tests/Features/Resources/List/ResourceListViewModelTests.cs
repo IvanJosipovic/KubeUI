@@ -24,6 +24,7 @@ using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Controls.DataGridFilters;
+using KubeUI.Avalonia.Features.AI;
 using KubeUI.Avalonia.Features.Resources.List.Behaviors;
 using KubeUI.Avalonia.Resources;
 using KubeUI.Avalonia.Shell.Documents.About;
@@ -212,6 +213,33 @@ public class ResourceListViewModelTests
         vm.SelectedItems[1].Name().ShouldBe("b");
         vm.SelectedItems[2].Namespace().ShouldBe("ns");
         vm.SelectedItems[2].Name().ShouldBe("c");
+    }
+
+    [AvaloniaFact(DisplayName = "Selection publishes lightweight agent context")]
+    public async Task selection_publishes_lightweight_agent_context()
+    {
+        using var window = Application.Current.CreateTestWindow();
+        var cluster = await Application.Current.CreateClusterAsync();
+        var vm = Application.Current.GetRequiredTestService<ResourceListViewModel<V1Pod>>();
+        var contextService = Application.Current.GetRequiredTestService<IAgentContextService>();
+        vm.Initialize(cluster);
+        var view = Application.Current.GetRequiredTestService<ResourceListView>();
+        view.DataContext = vm;
+        window.Content = view;
+        window.Show();
+
+        await AddOrUpdateAsync(cluster, Pod("ns", "api"));
+        await AddOrUpdateAsync(cluster, Pod("ns", "worker"));
+        await WaitForAsync(() => vm.ItemCount == 2, timeoutMs: 5000);
+
+        vm.SelectionModel.Select(0);
+        vm.SelectionModel.Select(1);
+        await WaitForAsync(() => contextService.Context?.SelectedResources.Count == 2, timeoutMs: 5000);
+
+        contextService.Context!.Namespace.ShouldBe("ns");
+        contextService.Context.SelectedResources.ShouldBe([
+            new KubeUI.AI.Agents.KubernetesResourceReference("v1", "Pod", "api", "ns"),
+            new KubeUI.AI.Agents.KubernetesResourceReference("v1", "Pod", "worker", "ns")]);
     }
 
     [AvaloniaFact(DisplayName = "Single select update middle")]

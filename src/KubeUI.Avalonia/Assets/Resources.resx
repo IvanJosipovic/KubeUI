@@ -575,6 +575,21 @@ Are you sure?</value>
   <data name="SettingsView_Title" xml:space="preserve">
     <value>Settings</value>
   </data>
+  <data name="SettingsView_AppearanceHeading" xml:space="preserve">
+    <value>Appearance</value>
+  </data>
+  <data name="SettingsView_AIHeading" xml:space="preserve">
+    <value>AI</value>
+  </data>
+  <data name="SettingsView_ApplicationHeading" xml:space="preserve">
+    <value>Application</value>
+  </data>
+  <data name="SettingsView_Agent_Label" xml:space="preserve">
+    <value>AI agent</value>
+  </data>
+  <data name="SettingsView_Agent_ToolTip" xml:space="preserve">
+    <value>Agent runtime used by the AI assistant.</value>
+  </data>
   <data name="SettingsView_Theme" xml:space="preserve">
     <value>Theme</value>
   </data>
@@ -604,6 +619,18 @@ Are you sure?</value>
   </data>
   <data name="SettingsView_PreRelease_ToolTip" xml:space="preserve">
     <value>Allows updates to pre-release versions of KubeUI</value>
+  </data>
+  <data name="SettingsView_McpEnabled_Label" xml:space="preserve">
+    <value>Enable Local MCP Server (Restart Required)</value>
+  </data>
+  <data name="SettingsView_McpEnabled_ToolTip" xml:space="preserve">
+    <value>Starts the embedded MCP server on localhost so MCP clients can control this KubeUI instance.</value>
+  </data>
+  <data name="SettingsView_McpPort_Label" xml:space="preserve">
+    <value>Local MCP Port (Restart Required)</value>
+  </data>
+  <data name="SettingsView_McpPort_ToolTip" xml:space="preserve">
+    <value>Hostname and path are fixed to 127.0.0.1 and /mcp. Change only the port when you need to avoid a local conflict.</value>
   </data>
   <data name="SettingsView_FontSize_Label" xml:space="preserve">
     <value>Font Size</value>
@@ -1823,5 +1850,98 @@ Are you sure?</value>
   </data>
   <data name="V1PodConfig_MenuItem_PortFormat" xml:space="preserve">
     <value>{0} - {1}</value>
+  </data>
+  <data name="AgentChatView_Title" xml:space="preserve">
+    <value>AI Assistant</value>
+  </data>
+  <data name="AgentChatView_PromptPlaceholder" xml:space="preserve">
+    <value>Ask an agent…</value>
+  </data>
+  <data name="AgentChatView_Send" xml:space="preserve">
+    <value>Send</value>
+  </data>
+  <data name="AgentChatView_Cancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="AgentChatView_User" xml:space="preserve">
+    <value>You</value>
+  </data>
+  <data name="AgentChatView_Tool" xml:space="preserve">
+    <value>Tool</value>
+  </data>
+  <data name="AgentChatView_Plan" xml:space="preserve">
+    <value>Plan</value>
+  </data>
+  <data name="AgentChatView_Permission" xml:space="preserve">
+    <value>Permission</value>
+  </data>
+  <data name="AgentChatView_Usage" xml:space="preserve">
+    <value>Usage</value>
+  </data>
+  <data name="AgentChatView_Status" xml:space="preserve">
+    <value>Status</value>
+  </data>
+  <data name="AgentChatView_Diagnostic" xml:space="preserve">
+    <value>Diagnostic</value>
+  </data>
+  <data name="AgentChatView_Error" xml:space="preserve">
+    <value>Error</value>
+  </data>
+  <data name="AgentChatView_Canceled" xml:space="preserve">
+    <value>Canceled</value>
+  </data>
+  <data name="AgentChatView_Unspecified" xml:space="preserve">
+    <value>unspecified</value>
+  </data>
+  <data name="AgentChatView_TokensFormat" xml:space="preserve">
+    <value>{0} tokens</value>
+  </data>
+  <data name="AgentChatView_PermissionFormat" xml:space="preserve">
+    <value>{0}: {1}</value>
+  </data>
+  <data name="AgentPermissionDialog_Title" xml:space="preserve">
+    <value>Agent permission required</value>
+  </data>
+  <data name="AgentPermissionDialog_ContentFormat" xml:space="preserve">
+    <value>The agent requests {0}: {1}.&#xA;&#xA;This operation is {2}.</value>
+  </data>
+  <data name="AgentPermissionDialog_UnspecifiedResource" xml:space="preserve">
+    <value>unspecified resource</value>
+  </data>
+  <data name="AgentPermissionDialog_Destructive" xml:space="preserve">
+    <value>destructive</value>
+  </data>
+  <data name="AgentPermissionDialog_NonDestructive" xml:space="preserve">
+    <value>not destructive</value>
+  </data>
+  <data name="AgentPermissionDialog_Allow" xml:space="preserve">
+    <value>Allow</value>
+  </data>
+  <data name="AgentPermissionDialog_Deny" xml:space="preserve">
+    <value>Deny</value>
+  </data>
+  <data name="AgentPermissionDialog_Denied" xml:space="preserve">
+    <value>Permission was denied in KubeUI.</value>
+  </data>
+  <data name="AgentPermissionDialog_OwnerTitle" xml:space="preserve">
+    <value>Agent permission</value>
+  </data>
+  <data name="AgentChatView_ToolStartedFormat" xml:space="preserve">
+    <value>▸ {0}{1}</value>
+  </data>
+  <data name="AgentChatView_ToolInputFormat" xml:space="preserve">
+    <value> {0}</value>
+  </data>
+  <data name="AgentChatView_ToolCompletedFormat" xml:space="preserve">
+    <value>{0} {1}</value>
+  </data>
+  <data name="AgentChatView_ToolSucceeded" xml:space="preserve">
+    <value>✓</value>
+  </data>
+  <data name="AgentChatView_ToolFailed" xml:space="preserve">
+    <value>✗</value>
+  </data>
+  <data name="AgentChatView_PlanStepFormat" xml:space="preserve">
+    <value>• {0}</value>
   </data>
 </root>

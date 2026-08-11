@@ -9,6 +9,10 @@ using KubeUI.Avalonia.Infrastructure.Threading;
 using KubeUI.Avalonia.Services.Icons;
 using KubeUI.Avalonia.Services.Settings;
 using KubeUI.Kubernetes;
+using KubeUI.AI.Agents;
+using KubeUI.AI.Configuration;
+using KubeUI.AI.Permissions;
+using KubeUI.Avalonia.Features.AI;
 using ServiceScan.SourceGenerator;
 
 namespace KubeUI.Avalonia.Infrastructure.DependencyInjection;
@@ -37,6 +41,11 @@ public static partial class KubeUIShellServiceCollectionExtensions
         services.AddSingleton<ISettingsPersistence, FileSettingsPersistence>();
         services.AddSingleton<ISettingsService, SettingsService>();
         services.AddSingleton<IResourceIconService, ResourceIconService>();
+        services.AddSingleton<IAgentRegistry>(sp => new AcpAgentRegistry(
+            AcpAgentDefaults.Definitions,
+            sp.GetRequiredService<IAgentPermissionService>()));
+        services.AddSingleton<IAgentPermissionService, AvaloniaAgentPermissionService>();
+        services.AddSingleton<IAgentContextService, AgentContextService>();
         services.AddSingleton<IClusterSettingsStore>(sp => sp.GetRequiredService<ISettingsService>());
         return services;
     }
@@ -47,7 +56,3 @@ public static partial class KubeUIShellServiceCollectionExtensions
     [GenerateServiceRegistrations(AssignableTo = typeof(ViewBase<>), Lifetime = ServiceLifetime.Transient, AsSelf = true, AsImplementedInterfaces = false, AssemblyNameFilter = "KubeUI.Avalonia")]
     private static partial IServiceCollection AddKubeUIShellGeneratedServices(this IServiceCollection services);
 }
-
-
-
-

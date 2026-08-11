@@ -9,20 +9,63 @@ using KubeUI.Avalonia.Resources;
 
 namespace KubeUI.Avalonia.Shell.Navigation;
 
-internal sealed class NavigationDocumentService
+public interface IResourceNavigationService
+{
+    void Open(ResourceNavigationLink navigation, bool forceNewTab = false);
+    Task<bool> OpenResourceListAsync(string? clusterName, string apiVersion, string kind);
+}
+
+internal sealed class NavigationDocumentService : IResourceNavigationService
 {
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<NavigationDocumentService> _logger;
+    private readonly ClusterWorkspaceCatalog _clusterCatalog;
     private readonly Func<IFactory> _factory;
 
     public NavigationDocumentService(
         IServiceProvider serviceProvider,
         ILogger<NavigationDocumentService> logger,
+        ClusterWorkspaceCatalog clusterCatalog,
         Func<IFactory> factory)
     {
         _serviceProvider = serviceProvider;
         _logger = logger;
+        _clusterCatalog = clusterCatalog;
         _factory = factory;
+    }
+
+    public async Task<bool> OpenResourceListAsync(string? clusterName, string apiVersion, string kind)
+    {
+        if (string.IsNullOrWhiteSpace(apiVersion) || string.IsNullOrWhiteSpace(kind))
+            return false;
+
+        var workspace = string.IsNullOrWhiteSpace(clusterName)
+            ? _clusterCatalog.GetDefault()
+            : _clusterCatalog.GetCluster(clusterName);
+        if (workspace is null)
+            return false;
+
+        await workspace.Connect().ConfigureAwait(false);
+        if (!workspace.Runtime.Connected)
+            return false;
+
+        var parts = apiVersion.Split('/', 2, StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+        var group = parts.Length == 2 ? parts[0] : string.Empty;
+        var version = parts.Length == 2 ? parts[1] : apiVersion;
+        var config = workspace.GetResourceConfigs().FirstOrDefault(item =>
+            string.Equals(item.Kind.Group, group, StringComparison.Ordinal)
+            && string.Equals(item.Kind.ApiVersion, version, StringComparison.Ordinal)
+            && string.Equals(item.Kind.Kind, kind, StringComparison.Ordinal));
+        if (config is null)
+            return false;
+
+        await global::Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() => Open(new ResourceNavigationLink
+        {
+            Cluster = workspace,
+            Name = config.Name,
+            ControlType = config.Type
+        }));
+        return true;
     }
 
     public void Open(ResourceNavigationLink navigation, bool forceNewTab = false)

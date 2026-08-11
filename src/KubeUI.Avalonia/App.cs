@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using Avalonia.Markup.Xaml.Styling;
 using Dock.Model.Controls;
 using Dock.Model.Core;
 using k8s;
@@ -77,6 +78,10 @@ public partial class App : Application, IServiceProviderHost
     public override void Initialize()
     {
         Styles.Add(new Fluent());
+        Resources.MergedDictionaries.Add(new ResourceInclude(new Uri("avares://LiveMarkdown.Avalonia/Defaults.axaml"))
+        {
+            Source = new Uri("avares://LiveMarkdown.Avalonia/Defaults.axaml")
+        });
 
         Services.GetRequiredService<Instrumentation>().AppOpened.Add(1);
     }

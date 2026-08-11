@@ -111,7 +111,9 @@ public sealed partial class ClusterManager : ObservableObject, IClusterRuntimeCa
         {
             try
             {
-                var config = await Task.Run(() => KubernetesClientConfiguration.LoadKubeConfig(path), cancellationToken).ConfigureAwait(false);
+                var config = await Task.Run(() => KubernetesClientConfiguration.LoadKubeConfig(path), CancellationToken.None)
+                    .WaitAsync(cancellationToken)
+                    .ConfigureAwait(false);
                 AddClustersFromConfig(config);
                 return;
             }

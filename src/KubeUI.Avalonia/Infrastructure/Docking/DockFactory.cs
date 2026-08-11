@@ -5,7 +5,10 @@ using Dock.Model.Mvvm;
 using Dock.Model.Mvvm.Controls;
 using KubeUI.Avalonia.Shell.Main;
 using KubeUI.Avalonia.Shell.Navigation;
+using KubeUI.Avalonia.Features.AI;
+using KubeUI.Avalonia.Services.Settings;
 using Orientation = Dock.Model.Core.Orientation;
+using Dock.Model;
 
 namespace KubeUI.Avalonia.Infrastructure.Docking;
 
@@ -121,6 +124,13 @@ public class DockFactory : Factory
         _rootDock.VisibleDockables = CreateList<IDockable>(mainLayout);
         _rootDock.IsCollapsable = false;
         _rootDock.EnableGlobalDocking = false;
+
+        if (_serviceProvider.GetRequiredService<ISettingsService>().Settings.McpServerEnabled)
+        {
+            var chat = _serviceProvider.GetRequiredService<AgentChatViewModel>();
+            chat.SetPinnedBounds(0, 0, 420, 0); //todo make this dynamic based on window size
+            _rootDock.RightPinnedDockables.Add(chat);
+        }
 
         return _rootDock;
     }
