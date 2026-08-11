@@ -973,7 +973,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
             _ = SeedResourceOffUiThreadAsync(cluster.Runtime, resourceConfig.Type);
         }
 
-        ApplyGraph(FilterToCurrentScope(_completeGraph));
+        Run();
 
         var ownerReferenceFound = false;
         IReadOnlyList<IKubernetesObject<V1ObjectMeta>> resources = _resourcesByKey.Values.ToArray();
@@ -1193,24 +1193,6 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         bool HideNoise,
         int Version);
 
-    private ResourceRelationshipGraph FilterToCurrentScope(ResourceRelationshipGraph graph)
-    {
-        if (RootResource is { } root)
-        {
-            return FilterToRootResource(graph, root);
-        }
-
-        if (Cluster == null && SelectedNamespaces.Count == 0)
-        {
-            return graph;
-        }
-
-        var namespaces = SelectedNamespaces
-            .Select(selectedNamespace => selectedNamespace.Name())
-            .OfType<string>()
-            .ToHashSet(StringComparer.Ordinal);
-        return FilterToSelectedNamespaces(graph, namespaces);
-    }
     private ResourceRelationshipGraph BuildGraph(
         IReadOnlyList<IKubernetesObject<V1ObjectMeta>> source,
         IKubernetesObject<V1ObjectMeta>? root,
