@@ -36,7 +36,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
     public new IFactory Factory => _serviceProvider.GetRequiredService<IFactory>();
     private readonly Dictionary<ClusterWorkspace, ClusterNavigationNode> _clusterNodes = [];
     private readonly Dictionary<IClusterRuntime, ClusterWorkspace> _workspacesByRuntime = [];
-    private readonly NavigationDocumentService _documentService;
+    private readonly IResourceNavigationService _documentService;
     private readonly IResourceIconService _iconService;
     private readonly IPlatformServices _platformServices;
 
@@ -52,6 +52,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
         IDialogService dialogService,
         ClusterWorkspaceCatalog clusterCatalog,
         IServiceProvider serviceProvider,
+        IResourceNavigationService documentService,
         IResourceIconService iconService,
         IPlatformServices platformServices)
     {
@@ -62,10 +63,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
         _platformServices = platformServices;
         _dialogService = dialogService;
         ClusterCatalog = clusterCatalog;
-        _documentService = new NavigationDocumentService(
-            serviceProvider,
-            serviceProvider.GetRequiredService<ILogger<NavigationDocumentService>>(),
-            () => Factory);
+        _documentService = documentService;
         Title = Assets.Resources.NavigationView_Title!;
         Id = nameof(NavigationViewModel);
 

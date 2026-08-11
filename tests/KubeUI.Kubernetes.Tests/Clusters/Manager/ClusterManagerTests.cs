@@ -9,6 +9,29 @@ namespace KubeUI.Kubernetes.Tests.Clusters.Manager;
 public class ClusterManagerTests
 {
     [Fact]
+    public async Task LoadClustersAsync_treats_a_missing_kubeconfig_collection_as_empty()
+    {
+        var dispatcher = new RecordingThreadDispatcher();
+        var kubeConfigPath = Path.Combine(Path.GetTempPath(), $"kubeui-{Guid.NewGuid():N}.config");
+        await using var services = KubernetesTestServiceProvider.Build(new NullKubeConfigSettingsStore(), collection =>
+        {
+            collection.AddSingleton<IThreadDispatcher>(dispatcher);
+            collection.AddSingleton<IKubeConfigPathProvider>(new TestKubeConfigPathProvider(kubeConfigPath));
+        });
+
+        using var manager = new ClusterManager(
+            NullLogger<ClusterManager>.Instance,
+            services,
+            services.GetRequiredService<IClusterSettingsStore>(),
+            dispatcher,
+            services.GetRequiredService<IKubeConfigPathProvider>());
+
+        await manager.LoadClustersAsync(TestContext.Current.CancellationToken);
+
+        manager.Clusters.ShouldBeEmpty();
+    }
+
+    [Fact]
     public async Task LoadFromConfig_MarshalsClusterAdditionsThroughDispatcher()
     {
         var dispatcher = new RecordingThreadDispatcher();
@@ -181,6 +204,17 @@ public class ClusterManagerTests
         }
 
         public string DefaultPath { get; }
+    }
+
+    private sealed class NullKubeConfigSettingsStore : IClusterSettingsStore
+    {
+        public IReadOnlyCollection<string> KubeConfigPaths => null!;
+
+        public void AddKubeConfigPath(string path)
+        {
+        }
+
+        public IReadOnlyCollection<string> GetClusterNamespaces(IClusterRuntime cluster) => [];
     }
 
     private static K8SConfiguration CreateKubeConfig(string contextName, string clusterName, string userName, string server)

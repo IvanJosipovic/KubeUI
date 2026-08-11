@@ -56,7 +56,8 @@ public sealed partial class ClusterManager : ObservableObject, IClusterRuntimeCa
 
     internal async Task LoadClustersAsync(CancellationToken cancellationToken)
     {
-        if (!_settings.KubeConfigPaths.Contains(_kubeConfigPathProvider.DefaultPath))
+        var kubeConfigPaths = _settings.KubeConfigPaths ?? [];
+        if (!kubeConfigPaths.Contains(_kubeConfigPathProvider.DefaultPath))
         {
             try
             {
@@ -72,7 +73,7 @@ public sealed partial class ClusterManager : ObservableObject, IClusterRuntimeCa
             }
         }
 
-        foreach (var config in _settings.KubeConfigPaths.ToArray())
+        foreach (var config in kubeConfigPaths.ToArray())
         {
             try
             {
@@ -111,7 +112,9 @@ public sealed partial class ClusterManager : ObservableObject, IClusterRuntimeCa
         {
             try
             {
-                var config = await Task.Run(() => KubernetesClientConfiguration.LoadKubeConfig(path), cancellationToken).ConfigureAwait(false);
+                var config = await Task.Run(() => KubernetesClientConfiguration.LoadKubeConfig(path), CancellationToken.None)
+                    .WaitAsync(cancellationToken)
+                    .ConfigureAwait(false);
                 AddClustersFromConfig(config);
                 return;
             }

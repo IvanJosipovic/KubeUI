@@ -24,6 +24,9 @@
     <PackageReference Include="Shouldly" Version="4.3.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.8.1" />
     <PackageReference Include="Moq" Version="4.20.72" />
+    <PackageReference Include="dotacp.client" Version="2026.7.19" PrivateAssets="all" />
+    <PackageReference Include="dotacp.protocol" Version="2026.7.19" PrivateAssets="all" />
+    <PackageReference Include="StreamJsonRpc" Version="2.25.29" PrivateAssets="all" />
     <PackageReference Include="xunit.v3.mtp-v2" Version="3.2.2" />
     <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5">
       <PrivateAssets>all</PrivateAssets>

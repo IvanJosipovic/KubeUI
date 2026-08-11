@@ -7,6 +7,15 @@ public sealed partial class Settings : ObservableObject
     public partial bool LoggingEnabled { get; set; }
 
     [ObservableProperty]
+    public partial bool McpServerEnabled { get; set; }
+
+    [ObservableProperty]
+    public partial string? SelectedAgentId { get; set; }
+
+    [ObservableProperty]
+    public partial int McpServerPort { get; set; } = 62888;
+
+    [ObservableProperty]
     public partial bool TelemetryEnabled { get; set; } = true;
 
     [ObservableProperty]
