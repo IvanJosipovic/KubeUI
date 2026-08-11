@@ -209,7 +209,7 @@ public sealed class DotAcpClientTests
                 new PermissionOption { Kind = PermissionOptionKind.RejectOnce, Name = "Deny", OptionId = "deny" },
                 new PermissionOption { Kind = PermissionOptionKind.AllowOnce, Name = "Allow", OptionId = "allow" }
             ],
-            ToolCall = new ToolCallUpdate { Title = "write file" }
+            ToolCall = new ToolCallUpdate { Title = "write file", Kind = ToolKind.Edit }
         });
 
         response.Outcome.ShouldBeOfType<SelectedPermissionOutcome>().OptionId.ToString().ShouldBe("allow");
