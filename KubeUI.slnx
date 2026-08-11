@@ -15,6 +15,7 @@
   </Folder>
   <Project Path="benchmarks/KubeUI.Benchmarks/KubeUI.Benchmarks.csproj" />
   <Project Path="src/KubeUI.Avalonia/KubeUI.Avalonia.csproj" />
+  <Project Path="src/KubeUI.AI/KubeUI.AI.csproj" />
   <Project Path="src/KubeUI.Desktop/KubeUI.Desktop.csproj" />
   <Project Path="src/KubeUI.Kubernetes/KubeUI.Kubernetes.csproj" />
 </Solution>

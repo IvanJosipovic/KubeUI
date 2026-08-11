@@ -25,6 +25,8 @@ public sealed class Fluent : AvaloniaStyles
 {
     private static readonly CultureInfo s_locale = CultureInfo.CurrentUICulture;
     private static readonly Uri s_baseUri = new("avares://KubeUI.Avalonia");
+    private readonly ColorPaletteResources _lightPalette = CreateLightPalette();
+    private readonly ColorPaletteResources _darkPalette = CreateDarkPalette();
 
     public Fluent()
     {
@@ -38,6 +40,7 @@ public sealed class Fluent : AvaloniaStyles
         Add(CreateThemeResourceStyles(CreateVisualizationLightResources(), CreateVisualizationDarkResources()));
         Add(CreateStyleInclude("avares://Avalonia.Controls.DataGrid/Themes/Fluent.v2.xaml"));
         Add(CreateStyleInclude("avares://AvaloniaEdit/Themes/Fluent/AvaloniaEdit.xaml"));
+        Add(CreateStyleInclude("avares://LiveMarkdown.Avalonia/Styles.axaml"));
         Add(new DockFluentTheme());
         Add(CreateStyleInclude("avares://SvcSystems.UI.Terminal/Styles/Colors.axaml"));
         DataGridStyles.AddTo(this);
@@ -67,15 +70,15 @@ public sealed class Fluent : AvaloniaStyles
             .TransparencyLevelHint([WindowTransparencyLevel.None]));
     }
 
-    private static FluentTheme CreateFluentTheme()
+    private FluentTheme CreateFluentTheme()
     {
         var theme = new FluentTheme
         {
             DensityStyle = DensityStyle.Compact
         };
 
-        theme.Palettes.Add(ThemeVariant.Light, CreateLightPalette());
-        theme.Palettes.Add(ThemeVariant.Dark, CreateDarkPalette());
+        theme.Palettes.Add(ThemeVariant.Light, _lightPalette);
+        theme.Palettes.Add(ThemeVariant.Dark, _darkPalette);
 
         return theme;
     }
@@ -154,6 +157,41 @@ public sealed class Fluent : AvaloniaStyles
         ["ContainerStatusErrorBrush"] = Brush("#FF6B6B"),
         ["SubtleOutlineBrush"] = Brush("#9E9E9E"),
     };
+
+    internal ResourceDictionary CreateMarkdownResourceOverrides() => new()
+    {
+        ThemeDictionaries =
+        {
+            [ThemeVariant.Light] = CreateMarkdownLightResources(),
+            [ThemeVariant.Dark] = CreateMarkdownDarkResources(),
+        }
+    };
+
+    private ResourceDictionary CreateMarkdownLightResources()
+    {
+        return new()
+        {
+            ["BorderColor"] = _lightPalette.BaseMediumLow,
+            ["ForegroundColor"] = _lightPalette.BaseHigh,
+            ["CardBackgroundColor"] = _lightPalette.RegionColor,
+            ["SecondaryCardBackgroundColor"] = _lightPalette.BaseLow,
+            ["CodeInlineColor"] = _lightPalette.BaseMediumHigh,
+            ["QuoteBorderColor"] = _lightPalette.BaseMediumLow,
+        };
+    }
+
+    private ResourceDictionary CreateMarkdownDarkResources()
+    {
+        return new()
+        {
+            ["BorderColor"] = _darkPalette.BaseMediumLow,
+            ["ForegroundColor"] = _darkPalette.BaseHigh,
+            ["CardBackgroundColor"] = _darkPalette.RegionColor,
+            ["SecondaryCardBackgroundColor"] = _darkPalette.BaseLow,
+            ["CodeInlineColor"] = _darkPalette.BaseMediumHigh,
+            ["QuoteBorderColor"] = _darkPalette.BaseMediumLow,
+        };
+    }
 
     private static ResourceDictionary CreateVisualizationLightResources() => new()
     {

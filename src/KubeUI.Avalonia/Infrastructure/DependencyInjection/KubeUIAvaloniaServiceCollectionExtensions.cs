@@ -7,6 +7,9 @@ using KubeUI.Avalonia.Infrastructure.Dialogs;
 using KubeUI.Avalonia.Infrastructure.Docking;
 using KubeUI.Avalonia.Infrastructure.Platform;
 using KubeUI.Kubernetes;
+using KubeUI.Avalonia.Infrastructure.Mcp;
+using KubeUI.Avalonia.Shell.Navigation;
+using KubeUI.Avalonia.Features.Clusters.Workspace;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace KubeUI.Avalonia.Infrastructure.DependencyInjection;
@@ -18,6 +21,12 @@ public static class KubeUIAvaloniaServiceCollectionExtensions
         services.AddKubeUIAvaloniaServices();
         services.AddKubeUIKubernetesServices();
         services.AddKubeUIDialogServices();
+        services.AddSingleton<IMcpClusterSession, McpClusterSession>();
+        services.AddSingleton<IResourceNavigationService>(sp => new NavigationDocumentService(
+            sp,
+            sp.GetRequiredService<ILogger<NavigationDocumentService>>(),
+            sp.GetRequiredService<ClusterWorkspaceCatalog>(),
+            () => sp.GetRequiredService<IFactory>()));
 
         configureOverrides?.Invoke(services);
 

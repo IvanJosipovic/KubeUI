@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using Avalonia.Markup.Xaml.Styling;
 using Dock.Model.Controls;
 using Dock.Model.Core;
 using k8s;
@@ -10,18 +11,19 @@ using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Services.Settings;
 using KubeUI.Avalonia.Shell.Main;
 using KubeUI.Avalonia.Styles;
+using LiveMarkdown.Avalonia;
 using Microsoft.Extensions.Hosting;
 using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Trace;
 
-[assembly: GenerateMarkupExtensionsForAssembly(typeof(DataGrid))]
 [assembly: GenerateMarkupExtensionsForAssembly(typeof(Avalonia.Skia.SkiaPlatform))]
 [assembly: GenerateMarkupExtensionsForAssembly(typeof(Avalonia.Svg.Skia.SvgImage))]
 [assembly: GenerateMarkupExtensionsForAssembly(typeof(Avalonia.Xaml.Interactions.Core.DataTrigger))]
 [assembly: GenerateMarkupExtensionsForAssembly(typeof(Avalonia.Xaml.Interactions.Events.PointerPressedEventTrigger))]
 [assembly: GenerateMarkupExtensionsForAssembly(typeof(Avalonia.Xaml.Interactivity.EventTriggerBase))]
 [assembly: GenerateMarkupExtensionsForAssembly(typeof(AvaloniaEdit.TextEditor))]
+[assembly: GenerateMarkupExtensionsForAssembly(typeof(DataGrid))]
 [assembly: GenerateMarkupExtensionsForAssembly(typeof(Dock.Avalonia.Controls.DockableControl))]
 [assembly: GenerateMarkupExtensionsForAssembly(typeof(Dock.Controls.DeferredContentControl.DeferredContentControl))]
 [assembly: GenerateMarkupExtensionsForAssembly(typeof(FluentAvalonia.UI.Controls.FABitmapIcon))]
@@ -76,7 +78,13 @@ public partial class App : Application, IServiceProviderHost
 
     public override void Initialize()
     {
-        Styles.Add(new Fluent());
+        var fluent = new Fluent();
+        Styles.Add(fluent);
+        Resources.MergedDictionaries.Add(new ResourceInclude(new Uri("avares://LiveMarkdown.Avalonia/Defaults.axaml"))
+        {
+            Source = new Uri("avares://LiveMarkdown.Avalonia/Defaults.axaml")
+        });
+        Resources.MergedDictionaries.Add(fluent.CreateMarkdownResourceOverrides());
 
         Services.GetRequiredService<Instrumentation>().AppOpened.Add(1);
     }

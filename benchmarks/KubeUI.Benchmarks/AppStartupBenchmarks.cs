@@ -24,7 +24,7 @@ public class AppStartupBenchmarks
         {
             using var shutdownTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
             await host.StopAsync(shutdownTimeout.Token);
-            host.Dispose();
+            await host.DisposeAsync();
         }
     }
 }
