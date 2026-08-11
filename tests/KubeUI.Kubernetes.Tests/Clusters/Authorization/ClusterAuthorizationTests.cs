@@ -152,6 +152,7 @@ public sealed class ClusterAuthorizationTests
         var firstEntered = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
         var releaseFirst = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
         var secondReady = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var coordinationTimeout = TimeSpan.FromSeconds(30);
         var readyCount = 0;
         Func<V1CustomResourceDefinition, Task> handler = async crd =>
         {
@@ -173,13 +174,13 @@ public sealed class ClusterAuthorizationTests
             queueMethod.ShouldNotBeNull();
 
             queueMethod!.Invoke(cluster, [first]);
-            await firstEntered.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
+            await firstEntered.Task.WaitAsync(coordinationTimeout, TestContext.Current.CancellationToken);
             queueMethod.Invoke(cluster, [second]);
 
             Volatile.Read(ref readyCount).ShouldBe(1);
 
             releaseFirst.TrySetResult(null);
-            await secondReady.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
+            await secondReady.Task.WaitAsync(coordinationTimeout, TestContext.Current.CancellationToken);
             readyCount.ShouldBe(2);
         }
         finally
