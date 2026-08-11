@@ -36,14 +36,11 @@ public sealed class AcpAgent : IAgent
     public string Name => _definition.Name;
     public DomainAgentCapabilities Capabilities { get; private set; }
 
-    public event Action<string>? DiagnosticReceived;
-
     public async Task<IAgentSession> CreateSessionAsync(AgentSessionOptions options, CancellationToken cancellationToken = default)
     {
         using var activity = AgentActivitySource.Source.StartActivity("ai.agent.start");
         activity?.SetTag("agent.id", Id);
         var process = _processFactory?.Invoke() ?? CreateProcess(options);
-        process.ErrorReceived += OnProcessError;
         Connection? connection = null;
         var events = Channel.CreateUnbounded<AgentEvent>();
         try
@@ -89,7 +86,7 @@ public sealed class AcpAgent : IAgent
                     Cwd = options.WorkingDirectory ?? Environment.CurrentDirectory,
                     McpServers = string.IsNullOrWhiteSpace(options.McpEndpoint)
                         ? []
-                        : [new McpServerHttp { Name = "kubeui", Url = options.McpEndpoint }]
+                        : [AcpMcpServerFactory.Create(this, options.McpEndpoint)]
                 }, cancellationToken).ConfigureAwait(false);
                 sessionActivity?.SetTag("agent.session.id", session.SessionId.ToString());
             }
@@ -100,18 +97,20 @@ public sealed class AcpAgent : IAgent
                 events,
                 options.Context,
                 process,
-                () => process.ErrorReceived -= OnProcessError);
+                null);
         }
-        catch
+        catch (Exception exception)
         {
+            var formattedException = AcpErrorFormatter.IsAcpError(exception)
+                ? AcpErrorFormatter.Format(exception)
+                : null;
             connection?.Dispose();
             await process.DisposeAsync().ConfigureAwait(false);
-            process.ErrorReceived -= OnProcessError;
+            if (formattedException is not null)
+                throw new InvalidOperationException(formattedException, exception);
             throw;
         }
     }
-
-    private void OnProcessError(string message) => DiagnosticReceived?.Invoke(message);
 
     private IAcpProcess CreateProcess(AgentSessionOptions options) => new AcpProcess(_definition, options);
 

@@ -1854,6 +1854,9 @@ Are you sure?</value>
   <data name="AgentChatView_Title" xml:space="preserve">
     <value>AI Assistant</value>
   </data>
+  <data name="AgentChatView_AgentLabel" xml:space="preserve">
+    <value>Agent:</value>
+  </data>
   <data name="AgentChatView_PromptPlaceholder" xml:space="preserve">
     <value>Ask an agent…</value>
   </data>

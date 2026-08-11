@@ -11,18 +11,19 @@ using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Services.Settings;
 using KubeUI.Avalonia.Shell.Main;
 using KubeUI.Avalonia.Styles;
+using LiveMarkdown.Avalonia;
 using Microsoft.Extensions.Hosting;
 using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Trace;
 
-[assembly: GenerateMarkupExtensionsForAssembly(typeof(DataGrid))]
 [assembly: GenerateMarkupExtensionsForAssembly(typeof(Avalonia.Skia.SkiaPlatform))]
 [assembly: GenerateMarkupExtensionsForAssembly(typeof(Avalonia.Svg.Skia.SvgImage))]
 [assembly: GenerateMarkupExtensionsForAssembly(typeof(Avalonia.Xaml.Interactions.Core.DataTrigger))]
 [assembly: GenerateMarkupExtensionsForAssembly(typeof(Avalonia.Xaml.Interactions.Events.PointerPressedEventTrigger))]
 [assembly: GenerateMarkupExtensionsForAssembly(typeof(Avalonia.Xaml.Interactivity.EventTriggerBase))]
 [assembly: GenerateMarkupExtensionsForAssembly(typeof(AvaloniaEdit.TextEditor))]
+[assembly: GenerateMarkupExtensionsForAssembly(typeof(DataGrid))]
 [assembly: GenerateMarkupExtensionsForAssembly(typeof(Dock.Avalonia.Controls.DockableControl))]
 [assembly: GenerateMarkupExtensionsForAssembly(typeof(Dock.Controls.DeferredContentControl.DeferredContentControl))]
 [assembly: GenerateMarkupExtensionsForAssembly(typeof(FluentAvalonia.UI.Controls.FABitmapIcon))]
@@ -82,6 +83,7 @@ public partial class App : Application, IServiceProviderHost
         {
             Source = new Uri("avares://LiveMarkdown.Avalonia/Defaults.axaml")
         });
+        Resources.MergedDictionaries.Add(Fluent.CreateMarkdownResourceOverrides());
 
         Services.GetRequiredService<Instrumentation>().AppOpened.Add(1);
     }

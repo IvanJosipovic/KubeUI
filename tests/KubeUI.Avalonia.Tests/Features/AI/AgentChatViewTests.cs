@@ -36,6 +36,7 @@ public sealed class AgentChatViewTests
 
         var prompt = view.GetVisualDescendants().OfType<TextBox>().Single(control => control.Name == "PromptEditor");
         var send = view.GetVisualDescendants().OfType<Button>().Single(control => control.Name == "SendButton");
+        view.GetVisualDescendants().OfType<TextBlock>().ShouldContain(control => control.Text == "Test agent");
         prompt.ShouldNotBeNull();
         send.ShouldNotBeNull();
         prompt!.AcceptsReturn.ShouldBeFalse();

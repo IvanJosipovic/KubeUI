@@ -12,58 +12,68 @@ namespace KubeUI.Avalonia.Features.AI;
 /// </summary>
 public sealed class AgentChatView : ViewBase<AgentChatViewModel>
 {
-    private ScrollViewer? _conversationScrollViewer;
+    private ScrollViewer _conversationScrollViewer = null!;
     private bool _conversationIsAtEnd = true;
 
     protected override object Build(AgentChatViewModel vm)
     {
         ArgumentNullException.ThrowIfNull(vm);
-        var markdownRenderer = new MarkdownRenderer
-        {
-            MarkdownBuilder = vm.MarkdownBuilder,
-            HorizontalAlignment = HorizontalAlignment.Stretch
-        };
-        var conversationScrollViewer = new ScrollViewer()
-            .Ref(out _conversationScrollViewer)
-            .VerticalScrollBarVisibility(ScrollBarVisibility.Auto)
-            .HorizontalScrollBarVisibility(ScrollBarVisibility.Disabled)
-            .Content(markdownRenderer)
-            .Row(0);
-        conversationScrollViewer.PropertyChanged += ConversationScrollViewerOnPropertyChanged;
 
-        return new Grid()
-            .Rows("*,Auto")
+        var controls = new Grid()
+            .Rows("Auto,*,Auto")
             .Margin(12)
             .Children(
-                conversationScrollViewer,
-                new Grid()
-                    .Row(1)
-                    .Cols("*,Auto,Auto")
+                new StackPanel()
+                    .Orientation(Orientation.Horizontal)
+                    .Spacing(4)
+                    .Margin(0, 0, 0, 8)
                     .Children(
-                        new TextBox()
-                            .Name("PromptEditor")
-                            .PlaceholderText(Assets.Resources.AgentChatView_PromptPlaceholder)
-                            .Text(vm, x => x.Prompt)
-                            .AcceptsReturn(false)
-                            .KeyBindings(new KeyBinding
-                            {
-                                Command = vm.SendCommand,
-                                Gesture = new KeyGesture(Key.Enter)
-                            })
-                            .Row(0),
-                        new Button()
-                            .Name("SendButton")
-                            .Content(Assets.Resources.AgentChatView_Send)
-                            .Command(vm, x => x.SendCommand)
-                            .IsVisible(vm, x => !x.IsBusy)
-                            .Col(1),
-                        new Button()
-                            .Name("CancelButton")
-                            .Content(Assets.Resources.AgentChatView_Cancel)
-                            .Command(vm, x => x.CancelCommand)
-                            .IsVisible(vm, x => x.IsBusy)
-                            .Col(2)))
-            .Background(Brushes.Transparent);
+                        new TextBlock()
+                            .Text(Assets.Resources.AgentChatView_AgentLabel),
+                        new TextBlock()
+                            .Text(vm, x => x.SelectedAgent.Name)),
+                        new ScrollViewer()
+                            .Ref(out _conversationScrollViewer)
+                            .VerticalScrollBarVisibility(ScrollBarVisibility.Auto)
+                            .HorizontalScrollBarVisibility(ScrollBarVisibility.Disabled)
+                            .Row(1)
+                            .Content(new MarkdownRenderer()
+                                        {
+                                            MarkdownBuilder = vm.MarkdownBuilder,
+                                        }
+                                        .HorizontalAlignment(HorizontalAlignment.Stretch)),
+                        new Grid()
+                            .Row(2)
+                            .Cols("*,Auto,Auto")
+                            .Children(
+                                new TextBox()
+                                    .Name("PromptEditor")
+                                    .PlaceholderText(Assets.Resources.AgentChatView_PromptPlaceholder)
+                                    .Text(vm, x => x.Prompt)
+                                    .AcceptsReturn(false)
+                                    .KeyBindings(new KeyBinding
+                                    {
+                                        Command = vm.SendCommand,
+                                        Gesture = new KeyGesture(Key.Enter)
+                                    })
+                                    .Row(0),
+                                new Button()
+                                    .Name("SendButton")
+                                    .Content(Assets.Resources.AgentChatView_Send)
+                                    .Command(vm, x => x.SendCommand)
+                                    .IsVisible(vm, x => !x.IsBusy)
+                                    .Col(1),
+                                new Button()
+                                    .Name("CancelButton")
+                                    .Content(Assets.Resources.AgentChatView_Cancel)
+                                    .Command(vm, x => x.CancelCommand)
+                                    .IsVisible(vm, x => x.IsBusy)
+                                    .Col(2)))
+                    .Background(Brushes.Transparent);
+
+        _conversationScrollViewer.PropertyChanged += ConversationScrollViewerOnPropertyChanged;
+
+        return controls;
     }
 
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)

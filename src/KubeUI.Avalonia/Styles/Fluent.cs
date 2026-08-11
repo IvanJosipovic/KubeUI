@@ -25,6 +25,8 @@ public sealed class Fluent : AvaloniaStyles
 {
     private static readonly CultureInfo s_locale = CultureInfo.CurrentUICulture;
     private static readonly Uri s_baseUri = new("avares://KubeUI.Avalonia");
+    private static readonly ColorPaletteResources s_lightPalette = CreateLightPalette();
+    private static readonly ColorPaletteResources s_darkPalette = CreateDarkPalette();
 
     public Fluent()
     {
@@ -75,8 +77,8 @@ public sealed class Fluent : AvaloniaStyles
             DensityStyle = DensityStyle.Compact
         };
 
-        theme.Palettes.Add(ThemeVariant.Light, CreateLightPalette());
-        theme.Palettes.Add(ThemeVariant.Dark, CreateDarkPalette());
+        theme.Palettes.Add(ThemeVariant.Light, s_lightPalette);
+        theme.Palettes.Add(ThemeVariant.Dark, s_darkPalette);
 
         return theme;
     }
@@ -155,6 +157,41 @@ public sealed class Fluent : AvaloniaStyles
         ["ContainerStatusErrorBrush"] = Brush("#FF6B6B"),
         ["SubtleOutlineBrush"] = Brush("#9E9E9E"),
     };
+
+    internal static ResourceDictionary CreateMarkdownResourceOverrides() => new()
+    {
+        ThemeDictionaries =
+        {
+            [ThemeVariant.Light] = CreateMarkdownLightResources(),
+            [ThemeVariant.Dark] = CreateMarkdownDarkResources(),
+        }
+    };
+
+    private static ResourceDictionary CreateMarkdownLightResources()
+    {
+        return new()
+        {
+            ["BorderColor"] = s_lightPalette.BaseMediumLow,
+            ["ForegroundColor"] = s_lightPalette.BaseHigh,
+            ["CardBackgroundColor"] = s_lightPalette.RegionColor,
+            ["SecondaryCardBackgroundColor"] = s_lightPalette.BaseLow,
+            ["CodeInlineColor"] = s_lightPalette.BaseMediumHigh,
+            ["QuoteBorderColor"] = s_lightPalette.BaseMediumLow,
+        };
+    }
+
+    private static ResourceDictionary CreateMarkdownDarkResources()
+    {
+        return new()
+        {
+            ["BorderColor"] = s_darkPalette.BaseMediumLow,
+            ["ForegroundColor"] = s_darkPalette.BaseHigh,
+            ["CardBackgroundColor"] = s_darkPalette.RegionColor,
+            ["SecondaryCardBackgroundColor"] = s_darkPalette.BaseLow,
+            ["CodeInlineColor"] = s_darkPalette.BaseMediumHigh,
+            ["QuoteBorderColor"] = s_darkPalette.BaseMediumLow,
+        };
+    }
 
     private static ResourceDictionary CreateVisualizationLightResources() => new()
     {

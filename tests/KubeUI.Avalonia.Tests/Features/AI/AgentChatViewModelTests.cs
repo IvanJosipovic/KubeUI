@@ -240,6 +240,7 @@ public sealed class AgentChatViewModelTests
             Options = options;
             return Task.FromResult<IAgentSession>(session);
         }
+
     }
 
     private sealed class BlockingTestAgent(BlockingTestSession session) : IAgent

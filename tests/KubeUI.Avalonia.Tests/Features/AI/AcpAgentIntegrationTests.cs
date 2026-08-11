@@ -2,6 +2,8 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO.Pipelines;
 using System.Text;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using dotacp.protocol;
 using KubeUI.AI.Acp;
 using KubeUI.AI.Agents;
@@ -16,6 +18,54 @@ namespace KubeUI.Avalonia.Tests.Features.AI;
 public sealed class AcpAgentIntegrationTests
 {
     [Fact]
+    public void acp_error_formatter_preserves_code_and_structured_data()
+    {
+        var exception = new AcpException(
+            -32602,
+            "Invalid params",
+            new { type = new { errors = new[] { "Expected http" } } });
+
+        AcpErrorFormatter.Format(exception).ShouldBe(
+            "ACP error -32602: Invalid params. Details: {\"type\":{\"errors\":[\"Expected http\"]}}");
+
+        var remoteException = new StreamJsonRpc.RemoteInvocationException(
+            "Invalid params",
+            -32602,
+            new { headers = new { errors = new[] { "Expected object" } } });
+
+        AcpErrorFormatter.Format(remoteException).ShouldBe(
+            "ACP error -32602: Invalid params. Details: {\"headers\":{\"errors\":[\"Expected object\"]}}");
+    }
+
+    [Fact]
+    public async Task acp_session_creation_exposes_structured_error_details()
+    {
+        await using var process = new InMemoryAcpProcess(
+            sessionCreationException: new AcpException(-32602, "Invalid params", new { type = "http" }));
+        var agent = new AcpAgent(
+            new AcpAgentDefinition { Id = "copilot", Name = "GitHub Copilot", Executable = "copilot" },
+            () => process);
+        var exception = await Should.ThrowAsync<InvalidOperationException>(
+            () => agent.CreateSessionAsync(new AgentSessionOptions()));
+
+        exception.Message.ShouldContain("ACP error -32000: Invalid params.");
+        exception.Message.ShouldContain("AcpException");
+    }
+
+    [Fact]
+    public void copilot_mcp_server_uses_http_configuration_with_empty_headers()
+    {
+        var json = JObject.Parse(JsonConvert.SerializeObject(
+            AcpMcpServerFactory.Create(
+                new AcpAgent(new AcpAgentDefinition { Id = "copilot", Name = "GitHub Copilot", Executable = "copilot" }),
+                "http://127.0.0.1:62888/mcp")));
+
+        json["type"]!.Value<string>().ShouldBe("http");
+        json["url"]!.Value<string>().ShouldBe("http://127.0.0.1:62888/mcp");
+        json["headers"]!.ShouldBeOfType<JArray>().ShouldBeEmpty();
+    }
+
+    [Fact]
     public async Task acp_agent_completes_initialize_session_prompt_stream_cancel_and_shutdown()
     {
         await using var process = new InMemoryAcpProcess();
@@ -23,9 +73,6 @@ public sealed class AcpAgentIntegrationTests
             new AcpAgentDefinition { Id = "fake", Name = "Fake ACP", Executable = "unused" },
             () => process,
             new AllowPermissionService());
-        var diagnosticCount = 0;
-        agent.DiagnosticReceived += _ => diagnosticCount++;
-
         await using var session = await agent.CreateSessionAsync(new AgentSessionOptions());
         agent.Capabilities.ShouldBe(
             DomainAgentCapabilities.FileSystem
@@ -52,7 +99,6 @@ public sealed class AcpAgentIntegrationTests
         await session.DisposeAsync();
         process.WasDisposed.ShouldBeTrue();
         process.EmitDiagnostic("after-dispose");
-        diagnosticCount.ShouldBe(0);
     }
 
     [Fact]
@@ -231,7 +277,8 @@ public sealed class AcpAgentIntegrationTests
 
     private sealed class InMemoryAcpProcess(
         bool requiresAuthentication = false,
-        IReadOnlyList<string>? authenticationMethodIds = null) : IAcpProcess
+        IReadOnlyList<string>? authenticationMethodIds = null,
+        AcpException? sessionCreationException = null) : IAcpProcess
     {
         private readonly Pipe _clientToServer = new();
         private readonly Pipe _serverToClient = new();
@@ -262,7 +309,7 @@ public sealed class AcpAgentIntegrationTests
                 new JsonMessageFormatter());
             _server = new JsonRpc(handler);
 #pragma warning restore CA2000
-            _fakeServer = new FakeAcpServer(_server, requiresAuthentication, authenticationMethodIds);
+            _fakeServer = new FakeAcpServer(_server, requiresAuthentication, authenticationMethodIds, sessionCreationException);
             _server.AddLocalRpcTarget(_fakeServer);
             _server.StartListening();
             return Task.CompletedTask;
@@ -300,7 +347,8 @@ public sealed class AcpAgentIntegrationTests
     private sealed class FakeAcpServer(
         JsonRpc rpc,
         bool requiresAuthentication,
-        IReadOnlyList<string>? authenticationMethodIds)
+        IReadOnlyList<string>? authenticationMethodIds,
+        AcpException? sessionCreationException)
     {
         public TaskCompletionSource CancelReceived { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
         public TaskCompletionSource AuthenticationReceived { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -336,6 +384,8 @@ public sealed class AcpAgentIntegrationTests
         [JsonRpcMethod("session/new", UseSingleObjectParameterDeserialization = true)]
         public Task<NewSessionResponse> NewSessionAsync(NewSessionRequest request)
         {
+            if (sessionCreationException is not null)
+                throw sessionCreationException;
             NewSessionRequest = request;
             return Task.FromResult(new NewSessionResponse { SessionId = new SessionId("fake-session") });
         }

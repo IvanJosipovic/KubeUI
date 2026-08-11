@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Linq.Expressions;
 using Avalonia.Controls.Templates;
+using Avalonia.Controls.Primitives;
 using Avalonia.Data.Converters;
 using Avalonia.Markup.Xaml.MarkupExtensions;
 using Avalonia.Media;
@@ -16,59 +17,62 @@ public sealed class SettingsView() : ViewBase<SettingsViewModel>
     {
         ArgumentNullException.ThrowIfNull(vm);
 
-        return new StackPanel()
-            .Children(
+        return new ScrollViewer()
+            .VerticalScrollBarVisibility(ScrollBarVisibility.Auto)
+            .HorizontalScrollBarVisibility(ScrollBarVisibility.Disabled)
+            .Content(
+                new StackPanel()
+                    .Children(
+                        CreateHeading(Assets.Resources.SettingsView_ApplicationHeading!),
+                        CreateToggleRow(
+                            vm,
+                            Assets.Resources.SettingsView_Logging_ToolTip,
+                            Assets.Resources.SettingsView_Logging_Label!,
+                            x => x.SettingsService.Settings.LoggingEnabled),
+                        CreateToggleRow(
+                            vm,
+                            Assets.Resources.SettingsView_Telemetry_ToolTip,
+                            Assets.Resources.SettingsView_Telemetry_Label!,
+                            x => x.SettingsService.Settings.TelemetryEnabled),
+                        CreateToggleRow(
+                            vm,
+                            Assets.Resources.SettingsView_PreRelease_ToolTip,
+                            Assets.Resources.SettingsView_PreRelease_Label!,
+                            x => x.SettingsService.Settings.PreReleaseChannel),
 
-                CreateHeading(Assets.Resources.SettingsView_ApplicationHeading!),
-                CreateToggleRow(
-                    vm,
-                    Assets.Resources.SettingsView_Logging_ToolTip,
-                    Assets.Resources.SettingsView_Logging_Label!,
-                    x => x.SettingsService.Settings.LoggingEnabled),
-                CreateToggleRow(
-                    vm,
-                    Assets.Resources.SettingsView_Telemetry_ToolTip,
-                    Assets.Resources.SettingsView_Telemetry_Label!,
-                    x => x.SettingsService.Settings.TelemetryEnabled),
-                CreateToggleRow(
-                    vm,
-                    Assets.Resources.SettingsView_PreRelease_ToolTip,
-                    Assets.Resources.SettingsView_PreRelease_Label!,
-                    x => x.SettingsService.Settings.PreReleaseChannel),
+                        CreateHeading(Assets.Resources.SettingsView_AppearanceHeading!),
+                        CreateThemeRow(vm),
+                        CreateNumericRow(
+                            vm,
+                            Assets.Resources.SettingsView_FontSize_ToolTip,
+                            Assets.Resources.SettingsView_FontSize_Label!,
+                            x => x.SettingsService.Appearance.FontSize),
+                        CreateNumericRow(
+                            vm,
+                            Assets.Resources.SettingsView_ConsoleFontSize_ToolTip,
+                            Assets.Resources.SettingsView_ConsoleFontSize_Label!,
+                            x => x.SettingsService.Appearance.ConsoleFontSize),
+                        CreateNumericRow(
+                            vm,
+                            Assets.Resources.SettingsView_ListRowHeight_ToolTip,
+                            Assets.Resources.SettingsView_ListRowHeight_Label!,
+                            x => x.SettingsService.Appearance.ListRowHeight),
 
-                CreateHeading(Assets.Resources.SettingsView_AppearanceHeading!),
-                CreateThemeRow(vm),
-                CreateNumericRow(
-                    vm,
-                    Assets.Resources.SettingsView_FontSize_ToolTip,
-                    Assets.Resources.SettingsView_FontSize_Label!,
-                    x => x.SettingsService.Appearance.FontSize),
-                CreateNumericRow(
-                    vm,
-                    Assets.Resources.SettingsView_ConsoleFontSize_ToolTip,
-                    Assets.Resources.SettingsView_ConsoleFontSize_Label!,
-                    x => x.SettingsService.Appearance.ConsoleFontSize),
-                CreateNumericRow(
-                    vm,
-                    Assets.Resources.SettingsView_ListRowHeight_ToolTip,
-                    Assets.Resources.SettingsView_ListRowHeight_Label!,
-                    x => x.SettingsService.Appearance.ListRowHeight),
-
-                CreateHeading(Assets.Resources.SettingsView_AIHeading),
-                CreateToggleRow(
-                    vm,
-                    Assets.Resources.SettingsView_McpEnabled_ToolTip,
-                    Assets.Resources.SettingsView_McpEnabled_Label,
-                    x => x.SettingsService.Settings.McpServerEnabled),
-                CreateNumericRow(
-                    vm,
-                    Assets.Resources.SettingsView_McpPort_ToolTip,
-                    Assets.Resources.SettingsView_McpPort_Label,
-                    x => x.McpServerPort,
-                    1024,
-                    65535)
-                    .IsEnabled(vm, x => x.SettingsService.Settings.McpServerEnabled),
-                CreateAgentRow(vm));
+                        CreateHeading(Assets.Resources.SettingsView_AIHeading),
+                        CreateToggleRow(
+                            vm,
+                            Assets.Resources.SettingsView_McpEnabled_ToolTip,
+                            Assets.Resources.SettingsView_McpEnabled_Label,
+                            x => x.SettingsService.Settings.McpServerEnabled),
+                        CreateNumericRow(
+                            vm,
+                            Assets.Resources.SettingsView_McpPort_ToolTip,
+                            Assets.Resources.SettingsView_McpPort_Label,
+                            x => x.McpServerPort,
+                            1024,
+                            65535)
+                            .IsEnabled(vm, x => x.SettingsService.Settings.McpServerEnabled),
+                        CreateAgentRow(vm)));
     }
 
     private static Border CreateHeading(string text)
