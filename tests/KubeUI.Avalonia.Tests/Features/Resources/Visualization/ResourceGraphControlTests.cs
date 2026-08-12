@@ -981,6 +981,7 @@ public sealed class ResourceGraphControlTests
             config => config.Type = backend,
             connect: false);
         await cluster.Connect();
+        cluster.SelectedNamespaces.Add(new V1Namespace { Metadata = new V1ObjectMeta { Name = "default" } });
 
         var seedRequested = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
         void OnResourceSeeded(IClusterRuntime _, GroupApiVersionKind kind)

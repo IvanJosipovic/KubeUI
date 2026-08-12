@@ -296,7 +296,6 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
             await Dispatcher.UIThread.InvokeAsync(() => ApplyGraphAsync(graph));
             return;
         }
-
         var pendingReferences = _pendingReferences.ToHashSet();
         var selectedTypes = SelectedResourceTypes.ToHashSet(StringComparer.Ordinal);
         var excludedTypes = _excludedResourceTypes.ToHashSet(StringComparer.Ordinal);
@@ -974,7 +973,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
             _ = SeedResourceOffUiThreadAsync(cluster.Runtime, resourceConfig.Type);
         }
 
-        ApplyGraph(_completeGraph);
+        Run();
 
         var ownerReferenceFound = false;
         IReadOnlyList<IKubernetesObject<V1ObjectMeta>> resources = _resourcesByKey.Values.ToArray();
@@ -1128,6 +1127,12 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         var cluster = Cluster;
         if (cluster == null || (RootResource == null && SelectedNamespaces.Count == 0))
         {
+            _pendingRebuild = null;
+            _rebuildCancellation?.Cancel();
+            Interlocked.Increment(ref _graphApplicationVersion);
+            Interlocked.Increment(ref _filterVersion);
+            _pendingReferences.Clear();
+            _completeGraph = ResourceRelationshipGraph.Empty;
             Graph = ResourceRelationshipGraph.Empty;
             return;
         }

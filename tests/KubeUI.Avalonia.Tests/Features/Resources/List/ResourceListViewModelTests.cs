@@ -1813,6 +1813,7 @@ public class ResourceListViewModelTests
             await AddOrUpdateAsync(cluster, Pod("ns", i.ToString()));
         }
 
+        await WaitForAsync(() => vm.View.Count == 400, 5000);
         await TestApplicationExtensions.WaitForUiAsync();
 
         factory.SetActiveDockable(vm);
@@ -1835,7 +1836,7 @@ public class ResourceListViewModelTests
 
         var targetOffset = new Vector(0, Math.Max(0, scrollViewer.Extent.Height - scrollViewer.Viewport.Height));
         scrollViewer.Offset = targetOffset;
-        await TestApplicationExtensions.WaitForUiAsync();
+        await WaitForAsync(() => Math.Abs(scrollViewer.Offset.Y - targetOffset.Y) < 0.1, 5000);
 
         // switch away to trigger capture
         factory.SetActiveDockable(otherDockable);
