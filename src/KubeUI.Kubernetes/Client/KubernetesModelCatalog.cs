@@ -16,7 +16,7 @@ public sealed class KubernetesModelCatalog
     public KubernetesModelCatalog()
     {
         var xmlDocumentation = new XmlDocument();
-        using Stream stream = typeof(Generator).Assembly.GetManifestResourceStream("runtime.KubernetesClient.xml")
+        using var stream = typeof(Generator).Assembly.GetManifestResourceStream("runtime.KubernetesClient.xml")
             ?? throw new InvalidOperationException("Kubernetes XML documentation resource not found.");
         xmlDocumentation.Load(stream);
 
@@ -30,7 +30,7 @@ public sealed class KubernetesModelCatalog
 
     public Type? GetResourceType(GroupApiVersionKind key)
     {
-        _types.TryGetValue(key, out Type? type);
+        _types.TryGetValue(key, out var type);
         return type;
     }
 
@@ -52,7 +52,7 @@ public sealed class KubernetesModelCatalog
     {
         return _documentation.TryGetValue(
             CreateMemberDocumentationKey(memberInfo.DeclaringType, GetMemberPrefix(memberInfo), memberInfo.Name),
-            out XmlElement? documentation)
+            out var documentation)
             ? documentation
             : null;
     }
@@ -69,7 +69,7 @@ public sealed class KubernetesModelCatalog
 
         return _documentation.TryGetValue(
             CreateMemberDocumentationKey(methodInfo.DeclaringType, 'M', memberName),
-            out XmlElement? documentation)
+            out var documentation)
             ? documentation
             : null;
     }
@@ -78,7 +78,7 @@ public sealed class KubernetesModelCatalog
     {
         return _documentation.TryGetValue(
             CreateMemberDocumentationKey(type, 'T', string.Empty),
-            out XmlElement? documentation)
+            out var documentation)
             ? documentation
             : null;
     }
@@ -87,7 +87,7 @@ public sealed class KubernetesModelCatalog
     {
         var types = new Dictionary<GroupApiVersionKind, Type>();
 
-        foreach (Type item in assembly.GetExportedTypes())
+        foreach (var item in assembly.GetExportedTypes())
         {
             var attributes = item.GetCustomAttributes(typeof(KubernetesEntityAttribute), inherit: true);
             if (attributes.Length == 0)
@@ -111,7 +111,7 @@ public sealed class KubernetesModelCatalog
             return documentation;
         }
 
-        foreach (XmlElement member in members.ChildNodes.OfType<XmlElement>())
+        foreach (var member in members.ChildNodes.OfType<XmlElement>())
         {
             var name = member.GetAttribute("name");
             if (!string.IsNullOrEmpty(name))

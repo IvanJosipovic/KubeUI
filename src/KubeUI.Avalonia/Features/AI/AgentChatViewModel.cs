@@ -252,7 +252,7 @@ public sealed partial class AgentChatViewModel : ViewModelBase, IAsyncDisposable
     private void RebuildMarkdown()
     {
         MarkdownBuilder.Clear();
-        foreach (AgentChatMessage message in Messages)
+        foreach (var message in Messages)
             AppendMarkdownMessage(message);
     }
 

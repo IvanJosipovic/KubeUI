@@ -647,9 +647,9 @@ public sealed class ResourceGraphControlTests
             Kind = "FunctionRevision",
             Metadata = new() { Name = "function-go-templating-117c9a95eb57", Uid = "function-revision-uid" },
         };
-        V1Deployment providerDeployment = CreateDeployment("provider-databricks-5bec9d044d7e");
+        var providerDeployment = CreateDeployment("provider-databricks-5bec9d044d7e");
         providerDeployment.Metadata.NamespaceProperty = "crossplane-system";
-        V1Deployment functionDeployment = CreateDeployment("function-go-templating-117c9a95eb57");
+        var functionDeployment = CreateDeployment("function-go-templating-117c9a95eb57");
         functionDeployment.Metadata.NamespaceProperty = "crossplane-system";
 
         ResourceRelationshipGraph graph = new(
