@@ -10,7 +10,7 @@
   <ItemGroup>
     <PackageReference Include="CliWrap" Version="3.10.4" />
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
-    <PackageReference Include="xunit.v3.extensibility.core" Version="3.2.2" />
+    <PackageReference Include="xunit.v3.extensibility.core" Version="4.0.0" />
   </ItemGroup>
 
   <ItemGroup>
