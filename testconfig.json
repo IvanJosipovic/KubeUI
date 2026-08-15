@@ -4,12 +4,14 @@
   },
   "commandLineOptions": {
     "coverage": true,
-    "coverage-output-format": "cobertura",
     "crashdump": true,
     "hangdump": true,
-    "hangdump-timeout": "1m",
-    "hangdump-type": "Full",
-    "report-trx": true
+    "hangdump-timeout": "1m"
+  },
+  "codeCoverage": {
+    "Configuration": {
+      "Format": "cobertura"
+    }
   },
   "xUnit": {
     "longRunningTestSeconds": 30,

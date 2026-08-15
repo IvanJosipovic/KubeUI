@@ -12,11 +12,12 @@
     <PackageReference Include="Avalonia.Headless.XUnit" Version="12.1.1" />
     <PackageReference Include="dotacp.client" Version="2026.7.19" PrivateAssets="all" />
     <PackageReference Include="dotacp.protocol" Version="2026.7.19" PrivateAssets="all" />
-    <PackageReference Include="StreamJsonRpc" Version="2.25.29" PrivateAssets="all" />
-    <PackageReference Include="xunit.v3.mtp-v2" Version="3.2.2" />
     <PackageReference Include="Microsoft.Testing.Extensions.CodeCoverage" Version="18.10.0" />
     <PackageReference Include="Microsoft.Testing.Extensions.CrashDump" Version="2.3.3" />
     <PackageReference Include="Microsoft.Testing.Extensions.HangDump" Version="2.3.3" />
+    <PackageReference Include="Microsoft.Testing.Extensions.TrxReport" Version="2.3.3" />
+    <PackageReference Include="StreamJsonRpc" Version="2.25.29" PrivateAssets="all" />
+    <PackageReference Include="xunit.v3.mtp-v2" Version="3.2.2" />
   </ItemGroup>
 
   <ItemGroup>

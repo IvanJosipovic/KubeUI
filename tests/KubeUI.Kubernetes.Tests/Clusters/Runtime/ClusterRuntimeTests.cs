@@ -1,5 +1,12 @@
 namespace KubeUI.Kubernetes.Tests.Clusters.Runtime;
 
+using DynamicData;
+using System.Reactive.Linq;
+using System.Reactive.Threading.Tasks;
+using V1Namespace = k8s.Models.V1Namespace;
+using V1ObjectMeta = k8s.Models.V1ObjectMeta;
+using V1Pod = k8s.Models.V1Pod;
+using V1Service = k8s.Models.V1Service;
 using Shouldly;
 
 [Trait("Category", "Kind")]
@@ -12,7 +19,7 @@ public sealed class ClusterRuntimeTests : ClusterRuntimeAssertions
         var cluster = clusterScope.Cluster;
         await cluster.Connect();
 
-        await cluster.SeedResource<k8s.Models.V1Pod>(waitForReady: true);
+        await cluster.SeedResource<V1Pod>(waitForReady: true);
         await cluster.Disconnect();
 
         cluster.ActiveResourceInformerTaskCount.ShouldBe(0);
@@ -26,17 +33,17 @@ public sealed class ClusterRuntimeTests : ClusterRuntimeAssertions
             {
                 Resources =
                 [
-                    new k8s.Models.V1Namespace
+                    new V1Namespace
                     {
-                        Metadata = new k8s.Models.V1ObjectMeta { Name = "scenario" },
+                        Metadata = new V1ObjectMeta { Name = "scenario" },
                     },
                 ],
             },
             TestContext.Current.CancellationToken);
         await clusterScope.Cluster.Connect();
 
-        using var client = clusterScope.Cluster.Client!.GetGenericClient<k8s.Models.V1Namespace>();
-        var seeded = await client.ReadAsync<k8s.Models.V1Namespace>(
+        using var client = clusterScope.Cluster.Client!.GetGenericClient<V1Namespace>();
+        var seeded = await client.ReadAsync<V1Namespace>(
             "scenario",
             TestContext.Current.CancellationToken);
 
@@ -60,13 +67,13 @@ public sealed class ClusterRuntimeTests : ClusterRuntimeAssertions
         var cluster = clusterScope.Cluster;
         await cluster.Connect();
 
-        await cluster.UpdateCanI<k8s.Models.V1Pod>(Verb.List);
-        await cluster.UpdateCanI<k8s.Models.V1Pod>(Verb.Watch);
-        await cluster.UpdateCanI<k8s.Models.V1Service>(Verb.List);
+        await cluster.UpdateCanI<V1Pod>(Verb.List);
+        await cluster.UpdateCanI<V1Pod>(Verb.Watch);
+        await cluster.UpdateCanI<V1Service>(Verb.List);
 
-        cluster.Permissions.CanIAnyNamespace<k8s.Models.V1Pod>(Verb.List).ShouldBeTrue();
-        cluster.Permissions.CanIAnyNamespace<k8s.Models.V1Pod>(Verb.Watch).ShouldBeTrue();
-        cluster.Permissions.CanIAnyNamespace<k8s.Models.V1Service>(Verb.List).ShouldBeFalse();
+        cluster.Permissions.CanIAnyNamespace<V1Pod>(Verb.List).ShouldBeTrue();
+        cluster.Permissions.CanIAnyNamespace<V1Pod>(Verb.Watch).ShouldBeTrue();
+        cluster.Permissions.CanIAnyNamespace<V1Service>(Verb.List).ShouldBeFalse();
     }
 
     protected override async Task<TestCluster> CreateHarnessAsync(KubernetesBackend backend)
@@ -96,6 +103,41 @@ public sealed class ClusterRuntimeTests : ClusterRuntimeAssertions
     public Task StaleResourceVersionUpdatesAreRejected(KubernetesBackend backend) => StaleResourceVersionUpdatesAreRejectedCore(backend);
     [Theory, KubernetesBackendData]
     public Task ReplaceDirectRefreshesResourceVersion(KubernetesBackend backend) => ReplaceDirectRefreshesResourceVersionCore(backend);
+
+    [Theory, KubernetesBackendData]
+    public async Task Modified_resource_refreshes_the_existing_cache_instance(KubernetesBackend backend)
+    {
+        await using var harness = await new TestClusterGenerator().CreateAsync(
+            new TestClusterConfig { Type = backend },
+            TestContext.Current.CancellationToken);
+        await harness.Cluster.Connect();
+        await harness.Cluster.SeedResource<V1Namespace>(true);
+
+        var created = await harness.CreateAsync(
+            new V1Namespace { Metadata = new V1ObjectMeta { Name = "refresh-test" } },
+            TestContext.Current.CancellationToken);
+        var original = await WaitForResourceAsync<V1Namespace>(
+            harness.Cluster,
+            null,
+            created.Metadata.Name,
+            cancellationToken: TestContext.Current.CancellationToken);
+        original.ShouldNotBeNull();
+
+        var refresh = harness.Cluster.GetResourceSourceCache<V1Namespace>()
+            .Connect()
+            .WhereReasonsAre(ChangeReason.Refresh)
+            .FirstAsync()
+            .ToTask(TestContext.Current.CancellationToken);
+
+        created.Metadata.Labels = new Dictionary<string, string> { ["test"] = "updated" };
+        await harness.ReplaceAsync(created, TestContext.Current.CancellationToken);
+
+        var changes = await refresh;
+        var updated = changes.Single().Current;
+
+        updated.ShouldBeSameAs(original);
+        updated.Metadata.Labels!["test"].ShouldBe("updated");
+    }
 
     [Theory, KubernetesBackendData]
     public Task CreateObject(KubernetesBackend backend) => CreateObjectCore(backend);
