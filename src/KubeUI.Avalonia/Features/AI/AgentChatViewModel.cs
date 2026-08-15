@@ -5,6 +5,7 @@ using KubeUI.Avalonia.Infrastructure.Mcp;
 using KubeUI.Avalonia.Services.Settings;
 using Avalonia.Threading;
 using LiveMarkdown.Avalonia;
+using KubeUI.Avalonia.Options;
 
 namespace KubeUI.Avalonia.Features.AI;
 
@@ -171,9 +172,9 @@ public sealed partial class AgentChatViewModel : ViewModelBase, IAsyncDisposable
         Context = _contextService?.Context;
     }
 
-    private void SettingsOnPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    private void SettingsOnPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(KubeUI.Avalonia.Options.Settings.SelectedAgentId))
+        if (e.PropertyName == nameof(Settings.SelectedAgentId))
             SelectedAgent = ResolveConfiguredAgent();
     }
 

@@ -21,7 +21,7 @@ public sealed class McpServerHostTests
     public async Task enabled_mcp_host_accepts_initialize_and_stops_cleanly()
     {
         var port = GetAvailablePort();
-        var settings = new KubeUI.Avalonia.Options.Settings
+        var settings = new Settings
         {
             McpServerEnabled = true,
             McpServerPort = port
@@ -30,7 +30,7 @@ public sealed class McpServerHostTests
         settingsService.SetupGet(service => service.Settings).Returns(settings);
         var builder = Program.CreateHostBuilder([], includeOptionalServices: false, configureServices: services =>
         {
-            services.Replace(ServiceDescriptor.Singleton<ISettingsService>(settingsService.Object));
+            services.Replace(ServiceDescriptor.Singleton(settingsService.Object));
             services.Replace(ServiceDescriptor.Singleton(new Mock<IClusterRuntimeCatalog>(MockBehavior.Strict).Object));
             services.Replace(ServiceDescriptor.Singleton(new Mock<IMcpClusterSession>(MockBehavior.Strict).Object));
             services.Replace(ServiceDescriptor.Singleton(new Mock<IKubernetesYamlSerializer>(MockBehavior.Strict).Object));
@@ -75,7 +75,7 @@ public sealed class McpServerHostTests
     public async Task enabled_mcp_host_invokes_registered_tools()
     {
         var port = GetAvailablePort();
-        var settings = new KubeUI.Avalonia.Options.Settings
+        var settings = new Settings
         {
             McpServerEnabled = true,
             McpServerPort = port
@@ -90,12 +90,12 @@ public sealed class McpServerHostTests
         clusterCatalog.SetupGet(catalog => catalog.Clusters).Returns([]);
         var builder = Program.CreateHostBuilder([], includeOptionalServices: false, configureServices: services =>
         {
-            services.Replace(ServiceDescriptor.Singleton<ISettingsService>(settingsService.Object));
+            services.Replace(ServiceDescriptor.Singleton(settingsService.Object));
             services.Replace(ServiceDescriptor.Singleton(clusterCatalog.Object));
             services.Replace(ServiceDescriptor.Singleton(new Mock<IMcpClusterSession>(MockBehavior.Strict).Object));
             services.Replace(ServiceDescriptor.Singleton(new Mock<IKubernetesYamlSerializer>(MockBehavior.Strict).Object));
             services.Replace(ServiceDescriptor.Singleton(new Mock<IAgentPermissionService>(MockBehavior.Strict).Object));
-            services.Replace(ServiceDescriptor.Singleton<IResourceNavigationService>(navigation.Object));
+            services.Replace(ServiceDescriptor.Singleton(navigation.Object));
         }, mcpPortOverride: port, mcpEnabledOverride: true);
         using var application = Program.CreateAndConfigureMcpEndpoint(builder);
 

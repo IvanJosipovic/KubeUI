@@ -1,5 +1,6 @@
 using KubeUI.AI.Agents;
 using KubeUI.Avalonia.Infrastructure.Presentation;
+using KubeUI.Avalonia.Options;
 using KubeUI.Avalonia.Services.Settings;
 
 namespace KubeUI.Avalonia.Shell.Documents.Settings;
@@ -56,9 +57,9 @@ public sealed partial class SettingsViewModel : ViewModelBase, IDisposable
     private void Settings_PropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         SettingsService.SaveSettings();
-        if (e.PropertyName == nameof(KubeUI.Avalonia.Options.Settings.SelectedAgentId))
+        if (e.PropertyName == nameof(Options.Settings.SelectedAgentId))
             OnPropertyChanged(nameof(SelectedAgent));
-        else if (e.PropertyName == nameof(KubeUI.Avalonia.Options.Settings.McpServerPort))
+        else if (e.PropertyName == nameof(Options.Settings.McpServerPort))
             OnPropertyChanged(nameof(McpServerPort));
     }
 
