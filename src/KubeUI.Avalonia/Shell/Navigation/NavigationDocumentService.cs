@@ -59,7 +59,7 @@ internal sealed class NavigationDocumentService : IResourceNavigationService
         if (config is null)
             return false;
 
-        await global::Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() => Open(new ResourceNavigationLink
+        await Dispatcher.UIThread.InvokeAsync(() => Open(new ResourceNavigationLink
         {
             Cluster = workspace,
             Name = config.Name,

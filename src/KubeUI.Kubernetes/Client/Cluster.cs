@@ -37,6 +37,8 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
 
     private IServiceProvider _serviceProvider;
 
+    private IThreadDispatcher _dispatcher;
+
     public V2beta1APIGroupDiscoveryList NativeAPIGroupDiscoveryList { get; private set; }
 
     public V2beta1APIGroupDiscoveryList APIGroupDiscoveryList { get; private set; }
@@ -108,7 +110,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
     /// <param name="generator">The custom-resource model generator.</param>
     /// <param name="settings">The cluster settings store.</param>
     /// <param name="serviceProvider">The application service provider.</param>
-    public Cluster(ILogger<Cluster> logger, ILoggerFactory loggerFactory, ClusterModelCatalog modelCatalog, IGenerator generator, IClusterSettingsStore settings, IServiceProvider serviceProvider)
+    public Cluster(ILogger<Cluster> logger, ILoggerFactory loggerFactory, ClusterModelCatalog modelCatalog, IGenerator generator, IClusterSettingsStore settings, IServiceProvider serviceProvider, IThreadDispatcher dispatcher)
     {
         _loggerFactory = loggerFactory;
         _logger = logger;
@@ -119,6 +121,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
 
         _settings = settings;
         _serviceProvider = serviceProvider;
+        _dispatcher = dispatcher;
         _customResourceDefinitionTask = ProcessCustomResourceDefinitionQueueAsync();
     }
 
@@ -239,7 +242,10 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
 
                     namespaceCache
                     .Connect()
-                    .SortAndBind(out var filteredObjects, SortExpressionComparer<V1Namespace>.Ascending(p => p.Name()))
+                    .SortAndBind(
+                        out var filteredObjects,
+                        SortExpressionComparer<V1Namespace>.Ascending(p => p.Name()),
+                        new SortAndBindOptions { Scheduler = _dispatcher.Scheduler })
                     .Subscribe((_) => { }, (y) => _logger.LogError(y, "Error Namespace Observable"));
 
                     Namespaces ??= filteredObjects;

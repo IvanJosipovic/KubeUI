@@ -1,0 +1,19 @@
+{
+  "platformOptions": {
+    "resultsDirectory": "./TestResults"
+  },
+  "commandLineOptions": {
+    "coverage": true,
+    "coverage-output-format": "cobertura",
+    "crashdump": true,
+    "hangdump": true,
+    "hangdump-timeout": "1m",
+    "hangdump-type": "Full",
+    "report-trx": true
+  },
+  "xUnit": {
+    "longRunningTestSeconds": 30,
+    "diagnosticMessages": true,
+    "showLiveOutput": true
+  }
+}

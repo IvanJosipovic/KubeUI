@@ -1,11 +1,13 @@
 using System.Collections;
 using System.Diagnostics;
 using System.Reflection;
+using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Media;
 using Avalonia.Styling;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.Input;
+using DynamicData;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Resources;
@@ -44,6 +46,31 @@ public class ClusterWorkspaceTests
         await TestApplicationExtensions.WaitForUiAsync();
 
         workspace.ClusterColor.ShouldBe(Brushes.Orange);
+    }
+
+    [AvaloniaFact]
+    public async Task namespace_updates_from_background_threads_update_bound_controls()
+    {
+        var workspace = await Application.Current.CreateClusterAsync();
+        var listBox = new ListBox
+        {
+            ItemsSource = workspace.Runtime.Namespaces
+        };
+        using var window = Application.Current.CreateTestWindow(content: listBox);
+        window.Show();
+        await TestApplicationExtensions.WaitForUiAsync();
+
+        var expectedItemCount = workspace.Runtime.Namespaces.Count + 1;
+        await Task.Run(() => workspace.Runtime.GetResourceSourceCache<V1Namespace>().AddOrUpdate(new V1Namespace
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = $"background-{Guid.NewGuid():N}"
+            }
+        }), TestContext.Current.CancellationToken);
+        await TestApplicationExtensions.WaitForUiAsync();
+
+        listBox.ItemCount.ShouldBe(expectedItemCount);
     }
 
     [AvaloniaTheory, KubernetesBackendData]

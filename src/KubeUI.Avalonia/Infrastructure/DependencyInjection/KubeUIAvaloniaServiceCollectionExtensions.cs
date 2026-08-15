@@ -6,6 +6,7 @@ using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using KubeUI.Avalonia.Infrastructure.Dialogs;
 using KubeUI.Avalonia.Infrastructure.Docking;
 using KubeUI.Avalonia.Infrastructure.Platform;
+using KubeUI.Avalonia.Infrastructure.Threading;
 using KubeUI.Kubernetes;
 using KubeUI.Avalonia.Infrastructure.Mcp;
 using KubeUI.Avalonia.Shell.Navigation;
@@ -20,6 +21,7 @@ public static class KubeUIAvaloniaServiceCollectionExtensions
     {
         services.AddKubeUIAvaloniaServices();
         services.AddKubeUIKubernetesServices();
+        services.Replace(ServiceDescriptor.Singleton<IThreadDispatcher>(AvaloniaScheduler.Instance));
         services.AddKubeUIDialogServices();
         services.AddSingleton<IMcpClusterSession, McpClusterSession>();
         services.AddSingleton<IResourceNavigationService>(sp => new NavigationDocumentService(
