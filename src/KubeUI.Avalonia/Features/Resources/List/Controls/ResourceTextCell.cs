@@ -18,6 +18,7 @@ public sealed partial class ResourceTextCell : UserControl, IInitializeCluster, 
     private Func<object, string>? _displayFunc;
 
     private IKubernetesObject<V1ObjectMeta>? _viewModel;
+    private bool _runtimeChangeSubscribed;
 
     [GeneratedDirectProperty]
     public partial string PrettyString { get; set; } = string.Empty;
@@ -59,19 +60,44 @@ public sealed partial class ResourceTextCell : UserControl, IInitializeCluster, 
     {
         base.OnDataContextChanged(e);
 
+        SubscribeToRuntimeChanges();
         SetPrettyString();
     }
 
-    protected override void OnUnloaded(RoutedEventArgs e)
+    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
     {
-        base.OnUnloaded(e);
-        Cluster?.Runtime.OnChange -= _cluster_OnChange;
+        base.OnAttachedToVisualTree(e);
+        SubscribeToRuntimeChanges();
+    }
+
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        UnsubscribeFromRuntimeChanges();
+        base.OnDetachedFromVisualTree(e);
     }
 
     public void Initialize(ClusterWorkspace cluster)
     {
         Cluster = cluster;
-        Cluster.Runtime.OnChange += _cluster_OnChange;
+        SubscribeToRuntimeChanges();
+    }
+
+    private void SubscribeToRuntimeChanges()
+    {
+        if (!_runtimeChangeSubscribed && Cluster is not null)
+        {
+            Cluster.Runtime.OnChange += _cluster_OnChange;
+            _runtimeChangeSubscribed = true;
+        }
+    }
+
+    private void UnsubscribeFromRuntimeChanges()
+    {
+        if (_runtimeChangeSubscribed && Cluster is not null)
+        {
+            Cluster.Runtime.OnChange -= _cluster_OnChange;
+            _runtimeChangeSubscribed = false;
+        }
     }
 
     public void SetDisplayFunc(Func<object, string> selector)
@@ -84,17 +110,22 @@ public sealed partial class ResourceTextCell : UserControl, IInitializeCluster, 
         if (DataContext is IKubernetesObject<V1ObjectMeta> obj)
         {
             _viewModel = obj;
-
-            try
-            {
-                PrettyString = _displayFunc?.Invoke(obj) ?? string.Empty;
-            }
-            catch (Exception)
-            {
-                PrettyString = string.Empty;
-            }
+            UpdatePrettyString(obj);
         }
         else
+        {
+            _viewModel = null;
+            PrettyString = string.Empty;
+        }
+    }
+
+    private void UpdatePrettyString(IKubernetesObject<V1ObjectMeta> obj)
+    {
+        try
+        {
+            PrettyString = _displayFunc?.Invoke(obj) ?? string.Empty;
+        }
+        catch (Exception)
         {
             PrettyString = string.Empty;
         }
@@ -102,16 +133,21 @@ public sealed partial class ResourceTextCell : UserControl, IInitializeCluster, 
 
     private void _cluster_OnChange(WatchEventType eventType, GroupApiVersionKind groupApiVersionKind, IKubernetesObject<V1ObjectMeta> resource)
     {
-        if (_viewModel?.Kind == resource.Kind
+        if (eventType is WatchEventType.Added or WatchEventType.Modified
+            && _viewModel is not null
             && _viewModel.ApiVersion == resource.ApiVersion
-            && _viewModel?.Name() == resource.Name()
-            && _viewModel?.Namespace() == resource.Namespace())
+            && _viewModel.Kind == resource.Kind
+            && _viewModel.Name() == resource.Name()
+            && _viewModel.Namespace() == resource.Namespace())
         {
-            Dispatcher.UIThread.Invoke(() =>
+            if (Dispatcher.UIThread.CheckAccess())
             {
-                DataContext = resource;
                 SetPrettyString();
-            }, DispatcherPriority.Normal);
+            }
+            else
+            {
+                Dispatcher.UIThread.Invoke(SetPrettyString);
+            }
         }
     }
 }

@@ -824,8 +824,12 @@ public class ResourceListViewModelTests
                 item.Name() == "a" &&
                 item.Metadata.Labels?.TryGetValue("test", out var value) == true &&
                 value == "value");
-            return namespaceIndex >= 0 && GetResourceCellText<V1Namespace>(grid, "a", 1)?.Contains("test=value", StringComparison.OrdinalIgnoreCase) == true;
-        });
+            return namespaceIndex >= 0;
+        }, timeoutMs: 5000);
+
+        await WaitForAsync(
+            () => GetResourceCellText<V1Namespace>(grid, "a", 1)?.Contains("test=value", StringComparison.OrdinalIgnoreCase) == true,
+            timeoutMs: 5000);
 
         var after = GetResourceCellText<V1Namespace>(grid, "a", 1);
         after.ShouldNotBeNull();

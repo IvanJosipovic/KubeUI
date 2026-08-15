@@ -398,6 +398,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
             ResourceInformerCallbackGuard.Execute(_logger, eventType, kind, item, () =>
             {
                 var items = GetResourceSourceCache<T>();
+                IKubernetesObject<V1ObjectMeta> notificationResource = item;
 
                 switch (eventType)
                 {
@@ -420,6 +421,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
                             if (original.HasValue)
                             {
                                 item.Adapt(original.Value);
+                                notificationResource = original.Value;
                                 o.Refresh(key);
                             }
                             else
@@ -443,7 +445,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
                         break;
                 }
 
-                OnChange?.Invoke(eventType, kind, item);
+                OnChange?.Invoke(eventType, kind, notificationResource);
             });
         });
     }
