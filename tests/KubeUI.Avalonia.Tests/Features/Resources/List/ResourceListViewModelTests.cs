@@ -730,6 +730,52 @@ public class ResourceListViewModelTests
         vm.SelectedItem.Name().ShouldBe("b");
     }
 
+    [AvaloniaFact(DisplayName = "Large resource list preserves selection during incremental sorted update")]
+    public async Task large_resource_list_preserves_selection_during_incremental_sorted_update()
+    {
+        using var window = Application.Current.CreateTestWindow();
+        var cluster = await Application.Current.CreateClusterAsync();
+
+        var vm = Application.Current.GetRequiredTestService<ResourceListViewModel<Corev1Event>>();
+        vm.Initialize(cluster);
+
+        var view = Application.Current.GetRequiredTestService<ResourceListView>();
+        view.DataContext = vm;
+        window.Content = view;
+        window.Show();
+
+        var baseTimestamp = DateTime.UtcNow.AddHours(-1);
+        var events = Enumerable.Range(0, 400)
+            .Select(index => Event("ns", $"event-{index:D3}", baseTimestamp.AddMinutes(index), index))
+            .ToArray();
+
+        cluster.Runtime.GetResourceSourceCache<Corev1Event>().Edit(updater => updater.AddOrUpdate(events));
+        await WaitForAsync(() => vm.View.Count == 400, timeoutMs: 5000);
+
+        vm.View[0].ShouldBeOfType<Corev1Event>().Name().ShouldBe("event-399");
+        vm.View[1].ShouldBeOfType<Corev1Event>().Name().ShouldBe("event-398");
+        vm.View[2].ShouldBeOfType<Corev1Event>().Name().ShouldBe("event-397");
+
+        vm.SelectionModel.Select(0);
+        vm.SelectionModel.Select(1);
+        vm.SelectionModel.Select(2);
+
+        await AddOrUpdateAsync(
+            cluster,
+            Event("ns", "event-398", baseTimestamp.AddMinutes(1000), 1000));
+
+        await WaitForAsync(
+            () => vm.View.Count == 400
+                && vm.View[0].ShouldBeOfType<Corev1Event>().Name() == "event-398",
+            timeoutMs: 5000);
+
+        vm.SelectionModel.SelectedIndexes.Count.ShouldBe(3);
+        vm.SelectionModel.SelectedItems
+            .Cast<Corev1Event>()
+            .Select(item => item.Name())
+            .ShouldBe(["event-398", "event-399", "event-397"]);
+    }
+
     [AvaloniaFact(DisplayName = "Update check DataGrid Text update")]
     public async Task UpdateResourceTextBox()
     {

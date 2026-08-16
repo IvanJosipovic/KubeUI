@@ -318,7 +318,8 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
         var type = typeof(T);
         var kind = GroupApiVersionKind.From<T>();
         var container = (ContainerClass<T>)Objects.GetOrAdd(kind, _ => new ContainerClass<T>());
-        var seedTask = container.GetOrCreateSeedTask(() => SeedResourceCoreAsync<T>());
+        var seedTask = container.GetOrCreateSeedTask(() =>
+            Task.Run(() => SeedResourceCoreAsync<T>()));
 
         _logger.LogDebug("Seed requested for {type}.", type);
 

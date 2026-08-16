@@ -170,7 +170,7 @@ internal sealed class IdentityPreservingSelectionModel<T> : ISelectionModel, INo
 
             _sourceMutationInProgress = false;
             RestoreSelectionSnapshot(snapshot);
-        }, DispatcherPriority.Background);
+        }, DispatcherPriority.Normal);
     }
 
     private void RestoreSelectionSnapshot(IReadOnlyList<object> snapshot)

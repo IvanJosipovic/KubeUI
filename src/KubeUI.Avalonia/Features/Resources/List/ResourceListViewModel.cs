@@ -1,6 +1,7 @@
 using System.Collections.Specialized;
 using System.Globalization;
 using System.Reactive;
+using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Text;
@@ -35,6 +36,8 @@ namespace KubeUI.Avalonia.Features.Resources.List;
 public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluster, IDisposable, IResourceListViewModel where T : class, IKubernetesObject<V1ObjectMeta>, new()
 {
     private static readonly TimeSpan SearchDebounceDelay = TimeSpan.FromMilliseconds(250);
+    private const int MinimumBindingResetThreshold = 1;
+    private const int MaximumBindingResetThreshold = 25;
     internal const string NamespaceScopeFilterId = "__namespace_scope__";
     internal const string NamespaceScopePropertyPath = "namespace_scope";
     private readonly IServiceProvider _serviceProvider;
@@ -193,16 +196,10 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         GenerateColumnDefinitions();
         SetNamespaceFilter();
 
+        IsLoading = true;
+        LoadError = null;
         var seedTask = Cluster.Runtime.SeedResource<T>();
-
-        if (seedTask.IsCompletedSuccessfully)
-        {
-            LoadError = null;
-            IsLoading = false;
-            BindObjects();
-            return;
-        }
-
+        BindObjects();
         _ = LoadAsync(seedTask);
     }
 
@@ -333,7 +330,6 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
 
             await seedTask.ConfigureAwait(false);
 
-            await Dispatcher.UIThread.InvokeAsync(BindObjects);
         }
         catch (Exception ex)
         {
@@ -362,14 +358,17 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         _sortingAdapterFactory.UpdateComparer(SortingModel.Descriptors);
         sortSubject.OnNext(_sortingAdapterFactory.SortComparer);
         _subscription = Objects.Connect()
+            .ObserveOn(TaskPoolScheduler.Default)
+            .Filter(filterSubject.ObserveOn(TaskPoolScheduler.Default))
+            .Filter(searchSubject.ObserveOn(TaskPoolScheduler.Default))
+            .Sort(sortSubject.ObserveOn(TaskPoolScheduler.Default))
             .ObserveOn(AvaloniaScheduler.Instance)
-            .Filter(filterSubject)
-            .Filter(searchSubject)
-            .SortAndBind(out var view, sortSubject, new()
+            .Bind(out var view, new()
             {
                 ResetOnFirstTimeLoad = true,
                 UseReplaceForUpdates = true,
-                InitialCapacity = Objects.Count
+                // Small lists need atomic resets for selection reconciliation; large lists use incremental updates.
+                ResetThreshold = GetBindingResetThreshold(Objects.Count)
             })
             .Subscribe(
                 _ => { },
@@ -391,6 +390,11 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         _countSubscription = countObs.Subscribe(Observer.Create<int>(c => ItemCount = c));
 
         _view = view;
+    }
+
+    private static int GetBindingResetThreshold(int itemCount)
+    {
+        return Math.Clamp(itemCount / 100, MinimumBindingResetThreshold, MaximumBindingResetThreshold);
     }
 
     private void SubscribeToSelectedNamespaces()
