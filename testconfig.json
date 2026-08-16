@@ -1,6 +1,6 @@
 {
   "platformOptions": {
-    "resultsDirectory": "./TestResults"
+    "resultDirectory": "./TestResults"
   },
   "commandLineOptions": {
     "coverage": true,

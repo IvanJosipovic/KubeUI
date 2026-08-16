@@ -73,6 +73,34 @@ public class ClusterWorkspaceTests
         listBox.ItemCount.ShouldBe(expectedItemCount);
     }
 
+    [AvaloniaFact]
+    public async Task reconnect_replaces_namespace_collection_and_updates_bound_controls()
+    {
+        var workspace = await Application.Current.CreateClusterAsync();
+        var listBox = new ListBox();
+        using var window = Application.Current.CreateTestWindow(content: listBox);
+        listBox.ItemsSource = workspace.Runtime.Namespaces;
+        window.Show();
+        await TestApplicationExtensions.WaitForUiAsync();
+
+        var previousNamespaces = workspace.Runtime.Namespaces;
+        await workspace.Disconnect();
+        await workspace.Connect();
+        await TestApplicationExtensions.WaitForUiAsync();
+
+        workspace.Runtime.Namespaces.ShouldNotBeSameAs(previousNamespaces);
+        listBox.ItemsSource = workspace.Runtime.Namespaces;
+        var expectedItemCount = workspace.Runtime.Namespaces.Count + 1;
+
+        await Task.Run(() => workspace.Runtime.GetResourceSourceCache<V1Namespace>().AddOrUpdate(new V1Namespace
+        {
+            Metadata = new V1ObjectMeta { Name = $"reconnected-{Guid.NewGuid():N}" }
+        }), TestContext.Current.CancellationToken);
+        await TestApplicationExtensions.WaitForUiAsync();
+
+        listBox.ItemCount.ShouldBe(expectedItemCount);
+    }
+
     [AvaloniaTheory, KubernetesBackendData]
     [Trait("Category", "Kind")]
     public async Task added_crd_adds_resource_config_and_model_cache_entry(KubernetesBackend backend)

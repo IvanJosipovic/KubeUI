@@ -19,6 +19,9 @@ public class ResourceListColumn<T, TValue> : IResourceListColumn where T : class
 
     public SortDirection Sort { get; set; } = SortDirection.None;
 
+    /// <summary>
+    /// Gets or sets custom control type, or <see langword="null"/> to render the column as text.
+    /// </summary>
     public Type? CustomControl { get; set; }
 
     public string? Width { get; set; }

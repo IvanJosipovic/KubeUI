@@ -31,8 +31,10 @@ public sealed class AvaloniaScheduler : LocalScheduler, IThreadDispatcher
 
     private int _reentrancyGuard;
 
+    /// <inheritdoc />
     public IScheduler Scheduler => this;
 
+    /// <inheritdoc />
     public void Invoke(Action action)
     {
         ArgumentNullException.ThrowIfNull(action);
@@ -116,4 +118,3 @@ public sealed class AvaloniaScheduler : LocalScheduler, IThreadDispatcher
         }
     }
 }
-

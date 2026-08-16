@@ -465,7 +465,17 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     {
         var binding = DataGridBindingDefinition.Create<T, T>(item => item);
         binding.Mode = BindingMode.OneWay;
-        binding.Converter = new FuncValueConverter<T, string>(item => columnDefinition.DisplayValue(item));
+        binding.Converter = new FuncValueConverter<T, string>(item =>
+        {
+            try
+            {
+                return columnDefinition.DisplayValue(item);
+            }
+            catch (Exception)
+            {
+                return string.Empty;
+            }
+        });
 
         return new DataGridTextColumnDefinition
         {

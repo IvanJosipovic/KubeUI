@@ -104,12 +104,13 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
     /// <summary>
     /// Initializes a cluster runtime and its model catalog.
     /// </summary>
-    /// <param name="logger">The cluster logger.</param>
-    /// <param name="loggerFactory">The logger factory used by resource informers.</param>
-    /// <param name="modelCatalog">The model catalog owned by this cluster.</param>
-    /// <param name="generator">The custom-resource model generator.</param>
-    /// <param name="settings">The cluster settings store.</param>
-    /// <param name="serviceProvider">The application service provider.</param>
+    /// <param name="logger">Cluster logger.</param>
+    /// <param name="loggerFactory">Logger factory used by resource informers.</param>
+    /// <param name="modelCatalog">Model catalog owned by this cluster.</param>
+    /// <param name="generator">Custom-resource model generator.</param>
+    /// <param name="settings">Cluster settings store.</param>
+    /// <param name="serviceProvider">Application service provider.</param>
+    /// <param name="dispatcher">Dispatcher used for UI-bound observable updates.</param>
     public Cluster(ILogger<Cluster> logger, ILoggerFactory loggerFactory, ClusterModelCatalog modelCatalog, IGenerator generator, IClusterSettingsStore settings, IServiceProvider serviceProvider, IThreadDispatcher dispatcher)
     {
         _loggerFactory = loggerFactory;
@@ -249,7 +250,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
                         .Bind(out var filteredObjects)
                         .Subscribe((_) => { }, (y) => _logger.LogError(y, "Error Namespace Observable"));
 
-                    Namespaces ??= filteredObjects;
+                    Namespaces = filteredObjects;
 
                     Connected = true;
                     Status = ClusterStatus.Connected;

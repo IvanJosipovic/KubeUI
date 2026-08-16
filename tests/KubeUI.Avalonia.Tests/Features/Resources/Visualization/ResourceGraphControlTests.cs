@@ -1267,6 +1267,11 @@ public sealed class ResourceGraphControlTests
 
         for (var i = 0; i < 3; i++)
         {
+            await TestWait.UntilAsync(
+                () => !viewModel.IsRebuildPendingOrRunning,
+                TimeSpan.FromSeconds(5),
+                cancellationToken: TestContext.Current.CancellationToken);
+
             var incremental = CreatePod($"incremental-{i}");
             incremental.Metadata.Uid = null;
             await cluster.Runtime.AddOrUpdateResource(incremental);

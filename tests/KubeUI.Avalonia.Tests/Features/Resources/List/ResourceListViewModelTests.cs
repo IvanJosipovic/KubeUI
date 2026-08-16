@@ -932,6 +932,28 @@ public class ResourceListViewModelTests
         grid.Columns.All(column => column.FilterFlyout != null).ShouldBeTrue();
     }
 
+    [AvaloniaFact]
+    public void text_column_binding_returns_empty_for_missing_metadata()
+    {
+        var column = new ResourceListColumn<V1Pod, string>
+        {
+            Key = "name",
+            Name = "Name",
+            Field = pod => pod.Metadata!.Name,
+        };
+
+        var createColumn = typeof(ResourceListViewModel<V1Pod>).GetMethod(
+            "CreateTextColumnDefinition",
+            BindingFlags.Static | BindingFlags.NonPublic);
+        createColumn.ShouldNotBeNull();
+
+        var definition = createColumn!.Invoke(null, [column, new DataGridLengthConverter()])
+            .ShouldBeOfType<DataGridTextColumnDefinition>();
+        definition.Binding.Converter.ShouldNotBeNull();
+        definition.Binding.Converter!.Convert(new V1Pod(), typeof(string), null, System.Globalization.CultureInfo.InvariantCulture)
+            .ShouldBe(string.Empty);
+    }
+
     [AvaloniaFact(DisplayName = "Resource list filter flyout rows align editors")]
     public async Task resource_list_filter_flyout_rows_align_editors()
     {
