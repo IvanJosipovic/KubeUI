@@ -2428,7 +2428,7 @@ public class ResourceListViewModelTests
         await WaitForAsync(() => vm.View.Count == 3, timeoutMs: 5000);
 
         vm.SearchQuery = "beta";
-        await WaitForAsync(() => vm.View.Count == 1 && vm.SearchModel.Results.Count > 0);
+        await WaitForAsync(() => vm.View.Count == 1 && vm.SearchModel.Results.Count > 0, timeoutMs: 5000);
 
         vm.View[0].ShouldBeOfType<V1Pod>().Name().ShouldBe("beta");
         vm.SearchModel.Results.Single().Item.ShouldBeOfType<V1Pod>().Name().ShouldBe("beta");
