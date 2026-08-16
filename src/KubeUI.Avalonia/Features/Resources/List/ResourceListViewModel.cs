@@ -36,8 +36,6 @@ namespace KubeUI.Avalonia.Features.Resources.List;
 public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluster, IDisposable, IResourceListViewModel where T : class, IKubernetesObject<V1ObjectMeta>, new()
 {
     private static readonly TimeSpan SearchDebounceDelay = TimeSpan.FromMilliseconds(250);
-    private const int MinimumBindingResetThreshold = 1;
-    private const int MaximumBindingResetThreshold = 25;
     internal const string NamespaceScopeFilterId = "__namespace_scope__";
     internal const string NamespaceScopePropertyPath = "namespace_scope";
     private readonly IServiceProvider _serviceProvider;
@@ -329,7 +327,6 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
             });
 
             await seedTask.ConfigureAwait(false);
-
         }
         catch (Exception ex)
         {
@@ -366,9 +363,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
             .Bind(out var view, new()
             {
                 ResetOnFirstTimeLoad = true,
-                UseReplaceForUpdates = true,
-                // Small lists need atomic resets for selection reconciliation; large lists use incremental updates.
-                ResetThreshold = GetBindingResetThreshold(Objects.Count)
+                UseReplaceForUpdates = true
             })
             .Subscribe(
                 _ => { },
@@ -390,11 +385,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         _countSubscription = countObs.Subscribe(Observer.Create<int>(c => ItemCount = c));
 
         _view = view;
-    }
-
-    private static int GetBindingResetThreshold(int itemCount)
-    {
-        return Math.Clamp(itemCount / 100, MinimumBindingResetThreshold, MaximumBindingResetThreshold);
+        OnPropertyChanged(nameof(View));
     }
 
     private void SubscribeToSelectedNamespaces()

@@ -42,7 +42,9 @@ public class ResourceListPipelineBenchmarks
     public void Setup()
     {
         _items = BuildItems(ItemCount);
-        _replacement = CreatePod(ItemCount / 2, "pod-replacement");
+        var replacementIndex = ItemCount / 2;
+        _replacement = CreatePod(replacementIndex, $"pod-{replacementIndex:D4}");
+        _replacement.Metadata!.ResourceVersion = "replacement";
 
         _matchingFilter = static pod => pod.Metadata?.Name?.Contains("pod-0001", StringComparison.Ordinal) == true;
         _nonMatchingFilter = static _ => true;
