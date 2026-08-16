@@ -1280,7 +1280,14 @@ public sealed class ResourceGraphControlTests
                 TimeSpan.FromSeconds(5),
                 cancellationToken: TestContext.Current.CancellationToken);
             await TestApplicationExtensions.WaitForUiAsync();
-            await builder.WaitForAdditionAsync(TimeSpan.FromSeconds(30));
+            // The informer may coalesce this change with a rebuild or deliver it while
+            // another graph application is pending. Wait for the observable graph state
+            // instead of requiring one particular internal callback ordering.
+            await TestWait.UntilAsync(
+                () => viewModel.Graph?.Resources.Any(resource => resource.Name() == incremental.Name()) == true,
+                TimeSpan.FromSeconds(30),
+                cancellationToken: TestContext.Current.CancellationToken,
+                beforePoll: Dispatcher.UIThread.RunJobs);
             await TestApplicationExtensions.WaitForUiAsync();
         }
 
@@ -1313,7 +1320,6 @@ public sealed class ResourceGraphControlTests
     private sealed class LeakyAdditionRelationshipBuilder : IResourceRelationshipBuilder
     {
         private readonly TaskCompletionSource _initialBuild = new(TaskCreationOptions.RunContinuationsAsynchronously);
-        private readonly ConcurrentQueue<TaskCompletionSource> _additions = [];
 
         public ResourceRelationshipGraph Build(
             IEnumerable<IKubernetesObject<V1ObjectMeta>> resources,
@@ -1341,32 +1347,10 @@ public sealed class ResourceGraphControlTests
             IReadOnlySet<string> selectedNamespaces,
             bool hideNoise)
         {
-            TaskCompletionSource addition = new(TaskCreationOptions.RunContinuationsAsynchronously);
-            _additions.Enqueue(addition);
-            addition.TrySetResult();
             return new ResourceRelationshipGraph(resources.ToArray(), []);
         }
 
         public async Task WaitForInitialBuildAsync() => await WaitForSignalAsync(_initialBuild.Task, "initial visualization build");
-
-        public async Task WaitForAdditionAsync(TimeSpan? timeout = null)
-        {
-            timeout ??= TimeSpan.FromSeconds(5);
-            TaskCompletionSource? addition;
-            var deadline = DateTime.UtcNow.Add(timeout.Value);
-            while (!_additions.TryDequeue(out addition))
-            {
-                await TestApplicationExtensions.WaitForUiAsync();
-                if (DateTime.UtcNow >= deadline)
-                {
-                    throw new TimeoutException("Timed out waiting for an incremental graph addition.");
-                }
-
-                await WaitForNextPollAsync();
-            }
-
-            await addition.Task.WaitAsync(timeout.Value, TestContext.Current.CancellationToken);
-        }
     }
 
     [AvaloniaTheory, KubernetesBackendData]
