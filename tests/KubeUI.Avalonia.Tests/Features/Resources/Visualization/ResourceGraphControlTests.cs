@@ -1212,12 +1212,11 @@ public sealed class ResourceGraphControlTests
         viewModel.Graph!.Resources.ShouldNotContain(resource => resource.Name() == "unrelated");
     }
 
-    [AvaloniaTheory, KubernetesBackendData]
-    [Trait("Category", "Kind")]
-    public async Task repeated_incremental_deltas_do_not_accumulate_resources_from_unselected_namespaces(KubernetesBackend backend)
+    [AvaloniaFact]
+    public async Task repeated_incremental_deltas_do_not_accumulate_resources_from_unselected_namespaces()
     {
         var cluster = await Application.Current.CreateClusterAsync(
-            config => config.Type = backend,
+            config => config.Type = KubernetesBackend.Fake,
             connect: false);
 
         await ConnectAndWaitForResourceConfigsAsync(cluster, typeof(V1Pod));

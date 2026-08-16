@@ -24,8 +24,7 @@ jobs:
           dotnet test \
             --configuration Release \
             --no-build \
-            --max-threads 2 \
-            --report-trx-filename kind-test-results.trx
+            --max-threads 2
         env:
           KUBEUI_RUN_KIND_TESTS: 1
 
