@@ -1285,9 +1285,9 @@ public sealed class ResourceGraphControlTests
             // instead of requiring one particular internal callback ordering.
             await TestWait.UntilAsync(
                 () => viewModel.Graph?.Resources.Any(resource => resource.Name() == incremental.Name()) == true,
-                TimeSpan.FromSeconds(30),
+                timeoutMs: 30_000,
                 cancellationToken: TestContext.Current.CancellationToken,
-                beforePoll: Dispatcher.UIThread.RunJobs);
+                beforePoll: () => Dispatcher.UIThread.RunJobs());
             await TestApplicationExtensions.WaitForUiAsync();
         }
 
