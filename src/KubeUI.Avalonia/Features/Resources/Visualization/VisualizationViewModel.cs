@@ -289,6 +289,8 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         _ = ApplyGraphAsync(graph);
     }
 
+    internal bool IsRebuildPendingOrRunning => _rebuildRunning || _pendingRebuild is not null;
+
     internal async Task ApplyGraphAsync(ResourceRelationshipGraph graph)
     {
         if (!Dispatcher.UIThread.CheckAccess())

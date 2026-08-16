@@ -1258,6 +1258,11 @@ public sealed class ResourceGraphControlTests
             await TestWait.NextPollAsync(TimeSpan.FromMilliseconds(10), TestContext.Current.CancellationToken);
         }
 
+        await TestWait.UntilAsync(
+            () => !viewModel.IsRebuildPendingOrRunning,
+            TimeSpan.FromSeconds(5),
+            cancellationToken: TestContext.Current.CancellationToken);
+
         viewModel.Graph!.Resources.Select(resource => resource.Name()).ShouldNotContain("unrelated");
 
         for (var i = 0; i < 3; i++)

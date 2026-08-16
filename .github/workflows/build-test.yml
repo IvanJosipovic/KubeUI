@@ -23,17 +23,9 @@ jobs:
         run: |
           dotnet test \
             --configuration Release \
-            --no-build
-
-      - name: Test Kind
-        run: |
-          dotnet test \
-            --configuration Release \
             --no-build \
-            --filter-trait "Category=Kind" \
             --max-threads 2 \
             --report-trx-filename kind-test-results.trx
-
         env:
           KUBEUI_RUN_KIND_TESTS: 1
 
