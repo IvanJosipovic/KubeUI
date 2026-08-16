@@ -457,28 +457,22 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     private DataGridColumnDefinition CreateColumnDefinition(IResourceListColumn columnDefinition, DataGridLengthConverter converter)
     {
         return columnDefinition.CustomControl == null
-            ? CreateTextTemplateColumnDefinition(columnDefinition, converter)
+            ? CreateTextColumnDefinition(columnDefinition, converter)
             : CreateTemplateColumnDefinition(columnDefinition, converter);
     }
 
-    private static DataGridControlTemplateColumnDefinition CreateTextTemplateColumnDefinition(IResourceListColumn columnDefinition, DataGridLengthConverter converter)
+    private static DataGridTextColumnDefinition CreateTextColumnDefinition(IResourceListColumn columnDefinition, DataGridLengthConverter converter)
     {
-        return new DataGridControlTemplateColumnDefinition
+        var binding = DataGridBindingDefinition.Create<T, T>(item => item);
+        binding.Mode = BindingMode.OneWay;
+        binding.Converter = new FuncValueConverter<T, string>(item => columnDefinition.DisplayValue(item));
+
+        return new DataGridTextColumnDefinition
         {
             Header = columnDefinition.Name,
             ColumnKey = columnDefinition.Key,
             Tag = columnDefinition,
-            CellTemplate = new FuncDataTemplate<T>((_, _) =>
-            {
-                var textBlock = new TextBlock();
-                textBlock.Bind(TextBlock.TextProperty, new Binding
-                {
-                    Mode = BindingMode.OneWay,
-                    Converter = new FuncValueConverter<object?, string>(value =>
-                        value is T item ? columnDefinition.DisplayValue(item) : string.Empty)
-                });
-                return textBlock;
-            }, supportsRecycling: true),
+            Binding = binding,
             CanUserSort = true,
             ShowFilterButton = true,
             CustomSortComparer = s_noopSortComparer,

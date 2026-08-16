@@ -792,6 +792,7 @@ public class ResourceListViewModelTests
 
         var grid = view.FindControl<DataGrid>("PART_Grid");
         grid.ShouldNotBeNull();
+        grid!.Columns[1].ShouldBeOfType<DataGridTextColumn>();
 
         var ns = new V1Namespace()
         {
@@ -1762,7 +1763,7 @@ public class ResourceListViewModelTests
             .ToArray();
         sortedNamespaces.Select(item => item.Name()).ShouldBe(["c", "b", "a"]);
         vm.SortingModel.Descriptors.Count.ShouldBe(1);
-        ((DataGridControlTemplateColumnDefinition)(vm.SortingModel.Descriptors[0].ColumnId)).ColumnKey.ShouldBe("name");
+        ((DataGridColumnDefinition)(vm.SortingModel.Descriptors[0].ColumnId)).ColumnKey.ShouldBe("name");
 
         factory.SetActiveDockable(otherDockable);
         factory.SetFocusedDockable(documents, otherDockable);
@@ -1780,7 +1781,7 @@ public class ResourceListViewModelTests
             .ToArray();
         restoredNamespaces.Select(item => item.Name()).ShouldBe(["c", "b", "a"]);
         vm.SortingModel.Descriptors.Count.ShouldBe(1);
-        ((DataGridControlTemplateColumnDefinition)(vm.SortingModel.Descriptors[0].ColumnId)).ColumnKey.ShouldBe("name");
+        ((DataGridColumnDefinition)(vm.SortingModel.Descriptors[0].ColumnId)).ColumnKey.ShouldBe("name");
     }
 
     [AvaloniaFact(DisplayName = "Switching document tabs preserves DataGrid scroll offset")]
@@ -1958,7 +1959,7 @@ public class ResourceListViewModelTests
             .ToArray();
         sortedNamespaces.Select(item => item.Name()).ShouldBe(["a", "b", "c"]);
         vm.SortingModel.Descriptors.Count.ShouldBe(1);
-        ((DataGridControlTemplateColumnDefinition)(vm.SortingModel.Descriptors[0].ColumnId)).ColumnKey.ShouldBe("labels");
+        ((DataGridColumnDefinition)(vm.SortingModel.Descriptors[0].ColumnId)).ColumnKey.ShouldBe("labels");
     }
 
     [AvaloniaFact(DisplayName = "Restoring DataGrid state preserves column widths")]

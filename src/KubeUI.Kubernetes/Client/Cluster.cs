@@ -58,6 +58,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
     private readonly ConcurrentDictionary<string, string> _customResourceDefinitionSignatures = new(StringComparer.Ordinal);
     private CancellationTokenSource? _resourceInformerCancellationTokenSource = new();
     private ConcurrentBag<Task> _resourceInformerTasks = [];
+    private IDisposable? _namespaceSubscription;
 
     public ConcurrentDictionary<GroupApiVersionKind, object> Objects { get; } = [];
 
@@ -133,6 +134,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
 
         _customResourceDefinitionQueue.Writer.TryComplete();
         _customResourceDefinitionCancellationTokenSource.Cancel();
+        StopNamespaceSubscription();
         await StopResourceInformersAsync().ConfigureAwait(false);
         _connectionLimiter.Dispose();
 
@@ -239,13 +241,13 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
                         }
                     }
 
-                    namespaceCache
-                    .Connect()
-                    .SortAndBind(
-                        out var filteredObjects,
-                        SortExpressionComparer<V1Namespace>.Ascending(p => p.Name()),
-                        new SortAndBindOptions { Scheduler = _dispatcher.Scheduler })
-                    .Subscribe((_) => { }, (y) => _logger.LogError(y, "Error Namespace Observable"));
+                    StopNamespaceSubscription();
+                    _namespaceSubscription = namespaceCache
+                        .Connect()
+                        .Sort(SortExpressionComparer<V1Namespace>.Ascending(p => p.Name()))
+                        .ObserveOn(_dispatcher.Scheduler)
+                        .Bind(out var filteredObjects)
+                        .Subscribe((_) => { }, (y) => _logger.LogError(y, "Error Namespace Observable"));
 
                     Namespaces ??= filteredObjects;
 
@@ -283,6 +285,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
         {
             StopMetrics();
             StopPortForwarders();
+            StopNamespaceSubscription();
 
             await StopResourceInformersAsync().ConfigureAwait(false);
             ClearDynamicCustomResourceDefinitions();
@@ -1036,6 +1039,11 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
         NodeMetrics.Clear();
         PodMetrics.Clear();
         IsMetricsAvailable = false;
+    }
+
+    private void StopNamespaceSubscription()
+    {
+        Interlocked.Exchange(ref _namespaceSubscription, null)?.Dispose();
     }
 
     private async Task StopResourceInformersAsync()
