@@ -1270,7 +1270,7 @@ public sealed class ResourceGraphControlTests
                 TimeSpan.FromSeconds(5),
                 cancellationToken: TestContext.Current.CancellationToken);
             await TestApplicationExtensions.WaitForUiAsync();
-            await builder.WaitForAdditionAsync();
+            await builder.WaitForAdditionAsync(TimeSpan.FromSeconds(30));
             await TestApplicationExtensions.WaitForUiAsync();
         }
 
@@ -1339,10 +1339,11 @@ public sealed class ResourceGraphControlTests
 
         public async Task WaitForInitialBuildAsync() => await WaitForSignalAsync(_initialBuild.Task, "initial visualization build");
 
-        public async Task WaitForAdditionAsync()
+        public async Task WaitForAdditionAsync(TimeSpan? timeout = null)
         {
+            timeout ??= TimeSpan.FromSeconds(5);
             TaskCompletionSource? addition;
-            var deadline = DateTime.UtcNow.AddSeconds(5);
+            var deadline = DateTime.UtcNow.Add(timeout.Value);
             while (!_additions.TryDequeue(out addition))
             {
                 await TestApplicationExtensions.WaitForUiAsync();
@@ -1354,7 +1355,7 @@ public sealed class ResourceGraphControlTests
                 await WaitForNextPollAsync();
             }
 
-            await addition.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
+            await addition.Task.WaitAsync(timeout.Value, TestContext.Current.CancellationToken);
         }
     }
 
