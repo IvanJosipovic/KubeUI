@@ -773,8 +773,8 @@ public class ResourceListViewModelTests
         after.ShouldContain("node-b");
     }
 
-    [AvaloniaFact(DisplayName = "Update check DataGrid Text update2")]
-    public async Task UpdateResourceTextBox2()
+    [AvaloniaFact(DisplayName = "Default text column updates when a resource is replaced")]
+    public async Task default_text_column_updates_when_resource_is_replaced()
     {
         using var window = Application.Current.CreateTestWindow();
 
@@ -804,9 +804,9 @@ public class ResourceListViewModelTests
         await AddOrUpdateAsync(cluster, ns);
 
         await WaitForAsync(() => vm.View.Cast<V1Namespace>().Any(item => item.Name() == "a"));
+        await WaitForAsync(() => GetAllRows(grid).Any(row => row.IsVisible && (row.DataContext as V1Namespace)?.Name() == "a"), timeoutMs: 5000);
         var before = GetResourceCellText<V1Namespace>(grid, "a", 1);
-        before.ShouldNotBeNull();
-        before.ShouldBeEmpty();
+        (before ?? string.Empty).ShouldBeEmpty();
 
         var updatedNamespace = new V1Namespace
         {

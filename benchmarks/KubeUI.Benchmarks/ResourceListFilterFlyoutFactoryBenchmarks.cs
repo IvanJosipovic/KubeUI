@@ -6,7 +6,6 @@ using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Engines;
 using k8s.Models;
 using KubeUI.Avalonia.Features.Resources.List;
-using KubeUI.Avalonia.Features.Resources.List.Controls;
 using KubeUI.Avalonia.Resources;
 using Microsoft.VSDiagnostics;
 
@@ -30,7 +29,7 @@ public class ResourceListFilterFlyoutFactoryBenchmarks
         var service = Activator.CreateInstance(serviceType, nonPublic: true)!;
         _factory = Activator.CreateInstance(factoryType, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, binder: null, args: [service], culture: CultureInfo.InvariantCulture)!;
         _create = factoryType.GetMethod("Create", BindingFlags.Instance | BindingFlags.Public)!;
-        _resourceColumn = new BenchmarkColumn("name", "Name", typeof(string), typeof(ResourceTextCell));
+        _resourceColumn = new BenchmarkColumn("name", "Name", typeof(string));
         _column = new DataGridControlTemplateColumnDefinition
         {
             Header = "Name",
@@ -59,12 +58,11 @@ public class ResourceListFilterFlyoutFactoryBenchmarks
 
     private sealed class BenchmarkColumn : IResourceListColumn
     {
-        public BenchmarkColumn(string key, string name, Type valueType, Type customControl)
+        public BenchmarkColumn(string key, string name, Type valueType)
         {
             Key = key;
             Name = name;
             ValueType = valueType;
-            CustomControl = customControl;
             ValueAccessor = new BenchmarkValueAccessor();
             SortKey = static _ => null;
             DisplayValue = static _ => string.Empty;
@@ -75,7 +73,7 @@ public class ResourceListFilterFlyoutFactoryBenchmarks
         public string? Width => null;
         public double MinWidth => 90;
         public SortDirection Sort { get; set; }
-        public Type CustomControl { get; }
+        public Type? CustomControl => null;
         public Type ItemType => typeof(V1Pod);
         public Type ValueType { get; }
         public IDataGridColumnValueAccessor ValueAccessor { get; }

@@ -13,7 +13,6 @@ public static class KubeUIKubernetesServiceCollectionExtensions
 
     public static IServiceCollection AddKubeUIKubernetesServices(this IServiceCollection services)
     {
-        MapsterConfiguration.Configure();
         ConfigureKubeUIKubernetesJson();
         services.AddSingleton<IThreadDispatcher, ImmediateThreadDispatcher>();
         services.AddSingleton<IKubeConfigPathProvider, DefaultKubeConfigPathProvider>();

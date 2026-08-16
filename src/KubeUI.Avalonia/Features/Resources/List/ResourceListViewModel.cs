@@ -10,6 +10,8 @@ using Avalonia.Controls.DataGridSearching;
 using Avalonia.Controls.DataGridSorting;
 using Avalonia.Controls.Selection;
 using Avalonia.Controls.Templates;
+using Avalonia.Data;
+using Avalonia.Data.Converters;
 using AvaloniaEdit.Utils;
 using DynamicData;
 using DynamicData.Binding;
@@ -454,7 +456,38 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
 
     private DataGridColumnDefinition CreateColumnDefinition(IResourceListColumn columnDefinition, DataGridLengthConverter converter)
     {
-        return CreateTemplateColumnDefinition(columnDefinition, converter);
+        return columnDefinition.CustomControl == null
+            ? CreateTextTemplateColumnDefinition(columnDefinition, converter)
+            : CreateTemplateColumnDefinition(columnDefinition, converter);
+    }
+
+    private static DataGridControlTemplateColumnDefinition CreateTextTemplateColumnDefinition(IResourceListColumn columnDefinition, DataGridLengthConverter converter)
+    {
+        return new DataGridControlTemplateColumnDefinition
+        {
+            Header = columnDefinition.Name,
+            ColumnKey = columnDefinition.Key,
+            Tag = columnDefinition,
+            CellTemplate = new FuncDataTemplate<T>((_, _) =>
+            {
+                var textBlock = new TextBlock();
+                textBlock.Bind(TextBlock.TextProperty, new Binding
+                {
+                    Mode = BindingMode.OneWay,
+                    Converter = new FuncValueConverter<object?, string>(value =>
+                        value is T item ? columnDefinition.DisplayValue(item) : string.Empty)
+                });
+                return textBlock;
+            }, supportsRecycling: true),
+            CanUserSort = true,
+            ShowFilterButton = true,
+            CustomSortComparer = s_noopSortComparer,
+            MinWidth = columnDefinition.MinWidth,
+            Width = ParseWidth(columnDefinition.Width, converter),
+            ValueAccessor = columnDefinition.ValueAccessor,
+            ValueType = columnDefinition.ValueType,
+            Options = BuildColumnOptions(columnDefinition)
+        };
     }
 
     private DataGridColumnDefinition CreateTemplateColumnDefinition(IResourceListColumn columnDefinition, DataGridLengthConverter converter)
@@ -484,16 +517,11 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         {
             try
             {
-                var control = _serviceProvider.GetRequiredService(columnDefinition.CustomControl) as Control;
+                var control = _serviceProvider.GetRequiredService(columnDefinition.CustomControl!) as Control;
 
                 if (control == null)
                 {
-                    throw new InvalidOperationException($"Unable to resolve control type {columnDefinition.CustomControl.FullName}");
-                }
-
-                if (control is IDisplayFunc displayFunc)
-                {
-                    displayFunc.SetDisplayFunc(columnDefinition.DisplayValue);
+                    throw new InvalidOperationException($"Unable to resolve control type {columnDefinition.CustomControl!.FullName}");
                 }
 
                 if (control is IInitializeCluster initializeCluster)

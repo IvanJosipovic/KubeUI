@@ -105,7 +105,7 @@ public sealed class ClusterRuntimeTests : ClusterRuntimeAssertions
     public Task ReplaceDirectRefreshesResourceVersion(KubernetesBackend backend) => ReplaceDirectRefreshesResourceVersionCore(backend);
 
     [Theory, KubernetesBackendData]
-    public async Task Modified_resource_refreshes_the_existing_cache_instance(KubernetesBackend backend)
+    public async Task Modified_resource_replaces_the_existing_cache_instance(KubernetesBackend backend)
     {
         await using var harness = await new TestClusterGenerator().CreateAsync(
             new TestClusterConfig { Type = backend },
@@ -123,19 +123,19 @@ public sealed class ClusterRuntimeTests : ClusterRuntimeAssertions
             cancellationToken: TestContext.Current.CancellationToken);
         original.ShouldNotBeNull();
 
-        var refresh = harness.Cluster.GetResourceSourceCache<V1Namespace>()
+        var update = harness.Cluster.GetResourceSourceCache<V1Namespace>()
             .Connect()
-            .WhereReasonsAre(ChangeReason.Refresh)
+            .WhereReasonsAre(ChangeReason.Update)
             .FirstAsync()
             .ToTask(TestContext.Current.CancellationToken);
 
         created.Metadata.Labels = new Dictionary<string, string> { ["test"] = "updated" };
         await harness.ReplaceAsync(created, TestContext.Current.CancellationToken);
 
-        var changes = await refresh;
+        var changes = await update;
         var updated = changes.Single().Current;
 
-        updated.ShouldBeSameAs(original);
+        updated.ShouldNotBeSameAs(original);
         updated.Metadata.Labels!["test"].ShouldBe("updated");
     }
 

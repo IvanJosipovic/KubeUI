@@ -14,7 +14,6 @@ using k8s.Models;
 using KubernetesClient.Informer.Client;
 using KubernetesCRDModelGen;
 using KubeUI.Kubernetes.Client;
-using Mapster;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Http.Resilience;
 using Polly;
@@ -398,8 +397,6 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
             ResourceInformerCallbackGuard.Execute(_logger, eventType, kind, item, () =>
             {
                 var items = GetResourceSourceCache<T>();
-                IKubernetesObject<V1ObjectMeta> notificationResource = item;
-
                 switch (eventType)
                 {
                     case WatchEventType.Added:
@@ -414,21 +411,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
                         }
                         break;
                     case WatchEventType.Modified:
-                        items.Edit(o =>
-                        {
-                            var key = o.GetKey(item);
-                            var original = o.Lookup(key);
-                            if (original.HasValue)
-                            {
-                                item.Adapt(original.Value);
-                                notificationResource = original.Value;
-                                o.Refresh(key);
-                            }
-                            else
-                            {
-                                o.AddOrUpdate(item);
-                            }
-                        });
+                        items.AddOrUpdate(item);
 
                         if (item is V1CustomResourceDefinition modifiedCrd)
                         {
@@ -445,7 +428,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
                         break;
                 }
 
-                OnChange?.Invoke(eventType, kind, notificationResource);
+                OnChange?.Invoke(eventType, kind, item);
             });
         });
     }

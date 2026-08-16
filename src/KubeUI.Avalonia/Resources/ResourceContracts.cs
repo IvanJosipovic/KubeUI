@@ -7,7 +7,7 @@ public interface IResourceListColumn
     string? Width { get; }
     double MinWidth { get; }
     SortDirection Sort { get; set; }
-    Type CustomControl { get; }
+    Type? CustomControl { get; }
     Type ItemType { get; }
     Type ValueType { get; }
     IDataGridColumnValueAccessor ValueAccessor { get; }
@@ -21,4 +21,3 @@ public enum SortDirection
     Ascending,
     Descending
 }
-

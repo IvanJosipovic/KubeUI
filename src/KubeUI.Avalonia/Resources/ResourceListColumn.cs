@@ -1,6 +1,5 @@
 using k8s;
 using k8s.Models;
-using KubeUI.Avalonia.Features.Resources.List.Controls;
 
 namespace KubeUI.Avalonia.Resources;
 
@@ -20,7 +19,7 @@ public class ResourceListColumn<T, TValue> : IResourceListColumn where T : class
 
     public SortDirection Sort { get; set; } = SortDirection.None;
 
-    public Type CustomControl { get; set; } = typeof(ResourceTextCell);
+    public Type? CustomControl { get; set; }
 
     public string? Width { get; set; }
 
