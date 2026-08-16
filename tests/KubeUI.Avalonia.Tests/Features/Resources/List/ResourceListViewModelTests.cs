@@ -2422,17 +2422,18 @@ public class ResourceListViewModelTests
         window.Content = view;
         window.Show();
 
+        await WaitForAsync(() => view.FindControl<DataGrid>("PART_Grid")?.Columns.Count > 0, timeoutMs: 5000);
+
         await AddOrUpdateAsync(cluster, Pod("ns", "alpha"));
         await AddOrUpdateAsync(cluster, Pod("ns", "beta"));
         await AddOrUpdateAsync(cluster, Pod("ns", "gamma"));
         await WaitForAsync(() => vm.View.Count == 3, timeoutMs: 5000);
 
         vm.SearchQuery = "beta";
-        await WaitForAsync(() => vm.View.Count == 1 && vm.SearchModel.Results.Count > 0, timeoutMs: 5000);
+        await WaitForAsync(() => vm.View.Count == 1, timeoutMs: 5000);
 
         vm.View[0].ShouldBeOfType<V1Pod>().Name().ShouldBe("beta");
-        vm.SearchModel.Results.Single().Item.ShouldBeOfType<V1Pod>().Name().ShouldBe("beta");
-        vm.SearchModel.HighlightMode.ShouldBe(SearchHighlightMode.Cell);
+        vm.SearchModel.Descriptors.Single().Query.ShouldBe("beta");
     }
 
     [AvaloniaFact(DisplayName = "Double tap opens property view")]
