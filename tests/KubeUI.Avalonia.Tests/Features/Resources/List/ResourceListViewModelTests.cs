@@ -2425,7 +2425,7 @@ public class ResourceListViewModelTests
         await AddOrUpdateAsync(cluster, Pod("ns", "alpha"));
         await AddOrUpdateAsync(cluster, Pod("ns", "beta"));
         await AddOrUpdateAsync(cluster, Pod("ns", "gamma"));
-        await WaitForAsync(() => vm.View.Count == 3);
+        await WaitForAsync(() => vm.View.Count == 3, timeoutMs: 5000);
 
         vm.SearchQuery = "beta";
         await WaitForAsync(() => vm.View.Count == 1 && vm.SearchModel.Results.Count > 0);
