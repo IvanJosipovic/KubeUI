@@ -1246,17 +1246,10 @@ public sealed class ResourceGraphControlTests
         viewModel.Initialize(cluster);
         cluster.SelectedNamespaces.Add(cluster.Runtime.Namespaces.Single(namespaceResource => namespaceResource.Name() == "default"));
         await builder.WaitForInitialBuildAsync();
-        var initialGraphDeadline = DateTime.UtcNow.AddSeconds(5);
-        while (!viewModel.Graph!.Resources.Any(resource => resource.Name() == "selected"))
-        {
-            await TestApplicationExtensions.WaitForUiAsync();
-            if (DateTime.UtcNow >= initialGraphDeadline)
-            {
-                throw new TimeoutException("Timed out waiting for the initial visualization graph.");
-            }
-
-            await TestWait.NextPollAsync(TimeSpan.FromMilliseconds(10), TestContext.Current.CancellationToken);
-        }
+        await TestWait.UntilAsync(
+            () => viewModel.Graph?.Resources.Any(resource => resource.Name() == "selected") == true,
+            timeoutMs: 5_000,
+            cancellationToken: TestContext.Current.CancellationToken);
 
         await TestWait.UntilAsync(
             () => !viewModel.IsRebuildPendingOrRunning,
@@ -1279,7 +1272,6 @@ public sealed class ResourceGraphControlTests
                 () => cluster.Runtime.GetResource<V1Pod>("default", incremental.Name()) is not null,
                 TimeSpan.FromSeconds(5),
                 cancellationToken: TestContext.Current.CancellationToken);
-            await TestApplicationExtensions.WaitForUiAsync();
             // The informer may coalesce this change with a rebuild or deliver it while
             // another graph application is pending. Wait for the observable graph state
             // instead of requiring one particular internal callback ordering.
@@ -1287,7 +1279,6 @@ public sealed class ResourceGraphControlTests
                 () => viewModel.Graph?.Resources.Any(resource => resource.Name() == incremental.Name()) == true,
                 timeoutMs: 30_000,
                 cancellationToken: TestContext.Current.CancellationToken);
-            await TestApplicationExtensions.WaitForUiAsync();
         }
 
         viewModel.Graph!.Resources.Select(resource => resource.Name()).ShouldNotContain("unrelated");
