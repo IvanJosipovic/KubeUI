@@ -24,6 +24,7 @@ using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Controls.DataGridFilters;
+using KubeUI.Avalonia.Features.Resources.List.Controls;
 using KubeUI.Avalonia.Features.AI;
 using KubeUI.Avalonia.Features.Resources.List.Behaviors;
 using KubeUI.Avalonia.Resources;
@@ -881,6 +882,79 @@ public class ResourceListViewModelTests
         var after = GetResourceCellText<V1Namespace>(grid, "a", 1);
         after.ShouldNotBeNull();
         after.ShouldContain("test=value");
+    }
+
+    [AvaloniaFact(DisplayName = "Relative-time cells match ProDataGrid text-cell presentation")]
+    public async Task relative_time_cells_match_prodatagrid_text_cell_presentation()
+    {
+        using var window = Application.Current.CreateTestWindow();
+        var cluster = await Application.Current.CreateClusterAsync();
+        var vm = Application.Current.GetRequiredTestService<ResourceListViewModel<V1Pod>>();
+        vm.Initialize(cluster);
+
+        var view = Application.Current.GetRequiredTestService<ResourceListView>();
+        view.DataContext = vm;
+        window.Content = view;
+        window.Show();
+
+        var grid = view.FindControl<DataGrid>("PART_Grid");
+        grid.ShouldNotBeNull();
+
+        var nameColumn = vm.ColumnDefinitions
+            .Select((column, index) => (column, index))
+            .Single(item => string.Equals(item.column.ColumnKey?.ToString(), "name", StringComparison.Ordinal))
+            .index;
+        var ageColumn = vm.ColumnDefinitions
+            .Select((column, index) => (column, index))
+            .Single(item => string.Equals(item.column.ColumnKey?.ToString(), "age", StringComparison.Ordinal))
+            .index;
+
+        await AddOrUpdateAsync(cluster, Pod("ns", "presentation-test"));
+        await WaitForAsync(
+            () => GetAllRows(grid!).Any(row => row.IsVisible && (row.DataContext as V1Pod)?.Name() == "presentation-test"),
+            timeoutMs: 5000);
+
+        var row = GetAllRows(grid!)
+            .Single(item => item.IsVisible && (item.DataContext as V1Pod)?.Name() == "presentation-test");
+        var generatedTextCell = grid!.Columns[nameColumn].GetCellContent(row);
+        generatedTextCell.ShouldNotBeNull();
+        generatedTextCell.ShouldBeAssignableTo<TextBlock>();
+        generatedTextCell!.GetType().BaseType.ShouldBe(typeof(TextBlock));
+        var generatedTextBlock = (TextBlock)generatedTextCell;
+        var relativeTimeCell = grid.Columns[ageColumn].GetCellContent(row).ShouldBeOfType<AgeCell>();
+
+        generatedTextBlock.GetValue(ToolTip.TipProperty).ShouldBe(generatedTextBlock.Text);
+        relativeTimeCell.GetValue(ToolTip.TipProperty).ShouldBe(relativeTimeCell.Text);
+
+        relativeTimeCell.Name.ShouldBe(generatedTextBlock.Name);
+        relativeTimeCell.Margin.ShouldBe(generatedTextBlock.Margin);
+        relativeTimeCell.HorizontalAlignment.ShouldBe(generatedTextBlock.HorizontalAlignment);
+        relativeTimeCell.VerticalAlignment.ShouldBe(generatedTextBlock.VerticalAlignment);
+        relativeTimeCell.Width.ShouldBe(generatedTextBlock.Width);
+        relativeTimeCell.Height.ShouldBe(generatedTextBlock.Height);
+        relativeTimeCell.MinWidth.ShouldBe(generatedTextBlock.MinWidth);
+        relativeTimeCell.MaxWidth.ShouldBe(generatedTextBlock.MaxWidth);
+        relativeTimeCell.MinHeight.ShouldBe(generatedTextBlock.MinHeight);
+        relativeTimeCell.MaxHeight.ShouldBe(generatedTextBlock.MaxHeight);
+        relativeTimeCell.FontFamily.ShouldBe(generatedTextBlock.FontFamily);
+        relativeTimeCell.FontSize.ShouldBe(generatedTextBlock.FontSize);
+        relativeTimeCell.FontStyle.ShouldBe(generatedTextBlock.FontStyle);
+        relativeTimeCell.FontStretch.ShouldBe(generatedTextBlock.FontStretch);
+        relativeTimeCell.FontWeight.ShouldBe(generatedTextBlock.FontWeight);
+        relativeTimeCell.Foreground.ShouldBe(generatedTextBlock.Foreground);
+        relativeTimeCell.TextWrapping.ShouldBe(generatedTextBlock.TextWrapping);
+        relativeTimeCell.TextTrimming.ShouldBe(generatedTextBlock.TextTrimming);
+        relativeTimeCell.TextAlignment.ShouldBe(generatedTextBlock.TextAlignment);
+        relativeTimeCell.MaxLines.ShouldBe(generatedTextBlock.MaxLines);
+        relativeTimeCell.LineHeight.ShouldBe(generatedTextBlock.LineHeight);
+        relativeTimeCell.LineSpacing.ShouldBe(generatedTextBlock.LineSpacing);
+
+        var generatedCell = generatedTextBlock.GetVisualAncestors().OfType<DataGridCell>().Single();
+        var relativeTimeDataGridCell = relativeTimeCell.GetVisualAncestors().OfType<DataGridCell>().Single();
+        relativeTimeDataGridCell.Padding.ShouldBe(generatedCell.Padding);
+        relativeTimeDataGridCell.Margin.ShouldBe(generatedCell.Margin);
+        relativeTimeDataGridCell.HorizontalContentAlignment.ShouldBe(generatedCell.HorizontalContentAlignment);
+        relativeTimeDataGridCell.VerticalContentAlignment.ShouldBe(generatedCell.VerticalContentAlignment);
     }
 
     [AvaloniaFact(DisplayName = "Mutable sort updates keep the resource list live")]
@@ -2405,6 +2479,67 @@ public class ResourceListViewModelTests
 
         vm.SortingModel.Descriptors.Count.ShouldBe(1);
         vm.SortingModel.Descriptors[0].Direction.ShouldBe(ListSortDirection.Ascending);
+    }
+
+    [AvaloniaFact(DisplayName = "Sorting events refreshes virtualized time cells")]
+    public async Task sorting_events_refreshes_virtualized_time_cells()
+    {
+        using var window = Application.Current.CreateTestWindow();
+        var cluster = await Application.Current.CreateClusterAsync();
+        var vm = Application.Current.GetRequiredTestService<ResourceListViewModel<Corev1Event>>();
+        vm.Initialize(cluster);
+
+        var view = Application.Current.GetRequiredTestService<ResourceListView>();
+        view.DataContext = vm;
+        window.Content = view;
+        window.Show();
+
+        await WaitForAsync(() => view.FindControl<DataGrid>("PART_Grid")?.Columns.Count > 0);
+
+        var now = DateTime.UtcNow;
+        var events = Enumerable.Range(0, 100)
+            .Select(index => Event(
+                "ns",
+                $"event-{index:D3}",
+                index < 50 ? now.AddMinutes(-1) : now.AddYears(-10)))
+            .ToArray();
+        cluster.Runtime.GetResourceSourceCache<Corev1Event>().Edit(updater => updater.AddOrUpdate(events));
+
+        var grid = view.FindControl<DataGrid>("PART_Grid").ShouldNotBeNull();
+        await WaitForAsync(() => vm.View.Count == 100 && GetAllRows(grid).Any(row => row.IsVisible));
+
+        var ageColumn = grid.Columns.Single(column =>
+            string.Equals(column.ColumnKey?.ToString(), "age", StringComparison.Ordinal));
+        var lastSeenColumn = grid.Columns.Single(column =>
+            string.Equals(column.ColumnKey?.ToString(), "last-seen", StringComparison.Ordinal));
+
+        using var adapter = vm.SortingAdapterFactory.Create(grid, vm.SortingModel);
+        adapter.AttachView(grid.CollectionView);
+        adapter.HandleHeaderClick(ageColumn, KeyModifiers.None);
+
+        await WaitForAsync(() => ((Corev1Event)vm.View[0]).Name() == "event-050");
+        Dispatcher.UIThread.RunJobs();
+
+        var visibleRows = GetAllRows(grid)
+            .Where(row => row.IsVisible)
+            .Select(row =>
+            {
+                var resource = row.DataContext.ShouldBeOfType<Corev1Event>();
+                return (
+                    resource,
+                    LastSeen: GetCellText(grid, row, lastSeenColumn.DisplayIndex),
+                    Age: GetCellText(grid, row, ageColumn.DisplayIndex));
+        })
+            .ToArray();
+
+        visibleRows.ShouldNotBeEmpty();
+        foreach (var row in visibleRows)
+        {
+            row.resource.Name().ShouldNotBeNull();
+            row.resource.Name()!.CompareTo("event-050", StringComparison.Ordinal).ShouldBeGreaterThanOrEqualTo(0);
+            row.LastSeen.ShouldStartWith("10y");
+            row.Age.ShouldStartWith("10y");
+        }
     }
 
     [AvaloniaFact(DisplayName = "Sorting a large pod list updates the first rendered rows")]

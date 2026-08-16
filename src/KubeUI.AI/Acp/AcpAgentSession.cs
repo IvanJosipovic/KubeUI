@@ -14,6 +14,7 @@ internal sealed class AcpAgentSession : IAgentSession
     private readonly Connection _connection;
     private readonly Channel<AgentEvent> _events;
     private readonly IAcpProcess? _diagnosticProcess;
+    private readonly IDisposable? _client;
     private readonly Action? _onDispose;
     private bool _disposed;
 
@@ -24,6 +25,7 @@ internal sealed class AcpAgentSession : IAgentSession
         Channel<AgentEvent> events,
         AgentContext? context = null,
         IAcpProcess? diagnosticProcess = null,
+        IDisposable? client = null,
         Action? onDispose = null)
     {
         _id = id;
@@ -32,6 +34,7 @@ internal sealed class AcpAgentSession : IAgentSession
         _connection = connection;
         _events = events;
         _diagnosticProcess = diagnosticProcess;
+        _client = client;
         _onDispose = onDispose;
         if (_diagnosticProcess is not null)
             _diagnosticProcess.ErrorReceived += DiagnosticProcessOnError;
@@ -89,6 +92,7 @@ internal sealed class AcpAgentSession : IAgentSession
         using var activity = AgentActivitySource.Source.StartActivity("ai.agent.stop");
         activity?.SetTag("agent.protocol", "acp");
         _connection.Dispose();
+        _client?.Dispose();
         if (_diagnosticProcess is not null)
             await _diagnosticProcess.DisposeAsync().ConfigureAwait(false);
         _events.Writer.TryComplete();

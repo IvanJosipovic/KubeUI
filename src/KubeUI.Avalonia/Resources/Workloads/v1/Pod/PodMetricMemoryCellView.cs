@@ -1,86 +1,26 @@
 using Humanizer;
 using k8s.Models;
-using KubeUI.Avalonia.Features.Clusters.Workspace;
-using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Infrastructure.Threading;
 
 namespace KubeUI.Avalonia.Resources.Workloads.v1.Pod;
 
-public partial class PodMetricMemoryCellView : ViewBase<V1Pod>, IInitializeCluster
+public sealed class PodMetricMemoryCellView : PodMetricCellBase
 {
-    public ClusterWorkspace? Cluster { get; private set; }
-
-    private readonly IUiRefreshClock _refreshClock;
-    private IDisposable? _refreshSubscription;
-
-    [GeneratedDirectProperty]
-    public partial string PrettyString { get; set; } = string.Empty;
-
     public PodMetricMemoryCellView(IUiRefreshClock refreshClock)
+        : base(refreshClock)
     {
-        _refreshClock = refreshClock;
     }
 
-    protected override object Build(V1Pod vm)
+    protected override string FormatMetric(PodMetrics metric)
     {
-        ArgumentNullException.ThrowIfNull(vm);
-
-        return new TextBlock()
-            .Name("CellTextBlock")
-            .Margin(12, 0, 12, 0)
-            .HorizontalAlignment(HorizontalAlignment.Left)
-            .VerticalAlignment(VerticalAlignment.Center)
-            .Text(this, x => x.PrettyString)
-            .ToolTip_Tip(this, x => x.PrettyString);
-    }
-
-    protected override void OnDataContextChanged(EventArgs e)
-    {
-        base.OnDataContextChanged(e);
-        Update();
-    }
-
-    private void Update()
-    {
-        if (Cluster == null || DataContext is not V1Pod pod)
-        {
-            return;
-        }
-
-        var metric = Cluster.Runtime.PodMetrics.FirstOrDefault(m =>
-            m.Name() == pod.Name() && m.Namespace() == pod.Namespace());
-
-        if (metric == null)
-        {
-            return;
-        }
-
         try
         {
-            var usageBytes = metric.Containers.Sum(c => c.Usage["memory"].ToInt64());
-            PrettyString = usageBytes.Bytes().Humanize();
+            var usageBytes = metric.Containers.Sum(container => container.Usage["memory"].ToInt64());
+            return usageBytes.Bytes().Humanize();
         }
         catch
         {
-            PrettyString = string.Empty;
+            return string.Empty;
         }
-    }
-
-    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
-    {
-        base.OnAttachedToVisualTree(e);
-        _refreshSubscription = _refreshClock.Subscribe(Update);
-    }
-
-    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
-    {
-        base.OnDetachedFromVisualTree(e);
-        _refreshSubscription?.Dispose();
-        _refreshSubscription = null;
-    }
-
-    public void Initialize(ClusterWorkspace cluster)
-    {
-        Cluster = cluster;
     }
 }

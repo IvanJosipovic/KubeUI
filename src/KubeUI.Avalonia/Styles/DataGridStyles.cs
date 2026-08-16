@@ -1,4 +1,5 @@
 using Avalonia.Markup.Xaml.MarkupExtensions;
+using LiveChartsCore.Measure;
 using AvaloniaStyles = Avalonia.Styling.Styles;
 using NumericUpDown = Ursa.Controls.NumericUpDown;
 
@@ -22,7 +23,12 @@ internal static class DataGridStyles
 
         styles.Add(new Style<TextBlock>(x => x.OfType<DataGrid>().Descendant().Name("CellTextBlock"))
             .MaxLines(1)
-            .FontSize(new DynamicResourceExtension(Typography.AppFontSizeResourceKey)));
+            .FontSize(new DynamicResourceExtension(Typography.AppFontSizeResourceKey))
+            .Setter(
+                ToolTip.TipProperty,
+                CompiledBinding.Create<TextBlock, string>(
+                    x => x.Text,
+                    source: new RelativeSource(RelativeSourceMode.Self))));
 
         styles.Add(new Style<StackPanel>(x => x.OfType<StackPanel>().Class("filter-flyout-root"))
             .MinWidth(296d)

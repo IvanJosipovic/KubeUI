@@ -1,5 +1,14 @@
 <Project>
   <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>preview</LangVersion>
+
+    <EnableAvaloniaXamlCompilation>false</EnableAvaloniaXamlCompilation>
+
+    <WarningsAsErrors>$(WarningsAsErrors);CA1001</WarningsAsErrors>
+
     <AnalysisLevel>latest</AnalysisLevel>
     <AnalysisMode>Recommended</AnalysisMode>
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>

@@ -528,8 +528,6 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                     initializeCluster.Initialize(Cluster);
                 }
 
-                control.DataContext = item;
-
                 return control;
             }
             catch (Exception ex)

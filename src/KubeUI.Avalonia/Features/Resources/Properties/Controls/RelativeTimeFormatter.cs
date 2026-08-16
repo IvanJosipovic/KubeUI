@@ -2,7 +2,7 @@ using k8s.Models;
 
 namespace KubeUI.Avalonia.Features.Resources.Properties.Controls;
 
-internal static class EventTimeFormatter
+internal static class RelativeTimeFormatter
 {
     public static string FormatPrettyAge(DateTime timestampUtc, DateTime utcNow)
     {
@@ -16,7 +16,7 @@ internal static class EventTimeFormatter
 
         if (delta.TotalDays >= 365)
         {
-            return $"{(delta.TotalDays / 365):N0}y";
+            return $"{delta.TotalDays / 365:N0}y";
         }
 
         if (delta.TotalDays >= 1)
