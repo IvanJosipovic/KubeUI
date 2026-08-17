@@ -539,7 +539,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
     {
         if (parameters[0] is V1Pod pod && parameters[1] is V1ContainerPort containerPort)
         {
-            var pf = Cluster.Runtime.AddPodPortForward(pod.Namespace(), pod.Name(), containerPort.ContainerPort);
+            var pf = Cluster.Runtime.AddPodPortForward(pod.Namespace(), pod.Name(), pod.Uid(), containerPort.ContainerPort);
 
             ContentDialogSettings settings = new()
             {

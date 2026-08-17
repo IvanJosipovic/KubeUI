@@ -1,6 +1,5 @@
 using System.Linq.Expressions;
 using k8s.Models;
-using KubeUI.Avalonia.Controls;
 using KubeUI.Kubernetes;
 
 namespace KubeUI.Avalonia.Resources.Workloads.v1.Pod;
@@ -40,9 +39,9 @@ public partial class PortForwarderListView : ViewBase<PortForwarderListViewModel
             ]);
     }
 
-    private static MyDataGridTextColumn CreateColumn<TValue>(Expression<Func<PortForwarder, TValue>> bindingExpression, string header, double width, bool isStar = false)
+    private static DataGridTextColumn CreateColumn<TValue>(Expression<Func<PortForwarder, TValue>> bindingExpression, string header, double width, bool isStar = false)
     {
-        return new MyDataGridTextColumn
+        return new DataGridTextColumn
         {
             Binding = CompiledBinding.Create(bindingExpression),
             Header = header,

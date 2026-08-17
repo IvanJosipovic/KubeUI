@@ -13,9 +13,9 @@ public sealed class ResourceEventsSelectorTests
     {
         var now = new DateTime(2026, 3, 29, 0, 34, 52, DateTimeKind.Utc);
 
-        EventTimeFormatter.FormatPrettyAge(now, now).ShouldBe("0ms");
-        EventTimeFormatter.FormatPrettyAge(now.AddSeconds(-74), now).ShouldBe("1m14s");
-        EventTimeFormatter.FormatPrettyAge(now.AddHours(-2), now).ShouldBe("2h");
+        RelativeTimeFormatter.FormatPrettyAge(now, now).ShouldBe("0ms");
+        RelativeTimeFormatter.FormatPrettyAge(now.AddSeconds(-74), now).ShouldBe("1m14s");
+        RelativeTimeFormatter.FormatPrettyAge(now.AddHours(-2), now).ShouldBe("2h");
     }
 
     [AvaloniaFact]

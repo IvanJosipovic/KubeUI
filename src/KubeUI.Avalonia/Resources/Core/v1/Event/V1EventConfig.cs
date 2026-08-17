@@ -6,12 +6,8 @@ using KubeUI.Avalonia.Styles;
 
 namespace KubeUI.Avalonia.Resources.Core.v1.Event;
 
-public sealed partial class V1EventConfig : ResourceConfigBase<Corev1Event>
+public sealed class V1EventConfig(IServiceProvider serviceProvider) : ResourceConfigBase<Corev1Event>(serviceProvider)
 {
-    public V1EventConfig(IServiceProvider serviceProvider) : base(serviceProvider)
-    {
-    }
-
     public override bool IsNamespaced => true;
     public override bool SeedOnConnect => true;
     public override bool ShowNewResource => false;
@@ -23,14 +19,14 @@ public sealed partial class V1EventConfig : ResourceConfigBase<Corev1Event>
             new ResourceListColumn<Corev1Event, string>()
             {
                 Key = "type",
-                Name = Assets.Resources.V1EventConfig_Type!,
+                Name = Assets.Resources.V1EventConfig_Type,
                 Field = x => x?.Type ?? "",
                 Width = nameof(DataGridLengthUnitType.SizeToCells)
             },
             new ResourceListColumn<Corev1Event, string>()
             {
                 Key = "message",
-                Name = Assets.Resources.V1EventConfig_Message!,
+                Name = Assets.Resources.V1EventConfig_Message,
                 Field = x => x?.Message ?? "",
                 Width = "4*"
             },
@@ -38,30 +34,30 @@ public sealed partial class V1EventConfig : ResourceConfigBase<Corev1Event>
             new ResourceListColumn<Corev1Event, string>()
             {
                 Key = "involved-object",
-                Name = Assets.Resources.V1EventConfig_Involved_Object!,
+                Name = Assets.Resources.V1EventConfig_Involved_Object,
                 Field = x => x?.InvolvedObject?.Name ?? "",
                 Width = "*"
             },
             new ResourceListColumn<Corev1Event, string>()
             {
                 Key = "source",
-                Name = Assets.Resources.V1EventConfig_Source!,
+                Name = Assets.Resources.V1EventConfig_Source,
                 Field = x => x?.Source?.Component ?? (x?.ReportingComponent) ?? "",
                 Width = "*"
             },
             new ResourceListColumn<Corev1Event, int>()
             {
                 Key = "count",
-                Name = Assets.Resources.V1EventConfig_Count!,
+                Name = Assets.Resources.V1EventConfig_Count,
                 Field = x => x.Count ?? 0,
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },
             new ResourceListColumn<Corev1Event, DateTime?>()
             {
                 Key = "last-seen",
-                Name = Assets.Resources.V1EventConfig_Last_Seen!,
-                CustomControl = typeof(EventLastSeenCellView),
-                Field = x => EventTimeFormatter.ResolveTimestamp(x),
+                Name = Assets.Resources.V1EventConfig_Last_Seen,
+                CustomControl = typeof(EventLastSeenCell),
+                Field = x => RelativeTimeFormatter.ResolveTimestamp(x),
                 Sort = SortDirection.Descending,
                 Width = "80"
             },
@@ -85,5 +81,4 @@ public sealed partial class V1EventConfig : ResourceConfigBase<Corev1Event>
                     return ApplicationBrushResources.GetBrush("SystemBaseHighColor");
                 })))
     ];
-
 }

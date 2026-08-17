@@ -14,7 +14,6 @@ using k8s.Models;
 using KubernetesClient.Informer.Client;
 using KubernetesCRDModelGen;
 using KubeUI.Kubernetes.Client;
-using Mapster;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Http.Resilience;
 using Polly;
@@ -37,6 +36,8 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
 
     private IServiceProvider _serviceProvider;
 
+    private IThreadDispatcher _dispatcher;
+
     public V2beta1APIGroupDiscoveryList NativeAPIGroupDiscoveryList { get; private set; }
 
     public V2beta1APIGroupDiscoveryList APIGroupDiscoveryList { get; private set; }
@@ -57,6 +58,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
     private readonly ConcurrentDictionary<string, string> _customResourceDefinitionSignatures = new(StringComparer.Ordinal);
     private CancellationTokenSource? _resourceInformerCancellationTokenSource = new();
     private ConcurrentBag<Task> _resourceInformerTasks = [];
+    private IDisposable? _namespaceSubscription;
 
     public ConcurrentDictionary<GroupApiVersionKind, object> Objects { get; } = [];
 
@@ -102,13 +104,14 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
     /// <summary>
     /// Initializes a cluster runtime and its model catalog.
     /// </summary>
-    /// <param name="logger">The cluster logger.</param>
-    /// <param name="loggerFactory">The logger factory used by resource informers.</param>
-    /// <param name="modelCatalog">The model catalog owned by this cluster.</param>
-    /// <param name="generator">The custom-resource model generator.</param>
-    /// <param name="settings">The cluster settings store.</param>
-    /// <param name="serviceProvider">The application service provider.</param>
-    public Cluster(ILogger<Cluster> logger, ILoggerFactory loggerFactory, ClusterModelCatalog modelCatalog, IGenerator generator, IClusterSettingsStore settings, IServiceProvider serviceProvider)
+    /// <param name="logger">Cluster logger.</param>
+    /// <param name="loggerFactory">Logger factory used by resource informers.</param>
+    /// <param name="modelCatalog">Model catalog owned by this cluster.</param>
+    /// <param name="generator">Custom-resource model generator.</param>
+    /// <param name="settings">Cluster settings store.</param>
+    /// <param name="serviceProvider">Application service provider.</param>
+    /// <param name="dispatcher">Dispatcher used for UI-bound observable updates.</param>
+    public Cluster(ILogger<Cluster> logger, ILoggerFactory loggerFactory, ClusterModelCatalog modelCatalog, IGenerator generator, IClusterSettingsStore settings, IServiceProvider serviceProvider, IThreadDispatcher dispatcher)
     {
         _loggerFactory = loggerFactory;
         _logger = logger;
@@ -119,6 +122,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
 
         _settings = settings;
         _serviceProvider = serviceProvider;
+        _dispatcher = dispatcher;
         _customResourceDefinitionTask = ProcessCustomResourceDefinitionQueueAsync();
     }
 
@@ -131,6 +135,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
 
         _customResourceDefinitionQueue.Writer.TryComplete();
         _customResourceDefinitionCancellationTokenSource.Cancel();
+        StopNamespaceSubscription();
         await StopResourceInformersAsync().ConfigureAwait(false);
         _connectionLimiter.Dispose();
 
@@ -233,16 +238,19 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
 
                         foreach (var item in namespaces)
                         {
-                            namespaceCache.AddOrUpdate(new V1Namespace() { Metadata = new() { Name = item } });
+                            namespaceCache.AddOrUpdate(new V1Namespace() { Metadata = new() { Name = item, Uid = item } });
                         }
                     }
 
-                    namespaceCache
-                    .Connect()
-                    .SortAndBind(out var filteredObjects, SortExpressionComparer<V1Namespace>.Ascending(p => p.Name()))
-                    .Subscribe((_) => { }, (y) => _logger.LogError(y, "Error Namespace Observable"));
+                    StopNamespaceSubscription();
+                    _namespaceSubscription = namespaceCache
+                        .Connect()
+                        .Sort(SortExpressionComparer<V1Namespace>.Ascending(p => p.Name()))
+                        .ObserveOn(_dispatcher.Scheduler)
+                        .Bind(out var filteredObjects)
+                        .Subscribe((_) => { }, (y) => _logger.LogError(y, "Error Namespace Observable"));
 
-                    Namespaces ??= filteredObjects;
+                    Namespaces = filteredObjects;
 
                     Connected = true;
                     Status = ClusterStatus.Connected;
@@ -278,6 +286,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
         {
             StopMetrics();
             StopPortForwarders();
+            StopNamespaceSubscription();
 
             await StopResourceInformersAsync().ConfigureAwait(false);
             ClearDynamicCustomResourceDefinitions();
@@ -309,7 +318,8 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
         var type = typeof(T);
         var kind = GroupApiVersionKind.From<T>();
         var container = (ContainerClass<T>)Objects.GetOrAdd(kind, _ => new ContainerClass<T>());
-        var seedTask = container.GetOrCreateSeedTask(() => SeedResourceCoreAsync<T>());
+        var seedTask = container.GetOrCreateSeedTask(() =>
+            Task.Run(() => SeedResourceCoreAsync<T>()));
 
         _logger.LogDebug("Seed requested for {type}.", type);
 
@@ -392,7 +402,6 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
             ResourceInformerCallbackGuard.Execute(_logger, eventType, kind, item, () =>
             {
                 var items = GetResourceSourceCache<T>();
-
                 switch (eventType)
                 {
                     case WatchEventType.Added:
@@ -407,20 +416,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
                         }
                         break;
                     case WatchEventType.Modified:
-                        items.Edit(o =>
-                        {
-                            var key = o.GetKey(item);
-                            var original = o.Lookup(key);
-                            if (original.HasValue)
-                            {
-                                item.Adapt(original.Value);
-                                o.Refresh(key);
-                            }
-                            else
-                            {
-                                o.AddOrUpdate(item);
-                            }
-                        });
+                        items.AddOrUpdate(item);
 
                         if (item is V1CustomResourceDefinition modifiedCrd)
                         {
@@ -651,7 +647,9 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
 
     public T? GetResource<T>(string? @namespace, string name) where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
-        return GetResourceSourceCache<T>().Lookup(@namespace + "/" + name).ValueOrDefault();
+        return GetResourceSourceCache<T>().Items.FirstOrDefault(item =>
+            string.Equals(item.Namespace(), @namespace, StringComparison.Ordinal)
+            && string.Equals(item.Name(), name, StringComparison.Ordinal));
     }
 
     public IReadOnlyList<T> GetResourceList<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
@@ -1047,6 +1045,11 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
         IsMetricsAvailable = false;
     }
 
+    private void StopNamespaceSubscription()
+    {
+        Interlocked.Exchange(ref _namespaceSubscription, null)?.Dispose();
+    }
+
     private async Task StopResourceInformersAsync()
     {
         var cancellationTokenSource = Interlocked.Exchange(ref _resourceInformerCancellationTokenSource, null);
@@ -1150,7 +1153,13 @@ public partial class ContainerClass<T> : ObservableObject, IClearableResourceCon
 
     public bool IsSeeded => InformerCount > 0;
 
-    public ISourceCache<T, string> Items { get; } = new SourceCache<T, string>(x => x.Namespace() + "/" + x.Name());
+    public ISourceCache<T, string> Items { get; } = new SourceCache<T, string>(GetResourceCacheKey);
+
+    private static string GetResourceCacheKey(T resource)
+    {
+        return resource.Uid() ?? throw new InvalidOperationException(
+            $"Resource {typeof(T).Name} '{resource.Namespace()}/{resource.Name()}' has no metadata UID.");
+    }
 
     public IObservable<ResourceChange> ConnectChanges(GroupApiVersionKind kind)
     {

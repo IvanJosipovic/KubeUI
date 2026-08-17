@@ -44,7 +44,7 @@ public sealed class ClusterCrdModelCatalog
 
         lock (_gate)
         {
-            _types.TryGetValue(key, out Type? previousType);
+            _types.TryGetValue(key, out var previousType);
             if (previousType != null)
             {
                 RemoveAssemblyUnsafe(previousType.Assembly);
@@ -52,7 +52,7 @@ public sealed class ClusterCrdModelCatalog
 
             RemoveAssemblyWithSameIdentityUnsafe(assembly);
             AddAssemblyUnsafe(assembly, xmlDocument, unloadHandle);
-            _types.TryGetValue(key, out Type? currentType);
+            _types.TryGetValue(key, out var currentType);
             return (previousType, currentType);
         }
     }
@@ -63,7 +63,7 @@ public sealed class ClusterCrdModelCatalog
 
         lock (_gate)
         {
-            if (!_types.TryGetValue(key, out Type? existingType))
+            if (!_types.TryGetValue(key, out var existingType))
             {
                 return null;
             }
@@ -89,7 +89,7 @@ public sealed class ClusterCrdModelCatalog
 
     public Type? GetResourceType(GroupApiVersionKind key)
     {
-        _types.TryGetValue(key, out Type? value);
+        _types.TryGetValue(key, out var value);
         return value;
     }
 
@@ -159,7 +159,7 @@ public sealed class ClusterCrdModelCatalog
 
     private void RemoveAssemblyWithSameIdentityUnsafe(Assembly assembly)
     {
-        if (_assembliesByIdentity.TryGetValue(GetAssemblyIdentity(assembly), out Assembly? existingAssembly))
+        if (_assembliesByIdentity.TryGetValue(GetAssemblyIdentity(assembly), out var existingAssembly))
         {
             RemoveAssemblyUnsafe(existingAssembly);
         }
@@ -167,7 +167,7 @@ public sealed class ClusterCrdModelCatalog
 
     private void RemoveAssemblyUnsafe(Assembly assembly)
     {
-        if (!_assemblies.TryGetValue(assembly, out AssemblyEntry? entry))
+        if (!_assemblies.TryGetValue(assembly, out var entry))
         {
             return;
         }
@@ -199,14 +199,14 @@ public sealed class ClusterCrdModelCatalog
     private XmlElement? GetDocumentation(Type? type, char prefix, string name)
     {
         if (type == null
-            || !_assemblies.TryGetValue(type.Assembly, out AssemblyEntry? entry))
+            || !_assemblies.TryGetValue(type.Assembly, out var entry))
         {
             return null;
         }
 
         return entry.Documentation.TryGetValue(
             CreateMemberDocumentationKey(type, prefix, name),
-            out XmlElement? documentation)
+            out var documentation)
             ? documentation
             : null;
     }
@@ -215,7 +215,7 @@ public sealed class ClusterCrdModelCatalog
     {
         var types = new Dictionary<GroupApiVersionKind, Type>();
 
-        foreach (Type item in assembly.GetExportedTypes())
+        foreach (var item in assembly.GetExportedTypes())
         {
             var attributes = item.GetCustomAttributes(typeof(KubernetesEntityAttribute), inherit: true);
             if (attributes.Length == 0)
@@ -239,7 +239,7 @@ public sealed class ClusterCrdModelCatalog
             return documentation;
         }
 
-        foreach (XmlElement member in members.ChildNodes.OfType<XmlElement>())
+        foreach (var member in members.ChildNodes.OfType<XmlElement>())
         {
             var name = member.GetAttribute("name");
             if (!string.IsNullOrEmpty(name))

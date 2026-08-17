@@ -142,7 +142,8 @@ public sealed class ClusterAuthorizationTests
             new ClusterModelCatalog(new KubernetesModelCatalog()),
             new Generator(),
             new KubernetesTestSettingsStore(),
-            new ServiceCollection().BuildServiceProvider());
+            new ServiceCollection().BuildServiceProvider(),
+            new ImmediateThreadDispatcher());
         cluster.Connected = true;
 
         var first = Serialization.KubernetesYaml.Deserialize<V1CustomResourceDefinition>(KubernetesTestData.CustomResourceDefinitionYaml);

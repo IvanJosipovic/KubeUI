@@ -11,14 +11,14 @@ public sealed class VisualizationViewModelTests
     [Fact]
     public void selecting_another_namespace_removes_resources_from_previous_selection()
     {
-        V1Pod podA = Pod("namespace-a", "pod-a");
-        V1Pod podB = Pod("namespace-b", "pod-b");
-        ResourceRelationshipGraph graph = Graph(podA, podB);
+        var podA = Pod("namespace-a", "pod-a");
+        var podB = Pod("namespace-b", "pod-b");
+        var graph = Graph(podA, podB);
 
-        ResourceRelationshipGraph selectedA = VisualizationViewModel.FilterToSelectedNamespaces(
+        var selectedA = VisualizationViewModel.FilterToSelectedNamespaces(
             graph,
             new HashSet<string>(["namespace-a"], StringComparer.Ordinal));
-        ResourceRelationshipGraph selectedB = VisualizationViewModel.FilterToSelectedNamespaces(
+        var selectedB = VisualizationViewModel.FilterToSelectedNamespaces(
             graph,
             new HashSet<string>(["namespace-b"], StringComparer.Ordinal));
 
@@ -29,9 +29,9 @@ public sealed class VisualizationViewModelTests
     [Fact]
     public void clearing_namespace_selection_returns_empty_graph()
     {
-        ResourceRelationshipGraph graph = Graph(Pod("namespace-a", "pod-a"));
+        var graph = Graph(Pod("namespace-a", "pod-a"));
 
-        ResourceRelationshipGraph selected = VisualizationViewModel.FilterToSelectedNamespaces(
+        var selected = VisualizationViewModel.FilterToSelectedNamespaces(
             graph,
             new HashSet<string>(StringComparer.Ordinal));
 
@@ -42,20 +42,20 @@ public sealed class VisualizationViewModelTests
     [Fact]
     public void selecting_namespace_preserves_related_cluster_scoped_resource()
     {
-        V1Pod pod = Pod("namespace-a", "pod-a");
+        var pod = Pod("namespace-a", "pod-a");
         V1Node node = new()
         {
             ApiVersion = "v1",
             Kind = "Node",
             Metadata = new V1ObjectMeta { Name = "node-a", Uid = "node-uid" },
         };
-        ResourceIdentity podIdentity = Identity(pod);
-        ResourceIdentity nodeIdentity = Identity(node);
+        var podIdentity = Identity(pod);
+        var nodeIdentity = Identity(node);
         ResourceRelationshipGraph graph = new(
             [pod, node],
             [new ResourceRelationship(nodeIdentity, podIdentity, ResourceRelationshipKind.Reference)]);
 
-        ResourceRelationshipGraph selected = VisualizationViewModel.FilterToSelectedNamespaces(
+        var selected = VisualizationViewModel.FilterToSelectedNamespaces(
             graph,
             new HashSet<string>(["namespace-a"], StringComparer.Ordinal));
 

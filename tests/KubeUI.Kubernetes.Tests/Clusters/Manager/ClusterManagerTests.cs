@@ -4,6 +4,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Shouldly;
 
+using System.Reactive.Concurrency;
+
 namespace KubeUI.Kubernetes.Tests.Clusters.Manager;
 
 public class ClusterManagerTests
@@ -163,6 +165,8 @@ public class ClusterManagerTests
     private sealed class RecordingThreadDispatcher : IThreadDispatcher
     {
         private readonly Queue<Action> _pending = new();
+
+        public IScheduler Scheduler => ImmediateScheduler.Instance;
 
         public int PendingCount => _pending.Count;
 

@@ -1,6 +1,7 @@
 using System.Collections.Specialized;
 using System.Globalization;
 using System.Reactive;
+using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Text;
@@ -10,6 +11,8 @@ using Avalonia.Controls.DataGridSearching;
 using Avalonia.Controls.DataGridSorting;
 using Avalonia.Controls.Selection;
 using Avalonia.Controls.Templates;
+using Avalonia.Data;
+using Avalonia.Data.Converters;
 using AvaloniaEdit.Utils;
 using DynamicData;
 using DynamicData.Binding;
@@ -72,7 +75,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     private readonly Subject<string> _searchQueryChanges = new();
     private readonly IDisposable _searchQuerySubscription;
 
-    private readonly ISelectionModel _selectionModel = new IdentityPreservingSelectionModel<T>(GetResourceIdentity)
+    private readonly IdentityPreservingSelectionModel<T> _selectionModel = new(GetResourceIdentity)
     {
         SingleSelect = false
     };
@@ -153,7 +156,10 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         _agentContextService = agentContextService;
 
         _searchQuerySubscription = _searchQueryChanges
-            .Throttle(SearchDebounceDelay)
+            .Select(query => string.IsNullOrWhiteSpace(query)
+                ? Observable.Return(query)
+                : Observable.Timer(SearchDebounceDelay).Select(_ => query))
+            .Switch()
             .ObserveOn(AvaloniaScheduler.Instance)
             .Subscribe(Observer.Create<string>(_ => ApplySearch()));
 
@@ -191,16 +197,10 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         GenerateColumnDefinitions();
         SetNamespaceFilter();
 
+        IsLoading = true;
+        LoadError = null;
         var seedTask = Cluster.Runtime.SeedResource<T>();
-
-        if (seedTask.IsCompletedSuccessfully)
-        {
-            LoadError = null;
-            IsLoading = false;
-            BindObjects();
-            return;
-        }
-
+        BindObjects();
         _ = LoadAsync(seedTask);
     }
 
@@ -317,6 +317,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         FilteringModel.FilteringChanged -= FilteringModelOnFilteringChanged;
         SearchModel.SearchChanged -= SearchModelOnSearchChanged;
         _selectionModel.SelectionChanged -= SelectionModelOnSelectionChanged;
+        _selectionModel.Dispose();
     }
 
     private async Task LoadAsync(Task seedTask)
@@ -330,8 +331,6 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
             });
 
             await seedTask.ConfigureAwait(false);
-
-            await Dispatcher.UIThread.InvokeAsync(BindObjects);
         }
         catch (Exception ex)
         {
@@ -360,14 +359,15 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         _sortingAdapterFactory.UpdateComparer(SortingModel.Descriptors);
         sortSubject.OnNext(_sortingAdapterFactory.SortComparer);
         _subscription = Objects.Connect()
+            .ObserveOn(TaskPoolScheduler.Default)
+            .Filter(filterSubject.ObserveOn(TaskPoolScheduler.Default))
+            .Filter(searchSubject.ObserveOn(TaskPoolScheduler.Default))
+            .Sort(sortSubject.ObserveOn(TaskPoolScheduler.Default))
             .ObserveOn(AvaloniaScheduler.Instance)
-            .Filter(filterSubject)
-            .Filter(searchSubject)
-            .SortAndBind(out var view, sortSubject, new()
+            .Bind(out var view, new()
             {
                 ResetOnFirstTimeLoad = true,
-                UseReplaceForUpdates = true,
-                InitialCapacity = Objects.Count
+                UseReplaceForUpdates = true
             })
             .Subscribe(
                 _ => { },
@@ -389,6 +389,8 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         _countSubscription = countObs.Subscribe(Observer.Create<int>(c => ItemCount = c));
 
         _view = view;
+        _selectionModel.SetIdentitySource(view);
+        OnPropertyChanged(nameof(View));
     }
 
     private void SubscribeToSelectedNamespaces()
@@ -454,7 +456,42 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
 
     private DataGridColumnDefinition CreateColumnDefinition(IResourceListColumn columnDefinition, DataGridLengthConverter converter)
     {
-        return CreateTemplateColumnDefinition(columnDefinition, converter);
+        return columnDefinition.CustomControl == null
+            ? CreateTextColumnDefinition(columnDefinition, converter)
+            : CreateTemplateColumnDefinition(columnDefinition, converter);
+    }
+
+    private static DataGridTextColumnDefinition CreateTextColumnDefinition(IResourceListColumn columnDefinition, DataGridLengthConverter converter)
+    {
+        var binding = DataGridBindingDefinition.Create<T, T>(item => item);
+        binding.Mode = BindingMode.OneWay;
+        binding.Converter = new FuncValueConverter<T, string>(item =>
+        {
+            try
+            {
+                return columnDefinition.DisplayValue(item);
+            }
+            catch (Exception)
+            {
+                return string.Empty;
+            }
+        });
+
+        return new DataGridTextColumnDefinition
+        {
+            Header = columnDefinition.Name,
+            ColumnKey = columnDefinition.Key,
+            Tag = columnDefinition,
+            Binding = binding,
+            CanUserSort = true,
+            ShowFilterButton = true,
+            CustomSortComparer = s_noopSortComparer,
+            MinWidth = columnDefinition.MinWidth,
+            Width = ParseWidth(columnDefinition.Width, converter),
+            ValueAccessor = columnDefinition.ValueAccessor,
+            ValueType = columnDefinition.ValueType,
+            Options = BuildColumnOptions(columnDefinition)
+        };
     }
 
     private DataGridColumnDefinition CreateTemplateColumnDefinition(IResourceListColumn columnDefinition, DataGridLengthConverter converter)
@@ -484,24 +521,17 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         {
             try
             {
-                var control = _serviceProvider.GetRequiredService(columnDefinition.CustomControl) as Control;
+                var control = _serviceProvider.GetRequiredService(columnDefinition.CustomControl!) as Control;
 
                 if (control == null)
                 {
-                    throw new InvalidOperationException($"Unable to resolve control type {columnDefinition.CustomControl.FullName}");
-                }
-
-                if (control is IDisplayFunc displayFunc)
-                {
-                    displayFunc.SetDisplayFunc(columnDefinition.DisplayValue);
+                    throw new InvalidOperationException($"Unable to resolve control type {columnDefinition.CustomControl!.FullName}");
                 }
 
                 if (control is IInitializeCluster initializeCluster)
                 {
                     initializeCluster.Initialize(Cluster);
                 }
-
-                control.DataContext = item;
 
                 return control;
             }
@@ -617,7 +647,8 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
 
     private static string GetResourceIdentity(T resource)
     {
-        return string.Create(CultureInfo.InvariantCulture, $"{resource.Namespace()}/{resource.Name()}");
+        return resource.Uid() ?? throw new InvalidOperationException(
+            $"Resource {typeof(T).Name} '{resource.Namespace()}/{resource.Name()}' has no metadata UID.");
     }
 }
 

@@ -42,11 +42,13 @@ public sealed class AcpAgent : IAgent
         activity?.SetTag("agent.id", Id);
         var process = _processFactory?.Invoke() ?? CreateProcess(options);
         Connection? connection = null;
+        DotAcpClient? client = null;
         var events = Channel.CreateUnbounded<AgentEvent>();
         try
         {
             await process.StartAsync(cancellationToken).ConfigureAwait(false);
-                connection = Connection.RunClient(new DotAcpClient(events.Writer, _permissionService, options.TrustedMcpServers), process.Input, process.Output)
+            client = new DotAcpClient(events.Writer, _permissionService, options.TrustedMcpServers);
+            connection = Connection.RunClient(client, process.Input, process.Output)
                 ?? throw new InvalidOperationException("Unable to create ACP connection.");
             ProtocolInitializeResponse initialize;
             using (var initializeActivity = AgentActivitySource.Source.StartActivity("ai.agent.initialize"))
@@ -97,6 +99,7 @@ public sealed class AcpAgent : IAgent
                 events,
                 options.Context,
                 process,
+                client,
                 null);
         }
         catch (Exception exception)
@@ -120,6 +123,7 @@ public sealed class AcpAgent : IAgent
                 }
             }
             await process.DisposeAsync().ConfigureAwait(false);
+            client?.Dispose();
             if (formattedException is not null)
                 throw new InvalidOperationException(formattedException, exception);
             throw;

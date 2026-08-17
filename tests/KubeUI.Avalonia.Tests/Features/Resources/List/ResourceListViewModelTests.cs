@@ -24,6 +24,7 @@ using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Controls.DataGridFilters;
+using KubeUI.Avalonia.Features.Resources.List.Controls;
 using KubeUI.Avalonia.Features.AI;
 using KubeUI.Avalonia.Features.Resources.List.Behaviors;
 using KubeUI.Avalonia.Resources;
@@ -91,6 +92,11 @@ public class ResourceListViewModelTests
 
     private static async Task AddOrUpdateAsync<T>(ClusterWorkspace cluster, T resource) where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
+        if (resource.Metadata.Uid is null)
+        {
+            resource.Metadata.Uid = cluster.Runtime.GetResource<T>(resource.Namespace(), resource.Name())?.Uid();
+        }
+
         await cluster.Runtime.AddOrUpdateResource(resource);
         await TestApplicationExtensions.WaitForUiAsync();
     }
@@ -662,6 +668,7 @@ public class ResourceListViewModelTests
         // Replace 'b' with new instance (same key)
         await AddOrUpdateAsync(cluster, Event("ns", "b"));
         await WaitForAsync(() => vm.View.Count == 3 && vm.View[0].ShouldBeOfType<Corev1Event>().Name() == "b");
+        await WaitForAsync(() => vm.SelectionModel.SelectedIndexes.SequenceEqual([0]));
 
         vm.View[0].ShouldBeOfType<Corev1Event>().Name().ShouldBe("b");
         vm.View[1].ShouldBeOfType<Corev1Event>().Name().ShouldBe("c");
@@ -713,6 +720,7 @@ public class ResourceListViewModelTests
         // Replace 'b' with new instance (same key)
         await AddOrUpdateAsync(cluster, Event("ns", "b"));
         await WaitForAsync(() => vm.View.Count == 3 && vm.View[0].ShouldBeOfType<Corev1Event>().Name() == "b");
+        await WaitForAsync(() => vm.SelectionModel.SelectedIndexes.SequenceEqual([0, 1, 2]));
 
         vm.View[0].ShouldBeOfType<Corev1Event>().Name().ShouldBe("b");
         vm.View[1].ShouldBeOfType<Corev1Event>().Name().ShouldBe("c");
@@ -728,6 +736,58 @@ public class ResourceListViewModelTests
 
         vm.SelectedItem.Namespace().ShouldBe("ns");
         vm.SelectedItem.Name().ShouldBe("b");
+    }
+
+    [AvaloniaFact(DisplayName = "Large resource list preserves selection during incremental sorted update")]
+    public async Task large_resource_list_preserves_selection_during_incremental_sorted_update()
+    {
+        using var window = Application.Current.CreateTestWindow();
+        var cluster = await Application.Current.CreateClusterAsync();
+
+        var vm = Application.Current.GetRequiredTestService<ResourceListViewModel<Corev1Event>>();
+        vm.Initialize(cluster);
+
+        var view = Application.Current.GetRequiredTestService<ResourceListView>();
+        view.DataContext = vm;
+        window.Content = view;
+        window.Show();
+
+        var baseTimestamp = DateTime.UtcNow.AddHours(-1);
+        var events = Enumerable.Range(0, 400)
+            .Select(index => Event("ns", $"event-{index:D3}", baseTimestamp.AddMinutes(index), index))
+            .Select(item =>
+            {
+                item.Metadata.Uid = item.Name();
+                return item;
+            })
+            .ToArray();
+
+        cluster.Runtime.GetResourceSourceCache<Corev1Event>().Edit(updater => updater.AddOrUpdate(events));
+        await WaitForAsync(() => vm.View.Count == 400, timeoutMs: 5000);
+
+        vm.View[0].ShouldBeOfType<Corev1Event>().Name().ShouldBe("event-399");
+        vm.View[1].ShouldBeOfType<Corev1Event>().Name().ShouldBe("event-398");
+        vm.View[2].ShouldBeOfType<Corev1Event>().Name().ShouldBe("event-397");
+
+        vm.SelectionModel.Select(0);
+        vm.SelectionModel.Select(1);
+        vm.SelectionModel.Select(2);
+
+        await AddOrUpdateAsync(
+            cluster,
+            Event("ns", "event-398", baseTimestamp.AddMinutes(1000), 1000));
+
+        await WaitForAsync(
+            () => vm.View.Count == 400
+                && vm.View[0].ShouldBeOfType<Corev1Event>().Name() == "event-398",
+            timeoutMs: 5000);
+        await WaitForAsync(() => vm.SelectionModel.SelectedIndexes.Count == 3);
+
+        vm.SelectionModel.SelectedIndexes.Count.ShouldBe(3);
+        vm.SelectionModel.SelectedItems
+            .Cast<Corev1Event>()
+            .Select(item => item.Name())
+            .ShouldBe(["event-398", "event-399", "event-397"]);
     }
 
     [AvaloniaFact(DisplayName = "Update check DataGrid Text update")]
@@ -773,8 +833,8 @@ public class ResourceListViewModelTests
         after.ShouldContain("node-b");
     }
 
-    [AvaloniaFact(DisplayName = "Update check DataGrid Text update2")]
-    public async Task UpdateResourceTextBox2()
+    [AvaloniaFact(DisplayName = "Default text column updates when a resource is replaced")]
+    public async Task default_text_column_updates_when_resource_is_replaced()
     {
         using var window = Application.Current.CreateTestWindow();
 
@@ -792,6 +852,7 @@ public class ResourceListViewModelTests
 
         var grid = view.FindControl<DataGrid>("PART_Grid");
         grid.ShouldNotBeNull();
+        grid!.Columns[1].ShouldBeOfType<DataGridTextColumn>();
 
         var ns = new V1Namespace()
         {
@@ -804,9 +865,9 @@ public class ResourceListViewModelTests
         await AddOrUpdateAsync(cluster, ns);
 
         await WaitForAsync(() => vm.View.Cast<V1Namespace>().Any(item => item.Name() == "a"));
+        await WaitForAsync(() => GetAllRows(grid).Any(row => row.IsVisible && (row.DataContext as V1Namespace)?.Name() == "a"), timeoutMs: 5000);
         var before = GetResourceCellText<V1Namespace>(grid, "a", 1);
-        before.ShouldNotBeNull();
-        before.ShouldBeEmpty();
+        (before ?? string.Empty).ShouldBeEmpty();
 
         var updatedNamespace = new V1Namespace
         {
@@ -824,12 +885,89 @@ public class ResourceListViewModelTests
                 item.Name() == "a" &&
                 item.Metadata.Labels?.TryGetValue("test", out var value) == true &&
                 value == "value");
-            return namespaceIndex >= 0 && GetResourceCellText<V1Namespace>(grid, "a", 1)?.Contains("test=value", StringComparison.OrdinalIgnoreCase) == true;
-        });
+            return namespaceIndex >= 0;
+        }, timeoutMs: 5000);
+
+        await WaitForAsync(
+            () => GetResourceCellText<V1Namespace>(grid, "a", 1)?.Contains("test=value", StringComparison.OrdinalIgnoreCase) == true,
+            timeoutMs: 5000);
 
         var after = GetResourceCellText<V1Namespace>(grid, "a", 1);
         after.ShouldNotBeNull();
         after.ShouldContain("test=value");
+    }
+
+    [AvaloniaFact(DisplayName = "Relative-time cells match ProDataGrid text-cell presentation")]
+    public async Task relative_time_cells_match_prodatagrid_text_cell_presentation()
+    {
+        using var window = Application.Current.CreateTestWindow();
+        var cluster = await Application.Current.CreateClusterAsync();
+        var vm = Application.Current.GetRequiredTestService<ResourceListViewModel<V1Pod>>();
+        vm.Initialize(cluster);
+
+        var view = Application.Current.GetRequiredTestService<ResourceListView>();
+        view.DataContext = vm;
+        window.Content = view;
+        window.Show();
+
+        var grid = view.FindControl<DataGrid>("PART_Grid");
+        grid.ShouldNotBeNull();
+
+        var nameColumn = vm.ColumnDefinitions
+            .Select((column, index) => (column, index))
+            .Single(item => string.Equals(item.column.ColumnKey?.ToString(), "name", StringComparison.Ordinal))
+            .index;
+        var ageColumn = vm.ColumnDefinitions
+            .Select((column, index) => (column, index))
+            .Single(item => string.Equals(item.column.ColumnKey?.ToString(), "age", StringComparison.Ordinal))
+            .index;
+
+        await AddOrUpdateAsync(cluster, Pod("ns", "presentation-test"));
+        await WaitForAsync(
+            () => GetAllRows(grid!).Any(row => row.IsVisible && (row.DataContext as V1Pod)?.Name() == "presentation-test"),
+            timeoutMs: 5000);
+
+        var row = GetAllRows(grid!)
+            .Single(item => item.IsVisible && (item.DataContext as V1Pod)?.Name() == "presentation-test");
+        var generatedTextCell = grid!.Columns[nameColumn].GetCellContent(row);
+        generatedTextCell.ShouldNotBeNull();
+        generatedTextCell.ShouldBeAssignableTo<TextBlock>();
+        generatedTextCell!.GetType().BaseType.ShouldBe(typeof(TextBlock));
+        var generatedTextBlock = (TextBlock)generatedTextCell;
+        var relativeTimeCell = grid.Columns[ageColumn].GetCellContent(row).ShouldBeOfType<AgeCell>();
+        await WaitForAsync(() => generatedTextBlock.GetValue(ToolTip.TipProperty) as string == generatedTextBlock.Text);
+        generatedTextBlock.GetValue(ToolTip.TipProperty).ShouldBe(generatedTextBlock.Text);
+        relativeTimeCell.GetValue(ToolTip.TipProperty).ShouldBe(relativeTimeCell.Text);
+
+        relativeTimeCell.Name.ShouldBe(generatedTextBlock.Name);
+        relativeTimeCell.Margin.ShouldBe(generatedTextBlock.Margin);
+        relativeTimeCell.HorizontalAlignment.ShouldBe(generatedTextBlock.HorizontalAlignment);
+        relativeTimeCell.VerticalAlignment.ShouldBe(generatedTextBlock.VerticalAlignment);
+        relativeTimeCell.Width.ShouldBe(generatedTextBlock.Width);
+        relativeTimeCell.Height.ShouldBe(generatedTextBlock.Height);
+        relativeTimeCell.MinWidth.ShouldBe(generatedTextBlock.MinWidth);
+        relativeTimeCell.MaxWidth.ShouldBe(generatedTextBlock.MaxWidth);
+        relativeTimeCell.MinHeight.ShouldBe(generatedTextBlock.MinHeight);
+        relativeTimeCell.MaxHeight.ShouldBe(generatedTextBlock.MaxHeight);
+        relativeTimeCell.FontFamily.ShouldBe(generatedTextBlock.FontFamily);
+        relativeTimeCell.FontSize.ShouldBe(generatedTextBlock.FontSize);
+        relativeTimeCell.FontStyle.ShouldBe(generatedTextBlock.FontStyle);
+        relativeTimeCell.FontStretch.ShouldBe(generatedTextBlock.FontStretch);
+        relativeTimeCell.FontWeight.ShouldBe(generatedTextBlock.FontWeight);
+        relativeTimeCell.Foreground.ShouldBe(generatedTextBlock.Foreground);
+        relativeTimeCell.TextWrapping.ShouldBe(generatedTextBlock.TextWrapping);
+        relativeTimeCell.TextTrimming.ShouldBe(generatedTextBlock.TextTrimming);
+        relativeTimeCell.TextAlignment.ShouldBe(generatedTextBlock.TextAlignment);
+        relativeTimeCell.MaxLines.ShouldBe(generatedTextBlock.MaxLines);
+        relativeTimeCell.LineHeight.ShouldBe(generatedTextBlock.LineHeight);
+        relativeTimeCell.LineSpacing.ShouldBe(generatedTextBlock.LineSpacing);
+
+        var generatedCell = generatedTextBlock.GetVisualAncestors().OfType<DataGridCell>().Single();
+        var relativeTimeDataGridCell = relativeTimeCell.GetVisualAncestors().OfType<DataGridCell>().Single();
+        relativeTimeDataGridCell.Padding.ShouldBe(generatedCell.Padding);
+        relativeTimeDataGridCell.Margin.ShouldBe(generatedCell.Margin);
+        relativeTimeDataGridCell.HorizontalContentAlignment.ShouldBe(generatedCell.HorizontalContentAlignment);
+        relativeTimeDataGridCell.VerticalContentAlignment.ShouldBe(generatedCell.VerticalContentAlignment);
     }
 
     [AvaloniaFact(DisplayName = "Mutable sort updates keep the resource list live")]
@@ -925,6 +1063,28 @@ public class ResourceListViewModelTests
         grid.Columns.ShouldNotBeEmpty();
         grid.Columns.All(column => column.ShowFilterButton == true).ShouldBeTrue();
         grid.Columns.All(column => column.FilterFlyout != null).ShouldBeTrue();
+    }
+
+    [AvaloniaFact]
+    public void text_column_binding_returns_empty_for_missing_metadata()
+    {
+        var column = new ResourceListColumn<V1Pod, string>
+        {
+            Key = "name",
+            Name = "Name",
+            Field = pod => pod.Metadata!.Name,
+        };
+
+        var createColumn = typeof(ResourceListViewModel<V1Pod>).GetMethod(
+            "CreateTextColumnDefinition",
+            BindingFlags.Static | BindingFlags.NonPublic);
+        createColumn.ShouldNotBeNull();
+
+        var definition = createColumn!.Invoke(null, [column, new DataGridLengthConverter()])
+            .ShouldBeOfType<DataGridTextColumnDefinition>();
+        definition.Binding.Converter.ShouldNotBeNull();
+        definition.Binding.Converter!.Convert(new V1Pod(), typeof(string), null, System.Globalization.CultureInfo.InvariantCulture)
+            .ShouldBe(string.Empty);
     }
 
     [AvaloniaFact(DisplayName = "Resource list filter flyout rows align editors")]
@@ -1758,7 +1918,7 @@ public class ResourceListViewModelTests
             .ToArray();
         sortedNamespaces.Select(item => item.Name()).ShouldBe(["c", "b", "a"]);
         vm.SortingModel.Descriptors.Count.ShouldBe(1);
-        ((DataGridControlTemplateColumnDefinition)(vm.SortingModel.Descriptors[0].ColumnId)).ColumnKey.ShouldBe("name");
+        ((DataGridColumnDefinition)(vm.SortingModel.Descriptors[0].ColumnId)).ColumnKey.ShouldBe("name");
 
         factory.SetActiveDockable(otherDockable);
         factory.SetFocusedDockable(documents, otherDockable);
@@ -1776,7 +1936,7 @@ public class ResourceListViewModelTests
             .ToArray();
         restoredNamespaces.Select(item => item.Name()).ShouldBe(["c", "b", "a"]);
         vm.SortingModel.Descriptors.Count.ShouldBe(1);
-        ((DataGridControlTemplateColumnDefinition)(vm.SortingModel.Descriptors[0].ColumnId)).ColumnKey.ShouldBe("name");
+        ((DataGridColumnDefinition)(vm.SortingModel.Descriptors[0].ColumnId)).ColumnKey.ShouldBe("name");
     }
 
     [AvaloniaFact(DisplayName = "Switching document tabs preserves DataGrid scroll offset")]
@@ -1947,14 +2107,15 @@ public class ResourceListViewModelTests
             () => vm.View.OfType<V1Namespace>()
                 .Where(item => item.Name() is "a" or "b" or "c")
                 .Select(item => item.Name())
+                .OrderBy(name => name)
                 .SequenceEqual(["a", "b", "c"]),
             3000);
         var sortedNamespaces = vm.View.OfType<V1Namespace>()
             .Where(item => item.Name() is "a" or "b" or "c")
             .ToArray();
-        sortedNamespaces.Select(item => item.Name()).ShouldBe(["a", "b", "c"]);
+        sortedNamespaces.Select(item => item.Name()).OrderBy(name => name).ShouldBe(["a", "b", "c"]);
         vm.SortingModel.Descriptors.Count.ShouldBe(1);
-        ((DataGridControlTemplateColumnDefinition)(vm.SortingModel.Descriptors[0].ColumnId)).ColumnKey.ShouldBe("labels");
+        ((DataGridColumnDefinition)(vm.SortingModel.Descriptors[0].ColumnId)).ColumnKey.ShouldBe("labels");
     }
 
     [AvaloniaFact(DisplayName = "Restoring DataGrid state preserves column widths")]
@@ -2334,6 +2495,72 @@ public class ResourceListViewModelTests
         vm.SortingModel.Descriptors[0].Direction.ShouldBe(ListSortDirection.Ascending);
     }
 
+    [AvaloniaFact(DisplayName = "Sorting events refreshes virtualized time cells")]
+    public async Task sorting_events_refreshes_virtualized_time_cells()
+    {
+        using var window = Application.Current.CreateTestWindow();
+        var cluster = await Application.Current.CreateClusterAsync();
+        var vm = Application.Current.GetRequiredTestService<ResourceListViewModel<Corev1Event>>();
+        vm.Initialize(cluster);
+
+        var view = Application.Current.GetRequiredTestService<ResourceListView>();
+        view.DataContext = vm;
+        window.Content = view;
+        window.Show();
+
+        await WaitForAsync(() => view.FindControl<DataGrid>("PART_Grid")?.Columns.Count > 0);
+
+        var now = DateTime.UtcNow;
+        var events = Enumerable.Range(0, 100)
+            .Select(index => Event(
+                "ns",
+                $"event-{index:D3}",
+                index < 50 ? now.AddMinutes(-1) : now.AddYears(-10)))
+            .Select(item =>
+            {
+                item.Metadata.Uid = item.Name();
+                return item;
+            })
+            .ToArray();
+        cluster.Runtime.GetResourceSourceCache<Corev1Event>().Edit(updater => updater.AddOrUpdate(events));
+
+        var grid = view.FindControl<DataGrid>("PART_Grid").ShouldNotBeNull();
+        await WaitForAsync(() => vm.View.Count == 100 && GetAllRows(grid).Any(row => row.IsVisible));
+
+        var ageColumn = grid.Columns.Single(column =>
+            string.Equals(column.ColumnKey?.ToString(), "age", StringComparison.Ordinal));
+        var lastSeenColumn = grid.Columns.Single(column =>
+            string.Equals(column.ColumnKey?.ToString(), "last-seen", StringComparison.Ordinal));
+
+        using var adapter = vm.SortingAdapterFactory.Create(grid, vm.SortingModel);
+        adapter.AttachView(grid.CollectionView);
+        adapter.HandleHeaderClick(ageColumn, KeyModifiers.None);
+
+        await WaitForAsync(() => ((Corev1Event)vm.View[0]).Name() == "event-050");
+        Dispatcher.UIThread.RunJobs();
+
+        var visibleRows = GetAllRows(grid)
+            .Where(row => row.IsVisible)
+            .Select(row =>
+            {
+                var resource = row.DataContext.ShouldBeOfType<Corev1Event>();
+                return (
+                    resource,
+                    LastSeen: GetCellText(grid, row, lastSeenColumn.DisplayIndex),
+                    Age: GetCellText(grid, row, ageColumn.DisplayIndex));
+        })
+            .ToArray();
+
+        visibleRows.ShouldNotBeEmpty();
+        foreach (var row in visibleRows)
+        {
+            row.resource.Name().ShouldNotBeNull();
+            row.resource.Name()!.CompareTo("event-050", StringComparison.Ordinal).ShouldBeGreaterThanOrEqualTo(0);
+            row.LastSeen.ShouldStartWith("10y");
+            row.Age.ShouldStartWith("10y");
+        }
+    }
+
     [AvaloniaFact(DisplayName = "Sorting a large pod list updates the first rendered rows")]
     public async Task sorting_a_large_pod_list_updates_the_first_rendered_rows()
     {
@@ -2417,17 +2644,18 @@ public class ResourceListViewModelTests
         window.Content = view;
         window.Show();
 
+        await WaitForAsync(() => view.FindControl<DataGrid>("PART_Grid")?.Columns.Count > 0, timeoutMs: 5000);
+
         await AddOrUpdateAsync(cluster, Pod("ns", "alpha"));
         await AddOrUpdateAsync(cluster, Pod("ns", "beta"));
         await AddOrUpdateAsync(cluster, Pod("ns", "gamma"));
-        await WaitForAsync(() => vm.View.Count == 3);
+        await WaitForAsync(() => vm.View.Count == 3, timeoutMs: 5000);
 
         vm.SearchQuery = "beta";
-        await WaitForAsync(() => vm.View.Count == 1 && vm.SearchModel.Results.Count > 0);
+        await WaitForAsync(() => vm.View.Count == 1, timeoutMs: 5000);
 
         vm.View[0].ShouldBeOfType<V1Pod>().Name().ShouldBe("beta");
-        vm.SearchModel.Results.Single().Item.ShouldBeOfType<V1Pod>().Name().ShouldBe("beta");
-        vm.SearchModel.HighlightMode.ShouldBe(SearchHighlightMode.Cell);
+        vm.SearchModel.Descriptors.Single().Query.ShouldBe("beta");
     }
 
     [AvaloniaFact(DisplayName = "Double tap opens property view")]

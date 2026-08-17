@@ -1,8 +1,0 @@
-<Project>
-  <PropertyGroup>
-    <!-- Disable Avalonia.BuildServices' AvaloniaStats task for all projects.
-         Due to build errors, System.UnauthorizedAccessException: Access to the path 'C:\Users\username\AppData\Local\AvaloniaUI\BuildServices\buildtasks.log' is denied.
-    -->
-    <UsedAvaloniaProducts></UsedAvaloniaProducts>
-  </PropertyGroup>
-</Project>

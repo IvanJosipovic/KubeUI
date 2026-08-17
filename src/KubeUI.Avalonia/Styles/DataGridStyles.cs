@@ -1,4 +1,6 @@
 using Avalonia.Markup.Xaml.MarkupExtensions;
+using Avalonia.Data;
+using LiveChartsCore.Measure;
 using AvaloniaStyles = Avalonia.Styling.Styles;
 using NumericUpDown = Ursa.Controls.NumericUpDown;
 
@@ -11,6 +13,7 @@ internal static class DataGridStyles
         ArgumentNullException.ThrowIfNull(styles);
 
         styles.Resources["DataGridFilterFlyoutPresenterTheme"] = CreateFilterFlyoutPresenterTheme();
+        styles.Resources["DataGridCellTextBlockTheme"] = CreateCellTextBlockTheme();
 
         styles.Add(new Style<DataGrid>()
             .RowHeight(new DynamicResourceExtension("DataGridRowHeight"))
@@ -78,6 +81,23 @@ internal static class DataGridStyles
         theme.Setters.Add(new Setter(Layoutable.HorizontalAlignmentProperty, HorizontalAlignment.Left));
         theme.Setters.Add(new Setter(Layoutable.VerticalAlignmentProperty, VerticalAlignment.Top));
 
+        return theme;
+    }
+
+    private static ControlTheme CreateCellTextBlockTheme()
+    {
+        var theme = new ControlTheme(typeof(TextBlock));
+        theme.Setters.Add(new Setter(Layoutable.MarginProperty, new Thickness(12, 0, 12, 0)));
+        theme.Setters.Add(new Setter(Layoutable.VerticalAlignmentProperty, VerticalAlignment.Center));
+        theme.Setters.Add(new Setter(TextBlock.MaxLinesProperty, 1));
+        theme.Setters.Add(new Setter(
+            ToolTip.TipProperty,
+            // DataGrid applies this through ControlTheme; compiled self bindings do not resolve there.
+            new Binding
+            {
+                Path = nameof(TextBlock.Text),
+                RelativeSource = new RelativeSource(RelativeSourceMode.Self)
+            }));
         return theme;
     }
 }

@@ -93,7 +93,8 @@ public sealed class ResourceFeatureConfigTests
 
         var lastSeenColumn = config.Columns().Single(x => x.Name == Assets.Resources.V1EventConfig_Last_Seen);
 
-        lastSeenColumn.CustomControl.Name.ShouldBe("EventLastSeenCellView");
+        lastSeenColumn.CustomControl.ShouldNotBeNull();
+        lastSeenColumn.CustomControl!.Name.ShouldBe("EventLastSeenCell");
     }
 
     [AvaloniaFact]

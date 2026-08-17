@@ -1,9 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-    <LangVersion>preview</LangVersion>
     <DebugType>embedded</DebugType>
   </PropertyGroup>
 
@@ -26,15 +23,14 @@
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" PrivateAssets="all" />
     <PackageReference Include="Azure.Identity" Version="1.21.0" />
     <PackageReference Include="Azure.ResourceManager" Version="1.14.0" />
-    <PackageReference Include="Azure.ResourceManager.ContainerService" Version="1.5.0" />
+    <PackageReference Include="Azure.ResourceManager.ContainerService" Version="1.6.0" />
     <PackageReference Include="DynamicData" Version="9.4.33" />
     <PackageReference Include="Humanizer.Core" Version="3.0.10" />
     <PackageReference Include="KubernetesClient" Version="19.0.2" />
     <PackageReference Include="KubernetesClient.Informer" Version="1.2.0" />
-    <PackageReference Include="KubernetesCRDModelGen" Version="1.6.12" />
-    <PackageReference Include="Mapster" Version="7.4.0" />
-    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.10" />
-    <PackageReference Include="Microsoft.Extensions.Http.Resilience" Version="10.8.0" />
+    <PackageReference Include="KubernetesCRDModelGen" Version="1.6.13" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.11" />
+    <PackageReference Include="Microsoft.Extensions.Http.Resilience" Version="10.9.0" />
     <PackageReference Include="Swordfish.NET.CollectionsV3" Version="3.3.16" />
     <PackageReference Include="YamlDotNet.System.Text.Json" Version="1.8.0" />
   </ItemGroup>

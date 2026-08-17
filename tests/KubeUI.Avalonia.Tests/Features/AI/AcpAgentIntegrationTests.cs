@@ -28,7 +28,7 @@ public sealed class AcpAgentIntegrationTests
         AcpErrorFormatter.Format(exception).ShouldBe(
             "ACP error -32602: Invalid params. Details: {\"type\":{\"errors\":[\"Expected http\"]}}");
 
-        var remoteException = new StreamJsonRpc.RemoteInvocationException(
+        var remoteException = new RemoteInvocationException(
             "Invalid params",
             -32602,
             new { headers = new { errors = new[] { "Expected object" } } });

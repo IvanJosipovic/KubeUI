@@ -150,6 +150,16 @@ public sealed class PortForwarderTests
         await using var harness = await new TestClusterGenerator().CreateAsync(new TestClusterConfig(), TestContext.Current.CancellationToken);
         var cluster = harness.Cluster;
         await cluster.Connect();
+        await cluster.SeedResource<V1Pod>(true);
+        cluster.GetResourceSourceCache<V1Pod>().Edit(updater => updater.AddOrUpdate(new V1Pod
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "pod-1",
+                NamespaceProperty = "default",
+                Uid = "pod-uid",
+            },
+        }));
         using var stream = new CaptureStream();
         var session = new Mock<IPortForwardSession>(MockBehavior.Strict);
         session.SetupGet(x => x.Stream).Returns(stream);
@@ -159,7 +169,7 @@ public sealed class PortForwarderTests
         factory.Setup(x => x.CreateAsync("pod-1", "default", 8080)).ReturnsAsync(session.Object);
 
         using var sut = new PortForwarder(cluster, "default", localPort: 0, sessionFactory: factory.Object);
-        sut.SetPod("pod-1", 8080);
+        sut.SetPod("pod-1", "pod-uid", 8080);
         sut.Start();
 
         var payload = Encoding.UTF8.GetBytes("ping");
@@ -177,6 +187,46 @@ public sealed class PortForwarderTests
         factory.Verify(x => x.CreateAsync("pod-1", "default", 8080), Times.Once);
         session.VerifyGet(x => x.Stream, Times.AtLeastOnce);
         stream.WrittenBytes.ShouldBe(payload);
+    }
+
+    [Fact]
+    public async Task Pod_forward_resolves_current_pod_name_by_uid()
+    {
+        await using var harness = await new TestClusterGenerator().CreateAsync(new TestClusterConfig(), TestContext.Current.CancellationToken);
+        var cluster = harness.Cluster;
+        await cluster.Connect();
+        await cluster.SeedResource<V1Pod>(true);
+
+        cluster.GetResourceSourceCache<V1Pod>().Edit(updater => updater.AddOrUpdate(new V1Pod
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "current-pod-name",
+                NamespaceProperty = "default",
+                Uid = "pod-uid",
+            },
+        }));
+
+        using var stream = new CaptureStream();
+        var session = new Mock<IPortForwardSession>(MockBehavior.Strict);
+        session.SetupGet(x => x.Stream).Returns(stream);
+        session.Setup(x => x.Dispose());
+
+        var factory = new Mock<IPortForwardSessionFactory>(MockBehavior.Strict);
+        factory.Setup(x => x.CreateAsync("current-pod-name", "default", 8080)).ReturnsAsync(session.Object);
+
+        using var sut = new PortForwarder(cluster, "default", localPort: 0, sessionFactory: factory.Object);
+        sut.SetPod("stale-pod-name", "pod-uid", 8080);
+        sut.Start();
+
+        using (var client = new TcpClient())
+        {
+            await client.ConnectAsync(IPAddress.Loopback, sut.LocalPort, TestContext.Current.CancellationToken);
+            client.Client.Shutdown(SocketShutdown.Send);
+        }
+
+        await WaitForAsync(() => sut.Connections == 0, cancellationToken: TestContext.Current.CancellationToken);
+        factory.Verify(x => x.CreateAsync("current-pod-name", "default", 8080), Times.Once);
     }
 
     [Theory, KubernetesBackendData]
@@ -199,9 +249,10 @@ public sealed class PortForwarderTests
             "default",
             "prometheus",
             cancellationToken: TestContext.Current.CancellationToken);
+        var serviceUid = cluster.GetResource<V1Service>("default", "prometheus")!.Uid();
 
         using var sut = new PortForwarder(cluster, "default");
-        sut.SetService("prometheus", 9090);
+        sut.SetService("prometheus", serviceUid!, 9090);
         sut.Start();
 
         await ConnectAsync(sut.LocalPort, TestContext.Current.CancellationToken);
@@ -252,9 +303,10 @@ public sealed class PortForwarderTests
             "default",
             "prometheus-slice",
             cancellationToken: TestContext.Current.CancellationToken);
+        var serviceUid = cluster.GetResource<V1Service>("default", "prometheus")!.Uid();
 
         using var sut = new PortForwarder(cluster, "default");
-        sut.SetService("prometheus", 9090);
+        sut.SetService("prometheus", serviceUid!, 9090);
         sut.Start();
 
         await ConnectAsync(sut.LocalPort, TestContext.Current.CancellationToken);
@@ -313,6 +365,7 @@ public sealed class PortForwarderTests
                     {
                         Kind = "Pod",
                         Name = "prometheus-0",
+                        Uid = "prometheus-0-uid",
                     },
                 },
             ],
@@ -322,9 +375,10 @@ public sealed class PortForwarderTests
             "default",
             "prometheus-slice",
             cancellationToken: TestContext.Current.CancellationToken);
+        var serviceUid = cluster.GetResource<V1Service>("default", "prometheus")!.Uid();
 
         using var sut = new PortForwarder(cluster, "default");
-        sut.SetService("prometheus", 9090);
+        sut.SetService("prometheus", serviceUid!, 9090);
         sut.Start();
 
         await ConnectAsync(sut.LocalPort, TestContext.Current.CancellationToken);

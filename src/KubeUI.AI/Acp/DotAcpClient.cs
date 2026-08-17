@@ -7,7 +7,7 @@ using KubeUI.AI.Permissions;
 namespace KubeUI.AI.Acp;
 
 // dotacp owns protocol dispatch. This callback is the sole protocol-to-domain seam.
-internal sealed class DotAcpClient : IAcpClient
+internal sealed class DotAcpClient : IAcpClient, IDisposable
 {
     private readonly ChannelWriter<AgentEvent> _events;
     private readonly IAgentPermissionService _permissionService;
@@ -88,4 +88,9 @@ internal sealed class DotAcpClient : IAcpClient
 
     public Task ExtNotificationAsync(string method, object notification, CancellationToken cancellationToken = default)
         => Task.CompletedTask;
+
+    public void Dispose()
+    {
+        _terminalHandler.Dispose();
+    }
 }

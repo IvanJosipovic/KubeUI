@@ -19,7 +19,8 @@ References:
 
 ### Data binding
 - Use compiled bindings only on all binding scopes.
-- Do not use new Binding()
+- Never use `new Binding()` when compiled binding can express the required source and path.
+- Use `new Binding()` only when compiled binding cannot represent the required binding scenario, such as a source mode or binding feature unavailable through the compiled-binding API; document that limitation at the call site.
 - Keep bindings one-way unless user input must update the ViewModel.
 
 ### Custom controls

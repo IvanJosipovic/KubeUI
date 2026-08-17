@@ -24,24 +24,7 @@ jobs:
           dotnet test \
             --configuration Release \
             --no-build \
-            --report-xunit-trx \
-            --report-xunit-trx-filename fake-test-results.trx \
-            --coverage \
-            --coverage-output-format cobertura \
-            --coverage-output fake-coverage.cobertura.xml
-
-      - name: Test Kind
-        run: |
-          dotnet test \
-            --configuration Release \
-            --no-build \
-            --filter-trait "Category=Kind" \
-            --max-threads 2 \
-            --report-xunit-trx \
-            --report-xunit-trx-filename kind-test-results.trx \
-            --coverage \
-            --coverage-output-format cobertura \
-            --coverage-output kind-coverage.cobertura.xml
+            --max-threads 2
         env:
           KUBEUI_RUN_KIND_TESTS: 1
 

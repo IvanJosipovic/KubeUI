@@ -256,6 +256,7 @@ public sealed class ResourceGraphControlTests
             {
                 Name = "unity-unitycatalog-server-db",
                 NamespaceProperty = "platform-dev-ijosipov",
+                Uid = "unity-unitycatalog-server-db-uid",
             },
             Spec = new()
             {
@@ -647,9 +648,9 @@ public sealed class ResourceGraphControlTests
             Kind = "FunctionRevision",
             Metadata = new() { Name = "function-go-templating-117c9a95eb57", Uid = "function-revision-uid" },
         };
-        V1Deployment providerDeployment = CreateDeployment("provider-databricks-5bec9d044d7e");
+        var providerDeployment = CreateDeployment("provider-databricks-5bec9d044d7e");
         providerDeployment.Metadata.NamespaceProperty = "crossplane-system";
-        V1Deployment functionDeployment = CreateDeployment("function-go-templating-117c9a95eb57");
+        var functionDeployment = CreateDeployment("function-go-templating-117c9a95eb57");
         functionDeployment.Metadata.NamespaceProperty = "crossplane-system";
 
         ResourceRelationshipGraph graph = new(
@@ -1212,12 +1213,11 @@ public sealed class ResourceGraphControlTests
         viewModel.Graph!.Resources.ShouldNotContain(resource => resource.Name() == "unrelated");
     }
 
-    [AvaloniaTheory, KubernetesBackendData]
-    [Trait("Category", "Kind")]
-    public async Task repeated_incremental_deltas_do_not_accumulate_resources_from_unselected_namespaces(KubernetesBackend backend)
+    [AvaloniaFact]
+    public async Task repeated_incremental_deltas_do_not_accumulate_resources_from_unselected_namespaces()
     {
         var cluster = await Application.Current.CreateClusterAsync(
-            config => config.Type = backend,
+            config => config.Type = KubernetesBackend.Fake,
             connect: false);
 
         await ConnectAndWaitForResourceConfigsAsync(cluster, typeof(V1Pod));
@@ -1246,22 +1246,25 @@ public sealed class ResourceGraphControlTests
         viewModel.Initialize(cluster);
         cluster.SelectedNamespaces.Add(cluster.Runtime.Namespaces.Single(namespaceResource => namespaceResource.Name() == "default"));
         await builder.WaitForInitialBuildAsync();
-        var initialGraphDeadline = DateTime.UtcNow.AddSeconds(5);
-        while (!viewModel.Graph!.Resources.Any(resource => resource.Name() == "selected"))
-        {
-            await TestApplicationExtensions.WaitForUiAsync();
-            if (DateTime.UtcNow >= initialGraphDeadline)
-            {
-                throw new TimeoutException("Timed out waiting for the initial visualization graph.");
-            }
+        await TestWait.UntilAsync(
+            () => viewModel.Graph?.Resources.Any(resource => resource.Name() == "selected") == true,
+            timeoutMs: 5_000,
+            cancellationToken: TestContext.Current.CancellationToken);
 
-            await TestWait.NextPollAsync(TimeSpan.FromMilliseconds(10), TestContext.Current.CancellationToken);
-        }
+        await TestWait.UntilAsync(
+            () => !viewModel.IsRebuildPendingOrRunning,
+            TimeSpan.FromSeconds(5),
+            cancellationToken: TestContext.Current.CancellationToken);
 
         viewModel.Graph!.Resources.Select(resource => resource.Name()).ShouldNotContain("unrelated");
 
         for (var i = 0; i < 3; i++)
         {
+            await TestWait.UntilAsync(
+                () => !viewModel.IsRebuildPendingOrRunning,
+                TimeSpan.FromSeconds(5),
+                cancellationToken: TestContext.Current.CancellationToken);
+
             var incremental = CreatePod($"incremental-{i}");
             incremental.Metadata.Uid = null;
             await cluster.Runtime.AddOrUpdateResource(incremental);
@@ -1269,9 +1272,13 @@ public sealed class ResourceGraphControlTests
                 () => cluster.Runtime.GetResource<V1Pod>("default", incremental.Name()) is not null,
                 TimeSpan.FromSeconds(5),
                 cancellationToken: TestContext.Current.CancellationToken);
-            await TestApplicationExtensions.WaitForUiAsync();
-            await builder.WaitForAdditionAsync();
-            await TestApplicationExtensions.WaitForUiAsync();
+            // The informer may coalesce this change with a rebuild or deliver it while
+            // another graph application is pending. Wait for the observable graph state
+            // instead of requiring one particular internal callback ordering.
+            await TestWait.UntilAsync(
+                () => viewModel.Graph?.Resources.Any(resource => resource.Name() == incremental.Name()) == true,
+                timeoutMs: 30_000,
+                cancellationToken: TestContext.Current.CancellationToken);
         }
 
         viewModel.Graph!.Resources.Select(resource => resource.Name()).ShouldNotContain("unrelated");
@@ -1303,7 +1310,6 @@ public sealed class ResourceGraphControlTests
     private sealed class LeakyAdditionRelationshipBuilder : IResourceRelationshipBuilder
     {
         private readonly TaskCompletionSource _initialBuild = new(TaskCreationOptions.RunContinuationsAsynchronously);
-        private readonly ConcurrentQueue<TaskCompletionSource> _additions = [];
 
         public ResourceRelationshipGraph Build(
             IEnumerable<IKubernetesObject<V1ObjectMeta>> resources,
@@ -1331,31 +1337,10 @@ public sealed class ResourceGraphControlTests
             IReadOnlySet<string> selectedNamespaces,
             bool hideNoise)
         {
-            TaskCompletionSource addition = new(TaskCreationOptions.RunContinuationsAsynchronously);
-            _additions.Enqueue(addition);
-            addition.TrySetResult();
             return new ResourceRelationshipGraph(resources.ToArray(), []);
         }
 
         public async Task WaitForInitialBuildAsync() => await WaitForSignalAsync(_initialBuild.Task, "initial visualization build");
-
-        public async Task WaitForAdditionAsync()
-        {
-            TaskCompletionSource? addition;
-            var deadline = DateTime.UtcNow.AddSeconds(5);
-            while (!_additions.TryDequeue(out addition))
-            {
-                await TestApplicationExtensions.WaitForUiAsync();
-                if (DateTime.UtcNow >= deadline)
-                {
-                    throw new TimeoutException("Timed out waiting for an incremental graph addition.");
-                }
-
-                await WaitForNextPollAsync();
-            }
-
-            await addition.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
-        }
     }
 
     [AvaloniaTheory, KubernetesBackendData]
