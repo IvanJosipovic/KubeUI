@@ -36,7 +36,7 @@ public sealed class DotAcpClientTests
     public async Task session_update_maps_tool_progress_to_domain_events()
     {
         var events = Channel.CreateUnbounded<AgentEvent>();
-        var client = new DotAcpClient(events.Writer);
+        using var client = new DotAcpClient(events.Writer);
 
         await client.SessionUpdateAsync(new SessionNotification
         {
@@ -55,7 +55,7 @@ public sealed class DotAcpClientTests
     public async Task session_update_maps_tool_call_start_to_domain_event()
     {
         var events = Channel.CreateUnbounded<AgentEvent>();
-        var client = new DotAcpClient(events.Writer);
+        using var client = new DotAcpClient(events.Writer);
 
         await client.SessionUpdateAsync(new SessionNotification
         {
@@ -74,7 +74,7 @@ public sealed class DotAcpClientTests
     public async Task session_update_maps_assistant_message_and_thought_to_domain_events()
     {
         var events = Channel.CreateUnbounded<AgentEvent>();
-        var client = new DotAcpClient(events.Writer);
+        using var client = new DotAcpClient(events.Writer);
 
         await client.SessionUpdateAsync(new SessionNotification
         {
@@ -99,7 +99,7 @@ public sealed class DotAcpClientTests
     public async Task session_update_maps_completed_and_failed_tools_to_completion_events()
     {
         var events = Channel.CreateUnbounded<AgentEvent>();
-        var client = new DotAcpClient(events.Writer);
+        using var client = new DotAcpClient(events.Writer);
 
         await client.SessionUpdateAsync(new SessionNotification
         {
@@ -135,7 +135,7 @@ public sealed class DotAcpClientTests
     public async Task session_update_maps_an_already_completed_tool_call_to_a_completion_event()
     {
         var events = Channel.CreateUnbounded<AgentEvent>();
-        var client = new DotAcpClient(events.Writer);
+        using var client = new DotAcpClient(events.Writer);
 
         await client.SessionUpdateAsync(new SessionNotification
         {
@@ -157,7 +157,7 @@ public sealed class DotAcpClientTests
     public async Task session_update_maps_user_and_session_metadata_variants_to_domain_events()
     {
         var events = Channel.CreateUnbounded<AgentEvent>();
-        var client = new DotAcpClient(events.Writer);
+        using var client = new DotAcpClient(events.Writer);
 
         await client.SessionUpdateAsync(new SessionNotification
         {
@@ -200,7 +200,7 @@ public sealed class DotAcpClientTests
     public async Task permission_request_selects_allow_option_when_permission_service_allows()
     {
         var events = Channel.CreateUnbounded<AgentEvent>();
-        var client = new DotAcpClient(events.Writer, new AllowAgentPermissionService());
+        using var client = new DotAcpClient(events.Writer, new AllowAgentPermissionService());
 
         var response = await client.RequestPermissionAsync(new RequestPermissionRequest
         {
@@ -220,7 +220,7 @@ public sealed class DotAcpClientTests
     public async Task permission_request_describes_tool_when_title_is_missing()
     {
         var events = Channel.CreateUnbounded<AgentEvent>();
-        var client = new DotAcpClient(events.Writer, new AllowAgentPermissionService());
+        using var client = new DotAcpClient(events.Writer, new AllowAgentPermissionService());
 
         await client.RequestPermissionAsync(new RequestPermissionRequest
         {
@@ -244,7 +244,7 @@ public sealed class DotAcpClientTests
     public async Task read_only_tool_permission_is_auto_allowed_without_prompt()
     {
         var events = Channel.CreateUnbounded<AgentEvent>();
-        var client = new DotAcpClient(events.Writer);
+        using var client = new DotAcpClient(events.Writer);
 
         var response = await client.RequestPermissionAsync(new RequestPermissionRequest
         {
@@ -268,7 +268,7 @@ public sealed class DotAcpClientTests
     public async Task permission_request_uses_mcp_tool_metadata_to_describe_the_tool()
     {
         var events = Channel.CreateUnbounded<AgentEvent>();
-        var client = new DotAcpClient(events.Writer, trustedMcpServers: new HashSet<string>(StringComparer.Ordinal) { "kubeui" });
+        using var client = new DotAcpClient(events.Writer, trustedMcpServers: new HashSet<string>(StringComparer.Ordinal) { "kubeui" });
 
         await client.SessionUpdateAsync(new SessionNotification
         {
@@ -304,7 +304,7 @@ public sealed class DotAcpClientTests
     public async Task external_mcp_tool_requires_permission_even_when_it_is_read_only()
     {
         var events = Channel.CreateUnbounded<AgentEvent>();
-        var client = new DotAcpClient(events.Writer, new AllowAgentPermissionService(), new HashSet<string>(StringComparer.Ordinal) { "kubeui" });
+        using var client = new DotAcpClient(events.Writer, new AllowAgentPermissionService(), new HashSet<string>(StringComparer.Ordinal) { "kubeui" });
 
         await client.SessionUpdateAsync(new SessionNotification
         {
@@ -339,7 +339,7 @@ public sealed class DotAcpClientTests
     public async Task session_update_maps_plan_and_usage_progress_to_domain_events()
     {
         var events = Channel.CreateUnbounded<AgentEvent>();
-        var client = new DotAcpClient(events.Writer);
+        using var client = new DotAcpClient(events.Writer);
 
         await client.SessionUpdateAsync(new SessionNotification
         {
@@ -388,7 +388,7 @@ public sealed class DotAcpClientTests
     {
         var (command, arguments) = GetEchoCommand("kubeui-terminal");
         var events = Channel.CreateUnbounded<AgentEvent>();
-        var client = new DotAcpClient(events.Writer, new AllowAgentPermissionService());
+        using var client = new DotAcpClient(events.Writer, new AllowAgentPermissionService());
         var terminal = await client.CreateTerminalAsync(new CreateTerminalRequest
         {
             Command = command,
@@ -419,7 +419,7 @@ public sealed class DotAcpClientTests
         try
         {
             await File.WriteAllTextAsync(path, "first\nsecond\nthird");
-            var client = new DotAcpClient(
+            using var client = new DotAcpClient(
                 Channel.CreateUnbounded<AgentEvent>().Writer,
                 new AllowAgentPermissionService());
 
@@ -438,7 +438,7 @@ public sealed class DotAcpClientTests
     [Fact]
     public async Task file_callbacks_deny_access_when_permission_service_denies()
     {
-        var client = new DotAcpClient(Channel.CreateUnbounded<AgentEvent>().Writer);
+        using var client = new DotAcpClient(Channel.CreateUnbounded<AgentEvent>().Writer);
 
         await Should.ThrowAsync<UnauthorizedAccessException>(() => client.ReadTextFileAsync(
             new ReadTextFileRequest { Path = Path.Combine(Path.GetTempPath(), "not-read.txt") }));

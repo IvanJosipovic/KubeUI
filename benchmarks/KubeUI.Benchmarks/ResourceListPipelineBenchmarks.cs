@@ -18,7 +18,7 @@ namespace KubeUI.Benchmarks;
 [MemoryDiagnoser]
 [ShortRunJob]
 [BenchmarkCategory("ResourceList", "DynamicData")]
-public class ResourceListPipelineBenchmarks
+public class ResourceListPipelineBenchmarks : IDisposable
 {
     private SourceCache<V1Pod, string> _cache = null!;
     private BehaviorSubject<Func<V1Pod, bool>> _filterSubject = null!;
@@ -101,6 +101,8 @@ public class ResourceListPipelineBenchmarks
         _filterSubject.Dispose();
         _cache.Dispose();
     }
+
+    public void Dispose() => Cleanup();
 
     private void ResetCache()
     {
