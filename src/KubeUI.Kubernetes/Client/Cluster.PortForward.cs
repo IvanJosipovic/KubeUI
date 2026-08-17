@@ -10,8 +10,13 @@ public partial class Cluster
 #pragma warning disable CA2000 // PortForwarders owns forwarders after Add.
     public PortForwarder AddPodPortForward(string @namespace, string podName, int containerPort)
     {
+        return AddPodPortForward(@namespace, podName, null, containerPort);
+    }
+
+    public PortForwarder AddPodPortForward(string @namespace, string podName, string? podUid, int containerPort)
+    {
         var pf = new PortForwarder(this, @namespace, localPort: 0, _portForwardSessionFactory);
-        pf.SetPod(podName, containerPort);
+        pf.SetPod(podName, podUid, containerPort);
 
         var existing = FindPortForwarder(pf);
         if (existing != null)
@@ -27,8 +32,13 @@ public partial class Cluster
 
     public PortForwarder AddServicePortForward(string @namespace, string serviceName, int servicePort)
     {
+        return AddServicePortForward(@namespace, serviceName, null, servicePort);
+    }
+
+    public PortForwarder AddServicePortForward(string @namespace, string serviceName, string? serviceUid, int servicePort)
+    {
         var pf = new PortForwarder(this, @namespace, localPort: 0, _portForwardSessionFactory);
-        pf.SetService(serviceName, servicePort);
+        pf.SetService(serviceName, serviceUid, servicePort);
 
         var existing = FindPortForwarder(pf);
         if (existing != null)

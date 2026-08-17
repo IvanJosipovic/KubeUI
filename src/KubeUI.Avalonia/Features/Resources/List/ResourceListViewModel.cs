@@ -647,7 +647,8 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
 
     private static string GetResourceIdentity(T resource)
     {
-        return string.Create(CultureInfo.InvariantCulture, $"{resource.Namespace()}/{resource.Name()}");
+        return resource.Uid() ?? throw new InvalidOperationException(
+            $"Resource {typeof(T).Name} '{resource.Namespace()}/{resource.Name()}' has no metadata UID.");
     }
 }
 

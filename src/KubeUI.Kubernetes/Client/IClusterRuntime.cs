@@ -49,8 +49,10 @@ public interface IClusterRuntime
     bool IsResourceNamespaced(Type type);
     bool IsResourceNamespaced<T>();
     PortForwarder AddPodPortForward(string @namespace, string podName, int containerPort);
+    PortForwarder AddPodPortForward(string @namespace, string podName, string? podUid, int containerPort);
     Task AddPodEphemeralDebugContainer(V1Pod pod, string? targetContainerName, string image);
     PortForwarder AddServicePortForward(string @namespace, string serviceName, int servicePort);
+    PortForwarder AddServicePortForward(string @namespace, string serviceName, string? serviceUid, int servicePort);
     void RemovePortForward(PortForwarder pf);
     Task AddOrUpdateResource<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new();
     Task Connect();

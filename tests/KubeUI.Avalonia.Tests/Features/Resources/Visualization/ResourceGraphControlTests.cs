@@ -256,6 +256,7 @@ public sealed class ResourceGraphControlTests
             {
                 Name = "unity-unitycatalog-server-db",
                 NamespaceProperty = "platform-dev-ijosipov",
+                Uid = "unity-unitycatalog-server-db-uid",
             },
             Spec = new()
             {

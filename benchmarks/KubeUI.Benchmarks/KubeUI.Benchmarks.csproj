@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <EnableAvaloniaXamlCompilation>false</EnableAvaloniaXamlCompilation>
+    <OutputType>Exe</OutputType>
   </PropertyGroup>
 
   <ItemGroup>

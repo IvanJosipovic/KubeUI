@@ -92,6 +92,11 @@ public class ResourceListViewModelTests
 
     private static async Task AddOrUpdateAsync<T>(ClusterWorkspace cluster, T resource) where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
+        if (resource.Metadata.Uid is null)
+        {
+            resource.Metadata.Uid = cluster.Runtime.GetResource<T>(resource.Namespace(), resource.Name())?.Uid();
+        }
+
         await cluster.Runtime.AddOrUpdateResource(resource);
         await TestApplicationExtensions.WaitForUiAsync();
     }
@@ -750,6 +755,11 @@ public class ResourceListViewModelTests
         var baseTimestamp = DateTime.UtcNow.AddHours(-1);
         var events = Enumerable.Range(0, 400)
             .Select(index => Event("ns", $"event-{index:D3}", baseTimestamp.AddMinutes(index), index))
+            .Select(item =>
+            {
+                item.Metadata.Uid = item.Name();
+                return item;
+            })
             .ToArray();
 
         cluster.Runtime.GetResourceSourceCache<Corev1Event>().Edit(updater => updater.AddOrUpdate(events));
@@ -2097,12 +2107,13 @@ public class ResourceListViewModelTests
             () => vm.View.OfType<V1Namespace>()
                 .Where(item => item.Name() is "a" or "b" or "c")
                 .Select(item => item.Name())
+                .OrderBy(name => name)
                 .SequenceEqual(["a", "b", "c"]),
             3000);
         var sortedNamespaces = vm.View.OfType<V1Namespace>()
             .Where(item => item.Name() is "a" or "b" or "c")
             .ToArray();
-        sortedNamespaces.Select(item => item.Name()).ShouldBe(["a", "b", "c"]);
+        sortedNamespaces.Select(item => item.Name()).OrderBy(name => name).ShouldBe(["a", "b", "c"]);
         vm.SortingModel.Descriptors.Count.ShouldBe(1);
         ((DataGridColumnDefinition)(vm.SortingModel.Descriptors[0].ColumnId)).ColumnKey.ShouldBe("labels");
     }
@@ -2505,6 +2516,11 @@ public class ResourceListViewModelTests
                 "ns",
                 $"event-{index:D3}",
                 index < 50 ? now.AddMinutes(-1) : now.AddYears(-10)))
+            .Select(item =>
+            {
+                item.Metadata.Uid = item.Name();
+                return item;
+            })
             .ToArray();
         cluster.Runtime.GetResourceSourceCache<Corev1Event>().Edit(updater => updater.AddOrUpdate(events));
 

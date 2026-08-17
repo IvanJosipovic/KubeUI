@@ -238,7 +238,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
 
                         foreach (var item in namespaces)
                         {
-                            namespaceCache.AddOrUpdate(new V1Namespace() { Metadata = new() { Name = item } });
+                            namespaceCache.AddOrUpdate(new V1Namespace() { Metadata = new() { Name = item, Uid = item } });
                         }
                     }
 
@@ -647,7 +647,9 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
 
     public T? GetResource<T>(string? @namespace, string name) where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
-        return GetResourceSourceCache<T>().Lookup(@namespace + "/" + name).ValueOrDefault();
+        return GetResourceSourceCache<T>().Items.FirstOrDefault(item =>
+            string.Equals(item.Namespace(), @namespace, StringComparison.Ordinal)
+            && string.Equals(item.Name(), name, StringComparison.Ordinal));
     }
 
     public IReadOnlyList<T> GetResourceList<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
@@ -1151,7 +1153,13 @@ public partial class ContainerClass<T> : ObservableObject, IClearableResourceCon
 
     public bool IsSeeded => InformerCount > 0;
 
-    public ISourceCache<T, string> Items { get; } = new SourceCache<T, string>(x => x.Namespace() + "/" + x.Name());
+    public ISourceCache<T, string> Items { get; } = new SourceCache<T, string>(GetResourceCacheKey);
+
+    private static string GetResourceCacheKey(T resource)
+    {
+        return resource.Uid() ?? throw new InvalidOperationException(
+            $"Resource {typeof(T).Name} '{resource.Namespace()}/{resource.Name()}' has no metadata UID.");
+    }
 
     public IObservable<ResourceChange> ConnectChanges(GroupApiVersionKind kind)
     {

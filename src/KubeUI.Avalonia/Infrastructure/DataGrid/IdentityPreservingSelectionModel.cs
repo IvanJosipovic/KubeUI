@@ -3,11 +3,14 @@ using Avalonia.Controls.Selection;
 
 namespace KubeUI.Avalonia.Infrastructure.DataGrid;
 
-internal sealed class IdentityPreservingSelectionModel<T> : ISelectionModel, INotifyPropertyChanged, IDisposable
+internal sealed class IdentityPreservingSelectionModel<T> : ISelectionModel, INotifyPropertyChanged, IDisposable where T : notnull
 {
     private readonly SelectionModel<object?> _inner = new();
     private readonly Func<T, object?> _identitySelector;
     private readonly List<object> _selectionSnapshot = [];
+    private readonly HashSet<object> _selectionIdentities = [];
+    private readonly List<int> _restoredIndexes = [];
+    private readonly Dictionary<T, object?> _identityCache = new();
     private INotifyCollectionChanged? _sourceNotifications;
     private IEnumerable? _identitySource;
     private INotifyCollectionChanged? _identitySourceNotifications;
@@ -49,6 +52,7 @@ internal sealed class IdentityPreservingSelectionModel<T> : ISelectionModel, INo
 
         if (ReferenceEquals(_identitySource, source))
         {
+            ReconcileSelection();
             return;
         }
 
@@ -59,6 +63,7 @@ internal sealed class IdentityPreservingSelectionModel<T> : ISelectionModel, INo
 
         _sourceChangeVersion++;
         _sourceMutationInProgress = false;
+        _identityCache.Clear();
         _identitySource = source;
         _identitySourceNotifications = source as INotifyCollectionChanged;
         if (_identitySourceNotifications is not null)
@@ -80,6 +85,7 @@ internal sealed class IdentityPreservingSelectionModel<T> : ISelectionModel, INo
         }
 
         _identitySource = null;
+        _identityCache.Clear();
         _inner.SelectionChanged -= InnerSelectionChanged;
     }
 
@@ -194,6 +200,8 @@ internal sealed class IdentityPreservingSelectionModel<T> : ISelectionModel, INo
 
     private void SourceOnCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
+        _identityCache.Clear();
+
         if (_selectionSnapshot.Count == 0)
         {
             return;
@@ -289,47 +297,86 @@ internal sealed class IdentityPreservingSelectionModel<T> : ISelectionModel, INo
 
     private List<int> FindIndexes(IReadOnlyList<object> snapshot)
     {
-        var indexes = new List<int>(snapshot.Count);
-
-        var source = _identitySource ?? Source;
-        if (source is IList list)
+        if (snapshot.Count <= 4)
         {
+            var indexes = new List<int>(snapshot.Count);
+            var fastSource = _identitySource ?? Source;
+            var fastSourceIndex = 0;
             foreach (var identity in snapshot)
             {
-                for (var i = 0; i < list.Count; i++)
+                foreach (var item in fastSource)
                 {
-                    if (Equals(identity, GetIdentity(list[i])))
+                    if (item is not null && Equals(identity, GetIdentity(item)))
                     {
-                        indexes.Add(i);
+                        indexes.Add(fastSourceIndex);
                         break;
                     }
+
+                    fastSourceIndex++;
                 }
+
+                fastSourceIndex = 0;
             }
 
             return indexes;
         }
 
+        _selectionIdentities.Clear();
         foreach (var identity in snapshot)
         {
-            var index = 0;
-            foreach (var item in source)
-            {
-                if (Equals(identity, GetIdentity(item)))
-                {
-                    indexes.Add(index);
-                    break;
-                }
-
-                index++;
-            }
+            _selectionIdentities.Add(identity);
         }
 
-        return indexes;
+        _restoredIndexes.Clear();
+        var source = _identitySource ?? Source;
+
+        if (source is IList list)
+        {
+            for (var index = 0; index < list.Count; index++)
+            {
+                if (list[index] is not { } item)
+                {
+                    continue;
+                }
+
+                if (_selectionIdentities.Contains(GetIdentity(item)!))
+                {
+                    _restoredIndexes.Add(index);
+                }
+            }
+
+            return _restoredIndexes;
+        }
+
+        var sourceIndex = 0;
+        foreach (var item in source)
+        {
+            if (item is not null && _selectionIdentities.Contains(GetIdentity(item)!))
+            {
+                _restoredIndexes.Add(sourceIndex);
+            }
+
+            sourceIndex++;
+        }
+
+        return _restoredIndexes;
     }
 
     private object? GetIdentity(object? item)
     {
-        return item is T typedItem ? _identitySelector(typedItem) : item;
+        if (item is not T typedItem)
+        {
+            return item;
+        }
+
+        if (_identityCache.TryGetValue(typedItem, out var identity))
+        {
+            return identity;
+        }
+
+        identity = _identitySelector(typedItem);
+        _identityCache.Add(typedItem, identity);
+        return identity;
     }
 
     private void UpdateSelectionSnapshot()

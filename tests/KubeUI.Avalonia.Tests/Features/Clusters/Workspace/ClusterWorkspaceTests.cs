@@ -65,7 +65,8 @@ public class ClusterWorkspaceTests
         {
             Metadata = new V1ObjectMeta
             {
-                Name = $"background-{Guid.NewGuid():N}"
+                Name = $"background-{Guid.NewGuid():N}",
+                Uid = $"background-{Guid.NewGuid():N}"
             }
         }), TestContext.Current.CancellationToken);
         await TestApplicationExtensions.WaitForUiAsync();
@@ -94,7 +95,11 @@ public class ClusterWorkspaceTests
 
         await Task.Run(() => workspace.Runtime.GetResourceSourceCache<V1Namespace>().AddOrUpdate(new V1Namespace
         {
-            Metadata = new V1ObjectMeta { Name = $"reconnected-{Guid.NewGuid():N}" }
+            Metadata = new V1ObjectMeta
+            {
+                Name = $"reconnected-{Guid.NewGuid():N}",
+                Uid = $"reconnected-{Guid.NewGuid():N}"
+            }
         }), TestContext.Current.CancellationToken);
         await TestApplicationExtensions.WaitForUiAsync();
 
