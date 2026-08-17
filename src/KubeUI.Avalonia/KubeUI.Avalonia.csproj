@@ -67,7 +67,7 @@
     <PackageReference Include="Westermo.GraphX.Controls.Avalonia" Version="4.4.2" />
     <PackageReference Include="Westermo.GraphX.Controls.Avalonia.Themes.Fluent" Version="4.2.0" />
     <PackageReference Include="Westermo.GraphX.Logic" Version="4.4.2" />
-    <PackageReference Include="SvcSystems.UI.Terminal" Version="1.0.3" />
+    <PackageReference Include="SvcSystems.UI.Terminal" Version="1.1.0" />
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
     <PackageReference Include="Dock.Avalonia" Version="12.1.0.1" />
     <PackageReference Include="Dock.Avalonia.Themes.Fluent" Version="12.1.0.1" />
