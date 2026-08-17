@@ -13,6 +13,7 @@ public abstract class RefreshingCellTextBlock : TextBlock
         Name = "CellTextBlock";
         Margin = new Thickness(12, 0, 12, 0);
         VerticalAlignment = VerticalAlignment.Center;
+        MaxLines = 1;
     }
 
     protected abstract string ResolveText(object? dataContext);
@@ -42,5 +43,6 @@ public abstract class RefreshingCellTextBlock : TextBlock
     protected void RefreshText()
     {
         Text = ResolveText(DataContext);
+        SetValue(ToolTip.TipProperty, Text);
     }
 }

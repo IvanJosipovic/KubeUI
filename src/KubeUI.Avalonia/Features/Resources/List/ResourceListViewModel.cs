@@ -75,7 +75,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     private readonly Subject<string> _searchQueryChanges = new();
     private readonly IDisposable _searchQuerySubscription;
 
-    private readonly ISelectionModel _selectionModel = new IdentityPreservingSelectionModel<T>(GetResourceIdentity)
+    private readonly IdentityPreservingSelectionModel<T> _selectionModel = new(GetResourceIdentity)
     {
         SingleSelect = false
     };
@@ -156,7 +156,10 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         _agentContextService = agentContextService;
 
         _searchQuerySubscription = _searchQueryChanges
-            .Throttle(SearchDebounceDelay)
+            .Select(query => string.IsNullOrWhiteSpace(query)
+                ? Observable.Return(query)
+                : Observable.Timer(SearchDebounceDelay).Select(_ => query))
+            .Switch()
             .ObserveOn(AvaloniaScheduler.Instance)
             .Subscribe(Observer.Create<string>(_ => ApplySearch()));
 
@@ -314,6 +317,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         FilteringModel.FilteringChanged -= FilteringModelOnFilteringChanged;
         SearchModel.SearchChanged -= SearchModelOnSearchChanged;
         _selectionModel.SelectionChanged -= SelectionModelOnSelectionChanged;
+        _selectionModel.Dispose();
     }
 
     private async Task LoadAsync(Task seedTask)
@@ -385,6 +389,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         _countSubscription = countObs.Subscribe(Observer.Create<int>(c => ItemCount = c));
 
         _view = view;
+        _selectionModel.SetIdentitySource(view);
         OnPropertyChanged(nameof(View));
     }
 

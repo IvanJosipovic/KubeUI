@@ -3,12 +3,14 @@ using Avalonia.Controls.Selection;
 
 namespace KubeUI.Avalonia.Infrastructure.DataGrid;
 
-internal sealed class IdentityPreservingSelectionModel<T> : ISelectionModel, INotifyPropertyChanged
+internal sealed class IdentityPreservingSelectionModel<T> : ISelectionModel, INotifyPropertyChanged, IDisposable
 {
     private readonly SelectionModel<object?> _inner = new();
     private readonly Func<T, object?> _identitySelector;
     private readonly List<object> _selectionSnapshot = [];
     private INotifyCollectionChanged? _sourceNotifications;
+    private IEnumerable? _identitySource;
+    private INotifyCollectionChanged? _identitySourceNotifications;
     private bool _sourceMutationInProgress;
     private bool _suppressSnapshotUpdates;
     private int _sourceChangeVersion;
@@ -39,6 +41,46 @@ internal sealed class IdentityPreservingSelectionModel<T> : ISelectionModel, INo
             _inner.Source = value;
             ReconcileSelection();
         }
+    }
+
+    public void SetIdentitySource(IEnumerable source)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+
+        if (ReferenceEquals(_identitySource, source))
+        {
+            return;
+        }
+
+        if (_identitySourceNotifications is not null)
+        {
+            _identitySourceNotifications.CollectionChanged -= SourceOnCollectionChanged;
+        }
+
+        _sourceChangeVersion++;
+        _sourceMutationInProgress = false;
+        _identitySource = source;
+        _identitySourceNotifications = source as INotifyCollectionChanged;
+        if (_identitySourceNotifications is not null)
+        {
+            _identitySourceNotifications.CollectionChanged += SourceOnCollectionChanged;
+        }
+
+        ReconcileSelection();
+    }
+
+    public void Dispose()
+    {
+        DetachSourceNotifications();
+
+        if (_identitySourceNotifications is not null)
+        {
+            _identitySourceNotifications.CollectionChanged -= SourceOnCollectionChanged;
+            _identitySourceNotifications = null;
+        }
+
+        _identitySource = null;
+        _inner.SelectionChanged -= InnerSelectionChanged;
     }
 
     public bool SingleSelect
@@ -249,7 +291,8 @@ internal sealed class IdentityPreservingSelectionModel<T> : ISelectionModel, INo
     {
         var indexes = new List<int>(snapshot.Count);
 
-        if (Source is IList list)
+        var source = _identitySource ?? Source;
+        if (source is IList list)
         {
             foreach (var identity in snapshot)
             {
@@ -269,7 +312,7 @@ internal sealed class IdentityPreservingSelectionModel<T> : ISelectionModel, INo
         foreach (var identity in snapshot)
         {
             var index = 0;
-            foreach (var item in Source)
+            foreach (var item in source)
             {
                 if (Equals(identity, GetIdentity(item)))
                 {

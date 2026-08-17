@@ -663,6 +663,7 @@ public class ResourceListViewModelTests
         // Replace 'b' with new instance (same key)
         await AddOrUpdateAsync(cluster, Event("ns", "b"));
         await WaitForAsync(() => vm.View.Count == 3 && vm.View[0].ShouldBeOfType<Corev1Event>().Name() == "b");
+        await WaitForAsync(() => vm.SelectionModel.SelectedIndexes.SequenceEqual([0]));
 
         vm.View[0].ShouldBeOfType<Corev1Event>().Name().ShouldBe("b");
         vm.View[1].ShouldBeOfType<Corev1Event>().Name().ShouldBe("c");
@@ -714,6 +715,7 @@ public class ResourceListViewModelTests
         // Replace 'b' with new instance (same key)
         await AddOrUpdateAsync(cluster, Event("ns", "b"));
         await WaitForAsync(() => vm.View.Count == 3 && vm.View[0].ShouldBeOfType<Corev1Event>().Name() == "b");
+        await WaitForAsync(() => vm.SelectionModel.SelectedIndexes.SequenceEqual([0, 1, 2]));
 
         vm.View[0].ShouldBeOfType<Corev1Event>().Name().ShouldBe("b");
         vm.View[1].ShouldBeOfType<Corev1Event>().Name().ShouldBe("c");
@@ -769,6 +771,7 @@ public class ResourceListViewModelTests
             () => vm.View.Count == 400
                 && vm.View[0].ShouldBeOfType<Corev1Event>().Name() == "event-398",
             timeoutMs: 5000);
+        await WaitForAsync(() => vm.SelectionModel.SelectedIndexes.Count == 3);
 
         vm.SelectionModel.SelectedIndexes.Count.ShouldBe(3);
         vm.SelectionModel.SelectedItems
@@ -922,7 +925,7 @@ public class ResourceListViewModelTests
         generatedTextCell!.GetType().BaseType.ShouldBe(typeof(TextBlock));
         var generatedTextBlock = (TextBlock)generatedTextCell;
         var relativeTimeCell = grid.Columns[ageColumn].GetCellContent(row).ShouldBeOfType<AgeCell>();
-
+        await WaitForAsync(() => generatedTextBlock.GetValue(ToolTip.TipProperty) as string == generatedTextBlock.Text);
         generatedTextBlock.GetValue(ToolTip.TipProperty).ShouldBe(generatedTextBlock.Text);
         relativeTimeCell.GetValue(ToolTip.TipProperty).ShouldBe(relativeTimeCell.Text);
 
