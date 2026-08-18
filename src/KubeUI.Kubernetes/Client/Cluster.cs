@@ -245,9 +245,8 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
                     StopNamespaceSubscription();
                     _namespaceSubscription = namespaceCache
                         .Connect()
-                        .Sort(SortExpressionComparer<V1Namespace>.Ascending(p => p.Name()))
                         .ObserveOn(_dispatcher.Scheduler)
-                        .Bind(out var filteredObjects)
+                        .SortAndBind(out var filteredObjects, SortExpressionComparer<V1Namespace>.Ascending(p => p.Name()))
                         .Subscribe((_) => { }, (y) => _logger.LogError(y, "Error Namespace Observable"));
 
                     Namespaces = filteredObjects;
