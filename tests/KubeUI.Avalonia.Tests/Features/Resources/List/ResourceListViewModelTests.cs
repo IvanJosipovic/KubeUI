@@ -938,6 +938,7 @@ public class ResourceListViewModelTests
         var generatedTextBlock = (TextBlock)generatedTextCell;
         var relativeTimeCell = grid.Columns[ageColumn].GetCellContent(row).ShouldBeOfType<AgeCell>();
         await WaitForAsync(() => generatedTextBlock.GetValue(ToolTip.TipProperty) as string == generatedTextBlock.Text);
+        await WaitForAsync(() => relativeTimeCell.GetValue(ToolTip.TipProperty) as string == relativeTimeCell.Text);
         generatedTextBlock.GetValue(ToolTip.TipProperty).ShouldBe(generatedTextBlock.Text);
         relativeTimeCell.GetValue(ToolTip.TipProperty).ShouldBe(relativeTimeCell.Text);
 

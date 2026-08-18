@@ -260,7 +260,10 @@ public partial class ResourceListView : ViewBase<IResourceListViewModel>
                     .Setter(MenuItem.CommandParameterProperty, CompiledBinding.Create<MenuItemViewModel, object?>(x => x.CommandParameter))
                     .Setter(ItemsControl.ItemsSourceProperty, CompiledBinding.Create<MenuItemViewModel, IEnumerable?>(x => x.Items))
                     .Setter(TagProperty, CompiledBinding.Create<MenuItemViewModel, bool>(x => x.IsSeparator))
-                    .Setter(MenuItem.IconProperty, new Binding { Converter = MenuItemIconConverter.Instance }),
+                    .Setter(MenuItem.IconProperty,
+                        CompiledBinding.Create<MenuItemViewModel, MenuItemViewModel>(
+                            x => x,
+                            converter: MenuItemIconConverter.Instance)),
                 new Style<MenuItem>(x => x.PropertyEquals(TagProperty, true))
                     .Setter(TemplatedControl.TemplateProperty, new FuncControlTemplate((_, _) => new Separator())));
 
