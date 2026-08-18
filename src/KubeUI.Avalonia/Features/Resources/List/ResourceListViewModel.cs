@@ -11,10 +11,10 @@ using Avalonia.Controls.DataGridSearching;
 using Avalonia.Controls.DataGridSorting;
 using Avalonia.Controls.Selection;
 using Avalonia.Controls.Templates;
-using Avalonia.Data;
 using Avalonia.Data.Converters;
 using AvaloniaEdit.Utils;
 using DynamicData;
+using DynamicData.Aggregation;
 using DynamicData.Binding;
 using Humanizer;
 using k8s;
@@ -22,14 +22,13 @@ using k8s.Models;
 using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Features.Resources.Common;
-using KubeUI.Avalonia.Features.Resources.List.Controls;
 using KubeUI.Avalonia.Infrastructure.DataGrid;
 using KubeUI.Avalonia.Infrastructure.Presentation;
-using KubeUI.Avalonia.Infrastructure.Threading;
 using KubeUI.Avalonia.Features.AI;
 using KubeUI.AI.Agents;
 using KubeUI.Avalonia.Resources;
 using SortDirection = KubeUI.Avalonia.Resources.SortDirection;
+using KubeUI.Avalonia.Infrastructure.Threading;
 
 namespace KubeUI.Avalonia.Features.Resources.List;
 
@@ -197,10 +196,16 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         GenerateColumnDefinitions();
         SetNamespaceFilter();
 
-        IsLoading = true;
-        LoadError = null;
         var seedTask = Cluster.Runtime.SeedResource<T>();
-        BindObjects();
+
+        if (seedTask.IsCompletedSuccessfully)
+        {
+            LoadError = null;
+            IsLoading = false;
+            BindObjects();
+            return;
+        }
+
         _ = LoadAsync(seedTask);
     }
 
@@ -331,6 +336,8 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
             });
 
             await seedTask.ConfigureAwait(false);
+
+            await Dispatcher.UIThread.InvokeAsync(BindObjects);
         }
         catch (Exception ex)
         {
@@ -353,40 +360,36 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
 
         SetNamespaceFilter();
 
-        var sortSubject = _sortSubject ?? throw new InvalidOperationException("Sort subject has not been initialized.");
         var filterSubject = _filterSubject ?? throw new InvalidOperationException("Filter subject has not been initialized.");
         var searchSubject = _searchSubject ?? throw new InvalidOperationException("Search subject has not been initialized.");
+        var sortSubject = _sortSubject ?? throw new InvalidOperationException("Sort subject has not been initialized.");
+
         _sortingAdapterFactory.UpdateComparer(SortingModel.Descriptors);
         sortSubject.OnNext(_sortingAdapterFactory.SortComparer);
-        _subscription = Objects.Connect()
+
+        var filteredObservable = Objects.Connect()
             .ObserveOn(TaskPoolScheduler.Default)
             .Filter(filterSubject.ObserveOn(TaskPoolScheduler.Default))
-            .Filter(searchSubject.ObserveOn(TaskPoolScheduler.Default))
-            .Sort(sortSubject.ObserveOn(TaskPoolScheduler.Default))
-            .ObserveOn(AvaloniaScheduler.Instance)
-            .Bind(out var view, new()
+            .Filter(searchSubject.ObserveOn(TaskPoolScheduler.Default));
+
+        var countObservable = filteredObservable
+            .Count()
+            .ObserveOn(AvaloniaScheduler.Instance);
+
+        _countSubscription?.Dispose();
+        _countSubscription = countObservable.Subscribe(Observer.Create<int>(count => ItemCount = count));
+
+        _subscription = filteredObservable
+            .SortAndBind(out var view, sortSubject, new()
             {
                 ResetOnFirstTimeLoad = true,
-                UseReplaceForUpdates = true
+                UseReplaceForUpdates = true,
+                Scheduler = AvaloniaScheduler.Instance
             })
             .Subscribe(
                 _ => { },
                 ex => _logger.LogError(ex, "Error Setting Resource List Filter: {ns} ", typeof(T))
             );
-
-        _countSubscription?.Dispose();
-        // Update count from the view (already filtered/searched/sorted). This
-        // avoids re-running the entire pipeline. Throttle updates to at most
-        // once per 100ms to reduce UI churn.
-        var countObs = Observable.FromEventPattern<NotifyCollectionChangedEventHandler, NotifyCollectionChangedEventArgs>(
-                h => ((INotifyCollectionChanged)view).CollectionChanged += h,
-                h => ((INotifyCollectionChanged)view).CollectionChanged -= h)
-                .Select(_ => view.Count)
-                .StartWith(view.Count)
-                .Sample(TimeSpan.FromMilliseconds(100), AvaloniaScheduler.Instance)
-                .DistinctUntilChanged();
-
-        _countSubscription = countObs.Subscribe(Observer.Create<int>(c => ItemCount = c));
 
         _view = view;
         _selectionModel.SetIdentitySource(view);
@@ -611,7 +614,6 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
 
     // Runtime DataGrid state captured from ProDataGrid (in-memory snapshot)
     public DataGridState? DataGridRuntimeState { get; set; }
-
 
     private void SearchModelOnSearchChanged(object? sender, SearchChangedEventArgs e)
     {

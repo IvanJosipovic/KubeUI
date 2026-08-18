@@ -138,7 +138,7 @@ public sealed class NavigationView : ViewBase<NavigationViewModel>
                                     new TextBlock()
                                         .VerticalAlignment(VerticalAlignment.Center)
                                         .Margin(4, 0, 0, 0)
-                                        .BindValue(TextBlock.TextProperty, new Binding("Count^")) //todo replace with CompiledBinding
+                                        .Text(CompiledBinding.Create<ResourceNavigationLink, int>(x => x.Count.StreamBinding()))
                                 )
                         ),
                 link => link.NavigationItems);

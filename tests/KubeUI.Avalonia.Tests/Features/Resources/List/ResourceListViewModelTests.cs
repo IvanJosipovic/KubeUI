@@ -1,6 +1,8 @@
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Collections.Specialized;
 using System.Reflection;
 using Avalonia.Controls;
 using Avalonia.Controls.DataGridFiltering;
@@ -1040,6 +1042,71 @@ public class ResourceListViewModelTests
         vm.View.Count.ShouldBe(203);
         await WaitForAsync(() => vm.ItemCount == 203, 5000);
         vm.View[0].ShouldBeOfType<Corev1Event>().Name().ShouldBe("tail");
+    }
+
+    [AvaloniaFact(DisplayName = "Initial resource list count includes all unfiltered resources")]
+    public async Task initial_resource_list_count_includes_all_unfiltered_resources()
+    {
+        using var window = Application.Current.CreateTestWindow();
+        var cluster = await Application.Current.CreateClusterAsync();
+        var events = Enumerable.Range(0, 126)
+            .Select(index => Event($"ns-{index % 3}", $"event-{index:D3}", DateTime.UtcNow.AddMinutes(index), index))
+            .Select(item =>
+            {
+                item.Metadata.Uid = item.Name();
+                return item;
+            })
+            .ToArray();
+
+        cluster.Runtime.GetResourceSourceCache<Corev1Event>().Edit(updater => updater.AddOrUpdate(events));
+
+        var vm = Application.Current.GetRequiredTestService<ResourceListViewModel<Corev1Event>>();
+        vm.Initialize(cluster);
+
+        var view = Application.Current.GetRequiredTestService<ResourceListView>();
+        view.DataContext = vm;
+        window.Content = view;
+        window.Show();
+
+        await WaitForAsync(() => vm.View.Count == 126, timeoutMs: 5000);
+        await WaitForAsync(() => vm.ItemCount == 126, timeoutMs: 5000);
+        var grid = view.FindControl<DataGrid>("PART_Grid");
+        grid.ShouldNotBeNull();
+        await WaitForAsync(() => grid!.ItemsSource is IList items && items.Count == 126, timeoutMs: 5000);
+        ((IList)grid!.ItemsSource!).Count.ShouldBe(126);
+        vm.FilteringModel.Descriptors.ShouldBeEmpty();
+        vm.SearchModel.Descriptors.ShouldBeEmpty();
+    }
+
+    [AvaloniaFact]
+    public async Task source_cache_updates_publish_the_complete_view_on_the_ui_thread()
+    {
+        var cluster = await Application.Current.CreateClusterAsync();
+        var vm = Application.Current.GetRequiredTestService<ResourceListViewModel<Corev1Event>>();
+        vm.Initialize(cluster);
+
+        var publishedOnUiThread = new ConcurrentBag<bool>();
+        ((INotifyCollectionChanged)vm.View).CollectionChanged += (_, _) =>
+            publishedOnUiThread.Add(Dispatcher.UIThread.CheckAccess());
+
+        var events = Enumerable.Range(0, 125)
+            .Select(index => Event("default", $"event-{index}"))
+            .Select(item =>
+            {
+                item.Metadata.Uid = item.Name();
+                return item;
+            })
+            .ToArray();
+
+        await Task.Run(
+            () => cluster.Runtime.GetResourceSourceCache<Corev1Event>().Edit(updater => updater.AddOrUpdate(events)),
+            TestContext.Current.CancellationToken);
+
+        await WaitForAsync(() => vm.View.Count == 125, timeoutMs: 5000);
+        await WaitForAsync(() => vm.ItemCount == 125, timeoutMs: 5000);
+
+        publishedOnUiThread.ShouldNotBeEmpty();
+        publishedOnUiThread.ShouldAllBe(value => value);
     }
 
     [AvaloniaFact(DisplayName = "Resource list columns expose filter buttons")]

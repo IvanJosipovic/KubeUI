@@ -802,11 +802,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
     private static IObservable<int> CreateResourceCountStream(ClusterWorkspace cluster, Type resourceType)
     {
         return cluster.Runtime.GetResourceCount(resourceType)
-            .DistinctUntilChanged()
-            .Publish(counts => counts.Take(1).Merge(counts.Skip(1).Sample(TimeSpan.FromMilliseconds(100), AvaloniaScheduler.Instance)))
-            .ObserveOn(AvaloniaScheduler.Instance)
-            .Replay(1)
-            .RefCount();
+                .Sample(TimeSpan.FromMilliseconds(100), AvaloniaScheduler.Instance);
     }
 
     private static NavigationLink CreateNavigationLink(ClusterWorkspace cluster, string id, string name, int order = 0)

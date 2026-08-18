@@ -203,7 +203,6 @@ public partial class ResourceListView : ViewBase<IResourceListViewModel>
                     .Margin(2, 0, 0, 0)
                     .VerticalContentAlignment(VerticalAlignment.Center)
                     .Content(CompiledBinding.Create<IResourceListViewModel, int>(x => x.ItemCount,
-                        source: vm,
                         stringFormat: Assets.Resources.ResourceListView_ItemsFormat)),
                 new StackPanel()
                     .Col(3)
