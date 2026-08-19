@@ -1428,13 +1428,14 @@ public sealed class ResourceGraphControlTests
             TimeSpan.FromSeconds(5),
             cancellationToken: TestContext.Current.CancellationToken);
 
+        var buildCountBeforeDispose = builder.BuildCount;
         viewModel.Dispose();
         var afterDispose = CreatePod("after-dispose");
         afterDispose.Metadata.Uid = null;
         await cluster.Runtime.AddOrUpdateResource(afterDispose);
         await TestApplicationExtensions.WaitForUiAsync();
 
-        builder.BuildCount.ShouldBe(1);
+        builder.BuildCount.ShouldBe(buildCountBeforeDispose);
     }
 
     [AvaloniaFact]
