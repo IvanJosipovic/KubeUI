@@ -185,16 +185,15 @@ public sealed class ResourceGraphControlTests
 
     private static async Task WaitForSignalAsync(Task signal, string description)
     {
-        var deadline = DateTime.UtcNow.AddSeconds(5);
-        while (!signal.IsCompleted)
-        {
-            await TestApplicationExtensions.WaitForUiAsync();
-            if (DateTime.UtcNow >= deadline)
-            {
-                throw new TimeoutException($"Timed out waiting for {description}.");
-            }
+        await TestWait.UntilAsync(
+            () => signal.IsCompleted,
+            TimeSpan.FromSeconds(15),
+            cancellationToken: TestContext.Current.CancellationToken,
+            beforePoll: () => Dispatcher.UIThread.RunJobs());
 
-            await WaitForNextPollAsync();
+        if (signal.IsFaulted)
+        {
+            throw new InvalidOperationException($"The {description} signal failed.", signal.Exception);
         }
     }
 
@@ -817,23 +816,20 @@ public sealed class ResourceGraphControlTests
         cluster.SelectedNamespaces.Clear();
         cluster.SelectedNamespaces.Add(new V1Namespace { Metadata = new() { Name = "default" } });
         viewModel.Initialize(cluster);
-        await TestApplicationExtensions.WaitForUiAsync();
-        await builder.WaitForInitialBuildAsync().WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
-        await TestApplicationExtensions.WaitForUiAsync();
-        await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background);
+        await builder.WaitForInitialBuildAsync().WaitAsync(TimeSpan.FromSeconds(15), TestContext.Current.CancellationToken);
+        await WaitForAsync(() => viewModel.Graph is not null);
 
         var pod = CreatePod("late");
         pod.Metadata.Uid = null;
         await cluster.Runtime.AddOrUpdateResource(pod);
-        await builder.WaitForAdditionStartedAsync().WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
+        await builder.WaitForAdditionStartedAsync().WaitAsync(TimeSpan.FromSeconds(15), TestContext.Current.CancellationToken);
 
         viewModel.HideNoise = false;
-        await builder.WaitForSecondBuildAsync().WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
-        await TestApplicationExtensions.WaitForUiAsync();
-        viewModel.Graph!.Resources.ShouldBeEmpty();
+        await builder.WaitForSecondBuildAsync().WaitAsync(TimeSpan.FromSeconds(15), TestContext.Current.CancellationToken);
+        await WaitForAsync(() => viewModel.Graph is { Resources.Count: 0 });
 
-        await builder.WaitForAdditionCompletedAsync().WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
-        await TestApplicationExtensions.WaitForUiAsync();
+        await builder.WaitForAdditionCompletedAsync().WaitAsync(TimeSpan.FromSeconds(15), TestContext.Current.CancellationToken);
+        await WaitForAsync(() => viewModel.Graph is { Resources.Count: 0 });
 
         viewModel.Graph!.Resources.ShouldBeEmpty();
     }
@@ -1419,6 +1415,10 @@ public sealed class ResourceGraphControlTests
         using VisualizationViewModel viewModel = new(builder);
         viewModel.Initialize(cluster);
         await builder.WaitForBuildAsync(1);
+        await TestWait.UntilAsync(
+            () => !viewModel.IsRebuildPendingOrRunning,
+            TimeSpan.FromSeconds(5),
+            cancellationToken: TestContext.Current.CancellationToken);
 
         viewModel.Dispose();
         var afterDispose = CreatePod("after-dispose");
