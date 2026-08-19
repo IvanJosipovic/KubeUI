@@ -116,7 +116,7 @@ public sealed class ApplicationShutdownTests
     public void late_unhandled_exception_does_not_throw_after_services_are_disposed()
     {
         var hostLifetime = new Mock<IHostApplicationLifetime>();
-        var services = new ServiceCollection()
+        using var services = new ServiceCollection()
             .AddLogging()
             .AddSingleton(hostLifetime.Object)
             .AddSingleton<Instrumentation>()
