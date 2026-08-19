@@ -828,6 +828,7 @@ public sealed class ResourceGraphControlTests
         await builder.WaitForSecondBuildAsync().WaitAsync(TimeSpan.FromSeconds(15), TestContext.Current.CancellationToken);
         await WaitForAsync(() => viewModel.Graph is { Resources.Count: 0 });
 
+        builder.ReleaseAddition();
         await builder.WaitForAdditionCompletedAsync().WaitAsync(TimeSpan.FromSeconds(15), TestContext.Current.CancellationToken);
         await WaitForAsync(() => viewModel.Graph is { Resources.Count: 0 });
 
@@ -1841,12 +1842,13 @@ public sealed class ResourceGraphControlTests
         public async Task WaitForSecondBuildAsync()
         {
             await WaitForSignalAsync(_secondBuild.Task, "second visualization build");
-            _releaseAddition.TrySetResult();
         }
 
         public async Task WaitForAdditionStartedAsync() => await WaitForSignalAsync(_additionStarted.Task, "incremental addition");
 
         public async Task WaitForAdditionCompletedAsync() => await WaitForSignalAsync(_additionCompleted.Task, "incremental addition completion");
+
+        public void ReleaseAddition() => _releaseAddition.TrySetResult();
 
     }
 
