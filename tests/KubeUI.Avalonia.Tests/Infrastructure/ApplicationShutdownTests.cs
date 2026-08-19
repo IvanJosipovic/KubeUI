@@ -116,13 +116,14 @@ public sealed class ApplicationShutdownTests
     public void late_unhandled_exception_does_not_throw_after_services_are_disposed()
     {
         var hostLifetime = new Mock<IHostApplicationLifetime>();
-        using var services = new ServiceCollection()
+        var services = new ServiceCollection()
             .AddLogging()
             .AddSingleton(hostLifetime.Object)
             .AddSingleton<Instrumentation>()
             .AddSingleton<ViewLocator>()
             .BuildServiceProvider();
         var app = new DisposedTelemetryApp(services);
+        services.Dispose();
 
         Should.NotThrow(() => app.RecordUnhandledException(
             new InvalidOperationException("late task failure"),
