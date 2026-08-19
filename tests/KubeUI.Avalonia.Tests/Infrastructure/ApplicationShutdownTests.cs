@@ -54,7 +54,7 @@ public sealed class ApplicationShutdownTests
     public void unhandled_runtime_exception_flushes_telemetry()
     {
         var hostLifetime = new Mock<IHostApplicationLifetime>();
-        var processor = new RecordingLogProcessor();
+        using var processor = new RecordingLogProcessor();
         var serviceCollection = new ServiceCollection()
             .AddLogging();
         serviceCollection.AddOpenTelemetry()
@@ -86,7 +86,7 @@ public sealed class ApplicationShutdownTests
     {
         public List<LogRecord> Records { get; } = [];
 
-        protected override void OnEnd(LogRecord data)
+        public override void OnEnd(LogRecord data)
         {
             Records.Add(data);
         }

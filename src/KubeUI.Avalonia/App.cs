@@ -42,6 +42,7 @@ public partial class App : Application, IServiceProviderHost
     private ILogger<App> _logger = null!;
     private IHostApplicationLifetime _hostApplicationLifetime = null!;
     private int _shutdownRequested;
+    private const int TelemetryFlushTimeoutMilliseconds = 5000;
 
     public App(IServiceProvider serviceProvider)
     {
@@ -193,8 +194,8 @@ public partial class App : Application, IServiceProviderHost
 
     protected virtual void FlushTelemetry()
     {
-        Services.GetService<LoggerProvider>()?.ForceFlush();
-        Services.GetService<MeterProvider>()?.ForceFlush();
-        Services.GetService<TracerProvider>()?.ForceFlush();
+        Services.GetService<LoggerProvider>()?.ForceFlush(TelemetryFlushTimeoutMilliseconds);
+        Services.GetService<MeterProvider>()?.ForceFlush(TelemetryFlushTimeoutMilliseconds);
+        Services.GetService<TracerProvider>()?.ForceFlush(TelemetryFlushTimeoutMilliseconds);
     }
 }
