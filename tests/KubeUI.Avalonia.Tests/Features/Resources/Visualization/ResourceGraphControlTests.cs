@@ -828,9 +828,16 @@ public sealed class ResourceGraphControlTests
         await builder.WaitForSecondBuildAsync().WaitAsync(TimeSpan.FromSeconds(15), TestContext.Current.CancellationToken);
         await WaitForAsync(() => viewModel.Graph is { Resources.Count: 0 });
 
-        builder.ReleaseAddition();
-        await builder.WaitForAdditionCompletedAsync().WaitAsync(TimeSpan.FromSeconds(15), TestContext.Current.CancellationToken);
-        await WaitForAsync(() => viewModel.Graph is { Resources.Count: 0 });
+        try
+        {
+            builder.ReleaseAddition();
+            await builder.WaitForAdditionCompletedAsync().WaitAsync(TimeSpan.FromSeconds(15), TestContext.Current.CancellationToken);
+            await WaitForAsync(() => viewModel.Graph is { Resources.Count: 0 });
+        }
+        finally
+        {
+            builder.ReleaseAddition();
+        }
 
         viewModel.Graph!.Resources.ShouldBeEmpty();
     }
