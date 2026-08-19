@@ -193,10 +193,7 @@ public partial class App : Application, IServiceProviderHost
 
     protected virtual void FlushTelemetry()
     {
-        foreach (var loggerProvider in Services.GetServices<ILoggerProvider>().OfType<LoggerProvider>())
-        {
-            loggerProvider.ForceFlush();
-        }
+        Services.GetService<LoggerProvider>()?.ForceFlush();
         Services.GetService<MeterProvider>()?.ForceFlush();
         Services.GetService<TracerProvider>()?.ForceFlush();
     }

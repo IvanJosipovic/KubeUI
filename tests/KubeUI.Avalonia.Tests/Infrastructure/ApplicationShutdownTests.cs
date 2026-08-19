@@ -1,4 +1,7 @@
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Hosting;
+using OpenTelemetry;
+using OpenTelemetry.Logs;
 using KubeUI.Avalonia.Infrastructure.Platform;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using Moq;
@@ -51,8 +54,12 @@ public sealed class ApplicationShutdownTests
     public void unhandled_runtime_exception_flushes_telemetry()
     {
         var hostLifetime = new Mock<IHostApplicationLifetime>();
-        using var services = new ServiceCollection()
-            .AddLogging()
+        var processor = new RecordingLogProcessor();
+        var serviceCollection = new ServiceCollection()
+            .AddLogging();
+        serviceCollection.AddOpenTelemetry()
+            .WithLogging(logging => logging.AddProcessor(processor));
+        using var services = serviceCollection
             .AddSingleton(hostLifetime.Object)
             .AddSingleton<Instrumentation>()
             .AddSingleton<ViewLocator>()
@@ -61,7 +68,7 @@ public sealed class ApplicationShutdownTests
 
         app.RecordUnhandledException(new InvalidOperationException("runtime failure"), isTerminating: false);
 
-        app.TelemetryWasFlushed.ShouldBeTrue();
+        processor.Records.ShouldContain(record => record.LogLevel == LogLevel.Critical);
         hostLifetime.Verify(x => x.StopApplication(), Times.Never);
     }
 
@@ -72,6 +79,16 @@ public sealed class ApplicationShutdownTests
         protected override void FlushTelemetry()
         {
             TelemetryWasFlushed = true;
+        }
+    }
+
+    private sealed class RecordingLogProcessor : BaseProcessor<LogRecord>
+    {
+        public List<LogRecord> Records { get; } = [];
+
+        protected override void OnEnd(LogRecord data)
+        {
+            Records.Add(data);
         }
     }
 
