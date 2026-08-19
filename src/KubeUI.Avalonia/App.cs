@@ -115,13 +115,12 @@ public partial class App : Application, IServiceProviderHost
 
     private void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
     {
-        _logger.LogCritical(e.ExceptionObject as Exception, "Unhandled domain exception (terminating: {IsTerminating})", e.IsTerminating);
-        GracefulShutdown();
+        RecordUnhandledException(e.ExceptionObject as Exception ?? new Exception(e.ExceptionObject?.ToString()), e.IsTerminating);
     }
 
     private void TaskScheduler_UnobservedTaskException(object? sender, UnobservedTaskExceptionEventArgs e)
     {
-        _logger.LogError(e.Exception, "Unobserved task exception");
+        RecordUnhandledException(e.Exception, isTerminating: false);
         e.SetObserved();
     }
 
@@ -165,8 +164,19 @@ public partial class App : Application, IServiceProviderHost
 
     private void OnUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
     {
-        _logger.LogCritical(e.Exception, "UI Thread Unhandled Exception");
+        RecordUnhandledException(e.Exception, isTerminating: false);
         e.Handled = true;
+    }
+
+    internal void RecordUnhandledException(Exception exception, bool isTerminating)
+    {
+        _logger.LogCritical(exception, "Unhandled exception (terminating: {IsTerminating})", isTerminating);
+        FlushTelemetry();
+
+        if (isTerminating)
+        {
+            GracefulShutdown();
+        }
     }
 
     internal void GracefulShutdown()
@@ -177,9 +187,17 @@ public partial class App : Application, IServiceProviderHost
         }
 
         KubernetesClientConfiguration.ExecStdError -= KubernetesClientConfiguration_ExecStdError;
-        Services.GetService<LoggerProvider>()?.ForceFlush();
+        FlushTelemetry();
+        _hostApplicationLifetime.StopApplication();
+    }
+
+    protected virtual void FlushTelemetry()
+    {
+        foreach (var loggerProvider in Services.GetServices<ILoggerProvider>().OfType<LoggerProvider>())
+        {
+            loggerProvider.ForceFlush();
+        }
         Services.GetService<MeterProvider>()?.ForceFlush();
         Services.GetService<TracerProvider>()?.ForceFlush();
-        _hostApplicationLifetime.StopApplication();
     }
 }

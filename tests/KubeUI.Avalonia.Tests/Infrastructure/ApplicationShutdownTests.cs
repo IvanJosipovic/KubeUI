@@ -40,9 +40,39 @@ public sealed class ApplicationShutdownTests
             .AddSingleton<ViewLocator>()
             .BuildServiceProvider();
 
-        var app = new App(services);
+        var app = new TestApp(services);
         app.GracefulShutdown();
 
+        app.TelemetryWasFlushed.ShouldBeTrue();
         hostLifetime.Verify(x => x.StopApplication(), Times.Once);
     }
+
+    [Fact]
+    public void unhandled_runtime_exception_flushes_telemetry()
+    {
+        var hostLifetime = new Mock<IHostApplicationLifetime>();
+        using var services = new ServiceCollection()
+            .AddLogging()
+            .AddSingleton(hostLifetime.Object)
+            .AddSingleton<Instrumentation>()
+            .AddSingleton<ViewLocator>()
+            .BuildServiceProvider();
+        var app = new TestApp(services);
+
+        app.RecordUnhandledException(new InvalidOperationException("runtime failure"), isTerminating: false);
+
+        app.TelemetryWasFlushed.ShouldBeTrue();
+        hostLifetime.Verify(x => x.StopApplication(), Times.Never);
+    }
+
+    private sealed class TestApp(IServiceProvider services) : App(services)
+    {
+        public bool TelemetryWasFlushed { get; private set; }
+
+        protected override void FlushTelemetry()
+        {
+            TelemetryWasFlushed = true;
+        }
+    }
+
 }
