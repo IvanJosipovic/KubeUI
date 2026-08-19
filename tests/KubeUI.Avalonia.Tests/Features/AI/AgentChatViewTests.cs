@@ -66,9 +66,9 @@ public sealed class AgentChatViewTests
         using var window = Application.Current.CreateTestWindow(400, 600, view);
 
         window.Show();
-        Dispatcher.UIThread.RunJobs();
 
         var scrollViewer = GetConversationScrollViewer(view);
+        await WaitForAsync(() => scrollViewer.Extent.Height > scrollViewer.Viewport.Height);
         scrollViewer.VerticalScrollBarVisibility.ShouldBe(ScrollBarVisibility.Auto);
         scrollViewer.Extent.Height.ShouldBeGreaterThan(scrollViewer.Viewport.Height);
         view.GetVisualDescendants().OfType<MarkdownRenderer>().Count().ShouldBe(1);
@@ -208,4 +208,13 @@ public sealed class AgentChatViewTests
     private static ScrollViewer GetConversationScrollViewer(AgentChatView view)
         => view.GetVisualDescendants().OfType<ScrollViewer>()
             .Single(control => control.Content is MarkdownRenderer);
+
+    private static async Task WaitForAsync(Func<bool> predicate, int timeoutMs = 5000)
+    {
+        await TestWait.UntilAsync(
+            predicate,
+            timeoutMs,
+            TestContext.Current.CancellationToken,
+            () => Dispatcher.UIThread.RunJobs());
+    }
 }

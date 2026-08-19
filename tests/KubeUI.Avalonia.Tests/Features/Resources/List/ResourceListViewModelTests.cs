@@ -1497,7 +1497,11 @@ public class ResourceListViewModelTests
         vm.SelectionModel.Select(0);
 
         cluster.SelectedNamespaces.Add(NamespaceResource("ns1"));
-        await TestApplicationExtensions.WaitForUiAsync();
+        await WaitForAsync(
+            () => vm.SelectedItem is { } selectedItem
+                && selectedItem.Namespace() == "ns1"
+                && selectedItem.Name() == "a",
+            timeoutMs: 5000);
 
         vm.SelectedItem.ShouldNotBeNull();
         vm.SelectedItem!.Namespace().ShouldBe("ns1");
