@@ -1493,6 +1493,7 @@ public class ResourceListViewModelTests
 
         await AddOrUpdateAsync(cluster, Pod("ns1", "a"));
         await AddOrUpdateAsync(cluster, Pod("ns2", "b"));
+        await WaitForAsync(() => vm.View.Count == 2, timeoutMs: 5000);
 
         vm.SelectionModel.Select(0);
 
