@@ -165,14 +165,19 @@ public partial class App : Application, IServiceProviderHost
 
     private void OnUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
     {
-        RecordUnhandledException(e.Exception, isTerminating: false);
+        HandleUiThreadException(e.Exception);
         e.Handled = true;
+    }
+
+    internal void HandleUiThreadException(Exception exception)
+    {
+        RecordUnhandledException(exception, isTerminating: false);
     }
 
     internal void RecordUnhandledException(Exception exception, bool isTerminating)
     {
         _logger.LogCritical(exception, "Unhandled exception (terminating: {IsTerminating})", isTerminating);
-        FlushTelemetry();
+        TryFlushTelemetry();
 
         if (isTerminating)
         {
@@ -188,8 +193,20 @@ public partial class App : Application, IServiceProviderHost
         }
 
         KubernetesClientConfiguration.ExecStdError -= KubernetesClientConfiguration_ExecStdError;
-        FlushTelemetry();
+        TryFlushTelemetry();
         _hostApplicationLifetime.StopApplication();
+    }
+
+    private void TryFlushTelemetry()
+    {
+        try
+        {
+            FlushTelemetry();
+        }
+        catch (ObjectDisposedException)
+        {
+            // Late unobserved task exceptions can arrive after host teardown.
+        }
     }
 
     protected virtual void FlushTelemetry()

@@ -72,6 +72,63 @@ public sealed class ApplicationShutdownTests
         hostLifetime.Verify(x => x.StopApplication(), Times.Never);
     }
 
+    [Fact]
+    public void ui_thread_exception_flushes_telemetry_without_stopping_host()
+    {
+        var hostLifetime = new Mock<IHostApplicationLifetime>();
+        using var services = new ServiceCollection()
+            .AddLogging()
+            .AddSingleton(hostLifetime.Object)
+            .AddSingleton<Instrumentation>()
+            .AddSingleton<ViewLocator>()
+            .BuildServiceProvider();
+        var app = new TestApp(services);
+
+        app.HandleUiThreadException(new InvalidOperationException("ui failure"));
+
+        app.TelemetryWasFlushed.ShouldBeTrue();
+        hostLifetime.Verify(x => x.StopApplication(), Times.Never);
+    }
+
+    [Fact]
+    public void terminating_exception_flushes_telemetry_and_stops_host()
+    {
+        var hostLifetime = new Mock<IHostApplicationLifetime>();
+        using var processor = new RecordingLogProcessor();
+        var serviceCollection = new ServiceCollection()
+            .AddLogging();
+        serviceCollection.AddOpenTelemetry()
+            .WithLogging(logging => logging.AddProcessor(processor));
+        using var services = serviceCollection
+            .AddSingleton(hostLifetime.Object)
+            .AddSingleton<Instrumentation>()
+            .AddSingleton<ViewLocator>()
+            .BuildServiceProvider();
+        var app = new App(services);
+
+        app.RecordUnhandledException(new InvalidOperationException("fatal failure"), isTerminating: true);
+
+        processor.Records.ShouldContain(record => record.LogLevel == LogLevel.Critical);
+        hostLifetime.Verify(x => x.StopApplication(), Times.Once);
+    }
+
+    [Fact]
+    public void late_unhandled_exception_does_not_throw_after_services_are_disposed()
+    {
+        var hostLifetime = new Mock<IHostApplicationLifetime>();
+        using var services = new ServiceCollection()
+            .AddLogging()
+            .AddSingleton(hostLifetime.Object)
+            .AddSingleton<Instrumentation>()
+            .AddSingleton<ViewLocator>()
+            .BuildServiceProvider();
+        var app = new DisposedTelemetryApp(services);
+
+        Should.NotThrow(() => app.RecordUnhandledException(
+            new InvalidOperationException("late task failure"),
+            isTerminating: false));
+    }
+
     private sealed class TestApp(IServiceProvider services) : App(services)
     {
         public bool TelemetryWasFlushed { get; private set; }
@@ -89,6 +146,14 @@ public sealed class ApplicationShutdownTests
         public override void OnEnd(LogRecord data)
         {
             Records.Add(data);
+        }
+    }
+
+    private sealed class DisposedTelemetryApp(IServiceProvider services) : App(services)
+    {
+        protected override void FlushTelemetry()
+        {
+            throw new ObjectDisposedException(nameof(IServiceProvider));
         }
     }
 
