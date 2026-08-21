@@ -4,6 +4,7 @@ using FluentIcons.Common;
 using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using k8s.Models;
+using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Features.Resources.Common;
 using KubeUI.Avalonia.Infrastructure.Platform;
 using KubeUI.Kubernetes;
@@ -14,9 +15,9 @@ public sealed partial class V1ServiceConfig : ResourceConfigBase<V1Service>
 {
     private static readonly AuthorizationRequest[] s_portForwardAuthorizationRequests =
     [
-        new(typeof(V1Pod), Verb.Create, "portforward"),
-        new(typeof(V1EndpointSlice), Verb.List, null),
-        new(typeof(V1EndpointSlice), Verb.Watch, null),
+        new(GroupApiVersionKind.From<V1Pod>(), Verb.Create, "portforward"),
+        new(GroupApiVersionKind.From<V1EndpointSlice>(), Verb.List, null),
+        new(GroupApiVersionKind.From<V1EndpointSlice>(), Verb.Watch, null),
     ];
 
     private readonly IPlatformServices _platformServices;

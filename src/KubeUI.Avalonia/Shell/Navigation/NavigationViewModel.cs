@@ -416,11 +416,11 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
         }
 
         var link = FindResourceNavigationLink(node.NavigationItems, kind);
-        if (link != null
+        if (link?.ResourceKind is { } resourceKind
             && cluster.Runtime.Objects.TryGetValue(kind, out var container)
             && container is IResourceContainer { IsSeeded: true })
         {
-            link.Count ??= CreateResourceCountStream(cluster, link.ControlType);
+            link.Count ??= CreateResourceCountStream(cluster, resourceKind);
         }
     }
 
@@ -428,9 +428,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
     {
         foreach (var item in items.ToArray())
         {
-            if (item is ResourceNavigationLink link
-                && link.ControlType != null
-                && GroupApiVersionKind.From(link.ControlType) == kind)
+            if (item is ResourceNavigationLink link && link.ResourceKind == kind)
             {
                 return link;
             }
@@ -475,7 +473,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
             return;
         }
 
-        if (resourceConfig.Type == typeof(V1CustomResourceDefinition) || resourceConfig.IsCustomResource)
+        if (resourceConfig.Kind == GroupApiVersionKind.From<V1CustomResourceDefinition>() || resourceConfig.IsCustomResource)
         {
             UpdateCustomResourceNavigation(node, cluster, resourceConfig, resourceConfigs);
         }
@@ -484,7 +482,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
             UpdateStandardResourceNavigation(node, cluster, resourceConfig);
         }
 
-        if (resourceConfig.Type == typeof(V1Pod))
+        if (resourceConfig.Kind == GroupApiVersionKind.From<V1Pod>())
         {
             UpdatePortForwardersNavigation(node);
         }
@@ -536,7 +534,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
         IReadOnlyCollection<IResourceConfig>? resourceConfigs = null)
     {
         var configs = resourceConfigs ?? cluster.GetResourceConfigs().ToArray();
-        var definition = cluster.GetResourceConfig(typeof(V1CustomResourceDefinition));
+        var definition = cluster.GetResourceConfig(GroupApiVersionKind.From<V1CustomResourceDefinition>());
         var rootId = $"{cluster.Runtime.Name}-custom-resource-definitions";
         var root = node.NavigationItems.FirstOrDefault(item => item.Id == rootId);
 
@@ -570,7 +568,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
                 UpdateCustomResourceLink(root, cluster, config);
             }
         }
-        else if (changedConfig.Type == typeof(V1CustomResourceDefinition))
+        else if (changedConfig.Kind == GroupApiVersionKind.From<V1CustomResourceDefinition>())
         {
             UpdateCustomResourceLink(root, cluster, definition);
         }
@@ -594,7 +592,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
         var id = $"{node.Cluster.Runtime.Name}-{NavigationTargets.PortForwarders}";
         RemoveNavigationItem(node.NavigationItems, id);
 
-        var podConfig = node.Cluster.GetResourceConfig(typeof(V1Pod));
+        var podConfig = node.Cluster.GetResourceConfig(GroupApiVersionKind.From<V1Pod>());
         if (podConfig is not { PermissionsLoaded: true, CanListAndWatch: true }
             || !CanCreatePortForward(node.Cluster))
         {
@@ -611,7 +609,11 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
     {
         try
         {
-            return cluster.Runtime.Permissions.CanIAnyNamespace(typeof(V1Pod), Verb.Create, "portforward");
+            return cluster.Runtime.Permissions.CanIAnyNamespace(
+                GroupApiVersionKind.From<V1Pod>(),
+                true,
+                Verb.Create,
+                "portforward");
         }
         catch (Exception ex)
         {
@@ -686,7 +688,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
             && desired is ResourceNavigationLink desiredResource)
         {
             currentResource.Cluster = desiredResource.Cluster;
-            currentResource.ControlType = desiredResource.ControlType;
+            currentResource.ResourceKind = desiredResource.ResourceKind;
             currentResource.OpenCommand = desiredResource.OpenCommand;
             currentResource.OpenInNewTabCommand = desiredResource.OpenInNewTabCommand;
             currentResource.ResourceIcon = desiredResource.ResourceIcon;
@@ -716,7 +718,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
     {
         var resourceId = $"{cluster.Runtime.Name}-{config.Kind}";
         var target = root.NavigationItems;
-        if (config.Type != typeof(V1CustomResourceDefinition))
+        if (config.Kind != GroupApiVersionKind.From<V1CustomResourceDefinition>())
         {
             var path = ConstructCustomResourceGroupPath(config.Kind.Group);
             var parts = new List<string>(path.Count);
@@ -739,7 +741,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
         var existingParent = FindNavigationParentCollection(root.NavigationItems, resourceId);
         var existing = existingParent?.FirstOrDefault(item => item.Id == resourceId);
         var desired = CreateResourceNavigationLink(cluster, config);
-        if (config.Type == typeof(V1CustomResourceDefinition))
+        if (config.Kind == GroupApiVersionKind.From<V1CustomResourceDefinition>())
         {
             desired.Name = "Definitions";
             desired.Order = -1;
@@ -769,8 +771,8 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
             Cluster = cluster,
             Id = $"{cluster.Runtime.Name}-{config.Kind}",
             Name = config.Name,
-            ControlType = config.Type,
-            ResourceIcon = _iconService.GetIcon(config.Type),
+            ResourceKind = config.Kind,
+            ResourceIcon = _iconService.GetIcon(config.Kind),
             Order = config.Order,
             OpenCommand = OpenResourceNavigationCommand,
             OpenInNewTabCommand = OpenResourceNavigationInNewTabCommand,
@@ -799,9 +801,9 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
         return path;
     }
 
-    private static IObservable<int> CreateResourceCountStream(ClusterWorkspace cluster, Type resourceType)
+    private static IObservable<int> CreateResourceCountStream(ClusterWorkspace cluster, GroupApiVersionKind kind)
     {
-        return cluster.Runtime.GetResourceCount(resourceType)
+        return cluster.Runtime.GetResourceCount(kind)
                 .Sample(TimeSpan.FromMilliseconds(100), AvaloniaScheduler.Instance);
     }
 
@@ -886,7 +888,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
                 NavigationTargets.ClusterWorkspace => typeof(ClusterViewModel),
                 NavigationTargets.PortForwarders => typeof(PortForwarderListViewModel),
                 NavigationTargets.Visualization => typeof(VisualizationViewModel),
-                _ => link.ControlType
+                _ => null
             };
 
             if (vmType == null)

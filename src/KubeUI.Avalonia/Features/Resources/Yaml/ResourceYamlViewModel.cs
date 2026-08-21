@@ -23,6 +23,8 @@ public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
     private TextDocument? _validationDocument;
     private bool _actionResultFromValidation;
     private CancellationTokenSource? _validationDebounceCts;
+    private GroupApiVersionKind? _resourceKind;
+    private Func<IKubernetesObject<V1ObjectMeta>, IKubernetesObject<V1ObjectMeta>>? _cloneObject;
 
     internal TimeSpan ValidationDebounceDelay { get; set; } = TimeSpan.FromSeconds(1);
 
@@ -38,6 +40,24 @@ public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
         {
             _object = value;
             OnPropertyChanged();
+        }
+    }
+
+    internal GroupApiVersionKind ResourceKind
+    {
+        get
+        {
+            if (TryResolveResourceKind(out var kind))
+            {
+                return kind;
+            }
+
+            if (Object is null || Cluster is null)
+            {
+                throw new InvalidOperationException("YAML resource has not been initialized.");
+            }
+
+            throw new InvalidOperationException($"Unknown Kubernetes resource {Object.ApiVersion}/{Object.Kind}.");
         }
     }
 
@@ -57,7 +77,7 @@ public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
     public partial Vector ScrollOffset { get; set; }
 
     [ObservableProperty]
-    public partial IEnumerable<NewFolding> AllFoldings { get; set; }
+    public partial IReadOnlyList<YamlFoldState> AllFoldings { get; set; } = [];
 
     [ObservableProperty]
     public partial IReadOnlyList<YamlDiagnostic> ValidationDiagnostics { get; set; } = [];
@@ -97,18 +117,65 @@ public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
 
     public void Initialize(ClusterWorkspace cluster, IKubernetesObject<V1ObjectMeta> @object)
     {
+        _cloneObject = null;
+        Initialize(cluster, @object, resourceKind: null);
+    }
+
+    public void Initialize<T>(ClusterWorkspace cluster, T @object)
+        where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    {
+        _cloneObject = value => Utilities.CloneObject((T)value);
+
+        if (@object is not GenericKubernetesObject
+            && !cluster.Runtime.ModelCatalog.TryGetResourceKind(@object, out _))
+        {
+            Initialize(cluster, @object, GroupApiVersionKind.From<T>());
+            return;
+        }
+
+        Initialize(cluster, @object, resourceKind: null);
+    }
+
+    private void Initialize(
+        ClusterWorkspace cluster,
+        IKubernetesObject<V1ObjectMeta> @object,
+        GroupApiVersionKind? resourceKind)
+    {
         Cluster = cluster;
         Cluster.Runtime.OnChange += Cluster_OnChange;
+        _resourceKind = resourceKind;
         Object = @object;
 
-        Id = $"{nameof(ResourceYamlViewModel)}-{Cluster.Runtime.Name}-{Object.ApiVersion}/{Object.Kind}/{Object.Metadata.NamespaceProperty}/{Object.Metadata.Name}";
+        var apiVersion = resourceKind?.GroupApiVersion ?? Object.ApiVersion;
+        var kind = resourceKind?.Kind ?? Object.Kind;
+        Id = $"{nameof(ResourceYamlViewModel)}-{Cluster.Runtime.Name}-{apiVersion}/{kind}/{Object.Metadata.NamespaceProperty}/{Object.Metadata.Name}";
+    }
+
+    private bool TryResolveResourceKind(out GroupApiVersionKind resourceKind)
+    {
+        if (_resourceKind is { } initializedKind)
+        {
+            resourceKind = initializedKind;
+            return true;
+        }
+
+        if (Cluster is not null
+            && Object is not null
+            && Cluster.Runtime.ModelCatalog.TryGetResourceKind(Object, out resourceKind))
+        {
+            return true;
+        }
+
+        resourceKind = default;
+        return false;
     }
 
     private void SetYamlDocument()
     {
         if (!EditMode && HideNoisyFields)
         {
-            var objectClone = Utilities.CloneObject(Object);
+            var objectClone = _cloneObject?.Invoke(Object)
+                ?? throw new InvalidOperationException("YAML resource was initialized without a typed clone strategy.");
 
             objectClone.Metadata?.ManagedFields = null;
             objectClone.Metadata?.Annotations?.Remove("kubectl.kubernetes.io/last-applied-configuration");
@@ -256,7 +323,15 @@ public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
 
     private bool CanSetEditMode()
     {
-        return Cluster!.Runtime.Permissions.CanI(Object!.GetType(), Verb.Update, Object?.Metadata?.NamespaceProperty);
+        if (Cluster is null || Object is null || !TryResolveResourceKind(out var kind))
+        {
+            return false;
+        }
+
+        return Cluster.Runtime.Permissions.CanI(
+            kind,
+            Verb.Update,
+            Object.Metadata?.NamespaceProperty);
     }
 
     [RelayCommand(CanExecute = nameof(CanUndo))]

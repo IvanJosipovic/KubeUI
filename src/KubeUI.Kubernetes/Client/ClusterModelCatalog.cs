@@ -1,162 +1,166 @@
-using System.Collections.Frozen;
-using System.Reflection;
-using System.Xml;
-using KubernetesCRDModelGen;
+using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
 
 namespace KubeUI.Kubernetes;
 
 /// <summary>
-/// Resolves built-in Kubernetes and cluster-specific custom-resource models and documentation.
+/// Resolves registered Kubernetes and cluster-specific custom-resource models and documentation.
 /// </summary>
 public sealed class ClusterModelCatalog
 {
     private readonly KubernetesModelCatalog _sharedCatalog;
     private readonly Lock _gate = new();
-    private FrozenDictionary<string, Type>? _yamlTypeMap;
-    private FrozenDictionary<string, Type>? _crdYamlTypeMap;
+    private readonly Dictionary<(string Group, string Version, string Kind), GroupApiVersionKind> _customResourceKinds = [];
+    private readonly Dictionary<string, GroupApiVersionKind> _customResourceKindsByDefinitionName = new(StringComparer.Ordinal);
+
+    public KubernetesOpenApiSchemaCatalog OpenApiSchemas { get; } = new();
 
     /// <summary>
-    /// Gets the catalog containing models generated for the connected cluster's CRDs.
+    /// Initializes a catalog for a cluster using the shared registered model catalog.
     /// </summary>
-    public ClusterCrdModelCatalog CrdModels { get; }
-
-    /// <summary>
-    /// Gets the shared catalog containing built-in Kubernetes models and documentation.
-    /// </summary>
-    public KubernetesModelCatalog SharedCatalog => _sharedCatalog;
-
-    /// <summary>
-    /// Initializes a catalog for a cluster using the shared built-in model catalog.
-    /// </summary>
-    /// <param name="sharedCatalog">The catalog containing built-in Kubernetes models.</param>
+    /// <param name="sharedCatalog">The catalog containing registered Kubernetes models.</param>
     public ClusterModelCatalog(KubernetesModelCatalog sharedCatalog)
     {
         _sharedCatalog = sharedCatalog;
-        CrdModels = new ClusterCrdModelCatalog();
     }
 
-    /// <summary>
-    /// Resolves a resource model by group, version, and kind, preferring a cluster CRD model.
-    /// </summary>
-    /// <param name="type">The group, version, and kind to resolve.</param>
-    /// <returns>The matching model type, or <see langword="null"/> when no model is registered.</returns>
-    public Type? GetResourceType(GroupApiVersionKind type)
+    public bool Contains(GroupApiVersionKind kind)
     {
-        return CrdModels.GetResourceType(type)
-            ?? _sharedCatalog.GetResourceType(type);
+        return IsCustomResource(kind)
+            || _sharedCatalog.TryGetResourceKind(kind.Group, kind.ApiVersion, kind.Kind, out _);
     }
 
-    /// <summary>
-    /// Resolves a resource model by group, version, and kind, preferring a cluster CRD model.
-    /// </summary>
-    /// <param name="group">The API group, or an empty string for core resources.</param>
-    /// <param name="version">The API version.</param>
-    /// <param name="kind">The resource kind.</param>
-    /// <returns>The matching model type, or <see langword="null"/> when no model is registered.</returns>
-    public Type? GetResourceType(string group, string version, string kind)
-    {
-        return GetResourceType(new GroupApiVersionKind(group, version, kind, string.Empty));
-    }
-
-    /// <summary>
-    /// Gets the YAML type mappings for models registered in the cluster CRD catalog.
-    /// </summary>
-    /// <returns>A map from YAML resource keys to model types.</returns>
-    public FrozenDictionary<string, Type> GetYamlTypeMap()
+    /// <summary>Determines whether API key belongs to a cluster custom resource.</summary>
+    public bool IsCustomResource(GroupApiVersionKind kind)
     {
         lock (_gate)
         {
-            var crdYamlTypeMap = CrdModels.GetYamlTypeMap();
-            if (_yamlTypeMap is not null && ReferenceEquals(_crdYamlTypeMap, crdYamlTypeMap))
-            {
-                return _yamlTypeMap;
-            }
-
-            var map = new Dictionary<string, Type>(_sharedCatalog.GetYamlTypeMap(), StringComparer.Ordinal);
-            foreach (var pair in crdYamlTypeMap)
-            {
-                map[pair.Key] = pair.Value;
-            }
-
-            _crdYamlTypeMap = crdYamlTypeMap;
-            return _yamlTypeMap = map.ToFrozenDictionary(StringComparer.Ordinal);
+            return _customResourceKinds.ContainsKey(CreateLookupKey(kind));
         }
     }
 
-    /// <summary>
-    /// Replaces the generated model associated with a custom-resource definition.
-    /// </summary>
-    /// <param name="crd">The custom-resource definition that owns the generated model.</param>
-    /// <param name="assembly">The generated model assembly.</param>
-    /// <param name="xmlDocument">The generated model documentation.</param>
-    /// <param name="unloadHandle">An optional handle used to unload the previous generated assembly.</param>
-    /// <returns>The previous and current model types associated with the CRD.</returns>
-    public (Type? previousType, Type? currentType) ReplaceCustomResourceDefinition(
-        V1CustomResourceDefinition crd,
-        Assembly assembly,
-        XmlDocument xmlDocument,
-        GeneratedAssemblyUnloadHandle? unloadHandle = null)
+    public bool TryGetResourceType(GroupApiVersionKind kind, out Type resourceType)
     {
-        return CrdModels.ReplaceCustomResourceDefinition(crd, assembly, xmlDocument, unloadHandle);
+        if (IsCustomResource(kind))
+        {
+            resourceType = typeof(GenericKubernetesObject);
+            return true;
+        }
+
+        return _sharedCatalog.TryGetResourceType(kind, out resourceType!);
     }
 
-    /// <summary>
-    /// Removes the generated model associated with a custom-resource definition.
-    /// </summary>
-    /// <param name="crd">The custom-resource definition whose generated model should be removed.</param>
-    /// <returns>The removed model type, or <see langword="null"/> when none was registered.</returns>
-    public Type? RemoveCustomResourceDefinition(V1CustomResourceDefinition crd)
+    /// <summary>Registers a CLR resource model supplied by a resource configuration.</summary>
+    /// <param name="resourceKind">API group, version, kind, and plural name.</param>
+    /// <param name="resourceType">CLR model type used for the resource.</param>
+    public void RegisterResource(GroupApiVersionKind resourceKind, Type resourceType)
     {
-        return CrdModels.RemoveCustomResourceDefinition(crd);
+        _sharedCatalog.Register(resourceKind, resourceType);
     }
 
-    /// <summary>
-    /// Removes all generated custom-resource models from the cluster catalog.
-    /// </summary>
+    public bool TryGetResourceKind(string apiVersion, string kind, out GroupApiVersionKind resourceKind)
+    {
+        var lookupKey = CreateLookupKey(apiVersion, kind);
+        lock (_gate)
+        {
+            if (_customResourceKinds.TryGetValue(lookupKey, out resourceKind))
+            {
+                return true;
+            }
+        }
+
+        var separator = apiVersion.IndexOf('/');
+        var group = separator < 0 ? string.Empty : apiVersion[..separator];
+        var version = separator < 0 ? apiVersion : apiVersion[(separator + 1)..];
+        return _sharedCatalog.TryGetResourceKind(group, version, kind, out resourceKind);
+    }
+
+    /// <summary>Resolves a resource API key from its payload without inspecting its CLR type.</summary>
+    /// <param name="resource">Resource whose API version and kind should be resolved.</param>
+    /// <param name="resourceKind">Resolved resource API key.</param>
+    /// <returns><see langword="true"/> when the resource API key is registered.</returns>
+    public bool TryGetResourceKind(
+        IKubernetesObject<V1ObjectMeta> resource,
+        out GroupApiVersionKind resourceKind)
+    {
+        ArgumentNullException.ThrowIfNull(resource);
+
+        return TryGetResourceKind(resource.ApiVersion ?? string.Empty, resource.Kind ?? string.Empty, out resourceKind);
+    }
+
+    public void RegisterOpenApiSchema(Microsoft.OpenApi.OpenApiDocument document)
+    {
+        OpenApiSchemas.Register(document);
+    }
+
+    public void RegisterCustomResourceDefinition(GroupApiVersionKind kind)
+    {
+        lock (_gate)
+        {
+            _customResourceKinds[CreateLookupKey(kind)] = kind;
+        }
+    }
+
+    public GroupApiVersionKind? RegisterCustomResourceDefinition(string definitionName, GroupApiVersionKind kind)
+    {
+        lock (_gate)
+        {
+            GroupApiVersionKind? previous = null;
+            if (_customResourceKindsByDefinitionName.TryGetValue(definitionName, out var previousKind)
+                && previousKind != kind)
+            {
+                _customResourceKinds.Remove(CreateLookupKey(previousKind));
+                previous = previousKind;
+            }
+
+            _customResourceKindsByDefinitionName[definitionName] = kind;
+            _customResourceKinds[CreateLookupKey(kind)] = kind;
+            return previous;
+        }
+    }
+
+    public bool RemoveCustomResourceDefinition(GroupApiVersionKind kind)
+    {
+        lock (_gate)
+        {
+            return _customResourceKinds.Remove(CreateLookupKey(kind));
+        }
+    }
+
+    public GroupApiVersionKind? RemoveCustomResourceDefinition(string definitionName)
+    {
+        lock (_gate)
+        {
+            if (!_customResourceKindsByDefinitionName.Remove(definitionName, out var kind))
+            {
+                return null;
+            }
+
+            _customResourceKinds.Remove(CreateLookupKey(kind));
+            return kind;
+        }
+    }
+
+    /// <summary>Removes all registered custom-resource keys.</summary>
     public void RemoveAllCustomResourceDefinitions()
     {
-        CrdModels.RemoveAllCustomResourceDefinitions();
+        lock (_gate)
+        {
+            _customResourceKinds.Clear();
+            _customResourceKindsByDefinitionName.Clear();
+        }
     }
 
-    /// <summary>
-    /// Determines whether a generated model is registered for a custom-resource definition.
-    /// </summary>
-    /// <param name="crd">The custom-resource definition to check.</param>
-    /// <returns><see langword="true"/> when a generated model is registered; otherwise, <see langword="false"/>.</returns>
-    public bool CheckIfCRDExists(V1CustomResourceDefinition crd)
+    private static (string Group, string Version, string Kind) CreateLookupKey(GroupApiVersionKind kind)
+        => (kind.Group, kind.ApiVersion, kind.Kind);
+
+    private static (string Group, string Version, string Kind) CreateLookupKey(string apiVersion, string kind)
     {
-        return CrdModels.CheckIfCRDExists(crd);
+        var separator = apiVersion.IndexOf('/');
+        return separator < 0
+            ? (string.Empty, apiVersion, kind)
+            : (apiVersion[..separator], apiVersion[(separator + 1)..], kind);
     }
 
-    /// <summary>
-    /// Gets XML documentation for a reflected member, preferring cluster-generated documentation.
-    /// </summary>
-    /// <param name="memberInfo">The member whose documentation should be resolved.</param>
-    /// <returns>The documentation element, or <see langword="null"/> when unavailable.</returns>
-    public XmlElement? GetDocumentation(MemberInfo memberInfo)
-    {
-        return CrdModels.GetDocumentation(memberInfo) ?? _sharedCatalog.GetDocumentation(memberInfo);
-    }
-
-    /// <summary>
-    /// Gets XML documentation for a reflected method, preferring cluster-generated documentation.
-    /// </summary>
-    /// <param name="methodInfo">The method whose documentation should be resolved.</param>
-    /// <returns>The documentation element, or <see langword="null"/> when unavailable.</returns>
-    public XmlElement? GetDocumentation(MethodInfo methodInfo)
-    {
-        return CrdModels.GetDocumentation(methodInfo) ?? _sharedCatalog.GetDocumentation(methodInfo);
-    }
-
-    /// <summary>
-    /// Gets XML documentation for a reflected type, preferring cluster-generated documentation.
-    /// </summary>
-    /// <param name="type">The type whose documentation should be resolved.</param>
-    /// <returns>The documentation element, or <see langword="null"/> when unavailable.</returns>
-    public XmlElement? GetDocumentation(Type type)
-    {
-        return CrdModels.GetDocumentation(type) ?? _sharedCatalog.GetDocumentation(type);
-    }
 }

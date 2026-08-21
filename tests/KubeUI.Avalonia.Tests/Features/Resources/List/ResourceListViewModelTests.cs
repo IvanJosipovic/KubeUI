@@ -2784,7 +2784,7 @@ public class ResourceListViewModelTests
             () => Dispatcher.UIThread.RunJobs())).ShouldNotBeNull()!;
     }
 
-    private static IList<string> GetNamespaceFilterValues<T>(ResourceListViewModel<T> vm)
+    private static List<string> GetNamespaceFilterValues<T>(ResourceListViewModel<T> vm)
         where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
         var descriptor = vm.FilteringModel.Descriptors.FirstOrDefault(x => Equals(x.ColumnId, ResourceListViewModel<T>.NamespaceScopeFilterId));
@@ -2892,6 +2892,7 @@ internal sealed class FakeDoubleTapResourceListViewModel : IResourceListViewMode
     public ISearchModel SearchModel { get; set; } = new SearchModel();
     public IDataGridSearchAdapterFactory SearchAdapterFactory => throw new NotImplementedException();
     public DataGridState? DataGridRuntimeState { get; set; }
+    public void InitializeResource(ClusterWorkspace cluster, GroupApiVersionKind kind) => Cluster = cluster;
 }
 
 internal sealed class FakeDoubleTapResourceConfig : IResourceConfig
@@ -2922,6 +2923,7 @@ internal sealed class FakeDoubleTapResourceConfig : IResourceConfig
     public Style[] ListStyle() => [];
     public IEnumerable<(Verb verb, string? subresource)> Permissions() => [];
     public Task EvaluateListWatchAccessAsync() => Task.CompletedTask;
+    public Task SeedResource(bool waitForReady = false) => Task.CompletedTask;
     public Type Type => typeof(V1Pod);
     public IRelayCommand NewResourceCommand => new RelayCommand(() => { });
     public IRelayCommand<IList> ViewCommand { get; }
@@ -2960,4 +2962,5 @@ internal sealed class FakeContextMenuResourceListViewModel : IResourceListViewMo
     public ISearchModel SearchModel { get; set; } = new SearchModel();
     public IDataGridSearchAdapterFactory SearchAdapterFactory => throw new NotImplementedException();
     public DataGridState? DataGridRuntimeState { get; set; }
+    public void InitializeResource(ClusterWorkspace cluster, GroupApiVersionKind kind) => Cluster = cluster;
 }

@@ -1,8 +1,9 @@
-using System.Reflection;
 using System.Text;
+using System.Text.Json;
 using System.Collections.Frozen;
 using k8s;
 using k8s.Models;
+using KubernetesClient.Informer.Client;
 using YamlDotNet.Core;
 using YamlDotNet.Core.Events;
 using YamlDotNet.Serialization;
@@ -67,18 +68,6 @@ public static class KubernetesYaml
             .ConfigureDefaultValuesHandling(DefaultValuesHandling.OmitNull)
             .BuildValueSerializer();
 
-    private static readonly IDictionary<string, Type> ModelTypeMap = typeof(KubernetesEntityAttribute).Assembly
-        .GetTypes()
-        .Where(t => t.GetCustomAttributes(typeof(KubernetesEntityAttribute), true).Any())
-        .ToDictionary(
-            t =>
-            {
-                var attr = t.GetCustomAttribute<KubernetesEntityAttribute>(true);
-                var groupPrefix = string.IsNullOrEmpty(attr.Group) ? "" : $"{attr.Group}/";
-                return $"{groupPrefix}{attr.ApiVersion}/{attr.Kind}";
-            },
-            t => t);
-
     private class ByteArrayStringYamlConverter : IYamlTypeConverter
     {
         public bool Accepts(Type type)
@@ -130,19 +119,9 @@ public static class KubernetesYaml
     }
 
     /// <summary>
-    /// Load a collection of objects from a stream asynchronously
-    ///
-    /// caller is responsible for closing the stream
+    /// Load a collection of objects from a stream asynchronously.
     /// </summary>
-    /// <param name="stream">
-    /// The stream to load the objects from.
-    /// </param>
-    /// <param name="typeMap">
-    /// A map from apiVersion/kind to Type. For example "v1/Pod" -> typeof(V1Pod). If null, a default mapping will
-    /// be used.
-    /// </param>
-    /// <returns>collection of objects</returns>
-    public static async Task<List<object>> LoadAllFromStreamAsync(Stream stream, IDictionary<string, Type>? typeMap = null)
+    public static async Task<List<object>> LoadAllFromStreamAsync(Stream stream, IDictionary<string, Type> typeMap)
     {
         using var reader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, bufferSize: 1024, leaveOpen: true);
         var content = await reader.ReadToEndAsync().ConfigureAwait(false);
@@ -164,15 +143,18 @@ public static class KubernetesYaml
     }
 
     /// <summary>
-    /// Load a collection of objects from a file asynchronously
+    /// Load a collection of objects from a stream asynchronously
+    ///
+    /// caller is responsible for closing the stream
     /// </summary>
-    /// <param name="fileName">The name of the file to load from.</param>
+    /// <param name="stream">
+    /// The stream to load the objects from.
+    /// </param>
     /// <param name="typeMap">
-    /// A map from apiVersion/kind to Type. For example "v1/Pod" -> typeof(V1Pod). If null, a default mapping will
-    /// be used.
+    /// A map from apiVersion/kind to Type. For example "v1/Pod" -> typeof(V1Pod).
     /// </param>
     /// <returns>collection of objects</returns>
-    public static async Task<List<object>> LoadAllFromFileAsync(string fileName, IDictionary<string, Type>? typeMap = null)
+    public static async Task<List<object>> LoadAllFromFileAsync(string fileName, IDictionary<string, Type> typeMap)
     {
         await using var fileStream = File.OpenRead(fileName);
         return await LoadAllFromStreamAsync(fileStream, typeMap).ConfigureAwait(false);
@@ -197,32 +179,21 @@ public static class KubernetesYaml
     /// The string to load the objects from.
     /// </param>
     /// <param name="typeMap">
-    /// A map from apiVersion/kind to Type. For example "v1/Pod" -> typeof(V1Pod). If null, a default mapping will
-    /// be used.
+    /// A map from apiVersion/kind to Type. For example "v1/Pod" -> typeof(V1Pod).
     /// </param>
     /// <returns>collection of objects</returns>
-    public static List<object> LoadAllFromString(string content, IDictionary<string, Type>? typeMap = null, bool strict = false)
+    public static List<object> LoadAllFromString(string content, IDictionary<string, Type> typeMap, bool strict = false)
     {
-        return LoadAllFromStringCore(content, typeMap, strict);
+        return LoadAllFromStringCore(content, key => typeMap[key], strict);
     }
 
     public static List<object> LoadAllFromString(string content, FrozenDictionary<string, Type> typeMap, bool strict)
     {
-        return LoadAllFromStringCore(content, typeMap, strict);
+        return LoadAllFromStringCore(content, key => typeMap[key], strict);
     }
 
-    private static List<object> LoadAllFromStringCore(string content, IEnumerable<KeyValuePair<string, Type>>? typeMap, bool strict)
+    private static List<object> LoadAllFromStringCore(string content, Func<string, Type> resolveType, bool strict)
     {
-        var mergedTypeMap = new Dictionary<string, Type>(ModelTypeMap);
-        // merge in KVPs from typeMap, overriding any in ModelTypeMap
-        if (typeMap is not null)
-        {
-            foreach (var pair in typeMap)
-            {
-                mergedTypeMap[pair.Key] = pair.Value;
-            }
-        }
-
         var types = new List<Type>();
         var parser = new MergingParser(new Parser(new StringReader(content)));
         parser.Consume<StreamStart>();
@@ -233,7 +204,7 @@ public static class KubernetesYaml
             {
                 dict = GetDeserializer(strict).Deserialize<Dictionary<object, object>>(parser);
             }
-            types.Add(mergedTypeMap[dict["apiVersion"] + "/" + dict["kind"]]);
+            types.Add(resolveType(dict["apiVersion"] + "/" + dict["kind"]));
         }
 
         parser = new MergingParser(new Parser(new StringReader(content)));
@@ -360,4 +331,5 @@ public static class KubernetesYaml
 
         return stringBuilder.ToString();
     }
+
 }

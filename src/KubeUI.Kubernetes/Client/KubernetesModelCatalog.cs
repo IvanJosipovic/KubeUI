@@ -1,160 +1,82 @@
 using System.Collections.Frozen;
-using System.Reflection;
-using System.Xml;
-using k8s.Models;
+using System.Collections.Generic;
 using KubernetesClient.Informer.Client;
-using KubernetesCRDModelGen;
 
 namespace KubeUI.Kubernetes;
 
+/// <summary>
+/// Runtime registry of resource models supplied by resource configurations.
+/// </summary>
 public sealed class KubernetesModelCatalog
 {
-    private readonly FrozenDictionary<GroupApiVersionKind, Type> _types;
-    private readonly FrozenDictionary<string, Type> _yamlTypeMap;
-    private readonly FrozenDictionary<string, XmlElement> _documentation;
+    private readonly Dictionary<GroupApiVersionKind, Type> _types = [];
+    private readonly object _sync = new();
 
-    public KubernetesModelCatalog()
+    /// <summary>
+    /// Gets a snapshot of registered models keyed by YAML API version and kind.
+    /// </summary>
+    /// <returns>The registered YAML model map.</returns>
+    public FrozenDictionary<string, Type> GetYamlTypeMap()
     {
-        var xmlDocumentation = new XmlDocument();
-        using var stream = typeof(Generator).Assembly.GetManifestResourceStream("runtime.KubernetesClient.xml")
-            ?? throw new InvalidOperationException("Kubernetes XML documentation resource not found.");
-        xmlDocumentation.Load(stream);
-
-        _types = GetTypes(typeof(V1Deployment).Assembly).ToFrozenDictionary();
-        _yamlTypeMap = _types.ToFrozenDictionary(
-            pair => CreateYamlKey(pair.Key),
-            pair => pair.Value,
-            StringComparer.Ordinal);
-        _documentation = GetDocumentationIndex(xmlDocumentation).ToFrozenDictionary(StringComparer.Ordinal);
-    }
-
-    public Type? GetResourceType(GroupApiVersionKind key)
-    {
-        _types.TryGetValue(key, out var type);
-        return type;
-    }
-
-    public Type? GetResourceType(string group, string version, string kind)
-    {
-        return GetResourceType(CreateKey(group, version, kind));
+        lock (_sync)
+        {
+            return _types.ToFrozenDictionary(
+                pair => CreateYamlKey(pair.Key),
+                pair => pair.Value,
+                StringComparer.Ordinal);
+        }
     }
 
     /// <summary>
-    /// Gets YAML resource keys for the built-in Kubernetes model types.
+    /// Registers a resource model for an API kind.
     /// </summary>
-    /// <returns>A map from YAML resource keys to model types.</returns>
-    public FrozenDictionary<string, Type> GetYamlTypeMap()
+    /// <param name="resourceKind">API group, version, kind, and plural name.</param>
+    /// <param name="resourceType">CLR model type used for the resource.</param>
+    public void Register(GroupApiVersionKind resourceKind, Type resourceType)
     {
-        return _yamlTypeMap;
-    }
+        ArgumentException.ThrowIfNullOrWhiteSpace(resourceKind.Kind);
+        ArgumentNullException.ThrowIfNull(resourceType);
 
-    public XmlElement? GetDocumentation(MemberInfo memberInfo)
-    {
-        return _documentation.TryGetValue(
-            CreateMemberDocumentationKey(memberInfo.DeclaringType, GetMemberPrefix(memberInfo), memberInfo.Name),
-            out var documentation)
-            ? documentation
-            : null;
-    }
-
-    public XmlElement? GetDocumentation(MethodInfo methodInfo)
-    {
-        var parameterTypeNames = methodInfo.GetParameters()
-            .Select(parameter => parameter.ParameterType.FullName)
-            .Where(fullName => !string.IsNullOrWhiteSpace(fullName));
-        var suffix = string.Join(",", parameterTypeNames);
-        var memberName = string.IsNullOrEmpty(suffix)
-            ? methodInfo.Name
-            : $"{methodInfo.Name}({suffix})";
-
-        return _documentation.TryGetValue(
-            CreateMemberDocumentationKey(methodInfo.DeclaringType, 'M', memberName),
-            out var documentation)
-            ? documentation
-            : null;
-    }
-
-    public XmlElement? GetDocumentation(Type type)
-    {
-        return _documentation.TryGetValue(
-            CreateMemberDocumentationKey(type, 'T', string.Empty),
-            out var documentation)
-            ? documentation
-            : null;
-    }
-
-    private static Dictionary<GroupApiVersionKind, Type> GetTypes(Assembly assembly)
-    {
-        var types = new Dictionary<GroupApiVersionKind, Type>();
-
-        foreach (var item in assembly.GetExportedTypes())
+        lock (_sync)
         {
-            var attributes = item.GetCustomAttributes(typeof(KubernetesEntityAttribute), inherit: true);
-            if (attributes.Length == 0)
-            {
-                continue;
-            }
-
-            var attribute = (KubernetesEntityAttribute)attributes[0];
-            types[CreateKey(attribute.Group, attribute.ApiVersion, attribute.Kind)] = item;
+            _types[resourceKind] = resourceType;
         }
-
-        return types;
     }
 
-    private static Dictionary<string, XmlElement> GetDocumentationIndex(XmlDocument xmlDocumentation)
+    /// <summary>
+    /// Resolves a registered resource API kind.
+    /// </summary>
+    public bool TryGetResourceKind(string group, string version, string kind, out GroupApiVersionKind resourceKind)
     {
-        var documentation = new Dictionary<string, XmlElement>(StringComparer.Ordinal);
-        var members = xmlDocumentation["doc"]?["members"];
-        if (members == null)
+        lock (_sync)
         {
-            return documentation;
-        }
-
-        foreach (var member in members.ChildNodes.OfType<XmlElement>())
-        {
-            var name = member.GetAttribute("name");
-            if (!string.IsNullOrEmpty(name))
+            foreach (var candidate in _types.Keys)
             {
-                documentation[name] = member;
+                if (string.Equals(candidate.Group, group, StringComparison.Ordinal)
+                    && string.Equals(candidate.ApiVersion, version, StringComparison.Ordinal)
+                    && string.Equals(candidate.Kind, kind, StringComparison.Ordinal))
+                {
+                    resourceKind = candidate;
+                    return true;
+                }
             }
         }
 
-        return documentation;
+        resourceKind = default;
+        return false;
     }
 
-    private static GroupApiVersionKind CreateKey(string group, string version, string kind)
+    public bool TryGetResourceType(GroupApiVersionKind resourceKind, out Type resourceType)
     {
-        return new GroupApiVersionKind(group, version, kind, string.Empty);
+        lock (_sync)
+        {
+            return _types.TryGetValue(resourceKind, out resourceType!);
+        }
     }
 
     private static string CreateYamlKey(GroupApiVersionKind key)
     {
         var groupPrefix = string.IsNullOrEmpty(key.Group) ? string.Empty : $"{key.Group}/";
         return $"{groupPrefix}{key.ApiVersion}/{key.Kind}";
-    }
-
-    private static string CreateMemberDocumentationKey(Type? type, char prefix, string name)
-    {
-        var typeName = type == null ? string.Empty : (type.FullName ?? type.Name).Replace('+', '.');
-        return string.IsNullOrEmpty(name)
-            ? $"{prefix}:{typeName}"
-            : $"{prefix}:{typeName}.{name}";
-    }
-
-    private static char GetMemberPrefix(MemberInfo memberInfo)
-    {
-        return memberInfo.MemberType switch
-        {
-            MemberTypes.Constructor => 'M',
-            MemberTypes.Event => 'E',
-            MemberTypes.Field => 'F',
-            MemberTypes.Method => 'M',
-            MemberTypes.NestedType => 'T',
-            MemberTypes.Property => 'P',
-            MemberTypes.TypeInfo => 'T',
-            MemberTypes.Custom => 'M',
-            _ => 'M',
-        };
     }
 }

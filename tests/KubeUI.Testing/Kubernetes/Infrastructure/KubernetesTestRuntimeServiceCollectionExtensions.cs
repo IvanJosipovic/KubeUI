@@ -1,5 +1,9 @@
 using KubeUI.Testing.Kubernetes.Bootstrap;
+using KubernetesClient.Informer.Client;
+using k8s.Models;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using KubeUI.Kubernetes;
 
 namespace KubeUI.Testing.Kubernetes.Infrastructure;
 
@@ -7,6 +11,13 @@ public static class KubernetesTestRuntimeServiceCollectionExtensions
 {
     public static IServiceCollection AddKubernetesTestRuntime(this IServiceCollection services)
     {
+        services.RemoveAll<KubernetesModelCatalog>();
+        services.AddSingleton(sp =>
+        {
+            var catalog = new KubernetesModelCatalog();
+            catalog.Register(GroupApiVersionKind.From<V1Pod>(), typeof(V1Pod));
+            return catalog;
+        });
         services.AddSingleton<TestClusterGenerator>();
         services.AddSingleton<TestClusterGeneratorCleanup>();
         services.AddSingleton<TestClusterConfig>();

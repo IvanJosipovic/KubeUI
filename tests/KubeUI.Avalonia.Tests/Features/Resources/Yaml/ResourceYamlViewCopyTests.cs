@@ -3,14 +3,43 @@ using Avalonia.Headless.XUnit;
 using Avalonia.Input.Platform;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
+using k8s;
 using k8s.Models;
 using KubeUI.Avalonia.Tests.Infra;
+using KubeUI.Kubernetes;
+using KubernetesClient.Informer.Client;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Features.Resources.Yaml;
 
 public sealed class ResourceYamlViewCopyTests
 {
+    [AvaloniaFact]
+    public async Task Generic_resource_yaml_view_can_attach_to_logical_tree()
+    {
+        var services = Application.Current.GetTestServices();
+        using var cluster = await Application.Current.CreateClusterAsync();
+        var kind = new GroupApiVersionKind("tests.kubeui.com", "v1", "Widget", "widgets");
+        var viewModel = services.GetRequiredService<ResourceYamlViewModel>();
+        var resource = KubernetesJson.Deserialize<GenericKubernetesObject>("""
+            {"apiVersion":"tests.kubeui.com/v1","kind":"Widget","metadata":{"name":"widget","namespace":"default"}}
+            """);
+        viewModel.Initialize(cluster, resource);
+
+        var view = new ResourceYamlView { DataContext = viewModel };
+        var window = new Window { Content = view, Width = 800, Height = 600 };
+        try
+        {
+            window.Show();
+            await TestApplicationExtensions.WaitForUiAsync();
+            view.FindControl<AvaloniaEdit.TextEditor>("Editor").ShouldNotBeNull();
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
     [AvaloniaFact]
     public async Task Editor_copy_writes_selected_yaml_text_to_the_clipboard()
     {

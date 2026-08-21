@@ -149,7 +149,6 @@ internal static class Program
         }
 
         configureServices?.Invoke(builder.Services);
-        builder.Services.AddSingleton<ServiceDescriptor[]>([.. builder.Services]);
         return builder;
     }
 

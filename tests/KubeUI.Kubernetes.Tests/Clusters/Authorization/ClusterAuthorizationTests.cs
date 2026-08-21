@@ -1,9 +1,7 @@
 using System.Reflection;
+using System.Net;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
-using KubernetesCRDModelGen;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging.Abstractions;
 using Shouldly;
 
 namespace KubeUI.Kubernetes.Tests.Clusters.Authorization;
@@ -22,7 +20,7 @@ public sealed class ClusterAuthorizationTests
             config,
             TestContext.Current.CancellationToken);
 
-        testCluster.Cluster.CanI(typeof(V1Pod), Verb.Create, subresource: "portforward").ShouldBeFalse();
+        testCluster.Cluster.CanI(GroupApiVersionKind.From<V1Pod>(), Verb.Create, subresource: "portforward").ShouldBeFalse();
     }
 
     [Theory, KubernetesBackendData]
@@ -97,7 +95,7 @@ public sealed class ClusterAuthorizationTests
         var invalidateSeededResourceMethod = typeof(Cluster).GetMethod("InvalidateSeededResource", BindingFlags.Instance | BindingFlags.NonPublic);
         invalidateSeededResourceMethod.ShouldNotBeNull();
 
-        var invalidated = invalidateSeededResourceMethod!.Invoke(cluster, [typeof(V1Pod)]).ShouldBeOfType<bool>();
+        var invalidated = invalidateSeededResourceMethod!.Invoke(cluster, [kind]).ShouldBeOfType<bool>();
 
         invalidated.ShouldBeTrue();
         cluster.Objects.ContainsKey(kind).ShouldBeFalse();
@@ -133,62 +131,96 @@ public sealed class ClusterAuthorizationTests
     }
 
     [Fact]
-    public async Task custom_resource_definition_processing_is_serialized()
+    public async Task openapi_schema_loading_retries_after_connection_failures()
     {
-        using var loggerFactory = NullLoggerFactory.Instance;
-        await using var cluster = new Cluster(
-            NullLogger<Cluster>.Instance,
-            loggerFactory,
-            new ClusterModelCatalog(new KubernetesModelCatalog()),
-            new Generator(),
-            new KubernetesTestSettingsStore(),
-            new ServiceCollection().BuildServiceProvider(),
-            new ImmediateThreadDispatcher());
-        cluster.Connected = true;
+        await using var harness = await new TestClusterGenerator().CreateAsync(
+            new TestClusterConfig { Type = KubernetesBackend.Fake },
+            TestContext.Current.CancellationToken);
 
-        var first = Serialization.KubernetesYaml.Deserialize<V1CustomResourceDefinition>(KubernetesTestData.CustomResourceDefinitionYaml);
-        var second = Serialization.KubernetesYaml.Deserialize<V1CustomResourceDefinition>(KubernetesTestData.CustomResourceDefinitionYaml);
-        second.Spec!.Names!.Kind = "UpdatedTest";
+        harness.FakeApi.ShouldNotBeNull();
+        harness.FakeApi!.OpenApiV3IndexFailuresRemaining = 2;
 
-        var firstEntered = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
-        var releaseFirst = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
-        var secondReady = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
-        var coordinationTimeout = TimeSpan.FromSeconds(30);
-        var readyCount = 0;
-        Func<V1CustomResourceDefinition, Task> handler = async crd =>
-        {
-            if (Interlocked.Increment(ref readyCount) == 1)
-            {
-                firstEntered.TrySetResult(null);
-                await releaseFirst.Task.WaitAsync(TestContext.Current.CancellationToken);
-            }
-            else
-            {
-                secondReady.TrySetResult(null);
-            }
-        };
-        cluster.OnCustomResourceDefinitionReady += handler;
+        await harness.Cluster.Connect();
+        harness.FakeApi.OpenApiV3IndexFailuresRemaining = 0;
 
-        try
-        {
-            var queueMethod = typeof(Cluster).GetMethod("QueueCustomResourceDefinition", BindingFlags.Instance | BindingFlags.NonPublic);
-            queueMethod.ShouldNotBeNull();
+        await harness.Cluster.SeedResource<V1Pod>();
 
-            queueMethod!.Invoke(cluster, [first]);
-            await firstEntered.Task.WaitAsync(coordinationTimeout, TestContext.Current.CancellationToken);
-            queueMethod.Invoke(cluster, [second]);
+        harness.Cluster.ModelCatalog.OpenApiSchemas
+            .GetSchema(GroupApiVersionKind.From<V1Pod>())
+            .ShouldNotBeNull();
+    }
 
-            Volatile.Read(ref readyCount).ShouldBe(1);
+    [Fact]
+    public async Task connect_succeeds_when_openapi_v3_is_forbidden()
+    {
+        await using var harness = await new TestClusterGenerator().CreateAsync(
+            new TestClusterConfig { Type = KubernetesBackend.Fake },
+            TestContext.Current.CancellationToken);
 
-            releaseFirst.TrySetResult(null);
-            await secondReady.Task.WaitAsync(coordinationTimeout, TestContext.Current.CancellationToken);
-            readyCount.ShouldBe(2);
-        }
-        finally
-        {
-            releaseFirst.TrySetResult(null);
-            cluster.OnCustomResourceDefinitionReady -= handler;
-        }
+        harness.FakeApi.ShouldNotBeNull();
+        harness.FakeApi!.OpenApiV3IndexStatusCode = HttpStatusCode.Forbidden;
+
+        await harness.Cluster.Connect();
+
+        harness.Cluster.Connected.ShouldBeTrue($"LastError: {harness.Cluster.LastError}; Requests: {string.Join(",", harness.FakeApi.RequestUris.Select(uri => uri?.PathAndQuery))}");
+        harness.Cluster.Status.ShouldBe(ClusterStatus.Connected);
+    }
+
+    [Fact]
+    public async Task connect_succeeds_when_an_openapi_v3_document_is_forbidden()
+    {
+        await using var harness = await new TestClusterGenerator().CreateAsync(
+            new TestClusterConfig { Type = KubernetesBackend.Fake },
+            TestContext.Current.CancellationToken);
+
+        harness.FakeApi.ShouldNotBeNull();
+        harness.FakeApi!.OpenApiV3DocumentStatusCode = HttpStatusCode.Forbidden;
+
+        await harness.Cluster.Connect();
+
+        harness.Cluster.Connected.ShouldBeTrue($"LastError: {harness.Cluster.LastError}; Requests: {string.Join(",", harness.FakeApi.RequestUris.Select(uri => uri?.PathAndQuery))}");
+        harness.Cluster.Status.ShouldBe(ClusterStatus.Connected);
+    }
+
+    [Fact]
+    public async Task connect_succeeds_when_an_openapi_v3_document_returns_bad_gateway()
+    {
+        await using var harness = await new TestClusterGenerator().CreateAsync(
+            new TestClusterConfig { Type = KubernetesBackend.Fake },
+            TestContext.Current.CancellationToken);
+
+        harness.FakeApi.ShouldNotBeNull();
+        harness.FakeApi!.OpenApiV3DocumentStatusCode = HttpStatusCode.BadGateway;
+
+        await harness.Cluster.Connect();
+
+        harness.Cluster.Connected.ShouldBeTrue();
+        harness.Cluster.Status.ShouldBe(ClusterStatus.Connected);
+    }
+
+    [Fact]
+    public async Task connect_authenticates_api_discovery_requests()
+    {
+        await using var harness = await new TestClusterGenerator().CreateAsync(
+            new TestClusterConfig { Type = KubernetesBackend.Fake },
+            TestContext.Current.CancellationToken);
+
+        harness.FakeApi.ShouldNotBeNull();
+        harness.FakeApi!.RequireAuthorizationForDiscovery = true;
+
+        await harness.Cluster.Connect();
+
+        harness.Cluster.Connected.ShouldBeTrue($"LastError: {harness.Cluster.LastError}; Requests: {string.Join(",", harness.FakeApi.RequestUris.Select(uri => uri?.PathAndQuery))}");
+        harness.Cluster.Status.ShouldBe(ClusterStatus.Connected);
+    }
+
+    [Fact]
+    public void custom_resource_definition_resolves_its_served_storage_version()
+    {
+        var crd = Serialization.KubernetesYaml.Deserialize<V1CustomResourceDefinition>(KubernetesTestData.CustomResourceDefinitionYaml);
+
+        crd.TryGetResourceKind(out var kind).ShouldBeTrue();
+        kind.ShouldBe(new GroupApiVersionKind("kubeui.com", "v1beta1", "Test", "tests"));
     }
 
 }

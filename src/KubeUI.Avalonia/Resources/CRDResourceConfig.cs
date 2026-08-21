@@ -1,198 +1,94 @@
-using System.Linq.Expressions;
-using System.Reflection;
-using System.Text.Json.Serialization;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using Humanizer;
 using k8s;
 using k8s.Models;
+using KubernetesClient.Informer.Client;
+using KubeUI.Kubernetes;
+using JsonPathLINQ;
 
 namespace KubeUI.Avalonia.Resources;
 
-public partial class CRDResourceConfig<T> : ResourceConfigBase<T>, ICustomResourceConfig where T : class, IKubernetesObject<V1ObjectMeta>, new()
+public sealed class CRDResourceConfig : ResourceConfigBase<GenericKubernetesObject>
 {
-    private bool _showNamespaces = true;
-    private string? _generatedName;
+    private bool _isNamespaced = true;
+    private string? _resourceName;
+    private GroupApiVersionKind _kind;
 
     public CRDResourceConfig(IServiceProvider serviceProvider)
         : base(serviceProvider)
     {
     }
 
-    public override bool IsNamespaced => _showNamespaces;
+    public override bool IsNamespaced => _isNamespaced;
+
+    public override GroupApiVersionKind Kind => _kind;
 
     public override bool IsCustomResource => true;
 
-    public override string Name => _generatedName ?? base.Name;
+    public override string Name => _resourceName ?? base.Name;
 
     private readonly List<IResourceListColumn> _columns = [];
 
-    public void Generate(V1CustomResourceDefinition crd)
+    public void Configure(V1CustomResourceDefinition crd)
     {
-        _generatedName = crd.Spec?.Names?.Kind.Humanize(LetterCasing.Title).Pluralize() ?? base.Name;
-        var spec = crd.Spec ?? throw new InvalidOperationException("CRD spec is missing.");
+        _columns.Clear();
+        if (!crd.TryGetResourceKind(out _kind) || crd.Spec is not { } spec)
+        {
+            throw new InvalidOperationException("CRD has no served storage version.");
+        }
 
-        // Add Name Column
+        var version = spec.Versions.First(candidate => candidate.Served && candidate.Storage);
+        _resourceName = spec.Names!.Kind.Humanize(LetterCasing.Title).Pluralize();
+
         _columns.Add(NameColumn(SortDirection.Ascending));
 
-        var version = spec.Versions.First(x => x.Storage);
-
-        //Check if its a namespaced crd
         if (spec.Scope == "Namespaced")
         {
-            // Add Namespace Column
+            _isNamespaced = true;
             _columns.Add(NamespaceColumn());
         }
         else
         {
-            _showNamespaces = false;
+            _isNamespaced = false;
         }
 
         if (version.AdditionalPrinterColumns != null)
         {
             foreach (var item in version.AdditionalPrinterColumns)
             {
-            start:
+                if (string.Equals(item.JsonPath, ".metadata.creationTimestamp", StringComparison.Ordinal))
+                {
+                    continue;
+                }
 
                 try
                 {
-                    if (item.JsonPath == ".metadata.creationTimestamp")
+                    switch (item.Type, item.Format)
                     {
-                        continue;
-                    }
-
-                    if (item.Type == "string")
-                    {
-                        var exp = JsonPathLINQ.JsonPath.GetExpression<T, string?>(item.JsonPath, true);
-
-                        var colDef = CreateColumn(item.Name, exp);
-
-                        _columns.Add(colDef);
-                    }
-                    else if (item.Type == "number")
-                    {
-                        var exp = JsonPathLINQ.JsonPath.GetExpression<T, double?>(item.JsonPath, true);
-
-                        var colDef = CreateColumn(item.Name, exp, TransformToFuncOfString(exp.Body, exp.Parameters).Compile());
-
-                        _columns.Add(colDef);
-                    }
-                    else if (item.Type == "integer" && item.Format == "int64")
-                    {
-                        var exp = JsonPathLINQ.JsonPath.GetExpression<T, long?>(item.JsonPath, true);
-
-                        var colDef = CreateColumn(item.Name, exp, TransformToFuncOfString(exp.Body, exp.Parameters).Compile());
-
-                        _columns.Add(colDef);
-                    }
-                    else if (item.Type == "integer")
-                    {
-                        var exp = JsonPathLINQ.JsonPath.GetExpression<T, int?>(item.JsonPath, true);
-
-                        var colDef = CreateColumn(item.Name, exp, TransformToFuncOfString(exp.Body, exp.Parameters).Compile());
-
-                        _columns.Add(colDef);
-                    }
-                    else if (item.Type == "date")
-                    {
-                        var exp = JsonPathLINQ.JsonPath.GetExpression<T, DateTime?>(item.JsonPath, true);
-
-                        var colDef = CreateColumn(item.Name, exp);
-
-                        _columns.Add(colDef);
-                    }
-                    else if (item.Type == "boolean")
-                    {
-                        var exp = JsonPathLINQ.JsonPath.GetExpression<T, bool?>(item.JsonPath, true);
-
-                        var colDef = CreateColumn(item.Name, exp, TransformToFuncOfString(exp.Body, exp.Parameters).Compile());
-
-                        _columns.Add(colDef);
-                    }
-                    else if (item.Type == "enum")
-                    {
-                        var exp = JsonPathLINQ.JsonPath.GetExpression<T, Enum>(item.JsonPath, true);
-
-                        var colDef = CreateColumn(item.Name, TransformToFuncOfString(exp.Body, exp.Parameters).Compile());
-
-                        _columns.Add(colDef);
-                    }
-                    else
-                    {
-                        _logger.LogWarning("CRD Column Type not supported: {type}", item.Type);
-                    }
-                }
-                catch (InvalidOperationException ex) when (ex.Message.StartsWith("No coercion operator is defined between types", StringComparison.Ordinal))
-                {
-                    // The type defined in the AdditionalPrinterColumn is not correct
-                    var match = TypeErrorRegex().Match(ex.Message);
-                    if (match.Success)
-                    {
-                        var typeString = match.Groups[1].Value;
-
-                        if (typeString.StartsWith("System.Nullable`1[", StringComparison.Ordinal))
-                        {
-                            typeString = typeString["System.Nullable`1[".Length..].TrimEnd(']');
-                        }
-
-                        var type = Type.GetType(typeString);
-
-                        if (type == null)
-                        {
-                            type = Type.Assembly.GetType(typeString);
-
-                            if (type == null)
-                            {
-                                _logger.LogError(ex, "Unable to load type for column: {Name} in type {type}", typeString, crd.Name());
-                                continue;
-                            }
-                        }
-
-                        if (type.IsGenericType)
-                        {
-                            type = type.GenericTypeArguments[0];
-                        }
-
-                        if (type == typeof(string))
-                        {
-                            item.Type = "string";
-                        }
-                        else if (type == typeof(double))
-                        {
-                            item.Type = "number";
-                        }
-                        else if (type == typeof(int))
-                        {
-                            item.Type = "integer";
-                        }
-                        else if (type == typeof(long))
-                        {
-                            item.Type = "integer";
-                            item.Format = "int64";
-                        }
-                        else if (type == typeof(DateTime))
-                        {
-                            item.Type = "date";
-                        }
-                        else if (type == typeof(bool))
-                        {
-                            item.Type = "boolean";
-                        }
-                        else if (type.IsEnum)
-                        {
-                            item.Type = "enum";
-                        }
-                        else
-                        {
-                            _logger.LogError(ex, "Unable to generate CRD Column: {Name} with type {Type}", item.Name, type);
-                            continue;
-                        }
-
-                        goto start;
+                        case ("integer", "int64"):
+                            _columns.Add(CreateColumn<long>(item.Name, item.JsonPath));
+                            break;
+                        case ("integer", _):
+                            _columns.Add(CreateColumn<int>(item.Name, item.JsonPath));
+                            break;
+                        case ("number", _):
+                            _columns.Add(CreateColumn<double>(item.Name, item.JsonPath));
+                            break;
+                        case ("boolean", _):
+                            _columns.Add(CreateColumn<bool>(item.Name, item.JsonPath));
+                            break;
+                        case ("date", _):
+                            _columns.Add(CreateDateColumn(item.Name, item.JsonPath));
+                            break;
+                        default:
+                            _columns.Add(CreateStringColumn(item.Name, item.JsonPath));
+                            break;
                     }
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Unable to generate CRD Column: {Name} in {crd}", item.Name, crd.Name());
+                    _logger.LogError(ex, "Unable to generate generic resource column: {Name} in {Resource}", item.Name, crd.Name());
                 }
             }
         }
@@ -200,90 +96,67 @@ public partial class CRDResourceConfig<T> : ResourceConfigBase<T>, ICustomResour
         _columns.Add(AgeColumn());
     }
 
+    private static ResourceListColumn<GenericKubernetesObject, TValue?> CreateColumn<TValue>(
+        string name,
+        string jsonPath)
+        where TValue : struct
+    {
+        var getter = JsonPath.GetExpression<GenericKubernetesObject, TValue?>(jsonPath, addNullChecks: true).Compile();
+        return new ResourceListColumn<GenericKubernetesObject, TValue?>
+        {
+            Key = CreateColumnKey(name),
+            Name = name,
+            Field = resource => getter(resource)
+        };
+    }
+
+    private static ResourceListColumn<GenericKubernetesObject, string> CreateStringColumn(
+        string name,
+        string jsonPath)
+    {
+        var getter = JsonPath.GetExpression<GenericKubernetesObject, string?>(jsonPath, addNullChecks: true).Compile();
+        return new ResourceListColumn<GenericKubernetesObject, string>
+        {
+            Key = CreateColumnKey(name),
+            Name = name,
+            Field = resource => getter(resource) ?? string.Empty
+        };
+    }
+
+    private static ResourceListColumn<GenericKubernetesObject, DateTime?> CreateDateColumn(string name, string jsonPath)
+    {
+        var getter = JsonPath.GetExpression<GenericKubernetesObject, string?>(jsonPath, addNullChecks: true).Compile();
+        return new ResourceListColumn<GenericKubernetesObject, DateTime?>
+        {
+            Key = CreateColumnKey(name),
+            Name = name,
+            Field = resource => DateTime.TryParse(getter(resource), out var value) ? value : null   
+        };
+    }
+
     public override IList<IResourceListColumn> Columns()
     {
         return _columns;
     }
 
-    [GeneratedRegex("types '(.+)' and '(.+)'", RegexOptions.None, matchTimeoutMilliseconds: 1000)]
-    private static partial Regex TypeErrorRegex();
-
-    private static Expression<Func<T, string>> TransformToFuncOfString(Expression expression, ReadOnlyCollection<ParameterExpression> parameters)
+    public override Task EvaluateListWatchAccessAsync()
     {
-        // Check if the expression type is an enum
-        if (expression.Type == typeof(Enum))
-        {
-            // Create a method to get the enum member name from the JsonStringEnumMemberNameAttribute
-            var getEnumMemberNameMethod = typeof(CRDResourceConfig<>).GetMethod(nameof(GetEnumMemberName), BindingFlags.NonPublic | BindingFlags.Static)
-                ?.MakeGenericMethod(expression.Type) ?? throw new InvalidOperationException("Unable to resolve enum member formatter.");
-
-            // Call the method to get the enum member name
-            var bodyAsString = Expression.Call(getEnumMemberNameMethod, expression);
-
-            // Create a new lambda expression
-            return Expression.Lambda<Func<T, string>>(bodyAsString, parameters);
-        }
-        else
-        {
-            Expression bodyAsString;
-
-            // Convert the body of the original expression to return a string
-            if (Nullable.GetUnderlyingType(expression.Type) != null)
-            {
-                bodyAsString = Expression.Condition(
-                    Expression.Equal(expression, Expression.Constant(null, expression.Type)),
-                    Expression.Constant(string.Empty),
-                    Expression.Call(expression, nameof(ToString), Type.EmptyTypes)
-                );
-            }
-            else
-            {
-                bodyAsString = Expression.Call(expression, nameof(ToString), Type.EmptyTypes);
-            }
-
-            // Create a new lambda expression
-            return Expression.Lambda<Func<T, string>>(bodyAsString, parameters);
-        }
-    }
-
-    private static ResourceListColumn<T, TValue> CreateColumn<TValue>(string name, Expression<Func<T, TValue>> expression, Func<T, string>? display = null)
-    {
-        return new ResourceListColumn<T, TValue>()
-        {
-            Key = CreateColumnKey(name),
-            Name = name,
-            Display = display,
-            Field = expression.Compile(),
-        };
-    }
-
-    private static ResourceListColumn<T, TValue> CreateColumn<TValue>(string name, Func<T, TValue> field, Func<T, string>? display = null)
-    {
-        return new ResourceListColumn<T, TValue>()
-        {
-            Key = CreateColumnKey(name),
-            Name = name,
-            Display = display,
-            Field = field,
-        };
+        PermissionsLoaded = false;
+        CanListAndWatch = false;
+        CanListAndWatch = Cluster.Runtime.Permissions.CanIAnyNamespace(
+            Kind,
+            IsNamespaced,
+            Verb.List)
+            && Cluster.Runtime.Permissions.CanIAnyNamespace(
+                Kind,
+                IsNamespaced,
+                Verb.Watch);
+        PermissionsLoaded = true;
+        return Task.CompletedTask;
     }
 
     private static string CreateColumnKey(string name)
     {
         return Regex.Replace(name.Trim().ToLowerInvariant(), @"\W+", "-").Trim('-');
-    }
-
-    private static string GetEnumMemberName<TEnum>(TEnum enumValue) where TEnum : Enum
-    {
-        var memberInfo = typeof(TEnum).GetMember(enumValue.ToString()).FirstOrDefault();
-        if (memberInfo != null)
-        {
-            var attribute = memberInfo.GetCustomAttribute<JsonStringEnumMemberNameAttribute>();
-            if (attribute != null)
-            {
-                return attribute.Name;
-            }
-        }
-        return enumValue.ToString();
     }
 }

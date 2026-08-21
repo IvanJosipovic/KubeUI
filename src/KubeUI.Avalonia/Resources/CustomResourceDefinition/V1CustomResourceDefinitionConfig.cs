@@ -1,6 +1,7 @@
-using Dock.Model.Core;
 using FluentIcons.Common;
 using k8s.Models;
+using KubernetesClient.Informer.Client;
+using KubeUI.Kubernetes;
 using KubeUI.Avalonia.Features.Resources.Common;
 using KubeUI.Avalonia.Features.Resources.List;
 using KubeUI.Avalonia.Infrastructure.Docking;
@@ -74,32 +75,17 @@ public sealed partial class V1CustomResourceDefinitionConfig : ResourceConfigBas
     [RelayCommand(CanExecute = nameof(CanListCRD))]
     private void ListCRD(V1CustomResourceDefinition crd)
     {
-        var spec = crd.Spec;
-        if (spec == null)
+        if (!crd.TryGetResourceKind(out var kind))
+        {
+            return;
+        }
+        if (!Cluster.Runtime.ModelCatalog.IsCustomResource(kind))
         {
             return;
         }
 
-        var version = spec.Versions?.FirstOrDefault(x => x.Storage);
-        if (version == null)
-        {
-            return;
-        }
-
-        var type = Cluster.Runtime.ModelCatalog.GetResourceType(spec.Group, version.Name, spec.Names.Kind);
-        if (type == null)
-        {
-            return;
-        }
-
-        var resourceListType = typeof(ResourceListViewModel<>).MakeGenericType(type);
-
-        var vm = ServiceProvider.GetRequiredService(resourceListType) as IDockable;
-
-        if (vm is IInitializeCluster init)
-        {
-            init.Initialize(Cluster);
-        }
+        var vm = ServiceProvider.GetRequiredService<ResourceListViewModel<GenericKubernetesObject>>();
+        vm.InitializeResource(Cluster, kind);
 
         _factory.AddToDocuments(vm);
     }
@@ -111,20 +97,16 @@ public sealed partial class V1CustomResourceDefinitionConfig : ResourceConfigBas
             return false;
         }
 
-        var spec = crd.Spec;
-        var version = spec.Versions?.FirstOrDefault(x => x.Served && x.Storage);
-        if (version == null)
+        if (!crd.TryGetResourceKind(out var kind))
+        {
+            return false;
+        }
+        if (!Cluster.Runtime.ModelCatalog.IsCustomResource(kind))
         {
             return false;
         }
 
-        var type = Cluster.Runtime.ModelCatalog.GetResourceType(spec.Group, version.Name, spec.Names.Kind);
-        if (type == null)
-        {
-            return false;
-        }
-
-        var resourceConfig = Cluster.GetResourceConfig(type);
+        var resourceConfig = Cluster.GetResourceConfig(kind);
         return resourceConfig?.PermissionsLoaded == true && resourceConfig.CanListAndWatch;
     }
 }

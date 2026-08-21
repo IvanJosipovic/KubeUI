@@ -10,6 +10,8 @@ using AvaloniaEdit.Indentation;
 using AvaloniaEdit.TextMate;
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
 using KubeUI.Avalonia.Styles;
+using KubeUI.Kubernetes;
+using KubernetesClient.Informer.Client;
 using TextMateSharp.Grammars;
 using static AvaloniaEdit.TextMate.TextMate;
 
@@ -22,7 +24,6 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
 
     private sealed class EditorInputHandler(
         TextArea textArea,
-        System.Action triggerCompletion,
         Func<bool> triggerBackspaceUnindent,
         Func<bool> triggerSelectionIndent,
         Func<bool> triggerSelectionUnindent) : TextAreaStackedInputHandler(textArea)
@@ -31,13 +32,6 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
         {
             if (e.Handled)
             {
-                return;
-            }
-
-            if (e.Key == Key.Space && e.KeyModifiers.HasFlag(KeyModifiers.Control))
-            {
-                triggerCompletion();
-                e.Handled = true;
                 return;
             }
 
@@ -67,7 +61,12 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
     private readonly Dictionary<string, Queue<bool>> _savedFoldStates = new(StringComparer.Ordinal);
     private CompletionWindow? _completionWindow;
     private EditorInputHandler? _editorInputHandler;
+    private KeyBinding? _forceNewSequenceItemBinding;
     private DispatcherTimer? _foldingUpdateTimer;
+    private YamlSchemaNode? _schemaRoot;
+    private ClusterModelCatalog? _schemaCatalog;
+    private GroupApiVersionKind _schemaKind;
+    private long _schemaVersion = -1;
 
     protected override void OnAttached()
     {
@@ -94,11 +93,16 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
         AssociatedObject.TextArea.TextEntered += TextArea_TextEntered;
         _editorInputHandler = new EditorInputHandler(
             AssociatedObject.TextArea,
-            ShowCompletionWindow,
             TryUnindentOnBackspace,
             TryIndentSelection,
             TryUnindentSelection);
         AssociatedObject.TextArea.PushStackedInputHandler(_editorInputHandler);
+        _forceNewSequenceItemBinding = new KeyBinding
+        {
+            Gesture = new KeyGesture(Key.Enter, KeyModifiers.Control),
+            Command = new CommunityToolkit.Mvvm.Input.RelayCommand(() => TryForceNewSequenceItem()),
+        };
+        AssociatedObject.KeyBindings.Add(_forceNewSequenceItemBinding);
         _foldingUpdateTimer = new DispatcherTimer
         {
             Interval = TimeSpan.FromMilliseconds(150),
@@ -208,6 +212,12 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
                 AssociatedObject.TextArea.PopStackedInputHandler(_editorInputHandler);
                 _editorInputHandler = null;
             }
+
+            if (_forceNewSequenceItemBinding != null)
+            {
+                AssociatedObject.KeyBindings.Remove(_forceNewSequenceItemBinding);
+                _forceNewSequenceItemBinding = null;
+            }
         }
 
         if (_foldingUpdateTimer != null)
@@ -283,14 +293,11 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
         }
 
         _savedFoldStates.Clear();
-        List<NewFolding>? foldings = persistToViewModel ? [] : null;
+        List<YamlFoldState>? foldings = persistToViewModel ? [] : null;
 
         foreach (var folding in _foldingManager.AllFoldings)
         {
-            var tag = (NewFolding)folding.Tag;
-            tag.DefaultClosed = folding.IsFolded;
-
-            var title = tag.Name.TrimEnd();
+            var title = folding.Title.TrimEnd();
             if (!_savedFoldStates.TryGetValue(title, out var states))
             {
                 states = new Queue<bool>();
@@ -298,7 +305,7 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
             }
 
             states.Enqueue(folding.IsFolded);
-            foldings?.Add(tag);
+                foldings?.Add(new YamlFoldState(title, folding.IsFolded));
         }
 
         if (foldings != null)
@@ -438,10 +445,51 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
             return false;
         }
 
-        var insertText = GetDocumentNewLine(document) + new string(' ', CountLeadingSpaces(lineText)) + "- ";
+        var indent = CountLeadingSpaces(lineText);
+        var insertText = IsInlineMappingSequenceEntry(trimmed)
+            ? GetDocumentNewLine(document) + new string(' ', indent + IndentationSize)
+            : GetDocumentNewLine(document) + new string(' ', indent) + "- ";
         document.Insert(caretOffset, insertText);
         AssociatedObject.TextArea.Caret.Offset = caretOffset + insertText.Length;
         e.Handled = true;
+        return true;
+    }
+
+    private static bool IsInlineMappingSequenceEntry(string trimmedLine)
+    {
+        var colon = trimmedLine.IndexOf(':', 2);
+        return colon > 2 && !string.IsNullOrWhiteSpace(trimmedLine[2..colon]);
+    }
+
+    private bool TryForceNewSequenceItem()
+    {
+        if (AssociatedObject?.Document == null
+            || AssociatedObject.IsReadOnly
+            || _currentViewModel?.EditMode != true
+            || !AssociatedObject.TextArea.Selection.IsEmpty)
+        {
+            return false;
+        }
+
+        var document = AssociatedObject.Document;
+        var caretOffset = AssociatedObject.CaretOffset;
+        var line = document.GetLineByOffset(caretOffset);
+        if (caretOffset != line.EndOffset)
+        {
+            return false;
+        }
+
+        var lineText = document.GetText(line);
+        var trimmed = lineText.Trim();
+        if (trimmed != "-" && !trimmed.StartsWith("- ", StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        var indent = CountLeadingSpaces(lineText);
+        var insertText = GetDocumentNewLine(document) + new string(' ', indent) + "- ";
+        document.Insert(caretOffset, insertText);
+        AssociatedObject.TextArea.Caret.Offset = caretOffset + insertText.Length;
         return true;
     }
 
@@ -460,8 +508,7 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
         if (!YamlSchemaContext.TryCreateSequenceEntryInsertion(
                 AssociatedObject.Document,
                 AssociatedObject.CaretOffset,
-                _currentViewModel.Object.GetType(),
-                _currentViewModel.Cluster.Runtime.ModelCatalog,
+                GetSchemaRoot(_currentViewModel),
                 out var insertionText))
         {
             return false;
@@ -677,8 +724,7 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
         var context = YamlSchemaContext.Resolve(
             AssociatedObject.Document,
             AssociatedObject.CaretOffset,
-            _currentViewModel.Object.GetType(),
-            _currentViewModel.Cluster.Runtime.ModelCatalog);
+            GetSchemaRoot(_currentViewModel));
 
         var completionItems = context.CompletionItems
             .Where(item => item.Text.StartsWith(context.Key.Prefix, StringComparison.OrdinalIgnoreCase))
@@ -721,14 +767,32 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
         _completionWindow.Show();
     }
 
-    private void ViewModelOnCompletionRequested(object? sender, EventArgs e)
-    {
-        ShowCompletionWindow();
-    }
-
     private void CompletionWindow_Closed(object? sender, EventArgs e)
     {
         CloseCompletionWindow();
+    }
+
+    private async void ViewModelOnCompletionRequested(object? sender, EventArgs e)
+    {
+        if (_currentViewModel?.Cluster is { } cluster)
+        {
+            try
+            {
+                await cluster.Runtime.EnsureOpenApiSchemasAsync().ConfigureAwait(true);
+            }
+            catch (Exception ex)
+            {
+                if (Application.Current is IServiceProviderHost host)
+                {
+                    host.Services.GetRequiredService<ILogger<YamlEditorBehavior>>()
+                        .LogDebug(ex, "Unable to load OpenAPI schemas for YAML completion.");
+                }
+
+                return;
+            }
+        }
+
+        ShowCompletionWindow();
     }
 
     private void CloseCompletionWindow()
@@ -784,11 +848,6 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
 
     private void LoadSavedFoldStates(ResourceYamlViewModel vm)
     {
-        if (vm.AllFoldings == null)
-        {
-            return;
-        }
-
         foreach (var folding in vm.AllFoldings)
         {
             var title = folding.Name.TrimEnd();
@@ -798,7 +857,7 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
                 _savedFoldStates.Add(title, states);
             }
 
-            states.Enqueue(folding.DefaultClosed);
+            states.Enqueue(folding.IsFolded);
         }
     }
 
@@ -812,5 +871,24 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
                 folding.IsFolded = states.Dequeue();
             }
         }
+    }
+
+    private YamlSchemaNode GetSchemaRoot(ResourceYamlViewModel vm)
+    {
+        var catalog = vm.Cluster!.Runtime.ModelCatalog;
+        var kind = vm.ResourceKind;
+        var version = catalog.OpenApiSchemas.Version;
+        if (_schemaRoot is null
+            || !ReferenceEquals(_schemaCatalog, catalog)
+            || _schemaKind != kind
+            || _schemaVersion != version)
+        {
+            _schemaRoot = YamlSchemaContext.CreateRoot(kind, catalog);
+            _schemaCatalog = catalog;
+            _schemaKind = kind;
+            _schemaVersion = version;
+        }
+
+        return _schemaRoot;
     }
 }

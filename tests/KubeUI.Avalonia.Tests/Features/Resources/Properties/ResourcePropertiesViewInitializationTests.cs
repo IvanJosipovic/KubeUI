@@ -4,6 +4,7 @@ using Avalonia.Threading;
 using Dock.Model.Controls;
 using Dock.Model.Core;
 using k8s.Models;
+using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Features.Resources.Properties.Controls;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Resources;
@@ -111,7 +112,7 @@ public sealed class ResourcePropertiesViewInitializationTests
         factory.InitLayout(layout);
         var rightDock = factory.GetDockable<IToolDock>("RightDock")!;
         var workspace = await Application.Current.CreateClusterAsync();
-        var config = (ResourceConfigBase<V1Pod>)workspace.GetResourceConfig<V1Pod>();
+        var config = (ResourceConfigBase<V1Pod>)workspace.GetResourceConfig(GroupApiVersionKind.From<V1Pod>());
         var podA = new V1Pod
         {
             Metadata = new V1ObjectMeta { Name = "pod-a", NamespaceProperty = "default" },

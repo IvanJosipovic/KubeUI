@@ -1,5 +1,6 @@
 using k8s;
 using k8s.Models;
+using KubernetesClient.Informer.Client;
 
 namespace KubeUI.Kubernetes.Resources.Relationships.Providers;
 
@@ -7,9 +8,9 @@ public sealed class IngressRelationshipProvider : IResourceRelationshipProvider
 {
     public IEnumerable<ResourceSeedPrerequisite> SeedPrerequisites =>
     [
-        new(typeof(V1Ingress)),
-        new(typeof(V1IngressClass)),
-        new(typeof(V1Service)),
+        new(GroupApiVersionKind.From<V1Ingress>()),
+        new(GroupApiVersionKind.From<V1IngressClass>()),
+        new(GroupApiVersionKind.From<V1Service>()),
     ];
 
     public void AddRelationships(IKubernetesObject<V1ObjectMeta> resource, ResourceRelationshipContext context, ICollection<ResourceRelationship> relationships)

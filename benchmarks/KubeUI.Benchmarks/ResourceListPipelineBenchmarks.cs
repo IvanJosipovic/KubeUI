@@ -115,7 +115,7 @@ public class ResourceListPipelineBenchmarks : IDisposable
         });
     }
 
-    private static IReadOnlyList<V1Pod> BuildItems(int count)
+    private static V1Pod[] BuildItems(int count)
     {
         var items = new V1Pod[count];
         for (var i = 0; i < count; i++)

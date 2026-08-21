@@ -182,7 +182,7 @@ public class ResourceListViewModelBenchmarks
         return list;
     }
 
-    private static IReadOnlyList<SortingDescriptor> BuildSortingDescriptors(IReadOnlyList<IResourceListColumn> columns, int descriptorCount)
+    private static SortingDescriptor[] BuildSortingDescriptors(IReadOnlyList<IResourceListColumn> columns, int descriptorCount)
     {
         var count = Math.Min(descriptorCount, columns.Count);
         var descriptors = new SortingDescriptor[count];
@@ -195,7 +195,7 @@ public class ResourceListViewModelBenchmarks
         return descriptors;
     }
 
-    private static IReadOnlyList<FilteringDescriptor> BuildFilteringDescriptors(IReadOnlyList<IResourceListColumn> columns, int descriptorCount)
+    private static FilteringDescriptor[] BuildFilteringDescriptors(IReadOnlyList<IResourceListColumn> columns, int descriptorCount)
     {
         var count = Math.Min(descriptorCount, columns.Count);
         var descriptors = new FilteringDescriptor[count];
@@ -210,7 +210,7 @@ public class ResourceListViewModelBenchmarks
         return descriptors;
     }
 
-    private static IReadOnlyList<object> BuildExplicitColumnIds(IReadOnlyList<IResourceListColumn> columns, int descriptorCount)
+    private static object[] BuildExplicitColumnIds(IReadOnlyList<IResourceListColumn> columns, int descriptorCount)
     {
         var count = Math.Min(descriptorCount, columns.Count);
         var columnIds = new object[count];
@@ -222,12 +222,12 @@ public class ResourceListViewModelBenchmarks
         return columnIds;
     }
 
-    private static IReadOnlyList<V1Pod> BuildItems(int itemCount)
+    private static V1Pod[] BuildItems(int itemCount)
     {
-        var items = new List<V1Pod>(itemCount);
+        var items = new V1Pod[itemCount];
         for (var i = 0; i < itemCount; i++)
         {
-            items.Add(new V1Pod
+            items[i] = new V1Pod
             {
                 ApiVersion = V1Pod.KubeApiVersion,
                 Kind = V1Pod.KubeKind,
@@ -238,7 +238,7 @@ public class ResourceListViewModelBenchmarks
                     CreationTimestamp = DateTime.UtcNow.AddMinutes(-i),
                     ResourceVersion = i.ToString(CultureInfo.InvariantCulture)
                 }
-            });
+            };
         }
 
         return items;

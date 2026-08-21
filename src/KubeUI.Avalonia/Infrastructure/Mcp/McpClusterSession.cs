@@ -26,6 +26,7 @@ public sealed record McpResourceGraphInfo(
 public interface IMcpClusterSession
 {
     Task<IClusterRuntime> GetConnectedClusterAsync(string? clusterName);
+    Task SeedResourceAsync(string? clusterName, GroupApiVersionKind resourceKind);
     Task<IReadOnlyList<McpSupportedResourceInfo>> ListSupportedResourcesAsync(string? clusterName);
     Task<IReadOnlyList<IKubernetesObject<V1ObjectMeta>>> ListResourcesAsync(
         string? clusterName, string apiVersion, string kind, string? @namespace, int limit);
@@ -73,6 +74,15 @@ internal sealed class McpClusterSession(
                 config.IsCustomResource, config.CanListAndWatch, config.PermissionsLoaded))];
     }
 
+    public async Task SeedResourceAsync(string? clusterName, GroupApiVersionKind resourceKind)
+    {
+        var cluster = await GetConnectedClusterAsync(clusterName).ConfigureAwait(false);
+        var workspace = workspaceCatalog.GetCluster(cluster.Name)
+            ?? throw new InvalidOperationException($"Cluster {cluster.Name} is not backed by a KubeUI workspace.");
+
+        await workspace.GetResourceConfig(resourceKind).SeedResource().ConfigureAwait(false);
+    }
+
     public async Task<IReadOnlyList<IKubernetesObject<V1ObjectMeta>>> ListResourcesAsync(
         string? clusterName, string apiVersion, string kind, string? @namespace, int limit)
     {
@@ -82,10 +92,10 @@ internal sealed class McpClusterSession(
         var cluster = await GetConnectedClusterAsync(clusterName).ConfigureAwait(false);
         var workspace = workspaceCatalog.GetCluster(cluster.Name)
             ?? throw new InvalidOperationException($"Cluster {cluster.Name} is not backed by a KubeUI workspace.");
-        var (resourceType, resourceKind) = ResolveResourceType(cluster, workspace, apiVersion, kind);
-        resourceType = resourceType
-            ?? throw new InvalidOperationException($"Unable to resolve Kubernetes type for {apiVersion}/{kind}.");
-        await cluster.SeedResource(resourceType).ConfigureAwait(false);
+        var resourceKind = ResolveResourceKind(cluster, workspace, apiVersion, kind);
+        if (!cluster.ModelCatalog.Contains(resourceKind))
+            throw new InvalidOperationException($"Unable to resolve Kubernetes resource for {apiVersion}/{kind}.");
+        await workspace.GetResourceConfig(resourceKind).SeedResource().ConfigureAwait(false);
         if (!cluster.Objects.TryGetValue(resourceKind, out var value)
             || value is not IResourceContainer container)
             return [];
@@ -119,10 +129,10 @@ internal sealed class McpClusterSession(
         var cluster = await GetConnectedClusterAsync(clusterName).ConfigureAwait(false);
         var workspace = workspaceCatalog.GetCluster(cluster.Name)
             ?? throw new InvalidOperationException($"Cluster {cluster.Name} is not backed by a KubeUI workspace.");
-        var (resourceType, resourceKind) = ResolveResourceType(cluster, workspace, apiVersion, kind);
-        resourceType = resourceType
-            ?? throw new InvalidOperationException($"Unable to resolve Kubernetes type for {apiVersion}/{kind}.");
-        await cluster.SeedResource(resourceType).ConfigureAwait(false);
+        var resourceKind = ResolveResourceKind(cluster, workspace, apiVersion, kind);
+        if (!cluster.ModelCatalog.Contains(resourceKind))
+            throw new InvalidOperationException($"Unable to resolve Kubernetes resource for {apiVersion}/{kind}.");
+        await workspace.GetResourceConfig(resourceKind).SeedResource().ConfigureAwait(false);
 
         var resources = cluster.Objects.Values
             .OfType<IResourceContainer>()
@@ -179,7 +189,7 @@ internal sealed class McpClusterSession(
             ?? throw new InvalidOperationException("No clusters are configured in KubeUI.");
     }
 
-    private static (Type? ResourceType, GroupApiVersionKind ResourceKind) ResolveResourceType(
+    private static GroupApiVersionKind ResolveResourceKind(
         IClusterRuntime cluster,
         ClusterWorkspace workspace,
         string apiVersion,
@@ -189,9 +199,8 @@ internal sealed class McpClusterSession(
         var group = parts.Length == 2 ? parts[0] : string.Empty;
         var version = parts.Length == 2 ? parts[1] : apiVersion;
         var requestedKind = new GroupApiVersionKind(group, version, kind, string.Empty);
-        var resourceType = cluster.ModelCatalog.GetResourceType(requestedKind);
-        if (resourceType is not null)
-            return (resourceType, requestedKind);
+        if (cluster.ModelCatalog.Contains(requestedKind))
+            return requestedKind;
 
         // Agents sometimes pass only "v1" for a custom resource. Recover that
         // form only when KubeUI has one unambiguous registered kind/version.
@@ -207,9 +216,9 @@ internal sealed class McpClusterSession(
         if (candidates.Length == 1)
         {
             var candidate = candidates[0];
-            return (cluster.ModelCatalog.GetResourceType(candidate), candidate);
+            return candidate;
         }
 
-        return (null, requestedKind);
+        return requestedKind;
     }
 }

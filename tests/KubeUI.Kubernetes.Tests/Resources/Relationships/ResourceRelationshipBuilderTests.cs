@@ -1,10 +1,10 @@
+using System.Text.Json;
 using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
 using KubeUI.Kubernetes.Resources.Relationships;
 using KubeUI.Kubernetes.Resources.Relationships.Providers;
 using Shouldly;
-using System.Text.Json.Serialization;
 
 namespace KubeUI.Kubernetes.Tests.Resources.Relationships;
 
@@ -64,6 +64,52 @@ public sealed class ResourceRelationshipBuilderTests
     }
 
     [Fact]
+    public void Relates_json_backed_gateway_route_to_parent_and_backend()
+    {
+        var route = KubernetesJson.Deserialize<GenericKubernetesObject>("""
+            {
+              "apiVersion": "gateway.networking.k8s.io/v1",
+              "kind": "HTTPRoute",
+              "metadata": { "name": "route", "namespace": "demo" },
+              "spec": {
+                "parentRefs": [{ "name": "public", "sectionName": "https", "port": 8443 }],
+                "rules": [{ "backendRefs": [{ "name": "web", "port": 8080 }] }]
+              }
+            }
+            """);
+        var gateway = KubernetesJson.Deserialize<GenericKubernetesObject>("""
+            {
+              "apiVersion": "gateway.networking.k8s.io/v1",
+              "kind": "Gateway",
+              "metadata": { "name": "public", "namespace": "demo" }
+            }
+            """);
+        var service = KubernetesJson.Deserialize<GenericKubernetesObject>("""
+            {
+              "apiVersion": "v1",
+              "kind": "Service",
+              "metadata": { "name": "web", "namespace": "demo" }
+            }
+            """);
+
+        var graph = new ResourceRelationshipBuilder().Build(
+            [route, gateway, service],
+            new HashSet<string> { "demo" },
+            hideNoise: true);
+
+        graph.Relationships.ShouldContain(new ResourceRelationship(
+            new("gateway.networking.k8s.io/v1", "HTTPRoute", "demo", "route", null),
+            new("gateway.networking.k8s.io/v1", "Gateway", "demo", "public", null),
+            ResourceRelationshipKind.Reference,
+            "sectionName=https, port=8443"));
+        graph.Relationships.ShouldContain(new ResourceRelationship(
+            new("gateway.networking.k8s.io/v1", "HTTPRoute", "demo", "route", null),
+            new("v1", "Service", "demo", "web", null),
+            ResourceRelationshipKind.Reference,
+            "port=8080"));
+    }
+
+    [Fact]
     public void Relates_ingress_to_its_ingress_class()
     {
         V1Ingress ingress = new()
@@ -98,22 +144,22 @@ public sealed class ResourceRelationshipBuilderTests
             new HashSet<string>(),
             hideNoise: true);
 
-        graph.RequiredSeedPrerequisites.ShouldContain(new ResourceSeedPrerequisite(typeof(V1Service)));
-        graph.RequiredSeedPrerequisites.ShouldContain(new ResourceSeedPrerequisite(typeof(V1Ingress)));
-        graph.RequiredSeedPrerequisites.ShouldContain(new ResourceSeedPrerequisite(typeof(V1EndpointSlice)));
-        graph.RequiredSeedPrerequisites.ShouldContain(new ResourceSeedPrerequisite(typeof(V1Pod)));
-        graph.RequiredSeedPrerequisites.ShouldContain(new ResourceSeedPrerequisite(typeof(V1Node)));
-        graph.RequiredSeedPrerequisites.ShouldContain(new ResourceSeedPrerequisite(typeof(V1ConfigMap)));
-        graph.RequiredSeedPrerequisites.ShouldContain(new ResourceSeedPrerequisite(typeof(V1Secret)));
-        graph.RequiredSeedPrerequisites.ShouldContain(new ResourceSeedPrerequisite(typeof(V1PersistentVolumeClaim)));
-        graph.RequiredSeedPrerequisites.ShouldContain(new ResourceSeedPrerequisite(typeof(V1RoleBinding)));
-        graph.RequiredSeedPrerequisites.ShouldContain(new ResourceSeedPrerequisite(typeof(V1ClusterRoleBinding)));
-        graph.RequiredSeedPrerequisites.ShouldContain(new ResourceSeedPrerequisite(typeof(Corev1Event)));
-        graph.RequiredSeedPrerequisites.ShouldContain(new ResourceSeedPrerequisite(typeof(V1ServiceAccount)));
-        graph.RequiredSeedPrerequisites.ShouldContain(new ResourceSeedPrerequisite(typeof(V1PersistentVolume)));
-        graph.RequiredSeedPrerequisites.ShouldContain(new ResourceSeedPrerequisite(typeof(V1StorageClass)));
-        graph.RequiredSeedPrerequisites.ShouldContain(new ResourceSeedPrerequisite(typeof(V1Role)));
-        graph.RequiredSeedPrerequisites.ShouldContain(new ResourceSeedPrerequisite(typeof(V1ClusterRole)));
+        graph.RequiredSeedPrerequisites.ShouldContain(new ResourceSeedPrerequisite(GroupApiVersionKind.From<V1Service>()));
+        graph.RequiredSeedPrerequisites.ShouldContain(new ResourceSeedPrerequisite(GroupApiVersionKind.From<V1Ingress>()));
+        graph.RequiredSeedPrerequisites.ShouldContain(new ResourceSeedPrerequisite(GroupApiVersionKind.From<V1EndpointSlice>()));
+        graph.RequiredSeedPrerequisites.ShouldContain(new ResourceSeedPrerequisite(GroupApiVersionKind.From<V1Pod>()));
+        graph.RequiredSeedPrerequisites.ShouldContain(new ResourceSeedPrerequisite(GroupApiVersionKind.From<V1Node>()));
+        graph.RequiredSeedPrerequisites.ShouldContain(new ResourceSeedPrerequisite(GroupApiVersionKind.From<V1ConfigMap>()));
+        graph.RequiredSeedPrerequisites.ShouldContain(new ResourceSeedPrerequisite(GroupApiVersionKind.From<V1Secret>()));
+        graph.RequiredSeedPrerequisites.ShouldContain(new ResourceSeedPrerequisite(GroupApiVersionKind.From<V1PersistentVolumeClaim>()));
+        graph.RequiredSeedPrerequisites.ShouldContain(new ResourceSeedPrerequisite(GroupApiVersionKind.From<V1RoleBinding>()));
+        graph.RequiredSeedPrerequisites.ShouldContain(new ResourceSeedPrerequisite(GroupApiVersionKind.From<V1ClusterRoleBinding>()));
+        graph.RequiredSeedPrerequisites.ShouldContain(new ResourceSeedPrerequisite(GroupApiVersionKind.From<Corev1Event>()));
+        graph.RequiredSeedPrerequisites.ShouldContain(new ResourceSeedPrerequisite(GroupApiVersionKind.From<V1ServiceAccount>()));
+        graph.RequiredSeedPrerequisites.ShouldContain(new ResourceSeedPrerequisite(GroupApiVersionKind.From<V1PersistentVolume>()));
+        graph.RequiredSeedPrerequisites.ShouldContain(new ResourceSeedPrerequisite(GroupApiVersionKind.From<V1StorageClass>()));
+        graph.RequiredSeedPrerequisites.ShouldContain(new ResourceSeedPrerequisite(GroupApiVersionKind.From<V1Role>()));
+        graph.RequiredSeedPrerequisites.ShouldContain(new ResourceSeedPrerequisite(GroupApiVersionKind.From<V1ClusterRole>()));
         graph.RequiredSeedPrerequisites.ShouldContain(new ResourceSeedPrerequisite(
             new GroupApiVersionKind("protection.crossplane.io", "v1beta1", "Usage", "usages"),
             allowServedVersionFallback: true));
@@ -511,6 +557,55 @@ public sealed class ResourceRelationshipBuilderTests
         graph.Relationships.ShouldContain(new ResourceRelationship(
             new(schema.ApiVersion!, schema.Kind!, schema.Namespace(), schema.Name()!, schema.Uid()),
             new(catalog.ApiVersion!, catalog.Kind!, catalog.Namespace(), catalog.Name()!, catalog.Uid()),
+            ResourceRelationshipKind.Reference,
+            "uses"));
+    }
+
+    [Fact]
+    public void Relates_json_backed_crossplane_usage()
+    {
+        var schema = KubernetesJson.Deserialize<GenericKubernetesObject>("""
+            {
+              "apiVersion": "unity.databricks.m.crossplane.io/v1beta1",
+              "kind": "Schema",
+              "metadata": { "name": "schema", "namespace": "platform" }
+            }
+            """);
+        var catalog = KubernetesJson.Deserialize<GenericKubernetesObject>("""
+            {
+              "apiVersion": "unity.databricks.m.crossplane.io/v1",
+              "kind": "Catalog",
+              "metadata": { "name": "catalog", "namespace": "platform" }
+            }
+            """);
+        var usage = KubernetesJson.Deserialize<GenericKubernetesObject>("""
+            {
+              "apiVersion": "protection.crossplane.io/v1beta1",
+              "kind": "Usage",
+              "metadata": { "name": "usage", "namespace": "platform" },
+              "spec": {
+                "by": {
+                  "apiVersion": "unity.databricks.m.crossplane.io/v1beta1",
+                  "kind": "Schema",
+                  "resourceRef": { "name": "schema" }
+                },
+                "of": {
+                  "apiVersion": "unity.databricks.m.crossplane.io/v1",
+                  "kind": "Catalog",
+                  "resourceRef": { "name": "catalog" }
+                }
+              }
+            }
+            """);
+
+        var graph = new ResourceRelationshipBuilder().Build(
+            [schema, catalog, usage],
+            new HashSet<string> { "platform" },
+            hideNoise: true);
+
+        graph.Relationships.ShouldContain(new ResourceRelationship(
+            new("unity.databricks.m.crossplane.io/v1beta1", "Schema", "platform", "schema", null),
+            new("unity.databricks.m.crossplane.io/v1", "Catalog", "platform", "catalog", null),
             ResourceRelationshipKind.Reference,
             "uses"));
     }
@@ -1638,16 +1733,34 @@ public sealed class ResourceRelationshipBuilderTests
         }
     }
 
-    private class TestDynamicResource : IKubernetesObject<V1ObjectMeta>
+    private class TestDynamicResource : GenericKubernetesObject
     {
-        public string? ApiVersion { get; set; }
-        public string? Kind { get; set; }
-        public V1ObjectMeta Metadata { get; set; } = new();
+        protected void SetProperty<T>(string name, T? value)
+        {
+            if (value is null)
+            {
+                Properties.Remove(name);
+                return;
+            }
+
+            using var document = JsonDocument.Parse(KubernetesJson.Serialize(value));
+            Properties[name] = document.RootElement.Clone();
+        }
     }
 
     private sealed class TestDynamicUsage : TestDynamicResource
     {
-        public TestDynamicUsageSpec Spec { get; set; } = new();
+        private TestDynamicUsageSpec _spec = new();
+
+        public TestDynamicUsageSpec Spec
+        {
+            get => _spec;
+            set
+            {
+                _spec = value;
+                SetProperty("spec", value);
+            }
+        }
     }
 
     private sealed class TestDynamicUsageSpec
@@ -1678,8 +1791,17 @@ public sealed class ResourceRelationshipBuilderTests
 
     private sealed class TestGateway : TestDynamicResource
     {
-        [JsonIgnore]
-        public TestGatewaySpec? Spec { get; set; }
+        private TestGatewaySpec? _spec;
+
+        public TestGatewaySpec? Spec
+        {
+            get => _spec;
+            set
+            {
+                _spec = value;
+                SetProperty("spec", value);
+            }
+        }
     }
 
     private sealed class TestGatewayClass : TestDynamicResource
@@ -1688,8 +1810,17 @@ public sealed class ResourceRelationshipBuilderTests
 
     private sealed class TestListenerSet : TestDynamicResource
     {
-        [JsonIgnore]
-        public TestListenerSetSpec? Spec { get; set; }
+        private TestListenerSetSpec? _spec;
+
+        public TestListenerSetSpec? Spec
+        {
+            get => _spec;
+            set
+            {
+                _spec = value;
+                SetProperty("spec", value);
+            }
+        }
     }
 
     private sealed class TestListenerSetSpec
@@ -1699,20 +1830,47 @@ public sealed class ResourceRelationshipBuilderTests
 
     private class TestRoute : TestDynamicResource
     {
-        [JsonIgnore]
-        public TestRouteSpec? Spec { get; set; }
+        private TestRouteSpec? _spec;
+
+        public TestRouteSpec? Spec
+        {
+            get => _spec;
+            set
+            {
+                _spec = value;
+                SetProperty("spec", value);
+            }
+        }
     }
 
     private sealed class TestUnsupportedRoute : TestRoute
     {
-        [JsonIgnore]
-        public new TestUnsupportedSpec Spec { get; set; } = new();
+        private TestUnsupportedSpec _spec = new();
+
+        public new TestUnsupportedSpec Spec
+        {
+            get => _spec;
+            set
+            {
+                _spec = value;
+                SetProperty("spec", value);
+            }
+        }
     }
 
     private sealed class TestPolicy : TestDynamicResource
     {
-        [JsonIgnore]
-        public TestPolicySpec? Spec { get; set; }
+        private TestPolicySpec? _spec;
+
+        public TestPolicySpec? Spec
+        {
+            get => _spec;
+            set
+            {
+                _spec = value;
+                SetProperty("spec", value);
+            }
+        }
     }
 
     private sealed class TestGatewaySpec

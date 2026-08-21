@@ -1,11 +1,12 @@
 using k8s;
 using k8s.Models;
+using KubernetesClient.Informer.Client;
 
 namespace KubeUI.Kubernetes.Resources.Relationships.Providers;
 
 public sealed class EventRelationshipProvider : IResourceRelationshipProvider
 {
-    public IEnumerable<ResourceSeedPrerequisite> SeedPrerequisites => [new(typeof(Corev1Event))];
+    public IEnumerable<ResourceSeedPrerequisite> SeedPrerequisites => [new(GroupApiVersionKind.From<Corev1Event>())];
 
     public void AddRelationships(IKubernetesObject<V1ObjectMeta> resource, ResourceRelationshipContext context, ICollection<ResourceRelationship> relationships)
     {

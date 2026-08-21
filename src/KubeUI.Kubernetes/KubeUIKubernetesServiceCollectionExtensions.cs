@@ -1,6 +1,5 @@
 using System.Text.Json.Serialization.Metadata;
 using k8s;
-using KubernetesCRDModelGen;
 using KubeUI.Kubernetes.Serialization;
 
 namespace KubeUI.Kubernetes;
@@ -25,7 +24,6 @@ public static class KubeUIKubernetesServiceCollectionExtensions
         services.AddSingleton<ClusterManager>();
         services.AddSingleton<IClusterRuntimeCatalog>(sp => sp.GetRequiredService<ClusterManager>());
         services.AddHostedService<ClusterManagerStartupService>();
-        services.AddSingleton<IGenerator, Generator>();
         return services;
     }
 
@@ -55,17 +53,10 @@ public static class KubeUIKubernetesServiceCollectionExtensions
                             {
                                 jsonTypeInfo =>
                                 {
-                                    if (jsonTypeInfo.Type?.Namespace?.StartsWith("KubeUI.Models", StringComparison.Ordinal) == true)
-                                    {
-                                        foreach (var prop in jsonTypeInfo.Properties)
-                                        {
-                                            prop.IsRequired = false;
-                                        }
-                                    }
 
                                     if (jsonTypeInfo.OriginatingResolver is DefaultJsonTypeInfoResolver)
                                     {
-                                        _jsonLogger?.LogDebug("Type is serialized using reflection: {Type}", jsonTypeInfo.Type);
+                                        _jsonLogger?.LogCritical("Type is serialized using reflection: {Type}", jsonTypeInfo.Type);
                                     }
                                 }
                             }

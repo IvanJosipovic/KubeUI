@@ -1,6 +1,7 @@
 using k8s;
 using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Kubernetes;
+using KubernetesClient.Informer.Client;
 using YamlDotNet.Core;
 using KubernetesYamlSerializer = KubeUI.Kubernetes.Serialization.KubernetesYaml;
 
@@ -8,6 +9,13 @@ namespace KubeUI.Avalonia.Features.Resources.Yaml;
 
 public sealed class YamlSyntaxValidationService : IYamlValidationService
 {
+    private readonly KubernetesModelCatalog _sharedCatalog;
+
+    public YamlSyntaxValidationService(KubernetesModelCatalog sharedCatalog)
+    {
+        _sharedCatalog = sharedCatalog;
+    }
+
     /// <summary>
     /// Validates YAML using the optional cluster model catalog for custom-resource resolution.
     /// </summary>
@@ -23,8 +31,16 @@ public sealed class YamlSyntaxValidationService : IYamlValidationService
 
         try
         {
-            var typeMap = modelCatalog?.GetYamlTypeMap();
-            KubernetesYamlSerializer.LoadAllFromString(yaml, typeMap, strict: true);
+            var manifest = KubernetesYamlSerializer.Deserialize<KubernetesObject>(yaml);
+            if (modelCatalog is not null
+                && modelCatalog.TryGetResourceKind(manifest.ApiVersion ?? string.Empty, manifest.Kind ?? string.Empty, out var resourceKind)
+                && modelCatalog.IsCustomResource(resourceKind))
+            {
+                KubernetesYamlSerializer.Deserialize<GenericKubernetesObject>(yaml, strict: true);
+                return [];
+            }
+
+            KubernetesYamlSerializer.LoadAllFromString(yaml, _sharedCatalog.GetYamlTypeMap(), strict: true);
 
             return [];
         }
@@ -138,47 +154,21 @@ public sealed class YamlSyntaxValidationService : IYamlValidationService
     {
         for (var current = exception; current != null; current = current.InnerException)
         {
-            if (!TryGetMarkLocation(current, "Start", out var startLine, out var startColumn))
+            if (current is not YamlException yamlException)
             {
                 continue;
             }
 
-            if (!TryGetMarkLocation(current, "End", out var endLine, out var endColumn))
-            {
-                endLine = startLine;
-                endColumn = startColumn;
-            }
-
-            location = new YamlDiagnosticLocation(startLine, startColumn, endLine, endColumn);
+            location = new YamlDiagnosticLocation(
+                (int)Math.Max(1L, yamlException.Start.Line),
+                (int)Math.Max(1L, yamlException.Start.Column),
+                (int)Math.Max(1L, yamlException.End.Line),
+                (int)Math.Max(1L, yamlException.End.Column));
             return true;
         }
 
         location = default!;
         return false;
-    }
-
-    private static bool TryGetMarkLocation(Exception exception, string propertyName, out int line, out int column)
-    {
-        line = 0;
-        column = 0;
-
-        var property = exception.GetType().GetProperty(propertyName);
-        var mark = property?.GetValue(exception);
-        if (mark == null)
-        {
-            return false;
-        }
-
-        var lineProperty = mark.GetType().GetProperty(nameof(Mark.Line));
-        var columnProperty = mark.GetType().GetProperty(nameof(Mark.Column));
-        if (lineProperty?.GetValue(mark) is not long rawLine || columnProperty?.GetValue(mark) is not long rawColumn)
-        {
-            return false;
-        }
-
-        line = (int)Math.Max(1L, rawLine);
-        column = (int)Math.Max(1L, rawColumn);
-        return true;
     }
 
     private static YamlDiagnosticLocation? FindHeaderLocation(string yaml, string key)

@@ -197,12 +197,14 @@ public sealed class ResourceGraphControlTests
         }
     }
 
-    private static async Task ConnectAndWaitForResourceConfigsAsync(ClusterWorkspace cluster, params Type[] resourceTypes)
+    private static async Task ConnectAndWaitForResourceConfigsAsync(
+        ClusterWorkspace cluster,
+        params GroupApiVersionKind[] resourceKinds)
     {
         await cluster.Connect();
-        await WaitForAsync(() => resourceTypes.All(resourceType =>
+        await WaitForAsync(() => resourceKinds.All(resourceKind =>
         {
-            var resourceConfig = cluster.GetResourceConfig(resourceType);
+            var resourceConfig = cluster.GetResourceConfig(resourceKind);
             return resourceConfig.PermissionsLoaded && resourceConfig.CanListAndWatch;
         }));
     }
@@ -304,7 +306,7 @@ public sealed class ResourceGraphControlTests
             config => config.Type = backend,
             connect: false);
 
-        await ConnectAndWaitForResourceConfigsAsync(cluster, typeof(V1Secret));
+        await ConnectAndWaitForResourceConfigsAsync(cluster, GroupApiVersionKind.From<V1Secret>());
         V1Namespace namespaceResource = new() { Metadata = new() { Name = "platform-dev-ijosipov" } };
         await cluster.Runtime.CreateAsync(namespaceResource, TestContext.Current.CancellationToken);
 
@@ -341,7 +343,7 @@ public sealed class ResourceGraphControlTests
             config => config.Type = backend,
             connect: false);
 
-        await ConnectAndWaitForResourceConfigsAsync(cluster, typeof(V1Secret));
+        await ConnectAndWaitForResourceConfigsAsync(cluster, GroupApiVersionKind.From<V1Secret>());
         V1Namespace namespaceResource = new() { Metadata = new() { Name = "platform-dev-ijosipov" } };
         await cluster.Runtime.CreateAsync(namespaceResource, TestContext.Current.CancellationToken);
 
@@ -768,7 +770,7 @@ public sealed class ResourceGraphControlTests
     {
         var pod = CreatePod("pod");
         UnresolvedResourceReference pending = new("apps", "v1", "Deployment", "default", "owner");
-        ResourceSeedPrerequisite prerequisite = new(typeof(V1Deployment));
+        ResourceSeedPrerequisite prerequisite = new(GroupApiVersionKind.From<V1Deployment>());
 
         using VisualizationViewModel viewModel = new(new ResourceRelationshipBuilder());
         await viewModel.ApplyGraphAsync(new ResourceRelationshipGraph(
@@ -850,7 +852,10 @@ public sealed class ResourceGraphControlTests
             config => config.Type = backend,
             connect: false);
 
-        await ConnectAndWaitForResourceConfigsAsync(cluster, typeof(V1Deployment), typeof(V1Pod));
+        await ConnectAndWaitForResourceConfigsAsync(
+            cluster,
+            GroupApiVersionKind.From<V1Deployment>(),
+            GroupApiVersionKind.From<V1Pod>());
         cluster.SelectedNamespaces.Add(new V1Namespace { Metadata = new() { Name = "default" } });
         using VisualizationViewModel viewModel = new(new OwnerRelationshipBuilder());
         await cluster.Runtime.SeedResource<V1Deployment>(true);
@@ -1007,7 +1012,7 @@ public sealed class ResourceGraphControlTests
                 [],
                 SeedPrerequisites: new HashSet<ResourceSeedPrerequisite>
                 {
-                    new(typeof(V1Node)),
+                    new(GroupApiVersionKind.From<V1Node>()),
                 }));
 
             (await seedRequested.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken)).ShouldBeFalse();
@@ -1224,7 +1229,7 @@ public sealed class ResourceGraphControlTests
             config => config.Type = KubernetesBackend.Fake,
             connect: false);
 
-        await ConnectAndWaitForResourceConfigsAsync(cluster, typeof(V1Pod));
+        await ConnectAndWaitForResourceConfigsAsync(cluster, GroupApiVersionKind.From<V1Pod>());
         var selected = CreatePod("selected");
         selected.Metadata.Uid = null;
         await cluster.Runtime.AddOrUpdateResource(new V1Namespace { Metadata = new() { Name = "other" } });
@@ -1295,7 +1300,7 @@ public sealed class ResourceGraphControlTests
         var cluster = await Application.Current.CreateClusterAsync(config => config.Type = backend);
         await WaitForAsync(() =>
         {
-            var deploymentConfig = cluster.GetResourceConfig<V1Deployment>();
+            var deploymentConfig = cluster.GetResourceConfig(GroupApiVersionKind.From<V1Deployment>());
             return deploymentConfig.PermissionsLoaded && deploymentConfig.CanListAndWatch;
         });
 
@@ -1305,9 +1310,9 @@ public sealed class ResourceGraphControlTests
         viewModel.Initialize(cluster);
         await builder.WaitForBuildAsync(1);
 
-        ResourceSeedPrerequisite prerequisite = new(typeof(V1Deployment));
+        ResourceSeedPrerequisite prerequisite = new(GroupApiVersionKind.From<V1Deployment>());
         await viewModel.ApplyGraphAsync(new ResourceRelationshipGraph([], [], SeedPrerequisites: new HashSet<ResourceSeedPrerequisite> { prerequisite }));
-        await cluster.Runtime.SeedResource(typeof(V1Deployment));
+        await cluster.Runtime.SeedResource(GroupApiVersionKind.From<V1Deployment>());
         await builder.WaitForBuildAsync(2);
     }
 
@@ -1374,7 +1379,7 @@ public sealed class ResourceGraphControlTests
             config => config.Type = backend,
             connect: false);
 
-        await ConnectAndWaitForResourceConfigsAsync(cluster, typeof(V1Pod));
+        await ConnectAndWaitForResourceConfigsAsync(cluster, GroupApiVersionKind.From<V1Pod>());
         cluster.SelectedNamespaces.Add(new V1Namespace { Metadata = new() { Name = "default" } });
         var builder = new BuildCaptureRelationshipBuilder();
         using VisualizationViewModel viewModel = new(builder);

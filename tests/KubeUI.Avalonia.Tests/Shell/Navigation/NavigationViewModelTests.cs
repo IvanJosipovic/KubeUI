@@ -107,9 +107,9 @@ public class NavigationViewModelTests
         return FindResourceLink(root.NavigationItems, name);
     }
 
-    private static ResourceNavigationLink? FindResourceLink(ClusterNavigationNode root, Type resourceType)
+    private static ResourceNavigationLink? FindResourceLink(ClusterNavigationNode root, GroupApiVersionKind resourceKind)
     {
-        return FindResourceLink(root.NavigationItems, resourceType);
+        return FindResourceLink(root.NavigationItems, resourceKind);
     }
 
     private static ResourceNavigationLink? FindResourceLink(IEnumerable<NavigationItem> items, string name)
@@ -131,16 +131,16 @@ public class NavigationViewModelTests
         return null;
     }
 
-    private static ResourceNavigationLink? FindResourceLink(IEnumerable<NavigationItem> items, Type resourceType)
+    private static ResourceNavigationLink? FindResourceLink(IEnumerable<NavigationItem> items, GroupApiVersionKind resourceKind)
     {
         foreach (var child in items)
         {
-            if (child is ResourceNavigationLink resourceLink && resourceLink.ControlType == resourceType)
+            if (child is ResourceNavigationLink resourceLink && resourceLink.ResourceKind == resourceKind)
             {
                 return resourceLink;
             }
 
-            var nested = FindResourceLink(child.NavigationItems, resourceType);
+            var nested = FindResourceLink(child.NavigationItems, resourceKind);
             if (nested != null)
             {
                 return nested;
@@ -224,33 +224,10 @@ public class NavigationViewModelTests
         return null;
     }
 
-    private static Type? GetCustomResourceType(IClusterRuntime runtime, V1CustomResourceDefinition crd)
+    private static GroupApiVersionKind GetCustomResourceKind(V1CustomResourceDefinition crd)
     {
-        var version = crd.Spec?.Versions?.FirstOrDefault(x => x.Served && x.Storage)?.Name;
-        return version == null ? null : runtime.ModelCatalog.GetResourceType(crd.Spec.Group, version, crd.Spec.Names.Kind);
-    }
-
-    private static async Task AddGeneratedCustomResourceAsync(ClusterWorkspace cluster, Type resourceType, V1CustomResourceDefinition crd, string @namespace, string name)
-    {
-        var resource = Activator.CreateInstance(resourceType).ShouldNotBeNull();
-        var metadata = new V1ObjectMeta
-        {
-            NamespaceProperty = @namespace,
-            Name = name,
-            CreationTimestamp = DateTime.UtcNow,
-        };
-
-        resourceType.GetProperty(nameof(IKubernetesObject<V1ObjectMeta>.Metadata))?.SetValue(resource, metadata);
-        resourceType.GetProperty(nameof(IKubernetesObject.ApiVersion))?.SetValue(resource, $"{crd.Spec.Group}/{crd.Spec.Versions.First(x => x.Served && x.Storage).Name}");
-        resourceType.GetProperty(nameof(IKubernetesObject.Kind))?.SetValue(resource, crd.Spec.Names.Kind);
-
-        var addOrUpdateMethod = typeof(IClusterRuntime)
-            .GetMethods()
-            .First(x => x.Name == nameof(IClusterRuntime.AddOrUpdateResource) && x.IsGenericMethodDefinition && x.GetParameters().Length == 1)
-            .MakeGenericMethod(resourceType);
-
-        await (Task)addOrUpdateMethod.Invoke(cluster.Runtime, [resource])!;
-        await TestApplicationExtensions.WaitForUiAsync();
+        var version = crd.Spec.Versions.First(x => x.Served && x.Storage).Name;
+        return new GroupApiVersionKind(crd.Spec.Group, version, crd.Spec.Names.Kind, crd.Spec.Names.Plural);
     }
 
     [AvaloniaFact]
@@ -675,9 +652,9 @@ public class NavigationViewModelTests
         await vm.TreeViewSelectionChangedAsync(clusterNode);
 
         await WaitForAsync(() => workspace.Runtime.Namespaces.Any(x => x.Name() == "my-app"));
-        await WaitForAsync(() => workspace.GetResourceConfigs().Any(x => x.Type == typeof(V1Pod) && x.PermissionsLoaded));
+        await WaitForAsync(() => workspace.GetResourceConfigs().Any(x => x.Kind == GroupApiVersionKind.From<V1Pod>() && x.PermissionsLoaded));
 
-        var podConfig = workspace.GetResourceConfig<V1Pod>();
+        var podConfig = workspace.GetResourceConfig(GroupApiVersionKind.From<V1Pod>());
         podConfig.CanListAndWatch.ShouldBeTrue();
 
         await WaitForAsync(() => FindResourceLink(clusterNode, "Pods") != null);
@@ -858,7 +835,7 @@ public class NavigationViewModelTests
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
         var originalNamespaceLink = clusterNode.NavigationItems
             .OfType<ResourceNavigationLink>()
-            .Single(x => x.ControlType == typeof(V1Namespace));
+            .Single(x => x.ResourceKind == GroupApiVersionKind.From<V1Namespace>());
         var alphaConfig = new FakeResourceConfig(typeof(TestPermissionResourceAlpha), "Alpha Permission Resource");
         var betaConfig = new FakeResourceConfig(typeof(TestPermissionResourceBeta), "Beta Permission Resource");
 
@@ -871,7 +848,7 @@ public class NavigationViewModelTests
 
         clusterNode.NavigationItems
             .OfType<ResourceNavigationLink>()
-            .Single(x => x.ControlType == typeof(V1Namespace))
+            .Single(x => x.ResourceKind == GroupApiVersionKind.From<V1Namespace>())
             .ShouldBeSameAs(originalNamespaceLink);
     }
 
@@ -943,7 +920,7 @@ public class NavigationViewModelTests
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
         var originalNamespaceLink = clusterNode.NavigationItems
             .OfType<ResourceNavigationLink>()
-            .Single(x => x.ControlType == typeof(V1Namespace));
+            .Single(x => x.ResourceKind == GroupApiVersionKind.From<V1Namespace>());
 
         workspace.AddResourceConfigForTest(new FakeResourceConfig(typeof(TestPermissionResourceAlpha), "Alpha Permission Resource"));
         await WaitForAsync(
@@ -952,7 +929,7 @@ public class NavigationViewModelTests
 
         var updatedNamespaceLink = clusterNode.NavigationItems
             .OfType<ResourceNavigationLink>()
-            .Single(x => x.ControlType == typeof(V1Namespace));
+            .Single(x => x.ResourceKind == GroupApiVersionKind.From<V1Namespace>());
 
         ReferenceEquals(originalNamespaceLink, updatedNamespaceLink).ShouldBeTrue();
     }
@@ -1236,7 +1213,7 @@ public class NavigationViewModelTests
 
         var definitionsLink = crdRoot.NavigationItems
             .OfType<ResourceNavigationLink>()
-            .Single(x => x.ControlType == typeof(V1CustomResourceDefinition));
+            .Single(x => x.ResourceKind == GroupApiVersionKind.From<V1CustomResourceDefinition>());
 
         definitionsLink.Name.ShouldBe("Definitions");
 
@@ -1251,8 +1228,8 @@ public class NavigationViewModelTests
         alphaGroup.NavigationItems
             .OfType<ResourceNavigationLink>()
             .Single()
-            .ControlType
-            .ShouldBe(typeof(TestCustomResourceAlpha));
+            .ResourceKind
+            .ShouldBe(GroupApiVersionKind.From<TestCustomResourceAlpha>());
 
         var testGroup = rootGroup.NavigationItems
             .OfType<NavigationItem>()
@@ -1265,12 +1242,12 @@ public class NavigationViewModelTests
         nestedGroup.NavigationItems
             .OfType<ResourceNavigationLink>()
             .Single()
-            .ControlType
-            .ShouldBe(typeof(TestCustomResourceNested));
+            .ResourceKind
+            .ShouldBe(GroupApiVersionKind.From<TestCustomResourceNested>());
 
         clusterNode.NavigationItems
             .OfType<ResourceNavigationLink>()
-            .Any(x => x.ControlType == typeof(TestCustomResourceAlpha))
+            .Any(x => x.ResourceKind == GroupApiVersionKind.From<TestCustomResourceAlpha>())
             .ShouldBeFalse();
     }
 
@@ -1316,7 +1293,7 @@ public class NavigationViewModelTests
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
         var resourceLink = clusterNode.NavigationItems
             .OfType<ResourceNavigationLink>()
-            .FirstOrDefault(x => x.ControlType == typeof(V1Namespace));
+            .FirstOrDefault(x => x.ResourceKind == GroupApiVersionKind.From<V1Namespace>());
 
         resourceLink.ShouldNotBeNull();
         (resourceLink.Count is not null).ShouldBeTrue();
@@ -1324,18 +1301,18 @@ public class NavigationViewModelTests
         workspace.AddResourceConfigForTest(new FakeCustomResourceConfig(typeof(TestCustomResourceAlpha), "Alpha Resources"));
         await WaitForAsync(() => clusterNode.NavigationItems
             .OfType<ResourceNavigationLink>()
-            .Any(x => x.ControlType == typeof(V1Namespace) && x.Count is not null));
+            .Any(x => x.ResourceKind == GroupApiVersionKind.From<V1Namespace>() && x.Count is not null));
 
         var rebuiltResourceLink = clusterNode.NavigationItems
             .OfType<ResourceNavigationLink>()
-            .FirstOrDefault(x => x.ControlType == typeof(V1Namespace));
+            .FirstOrDefault(x => x.ResourceKind == GroupApiVersionKind.From<V1Namespace>());
 
         rebuiltResourceLink.ShouldNotBeNull();
         (rebuiltResourceLink.Count is not null).ShouldBeTrue();
     }
 
     [AvaloniaFact]
-    public async Task stale_crd_navigation_link_opens_the_current_generated_resource_type()
+    public async Task stale_crd_navigation_link_opens_current_generic_resource()
     {
         var services = Application.Current.GetTestServices();
         var workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
@@ -1347,12 +1324,13 @@ public class NavigationViewModelTests
         var originalCrd = ClusterWorkspaceTestCustomResourceDefinitionFactory.Create("tests.kubeui.com", "tests", "someString");
         await workspace.Runtime.AddOrUpdateResource(originalCrd);
 
-        var originalType = await WaitForValueAsync(() => GetCustomResourceType(workspace.Runtime, originalCrd));
-        originalType.ShouldNotBeNull();
-        await workspace.Runtime.Permissions.UpdateCanI(originalType, Verb.List);
-        await workspace.Runtime.Permissions.UpdateCanI(originalType, Verb.Watch);
-        await workspace.Runtime.Permissions.UpdatePermissionsAllNamespaceAsync(originalType, Verb.List);
-        await workspace.Runtime.Permissions.UpdatePermissionsAllNamespaceAsync(originalType, Verb.Watch);
+        var originalKind = GetCustomResourceKind(originalCrd);
+        await WaitForAsync(() => workspace.Runtime.ModelCatalog.IsCustomResource(originalKind));
+        await workspace.Runtime.Permissions.UpdateCanI(GetCustomResourceKind(originalCrd), Verb.List);
+        await workspace.Runtime.Permissions.UpdateCanI(GetCustomResourceKind(originalCrd), Verb.Watch);
+        await workspace.Runtime.Permissions.UpdatePermissionsAllNamespaceAsync(GetCustomResourceKind(originalCrd), true, Verb.List);
+        await workspace.Runtime.Permissions.UpdatePermissionsAllNamespaceAsync(GetCustomResourceKind(originalCrd), true, Verb.Watch);
+        await workspace.Runtime.SeedResource(originalKind, true);
 
         var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
@@ -1361,7 +1339,7 @@ public class NavigationViewModelTests
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
         var staleLink = await WaitForValueAsync(() => FindResourceLink(clusterNode, "Tests"));
         staleLink.ShouldNotBeNull();
-        staleLink.ControlType.ShouldBe(originalType);
+        staleLink.ResourceKind.ShouldBe(originalKind);
 
         var updatedCrd = ClusterWorkspaceTestCustomResourceDefinitionFactory.Create("tests.kubeui.com", "tests", "otherString");
         var currentCrd = workspace.Runtime.GetResource<V1CustomResourceDefinition>(null, originalCrd.Name()).ShouldNotBeNull();
@@ -1369,19 +1347,12 @@ public class NavigationViewModelTests
         updatedCrd.Metadata.ResourceVersion = currentCrd.Metadata.ResourceVersion;
         await workspace.Runtime.AddOrUpdateResource(updatedCrd);
 
-        var updatedType = await WaitForValueAsync(() =>
-        {
-            var type = GetCustomResourceType(workspace.Runtime, updatedCrd);
-            return type != null && type != originalType ? type : null;
-        });
-        updatedType.ShouldNotBeNull();
-        updatedType.ShouldNotBe(originalType);
-        await workspace.Runtime.Permissions.UpdateCanI(updatedType, Verb.List);
-        await workspace.Runtime.Permissions.UpdateCanI(updatedType, Verb.Watch);
-        await workspace.Runtime.Permissions.UpdatePermissionsAllNamespaceAsync(updatedType, Verb.List);
-        await workspace.Runtime.Permissions.UpdatePermissionsAllNamespaceAsync(updatedType, Verb.Watch);
-        await AddGeneratedCustomResourceAsync(workspace, updatedType, updatedCrd, "default", "new-item");
-
+        var updatedKind = GetCustomResourceKind(updatedCrd);
+        await WaitForAsync(() => workspace.Runtime.ModelCatalog.IsCustomResource(updatedKind));
+        await workspace.Runtime.Permissions.UpdateCanI(GetCustomResourceKind(updatedCrd), Verb.List);
+        await workspace.Runtime.Permissions.UpdateCanI(GetCustomResourceKind(updatedCrd), Verb.Watch);
+        await workspace.Runtime.Permissions.UpdatePermissionsAllNamespaceAsync(GetCustomResourceKind(updatedCrd), true, Verb.List);
+        await workspace.Runtime.Permissions.UpdatePermissionsAllNamespaceAsync(GetCustomResourceKind(updatedCrd), true, Verb.Watch);
         await vm.OpenResourceNavigationCommand.ExecuteAsync(staleLink).WaitAsync(TestContext.Current.CancellationToken);
         await TestApplicationExtensions.WaitForUiAsync();
 
@@ -1391,16 +1362,15 @@ public class NavigationViewModelTests
         await WaitForAsync(() =>
             documents.VisibleDockables?.OfType<IResourceListViewModel>().Any(x =>
                 ReferenceEquals(x.Cluster, workspace)
-                && x.Kind == GroupApiVersionKind.From(updatedType)
-                && x.ResourceConfig.Type == updatedType
-                && x.ItemCount == 1) == true);
+                && x.Kind == updatedKind
+                && x.ResourceConfig.IsCustomResource) == true,
+            timeoutMs: 10000);
 
         var openedDocument = documents.VisibleDockables!
             .OfType<IResourceListViewModel>()
-            .Single(x => ReferenceEquals(x.Cluster, workspace) && x.Kind == GroupApiVersionKind.From(updatedType));
+            .Single(x => ReferenceEquals(x.Cluster, workspace) && x.Kind == updatedKind);
 
-        openedDocument.ResourceConfig.Type.ShouldBe(updatedType);
-        openedDocument.ItemCount.ShouldBe(1);
+        openedDocument.ResourceConfig.IsCustomResource.ShouldBeTrue();
     }
 
     [AvaloniaFact]
@@ -1516,7 +1486,7 @@ public class NavigationViewModelTests
         await TestApplicationExtensions.WaitForUiAsync();
 
         var clusterNode = navigation.Clusters.Single(x => x.Cluster == workspace);
-        var podsLink = await WaitForValueAsync(() => FindResourceLink(clusterNode, typeof(V1Pod)));
+        var podsLink = await WaitForValueAsync(() => FindResourceLink(clusterNode, GroupApiVersionKind.From<V1Pod>()));
         podsLink.ShouldNotBeNull();
         podsLink.Count.ShouldBeNull();
 
@@ -1545,7 +1515,7 @@ public class NavigationViewModelTests
         await TestApplicationExtensions.WaitForUiAsync();
 
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
-        var eventsLink = await WaitForValueAsync(() => FindResourceLink(clusterNode, typeof(Corev1Event)));
+        var eventsLink = await WaitForValueAsync(() => FindResourceLink(clusterNode, GroupApiVersionKind.From<Corev1Event>()));
 
         eventsLink.ShouldNotBeNull();
         (eventsLink.Count is not null).ShouldBeTrue();
@@ -1595,7 +1565,7 @@ public class NavigationViewModelTests
         await TestApplicationExtensions.WaitForUiAsync();
 
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
-        var eventsLink = await WaitForValueAsync(() => FindResourceLink(clusterNode, typeof(Corev1Event)));
+        var eventsLink = await WaitForValueAsync(() => FindResourceLink(clusterNode, GroupApiVersionKind.From<Corev1Event>()));
         eventsLink.ShouldNotBeNull();
         if (eventsLink.Count is null)
         {
@@ -1657,7 +1627,7 @@ public class NavigationViewModelTests
         await TestApplicationExtensions.WaitForUiAsync();
 
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
-        var eventsLink = await WaitForValueAsync(() => FindResourceLink(clusterNode, typeof(Corev1Event)));
+        var eventsLink = await WaitForValueAsync(() => FindResourceLink(clusterNode, GroupApiVersionKind.From<Corev1Event>()));
         eventsLink.ShouldNotBeNull();
         if (eventsLink.Count is null)
         {
@@ -1699,9 +1669,9 @@ public class NavigationViewModelTests
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
         await vm.TreeViewSelectionChangedAsync(clusterNode);
         await workspace.Connect();
-        await WaitForAsync(() => workspace.GetResourceConfigs().Any(x => x.Type == typeof(Corev1Event) && x.PermissionsLoaded));
+        await WaitForAsync(() => workspace.GetResourceConfigs().Any(x => x.Kind == GroupApiVersionKind.From<Corev1Event>() && x.PermissionsLoaded));
         var eventsLink = await WaitForValueAsync(
-            () => FindResourceLink(clusterNode, typeof(Corev1Event)),
+            () => FindResourceLink(clusterNode, GroupApiVersionKind.From<Corev1Event>()),
             timeoutMs: 10000);
         eventsLink.ShouldNotBeNull();
 
@@ -1749,7 +1719,7 @@ public class NavigationViewModelTests
             Cluster = workspace,
             Id = "cluster-events",
             Name = "Events",
-            ControlType = typeof(Corev1Event),
+            ResourceKind = GroupApiVersionKind.From<Corev1Event>(),
             Order = 1,
             Count = Observable.Return(1),
             OpenCommand = new RelayCommand(() => { }),
@@ -1762,7 +1732,7 @@ public class NavigationViewModelTests
             Cluster = workspace,
             Id = "cluster-events",
             Name = "Events",
-            ControlType = typeof(Corev1Event),
+            ResourceKind = GroupApiVersionKind.From<Corev1Event>(),
             Order = 1,
             Count = desiredCount,
             OpenCommand = new RelayCommand(() => { }),
@@ -1811,7 +1781,7 @@ public class NavigationViewModelTests
         await TestApplicationExtensions.WaitForUiAsync();
 
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
-        var eventsLink = await WaitForValueAsync(() => FindResourceLink(clusterNode, typeof(Corev1Event)));
+        var eventsLink = await WaitForValueAsync(() => FindResourceLink(clusterNode, GroupApiVersionKind.From<Corev1Event>()));
 
         eventsLink.ShouldNotBeNull();
         (eventsLink.Count is not null).ShouldBeTrue();
@@ -1860,16 +1830,16 @@ public class NavigationViewModelTests
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
         var namespaceLink = clusterNode.NavigationItems
             .OfType<ResourceNavigationLink>()
-            .Single(x => x.ControlType == typeof(V1Namespace));
+            .Single(x => x.ResourceKind == GroupApiVersionKind.From<V1Namespace>());
 
         workspace.AddResourceConfigForTest(new FakeCustomResourceConfig(typeof(TestCustomResourceAlpha), "Alpha Resources"));
         await WaitForAsync(() => clusterNode.NavigationItems
             .OfType<ResourceNavigationLink>()
-            .Any(x => x.ControlType == typeof(V1Namespace)));
+            .Any(x => x.ResourceKind == GroupApiVersionKind.From<V1Namespace>()));
 
         var rebuiltNamespaceLink = clusterNode.NavigationItems
             .OfType<ResourceNavigationLink>()
-            .Single(x => x.ControlType == typeof(V1Namespace));
+            .Single(x => x.ResourceKind == GroupApiVersionKind.From<V1Namespace>());
 
         ReferenceEquals(namespaceLink, rebuiltNamespaceLink).ShouldBeTrue();
     }
@@ -1896,7 +1866,7 @@ public class NavigationViewModelTests
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
         var namespaceLink = clusterNode.NavigationItems
             .OfType<ResourceNavigationLink>()
-            .Single(x => x.ControlType == typeof(V1Namespace));
+            .Single(x => x.ResourceKind == GroupApiVersionKind.From<V1Namespace>());
         var initialNamespaceCount = workspace.Runtime.Namespaces.Count;
 
         await workspace.Runtime.AddOrUpdateResource(new V1Namespace
@@ -1911,7 +1881,7 @@ public class NavigationViewModelTests
 
         var updatedNamespaceLink = clusterNode.NavigationItems
             .OfType<ResourceNavigationLink>()
-            .Single(x => x.ControlType == typeof(V1Namespace));
+            .Single(x => x.ResourceKind == GroupApiVersionKind.From<V1Namespace>());
 
         ReferenceEquals(namespaceLink, updatedNamespaceLink).ShouldBeTrue();
         (updatedNamespaceLink.Count is not null).ShouldBeTrue();
@@ -1947,8 +1917,8 @@ public class NavigationViewModelTests
             timeoutMs: 10000);
 
         testsLink.ShouldNotBeNull();
-        testsLink.ControlType
-            .ShouldNotBe(typeof(V1CustomResourceDefinition));
+        testsLink.ResourceKind
+            .ShouldNotBe(GroupApiVersionKind.From<V1CustomResourceDefinition>());
     }
 
     [AvaloniaFact]
@@ -1971,10 +1941,10 @@ public class NavigationViewModelTests
 
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
         var alphaLink = await WaitForValueAsync(
-            () => FindResourceLink(clusterNode, typeof(TestCustomResourceAlpha)),
+            () => FindResourceLink(clusterNode, GroupApiVersionKind.From<TestCustomResourceAlpha>()),
             timeoutMs: 10000);
         var betaLink = await WaitForValueAsync(
-            () => FindResourceLink(clusterNode, typeof(TestCustomResourceBeta)),
+            () => FindResourceLink(clusterNode, GroupApiVersionKind.From<TestCustomResourceBeta>()),
             timeoutMs: 10000);
 
         alphaLink.ShouldNotBeNull();
@@ -2134,7 +2104,7 @@ public class NavigationViewModelTests
         ReferenceEquals(originalRoot, updatedRoot).ShouldBeTrue();
         updatedRoot.NavigationItems
             .OfType<ResourceNavigationLink>()
-            .Single(x => x.ControlType == typeof(V1CustomResourceDefinition));
+            .Single(x => x.ResourceKind == GroupApiVersionKind.From<V1CustomResourceDefinition>());
         updatedRoot.NavigationItems
             .Where(x => x is not ResourceNavigationLink)
             .Any()
@@ -2255,6 +2225,7 @@ internal class FakeCustomResourceConfig : IResourceConfig
     public Style[] ListStyle() => [];
     public IEnumerable<(Verb verb, string? subresource)> Permissions() => [];
     public Task EvaluateListWatchAccessAsync() => Task.CompletedTask;
+    public Task SeedResource(bool waitForReady = false) => Task.CompletedTask;
     public Type Type { get; }
 
     public IRelayCommand NewResourceCommand => throw new NotImplementedException();
@@ -2293,6 +2264,7 @@ internal class FakeResourceConfig : IResourceConfig
     public Style[] ListStyle() => [];
     public IEnumerable<(Verb verb, string? subresource)> Permissions() => [];
     public Task EvaluateListWatchAccessAsync() => Task.CompletedTask;
+    public Task SeedResource(bool waitForReady = false) => Task.CompletedTask;
     public Type Type { get; }
 
     public IRelayCommand NewResourceCommand => throw new NotImplementedException();
@@ -2341,6 +2313,8 @@ internal sealed class DeferredPermissionResourceConfig : IResourceConfig
         _permissionCompleted?.TrySetResult(null);
         return Task.CompletedTask;
     }
+
+    public Task SeedResource(bool waitForReady = false) => Task.CompletedTask;
 
     public IRelayCommand NewResourceCommand => throw new NotImplementedException();
 
@@ -2411,6 +2385,8 @@ internal sealed class SlowPermissionResourceConfig : IResourceConfig
         CanListAndWatch = true;
         PermissionsLoaded = true;
     }
+
+    public Task SeedResource(bool waitForReady = false) => Task.CompletedTask;
 
     public IRelayCommand NewResourceCommand => throw new NotImplementedException();
 

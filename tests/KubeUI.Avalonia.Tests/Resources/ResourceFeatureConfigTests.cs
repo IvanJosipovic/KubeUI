@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using CommunityToolkit.Mvvm.Input;
 using k8s.Models;
+using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Resources;
 using KubeUI.Avalonia.Tests.Infra;
 using Shouldly;
@@ -163,9 +164,9 @@ public sealed class ResourceFeatureConfigTests
     {
         var config = ResolveConfig<V1ServiceConfig>();
 
-        config.AuthorizationRequests().ShouldContain(new AuthorizationRequest(typeof(V1Pod), Verb.Create, "portforward"));
-        config.AuthorizationRequests().ShouldContain(new AuthorizationRequest(typeof(V1EndpointSlice), Verb.List, null));
-        config.AuthorizationRequests().ShouldContain(new AuthorizationRequest(typeof(V1EndpointSlice), Verb.Watch, null));
+        config.AuthorizationRequests().ShouldContain(new AuthorizationRequest(GroupApiVersionKind.From<V1Pod>(), Verb.Create, "portforward"));
+        config.AuthorizationRequests().ShouldContain(new AuthorizationRequest(GroupApiVersionKind.From<V1EndpointSlice>(), Verb.List, null));
+        config.AuthorizationRequests().ShouldContain(new AuthorizationRequest(GroupApiVersionKind.From<V1EndpointSlice>(), Verb.Watch, null));
     }
 
     [AvaloniaFact]
@@ -173,7 +174,7 @@ public sealed class ResourceFeatureConfigTests
     {
         var config = ResolveConfig<V1CronJobConfig>();
 
-        config.AuthorizationRequests().ShouldContain(new AuthorizationRequest(typeof(V1Job), Verb.Create, null));
+        config.AuthorizationRequests().ShouldContain(new AuthorizationRequest(GroupApiVersionKind.From<V1Job>(), Verb.Create, null));
     }
 
     [AvaloniaFact]
@@ -291,7 +292,7 @@ public sealed class ResourceFeatureConfigTests
         });
 
         await ((Cluster)workspace.Runtime).UpdateCanI<V1Job>(Verb.Create, "volsync");
-        var config = (V1CronJobConfig)workspace.GetResourceConfig<V1CronJob>();
+        var config = (V1CronJobConfig)workspace.GetResourceConfig(GroupApiVersionKind.From<V1CronJob>());
         var cronJob = CreateCronJob("volsync", "immich-rclone-backup");
 
         var startItem = config.GetCustomMenuItems(new[] { cronJob }).Single(item => item.Title == "Start");
@@ -335,7 +336,7 @@ public sealed class ResourceFeatureConfigTests
         await workspace.Runtime.SeedResource<V1Job>(true);
         await ((Cluster)workspace.Runtime).UpdateCanI<V1Job>(Verb.Create);
         await ((Cluster)workspace.Runtime).UpdateCanI<V1Job>(Verb.Create, "volsync");
-        var config = (V1CronJobConfig)workspace.GetResourceConfig<V1CronJob>();
+        var config = (V1CronJobConfig)workspace.GetResourceConfig(GroupApiVersionKind.From<V1CronJob>());
         var cronJob = CreateCronJob("volsync", "immich-rclone-backup");
 
         var startItem = config.GetCustomMenuItems(new[] { cronJob }).Single(item => item.Title == "Start");
@@ -369,7 +370,7 @@ public sealed class ResourceFeatureConfigTests
         await workspace.Runtime.SeedResource<V1Job>(true);
         await ((Cluster)workspace.Runtime).UpdateCanI<V1Job>(Verb.Create);
         await ((Cluster)workspace.Runtime).UpdateCanI<V1Job>(Verb.Create, "volsync");
-        var config = (V1CronJobConfig)workspace.GetResourceConfig<V1CronJob>();
+        var config = (V1CronJobConfig)workspace.GetResourceConfig(GroupApiVersionKind.From<V1CronJob>());
         var cronJob = CreateCronJob("volsync", "immich-rclone-backup");
 
         var startItem = config.GetCustomMenuItems(new[] { cronJob }).Single(item => item.Title == "Start");

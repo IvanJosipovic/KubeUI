@@ -1,9 +1,9 @@
-using System.Reflection;
-using System.Text.Json.Serialization;
-using System.Xml;
 using AvaloniaEdit.Document;
 using k8s.Models;
+using Microsoft.OpenApi;
+using KubernetesClient.Informer.Client;
 using Shouldly;
+using System.Text.Json.Nodes;
 
 namespace KubeUI.Avalonia.Tests.Features.Resources.Yaml;
 
@@ -16,9 +16,9 @@ public class YamlSchemaContextTests
     {
         var document = new TextDocument("met");
 
-        var context = YamlSchemaContext.Resolve(document, document.TextLength, typeof(V1Pod), s_modelCache);
+        var context = YamlSchemaContext.Resolve(document, document.TextLength, GroupApiVersionKind.From<V1Pod>(), s_modelCache);
 
-        context.ContainerType.ShouldBe(typeof(V1Pod));
+        context.ContainerType.Name.ShouldBe("Pod");
         context.CompletionItems.Select(item => item.Text).ShouldContain("metadata");
         context.CompletionItems.Select(item => item.Text).ShouldContain("apiVersion");
     }
@@ -28,98 +28,77 @@ public class YamlSchemaContextTests
     {
         var document = new TextDocument("spec:");
 
-        var context = YamlSchemaContext.Resolve(document, 2, typeof(V1Pod), s_modelCache);
+        var context = YamlSchemaContext.Resolve(document, 2, GroupApiVersionKind.From<V1Pod>(), s_modelCache);
 
-        context.CurrentProperty.ShouldNotBeNull();
-        context.CurrentProperty.Name.ShouldBe(nameof(V1Pod.Spec));
         context.Documentation.ShouldNotBeNull();
-        context.Documentation.DisplayText.ShouldContain("Specification of the desired behavior of the pod.");
-        context.Documentation.DisplayText.ShouldContain(nameof(V1PodSpec));
-        context.Documentation.TypeSummary.ShouldBeEmpty();
+        context.Documentation.PropertySummary.ShouldBe("Specification of the desired behavior of the pod.");
+        context.Documentation.TypeName.ShouldBe("object");
     }
 
     [Fact]
-    public void Resolve_UsesOnlyPropertySummaryForFieldDocumentation()
+    public void Resolve_MapsPodSpecAndStatusReferencesToObjects()
     {
-        var cache = CreateModelCacheWithXml(
-            $$"""
-            <doc>
-              <assembly>
-                <name>{{typeof(TestYamlDocRoot).Assembly.GetName().Name}}</name>
-              </assembly>
-              <members>
-                <member name="P:{{GetXmlMemberTypeName(typeof(TestYamlDocRoot))}}.Spec">
-                  <summary>Widget desired state.</summary>
-                </member>
-                <member name="T:{{GetXmlMemberTypeName(typeof(TestYamlDocSpec))}}">
-                  <summary>Widget desired state.</summary>
-                </member>
-              </members>
-            </doc>
-            """,
-            typeof(TestYamlDocRoot).Assembly);
+        var document = new TextDocument(
+            """
+            apiVersion: v1
+            kind: Pod
+            spec:
+            status:
+            """);
 
-        var document = new TextDocument("spec:");
-        var context = YamlSchemaContext.Resolve(document, 2, typeof(TestYamlDocRoot), cache);
+        var specOffset = document.Text.IndexOf("spec", StringComparison.Ordinal) + 2;
+        var statusOffset = document.Text.IndexOf("status", StringComparison.Ordinal) + 2;
 
-        context.Documentation.ShouldNotBeNull();
-        CountOccurrences(context.Documentation.DisplayText, "Widget desired state.").ShouldBe(1);
-        context.Documentation.TypeSummary.ShouldBeEmpty();
+        var spec = YamlSchemaContext.Resolve(document, specOffset, GroupApiVersionKind.From<V1Pod>(), s_modelCache);
+        var status = YamlSchemaContext.Resolve(document, statusOffset, GroupApiVersionKind.From<V1Pod>(), s_modelCache);
+
+        spec.Documentation.ShouldNotBeNull();
+        spec.Documentation.TypeName.ShouldBe("object");
+        status.Documentation.ShouldNotBeNull();
+        status.Documentation.TypeName.ShouldBe("object");
     }
 
     [Fact]
-    public void Resolve_DoesNotIncludeTypeSummaryInFieldDocumentation()
+    public void Resolve_ReturnsDocumentationForMetadataNameAndNamespace()
     {
-        var cache = CreateModelCacheWithXml(
-            $$"""
-            <doc>
-              <assembly>
-                <name>{{typeof(TestYamlDocRoot).Assembly.GetName().Name}}</name>
-              </assembly>
-              <members>
-                <member name="P:{{GetXmlMemberTypeName(typeof(TestYamlDocRoot))}}.Spec">
-                  <summary>Property summary.</summary>
-                </member>
-                <member name="T:{{GetXmlMemberTypeName(typeof(TestYamlDocSpec))}}">
-                  <summary>Type summary.</summary>
-                </member>
-              </members>
-            </doc>
-            """,
-            typeof(TestYamlDocRoot).Assembly);
+        var document = new TextDocument(
+            """
+            apiVersion: v1
+            kind: Pod
+            metadata:
+              name: pod
+              namespace: default
+            """);
 
-        var document = new TextDocument("spec:");
-        var context = YamlSchemaContext.Resolve(document, 2, typeof(TestYamlDocRoot), cache);
+        var nameOffset = document.Text.IndexOf("name", StringComparison.Ordinal) + 2;
+        var nameContext = YamlSchemaContext.Resolve(document, nameOffset, GroupApiVersionKind.From<V1Pod>(), s_modelCache);
+        nameContext.Documentation.ShouldNotBeNull();
+        nameContext.Documentation.Label.ShouldBe("name");
 
-        context.Documentation.ShouldNotBeNull();
-        CountOccurrences(context.Documentation.DisplayText, "Property summary.").ShouldBe(1);
-        context.Documentation.DisplayText.ShouldNotContain("Type summary.");
-        context.Documentation.TypeSummary.ShouldBeEmpty();
+        var namespaceOffset = document.Text.IndexOf("namespace", StringComparison.Ordinal) + 2;
+        var namespaceContext = YamlSchemaContext.Resolve(document, namespaceOffset, GroupApiVersionKind.From<V1Pod>(), s_modelCache);
+        namespaceContext.Documentation.ShouldNotBeNull();
+        namespaceContext.Documentation.Label.ShouldBe("namespace");
     }
 
     [Fact]
-    public void Resolve_NormalizesXmlDocumentationWhitespace()
+    public void Resolve_UsesOpenApiPropertyDescription()
     {
-        var cache = CreateModelCacheWithXml(
-            $$"""
-            <doc>
-              <assembly>
-                <name>{{typeof(TestYamlDocRoot).Assembly.GetName().Name}}</name>
-              </assembly>
-              <members>
-                <member name="P:{{GetXmlMemberTypeName(typeof(TestYamlDocRoot))}}.Spec">
-                  <summary>
-                    An opaque value that represents the internal version
-                    of this object.
-                  </summary>
-                </member>
-              </members>
-            </doc>
-            """,
-            typeof(TestYamlDocRoot).Assembly);
+        var cache = CreateModelCacheWithOpenApi("Widget desired state.");
 
         var document = new TextDocument("spec:");
-        var context = YamlSchemaContext.Resolve(document, 2, typeof(TestYamlDocRoot), cache);
+        var context = YamlSchemaContext.Resolve(document, 2, new GroupApiVersionKind(string.Empty, "v1", "TestYamlDocRoot", string.Empty), cache);
+
+        context.Documentation.ShouldNotBeNull();
+        context.Documentation.PropertySummary.ShouldBe("Widget desired state.");
+    }
+
+    public void Resolve_NormalizesOpenApiDocumentationWhitespace()
+    {
+        var cache = CreateModelCacheWithOpenApi("An opaque value that represents the internal version\n of this object.");
+
+        var document = new TextDocument("spec:");
+        var context = YamlSchemaContext.Resolve(document, 2, new GroupApiVersionKind(string.Empty, "v1", "TestYamlDocRoot", string.Empty), cache);
 
         context.Documentation.ShouldNotBeNull();
         context.Documentation.PropertySummary.ShouldBe("An opaque value that represents the internal version of this object.");
@@ -137,9 +116,9 @@ public class YamlSchemaContextTests
                 - na
             """);
 
-        var context = YamlSchemaContext.Resolve(document, document.TextLength, typeof(V1Pod), s_modelCache);
+        var context = YamlSchemaContext.Resolve(document, document.TextLength, GroupApiVersionKind.From<V1Pod>(), s_modelCache);
 
-        context.ContainerType.ShouldBe(typeof(V1Container));
+        context.ContainerType.Name.ShouldBe("containers");
         context.CompletionItems.Select(item => item.Text).ShouldContain("name");
         context.CompletionItems.Select(item => item.Text).ShouldContain("image");
     }
@@ -157,13 +136,72 @@ public class YamlSchemaContextTests
             """);
 
         var offset = document.Text.LastIndexOf("name", StringComparison.Ordinal) + 2;
-        var context = YamlSchemaContext.Resolve(document, offset, typeof(V1Pod), s_modelCache);
+        var context = YamlSchemaContext.Resolve(document, offset, GroupApiVersionKind.From<V1Pod>(), s_modelCache);
 
-        context.ContainerType.ShouldBe(typeof(V1Container));
-        context.CurrentProperty.ShouldNotBeNull();
-        context.CurrentProperty.Name.ShouldBe(nameof(V1Container.Name));
+        context.ContainerType.Name.ShouldBe("containers");
         context.Documentation.ShouldNotBeNull();
-        context.Documentation.DisplayText.ShouldContain("Name of the container");
+        context.Documentation.PropertySummary.ShouldBe("Name of the container");
+    }
+
+    [Fact]
+    public void Resolve_ReturnsDocumentationForPodContainersProperty()
+    {
+        var document = new TextDocument(
+            """
+            apiVersion: v1
+            kind: Pod
+            spec:
+              containers:
+            """);
+
+        var offset = document.Text.IndexOf("containers", StringComparison.Ordinal) + 2;
+        var context = YamlSchemaContext.Resolve(document, offset, GroupApiVersionKind.From<V1Pod>(), s_modelCache);
+
+        context.Documentation.ShouldNotBeNull();
+        context.Documentation.Label.ShouldBe("containers");
+        context.Documentation.TypeName.ShouldBe("array");
+    }
+
+    [Fact]
+    public void Resolve_OffersCompletionsUnderPodAffinityTerm()
+    {
+        var document = new TextDocument(
+            "apiVersion: v1\n"
+            + "kind: Pod\n"
+            + "spec:\n"
+            + "  affinity:\n"
+            + "    podAffinity:\n"
+            + "      preferredDuringSchedulingIgnoredDuringExecution:\n"
+            + "        - weight: 2\n"
+            + "          podAffinityTerm:\n"
+            + "            ");
+
+        var context = YamlSchemaContext.Resolve(document, document.TextLength, GroupApiVersionKind.From<V1Pod>(), s_modelCache);
+
+        context.ContainerType.Name.ShouldBe("podAffinityTerm");
+        context.CompletionItems.Select(item => item.Text).ShouldContain("labelSelector");
+    }
+
+    [Fact]
+    public void Resolve_OffersEnumCompletionsForNestedMatchExpressionOperator()
+    {
+        var document = new TextDocument(
+            "apiVersion: v1\n"
+            + "kind: Pod\n"
+            + "spec:\n"
+            + "  affinity:\n"
+            + "    podAffinity:\n"
+            + "      preferredDuringSchedulingIgnoredDuringExecution:\n"
+            + "        - weight: 1\n"
+            + "          podAffinityTerm:\n"
+            + "            labelSelector:\n"
+            + "              matchExpressions:\n"
+            + "                - operator: ");
+
+        var context = YamlSchemaContext.Resolve(document, document.TextLength, GroupApiVersionKind.From<V1Pod>(), s_modelCache);
+
+        context.CompletionItems.Select(item => item.Text).ShouldBe(
+            ["In", "NotIn", "Exists", "DoesNotExist"]);
     }
 
     [Fact]
@@ -179,13 +217,135 @@ public class YamlSchemaContextTests
             """);
 
         var offset = document.Text.LastIndexOf("imagePullPolicy", StringComparison.Ordinal) + 2;
-        var context = YamlSchemaContext.Resolve(document, offset, typeof(V1Pod), s_modelCache);
+        var context = YamlSchemaContext.Resolve(document, offset, GroupApiVersionKind.From<V1Pod>(), s_modelCache);
 
-        context.ContainerType.ShouldBe(typeof(V1Container));
-        context.CurrentProperty.ShouldNotBeNull();
-        context.CurrentProperty.Name.ShouldBe(nameof(V1Container.ImagePullPolicy));
+        context.ContainerType.Name.ShouldBe("containers");
         context.Documentation.ShouldNotBeNull();
-        context.Documentation.DisplayText.ShouldContain("Image pull policy");
+        context.Documentation.PropertySummary.ShouldBe("Image pull policy");
+    }
+
+    [Fact]
+    public void Resolve_ReturnsCompletionItemsForEnumValuesAtValuePosition()
+    {
+        var document = new TextDocument(
+            """
+            apiVersion: v1
+            kind: Pod
+            spec:
+              containers:
+                - imagePullPolicy: I
+            """);
+
+        var context = YamlSchemaContext.Resolve(document, document.TextLength, GroupApiVersionKind.From<V1Pod>(), s_modelCache);
+
+        context.Key.Prefix.ShouldBe("I");
+        context.CompletionItems.Select(item => item.Text)
+            .ShouldBe(["Always", "IfNotPresent", "Never"]);
+        context.CompletionItems.Select(item => item.InsertionText)
+            .ShouldBe(["Always", "IfNotPresent", "Never"]);
+    }
+
+    [Fact]
+    public void Resolve_MapsEveryOpenApiSchemaType()
+    {
+        var cache = new ClusterModelCatalog(new KubernetesModelCatalog());
+        cache.RegisterOpenApiSchema(new OpenApiDocument
+        {
+            Components = new OpenApiComponents
+            {
+                Schemas = new Dictionary<string, IOpenApiSchema>
+                {
+                    ["io.k8s.api.core.v1.TypeOptionsRoot"] = new OpenApiSchema
+                    {
+                        Properties = new Dictionary<string, IOpenApiSchema>
+                        {
+                            ["nullValue"] = new OpenApiSchema { Type = JsonSchemaType.Null },
+                            ["booleanValue"] = new OpenApiSchema { Type = JsonSchemaType.Boolean },
+                            ["integerValue"] = new OpenApiSchema { Type = JsonSchemaType.Integer },
+                            ["numberValue"] = new OpenApiSchema { Type = JsonSchemaType.Number },
+                            ["stringValue"] = new OpenApiSchema { Type = JsonSchemaType.String },
+                            ["objectValue"] = new OpenApiSchema { Type = JsonSchemaType.Object },
+                            ["arrayValue"] = new OpenApiSchema
+                            {
+                                Type = JsonSchemaType.Array,
+                                Items = new OpenApiSchema { Type = JsonSchemaType.String },
+                            },
+                        },
+                    },
+                },
+            },
+        });
+
+        var expected = new Dictionary<string, string>
+        {
+            ["nullValue"] = "null",
+            ["booleanValue"] = "boolean",
+            ["integerValue"] = "integer",
+            ["numberValue"] = "number",
+            ["stringValue"] = "string",
+            ["objectValue"] = "object",
+            ["arrayValue"] = "array",
+        };
+
+        foreach (var pair in expected)
+        {
+            var document = new TextDocument($"{pair.Key}:");
+            var context = YamlSchemaContext.Resolve(
+                document,
+                pair.Key.Length / 2,
+                new GroupApiVersionKind(string.Empty, "v1", "TypeOptionsRoot", string.Empty),
+                cache);
+
+            context.Documentation.ShouldNotBeNull();
+            context.Documentation.TypeName.ShouldBe(pair.Value);
+        }
+    }
+
+    [Fact]
+    public void Resolve_TreatsComposedObjectWithPrimitiveWrapperTypeAsObject()
+    {
+        var cache = new ClusterModelCatalog(new KubernetesModelCatalog());
+        cache.RegisterOpenApiSchema(new OpenApiDocument
+        {
+            Components = new OpenApiComponents
+            {
+                Schemas = new Dictionary<string, IOpenApiSchema>
+                {
+                    ["io.k8s.api.core.v1.WrappedRoot"] = new OpenApiSchema
+                    {
+                        Properties = new Dictionary<string, IOpenApiSchema>
+                        {
+                            ["spec"] = new OpenApiSchema
+                            {
+                                Type = JsonSchemaType.String,
+                                Properties = new Dictionary<string, IOpenApiSchema>
+                                {
+                                    ["containers"] = new OpenApiSchema { Type = JsonSchemaType.Array },
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        });
+
+        var document = new TextDocument("spec:");
+        var specContext = YamlSchemaContext.Resolve(
+            document,
+            2,
+            new GroupApiVersionKind(string.Empty, "v1", "WrappedRoot", string.Empty),
+            cache);
+
+        specContext.Documentation.ShouldNotBeNull();
+        specContext.Documentation.TypeName.ShouldBe("object");
+
+        document.Text = "spec:\n  ";
+        var nestedContext = YamlSchemaContext.Resolve(
+            document,
+            document.TextLength,
+            new GroupApiVersionKind(string.Empty, "v1", "WrappedRoot", string.Empty),
+            cache);
+        nestedContext.CompletionItems.Select(item => item.Text).ShouldContain("containers");
     }
 
     [Fact]
@@ -238,13 +398,11 @@ public class YamlSchemaContextTests
             """);
 
         var offset = document.Text.LastIndexOf("imagePullPolicy", StringComparison.Ordinal) + 2;
-        var context = YamlSchemaContext.Resolve(document, offset, typeof(V1Pod), s_modelCache);
+        var context = YamlSchemaContext.Resolve(document, offset, GroupApiVersionKind.From<V1Pod>(), s_modelCache);
 
-        context.ContainerType.ShouldBe(typeof(V1Container));
-        context.CurrentProperty.ShouldNotBeNull();
-        context.CurrentProperty.Name.ShouldBe(nameof(V1Container.ImagePullPolicy));
+        context.ContainerType.Name.ShouldBe("containers");
         context.Documentation.ShouldNotBeNull();
-        context.Documentation.DisplayText.ShouldContain("Image pull policy");
+        context.Documentation.PropertySummary.ShouldBe("Image pull policy");
     }
 
     [Fact]
@@ -311,13 +469,11 @@ public class YamlSchemaContextTests
             """);
 
         var offset = document.Text.LastIndexOf("serviceAccountName", StringComparison.Ordinal) + 2;
-        var context = YamlSchemaContext.Resolve(document, offset, typeof(V1Pod), s_modelCache);
+        var context = YamlSchemaContext.Resolve(document, offset, GroupApiVersionKind.From<V1Pod>(), s_modelCache);
 
-        context.ContainerType.ShouldBe(typeof(V1PodSpec));
-        context.CurrentProperty.ShouldNotBeNull();
-        context.CurrentProperty.Name.ShouldBe(nameof(V1PodSpec.ServiceAccountName));
+        context.ContainerType.Name.ShouldBe("spec");
         context.Documentation.ShouldNotBeNull();
-        context.Documentation.DisplayText.ShouldContain("ServiceAccountName");
+        context.Documentation.PropertySummary.ShouldBe("ServiceAccountName");
     }
 
     [Fact]
@@ -361,13 +517,11 @@ public class YamlSchemaContextTests
             """);
 
         var offset = document.Text.LastIndexOf("imagePullPolicy", StringComparison.Ordinal) + 2;
-        var context = YamlSchemaContext.Resolve(document, offset, typeof(V1Pod), s_modelCache);
+        var context = YamlSchemaContext.Resolve(document, offset, GroupApiVersionKind.From<V1Pod>(), s_modelCache);
 
-        context.ContainerType.ShouldBe(typeof(V1Container));
-        context.CurrentProperty.ShouldNotBeNull();
-        context.CurrentProperty.Name.ShouldBe(nameof(V1Container.ImagePullPolicy));
+        context.ContainerType.Name.ShouldBe("containers");
         context.Documentation.ShouldNotBeNull();
-        context.Documentation.DisplayText.ShouldContain("Image pull policy");
+        context.Documentation.PropertySummary.ShouldBe("Image pull policy");
     }
 
     [Fact]
@@ -411,13 +565,11 @@ public class YamlSchemaContextTests
             """).TrimEnd('\r', '\n'));
 
         var offset = document.Text.LastIndexOf("imagePullPolicy", StringComparison.Ordinal) + 2;
-        var context = YamlSchemaContext.Resolve(document, offset, typeof(V1Pod), s_modelCache);
+        var context = YamlSchemaContext.Resolve(document, offset, GroupApiVersionKind.From<V1Pod>(), s_modelCache);
 
-        context.ContainerType.ShouldBe(typeof(V1Container));
-        context.CurrentProperty.ShouldNotBeNull();
-        context.CurrentProperty.Name.ShouldBe(nameof(V1Container.ImagePullPolicy));
+        context.ContainerType.Name.ShouldBe("containers");
         context.Documentation.ShouldNotBeNull();
-        context.Documentation.DisplayText.ShouldContain("Image pull policy");
+        context.Documentation.PropertySummary.ShouldBe("Image pull policy");
     }
 
     [Fact]
@@ -441,14 +593,11 @@ public class YamlSchemaContextTests
             """);
 
         var offset = document.Text.LastIndexOf("name:", StringComparison.Ordinal) + 2;
-        var context = YamlSchemaContext.Resolve(document, offset, typeof(V1Pod), s_modelCache);
+        var context = YamlSchemaContext.Resolve(document, offset, GroupApiVersionKind.From<V1Pod>(), s_modelCache);
 
-        context.ContainerType.ShouldBe(typeof(V1Container));
-        context.CurrentProperty.ShouldNotBeNull();
-        context.CurrentProperty.Name.ShouldBe(nameof(V1Container.Name));
+        context.ContainerType.Name.ShouldBe("containers");
         context.Documentation.ShouldNotBeNull();
-        context.Documentation.DisplayText.ShouldContain("Name of the container");
-        context.Documentation.DisplayText.ShouldNotContain(nameof(V1Pod.Kind));
+        context.Documentation.PropertySummary.ShouldBe("Name of the container");
     }
 
     [Fact]
@@ -456,9 +605,8 @@ public class YamlSchemaContextTests
     {
         var document = new TextDocument("metadata: default");
 
-        var context = YamlSchemaContext.Resolve(document, document.TextLength, typeof(V1Pod), s_modelCache);
+        var context = YamlSchemaContext.Resolve(document, document.TextLength, GroupApiVersionKind.From<V1Pod>(), s_modelCache);
 
-        context.CurrentProperty.ShouldBeNull();
         context.CompletionItems.ShouldBeEmpty();
     }
 
@@ -473,13 +621,44 @@ public class YamlSchemaContextTests
               
             """);
 
-        var context = YamlSchemaContext.Resolve(document, document.TextLength, typeof(V1Pod), s_modelCache);
+        var context = YamlSchemaContext.Resolve(document, document.TextLength, GroupApiVersionKind.From<V1Pod>(), s_modelCache);
 
-        context.ContainerType.ShouldBe(typeof(V1PodSpec));
+        context.ContainerType.Name.ShouldBe("spec");
         context.CompletionItems.Select(item => item.Text).ShouldContain("containers");
         context.Key.StartOffset.ShouldBe(document.TextLength);
         context.Key.EndOffset.ShouldBe(document.TextLength);
         context.Key.Prefix.ShouldBe(string.Empty);
+    }
+
+    [Fact]
+    public void Resolve_OffersNestedCompletionsOnBlankLineWithoutIndentation()
+    {
+        var document = new TextDocument(
+            "apiVersion: v1\n"
+            + "kind: Pod\n"
+            + "spec:\n");
+
+        var context = YamlSchemaContext.Resolve(document, document.TextLength, GroupApiVersionKind.From<V1Pod>(), s_modelCache);
+
+        context.ContainerType.Name.ShouldBe("spec");
+        context.CompletionItems.Select(item => item.Text).ShouldContain("containers");
+    }
+
+    [Fact]
+    public void Resolve_OffersRootCompletionsAfterCompletedMetadata()
+    {
+        var document = new TextDocument(
+            "apiVersion: v1\n"
+            + "kind: Pod\n"
+            + "metadata:\n"
+            + "  name: temp\n"
+            + "  namespace: default\n"
+            + "\n");
+
+        var context = YamlSchemaContext.Resolve(document, document.TextLength, GroupApiVersionKind.From<V1Pod>(), s_modelCache);
+
+        context.ContainerType.Name.ShouldBe("Pod");
+        context.CompletionItems.Select(item => item.Text).ShouldContain("spec");
     }
 
     [Fact]
@@ -494,9 +673,9 @@ public class YamlSchemaContextTests
                 -
             """);
 
-        var context = YamlSchemaContext.Resolve(document, document.TextLength, typeof(V1Pod), s_modelCache);
+        var context = YamlSchemaContext.Resolve(document, document.TextLength, GroupApiVersionKind.From<V1Pod>(), s_modelCache);
 
-        context.ContainerType.ShouldBe(typeof(V1Container));
+        context.ContainerType.Name.ShouldBe("containers");
         context.CompletionItems.Select(item => item.Text).ShouldContain("name");
         context.Key.StartOffset.ShouldBe(document.TextLength);
         context.Key.EndOffset.ShouldBe(document.TextLength);
@@ -519,9 +698,9 @@ public class YamlSchemaContextTests
                   -
             """);
 
-        var context = YamlSchemaContext.Resolve(document, document.TextLength, typeof(V1Pod), s_modelCache);
+        var context = YamlSchemaContext.Resolve(document, document.TextLength, GroupApiVersionKind.From<V1Pod>(), s_modelCache);
 
-        context.ContainerType.ShouldBe(typeof(string));
+        context.ContainerType.TypeName.ShouldBe("string");
         context.CompletionItems.ShouldBeEmpty();
     }
 
@@ -541,9 +720,9 @@ public class YamlSchemaContextTests
                   - sl
             """);
 
-        var context = YamlSchemaContext.Resolve(document, document.TextLength, typeof(V1Pod), s_modelCache);
+        var context = YamlSchemaContext.Resolve(document, document.TextLength, GroupApiVersionKind.From<V1Pod>(), s_modelCache);
 
-        context.ContainerType.ShouldBe(typeof(string));
+        context.ContainerType.TypeName.ShouldBe("string");
         context.CompletionItems.ShouldBeEmpty();
     }
 
@@ -557,9 +736,9 @@ public class YamlSchemaContextTests
               
             """);
 
-        var context = YamlSchemaContext.Resolve(document, document.TextLength, typeof(V1Pod), s_modelCache);
+        var context = YamlSchemaContext.Resolve(document, document.TextLength, GroupApiVersionKind.From<V1Pod>(), s_modelCache);
 
-        context.ContainerType.ShouldBe(typeof(V1Pod));
+        context.ContainerType.Name.ShouldBe("Pod");
         context.CompletionItems.Select(item => item.Text).ShouldNotContain("apiVersion");
         context.CompletionItems.Select(item => item.Text).ShouldNotContain("kind");
         context.CompletionItems.Select(item => item.Text).ShouldContain("metadata");
@@ -579,9 +758,9 @@ public class YamlSchemaContextTests
                   
             """);
 
-        var context = YamlSchemaContext.Resolve(document, document.TextLength - 1, typeof(V1Pod), s_modelCache);
+        var context = YamlSchemaContext.Resolve(document, document.TextLength - 1, GroupApiVersionKind.From<V1Pod>(), s_modelCache);
 
-        context.ContainerType.ShouldBe(typeof(V1Container));
+        context.ContainerType.Name.ShouldBe("containers");
         context.CompletionItems.Select(item => item.Text).ShouldNotContain("name");
         context.CompletionItems.Select(item => item.Text).ShouldNotContain("image");
         context.CompletionItems.Select(item => item.Text).ShouldContain("ports");
@@ -599,9 +778,9 @@ public class YamlSchemaContextTests
               name: demo
             """);
 
-        var context = YamlSchemaContext.Resolve(document, document.Text.IndexOf('\n', document.Text.IndexOf("kind: Pod", StringComparison.Ordinal)) + 1, typeof(V1Pod), s_modelCache);
+        var context = YamlSchemaContext.Resolve(document, document.Text.IndexOf('\n', document.Text.IndexOf("kind: Pod", StringComparison.Ordinal)) + 1, GroupApiVersionKind.From<V1Pod>(), s_modelCache);
 
-        context.ContainerType.ShouldBe(typeof(V1Pod));
+        context.ContainerType.Name.ShouldBe("Pod");
         context.CompletionItems.Select(item => item.Text).ShouldNotContain("metadata");
         context.CompletionItems.Select(item => item.Text).ShouldNotContain("apiVersion");
         context.CompletionItems.Select(item => item.Text).ShouldNotContain("kind");
@@ -628,9 +807,9 @@ public class YamlSchemaContextTests
                 name: ubuntu-sleep
             """);
 
-        var context = YamlSchemaContext.Resolve(document, document.Text.IndexOf("\n    imagePullPolicy", StringComparison.Ordinal) + 1, typeof(V1Pod), s_modelCache);
+        var context = YamlSchemaContext.Resolve(document, document.Text.IndexOf("\n    imagePullPolicy", StringComparison.Ordinal) + 1, GroupApiVersionKind.From<V1Pod>(), s_modelCache);
 
-        context.ContainerType.ShouldBe(typeof(V1Container));
+        context.ContainerType.Name.ShouldBe("containers");
         context.CompletionItems.Select(item => item.Text).ShouldNotContain("image");
         context.CompletionItems.Select(item => item.Text).ShouldNotContain("imagePullPolicy");
         context.CompletionItems.Select(item => item.Text).ShouldNotContain("name");
@@ -647,7 +826,7 @@ public class YamlSchemaContextTests
               containers:
             """);
 
-        var result = YamlSchemaContext.TryCreateSequenceEntryInsertion(document, document.TextLength, typeof(V1Pod), s_modelCache, out var insertionText);
+        var result = YamlSchemaContext.TryCreateSequenceEntryInsertion(document, document.TextLength, GroupApiVersionKind.From<V1Pod>(), s_modelCache, out var insertionText);
 
         result.ShouldBeTrue();
         insertionText.ShouldBe("\n    - ");
@@ -665,7 +844,7 @@ public class YamlSchemaContextTests
                 - command:
             """);
 
-        var result = YamlSchemaContext.TryCreateSequenceEntryInsertion(document, document.TextLength, typeof(V1Pod), s_modelCache, out var insertionText);
+        var result = YamlSchemaContext.TryCreateSequenceEntryInsertion(document, document.TextLength, GroupApiVersionKind.From<V1Pod>(), s_modelCache, out var insertionText);
 
         result.ShouldBeTrue();
         insertionText.ShouldBe("\n        - ");
@@ -681,7 +860,7 @@ public class YamlSchemaContextTests
             metadata:
             """);
 
-        var result = YamlSchemaContext.TryCreateSequenceEntryInsertion(document, document.TextLength, typeof(V1Pod), s_modelCache, out var insertionText);
+        var result = YamlSchemaContext.TryCreateSequenceEntryInsertion(document, document.TextLength, GroupApiVersionKind.From<V1Pod>(), s_modelCache, out var insertionText);
 
         result.ShouldBeFalse();
         insertionText.ShouldBeEmpty();
@@ -690,49 +869,127 @@ public class YamlSchemaContextTests
     private static ClusterModelCatalog CreateModelCache()
     {
         var cache = new ClusterModelCatalog(new KubernetesModelCatalog());
-        var xml = new XmlDocument();
-        using var stream = typeof(KubernetesCRDModelGen.Generator).Assembly.GetManifestResourceStream("runtime.KubernetesClient.xml");
-        stream.ShouldNotBeNull();
-        xml.Load(stream);
-        cache.CrdModels.AddToCache(typeof(V1Pod).Assembly, xml);
+        var pod = new OpenApiSchema
+        {
+            Properties = new Dictionary<string, IOpenApiSchema>
+            {
+                ["apiVersion"] = new OpenApiSchema(),
+                ["kind"] = new OpenApiSchema(),
+                ["metadata"] = Schema(null, ("name", null), ("namespace", null)),
+                ["spec"] = new OpenApiSchema(),
+            },
+        };
+        var podSpec = Schema(null, ("containers", null), ("serviceAccountName", "ServiceAccountName"));
+        var affinity = Schema(null, ("podAffinity", null));
+        var podAffinity = Schema(null, ("preferredDuringSchedulingIgnoredDuringExecution", null));
+        var weightedPodAffinityTerm = Schema(null, ("weight", null), ("podAffinityTerm", null));
+        var podAffinityTerm = Schema(null, ("labelSelector", null), ("namespaceSelector", null), ("namespaces", null), ("topologyKey", null));
+        var labelSelector = Schema(null, ("matchExpressions", null));
+        var matchExpression = Schema(null, ("key", null), ("operator", null), ("values", null));
+        matchExpression.Properties!["operator"] = new OpenApiSchema
+        {
+            Enum = [
+                JsonValue.Create("In"),
+                JsonValue.Create("NotIn"),
+                JsonValue.Create("Exists"),
+                JsonValue.Create("DoesNotExist")],
+        };
+        labelSelector.Properties!["matchExpressions"] = new OpenApiSchema
+        {
+            Type = JsonSchemaType.Array,
+            Items = matchExpression,
+        };
+        affinity.Properties!["podAffinity"] = podAffinity;
+        podAffinity.Properties!["preferredDuringSchedulingIgnoredDuringExecution"] = new OpenApiSchema
+        {
+            Type = JsonSchemaType.Array,
+            Items = weightedPodAffinityTerm,
+        };
+        weightedPodAffinityTerm.Properties!["podAffinityTerm"] = podAffinityTerm;
+        podAffinityTerm.Properties!["labelSelector"] = labelSelector;
+        podSpec.Properties!["affinity"] = affinity;
+        var container = new OpenApiSchema
+        {
+            Properties = new Dictionary<string, IOpenApiSchema>
+            {
+                ["command"] = new OpenApiSchema
+                {
+                    Type = JsonSchemaType.Array,
+                    Items = new OpenApiSchema { Type = JsonSchemaType.String },
+                },
+                ["name"] = new OpenApiSchema { Description = "Name of the container" },
+                ["image"] = new OpenApiSchema(),
+                ["imagePullPolicy"] = new OpenApiSchema
+                {
+                    Description = "Image pull policy",
+                    Enum = [JsonValue.Create("Always"), JsonValue.Create("IfNotPresent"), JsonValue.Create("Never")],
+                },
+                ["ports"] = new OpenApiSchema { Type = JsonSchemaType.Array, Items = new OpenApiSchema { Type = JsonSchemaType.Object } },
+            },
+        };
+        var document = new OpenApiDocument
+        {
+            Components = new OpenApiComponents
+            {
+                Schemas = new Dictionary<string, IOpenApiSchema>
+                {
+                    ["io.k8s.api.core.v1.Pod"] = pod,
+                    ["io.k8s.api.core.v1.PodSpec"] = podSpec,
+                    ["io.k8s.api.core.v1.PodStatus"] = Schema(null, ("phase", null)),
+                    ["io.k8s.api.core.v1.Container"] = container,
+                },
+            },
+        };
+        pod.Properties!["spec"] = new OpenApiSchema
+        {
+            AllOf = [new OpenApiSchemaReference("io.k8s.api.core.v1.PodSpec", document)],
+            Description = "Specification of the desired behavior of the pod.",
+        };
+        pod.Properties!["status"] = new OpenApiSchema
+        {
+            AllOf = [new OpenApiSchemaReference("io.k8s.api.core.v1.PodStatus", document)],
+        };
+        podSpec.Properties!["containers"] = new OpenApiSchema
+        {
+            Type = JsonSchemaType.Array,
+            Items = new OpenApiSchemaReference("io.k8s.api.core.v1.Container", document),
+        };
+        document.RegisterComponents();
+        cache.RegisterOpenApiSchema(document);
         return cache;
     }
 
-    private static ClusterModelCatalog CreateModelCacheWithXml(string xmlContent, Assembly assembly)
+    private static OpenApiSchema Schema(string? description, params (string Name, string? Description)[] properties)
+    {
+        return new OpenApiSchema
+        {
+            Description = description,
+            Properties = properties.ToDictionary(
+                property => property.Name,
+                property => (IOpenApiSchema)new OpenApiSchema { Description = property.Description }),
+        };
+    }
+
+    private static ClusterModelCatalog CreateModelCacheWithOpenApi(string? propertyDescription)
     {
         var cache = new ClusterModelCatalog(new KubernetesModelCatalog());
-        var xml = new XmlDocument();
-        xml.LoadXml(xmlContent);
-        cache.CrdModels.AddToCache(assembly, xml);
-        return cache;
-    }
-
-    private static int CountOccurrences(string text, string value)
-    {
-        var count = 0;
-        var index = 0;
-        while ((index = text.IndexOf(value, index, StringComparison.Ordinal)) >= 0)
+        cache.RegisterOpenApiSchema(new OpenApiDocument
         {
-            count++;
-            index += value.Length;
-        }
-
-        return count;
-    }
-
-    private static string GetXmlMemberTypeName(Type type)
-    {
-        return (type.FullName ?? type.Name).Replace('+', '.');
-    }
-
-    public sealed class TestYamlDocRoot
-    {
-        [JsonPropertyName("spec")]
-        public TestYamlDocSpec? Spec { get; set; }
-    }
-
-    public sealed class TestYamlDocSpec
-    {
+            Components = new OpenApiComponents
+            {
+                Schemas = new Dictionary<string, IOpenApiSchema>
+                {
+                    ["io.k8s.api.core.v1.TestYamlDocRoot"] = new OpenApiSchema
+                    {
+                        Properties = new Dictionary<string, IOpenApiSchema>
+                        {
+                            ["spec"] = new OpenApiSchema { Description = propertyDescription },
+                        },
+                    },
+                },
+            },
+        });
+        return cache;
     }
 
 }

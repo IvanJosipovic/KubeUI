@@ -3,6 +3,7 @@ using k8s.Models;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Features.Resources.Common;
 using KubeUI.Avalonia.Infrastructure.Presentation;
+using KubeUI.Kubernetes;
 
 namespace KubeUI.Avalonia.Features.Resources.Visualization;
 
@@ -69,7 +70,7 @@ public sealed partial class ResourceNodeViewModel : ViewModelBase
                 return [];
             }
 
-            var config = Cluster.GetResourceConfig(Resource.GetType());
+            var config = Cluster.GetResourceConfig(Resource);
             return config == null
                 ? []
                 : ResourceActionPresenter.Compose(config, new[] { Resource });

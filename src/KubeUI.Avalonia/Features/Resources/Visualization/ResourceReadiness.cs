@@ -1,5 +1,7 @@
+using System.Text.Json;
 using k8s;
 using k8s.Models;
+using KubeUI.Kubernetes;
 
 namespace KubeUI.Avalonia.Features.Resources.Visualization;
 
@@ -38,21 +40,27 @@ internal static class ResourceReadiness
         return conditions?.Any(condition => string.Equals(statusSelector(condition), "False", StringComparison.OrdinalIgnoreCase)) == true;
     }
 
-    private static bool IsCustomResourceNotReady(object resource)
+    private static bool IsCustomResourceNotReady(IKubernetesObject<V1ObjectMeta> resource)
     {
-        var statusProperty = resource.GetType().GetProperty("Status");
-        var status = statusProperty?.GetValue(resource);
-        var conditionsProperty = status?.GetType().GetProperty("Conditions");
-        if (conditionsProperty?.GetValue(status) is not IEnumerable conditions)
+        if (resource is not GenericKubernetesObject generic)
         {
             return false;
         }
 
-        foreach (var condition in conditions)
+        if (!generic.Properties.TryGetValue("status", out var status)
+            || status.ValueKind != JsonValueKind.Object
+            || !status.TryGetProperty("conditions", out var conditions)
+            || conditions.ValueKind != JsonValueKind.Array)
         {
-            var conditionStatusProperty = condition?.GetType().GetProperty("Status");
-            if (conditionStatusProperty?.GetValue(condition) is string conditionStatus
-                && string.Equals(conditionStatus, "False", StringComparison.OrdinalIgnoreCase))
+            return false;
+        }
+
+        foreach (var condition in conditions.EnumerateArray())
+        {
+            if (condition.ValueKind == JsonValueKind.Object
+                && condition.TryGetProperty("status", out var conditionStatus)
+                && conditionStatus.ValueKind == JsonValueKind.String
+                && string.Equals(conditionStatus.GetString(), "False", StringComparison.OrdinalIgnoreCase))
             {
                 return true;
             }

@@ -16,7 +16,6 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<ClusterWorkspace> _logger;
     private readonly ConcurrentDictionary<GroupApiVersionKind, IResourceConfig> _resourceConfigs = new();
-    private readonly ConcurrentDictionary<string, long> _customResourceDefinitionGenerations = new(StringComparer.Ordinal);
     private readonly CancellationTokenSource _disposeCancellation = new();
     private readonly object _connectLock = new();
     private bool _disposed;
@@ -130,35 +129,15 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
         }
     }
 
-    private async Task UpdateResourceConfigsPermissionsAsync(
-        IReadOnlyCollection<IResourceConfig>? resourceConfigs = null)
-    {
-        using var activity = StartWorkspaceActivity(nameof(UpdateResourceConfigPermissionsAsync));
-
-        var categoryBatches = (resourceConfigs ?? GetResourceConfigs())
-            .GroupBy(static config => config.Category, StringComparer.Ordinal)
-            .OrderBy(static category => ResourceCategories.GetOrder(category.Key, category.Min(config => config.Order)))
-            .ThenBy(static category => category.Key, StringComparer.Ordinal);
-
-        foreach (var categoryBatch in categoryBatches)
-        {
-            foreach (var orderBatch in categoryBatch.GroupBy(static config => config.Order).OrderBy(static batch => batch.Key))
-            {
-                await Parallel.ForEachAsync(
-                    orderBatch,
-                    new ParallelOptions { MaxDegreeOfParallelism = 4 },
-                    async (resourceConfig, _) => await UpdateResourceConfigPermissionsAsync(resourceConfig).ConfigureAwait(false)).ConfigureAwait(false);
-            }
-        }
-    }
-
     private async Task UpdateResourceConfigPermissionsAsync(IResourceConfig resourceConfig)
     {
         foreach (var request in resourceConfig.AuthorizationRequests().Distinct())
         {
-            await Runtime.Permissions
-                .UpdatePermissionsAllNamespaceAsync(request.ResourceType, request.Verb, request.Subresource)
-                .ConfigureAwait(false);
+            await Runtime.Permissions.UpdatePermissionsAllNamespaceAsync(
+                request.ResourceKind,
+                resourceConfig.IsNamespaced,
+                request.Verb,
+                request.Subresource).ConfigureAwait(false);
         }
     }
 
@@ -190,18 +169,19 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
         return _resourceConfigs[kind];
     }
 
-    /// <summary>
-    /// Gets the registered resource configuration for a resource type, if one exists.
-    /// </summary>
-    public IResourceConfig? GetResourceConfig(Type resourceType)
+    public ResourceConfigBase<T> GetResourceConfig<T>(GroupApiVersionKind kind)
+        where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
-        ArgumentNullException.ThrowIfNull(resourceType);
-        return _resourceConfigs.GetValueOrDefault(GroupApiVersionKind.From(resourceType));
+        return _resourceConfigs[kind] as ResourceConfigBase<T>
+            ?? throw new InvalidOperationException($"Resource config {kind} is not configured for {typeof(T).Name}.");
     }
 
-    public IResourceConfig GetResourceConfig<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    public IResourceConfig? GetResourceConfig(IKubernetesObject<V1ObjectMeta> resource)
     {
-        return GetResourceConfig(GroupApiVersionKind.From<T>());
+        ArgumentNullException.ThrowIfNull(resource);
+        return Runtime.ModelCatalog.TryGetResourceKind(resource, out var kind)
+            ? _resourceConfigs.GetValueOrDefault(kind)
+            : null;
     }
 
     public IEnumerable<IResourceConfig> GetResourceConfigs()
@@ -226,7 +206,6 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
 
         _disposed = true;
         Runtime.OnChange -= OnRuntimeChange;
-        Runtime.OnCustomResourceDefinitionReady -= HandleCustomResourceDefinitionReady;
         if (Runtime is INotifyPropertyChanged runtime)
         {
             runtime.PropertyChanged -= OnRuntimePropertyChanged;
@@ -240,19 +219,13 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
     {
         using var activity = StartWorkspaceActivity(nameof(EnsureBuiltInResourceConfigs));
 
-        var serviceDescriptors = _serviceProvider.GetRequiredService<ServiceDescriptor[]>();
-
-        var types = serviceDescriptors
-            .Select(static descriptor => descriptor.ServiceType)
-            .Where(static type => !type.IsAbstract
-                && !type.ContainsGenericParameters
-                && typeof(IResourceConfig).IsAssignableFrom(type))
-            .Distinct()
-            .ToList();
-
-        foreach (var type in types)
+        foreach (var resourceConfig in _serviceProvider.GetServices<IResourceConfig>())
         {
-            var resourceConfig = (IResourceConfig)_serviceProvider.GetRequiredService(type);
+            if (resourceConfig.IsCustomResource)
+            {
+                continue;
+            }
+
             resourceConfig.Initialize(this);
             _resourceConfigs[resourceConfig.Kind] = resourceConfig;
         }
@@ -273,48 +246,6 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
         }
 
         ProcessResourceConfigPermissionsUpdated(resourceConfig);
-    }
-
-    private async Task<IResourceConfig?> BuildCustomResourceConfigAsync(V1CustomResourceDefinition crd)
-    {
-        using var activity = StartWorkspaceActivity(nameof(BuildCustomResourceConfigAsync));
-        activity?.SetTag("kubernetes.crd.name", crd.Name());
-
-        var version = crd.Spec?.Versions?.FirstOrDefault(x => x.Served && x.Storage);
-        if (version == null)
-        {
-            return null;
-        }
-
-        var resourceType = Runtime.ModelCatalog.GetResourceType(crd.Spec.Group, version.Name, crd.Spec.Names.Kind);
-        if (resourceType == null)
-        {
-            return null;
-        }
-
-        var resourceConfigType = typeof(CRDResourceConfig<>).MakeGenericType(resourceType);
-        var resourceConfig = (IResourceConfig)_serviceProvider.GetRequiredService(resourceConfigType);
-
-        resourceConfig.Initialize(this);
-        await UpdateResourceConfigsPermissionsAsync([resourceConfig]).ConfigureAwait(false);
-        await EvaluateResourceConfigAccessCoreAsync(resourceConfig).ConfigureAwait(false);
-
-        if (!resourceConfig.CanListAndWatch)
-        {
-            return null;
-        }
-
-        if (resourceConfig is not ICustomResourceConfig customResourceConfig)
-        {
-            return null;
-        }
-
-        using var generationActivity = StartWorkspaceActivity("GenerateCustomResourceConfig");
-        generationActivity?.SetTag("kubernetes.crd.name", crd.Name());
-        customResourceConfig.Generate(crd);
-        generationActivity?.Stop();
-
-        return resourceConfig;
     }
 
     private async Task SeedResourcesConfiguredForConnectAsync()
@@ -342,7 +273,7 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
             return;
         }
 
-        await Runtime.SeedResource(resourceConfig.Type).ConfigureAwait(false);
+        await resourceConfig.SeedResource().ConfigureAwait(false);
     }
 
     private void ProcessResourceConfigPermissionsUpdated(IResourceConfig resourceConfig)
@@ -355,7 +286,6 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
     private void SubscribeRuntime()
     {
         Runtime.OnChange += OnRuntimeChange;
-        Runtime.OnCustomResourceDefinitionReady += HandleCustomResourceDefinitionReady;
         if (Runtime is INotifyPropertyChanged runtime)
         {
             runtime.PropertyChanged += OnRuntimePropertyChanged;
@@ -384,62 +314,72 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
 
         foreach (var removedKind in removedCustomResourceKinds)
         {
-            _resourceConfigs.TryRemove(removedKind, out _);
-        }
-
-        _customResourceDefinitionGenerations.Clear();
-
-        foreach (var removedKind in removedCustomResourceKinds)
-        {
-            NotifyCustomResourceDefinitionRemoved(removedKind);
+            if (_resourceConfigs.TryRemove(removedKind, out _))
+            {
+                NotifyCustomResourceDefinitionRemoved(removedKind);
+            }
         }
     }
 
-    private void OnRuntimeChange(WatchEventType eventType, GroupApiVersionKind kind, IKubernetesObject<V1ObjectMeta> item)
+    private void OnRuntimeChange(WatchEventType eventType, GroupApiVersionKind resourceKind, IKubernetesObject<V1ObjectMeta> item)
     {
         if (item is not V1CustomResourceDefinition crd)
         {
             return;
         }
 
+        if (!crd.TryGetResourceKind(out var kind))
+        {
+            return;
+        }
+
         if (eventType == WatchEventType.Deleted)
         {
-            RemoveCustomResourceDefinition(crd);
-            return;
+            RemoveCustomResourceDefinition(kind);
+        }
+        else
+        {
+            RemoveOtherCustomResourceVersions(kind);
+            _ = ProcessCustomResourceDefinitionAsync(crd);
         }
     }
 
-    private Task HandleCustomResourceDefinitionReady(V1CustomResourceDefinition crd)
+    private void RemoveOtherCustomResourceVersions(GroupApiVersionKind currentKind)
     {
-        var generation = _customResourceDefinitionGenerations.AddOrUpdate(
-            crd.Name(),
-            1,
-            static (_, currentGeneration) => currentGeneration + 1);
+        var previousKinds = _resourceConfigs
+            .Where(pair => pair.Value.IsCustomResource
+                && pair.Key != currentKind
+                && string.Equals(pair.Key.Group, currentKind.Group, StringComparison.Ordinal)
+                && string.Equals(pair.Key.Kind, currentKind.Kind, StringComparison.Ordinal))
+            .Select(static pair => pair.Key)
+            .ToArray();
 
-        return ProcessCustomResourceDefinitionAsync(crd, generation);
+        foreach (var previousKind in previousKinds)
+        {
+            RemoveCustomResourceDefinition(previousKind);
+        }
     }
 
-    private async Task ProcessCustomResourceDefinitionAsync(V1CustomResourceDefinition crd, long generation)
+    private async Task ProcessCustomResourceDefinitionAsync(V1CustomResourceDefinition crd)
     {
         using var activity = StartWorkspaceActivity(nameof(ProcessCustomResourceDefinitionAsync));
         activity?.SetTag("kubernetes.crd.name", crd.Name());
 
         try
         {
-            var builtConfig = await BuildCustomResourceConfigAsync(crd).ConfigureAwait(false);
-            if (builtConfig == null)
+            var resourceConfig = _serviceProvider.GetRequiredService<CRDResourceConfig>();
+            resourceConfig.Initialize(this);
+            resourceConfig.Configure(crd);
+
+            await UpdateResourceConfigPermissionsAndEvaluateAsync(resourceConfig).ConfigureAwait(false);
+
+            if (!resourceConfig.CanListAndWatch)
             {
                 return;
             }
 
-            if (!_customResourceDefinitionGenerations.TryGetValue(crd.Name(), out var currentGeneration)
-                || currentGeneration != generation)
-            {
-                return;
-            }
-
-            _resourceConfigs[builtConfig.Kind] = builtConfig;
-            ProcessResourceConfigPermissionsUpdated(builtConfig);
+            _resourceConfigs[resourceConfig.Kind] = resourceConfig;
+            ProcessResourceConfigPermissionsUpdated(resourceConfig);
         }
         catch (OperationCanceledException) when (_disposeCancellation.IsCancellationRequested)
         {
@@ -451,48 +391,12 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
         }
     }
 
-    private void RemoveCustomResourceDefinition(V1CustomResourceDefinition crd)
+    private void RemoveCustomResourceDefinition(GroupApiVersionKind kind)
     {
-        _customResourceDefinitionGenerations.AddOrUpdate(
-            crd.Name(),
-            1,
-            static (_, currentGeneration) => currentGeneration + 1);
-        var removedKind = TryResolveCustomResourceKind(crd);
-        if (removedKind == null)
+        if (_resourceConfigs.TryRemove(kind, out _))
         {
-            return;
+            NotifyCustomResourceDefinitionRemoved(kind);
         }
-
-        _resourceConfigs.TryRemove(removedKind.Value, out _);
-        NotifyCustomResourceDefinitionRemoved(removedKind.Value);
-    }
-
-
-    private GroupApiVersionKind? TryResolveCustomResourceKind(V1CustomResourceDefinition crd)
-    {
-        var version = crd.Spec?.Versions?.FirstOrDefault(x => x.Served && x.Storage);
-        if (version == null)
-        {
-            return null;
-        }
-
-        var resourceType = Runtime.ModelCatalog.GetResourceType(crd.Spec.Group, version.Name, crd.Spec.Names.Kind);
-        if (resourceType != null)
-        {
-            return GroupApiVersionKind.From(resourceType);
-        }
-
-        foreach (var resourceKind in _resourceConfigs.Keys)
-        {
-            if (string.Equals(resourceKind.Group, crd.Spec.Group, StringComparison.Ordinal)
-                && string.Equals(resourceKind.ApiVersion, version.Name, StringComparison.Ordinal)
-                && string.Equals(resourceKind.Kind, crd.Spec.Names.Kind, StringComparison.Ordinal))
-            {
-                return resourceKind;
-            }
-        }
-
-        return null;
     }
 
     private void NotifyCustomResourceDefinitionRemoved(GroupApiVersionKind kind)
