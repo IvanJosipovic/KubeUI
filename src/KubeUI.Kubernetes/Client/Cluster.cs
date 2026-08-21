@@ -29,8 +29,8 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
 
     private ILogger<Cluster> _logger;
 
-    private int _openApiSchemasLoadAttempted;
-    private readonly SemaphoreSlim _openApiSchemaLoadGate = new(1, 1);
+    private KubernetesOpenApiSchemaLoader _openApiSchemaLoader;
+    private KubernetesApiDiscoveryClient? _discoveryClient;
 
     private IClusterSettingsStore _settings;
 
@@ -110,6 +110,9 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
         _logger = logger;
         _portForwardSessionFactory = new KubernetesPortForwardSessionFactory(this);
         ModelCatalog = modelCatalog;
+        _openApiSchemaLoader = new(
+            ModelCatalog.OpenApiSchemas,
+            loggerFactory.CreateLogger<KubernetesOpenApiSchemaLoader>());
         _settings = settings;
         _serviceProvider = serviceProvider;
         _dispatcher = dispatcher;
@@ -124,7 +127,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
 
         StopNamespaceSubscription();
         await StopResourceInformersAsync().ConfigureAwait(false);
-        _openApiSchemaLoadGate.Dispose();
+        _openApiSchemaLoader.Dispose();
         _connectionLimiter.Dispose();
     }
 
@@ -192,9 +195,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
 
                     EnsureResourceInformerCancellationTokenSource();
 
-                    NativeAPIGroupDiscoveryList = await GetAPIGroupDiscoveryList().ConfigureAwait(true);
-
-                    APIGroupDiscoveryList = await GetAPIGroupDiscoveryList(false).ConfigureAwait(true);
+                    await LoadApiGroupDiscoveryListAsync().ConfigureAwait(true);
 
                     await EnsureOpenApiSchemasAsync().ConfigureAwait(true);
 
@@ -282,7 +283,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
 
             Client = null;
             Connected = false;
-            Volatile.Write(ref _openApiSchemasLoadAttempted, 0);
+            _openApiSchemaLoader.Reset();
             Status = ClusterStatus.None;
             LastError = null;
             ResetAuthorizationIndex();
@@ -521,7 +522,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
     {
         try
         {
-            APIGroupDiscoveryList = await GetAPIGroupDiscoveryList(false).ConfigureAwait(false);
+            await LoadApiGroupDiscoveryListAsync().ConfigureAwait(false);
         }
         catch (Exception ex)
         {
@@ -530,58 +531,31 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
         }
     }
 
+    private async Task LoadApiGroupDiscoveryListAsync()
+    {
+        if (Client is not k8s.Kubernetes kubernetesClient)
+        {
+            throw new InvalidOperationException("Cluster client is not connected.");
+        }
+
+        _discoveryClient ??= new KubernetesApiDiscoveryClient(kubernetesClient);
+        await _discoveryClient.RefreshAsync(
+            _resourceInformerCancellationTokenSource?.Token ?? CancellationToken.None).ConfigureAwait(false);
+        NativeAPIGroupDiscoveryList = _discoveryClient.Core;
+        APIGroupDiscoveryList = _discoveryClient.Groups;
+    }
+
     public async Task EnsureOpenApiSchemasAsync()
     {
-        using var activity = StartClusterActivity(nameof(EnsureOpenApiSchemasAsync));
-        activity?.SetTag("kubernetes.openapi.schema.count", ModelCatalog.OpenApiSchemas.Count);
-
-        if ((Volatile.Read(ref _openApiSchemasLoadAttempted) != 0
-                && ModelCatalog.OpenApiSchemas.Count > 0)
-            || Client is not k8s.Kubernetes kubernetesClient)
+        if (Client is not k8s.Kubernetes kubernetesClient)
         {
-            activity?.SetTag("kubernetes.openapi.schema.load.skipped", true);
             return;
         }
 
-        await _openApiSchemaLoadGate.WaitAsync().ConfigureAwait(false);
-        try
-        {
-            if (Volatile.Read(ref _openApiSchemasLoadAttempted) != 0)
-            {
-                activity?.SetTag("kubernetes.openapi.schema.load.skipped", true);
-                return;
-            }
-
-            const int maxAttempts = 3;
-            for (var attempt = 1; attempt <= maxAttempts; attempt++)
-            {
-                try
-                {
-                    await ModelCatalog.OpenApiSchemas.LoadAsync(
-                        kubernetesClient,
-                        _resourceInformerCancellationTokenSource?.Token ?? CancellationToken.None).ConfigureAwait(false);
-
-                    Volatile.Write(ref _openApiSchemasLoadAttempted, 1);
-                    activity?.SetTag("kubernetes.openapi.schema.count", ModelCatalog.OpenApiSchemas.Count);
-                    activity?.SetStatus(ActivityStatusCode.Ok);
-                    return;
-                }
-                catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException)
-                {
-                    activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
-                    _logger.LogDebug(
-                        ex,
-                        "Unable to load Kubernetes OpenAPI v3 schemas for {name} on attempt {attempt} of {maxAttempts}.",
-                        Name,
-                        attempt,
-                        maxAttempts);
-                }
-            }
-        }
-        finally
-        {
-            _openApiSchemaLoadGate.Release();
-        }
+        await _openApiSchemaLoader.EnsureAsync(
+            kubernetesClient,
+            Name,
+            _resourceInformerCancellationTokenSource?.Token ?? CancellationToken.None).ConfigureAwait(false);
     }
 
     private void RegisterCustomResourceDefinition(V1CustomResourceDefinition? crd)
@@ -970,27 +944,6 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
     public bool IsResourceNamespaced<T>()
     {
         return IsResourceNamespaced(GroupApiVersionKind.From<T>());
-    }
-
-    private async Task<V2beta1APIGroupDiscoveryList> GetAPIGroupDiscoveryList(bool native = true)
-    {
-        using var activity = StartClusterActivity(nameof(GetAPIGroupDiscoveryList) + (native ? "Native" : ""));
-
-        var kubernetesClient = Client as k8s.Kubernetes
-            ?? throw new InvalidOperationException("Cluster client is not connected.");
-        using var request = new HttpRequestMessage(
-            HttpMethod.Get,
-            new Uri(kubernetesClient.BaseUri, $"{(native ? "api" : "apis")}?timeout=32s"));
-        request.Headers.TryAddWithoutValidation(
-            "Accept",
-            "application/json;g=apidiscovery.k8s.io;v=v2;as=APIGroupDiscoveryList,application/json;g=apidiscovery.k8s.io;v=v2beta1;as=APIGroupDiscoveryList,application/json");
-        using var resp = await kubernetesClient.SendAuthenticatedAsync(
-            request,
-            _resourceInformerCancellationTokenSource?.Token ?? CancellationToken.None).ConfigureAwait(false);
-        resp.EnsureSuccessStatusCode();
-
-        return await resp.Content.ReadFromJsonAsync(CustomSourceGenerationContext.Default.V2beta1APIGroupDiscoveryList).ConfigureAwait(false)
-            ?? throw new InvalidOperationException("API group discovery response was empty.");
     }
 
     public async Task<bool> IsResourceReady<T>(CancellationToken? token = null) where T : class, IKubernetesObject<V1ObjectMeta>, new()

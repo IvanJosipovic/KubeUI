@@ -13,6 +13,10 @@ namespace KubeUI.Kubernetes;
 public sealed class KubernetesOpenApiSchemaCatalog
 {
     private readonly ConcurrentDictionary<string, IOpenApiSchema> _schemas = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, OpenApiDocument> _activeDocuments = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, string> _activeHashes = new(StringComparer.Ordinal);
+    private readonly Dictionary<OpenApiCacheKey, OpenApiDocument> _documentCache = [];
+    private readonly Lock _gate = new();
     private long _version;
 
     public int Count => _schemas.Count;
@@ -48,6 +52,7 @@ public sealed class KubernetesOpenApiSchemaCatalog
             return;
         }
 
+        Dictionary<string, (string Hash, Uri Uri)> references = [];
         foreach (var path in paths.EnumerateObject())
         {
             if (!path.Value.TryGetProperty("serverRelativeURL", out var url)
@@ -57,9 +62,66 @@ public sealed class KubernetesOpenApiSchemaCatalog
             }
 
             var schemaUri = new Uri(client.BaseUri, url.GetString()!.TrimStart('/'));
-            using var schemaResponse = await authenticatedClient.GetAsync(schemaUri, cancellationToken).ConfigureAwait(false);
+            var groupVersion = ParseGroupVersion(path.Name);
+            if (groupVersion is null)
+            {
+                continue;
+            }
+
+            var hash = ParseHash(schemaUri);
+            if (hash is null)
+            {
+                continue;
+            }
+
+            references[groupVersion] = (hash, schemaUri);
+        }
+
+        Dictionary<string, OpenApiDocument> nextDocuments = [];
+        Dictionary<string, string> nextHashes = [];
+        lock (_gate)
+        {
+            foreach (var reference in references)
+            {
+                if (_activeHashes.TryGetValue(reference.Key, out var activeHash)
+                    && string.Equals(activeHash, reference.Value.Hash, StringComparison.Ordinal)
+                    && _activeDocuments.TryGetValue(reference.Key, out var activeDocument))
+                {
+                    nextHashes[reference.Key] = activeHash;
+                    nextDocuments[reference.Key] = activeDocument;
+                    continue;
+                }
+
+                if (_documentCache.TryGetValue(
+                        new OpenApiCacheKey(reference.Key, reference.Value.Hash),
+                        out var cachedDocument))
+                {
+                    nextHashes[reference.Key] = reference.Value.Hash;
+                    nextDocuments[reference.Key] = cachedDocument;
+                }
+            }
+        }
+
+        foreach (var reference in references)
+        {
+            if (nextDocuments.ContainsKey(reference.Key))
+            {
+                continue;
+            }
+
+            using var schemaResponse = await authenticatedClient.GetAsync(reference.Value.Uri, cancellationToken).ConfigureAwait(false);
             if (!schemaResponse.IsSuccessStatusCode)
             {
+                lock (_gate)
+                {
+                    if (_activeDocuments.TryGetValue(reference.Key, out var previousDocument)
+                        && _activeHashes.TryGetValue(reference.Key, out var previousHash))
+                    {
+                        nextDocuments[reference.Key] = previousDocument;
+                        nextHashes[reference.Key] = previousHash;
+                    }
+                }
+
                 continue;
             }
 
@@ -67,7 +129,7 @@ public sealed class KubernetesOpenApiSchemaCatalog
             {
                 HttpClient = authenticatedClient,
                 LoadExternalRefs = true,
-                BaseUrl = schemaUri,
+                BaseUrl = reference.Value.Uri,
             };
             await using var schemaStream = await schemaResponse.Content
                 .ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
@@ -79,10 +141,61 @@ public sealed class KubernetesOpenApiSchemaCatalog
 
             if (readResult.Document is not null)
             {
-                Register(readResult.Document);
+                nextDocuments[reference.Key] = readResult.Document;
+                nextHashes[reference.Key] = reference.Value.Hash;
+                lock (_gate)
+                {
+                    _documentCache[new OpenApiCacheKey(reference.Key, reference.Value.Hash)] = readResult.Document;
+                }
             }
         }
+
+        lock (_gate)
+        {
+            _activeDocuments.Clear();
+            _activeHashes.Clear();
+            foreach (var document in nextDocuments)
+            {
+                _activeDocuments[document.Key] = document.Value;
+                _activeHashes[document.Key] = nextHashes[document.Key];
+            }
+
+            _schemas.Clear();
+            foreach (var document in _activeDocuments.Values)
+            {
+                AddSchemas(document);
+            }
+
+            Interlocked.Increment(ref _version);
+        }
     }
+
+    private static string? ParseGroupVersion(string path)
+    {
+        path = path.TrimStart('/');
+        if (path.StartsWith("api/", StringComparison.Ordinal))
+        {
+            return $"/{path[4..]}";
+        }
+
+        return path.StartsWith("apis/", StringComparison.Ordinal) ? path[5..] : null;
+    }
+
+    private static string? ParseHash(Uri uri)
+    {
+        foreach (var parameter in uri.Query.TrimStart('?').Split('&', StringSplitOptions.RemoveEmptyEntries))
+        {
+            var separator = parameter.IndexOf('=');
+            if (separator > 0 && string.Equals(parameter[..separator], "hash", StringComparison.Ordinal))
+            {
+                return Uri.UnescapeDataString(parameter[(separator + 1)..]);
+            }
+        }
+
+        return null;
+    }
+
+    private readonly record struct OpenApiCacheKey(string GroupVersion, string Hash);
 
     private sealed class KubernetesCredentialsHandler : DelegatingHandler
     {
@@ -153,6 +266,20 @@ public sealed class KubernetesOpenApiSchemaCatalog
         ArgumentNullException.ThrowIfNull(document);
         document.RegisterComponents();
 
+        if (document.Components?.Schemas is null)
+        {
+            return;
+        }
+
+        lock (_gate)
+        {
+            AddSchemas(document);
+            Interlocked.Increment(ref _version);
+        }
+    }
+
+    private void AddSchemas(OpenApiDocument document)
+    {
         if (document.Components?.Schemas is not { } schemas)
         {
             return;
@@ -162,8 +289,6 @@ public sealed class KubernetesOpenApiSchemaCatalog
         {
             _schemas[definition.Key] = definition.Value;
         }
-
-        Interlocked.Increment(ref _version);
     }
 
     public IOpenApiSchema? GetSchema(GroupApiVersionKind kind)

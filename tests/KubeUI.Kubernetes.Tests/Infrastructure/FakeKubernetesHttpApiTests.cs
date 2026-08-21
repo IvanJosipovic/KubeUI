@@ -2,12 +2,34 @@ using System.Net;
 using System.Net.Http.Json;
 using k8s;
 using k8s.Models;
+using KubeUI.Kubernetes;
 using Shouldly;
 
 namespace KubeUI.Kubernetes.Tests.Infrastructure;
 
 public sealed class FakeKubernetesHttpApiTests
 {
+    [Fact]
+    public async Task AggregatedDiscoveryClient_reuses_etags_without_replacing_cached_responses()
+    {
+        using var api = new FakeKubernetesHttpApi();
+        using var client = KubernetesClientMaterializer.Create(
+            new KubernetesClientConfiguration { Host = "http://fake-kubernetes" },
+            api);
+        var discovery = new KubernetesApiDiscoveryClient(client);
+
+        await discovery.RefreshAsync(TestContext.Current.CancellationToken);
+        var core = discovery.Core;
+        var groups = discovery.Groups;
+
+        await discovery.RefreshAsync(TestContext.Current.CancellationToken);
+
+        discovery.Core.ShouldBeSameAs(core);
+        discovery.Groups.ShouldBeSameAs(groups);
+        api.RequestUris.Count(uri => uri?.AbsolutePath == "/api").ShouldBe(2);
+        api.RequestUris.Count(uri => uri?.AbsolutePath == "/apis").ShouldBe(2);
+    }
+
     [Fact]
     public async Task RealClientUsesFakeHttpTransportForCrud()
     {

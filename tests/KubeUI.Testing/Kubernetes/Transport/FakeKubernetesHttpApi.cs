@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Http.Json;
+using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -61,6 +62,12 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
     {
         get => Volatile.Read(ref _state.RequireAuthorizationForDiscovery) != 0;
         set => Volatile.Write(ref _state.RequireAuthorizationForDiscovery, value ? 1 : 0);
+    }
+
+    public string DiscoveryETag
+    {
+        get => _state.DiscoveryETag;
+        set => _state.DiscoveryETag = value;
     }
 
     public string AuthenticatedUser { get; set; } = "system:admin";
@@ -213,7 +220,7 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
 
             if (path == "/api")
             {
-                return SetRequest(request, Json(Discovery(true)));
+                return SetRequest(request, DiscoveryResponse(request, Discovery(true)));
             }
 
             if (!AcceptsApiDiscovery(request))
@@ -221,7 +228,7 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
                 return SetRequest(request, Json(new { apiVersion = "v1", kind = "APIGroupList", groups = Array.Empty<object>() }));
             }
 
-            return SetRequest(request, Json(Discovery(false)));
+            return SetRequest(request, DiscoveryResponse(request, Discovery(false)));
         }
 
         if (request.Method == HttpMethod.Get && path == "/version")
@@ -273,6 +280,22 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
     private static HttpResponseMessage SetRequest(HttpRequestMessage request, HttpResponseMessage response)
     {
         response.RequestMessage = request;
+        return response;
+    }
+
+    private HttpResponseMessage DiscoveryResponse(HttpRequestMessage request, object payload)
+    {
+        if (request.Headers.TryGetValues("If-None-Match", out var values)
+            && values.Contains(_state.DiscoveryETag, StringComparer.Ordinal))
+        {
+            return new HttpResponseMessage(HttpStatusCode.NotModified)
+            {
+                Headers = { ETag = new EntityTagHeaderValue(_state.DiscoveryETag) },
+            };
+        }
+
+        var response = Json(payload);
+        response.Headers.ETag = new EntityTagHeaderValue(_state.DiscoveryETag);
         return response;
     }
 
@@ -900,7 +923,7 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
         {
             ["/api/v1"] = new JsonObject
             {
-                ["serverRelativeURL"] = "/openapi/v3/api/v1",
+                ["serverRelativeURL"] = "/openapi/v3/api/v1?hash=fake-v1",
             },
         },
     };
@@ -1086,6 +1109,7 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
         public int OpenApiV3IndexStatusCode;
         public int OpenApiV3DocumentStatusCode;
         public int RequireAuthorizationForDiscovery;
+        public string DiscoveryETag = "\"fake-discovery-v1\"";
         public long ResourceVersion;
     }
 
