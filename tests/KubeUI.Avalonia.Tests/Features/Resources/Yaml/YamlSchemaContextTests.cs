@@ -147,9 +147,16 @@ public class YamlSchemaContextTests
             document.Text.IndexOf("imagePullPolicy", StringComparison.Ordinal) + 2,
             GroupApiVersionKind.From<V1Pod>(),
             s_modelCache);
+        var name = YamlSchemaContext.Resolve(
+            document,
+            document.Text.LastIndexOf("name: alloy", StringComparison.Ordinal) + 2,
+            GroupApiVersionKind.From<V1Pod>(),
+            s_modelCache);
 
         policy.Documentation.ShouldNotBeNull();
         policy.Documentation.Label.ShouldBe("imagePullPolicy");
+        name.Documentation.ShouldNotBeNull();
+        name.Documentation.Label.ShouldBe("name");
     }
 
     [Fact]

@@ -66,8 +66,24 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
 
     public string DiscoveryETag
     {
-        get => _state.DiscoveryETag;
-        set => _state.DiscoveryETag = value;
+        get => _state.CoreDiscoveryETag;
+        set
+        {
+            _state.CoreDiscoveryETag = value;
+            _state.GroupedDiscoveryETag = value;
+        }
+    }
+
+    public string CoreDiscoveryETag
+    {
+        get => _state.CoreDiscoveryETag;
+        set => _state.CoreDiscoveryETag = value;
+    }
+
+    public string GroupedDiscoveryETag
+    {
+        get => _state.GroupedDiscoveryETag;
+        set => _state.GroupedDiscoveryETag = value;
     }
 
     public string AuthenticatedUser { get; set; } = "system:admin";
@@ -100,6 +116,12 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
     {
         get => (HttpStatusCode)Volatile.Read(ref _state.OpenApiV3DocumentStatusCode);
         set => Volatile.Write(ref _state.OpenApiV3DocumentStatusCode, (int)value);
+    }
+
+    public string OpenApiV3DocumentHash
+    {
+        get => _state.OpenApiV3DocumentHash;
+        set => _state.OpenApiV3DocumentHash = value;
     }
 
     public IReadOnlyList<Uri?> RequestUris => _requestUris.ToArray();
@@ -285,17 +307,20 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
 
     private HttpResponseMessage DiscoveryResponse(HttpRequestMessage request, object payload)
     {
+        var etag = request.RequestUri?.AbsolutePath == "/api"
+            ? _state.CoreDiscoveryETag
+            : _state.GroupedDiscoveryETag;
         if (request.Headers.TryGetValues("If-None-Match", out var values)
-            && values.Contains(_state.DiscoveryETag, StringComparer.Ordinal))
+            && values.Contains(etag, StringComparer.Ordinal))
         {
             return new HttpResponseMessage(HttpStatusCode.NotModified)
             {
-                Headers = { ETag = new EntityTagHeaderValue(_state.DiscoveryETag) },
+                Headers = { ETag = new EntityTagHeaderValue(etag) },
             };
         }
 
         var response = Json(payload);
-        response.Headers.ETag = new EntityTagHeaderValue(_state.DiscoveryETag);
+        response.Headers.ETag = new EntityTagHeaderValue(etag);
         return response;
     }
 
@@ -917,13 +942,13 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
 
     private static string DefinitionKey(string group, string version, string plural) => $"{group}/{version}/{plural}";
 
-    private static JsonObject OpenApiV3Index() => new()
+    private JsonObject OpenApiV3Index() => new()
     {
         ["paths"] = new JsonObject
         {
             ["/api/v1"] = new JsonObject
             {
-                ["serverRelativeURL"] = "/openapi/v3/api/v1?hash=fake-v1",
+                ["serverRelativeURL"] = $"/openapi/v3/api/v1?hash={_state.OpenApiV3DocumentHash}",
             },
         },
     };
@@ -1108,8 +1133,10 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
         public int OpenApiV3IndexFailuresRemaining;
         public int OpenApiV3IndexStatusCode;
         public int OpenApiV3DocumentStatusCode;
+        public string OpenApiV3DocumentHash = "fake-v1";
         public int RequireAuthorizationForDiscovery;
-        public string DiscoveryETag = "\"fake-discovery-v1\"";
+        public string CoreDiscoveryETag = "\"fake-discovery-core-v1\"";
+        public string GroupedDiscoveryETag = "\"fake-discovery-groups-v1\"";
         public long ResourceVersion;
     }
 

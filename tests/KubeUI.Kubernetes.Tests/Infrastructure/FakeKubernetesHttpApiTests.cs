@@ -13,6 +13,8 @@ public sealed class FakeKubernetesHttpApiTests
     public async Task AggregatedDiscoveryClient_reuses_etags_without_replacing_cached_responses()
     {
         using var api = new FakeKubernetesHttpApi();
+        api.CoreDiscoveryETag = "\"fake-discovery-core-test\"";
+        api.GroupedDiscoveryETag = "\"fake-discovery-groups-test\"";
         using var client = KubernetesClientMaterializer.Create(
             new KubernetesClientConfiguration { Host = "http://fake-kubernetes" },
             api);
@@ -28,6 +30,27 @@ public sealed class FakeKubernetesHttpApiTests
         discovery.Groups.ShouldBeSameAs(groups);
         api.RequestUris.Count(uri => uri?.AbsolutePath == "/api").ShouldBe(2);
         api.RequestUris.Count(uri => uri?.AbsolutePath == "/apis").ShouldBe(2);
+    }
+
+    [Fact]
+    public async Task AggregatedDiscoveryClient_skips_a_concurrent_refresh()
+    {
+        using var api = new FakeKubernetesHttpApi();
+        using var conditionHandler = new TestConditionHandler(TimeSpan.FromMilliseconds(100), throwOnConnect: false)
+        {
+            InnerHandler = api,
+        };
+        using var client = KubernetesClientMaterializer.Create(
+            new KubernetesClientConfiguration { Host = "http://fake-kubernetes" },
+            conditionHandler);
+        var discovery = new KubernetesApiDiscoveryClient(client);
+
+        var firstRefresh = discovery.RefreshAsync(TestContext.Current.CancellationToken);
+        var secondRefresh = discovery.RefreshAsync(TestContext.Current.CancellationToken);
+        await Task.WhenAll(firstRefresh, secondRefresh);
+
+        api.RequestUris.Count(uri => uri?.AbsolutePath == "/api").ShouldBe(1);
+        api.RequestUris.Count(uri => uri?.AbsolutePath == "/apis").ShouldBe(1);
     }
 
     [Fact]

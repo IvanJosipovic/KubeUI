@@ -2930,6 +2930,33 @@ public class ResourceYamlViewModelTests
     }
 
     [AvaloniaFact]
+    public void YamlSyntaxValidationService_AnchorsDuplicateKeyDiagnostic_ToDuplicateKey()
+    {
+        var service = Application.Current.GetRequiredTestService<IYamlValidationService>();
+
+        var diagnostics = service.Validate("""
+            apiVersion: azure.upbound.io/v1beta1
+            kind: ResourceGroup
+            metadata:
+              name: temp
+              namespace: default
+            spec:
+              forProvider:
+                location: test
+                managedBy: tes
+                tags:
+                  test: val
+                  test: 2
+                  test: 4
+            """.ReplaceLineEndings("\n"));
+
+        diagnostics.Count.ShouldBe(1);
+        diagnostics[0].Message.ShouldContain("duplicate key test");
+        diagnostics[0].StartLine.ShouldBe(12);
+        diagnostics[0].StartColumn.ShouldBe(7);
+    }
+
+    [AvaloniaFact]
     public void YamlSyntaxValidationService_AcceptsCrdInstanceWithJsonModel()
     {
         var service = Application.Current.GetRequiredTestService<IYamlValidationService>();

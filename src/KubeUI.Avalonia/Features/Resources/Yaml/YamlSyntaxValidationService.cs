@@ -51,7 +51,7 @@ public sealed class YamlSyntaxValidationService : IYamlValidationService
 
             if (meaningfulException is YamlException yamlException)
             {
-                return CreateYamlExceptionDiagnostic(ex, yamlException);
+                return CreateYamlExceptionDiagnostic(yaml, ex, yamlException);
             }
 
             if (TryGetExceptionLocation(ex, out var location))
@@ -121,7 +121,7 @@ public sealed class YamlSyntaxValidationService : IYamlValidationService
             var meaningfulException = Utilities.GetMeaningfulException(ex);
             if (meaningfulException is YamlException yamlException)
             {
-                return CreateYamlExceptionDiagnostic(ex, yamlException);
+                return CreateYamlExceptionDiagnostic(yaml, ex, yamlException);
             }
 
             if (TryGetExceptionLocation(ex, out var location))
@@ -151,8 +151,27 @@ public sealed class YamlSyntaxValidationService : IYamlValidationService
         }
     }
 
-    private static IReadOnlyList<YamlDiagnostic> CreateYamlExceptionDiagnostic(Exception sourceException, YamlException yamlException)
+    private static IReadOnlyList<YamlDiagnostic> CreateYamlExceptionDiagnostic(
+        string yaml,
+        Exception sourceException,
+        YamlException yamlException)
     {
+        var message = Utilities.GetMeaningfulExceptionMessage(sourceException);
+        if (message.Contains("duplicate key", StringComparison.OrdinalIgnoreCase)
+            && TryGetDuplicateKeyLocation(yaml, yamlException.Start.Line, out var duplicateLocation))
+        {
+            return
+            [
+                new YamlDiagnostic(
+                    duplicateLocation.StartLine,
+                    duplicateLocation.StartColumn,
+                    duplicateLocation.EndLine,
+                    duplicateLocation.EndColumn,
+                    message,
+                    YamlDiagnosticSeverity.Error),
+            ];
+        }
+
         return
         [
             new YamlDiagnostic(
@@ -160,9 +179,55 @@ public sealed class YamlSyntaxValidationService : IYamlValidationService
                 (int)Math.Max(1L, yamlException.Start.Column),
                 (int)Math.Max(1L, yamlException.End.Line),
                 (int)Math.Max(1L, yamlException.End.Column),
-                Utilities.GetMeaningfulExceptionMessage(sourceException),
+                message,
                 YamlDiagnosticSeverity.Error),
         ];
+    }
+
+    private static bool TryGetDuplicateKeyLocation(string yaml, long firstKeyLine, out YamlDiagnosticLocation location)
+    {
+        var lines = yaml.ReplaceLineEndings("\n").Split('\n');
+        var firstIndex = (int)firstKeyLine - 1;
+        if (firstIndex < 0 || firstIndex >= lines.Length || !TryGetMappingKey(lines[firstIndex], out var key, out var indent))
+        {
+            location = default!;
+            return false;
+        }
+
+        for (var i = firstIndex + 1; i < lines.Length; i++)
+        {
+            if (!TryGetMappingKey(lines[i], out var candidate, out var candidateIndent)
+                || candidateIndent != indent
+                || !string.Equals(candidate, key, StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            location = new YamlDiagnosticLocation(
+                i + 1,
+                indent + 1,
+                i + 1,
+                indent + key.Length + 1);
+            return true;
+        }
+
+        location = default!;
+        return false;
+    }
+
+    private static bool TryGetMappingKey(string line, out string key, out int indent)
+    {
+        var trimmed = line.TrimStart();
+        indent = line.Length - trimmed.Length;
+        var separator = trimmed.IndexOf(':');
+        if (separator <= 0 || trimmed.StartsWith('#'))
+        {
+            key = string.Empty;
+            return false;
+        }
+
+        key = trimmed[..separator].Trim();
+        return key.Length > 0;
     }
 
     private static bool TryGetExceptionLocation(Exception exception, out YamlDiagnosticLocation location)

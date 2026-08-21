@@ -10,20 +10,39 @@ public sealed class KubernetesApiDiscoveryClient
     private readonly k8s.Kubernetes _client;
     private string? _coreETag;
     private string? _groupedETag;
+    private int _refreshInProgress;
 
+    /// <summary>Creates a discovery client for an authenticated Kubernetes client.</summary>
+    /// <param name="client">Kubernetes client used for discovery requests.</param>
     public KubernetesApiDiscoveryClient(k8s.Kubernetes client)
     {
         _client = client ?? throw new ArgumentNullException(nameof(client));
     }
 
+    /// <summary>Gets core API discovery data, or null before a successful refresh.</summary>
     public V2beta1APIGroupDiscoveryList? Core { get; private set; }
 
+    /// <summary>Gets grouped API discovery data, or null before a successful refresh.</summary>
     public V2beta1APIGroupDiscoveryList? Groups { get; private set; }
 
+    /// <summary>Refreshes core and grouped API discovery data, skipping concurrent requests.</summary>
+    /// <param name="cancellationToken">Token used to cancel the refresh.</param>
     public async Task RefreshAsync(CancellationToken cancellationToken = default)
     {
-        Core = await RefreshEndpointAsync(true, cancellationToken).ConfigureAwait(false);
-        Groups = await RefreshEndpointAsync(false, cancellationToken).ConfigureAwait(false);
+        if (Interlocked.Exchange(ref _refreshInProgress, 1) != 0)
+        {
+            return;
+        }
+
+        try
+        {
+            Core = await RefreshEndpointAsync(true, cancellationToken).ConfigureAwait(false);
+            Groups = await RefreshEndpointAsync(false, cancellationToken).ConfigureAwait(false);
+        }
+        finally
+        {
+            Volatile.Write(ref _refreshInProgress, 0);
+        }
     }
 
     private async Task<V2beta1APIGroupDiscoveryList> RefreshEndpointAsync(

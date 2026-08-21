@@ -38,10 +38,6 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
 
     private IThreadDispatcher _dispatcher;
 
-    public V2beta1APIGroupDiscoveryList NativeAPIGroupDiscoveryList { get; private set; }
-
-    public V2beta1APIGroupDiscoveryList APIGroupDiscoveryList { get; private set; }
-
     public event Action<WatchEventType, GroupApiVersionKind, IKubernetesObject<V1ObjectMeta>>? OnChange;
     public event Action<IClusterRuntime>? NamespaceSelectionRequired;
     public event Action<IClusterRuntime, GroupApiVersionKind>? ResourceSeeded;
@@ -165,8 +161,6 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
                         config = KubernetesClientConfiguration.BuildConfigFromConfigFile(KubeConfigPath, Name);
                     }
 
-
-
                     if (KubernetesClientFactory is null)
                     {
                         // build a custom pipeline for HTTP calls
@@ -194,10 +188,6 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
                     }
 
                     EnsureResourceInformerCancellationTokenSource();
-
-                    await LoadApiGroupDiscoveryListAsync().ConfigureAwait(true);
-
-                    await EnsureOpenApiSchemasAsync().ConfigureAwait(true);
 
                     await UpdateNamespacePermission().ConfigureAwait(true);
 
@@ -240,7 +230,9 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
                     Status = ClusterStatus.Connected;
                     LastError = null;
 
-                    await InitMetrics().ConfigureAwait(false);
+                    _ = RefreshApiGroupDiscoveryListAsync();
+                    _ = EnsureOpenApiSchemasAsync();
+                    _ = InitMetrics();
                 }
                 catch (Exception ex)
                 {
@@ -284,6 +276,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
             Client = null;
             Connected = false;
             _openApiSchemaLoader.Reset();
+            _discoveryClient = null;
             Status = ClusterStatus.None;
             LastError = null;
             ResetAuthorizationIndex();
@@ -348,6 +341,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
         var container = (ContainerClass<GenericKubernetesObject>)Objects.GetOrAdd(
             kind,
             _ => new ContainerClass<GenericKubernetesObject>());
+
         var seedTask = container.GetOrCreateSeedTask(async () =>
         {
             var informer = new ResourceInformer<GenericKubernetesObject>(
@@ -522,27 +516,20 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
     {
         try
         {
-            await LoadApiGroupDiscoveryListAsync().ConfigureAwait(false);
+            if (Client is not k8s.Kubernetes kubernetesClient)
+            {
+                throw new InvalidOperationException("Cluster client is not connected.");
+            }
+
+            _discoveryClient ??= new KubernetesApiDiscoveryClient(kubernetesClient);
+            await _discoveryClient.RefreshAsync(
+                _resourceInformerCancellationTokenSource?.Token ?? CancellationToken.None).ConfigureAwait(false);
         }
         catch (Exception ex)
         {
             Activity.Current?.SetStatus(ActivityStatusCode.Error, ex.Message);
             _logger.LogError(ex, "Unable to refresh API discovery for cluster {name}", Name);
         }
-    }
-
-    private async Task LoadApiGroupDiscoveryListAsync()
-    {
-        if (Client is not k8s.Kubernetes kubernetesClient)
-        {
-            throw new InvalidOperationException("Cluster client is not connected.");
-        }
-
-        _discoveryClient ??= new KubernetesApiDiscoveryClient(kubernetesClient);
-        await _discoveryClient.RefreshAsync(
-            _resourceInformerCancellationTokenSource?.Token ?? CancellationToken.None).ConfigureAwait(false);
-        NativeAPIGroupDiscoveryList = _discoveryClient.Core;
-        APIGroupDiscoveryList = _discoveryClient.Groups;
     }
 
     public async Task EnsureOpenApiSchemasAsync()
@@ -552,10 +539,18 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
             return;
         }
 
-        await _openApiSchemaLoader.EnsureAsync(
-            kubernetesClient,
-            Name,
-            _resourceInformerCancellationTokenSource?.Token ?? CancellationToken.None).ConfigureAwait(false);
+        try
+        {
+            await _openApiSchemaLoader.EnsureAsync(
+                kubernetesClient,
+                Name,
+                _resourceInformerCancellationTokenSource?.Token ?? CancellationToken.None).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            Activity.Current?.SetStatus(ActivityStatusCode.Error, ex.Message);
+            _logger.LogError(ex, "Unable to load OpenAPI schemas for cluster {name}", Name);
+        }
     }
 
     private void RegisterCustomResourceDefinition(V1CustomResourceDefinition? crd)
@@ -717,34 +712,21 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
     }
 
     public async Task DryRunYaml(Stream stream)
-    {
-        var exceptions = new List<Exception>();
-        var resources = LoadGenericResources(stream);
-        foreach (var generic in resources)
-        {
-            try
-            {
-                if (!ModelCatalog.TryGetResourceKind(generic.ApiVersion ?? string.Empty, generic.Kind ?? string.Empty, out var resourceKind))
-                {
-                    exceptions.Add(new Exception($"Unable to find resource model for {generic.ApiVersion + "/" + generic.Kind}"));
-                    continue;
-                }
-
-                await DryRunResourceAsync(generic).ConfigureAwait(false);
-            }
-            catch (Exception ex)
-            {
-                exceptions.Add(ex);
-            }
-        }
-
-        if (exceptions.Count > 0)
-        {
-            throw new AggregateException("Error dry running Yaml", exceptions);
-        }
-    }
+        => await ProcessYamlResourcesAsync(
+            stream,
+            DryRunResourceAsync,
+            "Error dry running Yaml").ConfigureAwait(false);
 
     public async Task ImportYaml(Stream stream)
+        => await ProcessYamlResourcesAsync(
+            stream,
+            AddOrUpdateResource,
+            "Error importing Yaml").ConfigureAwait(false);
+
+    private async Task ProcessYamlResourcesAsync(
+        Stream stream,
+        Func<GenericKubernetesObject, Task> operation,
+        string aggregateMessage)
     {
         var exceptions = new List<Exception>();
         var resources = LoadGenericResources(stream);
@@ -758,7 +740,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
                     continue;
                 }
 
-                await AddOrUpdateResource(generic).ConfigureAwait(false);
+                await operation(generic).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -768,22 +750,22 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
 
         if (exceptions.Count > 0)
         {
-            throw new AggregateException("Error importing Yaml", exceptions);
+            throw new AggregateException(aggregateMessage, exceptions);
         }
     }
 
     private static List<GenericKubernetesObject> LoadGenericResources(Stream stream)
     {
         using var reader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, bufferSize: 1024, leaveOpen: true);
-        var parser = new Parser(new StringReader(reader.ReadToEnd()));
+        var parser = new Parser(reader);
         parser.Consume<StreamStart>();
         var resources = new List<GenericKubernetesObject>();
 
         while (parser.Accept<DocumentStart>(out _))
         {
-            var document = Serialization.KubernetesYaml.Deserialize(parser);
-            resources.Add(Serialization.KubernetesYaml.Deserialize<GenericKubernetesObject>(
-                Serialization.KubernetesYaml.Serialize(document!)));
+            resources.Add((GenericKubernetesObject)Serialization.KubernetesYaml.Deserialize(
+                parser,
+                typeof(GenericKubernetesObject))!);
         }
 
         return resources;
@@ -915,7 +897,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
 
     public V2beta1APIGroupDiscoveryListItemVersionResource? GetAPIGroupDiscoveryListItem(GroupApiVersionKind api, bool isNative = false)
     {
-        var list = isNative ? NativeAPIGroupDiscoveryList : APIGroupDiscoveryList;
+        var list = isNative ? _discoveryClient?.Core : _discoveryClient?.Groups;
 
         if (list == null || list.items == null)
             return null;

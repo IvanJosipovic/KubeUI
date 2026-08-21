@@ -75,7 +75,9 @@ public partial class Cluster
     {
         using var activity = StartClusterActivity(nameof(InitMetrics));
 
-        var kube = Client as k8s.Kubernetes;
+        try
+        {
+            var kube = Client as k8s.Kubernetes;
 
         var model = new V1SelfSubjectAccessReview()
         {
@@ -115,23 +117,28 @@ public partial class Cluster
 
         IsMetricsAvailable = APIGroups.Groups.Any(g => g.Name == "metrics.k8s.io") && resp.Status.Allowed && resp2.Status.Allowed;
 
-        if (IsMetricsAvailable)
-        {
-            _metricsRefreshCancellationTokenSource?.Cancel();
-            _metricsRefreshTimer?.Dispose();
-
-            var metricsRefreshCancellationTokenSource = new CancellationTokenSource();
-            var metricsRefreshTimer = new PeriodicTimer(TimeSpan.FromSeconds(30));
-            _metricsRefreshCancellationTokenSource = metricsRefreshCancellationTokenSource;
-            _metricsRefreshTimer = metricsRefreshTimer;
-
-            await RefreshMetricsDataAsync(metricsRefreshCancellationTokenSource.Token);
-
-            using (ExecutionContext.SuppressFlow())
+            if (IsMetricsAvailable)
             {
-                _ = Task.Run(() => RefreshMetricsAsync(metricsRefreshTimer, metricsRefreshCancellationTokenSource.Token));
+                _metricsRefreshCancellationTokenSource?.Cancel();
+                _metricsRefreshTimer?.Dispose();
+
+                var metricsRefreshCancellationTokenSource = new CancellationTokenSource();
+                var metricsRefreshTimer = new PeriodicTimer(TimeSpan.FromSeconds(30));
+                _metricsRefreshCancellationTokenSource = metricsRefreshCancellationTokenSource;
+                _metricsRefreshTimer = metricsRefreshTimer;
+
+                await RefreshMetricsDataAsync(metricsRefreshCancellationTokenSource.Token);
+
+                using (ExecutionContext.SuppressFlow())
+                {
+                    _ = Task.Run(() => RefreshMetricsAsync(metricsRefreshTimer, metricsRefreshCancellationTokenSource.Token));
+                }
             }
+        }
+        catch (Exception ex)
+        {
+            activity?.SetStatus(System.Diagnostics.ActivityStatusCode.Error, ex.Message);
+            _logger.LogError(ex, "Error initializing Metrics");
         }
     }
 }
-
