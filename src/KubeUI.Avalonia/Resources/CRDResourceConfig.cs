@@ -119,7 +119,17 @@ public sealed class CRDResourceConfig : ResourceConfigBase<GenericKubernetesObje
         {
             Key = CreateColumnKey(name),
             Name = name,
-            Field = resource => getter(resource) ?? string.Empty
+            Field = resource =>
+            {
+                try
+                {
+                    return getter(resource) ?? string.Empty;
+                }
+                catch (KeyNotFoundException)
+                {
+                    return string.Empty;
+                }
+            }
         };
     }
 

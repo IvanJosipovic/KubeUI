@@ -139,6 +139,141 @@ public class ResourceYamlViewModelTests
     }
 
     [AvaloniaFact]
+    public void YamlFoldingStrategy_IdentifiesMultilineNoisyMetadataFields()
+    {
+        var text = new TextDocument("""
+            apiVersion: v1
+            kind: Pod
+            metadata:
+              annotations:
+                example.com/keep: value
+                kubectl.kubernetes.io/last-applied-configuration: |
+                  {"apiVersion":"v1","kind":"Pod"}
+              managedFields:
+                - manager: kubectl
+                  operation: Apply
+            """.ReplaceLineEndings("\n"));
+
+        var foldings = YamlFoldingStrategy.CreateNewFoldings(text, out _).ToList();
+        foldings.Select(folding => folding.Name.Trim()).ShouldBe(
+        [
+            "metadata:",
+            "annotations:",
+            "kubectl.kubernetes.io/last-applied-configuration: |",
+            "managedFields:",
+            "- manager: kubectl",
+        ]);
+        var noisyFoldings = foldings
+            .Where(folding => YamlFoldingStrategy.IsNoisyFieldFolding(text, folding))
+            .Select(folding => folding.Name.Trim())
+            .ToArray();
+
+        noisyFoldings.ShouldBe(
+        [
+            "kubectl.kubernetes.io/last-applied-configuration: |",
+            "managedFields:",
+        ]);
+    }
+
+    [AvaloniaFact]
+    public void YamlFoldingStrategy_DoesNotIdentifySingleLineLastAppliedConfiguration()
+    {
+        var text = new TextDocument("""
+            metadata:
+              annotations:
+                kubectl.kubernetes.io/last-applied-configuration: compact
+            """.ReplaceLineEndings("\n"));
+
+        var foldings = YamlFoldingStrategy.CreateNewFoldings(text, out _).ToList();
+
+        foldings.Any(folding => YamlFoldingStrategy.IsNoisyFieldFolding(text, folding)).ShouldBeFalse();
+    }
+
+    [AvaloniaFact]
+    public async Task ResourceYamlView_PreservesNoisyFieldsInSerializedYaml()
+    {
+        var cluster = await Application.Current.CreateClusterAsync();
+        var resource = KubernetesJson.Deserialize<GenericKubernetesObject>("""
+            {
+              "apiVersion": "v1",
+              "kind": "Pod",
+              "metadata": {
+                "name": "test",
+                "managedFields": [{"manager": "kubectl", "operation": "Apply"}],
+                "annotations": {
+                  "kubectl.kubernetes.io/last-applied-configuration": "compact"
+                }
+              }
+            }
+            """)!;
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
+
+        vm.Initialize(cluster, resource);
+
+        vm.YamlDocument.Text.ShouldContain("managedFields:");
+        vm.YamlDocument.Text.ShouldContain("kubectl.kubernetes.io/last-applied-configuration:");
+    }
+
+    [AvaloniaFact]
+    public async Task ResourceYamlView_HideNoisyFieldsToggleControlsNoisyFoldState()
+    {
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
+
+        var cluster = await Application.Current.CreateClusterAsync();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
+        vm.Initialize(cluster, new V1Pod
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "test",
+                ManagedFields =
+                [
+                    new V1ManagedFieldsEntry
+                    {
+                        Manager = "kubectl",
+                        Operation = "Apply",
+                    },
+                ],
+                Annotations = new Dictionary<string, string>
+                {
+                    ["example.com/keep"] = "value",
+                },
+            },
+        });
+
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
+        view.DataContext = vm;
+        window.Content = view;
+        window.Show();
+
+        await TestApplicationExtensions.WaitForUiAsync();
+
+        var editor = view.FindControl<TextEditor>("Editor");
+        editor.ShouldNotBeNull();
+        var behavior = Interaction.GetBehaviors(editor).OfType<YamlEditorBehavior>().Single();
+        var foldingManager = GetFoldingManager(behavior);
+        foldingManager.ShouldNotBeNull();
+
+        await WaitForUiAsync(
+            () => foldingManager.AllFoldings.Any(folding =>
+                YamlFoldingStrategy.IsNoisyFieldFolding(editor.Document!, folding.StartOffset, folding.EndOffset)));
+
+        FoldingSection[] GetNoisyFoldings() => foldingManager.AllFoldings
+            .Where(folding => YamlFoldingStrategy.IsNoisyFieldFolding(editor.Document!, folding.StartOffset, folding.EndOffset))
+            .ToArray();
+
+        var noisyFoldings = GetNoisyFoldings();
+        noisyFoldings.ShouldNotBeEmpty();
+        noisyFoldings.ShouldAllBe(folding => folding.IsFolded);
+
+        vm.HideNoisyFields = false;
+        await WaitForUiAsync(() => GetNoisyFoldings().All(folding => !folding.IsFolded));
+
+        vm.HideNoisyFields = true;
+        await WaitForUiAsync(() => GetNoisyFoldings().All(folding => folding.IsFolded));
+    }
+
+    [AvaloniaFact]
     public void YamlFoldingStrategy_CreatesFoldingForMappingWithSequenceChildren()
     {
         var text = new TextDocument();
@@ -325,6 +460,48 @@ public class ResourceYamlViewModelTests
         foldingManager.ShouldNotBeNull();
         foldingManager.AllFoldings.First().IsFolded.ShouldBeTrue();
 
+    }
+
+    [AvaloniaFact]
+    public async Task ResourceYamlView_DoesNotReplaceUnsavedYaml_WhenResourceUpdatesDuringEdit()
+    {
+        var cluster = await Application.Current.CreateClusterAsync();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
+        vm.Initialize(cluster, new V1Namespace
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "test",
+            },
+        });
+        vm.EditMode = true;
+        vm.YamlDocument.Text = """
+            apiVersion: v1
+            kind: Namespace
+            metadata:
+              name: local-edit
+            """.ReplaceLineEndings("\n");
+
+        await cluster.Runtime.AddOrUpdateResource(new V1Namespace
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "test",
+                Labels = new Dictionary<string, string>
+                {
+                    ["server-update"] = "true",
+                },
+            },
+        });
+
+        await WaitForUiAsync(
+            () => vm.Object?.Metadata.Labels?.ContainsKey("server-update") == true);
+
+        vm.YamlDocument.Text.ShouldContain("name: local-edit");
+
+        vm.EditMode = false;
+        await WaitForUiAsync(() => vm.YamlDocument.Text.Contains("server-update", StringComparison.Ordinal));
+        vm.YamlDocument.Text.ShouldNotContain("name: local-edit");
     }
 
     [AvaloniaFact]
@@ -861,7 +1038,13 @@ public class ResourceYamlViewModelTests
         var editorPoint = GetPointForOffset(editor, offset);
         var windowPoint = editor.TextArea.TextView.TranslatePoint(editorPoint, window);
         windowPoint.ShouldNotBeNull();
-        window.InputHitTest(windowPoint!.Value).ShouldBeOfType<TextView>();
+        TextView? hitTextView = null;
+        await WaitForAsync(() =>
+        {
+            hitTextView = window.InputHitTest(windowPoint!.Value) as TextView;
+            return hitTextView is not null;
+        }, 3000);
+        hitTextView.ShouldNotBeNull();
 
         window.MouseMove(windowPoint!.Value);
 

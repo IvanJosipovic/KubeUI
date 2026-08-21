@@ -31,16 +31,13 @@ public sealed class YamlSyntaxValidationService : IYamlValidationService
 
         try
         {
-            var manifest = KubernetesYamlSerializer.Deserialize<KubernetesObject>(yaml);
-            if (modelCatalog is not null
-                && modelCatalog.TryGetResourceKind(manifest.ApiVersion ?? string.Empty, manifest.Kind ?? string.Empty, out var resourceKind)
-                && modelCatalog.IsCustomResource(resourceKind))
-            {
-                KubernetesYamlSerializer.Deserialize<GenericKubernetesObject>(yaml, strict: true);
-                return [];
-            }
-
-            KubernetesYamlSerializer.LoadAllFromString(yaml, _sharedCatalog.GetYamlTypeMap(), strict: true);
+            var typeMap = _sharedCatalog.GetYamlTypeMap();
+            KubernetesYamlSerializer.LoadAllFromString(
+                yaml,
+                key => typeMap.TryGetValue(key, out var type)
+                    ? type
+                    : ResolveCustomResourceType(key, modelCatalog),
+                strict: true);
 
             return [];
         }
@@ -82,6 +79,24 @@ public sealed class YamlSyntaxValidationService : IYamlValidationService
                     YamlDiagnosticSeverity.Error),
             ];
         }
+    }
+
+    private static Type ResolveCustomResourceType(string key, ClusterModelCatalog? modelCatalog)
+    {
+        if (modelCatalog is null)
+        {
+            throw new KeyNotFoundException(key);
+        }
+
+        var separator = key.LastIndexOf('/');
+        if (separator > 0
+            && modelCatalog.TryGetResourceKind(key[..separator], key[(separator + 1)..], out var resourceKind)
+            && modelCatalog.IsCustomResource(resourceKind))
+        {
+            return typeof(GenericKubernetesObject);
+        }
+
+        throw new KeyNotFoundException(key);
     }
 
     private static IReadOnlyList<YamlDiagnostic> CreateUnknownTypeDiagnostic(string yaml)

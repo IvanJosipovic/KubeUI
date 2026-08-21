@@ -63,6 +63,7 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
     private EditorInputHandler? _editorInputHandler;
     private KeyBinding? _forceNewSequenceItemBinding;
     private DispatcherTimer? _foldingUpdateTimer;
+    private bool _forceNoisyFoldStateUpdate;
     private YamlSchemaNode? _schemaRoot;
     private ClusterModelCatalog? _schemaCatalog;
     private GroupApiVersionKind _schemaKind;
@@ -334,9 +335,13 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
 
     private void ViewModelOnPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
+        if (e.PropertyName == nameof(ResourceYamlViewModel.HideNoisyFields))
+        {
+            _forceNoisyFoldStateUpdate = true;
+        }
+
         if (e.PropertyName is nameof(ResourceYamlViewModel.Object)
-            or nameof(ResourceYamlViewModel.EditMode)
-            or nameof(ResourceYamlViewModel.HideNoisyFields))
+            or nameof(ResourceYamlViewModel.EditMode))
         {
             PersistFoldingState(_currentViewModel);
         }
@@ -458,7 +463,9 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
     private static bool IsInlineMappingSequenceEntry(string trimmedLine)
     {
         var colon = trimmedLine.IndexOf(':', 2);
-        return colon > 2 && !string.IsNullOrWhiteSpace(trimmedLine[2..colon]);
+        return colon > 2
+            && (colon + 1 == trimmedLine.Length || char.IsWhiteSpace(trimmedLine[colon + 1]))
+            && !string.IsNullOrWhiteSpace(trimmedLine[2..colon]);
     }
 
     private bool TryForceNewSequenceItem()
@@ -822,6 +829,24 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
         {
             try
             {
+                var previousNoisyStates = new Dictionary<string, Queue<bool>>(StringComparer.Ordinal);
+                foreach (var folding in _foldingManager.AllFoldings)
+                {
+                    if (!YamlFoldingStrategy.IsNoisyFieldFolding(AssociatedObject.Document!, folding.StartOffset, folding.EndOffset))
+                    {
+                        continue;
+                    }
+
+                    var title = folding.Title.TrimEnd();
+                    if (!previousNoisyStates.TryGetValue(title, out var states))
+                    {
+                        states = new Queue<bool>();
+                        previousNoisyStates.Add(title, states);
+                    }
+
+                    states.Enqueue(folding.IsFolded);
+                }
+
                 if (_savedFoldStates.Count == 0)
                 {
                     LoadSavedFoldStates(vm);
@@ -831,7 +856,32 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
                     .ToList();
 
                 _foldingManager.UpdateFoldings(newFoldings, firstErrorOffset);
-                RestoreFoldStates();
+                var restoredTitles = RestoreFoldStates();
+                foreach (var folding in _foldingManager.AllFoldings)
+                {
+                    if (!YamlFoldingStrategy.IsNoisyFieldFolding(AssociatedObject.Document!, folding.StartOffset, folding.EndOffset))
+                    {
+                        continue;
+                    }
+
+                    var title = folding.Title.TrimEnd();
+                    if (!_forceNoisyFoldStateUpdate && restoredTitles.Contains(title))
+                    {
+                        continue;
+                    }
+
+                    if (!_forceNoisyFoldStateUpdate
+                        && previousNoisyStates.TryGetValue(title, out var previousStates)
+                        && previousStates.Count > 0)
+                    {
+                        folding.IsFolded = previousStates.Dequeue();
+                        continue;
+                    }
+
+                    folding.IsFolded = vm.HideNoisyFields;
+                }
+
+                _forceNoisyFoldStateUpdate = false;
             }
             catch (Exception ex)
             {
@@ -861,16 +911,20 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
         }
     }
 
-    private void RestoreFoldStates()
+    private HashSet<string> RestoreFoldStates()
     {
+        var restoredTitles = new HashSet<string>(StringComparer.Ordinal);
         foreach (var folding in _foldingManager!.AllFoldings)
         {
             var title = folding.Title.TrimEnd();
             if (_savedFoldStates.TryGetValue(title, out var states) && states.Count > 0)
             {
                 folding.IsFolded = states.Dequeue();
+                restoredTitles.Add(title);
             }
         }
+
+        return restoredTitles;
     }
 
     private YamlSchemaNode GetSchemaRoot(ResourceYamlViewModel vm)

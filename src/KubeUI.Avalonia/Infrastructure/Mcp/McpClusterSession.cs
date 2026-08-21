@@ -198,9 +198,10 @@ internal sealed class McpClusterSession(
         var parts = apiVersion.Split('/', 2, StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
         var group = parts.Length == 2 ? parts[0] : string.Empty;
         var version = parts.Length == 2 ? parts[1] : apiVersion;
+        if (cluster.ModelCatalog.TryGetResourceKind(apiVersion, kind, out var registeredKind))
+            return registeredKind;
+
         var requestedKind = new GroupApiVersionKind(group, version, kind, string.Empty);
-        if (cluster.ModelCatalog.Contains(requestedKind))
-            return requestedKind;
 
         // Agents sometimes pass only "v1" for a custom resource. Recover that
         // form only when KubeUI has one unambiguous registered kind/version.

@@ -187,6 +187,15 @@ public static class KubernetesYaml
         return LoadAllFromStringCore(content, key => typeMap[key], strict);
     }
 
+    public static List<object> LoadAllFromString(
+        string content,
+        Func<string, Type> resolveType,
+        bool strict = false)
+    {
+        ArgumentNullException.ThrowIfNull(resolveType);
+        return LoadAllFromStringCore(content, resolveType, strict);
+    }
+
     public static List<object> LoadAllFromString(string content, FrozenDictionary<string, Type> typeMap, bool strict)
     {
         return LoadAllFromStringCore(content, key => typeMap[key], strict);

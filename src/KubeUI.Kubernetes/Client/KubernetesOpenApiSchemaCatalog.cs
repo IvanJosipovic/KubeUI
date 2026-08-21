@@ -69,8 +69,11 @@ public sealed class KubernetesOpenApiSchemaCatalog
                 LoadExternalRefs = true,
                 BaseUrl = schemaUri,
             };
+            await using var schemaStream = await schemaResponse.Content
+                .ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
             var readResult = await OpenApiDocument.LoadAsync(
-                schemaUri.AbsoluteUri,
+                schemaStream,
+                "json",
                 readerSettings,
                 cancellationToken).ConfigureAwait(false);
 
@@ -277,7 +280,10 @@ public sealed class KubernetesOpenApiSchemaCatalog
             yield break;
         }
 
-        yield return $"io.k8s.api.{kind.Group}.{kind.ApiVersion}.{kind.Kind}";
+        var group = kind.Group.EndsWith(".k8s.io", StringComparison.Ordinal)
+            ? kind.Group[..^".k8s.io".Length]
+            : kind.Group;
+        yield return $"io.k8s.api.{group}.{kind.ApiVersion}.{kind.Kind}";
 
         if (kind.Group.Contains('.', StringComparison.Ordinal))
         {

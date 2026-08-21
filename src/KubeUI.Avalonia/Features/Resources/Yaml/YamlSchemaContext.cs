@@ -404,40 +404,57 @@ internal sealed record YamlSchemaNode(
     public bool IsSequence => SchemaType == JsonSchemaType.Array || Items is not null;
 
     public static YamlSchemaNode Create(string name, IOpenApiSchema? schema, ClusterModelCatalog catalog)
+        => Create(name, schema, catalog, new HashSet<IOpenApiSchema>(ReferenceEqualityComparer.Instance));
+
+    private static YamlSchemaNode Create(
+        string name,
+        IOpenApiSchema? schema,
+        ClusterModelCatalog catalog,
+        HashSet<IOpenApiSchema> activeSchemas)
     {
         var description = schema?.Description;
         schema = catalog.OpenApiSchemas.ExpandReferences(schema);
         if (schema is null)
             return new(name, JsonSchemaType.Object, null, new Dictionary<string, YamlSchemaNode>(StringComparer.Ordinal), null, []);
 
-        var variants = GetSchemaVariants(schema, catalog).ToArray();
-        var properties = new Dictionary<string, YamlSchemaNode>(StringComparer.Ordinal);
-        foreach (var property in variants.SelectMany(variant => variant.Properties ?? EmptyProperties))
-        {
-            properties[property.Key] = Create(property.Key, property.Value, catalog);
-        }
+        if (!activeSchemas.Add(schema))
+            return new(name, schema.Type ?? JsonSchemaType.Object, description, new Dictionary<string, YamlSchemaNode>(StringComparer.Ordinal), null, []);
 
-        var itemsSchema = variants.Select(variant => variant.Items).FirstOrDefault(items => items is not null);
-        var items = itemsSchema is null ? null : Create(name, itemsSchema, catalog);
-        var schemaType = variants.Select(variant => variant.Type).FirstOrDefault(type => type is not null);
-        var variantDescription = variants.Select(variant => variant.Description).FirstOrDefault(value => !string.IsNullOrWhiteSpace(value));
-        var enumValues = variants
-            .SelectMany(variant => variant.Enum ?? [])
-            .Select(value => value?.ToString() ?? string.Empty)
-            .Where(value => value.Length > 0)
-            .Distinct(StringComparer.Ordinal)
-            .ToArray();
-        return new(
-            name,
-            properties.Count > 0
-                ? JsonSchemaType.Object
-                : items is not null
-                    ? JsonSchemaType.Array
-                    : schemaType ?? JsonSchemaType.String,
-            description ?? variantDescription,
-            properties,
-            items,
-            enumValues);
+        try
+        {
+            var variants = GetSchemaVariants(schema, catalog).ToArray();
+            var properties = new Dictionary<string, YamlSchemaNode>(StringComparer.Ordinal);
+            foreach (var property in variants.SelectMany(variant => variant.Properties ?? EmptyProperties))
+            {
+                properties[property.Key] = Create(property.Key, property.Value, catalog, activeSchemas);
+            }
+
+            var itemsSchema = variants.Select(variant => variant.Items).FirstOrDefault(items => items is not null);
+            var items = itemsSchema is null ? null : Create(name, itemsSchema, catalog, activeSchemas);
+            var schemaType = variants.Select(variant => variant.Type).FirstOrDefault(type => type is not null);
+            var variantDescription = variants.Select(variant => variant.Description).FirstOrDefault(value => !string.IsNullOrWhiteSpace(value));
+            var enumValues = variants
+                .SelectMany(variant => variant.Enum ?? [])
+                .Select(value => value?.ToString() ?? string.Empty)
+                .Where(value => value.Length > 0)
+                .Distinct(StringComparer.Ordinal)
+                .ToArray();
+            return new(
+                name,
+                properties.Count > 0
+                    ? JsonSchemaType.Object
+                    : items is not null
+                        ? JsonSchemaType.Array
+                        : schemaType ?? JsonSchemaType.String,
+                description ?? variantDescription,
+                properties,
+                items,
+                enumValues);
+        }
+        finally
+        {
+            activeSchemas.Remove(schema);
+        }
     }
 
     private static IEnumerable<IOpenApiSchema> GetSchemaVariants(IOpenApiSchema schema, ClusterModelCatalog catalog)

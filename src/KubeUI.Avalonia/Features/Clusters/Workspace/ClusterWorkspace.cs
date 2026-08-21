@@ -16,6 +16,7 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<ClusterWorkspace> _logger;
     private readonly ConcurrentDictionary<GroupApiVersionKind, IResourceConfig> _resourceConfigs = new();
+    private readonly ConcurrentDictionary<string, long> _customResourceDefinitionGenerations = new(StringComparer.Ordinal);
     private readonly CancellationTokenSource _disposeCancellation = new();
     private readonly object _connectLock = new();
     private bool _disposed;
@@ -333,6 +334,12 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
             return;
         }
 
+        var definitionName = crd.Name() ?? string.Empty;
+        var generation = _customResourceDefinitionGenerations.AddOrUpdate(
+            definitionName,
+            1,
+            static (_, current) => current + 1);
+
         if (eventType == WatchEventType.Deleted)
         {
             RemoveCustomResourceDefinition(kind);
@@ -340,7 +347,7 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
         else
         {
             RemoveOtherCustomResourceVersions(kind);
-            _ = ProcessCustomResourceDefinitionAsync(crd);
+            _ = ProcessCustomResourceDefinitionAsync(crd, definitionName, generation);
         }
     }
 
@@ -360,7 +367,10 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
         }
     }
 
-    private async Task ProcessCustomResourceDefinitionAsync(V1CustomResourceDefinition crd)
+    private async Task ProcessCustomResourceDefinitionAsync(
+        V1CustomResourceDefinition crd,
+        string definitionName,
+        long generation)
     {
         using var activity = StartWorkspaceActivity(nameof(ProcessCustomResourceDefinitionAsync));
         activity?.SetTag("kubernetes.crd.name", crd.Name());
@@ -374,6 +384,12 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
             await UpdateResourceConfigPermissionsAndEvaluateAsync(resourceConfig).ConfigureAwait(false);
 
             if (!resourceConfig.CanListAndWatch)
+            {
+                return;
+            }
+
+            if (!_customResourceDefinitionGenerations.TryGetValue(definitionName, out var currentGeneration)
+                || currentGeneration != generation)
             {
                 return;
             }

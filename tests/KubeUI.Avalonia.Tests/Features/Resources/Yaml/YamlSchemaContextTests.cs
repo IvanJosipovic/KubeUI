@@ -82,6 +82,77 @@ public class YamlSchemaContextTests
     }
 
     [Fact]
+    public void Resolve_ReturnsDocumentationForContainerFieldsAfterEnvironmentSequence()
+    {
+        var document = new TextDocument(
+            """
+            apiVersion: v1
+            kind: Pod
+            spec:
+              containers:
+              - env:
+                - name: ENVIRONMENT
+                  value: production
+                image: example/image:latest
+                imagePullPolicy: IfNotPresent
+                name: app
+            """);
+
+        var policy = YamlSchemaContext.Resolve(
+            document,
+            document.Text.IndexOf("imagePullPolicy", StringComparison.Ordinal) + 2,
+            GroupApiVersionKind.From<V1Pod>(),
+            s_modelCache);
+        var name = YamlSchemaContext.Resolve(
+            document,
+            document.Text.LastIndexOf("name: app", StringComparison.Ordinal) + 2,
+            GroupApiVersionKind.From<V1Pod>(),
+            s_modelCache);
+
+        policy.ContainerType.Name.ShouldBe("containers");
+        policy.Documentation.ShouldNotBeNull();
+        policy.Documentation.Label.ShouldBe("imagePullPolicy");
+        name.Documentation.ShouldNotBeNull();
+        name.Documentation.Label.ShouldBe("name");
+    }
+
+    [Fact]
+    public void Resolve_ReturnsDocumentationAfterNestedManagedFields()
+    {
+        var document = new TextDocument(
+            """
+            apiVersion: v1
+            kind: Pod
+            metadata:
+              managedFields:
+              - fieldsV1:
+                  f:metadata:
+                    f:annotations:
+                      .: {}
+                  f:spec:
+                    f:containers:
+                      k:{"name":"alloy"}: {}
+                manager: kubelet
+                operation: Update
+              name: alloy
+            spec:
+              containers:
+              - image: example/alloy:latest
+                imagePullPolicy: IfNotPresent
+                name: alloy
+            """);
+
+        var policy = YamlSchemaContext.Resolve(
+            document,
+            document.Text.IndexOf("imagePullPolicy", StringComparison.Ordinal) + 2,
+            GroupApiVersionKind.From<V1Pod>(),
+            s_modelCache);
+
+        policy.Documentation.ShouldNotBeNull();
+        policy.Documentation.Label.ShouldBe("imagePullPolicy");
+    }
+
+    [Fact]
     public void Resolve_UsesOpenApiPropertyDescription()
     {
         var cache = CreateModelCacheWithOpenApi("Widget desired state.");

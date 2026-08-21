@@ -363,9 +363,32 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
 
             _resourceInformerTasks.Add(informer.RunInfinite(GetResourceInformerCancellationToken()));
             await informer.ReadyAsync(GetResourceInformerCancellationToken()).ConfigureAwait(false);
+
+            if (container.IsSeeded)
+            {
+                ResourceSeeded?.Invoke(this, kind);
+            }
         });
 
-        await seedTask.Value.ConfigureAwait(false);
+        try
+        {
+            await seedTask.Value.ConfigureAwait(false);
+        }
+        catch
+        {
+            container.RemoveSeedTask(seedTask);
+            throw;
+        }
+
+        if (waitForReady)
+        {
+            await IsResourceReady<GenericKubernetesObject>(kind).ConfigureAwait(false);
+        }
+
+        if (!container.IsSeeded)
+        {
+            container.RemoveSeedTask(seedTask);
+        }
     }
 
     private Task SeedResource(Type resourceType, bool waitForReady)
@@ -391,19 +414,27 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
                 return;
             }
 
-            var container = (ContainerClass<GenericKubernetesObject>)Objects[kind];
-            switch (eventType)
+            ResourceInformerCallbackGuard.Execute(_logger, eventType, kind, generic, () =>
             {
-                case WatchEventType.Added:
-                case WatchEventType.Modified:
-                    container.Items.AddOrUpdate(generic);
-                    break;
-                case WatchEventType.Deleted:
-                    container.Items.Remove(generic);
-                    break;
-            }
+                if (!Objects.TryGetValue(kind, out var objectContainer)
+                    || objectContainer is not ContainerClass<GenericKubernetesObject> container)
+                {
+                    return;
+                }
 
-            OnChange?.Invoke(eventType, kind, generic);
+                switch (eventType)
+                {
+                    case WatchEventType.Added:
+                    case WatchEventType.Modified:
+                        container.Items.AddOrUpdate(generic);
+                        break;
+                    case WatchEventType.Deleted:
+                        container.Items.Remove(generic);
+                        break;
+                }
+
+                OnChange?.Invoke(eventType, kind, generic);
+            });
         });
     }
 
@@ -521,18 +552,31 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
                 return;
             }
 
-            await ModelCatalog.OpenApiSchemas.LoadAsync(
-                kubernetesClient,
-                _resourceInformerCancellationTokenSource?.Token ?? CancellationToken.None).ConfigureAwait(false);
+            const int maxAttempts = 3;
+            for (var attempt = 1; attempt <= maxAttempts; attempt++)
+            {
+                try
+                {
+                    await ModelCatalog.OpenApiSchemas.LoadAsync(
+                        kubernetesClient,
+                        _resourceInformerCancellationTokenSource?.Token ?? CancellationToken.None).ConfigureAwait(false);
 
-            Volatile.Write(ref _openApiSchemasLoadAttempted, 1);
-            activity?.SetTag("kubernetes.openapi.schema.count", ModelCatalog.OpenApiSchemas.Count);
-            activity?.SetStatus(ActivityStatusCode.Ok);
-        }
-        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException)
-        {
-            activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
-            _logger.LogDebug(ex, "Unable to load Kubernetes OpenAPI v3 schemas for {name}.", Name);
+                    Volatile.Write(ref _openApiSchemasLoadAttempted, 1);
+                    activity?.SetTag("kubernetes.openapi.schema.count", ModelCatalog.OpenApiSchemas.Count);
+                    activity?.SetStatus(ActivityStatusCode.Ok);
+                    return;
+                }
+                catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException)
+                {
+                    activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
+                    _logger.LogDebug(
+                        ex,
+                        "Unable to load Kubernetes OpenAPI v3 schemas for {name} on attempt {attempt} of {maxAttempts}.",
+                        Name,
+                        attempt,
+                        maxAttempts);
+                }
+            }
         }
         finally
         {
@@ -953,7 +997,13 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
     {
         token ??= CancellationToken.None;
 
-        var kind = GroupApiVersionKind.From<T>();
+        return await IsResourceReady<T>(GroupApiVersionKind.From<T>(), token).ConfigureAwait(false);
+    }
+
+    private async Task<bool> IsResourceReady<T>(GroupApiVersionKind kind, CancellationToken? token = null)
+        where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    {
+        token ??= CancellationToken.None;
 
         if (Objects.TryGetValue(kind, out var obj) && obj is ContainerClass<T> container)
         {
@@ -961,7 +1011,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
             await Task.WhenAll(tasks).WaitAsync(token.Value).ConfigureAwait(false);
         }
 
-        return false;
+        return true;
     }
 
     private void StopPortForwarders()

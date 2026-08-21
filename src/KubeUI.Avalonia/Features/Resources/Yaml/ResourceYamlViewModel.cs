@@ -24,7 +24,6 @@ public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
     private bool _actionResultFromValidation;
     private CancellationTokenSource? _validationDebounceCts;
     private GroupApiVersionKind? _resourceKind;
-    private Func<IKubernetesObject<V1ObjectMeta>, IKubernetesObject<V1ObjectMeta>>? _cloneObject;
 
     internal TimeSpan ValidationDebounceDelay { get; set; } = TimeSpan.FromSeconds(1);
 
@@ -117,15 +116,12 @@ public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
 
     public void Initialize(ClusterWorkspace cluster, IKubernetesObject<V1ObjectMeta> @object)
     {
-        _cloneObject = null;
         Initialize(cluster, @object, resourceKind: null);
     }
 
     public void Initialize<T>(ClusterWorkspace cluster, T @object)
         where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
-        _cloneObject = value => Utilities.CloneObject((T)value);
-
         if (@object is not GenericKubernetesObject
             && !cluster.Runtime.ModelCatalog.TryGetResourceKind(@object, out _))
         {
@@ -172,27 +168,16 @@ public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
 
     private void SetYamlDocument()
     {
-        if (!EditMode && HideNoisyFields)
-        {
-            var objectClone = _cloneObject?.Invoke(Object)
-                ?? throw new InvalidOperationException("YAML resource was initialized without a typed clone strategy.");
-
-            objectClone.Metadata?.ManagedFields = null;
-            objectClone.Metadata?.Annotations?.Remove("kubectl.kubernetes.io/last-applied-configuration");
-
-            YamlDocument.Text = _yamlSerializer.Serialize(objectClone);
-        }
-        else
-        {
-            YamlDocument.Text = _yamlSerializer.Serialize(Object!);
-        }
+        YamlDocument.Text = _yamlSerializer.Serialize(Object!);
     }
 
     protected override void OnPropertyChanged(PropertyChangedEventArgs e)
     {
         base.OnPropertyChanged(e);
 
-        if (e.PropertyName == nameof(Object) || e.PropertyName == nameof(EditMode) || e.PropertyName == nameof(HideNoisyFields))
+        if ((e.PropertyName == nameof(Object) && !EditMode)
+            || (e.PropertyName == nameof(EditMode) && !EditMode)
+            || e.PropertyName == nameof(HideNoisyFields))
         {
             if (e.PropertyName == nameof(EditMode) && !EditMode)
             {

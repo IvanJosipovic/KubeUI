@@ -46,6 +46,7 @@ public sealed class YamlHoverToolTipBehavior : Behavior<TextEditor>
 
     protected override void OnDetaching()
     {
+        Interlocked.Increment(ref _hoverRequest);
         if (AssociatedObject != null)
         {
             AssociatedObject.DataContextChanged -= OnDataContextChanged;

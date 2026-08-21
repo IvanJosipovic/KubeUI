@@ -16,6 +16,13 @@ public static class KubernetesTestRuntimeServiceCollectionExtensions
         {
             var catalog = new KubernetesModelCatalog();
             catalog.Register(GroupApiVersionKind.From<V1Pod>(), typeof(V1Pod));
+            catalog.Register(GroupApiVersionKind.From<V1Namespace>(), typeof(V1Namespace));
+            catalog.Register(GroupApiVersionKind.From<V1ServiceAccount>(), typeof(V1ServiceAccount));
+            catalog.Register(GroupApiVersionKind.From<V1Secret>(), typeof(V1Secret));
+            catalog.Register(GroupApiVersionKind.From<V1ClusterRole>(), typeof(V1ClusterRole));
+            catalog.Register(GroupApiVersionKind.From<V1ClusterRoleBinding>(), typeof(V1ClusterRoleBinding));
+            catalog.Register(GroupApiVersionKind.From<V1RoleBinding>(), typeof(V1RoleBinding));
+            catalog.Register(GroupApiVersionKind.From<V1CustomResourceDefinition>(), typeof(V1CustomResourceDefinition));
             return catalog;
         });
         services.AddSingleton<TestClusterGenerator>();
