@@ -63,6 +63,7 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
     private EditorInputHandler? _editorInputHandler;
     private KeyBinding? _forceNewSequenceItemBinding;
     private DispatcherTimer? _foldingUpdateTimer;
+    private bool _updateFoldingsAfterObjectRefresh;
     private bool _forceNoisyFoldStateUpdate;
     private YamlSchemaNode? _schemaRoot;
     private ClusterModelCatalog? _schemaCatalog;
@@ -266,6 +267,15 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
     private void Editor_TextChanged(object? sender, EventArgs e)
     {
         CloseCompletionWindow();
+
+        if (_updateFoldingsAfterObjectRefresh)
+        {
+            _updateFoldingsAfterObjectRefresh = false;
+            _foldingUpdateTimer?.Stop();
+            UpdateFoldings();
+            return;
+        }
+
         ScheduleFoldingUpdate();
     }
 
@@ -347,7 +357,7 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
 
             if (e.PropertyName == nameof(ResourceYamlViewModel.Object))
             {
-                UpdateFoldings();
+                _updateFoldingsAfterObjectRefresh = true;
             }
         }
     }

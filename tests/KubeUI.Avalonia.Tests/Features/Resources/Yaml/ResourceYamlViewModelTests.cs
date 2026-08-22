@@ -325,6 +325,41 @@ public class ResourceYamlViewModelTests
     }
 
     [AvaloniaFact]
+    public async Task ResourceYamlView_PreservesUserFoldingsWhenObjectRefreshes()
+    {
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
+
+        var cluster = await Application.Current.CreateClusterAsync();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
+        vm.Initialize(cluster, CreatePod("before", includeLabels: false, extraEnv: true));
+
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
+        view.DataContext = vm;
+        window.Content = view;
+        window.Show();
+
+        await TestApplicationExtensions.WaitForUiAsync();
+
+        var editor = view.FindControl<TextEditor>("Editor");
+        editor.ShouldNotBeNull();
+        var behavior = Interaction.GetBehaviors(editor).OfType<YamlEditorBehavior>().Single();
+        var foldingManager = GetFoldingManager(behavior);
+        foldingManager.ShouldNotBeNull();
+
+        await WaitForUiAsync(
+            () => foldingManager.AllFoldings.Any(folding => folding.Title.TrimEnd() == "spec:"));
+
+        foldingManager.AllFoldings.Single(folding => folding.Title.TrimEnd() == "spec:").IsFolded = true;
+
+        vm.Object = CreatePod("after", includeLabels: false, extraEnv: true);
+
+        foldingManager.AllFoldings
+            .Single(folding => folding.Title.TrimEnd() == "spec:")
+            .IsFolded
+            .ShouldBeTrue();
+    }
+
+    [AvaloniaFact]
     public void YamlFoldingStrategy_CreatesFoldingForMappingWithSequenceChildren()
     {
         var text = new TextDocument();
