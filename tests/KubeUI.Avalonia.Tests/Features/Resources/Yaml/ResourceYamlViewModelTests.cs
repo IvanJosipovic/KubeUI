@@ -3071,6 +3071,29 @@ public class ResourceYamlViewModelTests
     }
 
     [AvaloniaFact]
+    public void YamlSyntaxValidationService_AnchorsDuplicateKeyInSequenceMapping_ToDuplicateKey()
+    {
+        var service = Application.Current.GetRequiredTestService<IYamlValidationService>();
+
+        var diagnostics = service.Validate("""
+            apiVersion: v1
+            kind: Pod
+            metadata:
+              name: temp
+            spec:
+              containers:
+                - name: app
+                  image: first
+                  image: second
+            """.ReplaceLineEndings("\n"));
+
+        diagnostics.Count.ShouldBe(1);
+        diagnostics[0].Message.ShouldContain("duplicate key image");
+        diagnostics[0].StartLine.ShouldBe(9);
+        diagnostics[0].StartColumn.ShouldBe(7);
+    }
+
+    [AvaloniaFact]
     public void YamlSyntaxValidationService_AcceptsCrdInstanceWithJsonModel()
     {
         var service = Application.Current.GetRequiredTestService<IYamlValidationService>();

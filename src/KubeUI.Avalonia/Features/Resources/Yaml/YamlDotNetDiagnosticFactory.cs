@@ -79,28 +79,36 @@ internal static class YamlDotNetDiagnosticFactory
     {
         var lines = yaml.ReplaceLineEndings("\n").Split('\n');
         var firstIndex = (int)firstKeyLine - 1;
-        if (firstIndex < 0 || firstIndex >= lines.Length || !TryGetMappingKey(lines[firstIndex], out var key, out var indent))
+        if (firstIndex < 0 || firstIndex >= lines.Length)
         {
             location = default!;
             return false;
         }
 
-        for (var i = firstIndex + 1; i < lines.Length; i++)
+        for (var i = firstIndex; i < lines.Length; i++)
         {
-            if (!TryGetMappingKey(lines[i], out var candidate, out var candidateIndent))
+            if (!TryGetMappingKey(lines[i], out var key, out var indent, out _))
             {
                 continue;
             }
 
-            if (candidateIndent < indent)
+            for (var j = i + 1; j < lines.Length; j++)
             {
-                break;
-            }
+                if (!TryGetMappingKey(lines[j], out var candidate, out var candidateIndent, out var candidateColumn))
+                {
+                    continue;
+                }
 
-            if (candidateIndent == indent && string.Equals(candidate, key, StringComparison.Ordinal))
-            {
-                location = new YamlDiagnosticLocation(i + 1, indent + 1, i + 1, indent + key.Length + 1);
-                return true;
+                if (candidateIndent < indent)
+                {
+                    break;
+                }
+
+                if (candidateIndent == indent && string.Equals(candidate, key, StringComparison.Ordinal))
+                {
+                    location = new YamlDiagnosticLocation(j + 1, candidateColumn, j + 1, candidateColumn + candidate.Length);
+                    return true;
+                }
             }
         }
 
@@ -108,12 +116,27 @@ internal static class YamlDotNetDiagnosticFactory
         return false;
     }
 
-    private static bool TryGetMappingKey(string line, out string key, out int indent)
+    private static bool TryGetMappingKey(string line, out string key, out int indent, out int keyColumn)
     {
         var trimmed = line.TrimStart();
-        indent = line.Length - trimmed.Length;
+        var lineIndent = line.Length - trimmed.Length;
+        if (trimmed.StartsWith('-')
+            && (trimmed.Length == 1 || char.IsWhiteSpace(trimmed[1])))
+        {
+            trimmed = trimmed[1..].TrimStart();
+            keyColumn = lineIndent + line[lineIndent..].IndexOf(trimmed, StringComparison.Ordinal) + 1;
+            indent = keyColumn - 1;
+        }
+        else
+        {
+            keyColumn = lineIndent + 1;
+            indent = lineIndent;
+        }
+
         var separator = trimmed.IndexOf(':');
-        if (separator <= 0 || trimmed.StartsWith('#'))
+        if (separator <= 0
+            || trimmed.StartsWith('#')
+            || (separator + 1 < trimmed.Length && !char.IsWhiteSpace(trimmed[separator + 1])))
         {
             key = string.Empty;
             return false;
