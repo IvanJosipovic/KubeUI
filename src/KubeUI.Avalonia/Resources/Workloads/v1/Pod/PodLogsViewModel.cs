@@ -37,13 +37,13 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     public partial Vector ScrollOffset { get; set; }
 
+    internal const int MaxLogEntries = 10_000;
+
     private Stream? _stream;
 
     private StreamReader? _streamReader;
 
-    private readonly int _lines = 100;
-
-    private bool _isConnected;
+    private CancellationTokenSource? _connectionCancellation;
 
     public PodLogsViewModel(ILogger<PodLogsViewModel> logger)
     {
@@ -53,48 +53,75 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
 
     public async Task Connect()
     {
+        Disconnect();
+
+        var connectionCancellation = new CancellationTokenSource();
+        _connectionCancellation = connectionCancellation;
+
         try
         {
             Logs.Text = string.Empty;
 
-            _stream = await Cluster!.Runtime.Client!.CoreV1.ReadNamespacedPodLogAsync(Object.Name(), Object.Namespace(), container: ContainerName, tailLines: _lines, previous: Previous, follow: true, pretty: true, timestamps: Timestamps);
+            Stream stream = await Cluster!.Runtime.Client!.CoreV1.ReadNamespacedPodLogAsync(Object.Name(), Object.Namespace(), container: ContainerName, tailLines: 100, previous: Previous, follow: true, pretty: true, timestamps: Timestamps, cancellationToken: connectionCancellation.Token);
 
-            _streamReader = new StreamReader(_stream);
-
-            _isConnected = true;
-
-            _ = Task.Run(async () =>
+            if (connectionCancellation.IsCancellationRequested)
             {
-                while (_isConnected)
-                {
-                    try
-                    {
-                        var log = await _streamReader.ReadLineAsync();
+                stream.Dispose();
+                return;
+            }
 
-                        if (!string.IsNullOrEmpty(log))
-                        {
-                            await Dispatcher.UIThread.InvokeAsync(() => Logs.Insert(Logs.TextLength, log + Environment.NewLine), DispatcherPriority.Background);
-                        }
-                    }
-                    catch (IOException ex) when (ex.Message.Equals("The request was aborted."))
-                    {
-                        _isConnected = false;
+            StreamReader streamReader = new(stream);
+            _stream = stream;
+            _streamReader = streamReader;
 
-                        break;
-                    }
-                    catch (ObjectDisposedException)
-                    {
-                        _isConnected = false;
-
-                        break;
-                    }
-                }
-            });
+            _ = ReadLogsAsync(streamReader, connectionCancellation);
+        }
+        catch (OperationCanceledException) when (connectionCancellation.IsCancellationRequested)
+        {
         }
         catch (Exception ex)
         {
             //todo display notification
             _logger.LogError(ex, "Unable to View Logs");
+        }
+    }
+
+    private async Task ReadLogsAsync(StreamReader streamReader, CancellationTokenSource connectionCancellation)
+    {
+        try
+        {
+            while (!connectionCancellation.IsCancellationRequested)
+            {
+                var log = await streamReader.ReadLineAsync(connectionCancellation.Token);
+
+                if (log == null)
+                {
+                    break;
+                }
+
+                if (!string.IsNullOrEmpty(log))
+                {
+                    await Dispatcher.UIThread.InvokeAsync(() => AppendLog(log), DispatcherPriority.Background);
+                }
+            }
+        }
+        catch (OperationCanceledException) when (connectionCancellation.IsCancellationRequested)
+        {
+        }
+        catch (IOException ex) when (ex.Message.Equals("The request was aborted.", StringComparison.Ordinal))
+        {
+        }
+    }
+
+    internal void AppendLog(string log)
+    {
+        Logs.Insert(Logs.TextLength, log + Environment.NewLine);
+
+        var excessLines = Logs.LineCount - (MaxLogEntries + 1);
+        if (excessLines > 0)
+        {
+            var lastLineToRemove = Logs.GetLineByNumber(excessLines);
+            Logs.Remove(0, lastLineToRemove.TotalLength);
         }
     }
 
@@ -116,11 +143,17 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
 
     public void Dispose()
     {
-        _isConnected = false;
+        Disconnect();
+    }
 
+    private void Disconnect()
+    {
+        _connectionCancellation?.Cancel();
         _stream?.Dispose();
-
         _streamReader?.Dispose();
+        _connectionCancellation?.Dispose();
+        _connectionCancellation = null;
+        _stream = null;
+        _streamReader = null;
     }
 }
-
