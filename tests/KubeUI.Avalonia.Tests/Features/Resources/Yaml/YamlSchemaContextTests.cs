@@ -484,6 +484,40 @@ public class YamlSchemaContextTests
     }
 
     [Fact]
+    public void Resolve_ReturnsDocumentationForMetadataNameAndNamespaceAfterManagedFields()
+    {
+        var document = new TextDocument(
+            """
+            apiVersion: v1
+            kind: ConfigMap
+            metadata:
+              annotations:
+                meta.helm.sh/release-name: cloudnative-pg
+              managedFields:
+              - apiVersion: v1
+                fieldsType: FieldsV1
+                fieldsV1:
+                  f:metadata:
+                    f:annotations:
+                      .: {}
+              name: cnpg-controller-manager-config
+              namespace: cnpg-system
+            """);
+
+        var nameOffset = document.Text.LastIndexOf("name: cnpg", StringComparison.Ordinal) + 1;
+        var namespaceOffset = document.Text.LastIndexOf("namespace: cnpg", StringComparison.Ordinal) + 1;
+
+        var nameContext = YamlSchemaContext.Resolve(document, nameOffset, GroupApiVersionKind.From<V1ConfigMap>(), s_modelCache);
+        var namespaceContext = YamlSchemaContext.Resolve(document, namespaceOffset, GroupApiVersionKind.From<V1ConfigMap>(), s_modelCache);
+
+        nameContext.ContainerType.Name.ShouldBe("metadata");
+        nameContext.Documentation.ShouldNotBeNull();
+        nameContext.Documentation.Label.ShouldBe("name");
+        namespaceContext.Documentation.ShouldNotBeNull();
+        namespaceContext.Documentation.Label.ShouldBe("namespace");
+    }
+
+    [Fact]
     public void Resolve_ReturnsDocumentationForLatePodSpecFieldInLargePodManifest()
     {
         var document = new TextDocument(

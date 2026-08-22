@@ -131,7 +131,28 @@ internal static class YamlSchemaContext
     internal static YamlSchemaNode CreateRoot(GroupApiVersionKind kind, ClusterModelCatalog modelCache)
     {
         ArgumentNullException.ThrowIfNull(modelCache);
-        return YamlSchemaNode.Create(kind.Kind, modelCache.OpenApiSchemas.GetSchema(kind), modelCache);
+        var root = YamlSchemaNode.Create(kind.Kind, modelCache.OpenApiSchemas.GetSchema(kind), modelCache);
+        if (root.Properties.ContainsKey("metadata"))
+        {
+            return root;
+        }
+
+        var properties = new Dictionary<string, YamlSchemaNode>(root.Properties, StringComparer.Ordinal)
+        {
+            ["metadata"] = new YamlSchemaNode(
+                "metadata",
+                JsonSchemaType.Object,
+                null,
+                new Dictionary<string, YamlSchemaNode>(StringComparer.Ordinal)
+                {
+                    ["name"] = new YamlSchemaNode("name", JsonSchemaType.String, null, new Dictionary<string, YamlSchemaNode>(StringComparer.Ordinal), null, []),
+                    ["namespace"] = new YamlSchemaNode("namespace", JsonSchemaType.String, null, new Dictionary<string, YamlSchemaNode>(StringComparer.Ordinal), null, []),
+                },
+                null,
+                []),
+        };
+
+        return root with { Properties = properties };
     }
 
     private static void ProcessLine(List<YamlFrame> frames, string text)
