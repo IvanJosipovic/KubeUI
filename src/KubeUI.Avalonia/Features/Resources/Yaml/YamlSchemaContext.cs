@@ -131,28 +131,7 @@ internal static class YamlSchemaContext
     internal static YamlSchemaNode CreateRoot(GroupApiVersionKind kind, ClusterModelCatalog modelCache)
     {
         ArgumentNullException.ThrowIfNull(modelCache);
-        var root = YamlSchemaNode.Create(kind.Kind, modelCache.OpenApiSchemas.GetSchema(kind), modelCache);
-        if (root.Properties.ContainsKey("metadata"))
-        {
-            return root;
-        }
-
-        var properties = new Dictionary<string, YamlSchemaNode>(root.Properties, StringComparer.Ordinal)
-        {
-            ["metadata"] = new YamlSchemaNode(
-                "metadata",
-                JsonSchemaType.Object,
-                null,
-                new Dictionary<string, YamlSchemaNode>(StringComparer.Ordinal)
-                {
-                    ["name"] = new YamlSchemaNode("name", JsonSchemaType.String, null, new Dictionary<string, YamlSchemaNode>(StringComparer.Ordinal), null, []),
-                    ["namespace"] = new YamlSchemaNode("namespace", JsonSchemaType.String, null, new Dictionary<string, YamlSchemaNode>(StringComparer.Ordinal), null, []),
-                },
-                null,
-                []),
-        };
-
-        return root with { Properties = properties };
+        return YamlSchemaNode.Create(kind.Kind, modelCache.OpenApiSchemas.GetSchema(kind), modelCache);
     }
 
     private static void ProcessLine(List<YamlFrame> frames, string text)
@@ -479,7 +458,18 @@ internal sealed record YamlSchemaNode(
     }
 
     private static IEnumerable<IOpenApiSchema> GetSchemaVariants(IOpenApiSchema schema, ClusterModelCatalog catalog)
+        => GetSchemaVariants(schema, catalog, new HashSet<IOpenApiSchema>(ReferenceEqualityComparer.Instance));
+
+    private static IEnumerable<IOpenApiSchema> GetSchemaVariants(
+        IOpenApiSchema schema,
+        ClusterModelCatalog catalog,
+        HashSet<IOpenApiSchema> visited)
     {
+        if (!visited.Add(schema))
+        {
+            yield break;
+        }
+
         yield return schema;
 
         foreach (var composed in schema.AllOf ?? [])
@@ -487,7 +477,10 @@ internal sealed record YamlSchemaNode(
             var resolved = catalog.OpenApiSchemas.ExpandReferences(composed);
             if (resolved is not null)
             {
-                yield return resolved;
+                foreach (var variant in GetSchemaVariants(resolved, catalog, visited))
+                {
+                    yield return variant;
+                }
             }
         }
 
@@ -496,7 +489,10 @@ internal sealed record YamlSchemaNode(
             var resolved = catalog.OpenApiSchemas.ExpandReferences(composed);
             if (resolved is not null)
             {
-                yield return resolved;
+                foreach (var variant in GetSchemaVariants(resolved, catalog, visited))
+                {
+                    yield return variant;
+                }
             }
         }
 
@@ -505,7 +501,10 @@ internal sealed record YamlSchemaNode(
             var resolved = catalog.OpenApiSchemas.ExpandReferences(composed);
             if (resolved is not null)
             {
-                yield return resolved;
+                foreach (var variant in GetSchemaVariants(resolved, catalog, visited))
+                {
+                    yield return variant;
+                }
             }
         }
     }

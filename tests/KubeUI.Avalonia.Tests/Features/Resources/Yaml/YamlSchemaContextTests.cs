@@ -518,6 +518,58 @@ public class YamlSchemaContextTests
     }
 
     [Fact]
+    public void Resolve_ReturnsDocumentationThroughNestedMetadataSchemaReferences()
+    {
+        var cache = new ClusterModelCatalog(new KubernetesModelCatalog());
+        var documentSchema = new OpenApiDocument
+        {
+            Components = new OpenApiComponents
+            {
+                Schemas = new Dictionary<string, IOpenApiSchema>
+                {
+                    ["io.k8s.api.core.v1.Pod"] = new OpenApiSchema
+                    {
+                        Properties = new Dictionary<string, IOpenApiSchema>
+                        {
+                            ["metadata"] = new OpenApiSchema
+                            {
+                                AllOf = [new OpenApiSchemaReference("ObjectMeta", null, "#/components/schemas/ObjectMeta")],
+                            },
+                        },
+                    },
+                    ["ObjectMeta"] = new OpenApiSchema
+                    {
+                        AllOf = [new OpenApiSchemaReference("ObjectMetaFields", null, "#/components/schemas/ObjectMetaFields")],
+                    },
+                    ["ObjectMetaFields"] = Schema(null, ("name", null), ("namespace", null)),
+                },
+            },
+        };
+        documentSchema.RegisterComponents();
+        cache.RegisterOpenApiSchema(documentSchema);
+
+        var document = new TextDocument(
+            """
+            apiVersion: v1
+            kind: Pod
+            metadata:
+              name: pod
+              namespace: default
+            """);
+
+        var nameOffset = document.Text.IndexOf("name: pod", StringComparison.Ordinal) + 1;
+        var namespaceOffset = document.Text.IndexOf("namespace: default", StringComparison.Ordinal) + 1;
+
+        var nameContext = YamlSchemaContext.Resolve(document, nameOffset, GroupApiVersionKind.From<V1Pod>(), cache);
+        var namespaceContext = YamlSchemaContext.Resolve(document, namespaceOffset, GroupApiVersionKind.From<V1Pod>(), cache);
+
+        nameContext.Documentation.ShouldNotBeNull();
+        nameContext.Documentation.Label.ShouldBe("name");
+        namespaceContext.Documentation.ShouldNotBeNull();
+        namespaceContext.Documentation.Label.ShouldBe("namespace");
+    }
+
+    [Fact]
     public void Resolve_ReturnsDocumentationForLatePodSpecFieldInLargePodManifest()
     {
         var document = new TextDocument(

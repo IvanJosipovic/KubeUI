@@ -1,6 +1,7 @@
 using System.Reflection;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
+using Avalonia.Controls.Primitives.PopupPositioning;
 using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
 using Avalonia.Input;
@@ -857,7 +858,7 @@ public class ResourceYamlViewModelTests
         var popup = GetDocumentationWindow(editor);
         popup.ShouldNotBeNull();
         popup!.ShouldBeOfType<StackPanel>();
-        ToolTip.GetIsOpen(editor).ShouldBeTrue();
+        IsDocumentationPopupOpen(editor).ShouldBeTrue();
 
         var panel = (StackPanel)popup;
         var title = panel.Children.OfType<TextBlock>().FirstOrDefault();
@@ -869,7 +870,7 @@ public class ResourceYamlViewModelTests
         shown.ShouldBeFalse();
         Dispatcher.UIThread.RunJobs();
 
-        ToolTip.GetIsOpen(editor).ShouldBeFalse();
+        IsDocumentationPopupOpen(editor).ShouldBeFalse();
     }
 
     [AvaloniaFact]
@@ -903,8 +904,8 @@ public class ResourceYamlViewModelTests
         {
             var offset = editor.Document!.Text.IndexOf(field, StringComparison.Ordinal) + 1;
             InvokeHoverTooltip(editor, offset).ShouldBeTrue(field);
-            ToolTip.GetTip(editor).ShouldNotBeNull(field);
-            ToolTip.GetIsOpen(editor).ShouldBeTrue(field);
+            GetDocumentationWindow(editor).ShouldNotBeNull(field);
+            IsDocumentationPopupOpen(editor).ShouldBeTrue(field);
         }
     }
 
@@ -936,8 +937,24 @@ public class ResourceYamlViewModelTests
 
         window.MouseMove(windowPoint!.Value);
 
-        await WaitForAsync(() => ToolTip.GetIsOpen(editor), 1000);
-        ToolTip.GetTip(editor).ShouldNotBeNull();
+        await WaitForAsync(() => IsDocumentationPopupOpen(editor), 1000);
+        GetDocumentationWindow(editor).ShouldNotBeNull();
+        var popup = GetDocumentationPopup(editor).ShouldNotBeNull();
+        popup.PlacementTarget.ShouldBe(editor.TextArea.TextView);
+        popup.Placement.ShouldBe(PlacementMode.AnchorAndGravity);
+        popup.PlacementAnchor.ShouldBe(PopupAnchor.TopLeft);
+        popup.PlacementGravity.ShouldBe(PopupGravity.BottomRight);
+        popup.PlacementConstraintAdjustment.ShouldBe(
+            PopupPositionerConstraintAdjustment.SlideX | PopupPositionerConstraintAdjustment.SlideY);
+        popup.PlacementRect.ShouldNotBeNull().X.ShouldBeGreaterThan(0);
+        popup.HorizontalOffset.ShouldBe(8);
+        popup.VerticalOffset.ShouldBe(0);
+
+        var surface = popup.Child.ShouldBeOfType<ContentControl>();
+        surface.IsHitTestVisible.ShouldBeFalse();
+        Application.Current.TryGetResource("SystemRegionBrush", Application.Current.ActualThemeVariant, out var background).ShouldBeTrue();
+        surface.Background.ShouldBe(background);
+        surface.Foreground.ShouldNotBeNull();
     }
 
     [AvaloniaFact]
@@ -967,10 +984,10 @@ public class ResourceYamlViewModelTests
         var offset = editor.Document!.Text.IndexOf("spec", StringComparison.Ordinal) + 1;
 
         InvokeHoverTooltipAtPoint(editor, GetPointForOffset(editor, offset)).ShouldBeTrue();
-        var tip = ToolTip.GetTip(editor).ShouldBeOfType<StackPanel>();
+        var tip = GetDocumentationWindow(editor).ShouldBeOfType<StackPanel>();
         tip.Children.OfType<TextBlock>().Select(x => x.Text).ShouldContain("Pod specification");
         tip.Children.OfType<TextBlock>().Select(x => x.Text).ShouldContain("object");
-        ToolTip.GetIsOpen(editor).ShouldBeTrue();
+        IsDocumentationPopupOpen(editor).ShouldBeTrue();
     }
 
     [AvaloniaFact]
@@ -1002,9 +1019,9 @@ public class ResourceYamlViewModelTests
 
         window.MouseMove(windowPoint!.Value);
 
-        await WaitForAsync(() => ToolTip.GetIsOpen(editor), 1000);
-        ToolTip.GetIsOpen(editor).ShouldBeTrue();
-        ToolTip.GetTip(editor).ShouldNotBeNull();
+        await WaitForAsync(() => IsDocumentationPopupOpen(editor), 1000);
+        IsDocumentationPopupOpen(editor).ShouldBeTrue();
+        GetDocumentationWindow(editor).ShouldNotBeNull();
     }
 
     [AvaloniaFact]
@@ -1048,9 +1065,9 @@ public class ResourceYamlViewModelTests
 
         window.MouseMove(windowPoint!.Value);
 
-        await WaitForAsync(() => ToolTip.GetIsOpen(editor), 1000);
-        ToolTip.GetIsOpen(editor).ShouldBeTrue();
-        ToolTip.GetTip(editor).ShouldNotBeNull();
+        await WaitForAsync(() => IsDocumentationPopupOpen(editor), 1000);
+        IsDocumentationPopupOpen(editor).ShouldBeTrue();
+        GetDocumentationWindow(editor).ShouldNotBeNull();
     }
 
     [AvaloniaFact]
@@ -1087,9 +1104,11 @@ public class ResourceYamlViewModelTests
             windowPoint.ShouldNotBeNull();
             window.MouseMove(windowPoint.Value);
 
-            await WaitForAsync(() => ToolTip.GetIsOpen(editor), 1000);
-            ToolTip.GetTip(editor).ShouldNotBeNull();
-            ToolTip.GetShouldUseOverlayLayer(editor).ShouldBeFalse();
+            await WaitForAsync(() => IsDocumentationPopupOpen(editor), 1000);
+            GetDocumentationWindow(editor).ShouldNotBeNull();
+            var popup = GetDocumentationPopup(editor).ShouldNotBeNull();
+            popup.PlacementTarget.ShouldBe(editor.TextArea.TextView);
+            popup.Placement.ShouldBe(PlacementMode.AnchorAndGravity);
         }
         finally
         {
@@ -1140,9 +1159,11 @@ public class ResourceYamlViewModelTests
             windowPoint.ShouldNotBeNull();
             window.MouseMove(windowPoint.Value);
 
-            await WaitForAsync(() => ToolTip.GetIsOpen(editor), 1000);
-            ToolTip.GetTip(editor).ShouldNotBeNull();
-            ToolTip.GetShouldUseOverlayLayer(editor).ShouldBeFalse();
+            await WaitForAsync(() => IsDocumentationPopupOpen(editor), 1000);
+            GetDocumentationWindow(editor).ShouldNotBeNull();
+            var popup = GetDocumentationPopup(editor).ShouldNotBeNull();
+            popup.PlacementTarget.ShouldBe(editor.TextArea.TextView);
+            popup.Placement.ShouldBe(PlacementMode.AnchorAndGravity);
         }
         finally
         {
@@ -1181,8 +1202,8 @@ public class ResourceYamlViewModelTests
         var offset = editor.Document!.Text.IndexOf("spec", StringComparison.Ordinal) + 1;
 
         InvokeHoverTooltip(editor, offset).ShouldBeTrue();
-        ToolTip.GetTip(editor).ShouldNotBeNull();
-        ToolTip.GetIsOpen(editor).ShouldBeTrue();
+        GetDocumentationWindow(editor).ShouldNotBeNull();
+        IsDocumentationPopupOpen(editor).ShouldBeTrue();
     }
 
     [AvaloniaFact]
@@ -1672,7 +1693,7 @@ public class ResourceYamlViewModelTests
 
         Dispatcher.UIThread.RunJobs();
 
-        ToolTip.GetIsOpen(editor).ShouldBeFalse();
+        IsDocumentationPopupOpen(editor).ShouldBeFalse();
     }
 
     [AvaloniaFact]
@@ -1766,14 +1787,14 @@ public class ResourceYamlViewModelTests
 
         Dispatcher.UIThread.RunJobs();
 
-        ToolTip.GetIsOpen(editor).ShouldBeTrue();
+        IsDocumentationPopupOpen(editor).ShouldBeTrue();
 
         var scrollViewer = editor.GetScrollViewer();
         scrollViewer.ShouldNotBeNull();
         scrollViewer.Offset = new Vector(0, 80);
         Dispatcher.UIThread.RunJobs();
 
-        ToolTip.GetIsOpen(editor).ShouldBeFalse();
+        IsDocumentationPopupOpen(editor).ShouldBeFalse();
     }
 
     [AvaloniaFact]
@@ -1976,7 +1997,7 @@ public class ResourceYamlViewModelTests
 
         Dispatcher.UIThread.RunJobs();
 
-        ToolTip.GetIsOpen(editor).ShouldBeFalse();
+        IsDocumentationPopupOpen(editor).ShouldBeFalse();
     }
 
     [AvaloniaFact]
@@ -3999,9 +4020,21 @@ public class ResourceYamlViewModelTests
         return point - editor.TextArea.TextView.ScrollOffset;
     }
 
+    private static Popup? GetDocumentationPopup(TextEditor editor)
+    {
+        var behavior = Interaction.GetBehaviors(editor).OfType<YamlHoverToolTipBehavior>().Single();
+        var field = typeof(YamlHoverToolTipBehavior).GetField("_hoverPopup", BindingFlags.Instance | BindingFlags.NonPublic);
+        return field?.GetValue(behavior) as Popup;
+    }
+
+    private static bool IsDocumentationPopupOpen(TextEditor editor)
+    {
+        return GetDocumentationPopup(editor)?.IsOpen == true;
+    }
+
     private static object? GetDocumentationWindow(TextEditor editor)
     {
-        return ToolTip.GetTip(editor);
+        return (GetDocumentationPopup(editor)?.Child as ContentControl)?.Content;
     }
 
     private static IReadOnlyList<string> GetDiagnosticMessages(TextEditor editor)
