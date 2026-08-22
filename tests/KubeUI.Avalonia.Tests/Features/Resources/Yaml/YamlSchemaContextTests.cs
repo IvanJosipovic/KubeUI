@@ -171,6 +171,7 @@ public class YamlSchemaContextTests
         context.Documentation.PropertySummary.ShouldBe("Widget desired state.");
     }
 
+    [Fact]
     public void Resolve_NormalizesOpenApiDocumentationWhitespace()
     {
         var cache = CreateModelCacheWithOpenApi("An opaque value that represents the internal version\n of this object.");

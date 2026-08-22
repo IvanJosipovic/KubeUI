@@ -64,6 +64,7 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
         set => Volatile.Write(ref _state.RequireAuthorizationForDiscovery, value ? 1 : 0);
     }
 
+    /// <summary>Gets or sets the ETag used for both core and grouped discovery responses.</summary>
     public string DiscoveryETag
     {
         get => _state.CoreDiscoveryETag;
@@ -74,12 +75,14 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
         }
     }
 
+    /// <summary>Gets or sets the ETag used for the core <c>/api</c> discovery response.</summary>
     public string CoreDiscoveryETag
     {
         get => _state.CoreDiscoveryETag;
         set => _state.CoreDiscoveryETag = value;
     }
 
+    /// <summary>Gets or sets the ETag used for grouped <c>/apis</c> discovery responses.</summary>
     public string GroupedDiscoveryETag
     {
         get => _state.GroupedDiscoveryETag;
@@ -118,6 +121,7 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
         set => Volatile.Write(ref _state.OpenApiV3DocumentStatusCode, (int)value);
     }
 
+    /// <summary>Gets or sets the hash advertised for OpenAPI v3 group-version documents.</summary>
     public string OpenApiV3DocumentHash
     {
         get => _state.OpenApiV3DocumentHash;
@@ -307,7 +311,7 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
 
     private HttpResponseMessage DiscoveryResponse(HttpRequestMessage request, object payload)
     {
-        var etag = request.RequestUri?.AbsolutePath == "/api"
+        var etag = request.RequestUri?.AbsolutePath.TrimEnd('/') == "/api"
             ? _state.CoreDiscoveryETag
             : _state.GroupedDiscoveryETag;
         if (request.Headers.TryGetValues("If-None-Match", out var values)

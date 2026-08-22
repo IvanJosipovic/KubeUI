@@ -11,6 +11,9 @@ public sealed class KubernetesModelCatalog
 {
     private readonly Dictionary<GroupApiVersionKind, Type> _types = [];
     private readonly object _sync = new();
+    private long _version;
+
+    public long Version => Interlocked.Read(ref _version);
 
     /// <summary>
     /// Gets a snapshot of registered models keyed by YAML API version and kind.
@@ -40,6 +43,7 @@ public sealed class KubernetesModelCatalog
         lock (_sync)
         {
             _types[resourceKind] = resourceType;
+            Interlocked.Increment(ref _version);
         }
     }
 

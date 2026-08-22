@@ -77,7 +77,10 @@ public partial class Cluster
 
         try
         {
-            var kube = Client as k8s.Kubernetes;
+            if (!TryGetKubernetesClient(out var kube))
+            {
+                return;
+            }
 
         var model = new V1SelfSubjectAccessReview()
         {
@@ -111,7 +114,7 @@ public partial class Cluster
             }
         };
 
-        var resp2 = await kube.CreateSelfSubjectAccessReviewAsync(model);
+        var resp2 = await kube.CreateSelfSubjectAccessReviewAsync(model2);
 
         var APIGroups = await Client.Apis.GetAPIVersionsAsync();
 

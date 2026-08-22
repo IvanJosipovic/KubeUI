@@ -163,7 +163,10 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
 
         if (!IsCustomResource)
         {
-            Cluster.Runtime.ModelCatalog.RegisterResource(Kind, typeof(T));
+            Cluster.Runtime.ModelCatalog.RegisterResource(
+                Kind,
+                typeof(T),
+                waitForReady => Cluster.Runtime.SeedResource<T>(waitForReady));
         }
     }
 

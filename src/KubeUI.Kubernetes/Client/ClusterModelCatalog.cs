@@ -13,6 +13,7 @@ public sealed class ClusterModelCatalog
     private readonly Lock _gate = new();
     private readonly Dictionary<(string Group, string Version, string Kind), GroupApiVersionKind> _customResourceKinds = [];
     private readonly Dictionary<string, GroupApiVersionKind> _customResourceKindsByDefinitionName = new(StringComparer.Ordinal);
+    private readonly Dictionary<GroupApiVersionKind, Func<bool, Task>> _seeders = [];
 
     public KubernetesOpenApiSchemaCatalog OpenApiSchemas { get; } = new();
 
@@ -57,6 +58,28 @@ public sealed class ClusterModelCatalog
     public void RegisterResource(GroupApiVersionKind resourceKind, Type resourceType)
     {
         _sharedCatalog.Register(resourceKind, resourceType);
+    }
+
+    /// <summary>Registers a CLR resource model and its typed seed operation.</summary>
+    /// <param name="resourceKind">API group, version, kind, and plural name.</param>
+    /// <param name="resourceType">CLR model type used for the resource.</param>
+    /// <param name="seeder">Operation that seeds the model and optionally waits for readiness.</param>
+    public void RegisterResource(GroupApiVersionKind resourceKind, Type resourceType, Func<bool, Task> seeder)
+    {
+        ArgumentNullException.ThrowIfNull(seeder);
+        RegisterResource(resourceKind, resourceType);
+        lock (_gate)
+        {
+            _seeders[resourceKind] = seeder;
+        }
+    }
+
+    public bool TryGetResourceSeeder(GroupApiVersionKind resourceKind, out Func<bool, Task> seeder)
+    {
+        lock (_gate)
+        {
+            return _seeders.TryGetValue(resourceKind, out seeder!);
+        }
     }
 
     public bool TryGetResourceKind(string apiVersion, string kind, out GroupApiVersionKind resourceKind)

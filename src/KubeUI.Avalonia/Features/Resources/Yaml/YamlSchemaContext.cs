@@ -131,7 +131,22 @@ internal static class YamlSchemaContext
     internal static YamlSchemaNode CreateRoot(GroupApiVersionKind kind, ClusterModelCatalog modelCache)
     {
         ArgumentNullException.ThrowIfNull(modelCache);
-        return YamlSchemaNode.Create(kind.Kind, modelCache.OpenApiSchemas.GetSchema(kind), modelCache);
+        var root = YamlSchemaNode.Create(kind.Kind, modelCache.OpenApiSchemas.GetSchema(kind), modelCache);
+        var metadata = root.Properties.TryGetValue("metadata", out var existingMetadata)
+            ? existingMetadata
+            : new YamlSchemaNode("metadata", JsonSchemaType.Object, null, new Dictionary<string, YamlSchemaNode>(StringComparer.Ordinal), null, []);
+        var metadataProperties = new Dictionary<string, YamlSchemaNode>(metadata.Properties, StringComparer.Ordinal)
+        {
+            ["name"] = metadata.Properties.GetValueOrDefault("name")
+                ?? new YamlSchemaNode("name", JsonSchemaType.String, null, new Dictionary<string, YamlSchemaNode>(StringComparer.Ordinal), null, []),
+            ["namespace"] = metadata.Properties.GetValueOrDefault("namespace")
+                ?? new YamlSchemaNode("namespace", JsonSchemaType.String, null, new Dictionary<string, YamlSchemaNode>(StringComparer.Ordinal), null, []),
+        };
+        var rootProperties = new Dictionary<string, YamlSchemaNode>(root.Properties, StringComparer.Ordinal)
+        {
+            ["metadata"] = metadata with { Properties = metadataProperties },
+        };
+        return root with { Properties = rootProperties };
     }
 
     private static void ProcessLine(List<YamlFrame> frames, string text)

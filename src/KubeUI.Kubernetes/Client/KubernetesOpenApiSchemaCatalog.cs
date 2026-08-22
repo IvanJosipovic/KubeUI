@@ -20,14 +20,14 @@ public sealed class KubernetesOpenApiSchemaCatalog
 
     internal void Replace(IEnumerable<OpenApiDocument> documents)
     {
-        var schemas = new Dictionary<string, IOpenApiSchema>(StringComparer.Ordinal);
-        foreach (var document in documents)
-        {
-            AddSchemas(document, schemas);
-        }
-
         lock (_gate)
         {
+            var schemas = new Dictionary<string, IOpenApiSchema>(StringComparer.Ordinal);
+            foreach (var document in documents)
+            {
+                AddSchemas(document, schemas);
+            }
+
             Volatile.Write(ref _schemas, schemas);
             Interlocked.Increment(ref _version);
         }

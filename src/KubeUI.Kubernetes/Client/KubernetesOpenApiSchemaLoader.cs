@@ -127,7 +127,7 @@ public sealed class KubernetesOpenApiSchemaLoader : IDisposable
             var readerSettings = new OpenApiReaderSettings
             {
                 HttpClient = authenticatedClient,
-                LoadExternalRefs = true,
+                LoadExternalRefs = false,
                 BaseUrl = reference.Value.Uri,
             };
             await using var schemaStream = await schemaResponse.Content
@@ -216,7 +216,9 @@ public sealed class KubernetesOpenApiSchemaLoader : IDisposable
             HttpRequestMessage request,
             CancellationToken cancellationToken)
         {
-            if (_client.Credentials is not null)
+            if (_client.Credentials is not null
+                && request.RequestUri is { } uri
+                && _client.BaseUri.IsBaseOf(uri))
             {
                 await _client.Credentials.ProcessHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
             }
@@ -242,6 +244,7 @@ public sealed class KubernetesOpenApiSchemaLoader : IDisposable
             {
                 Version = request.Version,
                 VersionPolicy = request.VersionPolicy,
+                Content = request.Content,
             };
 
             foreach (var header in request.Headers)

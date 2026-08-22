@@ -11,6 +11,7 @@ public sealed class KubernetesApiDiscoveryClient
     private string? _coreETag;
     private string? _groupedETag;
     private int _refreshInProgress;
+    private int _refreshRequested;
 
     /// <summary>Creates a discovery client for an authenticated Kubernetes client.</summary>
     /// <param name="client">Kubernetes client used for discovery requests.</param>
@@ -31,13 +32,19 @@ public sealed class KubernetesApiDiscoveryClient
     {
         if (Interlocked.Exchange(ref _refreshInProgress, 1) != 0)
         {
+            Volatile.Write(ref _refreshRequested, 1);
             return;
         }
 
         try
         {
-            Core = await RefreshEndpointAsync(true, cancellationToken).ConfigureAwait(false);
-            Groups = await RefreshEndpointAsync(false, cancellationToken).ConfigureAwait(false);
+            do
+            {
+                Volatile.Write(ref _refreshRequested, 0);
+                Core = await RefreshEndpointAsync(true, cancellationToken).ConfigureAwait(false);
+                Groups = await RefreshEndpointAsync(false, cancellationToken).ConfigureAwait(false);
+            }
+            while (Interlocked.Exchange(ref _refreshRequested, 0) != 0);
         }
         finally
         {

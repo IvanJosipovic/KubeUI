@@ -49,8 +49,23 @@ public sealed class FakeKubernetesHttpApiTests
         var secondRefresh = discovery.RefreshAsync(TestContext.Current.CancellationToken);
         await Task.WhenAll(firstRefresh, secondRefresh);
 
-        api.RequestUris.Count(uri => uri?.AbsolutePath == "/api").ShouldBe(1);
-        api.RequestUris.Count(uri => uri?.AbsolutePath == "/apis").ShouldBe(1);
+        api.RequestUris.Count(uri => uri?.AbsolutePath == "/api").ShouldBe(2);
+        api.RequestUris.Count(uri => uri?.AbsolutePath == "/apis").ShouldBe(2);
+    }
+
+    [Fact]
+    public async Task FakeDiscovery_uses_core_etag_for_trailing_slash()
+    {
+        using var api = new FakeKubernetesHttpApi
+        {
+            CoreDiscoveryETag = "\"core\"",
+            GroupedDiscoveryETag = "\"grouped\"",
+        };
+
+        using var client = new HttpClient(api) { BaseAddress = new Uri("http://fake-kubernetes") };
+        using var response = await client.GetAsync("/api/", TestContext.Current.CancellationToken);
+
+        response.Headers.ETag!.Tag.ShouldBe("\"core\"");
     }
 
     [Fact]

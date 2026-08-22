@@ -84,7 +84,7 @@ public sealed class YamlHoverToolTipBehavior : Behavior<TextEditor>
     private void OnDetachedFromVisualTree(object? sender, VisualTreeAttachmentEventArgs e)
     {
         DetachScrollViewer();
-        CloseHoverToolTip();
+        InvalidateHover();
     }
 
     private void OnLayoutUpdated(object? sender, EventArgs e)
@@ -93,7 +93,7 @@ public sealed class YamlHoverToolTipBehavior : Behavior<TextEditor>
             && _tooltipScrollOffset is Vector offset
             && GetCurrentScrollOffset() != offset)
         {
-            CloseHoverToolTip();
+            InvalidateHover();
         }
     }
 
@@ -102,17 +102,17 @@ public sealed class YamlHoverToolTipBehavior : Behavior<TextEditor>
         UpdateCurrentViewModel(AssociatedObject?.DataContext as ResourceYamlViewModel);
         _schemaLoadTask = null;
         _schemaRoot = null;
-        CloseHoverToolTip();
+        InvalidateHover();
     }
 
     private void OnTextChanged(object? sender, EventArgs e)
     {
-        CloseHoverToolTip();
+        InvalidateHover();
     }
 
     private void OnActualThemeVariantChanged(object? sender, EventArgs e)
     {
-        CloseHoverToolTip();
+        InvalidateHover();
     }
 
     private void UpdateCurrentViewModel(ResourceYamlViewModel? nextViewModel)
@@ -149,7 +149,7 @@ public sealed class YamlHoverToolTipBehavior : Behavior<TextEditor>
             or nameof(ResourceYamlViewModel.ValidationDiagnostics)
             or nameof(ResourceYamlViewModel.HideNoisyFields))
         {
-            CloseHoverToolTip();
+            InvalidateHover();
         }
     }
 
@@ -231,7 +231,7 @@ public sealed class YamlHoverToolTipBehavior : Behavior<TextEditor>
     {
         if (e.Property == ScrollViewer.OffsetProperty)
         {
-            CloseHoverToolTip();
+            InvalidateHover();
         }
     }
 
@@ -256,7 +256,7 @@ public sealed class YamlHoverToolTipBehavior : Behavior<TextEditor>
         var diagnosticMessage = YamlDiagnosticRenderingBehavior.GetRenderer(AssociatedObject)?.TryGetMessageAt(offset);
         if (string.IsNullOrEmpty(diagnosticMessage))
         {
-            CloseHoverToolTip();
+            InvalidateHover();
             return false;
         }
 
@@ -273,7 +273,7 @@ public sealed class YamlHoverToolTipBehavior : Behavior<TextEditor>
     {
         if (!TryGetPointerOffset(point, out var offset))
         {
-            CloseHoverToolTip();
+            InvalidateHover();
             return false;
         }
 
@@ -355,6 +355,12 @@ public sealed class YamlHoverToolTipBehavior : Behavior<TextEditor>
         }
 
         _tooltipScrollOffset = null;
+    }
+
+    private void InvalidateHover()
+    {
+        Interlocked.Increment(ref _hoverRequest);
+        CloseHoverToolTip();
     }
 
     private Vector GetCurrentScrollOffset()

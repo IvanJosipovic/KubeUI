@@ -1,7 +1,6 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Net.Http.Json;
-using System.Reflection;
 using System.Reactive.Linq;
 using System.Text;
 using System.Text.Json;
@@ -294,7 +293,10 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
         using var activity = StartClusterActivity(nameof(SeedResource) + "<" + typeof(T).Name + ">");
 
         var kind = GroupApiVersionKind.From<T>();
-        ModelCatalog.RegisterResource(kind, typeof(T));
+        ModelCatalog.RegisterResource(
+            kind,
+            typeof(T),
+            waitForReady => SeedResource<T>(waitForReady));
         var container = (ContainerClass<T>)Objects.GetOrAdd(kind, _ => new ContainerClass<T>());
         var seedTask = container.GetOrCreateSeedTask(() =>
             Task.Run(() => SeedResourceCoreAsync<T>()));
@@ -329,12 +331,12 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
     {
         if (!ModelCatalog.IsCustomResource(kind))
         {
-            if (!ModelCatalog.TryGetResourceType(kind, out var resourceType))
+            if (!ModelCatalog.TryGetResourceSeeder(kind, out var seeder))
             {
                 throw new ArgumentException($"Unknown resource kind {kind}.", nameof(kind));
             }
 
-            await SeedResource(resourceType, waitForReady).ConfigureAwait(false);
+            await seeder(waitForReady).ConfigureAwait(false);
             return;
         }
 
@@ -384,20 +386,6 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
         {
             container.RemoveSeedTask(seedTask);
         }
-    }
-
-    private Task SeedResource(Type resourceType, bool waitForReady)
-    {
-        ArgumentNullException.ThrowIfNull(resourceType);
-
-        var method = GetType()
-            .GetMethods(BindingFlags.Instance | BindingFlags.Public)
-            .First(candidate => candidate.Name == nameof(SeedResource)
-                && candidate.IsGenericMethodDefinition
-                && candidate.GetParameters().Length == 1)
-            .MakeGenericMethod(resourceType);
-
-        return (Task)method.Invoke(this, [waitForReady])!;
     }
 
     private ResourceInformerCallback<IKubernetesObject<V1ObjectMeta>> GetGenericResourceInformerCallback(GroupApiVersionKind kind)
@@ -516,9 +504,10 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
     {
         try
         {
-            if (Client is not k8s.Kubernetes kubernetesClient)
+            if (!TryGetKubernetesClient(out var kubernetesClient))
             {
-                throw new InvalidOperationException("Cluster client is not connected.");
+                _logger.LogDebug("Skipping API discovery refresh for disconnected cluster {name}.", Name);
+                return;
             }
 
             _discoveryClient ??= new KubernetesApiDiscoveryClient(kubernetesClient);
@@ -530,6 +519,12 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
             Activity.Current?.SetStatus(ActivityStatusCode.Error, ex.Message);
             _logger.LogError(ex, "Unable to refresh API discovery for cluster {name}", Name);
         }
+    }
+
+    private bool TryGetKubernetesClient(out k8s.Kubernetes client)
+    {
+        client = Client as k8s.Kubernetes;
+        return client is not null;
     }
 
     public async Task EnsureOpenApiSchemasAsync()

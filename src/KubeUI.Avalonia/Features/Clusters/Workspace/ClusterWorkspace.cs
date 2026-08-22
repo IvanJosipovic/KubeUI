@@ -346,7 +346,6 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
         }
         else
         {
-            RemoveOtherCustomResourceVersions(kind);
             _ = ProcessCustomResourceDefinitionAsync(crd, definitionName, generation);
         }
     }
@@ -394,6 +393,7 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
                 return;
             }
 
+            RemoveOtherCustomResourceVersions(resourceConfig.Kind);
             _resourceConfigs[resourceConfig.Kind] = resourceConfig;
             ProcessResourceConfigPermissionsUpdated(resourceConfig);
         }

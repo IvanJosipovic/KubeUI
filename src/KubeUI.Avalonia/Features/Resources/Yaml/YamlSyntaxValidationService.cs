@@ -1,3 +1,4 @@
+using System.Collections.Frozen;
 using k8s;
 using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Kubernetes;
@@ -10,6 +11,8 @@ namespace KubeUI.Avalonia.Features.Resources.Yaml;
 public sealed class YamlSyntaxValidationService : IYamlValidationService
 {
     private readonly KubernetesModelCatalog _sharedCatalog;
+    private FrozenDictionary<string, Type>? _typeMap;
+    private long _typeMapVersion = -1;
 
     public YamlSyntaxValidationService(KubernetesModelCatalog sharedCatalog)
     {
@@ -31,7 +34,7 @@ public sealed class YamlSyntaxValidationService : IYamlValidationService
 
         try
         {
-            var typeMap = _sharedCatalog.GetYamlTypeMap();
+            var typeMap = GetTypeMap();
             KubernetesYamlSerializer.LoadAllFromString(
                 yaml,
                 key => typeMap.TryGetValue(key, out var type)
@@ -79,6 +82,21 @@ public sealed class YamlSyntaxValidationService : IYamlValidationService
                     YamlDiagnosticSeverity.Error),
             ];
         }
+    }
+
+    private FrozenDictionary<string, Type> GetTypeMap()
+    {
+        var version = _sharedCatalog.Version;
+        var typeMap = Volatile.Read(ref _typeMap);
+        if (typeMap is not null && Volatile.Read(ref _typeMapVersion) == version)
+        {
+            return typeMap;
+        }
+
+        typeMap = _sharedCatalog.GetYamlTypeMap();
+        Volatile.Write(ref _typeMap, typeMap);
+        Volatile.Write(ref _typeMapVersion, version);
+        return typeMap;
     }
 
     private static Type ResolveCustomResourceType(string key, ClusterModelCatalog? modelCatalog)
@@ -196,8 +214,17 @@ public sealed class YamlSyntaxValidationService : IYamlValidationService
 
         for (var i = firstIndex + 1; i < lines.Length; i++)
         {
-            if (!TryGetMappingKey(lines[i], out var candidate, out var candidateIndent)
-                || candidateIndent != indent
+            if (!TryGetMappingKey(lines[i], out var candidate, out var candidateIndent))
+            {
+                continue;
+            }
+
+            if (candidateIndent < indent)
+            {
+                break;
+            }
+
+            if (candidateIndent != indent
                 || !string.Equals(candidate, key, StringComparison.Ordinal))
             {
                 continue;
