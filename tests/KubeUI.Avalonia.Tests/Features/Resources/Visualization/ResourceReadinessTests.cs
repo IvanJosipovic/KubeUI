@@ -1,6 +1,7 @@
 using k8s;
 using k8s.Models;
 using KubeUI.Avalonia.Features.Resources.Visualization;
+using KubeUI.Kubernetes;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Features.Resources.Visualization;
@@ -36,15 +37,16 @@ public sealed class ResourceReadinessTests
     }
 
     [Fact]
-    public void Custom_resource_status_is_checked_by_condition_name()
+    public void Json_backed_custom_resource_status_is_checked_by_condition_name()
     {
-        var resource = new CustomResource
-        {
-            Status = new CustomStatus
+        var resource = KubernetesJson.Deserialize<GenericKubernetesObject>("""
             {
-                Conditions = [new CustomCondition { Status = "False" }],
-            },
-        };
+              "apiVersion": "example.com/v1",
+              "kind": "Widget",
+              "metadata": { "name": "widget" },
+              "status": { "conditions": [{ "status": "False" }] }
+            }
+            """)!;
 
         ResourceReadiness.IsNotReady(resource).ShouldBeTrue();
     }
@@ -52,27 +54,12 @@ public sealed class ResourceReadinessTests
     [Fact]
     public void Resource_without_status_is_ready()
     {
-        ResourceReadiness.IsNotReady(new CustomResource()).ShouldBeFalse();
-    }
-
-    private sealed class CustomResource : IKubernetesObject<V1ObjectMeta>
-    {
-        public string? ApiVersion { get; set; }
-
-        public string? Kind { get; set; }
-
-        public V1ObjectMeta Metadata { get; set; } = new();
-
-        public CustomStatus? Status { get; set; }
-    }
-
-    private sealed class CustomStatus
-    {
-        public IReadOnlyList<CustomCondition>? Conditions { get; set; }
-    }
-
-    private sealed class CustomCondition
-    {
-        public string? Status { get; set; }
+        ResourceReadiness.IsNotReady(KubernetesJson.Deserialize<GenericKubernetesObject>("""
+            {
+              "apiVersion": "example.com/v1",
+              "kind": "Widget",
+              "metadata": { "name": "widget" }
+            }
+            """)!).ShouldBeFalse();
     }
 }

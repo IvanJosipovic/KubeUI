@@ -416,35 +416,30 @@ public abstract class ClusterScenarioAssertions
         await harness.CreateAsync(crd, TestContext.Current.CancellationToken);
 
         await WaitForResourceAsync<V1CustomResourceDefinition>(harness.Cluster, null, "tests.kubeui.com");
-        var generatedType = await WaitForGeneratedTypeAsync(harness.Cluster, "kubeui.com", "v1beta1", "Test");
-        generatedType.ShouldNotBeNull();
+        var kind = new GroupApiVersionKind("kubeui.com", "v1beta1", "Test", "tests");
+        await TestWait.UntilAsync(
+            () => harness.Cluster.ModelCatalog.IsCustomResource(kind),
+            TimeSpan.FromSeconds(30),
+            cancellationToken: TestContext.Current.CancellationToken);
 
-        await harness.Cluster.Permissions.UpdatePermissionsAllNamespaceAsync(generatedType!, Verb.List);
-        await harness.Cluster.Permissions.UpdatePermissionsAllNamespaceAsync(generatedType!, Verb.Watch);
+        await harness.Cluster.Permissions.UpdatePermissionsAllNamespaceAsync(kind, true, Verb.List);
+        await harness.Cluster.Permissions.UpdatePermissionsAllNamespaceAsync(kind, true, Verb.Watch);
 
         await harness.Cluster.ImportYaml(new MemoryStream(Encoding.UTF8.GetBytes(KubernetesTestData.CustomResourceYaml)));
+        await harness.Cluster.SeedResource(kind, true);
 
-        var seedMethod = harness.Cluster.GetType()
-            .GetMethods(BindingFlags.Instance | BindingFlags.Public)
-            .Single(method => method.Name == nameof(IClusterRuntime.SeedResource)
-                && method.IsGenericMethodDefinition
-                && method.GetParameters().Length == 1);
-        await (Task)seedMethod.MakeGenericMethod(generatedType!).Invoke(harness.Cluster, [true])!;
-
-        var kind = harness.Cluster.Objects[GroupApiVersionKind.From(generatedType)];
-        var items = kind.GetType().GetProperty("Items")!.GetValue(kind)!;
+        var container = harness.Cluster.Objects[kind].ShouldBeOfType<ContainerClass<GenericKubernetesObject>>();
         await TestWait.UntilAsync(
-            () => (int)items.GetType().GetProperty("Count")!.GetValue(items)! == 1,
+            () => container.Items.Items.Count == 1,
             TimeSpan.FromSeconds(10),
             cancellationToken: TestContext.Current.CancellationToken);
 
-        foreach (var item in (IList)items.GetType().GetProperty("Items")!.GetValue(items)!)
+        foreach (var item in container.Items.Items)
         {
-            var obj = (IKubernetesObject<V1ObjectMeta>)item;
+            var obj = item;
             obj.Name().ShouldBe("test1");
             obj.Namespace().ShouldBe("default");
-            var spec = obj.GetType().GetProperty("Spec")!.GetValue(obj)!;
-            spec.GetType().GetProperty("SomeString")!.GetValue(spec).ShouldBe("myValue");
+            obj.Properties["spec"].GetProperty("someString").GetString().ShouldBe("myValue");
         }
     }
 
@@ -654,12 +649,4 @@ public abstract class ClusterScenarioAssertions
             cancellationToken == default ? TestContext.Current.CancellationToken : cancellationToken);
     }
 
-    private static async Task<Type?> WaitForGeneratedTypeAsync(IClusterRuntime cluster, string group, string version, string kind, TimeSpan? timeout = null, int pollIntervalMs = 100, CancellationToken cancellationToken = default)
-    {
-        return await TestWait.UntilValueAsync(
-            () => cluster.ModelCatalog.GetResourceType(group, version, kind),
-            timeout ?? TimeSpan.FromSeconds(30),
-            TimeSpan.FromMilliseconds(pollIntervalMs),
-            cancellationToken == default ? TestContext.Current.CancellationToken : cancellationToken);
-    }
 }

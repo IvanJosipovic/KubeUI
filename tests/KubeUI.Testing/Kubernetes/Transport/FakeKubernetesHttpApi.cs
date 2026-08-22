@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Http.Json;
+using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -57,6 +58,37 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
 
     public bool UseRoleBasedAuthorization { get; set; }
 
+    public bool RequireAuthorizationForDiscovery
+    {
+        get => Volatile.Read(ref _state.RequireAuthorizationForDiscovery) != 0;
+        set => Volatile.Write(ref _state.RequireAuthorizationForDiscovery, value ? 1 : 0);
+    }
+
+    /// <summary>Gets or sets the ETag used for both core and grouped discovery responses.</summary>
+    public string DiscoveryETag
+    {
+        get => _state.CoreDiscoveryETag;
+        set
+        {
+            _state.CoreDiscoveryETag = value;
+            _state.GroupedDiscoveryETag = value;
+        }
+    }
+
+    /// <summary>Gets or sets the ETag used for the core <c>/api</c> discovery response.</summary>
+    public string CoreDiscoveryETag
+    {
+        get => _state.CoreDiscoveryETag;
+        set => _state.CoreDiscoveryETag = value;
+    }
+
+    /// <summary>Gets or sets the ETag used for grouped <c>/apis</c> discovery responses.</summary>
+    public string GroupedDiscoveryETag
+    {
+        get => _state.GroupedDiscoveryETag;
+        set => _state.GroupedDiscoveryETag = value;
+    }
+
     public string AuthenticatedUser { get; set; } = "system:admin";
 
     public bool FailConnection
@@ -69,6 +101,31 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
     {
         get => _state.ThrowOnConnection;
         set => _state.ThrowOnConnection = value;
+    }
+
+    public int OpenApiV3IndexFailuresRemaining
+    {
+        get => Math.Max(0, Volatile.Read(ref _state.OpenApiV3IndexFailuresRemaining));
+        set => Volatile.Write(ref _state.OpenApiV3IndexFailuresRemaining, Math.Max(0, value));
+    }
+
+    public HttpStatusCode OpenApiV3IndexStatusCode
+    {
+        get => (HttpStatusCode)Volatile.Read(ref _state.OpenApiV3IndexStatusCode);
+        set => Volatile.Write(ref _state.OpenApiV3IndexStatusCode, (int)value);
+    }
+
+    public HttpStatusCode OpenApiV3DocumentStatusCode
+    {
+        get => (HttpStatusCode)Volatile.Read(ref _state.OpenApiV3DocumentStatusCode);
+        set => Volatile.Write(ref _state.OpenApiV3DocumentStatusCode, (int)value);
+    }
+
+    /// <summary>Gets or sets the hash advertised for OpenAPI v3 group-version documents.</summary>
+    public string OpenApiV3DocumentHash
+    {
+        get => _state.OpenApiV3DocumentHash;
+        set => _state.OpenApiV3DocumentHash = value;
     }
 
     public IReadOnlyList<Uri?> RequestUris => _requestUris.ToArray();
@@ -110,9 +167,9 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
         add.MakeGenericMethod(resource.GetType()).Invoke(this, new object[] { resource });
     }
 
-    public void AddYaml(string yaml)
+    public void AddYaml(string yaml, IDictionary<string, Type> typeMap)
     {
-        foreach (var resource in KubeUI.Kubernetes.Serialization.KubernetesYaml.LoadAllFromString(yaml))
+        foreach (var resource in KubeUI.Kubernetes.Serialization.KubernetesYaml.LoadAllFromString(yaml, typeMap))
         {
             var add = GetType()
                 .GetMethods()
@@ -181,9 +238,15 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
 
         if (request.Method == HttpMethod.Get && (path is "/api" or "/apis"))
         {
+            if (Volatile.Read(ref _state.RequireAuthorizationForDiscovery) != 0
+                && request.Headers.Authorization is null)
+            {
+                return SetRequest(request, Error(HttpStatusCode.Forbidden, "discovery requires authentication"));
+            }
+
             if (path == "/api")
             {
-                return SetRequest(request, Json(Discovery(true)));
+                return SetRequest(request, DiscoveryResponse(request, Discovery(true)));
             }
 
             if (!AcceptsApiDiscovery(request))
@@ -191,12 +254,39 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
                 return SetRequest(request, Json(new { apiVersion = "v1", kind = "APIGroupList", groups = Array.Empty<object>() }));
             }
 
-            return SetRequest(request, Json(Discovery(false)));
+            return SetRequest(request, DiscoveryResponse(request, Discovery(false)));
         }
 
         if (request.Method == HttpMethod.Get && path == "/version")
         {
             return SetRequest(request, Json(new { gitVersion = "v1.0.0", major = "1", minor = "0", apiVersion = "v1", kind = "Info" }));
+        }
+
+        if (request.Method == HttpMethod.Get && path == "/openapi/v3")
+        {
+            var statusCode = Volatile.Read(ref _state.OpenApiV3IndexStatusCode);
+            if (statusCode != 0)
+            {
+                return SetRequest(request, Error((HttpStatusCode)statusCode, "simulated OpenAPI authorization failure"));
+            }
+
+            if (Interlocked.Decrement(ref _state.OpenApiV3IndexFailuresRemaining) >= 0)
+            {
+                return SetRequest(request, Error(HttpStatusCode.ServiceUnavailable, "simulated OpenAPI failure"));
+            }
+
+            return SetRequest(request, Json(OpenApiV3Index()));
+        }
+
+        if (request.Method == HttpMethod.Get && path == "/openapi/v3/api/v1")
+        {
+            var statusCode = Volatile.Read(ref _state.OpenApiV3DocumentStatusCode);
+            if (statusCode != 0)
+            {
+                return SetRequest(request, Error((HttpStatusCode)statusCode, "simulated OpenAPI document authorization failure"));
+            }
+
+            return SetRequest(request, Json(OpenApiV3Document()));
         }
 
         if (request.Method == HttpMethod.Get && path == "/api/v1")
@@ -216,6 +306,25 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
     private static HttpResponseMessage SetRequest(HttpRequestMessage request, HttpResponseMessage response)
     {
         response.RequestMessage = request;
+        return response;
+    }
+
+    private HttpResponseMessage DiscoveryResponse(HttpRequestMessage request, object payload)
+    {
+        var etag = request.RequestUri?.AbsolutePath.TrimEnd('/') == "/api"
+            ? _state.CoreDiscoveryETag
+            : _state.GroupedDiscoveryETag;
+        if (request.Headers.TryGetValues("If-None-Match", out var values)
+            && values.Contains(etag, StringComparer.Ordinal))
+        {
+            return new HttpResponseMessage(HttpStatusCode.NotModified)
+            {
+                Headers = { ETag = new EntityTagHeaderValue(etag) },
+            };
+        }
+
+        var response = Json(payload);
+        response.Headers.ETag = new EntityTagHeaderValue(etag);
         return response;
     }
 
@@ -837,6 +946,121 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
 
     private static string DefinitionKey(string group, string version, string plural) => $"{group}/{version}/{plural}";
 
+    private JsonObject OpenApiV3Index() => new()
+    {
+        ["paths"] = new JsonObject
+        {
+            ["/api/v1"] = new JsonObject
+            {
+                ["serverRelativeURL"] = $"/openapi/v3/api/v1?hash={_state.OpenApiV3DocumentHash}",
+            },
+        },
+    };
+
+    private static JsonObject OpenApiV3Document() => new()
+    {
+        ["openapi"] = "3.0.0",
+        ["info"] = new JsonObject
+        {
+            ["title"] = "Fake Kubernetes API",
+            ["version"] = "v1",
+        },
+        ["paths"] = new JsonObject(),
+        ["components"] = new JsonObject
+        {
+            ["schemas"] = new JsonObject
+            {
+                ["io.k8s.api.core.v1.Pod"] = new JsonObject
+                {
+                    ["type"] = "object",
+                    ["properties"] = new JsonObject
+                    {
+                        ["apiVersion"] = new JsonObject { ["type"] = "string" },
+                        ["kind"] = new JsonObject { ["type"] = "string" },
+                        ["metadata"] = new JsonObject { ["$ref"] = "#/components/schemas/io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta" },
+                        ["spec"] = new JsonObject { ["$ref"] = "#/components/schemas/io.k8s.api.core.v1.PodSpec" },
+                    },
+                },
+                ["io.example.com.v1.Widget"] = new JsonObject
+                {
+                    ["type"] = "object",
+                    ["properties"] = new JsonObject
+                    {
+                        ["apiVersion"] = new JsonObject { ["type"] = "string" },
+                        ["kind"] = new JsonObject { ["type"] = "string" },
+                        ["metadata"] = new JsonObject { ["$ref"] = "#/components/schemas/io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta" },
+                        ["spec"] = new JsonObject
+                        {
+                            ["type"] = "object",
+                            ["description"] = "Custom resource schema",
+                        },
+                    },
+                },
+                ["io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta"] = new JsonObject
+                {
+                    ["type"] = "object",
+                    ["properties"] = new JsonObject
+                    {
+                        ["name"] = new JsonObject { ["type"] = "string" },
+                        ["namespace"] = new JsonObject { ["type"] = "string" },
+                        ["ownerReferences"] = new JsonObject
+                        {
+                            ["type"] = "array",
+                            ["items"] = new JsonObject { ["$ref"] = "#/components/schemas/io.k8s.apimachinery.pkg.apis.meta.v1.OwnerReference" },
+                        },
+                    },
+                },
+                ["io.k8s.apimachinery.pkg.apis.meta.v1.OwnerReference"] = new JsonObject
+                {
+                    ["type"] = "object",
+                    ["properties"] = new JsonObject
+                    {
+                        ["apiVersion"] = new JsonObject { ["type"] = "string" },
+                        ["kind"] = new JsonObject { ["type"] = "string" },
+                        ["name"] = new JsonObject { ["type"] = "string" },
+                        ["uid"] = new JsonObject { ["type"] = "string" },
+                    },
+                },
+                ["io.k8s.api.core.v1.PodSpec"] = new JsonObject
+                {
+                    ["type"] = "object",
+                    ["description"] = "Pod specification",
+                    ["properties"] = new JsonObject
+                    {
+                        ["containers"] = new JsonObject
+                        {
+                            ["type"] = "array",
+                            ["items"] = new JsonObject { ["$ref"] = "#/components/schemas/io.k8s.api.core.v1.Container" },
+                        },
+                    },
+                },
+                ["io.k8s.api.core.v1.Container"] = new JsonObject
+                {
+                    ["type"] = "object",
+                    ["properties"] = new JsonObject
+                    {
+                        ["command"] = new JsonObject
+                        {
+                            ["type"] = "array",
+                            ["items"] = new JsonObject { ["type"] = "string" },
+                        },
+                        ["image"] = new JsonObject { ["type"] = "string" },
+                        ["imagePullPolicy"] = new JsonObject
+                        {
+                            ["type"] = "string",
+                            ["description"] = "Image pull policy",
+                            ["enum"] = new JsonArray(
+                                JsonValue.Create("Always"),
+                                JsonValue.Create("IfNotPresent"),
+                                JsonValue.Create("Never")),
+                        },
+                        ["name"] = new JsonObject { ["type"] = "string", ["description"] = "Name of the container" },
+                    },
+                },
+            },
+        },
+    };
+
     private static string PermissionKey(string resource, string verb, string? @namespace, string? subresource) => $"{resource}|{verb}|{@namespace}|{subresource}";
 
     private static string ResourceKey(string path) => path.Trim('/');
@@ -910,6 +1134,13 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
         public CancellationTokenSource ShutdownCancellation { get; } = new();
         public bool FailConnection { get; set; }
         public bool ThrowOnConnection { get; set; }
+        public int OpenApiV3IndexFailuresRemaining;
+        public int OpenApiV3IndexStatusCode;
+        public int OpenApiV3DocumentStatusCode;
+        public string OpenApiV3DocumentHash = "fake-v1";
+        public int RequireAuthorizationForDiscovery;
+        public string CoreDiscoveryETag = "\"fake-discovery-core-v1\"";
+        public string GroupedDiscoveryETag = "\"fake-discovery-groups-v1\"";
         public long ResourceVersion;
     }
 

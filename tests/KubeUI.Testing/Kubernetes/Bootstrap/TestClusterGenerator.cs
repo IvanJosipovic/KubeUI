@@ -152,7 +152,7 @@ public sealed class TestClusterGenerator
 
         if (!string.IsNullOrWhiteSpace(config.InitialYaml))
         {
-            api.AddYaml(config.InitialYaml);
+            api.AddYaml(config.InitialYaml, _services.GetRequiredService<KubeUI.Kubernetes.KubernetesModelCatalog>().GetYamlTypeMap());
         }
 
         var kubeConfig = CreateFakeKubeConfig();
@@ -198,7 +198,7 @@ public sealed class TestClusterGenerator
         try
         {
             await ApplyResourcesAsync(client, config.InitialResources, cancellationToken).ConfigureAwait(false);
-            await ApplyInitialYamlAsync(client, config.InitialYaml, cancellationToken).ConfigureAwait(false);
+            await ApplyInitialYamlAsync(client, config.InitialYaml, _services.GetRequiredService<KubeUI.Kubernetes.KubernetesModelCatalog>().GetYamlTypeMap(), cancellationToken).ConfigureAwait(false);
             client.Dispose();
             ApplyImpersonation(kubeConfig, config.AuthenticatedUser);
             clientConfig = KubernetesClientConfiguration.BuildConfigFromConfigObject(kubeConfig, config.Name, masterUrl: null);
@@ -248,7 +248,7 @@ public sealed class TestClusterGenerator
             try
             {
                 await ApplyResourcesAsync(client, config.InitialResources, cancellationToken).ConfigureAwait(false);
-                await ApplyInitialYamlAsync(client, config.InitialYaml, cancellationToken).ConfigureAwait(false);
+                await ApplyInitialYamlAsync(client, config.InitialYaml, _services.GetRequiredService<KubeUI.Kubernetes.KubernetesModelCatalog>().GetYamlTypeMap(), cancellationToken).ConfigureAwait(false);
                 if (!string.Equals(config.AuthenticatedUser, "system:admin", StringComparison.Ordinal))
                 {
                     var (namespaceName, serviceAccountName) = ParseServiceAccount(config.AuthenticatedUser);
@@ -383,6 +383,7 @@ public sealed class TestClusterGenerator
     private static async Task ApplyInitialYamlAsync(
         IKubernetes client,
         string? yaml,
+        IDictionary<string, Type> typeMap,
         CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(yaml))
@@ -392,7 +393,7 @@ public sealed class TestClusterGenerator
 
         await ApplyResourcesAsync(
             client,
-            KubeUI.Kubernetes.Serialization.KubernetesYaml.LoadAllFromString(yaml).Cast<IKubernetesObject>(),
+            KubeUI.Kubernetes.Serialization.KubernetesYaml.LoadAllFromString(yaml, typeMap).Cast<IKubernetesObject>(),
             cancellationToken).ConfigureAwait(false);
     }
 

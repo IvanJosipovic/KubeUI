@@ -2,6 +2,7 @@ using System.Windows.Input;
 using FluentIcons.Common;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Kubernetes;
+using KubernetesClient.Informer.Client;
 using Swordfish.NET.Collections;
 
 namespace KubeUI.Avalonia.Shell.Navigation;
@@ -196,14 +197,14 @@ public partial class NavigationLink : NavigationItem
     public partial ClusterWorkspace Cluster { get; set; }
 
     [ObservableProperty]
-    public partial Type? ControlType { get; set; }
-
-    [ObservableProperty]
     public partial string? ViewModelKey { get; set; }
 }
 
 public partial class ResourceNavigationLink : NavigationLink
 {
+    [ObservableProperty]
+    public partial GroupApiVersionKind? ResourceKind { get; set; }
+
     [ObservableProperty]
     public partial IObservable<int>? Count { get; set; }
 

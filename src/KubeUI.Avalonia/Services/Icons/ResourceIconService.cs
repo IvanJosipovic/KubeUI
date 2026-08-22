@@ -1,9 +1,9 @@
 using System.Collections.Concurrent;
-using System.Reflection;
 using System.Text.RegularExpressions;
 using Avalonia.Platform;
 using Avalonia.Svg.Skia;
 using k8s.Models;
+using KubernetesClient.Informer.Client;
 
 using KubeUI.Avalonia.Styles;
 
@@ -13,52 +13,58 @@ public sealed partial class ResourceIconService : IResourceIconService
 {
     private const string BlankIconPath = "/Assets/kube/blank.svg";
     private static readonly Uri AppUri = new("avares://KubeUI.Avalonia");
-    private static readonly Dictionary<Type, string> IconPaths = new()
+    private static readonly Dictionary<GroupApiVersionKind, string> IconPaths = new()
     {
-        [typeof(V1Node)] = "/Assets/kube/infrastructure_components/unlabeled/node.svg",
-        [typeof(Corev1Event)] = "/Assets/kube/infrastructure_components/unlabeled/etcd.svg",
-        [typeof(V1ConfigMap)] = "/Assets/kube/resources/unlabeled/cm.svg",
-        [typeof(V1ClusterRoleBinding)] = "/Assets/kube/resources/unlabeled/crb.svg",
-        [typeof(V1CustomResourceDefinition)] = "/Assets/kube/resources/unlabeled/crd.svg",
-        [typeof(V1ClusterRole)] = "/Assets/kube/resources/unlabeled/c-role.svg",
-        [typeof(V1CronJob)] = "/Assets/kube/resources/unlabeled/cronjob.svg",
-        [typeof(V1Deployment)] = "/Assets/kube/resources/unlabeled/deploy.svg",
-        [typeof(V1DaemonSet)] = "/Assets/kube/resources/unlabeled/ds.svg",
-        [typeof(V1EndpointSlice)] = "/Assets/kube/resources/unlabeled/ep.svg",
-        [typeof(V1APIGroup)] = "/Assets/kube/resources/unlabeled/group.svg",
-        [typeof(V1HorizontalPodAutoscaler)] = "/Assets/kube/resources/unlabeled/hpa.svg",
-        [typeof(V2HorizontalPodAutoscaler)] = "/Assets/kube/resources/unlabeled/hpa.svg",
-        [typeof(V1Ingress)] = "/Assets/kube/resources/unlabeled/ing.svg",
-        [typeof(V1Job)] = "/Assets/kube/resources/unlabeled/job.svg",
-        [typeof(V1LimitRange)] = "/Assets/kube/resources/unlabeled/limits.svg",
-        [typeof(V1NetworkPolicy)] = "/Assets/kube/resources/unlabeled/netpol.svg",
-        [typeof(V1Namespace)] = "/Assets/kube/resources/unlabeled/ns.svg",
-        [typeof(V1Pod)] = "/Assets/kube/resources/unlabeled/pod.svg",
-        [typeof(V1PersistentVolume)] = "/Assets/kube/resources/unlabeled/pv.svg",
-        [typeof(V1PersistentVolumeClaim)] = "/Assets/kube/resources/unlabeled/pvc.svg",
-        [typeof(V1ResourceQuota)] = "/Assets/kube/resources/unlabeled/quota.svg",
-        [typeof(V1RoleBinding)] = "/Assets/kube/resources/unlabeled/rb.svg",
-        [typeof(V1Role)] = "/Assets/kube/resources/unlabeled/role.svg",
-        [typeof(V1ReplicaSet)] = "/Assets/kube/resources/unlabeled/rs.svg",
-        [typeof(V1ServiceAccount)] = "/Assets/kube/resources/unlabeled/sa.svg",
-        [typeof(V1StorageClass)] = "/Assets/kube/resources/unlabeled/sc.svg",
-        [typeof(V1Secret)] = "/Assets/kube/resources/unlabeled/secret.svg",
-        [typeof(V1StatefulSet)] = "/Assets/kube/resources/unlabeled/sts.svg",
-        [typeof(V1Service)] = "/Assets/kube/resources/unlabeled/svc.svg",
-        [typeof(V1UserSubject)] = "/Assets/kube/resources/unlabeled/user.svg",
+        [GroupApiVersionKind.From<V1Node>()] = "/Assets/kube/infrastructure_components/unlabeled/node.svg",
+        [GroupApiVersionKind.From<Corev1Event>()] = "/Assets/kube/infrastructure_components/unlabeled/etcd.svg",
+        [GroupApiVersionKind.From<V1ConfigMap>()] = "/Assets/kube/resources/unlabeled/cm.svg",
+        [GroupApiVersionKind.From<V1ClusterRoleBinding>()] = "/Assets/kube/resources/unlabeled/crb.svg",
+        [GroupApiVersionKind.From<V1CustomResourceDefinition>()] = "/Assets/kube/resources/unlabeled/crd.svg",
+        [GroupApiVersionKind.From<V1ClusterRole>()] = "/Assets/kube/resources/unlabeled/c-role.svg",
+        [GroupApiVersionKind.From<V1CronJob>()] = "/Assets/kube/resources/unlabeled/cronjob.svg",
+        [GroupApiVersionKind.From<V1Deployment>()] = "/Assets/kube/resources/unlabeled/deploy.svg",
+        [GroupApiVersionKind.From<V1DaemonSet>()] = "/Assets/kube/resources/unlabeled/ds.svg",
+        [GroupApiVersionKind.From<V1EndpointSlice>()] = "/Assets/kube/resources/unlabeled/ep.svg",
+        [new GroupApiVersionKind(string.Empty, "v1", "APIGroup", string.Empty)] = "/Assets/kube/resources/unlabeled/group.svg",
+        [GroupApiVersionKind.From<V1HorizontalPodAutoscaler>()] = "/Assets/kube/resources/unlabeled/hpa.svg",
+        [GroupApiVersionKind.From<V2HorizontalPodAutoscaler>()] = "/Assets/kube/resources/unlabeled/hpa.svg",
+        [GroupApiVersionKind.From<V1Ingress>()] = "/Assets/kube/resources/unlabeled/ing.svg",
+        [GroupApiVersionKind.From<V1Job>()] = "/Assets/kube/resources/unlabeled/job.svg",
+        [GroupApiVersionKind.From<V1LimitRange>()] = "/Assets/kube/resources/unlabeled/limits.svg",
+        [GroupApiVersionKind.From<V1NetworkPolicy>()] = "/Assets/kube/resources/unlabeled/netpol.svg",
+        [GroupApiVersionKind.From<V1Namespace>()] = "/Assets/kube/resources/unlabeled/ns.svg",
+        [GroupApiVersionKind.From<V1Pod>()] = "/Assets/kube/resources/unlabeled/pod.svg",
+        [GroupApiVersionKind.From<V1PersistentVolume>()] = "/Assets/kube/resources/unlabeled/pv.svg",
+        [GroupApiVersionKind.From<V1PersistentVolumeClaim>()] = "/Assets/kube/resources/unlabeled/pvc.svg",
+        [GroupApiVersionKind.From<V1ResourceQuota>()] = "/Assets/kube/resources/unlabeled/quota.svg",
+        [GroupApiVersionKind.From<V1RoleBinding>()] = "/Assets/kube/resources/unlabeled/rb.svg",
+        [GroupApiVersionKind.From<V1Role>()] = "/Assets/kube/resources/unlabeled/role.svg",
+        [GroupApiVersionKind.From<V1ReplicaSet>()] = "/Assets/kube/resources/unlabeled/rs.svg",
+        [GroupApiVersionKind.From<V1ServiceAccount>()] = "/Assets/kube/resources/unlabeled/sa.svg",
+        [GroupApiVersionKind.From<V1StorageClass>()] = "/Assets/kube/resources/unlabeled/sc.svg",
+        [GroupApiVersionKind.From<V1Secret>()] = "/Assets/kube/resources/unlabeled/secret.svg",
+        [GroupApiVersionKind.From<V1StatefulSet>()] = "/Assets/kube/resources/unlabeled/sts.svg",
+        [GroupApiVersionKind.From<V1Service>()] = "/Assets/kube/resources/unlabeled/svc.svg",
+        [new GroupApiVersionKind(string.Empty, "v1", "UserSubject", string.Empty)] = "/Assets/kube/resources/unlabeled/user.svg",
     };
 
-    private readonly ConcurrentDictionary<Type, SvgSource> _sources = new();
+    private readonly ConcurrentDictionary<GroupApiVersionKind, SvgSource> _sources = new();
 
-    public IImage GetIcon(Type resourceType)
+    public IImage GetIcon(GroupApiVersionKind resourceKind)
     {
-        ArgumentNullException.ThrowIfNull(resourceType);
-        return new SvgImage { Source = _sources.GetOrAdd(resourceType, CreateSource) };
+        return new SvgImage { Source = _sources.GetOrAdd(resourceKind, CreateSource) };
     }
 
-    private static SvgSource CreateSource(Type resourceType)
+    private static SvgSource CreateSource(GroupApiVersionKind resourceKind)
     {
-        if (IconPaths.TryGetValue(resourceType, out var path))
+        var path = IconPaths.TryGetValue(resourceKind, out var exactPath)
+            ? exactPath
+            : IconPaths.FirstOrDefault(pair =>
+                pair.Key.Group == resourceKind.Group
+                && pair.Key.ApiVersion == resourceKind.ApiVersion
+                && pair.Key.Kind == resourceKind.Kind).Value;
+
+        if (path is not null)
         {
             return new SvgSource(AppUri) { Path = path };
         }
@@ -67,7 +73,7 @@ public sealed partial class ResourceIconService : IResourceIconService
             ?? throw new InvalidOperationException($"Unable to load resource icon '{BlankIconPath}'.");
         using StreamReader reader = new(stream);
         var blankSvg = reader.ReadToEnd();
-        var initials = GetInitials(GetResourceKind(resourceType));
+        var initials = GetInitials(resourceKind.Kind);
         var fontSize = initials.Length switch
         {
             1 => Typography.IconFontSizeOneCharacter,
@@ -87,12 +93,6 @@ public sealed partial class ResourceIconService : IResourceIconService
         }
 
         return typeName.Length == 0 ? string.Empty : typeName[..1].ToUpperInvariant();
-    }
-
-    private static string GetResourceKind(Type resourceType)
-    {
-        var kindField = resourceType.GetField("KubeKind", BindingFlags.Public | BindingFlags.Static);
-        return kindField?.GetValue(null) as string ?? resourceType.Name;
     }
 
     [GeneratedRegex("[A-Z]+(?=[A-Z][a-z]|$)|[A-Z]?[a-z]+|[0-9]+", RegexOptions.CultureInvariant)]

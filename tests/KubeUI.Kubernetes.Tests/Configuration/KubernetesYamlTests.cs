@@ -1,5 +1,6 @@
 using System.Collections.Frozen;
 using k8s.Models;
+using KubeUI.Kubernetes;
 using KubeUI.Kubernetes.Serialization;
 using Shouldly;
 using YamlDotNet.Core;
@@ -90,4 +91,27 @@ public class KubernetesYamlTests
 
         objects.Single().ShouldBeOfType<V1Pod>();
     }
+
+    [Fact]
+    public void LoadAllFromStringUsesAllAvailableKubernetesModelTypes()
+    {
+        var catalog = new KubernetesModelCatalog();
+        catalog.Register(
+            new KubernetesClient.Informer.Client.GroupApiVersionKind("", "v1", "PodTemplate", "podtemplates"),
+            typeof(V1PodTemplate));
+
+        var objects = KubernetesYaml.LoadAllFromString("""
+            apiVersion: v1
+            kind: PodTemplate
+            metadata:
+              name: test
+            template:
+              metadata:
+                labels:
+                  app: test
+            """.ReplaceLineEndings("\n"), catalog.GetYamlTypeMap());
+
+        objects.Single().ShouldBeOfType<V1PodTemplate>();
+    }
+
 }

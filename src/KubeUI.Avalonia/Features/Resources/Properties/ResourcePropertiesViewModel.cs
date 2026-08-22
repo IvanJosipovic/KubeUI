@@ -43,7 +43,7 @@ public sealed partial class ResourcePropertiesViewModel<T> : ViewModelBase, IDis
     {
         Cluster = cluster;
         Object = resource;
-        ResourceConfig = (ResourceConfigBase<T>)Cluster.GetResourceConfig(Kind);
+        ResourceConfig = Cluster.GetResourceConfig<T>(Kind);
         Cluster.Runtime.OnChange += Cluster_OnChange;
     }
 
@@ -77,4 +77,3 @@ public sealed partial class ResourcePropertiesViewModel<T> : ViewModelBase, IDis
         Cluster?.Runtime.OnChange -= Cluster_OnChange;
     }
 }
-

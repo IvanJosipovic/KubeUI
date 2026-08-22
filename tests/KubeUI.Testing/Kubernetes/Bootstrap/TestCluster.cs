@@ -65,7 +65,7 @@ public sealed class TestCluster : IDisposable, IAsyncDisposable
     {
         if (_fakeApi is not null)
         {
-            _fakeApi.AddYaml(yaml);
+            _fakeApi.AddYaml(yaml, _services.GetRequiredService<KubeUI.Kubernetes.KubernetesModelCatalog>().GetYamlTypeMap());
 
             const string name = "http-limited";
             var kubeConfig = CloneKubeConfig(name);
@@ -163,12 +163,14 @@ public sealed class TestCluster : IDisposable, IAsyncDisposable
         return kubeConfig;
     }
 
-    private static async Task ApplyYamlAsync(IKubernetes client, string yaml, CancellationToken cancellationToken)
+    private async Task ApplyYamlAsync(IKubernetes client, string yaml, CancellationToken cancellationToken)
     {
         var createMethod = typeof(TestCluster)
             .GetMethod(nameof(CreateResourceAsync), BindingFlags.Static | BindingFlags.NonPublic)!;
 
-        foreach (var resource in KubeUI.Kubernetes.Serialization.KubernetesYaml.LoadAllFromString(yaml).Cast<IKubernetesObject>())
+        foreach (var resource in KubeUI.Kubernetes.Serialization.KubernetesYaml.LoadAllFromString(
+            yaml,
+            _services.GetRequiredService<KubeUI.Kubernetes.KubernetesModelCatalog>().GetYamlTypeMap()).Cast<IKubernetesObject>())
         {
             var createTask = (Task)createMethod
                 .MakeGenericMethod(resource.GetType())

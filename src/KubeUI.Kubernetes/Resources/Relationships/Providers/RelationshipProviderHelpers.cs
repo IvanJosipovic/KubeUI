@@ -1,3 +1,4 @@
+using System.Text.Json;
 using k8s;
 using k8s.Models;
 
@@ -5,6 +6,61 @@ namespace KubeUI.Kubernetes.Resources.Relationships.Providers;
 
 internal static class RelationshipProviderHelpers
 {
+    public static JsonElement? Property(GenericKubernetesObject resource, string name)
+    {
+        ArgumentNullException.ThrowIfNull(resource);
+
+        return resource.Properties.TryGetValue(name, out var value) ? value : null;
+    }
+
+    public static JsonElement? Property(JsonElement source, string name)
+    {
+        if (source.ValueKind != JsonValueKind.Object || !source.TryGetProperty(name, out var value))
+        {
+            return null;
+        }
+
+        return value;
+    }
+
+    public static string? String(JsonElement? value)
+    {
+        if (value is not { } element || element.ValueKind != JsonValueKind.String)
+        {
+            return null;
+        }
+
+        return element.GetString();
+    }
+
+    public static IEnumerable<JsonElement> Objects(JsonElement? value)
+    {
+        if (value is not { ValueKind: JsonValueKind.Array } array)
+        {
+            yield break;
+        }
+
+        foreach (var item in array.EnumerateArray())
+        {
+            if (item.ValueKind == JsonValueKind.Object)
+            {
+                yield return item;
+            }
+        }
+    }
+
+    public static string? ValueText(JsonElement? value)
+    {
+        if (value is not { } element || element.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined)
+        {
+            return null;
+        }
+
+        return element.ValueKind == JsonValueKind.String
+            ? element.GetString()
+            : element.GetRawText();
+    }
+
     public static V1PodSpec? PodSpec(IKubernetesObject<V1ObjectMeta> resource)
         => resource switch
         {
@@ -33,44 +89,6 @@ internal static class RelationshipProviderHelpers
             && target != null)
         {
             context.Add(relationships, source, target, relationshipKind, label);
-        }
-    }
-
-    public static void AddByTargetReference(
-        ResourceRelationshipContext context,
-        ICollection<ResourceRelationship> relationships,
-        IKubernetesObject<V1ObjectMeta> source,
-        V1ObjectReference? targetReference,
-        string? defaultNamespace,
-        Type targetType,
-        ResourceRelationshipKind relationshipKind)
-    {
-        IKubernetesObject<V1ObjectMeta>? target = null;
-        if (!string.IsNullOrWhiteSpace(targetReference?.Uid))
-        {
-            context.TryGetByUid(targetReference.Uid, out target);
-        }
-
-        if (target == null && targetReference != null)
-        {
-            var apiVersion = string.IsNullOrWhiteSpace(targetReference.ApiVersion)
-                ? V1Pod.KubeApiVersion
-                : targetReference.ApiVersion;
-            context.TryGet(apiVersion, targetReference.Kind ?? string.Empty, targetReference.NamespaceProperty ?? defaultNamespace, targetReference.Name, out target);
-        }
-
-        if (target == null
-            && targetReference != null
-            && context.TryGetByGroupAndKind(string.Empty, string.IsNullOrWhiteSpace(targetReference.Kind) ? V1Pod.KubeKind : targetReference.Kind, out var candidates))
-        {
-            target = candidates.FirstOrDefault(candidate =>
-                string.Equals(candidate.Namespace(), targetReference.NamespaceProperty ?? defaultNamespace, StringComparison.Ordinal)
-                && string.Equals(candidate.Name(), targetReference.Name, StringComparison.Ordinal));
-        }
-
-        if (target != null && targetType.IsInstanceOfType(target))
-        {
-            context.Add(relationships, source, target, relationshipKind);
         }
     }
 

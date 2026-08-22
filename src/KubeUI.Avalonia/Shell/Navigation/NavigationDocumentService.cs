@@ -6,6 +6,7 @@ using KubeUI.Avalonia.Features.Resources.List;
 using KubeUI.Avalonia.Infrastructure.Docking;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Resources;
+using KubeUI.Kubernetes;
 
 namespace KubeUI.Avalonia.Shell.Navigation;
 
@@ -63,7 +64,7 @@ internal sealed class NavigationDocumentService : IResourceNavigationService
         {
             Cluster = workspace,
             Name = config.Name,
-            ControlType = config.Type
+            ResourceKind = config.Kind
         }));
         return true;
     }
@@ -80,17 +81,11 @@ internal sealed class NavigationDocumentService : IResourceNavigationService
         var existing = !forceNewTab ? FindExisting(navigation.Cluster, config.Kind) : null;
         if (existing != null)
         {
-            if (existing is IResourceListViewModel list
-                && list.ResourceConfig.Type != config.Type)
-            {
-                existing = Replace(list, config.Type) ?? existing;
-            }
-
             Activate(existing);
             return;
         }
 
-        var document = Create(navigation.Cluster, config.Type);
+        var document = Create(navigation.Cluster, config.Kind);
         if (document == null)
         {
             _logger.LogError("Unable to resolve resource list view model for {Name}", navigation.Name);
@@ -107,71 +102,34 @@ internal sealed class NavigationDocumentService : IResourceNavigationService
 
     private IResourceConfig? ResolveConfig(ResourceNavigationLink navigation)
     {
-        return navigation.ControlType == null
-            ? null
-            : navigation.Cluster.GetResourceConfigs()
-                .FirstOrDefault(config => config.Kind == GroupApiVersionKind.From(navigation.ControlType));
+        return navigation.ResourceKind is { } kind
+            ? navigation.Cluster.GetResourceConfig(kind)
+            : null;
     }
 
-    private IDockable? Create(ClusterWorkspace cluster, Type resourceType)
+    private IDockable? Create(ClusterWorkspace cluster, GroupApiVersionKind kind)
     {
+        if (!cluster.Runtime.ModelCatalog.TryGetResourceType(kind, out var resourceType))
+        {
+            return null;
+        }
+
         var type = typeof(ResourceListViewModel<>).MakeGenericType(resourceType);
         if (_serviceProvider.GetRequiredService(type) is not IDockable document)
         {
             return null;
         }
 
-        if (document is IInitializeCluster initialize)
+        if (document is IResourceListViewModel resourceList)
+        {
+            resourceList.InitializeResource(cluster, kind);
+        }
+        else if (document is IInitializeCluster initialize)
         {
             initialize.Initialize(cluster);
         }
 
         return document;
-    }
-
-    private IDockable? Replace(IResourceListViewModel existing, Type resourceType)
-    {
-        if (existing is not IDockable oldDocument)
-        {
-            return null;
-        }
-
-        var documents = _factory().GetDockable<IDocumentDock>("Documents");
-        if (documents?.VisibleDockables == null)
-        {
-            return null;
-        }
-
-        if (Create(existing.Cluster, resourceType) is not IResourceListViewModel replacement)
-        {
-            return null;
-        }
-
-        var replacementDockable = (IDockable)replacement;
-        replacementDockable.Id = oldDocument.Id;
-        replacement.IsNamespaceSelectionLinked = existing.IsNamespaceSelectionLinked;
-        replacement.SearchQuery = existing.SearchQuery;
-
-        if (!replacement.IsNamespaceSelectionLinked)
-        {
-            replacement.SelectedNamespaces.Clear();
-            foreach (var selectedNamespace in existing.SelectedNamespaces)
-            {
-                replacement.SelectedNamespaces.Add(selectedNamespace);
-            }
-        }
-
-        var index = documents.VisibleDockables.IndexOf(oldDocument);
-        var wasActive = ReferenceEquals(documents.ActiveDockable, oldDocument);
-        _factory().CloseDockable(oldDocument);
-        _factory().InsertDockable(documents, replacementDockable, Math.Max(0, Math.Min(index, documents.VisibleDockables.Count)));
-
-        if (wasActive)
-        {
-            Activate(replacementDockable);
-        }
-
-        return replacementDockable;
     }
 
     private IDockable? FindExisting(ClusterWorkspace cluster, GroupApiVersionKind kind)

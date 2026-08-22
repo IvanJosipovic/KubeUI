@@ -26,6 +26,7 @@ using KubeUI.Avalonia.Infrastructure.DataGrid;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Features.AI;
 using KubeUI.AI.Agents;
+using KubeUI.Kubernetes;
 using KubeUI.Avalonia.Resources;
 using SortDirection = KubeUI.Avalonia.Resources.SortDirection;
 using KubeUI.Avalonia.Infrastructure.Threading;
@@ -40,13 +41,14 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<ResourceListViewModel<T>> _logger;
     private readonly IAgentContextService _agentContextService;
+    private GroupApiVersionKind _kind;
 
     private static readonly IComparer s_noopSortComparer = Comparer<object>.Create(static (_, _) => 0);
 
     [ObservableProperty]
     public partial ClusterWorkspace Cluster { get; set; }
 
-    public GroupApiVersionKind Kind => GroupApiVersionKind.From<T>();
+    public GroupApiVersionKind Kind => _kind;
 
     [ObservableProperty]
     public partial ISourceCache<T, string> Objects { get; set; }
@@ -170,10 +172,21 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
 
     public void Initialize(ClusterWorkspace cluster)
     {
+        if (typeof(T) == typeof(GenericKubernetesObject))
+        {
+            throw new InvalidOperationException("Generic resource lists must be initialized with a resource GVK.");
+        }
+
+        InitializeResource(cluster, GroupApiVersionKind.From<T>());
+    }
+
+    public void InitializeResource(ClusterWorkspace cluster, GroupApiVersionKind kind)
+    {
         Cluster = cluster;
-        Title = Kind.Kind.Humanize(LetterCasing.Title).Pluralize();
-        Id = Cluster.Runtime.Name + "-" + Kind;
-        ResourceConfig = (ResourceConfigBase<T>)Cluster.GetResourceConfig(Kind);
+        _kind = kind;
+        ResourceConfig = Cluster.GetResourceConfig<T>(kind);
+        Title = kind.Kind.Humanize(LetterCasing.Title).Pluralize();
+        Id = Cluster.Runtime.Name + "-" + kind;
         _resourceColumns = ResourceConfig.Columns();
         _resourceColumnsByKey.Clear();
         foreach (var column in _resourceColumns)
@@ -196,7 +209,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         GenerateColumnDefinitions();
         SetNamespaceFilter();
 
-        var seedTask = Cluster.Runtime.SeedResource<T>();
+        var seedTask = ResourceConfig.SeedResource();
 
         if (seedTask.IsCompletedSuccessfully)
         {
@@ -341,7 +354,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error loading resource list for {Type}", typeof(T));
+            _logger.LogError(ex, "Error loading resource list for {Kind}", Kind);
 
             await Dispatcher.UIThread.InvokeAsync(() => LoadError = ex);
         }
@@ -353,7 +366,8 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
 
     private void BindObjects()
     {
-        Objects = Cluster.Runtime.GetResourceSourceCache<T>();
+        Objects = Cluster.Runtime.GetResourceSourceCache<T>(ResourceConfig.Kind);
+
         SubscribeToSelectedNamespaces();
 
         _subscription?.Dispose();
@@ -388,7 +402,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
             })
             .Subscribe(
                 _ => { },
-                ex => _logger.LogError(ex, "Error Setting Resource List Filter: {ns} ", typeof(T))
+                ex => _logger.LogError(ex, "Error setting resource list filter for {Kind}", Kind)
             );
 
         _view = view;
@@ -650,7 +664,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     private static string GetResourceIdentity(T resource)
     {
         return resource.Uid() ?? throw new InvalidOperationException(
-            $"Resource {typeof(T).Name} '{resource.Namespace()}/{resource.Name()}' has no metadata UID.");
+            $"Resource {resource.ApiVersion}/{resource.Kind} '{resource.Namespace()}/{resource.Name()}' has no metadata UID.");
     }
 }
 

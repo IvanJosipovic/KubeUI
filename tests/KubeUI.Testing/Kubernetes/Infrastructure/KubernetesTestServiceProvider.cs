@@ -1,6 +1,10 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using k8s;
+using k8s.Models;
+using KubernetesClient.Informer.Client;
+using KubeUI.Kubernetes;
 
 namespace KubeUI.Testing.Kubernetes.Infrastructure;
 
@@ -64,6 +68,25 @@ public static class KubernetesTestServiceProvider
         services.AddSingleton(settings);
         services.AddKubeUIKubernetesServices();
         configure?.Invoke(services);
-        return services.BuildServiceProvider();
+        var provider = services.BuildServiceProvider();
+        RegisterYamlModels(provider.GetRequiredService<KubernetesModelCatalog>());
+        return provider;
+    }
+
+    private static void RegisterYamlModels(KubernetesModelCatalog catalog)
+    {
+        Register<V1Pod>(catalog);
+        Register<V1Namespace>(catalog);
+        Register<V1ServiceAccount>(catalog);
+        Register<V1Secret>(catalog);
+        Register<V1ClusterRole>(catalog);
+        Register<V1ClusterRoleBinding>(catalog);
+        Register<V1RoleBinding>(catalog);
+    }
+
+    private static void Register<T>(KubernetesModelCatalog catalog)
+        where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    {
+        catalog.Register(GroupApiVersionKind.From<T>(), typeof(T));
     }
 }

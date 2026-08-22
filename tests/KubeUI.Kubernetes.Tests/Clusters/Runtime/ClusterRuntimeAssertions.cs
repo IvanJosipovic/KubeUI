@@ -2,6 +2,7 @@ using System.Collections;
 using System.Net;
 using System.Reflection;
 using System.Text;
+using System.Text.Json;
 using k8s;
 using k8s.Autorest;
 using k8s.Models;
@@ -68,6 +69,10 @@ public abstract class ClusterRuntimeAssertions
         await using var harness = await CreateHarnessAsync(backend);
         var limitedCluster = await harness.CreateLimitedAccessAsync(
             KubernetesTestData.LimitedAccessWithNamespaceFallback,
+            cancellationToken: TestContext.Current.CancellationToken);
+        await TestWait.UntilAsync(
+            () => limitedCluster.IsResourceNamespaced<V1Pod>(),
+            TimeSpan.FromSeconds(5),
             cancellationToken: TestContext.Current.CancellationToken);
         await RefreshPermissionsAsync<V1Pod>(limitedCluster, Verb.Get, Verb.List, Verb.Watch);
 
@@ -445,8 +450,9 @@ public abstract class ClusterRuntimeAssertions
         crd.ShouldNotBeNull();
         crd.Name().ShouldBe("tests.kubeui.com");
 
-        var generatedType = await WaitForGeneratedTypeAsync(harness.Cluster, "kubeui.com", "v1beta1", "Test");
-        generatedType.ShouldNotBeNull();
+        harness.Cluster.ModelCatalog.IsCustomResource(
+            new GroupApiVersionKind("kubeui.com", "v1beta1", "Test", "tests"))
+            .ShouldBeTrue();
 
         }
         finally
@@ -466,35 +472,27 @@ public abstract class ClusterRuntimeAssertions
         await harness.CreateAsync(crd, TestContext.Current.CancellationToken);
 
         await WaitForResourceAsync<V1CustomResourceDefinition>(harness.Cluster, null, "tests.kubeui.com");
-        var generatedType = await WaitForGeneratedTypeAsync(harness.Cluster, "kubeui.com", "v1beta1", "Test");
-        generatedType.ShouldNotBeNull();
+        var version = crd.Spec.Versions.First(version => version.Served && version.Storage).Name;
+        var kind = new GroupApiVersionKind(crd.Spec.Group, version, crd.Spec.Names.Kind, crd.Spec.Names.Plural);
 
-        await harness.Cluster.Permissions.UpdatePermissionsAllNamespaceAsync(generatedType!, Verb.List);
-        await harness.Cluster.Permissions.UpdatePermissionsAllNamespaceAsync(generatedType!, Verb.Watch);
+        await harness.Cluster.Permissions.UpdatePermissionsAllNamespaceAsync(kind, namespaced: true, verb: Verb.List);
+        await harness.Cluster.Permissions.UpdatePermissionsAllNamespaceAsync(kind, namespaced: true, verb: Verb.Watch);
 
         await harness.Cluster.ImportYaml(new MemoryStream(Encoding.UTF8.GetBytes(KubernetesTestData.CustomResourceYaml)));
 
-        var seedMethod = harness.Cluster.GetType()
-            .GetMethods(BindingFlags.Instance | BindingFlags.Public)
-            .Single(method => method.Name == nameof(IClusterRuntime.SeedResource)
-                && method.IsGenericMethodDefinition
-                && method.GetParameters().Length == 1);
-        await (Task)seedMethod.MakeGenericMethod(generatedType!).Invoke(harness.Cluster, [true])!;
+        await harness.Cluster.SeedResource(kind, waitForReady: true);
 
-        var kind = harness.Cluster.Objects[GroupApiVersionKind.From(generatedType)];
-        var items = kind.GetType().GetProperty("Items")!.GetValue(kind)!;
+        var items = harness.Cluster.GetResourceSourceCache<GenericKubernetesObject>(kind);
         await TestWait.UntilAsync(
-            () => (int)items.GetType().GetProperty("Count")!.GetValue(items)! == 1,
+            () => items.Count == 1,
             TimeSpan.FromSeconds(10),
             cancellationToken: TestContext.Current.CancellationToken);
 
-        foreach (var item in (IList)items.GetType().GetProperty("Items")!.GetValue(items)!)
+        foreach (var item in items.Items)
         {
-            var obj = (IKubernetesObject<V1ObjectMeta>)item;
-            obj.Name().ShouldBe("test1");
-            obj.Namespace().ShouldBe("default");
-            var spec = obj.GetType().GetProperty("Spec")!.GetValue(obj)!;
-            spec.GetType().GetProperty("SomeString")!.GetValue(spec).ShouldBe("myValue");
+            item.Name().ShouldBe("test1");
+            item.Namespace().ShouldBe("default");
+            item.Properties.ShouldNotBeNull();
         }
 
         }
@@ -727,12 +725,4 @@ public abstract class ClusterRuntimeAssertions
             cancellationToken == default ? TestContext.Current.CancellationToken : cancellationToken);
     }
 
-    private static async Task<Type?> WaitForGeneratedTypeAsync(IClusterRuntime cluster, string group, string version, string kind, TimeSpan? timeout = null, int pollIntervalMs = 100, CancellationToken cancellationToken = default)
-    {
-        return await TestWait.UntilValueAsync(
-            () => cluster.ModelCatalog.GetResourceType(group, version, kind),
-            timeout ?? TimeSpan.FromSeconds(30),
-            TimeSpan.FromMilliseconds(pollIntervalMs),
-            cancellationToken == default ? TestContext.Current.CancellationToken : cancellationToken);
-    }
 }

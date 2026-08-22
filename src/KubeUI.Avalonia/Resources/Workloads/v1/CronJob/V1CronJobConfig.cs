@@ -1,5 +1,6 @@
 using FluentIcons.Common;
 using k8s.Models;
+using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Features.Resources.Common;
 using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Kubernetes;
@@ -14,7 +15,7 @@ public sealed partial class V1CronJobConfig : ResourceConfigBase<V1CronJob>
 
     private static readonly AuthorizationRequest[] s_startAuthorizationRequests =
     [
-        new(typeof(V1Job), Verb.Create, null),
+        new(GroupApiVersionKind.From<V1Job>(), Verb.Create, null),
     ];
 
     public V1CronJobConfig(IServiceProvider serviceProvider, TimeProvider timeProvider)

@@ -11,6 +11,7 @@ using k8s.Models;
 using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Features.Resources.Common;
+using KubeUI.Avalonia.Features.Resources.List;
 using KubeUI.Avalonia.Features.Resources.List.Controls;
 using KubeUI.Avalonia.Features.Resources.Properties;
 using KubeUI.Avalonia.Features.Resources.Visualization;
@@ -38,9 +39,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
         _notificationManager = serviceProvider.GetRequiredService<INotificationManager>();
     }
 
-    public Type Type { get; } = typeof(T);
-
-    public GroupApiVersionKind Kind { get; } = GroupApiVersionKind.From<T>();
+    public virtual GroupApiVersionKind Kind => GroupApiVersionKind.From<T>();
 
     public ClusterWorkspace Cluster { get; private set; }
 
@@ -56,9 +55,16 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
 
     public virtual bool SeedOnConnect => false;
 
-    public bool CanListAndWatch { get; private set; }
+    public bool CanListAndWatch { get; protected set; }
 
-    public bool PermissionsLoaded { get; private set; }
+    public bool PermissionsLoaded { get; protected set; }
+
+    public Task SeedResource(bool waitForReady = false)
+    {
+        return IsCustomResource
+            ? Cluster.Runtime.SeedResource(Kind, waitForReady)
+            : Cluster.Runtime.SeedResource<T>(waitForReady);
+    }
 
     public virtual int Order { get; }
 
@@ -103,14 +109,14 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
 
     public virtual IEnumerable<AuthorizationRequest> AuthorizationRequests()
     {
-        return Permissions().Select(permission => new AuthorizationRequest(Type, permission.verb, permission.subresource));
+        return Permissions().Select(permission => new AuthorizationRequest(Kind, permission.verb, permission.subresource));
     }
 
     public virtual IEnumerable<AuthorizationRequest> ListWatchAuthorizationRequests()
     {
         return [
-            new AuthorizationRequest(Type, Verb.List, null),
-            new AuthorizationRequest(Type, Verb.Watch, null),
+            new AuthorizationRequest(Kind, Verb.List, null),
+            new AuthorizationRequest(Kind, Verb.Watch, null),
         ];
     }
 
@@ -154,6 +160,14 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
     public void Initialize(ClusterWorkspace cluster)
     {
         Cluster = cluster;
+
+        if (!IsCustomResource)
+        {
+            Cluster.Runtime.ModelCatalog.RegisterResource(
+                Kind,
+                typeof(T),
+                waitForReady => Cluster.Runtime.SeedResource<T>(waitForReady));
+        }
     }
 
     public IEnumerable<MenuItemViewModel> GetDefaultMenuItems(IEnumerable? selectedItems)
@@ -202,7 +216,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
         (Verb.Watch, null),
     ];
 
-    public async Task EvaluateListWatchAccessAsync()
+    public virtual Task EvaluateListWatchAccessAsync()
     {
         PermissionsLoaded = false;
         CanListAndWatch = false;
@@ -213,17 +227,18 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
         }
         catch (Exception ex)
         {
-            _logger.LogDebug(ex, "Unable to evaluate cached list/watch permissions for {Type}", typeof(T).FullName);
+            _logger.LogDebug(ex, "Unable to evaluate cached list/watch permissions for {Kind}", Kind);
             CanListAndWatch = false;
         }
 
         PermissionsLoaded = true;
+        return Task.CompletedTask;
     }
 
     private bool HasListAndWatchAccess()
     {
-        if (Cluster.Runtime.Permissions.CanIAnyNamespace<T>(Verb.List)
-            && Cluster.Runtime.Permissions.CanIAnyNamespace<T>(Verb.Watch))
+        if (Cluster.Runtime.Permissions.CanIAnyNamespace(Kind, IsNamespaced, Verb.List)
+            && Cluster.Runtime.Permissions.CanIAnyNamespace(Kind, IsNamespaced, Verb.Watch))
         {
             return true;
         }
@@ -241,8 +256,8 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
                 continue;
             }
 
-            if (Cluster.Runtime.Permissions.CanI<T>(Verb.List, namespaceName)
-                && Cluster.Runtime.Permissions.CanI<T>(Verb.Watch, namespaceName))
+            if (Cluster.Runtime.Permissions.CanI(Kind, Verb.List, namespaceName)
+                && Cluster.Runtime.Permissions.CanI(Kind, Verb.Watch, namespaceName))
             {
                 return true;
             }
@@ -256,7 +271,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
     [RelayCommand(CanExecute = nameof(CanNewResource))]
     public void NewResource()
     {
-        var resource = Activator.CreateInstance<T>();
+        var resource = new T();
         resource.Kind = Kind.Kind;
         resource.ApiVersion = Kind.GroupApiVersion;
         resource.Metadata = new()
@@ -278,7 +293,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
 
     public bool CanNewResource()
     {
-        return Cluster.Runtime.Permissions.CanIAnyNamespace<T>(Verb.Create);
+        return Cluster.Runtime.Permissions.CanIAnyNamespace(Kind, IsNamespaced, Verb.Create);
     }
 
     [RelayCommand(CanExecute = nameof(CanDelete))]
@@ -332,7 +347,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
 
         foreach (var item in items.Cast<T>().ToList().GroupBy(x => x.Namespace()))
         {
-            if (!Cluster.Runtime.Permissions.CanI<T>(Verb.Delete, item.Key))
+            if (!Cluster.Runtime.Permissions.CanI(Kind, Verb.Delete, item.Key))
             {
                 return false;
             }
@@ -418,7 +433,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
             {
                 try
                 {
-                    using var genClient = KubernetesClientExtensions.GetGenericClient(Cluster.Runtime.Client, item);
+                    using var genClient = Cluster.Runtime.Client!.GetGenericClient(Kind);
 
                     await genClient.PatchNamespacedAsync<T>(new V1Patch(sRestartControllerPatch, V1Patch.PatchType.MergePatch), item.Metadata.NamespaceProperty, item.Metadata.Name);
                 }
@@ -449,7 +464,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
 
         foreach (var item in items.Cast<T>().ToList().GroupBy(x => x.Namespace()))
         {
-            if (!Cluster.Runtime.Permissions.CanI<T>(Verb.Patch, item.Key))
+            if (!Cluster.Runtime.Permissions.CanI(Kind, Verb.Patch, item.Key))
             {
                 return false;
             }

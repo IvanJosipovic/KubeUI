@@ -32,7 +32,6 @@ public static class KubeUIAvaloniaServiceCollectionExtensions
 
         configureOverrides?.Invoke(services);
 
-        services.AddSingleton<ServiceDescriptor[]>([.. services]);
         return services;
     }
 

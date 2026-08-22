@@ -1,30 +1,25 @@
-﻿using System.Reflection;
-using System.Text.Json;
 using Avalonia.Controls.Notifications;
 using Avalonia.Input;
 using Avalonia.Xaml.Interactivity;
 using k8s;
 using k8s.Autorest;
 using k8s.Models;
+using KubeUI.Kubernetes;
 
 namespace KubeUI.Avalonia.Infrastructure;
 
 public static class Utilities
 {
-    public static IKubernetesObject<V1ObjectMeta> CloneObject(object obj)
+    public static T CloneObject<T>(T resource)
+        where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
-        var json = KubernetesJson.Serialize(obj);
+        ArgumentNullException.ThrowIfNull(resource);
 
-        return (IKubernetesObject<V1ObjectMeta>)DeserializeKubeJson(json, obj.GetType());
-    }
-
-    private static readonly MethodInfo s_deserializeJson = typeof(KubernetesJson).GetMethod(nameof(KubernetesJson.Deserialize), BindingFlags.Static | BindingFlags.Public, [typeof(string), typeof(JsonSerializerOptions)]);
-
-    public static object DeserializeKubeJson(string json, Type type)
-    {
-        var fooRef = s_deserializeJson.MakeGenericMethod(type);
-
-        return fooRef.Invoke(null, [json, null]) ?? throw new InvalidOperationException("Deserialization returned null.");
+        return resource is GenericKubernetesObject generic
+            ? (T)(object)(KubernetesJson.Deserialize<GenericKubernetesObject>(KubernetesJson.Serialize(generic))
+                ?? throw new InvalidOperationException("Deserialization returned null."))
+            : KubernetesJson.Deserialize<T>(KubernetesJson.Serialize(resource))
+                ?? throw new InvalidOperationException("Deserialization returned null.");
     }
 
     public static void HandleException(ILogger logger, INotificationManager notificationManage, Exception ex, string message, NotificationType type = NotificationType.Error, bool sendNotification = false)
@@ -197,7 +192,6 @@ public static class Utilities
     private static bool IsWrapperException(Exception ex)
     {
         return ex is AggregateException
-            or TargetInvocationException
             || ex.Message.Contains("Exception during deserialization", StringComparison.Ordinal)
             || ex.Message.Contains("Exception during serialization", StringComparison.Ordinal);
     }
@@ -219,4 +213,3 @@ public static class Utilities
         return obj;
     }
 }
-

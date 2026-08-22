@@ -12,10 +12,8 @@ public sealed class YamlEditorIntelliSenseTests
     {
         var documentation = new YamlDocumentationInfo(
             "spec",
-            typeof(TestDocType),
-            "Field summary.",
-            "Type summary.",
-            "unused");
+            nameof(TestDocType),
+            "Field summary.");
 
         var control = YamlDocumentationViewFactory.Create(documentation);
 
@@ -23,25 +21,8 @@ public sealed class YamlEditorIntelliSenseTests
         panel.Children.Count.ShouldBe(3);
 
         panel.Children[0].ShouldBeOfType<TextBlock>().Text.ShouldBe("spec");
-        panel.Children[1].ShouldBeOfType<TextBlock>().Text.ShouldContain(typeof(TestDocType).FullName);
+        panel.Children[1].ShouldBeOfType<TextBlock>().Text.ShouldBe(nameof(TestDocType));
         panel.Children[2].ShouldBeOfType<TextBlock>().Text.ShouldBe("Field summary.");
-    }
-
-    [AvaloniaFact]
-    public void DocumentationViewFactory_UsesTypeSummaryWhenFieldSummaryIsMissing()
-    {
-        var documentation = new YamlDocumentationInfo(
-            "metadata",
-            typeof(TestDocType),
-            string.Empty,
-            "Type summary only.",
-            "unused");
-
-        var control = YamlDocumentationViewFactory.Create(documentation);
-
-        var panel = control.ShouldBeOfType<StackPanel>();
-        panel.Children.Count.ShouldBe(3);
-        panel.Children[2].ShouldBeOfType<TextBlock>().Text.ShouldBe("Type summary only.");
     }
 
     [AvaloniaFact]
@@ -49,10 +30,8 @@ public sealed class YamlEditorIntelliSenseTests
     {
         var documentation = new YamlDocumentationInfo(
             "ownerReferences",
-            typeof(List<V1OwnerReference>),
-            "Owner references.",
-            string.Empty,
-            "unused");
+            "System.Collections.Generic.List<k8s.Models.V1OwnerReference>",
+            "Owner references.");
 
         var control = YamlDocumentationViewFactory.Create(documentation);
 

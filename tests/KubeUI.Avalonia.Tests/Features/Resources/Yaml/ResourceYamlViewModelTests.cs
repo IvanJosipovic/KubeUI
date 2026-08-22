@@ -1,6 +1,8 @@
 using System.Reflection;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
+using Avalonia.Controls.Primitives.PopupPositioning;
+using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
 using Avalonia.Input;
 using Avalonia.Threading;
@@ -16,10 +18,12 @@ using Dock.Model.Controls;
 using Dock.Model.Core;
 using FluentAvalonia.UI.Controls;
 using k8s.Models;
-using KubernetesCRDModelGen;
+using KubernetesJson = k8s.KubernetesJson;
+using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Features.Resources.Yaml.Behaviors;
 using KubeUI.Avalonia.Infrastructure.Platform;
 using KubeUI.Avalonia.Shell.Documents.About;
+using KubeUI.Avalonia.Shell.Main;
 using KubeUI.Avalonia.Tests.Infra;
 using KubeUI.Kubernetes.Serialization;
 using Shouldly;
@@ -63,6 +67,60 @@ public class ResourceYamlViewModelTests
     }
 
     [AvaloniaFact]
+    public void Utilities_CloneObject_PreservesNestedTypedResourceFields()
+    {
+        var pod = new V1Pod
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "test",
+                NamespaceProperty = "default",
+            },
+            Spec = new V1PodSpec
+            {
+                Containers =
+                [
+                    new V1Container
+                    {
+                        Name = "app",
+                        Image = "nginx:1.27",
+                        Command = ["/bin/sh", "-c"],
+                    },
+                ],
+            },
+        };
+
+        var clone = Utilities.CloneObject(pod);
+        clone.ShouldBeOfType<V1Pod>();
+        var yaml = KubernetesYaml.Serialize(clone);
+
+        yaml.ShouldContain("spec:");
+        yaml.ShouldContain("containers:");
+        yaml.ShouldContain("image: nginx:1.27");
+        yaml.ShouldContain("command:");
+        yaml.ShouldContain("- /bin/sh");
+    }
+
+    [Fact]
+    public void Utilities_CloneObject_PreservesGenericResourceTypeAndDocument()
+    {
+        var resource = KubernetesJson.Deserialize<GenericKubernetesObject>("""
+            {
+              "apiVersion": "example.com/v1alpha1",
+              "kind": "Widget",
+              "metadata": { "name": "test" },
+              "spec": { "replicas": 3 }
+            }
+            """)!;
+
+        var clone = Utilities.CloneObject(resource);
+
+        clone.ShouldBeOfType<GenericKubernetesObject>();
+        clone.ShouldNotBeSameAs(resource);
+        clone.Properties["spec"].GetProperty("replicas").GetInt32().ShouldBe(3);
+    }
+
+    [AvaloniaFact]
     public void YamlFoldingStrategy_CreatesFoldingsForNestedMappings()
     {
         var text = new TextDocument();
@@ -79,6 +137,234 @@ public class ResourceYamlViewModelTests
         foldings.Count.ShouldBe(2);
         foldings[0].Name.TrimEnd().ShouldBe($"prop2:");
         foldings[1].Name.TrimEnd().ShouldBe($"  prop2Nested:");
+    }
+
+    [AvaloniaFact]
+    public void YamlFoldingStrategy_IdentifiesMultilineNoisyMetadataFields()
+    {
+        var text = new TextDocument("""
+            apiVersion: v1
+            kind: Pod
+            metadata:
+              annotations:
+                example.com/keep: value
+                kubectl.kubernetes.io/last-applied-configuration: |
+                  {"apiVersion":"v1","kind":"Pod"}
+              managedFields:
+                - manager: kubectl
+                  operation: Apply
+            """.ReplaceLineEndings("\n"));
+
+        var foldings = YamlFoldingStrategy.CreateNewFoldings(text, out _).ToList();
+        foldings.Select(folding => folding.Name.Trim()).ShouldBe(
+        [
+            "metadata:",
+            "annotations:",
+            "kubectl.kubernetes.io/last-applied-configuration: |",
+            "managedFields:",
+            "- manager: kubectl",
+        ]);
+        var noisyFoldings = foldings
+            .Where(folding => YamlFoldingStrategy.IsNoisyFieldFolding(text, folding))
+            .Select(folding => folding.Name.Trim())
+            .ToArray();
+
+        noisyFoldings.ShouldBe(
+        [
+            "kubectl.kubernetes.io/last-applied-configuration: |",
+            "managedFields:",
+        ]);
+    }
+
+    [AvaloniaFact]
+    public void YamlFoldingStrategy_DoesNotIdentifySingleLineLastAppliedConfiguration()
+    {
+        var text = new TextDocument("""
+            metadata:
+              annotations:
+                kubectl.kubernetes.io/last-applied-configuration: compact
+            """.ReplaceLineEndings("\n"));
+
+        var foldings = YamlFoldingStrategy.CreateNewFoldings(text, out _).ToList();
+
+        foldings.Any(folding => YamlFoldingStrategy.IsNoisyFieldFolding(text, folding)).ShouldBeFalse();
+    }
+
+    [AvaloniaFact]
+    public async Task ResourceYamlView_PreservesNoisyFieldsInSerializedYaml()
+    {
+        var cluster = await Application.Current.CreateClusterAsync();
+        var resource = KubernetesJson.Deserialize<GenericKubernetesObject>("""
+            {
+              "apiVersion": "v1",
+              "kind": "Pod",
+              "metadata": {
+                "name": "test",
+                "managedFields": [{"manager": "kubectl", "operation": "Apply"}],
+                "annotations": {
+                  "kubectl.kubernetes.io/last-applied-configuration": "compact"
+                }
+              }
+            }
+            """)!;
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
+
+        vm.Initialize(cluster, resource);
+
+        vm.YamlDocument.Text.ShouldContain("managedFields:");
+        vm.YamlDocument.Text.ShouldContain("kubectl.kubernetes.io/last-applied-configuration:");
+    }
+
+    [AvaloniaFact]
+    public async Task ResourceYamlView_HideNoisyFieldsToggleControlsNoisyFoldState()
+    {
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
+
+        var cluster = await Application.Current.CreateClusterAsync();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
+        vm.Initialize(cluster, new V1Pod
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "test",
+                ManagedFields =
+                [
+                    new V1ManagedFieldsEntry
+                    {
+                        Manager = "kubectl",
+                        Operation = "Apply",
+                    },
+                ],
+                Annotations = new Dictionary<string, string>
+                {
+                    ["example.com/keep"] = "value",
+                },
+            },
+        });
+
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
+        view.DataContext = vm;
+        window.Content = view;
+        window.Show();
+
+        await TestApplicationExtensions.WaitForUiAsync();
+
+        var editor = view.FindControl<TextEditor>("Editor");
+        editor.ShouldNotBeNull();
+        var behavior = Interaction.GetBehaviors(editor).OfType<YamlEditorBehavior>().Single();
+        var foldingManager = GetFoldingManager(behavior);
+        foldingManager.ShouldNotBeNull();
+
+        await WaitForUiAsync(
+            () => foldingManager.AllFoldings.Any(folding =>
+                YamlFoldingStrategy.IsNoisyFieldFolding(editor.Document!, folding.StartOffset, folding.EndOffset)));
+
+        FoldingSection[] GetNoisyFoldings() => foldingManager.AllFoldings
+            .Where(folding => YamlFoldingStrategy.IsNoisyFieldFolding(editor.Document!, folding.StartOffset, folding.EndOffset))
+            .ToArray();
+
+        var noisyFoldings = GetNoisyFoldings();
+        noisyFoldings.ShouldNotBeEmpty();
+        noisyFoldings.ShouldAllBe(folding => folding.IsFolded);
+
+        vm.HideNoisyFields = false;
+        await WaitForUiAsync(() => GetNoisyFoldings().All(folding => !folding.IsFolded));
+
+        vm.HideNoisyFields = true;
+        await WaitForUiAsync(() => GetNoisyFoldings().All(folding => folding.IsFolded));
+    }
+
+    [AvaloniaFact]
+    public async Task ResourceYamlView_FoldsNewNoisyFieldsImmediatelyWhenObjectRefreshes()
+    {
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
+
+        var cluster = await Application.Current.CreateClusterAsync();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
+        vm.Initialize(cluster, new V1Pod
+        {
+            Metadata = new V1ObjectMeta { Name = "test" },
+        });
+
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
+        view.DataContext = vm;
+        window.Content = view;
+        window.Show();
+
+        await TestApplicationExtensions.WaitForUiAsync();
+
+        var editor = view.FindControl<TextEditor>("Editor");
+        editor.ShouldNotBeNull();
+        var behavior = Interaction.GetBehaviors(editor).OfType<YamlEditorBehavior>().Single();
+        var foldingManager = GetFoldingManager(behavior);
+        foldingManager.ShouldNotBeNull();
+
+        vm.Object = new V1Pod
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "test",
+                ManagedFields =
+                [
+                    new V1ManagedFieldsEntry
+                    {
+                        Manager = "kubectl",
+                        Operation = "Apply",
+                    },
+                ],
+            },
+        };
+
+        await WaitForUiAsync(
+            () => foldingManager.AllFoldings.Any(folding =>
+                YamlFoldingStrategy.IsNoisyFieldFolding(editor.Document!, folding.StartOffset, folding.EndOffset)));
+
+        var noisyFoldings = foldingManager.AllFoldings
+            .Where(folding => YamlFoldingStrategy.IsNoisyFieldFolding(
+                editor.Document!, folding.StartOffset, folding.EndOffset))
+            .ToArray();
+
+        noisyFoldings.ShouldNotBeEmpty();
+        noisyFoldings.ShouldAllBe(folding => folding.IsFolded);
+    }
+
+    [AvaloniaFact]
+    public async Task ResourceYamlView_PreservesUserFoldingsWhenObjectRefreshes()
+    {
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
+
+        var cluster = await Application.Current.CreateClusterAsync();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
+        vm.Initialize(cluster, CreatePod("before", includeLabels: false, extraEnv: true));
+
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
+        view.DataContext = vm;
+        window.Content = view;
+        window.Show();
+
+        await TestApplicationExtensions.WaitForUiAsync();
+
+        var editor = view.FindControl<TextEditor>("Editor");
+        editor.ShouldNotBeNull();
+        var behavior = Interaction.GetBehaviors(editor).OfType<YamlEditorBehavior>().Single();
+        var foldingManager = GetFoldingManager(behavior);
+        foldingManager.ShouldNotBeNull();
+
+        await WaitForUiAsync(
+            () => foldingManager.AllFoldings.Any(folding => folding.Title.TrimEnd() == "spec:"));
+
+        foldingManager.AllFoldings.Single(folding => folding.Title.TrimEnd() == "spec:").IsFolded = true;
+
+        vm.Object = CreatePod("after", includeLabels: false, extraEnv: true);
+
+        await WaitForUiAsync(
+            () => editor.Document!.Text.Contains("after", StringComparison.Ordinal)
+                && foldingManager.AllFoldings.Any(folding => folding.Title.TrimEnd() == "spec:"));
+
+        foldingManager.AllFoldings
+            .Single(folding => folding.Title.TrimEnd() == "spec:")
+            .IsFolded
+            .ShouldBeTrue();
     }
 
     [AvaloniaFact]
@@ -271,6 +557,48 @@ public class ResourceYamlViewModelTests
     }
 
     [AvaloniaFact]
+    public async Task ResourceYamlView_DoesNotReplaceUnsavedYaml_WhenResourceUpdatesDuringEdit()
+    {
+        var cluster = await Application.Current.CreateClusterAsync();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
+        vm.Initialize(cluster, new V1Namespace
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "test",
+            },
+        });
+        vm.EditMode = true;
+        vm.YamlDocument.Text = """
+            apiVersion: v1
+            kind: Namespace
+            metadata:
+              name: local-edit
+            """.ReplaceLineEndings("\n");
+
+        await cluster.Runtime.AddOrUpdateResource(new V1Namespace
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "test",
+                Labels = new Dictionary<string, string>
+                {
+                    ["server-update"] = "true",
+                },
+            },
+        });
+
+        await WaitForUiAsync(
+            () => vm.Object?.Metadata.Labels?.ContainsKey("server-update") == true);
+
+        vm.YamlDocument.Text.ShouldContain("name: local-edit");
+
+        vm.EditMode = false;
+        await WaitForUiAsync(() => vm.YamlDocument.Text.Contains("server-update", StringComparison.Ordinal));
+        vm.YamlDocument.Text.ShouldNotContain("name: local-edit");
+    }
+
+    [AvaloniaFact]
     public async Task ResourceYamlView_PreservesScrollOffset_WhenActiveDockableChanges()
     {
         var cluster = await Application.Current.CreateClusterAsync();
@@ -420,7 +748,7 @@ public class ResourceYamlViewModelTests
     {
         using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var cluster = await Application.Current.CreateClusterAsync();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
@@ -442,7 +770,6 @@ public class ResourceYamlViewModelTests
 
         var editor = view.FindControl<TextEditor>("Editor");
         editor.ShouldNotBeNull();
-
         var keyBinding = editor.KeyBindings.OfType<KeyBinding>()
             .Single(binding => binding.Command == vm.RequestCompletionCommand);
         keyBinding.Command.ShouldBe(vm.RequestCompletionCommand);
@@ -463,11 +790,11 @@ public class ResourceYamlViewModelTests
     }
 
     [AvaloniaFact]
-    public void ResourceYamlView_DoesNotShowEmptyCompletion_WhenTypedPrefixHasNoMatches()
+    public async Task ResourceYamlView_DoesNotShowEmptyCompletion_WhenTypedPrefixHasNoMatches()
     {
         using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var cluster = await Application.Current.CreateClusterAsync();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
@@ -498,11 +825,11 @@ public class ResourceYamlViewModelTests
     }
 
     [AvaloniaFact]
-    public void ResourceYamlView_ClosesCompletion_WhenTextIsDeleted()
+    public async Task ResourceYamlView_ClosesCompletion_WhenTextIsDeleted()
     {
         using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var cluster = await Application.Current.CreateClusterAsync();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
@@ -540,7 +867,7 @@ public class ResourceYamlViewModelTests
     {
         using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var cluster = await Application.Current.CreateClusterAsync();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
@@ -580,11 +907,11 @@ public class ResourceYamlViewModelTests
     }
 
     [AvaloniaFact]
-    public void ResourceYamlView_ShowsDocumentationPopupOnHoverOverFieldName()
+    public async Task ResourceYamlView_ShowsDocumentationPopupOnHoverOverFieldName()
     {
         using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var cluster = await Application.Current.CreateClusterAsync();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
@@ -624,7 +951,7 @@ public class ResourceYamlViewModelTests
         var popup = GetDocumentationWindow(editor);
         popup.ShouldNotBeNull();
         popup!.ShouldBeOfType<StackPanel>();
-        ToolTip.GetIsOpen(editor).ShouldBeTrue();
+        IsDocumentationPopupOpen(editor).ShouldBeTrue();
 
         var panel = (StackPanel)popup;
         var title = panel.Children.OfType<TextBlock>().FirstOrDefault();
@@ -636,15 +963,348 @@ public class ResourceYamlViewModelTests
         shown.ShouldBeFalse();
         Dispatcher.UIThread.RunJobs();
 
-        ToolTip.GetIsOpen(editor).ShouldBeFalse();
+        IsDocumentationPopupOpen(editor).ShouldBeFalse();
     }
 
     [AvaloniaFact]
-    public void ResourceYamlView_ShowsDocumentationPopupOnNestedFieldName()
+    public async Task ResourceYamlView_ShowsDocumentationPopupForPodMetadataNameAndNamespace()
+    {
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
+        var cluster = await Application.Current.CreateClusterAsync();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
+        vm.Initialize(cluster, new V1Pod
+        {
+            Metadata = new V1ObjectMeta { Name = "test", NamespaceProperty = "default" },
+        });
+
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
+        view.DataContext = vm;
+        window.Content = view;
+        window.Show();
+        Dispatcher.UIThread.RunJobs();
+
+        vm.YamlDocument.Text = """
+            apiVersion: v1
+            kind: Pod
+            metadata:
+              name: test
+              namespace: default
+            """.ReplaceLineEndings("\n");
+        Dispatcher.UIThread.RunJobs();
+
+        var editor = view.FindControl<TextEditor>("Editor").ShouldNotBeNull();
+        foreach (var field in new[] { "name", "namespace" })
+        {
+            var offset = editor.Document!.Text.IndexOf(field, StringComparison.Ordinal) + 1;
+            InvokeHoverTooltip(editor, offset).ShouldBeTrue(field);
+            GetDocumentationWindow(editor).ShouldNotBeNull(field);
+            IsDocumentationPopupOpen(editor).ShouldBeTrue(field);
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task ResourceYamlView_ShowsDocumentationPopupForMetadataNameAtEndOfDocument()
+    {
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
+        var cluster = await Application.Current.CreateClusterAsync();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
+        vm.Initialize(cluster, new V1Pod
+        {
+            Metadata = new V1ObjectMeta { Name = "test", NamespaceProperty = "default" },
+        });
+
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
+        view.DataContext = vm;
+        window.Content = view;
+        window.Show();
+        await TestApplicationExtensions.WaitForUiAsync();
+
+        vm.YamlDocument.Text = "apiVersion: v1\nkind: Pod\nmetadata:\n  name: temp";
+        await TestApplicationExtensions.WaitForUiAsync();
+
+        var editor = view.FindControl<TextEditor>("Editor").ShouldNotBeNull();
+        var offset = editor.Document!.Text.IndexOf("name", StringComparison.Ordinal) + 1;
+        var editorPoint = GetPointForOffset(editor, offset);
+        var windowPoint = editor.TextArea.TextView.TranslatePoint(editorPoint, window);
+        windowPoint.ShouldNotBeNull();
+
+        window.MouseMove(windowPoint!.Value);
+
+        await WaitForAsync(() => IsDocumentationPopupOpen(editor), 1000);
+        GetDocumentationWindow(editor).ShouldNotBeNull();
+        var popup = GetDocumentationPopup(editor).ShouldNotBeNull();
+        popup.PlacementTarget.ShouldBe(editor.TextArea.TextView);
+        popup.Placement.ShouldBe(PlacementMode.AnchorAndGravity);
+        popup.PlacementAnchor.ShouldBe(PopupAnchor.TopLeft);
+        popup.PlacementGravity.ShouldBe(PopupGravity.BottomRight);
+        popup.PlacementConstraintAdjustment.ShouldBe(
+            PopupPositionerConstraintAdjustment.SlideX | PopupPositionerConstraintAdjustment.SlideY);
+        popup.PlacementRect.ShouldNotBeNull().X.ShouldBeGreaterThan(0);
+        popup.HorizontalOffset.ShouldBe(8);
+        popup.VerticalOffset.ShouldBe(0);
+
+        var surface = popup.Child.ShouldBeOfType<ContentControl>();
+        surface.IsHitTestVisible.ShouldBeFalse();
+        Application.Current.TryGetResource("SystemRegionBrush", Application.Current.ActualThemeVariant, out var background).ShouldBeTrue();
+        surface.Background.ShouldBe(background);
+        surface.Foreground.ShouldNotBeNull();
+    }
+
+    [AvaloniaFact]
+    public async Task ResourceYamlView_ShowsTooltipForBuiltInResourceSchema()
+    {
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
+        var cluster = await Application.Current.CreateClusterAsync();
+        var kind = GroupApiVersionKind.From<V1Pod>();
+        cluster.Runtime.ModelCatalog.OpenApiSchemas.GetSchema(kind).ShouldNotBeNull();
+
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
+        vm.Initialize(cluster, new V1Pod
+        {
+            Metadata = new V1ObjectMeta { Name = "test", NamespaceProperty = "default" },
+        });
+
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
+        view.DataContext = vm;
+        window.Content = view;
+        window.Show();
+        Dispatcher.UIThread.RunJobs();
+
+        vm.YamlDocument.Text = "apiVersion: v1\nkind: Pod\nspec:\n";
+        Dispatcher.UIThread.RunJobs();
+
+        var editor = view.FindControl<TextEditor>("Editor").ShouldNotBeNull();
+        var offset = editor.Document!.Text.IndexOf("spec", StringComparison.Ordinal) + 1;
+
+        InvokeHoverTooltipAtPoint(editor, GetPointForOffset(editor, offset)).ShouldBeTrue();
+        var tip = GetDocumentationWindow(editor).ShouldBeOfType<StackPanel>();
+        tip.Children.OfType<TextBlock>().Select(x => x.Text).ShouldContain("Pod specification");
+        tip.Children.OfType<TextBlock>().Select(x => x.Text).ShouldContain("object");
+        IsDocumentationPopupOpen(editor).ShouldBeTrue();
+    }
+
+    [AvaloniaFact]
+    public async Task ResourceYamlView_ShowsTooltipForBuiltInResourceThroughWindowPointerMove()
+    {
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
+        var cluster = await Application.Current.CreateClusterAsync();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
+        vm.Initialize(cluster, new V1Pod
+        {
+            Metadata = new V1ObjectMeta { Name = "test", NamespaceProperty = "default" },
+        });
+
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
+        view.DataContext = vm;
+        window.Content = view;
+        window.Show();
+        Dispatcher.UIThread.RunJobs();
+
+        vm.YamlDocument.Text = "apiVersion: v1\nkind: Pod\nspec:\n";
+        Dispatcher.UIThread.RunJobs();
+
+        var editor = view.FindControl<TextEditor>("Editor").ShouldNotBeNull();
+        var offset = editor.Document!.Text.IndexOf("spec", StringComparison.Ordinal) + 1;
+        var textView = editor.TextArea.TextView;
+        var editorPoint = GetPointForOffset(editor, offset);
+        var windowPoint = textView.TranslatePoint(editorPoint, window);
+        windowPoint.ShouldNotBeNull();
+
+        window.MouseMove(windowPoint!.Value);
+
+        await WaitForAsync(() => IsDocumentationPopupOpen(editor), 1000);
+        IsDocumentationPopupOpen(editor).ShouldBeTrue();
+        GetDocumentationWindow(editor).ShouldNotBeNull();
+    }
+
+    [AvaloniaFact]
+    public async Task ResourceYamlView_ShowsTooltipForBuiltInResourceWhenPresentedByDock()
+    {
+        var cluster = await Application.Current.CreateClusterAsync();
+        cluster.Runtime.ModelCatalog.OpenApiSchemas.GetSchema(GroupApiVersionKind.From<V1Pod>()).ShouldNotBeNull();
+
+        var factory = Application.Current.GetRequiredTestService<IFactory>();
+        var layout = factory.CreateLayout();
+        factory.InitLayout(layout);
+        var documents = factory.GetDockable<IDocumentDock>("Documents").ShouldNotBeNull();
+        var dockControl = new DockControl { Layout = layout };
+
+        using var window = Application.Current.CreateTestWindow(content: dockControl);
+        window.Show();
+
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
+        vm.Initialize(cluster, new V1Pod
+        {
+            Metadata = new V1ObjectMeta { Name = "test", NamespaceProperty = "default" },
+        });
+        vm.YamlDocument.Text = "apiVersion: v1\nkind: Pod\nspec:\n";
+        factory.AddToDocuments(vm);
+        factory.SetActiveDockable(vm);
+        factory.SetFocusedDockable(documents, vm);
+
+        var editor = await WaitForValueAsync(() => FindVisibleYamlEditor(window, vm), 3000);
+        editor.ShouldNotBeNull();
+        var offset = editor.Document!.Text.IndexOf("spec", StringComparison.Ordinal) + 1;
+        var editorPoint = GetPointForOffset(editor, offset);
+        var windowPoint = editor.TextArea.TextView.TranslatePoint(editorPoint, window);
+        windowPoint.ShouldNotBeNull();
+        TextView? hitTextView = null;
+        await WaitForAsync(() =>
+        {
+            hitTextView = window.InputHitTest(windowPoint!.Value) as TextView;
+            return hitTextView is not null;
+        }, 3000);
+        hitTextView.ShouldNotBeNull();
+
+        window.MouseMove(windowPoint!.Value);
+
+        await WaitForAsync(() => IsDocumentationPopupOpen(editor), 1000);
+        IsDocumentationPopupOpen(editor).ShouldBeTrue();
+        GetDocumentationWindow(editor).ShouldNotBeNull();
+    }
+
+    [AvaloniaFact]
+    public async Task MainView_ShowsTooltipForV1PodYaml()
+    {
+        var cluster = await Application.Current.CreateClusterAsync();
+        var mainViewModel = Application.Current.GetRequiredTestService<MainViewModel>();
+        var factory = Application.Current.GetRequiredTestService<IFactory>();
+        var previousLayout = mainViewModel.Layout;
+        var layout = factory.CreateLayout();
+        factory.InitLayout(layout);
+        mainViewModel.Layout = layout;
+
+        using var window = Application.Current.CreateTestWindow(content: new MainView
+        {
+            DataContext = mainViewModel,
+        });
+        window.Show();
+
+        var pod = new V1Pod
+        {
+            Metadata = new V1ObjectMeta { Name = "test", NamespaceProperty = "default" },
+        };
+        var yamlViewModel = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
+        try
+        {
+            yamlViewModel.Initialize(cluster, pod);
+            yamlViewModel.YamlDocument.Text = "apiVersion: v1\nkind: Pod\nspec:\n";
+            factory.AddToBottom(yamlViewModel);
+
+            var editor = await WaitForValueAsync(() => FindVisibleYamlEditor(window, yamlViewModel), 3000);
+            var offset = editor.Document!.Text.IndexOf("spec", StringComparison.Ordinal) + 1;
+            var windowPoint = editor.TextArea.TextView.TranslatePoint(GetPointForOffset(editor, offset), window);
+            windowPoint.ShouldNotBeNull();
+            window.MouseMove(windowPoint.Value);
+
+            await WaitForAsync(() => IsDocumentationPopupOpen(editor), 1000);
+            GetDocumentationWindow(editor).ShouldNotBeNull();
+            var popup = GetDocumentationPopup(editor).ShouldNotBeNull();
+            popup.PlacementTarget.ShouldBe(editor.TextArea.TextView);
+            popup.Placement.ShouldBe(PlacementMode.AnchorAndGravity);
+        }
+        finally
+        {
+            factory.RemoveDockable(yamlViewModel, collapse: false);
+            yamlViewModel.Dispose();
+            if (previousLayout is not null)
+            {
+                factory.InitLayout(previousLayout);
+            }
+
+            mainViewModel.Layout = previousLayout;
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task MainWindow_ShowsTooltipForV1PodYaml()
+    {
+        var cluster = await Application.Current.CreateClusterAsync();
+        var mainViewModel = Application.Current.GetRequiredTestService<MainViewModel>();
+        var factory = Application.Current.GetRequiredTestService<IFactory>();
+        var previousLayout = mainViewModel.Layout;
+        var layout = factory.CreateLayout();
+        factory.InitLayout(layout);
+        mainViewModel.Layout = layout;
+
+        var window = new MainWindow
+        {
+            Width = 1200,
+            Height = 800,
+            DataContext = mainViewModel,
+        };
+        window.Show();
+
+        var pod = new V1Pod
+        {
+            Metadata = new V1ObjectMeta { Name = "test", NamespaceProperty = "default" },
+        };
+        var yamlViewModel = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
+        try
+        {
+            yamlViewModel.Initialize(cluster, pod);
+            yamlViewModel.YamlDocument.Text = "apiVersion: v1\nkind: Pod\nspec:\n";
+            factory.AddToBottom(yamlViewModel);
+
+            var editor = await WaitForValueAsync(() => FindVisibleYamlEditor(window, yamlViewModel), 3000);
+            var offset = editor.Document!.Text.IndexOf("spec", StringComparison.Ordinal) + 1;
+            var windowPoint = editor.TextArea.TextView.TranslatePoint(GetPointForOffset(editor, offset), window);
+            windowPoint.ShouldNotBeNull();
+            window.MouseMove(windowPoint.Value);
+
+            await WaitForAsync(() => IsDocumentationPopupOpen(editor), 1000);
+            GetDocumentationWindow(editor).ShouldNotBeNull();
+            var popup = GetDocumentationPopup(editor).ShouldNotBeNull();
+            popup.PlacementTarget.ShouldBe(editor.TextArea.TextView);
+            popup.Placement.ShouldBe(PlacementMode.AnchorAndGravity);
+        }
+        finally
+        {
+            factory.RemoveDockable(yamlViewModel, collapse: false);
+            yamlViewModel.Dispose();
+            window.DataContext = null;
+            window.Content = null;
+            window.Close();
+            mainViewModel.Layout = previousLayout;
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task ResourceYamlView_ShowsTooltipForCustomResourceSchema()
+    {
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
+        var cluster = await Application.Current.CreateClusterAsync();
+        var kind = new GroupApiVersionKind("example.com", "v1", "Widget", "widgets");
+        cluster.Runtime.ModelCatalog.RegisterCustomResourceDefinition(kind);
+        cluster.Runtime.ModelCatalog.OpenApiSchemas.GetSchema(kind).ShouldNotBeNull();
+
+        var resource = KubernetesJson.Deserialize<GenericKubernetesObject>("{\"apiVersion\":\"example.com/v1\",\"kind\":\"Widget\",\"metadata\":{\"name\":\"test\"}}");
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
+        vm.Initialize(cluster, resource);
+
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
+        view.DataContext = vm;
+        window.Content = view;
+        window.Show();
+        Dispatcher.UIThread.RunJobs();
+
+        vm.YamlDocument.Text = "apiVersion: example.com/v1\nkind: Widget\nspec:\n";
+        Dispatcher.UIThread.RunJobs();
+
+        var editor = view.FindControl<TextEditor>("Editor").ShouldNotBeNull();
+        var offset = editor.Document!.Text.IndexOf("spec", StringComparison.Ordinal) + 1;
+
+        InvokeHoverTooltip(editor, offset).ShouldBeTrue();
+        GetDocumentationWindow(editor).ShouldNotBeNull();
+        IsDocumentationPopupOpen(editor).ShouldBeTrue();
+    }
+
+    [AvaloniaFact]
+    public async Task ResourceYamlView_ShowsDocumentationPopupOnNestedFieldName()
     {
         using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var cluster = await Application.Current.CreateClusterAsync();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
@@ -691,11 +1351,11 @@ public class ResourceYamlViewModelTests
     }
 
     [AvaloniaFact]
-    public void ResourceYamlView_ShowsDocumentationPopupOnFieldNamePastTenthLine()
+    public async Task ResourceYamlView_ShowsDocumentationPopupOnFieldNamePastTenthLine()
     {
         using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var cluster = await Application.Current.CreateClusterAsync();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
@@ -748,14 +1408,15 @@ public class ResourceYamlViewModelTests
         var title = panel.Children.OfType<TextBlock>().FirstOrDefault();
         title.ShouldNotBeNull();
         title!.Text.ShouldBe("containers");
+        panel.Children.OfType<TextBlock>().Skip(1).First().Text.ShouldBe("array");
     }
 
     [AvaloniaFact]
-    public void ResourceYamlView_ShowsDocumentationPopupOnNestedFieldPastTenthLine()
+    public async Task ResourceYamlView_ShowsDocumentationPopupOnNestedFieldPastTenthLine()
     {
         using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var cluster = await Application.Current.CreateClusterAsync();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
@@ -813,11 +1474,11 @@ public class ResourceYamlViewModelTests
     }
 
     [AvaloniaFact]
-    public void ResourceYamlView_ShowsDocumentationPopupOnKeyAtEndOfLine()
+    public async Task ResourceYamlView_ShowsDocumentationPopupOnKeyAtEndOfLine()
     {
         using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var cluster = await Application.Current.CreateClusterAsync();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
@@ -874,11 +1535,11 @@ public class ResourceYamlViewModelTests
     }
 
     [AvaloniaFact]
-    public void ResourceYamlView_ShowsDocumentationPopupOnSequenceItemFieldName()
+    public async Task ResourceYamlView_ShowsDocumentationPopupOnSequenceItemFieldName()
     {
         using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var cluster = await Application.Current.CreateClusterAsync();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
@@ -937,11 +1598,11 @@ public class ResourceYamlViewModelTests
     }
 
     [AvaloniaFact]
-    public void ResourceYamlView_UpdatesDocumentationPopupWhenHoverMovesBetweenFields()
+    public async Task ResourceYamlView_UpdatesDocumentationPopupWhenHoverMovesBetweenFields()
     {
         using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var cluster = await Application.Current.CreateClusterAsync();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
@@ -1009,11 +1670,11 @@ public class ResourceYamlViewModelTests
     }
 
     [AvaloniaFact]
-    public void ResourceYamlView_ShowsDocumentationPopupAfterBlankLinesAndComments()
+    public async Task ResourceYamlView_ShowsDocumentationPopupAfterBlankLinesAndComments()
     {
         using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var cluster = await Application.Current.CreateClusterAsync();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
@@ -1072,11 +1733,11 @@ public class ResourceYamlViewModelTests
     }
 
     [AvaloniaFact]
-    public void ResourceYamlView_DoesNotShowDocumentationPopupOnColonOrValueBoundary()
+    public async Task ResourceYamlView_DoesNotShowDocumentationPopupOnColonOrValueBoundary()
     {
         using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var cluster = await Application.Current.CreateClusterAsync();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
@@ -1125,15 +1786,15 @@ public class ResourceYamlViewModelTests
 
         Dispatcher.UIThread.RunJobs();
 
-        ToolTip.GetIsOpen(editor).ShouldBeFalse();
+        IsDocumentationPopupOpen(editor).ShouldBeFalse();
     }
 
     [AvaloniaFact]
-    public void ResourceYamlView_ClosesDocumentationPopupWhenScrolled()
+    public async Task ResourceYamlView_ClosesDocumentationPopupWhenScrolled()
     {
         using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var cluster = await Application.Current.CreateClusterAsync();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
@@ -1219,22 +1880,22 @@ public class ResourceYamlViewModelTests
 
         Dispatcher.UIThread.RunJobs();
 
-        ToolTip.GetIsOpen(editor).ShouldBeTrue();
+        IsDocumentationPopupOpen(editor).ShouldBeTrue();
 
         var scrollViewer = editor.GetScrollViewer();
         scrollViewer.ShouldNotBeNull();
         scrollViewer.Offset = new Vector(0, 80);
         Dispatcher.UIThread.RunJobs();
 
-        ToolTip.GetIsOpen(editor).ShouldBeFalse();
+        IsDocumentationPopupOpen(editor).ShouldBeFalse();
     }
 
     [AvaloniaFact]
-    public void ResourceYamlView_ShowsDocumentationPopupFromRenderedPointOnRootField()
+    public async Task ResourceYamlView_ShowsDocumentationPopupFromRenderedPointOnRootField()
     {
         using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var cluster = await Application.Current.CreateClusterAsync();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
@@ -1277,11 +1938,11 @@ public class ResourceYamlViewModelTests
     }
 
     [AvaloniaFact]
-    public void ResourceYamlView_ShowsDocumentationPopupFromRenderedPointOnNestedSequenceField()
+    public async Task ResourceYamlView_ShowsDocumentationPopupFromRenderedPointOnNestedSequenceField()
     {
         using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var cluster = await Application.Current.CreateClusterAsync();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
@@ -1330,11 +1991,11 @@ public class ResourceYamlViewModelTests
     }
 
     [AvaloniaFact]
-    public void ResourceYamlView_ShowsDocumentationPopupFromRenderedPointPastTenthLine()
+    public async Task ResourceYamlView_ShowsDocumentationPopupFromRenderedPointPastTenthLine()
     {
         using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var cluster = await Application.Current.CreateClusterAsync();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
@@ -1390,11 +2051,11 @@ public class ResourceYamlViewModelTests
     }
 
     [AvaloniaFact]
-    public void ResourceYamlView_DoesNotShowDocumentationPopupFromRenderedPointOnValue()
+    public async Task ResourceYamlView_DoesNotShowDocumentationPopupFromRenderedPointOnValue()
     {
         using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var cluster = await Application.Current.CreateClusterAsync();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
@@ -1429,15 +2090,15 @@ public class ResourceYamlViewModelTests
 
         Dispatcher.UIThread.RunJobs();
 
-        ToolTip.GetIsOpen(editor).ShouldBeFalse();
+        IsDocumentationPopupOpen(editor).ShouldBeFalse();
     }
 
     [AvaloniaFact]
-    public void ResourceYamlView_ShowsDocumentationPopupForImagePullPolicyInCalicoControllerManifest()
+    public async Task ResourceYamlView_ShowsDocumentationPopupForImagePullPolicyInCalicoControllerManifest()
     {
         using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var cluster = await Application.Current.CreateClusterAsync();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
@@ -1509,11 +2170,11 @@ public class ResourceYamlViewModelTests
     }
 
     [AvaloniaFact]
-    public void ResourceYamlView_ShowsDocumentationPopupForImagePullPolicyInCalicoControllerManifestWithoutTrailingNewline()
+    public async Task ResourceYamlView_ShowsDocumentationPopupForImagePullPolicyInCalicoControllerManifestWithoutTrailingNewline()
     {
         using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var cluster = await Application.Current.CreateClusterAsync();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
@@ -1592,7 +2253,7 @@ public class ResourceYamlViewModelTests
     {
         using var window = Application.Current.CreateTestWindow(width: 800, height: 250);
 
-        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var cluster = await Application.Current.CreateClusterAsync();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
@@ -1678,7 +2339,7 @@ public class ResourceYamlViewModelTests
     {
         using var window = Application.Current.CreateTestWindow(width: 800, height: 250);
 
-        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var cluster = await Application.Current.CreateClusterAsync();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
@@ -1758,7 +2419,7 @@ public class ResourceYamlViewModelTests
     {
         using var window = Application.Current.CreateTestWindow(width: 800, height: 250);
 
-        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var cluster = await Application.Current.CreateClusterAsync();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
@@ -1837,7 +2498,7 @@ public class ResourceYamlViewModelTests
     {
         using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var cluster = await Application.Current.CreateClusterAsync();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
@@ -1872,7 +2533,7 @@ public class ResourceYamlViewModelTests
     {
         using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var cluster = await Application.Current.CreateClusterAsync();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
@@ -1924,7 +2585,7 @@ public class ResourceYamlViewModelTests
     {
         using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var cluster = await Application.Current.CreateClusterAsync();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
@@ -1974,11 +2635,120 @@ public class ResourceYamlViewModelTests
     }
 
     [AvaloniaFact]
+    public async Task ResourceYamlView_ContinuesSequenceItemMapping_WhenEnterIsPressedAfterValue()
+    {
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
+
+        var cluster = await Application.Current.CreateClusterAsync();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
+        vm.Initialize(cluster, new V1Pod
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "test",
+                NamespaceProperty = "default",
+            },
+        });
+        vm.ValidationDebounceDelay = TimeSpan.Zero;
+        vm.EditMode = true;
+        vm.YamlDocument.Text = """
+            apiVersion: v1
+            kind: Pod
+            metadata:
+              name: temp
+              namespace: default
+            spec:
+              containers:
+                - imagePullPolicy: Always
+            """.ReplaceLineEndings("\n");
+
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
+        view.DataContext = vm;
+        window.Content = view;
+        window.Show();
+
+        await TestApplicationExtensions.WaitForUiAsync();
+
+        var editor = view.FindControl<TextEditor>("Editor");
+        editor.ShouldNotBeNull();
+        editor.CaretOffset = editor.Text.Length;
+
+        editor.TextArea.PerformTextInput("\n");
+        await TestApplicationExtensions.WaitForUiAsync();
+
+        editor.Text.ShouldBe(
+            "apiVersion: v1\n"
+            + "kind: Pod\n"
+            + "metadata:\n"
+            + "  name: temp\n"
+            + "  namespace: default\n"
+            + "spec:\n"
+            + "  containers:\n"
+            + "    - imagePullPolicy: Always\n"
+            + "      ");
+    }
+
+    [AvaloniaFact]
+    public async Task ResourceYamlView_ForcesNewSequenceItem_WhenControlEnterIsPressedAfterValue()
+    {
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
+
+        var cluster = await Application.Current.CreateClusterAsync();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
+        vm.Initialize(cluster, new V1Pod
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "test",
+                NamespaceProperty = "default",
+            },
+        });
+        vm.ValidationDebounceDelay = TimeSpan.Zero;
+        vm.EditMode = true;
+        vm.YamlDocument.Text = """
+            apiVersion: v1
+            kind: Pod
+            metadata:
+              name: temp
+              namespace: default
+            spec:
+              containers:
+                - imagePullPolicy: Always
+            """.ReplaceLineEndings("\n");
+
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
+        view.DataContext = vm;
+        window.Content = view;
+        window.Show();
+
+        await TestApplicationExtensions.WaitForUiAsync();
+
+        var editor = view.FindControl<TextEditor>("Editor");
+        editor.ShouldNotBeNull();
+        editor.CaretOffset = editor.Text.Length;
+        editor.TextArea.Focus();
+
+        window.KeyPress(Key.Enter, RawInputModifiers.Control, PhysicalKey.Enter, null);
+        await TestApplicationExtensions.WaitForUiAsync();
+
+        editor.Text.ShouldBe(
+            "apiVersion: v1\n"
+            + "kind: Pod\n"
+            + "metadata:\n"
+            + "  name: temp\n"
+            + "  namespace: default\n"
+            + "spec:\n"
+            + "  containers:\n"
+            + "    - imagePullPolicy: Always\n"
+            + "    - ");
+    }
+
+    [AvaloniaFact]
     public async Task ResourceYamlView_ContinuesListItem_WhenEnterIsPressedAtEndOfSequenceEntry()
     {
         using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var cluster = await Application.Current.CreateClusterAsync();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
@@ -2026,7 +2796,7 @@ public class ResourceYamlViewModelTests
     {
         using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var cluster = await Application.Current.CreateClusterAsync();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
@@ -2072,7 +2842,7 @@ public class ResourceYamlViewModelTests
     {
         using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var cluster = await Application.Current.CreateClusterAsync();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
@@ -2119,7 +2889,7 @@ public class ResourceYamlViewModelTests
     {
         using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var cluster = await Application.Current.CreateClusterAsync();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
@@ -2139,7 +2909,7 @@ public class ResourceYamlViewModelTests
             spec:
               containers:
                 - name: test
-                  ar
+                  co
             """.ReplaceLineEndings("\n");
 
         var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
@@ -2162,7 +2932,7 @@ public class ResourceYamlViewModelTests
 
         var completionData = completionWindow!.CompletionList.CompletionData
             .OfType<YamlCompletionData>()
-            .Single(data => data.Text == "args");
+            .Single(data => data.Text == "command");
 
         completionData.Complete(
             editor.TextArea,
@@ -2183,7 +2953,7 @@ public class ResourceYamlViewModelTests
             + "spec:\n"
             + "  containers:\n"
             + "    - name: test\n"
-            + "      args:\n"
+            + "      command:\n"
             + "        - ");
     }
 
@@ -2192,7 +2962,7 @@ public class ResourceYamlViewModelTests
     {
         using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var cluster = await Application.Current.CreateClusterAsync();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
@@ -2274,27 +3044,69 @@ public class ResourceYamlViewModelTests
     }
 
     [AvaloniaFact]
-    public void YamlSyntaxValidationService_AcceptsCrdInstanceWithGeneratedModel()
+    public void YamlSyntaxValidationService_AnchorsDuplicateKeyDiagnostic_ToDuplicateKey()
+    {
+        var service = Application.Current.GetRequiredTestService<IYamlValidationService>();
+
+        var diagnostics = service.Validate("""
+            apiVersion: azure.upbound.io/v1beta1
+            kind: ResourceGroup
+            metadata:
+              name: temp
+              namespace: default
+            spec:
+              forProvider:
+                location: test
+                managedBy: tes
+                tags:
+                  test: val
+                  test: 2
+                  test: 4
+            """.ReplaceLineEndings("\n"));
+
+        diagnostics.Count.ShouldBe(1);
+        diagnostics[0].Message.ShouldContain("duplicate key test");
+        diagnostics[0].StartLine.ShouldBe(12);
+        diagnostics[0].StartColumn.ShouldBe(7);
+    }
+
+    [AvaloniaFact]
+    public void YamlSyntaxValidationService_AnchorsDuplicateKeyInSequenceMapping_ToDuplicateKey()
+    {
+        var service = Application.Current.GetRequiredTestService<IYamlValidationService>();
+
+        var diagnostics = service.Validate("""
+            apiVersion: v1
+            kind: Pod
+            metadata:
+              name: temp
+            spec:
+              containers:
+                - name: app
+                  image: first
+                  image: second
+            """.ReplaceLineEndings("\n"));
+
+        diagnostics.Count.ShouldBe(1);
+        diagnostics[0].Message.ShouldContain("duplicate key image");
+        diagnostics[0].StartLine.ShouldBe(9);
+        diagnostics[0].StartColumn.ShouldBe(7);
+    }
+
+    [AvaloniaFact]
+    public void YamlSyntaxValidationService_AcceptsCrdInstanceWithJsonModel()
     {
         var service = Application.Current.GetRequiredTestService<IYamlValidationService>();
         var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
 
         var crd = KubernetesYaml.Deserialize<V1CustomResourceDefinition>(KubernetesTestData.CustomResourceDefinitionYaml);
-        var generated = new Generator().GenerateAssembly(crd, "KubeUI.Avalonia.Tests.Models");
-        generated.Success.ShouldBeTrue();
-        generated.Assembly.ShouldNotBeNull();
-        generated.XmlDocumentation.ShouldNotBeNull();
-
+        var version = crd.Spec.Versions.First(version => version.Served && version.Storage).Name;
+        var kind = new GroupApiVersionKind(crd.Spec.Group, version, crd.Spec.Names.Kind, crd.Spec.Names.Plural);
         try
         {
-            cluster.Runtime.ModelCatalog.ReplaceCustomResourceDefinition(
-                crd,
-                generated.Assembly!,
-                generated.XmlDocumentation!,
-                generated.UnloadHandle);
+            cluster.Runtime.ModelCatalog.RegisterCustomResourceDefinition(kind);
 
-            var generatedType = cluster.Runtime.ModelCatalog.GetResourceType("kubeui.com", "v1beta1", "Test");
-            generatedType.ShouldNotBeNull();
+            cluster.Runtime.ModelCatalog.IsCustomResource(kind).ShouldBeTrue();
 
             var diagnostics = service.Validate(KubernetesTestData.CustomResourceYaml, cluster.Runtime.ModelCatalog);
 
@@ -2302,7 +3114,32 @@ public class ResourceYamlViewModelTests
         }
         finally
         {
-            cluster.Runtime.ModelCatalog.RemoveCustomResourceDefinition(crd);
+            cluster.Runtime.ModelCatalog.RemoveCustomResourceDefinition(kind);
+        }
+    }
+
+    [AvaloniaFact]
+    public void YamlSyntaxValidationService_AcceptsRegisteredCnpgCluster()
+    {
+        var service = Application.Current.GetRequiredTestService<IYamlValidationService>();
+        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var kind = new GroupApiVersionKind("postgresql.cnpg.io", "v1", "Cluster", "clusters");
+        const string yaml = """
+            apiVersion: postgresql.cnpg.io/v1
+            kind: Cluster
+            metadata:
+              name: app
+            """;
+
+        try
+        {
+            cluster.Runtime.ModelCatalog.RegisterCustomResourceDefinition(kind);
+
+            service.Validate(yaml.ReplaceLineEndings("\n"), cluster.Runtime.ModelCatalog).ShouldBeEmpty();
+        }
+        finally
+        {
+            cluster.Runtime.ModelCatalog.RemoveCustomResourceDefinition(kind);
         }
     }
 
@@ -3299,9 +4136,21 @@ public class ResourceYamlViewModelTests
         return point - editor.TextArea.TextView.ScrollOffset;
     }
 
+    private static Popup? GetDocumentationPopup(TextEditor editor)
+    {
+        var behavior = Interaction.GetBehaviors(editor).OfType<YamlHoverToolTipBehavior>().Single();
+        var field = typeof(YamlHoverToolTipBehavior).GetField("_hoverPopup", BindingFlags.Instance | BindingFlags.NonPublic);
+        return field?.GetValue(behavior) as Popup;
+    }
+
+    private static bool IsDocumentationPopupOpen(TextEditor editor)
+    {
+        return GetDocumentationPopup(editor)?.IsOpen == true;
+    }
+
     private static object? GetDocumentationWindow(TextEditor editor)
     {
-        return ToolTip.GetTip(editor);
+        return (GetDocumentationPopup(editor)?.Child as ContentControl)?.Content;
     }
 
     private static IReadOnlyList<string> GetDiagnosticMessages(TextEditor editor)

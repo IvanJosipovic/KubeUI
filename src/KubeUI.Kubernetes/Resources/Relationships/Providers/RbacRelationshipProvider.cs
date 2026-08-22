@@ -1,5 +1,6 @@
 using k8s;
 using k8s.Models;
+using KubernetesClient.Informer.Client;
 
 namespace KubeUI.Kubernetes.Resources.Relationships.Providers;
 
@@ -7,11 +8,11 @@ public sealed class RbacRelationshipProvider : IResourceRelationshipProvider
 {
     public IEnumerable<ResourceSeedPrerequisite> SeedPrerequisites =>
     [
-        new(typeof(V1RoleBinding)),
-        new(typeof(V1ClusterRoleBinding)),
-        new(typeof(V1ServiceAccount)),
-        new(typeof(V1Role)),
-        new(typeof(V1ClusterRole)),
+        new(GroupApiVersionKind.From<V1RoleBinding>()),
+        new(GroupApiVersionKind.From<V1ClusterRoleBinding>()),
+        new(GroupApiVersionKind.From<V1ServiceAccount>()),
+        new(GroupApiVersionKind.From<V1Role>()),
+        new(GroupApiVersionKind.From<V1ClusterRole>()),
     ];
 
     public void AddRelationships(IKubernetesObject<V1ObjectMeta> resource, ResourceRelationshipContext context, ICollection<ResourceRelationship> relationships)

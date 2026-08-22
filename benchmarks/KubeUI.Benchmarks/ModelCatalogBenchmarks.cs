@@ -30,37 +30,40 @@ public class ModelCatalogBenchmarks
         _clusterCatalog = new ClusterModelCatalog(_sharedCatalog);
         _podKey = new GroupApiVersionKind(string.Empty, "v1", "Pod", "pods");
         _missingKey = new GroupApiVersionKind("example.com", "v1", "Missing", "missings");
-        _yamlValidationService = new YamlSyntaxValidationService();
+        _yamlValidationService = new YamlSyntaxValidationService(_sharedCatalog);
     }
 
     [Benchmark]
     public void BuiltInTypeLookup()
     {
-        GC.KeepAlive(_sharedCatalog.GetResourceType(_podKey));
+        _sharedCatalog.TryGetResourceType(_podKey, out var resourceType);
+        GC.KeepAlive(resourceType);
     }
 
     [Benchmark]
     public void ClusterTypeLookupHit()
     {
-        GC.KeepAlive(_clusterCatalog.GetResourceType(_podKey));
+        _clusterCatalog.TryGetResourceType(_podKey, out var resourceType);
+        GC.KeepAlive(resourceType);
     }
 
     [Benchmark]
     public void ClusterTypeLookupMiss()
     {
-        GC.KeepAlive(_clusterCatalog.GetResourceType(_missingKey));
+        _clusterCatalog.TryGetResourceType(_missingKey, out var resourceType);
+        GC.KeepAlive(resourceType);
     }
 
     [Benchmark]
-    public void BuiltInDocumentationLookup()
+    public void BuiltInTypeMapSnapshot()
     {
-        GC.KeepAlive(_sharedCatalog.GetDocumentation(typeof(k8s.Models.V1Pod)));
+        GC.KeepAlive(_sharedCatalog.GetYamlTypeMap());
     }
 
     [Benchmark]
     public void LazyYamlTypeMapLookup()
     {
-        GC.KeepAlive(_clusterCatalog.GetYamlTypeMap());
+        GC.KeepAlive(_sharedCatalog.GetYamlTypeMap());
     }
 
     /// <summary>

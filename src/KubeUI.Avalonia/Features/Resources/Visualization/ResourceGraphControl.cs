@@ -1,9 +1,11 @@
 using Avalonia.Controls.Templates;
 using k8s;
 using k8s.Models;
+using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
 using KubeUI.Avalonia.Services.Icons;
+using KubeUI.Kubernetes;
 using KubeUI.Kubernetes.Resources.Relationships;
 using QuikGraph;
 using Westermo.GraphX.Common.Enums;
@@ -380,11 +382,29 @@ public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphContr
             {
                 Cluster = cluster,
                 Resource = resource,
-                Icon = _iconService.GetIcon(resource.GetType()),
+                Icon = _iconService.GetIcon(GetResourceKind(resource, cluster)),
             },
         };
 
         return vertex;
+    }
+
+    private static GroupApiVersionKind GetResourceKind(
+        IKubernetesObject<V1ObjectMeta> resource,
+        ClusterWorkspace? cluster)
+    {
+        if (cluster?.Runtime.ModelCatalog.TryGetResourceKind(resource, out var kind) == true)
+        {
+            return kind;
+        }
+
+        var apiVersion = resource.ApiVersion ?? string.Empty;
+        var separator = apiVersion.IndexOf('/');
+        return new GroupApiVersionKind(
+            separator < 0 ? string.Empty : apiVersion[..separator],
+            separator < 0 ? apiVersion : apiVersion[(separator + 1)..],
+            resource.Kind ?? string.Empty,
+            string.Empty);
     }
 
     private static bool TryCreateEdge(

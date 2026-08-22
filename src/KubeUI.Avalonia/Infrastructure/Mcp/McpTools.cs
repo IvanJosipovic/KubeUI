@@ -106,13 +106,10 @@ public sealed class McpTools(
         }
 
         var runtime = await clusterSession.GetConnectedClusterAsync(cluster).ConfigureAwait(false);
-        var parts = apiVersion.Split('/', 2, StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
-        var group = parts.Length == 2 ? parts[0] : string.Empty;
-        var version = parts.Length == 2 ? parts[1] : apiVersion;
-        var resourceType = runtime.ModelCatalog.GetResourceType(group, version, kind)
-            ?? throw new InvalidOperationException($"Unable to resolve Kubernetes type for {apiVersion}/{kind}.");
-        await runtime.SeedResource(resourceType).ConfigureAwait(false);
-        var resource = runtime.Objects.TryGetValue(new GroupApiVersionKind(group, version, kind, string.Empty), out var container)
+        if (!runtime.ModelCatalog.TryGetResourceKind(apiVersion, kind, out var resourceKind))
+            throw new InvalidOperationException($"Unable to resolve Kubernetes resource for {apiVersion}/{kind}.");
+        await clusterSession.SeedResourceAsync(cluster, resourceKind).ConfigureAwait(false);
+        var resource = runtime.Objects.TryGetValue(resourceKind, out var container)
             && container is IResourceContainer resourceContainer
             ? resourceContainer.Snapshot().FirstOrDefault(item =>
                 string.Equals(item.Metadata?.Name, name, StringComparison.Ordinal)

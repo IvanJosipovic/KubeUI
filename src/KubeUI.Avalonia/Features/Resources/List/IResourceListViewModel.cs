@@ -32,5 +32,6 @@ namespace KubeUI.Avalonia.Features.Resources.List
         IDataGridSearchAdapterFactory SearchAdapterFactory { get; }
         // Runtime DataGrid state captured from ProDataGrid (in-memory snapshot)
         DataGridState? DataGridRuntimeState { get; set; }
+        void InitializeResource(ClusterWorkspace cluster, GroupApiVersionKind kind);
     }
 }

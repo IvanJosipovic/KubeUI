@@ -1,5 +1,6 @@
 using k8s;
 using k8s.Models;
+using KubernetesClient.Informer.Client;
 
 namespace KubeUI.Kubernetes.Resources.Relationships.Providers;
 
@@ -7,8 +8,8 @@ public sealed class EndpointSliceRelationshipProvider : IResourceRelationshipPro
 {
     public IEnumerable<ResourceSeedPrerequisite> SeedPrerequisites =>
     [
-        new(typeof(V1EndpointSlice)),
-        new(typeof(V1Pod)),
+        new(GroupApiVersionKind.From<V1EndpointSlice>()),
+        new(GroupApiVersionKind.From<V1Pod>()),
     ];
 
     public void AddRelationships(IKubernetesObject<V1ObjectMeta> resource, ResourceRelationshipContext context, ICollection<ResourceRelationship> relationships)

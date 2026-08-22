@@ -1,5 +1,6 @@
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
+using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Shell.Navigation;
 using KubeUI.Avalonia.Tests.Infra;
 using Shouldly;
@@ -35,10 +36,10 @@ public sealed class LimitedAccessNavigationTests
             30000,
             TestContext.Current.CancellationToken);
 
-        workspace.GetResourceConfig<k8s.Models.V1Pod>().PermissionsLoaded.ShouldBeTrue();
-        workspace.GetResourceConfig<k8s.Models.V1Pod>().CanListAndWatch.ShouldBeTrue();
-        workspace.GetResourceConfig<k8s.Models.V1Deployment>().PermissionsLoaded.ShouldBeTrue();
-        workspace.GetResourceConfig<k8s.Models.V1Deployment>().CanListAndWatch.ShouldBeTrue();
+        workspace.GetResourceConfig(GroupApiVersionKind.From<k8s.Models.V1Pod>()).PermissionsLoaded.ShouldBeTrue();
+        workspace.GetResourceConfig(GroupApiVersionKind.From<k8s.Models.V1Pod>()).CanListAndWatch.ShouldBeTrue();
+        workspace.GetResourceConfig(GroupApiVersionKind.From<k8s.Models.V1Deployment>()).PermissionsLoaded.ShouldBeTrue();
+        workspace.GetResourceConfig(GroupApiVersionKind.From<k8s.Models.V1Deployment>()).CanListAndWatch.ShouldBeTrue();
 
         var podsLink = FindResourceLink(clusterNode, "Pods");
         var deploymentsLink = FindResourceLink(clusterNode, "Deployments");

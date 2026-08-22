@@ -60,20 +60,20 @@ public partial class Cluster
         _permissionIndex.Clear();
     }
 
-    private static void SetAuthorizationActivityTags(Activity? activity, Type type, Verb verb, string? @namespace, string? subresource)
+    private static void SetAuthorizationActivityTags(Activity? activity, GroupApiVersionKind kind, Verb verb, string? @namespace, string? subresource)
     {
-        activity?.SetTag("kubernetes.resource.type", type.Name);
+        activity?.SetTag("kubernetes.resource.group", kind.Group);
+        activity?.SetTag("kubernetes.resource.version", kind.ApiVersion);
+        activity?.SetTag("kubernetes.resource.kind", kind.Kind);
         activity?.SetTag("kubernetes.authorization.verb", verb.ToString());
         activity?.SetTag("kubernetes.namespace", @namespace);
         activity?.SetTag("kubernetes.subresource", subresource);
     }
 
-    private async Task<bool> BuildPermissionAsync(Type type, Verb verb, string? @namespace = null, string? subresource = null)
+    private async Task<bool> BuildPermissionAsync(GroupApiVersionKind kind, Verb verb, string? @namespace = null, string? subresource = null)
     {
         using var activity = StartClusterActivity(nameof(BuildPermissionAsync));
-        SetAuthorizationActivityTags(activity, type, verb, @namespace, subresource);
 
-        var kind = GroupApiVersionKind.From(type);
         var verbString = verb.ToString().ToLowerInvariant();
         var keyCheck = BuildReviewKey(kind, verbString, @namespace, subresource);
         if (_permissionIndex.TryGetValue(keyCheck, out var cached))
@@ -105,132 +105,87 @@ public partial class Cluster
         return allowed;
     }
 
-    public bool CanI(Type type, Verb verb, string? @namespace = null, string? subresource = null)
+    public bool CanI(GroupApiVersionKind kind, Verb verb, string? @namespace = null, string? subresource = null)
     {
-        using var activity = StartClusterActivity(nameof(CanI));
-        SetAuthorizationActivityTags(activity, type, verb, @namespace, subresource);
-
-        var kind = GroupApiVersionKind.From(type);
         var verbString = verb.ToString().ToLowerInvariant();
-
-        // If checking namespace permissions, check index for cluster-level first
-        if (!string.IsNullOrEmpty(@namespace))
+        if (!string.IsNullOrEmpty(@namespace)
+            && _permissionIndex.TryGetValue(BuildReviewKey(kind, verbString, null, subresource), out var globalAllowed)
+            && globalAllowed)
         {
-            var globalKey = BuildReviewKey(kind, verbString, null, subresource);
-            if (_permissionIndex.TryGetValue(globalKey, out var globalAllowed) && globalAllowed)
-            {
-                return true;
-            }
+            return true;
         }
 
-        var key = BuildReviewKey(kind, verbString, @namespace, subresource);
-        if (!_permissionIndex.TryGetValue(key, out var allowed))
+        return _permissionIndex.TryGetValue(BuildReviewKey(kind, verbString, @namespace, subresource), out var allowed) && allowed;
+    }
+
+    public bool CanIAnyNamespace(GroupApiVersionKind kind, bool namespaced, Verb verb, string? subresource = null)
+    {
+        return CanI(kind, verb, subresource: subresource)
+            || (namespaced && Namespaces.Any(item => CanI(kind, verb, item.Name(), subresource)));
+    }
+
+    public async Task UpdatePermissionsAllNamespaceAsync(GroupApiVersionKind kind, bool namespaced, Verb verb, string? subresource = null)
+    {
+        await BuildPermissionAsync(kind, verb, subresource: subresource).ConfigureAwait(false);
+        if (!namespaced || CanI(kind, verb, subresource: subresource))
         {
-            _logger.LogDebug(
-                "Authorization key was not indexed for {Verb} {Group}/{Resource}/{Subresource} namespace '{Namespace}'. Returning false.",
-                verb,
-                kind.Group,
-                kind.PluralName,
-                subresource,
-                @namespace);
-            return false;
+            return;
         }
 
-        return allowed;
+        await Parallel.ForEachAsync(Namespaces.Select(item => item.Name()).Where(static name => !string.IsNullOrWhiteSpace(name)),
+            new ParallelOptions { MaxDegreeOfParallelism = MaximumConcurrentNamespaceAuthorizationReviews },
+            async (namespaceName, _) => await BuildPermissionAsync(kind, verb, namespaceName, subresource).ConfigureAwait(false)).ConfigureAwait(false);
     }
 
     public bool CanI<T>(Verb verb, string? @namespace = null, string? subresource = null) where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
         using var activity = StartClusterActivity(nameof(CanI));
-        SetAuthorizationActivityTags(activity, typeof(T), verb, @namespace, subresource);
+        var kind = GroupApiVersionKind.From<T>();
+        SetAuthorizationActivityTags(activity, kind, verb, @namespace, subresource);
 
-        return CanI(typeof(T), verb, @namespace, subresource);
-    }
-
-    public async Task<bool> UpdateCanI(Type type, Verb verb, string? @namespace = null, string? subresource = null)
-    {
-        using var activity = StartClusterActivity(nameof(UpdateCanI));
-        SetAuthorizationActivityTags(activity, type, verb, @namespace, subresource);
-
-        return await BuildPermissionAsync(type, verb, @namespace, subresource).ConfigureAwait(false);
+        return CanI(kind, verb, @namespace, subresource);
     }
 
     public async Task<bool> UpdateCanI<T>(Verb verb, string? @namespace = null, string? subresource = null) where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
         using var activity = StartClusterActivity(nameof(UpdateCanI));
-        SetAuthorizationActivityTags(activity, typeof(T), verb, @namespace, subresource);
+        var kind = GroupApiVersionKind.From<T>();
+        SetAuthorizationActivityTags(activity, kind, verb, @namespace, subresource);
 
-        return await UpdateCanI(typeof(T), verb, @namespace, subresource).ConfigureAwait(false);
+        return await BuildPermissionAsync(kind, verb, @namespace, subresource).ConfigureAwait(false);
     }
 
-    public async Task UpdatePermissionsAllNamespaceAsync(Type type, Verb verb, string? subresource = null)
+    public async Task<bool> UpdateCanI(GroupApiVersionKind kind, Verb verb, string? @namespace = null, string? subresource = null)
     {
-        using var activity = StartClusterActivity(nameof(UpdatePermissionsAllNamespaceAsync));
-        SetAuthorizationActivityTags(activity, type, verb, null, subresource);
-
-        ArgumentNullException.ThrowIfNull(type);
-
-        var globallyAllowed = await UpdateCanI(type, verb, subresource: subresource).ConfigureAwait(false);
-        if (globallyAllowed || !IsResourceNamespaced(type))
-        {
-            return;
-        }
-
-        await Parallel.ForEachAsync(
-            Namespaces
-                .Select(static item => item.Name())
-                .Where(static name => !string.IsNullOrWhiteSpace(name))
-                .ToArray(),
-            new ParallelOptions { MaxDegreeOfParallelism = MaximumConcurrentNamespaceAuthorizationReviews },
-            async (@namespace, _) => await UpdateCanI(type, verb, @namespace, subresource).ConfigureAwait(false)).ConfigureAwait(false);
+        using var activity = StartClusterActivity(nameof(UpdateCanI));
+        SetAuthorizationActivityTags(activity, kind, verb, @namespace, subresource);
+        return await BuildPermissionAsync(kind, verb, @namespace, subresource).ConfigureAwait(false);
     }
 
     public async Task UpdatePermissionsAllNamespaceAsync<T>(Verb verb, string? subresource = null) where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
         using var activity = StartClusterActivity(nameof(UpdatePermissionsAllNamespaceAsync));
-        SetAuthorizationActivityTags(activity, typeof(T), verb, null, subresource);
+        var kind = GroupApiVersionKind.From<T>();
+        SetAuthorizationActivityTags(activity, kind, verb, null, subresource);
 
-        await UpdatePermissionsAllNamespaceAsync(typeof(T), verb, subresource).ConfigureAwait(false);
-    }
-
-    public bool CanIAnyNamespace(Type type, Verb verb, string? subresource = null)
-    {
-        using var activity = StartClusterActivity(nameof(CanIAnyNamespace));
-        SetAuthorizationActivityTags(activity, type, verb, null, subresource);
-
-        if (CanI(type, verb, subresource: subresource))
+        var globallyAllowed = await UpdateCanI<T>(verb, subresource: subresource).ConfigureAwait(false);
+        if (globallyAllowed || !IsResourceNamespaced(kind))
         {
-            return true;
+            return;
         }
 
-        if (!IsResourceNamespaced(type))
-        {
-            return false;
-        }
-
-        if (Namespaces is null)
-        {
-            return false;
-        }
-
-        foreach (var item in Namespaces)
-        {
-            var @namespace = item.Name();
-            if (!string.IsNullOrWhiteSpace(@namespace)
-                && CanI(type, verb, @namespace, subresource))
-            {
-                return true;
-            }
-        }
-
-        return false;
+        await Parallel.ForEachAsync(
+            Namespaces.Select(static item => item.Name()).Where(static name => !string.IsNullOrWhiteSpace(name)),
+            new ParallelOptions { MaxDegreeOfParallelism = MaximumConcurrentNamespaceAuthorizationReviews },
+            async (@namespace, _) => await UpdateCanI<T>(verb, @namespace, subresource).ConfigureAwait(false)).ConfigureAwait(false);
     }
 
     public bool CanIAnyNamespace<T>(Verb verb, string? subresource = null) where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
         using var activity = StartClusterActivity(nameof(CanIAnyNamespace));
-        SetAuthorizationActivityTags(activity, typeof(T), verb, null, subresource);
+        var kind = GroupApiVersionKind.From<T>();
+        SetAuthorizationActivityTags(activity, kind, verb, null, subresource);
 
-        return CanIAnyNamespace(typeof(T), verb, subresource);
+        return CanIAnyNamespace(kind, IsResourceNamespaced(kind), verb, subresource);
     }
 }

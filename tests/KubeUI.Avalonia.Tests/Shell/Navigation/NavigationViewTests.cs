@@ -4,6 +4,7 @@ using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using k8s.Models;
+using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Shell.Navigation;
 using KubeUI.Avalonia.Tests.Infra;
 using Shouldly;
@@ -25,7 +26,7 @@ public sealed class NavigationViewTests
             Cluster = workspace,
             Id = "test-pods",
             Name = "Pods",
-            ControlType = typeof(V1Pod),
+            ResourceKind = GroupApiVersionKind.From<V1Pod>(),
         };
         clusterNode.NavigationItems.Add(podsLink);
         navigation.Clusters.Add(clusterNode);
