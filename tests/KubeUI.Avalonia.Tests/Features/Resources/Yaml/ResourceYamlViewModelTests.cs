@@ -315,6 +315,10 @@ public class ResourceYamlViewModelTests
             },
         };
 
+        await WaitForUiAsync(
+            () => foldingManager.AllFoldings.Any(folding =>
+                YamlFoldingStrategy.IsNoisyFieldFolding(editor.Document!, folding.StartOffset, folding.EndOffset)));
+
         var noisyFoldings = foldingManager.AllFoldings
             .Where(folding => YamlFoldingStrategy.IsNoisyFieldFolding(
                 editor.Document!, folding.StartOffset, folding.EndOffset))
@@ -352,6 +356,10 @@ public class ResourceYamlViewModelTests
         foldingManager.AllFoldings.Single(folding => folding.Title.TrimEnd() == "spec:").IsFolded = true;
 
         vm.Object = CreatePod("after", includeLabels: false, extraEnv: true);
+
+        await WaitForUiAsync(
+            () => editor.Document!.Text.Contains("after", StringComparison.Ordinal)
+                && foldingManager.AllFoldings.Any(folding => folding.Title.TrimEnd() == "spec:"));
 
         foldingManager.AllFoldings
             .Single(folding => folding.Title.TrimEnd() == "spec:")
