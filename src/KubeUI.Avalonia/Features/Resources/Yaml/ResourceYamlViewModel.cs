@@ -173,8 +173,6 @@ public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
 
     protected override void OnPropertyChanged(PropertyChangedEventArgs e)
     {
-        base.OnPropertyChanged(e);
-
         if ((e.PropertyName == nameof(Object) && !EditMode)
             || (e.PropertyName == nameof(EditMode) && !EditMode)
             || e.PropertyName == nameof(HideNoisyFields))
@@ -186,6 +184,8 @@ public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
 
             SetYamlDocument();
         }
+
+        base.OnPropertyChanged(e);
 
         if (e.PropertyName == nameof(YamlDocument))
         {

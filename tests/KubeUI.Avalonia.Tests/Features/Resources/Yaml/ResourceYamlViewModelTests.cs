@@ -275,6 +275,56 @@ public class ResourceYamlViewModelTests
     }
 
     [AvaloniaFact]
+    public async Task ResourceYamlView_FoldsNewNoisyFieldsImmediatelyWhenObjectRefreshes()
+    {
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
+
+        var cluster = await Application.Current.CreateClusterAsync();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
+        vm.Initialize(cluster, new V1Pod
+        {
+            Metadata = new V1ObjectMeta { Name = "test" },
+        });
+
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
+        view.DataContext = vm;
+        window.Content = view;
+        window.Show();
+
+        await TestApplicationExtensions.WaitForUiAsync();
+
+        var editor = view.FindControl<TextEditor>("Editor");
+        editor.ShouldNotBeNull();
+        var behavior = Interaction.GetBehaviors(editor).OfType<YamlEditorBehavior>().Single();
+        var foldingManager = GetFoldingManager(behavior);
+        foldingManager.ShouldNotBeNull();
+
+        vm.Object = new V1Pod
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "test",
+                ManagedFields =
+                [
+                    new V1ManagedFieldsEntry
+                    {
+                        Manager = "kubectl",
+                        Operation = "Apply",
+                    },
+                ],
+            },
+        };
+
+        var noisyFoldings = foldingManager.AllFoldings
+            .Where(folding => YamlFoldingStrategy.IsNoisyFieldFolding(
+                editor.Document!, folding.StartOffset, folding.EndOffset))
+            .ToArray();
+
+        noisyFoldings.ShouldNotBeEmpty();
+        noisyFoldings.ShouldAllBe(folding => folding.IsFolded);
+    }
+
+    [AvaloniaFact]
     public void YamlFoldingStrategy_CreatesFoldingForMappingWithSequenceChildren()
     {
         var text = new TextDocument();

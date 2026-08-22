@@ -344,6 +344,11 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
             or nameof(ResourceYamlViewModel.EditMode))
         {
             PersistFoldingState(_currentViewModel);
+
+            if (e.PropertyName == nameof(ResourceYamlViewModel.Object))
+            {
+                UpdateFoldings();
+            }
         }
     }
 
