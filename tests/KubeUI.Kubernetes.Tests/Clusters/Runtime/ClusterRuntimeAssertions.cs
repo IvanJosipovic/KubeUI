@@ -70,6 +70,10 @@ public abstract class ClusterRuntimeAssertions
         var limitedCluster = await harness.CreateLimitedAccessAsync(
             KubernetesTestData.LimitedAccessWithNamespaceFallback,
             cancellationToken: TestContext.Current.CancellationToken);
+        await TestWait.UntilAsync(
+            () => limitedCluster.IsResourceNamespaced<V1Pod>(),
+            TimeSpan.FromSeconds(5),
+            cancellationToken: TestContext.Current.CancellationToken);
         await RefreshPermissionsAsync<V1Pod>(limitedCluster, Verb.Get, Verb.List, Verb.Watch);
 
         limitedCluster.Permissions.CanI<V1Pod>(Verb.Get, "default").ShouldBeFalse();

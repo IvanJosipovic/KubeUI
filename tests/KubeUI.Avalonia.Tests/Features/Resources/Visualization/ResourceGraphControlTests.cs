@@ -1363,6 +1363,10 @@ public sealed class ResourceGraphControlTests
         using VisualizationViewModel viewModel = new(builder);
         viewModel.Initialize(cluster);
         await builder.WaitForBuildAsync(1);
+        await TestWait.UntilAsync(
+            () => !viewModel.IsRebuildPendingOrRunning,
+            TimeSpan.FromSeconds(5),
+            cancellationToken: TestContext.Current.CancellationToken);
 
         viewModel.Dispose();
         cluster.SelectedNamespaces.Add(new V1Namespace { Metadata = new() { Name = "other" } });

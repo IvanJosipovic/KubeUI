@@ -143,6 +143,7 @@ public sealed class ClusterAuthorizationTests
         await harness.Cluster.Connect();
         harness.FakeApi.OpenApiV3IndexFailuresRemaining = 0;
 
+        await harness.Cluster.EnsureOpenApiSchemasAsync();
         await harness.Cluster.SeedResource<V1Pod>();
 
         harness.Cluster.ModelCatalog.OpenApiSchemas
