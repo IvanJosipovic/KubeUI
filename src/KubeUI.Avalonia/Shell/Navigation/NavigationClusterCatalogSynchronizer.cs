@@ -15,6 +15,7 @@ internal sealed class NavigationClusterCatalogSynchronizer : IDisposable
     private readonly Action<ClusterWorkspace, IResourceConfig> _applyResourceConfig;
     private readonly ICommand _toggleConnectionCommand;
     private readonly ICommand _openSettingsCommand;
+    private readonly ILogger<NavigationClusterCatalogSynchronizer> _logger;
     private readonly Dictionary<ClusterWorkspace, ClusterNavigationNode> _nodesByWorkspace = [];
     private readonly Dictionary<IClusterRuntime, ClusterWorkspace> _workspacesByRuntime = [];
 
@@ -25,7 +26,8 @@ internal sealed class NavigationClusterCatalogSynchronizer : IDisposable
         Action<ClusterWorkspace> unsubscribe,
         Action<ClusterWorkspace, IResourceConfig> applyResourceConfig,
         ICommand toggleConnectionCommand,
-        ICommand openSettingsCommand)
+        ICommand openSettingsCommand,
+        ILogger<NavigationClusterCatalogSynchronizer> logger)
     {
         _catalog = catalog;
         _nodes = nodes;
@@ -34,6 +36,7 @@ internal sealed class NavigationClusterCatalogSynchronizer : IDisposable
         _applyResourceConfig = applyResourceConfig;
         _toggleConnectionCommand = toggleConnectionCommand;
         _openSettingsCommand = openSettingsCommand;
+        _logger = logger;
 
         if (_catalog.Clusters is INotifyCollectionChanged collection)
         {
@@ -67,6 +70,12 @@ internal sealed class NavigationClusterCatalogSynchronizer : IDisposable
 
     private void OnCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
+        _logger.LogDebug(
+            "Navigation cluster catalog event: {Action}; NewItems={NewItems}; OldItems={OldItems}",
+            e.Action,
+            e.NewItems?.Count ?? 0,
+            e.OldItems?.Count ?? 0);
+
         switch (e.Action)
         {
             case NotifyCollectionChangedAction.Add:
@@ -100,6 +109,8 @@ internal sealed class NavigationClusterCatalogSynchronizer : IDisposable
 
     public void Reload()
     {
+        _logger.LogDebug("Navigation cluster catalog reload started; ExistingNodes={Nodes}", _nodesByWorkspace.Count);
+
         foreach (var workspace in _nodesByWorkspace.Keys.ToArray())
         {
             Remove(workspace);
@@ -111,14 +122,19 @@ internal sealed class NavigationClusterCatalogSynchronizer : IDisposable
         {
             Add(workspace);
         }
+
+        _logger.LogDebug("Navigation cluster catalog reload completed; Nodes={Nodes}", _nodesByWorkspace.Count);
     }
 
     private void Add(ClusterWorkspace workspace)
     {
         if (_nodesByWorkspace.ContainsKey(workspace))
         {
+            _logger.LogDebug("Navigation cluster node add ignored because node already exists: {ClusterName}", workspace.Runtime.Name);
             return;
         }
+
+        _logger.LogDebug("Navigation cluster node adding: {ClusterName}; Connected={Connected}; Status={Status}", workspace.Runtime.Name, workspace.Runtime.Connected, workspace.Runtime.Status);
 
         _subscribe(workspace);
         _workspacesByRuntime[workspace.Runtime] = workspace;
@@ -136,14 +152,19 @@ internal sealed class NavigationClusterCatalogSynchronizer : IDisposable
         {
             _applyResourceConfig(workspace, resourceConfig);
         }
+
+        _logger.LogDebug("Navigation cluster node added: {ClusterName}; Items={Items}", workspace.Runtime.Name, node.NavigationItems.Count);
     }
 
     private void Remove(ClusterWorkspace workspace)
     {
         if (!_nodesByWorkspace.Remove(workspace, out var node))
         {
+            _logger.LogDebug("Navigation cluster node removal ignored because node is missing: {ClusterName}", workspace.Runtime.Name);
             return;
         }
+
+        _logger.LogDebug("Navigation cluster node removing: {ClusterName}; Items={Items}", workspace.Runtime.Name, node.NavigationItems.Count);
 
         _unsubscribe(workspace);
         _workspacesByRuntime.Remove(workspace.Runtime);

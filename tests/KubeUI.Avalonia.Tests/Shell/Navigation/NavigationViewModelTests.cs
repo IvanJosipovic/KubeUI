@@ -547,6 +547,32 @@ public class NavigationViewModelTests
     }
 
     [AvaloniaFact]
+    public async Task resource_config_published_while_runtime_status_is_not_connected_is_replayed()
+    {
+        var services = Application.Current.GetTestServices();
+        var workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+
+        await workspace.Connect();
+        await TestApplicationExtensions.WaitForUiAsync();
+
+        using var vm = CreateViewModel();
+        vm.ClusterCatalog.Clusters.Add(workspace);
+        await TestApplicationExtensions.WaitForUiAsync();
+
+        var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
+        workspace.Runtime.Status = ClusterStatus.None;
+        workspace.Runtime.Connected.ShouldBeTrue();
+
+        var config = new FakeResourceConfig(typeof(TestPermissionResourceAlpha), "Replayed Resource");
+        workspace.AddResourceConfigForTest(config);
+        FindResourceLink(clusterNode, config.Name).ShouldBeNull();
+
+        workspace.Runtime.Status = ClusterStatus.Connected;
+
+        await WaitForAsync(() => FindResourceLink(clusterNode, config.Name) != null);
+    }
+
+    [AvaloniaFact]
     public async Task selecting_cluster_node_with_namespace_fallback_does_not_open_settings_or_prompt()
     {
         var workspace = await Application.Current.CreateClusterAsync(config =>

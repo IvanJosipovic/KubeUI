@@ -83,7 +83,8 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
             UnsubscribeCluster,
             (cluster, config) => ApplyResourceConfigNavigation(cluster, config),
             ToggleClusterConnectionCommand,
-            OpenClusterSettingsCommand);
+            OpenClusterSettingsCommand,
+            _serviceProvider.GetRequiredService<ILogger<NavigationClusterCatalogSynchronizer>>());
         _clusterNavigation.Reload();
     }
 
@@ -301,21 +302,51 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
             return;
         }
 
+        _logger.LogDebug(
+            "Navigation runtime state event received for {ClusterName}: {PropertyName}; Connected={Connected}; Status={Status}",
+            runtime.Name,
+            e.PropertyName,
+            runtime.Connected,
+            runtime.Status);
+
         Dispatcher.UIThread.Post(() =>
         {
             if (!_clusterNavigation.TryGetWorkspace(runtime, out var cluster))
             {
+                _logger.LogDebug("Navigation runtime state event ignored for unknown runtime {ClusterName}", runtime.Name);
                 return;
             }
 
-            if (e.PropertyName == nameof(IClusterRuntime.Connected)
-                && _clusterNavigation.TryGetNode(cluster, out var node))
+            if (!_clusterNavigation.TryGetNode(cluster, out var node))
             {
+                _logger.LogDebug("Navigation runtime state event ignored because node is missing for {ClusterName}", runtime.Name);
+                return;
+            }
+
+            if (e.PropertyName == nameof(IClusterRuntime.Connected))
+            {
+                _logger.LogDebug(
+                    "Navigation connection state applying for {ClusterName}: Connected={Connected}; ExistingItems={ExistingItems}",
+                    runtime.Name,
+                    runtime.Connected,
+                    node.NavigationItems.Count);
                 node.UpdateConnectionNavigation(runtime.Connected);
-                if (runtime.Connected)
+            }
+
+            if (runtime.Connected && runtime.Status == ClusterStatus.Connected)
+            {
+                node.IsExpanded = true;
+                var resourceConfigs = cluster.GetResourceConfigs().ToArray();
+                foreach (var resourceConfig in resourceConfigs)
                 {
-                    node.IsExpanded = true;
+                    ApplyResourceConfigNavigation(cluster, resourceConfig);
                 }
+
+                _logger.LogDebug(
+                    "Navigation resource state replayed for {ClusterName}; ResourceConfigs={ResourceConfigs}; Items={Items}",
+                    runtime.Name,
+                    resourceConfigs.Length,
+                    node.NavigationItems.Count);
             }
 
             if (runtime.Status == ClusterStatus.Errored)
@@ -335,6 +366,15 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
 
     private void OnClusterResourceConfigProcessed(ClusterWorkspace cluster, IResourceConfig resourceConfig)
     {
+        _logger.LogDebug(
+            "Navigation resource config event received for {ClusterName}: {ResourceKind}; PermissionsLoaded={PermissionsLoaded}; CanListAndWatch={CanListAndWatch}; Connected={Connected}; Status={Status}",
+            cluster.Runtime.Name,
+            resourceConfig.Kind,
+            resourceConfig.PermissionsLoaded,
+            resourceConfig.CanListAndWatch,
+            cluster.Runtime.Connected,
+            cluster.Runtime.Status);
+
         if (Dispatcher.UIThread.CheckAccess())
         {
             ApplyResourceConfigNavigation(cluster, resourceConfig);
@@ -350,10 +390,23 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
         IReadOnlyCollection<IResourceConfig>? resourceConfigs = null)
     {
         _resourceNavigation.Apply(cluster, resourceConfig, resourceConfigs, _clusterNavigation.Nodes);
+        if (_clusterNavigation.TryGetNode(cluster, out var node))
+        {
+            _logger.LogDebug(
+                "Navigation resource config applied for {ClusterName}: {ResourceKind}; Items={Items}",
+                cluster.Runtime.Name,
+                resourceConfig.Kind,
+                node.NavigationItems.Count);
+        }
     }
 
     private void OnClusterCustomResourceDefinitionRemoved(ClusterWorkspace cluster, GroupApiVersionKind removedKind)
     {
+        _logger.LogDebug(
+            "Navigation custom resource definition removal received for {ClusterName}: {ResourceKind}",
+            cluster.Runtime.Name,
+            removedKind);
+
         Dispatcher.UIThread.Post(() =>
         {
             if (!_clusterNavigation.TryGetNode(cluster, out var node))
@@ -366,6 +419,12 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
             {
                 ApplyResourceConfigNavigation(cluster, resourceConfig);
             }
+
+            _logger.LogDebug(
+                "Navigation custom resource definition removal applied for {ClusterName}: {ResourceKind}; Items={Items}",
+                cluster.Runtime.Name,
+                removedKind,
+                node.NavigationItems.Count);
         });
     }
 
