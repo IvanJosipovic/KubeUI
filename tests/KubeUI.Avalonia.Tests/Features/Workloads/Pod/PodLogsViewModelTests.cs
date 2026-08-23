@@ -20,7 +20,7 @@ public sealed class PodLogsViewModelTests
         }
 
         viewModel.Logs.Text.ShouldNotContain("log-0");
-        viewModel.Logs.Text.ShouldContain("log-1");
+        viewModel.Logs.Text.ShouldStartWith("log-1" + Environment.NewLine);
         viewModel.Logs.Text.ShouldContain($"log-{PodLogsViewModel.MaxLogEntries}");
         viewModel.Logs.LineCount.ShouldBe(PodLogsViewModel.MaxLogEntries + 1);
     }

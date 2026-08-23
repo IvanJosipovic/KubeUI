@@ -70,6 +70,16 @@ public partial class Cluster
         activity?.SetTag("kubernetes.subresource", subresource);
     }
 
+    private IEnumerable<string> GetKnownNamespaceNames()
+    {
+        if (Namespaces.Count > 0)
+        {
+            return Namespaces.Select(static item => item.Name()).Where(static name => !string.IsNullOrWhiteSpace(name));
+        }
+
+        return _settings.GetClusterNamespaces(this).Where(static name => !string.IsNullOrWhiteSpace(name));
+    }
+
     private async Task<bool> BuildPermissionAsync(GroupApiVersionKind kind, Verb verb, string? @namespace = null, string? subresource = null)
     {
         using var activity = StartClusterActivity(nameof(BuildPermissionAsync));
@@ -121,7 +131,7 @@ public partial class Cluster
     public bool CanIAnyNamespace(GroupApiVersionKind kind, bool namespaced, Verb verb, string? subresource = null)
     {
         return CanI(kind, verb, subresource: subresource)
-            || (namespaced && Namespaces.Any(item => CanI(kind, verb, item.Name(), subresource)));
+            || (namespaced && GetKnownNamespaceNames().Any(@namespace => CanI(kind, verb, @namespace, subresource)));
     }
 
     public async Task UpdatePermissionsAllNamespaceAsync(GroupApiVersionKind kind, bool namespaced, Verb verb, string? subresource = null)
@@ -132,7 +142,7 @@ public partial class Cluster
             return;
         }
 
-        await Parallel.ForEachAsync(Namespaces.Select(item => item.Name()).Where(static name => !string.IsNullOrWhiteSpace(name)),
+        await Parallel.ForEachAsync(GetKnownNamespaceNames(),
             new ParallelOptions { MaxDegreeOfParallelism = MaximumConcurrentNamespaceAuthorizationReviews },
             async (namespaceName, _) => await BuildPermissionAsync(kind, verb, namespaceName, subresource).ConfigureAwait(false)).ConfigureAwait(false);
     }
@@ -175,7 +185,7 @@ public partial class Cluster
         }
 
         await Parallel.ForEachAsync(
-            Namespaces.Select(static item => item.Name()).Where(static name => !string.IsNullOrWhiteSpace(name)),
+            GetKnownNamespaceNames(),
             new ParallelOptions { MaxDegreeOfParallelism = MaximumConcurrentNamespaceAuthorizationReviews },
             async (@namespace, _) => await UpdateCanI<T>(verb, @namespace, subresource).ConfigureAwait(false)).ConfigureAwait(false);
     }

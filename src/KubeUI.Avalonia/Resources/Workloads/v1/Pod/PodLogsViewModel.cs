@@ -101,15 +101,22 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
 
                 if (!string.IsNullOrEmpty(log))
                 {
-                    await Dispatcher.UIThread.InvokeAsync(() => AppendLog(log), DispatcherPriority.Background);
+                    await Dispatcher.UIThread.InvokeAsync(() =>
+                    {
+                        if (ReferenceEquals(_connectionCancellation, connectionCancellation) && !connectionCancellation.IsCancellationRequested)
+                        {
+                            AppendLog(log);
+                        }
+                    }, DispatcherPriority.Background);
                 }
             }
         }
-        catch (OperationCanceledException) when (connectionCancellation.IsCancellationRequested)
+        catch (Exception) when (connectionCancellation.IsCancellationRequested)
         {
         }
-        catch (IOException ex) when (ex.Message.Equals("The request was aborted.", StringComparison.Ordinal))
+        catch (Exception ex)
         {
+            _logger.LogError(ex, "Unable to read pod logs");
         }
     }
 
