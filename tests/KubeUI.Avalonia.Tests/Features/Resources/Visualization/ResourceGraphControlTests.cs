@@ -818,7 +818,7 @@ public sealed class ResourceGraphControlTests
         cluster.SelectedNamespaces.Clear();
         cluster.SelectedNamespaces.Add(new V1Namespace { Metadata = new() { Name = "default" } });
         viewModel.Initialize(cluster);
-        await builder.WaitForInitialBuildAsync().WaitAsync(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken);
+        await builder.WaitForInitialBuildAsync(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken);
         await WaitForAsync(() => viewModel.Graph is not null);
 
         var pod = CreatePod("late");
@@ -1841,18 +1841,19 @@ public sealed class ResourceGraphControlTests
                 : new ResourceRelationshipGraph([resource], []);
         }
 
-        public async Task WaitForInitialBuildAsync()
+        public async Task WaitForInitialBuildAsync(TimeSpan timeout = default, CancellationToken cancellationToken = default)
         {
-            var deadline = DateTime.UtcNow.AddSeconds(5);
+            var deadline = DateTime.UtcNow + (timeout == default ? TimeSpan.FromSeconds(5) : timeout);
             while (!_initialBuild.Task.IsCompleted)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 await TestApplicationExtensions.WaitForUiAsync();
                 if (DateTime.UtcNow >= deadline)
                 {
                     throw new TimeoutException("Timed out waiting for the initial visualization build.");
                 }
 
-                await WaitForNextPollAsync();
+                await WaitForNextPollAsync(cancellationToken);
             }
         }
 

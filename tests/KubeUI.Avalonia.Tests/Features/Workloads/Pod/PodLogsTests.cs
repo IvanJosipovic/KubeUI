@@ -18,6 +18,16 @@ public sealed class PodLogsTests
         stream.ReadCallCount.ShouldBe(1);
     }
 
+    [AvaloniaFact]
+    public async Task log_reader_stops_at_end_of_stream()
+    {
+        var logger = Application.Current.GetTestServices().GetRequiredService<ILogger<PodLogsViewModel>>();
+        using PodLogsViewModel viewModel = new(logger);
+        using var stream = new MemoryStream();
+
+        await viewModel.ReadLogStreamForTesting(stream);
+    }
+
     private sealed class ThrowingReadStream(Exception exception) : Stream
     {
         private readonly Exception _exception = exception;

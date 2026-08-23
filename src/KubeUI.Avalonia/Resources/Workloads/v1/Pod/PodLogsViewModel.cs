@@ -128,7 +128,12 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
             {
                 var log = await streamReader.ReadLineAsync(cancellationToken);
 
-                if (!string.IsNullOrEmpty(log))
+                if (log is null)
+                {
+                    break;
+                }
+
+                if (log.Length > 0)
                 {
                     await Dispatcher.UIThread.InvokeAsync(
                         () => Logs.Insert(Logs.TextLength, log + Environment.NewLine),
