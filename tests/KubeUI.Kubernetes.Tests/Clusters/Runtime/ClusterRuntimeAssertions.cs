@@ -534,6 +534,40 @@ public abstract class ClusterRuntimeAssertions
         }
     }
 
+    protected async Task DryRunYamlResolvesRegisteredNamespacedGenericResourceCore(KubernetesBackend backend)
+    {
+        await using var harness = await CreateHarnessAsync(backend);
+        try
+        {
+            await SeedResourceAsync<V1CustomResourceDefinition>(harness.Cluster);
+
+            var crd = Serialization.KubernetesYaml.Deserialize<V1CustomResourceDefinition>(KubernetesTestData.CustomResourceDefinitionYaml);
+            await harness.CreateAsync(crd, TestContext.Current.CancellationToken);
+            var kind = new GroupApiVersionKind("kubeui.com", "v1beta1", "Test", "tests");
+            await TestWait.UntilAsync(
+                () => harness.Cluster.ModelCatalog.IsCustomResource(kind),
+                TimeSpan.FromSeconds(10),
+                cancellationToken: TestContext.Current.CancellationToken);
+
+            var requestCount = harness.FakeApi?.RequestUris.Count ?? 0;
+            using var yamlStream = new MemoryStream(Encoding.UTF8.GetBytes(KubernetesTestData.CustomResourceYaml));
+            await harness.Cluster.DryRunYaml(yamlStream);
+
+            if (backend == KubernetesBackend.Fake)
+            {
+                harness.FakeApi.ShouldNotBeNull();
+                var request = harness.FakeApi!.RequestUris
+                    .Skip(requestCount)
+                    .Single(uri => uri?.Query.Contains("dryRun=All", StringComparison.OrdinalIgnoreCase) == true);
+                request!.AbsolutePath.ShouldBe("/apis/kubeui.com/v1beta1/namespaces/default/tests");
+            }
+        }
+        finally
+        {
+            await harness.Cluster.Disconnect();
+        }
+    }
+
     protected async Task RootAccessCanICore(KubernetesBackend backend)
     {
         await using var harness = await CreateHarnessAsync(backend);
