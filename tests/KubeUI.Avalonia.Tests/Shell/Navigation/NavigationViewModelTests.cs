@@ -469,15 +469,15 @@ public class NavigationViewModelTests
     [AvaloniaFact]
     public async Task selecting_cluster_node_with_namespace_fallback_shows_namespaced_resources_in_navigation()
     {
-        var services = Application.Current.GetTestServices();
-        var config = services.GetRequiredService<TestClusterConfig>();
-        config.AuthenticatedUser = KubernetesRbac.ServiceAccountUser;
-        config.InitialYaml = KubernetesTestData.LimitedAccessWithNamespaceFallback;
-        var workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
-        await workspace.Connect();
+        var workspace = await Application.Current.CreateClusterAsync(config =>
+        {
+            config.AuthenticatedUser = KubernetesRbac.ServiceAccountUser;
+            config.InitialYaml = KubernetesTestData.LimitedAccessWithNamespaceFallback;
+        }, connect: false);
         var settingsService = Application.Current.GetTestServices().GetRequiredService<ISettingsService>()
             ?? throw new InvalidOperationException("Test services are not initialized.");
         settingsService.Settings.GetClusterSettings(workspace.Runtime).Namespaces!.Add("my-app");
+        await workspace.Connect();
 
         var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
@@ -1115,23 +1115,22 @@ public class NavigationViewModelTests
     [AvaloniaFact]
     public async Task connect_preloads_pod_default_and_custom_permissions()
     {
-        var services = Application.Current.GetTestServices();
-        var config = services.GetRequiredService<TestClusterConfig>();
-        config.AuthenticatedUser = KubernetesRbac.ServiceAccountUser;
-        config.InitialResources = new[]
-                {
-                    (IKubernetesObject<V1ObjectMeta>)new V1Namespace { Metadata = new V1ObjectMeta { Name = "my-app" } },
-                }
-                .Concat(KubernetesRbac.ClusterWide(
-                    new RbacRule("namespaces", "list"),
-                    new RbacRule("namespaces", "watch")))
-                .Concat(KubernetesRbac.InNamespace("my-app",
-                    new RbacRule("pods", "list"),
-                    new RbacRule("pods", "watch"),
-                    new RbacRule("pods", "create", Subresource: "portforward")))
-                .ToArray();
-        var workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
-
+        var workspace = await Application.Current.CreateClusterAsync(config =>
+        {
+            config.AuthenticatedUser = KubernetesRbac.ServiceAccountUser;
+            config.InitialResources = new[]
+                    {
+                        (IKubernetesObject<V1ObjectMeta>)new V1Namespace { Metadata = new V1ObjectMeta { Name = "my-app" } },
+                    }
+                    .Concat(KubernetesRbac.ClusterWide(
+                        new RbacRule("namespaces", "list"),
+                        new RbacRule("namespaces", "watch")))
+                    .Concat(KubernetesRbac.InNamespace("my-app",
+                        new RbacRule("pods", "list"),
+                        new RbacRule("pods", "watch"),
+                        new RbacRule("pods", "create", Subresource: "portforward")))
+                    .ToArray();
+        }, connect: false);
 
         await workspace.Connect();
         await TestApplicationExtensions.WaitForUiAsync();
