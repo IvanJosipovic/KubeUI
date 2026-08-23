@@ -1135,6 +1135,10 @@ public class NavigationViewModelTests
         await workspace.Connect();
         await TestApplicationExtensions.WaitForUiAsync();
 
+        await TestWait.UntilAsync(
+            () => workspace.Runtime.Permissions.CanI<V1Pod>(Verb.Create, "my-app", "portforward"),
+            TimeSpan.FromSeconds(10),
+            cancellationToken: TestContext.Current.CancellationToken);
         workspace.Runtime.Permissions.CanI<V1Pod>(Verb.Create, "my-app", "portforward").ShouldBeTrue();
         workspace.Runtime.Permissions.CanI<V1Pod>(Verb.Create, subresource: "portforward").ShouldBeFalse();
         workspace.Runtime.Permissions.CanI<V1Pod>(Verb.Get, "my-app", "log").ShouldBeFalse();

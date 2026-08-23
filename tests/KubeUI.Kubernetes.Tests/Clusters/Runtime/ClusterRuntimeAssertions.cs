@@ -476,6 +476,11 @@ public abstract class ClusterRuntimeAssertions
         var version = crd.Spec.Versions.First(version => version.Served && version.Storage).Name;
         var kind = new GroupApiVersionKind(crd.Spec.Group, version, crd.Spec.Names.Kind, crd.Spec.Names.Plural);
 
+        await TestWait.UntilAsync(
+            () => harness.Cluster.ModelCatalog.IsCustomResource(kind),
+            TimeSpan.FromSeconds(10),
+            cancellationToken: TestContext.Current.CancellationToken);
+
         await harness.Cluster.Permissions.UpdatePermissionsAllNamespaceAsync(kind, namespaced: true, verb: Verb.List);
         await harness.Cluster.Permissions.UpdatePermissionsAllNamespaceAsync(kind, namespaced: true, verb: Verb.Watch);
 
@@ -517,9 +522,13 @@ public abstract class ClusterRuntimeAssertions
             TimeSpan.FromSeconds(10),
             cancellationToken: TestContext.Current.CancellationToken);
 
-        updated.Name().ShouldBe("test1");
-        updated.Namespace().ShouldBe("default");
-        updated.Properties.ShouldNotBeNull();
+        var observed = items.Items.Single(candidate =>
+            candidate.Properties.TryGetValue("spec", out var spec)
+            && spec.TryGetProperty("someString", out var value)
+            && value.GetString() == "updatedValue");
+        observed.Name().ShouldBe("test1");
+        observed.Namespace().ShouldBe("default");
+        observed.Properties.ShouldNotBeNull();
         await harness.Cluster.DeleteResource(updated);
 
         await TestWait.UntilAsync(

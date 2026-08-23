@@ -40,6 +40,10 @@ public sealed class ClusterAuthorizationTests
             cancellationToken: TestContext.Current.CancellationToken);
         await cluster.Permissions.UpdatePermissionsAllNamespaceAsync<V1Pod>(Verb.Create, "portforward");
 
+        await TestWait.UntilAsync(
+            () => cluster.CanIAnyNamespace<V1Pod>(Verb.Create, "portforward"),
+            TimeSpan.FromSeconds(10),
+            cancellationToken: TestContext.Current.CancellationToken);
         cluster.CanIAnyNamespace<V1Pod>(Verb.Create, "portforward").ShouldBeTrue();
     }
 

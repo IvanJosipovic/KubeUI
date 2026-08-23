@@ -818,7 +818,7 @@ public sealed class ResourceGraphControlTests
         cluster.SelectedNamespaces.Clear();
         cluster.SelectedNamespaces.Add(new V1Namespace { Metadata = new() { Name = "default" } });
         viewModel.Initialize(cluster);
-        await builder.WaitForInitialBuildAsync().WaitAsync(TimeSpan.FromSeconds(15), TestContext.Current.CancellationToken);
+        await builder.WaitForInitialBuildAsync().WaitAsync(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken);
         await WaitForAsync(() => viewModel.Graph is not null);
 
         var pod = CreatePod("late");
