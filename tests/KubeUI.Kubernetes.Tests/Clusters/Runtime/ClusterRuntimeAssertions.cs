@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Net;
 using System.Reflection;
+using System.Reactive.Linq;
 using System.Text;
 using System.Text.Json;
 using k8s;
@@ -488,12 +489,43 @@ public abstract class ClusterRuntimeAssertions
             TimeSpan.FromSeconds(10),
             cancellationToken: TestContext.Current.CancellationToken);
 
-        foreach (var item in items.Items)
+        var observedCount = 0;
+        using var countSubscription = harness.Cluster.GetResourceCount(kind).Subscribe(count => observedCount = count);
+        await TestWait.UntilAsync(
+            () => observedCount == 1,
+            TimeSpan.FromSeconds(5),
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        var item = items.Items.Single();
+        var updated = new GenericKubernetesObject
         {
-            item.Name().ShouldBe("test1");
-            item.Namespace().ShouldBe("default");
-            item.Properties.ShouldNotBeNull();
-        }
+            ApiVersion = item.ApiVersion,
+            Kind = item.Kind,
+            Metadata = item.Metadata,
+            Properties = new Dictionary<string, JsonElement>
+            {
+                ["spec"] = JsonSerializer.SerializeToElement(new { someString = "updatedValue" }),
+            },
+        };
+
+        await harness.Cluster.AddOrUpdateResource(updated);
+        await TestWait.UntilAsync(
+            () => items.Items.Any(candidate =>
+                candidate.Properties.TryGetValue("spec", out var spec)
+                && spec.TryGetProperty("someString", out var value)
+                && value.GetString() == "updatedValue"),
+            TimeSpan.FromSeconds(10),
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        updated.Name().ShouldBe("test1");
+        updated.Namespace().ShouldBe("default");
+        updated.Properties.ShouldNotBeNull();
+        await harness.Cluster.DeleteResource(updated);
+
+        await TestWait.UntilAsync(
+            () => items.Items.Count == 0,
+            TimeSpan.FromSeconds(10),
+            cancellationToken: TestContext.Current.CancellationToken);
 
         }
         finally
