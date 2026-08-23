@@ -41,9 +41,9 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
 
     private StreamReader? _streamReader;
 
-    private readonly int _lines = 100;
+    private CancellationTokenSource? _connectionCancellation;
 
-    private bool _isConnected;
+    private readonly int _lines = 100;
 
     public PodLogsViewModel(ILogger<PodLogsViewModel> logger)
     {
@@ -53,43 +53,39 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
 
     public async Task Connect()
     {
+        CancellationTokenSource connectionCancellation = new();
+        StopCurrentConnection();
+        _connectionCancellation = connectionCancellation;
+
         try
         {
             Logs.Text = string.Empty;
 
-            _stream = await Cluster!.Runtime.Client!.CoreV1.ReadNamespacedPodLogAsync(Object.Name(), Object.Namespace(), container: ContainerName, tailLines: _lines, previous: Previous, follow: true, pretty: true, timestamps: Timestamps);
+            var stream = await Cluster!.Runtime.Client!.CoreV1.ReadNamespacedPodLogAsync(
+                Object.Name(),
+                Object.Namespace(),
+                container: ContainerName,
+                tailLines: _lines,
+                previous: Previous,
+                follow: true,
+                pretty: true,
+                timestamps: Timestamps,
+                cancellationToken: connectionCancellation.Token);
 
-            _streamReader = new StreamReader(_stream);
-
-            _isConnected = true;
-
-            _ = Task.Run(async () =>
+            if (connectionCancellation.IsCancellationRequested)
             {
-                while (_isConnected)
-                {
-                    try
-                    {
-                        var log = await _streamReader.ReadLineAsync();
+                stream.Dispose();
+                return;
+            }
 
-                        if (!string.IsNullOrEmpty(log))
-                        {
-                            await Dispatcher.UIThread.InvokeAsync(() => Logs.Insert(Logs.TextLength, log + Environment.NewLine), DispatcherPriority.Background);
-                        }
-                    }
-                    catch (IOException ex) when (ex.Message.Equals("The request was aborted."))
-                    {
-                        _isConnected = false;
+            _stream = stream;
+            var streamReader = new StreamReader(stream);
+            _streamReader = streamReader;
 
-                        break;
-                    }
-                    catch (ObjectDisposedException)
-                    {
-                        _isConnected = false;
-
-                        break;
-                    }
-                }
-            });
+            _ = ReadLogsAsync(streamReader, connectionCancellation.Token);
+        }
+        catch (OperationCanceledException) when (connectionCancellation.IsCancellationRequested)
+        {
         }
         catch (Exception ex)
         {
@@ -116,11 +112,55 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
 
     public void Dispose()
     {
-        _isConnected = false;
+        StopCurrentConnection();
+    }
 
-        _stream?.Dispose();
+    internal Task ReadLogStreamForTesting(Stream stream)
+    {
+        return ReadLogsAsync(new StreamReader(stream), CancellationToken.None);
+    }
 
+    private async Task ReadLogsAsync(StreamReader streamReader, CancellationToken cancellationToken)
+    {
+        try
+        {
+            while (!cancellationToken.IsCancellationRequested)
+            {
+                var log = await streamReader.ReadLineAsync(cancellationToken);
+
+                if (!string.IsNullOrEmpty(log))
+                {
+                    await Dispatcher.UIThread.InvokeAsync(
+                        () => Logs.Insert(Logs.TextLength, log + Environment.NewLine),
+                        DispatcherPriority.Background,
+                        cancellationToken);
+                }
+            }
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+        }
+        catch (Exception ex) when (cancellationToken.IsCancellationRequested && ex is IOException or ObjectDisposedException or InvalidOperationException)
+        {
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unable to read pod logs");
+        }
+        finally
+        {
+            streamReader.Dispose();
+        }
+    }
+
+    private void StopCurrentConnection()
+    {
+        _connectionCancellation?.Cancel();
         _streamReader?.Dispose();
+        _stream?.Dispose();
+        _connectionCancellation?.Dispose();
+        _connectionCancellation = null;
+        _streamReader = null;
+        _stream = null;
     }
 }
-
