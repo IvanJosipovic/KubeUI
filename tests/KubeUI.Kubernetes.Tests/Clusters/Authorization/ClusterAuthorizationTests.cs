@@ -34,10 +34,6 @@ public sealed class ClusterAuthorizationTests
             KubernetesTestData.LimitedAccessWithNamespaceFallback,
             useNamespaceFallback: true,
             cancellationToken: TestContext.Current.CancellationToken);
-        await TestWait.UntilAsync(
-            () => cluster.Namespaces.Any(item => item.Name() == "my-app"),
-            TimeSpan.FromSeconds(10),
-            cancellationToken: TestContext.Current.CancellationToken);
         await cluster.Permissions.UpdatePermissionsAllNamespaceAsync<V1Pod>(Verb.Create, "portforward");
 
         await TestWait.UntilAsync(

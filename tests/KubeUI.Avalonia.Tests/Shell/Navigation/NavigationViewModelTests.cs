@@ -253,6 +253,41 @@ public class NavigationViewModelTests
     }
 
     [AvaloniaFact]
+    public async Task initial_custom_resource_definitions_populate_navigation_after_connect()
+    {
+        var crd = NavigationTestCustomResourceDefinitionFactory.Create(
+            "widgets.kubeui.com",
+            "Widgets",
+            "someString");
+        var secondCrd = NavigationTestCustomResourceDefinitionFactory.Create(
+            "gadgets.other.com",
+            "Gadgets",
+            "otherString",
+            "other.com");
+        var workspace = await Application.Current.CreateClusterAsync(
+            config => config.InitialResources = [crd, secondCrd],
+            connect: false);
+        using var vm = CreateViewModel();
+        vm.ClusterCatalog.Clusters.Add(workspace);
+
+        var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
+        clusterNode.NavigationItems.ShouldBeEmpty();
+        await workspace.Connect();
+
+        var crdRoot = await WaitForValueAsync(
+            () => clusterNode.NavigationItems.SingleOrDefault(x => x.Name == ResourceCategories.CustomResourceDefinitions),
+            timeoutMs: 10000);
+
+        crdRoot.ShouldNotBeNull();
+        (await WaitForValueAsync(
+            () => FindResourceLink(crdRoot.NavigationItems, GetCustomResourceKind(crd)),
+            timeoutMs: 10000)).ShouldNotBeNull();
+        (await WaitForValueAsync(
+            () => FindResourceLink(crdRoot.NavigationItems, GetCustomResourceKind(secondCrd)),
+            timeoutMs: 10000)).ShouldNotBeNull();
+    }
+
+    [AvaloniaFact]
     public async Task selecting_cluster_node_does_not_crash_when_connect_fails()
     {
         var services = Application.Current.GetTestServices();

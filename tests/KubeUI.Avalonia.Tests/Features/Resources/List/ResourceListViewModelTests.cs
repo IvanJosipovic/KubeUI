@@ -1777,7 +1777,13 @@ public class ResourceListViewModelTests
         ReferenceEquals(vm.SelectedNamespaces, cluster.SelectedNamespaces).ShouldBeTrue();
 
         cluster.SelectedNamespaces.Add(NamespaceResource("team-b"));
-        await TestApplicationExtensions.WaitForUiAsync();
+        await TestWait.UntilAsync(
+            () => vm.SelectedNamespaces.Select(x => x.Name()).SequenceEqual(["team-a", "team-b"])
+                && vm.FilteringModel.Descriptors
+                    .FirstOrDefault(x => Equals(x.ColumnId, ResourceListViewModel<V1Pod>.NamespaceScopeFilterId))
+                    ?.Values?.Cast<string>().SequenceEqual(["team-a", "team-b"]) == true,
+            TimeSpan.FromSeconds(10),
+            cancellationToken: TestContext.Current.CancellationToken);
 
         vm.SelectedNamespaces.Select(x => x.Name()).ShouldBe(["team-a", "team-b"]);
         GetNamespaceFilterValues(vm).ShouldBe(["team-a", "team-b"]);
