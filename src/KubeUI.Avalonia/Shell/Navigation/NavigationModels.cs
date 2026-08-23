@@ -1,6 +1,7 @@
 using System.Windows.Input;
 using FluentIcons.Common;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
+using KubeUI.Avalonia.Infrastructure.Threading;
 using KubeUI.Kubernetes;
 using KubernetesClient.Informer.Client;
 using Swordfish.NET.Collections;
@@ -13,6 +14,8 @@ public static class NavigationTargets
     public const string ClusterWorkspace = "cluster-workspace";
     public const string PortForwarders = "port-forwarders";
     public const string Visualization = "visualization";
+    public const string LoadYaml = "load-yaml";
+    public const string LoadFolder = "load-folder";
 }
 
 public interface IExpandableNavigationNode
@@ -22,7 +25,6 @@ public interface IExpandableNavigationNode
 
 public partial class ClusterNavigationNode : NavigationItem, IDisposable
 {
-    private const int ClusterSettingsOrder = -480;
     private string _runtimeName;
 
     public ClusterNavigationNode(ClusterWorkspace cluster)
@@ -46,32 +48,26 @@ public partial class ClusterNavigationNode : NavigationItem, IDisposable
         ? Icon.Dismiss
         : Icon.Link;
 
-    [ObservableProperty]
-    public partial ICommand? ToggleConnectionCommand { get; set; }
-
-    [ObservableProperty]
-    public partial ICommand? OpenSettingsCommand { get; set; }
-
     private void OnRuntimePropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName == nameof(IClusterRuntime.Connected))
         {
             OnPropertyChanged(nameof(ConnectionMenuHeader));
             OnPropertyChanged(nameof(ConnectionMenuIcon));
-            UpdateConnectionNavigation(Cluster.Runtime.Connected);
-            if (Cluster.Runtime.Connected)
-            {
-                IsExpanded = true;
-            }
         }
         else if (e.PropertyName == nameof(IClusterRuntime.Name))
         {
-            UpdateNavigationIds(_runtimeName, Cluster.Runtime.Name);
-            _runtimeName = Cluster.Runtime.Name;
+            AvaloniaScheduler.Instance.Invoke(() => UpdateNavigationName(Cluster.Runtime.Name));
         }
     }
 
-    private void UpdateNavigationIds(string oldName, string newName)
+    [ObservableProperty]
+    public partial ICommand? ToggleConnectionCommand { get; set; }
+
+    [ObservableProperty]
+    public partial ICommand? OpenSettingsCommand { get; set; }
+
+    internal void UpdateNavigationIds(string oldName, string newName)
     {
         if (string.Equals(oldName, newName, StringComparison.Ordinal))
         {
@@ -83,6 +79,12 @@ public partial class ClusterNavigationNode : NavigationItem, IDisposable
         {
             UpdateNavigationId(item, oldPrefix, newName);
         }
+    }
+
+    internal void UpdateNavigationName(string newName)
+    {
+        UpdateNavigationIds(_runtimeName, newName);
+        _runtimeName = newName;
     }
 
     private static void UpdateNavigationId(NavigationItem item, string oldPrefix, string newName)
@@ -98,7 +100,7 @@ public partial class ClusterNavigationNode : NavigationItem, IDisposable
         }
     }
 
-    private void UpdateConnectionNavigation(bool connected)
+    internal void UpdateConnectionNavigation(bool connected)
     {
         NavigationItems.Clear();
         if (!connected)
@@ -130,7 +132,7 @@ public partial class ClusterNavigationNode : NavigationItem, IDisposable
             Id = $"{Cluster.Runtime.Name}-{NavigationTargets.ClusterSettings}",
             Name = Assets.Resources.ClusterSettingsView_Title!,
             ViewModelKey = NavigationTargets.ClusterSettings,
-            Order = ClusterSettingsOrder,
+            Order = -480,
             FluentIcon = Icon.Settings,
         });
         NavigationItems.Add(new NavigationLink
@@ -138,7 +140,7 @@ public partial class ClusterNavigationNode : NavigationItem, IDisposable
             Cluster = Cluster,
             Id = $"{Cluster.Runtime.Name}-load-yaml",
             Name = Assets.Resources.NavigationView_LoadYaml!,
-            ViewModelKey = "load-yaml",
+            ViewModelKey = NavigationTargets.LoadYaml,
             Order = -470,
             FluentIcon = Icon.ArrowUpload,
         });
@@ -147,7 +149,7 @@ public partial class ClusterNavigationNode : NavigationItem, IDisposable
             Cluster = Cluster,
             Id = $"{Cluster.Runtime.Name}-load-folder",
             Name = Assets.Resources.NavigationView_LoadFolder!,
-            ViewModelKey = "load-folder",
+            ViewModelKey = NavigationTargets.LoadFolder,
             Order = -460,
             FluentIcon = Icon.FolderAdd,
         });

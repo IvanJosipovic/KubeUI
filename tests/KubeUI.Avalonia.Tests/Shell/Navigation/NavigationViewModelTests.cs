@@ -1,8 +1,9 @@
 using System.Collections;
 using System.Diagnostics;
 using System.Reactive.Linq;
-using System.Reflection;
 using Avalonia.Headless.XUnit;
+using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Styling;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.Input;
@@ -13,9 +14,11 @@ using k8s.Models;
 using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Features.Resources.Visualization;
 using KubeUI.Avalonia.Resources;
+using KubeUI.Avalonia.Services.Icons;
 using KubeUI.Avalonia.Shell.Navigation;
 using KubeUI.Avalonia.Tests.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Tests.Infra;
+using Microsoft.Extensions.Logging;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Shell.Navigation;
@@ -79,6 +82,43 @@ public class NavigationViewModelTests
     }
 
     [AvaloniaFact]
+    public async Task navigation_commands_ignore_null_and_connected_selection_toggles_expansion()
+    {
+        var services = Application.Current.GetTestServices();
+        var workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        using var vm = CreateViewModel();
+        var clusterNode = vm.Clusters.Single(node => node.Cluster == workspace);
+
+        await vm.HandleSelectionChangedCommand.ExecuteAsync(null);
+        await vm.HandleSelectionChangedCommand.ExecuteAsync(new SelectionChangedEventArgs(
+            SelectingItemsControl.SelectionChangedEvent,
+            Array.Empty<object>(),
+            Array.Empty<object>()));
+        await vm.HandleSelectionChangedCommand.ExecuteAsync(new SelectionChangedEventArgs(
+            SelectingItemsControl.SelectionChangedEvent,
+            new object[] { new NavigationItem() },
+            Array.Empty<object>()));
+        await vm.TreeViewSelectionChangedAsync(null);
+        await vm.ToggleClusterConnectionCommand.ExecuteAsync(null);
+        await vm.OpenClusterSettingsCommand.ExecuteAsync(null);
+        await vm.OpenResourceNavigationCommand.ExecuteAsync(null);
+        await vm.OpenResourceNavigationInNewTabCommand.ExecuteAsync(null);
+
+        workspace.Runtime.Status = ClusterStatus.Connecting;
+        await vm.ToggleClusterConnectionCommand.ExecuteAsync(clusterNode);
+        workspace.Runtime.Status = ClusterStatus.None;
+
+        await workspace.Connect();
+        await WaitForAsync(() => workspace.Runtime.Connected);
+
+        var wasExpanded = clusterNode.IsExpanded;
+        await vm.TreeViewSelectionChangedAsync(clusterNode);
+        clusterNode.IsExpanded.ShouldBe(!wasExpanded);
+
+        await vm.OpenClusterSettingsCommand.ExecuteAsync(clusterNode);
+    }
+
+    [AvaloniaFact]
     public async Task cluster_catalog_changes_update_navigation_nodes()
     {
         using var vm = CreateViewModel();
@@ -98,8 +138,42 @@ public class NavigationViewModelTests
         firstIndex.ShouldBeGreaterThanOrEqualTo(0);
         vm.Clusters.ShouldContain(node => ReferenceEquals(node.Cluster, firstWorkspace));
 
+        var replacementWorkspace = await Application.Current.CreateClusterAsync(connect: false);
+        vm.ClusterCatalog.Clusters[firstIndex] = replacementWorkspace;
+        vm.Clusters.ShouldNotContain(node => ReferenceEquals(node.Cluster, firstWorkspace));
+        vm.Clusters.ShouldContain(node => ReferenceEquals(node.Cluster, replacementWorkspace));
+
+        var nodeCount = vm.Clusters.Count;
+        vm.ClusterCatalog.Clusters.Add(replacementWorkspace);
+        vm.Clusters.Count.ShouldBe(nodeCount);
+        vm.ClusterCatalog.Clusters.Remove(firstWorkspace);
+        vm.ClusterCatalog.Clusters.Remove(replacementWorkspace);
+        vm.Clusters.ShouldBeEmpty();
+
+        vm.ClusterCatalog.Clusters.Add(firstWorkspace);
+        vm.Clusters.ShouldContain(node => ReferenceEquals(node.Cluster, firstWorkspace));
+
         vm.ClusterCatalog.Clusters.Clear();
         vm.Clusters.ShouldBeEmpty();
+    }
+
+    [AvaloniaFact]
+    public async Task resetting_cluster_catalog_disposes_removed_navigation_nodes()
+    {
+        var workspace = await Application.Current.CreateClusterAsync(connect: false);
+        using var vm = CreateViewModel();
+        vm.ClusterCatalog.Clusters.Add(workspace);
+
+        await workspace.Connect();
+        var node = vm.Clusters.Single(x => x.Cluster == workspace);
+        await WaitForAsync(() => node.NavigationItems.Count > 0);
+        var originalId = node.NavigationItems[0].Id;
+
+        vm.ClusterCatalog.Clusters.Clear();
+        workspace.Runtime.Name = "renamed-after-reset";
+        await TestApplicationExtensions.WaitForUiAsync();
+
+        node.NavigationItems[0].Id.ShouldBe(originalId);
     }
 
     private static ResourceNavigationLink? FindResourceLink(ClusterNavigationNode root, string name)
@@ -459,6 +533,8 @@ public class NavigationViewModelTests
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
         clusterNode.NavigationItems.Count.ShouldBeGreaterThan(0);
         clusterNode.ConnectionMenuHeader.ShouldBe(Assets.Resources.NavigationView_ContextMenu_Disconnect);
+        var changedProperties = new List<string?>();
+        clusterNode.PropertyChanged += (_, e) => changedProperties.Add(e.PropertyName);
 
         await vm.ToggleClusterConnectionCommand.ExecuteAsync(clusterNode).WaitAsync(TestContext.Current.CancellationToken);
         await TestApplicationExtensions.WaitForUiAsync();
@@ -466,6 +542,8 @@ public class NavigationViewModelTests
         await WaitForAsync(() => !workspace.Runtime.Connected && workspace.Runtime.Status == ClusterStatus.None);
         clusterNode.NavigationItems.Count.ShouldBe(0);
         clusterNode.ConnectionMenuHeader.ShouldBe(Assets.Resources.NavigationView_ContextMenu_Connect);
+        changedProperties.ShouldContain(nameof(ClusterNavigationNode.ConnectionMenuHeader));
+        changedProperties.ShouldContain(nameof(ClusterNavigationNode.ConnectionMenuIcon));
     }
 
     [AvaloniaFact]
@@ -1748,14 +1826,15 @@ public class NavigationViewModelTests
     public async Task resource_navigation_count_is_preserved_until_resource_is_seeded()
     {
         var services = Application.Current.GetTestServices();
-        var config = services.GetRequiredService<TestClusterConfig>();
         var workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
-
+        await workspace.Connect();
+        var config = new FakeResourceConfig(typeof(Corev1Event), "Events");
+        var node = new ClusterNavigationNode(workspace);
 
         var current = new ResourceNavigationLink
         {
             Cluster = workspace,
-            Id = "cluster-events",
+            Id = $"{workspace.Runtime.Name}-{GroupApiVersionKind.From<Corev1Event>()}",
             Name = "Events",
             ResourceKind = GroupApiVersionKind.From<Corev1Event>(),
             Order = 1,
@@ -1763,26 +1842,21 @@ public class NavigationViewModelTests
             OpenCommand = new RelayCommand(() => { }),
             OpenInNewTabCommand = new RelayCommand(() => { }),
         };
-
-        var desiredCount = Observable.Return(2);
-        var desired = new ResourceNavigationLink
-        {
-            Cluster = workspace,
-            Id = "cluster-events",
-            Name = "Events",
-            ResourceKind = GroupApiVersionKind.From<Corev1Event>(),
-            Order = 1,
-            Count = desiredCount,
-            OpenCommand = new RelayCommand(() => { }),
-            OpenInNewTabCommand = new RelayCommand(() => { }),
-        };
-
-        var method = typeof(NavigationViewModel).GetMethod("UpdateNavigationItem", BindingFlags.Static | BindingFlags.NonPublic);
-        method.ShouldNotBeNull();
+        node.NavigationItems.Add(current);
 
         var originalCount = current.Count;
-        method.Invoke(null, [current, desired]);
+        var synchronizer = new NavigationResourceSynchronizer(
+            services.GetRequiredService<IResourceIconService>(),
+            openCommand: null,
+            openInNewTabCommand: null,
+            services.GetRequiredService<ILogger<NavigationResourceSynchronizer>>());
+        synchronizer.Apply(
+            workspace,
+            config,
+            [config],
+            new Dictionary<ClusterWorkspace, ClusterNavigationNode> { [workspace] = node });
 
+        node.NavigationItems.OfType<ResourceNavigationLink>().Single().ShouldBeSameAs(current);
         current.Count.ShouldBeSameAs(originalCount);
 
         var count = await WaitForCountAsync(current.Count, timeoutMs: 1000);
@@ -2259,7 +2333,7 @@ internal class FakeCustomResourceConfig : IResourceConfig
     public IEnumerable<MenuItemViewModel> GetCustomMenuItems(IEnumerable? selectedItems) => Array.Empty<MenuItemViewModel>();
     public int Order { get; set; }
     public string Name { get; }
-    public string? Category => null;
+    public string? Category { get; set; }
     public Style[] ListStyle() => [];
     public IEnumerable<(Verb verb, string? subresource)> Permissions() => [];
     public Task EvaluateListWatchAccessAsync() => Task.CompletedTask;
@@ -2298,7 +2372,7 @@ internal class FakeResourceConfig : IResourceConfig
     public IEnumerable<MenuItemViewModel> GetCustomMenuItems(IEnumerable? selectedItems) => Array.Empty<MenuItemViewModel>();
     public int Order { get; set; }
     public string Name { get; }
-    public string? Category => null;
+    public string? Category { get; set; }
     public Style[] ListStyle() => [];
     public IEnumerable<(Verb verb, string? subresource)> Permissions() => [];
     public Task EvaluateListWatchAccessAsync() => Task.CompletedTask;
