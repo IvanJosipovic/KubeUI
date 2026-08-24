@@ -275,7 +275,7 @@ public sealed class TestClusterGenerator
                 client = CreateClient(
                     clientConfig,
                     terminalHandler: null,
-                    CreateHttpHandlers(config, out _));
+                    CreateHttpHandlers(config, out _, includeConfiguredHandlers: false));
 
                 return await CreateTestClusterAsync(
                     client,
@@ -287,7 +287,7 @@ public sealed class TestClusterGenerator
                     clientFactory: configuration => CreateClient(
                         configuration,
                         terminalHandler: null,
-                        CreateHttpHandlers(config, out _))).ConfigureAwait(false);
+                        CreateHttpHandlers(config, out _, includeConfiguredHandlers: false))).ConfigureAwait(false);
             }
             catch
             {
