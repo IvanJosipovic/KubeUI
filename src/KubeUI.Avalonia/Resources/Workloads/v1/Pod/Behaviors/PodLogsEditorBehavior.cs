@@ -5,13 +5,13 @@ using Avalonia.Styling;
 using Avalonia.Xaml.Interactivity;
 using AvaloniaEdit;
 using AvaloniaEdit.Search;
-using KubeUI.Avalonia.Resources.Workloads.v1.Pod.Views;
+using KubeUI.Avalonia.Infrastructure.Platform;
 using TextMateSharp.Grammars;
 using static AvaloniaEdit.TextMate.TextMate;
 
 namespace KubeUI.Avalonia.Resources.Workloads.v1.Pod.Behaviors;
 
-public sealed class PodLogsEditorBehavior : Behavior<TextEditor>
+public sealed class PodLogsEditorBehavior : Behavior<TextEditor>, IDeclarativeViewBase
 {
     public static readonly DirectProperty<PodLogsEditorBehavior, bool> AutoScrollToBottomProperty =
         AvaloniaProperty.RegisterDirect<PodLogsEditorBehavior, bool>(
@@ -208,12 +208,13 @@ public sealed class PodLogsEditorBehavior : Behavior<TextEditor>
             return;
         }
 
-        Vector targetOffset = _pendingRestoreOffset ?? ScrollOffset;
-        if (targetOffset == default)
+        if (_pendingRestoreOffset is null && ScrollOffset == default)
         {
             _isStuckToBottom = true;
             return;
         }
+
+        var targetOffset = _pendingRestoreOffset ?? ScrollOffset;
 
         if (_scrollViewer.Extent.Width <= _scrollViewer.Viewport.Width && _scrollViewer.Extent.Height <= _scrollViewer.Viewport.Height)
         {

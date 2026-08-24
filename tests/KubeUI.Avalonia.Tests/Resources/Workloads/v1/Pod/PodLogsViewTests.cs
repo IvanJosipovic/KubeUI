@@ -20,12 +20,13 @@ using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Resources.Workloads.v1.Pod;
 
-public sealed class PodLogsViewTests : AvaloniaTestBase
+public sealed class PodLogsViewTests
 {
     [AvaloniaFact]
-    public void view_installs_the_avaloniaedit_search_panel_and_behavior()
+    public async Task view_installs_the_avaloniaedit_search_panel_and_behavior()
     {
-        IServiceProvider services = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
+        using var workspace = await Application.Current.CreateClusterAsync();
+        IServiceProvider services = Application.Current.GetTestServices();
         PodLogsViewModel viewModel = new(
             services.GetRequiredService<ILogger<PodLogsViewModel>>(),
             services.GetRequiredService<ISettingsService>(),
@@ -33,7 +34,7 @@ public sealed class PodLogsViewTests : AvaloniaTestBase
             new PodLogSessionResolver(),
             new NoOpPodLogStreamClient())
         {
-            Cluster = new TestCluster().CreateWorkspace(),
+            Cluster = workspace.Runtime,
             Object = CreatePod(),
             ContainerName = "app",
         };
@@ -60,9 +61,10 @@ public sealed class PodLogsViewTests : AvaloniaTestBase
     }
 
     [AvaloniaFact]
-    public void selected_pods_and_containers_do_not_increase_the_toolbar_height()
+    public async Task selected_pods_and_containers_do_not_increase_the_toolbar_height()
     {
-        IServiceProvider services = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
+        using var workspace = await Application.Current.CreateClusterAsync();
+        IServiceProvider services = Application.Current.GetTestServices();
         PodLogsViewModel viewModel = new(
             services.GetRequiredService<ILogger<PodLogsViewModel>>(),
             services.GetRequiredService<ISettingsService>(),
@@ -70,7 +72,7 @@ public sealed class PodLogsViewTests : AvaloniaTestBase
             new PodLogSessionResolver(),
             new NoOpPodLogStreamClient())
         {
-            Cluster = new TestCluster().CreateWorkspace(),
+            Cluster = workspace.Runtime,
             Object = CreatePod(),
             ContainerName = "app",
             PodSelectionItems = CreatePodSelectionItems(12),
@@ -120,7 +122,8 @@ public sealed class PodLogsViewTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task view_sticks_to_bottom_when_logs_append_while_pinned()
     {
-        IServiceProvider services = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
+        using var workspace = await Application.Current.CreateClusterAsync();
+        IServiceProvider services = Application.Current.GetTestServices();
         PodLogsViewModel viewModel = new(
             services.GetRequiredService<ILogger<PodLogsViewModel>>(),
             services.GetRequiredService<ISettingsService>(),
@@ -128,7 +131,7 @@ public sealed class PodLogsViewTests : AvaloniaTestBase
             new PodLogSessionResolver(),
             new NoOpPodLogStreamClient())
         {
-            Cluster = new TestCluster().CreateWorkspace(),
+            Cluster = workspace.Runtime,
             Object = CreatePod(),
             ContainerName = "app",
             AutoScrollToBottom = true,
@@ -155,7 +158,7 @@ public sealed class PodLogsViewTests : AvaloniaTestBase
         ScrollViewer scrollViewer = await WaitForScrollViewerAsync(editor);
         await WaitForAsync(() => scrollViewer.Offset.Y >= scrollViewer.ScrollBarMaximum.Y - 1.0);
 
-        double previousBottom = scrollViewer.Offset.Y;
+        var previousBottom = scrollViewer.Offset.Y;
         await Dispatcher.UIThread.InvokeAsync(() => viewModel.Logs.Insert(viewModel.Logs.TextLength, Environment.NewLine + "tail line"));
 
         await WaitForAsync(() => scrollViewer.Offset.Y > previousBottom);
@@ -167,7 +170,8 @@ public sealed class PodLogsViewTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task view_does_not_force_scroll_when_reader_has_moved_away_from_the_bottom()
     {
-        IServiceProvider services = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
+        using var workspace = await Application.Current.CreateClusterAsync();
+        IServiceProvider services = Application.Current.GetTestServices();
         PodLogsViewModel viewModel = new(
             services.GetRequiredService<ILogger<PodLogsViewModel>>(),
             services.GetRequiredService<ISettingsService>(),
@@ -175,7 +179,7 @@ public sealed class PodLogsViewTests : AvaloniaTestBase
             new PodLogSessionResolver(),
             new NoOpPodLogStreamClient())
         {
-            Cluster = new TestCluster().CreateWorkspace(),
+            Cluster = workspace.Runtime,
             Object = CreatePod(),
             ContainerName = "app",
             AutoScrollToBottom = true,
@@ -202,7 +206,7 @@ public sealed class PodLogsViewTests : AvaloniaTestBase
         ScrollViewer scrollViewer = await WaitForScrollViewerAsync(editor);
         await WaitForAsync(() => Math.Abs(scrollViewer.Offset.Y - 80) < 1.0);
 
-        double beforeAppend = scrollViewer.Offset.Y;
+        var beforeAppend = scrollViewer.Offset.Y;
         await Dispatcher.UIThread.InvokeAsync(() => viewModel.Logs.Insert(viewModel.Logs.TextLength, Environment.NewLine + "older line"));
 
         await WaitForAsync(() => Math.Abs(scrollViewer.Offset.Y - beforeAppend) < 1.0);
@@ -214,7 +218,8 @@ public sealed class PodLogsViewTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task view_jumps_to_present_when_requested()
     {
-        IServiceProvider services = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
+        using var workspace = await Application.Current.CreateClusterAsync();
+        IServiceProvider services = Application.Current.GetTestServices();
         PodLogsViewModel viewModel = new(
             services.GetRequiredService<ILogger<PodLogsViewModel>>(),
             services.GetRequiredService<ISettingsService>(),
@@ -222,7 +227,7 @@ public sealed class PodLogsViewTests : AvaloniaTestBase
             new PodLogSessionResolver(),
             new NoOpPodLogStreamClient())
         {
-            Cluster = new TestCluster().CreateWorkspace(),
+            Cluster = workspace.Runtime,
             Object = CreatePod(),
             ContainerName = "app",
             AutoScrollToBottom = false,
@@ -284,10 +289,10 @@ public sealed class PodLogsViewTests : AvaloniaTestBase
 
     private static IReadOnlyList<PodLogPodSelectionItem> CreatePodSelectionItems(int count)
     {
-        List<PodLogPodSelectionItem> items = [new PodLogPodSelectionItem(null, "All Pods", true)];
-        for (int i = 0; i < count; i++)
+        var items = new List<PodLogPodSelectionItem> { new(null, "All Pods", true) };
+        for (var i = 0; i < count; i++)
         {
-            V1Pod pod = CreatePod();
+            var pod = CreatePod();
             pod.Metadata.Name = $"app-{i:00}";
             items.Add(new PodLogPodSelectionItem(pod, pod.Name(), false));
         }
@@ -297,32 +302,24 @@ public sealed class PodLogsViewTests : AvaloniaTestBase
 
     private static async Task<ScrollViewer> WaitForScrollViewerAsync(TextEditor editor)
     {
-        await WaitForAsync(() => editor.GetScrollViewer() is not null && editor.GetScrollViewer()!.ScrollBarMaximum.Y > 0);
-        return editor.GetScrollViewer() ?? throw new InvalidOperationException("ScrollViewer was not created.");
+        await WaitForAsync(() => editor.GetVisualDescendants().OfType<ScrollViewer>().Any(scrollViewer => scrollViewer.ScrollBarMaximum.Y > 0));
+        return editor.GetVisualDescendants().OfType<ScrollViewer>().FirstOrDefault()
+            ?? throw new InvalidOperationException("ScrollViewer was not created.");
     }
 
     private static async Task WaitForAsync(Func<bool> predicate, int timeoutMs = 3000)
     {
-        System.Diagnostics.Stopwatch stopwatch = System.Diagnostics.Stopwatch.StartNew();
-        while (stopwatch.ElapsedMilliseconds < timeoutMs)
-        {
-            Dispatcher.UIThread.RunJobs();
-            if (predicate())
-            {
-                return;
-            }
-
-            await Task.Delay(25);
-        }
-
-        Dispatcher.UIThread.RunJobs();
-        predicate().ShouldBeTrue();
+        await TestWait.UntilAsync(
+            predicate,
+            timeoutMs,
+            TestContext.Current.CancellationToken,
+            () => Dispatcher.UIThread.RunJobs());
     }
 
     private static string CreateManyLines(int count)
     {
-        StringBuilder builder = new();
-        for (int i = 1; i <= count; i++)
+        var builder = new StringBuilder();
+        for (var i = 1; i <= count; i++)
         {
             if (i > 1)
             {

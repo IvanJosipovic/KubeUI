@@ -345,8 +345,8 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
     [RelayCommand(CanExecute = nameof(CanViewLogs))]
     private async Task ViewLogs(object? parameter)
     {
-        IList? parameters = parameter as IList;
-        V1Pod? pod = parameter as V1Pod;
+        var parameters = parameter as IList;
+        var pod = parameter as V1Pod;
         string? containerName = null;
 
         if (parameters is not null && parameters.Count == 2 && parameters[0] is V1Pod submenuPod)
@@ -423,7 +423,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
 
     private static string GetDefaultContainerName(V1Pod pod)
     {
-        V1Container? container = pod.Spec?.Containers?.FirstOrDefault();
+        var container = pod.Spec?.Containers?.FirstOrDefault();
         if (container is not null && !string.IsNullOrWhiteSpace(container.Name))
         {
             return container.Name;
@@ -435,7 +435,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
             return container.Name;
         }
 
-        V1EphemeralContainer? ephemeralContainer = pod.Spec?.EphemeralContainers?.FirstOrDefault();
+        var ephemeralContainer = pod.Spec?.EphemeralContainers?.FirstOrDefault();
         return ephemeralContainer?.Name ?? string.Empty;
     }
 

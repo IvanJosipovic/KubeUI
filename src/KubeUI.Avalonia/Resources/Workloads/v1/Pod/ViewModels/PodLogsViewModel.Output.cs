@@ -2,6 +2,7 @@ using System.IO;
 using System.Text;
 using Avalonia.Threading;
 using AvaloniaEdit.Document;
+using k8s.Models;
 using KubeUI.Kubernetes;
 
 namespace KubeUI.Avalonia.Resources.Workloads.v1.Pod.ViewModels;
@@ -17,7 +18,10 @@ public sealed partial class PodLogsViewModel
 
         PodLogOutputEntry entry = new(podName, containerName, message);
         AddOutputEntry(entry);
-        Dispatcher.UIThread.InvokeAsync(() => AppendOutputEntry(entry, connectionCts), DispatcherPriority.Background);
+        var outputGeneration = Volatile.Read(ref _outputGeneration);
+        Dispatcher.UIThread.InvokeAsync(
+            () => AppendOutputEntry(entry, connectionCts, outputGeneration),
+            DispatcherPriority.Background);
     }
 
     private void DecrementActiveReaders(CancellationTokenSource connectionCts)
@@ -45,11 +49,11 @@ public sealed partial class PodLogsViewModel
 
     private string BuildSuggestedFileName()
     {
-        string podName = Object?.Metadata?.Name ?? "pod";
-        string containerName = string.IsNullOrWhiteSpace(ContainerName) ? "logs" : ContainerName;
-        string? namespaceName = Object?.Metadata?.NamespaceProperty;
+        var podName = Object?.Metadata?.Name ?? "pod";
+        var containerName = string.IsNullOrWhiteSpace(ContainerName) ? "logs" : ContainerName;
+        var namespaceName = Object?.Metadata?.NamespaceProperty;
 
-        string fileName = namespaceName is { Length: > 0 }
+        var fileName = namespaceName is { Length: > 0 }
             ? $"{namespaceName}-{podName}-{containerName}.log"
             : $"{podName}-{containerName}.log";
 
@@ -58,24 +62,41 @@ public sealed partial class PodLogsViewModel
 
     private async Task ReadLogsAsync(StreamReader reader, PodLogReadOptions option, CancellationTokenSource connectionCts)
     {
-        CancellationToken cancellationToken = connectionCts.Token;
-        bool streamEnded = false;
+        var cancellationToken = connectionCts.Token;
+        var streamEnded = false;
+        var appendedOutput = false;
+        List<string>? reconnectBuffer = HasExistingOutput(option) ? [] : null;
+        var outputGeneration = Volatile.Read(ref _outputGeneration);
         try
         {
             while (!cancellationToken.IsCancellationRequested)
             {
-                string? log = await reader.ReadLineAsync();
+                var log = await reader.ReadLineAsync();
                 if (log is null)
                 {
                     streamEnded = true;
                     break;
                 }
 
-                PodLogOutputEntry entry = new(option.PodName, option.ContainerName, log);
-                AddOutputEntry(entry);
-                await Dispatcher.UIThread.InvokeAsync(
-                    () => AppendOutputEntry(entry, connectionCts),
-                    DispatcherPriority.Background);
+                if (reconnectBuffer is null)
+                {
+                    AppendLogEntry(option, log, connectionCts, outputGeneration);
+                    appendedOutput = true;
+                }
+                else
+                {
+                    reconnectBuffer.Add(log);
+                    if (TryFlushReconnectBuffer(reconnectBuffer, option, atEnd: false, out var lines))
+                    {
+                        reconnectBuffer = null;
+                        for (var i = 0; i < lines.Count; i++)
+                        {
+                            AppendLogEntry(option, lines[i], connectionCts, outputGeneration);
+                        }
+
+                        appendedOutput = lines.Count > 0;
+                    }
+                }
             }
         }
         catch (IOException) when (cancellationToken.IsCancellationRequested)
@@ -87,27 +108,62 @@ public sealed partial class PodLogsViewModel
         catch (Exception ex)
         {
             _logger.LogError(ex, "Unable to read pod log stream for {PodNamespace}/{PodName} container {ContainerName}.", option.PodNamespace, option.PodName, option.ContainerName);
+            Dispatcher.UIThread.Post(
+                () =>
+                {
+                    if (IsCurrentConnection(connectionCts))
+                    {
+                        ConnectionError = ex.Message;
+                    }
+                },
+                DispatcherPriority.Background);
         }
         finally
         {
-            if (streamEnded && ShouldReconnectAfterStreamEnd(reader, option, cancellationToken))
+            if (reconnectBuffer is not null
+                && TryFlushReconnectBuffer(reconnectBuffer, option, atEnd: true, out var lines))
             {
-                ScheduleReconnectAfterStreamEnd(option, connectionCts);
+                for (var i = 0; i < lines.Count; i++)
+                {
+                    AppendLogEntry(option, lines[i], connectionCts, outputGeneration);
+                }
+
+                appendedOutput = lines.Count > 0;
+            }
+
+            if (streamEnded && appendedOutput && ShouldReconnectAfterStreamEnd(reader, option, cancellationToken))
+            {
+                ScheduleReconnectAfterStreamEnd(connectionCts);
             }
 
             DecrementActiveReaders(connectionCts);
         }
     }
 
-    private static bool ShouldReconnectAfterStreamEnd(StreamReader reader, PodLogReadOptions option, CancellationToken cancellationToken)
+    private bool ShouldReconnectAfterStreamEnd(StreamReader reader, PodLogReadOptions option, CancellationToken cancellationToken)
     {
         return option.Follow
             && !option.Previous
             && !cancellationToken.IsCancellationRequested
-            && !reader.BaseStream.CanSeek;
+            && !reader.BaseStream.CanSeek
+            && !IsTerminalPod()
+            && Volatile.Read(ref _activeReaderCount) == 1;
     }
 
-    private void ScheduleReconnectAfterStreamEnd(PodLogReadOptions option, CancellationTokenSource connectionCts)
+    private bool IsTerminalPod()
+    {
+        V1Pod? pod = SessionResolution?.Pod;
+        if (pod is null)
+        {
+            return false;
+        }
+
+        V1Pod? currentPod = Cluster.GetResource<V1Pod>(pod.Namespace(), pod.Name()) ?? pod;
+        return string.Equals(currentPod.Status?.Phase, "Succeeded", StringComparison.Ordinal)
+            || string.Equals(currentPod.Status?.Phase, "Failed", StringComparison.Ordinal);
+    }
+
+    private void ScheduleReconnectAfterStreamEnd(CancellationTokenSource connectionCts)
     {
         if (Interlocked.Exchange(ref _streamEndedReconnectPending, 1) == 1)
         {
@@ -130,7 +186,7 @@ public sealed partial class PodLogsViewModel
                 return;
             }
 
-            Dispatcher.UIThread.Post(RequestReconnect, DispatcherPriority.Background);
+            Dispatcher.UIThread.Post(() => RequestReconnect(preserveOutput: true), DispatcherPriority.Background);
         }, CancellationToken.None);
     }
 
@@ -146,14 +202,27 @@ public sealed partial class PodLogsViewModel
         }
     }
 
-    private void AppendOutputEntry(PodLogOutputEntry entry, CancellationTokenSource connectionCts)
+    private void AppendLogEntry(
+        PodLogReadOptions option,
+        string message,
+        CancellationTokenSource connectionCts,
+        int outputGeneration)
     {
-        if (!IsCurrentConnection(connectionCts))
+        PodLogOutputEntry entry = new(option.PodName, option.ContainerName, message);
+        AddOutputEntry(entry);
+        Dispatcher.UIThread.InvokeAsync(
+            () => AppendOutputEntry(entry, connectionCts, outputGeneration),
+            DispatcherPriority.Background);
+    }
+
+    private void AppendOutputEntry(PodLogOutputEntry entry, CancellationTokenSource connectionCts, int outputGeneration)
+    {
+        if (!IsCurrentConnection(connectionCts) || outputGeneration != Volatile.Read(ref _outputGeneration))
         {
             return;
         }
 
-        string line = FormatOutputEntry(entry, ShowResourceNames, GetCurrentDisplayMode());
+        var line = FormatOutputEntry(entry, ShowResourceNames, GetCurrentDisplayMode());
         if (Logs.TextLength > 0)
         {
             Logs.Insert(Logs.TextLength, Environment.NewLine);
@@ -167,7 +236,7 @@ public sealed partial class PodLogsViewModel
     {
         while (Logs.LineCount > MaxLogEntries)
         {
-            DocumentLine firstLine = Logs.GetLineByNumber(1);
+            var firstLine = Logs.GetLineByNumber(1);
             Logs.Remove(0, firstLine.TotalLength);
         }
     }
@@ -200,7 +269,7 @@ public sealed partial class PodLogsViewModel
         }
 
         StringBuilder builder = new();
-        for (int i = 0; i < entries.Length; i++)
+        for (var i = 0; i < entries.Length; i++)
         {
             if (i > 0)
             {
@@ -220,7 +289,7 @@ public sealed partial class PodLogsViewModel
             return entry.Message;
         }
 
-        string prefix = BuildDisplayPrefix(entry.PodName, entry.ContainerName, displayMode);
+        var prefix = BuildDisplayPrefix(entry.PodName, entry.ContainerName, displayMode);
         if (!string.IsNullOrWhiteSpace(prefix))
         {
             return $"[{prefix}] {entry.Message}";
@@ -253,4 +322,120 @@ public sealed partial class PodLogsViewModel
             _ => string.Empty,
         };
     }
+
+    private bool HasExistingOutput(PodLogReadOptions option)
+    {
+        lock (_outputEntriesGate)
+        {
+            for (var i = _outputEntries.Count - 1; i >= 0; i--)
+            {
+                var entry = _outputEntries[i];
+                if (string.Equals(entry.PodName, option.PodName, StringComparison.Ordinal)
+                    && string.Equals(entry.ContainerName, option.ContainerName, StringComparison.Ordinal))
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private bool TryFlushReconnectBuffer(
+        List<string> pending,
+        PodLogReadOptions option,
+        bool atEnd,
+        out List<string> lines)
+    {
+        var history = GetRecentMessages(option);
+        var overlap = GetSuffixPrefixOverlap(history, pending);
+
+        if (!atEnd && overlap == pending.Count && HasLongerOverlap(history, pending))
+        {
+            lines = [];
+            return false;
+        }
+
+        if (!atEnd && overlap == pending.Count)
+        {
+            lines = [];
+            return false;
+        }
+
+        lines = pending.Skip(overlap).ToList();
+        return true;
+    }
+
+    private List<string> GetRecentMessages(PodLogReadOptions option)
+    {
+        List<string> history = [];
+        lock (_outputEntriesGate)
+        {
+            for (var i = _outputEntries.Count - 1; i >= 0 && history.Count < option.TailLines; i--)
+            {
+                var entry = _outputEntries[i];
+                if (string.Equals(entry.PodName, option.PodName, StringComparison.Ordinal)
+                    && string.Equals(entry.ContainerName, option.ContainerName, StringComparison.Ordinal))
+                {
+                    history.Add(entry.Message);
+                }
+            }
+        }
+
+        history.Reverse();
+        return history;
+    }
+
+    private static int GetSuffixPrefixOverlap(IReadOnlyList<string> history, IReadOnlyList<string> pending)
+    {
+        var maximum = Math.Min(history.Count, pending.Count);
+        for (var length = maximum; length > 0; length--)
+        {
+            var matches = true;
+            for (var i = 0; i < length; i++)
+            {
+                if (!string.Equals(history[history.Count - length + i], pending[i], StringComparison.Ordinal))
+                {
+                    matches = false;
+                    break;
+                }
+            }
+
+            if (matches)
+            {
+                return length;
+            }
+        }
+
+        return 0;
+    }
+
+    private static bool HasLongerOverlap(IReadOnlyList<string> history, IReadOnlyList<string> pending)
+    {
+        if (pending.Count >= history.Count)
+        {
+            return false;
+        }
+
+        for (var length = pending.Count + 1; length <= history.Count; length++)
+        {
+            var matches = true;
+            for (var i = 0; i < pending.Count; i++)
+            {
+                if (!string.Equals(history[history.Count - length + i], pending[i], StringComparison.Ordinal))
+                {
+                    matches = false;
+                    break;
+                }
+            }
+
+            if (matches)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
 }

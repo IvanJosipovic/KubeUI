@@ -1,6 +1,8 @@
 using FluentIcons.Common;
 using k8s.Models;
+using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Features.Resources.Common;
+using KubeUI.Kubernetes;
 
 namespace KubeUI.Avalonia.Resources.Workloads.v1.StatefulSet;
 
@@ -34,6 +36,7 @@ public sealed partial class V1StatefulSetConfig : ResourceConfigBase<V1StatefulS
     protected override IEnumerable<MenuItemViewModel> CreateCustomMenuItems(IEnumerable<V1StatefulSet>? selectedItems)
     {
         return [
+            CreatePodLogsMenuItem(selectedItems),
             new()
             {
                 Title = Assets.Resources.V1StatefulSetConfig_MenuItem_Restart,
@@ -44,6 +47,11 @@ public sealed partial class V1StatefulSetConfig : ResourceConfigBase<V1StatefulS
         ];
     }
 
+    public override IEnumerable<AuthorizationRequest> AuthorizationRequests()
+    {
+        return base.AuthorizationRequests().Append(
+            new AuthorizationRequest(GroupApiVersionKind.From<V1Pod>(), Verb.Get, "log"));
+    }
+
     public override Control[] Properties(V1StatefulSet resource) => [new PropertiesView()];
 }
-

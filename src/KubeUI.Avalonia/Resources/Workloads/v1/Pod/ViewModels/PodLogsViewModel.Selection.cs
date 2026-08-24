@@ -11,16 +11,21 @@ public sealed partial class PodLogsViewModel
     private List<PodLogReadOptions> BuildReadTargets(PodLogSessionState state, PodLogSessionResolution resolution)
     {
         List<PodLogReadOptions> targets = [];
-        IReadOnlyList<V1Pod> pods = ResolveSelectedPods(resolution.RelatedPods, resolution.Pod);
-        IReadOnlyList<PodLogContainerOption> containers = ResolveSelectedContainers(resolution.Pod, state.ContainerName);
+        var pods = ResolveSelectedPods(resolution.RelatedPods, resolution.Pod);
 
-        for (int i = 0; i < pods.Count; i++)
+        for (var i = 0; i < pods.Count; i++)
         {
-            V1Pod pod = pods[i];
+            var pod = pods[i];
+            var containers = ResolveSelectedContainers(pod, state.ContainerName);
 
-            for (int j = 0; j < containers.Count; j++)
+            for (var j = 0; j < containers.Count; j++)
             {
-                PodLogContainerOption container = containers[j];
+                var container = containers[j];
+                if (!IsContainerReadyForLogs(pod, container.Name, state.Previous))
+                {
+                    continue;
+                }
+
                 targets.Add(CreateReadOptionsForPod(state, pod, container.Name));
             }
         }
@@ -30,7 +35,7 @@ public sealed partial class PodLogsViewModel
 
     private PodLogReadOptions CreateReadOptionsForPod(PodLogSessionState state, V1Pod pod, string containerName)
     {
-        bool previousLogsAvailable = HasPreviousLogs(pod, containerName);
+        var previousLogsAvailable = HasPreviousLogs(pod, containerName);
         return new PodLogReadOptions(
             pod.Namespace(),
             pod.Name(),
@@ -45,33 +50,55 @@ public sealed partial class PodLogsViewModel
     {
         List<PodLogContainerOption> containers = [];
 
-        IList<V1Container>? initContainers = pod.Spec?.InitContainers;
+        var initContainers = pod.Spec?.InitContainers;
         if (initContainers is not null)
         {
-            for (int i = 0; i < initContainers.Count; i++)
+            for (var i = 0; i < initContainers.Count; i++)
             {
-                V1Container container = initContainers[i];
+                var container = initContainers[i];
                 containers.Add(new PodLogContainerOption(container.Name, $"{container.Name} (init)", IsInitContainer: true));
             }
         }
 
-        IList<V1Container>? appContainers = pod.Spec?.Containers;
+        var appContainers = pod.Spec?.Containers;
         if (appContainers is not null)
         {
-            for (int i = 0; i < appContainers.Count; i++)
+            for (var i = 0; i < appContainers.Count; i++)
             {
-                V1Container container = appContainers[i];
+                var container = appContainers[i];
                 containers.Add(new PodLogContainerOption(container.Name, container.Name, IsInitContainer: false));
             }
         }
 
-        IList<V1EphemeralContainer>? ephemeralContainers = pod.Spec?.EphemeralContainers;
+        var ephemeralContainers = pod.Spec?.EphemeralContainers;
         if (ephemeralContainers is not null)
         {
-            for (int i = 0; i < ephemeralContainers.Count; i++)
+            for (var i = 0; i < ephemeralContainers.Count; i++)
             {
-                V1EphemeralContainer container = ephemeralContainers[i];
+                var container = ephemeralContainers[i];
                 containers.Add(new PodLogContainerOption(container.Name, $"{container.Name} (ephemeral)", IsInitContainer: false, IsEphemeralContainer: true));
+            }
+        }
+
+        return containers;
+    }
+
+    private static IReadOnlyList<PodLogContainerOption> BuildContainerOptions(IReadOnlyList<V1Pod> pods)
+    {
+        List<PodLogContainerOption> containers = [];
+        HashSet<PodLogContainerSelectionKey> seen = [];
+
+        for (var i = 0; i < pods.Count; i++)
+        {
+            var podContainers = BuildContainerOptions(pods[i]);
+            for (var j = 0; j < podContainers.Count; j++)
+            {
+                var container = podContainers[j];
+                var key = GetContainerSelectionKey(container);
+                if (seen.Add(key))
+                {
+                    containers.Add(container);
+                }
             }
         }
 
@@ -82,9 +109,9 @@ public sealed partial class PodLogsViewModel
     {
         List<PodLogPodSelectionItem> items = [new PodLogPodSelectionItem(null, Assets.Resources.PodLogsView_AllPods, true)];
 
-        for (int i = 0; i < pods.Count; i++)
+        for (var i = 0; i < pods.Count; i++)
         {
-            V1Pod pod = pods[i];
+            var pod = pods[i];
             items.Add(new PodLogPodSelectionItem(pod, pod.Name(), false));
         }
 
@@ -95,9 +122,9 @@ public sealed partial class PodLogsViewModel
     {
         List<PodLogContainerSelectionItem> items = [new PodLogContainerSelectionItem(string.Empty, Assets.Resources.PodLogsView_AllContainers, false, true)];
 
-        for (int i = 0; i < containers.Count; i++)
+        for (var i = 0; i < containers.Count; i++)
         {
-            PodLogContainerOption container = containers[i];
+            var container = containers[i];
             items.Add(new PodLogContainerSelectionItem(container.Name, container.DisplayName, container.IsInitContainer, false, container.IsEphemeralContainer));
         }
 
@@ -151,9 +178,9 @@ public sealed partial class PodLogsViewModel
         }
 
         List<TItem> selected = [];
-        foreach (TItem selectedItem in currentSelection)
+        foreach (var selectedItem in currentSelection)
         {
-            TItem? item = findSelectionItem(getSelectionKey(selectedItem));
+            var item = findSelectionItem(getSelectionKey(selectedItem));
             if (item is not null)
             {
                 selected.Add(item);
@@ -173,9 +200,9 @@ public sealed partial class PodLogsViewModel
         }
 
         HashSet<string> selectedNames = new(StringComparer.Ordinal);
-        for (int i = 0; i < SelectedPodItems.Count; i++)
+        for (var i = 0; i < SelectedPodItems.Count; i++)
         {
-            PodLogPodSelectionItem item = SelectedPodItems[i];
+            var item = SelectedPodItems[i];
             if (!item.IsAll && item.Pod is not null)
             {
                 selectedNames.Add(item.Pod.Name());
@@ -188,9 +215,9 @@ public sealed partial class PodLogsViewModel
         }
 
         List<V1Pod> selectedPods = [];
-        for (int i = 0; i < availablePods.Count; i++)
+        for (var i = 0; i < availablePods.Count; i++)
         {
-            V1Pod pod = availablePods[i];
+            var pod = availablePods[i];
             if (selectedNames.Contains(pod.Name()))
             {
                 selectedPods.Add(pod);
@@ -209,9 +236,9 @@ public sealed partial class PodLogsViewModel
         }
 
         HashSet<PodLogContainerSelectionKey> selectedKeys = [];
-        for (int i = 0; i < SelectedContainerItems.Count; i++)
+        for (var i = 0; i < SelectedContainerItems.Count; i++)
         {
-            PodLogContainerSelectionItem item = SelectedContainerItems[i];
+            var item = SelectedContainerItems[i];
             if (!item.IsAll)
             {
                 selectedKeys.Add(GetContainerSelectionKey(item));
@@ -224,23 +251,23 @@ public sealed partial class PodLogsViewModel
         }
 
         List<PodLogContainerOption> selectedContainers = [];
-        for (int i = 0; i < availableContainers.Count; i++)
+        for (var i = 0; i < availableContainers.Count; i++)
         {
-            PodLogContainerOption container = availableContainers[i];
+            var container = availableContainers[i];
             if (selectedKeys.Contains(GetContainerSelectionKey(container)))
             {
                 selectedContainers.Add(container);
             }
         }
 
-        return selectedContainers.Count > 0 ? selectedContainers : ResolveFallbackContainers(pod, fallbackContainerName);
+        return selectedContainers;
     }
 
     private static IReadOnlyList<PodLogContainerOption> ResolveFallbackContainers(V1Pod pod, string fallbackContainerName)
     {
-        string resolvedContainerName = ResolveContainerName(pod, fallbackContainerName);
+        var resolvedContainerName = ResolveContainerName(pod, fallbackContainerName);
         List<PodLogContainerOption> containers = [.. BuildContainerOptions(pod)];
-        for (int i = 0; i < containers.Count; i++)
+        for (var i = 0; i < containers.Count; i++)
         {
             if (string.Equals(containers[i].Name, resolvedContainerName, StringComparison.Ordinal))
             {
@@ -253,9 +280,9 @@ public sealed partial class PodLogsViewModel
 
     private static PodLogPodSelectionItem? FindPodSelectionItem(IReadOnlyList<PodLogPodSelectionItem> items, string podName)
     {
-        for (int i = 0; i < items.Count; i++)
+        for (var i = 0; i < items.Count; i++)
         {
-            PodLogPodSelectionItem item = items[i];
+            var item = items[i];
             if (!item.IsAll && item.Pod is not null && string.Equals(item.Pod.Name(), podName, StringComparison.Ordinal))
             {
                 return item;
@@ -271,9 +298,9 @@ public sealed partial class PodLogsViewModel
         bool? isInitContainer = null,
         bool? isEphemeralContainer = null)
     {
-        for (int i = 0; i < items.Count; i++)
+        for (var i = 0; i < items.Count; i++)
         {
-            PodLogContainerSelectionItem item = items[i];
+            var item = items[i];
             if (item.IsAll)
             {
                 continue;
@@ -302,7 +329,7 @@ public sealed partial class PodLogsViewModel
 
     private static string ResolveContainerName(V1Pod pod, string requestedContainerName)
     {
-        string? containerName = FindContainerName(pod.Spec?.Containers, requestedContainerName);
+        var containerName = FindContainerName(pod.Spec?.Containers, requestedContainerName);
         if (!string.IsNullOrWhiteSpace(containerName))
         {
             return containerName;
@@ -345,9 +372,9 @@ public sealed partial class PodLogsViewModel
             return null;
         }
 
-        for (int i = 0; i < containers.Count; i++)
+        for (var i = 0; i < containers.Count; i++)
         {
-            V1Container container = containers[i];
+            var container = containers[i];
             if (string.Equals(container.Name, requestedContainerName, StringComparison.Ordinal))
             {
                 return container.Name;
@@ -364,9 +391,9 @@ public sealed partial class PodLogsViewModel
             return null;
         }
 
-        for (int i = 0; i < containers.Count; i++)
+        for (var i = 0; i < containers.Count; i++)
         {
-            V1EphemeralContainer container = containers[i];
+            var container = containers[i];
             if (string.Equals(container.Name, requestedContainerName, StringComparison.Ordinal))
             {
                 return container.Name;
@@ -383,6 +410,41 @@ public sealed partial class PodLogsViewModel
             || GetRestartCount(pod.Status?.EphemeralContainerStatuses, containerName) > 0;
     }
 
+    private static bool IsContainerReadyForLogs(V1Pod pod, string containerName, bool previous)
+    {
+        if (previous && HasPreviousLogs(pod, containerName))
+        {
+            return true;
+        }
+
+        V1ContainerStatus? status = FindContainerStatus(pod.Status?.ContainerStatuses, containerName)
+            ?? FindContainerStatus(pod.Status?.InitContainerStatuses, containerName)
+            ?? FindContainerStatus(pod.Status?.EphemeralContainerStatuses, containerName);
+
+        return status is null
+            || status.State?.Waiting is null
+            || status.State.Running is not null
+            || status.State.Terminated is not null;
+    }
+
+    private static V1ContainerStatus? FindContainerStatus(IList<V1ContainerStatus>? statuses, string containerName)
+    {
+        if (statuses is null)
+        {
+            return null;
+        }
+
+        for (var i = 0; i < statuses.Count; i++)
+        {
+            if (string.Equals(statuses[i].Name, containerName, StringComparison.Ordinal))
+            {
+                return statuses[i];
+            }
+        }
+
+        return null;
+    }
+
     private static int GetRestartCount(IList<V1ContainerStatus>? containerStatuses, string containerName)
     {
         if (containerStatuses is null || containerStatuses.Count == 0)
@@ -390,9 +452,9 @@ public sealed partial class PodLogsViewModel
             return 0;
         }
 
-        for (int i = 0; i < containerStatuses.Count; i++)
+        for (var i = 0; i < containerStatuses.Count; i++)
         {
-            V1ContainerStatus containerStatus = containerStatuses[i];
+            var containerStatus = containerStatuses[i];
             if (string.Equals(containerStatus.Name, containerName, StringComparison.Ordinal))
             {
                 return containerStatus.RestartCount;
@@ -419,7 +481,7 @@ public sealed partial class PodLogsViewModel
 
     private static bool ContainsAllSelection<TSelectionItem>(IEnumerable<TSelectionItem> selectedItems, Func<TSelectionItem, bool> isAll)
     {
-        foreach (TSelectionItem selectedItem in selectedItems)
+        foreach (var selectedItem in selectedItems)
         {
             if (isAll(selectedItem))
             {
@@ -437,7 +499,7 @@ public sealed partial class PodLogsViewModel
             return true;
         }
 
-        foreach (TSelectionItem selectedItem in selectedItems)
+        foreach (var selectedItem in selectedItems)
         {
             switch (selectedItem)
             {
@@ -458,7 +520,7 @@ public sealed partial class PodLogsViewModel
             return;
         }
 
-        PodLogSelectionNormalization normalization = GetPodSelectionNormalization(e);
+        var normalization = GetPodSelectionNormalization(e);
         if (normalization != PodLogSelectionNormalization.None)
         {
             QueueNormalizeSelectedPodItems(normalization);
@@ -477,7 +539,7 @@ public sealed partial class PodLogsViewModel
             return;
         }
 
-        PodLogSelectionNormalization normalization = GetContainerSelectionNormalization(e);
+        var normalization = GetContainerSelectionNormalization(e);
         if (normalization != PodLogSelectionNormalization.None)
         {
             QueueNormalizeSelectedContainerItems(normalization);
@@ -541,7 +603,7 @@ public sealed partial class PodLogsViewModel
             return false;
         }
 
-        for (int i = 0; i < items.Count; i++)
+        for (var i = 0; i < items.Count; i++)
         {
             if (items[i] is PodLogPodSelectionItem { IsAll: true })
             {
@@ -584,7 +646,7 @@ public sealed partial class PodLogsViewModel
             return false;
         }
 
-        for (int i = 0; i < items.Count; i++)
+        for (var i = 0; i < items.Count; i++)
         {
             if (items[i] is PodLogContainerSelectionItem { IsAll: true })
             {
@@ -633,7 +695,7 @@ public sealed partial class PodLogsViewModel
     private void NormalizeSelectedPodItems()
     {
         _pendingNormalizePodSelection = false;
-        PodLogSelectionNormalization normalization = _pendingPodSelectionNormalization;
+        var normalization = _pendingPodSelectionNormalization;
         _pendingPodSelectionNormalization = PodLogSelectionNormalization.None;
         _isNormalizingPodSelection = true;
         try
@@ -664,7 +726,7 @@ public sealed partial class PodLogsViewModel
 
     private void RemoveAllPodItem()
     {
-        for (int i = SelectedPodItems.Count - 1; i >= 0; i--)
+        for (var i = SelectedPodItems.Count - 1; i >= 0; i--)
         {
             if (SelectedPodItems[i].IsAll)
             {
@@ -681,7 +743,7 @@ public sealed partial class PodLogsViewModel
     private void NormalizeSelectedContainerItems()
     {
         _pendingNormalizeContainerSelection = false;
-        PodLogSelectionNormalization normalization = _pendingContainerSelectionNormalization;
+        var normalization = _pendingContainerSelectionNormalization;
         _pendingContainerSelectionNormalization = PodLogSelectionNormalization.None;
         _isNormalizingContainerSelection = true;
         try
@@ -712,7 +774,7 @@ public sealed partial class PodLogsViewModel
 
     private void RemoveAllContainerItem()
     {
-        for (int i = SelectedContainerItems.Count - 1; i >= 0; i--)
+        for (var i = SelectedContainerItems.Count - 1; i >= 0; i--)
         {
             if (SelectedContainerItems[i].IsAll)
             {
@@ -738,12 +800,12 @@ public sealed partial class PodLogsViewModel
 
     private void ReplaceSelectedItems<TItem>(ObservableCollection<TItem> selectedItems, IEnumerable<TItem> items)
     {
-        bool wasApplyingSession = _isApplyingSession;
+        var wasApplyingSession = _isApplyingSession;
         _isApplyingSession = true;
         try
         {
             selectedItems.Clear();
-            foreach (TItem item in items)
+            foreach (var item in items)
             {
                 selectedItems.Add(item);
             }

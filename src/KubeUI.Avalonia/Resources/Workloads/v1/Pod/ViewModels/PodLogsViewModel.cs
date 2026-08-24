@@ -1,7 +1,9 @@
 using System.Collections.ObjectModel;
 using System.IO;
+using System.Reactive.Linq;
 using AvaloniaEdit.Document;
 using Dock.Model.Core;
+using k8s;
 using k8s.Models;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Resources.Workloads.v1.Pod.Services;
@@ -35,8 +37,12 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
     private PodLogSelectionNormalization _pendingPodSelectionNormalization;
     private PodLogSelectionNormalization _pendingContainerSelectionNormalization;
     private bool _pendingReconnect;
+    private bool _preserveOutputOnNextConnect;
     private int _streamEndedReconnectPending;
     private int _activeReaderCount;
+    private int _outputGeneration;
+    private IDisposable? _resourceChangesSubscription;
+    private IClusterRuntime? _subscribedCluster;
 
     public PodLogsViewModel(
         ILogger<PodLogsViewModel> logger,
@@ -61,7 +67,7 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
     public partial IClusterRuntime Cluster { get; set; }
 
     [ObservableProperty]
-    public partial V1Pod Object { get; set; }
+    public partial IKubernetesObject<V1ObjectMeta>? Object { get; set; }
 
     [ObservableProperty]
     public partial string ContainerName { get; set; }
@@ -146,38 +152,66 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     public partial bool IsConnected { get; set; }
 
+    [ObservableProperty]
+    public partial string? ConnectionError { get; set; }
+
     public async Task Connect()
     {
+        if (_disposed)
+        {
+            return;
+        }
+
         await _connectionGate.WaitAsync();
         try
         {
+            if (_disposed)
+            {
+                return;
+            }
+
+            var preserveOutput = _preserveOutputOnNextConnect;
+            _preserveOutputOnNextConnect = false;
             ResetConnection();
 
             IsConnecting = true;
+            ConnectionError = null;
 
-            PodLogSessionState state = _sessionResolver.CreateState(
+            var state = _sessionResolver.CreateState(
                 Object ?? throw new InvalidOperationException("The pod log view model is not initialized."),
                 ContainerName,
                 Previous,
                 Timestamps,
                 DefaultTailLines);
 
-            PodLogSessionResolution? resolution = _sessionResolver.TryResolve(Cluster, state);
+            var resolution = _sessionResolver.TryResolve(Cluster, state);
             if (resolution is null)
             {
                 SessionState = state;
                 SessionResolution = null;
-                AvailablePods = [Object];
-                AvailableContainers = BuildContainerOptions(Object);
-                PodSelectionItems = BuildPodSelectionItems([Object]);
-                ReplaceSelectedPodItems([PodSelectionItems[0]]);
+                if (Object is V1Pod unresolvedPod)
+                {
+                    AvailablePods = [unresolvedPod];
+                    AvailableContainers = BuildContainerOptions(unresolvedPod);
+                    PodSelectionItems = BuildPodSelectionItems([unresolvedPod]);
+                    ReplaceSelectedPodItems([PodSelectionItems[0]]);
+                }
+                else
+                {
+                    AvailablePods = [];
+                    AvailableContainers = [];
+                    PodSelectionItems = [];
+                    ReplaceSelectedPodItems([]);
+                }
+
                 ContainerSelectionItems = BuildContainerSelectionItems(AvailableContainers);
-                ReplaceSelectedContainerItems([ContainerSelectionItems[0]]);
+                ReplaceSelectedContainerItems(ContainerSelectionItems.Count > 0 ? [ContainerSelectionItems[0]] : []);
                 PreviousLogsAvailable = false;
                 UpdateResourceNameToggleState();
                 return;
             }
 
+            PodLogSessionResolution? previousResolution = SessionResolution;
             SessionState = state;
             SessionResolution = resolution;
             PreviousLogsAvailable = resolution.PreviousLogsAvailable;
@@ -186,12 +220,28 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
             try
             {
                 AvailablePods = resolution.RelatedPods;
-                AvailableContainers = BuildContainerOptions(resolution.Pod);
+                AvailableContainers = BuildContainerOptions(resolution.RelatedPods);
                 PodSelectionItems = BuildPodSelectionItems(resolution.RelatedPods);
-                ReplaceSelectedPodItems(BuildSelectedPodItems(resolution.Pod, PodSelectionItems));
+                ObservableCollection<PodLogPodSelectionItem> selectedPodItems = BuildSelectedPodItems(resolution.Pod, PodSelectionItems);
+                if (previousResolution is not null
+                    && Object is not V1Pod
+                    && !ContainsAllSelection(SelectedPodItems)
+                    && !string.Equals(previousResolution.Pod.Metadata?.Uid, resolution.Pod.Metadata?.Uid, StringComparison.Ordinal))
+                {
+                    PodLogPodSelectionItem? currentPodItem = FindPodSelectionItem(PodSelectionItems, resolution.Pod.Name());
+                    if (currentPodItem is not null)
+                    {
+                        selectedPodItems = new ObservableCollection<PodLogPodSelectionItem>([currentPodItem]);
+                    }
+                }
+
+                ReplaceSelectedPodItems(selectedPodItems);
                 ContainerSelectionItems = BuildContainerSelectionItems(AvailableContainers);
                 ReplaceSelectedContainerItems(BuildSelectedContainerItems(resolution.ContainerName, ContainerSelectionItems));
-                Object = resolution.Pod;
+                if (Object is V1Pod)
+                {
+                    Object = resolution.Pod;
+                }
                 ContainerName = resolution.ContainerName;
             }
             finally
@@ -201,16 +251,15 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
 
             UpdateResourceNameToggleState();
 
-            List<PodLogReadOptions> options = BuildReadTargets(state, resolution);
+            var options = BuildReadTargets(state, resolution);
             if (options.Count == 0)
             {
                 return;
             }
 
-            Logs.Text = string.Empty;
-            lock (_outputEntriesGate)
+            if (!preserveOutput)
             {
-                _outputEntries.Clear();
+                ClearOutput();
             }
 
             CancellationTokenSource connectionCts = new();
@@ -219,13 +268,20 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
             IsConnected = true;
             _hasLoadedSession = true;
             _activeReaderCount = options.Count;
+            EnsureResourceChangeSubscription();
 
-            for (int i = 0; i < options.Count; i++)
+            for (var i = 0; i < options.Count; i++)
             {
-                PodLogReadOptions option = options[i];
+                var option = options[i];
                 try
                 {
-                    Stream stream = await _streamClient.OpenAsync(Cluster, option, connectionCts.Token);
+                    var stream = await _streamClient.OpenAsync(Cluster, option, connectionCts.Token);
+                    if (_disposed || connectionCts.IsCancellationRequested)
+                    {
+                        stream.Dispose();
+                        break;
+                    }
+
                     StreamReader reader = new(stream);
                     _streams.Add(stream);
                     _streamReaders.Add(reader);
@@ -236,6 +292,7 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
                     _logger.LogError(ex, "Unable to open pod log stream for {PodNamespace}/{PodName} container {ContainerName}.", option.PodNamespace, option.PodName, option.ContainerName);
                     DecrementActiveReaders(connectionCts);
                     AppendStatusLine(option.PodName, option.ContainerName, ex.Message, connectionCts);
+                    ConnectionError = ex.Message;
                 }
             }
 
@@ -248,6 +305,7 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
         catch (Exception ex)
         {
             _logger.LogError(ex, "Unable to view pod logs.");
+            ConnectionError = ex.Message;
         }
         finally
         {
@@ -264,11 +322,7 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
     [RelayCommand]
     public void Clear()
     {
-        Logs.Text = string.Empty;
-        lock (_outputEntriesGate)
-        {
-            _outputEntries.Clear();
-        }
+        ClearOutput();
     }
 
     [RelayCommand]
@@ -287,17 +341,14 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
     [RelayCommand]
     public Task DownloadLogs()
     {
-        string suggestedFileName = BuildSuggestedFileName();
+        var suggestedFileName = BuildSuggestedFileName();
         return _exportService.ExportAsync(suggestedFileName, Logs.Text);
     }
 
     [RelayCommand]
     public Task JumpToControlledByLogs()
     {
-        V1Pod pod = SessionResolution?.Pod ?? Object ?? throw new InvalidOperationException("The pod log view model is not initialized.");
-
-        V1OwnerReference? controller = PodLogFileNameExtensions.GetControllerReference(pod);
-        if (controller is null)
+        if (SessionResolution?.RelatedPods.Count is not > 1 || Object is not V1Pod)
         {
             return Task.CompletedTask;
         }
@@ -323,22 +374,25 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
         }
 
         _disposed = true;
+        _resourceChangesSubscription?.Dispose();
+        _resourceChangesSubscription = null;
+        _subscribedCluster = null;
 
-        CancellationTokenSource? connectionCts = _connectionCts;
+        var connectionCts = _connectionCts;
         _connectionCts = null;
         connectionCts?.Cancel();
-        for (int i = 0; i < _streamReaders.Count; i++)
+        for (var i = 0; i < _streamReaders.Count; i++)
         {
             _streamReaders[i].Dispose();
         }
 
-        for (int i = 0; i < _streams.Count; i++)
+        for (var i = 0; i < _streams.Count; i++)
         {
             _streams[i].Dispose();
         }
 
-        connectionCts?.Dispose();
-        _connectionGate.Dispose();
+        // Connect may still be awaiting OpenAsync and will release the gate in its finally block.
+        // Keep the gate and CTS alive until those asynchronous operations have drained.
     }
 
     partial void OnPreviousChanged(bool value)
@@ -380,7 +434,7 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
         RequestReconnect();
     }
 
-    partial void OnObjectChanged(V1Pod value)
+    partial void OnObjectChanged(IKubernetesObject<V1ObjectMeta>? value)
     {
         if (_isApplyingSession)
         {
@@ -407,8 +461,13 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
         RequestReconnect();
     }
 
-    private void RequestReconnect()
+    private void RequestReconnect(bool preserveOutput = false)
     {
+        if (preserveOutput)
+        {
+            _preserveOutputOnNextConnect = true;
+        }
+
         if (!_hasLoadedSession || IsConnecting)
         {
             if (_hasLoadedSession)
@@ -422,30 +481,106 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
         _ = Connect();
     }
 
+    private void EnsureResourceChangeSubscription()
+    {
+        if (ReferenceEquals(_subscribedCluster, Cluster))
+        {
+            return;
+        }
+
+        _resourceChangesSubscription?.Dispose();
+        _resourceChangesSubscription = Cluster.ConnectResources()
+            .Throttle(TimeSpan.FromMilliseconds(50))
+            .Subscribe(_ => QueueResourceReevaluation());
+        _subscribedCluster = Cluster;
+    }
+
+    private void QueueResourceReevaluation()
+    {
+        if (_disposed || SessionState is null || SessionResolution is null)
+        {
+            return;
+        }
+
+        Dispatcher.UIThread.Post(
+            () =>
+            {
+                if (_disposed || SessionState is null || SessionResolution is null)
+                {
+                    return;
+                }
+
+                PodLogSessionResolution? resolution = _sessionResolver.TryResolve(Cluster, SessionState);
+                if (resolution is not null && HasLogTopologyChanged(SessionResolution, resolution))
+                {
+                    RequestReconnect(preserveOutput: true);
+                }
+            },
+            DispatcherPriority.ApplicationIdle);
+    }
+
+    private static bool HasLogTopologyChanged(PodLogSessionResolution current, PodLogSessionResolution next)
+    {
+        if (!string.Equals(current.Pod.Metadata?.Uid, next.Pod.Metadata?.Uid, StringComparison.Ordinal)
+            || current.RelatedPods.Count != next.RelatedPods.Count)
+        {
+            return true;
+        }
+
+        for (var i = 0; i < current.RelatedPods.Count; i++)
+        {
+            V1Pod currentPod = current.RelatedPods[i];
+            V1Pod nextPod = next.RelatedPods[i];
+            if (!string.Equals(currentPod.Metadata?.Uid, nextPod.Metadata?.Uid, StringComparison.Ordinal)
+                || !GetContainerNames(currentPod).SequenceEqual(GetContainerNames(nextPod), StringComparer.Ordinal))
+            {
+                return true;
+            }
+        }
+
+        return !string.Equals(current.ContainerName, next.ContainerName, StringComparison.Ordinal);
+    }
+
+    private static IEnumerable<string?> GetContainerNames(V1Pod pod)
+    {
+        return (pod.Spec?.Containers ?? []).Select(container => container.Name)
+            .Concat((pod.Spec?.InitContainers ?? []).Select(container => container.Name))
+            .Concat((pod.Spec?.EphemeralContainers ?? []).Select(container => container.Name));
+    }
+
     private void ResetConnection()
     {
         _connectionCts?.Cancel();
 
-        for (int i = 0; i < _streamReaders.Count; i++)
+        for (var i = 0; i < _streamReaders.Count; i++)
         {
             _streamReaders[i].Dispose();
         }
 
         _streamReaders.Clear();
 
-        for (int i = 0; i < _streams.Count; i++)
+        for (var i = 0; i < _streams.Count; i++)
         {
             _streams[i].Dispose();
         }
 
         _streams.Clear();
 
-        _connectionCts?.Dispose();
         _connectionCts = null;
 
         _activeReaderCount = 0;
         _streamEndedReconnectPending = 0;
         IsConnected = false;
+    }
+
+    private void ClearOutput()
+    {
+        Interlocked.Increment(ref _outputGeneration);
+        Logs.Text = string.Empty;
+        lock (_outputEntriesGate)
+        {
+            _outputEntries.Clear();
+        }
     }
 
 }

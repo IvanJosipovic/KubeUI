@@ -9,7 +9,8 @@ public sealed class PodLogExportService : IPodLogExportService
 {
     public async Task ExportAsync(string suggestedFileName, string content, CancellationToken cancellationToken = default)
     {
-        TopLevel topLevel = TopLevelAccessor.GetRequired();
+        cancellationToken.ThrowIfCancellationRequested();
+        var topLevel = TopLevelAccessor.GetRequired();
         FilePickerSaveOptions options = new()
         {
             Title = global::KubeUI.Avalonia.Assets.Resources.PodLogsView_Download,
@@ -23,15 +24,16 @@ public sealed class PodLogExportService : IPodLogExportService
             ],
         };
 
-        IStorageFile? file = await topLevel.StorageProvider.SaveFilePickerAsync(options);
+        var file = await topLevel.StorageProvider.SaveFilePickerAsync(options);
+        cancellationToken.ThrowIfCancellationRequested();
         if (file is null)
         {
             return;
         }
 
-        await using Stream stream = await file.OpenWriteAsync();
+        await using var stream = await file.OpenWriteAsync();
         await using StreamWriter writer = new(stream, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
-        await writer.WriteAsync(content);
-        await writer.FlushAsync();
+        await writer.WriteAsync(content.AsMemory(), cancellationToken);
+        await writer.FlushAsync(cancellationToken);
     }
 }

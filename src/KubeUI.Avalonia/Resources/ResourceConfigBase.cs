@@ -1,5 +1,7 @@
+using System.Collections.ObjectModel;
 using System.Text.Json;
 using Avalonia.Controls.Notifications;
+using CommunityToolkit.Mvvm.Input;
 using Dock.Model.Core;
 using FluentAvalonia.UI.Controls;
 using FluentIcons.Common;
@@ -18,6 +20,7 @@ using KubeUI.Avalonia.Features.Resources.Visualization;
 using KubeUI.Avalonia.Features.Resources.Yaml;
 using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Infrastructure.Docking;
+using KubeUI.Avalonia.Resources.Workloads.v1.Pod.ViewModels;
 using KubeUI.Kubernetes;
 
 namespace KubeUI.Avalonia.Resources;
@@ -118,6 +121,54 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
             new AuthorizationRequest(Kind, Verb.List, null),
             new AuthorizationRequest(Kind, Verb.Watch, null),
         ];
+    }
+
+    protected MenuItemViewModel CreatePodLogsMenuItem(IEnumerable<T>? selectedItems)
+    {
+        var selectedList = selectedItems?.ToList();
+        return new MenuItemViewModel
+        {
+            Title = Assets.Resources.V1PodConfig_MenuItem_ViewLogs,
+            FluentIcon = Icon.TextDescription,
+            Command = new AsyncRelayCommand<T?>(ViewPodLogsAsync, CanViewPodLogs),
+            CommandParameter = selectedList?.Count == 1 ? selectedList[0] : null,
+        };
+    }
+
+    private async Task ViewPodLogsAsync(T? resource)
+    {
+        if (resource is null)
+        {
+            return;
+        }
+
+        var viewModel = ServiceProvider.GetRequiredService<PodLogsViewModel>();
+        viewModel.Cluster = Cluster.Runtime;
+        viewModel.Object = resource;
+        viewModel.ContainerName = string.Empty;
+        viewModel.SelectedContainerItems = new ObservableCollection<PodLogContainerSelectionItem>([
+            new PodLogContainerSelectionItem(string.Empty, Assets.Resources.PodLogsView_AllContainers, false, true),
+        ]);
+        viewModel.Id = $"{nameof(PodLogsViewModel)}-{Cluster.Runtime.Name}-{Kind.Kind}-{resource.Namespace()}-{resource.Name()}-all";
+
+        if (_factory.AddToBottom(viewModel))
+        {
+            try
+            {
+                await viewModel.Connect();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error viewing logs for {Kind} {Namespace}/{Name}", Kind.Kind, resource.Namespace(), resource.Name());
+            }
+        }
+    }
+
+    private bool CanViewPodLogs(T? resource)
+    {
+        return resource is not null
+            && !string.IsNullOrWhiteSpace(resource.Name())
+            && Cluster.Runtime.Permissions.CanI<V1Pod>(Verb.Get, resource.Namespace(), "log");
     }
 
     public virtual Control[] Properties(T resource) => [];

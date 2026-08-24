@@ -1,4 +1,7 @@
 using k8s.Models;
+using KubernetesClient.Informer.Client;
+using KubeUI.Avalonia.Features.Resources.Common;
+using KubeUI.Kubernetes;
 
 namespace KubeUI.Avalonia.Resources.Workloads.v1.Job;
 
@@ -34,6 +37,17 @@ public sealed partial class V1JobConfig : ResourceConfigBase<V1Job>
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },
         ];
+    }
+
+    protected override IEnumerable<MenuItemViewModel> CreateCustomMenuItems(IEnumerable<V1Job>? selectedItems)
+    {
+        return [CreatePodLogsMenuItem(selectedItems)];
+    }
+
+    public override IEnumerable<AuthorizationRequest> AuthorizationRequests()
+    {
+        return base.AuthorizationRequests().Append(
+            new AuthorizationRequest(GroupApiVersionKind.From<V1Pod>(), Verb.Get, "log"));
     }
 
     public override Control[] Properties(V1Job resource) => [new PropertiesView()];
