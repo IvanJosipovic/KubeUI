@@ -226,6 +226,9 @@ public sealed class PortForwarderTests
         }
 
         await WaitForAsync(() => sut.Connections == 0, cancellationToken: TestContext.Current.CancellationToken);
+        await WaitForAsync(
+            () => factory.Invocations.Any(invocation => invocation.Method.Name == nameof(IPortForwardSessionFactory.CreateAsync)),
+            cancellationToken: TestContext.Current.CancellationToken);
         factory.Verify(x => x.CreateAsync("current-pod-name", "default", 8080), Times.Once);
     }
 

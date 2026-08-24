@@ -67,26 +67,59 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
     /// <summary>Gets or sets the ETag used for both core and grouped discovery responses.</summary>
     public string DiscoveryETag
     {
-        get => _state.CoreDiscoveryETag;
+        get
+        {
+            lock (_state.DiscoveryGate)
+            {
+                return _state.CoreDiscoveryETag;
+            }
+        }
         set
         {
-            _state.CoreDiscoveryETag = value;
-            _state.GroupedDiscoveryETag = value;
+            lock (_state.DiscoveryGate)
+            {
+                _state.CoreDiscoveryETag = value;
+                _state.GroupedDiscoveryETag = value;
+            }
         }
     }
 
     /// <summary>Gets or sets the ETag used for the core <c>/api</c> discovery response.</summary>
     public string CoreDiscoveryETag
     {
-        get => _state.CoreDiscoveryETag;
-        set => _state.CoreDiscoveryETag = value;
+        get
+        {
+            lock (_state.DiscoveryGate)
+            {
+                return _state.CoreDiscoveryETag;
+            }
+        }
+        set
+        {
+            lock (_state.DiscoveryGate)
+            {
+                _state.CoreDiscoveryETag = value;
+            }
+        }
     }
 
     /// <summary>Gets or sets the ETag used for grouped <c>/apis</c> discovery responses.</summary>
     public string GroupedDiscoveryETag
     {
-        get => _state.GroupedDiscoveryETag;
-        set => _state.GroupedDiscoveryETag = value;
+        get
+        {
+            lock (_state.DiscoveryGate)
+            {
+                return _state.GroupedDiscoveryETag;
+            }
+        }
+        set
+        {
+            lock (_state.DiscoveryGate)
+            {
+                _state.GroupedDiscoveryETag = value;
+            }
+        }
     }
 
     public string AuthenticatedUser { get; set; } = "system:admin";
@@ -246,7 +279,7 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
 
             if (path == "/api")
             {
-                return SetRequest(request, DiscoveryResponse(request, Discovery(true)));
+                return SetRequest(request, DiscoveryResponse(request, true));
             }
 
             if (!AcceptsApiDiscovery(request))
@@ -254,7 +287,7 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
                 return SetRequest(request, Json(new { apiVersion = "v1", kind = "APIGroupList", groups = Array.Empty<object>() }));
             }
 
-            return SetRequest(request, DiscoveryResponse(request, Discovery(false)));
+            return SetRequest(request, DiscoveryResponse(request, false));
         }
 
         if (request.Method == HttpMethod.Get && path == "/version")
@@ -309,23 +342,25 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
         return response;
     }
 
-    private HttpResponseMessage DiscoveryResponse(HttpRequestMessage request, object payload)
+    private HttpResponseMessage DiscoveryResponse(HttpRequestMessage request, bool core)
     {
-        var etag = request.RequestUri?.AbsolutePath.TrimEnd('/') == "/api"
-            ? _state.CoreDiscoveryETag
-            : _state.GroupedDiscoveryETag;
-        if (request.Headers.TryGetValues("If-None-Match", out var values)
-            && values.Contains(etag, StringComparer.Ordinal))
+        lock (_state.DiscoveryGate)
         {
-            return new HttpResponseMessage(HttpStatusCode.NotModified)
+            var payload = Discovery(core);
+            var etag = core ? _state.CoreDiscoveryETag : _state.GroupedDiscoveryETag;
+            if (request.Headers.TryGetValues("If-None-Match", out var values)
+                && values.Contains(etag, StringComparer.Ordinal))
             {
-                Headers = { ETag = new EntityTagHeaderValue(etag) },
-            };
-        }
+                return new HttpResponseMessage(HttpStatusCode.NotModified)
+                {
+                    Headers = { ETag = new EntityTagHeaderValue(etag) },
+                };
+            }
 
-        var response = Json(payload);
-        response.Headers.ETag = new EntityTagHeaderValue(etag);
-        return response;
+            var response = Json(payload);
+            response.Headers.ETag = new EntityTagHeaderValue(etag);
+            return response;
+        }
     }
 
     private async Task<HttpResponseMessage> HandleAuthorizationAsync(HttpRequestMessage request, CancellationToken cancellationToken)
@@ -541,10 +576,20 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
             && !string.IsNullOrWhiteSpace(plural)
             && !string.IsNullOrWhiteSpace(kind))
         {
-            _definitions[DefinitionKey(group, version, plural)] = new ResourceDefinition(
-                new GroupApiVersionKind(group, version, kind, plural),
-                string.Equals(scope, "Namespaced", StringComparison.Ordinal));
+            lock (_state.DiscoveryGate)
+            {
+                _definitions[DefinitionKey(group, version, plural)] = new ResourceDefinition(
+                    new GroupApiVersionKind(group, version, kind, plural),
+                    string.Equals(scope, "Namespaced", StringComparison.Ordinal));
+                InvalidateGroupedDiscoveryETag();
+            }
         }
+    }
+
+    private void InvalidateGroupedDiscoveryETag()
+    {
+        var revision = ++_state.GroupedDiscoveryRevision;
+        _state.GroupedDiscoveryETag = $"\"fake-discovery-groups-v{revision}\"";
     }
 
     private void RegisterPolicyResources(JsonObject resource)
@@ -1128,6 +1173,7 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
 
     private sealed class BackendState
     {
+        public object DiscoveryGate { get; } = new();
         public ConcurrentDictionary<string, ResourceDefinition> Definitions { get; } = new(StringComparer.Ordinal);
         public ConcurrentDictionary<string, JsonObject> Resources { get; } = new(StringComparer.Ordinal);
         public ConcurrentDictionary<string, ConcurrentBag<Channel<byte[]>>> Watchers { get; } = new(StringComparer.Ordinal);
@@ -1141,6 +1187,7 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
         public int RequireAuthorizationForDiscovery;
         public string CoreDiscoveryETag = "\"fake-discovery-core-v1\"";
         public string GroupedDiscoveryETag = "\"fake-discovery-groups-v1\"";
+        public long GroupedDiscoveryRevision = 1;
         public long ResourceVersion;
     }
 

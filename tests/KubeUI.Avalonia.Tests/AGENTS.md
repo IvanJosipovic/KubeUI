@@ -23,7 +23,6 @@ Tests using Avalonia capabilities should use `[AvaloniaFact]`. Pure model, seria
 
 ## Commands and cleanup
 
-- Always include `--hangdump --hangdump-timeout 1m` when running `dotnet test`.
 - Await async commands and preserve their exception/cancellation behavior.
 - Dispose scenario scopes with `await using`; dispose view models/workspaces owned directly by a test.
 - Keep fake transport behavior in `KubeUI.Testing`, not in individual tests.

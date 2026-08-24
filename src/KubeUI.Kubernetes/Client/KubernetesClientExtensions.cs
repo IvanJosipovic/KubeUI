@@ -49,10 +49,56 @@ public static class KubernetesClientExtensions
         return true;
     }
 
+    /// <summary>
+    /// Resolves the API identity for a typed resource or a registered custom resource instance.
+    /// </summary>
+    /// <typeparam name="T">The resource type.</typeparam>
+    /// <param name="item">The resource instance.</param>
+    /// <param name="modelCatalog">The catalog used to resolve custom resource kinds.</param>
+    /// <returns>The resource group, version, kind, and plural name.</returns>
+    public static GroupApiVersionKind GetResourceKind<T>(
+        this T item,
+        ClusterModelCatalog modelCatalog)
+        where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    {
+        ArgumentNullException.ThrowIfNull(item);
+        ArgumentNullException.ThrowIfNull(modelCatalog);
+
+        if (item is GenericKubernetesObject genericItem
+            && modelCatalog.TryGetResourceKind(genericItem, out var genericKind))
+        {
+            return genericKind;
+        }
+
+        if (item is GenericKubernetesObject unresolvedGenericItem)
+        {
+            throw new InvalidOperationException(
+                $"Unable to resolve resource kind for {unresolvedGenericItem.ApiVersion}/{unresolvedGenericItem.Kind}.");
+        }
+
+        return GroupApiVersionKind.From<T>();
+    }
+
     public static GenericClient GetGenericClient<T>(this IKubernetes client) where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
         var api = GroupApiVersionKind.From<T>();
         return new GenericClient(client, api.Group, api.ApiVersion, api.PluralName, false);
+    }
+
+    /// <summary>
+    /// Creates a generic client for a typed resource or a registered custom resource instance.
+    /// </summary>
+    /// <param name="client">The Kubernetes client.</param>
+    /// <param name="item">The resource instance.</param>
+    /// <param name="modelCatalog">The catalog used to resolve custom resource kinds.</param>
+    /// <returns>A generic client for the resource API.</returns>
+    public static GenericClient GetGenericClient<T>(
+        this IKubernetes client,
+        T item,
+        ClusterModelCatalog modelCatalog)
+        where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    {
+        return client.GetGenericClient(item.GetResourceKind(modelCatalog));
     }
 
     public static GenericClient GetGenericClient(this IKubernetes client, GroupApiVersionKind api)

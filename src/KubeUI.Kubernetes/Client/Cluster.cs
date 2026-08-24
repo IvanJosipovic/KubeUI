@@ -598,7 +598,8 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
 
     public async Task DeleteResource<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
-        using var client = Client.GetGenericClient<T>();
+        var kind = item.GetResourceKind(ModelCatalog);
+        using var client = Client.GetGenericClient(kind);
 
         if (string.IsNullOrEmpty(item.Namespace()))
         {
@@ -654,20 +655,9 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
 
     public async Task AddOrUpdateResource<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
-        var genericItem = item as GenericKubernetesObject;
-        var genericKind = default(GroupApiVersionKind);
-        if (genericItem is not null
-            && !ModelCatalog.TryGetResourceKind(genericItem.ApiVersion ?? string.Empty, genericItem.Kind ?? string.Empty, out genericKind))
-        {
-            throw new InvalidOperationException($"Unable to resolve resource kind for {genericItem.ApiVersion}/{genericItem.Kind}.");
-        }
-
-        using var client = genericItem == null
-            ? Client.GetGenericClient<T>()
-            : Client.GetGenericClient(genericKind);
-        var isNamespaced = genericItem == null
-            ? IsResourceNamespaced<T>()
-            : IsResourceNamespaced(genericKind);
+        var kind = item.GetResourceKind(ModelCatalog);
+        using var client = Client.GetGenericClient(kind);
+        var isNamespaced = IsResourceNamespaced(kind);
 
         if (isNamespaced && string.IsNullOrEmpty(item.Namespace()))
         {
@@ -804,21 +794,8 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
             throw new InvalidOperationException("Cluster client is not connected.");
         }
 
-        GroupApiVersionKind api;
-        if (item is GenericKubernetesObject generic)
-        {
-            if (!ModelCatalog.TryGetResourceKind(generic.ApiVersion ?? string.Empty, generic.Kind ?? string.Empty, out api))
-            {
-                throw new InvalidOperationException($"Unable to resolve resource kind for {generic.ApiVersion}/{generic.Kind}.");
-            }
-        }
-        else
-        {
-            api = GroupApiVersionKind.From<T>();
-        }
-        var isNamespaced = item is GenericKubernetesObject
-            ? IsResourceNamespaced(api)
-            : IsResourceNamespaced<T>();
+        var api = item.GetResourceKind(ModelCatalog);
+        var isNamespaced = IsResourceNamespaced(api);
 
         if (isNamespaced && string.IsNullOrEmpty(item.Namespace()))
         {

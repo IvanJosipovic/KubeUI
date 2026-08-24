@@ -158,6 +158,8 @@ public sealed class ClusterRuntimeTests : ClusterRuntimeAssertions
     [Theory, KubernetesBackendData]
     public Task ImportYamlCrdInstance(KubernetesBackend backend) => ImportYamlCrdInstanceCore(backend);
     [Theory, KubernetesBackendData]
+    public Task DryRunYamlResolvesRegisteredNamespacedGenericResource(KubernetesBackend backend) => DryRunYamlResolvesRegisteredNamespacedGenericResourceCore(backend);
+    [Theory, KubernetesBackendData]
     public Task RootAccessCanI(KubernetesBackend backend) => RootAccessCanICore(backend);
     [Theory, KubernetesBackendData]
     public Task LimitedAccess(KubernetesBackend backend) => LimitedAccessCore(backend, false);

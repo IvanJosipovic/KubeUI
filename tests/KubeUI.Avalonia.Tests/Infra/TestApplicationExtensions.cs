@@ -33,6 +33,11 @@ internal static class TestApplicationExtensions
         var services = application.GetTestServices();
         var config = services.GetRequiredService<TestClusterConfig>();
         configure?.Invoke(config);
+        if (config.Type == KubernetesBackend.Fake)
+        {
+            config.Name = $"fake-{Guid.NewGuid():N}";
+        }
+
         var cluster = await services.GetRequiredService<TestClusterGenerator>()
             .CreateAsync(config, TestContext.Current.CancellationToken);
         services.GetRequiredService<ClusterManager>().AddCluster(cluster.Cluster);

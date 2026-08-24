@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Net;
 using System.Reflection;
+using System.Reactive.Linq;
 using System.Text;
 using System.Text.Json;
 using k8s;
@@ -94,6 +95,13 @@ public abstract class ClusterRuntimeAssertions
             cancellationToken: TestContext.Current.CancellationToken);
         await RefreshPermissionsAsync<V1Pod>(rootCluster, (Verb.Get, "log"), (Verb.Create, "exec"), (Verb.Create, "portforward"));
         await RefreshPermissionsAsync<V1Pod>(limitedCluster, (Verb.Get, "log"), (Verb.Create, "exec"), (Verb.Create, "portforward"));
+
+        await TestWait.UntilAsync(
+            () => limitedCluster.Permissions.CanI<V1Pod>(Verb.Get, "my-app", "log")
+                && limitedCluster.Permissions.CanI<V1Pod>(Verb.Create, "my-app", "exec")
+                && limitedCluster.Permissions.CanI<V1Pod>(Verb.Create, "my-app", "portforward"),
+            TimeSpan.FromSeconds(5),
+            cancellationToken: TestContext.Current.CancellationToken);
 
         rootCluster.Permissions.CanI<V1Pod>(Verb.Get, "my-app", "log").ShouldBeTrue();
         rootCluster.Permissions.CanI<V1Pod>(Verb.Create, "my-app", "exec").ShouldBeTrue();
@@ -475,8 +483,18 @@ public abstract class ClusterRuntimeAssertions
         var version = crd.Spec.Versions.First(version => version.Served && version.Storage).Name;
         var kind = new GroupApiVersionKind(crd.Spec.Group, version, crd.Spec.Names.Kind, crd.Spec.Names.Plural);
 
+        await TestWait.UntilAsync(
+            () => harness.Cluster.ModelCatalog.IsCustomResource(kind),
+            TimeSpan.FromSeconds(10),
+            cancellationToken: TestContext.Current.CancellationToken);
+
         await harness.Cluster.Permissions.UpdatePermissionsAllNamespaceAsync(kind, namespaced: true, verb: Verb.List);
         await harness.Cluster.Permissions.UpdatePermissionsAllNamespaceAsync(kind, namespaced: true, verb: Verb.Watch);
+
+        await WaitForCustomResourceApiAsync(
+            harness.Cluster,
+            kind,
+            TestContext.Current.CancellationToken);
 
         await harness.Cluster.ImportYaml(new MemoryStream(Encoding.UTF8.GetBytes(KubernetesTestData.CustomResourceYaml)));
 
@@ -488,13 +506,86 @@ public abstract class ClusterRuntimeAssertions
             TimeSpan.FromSeconds(10),
             cancellationToken: TestContext.Current.CancellationToken);
 
-        foreach (var item in items.Items)
-        {
-            item.Name().ShouldBe("test1");
-            item.Namespace().ShouldBe("default");
-            item.Properties.ShouldNotBeNull();
-        }
+        var observedCount = 0;
+        using var countSubscription = harness.Cluster.GetResourceCount(kind).Subscribe(count => observedCount = count);
+        await TestWait.UntilAsync(
+            () => observedCount == 1,
+            TimeSpan.FromSeconds(5),
+            cancellationToken: TestContext.Current.CancellationToken);
 
+        var item = items.Items.Single();
+        var updated = new GenericKubernetesObject
+        {
+            ApiVersion = item.ApiVersion,
+            Kind = item.Kind,
+            Metadata = item.Metadata,
+            Properties = new Dictionary<string, JsonElement>
+            {
+                ["spec"] = JsonSerializer.SerializeToElement(new { someString = "updatedValue" }),
+            },
+        };
+
+        await harness.Cluster.AddOrUpdateResource(updated);
+        await TestWait.UntilAsync(
+            () => items.Items.Any(candidate =>
+                candidate.Properties.TryGetValue("spec", out var spec)
+                && spec.TryGetProperty("someString", out var value)
+                && value.GetString() == "updatedValue"),
+            TimeSpan.FromSeconds(10),
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        var observed = items.Items.Single(candidate =>
+            candidate.Properties.TryGetValue("spec", out var spec)
+            && spec.TryGetProperty("someString", out var value)
+            && value.GetString() == "updatedValue");
+        observed.Name().ShouldBe("test1");
+        observed.Namespace().ShouldBe("default");
+        observed.Properties.ShouldNotBeNull();
+        await harness.Cluster.DeleteResource(updated);
+
+        await TestWait.UntilAsync(
+            () => items.Items.Count == 0,
+            TimeSpan.FromSeconds(10),
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        }
+        finally
+        {
+            await harness.Cluster.Disconnect();
+        }
+    }
+
+    protected async Task DryRunYamlResolvesRegisteredNamespacedGenericResourceCore(KubernetesBackend backend)
+    {
+        await using var harness = await CreateHarnessAsync(backend);
+        try
+        {
+            await SeedResourceAsync<V1CustomResourceDefinition>(harness.Cluster);
+
+            var crd = Serialization.KubernetesYaml.Deserialize<V1CustomResourceDefinition>(KubernetesTestData.CustomResourceDefinitionYaml);
+            await harness.CreateAsync(crd, TestContext.Current.CancellationToken);
+            var kind = new GroupApiVersionKind("kubeui.com", "v1beta1", "Test", "tests");
+            await TestWait.UntilAsync(
+                () => harness.Cluster.ModelCatalog.IsCustomResource(kind),
+                TimeSpan.FromSeconds(10),
+                cancellationToken: TestContext.Current.CancellationToken);
+            await TestWait.UntilAsync(
+                () => harness.Cluster.IsResourceNamespaced(kind),
+                TimeSpan.FromSeconds(10),
+                cancellationToken: TestContext.Current.CancellationToken);
+
+            var requestCount = harness.FakeApi?.RequestUris.Count ?? 0;
+            using var yamlStream = new MemoryStream(Encoding.UTF8.GetBytes(KubernetesTestData.CustomResourceYaml));
+            await harness.Cluster.DryRunYaml(yamlStream);
+
+            if (backend == KubernetesBackend.Fake)
+            {
+                harness.FakeApi.ShouldNotBeNull();
+                var request = harness.FakeApi!.RequestUris
+                    .Skip(requestCount)
+                    .Single(uri => uri?.Query.Contains("dryRun=All", StringComparison.OrdinalIgnoreCase) == true);
+                request!.AbsolutePath.ShouldBe("/apis/kubeui.com/v1beta1/namespaces/default/tests");
+            }
         }
         finally
         {
@@ -698,6 +789,39 @@ public abstract class ClusterRuntimeAssertions
             await cluster.Permissions
                 .UpdatePermissionsAllNamespaceAsync<T>(request.Verb, request.Subresource)
                 .WaitAsync(TestContext.Current.CancellationToken);
+        }
+    }
+
+    private static async Task WaitForCustomResourceApiAsync(
+        IClusterRuntime cluster,
+        GroupApiVersionKind kind,
+        CancellationToken cancellationToken)
+    {
+        using var client = cluster.Client!.GetGenericClient(kind);
+        using var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(25));
+        var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(10);
+
+        while (true)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            try
+            {
+                await client.ListNamespacedAsync<GenericKubernetesObject>(
+                    "default").WaitAsync(cancellationToken);
+                return;
+            }
+            catch (HttpOperationException exception) when (
+                exception.Response.StatusCode == HttpStatusCode.NotFound
+                || exception.Response.StatusCode == HttpStatusCode.TooManyRequests)
+            {
+            }
+
+            var remaining = deadline - DateTime.UtcNow;
+            if (remaining <= TimeSpan.Zero || !await timer.WaitForNextTickAsync(cancellationToken))
+            {
+                throw new TimeoutException($"Custom resource API {kind} was not ready within 00:00:10.");
+            }
         }
     }
 
