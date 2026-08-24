@@ -133,6 +133,97 @@ public sealed class McpServerHostTests
         }
     }
 
+    [Fact]
+    public async Task host_startup_records_bound_port_when_configured_port_is_available()
+    {
+        var port = GetAvailablePort();
+        var settings = new Settings
+        {
+            McpServerEnabled = true,
+            McpServerPort = port
+        };
+        var settingsService = new Mock<ISettingsService>();
+        settingsService.SetupGet(service => service.Settings).Returns(settings);
+        using var application = Program.CreateStartedHost([], includeOptionalServices: false, configureServices: services =>
+        {
+            services.Replace(ServiceDescriptor.Singleton(settingsService.Object));
+        }, mcpPortOverride: port, mcpEnabledOverride: true);
+
+        try
+        {
+            application.Services.GetRequiredService<IMcpServerState>()
+                .BoundPort.ShouldBe(port);
+        }
+        finally
+        {
+            await application.StopAsync(CancellationToken.None);
+        }
+    }
+
+    [Fact]
+    public async Task host_startup_falls_back_to_dynamic_port_when_configured_port_is_blocked()
+    {
+        using var ipv4Blocker = StartListener(System.Net.IPAddress.Loopback);
+        using var ipv6Blocker = StartListener(System.Net.IPAddress.IPv6Loopback);
+        var blockedPort = ((System.Net.IPEndPoint)ipv4Blocker.LocalEndpoint).Port;
+
+        var settings = new Settings
+        {
+            McpServerEnabled = true,
+            McpServerPort = blockedPort
+        };
+        var settingsService = new Mock<ISettingsService>();
+        settingsService.SetupGet(service => service.Settings).Returns(settings);
+        using var application = Program.CreateStartedHost([], includeOptionalServices: false, configureServices: services =>
+        {
+            services.Replace(ServiceDescriptor.Singleton(settingsService.Object));
+            services.Replace(ServiceDescriptor.Singleton(new Mock<IClusterRuntimeCatalog>(MockBehavior.Strict).Object));
+            services.Replace(ServiceDescriptor.Singleton(new Mock<IMcpClusterSession>(MockBehavior.Strict).Object));
+            services.Replace(ServiceDescriptor.Singleton(new Mock<IKubernetesYamlSerializer>(MockBehavior.Strict).Object));
+            services.Replace(ServiceDescriptor.Singleton(new Mock<IAgentPermissionService>(MockBehavior.Strict).Object));
+        }, mcpPortOverride: blockedPort, mcpEnabledOverride: true);
+
+        try
+        {
+            var state = application.Services.GetRequiredService<IMcpServerState>();
+            state.BoundPort.ShouldNotBeNull();
+            state.BoundPort.Value.ShouldNotBe(blockedPort);
+            state.BoundPort.Value.ShouldBeGreaterThan(0);
+
+            using var client = new HttpClient();
+            using var request = new HttpRequestMessage(HttpMethod.Post, $"http://{McpServerConfiguration.Host}:{state.BoundPort}{McpServerConfiguration.Path}");
+            request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("text/event-stream"));
+            request.Headers.Add("MCP-Protocol-Version", "2025-06-18");
+            request.Content = JsonContent.Create(new
+            {
+                jsonrpc = "2.0",
+                id = 1,
+                method = "initialize",
+                @params = new
+                {
+                    protocolVersion = "2025-06-18",
+                    capabilities = new { },
+                    clientInfo = new { name = "KubeUI.Tests", version = "1.0" }
+                }
+            });
+
+            using var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
+            response.IsSuccessStatusCode.ShouldBeTrue(await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
+        }
+        finally
+        {
+            await application.StopAsync(CancellationToken.None);
+        }
+    }
+
+    private static TcpListener StartListener(System.Net.IPAddress address)
+    {
+        var listener = new TcpListener(address, 0);
+        listener.Start();
+        return listener;
+    }
+
     private static int GetAvailablePort()
     {
         using var listener = new TcpListener(System.Net.IPAddress.Loopback, 0);
