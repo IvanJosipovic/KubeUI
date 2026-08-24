@@ -1,31 +1,29 @@
-using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
+using Dock.Model.Controls;
+using Dock.Model.Core;
 using k8s.Models;
-using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
+using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Features.Resources.Properties.Controls;
-using KubeUI.Avalonia.Features.Resources.Properties.ViewModels;
-using KubeUI.Avalonia.Features.Resources.Properties.Views;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Resources;
 using KubeUI.Avalonia.Tests.Infra;
-using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 using AppResources = KubeUI.Avalonia.Assets.Resources;
 
 namespace KubeUI.Avalonia.Tests.Features.Resources.Properties;
 
-public sealed class ResourcePropertiesViewInitializationTests : AvaloniaTestBase
+public sealed class ResourcePropertiesViewInitializationTests
 {
     [AvaloniaFact]
     public async Task cluster_aware_property_controls_are_initialized_once()
     {
-        var workspace = new TestCluster().CreateWorkspace();
-        await workspace.EnsureWorkspaceStateInitializedAsync();
+        var services = Application.Current.GetTestServices();
+        var workspace = await Application.Current.CreateClusterAsync();
 
-        var services = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
         var trackingConfig = new TrackingResourceConfig(services);
+        trackingConfig.Initialize(workspace);
         var viewModel = services.GetRequiredService<ResourcePropertiesViewModel<V1Pod>>();
         viewModel.Initialize(workspace, new V1Pod
         {
@@ -37,7 +35,7 @@ public sealed class ResourcePropertiesViewInitializationTests : AvaloniaTestBase
         });
         viewModel.ResourceConfig = trackingConfig;
 
-        var view = new ResourcePropertiesView
+        var view = new ResourcePropertiesView<V1Pod>
         {
             DataContext = viewModel,
         };
@@ -47,21 +45,27 @@ public sealed class ResourcePropertiesViewInitializationTests : AvaloniaTestBase
             Content = view
         };
 
-        window.Show();
-        Dispatcher.UIThread.RunJobs();
-        Dispatcher.UIThread.RunJobs();
+        try
+        {
+            window.Show();
+            await TestApplicationExtensions.WaitForUiAsync();
+            await TestApplicationExtensions.WaitForUiAsync();
 
-        trackingConfig.TrackingControl.InitializeCount.ShouldBe(1);
-        view.FindControl<StackPanel>("PART_Items")!.Children.ShouldContain(trackingConfig.TrackingControl);
+            trackingConfig.TrackingControl.InitializeCount.ShouldBe(1);
+            view.FindControl<StackPanel>("PART_Items")!.Children.ShouldContain(trackingConfig.TrackingControl);
+        }
+        finally
+        {
+            window.Close();
+        }
     }
 
     [AvaloniaFact]
     public async Task properties_view_populates_on_first_attach()
     {
-        var workspace = new TestCluster().CreateWorkspace();
-        await workspace.EnsureWorkspaceStateInitializedAsync();
+        var services = Application.Current.GetTestServices();
+        var workspace = await Application.Current.CreateClusterAsync();
 
-        var services = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
         var viewModel = services.GetRequiredService<ResourcePropertiesViewModel<V1Pod>>();
         viewModel.Initialize(workspace, new V1Pod
         {
@@ -72,7 +76,7 @@ public sealed class ResourcePropertiesViewInitializationTests : AvaloniaTestBase
             }
         });
 
-        var view = new ResourcePropertiesView
+        var view = new ResourcePropertiesView<V1Pod>
         {
             DataContext = viewModel,
         };
@@ -82,14 +86,53 @@ public sealed class ResourcePropertiesViewInitializationTests : AvaloniaTestBase
             Content = view
         };
 
-        window.Show();
-        Dispatcher.UIThread.RunJobs();
-        Dispatcher.UIThread.RunJobs();
+        try
+        {
+            window.Show();
+            await TestApplicationExtensions.WaitForUiAsync();
+            await TestApplicationExtensions.WaitForUiAsync();
 
-        var items = view.FindControl<StackPanel>("PART_Items")!.Children.OfType<PropertyItem>().ToList();
+            var items = view.FindControl<StackPanel>("PART_Items")!.Children.OfType<PropertyItem>().ToList();
 
-        items.ShouldNotBeEmpty();
-        items.Any(x => x.Key == AppResources.ResourcePropertiesView_Name).ShouldBeTrue();
+            items.ShouldNotBeEmpty();
+            items.Any(x => x.Key == AppResources.ResourcePropertiesView_Name).ShouldBeTrue();
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task viewing_another_resource_replaces_existing_properties_view()
+    {
+        var services = Application.Current.GetTestServices();
+        var factory = services.GetRequiredService<IFactory>();
+        var layout = factory.CreateLayout();
+        factory.InitLayout(layout);
+        var rightDock = factory.GetDockable<IToolDock>("RightDock")!;
+        var workspace = await Application.Current.CreateClusterAsync();
+        var config = (ResourceConfigBase<V1Pod>)workspace.GetResourceConfig(GroupApiVersionKind.From<V1Pod>());
+        var podA = new V1Pod
+        {
+            Metadata = new V1ObjectMeta { Name = "pod-a", NamespaceProperty = "default" },
+        };
+        var podB = new V1Pod
+        {
+            Metadata = new V1ObjectMeta { Name = "pod-b", NamespaceProperty = "default" },
+        };
+
+        config.View(new[] { podA });
+        var firstView = rightDock.VisibleDockables!.Single()
+            .ShouldBeOfType<ResourcePropertiesViewModel<V1Pod>>();
+
+        config.View(new[] { podB });
+
+        rightDock.VisibleDockables.ShouldHaveSingleItem();
+        var secondView = rightDock.VisibleDockables.Single()
+            .ShouldBeOfType<ResourcePropertiesViewModel<V1Pod>>();
+        secondView.ShouldNotBeSameAs(firstView);
+        secondView.Object.ShouldBeSameAs(podB);
     }
 
     private sealed class TrackingResourceConfig : ResourceConfigBase<V1Pod>
@@ -111,13 +154,16 @@ public sealed class ResourcePropertiesViewInitializationTests : AvaloniaTestBase
     {
         public int InitializeCount { get; private set; }
 
+        public ClusterWorkspace? Cluster { get; private set; }
+
         public TrackingClusterControl()
         {
             Content = new TextBlock { Text = "tracking" };
         }
 
-        public void Initialize(ClusterWorkspaceViewModel cluster)
+        public void Initialize(ClusterWorkspace cluster)
         {
+            Cluster = cluster;
             InitializeCount++;
         }
     }

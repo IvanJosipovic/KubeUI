@@ -365,6 +365,62 @@ public sealed class PodLogsViewModelTests : AvaloniaTestBase
     }
 
     [AvaloniaFact]
+    public async Task Connect_should_retain_only_the_newest_log_entries()
+    {
+        TestCluster runtime = new();
+        ClusterWorkspaceViewModel workspace = runtime.CreateWorkspace();
+        V1Pod pod = CreatePod(
+            name: "app",
+            namespaceName: "default",
+            uid: "pod-uid",
+            containers: ["app"]);
+        await runtime.AddOrUpdateResource(pod);
+        string payload = string.Join(
+            Environment.NewLine,
+            Enumerable.Range(1, 10_001).Select(index => $"line-{index}"));
+        RecordingPodLogStreamClient streamClient = new([payload]);
+        PodLogsViewModel viewModel = CreateViewModel(workspace, streamClient);
+        viewModel.Object = pod;
+        viewModel.ContainerName = "app";
+
+        await viewModel.Connect();
+
+        await WaitForAsync(() => viewModel.Logs.LineCount == 10_000);
+
+        viewModel.Logs.LineCount.ShouldBe(10_000);
+        viewModel.Logs.Text.ShouldStartWith($"line-2{Environment.NewLine}");
+        viewModel.Logs.Text.Contains($"line-1{Environment.NewLine}").ShouldBeFalse();
+    }
+
+    [AvaloniaFact]
+    public async Task Connect_should_resolve_ephemeral_container_logs()
+    {
+        TestCluster runtime = new();
+        ClusterWorkspaceViewModel workspace = runtime.CreateWorkspace();
+        V1Pod pod = CreatePod(
+            name: "app",
+            namespaceName: "default",
+            uid: "pod-uid",
+            containers: ["app"],
+            ephemeralContainers: ["debug"]);
+        await runtime.AddOrUpdateResource(pod);
+        RecordingPodLogStreamClient streamClient = new(["debug line\n"]);
+        PodLogsViewModel viewModel = CreateViewModel(workspace, streamClient);
+        viewModel.Object = pod;
+        viewModel.ContainerName = "debug";
+
+        await viewModel.Connect();
+
+        await WaitForAsync(() => streamClient.Requests.Count == 1 && viewModel.Logs.Text.Contains("debug line", StringComparison.Ordinal));
+
+        viewModel.AvailableContainers.Select(container => container.Name).ShouldBe(["app", "debug"]);
+        viewModel.AvailableContainers[1].DisplayName.ShouldBe("debug (ephemeral)");
+        viewModel.AvailableContainers[1].IsEphemeralContainer.ShouldBeTrue();
+        viewModel.ContainerSelectionItems[2].IsEphemeralContainer.ShouldBeTrue();
+        streamClient.Requests[0].ContainerName.ShouldBe("debug");
+    }
+
+    [AvaloniaFact]
     public void Dispose_should_be_idempotent()
     {
         TestCluster runtime = new();
@@ -761,6 +817,7 @@ public sealed class PodLogsViewModelTests : AvaloniaTestBase
         string? ownerKind = null,
         string[]? containers = null,
         string[]? initContainers = null,
+        string[]? ephemeralContainers = null,
         int restartCount = 0,
         DateTime? creationTimestamp = null)
     {
@@ -770,6 +827,15 @@ public sealed class PodLogsViewModelTests : AvaloniaTestBase
             for (int i = 0; i < containers.Length; i++)
             {
                 containerList.Add(new V1Container { Name = containers[i] });
+            }
+        }
+
+        List<V1EphemeralContainer> ephemeralContainerList = [];
+        if (ephemeralContainers is not null)
+        {
+            for (int i = 0; i < ephemeralContainers.Length; i++)
+            {
+                ephemeralContainerList.Add(new V1EphemeralContainer { Name = ephemeralContainers[i] });
             }
         }
 
@@ -822,6 +888,7 @@ public sealed class PodLogsViewModelTests : AvaloniaTestBase
             {
                 Containers = containerList,
                 InitContainers = initContainerList,
+                EphemeralContainers = ephemeralContainerList,
             },
             Status = new V1PodStatus
             {

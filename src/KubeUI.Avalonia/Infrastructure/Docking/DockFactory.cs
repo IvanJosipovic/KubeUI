@@ -1,14 +1,14 @@
-using System.Runtime.Serialization;
 using Dock.Avalonia.Controls;
 using Dock.Model.Controls;
 using Dock.Model.Core;
 using Dock.Model.Mvvm;
 using Dock.Model.Mvvm.Controls;
-using KubeUI.Avalonia.Infrastructure;
-using KubeUI.Avalonia.Shell.Main.ViewModels;
-using KubeUI.Avalonia.Shell.Navigation.ViewModels;
-using Microsoft.Extensions.DependencyInjection;
+using KubeUI.Avalonia.Shell.Main;
+using KubeUI.Avalonia.Shell.Navigation;
+using KubeUI.Avalonia.Features.AI;
+using KubeUI.Avalonia.Services.Settings;
 using Orientation = Dock.Model.Core.Orientation;
+using Dock.Model;
 
 namespace KubeUI.Avalonia.Infrastructure.Docking;
 
@@ -125,6 +125,13 @@ public class DockFactory : Factory
         _rootDock.IsCollapsable = false;
         _rootDock.EnableGlobalDocking = false;
 
+        if (_serviceProvider.GetRequiredService<ISettingsService>().Settings.McpServerEnabled)
+        {
+            var chat = _serviceProvider.GetRequiredService<AgentChatViewModel>();
+            chat.SetPinnedBounds(0, 0, 420, 0); //todo make this dynamic based on window size
+            _rootDock.RightPinnedDockables.Add(chat);
+        }
+
         return _rootDock;
     }
 
@@ -162,11 +169,18 @@ public class DockFactory : Factory
     /// <param name="dockable"></param>
     public override void CloseDockable(IDockable dockable)
     {
-        base.CloseDockable(dockable);
-
-        if (dockable is IDisposable disp)
+        try
         {
-            disp.Dispose();
+            base.CloseDockable(dockable);
+
+            if (dockable is IDisposable disp)
+            {
+                disp.Dispose();
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error closing dockable");
         }
     }
 
@@ -177,35 +191,47 @@ public class DockFactory : Factory
     /// <param name="collapse"></param>
     public override void RemoveDockable(IDockable dockable, bool collapse)
     {
-        if (!dockable.CanClose)
+        try
         {
-            return;
-        }
+            if (!dockable.CanClose)
+            {
+                return;
+            }
 
-        base.RemoveDockable(dockable, collapse);
+            base.RemoveDockable(dockable, collapse);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error removing dockable");
+        }
     }
 
     public override void SplitToDock(IDock dock, IDockable dockable, DockOperation operation)
     {
-        var orgProportion = dockable.Proportion;
-
-        base.SplitToDock(dock, dockable, operation);
-
-        //Fixes proportion of dockable when splitting
-        if (dock.Owner is ProportionalDock)
+        try
         {
-            if (orgProportion == 1 || double.IsNaN(orgProportion))
+            var orgProportion = dockable.Proportion;
+
+            base.SplitToDock(dock, dockable, operation);
+
+            //Fixes proportion of dockable when splitting
+            if (dock.Owner is ProportionalDock)
             {
-                dockable.Proportion = 0.5;
-                dock.Proportion = 0.5;
+                if (orgProportion == 1 || double.IsNaN(orgProportion))
+                {
+                    dockable.Proportion = 0.5;
+                    dock.Proportion = 0.5;
+                }
+                else
+                {
+                    dock.Proportion = 1 - orgProportion;
+                    dockable.Proportion = orgProportion;
+                }
             }
-            else
-            {
-                dock.Proportion = 1 - orgProportion;
-                dockable.Proportion = orgProportion;
-            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error splitting dockable");
         }
     }
 }
-
-

@@ -4,15 +4,15 @@ using k8s.Models;
 
 namespace KubeUI.Avalonia.Resources.Workloads.v1.Pod.ViewModels;
 
-public sealed record PodLogContainerOption(string Name, string DisplayName, bool IsInitContainer);
+public sealed record PodLogContainerOption(string Name, string DisplayName, bool IsInitContainer, bool IsEphemeralContainer = false);
 
 public sealed record PodLogPodSelectionItem(V1Pod? Pod, string DisplayName, bool IsAll);
 
-public sealed record PodLogContainerSelectionItem(string Name, string DisplayName, bool IsInitContainer, bool IsAll);
+public sealed record PodLogContainerSelectionItem(string Name, string DisplayName, bool IsInitContainer, bool IsAll, bool IsEphemeralContainer = false);
 
 internal readonly record struct PodLogOutputEntry(string PodName, string ContainerName, string Message);
 
-internal readonly record struct PodLogContainerSelectionKey(string Name, bool IsInitContainer);
+internal readonly record struct PodLogContainerSelectionKey(string Name, bool IsInitContainer, bool IsEphemeralContainer);
 
 internal enum PodLogDisplayMode
 {

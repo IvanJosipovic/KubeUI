@@ -1,11 +1,6 @@
-using Avalonia.Controls;
 using FluentIcons.Common;
-using HanumanInstitute.MvvmDialogs;
-using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
-using k8s;
 using k8s.Models;
 using KubeUI.Avalonia.Features.Resources.Common;
-using KubeUI.Avalonia.Resources.Workloads.v1.DaemonSet.Views;
 
 namespace KubeUI.Avalonia.Resources.Workloads.v1.DaemonSet;
 
@@ -16,7 +11,7 @@ public sealed partial class V1DaemonSetConfig : ResourceConfigBase<V1DaemonSet>
     {
     }
     public override bool IsNamespaced => true;
-    public override string Category => CategoryString("ResourceConfig_Category_Workloads", "Workloads");
+    public override string Category => Assets.Resources.ResourceConfig_Category_Workloads!;
 
     public override int Order => 2;
 
@@ -27,14 +22,16 @@ public sealed partial class V1DaemonSetConfig : ResourceConfigBase<V1DaemonSet>
             NamespaceColumn(),
             new ResourceListColumn<V1DaemonSet, int>()
             {
-                Name = "Pods",
+                Key = "pods",
+                Name = Assets.Resources.V1DaemonSetConfig_Pods!,
                 Field = x => x.Status.NumberReady,
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },
             new ResourceListColumn<V1DaemonSet, string>()
             {
-                Name = "Node Selector",
-                Field = x => x.Spec.Selector.MatchLabels.Select(z => z.Key + "=" + z.Value).Aggregate((x,y) => x + ", " + y),
+                Key = "node-selector",
+                Name = Assets.Resources.V1DaemonSetConfig_Node_Selector!,
+                Field = x => x.Spec?.Selector?.MatchLabels is { Count: > 0 } matchLabels ? string.Join(", ", matchLabels.Select(x => x.Key + "=" + x.Value)) : "",
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },
             AgeColumn(),
@@ -46,7 +43,7 @@ public sealed partial class V1DaemonSetConfig : ResourceConfigBase<V1DaemonSet>
         return [
             new()
             {
-                Header = "Restart",
+                Title = Assets.Resources.V1DaemonSetConfig_MenuItem_Restart,
                 FluentIcon = Icon.ArrowSync,
                 Command = RestartCommand,
                 CommandParameter = selectedItems?.ToList()
@@ -56,5 +53,3 @@ public sealed partial class V1DaemonSetConfig : ResourceConfigBase<V1DaemonSet>
 
     public override Control[] Properties(V1DaemonSet resource) => [new PropertiesView()];
 }
-
-

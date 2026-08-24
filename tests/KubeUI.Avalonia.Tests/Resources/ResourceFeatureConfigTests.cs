@@ -1,64 +1,56 @@
+using System.Collections;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
+using CommunityToolkit.Mvvm.Input;
 using k8s.Models;
+using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Resources;
-using KubeUI.Avalonia.Resources.AccessControl;
-using KubeUI.Avalonia.Resources.Configuration;
-using KubeUI.Avalonia.Resources.Configuration.v1.Secret;
-using KubeUI.Avalonia.Resources.Core.v1;
-using KubeUI.Avalonia.Resources.Core.v1.Event;
-using KubeUI.Avalonia.Resources.Network;
-using KubeUI.Avalonia.Resources.Storage;
-using KubeUI.Avalonia.Resources.Workloads;
-using KubeUI.Avalonia.Resources.Workloads.v1.Pod;
 using KubeUI.Avalonia.Tests.Infra;
-using KubeUI.Kubernetes;
-using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
-using ClusterRoleBindingPropertiesView = KubeUI.Avalonia.Resources.AccessControl.v1.ClusterRoleBinding.Views.PropertiesView;
-using ClusterRolePropertiesView = KubeUI.Avalonia.Resources.AccessControl.v1.ClusterRole.Views.PropertiesView;
-using ConfigMapPropertiesView = KubeUI.Avalonia.Resources.Configuration.v1.ConfigMap.Views.PropertiesView;
-using CrdPropertiesView = KubeUI.Avalonia.Resources.CustomResourceDefinition.Views.PropertiesView;
-using CronJobPropertiesView = KubeUI.Avalonia.Resources.Workloads.v1.CronJob.Views.PropertiesView;
-using DaemonSetPropertiesView = KubeUI.Avalonia.Resources.Workloads.v1.DaemonSet.Views.PropertiesView;
-using DeploymentPropertiesView = KubeUI.Avalonia.Resources.Workloads.v1.Deployment.Views.PropertiesView;
-using EndpointSlicePropertiesView = KubeUI.Avalonia.Resources.Network.v1.EndpointSlice.Views.PropertiesView;
-using EventPropertiesView = KubeUI.Avalonia.Resources.Core.v1.Event.Views.PropertiesView;
-using HpaPropertiesView = KubeUI.Avalonia.Resources.Configuration.v2.HorizontalPodAutoscaler.Views.PropertiesView;
-using IngressClassPropertiesView = KubeUI.Avalonia.Resources.Network.v1.IngressClass.Views.PropertiesView;
-using IngressPropertiesView = KubeUI.Avalonia.Resources.Network.v1.Ingress.Views.PropertiesView;
-using JobPropertiesView = KubeUI.Avalonia.Resources.Workloads.v1.Job.Views.PropertiesView;
-using LeasePropertiesView = KubeUI.Avalonia.Resources.Configuration.v1.Lease.Views.PropertiesView;
-using LimitRangePropertiesView = KubeUI.Avalonia.Resources.Configuration.v1.LimitRange.Views.PropertiesView;
-using MutatingWebhookConfigurationPropertiesView = KubeUI.Avalonia.Resources.Configuration.v1.MutatingWebhookConfiguration.Views.PropertiesView;
-using NamespacePropertiesView = KubeUI.Avalonia.Resources.Core.v1.Namespace.Views.PropertiesView;
-using NetworkPolicyPropertiesView = KubeUI.Avalonia.Resources.Network.v1.NetworkPolicy.Views.PropertiesView;
-using NodePropertiesView = KubeUI.Avalonia.Resources.Core.v1.Node.Views.PropertiesView;
-using PersistentVolumeClaimPropertiesView = KubeUI.Avalonia.Resources.Storage.v1.PersistentVolumeClaim.Views.PropertiesView;
-using PersistentVolumePropertiesView = KubeUI.Avalonia.Resources.Storage.v1.PersistentVolume.Views.PropertiesView;
-using PodDisruptionBudgetPropertiesView = KubeUI.Avalonia.Resources.Configuration.v1.PodDisruptionBudget.Views.PropertiesView;
-using PodPropertiesView = KubeUI.Avalonia.Resources.Workloads.v1.Pod.Views.PropertiesView;
-using PriorityClassPropertiesView = KubeUI.Avalonia.Resources.Configuration.v1.PriorityClass.Views.PropertiesView;
-using ReplicaSetPropertiesView = KubeUI.Avalonia.Resources.Workloads.v1.ReplicaSet.Views.PropertiesView;
-using ResourceQuotaPropertiesView = KubeUI.Avalonia.Resources.Configuration.v1.ResourceQuota.Views.PropertiesView;
-using RoleBindingPropertiesView = KubeUI.Avalonia.Resources.AccessControl.v1.RoleBinding.Views.PropertiesView;
-using RolePropertiesView = KubeUI.Avalonia.Resources.AccessControl.v1.Role.Views.PropertiesView;
-using RuntimeClassPropertiesView = KubeUI.Avalonia.Resources.Configuration.v1.RuntimeClass.Views.PropertiesView;
-using SecretPropertiesView = KubeUI.Avalonia.Resources.Configuration.v1.Secret.Views.PropertiesView;
-using ServiceAccountPropertiesView = KubeUI.Avalonia.Resources.AccessControl.v1.ServiceAccount.Views.PropertiesView;
-using ServicePropertiesView = KubeUI.Avalonia.Resources.Network.v1.Service.Views.PropertiesView;
-using StatefulSetPropertiesView = KubeUI.Avalonia.Resources.Workloads.v1.StatefulSet.Views.PropertiesView;
-using StorageClassPropertiesView = KubeUI.Avalonia.Resources.Storage.v1.StorageClass.Views.PropertiesView;
+using ClusterRoleBindingPropertiesView = KubeUI.Avalonia.Resources.AccessControl.v1.ClusterRoleBinding.PropertiesView;
+using ClusterRolePropertiesView = KubeUI.Avalonia.Resources.AccessControl.v1.ClusterRole.PropertiesView;
+using ConfigMapPropertiesView = KubeUI.Avalonia.Resources.Configuration.v1.ConfigMap.PropertiesView;
+using CrdPropertiesView = KubeUI.Avalonia.Resources.CustomResourceDefinition.PropertiesView;
+using CronJobPropertiesView = KubeUI.Avalonia.Resources.Workloads.v1.CronJob.PropertiesView;
+using DaemonSetPropertiesView = KubeUI.Avalonia.Resources.Workloads.v1.DaemonSet.PropertiesView;
+using DeploymentPropertiesView = KubeUI.Avalonia.Resources.Workloads.v1.Deployment.PropertiesView;
+using EndpointSlicePropertiesView = KubeUI.Avalonia.Resources.Network.v1.EndpointSlice.PropertiesView;
+using EventPropertiesView = KubeUI.Avalonia.Resources.Core.v1.Event.PropertiesView;
+using HpaPropertiesView = KubeUI.Avalonia.Resources.Configuration.v2.HorizontalPodAutoscaler.PropertiesView;
+using IngressClassPropertiesView = KubeUI.Avalonia.Resources.Network.v1.IngressClass.PropertiesView;
+using IngressPropertiesView = KubeUI.Avalonia.Resources.Network.v1.Ingress.PropertiesView;
+using JobPropertiesView = KubeUI.Avalonia.Resources.Workloads.v1.Job.PropertiesView;
+using LeasePropertiesView = KubeUI.Avalonia.Resources.Configuration.v1.Lease.PropertiesView;
+using LimitRangePropertiesView = KubeUI.Avalonia.Resources.Configuration.v1.LimitRange.PropertiesView;
+using MutatingWebhookConfigurationPropertiesView = KubeUI.Avalonia.Resources.Configuration.v1.MutatingWebhookConfiguration.PropertiesView;
+using NamespacePropertiesView = KubeUI.Avalonia.Resources.Core.v1.Namespace.PropertiesView;
+using NetworkPolicyPropertiesView = KubeUI.Avalonia.Resources.Network.v1.NetworkPolicy.PropertiesView;
+using NodePropertiesView = KubeUI.Avalonia.Resources.Core.v1.Node.PropertiesView;
+using PersistentVolumeClaimPropertiesView = KubeUI.Avalonia.Resources.Storage.v1.PersistentVolumeClaim.PropertiesView;
+using PersistentVolumePropertiesView = KubeUI.Avalonia.Resources.Storage.v1.PersistentVolume.PropertiesView;
+using PodDisruptionBudgetPropertiesView = KubeUI.Avalonia.Resources.Configuration.v1.PodDisruptionBudget.PropertiesView;
+using PodPropertiesView = KubeUI.Avalonia.Resources.Workloads.v1.Pod.PropertiesView;
+using PriorityClassPropertiesView = KubeUI.Avalonia.Resources.Configuration.v1.PriorityClass.PropertiesView;
+using ReplicaSetPropertiesView = KubeUI.Avalonia.Resources.Workloads.v1.ReplicaSet.PropertiesView;
+using ResourceQuotaPropertiesView = KubeUI.Avalonia.Resources.Configuration.v1.ResourceQuota.PropertiesView;
+using RoleBindingPropertiesView = KubeUI.Avalonia.Resources.AccessControl.v1.RoleBinding.PropertiesView;
+using RolePropertiesView = KubeUI.Avalonia.Resources.AccessControl.v1.Role.PropertiesView;
+using RuntimeClassPropertiesView = KubeUI.Avalonia.Resources.Configuration.v1.RuntimeClass.PropertiesView;
+using SecretPropertiesView = KubeUI.Avalonia.Resources.Configuration.v1.Secret.PropertiesView;
+using ServiceAccountPropertiesView = KubeUI.Avalonia.Resources.AccessControl.v1.ServiceAccount.PropertiesView;
+using ServicePropertiesView = KubeUI.Avalonia.Resources.Network.v1.Service.PropertiesView;
+using StatefulSetPropertiesView = KubeUI.Avalonia.Resources.Workloads.v1.StatefulSet.PropertiesView;
+using StorageClassPropertiesView = KubeUI.Avalonia.Resources.Storage.v1.StorageClass.PropertiesView;
 using V2HorizontalPodAutoscalerConfig = KubeUI.Avalonia.Resources.Configuration.v2.HorizontalPodAutoscaler.V2HorizontalPodAutoscalerConfig;
-using ValidatingWebhookConfigurationPropertiesView = KubeUI.Avalonia.Resources.Configuration.v1.ValidatingWebhookConfiguration.Views.PropertiesView;
+using ValidatingWebhookConfigurationPropertiesView = KubeUI.Avalonia.Resources.Configuration.v1.ValidatingWebhookConfiguration.PropertiesView;
 
 namespace KubeUI.Avalonia.Tests.Resources;
 
-public sealed class ResourceFeatureConfigTests : AvaloniaTestBase
+public sealed class ResourceFeatureConfigTests
 {
     private static void AssertProperties<TConfig, TResource, TView>(TResource resource)
         where TConfig : ResourceConfigBase<TResource>
-        where TResource : class, k8s.IKubernetesObject<k8s.Models.V1ObjectMeta>, new()
+        where TResource : class, k8s.IKubernetesObject<V1ObjectMeta>, new()
         where TView : Control
     {
         var config = ResolveConfig<TConfig>();
@@ -80,7 +72,7 @@ public sealed class ResourceFeatureConfigTests : AvaloniaTestBase
     private static TConfig ResolveConfig<TConfig>()
         where TConfig : IResourceConfig
     {
-        var services = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
+        var services = Application.Current.GetTestServices();
         return services.GetRequiredService<TConfig>();
     }
 
@@ -100,9 +92,10 @@ public sealed class ResourceFeatureConfigTests : AvaloniaTestBase
     {
         var config = ResolveConfig<V1EventConfig>();
 
-        var lastSeenColumn = config.Columns().Single(x => x.Name == "Last Seen");
+        var lastSeenColumn = config.Columns().Single(x => x.Name == Assets.Resources.V1EventConfig_Last_Seen);
 
-        lastSeenColumn.CustomControl.Name.ShouldBe("EventLastSeenCell");
+        lastSeenColumn.CustomControl.ShouldNotBeNull();
+        lastSeenColumn.CustomControl!.Name.ShouldBe("EventLastSeenCell");
     }
 
     [AvaloniaFact]
@@ -123,6 +116,39 @@ public sealed class ResourceFeatureConfigTests : AvaloniaTestBase
     }
 
     [AvaloniaFact]
+    public void deployment_config_exposes_visualize_action_for_single_selection()
+    {
+        var config = ResolveConfig<V1DeploymentConfig>();
+        var deployment = new V1Deployment
+        {
+            Metadata = new V1ObjectMeta { Name = "api", NamespaceProperty = "default" },
+        };
+
+        var action = config.GetDefaultMenuItems(new[] { deployment })
+            .Single(item => item.Title == Assets.Resources.ResourceConfigBase_MenuItem_Visualize);
+
+        action.Command.ShouldNotBeNull();
+        action.CommandParameter.ShouldBeAssignableTo<IList>();
+        action.Command!.CanExecute(action.CommandParameter).ShouldBeTrue();
+    }
+
+    [AvaloniaFact]
+    public void deployment_config_disables_visualize_for_multiple_selection()
+    {
+        var config = ResolveConfig<V1DeploymentConfig>();
+        var deployments = new[]
+        {
+            new V1Deployment { Metadata = new V1ObjectMeta { Name = "api", NamespaceProperty = "default" } },
+            new V1Deployment { Metadata = new V1ObjectMeta { Name = "worker", NamespaceProperty = "default" } },
+        };
+
+        var action = config.GetDefaultMenuItems(deployments)
+            .Single(item => item.Title == Assets.Resources.ResourceConfigBase_MenuItem_Visualize);
+
+        action.Command!.CanExecute(action.CommandParameter).ShouldBeFalse();
+    }
+
+    [AvaloniaFact]
     public void service_config_uses_service_properties_view()
     {
         var config = ResolveConfig<V1ServiceConfig>();
@@ -138,9 +164,17 @@ public sealed class ResourceFeatureConfigTests : AvaloniaTestBase
     {
         var config = ResolveConfig<V1ServiceConfig>();
 
-        config.AuthorizationRequests().ShouldContain(new AuthorizationRequest(typeof(V1Pod), Verb.Create, "portforward"));
-        config.AuthorizationRequests().ShouldContain(new AuthorizationRequest(typeof(V1EndpointSlice), Verb.List, null));
-        config.AuthorizationRequests().ShouldContain(new AuthorizationRequest(typeof(V1EndpointSlice), Verb.Watch, null));
+        config.AuthorizationRequests().ShouldContain(new AuthorizationRequest(GroupApiVersionKind.From<V1Pod>(), Verb.Create, "portforward"));
+        config.AuthorizationRequests().ShouldContain(new AuthorizationRequest(GroupApiVersionKind.From<V1EndpointSlice>(), Verb.List, null));
+        config.AuthorizationRequests().ShouldContain(new AuthorizationRequest(GroupApiVersionKind.From<V1EndpointSlice>(), Verb.Watch, null));
+    }
+
+    [AvaloniaFact]
+    public void cronjob_config_authorization_requests_include_start_dependency()
+    {
+        var config = ResolveConfig<V1CronJobConfig>();
+
+        config.AuthorizationRequests().ShouldContain(new AuthorizationRequest(GroupApiVersionKind.From<V1Job>(), Verb.Create, null));
     }
 
     [AvaloniaFact]
@@ -157,43 +191,13 @@ public sealed class ResourceFeatureConfigTests : AvaloniaTestBase
     [AvaloniaFact]
     public void pod_config_uses_pod_properties_view()
     {
-        var services = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
+        var services = Application.Current.GetTestServices();
         var config = services.GetRequiredService<V1PodConfig>();
 
         var controls = config.Properties(new V1Pod());
 
         controls.Length.ShouldBe(1);
         controls[0].ShouldBeOfType<PodPropertiesView>();
-    }
-
-    [AvaloniaFact]
-    public void pod_config_view_logs_uses_all_containers_root_submenu()
-    {
-        var services = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
-        var config = services.GetRequiredService<V1PodConfig>();
-
-        V1Pod pod = new()
-        {
-            Metadata = new V1ObjectMeta
-            {
-                Name = "app-0",
-                NamespaceProperty = "default",
-            },
-            Spec = new V1PodSpec
-            {
-                Containers = [new V1Container { Name = "app" }],
-                InitContainers = [new V1Container { Name = "init-db" }],
-            },
-        };
-
-        var menuItems = config.GetCustomMenuItems(new[] { pod }).ToList();
-        var viewLogs = menuItems.Single(x => x.Header == "View Logs");
-
-        viewLogs.Items.ShouldNotBeNull();
-        viewLogs.Items!.Select(x => x.Header).ShouldBe(["All Containers", "Init", "Normal", "Ephemeral"]);
-        viewLogs.Items![0].Command.ShouldNotBeNull();
-        viewLogs.Items![0].CommandParameter.ShouldBe(pod);
-        menuItems.Count.ShouldBe(5);
     }
 
     [AvaloniaFact]
@@ -241,6 +245,142 @@ public sealed class ResourceFeatureConfigTests : AvaloniaTestBase
     }
 
     [AvaloniaFact]
+    public void cronjob_config_start_menu_creates_job_from_cronjob_template()
+    {
+        var cronJob = CreateCronJob("volsync", "immich-rclone-backup");
+        var job = V1CronJobConfig.CreateJobFromCronJob(cronJob, new DateTimeOffset(2026, 5, 15, 13, 14, 15, TimeSpan.Zero));
+
+        job.ApiVersion.ShouldBe("batch/v1");
+        job.Kind.ShouldBe("Job");
+        job.Name().ShouldBe("immich-rclone-backup-manual-202605151314150000000");
+        job.Namespace().ShouldBe("volsync");
+        job.Spec.ShouldBeSameAs(cronJob.Spec.JobTemplate.Spec);
+        job.Metadata.Labels.ShouldContainKeyAndValue("app", "immich");
+        job.Metadata.Annotations.ShouldContainKeyAndValue("template", "backup");
+        job.Metadata.Annotations.ShouldContainKeyAndValue("cronjob.kubernetes.io/instantiate", "manual");
+
+        var ownerReference = job.Metadata.OwnerReferences.Single();
+        ownerReference.ApiVersion.ShouldBe("batch/v1");
+        ownerReference.Kind.ShouldBe("CronJob");
+        ownerReference.Name.ShouldBe("immich-rclone-backup");
+        ownerReference.Uid.ShouldBe("cronjob-uid");
+        ownerReference.Controller.ShouldBe(true);
+        ownerReference.BlockOwnerDeletion.ShouldBeNull();
+    }
+
+    [AvaloniaFact]
+    public void cronjob_config_start_menu_matches_kubectl_annotation_precedence()
+    {
+        var cronJob = CreateCronJob("volsync", "immich-rclone-backup");
+        cronJob.Spec.JobTemplate.Metadata.Annotations["cronjob.kubernetes.io/instantiate"] = "template";
+
+        var job = V1CronJobConfig.CreateJobFromCronJob(cronJob, new DateTimeOffset(2026, 5, 15, 13, 14, 15, TimeSpan.Zero));
+
+        job.Metadata.Annotations.ShouldContainKeyAndValue("cronjob.kubernetes.io/instantiate", "template");
+    }
+
+    [AvaloniaFact]
+    public async Task cronjob_start_context_menu_creates_job_resource()
+    {
+        var workspace = await Application.Current.CreateClusterAsync();
+        await workspace.Runtime.SeedResource<V1Namespace>(true);
+        await workspace.Runtime.SeedResource<V1CronJob>(true);
+        await workspace.Runtime.SeedResource<V1Job>(true);
+        await workspace.Runtime.AddOrUpdateResource(new V1Namespace
+        {
+            Metadata = new() { Name = "volsync" },
+        });
+
+        await ((Cluster)workspace.Runtime).UpdateCanI<V1Job>(Verb.Create, "volsync");
+        var config = (V1CronJobConfig)workspace.GetResourceConfig(GroupApiVersionKind.From<V1CronJob>());
+        var cronJob = CreateCronJob("volsync", "immich-rclone-backup");
+
+        var startItem = config.GetCustomMenuItems(new[] { cronJob }).Single(item => item.Title == "Start");
+        var command = startItem.Command.ShouldBeAssignableTo<IAsyncRelayCommand>();
+        var commandParameter = startItem.CommandParameter.ShouldBeAssignableTo<IList>();
+
+        command.CanExecute(commandParameter).ShouldBeTrue();
+
+        await command.ExecuteAsync(commandParameter).WaitAsync(TestContext.Current.CancellationToken);
+        await TestWait.UntilAsync(
+            () => workspace.Runtime.GetResourceList<V1Job>().Count == 1,
+            TimeSpan.FromSeconds(5),
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        var job = workspace.Runtime.GetResourceList<V1Job>().Single();
+        job.Namespace().ShouldBe("volsync");
+        job.Name().ShouldStartWith("immich-rclone-backup-manual-");
+        job.Spec.Template.Spec.Containers.Single().Image.ShouldBe(cronJob.Spec.JobTemplate.Spec.Template.Spec.Containers.Single().Image);
+        job.Spec.Template.Spec.RestartPolicy.ShouldBe(cronJob.Spec.JobTemplate.Spec.Template.Spec.RestartPolicy);
+        job.Metadata.Annotations.ShouldContainKeyAndValue("cronjob.kubernetes.io/instantiate", "manual");
+    }
+
+    [AvaloniaFact]
+    public async Task cronjob_start_context_menu_requires_job_create_permission()
+    {
+        var services = Application.Current.GetTestServices();
+        var clusterConfig = services.GetRequiredService<TestClusterConfig>();
+        clusterConfig.AuthenticatedUser = KubernetesRbac.ServiceAccountUser;
+        clusterConfig.InitialResources = new[]
+        {
+            (k8s.IKubernetesObject<V1ObjectMeta>)new V1Namespace { Metadata = new V1ObjectMeta { Name = "volsync" } },
+        }
+            .Concat(KubernetesRbac.ClusterWide(
+                new RbacRule("namespaces", "list"),
+                new RbacRule("namespaces", "watch")))
+            .ToArray();
+        var workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        await workspace.Connect();
+        await workspace.Runtime.SeedResource<V1Namespace>(true);
+        await workspace.Runtime.SeedResource<V1CronJob>(true);
+        await workspace.Runtime.SeedResource<V1Job>(true);
+        await ((Cluster)workspace.Runtime).UpdateCanI<V1Job>(Verb.Create);
+        await ((Cluster)workspace.Runtime).UpdateCanI<V1Job>(Verb.Create, "volsync");
+        var config = (V1CronJobConfig)workspace.GetResourceConfig(GroupApiVersionKind.From<V1CronJob>());
+        var cronJob = CreateCronJob("volsync", "immich-rclone-backup");
+
+        var startItem = config.GetCustomMenuItems(new[] { cronJob }).Single(item => item.Title == "Start");
+        var command = startItem.Command.ShouldBeAssignableTo<IAsyncRelayCommand>();
+        var commandParameter = startItem.CommandParameter.ShouldBeAssignableTo<IList>();
+
+        command.CanExecute(commandParameter).ShouldBeFalse();
+    }
+
+    [AvaloniaFact]
+    public async Task cronjob_start_context_menu_allows_namespace_scoped_job_create_permission()
+    {
+        var services = Application.Current.GetTestServices();
+        var clusterConfig = services.GetRequiredService<TestClusterConfig>();
+        clusterConfig.AuthenticatedUser = KubernetesRbac.ServiceAccountUser;
+        clusterConfig.InitialResources = new[]
+        {
+            new V1Namespace { Metadata = new V1ObjectMeta { Name = "volsync" } },
+        }
+            .Concat(KubernetesRbac.ClusterWide(
+                new RbacRule("namespaces", "list"),
+                new RbacRule("namespaces", "watch")))
+            .Concat(KubernetesRbac.InNamespace("volsync", new RbacRule("jobs", "create", "batch")))
+            .ToArray();
+        var workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        await workspace.Connect();
+        await ((Cluster)workspace.Runtime).UpdateCanI<V1Job>(Verb.Create);
+        await ((Cluster)workspace.Runtime).UpdateCanI<V1Job>(Verb.Create, "volsync");
+        await workspace.Runtime.SeedResource<V1Namespace>(true);
+        await workspace.Runtime.SeedResource<V1CronJob>(true);
+        await workspace.Runtime.SeedResource<V1Job>(true);
+        await ((Cluster)workspace.Runtime).UpdateCanI<V1Job>(Verb.Create);
+        await ((Cluster)workspace.Runtime).UpdateCanI<V1Job>(Verb.Create, "volsync");
+        var config = (V1CronJobConfig)workspace.GetResourceConfig(GroupApiVersionKind.From<V1CronJob>());
+        var cronJob = CreateCronJob("volsync", "immich-rclone-backup");
+
+        var startItem = config.GetCustomMenuItems(new[] { cronJob }).Single(item => item.Title == "Start");
+        var command = startItem.Command.ShouldBeAssignableTo<IAsyncRelayCommand>();
+        var commandParameter = startItem.CommandParameter.ShouldBeAssignableTo<IList>();
+
+        command.CanExecute(commandParameter).ShouldBeTrue();
+    }
+
+    [AvaloniaFact]
     public void job_config_uses_job_properties_view()
     {
         var config = ResolveConfig<V1JobConfig>();
@@ -249,6 +389,55 @@ public sealed class ResourceFeatureConfigTests : AvaloniaTestBase
 
         controls.Length.ShouldBe(1);
         controls[0].ShouldBeOfType<JobPropertiesView>();
+    }
+
+    private static V1CronJob CreateCronJob(string @namespace, string name)
+    {
+        return new V1CronJob
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = name,
+                NamespaceProperty = @namespace,
+                Uid = "cronjob-uid",
+            },
+            Spec = new V1CronJobSpec
+            {
+                Schedule = "0 1 * * *",
+                JobTemplate = new V1JobTemplateSpec
+                {
+                    Metadata = new V1ObjectMeta
+                    {
+                        Labels = new Dictionary<string, string>
+                        {
+                            ["app"] = "immich",
+                        },
+                        Annotations = new Dictionary<string, string>
+                        {
+                            ["template"] = "backup",
+                        },
+                    },
+                    Spec = new V1JobSpec
+                    {
+                        Template = new V1PodTemplateSpec
+                        {
+                            Spec = new V1PodSpec
+                            {
+                                RestartPolicy = "Never",
+                                Containers =
+                                [
+                                    new V1Container
+                                    {
+                                        Name = "backup",
+                                        Image = "busybox",
+                                    },
+                                ],
+                            },
+                        },
+                    },
+                },
+            },
+        };
     }
 
     [AvaloniaFact] public void storage_class_config_uses_storage_class_properties_view() => AssertProperties<V1StorageClassConfig, V1StorageClass, StorageClassPropertiesView>(new V1StorageClass());
@@ -277,7 +466,7 @@ public sealed class ResourceFeatureConfigTests : AvaloniaTestBase
     [AvaloniaFact]
     public void crd_config_uses_properties_view()
     {
-        var services = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
+        var services = Application.Current.GetTestServices();
         var config = services.GetRequiredService<V1CustomResourceDefinitionConfig>();
 
         var controls = config.Properties(new V1CustomResourceDefinition());

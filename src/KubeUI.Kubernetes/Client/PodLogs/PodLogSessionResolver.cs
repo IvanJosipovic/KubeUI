@@ -260,6 +260,12 @@ public sealed class PodLogSessionResolver : IPodLogSessionResolver
             return containerName;
         }
 
+        containerName = FindEphemeralContainerName(pod.Spec?.EphemeralContainers, requestedContainerName);
+        if (!string.IsNullOrWhiteSpace(containerName))
+        {
+            return containerName;
+        }
+
         if (pod.Spec?.Containers is { Count: > 0 })
         {
             return pod.Spec.Containers[0].Name;
@@ -268,6 +274,11 @@ public sealed class PodLogSessionResolver : IPodLogSessionResolver
         if (pod.Spec?.InitContainers is { Count: > 0 })
         {
             return pod.Spec.InitContainers[0].Name;
+        }
+
+        if (pod.Spec?.EphemeralContainers is { Count: > 0 })
+        {
+            return pod.Spec.EphemeralContainers[0].Name;
         }
 
         return requestedContainerName;
@@ -292,10 +303,30 @@ public sealed class PodLogSessionResolver : IPodLogSessionResolver
         return null;
     }
 
+    private static string? FindEphemeralContainerName(IList<V1EphemeralContainer>? containers, string requestedContainerName)
+    {
+        if (containers is null || containers.Count == 0)
+        {
+            return null;
+        }
+
+        for (int i = 0; i < containers.Count; i++)
+        {
+            V1EphemeralContainer container = containers[i];
+            if (string.Equals(container.Name, requestedContainerName, StringComparison.Ordinal))
+            {
+                return container.Name;
+            }
+        }
+
+        return null;
+    }
+
     private static bool HasPreviousLogs(V1Pod pod, string containerName)
     {
         return GetRestartCount(pod.Status?.ContainerStatuses, containerName) > 0
-            || GetRestartCount(pod.Status?.InitContainerStatuses, containerName) > 0;
+            || GetRestartCount(pod.Status?.InitContainerStatuses, containerName) > 0
+            || GetRestartCount(pod.Status?.EphemeralContainerStatuses, containerName) > 0;
     }
 
     private static int GetRestartCount(IList<V1ContainerStatus>? containerStatuses, string containerName)

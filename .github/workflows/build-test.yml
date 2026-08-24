@@ -1,0 +1,59 @@
+name: Build Test
+
+on:
+  workflow_call:
+
+jobs:
+  build-test:
+    name: Build & Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup .NET Core
+        uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+
+      - name: Build
+        run: dotnet build --configuration Release --tl:off -clp:ErrorsOnly
+
+      - name: Test
+        run: |
+          dotnet test \
+            --configuration Release \
+            --no-build \
+            --max-threads 2
+        env:
+          KUBEUI_RUN_KIND_TESTS: 1
+
+      - name: Upload test dump
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-diagnostics
+          path: TestResults/
+
+      - name: Test Report
+        uses: dorny/test-reporter@v3
+        if: (!cancelled())
+        with:
+          name: KubeUI Tests
+          path: TestResults/*.trx
+          reporter: dotnet-trx
+
+      - name: Test Summary
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: (!cancelled())
+        with:
+          check_name: KubeUI Tests
+          comment_mode: always
+          files: TestResults/*.trx
+
+      - name: Coverage
+        uses: codecov/codecov-action@v7
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: TestResults/*.cobertura.xml
+          fail_ci_if_error: false

@@ -3,7 +3,6 @@ using System.IO;
 using AvaloniaEdit.Document;
 using Dock.Model.Core;
 using k8s.Models;
-using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Resources.Workloads.v1.Pod.Services;
 using KubeUI.Avalonia.Services.Settings;
@@ -14,6 +13,7 @@ namespace KubeUI.Avalonia.Resources.Workloads.v1.Pod.ViewModels;
 public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
 {
     private const int DefaultTailLines = 100;
+    private const int MaxLogEntries = 10_000;
 
     private readonly ILogger<PodLogsViewModel> _logger;
     private readonly IPodLogExportService _exportService;
@@ -58,7 +58,7 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
     public ISettingsService SettingsService { get; }
 
     [ObservableProperty]
-    public partial ClusterWorkspaceViewModel Cluster { get; set; }
+    public partial IClusterRuntime Cluster { get; set; }
 
     [ObservableProperty]
     public partial V1Pod Object { get; set; }
@@ -229,13 +229,13 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
                     StreamReader reader = new(stream);
                     _streams.Add(stream);
                     _streamReaders.Add(reader);
-                    _ = Task.Run(() => ReadLogsAsync(reader, option, connectionCts.Token));
+                    _ = Task.Run(() => ReadLogsAsync(reader, option, connectionCts));
                 }
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Unable to open pod log stream for {PodNamespace}/{PodName} container {ContainerName}.", option.PodNamespace, option.PodName, option.ContainerName);
-                    DecrementActiveReaders();
-                    AppendStatusLine(option.PodName, option.ContainerName, ex.Message);
+                    DecrementActiveReaders(connectionCts);
+                    AppendStatusLine(option.PodName, option.ContainerName, ex.Message, connectionCts);
                 }
             }
 

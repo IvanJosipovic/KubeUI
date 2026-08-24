@@ -1,15 +1,17 @@
 using Avalonia.Controls.Notifications;
-using Avalonia.Threading;
 using Dock.Model.Core;
 using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using KubeUI.Avalonia.Infrastructure.Dialogs;
 using KubeUI.Avalonia.Infrastructure.Docking;
+using KubeUI.Avalonia.Infrastructure.Platform;
+using KubeUI.Avalonia.Infrastructure.Threading;
 using KubeUI.Kubernetes;
-using Microsoft.Extensions.DependencyInjection;
+using KubeUI.Avalonia.Infrastructure.Mcp;
+using KubeUI.Avalonia.Shell.Navigation;
+using KubeUI.Avalonia.Features.Clusters.Workspace;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Microsoft.Extensions.Logging;
 
 namespace KubeUI.Avalonia.Infrastructure.DependencyInjection;
 
@@ -19,12 +21,17 @@ public static class KubeUIAvaloniaServiceCollectionExtensions
     {
         services.AddKubeUIAvaloniaServices();
         services.AddKubeUIKubernetesServices();
+        services.Replace(ServiceDescriptor.Singleton<IThreadDispatcher>(AvaloniaScheduler.Instance));
         services.AddKubeUIDialogServices();
+        services.AddSingleton<IMcpClusterSession, McpClusterSession>();
+        services.AddSingleton<IResourceNavigationService>(sp => new NavigationDocumentService(
+            sp,
+            sp.GetRequiredService<ILogger<NavigationDocumentService>>(),
+            sp.GetRequiredService<ClusterWorkspaceCatalog>(),
+            () => sp.GetRequiredService<IFactory>()));
 
         configureOverrides?.Invoke(services);
 
-        services.RemoveAll<ServiceDescriptor[]>();
-        services.AddSingleton<ServiceDescriptor[]>([.. services]);
         return services;
     }
 
@@ -36,8 +43,8 @@ public static class KubeUIAvaloniaServiceCollectionExtensions
             logger: x.GetRequiredService<ILogger<DialogManager>>())));
         services.TryAdd(ServiceDescriptor.Singleton<IDialogService, DialogService>(x => new DialogService(x.GetRequiredService<IDialogManager>())));
 
-        services.TryAdd(ServiceDescriptor.Singleton<IFactory>(sp => Dispatcher.UIThread.Invoke(() => (IFactory)new DockFactory(sp, sp.GetRequiredService<ILogger<DockFactory>>()))));
-        services.TryAdd(ServiceDescriptor.Singleton<INotificationManager>(_ => Dispatcher.UIThread.Invoke(() => (INotificationManager)new WindowNotificationManager(App.TopLevel) { MaxItems = 4 })));
+        services.TryAdd(ServiceDescriptor.Singleton(sp => Dispatcher.UIThread.Invoke(() => (IFactory)new DockFactory(sp, sp.GetRequiredService<ILogger<DockFactory>>()))));
+        services.TryAdd(ServiceDescriptor.Singleton(sp => Dispatcher.UIThread.Invoke(() => (INotificationManager)new WindowNotificationManager(sp.GetRequiredService<IPlatformServices>().GetRequiredTopLevel()) { MaxItems = 4 })));
         return services;
     }
 }

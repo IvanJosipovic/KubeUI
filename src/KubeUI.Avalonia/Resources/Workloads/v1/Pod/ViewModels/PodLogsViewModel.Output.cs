@@ -1,35 +1,46 @@
 using System.IO;
 using System.Text;
 using Avalonia.Threading;
+using AvaloniaEdit.Document;
 using KubeUI.Kubernetes;
 
 namespace KubeUI.Avalonia.Resources.Workloads.v1.Pod.ViewModels;
 
 public sealed partial class PodLogsViewModel
 {
-    private void AppendStatusLine(string podName, string containerName, string message)
+    private void AppendStatusLine(string podName, string containerName, string message, CancellationTokenSource connectionCts)
     {
-        if (string.IsNullOrWhiteSpace(message))
+        if (string.IsNullOrWhiteSpace(message) || !IsCurrentConnection(connectionCts))
         {
             return;
         }
 
         PodLogOutputEntry entry = new(podName, containerName, message);
-        lock (_outputEntriesGate)
-        {
-            _outputEntries.Add(entry);
-        }
-        Dispatcher.UIThread.InvokeAsync(() => AppendOutputEntry(entry), DispatcherPriority.Background);
+        AddOutputEntry(entry);
+        Dispatcher.UIThread.InvokeAsync(() => AppendOutputEntry(entry, connectionCts), DispatcherPriority.Background);
     }
 
-    private void DecrementActiveReaders()
+    private void DecrementActiveReaders(CancellationTokenSource connectionCts)
     {
+        if (!IsCurrentConnection(connectionCts))
+        {
+            return;
+        }
+
         if (Interlocked.Decrement(ref _activeReaderCount) > 0)
         {
             return;
         }
 
-        Dispatcher.UIThread.InvokeAsync(() => IsConnected = false, DispatcherPriority.Background);
+        Dispatcher.UIThread.InvokeAsync(
+            () =>
+            {
+                if (IsCurrentConnection(connectionCts))
+                {
+                    IsConnected = false;
+                }
+            },
+            DispatcherPriority.Background);
     }
 
     private string BuildSuggestedFileName()
@@ -45,8 +56,9 @@ public sealed partial class PodLogsViewModel
         return fileName.ReplaceInvalidFileNameChars();
     }
 
-    private async Task ReadLogsAsync(StreamReader reader, PodLogReadOptions option, CancellationToken cancellationToken)
+    private async Task ReadLogsAsync(StreamReader reader, PodLogReadOptions option, CancellationTokenSource connectionCts)
     {
+        CancellationToken cancellationToken = connectionCts.Token;
         bool streamEnded = false;
         try
         {
@@ -60,27 +72,30 @@ public sealed partial class PodLogsViewModel
                 }
 
                 PodLogOutputEntry entry = new(option.PodName, option.ContainerName, log);
-                lock (_outputEntriesGate)
-                {
-                    _outputEntries.Add(entry);
-                }
-                await Dispatcher.UIThread.InvokeAsync(() => AppendOutputEntry(entry), DispatcherPriority.Background);
+                AddOutputEntry(entry);
+                await Dispatcher.UIThread.InvokeAsync(
+                    () => AppendOutputEntry(entry, connectionCts),
+                    DispatcherPriority.Background);
             }
         }
-        catch (IOException ex) when (cancellationToken.IsCancellationRequested || ex.Message.Equals("The request was aborted.", StringComparison.Ordinal))
+        catch (IOException) when (cancellationToken.IsCancellationRequested)
         {
         }
-        catch (ObjectDisposedException)
+        catch (ObjectDisposedException) when (cancellationToken.IsCancellationRequested)
         {
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unable to read pod log stream for {PodNamespace}/{PodName} container {ContainerName}.", option.PodNamespace, option.PodName, option.ContainerName);
         }
         finally
         {
             if (streamEnded && ShouldReconnectAfterStreamEnd(reader, option, cancellationToken))
             {
-                ScheduleReconnectAfterStreamEnd(option, cancellationToken);
+                ScheduleReconnectAfterStreamEnd(option, connectionCts);
             }
 
-            DecrementActiveReaders();
+            DecrementActiveReaders(connectionCts);
         }
     }
 
@@ -92,7 +107,7 @@ public sealed partial class PodLogsViewModel
             && !reader.BaseStream.CanSeek;
     }
 
-    private void ScheduleReconnectAfterStreamEnd(PodLogReadOptions option, CancellationToken cancellationToken)
+    private void ScheduleReconnectAfterStreamEnd(PodLogReadOptions option, CancellationTokenSource connectionCts)
     {
         if (Interlocked.Exchange(ref _streamEndedReconnectPending, 1) == 1)
         {
@@ -103,14 +118,14 @@ public sealed partial class PodLogsViewModel
         {
             try
             {
-                await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken);
+                await Task.Delay(TimeSpan.FromSeconds(1), connectionCts.Token);
             }
             catch (OperationCanceledException)
             {
                 return;
             }
 
-            if (cancellationToken.IsCancellationRequested)
+            if (!IsCurrentConnection(connectionCts))
             {
                 return;
             }
@@ -119,8 +134,25 @@ public sealed partial class PodLogsViewModel
         }, CancellationToken.None);
     }
 
-    private void AppendOutputEntry(PodLogOutputEntry entry)
+    private void AddOutputEntry(PodLogOutputEntry entry)
     {
+        lock (_outputEntriesGate)
+        {
+            _outputEntries.Add(entry);
+            if (_outputEntries.Count > MaxLogEntries)
+            {
+                _outputEntries.RemoveRange(0, _outputEntries.Count - MaxLogEntries);
+            }
+        }
+    }
+
+    private void AppendOutputEntry(PodLogOutputEntry entry, CancellationTokenSource connectionCts)
+    {
+        if (!IsCurrentConnection(connectionCts))
+        {
+            return;
+        }
+
         string line = FormatOutputEntry(entry, ShowResourceNames, GetCurrentDisplayMode());
         if (Logs.TextLength > 0)
         {
@@ -128,6 +160,23 @@ public sealed partial class PodLogsViewModel
         }
 
         Logs.Insert(Logs.TextLength, line);
+        TrimLogDocument();
+    }
+
+    private void TrimLogDocument()
+    {
+        while (Logs.LineCount > MaxLogEntries)
+        {
+            DocumentLine firstLine = Logs.GetLineByNumber(1);
+            Logs.Remove(0, firstLine.TotalLength);
+        }
+    }
+
+    private bool IsCurrentConnection(CancellationTokenSource connectionCts)
+    {
+        return !_disposed
+            && ReferenceEquals(_connectionCts, connectionCts)
+            && !connectionCts.IsCancellationRequested;
     }
 
     private void RenderOutputEntries()

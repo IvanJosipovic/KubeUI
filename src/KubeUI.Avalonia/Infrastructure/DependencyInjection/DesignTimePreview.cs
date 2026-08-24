@@ -1,13 +1,7 @@
-using Avalonia;
-using Avalonia.Threading;
 using k8s;
 using k8s.Models;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
-using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
-using KubeUI.Avalonia.Features.Resources.List.ViewModels;
 using KubeUI.Avalonia.Infrastructure.Presentation;
-using KubeUI.Kubernetes;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace KubeUI.Avalonia.Infrastructure.DependencyInjection;
 
@@ -57,12 +51,12 @@ internal static class DesignTimePreview
         Dispatcher.UIThread.Post(() => _ = action());
     }
 
-    public static async Task<ClusterWorkspaceViewModel> CreateClusterAsync<TResource>()
+    public static async Task<ClusterWorkspace> CreateClusterAsync<TResource>()
         where TResource : class, IKubernetesObject<V1ObjectMeta>, new()
     {
         var cluster = Services.GetRequiredService<ClusterWorkspaceCatalog>().GetDefault();
         await cluster.Connect().ConfigureAwait(false);
-        await cluster.SeedResource<TResource>().ConfigureAwait(false);
+        await cluster.Runtime.SeedResource<TResource>().ConfigureAwait(false);
         return cluster;
     }
 

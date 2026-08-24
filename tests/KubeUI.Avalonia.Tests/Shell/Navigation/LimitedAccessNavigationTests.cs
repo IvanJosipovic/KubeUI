@@ -1,69 +1,53 @@
-using Avalonia;
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
+using KubernetesClient.Informer.Client;
+using KubeUI.Avalonia.Shell.Navigation;
 using KubeUI.Avalonia.Tests.Infra;
-using KubeUI.Kubernetes.Tests.Infra;
-using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Shell.Navigation;
 
-public sealed class LimitedAccessNavigationTests : AvaloniaTestBase
+public sealed class LimitedAccessNavigationTests
 {
-    [AvaloniaFact]
-    public async Task limited_access_with_namespace_fallback_shows_namespaced_resources_in_navigation()
+    [AvaloniaTheory, KubernetesBackendData]
+    [Trait("Category", "Kind")]
+    public async Task limited_access_with_listable_namespace_shows_namespaced_resources_in_navigation(KubernetesBackend backend)
     {
-        await using var harness = new MockClusterScenarioHarness();
-        await harness.InitializeAsync();
+        var services = Application.Current.GetTestServices();
+        var workspace = await Application.Current.CreateClusterAsync(config =>
+        {
+            config.Type = backend;
+            config.AuthenticatedUser = KubernetesRbac.ServiceAccountUser;
+            config.InitialYaml = KubernetesTestData.LimitedAccessWithNamespacePermissions;
+        });
 
-        var runtime = await harness.CreateLimitedAccessClusterAsync(includeNamespaceFallback: true);
-        var services = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
-        var workspace = ActivatorUtilities.CreateInstance<ClusterWorkspaceViewModel>(services, runtime);
         var navigation = services.GetRequiredService<NavigationViewModel>();
-
-        navigation.ClusterCatalog.Clusters.Add(workspace);
-        await workspace.EnsureWorkspaceStateInitializedAsync();
-        Dispatcher.UIThread.RunJobs();
 
         var clusterNode = navigation.Clusters.Single(x => x.Cluster == workspace);
         await navigation.TreeViewSelectionChangedAsync(clusterNode);
 
-        await WaitForAsync(() =>
-        {
-            Dispatcher.UIThread.RunJobs();
-            return FindResourceLink(clusterNode, "Pods") != null
-                && FindResourceLink(clusterNode, "Deployments") != null;
-        }, timeoutMs: 30000);
+        await TestWait.UntilAsync(
+            () =>
+            {
+                Dispatcher.UIThread.RunJobs();
+                return FindResourceLink(clusterNode, "Pods") != null
+                    && FindResourceLink(clusterNode, "Deployments") != null;
+            },
+            30000,
+            TestContext.Current.CancellationToken);
 
-        workspace.GetResourceConfig<k8s.Models.V1Pod>().PermissionsLoaded.ShouldBeTrue();
-        workspace.GetResourceConfig<k8s.Models.V1Pod>().CanListAndWatch.ShouldBeTrue();
-        workspace.GetResourceConfig<k8s.Models.V1Deployment>().PermissionsLoaded.ShouldBeTrue();
-        workspace.GetResourceConfig<k8s.Models.V1Deployment>().CanListAndWatch.ShouldBeTrue();
+        workspace.GetResourceConfig(GroupApiVersionKind.From<k8s.Models.V1Pod>()).PermissionsLoaded.ShouldBeTrue();
+        workspace.GetResourceConfig(GroupApiVersionKind.From<k8s.Models.V1Pod>()).CanListAndWatch.ShouldBeTrue();
+        workspace.GetResourceConfig(GroupApiVersionKind.From<k8s.Models.V1Deployment>()).PermissionsLoaded.ShouldBeTrue();
+        workspace.GetResourceConfig(GroupApiVersionKind.From<k8s.Models.V1Deployment>()).CanListAndWatch.ShouldBeTrue();
 
         var podsLink = FindResourceLink(clusterNode, "Pods");
         var deploymentsLink = FindResourceLink(clusterNode, "Deployments");
         podsLink.ShouldNotBeNull();
         deploymentsLink.ShouldNotBeNull();
 
-        await navigation.TreeViewSelectionChangedAsync(podsLink);
-        await navigation.TreeViewSelectionChangedAsync(deploymentsLink);
-    }
-
-    private static async Task WaitForAsync(Func<bool> predicate, int timeoutMs)
-    {
-        var deadline = DateTime.UtcNow.AddMilliseconds(timeoutMs);
-
-        while (DateTime.UtcNow < deadline)
-        {
-            if (predicate())
-            {
-                return;
-            }
-
-            await Task.Delay(100);
-        }
-
-        predicate().ShouldBeTrue();
+        await navigation.TreeViewSelectionChangedAsync(podsLink).WaitAsync(TestContext.Current.CancellationToken);
+        await navigation.TreeViewSelectionChangedAsync(deploymentsLink).WaitAsync(TestContext.Current.CancellationToken);
     }
 
     private static ResourceNavigationLink? FindResourceLink(ClusterNavigationNode root, string name)

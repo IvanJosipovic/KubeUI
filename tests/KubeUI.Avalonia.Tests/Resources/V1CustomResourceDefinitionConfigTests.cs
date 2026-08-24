@@ -1,22 +1,22 @@
-using Avalonia;
 using Avalonia.Headless.XUnit;
 using k8s;
 using k8s.Models;
+using KubeUI.Kubernetes;
 using KubeUI.Avalonia.Resources;
+using KubeUI.Avalonia.Features.Resources.List;
 using KubeUI.Avalonia.Tests.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Tests.Infra;
-using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Resources;
 
-public class V1CustomResourceDefinitionConfigTests : AvaloniaTestBase
+public class V1CustomResourceDefinitionConfigTests
 {
     [AvaloniaFact]
-    public void list_crd_command_does_not_throw_when_type_is_unavailable()
+    public async Task list_crd_command_does_not_throw_when_type_is_unavailable()
     {
-        var cluster = new TestCluster().CreateWorkspace();
-        var services = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
+        var services = Application.Current.GetTestServices();
+        var cluster = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         var config = ActivatorUtilities.CreateInstance<V1CustomResourceDefinitionConfig>(services);
         config.Initialize(cluster);
 
@@ -29,11 +29,41 @@ public class V1CustomResourceDefinitionConfigTests : AvaloniaTestBase
     }
 
     [AvaloniaFact]
-    public void generate_uses_humanized_plural_kind_for_display_name()
+    public void list_items_action_has_list_icon()
     {
-        var cluster = new TestCluster().CreateWorkspace();
-        var services = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
-        var config = ActivatorUtilities.CreateInstance<CRDResourceConfig<TestCustomResource>>(services);
+        var services = Application.Current.GetTestServices();
+        var config = ActivatorUtilities.CreateInstance<V1CustomResourceDefinitionConfig>(services);
+
+        var action = config.GetCustomMenuItems(Array.Empty<V1CustomResourceDefinition>()).Single();
+
+        action.FluentIcon.ShouldBe(FluentIcons.Common.Icon.AppsList);
+    }
+
+    [AvaloniaFact]
+    public async Task generic_resource_list_initializes_with_its_resource_kind()
+    {
+        var services = Application.Current.GetTestServices();
+        var cluster = await Application.Current.CreateClusterAsync();
+        var config = ActivatorUtilities.CreateInstance<CRDResourceConfig>(services);
+        config.Initialize(cluster);
+        config.Configure(ClusterWorkspaceTestCustomResourceDefinitionFactory.Create("example.com", "examples", "someString"));
+        cluster.AddResourceConfigForTest(config);
+        cluster.Runtime.ModelCatalog.RegisterCustomResourceDefinition(config.Kind);
+
+        var vm = services.GetRequiredService<ResourceListViewModel<GenericKubernetesObject>>();
+        vm.InitializeResource(cluster, config.Kind);
+
+        vm.Kind.ShouldBe(config.Kind);
+        vm.ResourceConfig.ShouldBe(config);
+    }
+
+    [AvaloniaFact]
+    public async Task configure_uses_humanized_plural_kind_for_display_name()
+    {
+        var services = Application.Current.GetTestServices();
+
+        var cluster = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var config = ActivatorUtilities.CreateInstance<CRDResourceConfig>(services);
         config.Initialize(cluster);
 
         var crd = new V1CustomResourceDefinition
@@ -58,7 +88,7 @@ public class V1CustomResourceDefinitionConfigTests : AvaloniaTestBase
             }
         };
 
-        config.Generate(crd);
+        config.Configure(crd);
 
         config.Name.ShouldBe("Ingress Classes");
     }
@@ -68,6 +98,7 @@ public class V1CustomResourceDefinitionConfigTests : AvaloniaTestBase
     {
         var column = new ResourceListColumn<NullableValueResource, int>
         {
+            Key = "value",
             Name = "Value",
             Field = resource => resource.Value!.Value,
         };
@@ -80,11 +111,63 @@ public class V1CustomResourceDefinitionConfigTests : AvaloniaTestBase
     }
 
     [AvaloniaFact]
-    public void crd_generator_uses_nullable_value_types_for_optional_printer_columns()
+    public async Task crd_printer_column_returns_empty_value_for_missing_annotation_key()
     {
-        var cluster = new TestCluster().CreateWorkspace();
-        var services = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
-        var config = ActivatorUtilities.CreateInstance<CRDResourceConfig<TestCustomResourceWithSpec>>(services);
+        var services = Application.Current.GetTestServices();
+        var cluster = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var config = ActivatorUtilities.CreateInstance<CRDResourceConfig>(services);
+        config.Initialize(cluster);
+
+        var crd = new V1CustomResourceDefinition
+        {
+            Spec = new V1CustomResourceDefinitionSpec
+            {
+                Group = "example.com",
+                Scope = "Namespaced",
+                Names = new V1CustomResourceDefinitionNames
+                {
+                    Kind = "IngressClass",
+                    Plural = "ingressclasses",
+                },
+                Versions =
+                [
+                    new V1CustomResourceDefinitionVersion
+                    {
+                        Name = "v1",
+                        Storage = true,
+                        Served = true,
+                        AdditionalPrinterColumns =
+                        [
+                            new V1CustomResourceColumnDefinition
+                            {
+                                Name = "External Name",
+                                JsonPath = ".metadata.annotations['crossplane.io/external-name']",
+                                Type = "string",
+                            }
+                        ]
+                    }
+                ]
+            }
+        };
+
+        config.Configure(crd);
+
+        var column = config.Columns().Single(x => x.Name == "External Name");
+        var resource = KubernetesJson.Deserialize<GenericKubernetesObject>("""{"apiVersion":"example.com/v1","kind":"IngressClass","metadata":{"annotations":{}}}""");
+
+        Should.NotThrow(() => column.ValueAccessor.GetValue(resource));
+        column.ValueAccessor.GetValue(resource).ShouldBe("");
+        column.DisplayValue(resource).ShouldBeEmpty();
+        column.SortKey(resource).ShouldBe("");
+    }
+
+    [AvaloniaFact]
+    public async Task crd_printer_column_reads_values_from_json_documents()
+    {
+        var services = Application.Current.GetTestServices();
+        var clusterConfig = services.GetRequiredService<TestClusterConfig>();
+        var cluster = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var config = ActivatorUtilities.CreateInstance<CRDResourceConfig>(services);
         config.Initialize(cluster);
 
         var crd = new V1CustomResourceDefinition
@@ -119,12 +202,65 @@ public class V1CustomResourceDefinitionConfigTests : AvaloniaTestBase
             }
         };
 
-        config.Generate(crd);
+        config.Configure(crd);
 
         var column = config.Columns().Single(x => x.Name == "Revision");
         column.ValueType.ShouldBe(typeof(int?));
-        column.ValueAccessor.GetValue(new TestCustomResourceWithSpec()).ShouldBeNull();
-        column.DisplayValue(new TestCustomResourceWithSpec()).ShouldBeEmpty();
+        column.ValueAccessor.GetValue(KubernetesJson.Deserialize<GenericKubernetesObject>("""{"spec":{"revision":42}}""")).ShouldBe(42);
+        column.ValueAccessor.GetValue(KubernetesJson.Deserialize<GenericKubernetesObject>("""{"spec":{}}""")).ShouldBeNull();
+        column.DisplayValue(KubernetesJson.Deserialize<GenericKubernetesObject>("""{"spec":{}}""")).ShouldBe("");
+    }
+
+    [AvaloniaFact]
+    public void crd_printer_columns_exclude_default_creation_timestamp_column()
+    {
+        var services = Application.Current.GetTestServices();
+        var cluster = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var config = ActivatorUtilities.CreateInstance<CRDResourceConfig>(services);
+        config.Initialize(cluster);
+
+        var crd = new V1CustomResourceDefinition
+        {
+            Spec = new V1CustomResourceDefinitionSpec
+            {
+                Group = "example.com",
+                Scope = "Namespaced",
+                Names = new V1CustomResourceDefinitionNames
+                {
+                    Kind = "Example",
+                    Plural = "examples",
+                },
+                Versions =
+                [
+                    new V1CustomResourceDefinitionVersion
+                    {
+                        Name = "v1",
+                        Storage = true,
+                        Served = true,
+                        AdditionalPrinterColumns =
+                        [
+                            new V1CustomResourceColumnDefinition
+                            {
+                                Name = "Created",
+                                JsonPath = ".metadata.creationTimestamp",
+                                Type = "date",
+                            },
+                            new V1CustomResourceColumnDefinition
+                            {
+                                Name = "Revision",
+                                JsonPath = ".spec.revision",
+                                Type = "integer",
+                            },
+                        ],
+                    },
+                ],
+            },
+        };
+
+        config.Configure(crd);
+
+        config.Columns().ShouldNotContain(column => column.Name == "Created");
+        config.Columns().ShouldContain(column => column.Name == "Revision");
     }
 }
 

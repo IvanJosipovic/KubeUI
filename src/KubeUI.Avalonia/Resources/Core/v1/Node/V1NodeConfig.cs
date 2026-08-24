@@ -1,14 +1,11 @@
-using Avalonia.Controls;
 using FluentAvalonia.UI.Controls;
 using FluentIcons.Common;
 using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using k8s;
 using k8s.Models;
-using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Features.Resources.Common;
 using KubeUI.Avalonia.Infrastructure;
-using KubeUI.Avalonia.Resources.Core.v1.Node.Views;
 using KubeUI.Kubernetes;
 
 namespace KubeUI.Avalonia.Resources.Core.v1.Node;
@@ -27,46 +24,53 @@ public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>
             NameColumn(SortDirection.Ascending),
             new ResourceListColumn<V1Node, string>()
             {
-                Name = "Instance Type",
+                Key = "instance-type",
+                Name = Assets.Resources.V1NodeConfig_Instance_Type!,
                 Field = x => x.Metadata.Labels.TryGetValue("node.kubernetes.io/instance-type", out var value) ? value : "",
                 Width = nameof(DataGridLengthUnitType.SizeToCells)
             },
             new ResourceListColumn<V1Node, decimal>()
             {
-                Name = "CPU",
+                Key = "cpu",
+                Name = Assets.Resources.V1NodeConfig_CPU!,
                 Field = x => x.Status?.Capacity?.TryGetValue("cpu", out var value) == true ? value.ToDecimal() : 0,
                 Display = x => x.Status?.Capacity?.TryGetValue("cpu", out var value) == true ? value.ToDecimal().ToString("0.##") + "c" : "0c",
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },
             new ResourceListColumn<V1Node, decimal>()
             {
-                Name = "Memory",
+                Key = "memory",
+                Name = Assets.Resources.V1NodeConfig_Memory!,
                 Field = x => x.Status?.Capacity?.TryGetValue("memory", out var value) == true ? value.ToDecimal() : 0,
                 Display = x => x.Status?.Capacity?.TryGetValue("memory", out var value) == true ? (value.ToDecimal() / 1048576 / 1024).ToString("0.##") + "Gi" : "0Gi",
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },
             new ResourceListColumn<V1Node, decimal>()
             {
-                Name = "Disk",
+                Key = "disk",
+                Name = Assets.Resources.V1NodeConfig_Disk!,
                 Field = x => x.Status?.Capacity?.TryGetValue("ephemeral-storage", out var value) == true ? value.ToDecimal() : 0,
                 Display = x => x.Status?.Capacity?.TryGetValue("ephemeral-storage", out var value) == true ? (value.ToDecimal() / 1048576 / 1024).ToString("0.##") + "Gi" : "0Gi",
                 Width = nameof(DataGridLengthUnitType.SizeToCells)
             },
             new ResourceListColumn<V1Node, string>()
             {
-                Name = "Taints",
-                Field = x => x?.Spec?.Taints?.Select(x => $"{x.Key}={x.Effect}").Aggregate((x,y) => $"{x}, {y}") ?? "",
+                Key = "taints",
+                Name = Assets.Resources.V1NodeConfig_Taints!,
+                Field = x => x?.Spec?.Taints is { Count: > 0 } taints ? string.Join(", ", taints.Select(x => $"{x.Key}={x.Effect}")) : "",
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },
             new ResourceListColumn<V1Node, string>()
             {
-                Name = "Version",
+                Key = "version",
+                Name = Assets.Resources.V1NodeConfig_Version!,
                 Field = x => x.Status.NodeInfo.KubeletVersion,
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },
             new ResourceListColumn<V1Node, string>()
             {
-                Name = "Status",
+                Key = "status",
+                Name = Assets.Resources.V1NodeConfig_Status!,
                 Field = x => x.Status.Conditions.FirstOrDefault(x => x.Type == "Ready")?.Reason ?? "",
                 Width = nameof(DataGridLengthUnitType.SizeToCells)
             },
@@ -79,21 +83,21 @@ public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>
         return [
             new()
             {
-                Header = "Cordon",
+                Title = Assets.Resources.V1NodeConfig_MenuItem_Cordon,
                 FluentIcon = Icon.Stop,
                 Command = CordonNodeCommand,
                 CommandParameter = selectedItems?.ToList(),
             },
             new()
             {
-                Header = "UnCordon",
+                Title = Assets.Resources.V1NodeConfig_MenuItem_UnCordon,
                 FluentIcon = Icon.Play,
                 Command = UnCordonNodeCommand,
                 CommandParameter = selectedItems?.ToList(),
             },
             new()
             {
-                Header = "Drain",
+                Title = Assets.Resources.V1NodeConfig_MenuItem_Drain,
                 FluentIcon = Icon.ArrowSync,
                 Command = DrainNodeCommand,
                 CommandParameter = selectedItems?.ToList(),
@@ -106,10 +110,10 @@ public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>
     {
         ContentDialogSettings settings = new()
         {
-            Title = Assets.Resources.ResourceListViewModel_CordonNode_Title,
-            Content = string.Format(Assets.Resources.ResourceListViewModel_CordonNode_Content, items.Count),
-            PrimaryButtonText = Assets.Resources.ResourceListViewModel_CordonNode_Primary,
-            SecondaryButtonText = Assets.Resources.ResourceListViewModel_CordonNode_Secondary,
+            Title = Assets.Resources.ResourceListView_CordonNode_Title,
+            Content = string.Format(Assets.Resources.ResourceListView_CordonNode_Content, items.Count),
+            PrimaryButtonText = Assets.Resources.ResourceListView_CordonNode_Primary,
+            SecondaryButtonText = Assets.Resources.ResourceListView_CordonNode_Secondary,
             DefaultButton = FAContentDialogButton.Secondary
         };
 
@@ -129,7 +133,7 @@ public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>
             {
                 try
                 {
-                    await Cluster.Client.CoreV1.PatchNodeAsync(new V1Patch(patch, V1Patch.PatchType.MergePatch), item.Name(), item.Namespace());
+                    await Cluster.Runtime.Client.CoreV1.PatchNodeAsync(new V1Patch(patch, V1Patch.PatchType.MergePatch), item.Name(), item.Namespace());
                 }
                 catch (Exception ex)
                 {
@@ -141,7 +145,7 @@ public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>
 
     private bool CanCordonNode(IList? items)
     {
-        return items?.Count > 0 && Cluster.CanI<V1Node>(Verb.Patch);
+        return items?.Count > 0 && Cluster.Runtime.Permissions.CanI<V1Node>(Verb.Patch);
     }
 
     [RelayCommand(CanExecute = nameof(CanUnCordonNode))]
@@ -149,10 +153,10 @@ public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>
     {
         ContentDialogSettings settings = new()
         {
-            Title = Assets.Resources.ResourceListViewModel_UnCordonNode_Title,
-            Content = string.Format(Assets.Resources.ResourceListViewModel_UnCordonNode_Content, items.Count),
-            PrimaryButtonText = Assets.Resources.ResourceListViewModel_UnCordonNode_Primary,
-            SecondaryButtonText = Assets.Resources.ResourceListViewModel_UnCordonNode_Secondary,
+            Title = Assets.Resources.ResourceListView_UnCordonNode_Title,
+            Content = string.Format(Assets.Resources.ResourceListView_UnCordonNode_Content, items.Count),
+            PrimaryButtonText = Assets.Resources.ResourceListView_UnCordonNode_Primary,
+            SecondaryButtonText = Assets.Resources.ResourceListView_UnCordonNode_Secondary,
             DefaultButton = FAContentDialogButton.Secondary
         };
 
@@ -172,7 +176,7 @@ public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>
             {
                 try
                 {
-                    await Cluster.Client.CoreV1.PatchNodeAsync(new V1Patch(patch, V1Patch.PatchType.MergePatch), item.Name(), item.Namespace());
+                    await Cluster.Runtime.Client.CoreV1.PatchNodeAsync(new V1Patch(patch, V1Patch.PatchType.MergePatch), item.Name(), item.Namespace());
                 }
                 catch (Exception ex)
                 {
@@ -184,7 +188,7 @@ public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>
 
     private bool CanUnCordonNode(IList? items)
     {
-        return items?.Count > 0 && Cluster.CanI<V1Node>(Verb.Patch);
+        return items?.Count > 0 && Cluster.Runtime.Permissions.CanI<V1Node>(Verb.Patch);
     }
 
     [RelayCommand(CanExecute = nameof(CanDrainNode))]
@@ -192,10 +196,10 @@ public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>
     {
         ContentDialogSettings settings = new()
         {
-            Title = Assets.Resources.ResourceListViewModel_DrainNode_Title,
-            Content = string.Format(Assets.Resources.ResourceListViewModel_DrainNode_Content, items.Count),
-            PrimaryButtonText = Assets.Resources.ResourceListViewModel_DrainNode_Primary,
-            SecondaryButtonText = Assets.Resources.ResourceListViewModel_DrainNode_Secondary,
+            Title = Assets.Resources.ResourceListView_DrainNode_Title,
+            Content = string.Format(Assets.Resources.ResourceListView_DrainNode_Content, items.Count),
+            PrimaryButtonText = Assets.Resources.ResourceListView_DrainNode_Primary,
+            SecondaryButtonText = Assets.Resources.ResourceListView_DrainNode_Secondary,
             DefaultButton = FAContentDialogButton.Secondary
         };
 
@@ -215,10 +219,10 @@ public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>
             {
                 try
                 {
-                    await Cluster.Client.CoreV1.PatchNodeAsync(new V1Patch(patch, V1Patch.PatchType.MergePatch), item.Name(), item.Namespace());
+                    await Cluster.Runtime.Client.CoreV1.PatchNodeAsync(new V1Patch(patch, V1Patch.PatchType.MergePatch), item.Name(), item.Namespace());
 
-                    await Cluster.SeedResource<V1Pod>(true);
-                    var pods = Cluster.GetResourceList<V1Pod>();
+                    await Cluster.Runtime.SeedResource<V1Pod>(true);
+                    var pods = Cluster.Runtime.GetResourceList<V1Pod>();
 
                     foreach (var pod in pods)
                     {
@@ -245,7 +249,7 @@ public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>
 
                             try
                             {
-                                await Cluster.Client.CoreV1.CreateNamespacedPodEvictionAsync(evict, pod.Metadata.Name, pod.Metadata.NamespaceProperty);
+                                await Cluster.Runtime.Client.CoreV1.CreateNamespacedPodEvictionAsync(evict, pod.Metadata.Name, pod.Metadata.NamespaceProperty);
                             }
                             catch (Exception ex)
                             {
@@ -264,10 +268,8 @@ public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>
 
     private bool CanDrainNode(IList? items)
     {
-        return items?.Count > 0 && Cluster.CanI<V1Node>(Verb.Patch);
+        return items?.Count > 0 && Cluster.Runtime.Permissions.CanI<V1Node>(Verb.Patch);
     }
 
     public override Control[] Properties(V1Node resource) => [new PropertiesView()];
 }
-
-

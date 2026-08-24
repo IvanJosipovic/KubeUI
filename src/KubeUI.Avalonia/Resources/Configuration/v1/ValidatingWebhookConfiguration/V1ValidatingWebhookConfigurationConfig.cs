@@ -1,6 +1,4 @@
-using Avalonia.Controls;
 using k8s.Models;
-using KubeUI.Avalonia.Resources.Configuration.v1.ValidatingWebhookConfiguration.Views;
 
 namespace KubeUI.Avalonia.Resources.Configuration.v1.ValidatingWebhookConfiguration;
 
@@ -10,7 +8,7 @@ public sealed partial class V1ValidatingWebhookConfigurationConfig : ResourceCon
         : base(serviceProvider)
     {
     }
-    public override string Category => CategoryString("ResourceConfig_Category_Configuration", "Configuration");
+    public override string Category => Assets.Resources.ResourceConfig_Category_Configuration!;
 
     public override int Order => 10;
 
@@ -20,7 +18,8 @@ public sealed partial class V1ValidatingWebhookConfigurationConfig : ResourceCon
             NameColumn(SortDirection.Ascending),
             new ResourceListColumn<V1ValidatingWebhookConfiguration, int>()
             {
-                Name = "Webhooks",
+                Key = "webhooks",
+                Name = Assets.Resources.V1ValidatingWebhookConfigurationConfig_Webhooks!,
                 Field = x => x.Webhooks.Count,
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },
@@ -31,4 +30,3 @@ public sealed partial class V1ValidatingWebhookConfigurationConfig : ResourceCon
     public override Control[] Properties(V1ValidatingWebhookConfiguration resource) => [new PropertiesView()];
 
 }
-

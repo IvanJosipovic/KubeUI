@@ -1,6 +1,4 @@
-using Avalonia.Controls;
 using k8s.Models;
-using KubeUI.Avalonia.Resources.AccessControl.v1.ServiceAccount.Views;
 
 namespace KubeUI.Avalonia.Resources.AccessControl.v1.ServiceAccount;
 
@@ -12,7 +10,7 @@ public sealed partial class V1ServiceAccountConfig : ResourceConfigBase<V1Servic
     }
 
     public override bool IsNamespaced => true;
-    public override string Category => CategoryString("ResourceConfig_Category_AccessControl", "Access Control");
+    public override string Category => Assets.Resources.ResourceConfig_Category_AccessControl!;
     public override int Order => 0;
 
     public override IList<IResourceListColumn> Columns()
@@ -26,4 +24,3 @@ public sealed partial class V1ServiceAccountConfig : ResourceConfigBase<V1Servic
 
     public override Control[] Properties(V1ServiceAccount resource) => [new PropertiesView()];
 }
-

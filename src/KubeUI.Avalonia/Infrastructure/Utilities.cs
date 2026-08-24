@@ -1,190 +1,25 @@
-﻿using System.Linq.Expressions;
-using System.Reflection;
-using System.Text.Json;
 using Avalonia.Controls.Notifications;
+using Avalonia.Input;
+using Avalonia.Xaml.Interactivity;
 using k8s;
 using k8s.Autorest;
 using k8s.Models;
-using KubernetesClient.Informer.Client;
-using KubeUI.Avalonia.Infrastructure;
+using KubeUI.Kubernetes;
 
 namespace KubeUI.Avalonia.Infrastructure;
 
 public static class Utilities
 {
-    public static string GetKubeAssetPath(Type type)
+    public static T CloneObject<T>(T resource)
+        where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
-        const string infrastructure_componentsBasePath = "/Assets/kube/infrastructure_components/unlabeled/";
+        ArgumentNullException.ThrowIfNull(resource);
 
-        if (type == typeof(V1Node))
-        {
-            return infrastructure_componentsBasePath + "node.svg";
-        }
-
-        if (type == typeof(Corev1Event))
-        {
-            return infrastructure_componentsBasePath + "etcd.svg";
-        }
-
-        const string resourceBasePath = "/Assets/kube/resources/unlabeled/";
-
-        if (type == typeof(V1ConfigMap))
-        {
-            return resourceBasePath + "cm.svg";
-        }
-
-        if (type == typeof(V1ClusterRoleBinding))
-        {
-            return resourceBasePath + "crb.svg";
-        }
-
-        if (type == typeof(V1CustomResourceDefinition))
-        {
-            return resourceBasePath + "crd.svg";
-        }
-
-        if (type == typeof(V1ClusterRole))
-        {
-            return resourceBasePath + "c-role.svg";
-        }
-
-        if (type == typeof(V1CronJob))
-        {
-            return resourceBasePath + "cronjob.svg";
-        }
-
-        if (type == typeof(V1Deployment))
-        {
-            return resourceBasePath + "deploy.svg";
-        }
-
-        if (type == typeof(V1DaemonSet))
-        {
-            return resourceBasePath + "ds.svg";
-        }
-
-        if (type == typeof(V1EndpointSlice))
-        {
-            return resourceBasePath + "ep.svg";
-        }
-
-        if (type == typeof(V1APIGroup)) // unsure on this one
-        {
-            return resourceBasePath + "group.svg";
-        }
-
-        if (type == typeof(V1HorizontalPodAutoscaler) || type == typeof(V2HorizontalPodAutoscaler))
-        {
-            return resourceBasePath + "hpa.svg";
-        }
-
-        if (type == typeof(V1Ingress))
-        {
-            return resourceBasePath + "ing.svg";
-        }
-
-        if (type == typeof(V1Job))
-        {
-            return resourceBasePath + "job.svg";
-        }
-
-        if (type == typeof(V1LimitRange))
-        {
-            return resourceBasePath + "limits.svg";
-        }
-
-        if (type == typeof(V1NetworkPolicy))
-        {
-            return resourceBasePath + "netpol.svg";
-        }
-
-        if (type == typeof(V1Namespace))
-        {
-            return resourceBasePath + "ns.svg";
-        }
-
-        if (type == typeof(V1Pod))
-        {
-            return resourceBasePath + "pod.svg";
-        }
-
-        if (type == typeof(V1PersistentVolume))
-        {
-            return resourceBasePath + "pv.svg";
-        }
-
-        if (type == typeof(V1PersistentVolumeClaim))
-        {
-            return resourceBasePath + "pvc.svg";
-        }
-
-        if (type == typeof(V1ResourceQuota))
-        {
-            return resourceBasePath + "quota.svg";
-        }
-
-        if (type == typeof(V1RoleBinding))
-        {
-            return resourceBasePath + "rb.svg";
-        }
-
-        if (type == typeof(V1Role))
-        {
-            return resourceBasePath + "role.svg";
-        }
-
-        if (type == typeof(V1ReplicaSet))
-        {
-            return resourceBasePath + "rs.svg";
-        }
-
-        if (type == typeof(V1ServiceAccount))
-        {
-            return resourceBasePath + "sa.svg";
-        }
-
-        if (type == typeof(V1StorageClass))
-        {
-            return resourceBasePath + "sc.svg";
-        }
-
-        if (type == typeof(V1Secret))
-        {
-            return resourceBasePath + "secret.svg";
-        }
-
-        if (type == typeof(V1StatefulSet))
-        {
-            return resourceBasePath + "sts.svg";
-        }
-
-        if (type == typeof(V1Service))
-        {
-            return resourceBasePath + "svc.svg";
-        }
-
-        if (type == typeof(V1UserSubject)) // unsure on this one
-        {
-            return resourceBasePath + "user.svg";
-        }
-
-        return "/Assets/kube/blank.svg";
-    }
-
-    public static IKubernetesObject<V1ObjectMeta> CloneObject(object obj)
-    {
-        var json = KubernetesJson.Serialize(obj);
-
-        return (IKubernetesObject<V1ObjectMeta>)DeserializeKubeJson(json, obj.GetType());
-    }
-
-    private static readonly MethodInfo s_deserializeJson = typeof(KubernetesJson).GetMethod(nameof(KubernetesJson.Deserialize), BindingFlags.Static | BindingFlags.Public, [typeof(string), typeof(JsonSerializerOptions)]);
-
-    public static object DeserializeKubeJson(string json, Type type)
-    {
-        var fooRef = s_deserializeJson.MakeGenericMethod(type);
-
-        return fooRef.Invoke(null, [json, null]) ?? throw new InvalidOperationException("Deserialization returned null.");
+        return resource is GenericKubernetesObject generic
+            ? (T)(object)(KubernetesJson.Deserialize<GenericKubernetesObject>(KubernetesJson.Serialize(generic))
+                ?? throw new InvalidOperationException("Deserialization returned null."))
+            : KubernetesJson.Deserialize<T>(KubernetesJson.Serialize(resource))
+                ?? throw new InvalidOperationException("Deserialization returned null.");
     }
 
     public static void HandleException(ILogger logger, INotificationManager notificationManage, Exception ex, string message, NotificationType type = NotificationType.Error, bool sendNotification = false)
@@ -357,10 +192,24 @@ public static class Utilities
     private static bool IsWrapperException(Exception ex)
     {
         return ex is AggregateException
-            or TargetInvocationException
             || ex.Message.Contains("Exception during deserialization", StringComparison.Ordinal)
             || ex.Message.Contains("Exception during serialization", StringComparison.Ordinal);
     }
 
-}
+    public static T Behaviors<T>(this T obj, params BehaviorCollection behaviorCollection) where T : AvaloniaObject
+    {
+        var collection = obj.GetValue(Interaction.BehaviorsProperty);
+        collection ??= [];
 
+        collection.AddRange(behaviorCollection);
+        obj.SetValue(Interaction.BehaviorsProperty, collection);
+
+        return obj;
+    }
+
+    public static T KeyBindings<T>(this T obj, params KeyBinding[] keyBindings) where T : IInputElement
+    {
+        obj.KeyBindings.AddRange(keyBindings);
+        return obj;
+    }
+}
