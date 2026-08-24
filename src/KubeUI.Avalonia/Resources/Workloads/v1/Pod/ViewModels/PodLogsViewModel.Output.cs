@@ -24,7 +24,7 @@ public sealed partial class PodLogsViewModel
             DispatcherPriority.Background);
     }
 
-    private void DecrementActiveReaders(CancellationTokenSource connectionCts)
+    private bool DecrementActiveReaders(CancellationTokenSource connectionCts)
     {
         var isCurrentConnection = IsCurrentConnection(connectionCts);
         if (_readerCounts.TryGetValue(connectionCts, out var remainingReaders))
@@ -55,12 +55,13 @@ public sealed partial class PodLogsViewModel
 
         if (!isCurrentConnection)
         {
-            return;
+            return false;
         }
 
-        if (Interlocked.Decrement(ref _activeReaderCount) > 0)
+        var isLastActiveReader = Interlocked.Decrement(ref _activeReaderCount) == 0;
+        if (!isLastActiveReader)
         {
-            return;
+            return false;
         }
 
         Dispatcher.UIThread.InvokeAsync(
@@ -72,6 +73,8 @@ public sealed partial class PodLogsViewModel
                 }
             },
             DispatcherPriority.Background);
+
+        return true;
     }
 
     private string BuildSuggestedFileName()
@@ -171,23 +174,27 @@ public sealed partial class PodLogsViewModel
 
             FlushOutputEntries(pendingOutput, connectionCts, outputGeneration);
 
-            if (streamEnded && appendedOutput && ShouldReconnectAfterStreamEnd(reader, option, connectionResolution.Pod, cancellationToken))
+            var isLastActiveReader = DecrementActiveReaders(connectionCts);
+            if (streamEnded && appendedOutput && ShouldReconnectAfterStreamEnd(reader, option, connectionResolution.Pod, cancellationToken, isLastActiveReader))
             {
                 ScheduleReconnectAfterStreamEnd(connectionCts);
             }
-
-            DecrementActiveReaders(connectionCts);
         }
     }
 
-    private bool ShouldReconnectAfterStreamEnd(StreamReader reader, PodLogReadOptions option, V1Pod resolvedPod, CancellationToken cancellationToken)
+    private bool ShouldReconnectAfterStreamEnd(
+        StreamReader reader,
+        PodLogReadOptions option,
+        V1Pod resolvedPod,
+        CancellationToken cancellationToken,
+        bool isLastActiveReader)
     {
         return option.Follow
             && !option.Previous
             && !cancellationToken.IsCancellationRequested
             && !reader.BaseStream.CanSeek
             && !IsTerminalPod(resolvedPod)
-            && Volatile.Read(ref _activeReaderCount) == 1;
+            && isLastActiveReader;
     }
 
     private static bool IsTerminalPod(V1Pod pod)
