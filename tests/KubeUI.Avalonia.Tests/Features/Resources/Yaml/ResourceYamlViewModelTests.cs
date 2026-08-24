@@ -5,6 +5,7 @@ using Avalonia.Controls.Primitives.PopupPositioning;
 using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
 using Avalonia.Input;
+using Avalonia.LogicalTree;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Avalonia.Xaml.Interactivity;
@@ -272,6 +273,42 @@ public class ResourceYamlViewModelTests
 
         vm.HideNoisyFields = true;
         await WaitForUiAsync(() => GetNoisyFoldings().All(folding => folding.IsFolded));
+    }
+
+    [AvaloniaFact]
+    public async Task ResourceYamlView_RepeatedDocumentRefreshesDoNotRetainDetachedFoldingMarkers()
+    {
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
+
+        var cluster = await Application.Current.CreateClusterAsync();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
+        vm.Initialize(cluster, new V1Pod { Metadata = new V1ObjectMeta { Name = "test" } });
+
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
+        view.DataContext = vm;
+        window.Content = view;
+        window.Show();
+
+        await TestApplicationExtensions.WaitForUiAsync();
+
+        var editor = view.FindControl<TextEditor>("Editor");
+        editor.ShouldNotBeNull();
+        var foldingMargin = editor.TextArea.LeftMargins.OfType<FoldingMargin>().Single();
+
+        vm.YamlDocument.Text = string.Join(
+            "\n",
+            Enumerable.Range(0, 300).Select(i => $"value-{i}: {i}"));
+        await TestApplicationExtensions.WaitForUiAsync();
+
+        for (var i = 0; i < 200; i++)
+        {
+            editor.ScrollToLine(i);
+            await TestApplicationExtensions.WaitForUiAsync();
+        }
+
+        ((ILogical)foldingMargin).LogicalChildren
+            .Count()
+            .ShouldBeLessThan(100);
     }
 
     [AvaloniaFact]
