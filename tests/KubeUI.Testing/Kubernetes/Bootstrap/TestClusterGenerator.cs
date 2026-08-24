@@ -275,7 +275,7 @@ public sealed class TestClusterGenerator
                 client = CreateClient(
                     clientConfig,
                     terminalHandler: null,
-                    CreateHttpHandlers(config, out _, includeConfiguredHandlers: false));
+                    CreateHttpHandlers(config, out _, includeHandlerFactory: false));
 
                 return await CreateTestClusterAsync(
                     client,
@@ -287,7 +287,7 @@ public sealed class TestClusterGenerator
                     clientFactory: configuration => CreateClient(
                         configuration,
                         terminalHandler: null,
-                        CreateHttpHandlers(config, out _, includeConfiguredHandlers: false))).ConfigureAwait(false);
+                        CreateHttpHandlers(config, out _, includeHandlerFactory: false))).ConfigureAwait(false);
             }
             catch
             {
@@ -371,13 +371,16 @@ public sealed class TestClusterGenerator
     private static IReadOnlyCollection<DelegatingHandler> CreateHttpHandlers(
         TestClusterConfig config,
         out TestConditionHandler conditionHandler,
-        bool includeConfiguredHandlers = true)
+        bool includeConfiguredHandlers = true,
+        bool includeHandlerFactory = true)
     {
         conditionHandler = new TestConditionHandler(config.EffectiveResponseLatency, config.ThrowOnConnect);
         List<DelegatingHandler> handlers = [conditionHandler];
         if (includeConfiguredHandlers)
         {
-            handlers.AddRange(config.HttpHandlerFactory?.Invoke() ?? config.HttpHandlers);
+            handlers.AddRange(includeHandlerFactory
+                ? config.HttpHandlerFactory?.Invoke() ?? config.HttpHandlers
+                : config.HttpHandlers);
         }
 
         return handlers;
