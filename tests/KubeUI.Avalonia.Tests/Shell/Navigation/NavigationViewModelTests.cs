@@ -901,6 +901,32 @@ public class NavigationViewModelTests
     }
 
     [AvaloniaFact]
+    public async Task cluster_navigation_does_not_expand_until_workspace_connection_completes()
+    {
+        var services = Application.Current.GetTestServices();
+        var workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var permissionRefreshRelease = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
+        workspace.AddResourceConfigForTest(new SlowPermissionResourceConfig(
+            typeof(TestPermissionResourceGamma),
+            "Gamma Permission Resource",
+            permissionRefreshRelease.Task));
+
+        using var vm = CreateViewModel();
+        vm.ClusterCatalog.Clusters.Add(workspace);
+        await TestApplicationExtensions.WaitForUiAsync();
+
+        var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
+        await vm.TreeViewSelectionChangedAsync(clusterNode);
+
+        await WaitForAsync(() => workspace.Runtime.Connected);
+        await TestApplicationExtensions.WaitForUiAsync();
+        clusterNode.IsExpanded.ShouldBeFalse();
+
+        permissionRefreshRelease.TrySetResult(null);
+        await WaitForAsync(() => workspace.Runtime.Status == ClusterStatus.Connected && clusterNode.IsExpanded);
+    }
+
+    [AvaloniaFact]
     public async Task connect_path_publishes_ready_resources_without_waiting_for_unrelated_slow_permission_refresh()
     {
         var services = Application.Current.GetTestServices();

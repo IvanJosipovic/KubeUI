@@ -333,9 +333,9 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
                 node.UpdateConnectionNavigation(runtime.Connected);
             }
 
-            if (runtime.Connected && runtime.Status == ClusterStatus.Connected)
+            if (runtime.Connected
+                && runtime.Status == ClusterStatus.Connected)
             {
-                node.IsExpanded = true;
                 var resourceConfigs = cluster.GetResourceConfigs().ToArray();
                 foreach (var resourceConfig in resourceConfigs)
                 {

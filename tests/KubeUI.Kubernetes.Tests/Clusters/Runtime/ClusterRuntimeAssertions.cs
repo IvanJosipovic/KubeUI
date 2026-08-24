@@ -557,6 +557,10 @@ public abstract class ClusterRuntimeAssertions
                 () => harness.Cluster.ModelCatalog.IsCustomResource(kind),
                 TimeSpan.FromSeconds(10),
                 cancellationToken: TestContext.Current.CancellationToken);
+            await TestWait.UntilAsync(
+                () => harness.Cluster.IsResourceNamespaced(kind),
+                TimeSpan.FromSeconds(10),
+                cancellationToken: TestContext.Current.CancellationToken);
 
             var requestCount = harness.FakeApi?.RequestUris.Count ?? 0;
             using var yamlStream = new MemoryStream(Encoding.UTF8.GetBytes(KubernetesTestData.CustomResourceYaml));
