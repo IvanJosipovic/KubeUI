@@ -1,5 +1,6 @@
 using KubeUI.AI.Agents;
 using KubeUI.Avalonia.Features.AI;
+using KubeUI.Avalonia.Infrastructure.Mcp;
 using KubeUI.Avalonia.Options;
 using KubeUI.Avalonia.Services.Settings;
 using System.Threading.Channels;
@@ -147,6 +148,46 @@ public sealed class AgentChatViewModelTests
 
         agent.Options!.Context.ShouldBe(context);
         await vm.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task send_passes_live_mcp_endpoint_when_server_state_has_one()
+    {
+        await using var session = new TestSession("session-mcp-live", []);
+        var agent = new TestAgent(session);
+        var settingsService = CreateSettingsService(new Settings { McpServerEnabled = true, McpServerPort = 62888 });
+        var serverState = new McpServerState();
+        serverState.SetEndpoint("http://127.0.0.1:54321/mcp");
+        var vm = new AgentChatViewModel(new TestRegistry(agent), settingsService.Object, mcpServerState: serverState)
+        {
+            Prompt = "List pods"
+        };
+
+        await vm.SendCommand.ExecuteAsync(null);
+
+        agent.Options!.McpEndpoint.ShouldBe("http://127.0.0.1:54321/mcp");
+        await vm.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task send_falls_back_to_configured_mcp_endpoint_without_live_server_state()
+    {
+        await using var session = new TestSession("session-mcp-configured", []);
+        var agent = new TestAgent(session);
+        var settingsService = CreateSettingsService(new Settings { McpServerEnabled = true, McpServerPort = 62888 });
+        var vm = new AgentChatViewModel(new TestRegistry(agent), settingsService.Object) { Prompt = "List pods" };
+
+        await vm.SendCommand.ExecuteAsync(null);
+
+        agent.Options!.McpEndpoint.ShouldBe("http://127.0.0.1:62888/mcp");
+        await vm.DisposeAsync();
+    }
+
+    private static Mock<ISettingsService> CreateSettingsService(Settings settings)
+    {
+        var settingsService = new Mock<ISettingsService>();
+        settingsService.SetupGet(service => service.Settings).Returns(settings);
+        return settingsService;
     }
 
     [Fact]

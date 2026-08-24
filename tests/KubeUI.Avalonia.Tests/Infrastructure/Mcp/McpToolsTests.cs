@@ -1,6 +1,7 @@
 using System.Reflection;
 using k8s.Models;
 using KubeUI.Avalonia.Infrastructure.Mcp;
+using KubeUI.Avalonia.Options;
 using KubeUI.Avalonia.Shell.Navigation;
 using KubeUI.Avalonia.Services.Settings;
 using KubeUI.AI.Agents;
@@ -142,15 +143,53 @@ public sealed class McpToolsTests
         session.VerifyNoOtherCalls();
     }
 
+    [Fact]
+    public void get_endpoint_prefers_live_endpoint_over_configured_settings()
+    {
+        var settingsService = new Mock<ISettingsService>(MockBehavior.Strict);
+        settingsService.SetupGet(service => service.Settings).Returns(new Settings
+        {
+            McpServerEnabled = true,
+            McpServerPort = 62888
+        });
+        var serverState = new McpServerState();
+        serverState.SetEndpoint("http://127.0.0.1:54321/mcp");
+        var tools = CreateTools(
+            new Mock<IMcpClusterSession>(MockBehavior.Strict),
+            settingsService: settingsService.Object,
+            serverState: serverState);
+
+        tools.GetEndpoint().ShouldBe("http://127.0.0.1:54321/mcp");
+    }
+
+    [Fact]
+    public void get_endpoint_uses_configured_endpoint_when_server_state_has_no_live_endpoint()
+    {
+        var settingsService = new Mock<ISettingsService>(MockBehavior.Strict);
+        settingsService.SetupGet(service => service.Settings).Returns(new Settings
+        {
+            McpServerEnabled = true,
+            McpServerPort = 62888
+        });
+        var tools = CreateTools(
+            new Mock<IMcpClusterSession>(MockBehavior.Strict),
+            settingsService: settingsService.Object);
+
+        tools.GetEndpoint().ShouldBe("http://127.0.0.1:62888/mcp");
+    }
+
     private static McpTools CreateTools(
         Mock<IMcpClusterSession> session,
         IAgentPermissionService? permissionService = null,
-        IResourceNavigationService? resourceNavigationService = null)
+        IResourceNavigationService? resourceNavigationService = null,
+        ISettingsService? settingsService = null,
+        McpServerState? serverState = null)
         => new(
             new Mock<IClusterRuntimeCatalog>().Object,
             session.Object,
             new Mock<IKubernetesYamlSerializer>().Object,
-            new Mock<ISettingsService>().Object,
+            settingsService ?? new Mock<ISettingsService>().Object,
             permissionService,
-            resourceNavigationService);
+            resourceNavigationService,
+            serverState);
 }

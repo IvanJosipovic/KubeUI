@@ -1,4 +1,6 @@
 using System.Diagnostics;
+using System.Net;
+using System.Net.Sockets;
 using System.Reflection;
 using Avalonia;
 using Avalonia.Controls;
@@ -21,6 +23,8 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Hosting.Server;
+using Microsoft.AspNetCore.Hosting.Server.Features;
 using NReco.Logging.File;
 using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
@@ -41,10 +45,10 @@ internal static class Program
 
         EnsureMacOsPath();
 
-        var host = CreateHostBuilder(args).Build();
-        ConfigureMcpEndpoint(host);
-        host.Services.ConfigureKubeUIKubernetesJsonLogging();
-        host.Start();
+        var application = CreateHostBuilder(args).Build();
+        ConfigureMcpEndpoint(application);
+        application.Services.ConfigureKubeUIKubernetesJsonLogging();
+        IHost host = StartHost(application, args);
 
         var builder = CreateAppBuilder(host.Services);
 
@@ -57,7 +61,10 @@ internal static class Program
             Task.Run(async () =>
             {
                 await host.StopAsync().ConfigureAwait(false);
-                await host.DisposeAsync().ConfigureAwait(false);
+                if (host is IAsyncDisposable asyncDisposable)
+                    await asyncDisposable.DisposeAsync().ConfigureAwait(false);
+                else
+                    host.Dispose();
             }).GetAwaiter().GetResult();
         }
     }
@@ -134,8 +141,10 @@ internal static class Program
             builder.Services.AddMcpServer()
                 .WithHttpTransport(options => options.Stateless = true)
                 .WithTools<McpTools>();
-            var port = mcpPortOverride ?? McpServerConfiguration.GetValidatedPort(settings.Settings);
-            builder.WebHost.ConfigureKestrel(options => options.ListenLocalhost(port));
+            var requestedPort = mcpPortOverride ?? settings.Settings.McpServerPort;
+            builder.WebHost.ConfigureKestrel(options => options.Listen(
+                IPAddress.Loopback,
+                McpServerConfiguration.ResolveAvailablePort(requestedPort)));
         }
 
         if (includeOptionalServices && settings.Settings.TelemetryEnabled)
@@ -166,6 +175,55 @@ internal static class Program
         var application = builder.Build();
         ConfigureMcpEndpoint(application);
         return application;
+    }
+
+    /// <summary>
+    /// Starts the host, publishing the live MCP endpoint once the server is bound. A failed MCP port bind
+    /// must never crash the application, so the host is rebuilt with the embedded MCP server disabled.
+    /// </summary>
+    internal static IHost StartHost(IHost host, string[] args, bool includeOptionalServices = true)
+    {
+        try
+        {
+            host.Start();
+            PublishMcpEndpoint(host);
+            return host;
+        }
+        catch (Exception exception) when (IsSocketBindFailure(exception))
+        {
+            host.Dispose();
+
+            var fallback = CreateHostBuilder(args, includeOptionalServices, mcpEnabledOverride: false).Build();
+            fallback.Start();
+            return fallback;
+        }
+    }
+
+    internal static void PublishMcpEndpoint(IHost host)
+    {
+        if (!host.Services.GetRequiredService<ISettingsService>().Settings.McpServerEnabled)
+            return;
+
+        var address = host.Services.GetRequiredService<IServer>().Features
+            .Get<IServerAddressesFeature>()?.Addresses
+            .FirstOrDefault(candidate => candidate.StartsWith($"http://{McpServerConfiguration.Host}:", StringComparison.Ordinal));
+        if (address is null)
+            return;
+
+        host.Services.GetRequiredService<McpServerState>().SetEndpoint(address + McpServerConfiguration.Path);
+    }
+
+    private static bool IsSocketBindFailure(Exception exception)
+    {
+        switch (exception)
+        {
+            case SocketException:
+                return true;
+            case AggregateException aggregate:
+                return aggregate.InnerExceptions.Any(IsSocketBindFailure);
+            default:
+                return exception.InnerException is not null && IsSocketBindFailure(exception.InnerException);
+        }
     }
 
     private static IServiceCollection AddFileLogging(this IServiceCollection services)

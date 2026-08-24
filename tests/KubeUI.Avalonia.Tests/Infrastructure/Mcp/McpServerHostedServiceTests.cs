@@ -1,5 +1,6 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Net;
 using System.Net.Sockets;
 using KubeUI.AI.Permissions;
 using KubeUI.Avalonia.Infrastructure.Mcp;
@@ -130,6 +131,104 @@ public sealed class McpServerHostTests
         finally
         {
             await application.StopAsync(CancellationToken.None);
+        }
+    }
+
+    [Fact]
+    public async Task enabled_mcp_host_falls_back_to_available_port_when_configured_port_is_blocked()
+    {
+        using var blocker = new TcpListener(IPAddress.Loopback, 0);
+        blocker.Start();
+        var blockedPort = ((IPEndPoint)blocker.LocalEndpoint).Port;
+        var settings = new Settings
+        {
+            McpServerEnabled = true,
+            McpServerPort = blockedPort
+        };
+        var settingsService = new Mock<ISettingsService>();
+        settingsService.SetupGet(service => service.Settings).Returns(settings);
+        var builder = Program.CreateHostBuilder([], includeOptionalServices: false, configureServices: services =>
+        {
+            services.Replace(ServiceDescriptor.Singleton(settingsService.Object));
+            services.Replace(ServiceDescriptor.Singleton(new Mock<IClusterRuntimeCatalog>(MockBehavior.Strict).Object));
+            services.Replace(ServiceDescriptor.Singleton(new Mock<IMcpClusterSession>(MockBehavior.Strict).Object));
+            services.Replace(ServiceDescriptor.Singleton(new Mock<IKubernetesYamlSerializer>(MockBehavior.Strict).Object));
+            services.Replace(ServiceDescriptor.Singleton(new Mock<IAgentPermissionService>(MockBehavior.Strict).Object));
+        }, mcpPortOverride: blockedPort, mcpEnabledOverride: true);
+        using var application = Program.CreateAndConfigureMcpEndpoint(builder);
+
+        try
+        {
+            using var host = Program.StartHost(application, [], includeOptionalServices: false);
+
+            var serverState = host.Services.GetRequiredService<McpServerState>();
+            serverState.Endpoint.ShouldNotBeNull();
+            serverState.Endpoint.ShouldNotBe(McpServerConfiguration.GetEndpoint(settings));
+            serverState.Endpoint.ShouldStartWith($"http://{McpServerConfiguration.Host}:");
+            new Uri(serverState.Endpoint).PathAndQuery.ShouldBe(McpServerConfiguration.Path);
+
+            using var client = new HttpClient();
+            using var request = new HttpRequestMessage(HttpMethod.Post, serverState.Endpoint);
+            request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("text/event-stream"));
+            request.Headers.Add("MCP-Protocol-Version", "2025-06-18");
+            request.Content = JsonContent.Create(new
+            {
+                jsonrpc = "2.0",
+                id = 3,
+                method = "initialize",
+                @params = new
+                {
+                    protocolVersion = "2025-06-18",
+                    capabilities = new { },
+                    clientInfo = new { name = "KubeUI.Tests", version = "1.0" }
+                }
+            });
+
+            using var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
+            response.IsSuccessStatusCode.ShouldBeTrue(await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
+
+            await host.StopAsync(TestContext.Current.CancellationToken);
+        }
+        finally
+        {
+            blocker.Stop();
+        }
+    }
+
+    [Fact]
+    public async Task start_host_publishes_configured_endpoint_as_live_endpoint()
+    {
+        var port = GetAvailablePort();
+        var settings = new Settings
+        {
+            McpServerEnabled = true,
+            McpServerPort = port
+        };
+        var settingsService = new Mock<ISettingsService>();
+        settingsService.SetupGet(service => service.Settings).Returns(settings);
+        var builder = Program.CreateHostBuilder([], includeOptionalServices: false, configureServices: services =>
+        {
+            services.Replace(ServiceDescriptor.Singleton(settingsService.Object));
+            services.Replace(ServiceDescriptor.Singleton(new Mock<IClusterRuntimeCatalog>(MockBehavior.Strict).Object));
+            services.Replace(ServiceDescriptor.Singleton(new Mock<IMcpClusterSession>(MockBehavior.Strict).Object));
+            services.Replace(ServiceDescriptor.Singleton(new Mock<IKubernetesYamlSerializer>(MockBehavior.Strict).Object));
+            services.Replace(ServiceDescriptor.Singleton(new Mock<IAgentPermissionService>(MockBehavior.Strict).Object));
+        }, mcpPortOverride: port, mcpEnabledOverride: true);
+        using var application = Program.CreateAndConfigureMcpEndpoint(builder);
+
+        try
+        {
+            using var host = Program.StartHost(application, [], includeOptionalServices: false);
+
+            application.Services.GetRequiredService<McpServerState>().Endpoint
+                .ShouldBe(McpServerConfiguration.GetEndpoint(settings));
+
+            await host.StopAsync(TestContext.Current.CancellationToken);
+        }
+        finally
+        {
+            await application.DisposeAsync();
         }
     }
 
