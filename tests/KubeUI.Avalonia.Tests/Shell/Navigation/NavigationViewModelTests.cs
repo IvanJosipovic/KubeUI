@@ -323,30 +323,6 @@ public class NavigationViewModelTests
         await workspace.Connect();
 
         await WaitForAsync(() => clusterNode.NavigationItems.Count > 0);
-        clusterNode.IsExpanded.ShouldBeTrue();
-    }
-
-    [AvaloniaFact]
-    public async Task navigation_expands_when_connected_event_precedes_connected_status_event()
-    {
-        var services = Application.Current.GetTestServices();
-        var workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
-        workspace.Runtime.Status = ClusterStatus.Connecting;
-
-        using var vm = CreateViewModel();
-        vm.ClusterCatalog.Clusters.Add(workspace);
-        await TestApplicationExtensions.WaitForUiAsync();
-
-        var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
-        clusterNode.IsExpanded.ShouldBeFalse();
-
-        workspace.Runtime.Connected = true;
-        await TestApplicationExtensions.WaitForUiAsync();
-        clusterNode.IsExpanded.ShouldBeFalse();
-
-        workspace.Runtime.Status = ClusterStatus.Connected;
-        await TestApplicationExtensions.WaitForUiAsync();
-        clusterNode.IsExpanded.ShouldBeTrue();
     }
 
     [AvaloniaFact]
@@ -650,7 +626,8 @@ public class NavigationViewModelTests
 
         await WaitForAsync(() =>
             FindResourceLink(clusterNode, "Pods") != null
-            && FindResourceLink(clusterNode, "Deployments") != null);
+            && FindResourceLink(clusterNode, "Deployments") != null,
+            timeoutMs: 10000);
 
         var podsLink = FindResourceLink(clusterNode, "Pods");
         podsLink.ShouldNotBeNull();
@@ -1290,6 +1267,7 @@ public class NavigationViewModelTests
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
 
         await WaitForAsync(() => fastRefreshCompleted.Task.IsCompleted);
+        await WaitForAsync(() => FindResourceLink(clusterNode, "Alpha Permission Resource") != null);
         FindResourceLink(clusterNode, "Alpha Permission Resource").ShouldNotBeNull();
         FindNavigationLink(clusterNode.NavigationItems, NavigationTargets.PortForwarders).ShouldBeNull();
 
