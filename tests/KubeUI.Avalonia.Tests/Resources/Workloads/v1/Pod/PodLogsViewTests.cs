@@ -27,7 +27,7 @@ public sealed class PodLogsViewTests
     {
         using var workspace = await Application.Current.CreateClusterAsync();
         IServiceProvider services = Application.Current.GetTestServices();
-        PodLogsViewModel viewModel = new(
+        using PodLogsViewModel viewModel = new(
             services.GetRequiredService<ILogger<PodLogsViewModel>>(),
             services.GetRequiredService<ISettingsService>(),
             new NoOpPodLogExportService(),
@@ -70,7 +70,7 @@ public sealed class PodLogsViewTests
     {
         using var workspace = await Application.Current.CreateClusterAsync();
         IServiceProvider services = Application.Current.GetTestServices();
-        PodLogsViewModel viewModel = new(
+        using PodLogsViewModel viewModel = new(
             services.GetRequiredService<ILogger<PodLogsViewModel>>(),
             services.GetRequiredService<ISettingsService>(),
             new NoOpPodLogExportService(),
@@ -134,7 +134,7 @@ public sealed class PodLogsViewTests
     {
         using var workspace = await Application.Current.CreateClusterAsync();
         IServiceProvider services = Application.Current.GetTestServices();
-        PodLogsViewModel viewModel = new(
+        using PodLogsViewModel viewModel = new(
             services.GetRequiredService<ILogger<PodLogsViewModel>>(),
             services.GetRequiredService<ISettingsService>(),
             new NoOpPodLogExportService(),
@@ -187,7 +187,7 @@ public sealed class PodLogsViewTests
     {
         using var workspace = await Application.Current.CreateClusterAsync();
         IServiceProvider services = Application.Current.GetTestServices();
-        PodLogsViewModel viewModel = new(
+        using PodLogsViewModel viewModel = new(
             services.GetRequiredService<ILogger<PodLogsViewModel>>(),
             services.GetRequiredService<ISettingsService>(),
             new NoOpPodLogExportService(),
@@ -240,7 +240,7 @@ public sealed class PodLogsViewTests
     {
         using var workspace = await Application.Current.CreateClusterAsync();
         IServiceProvider services = Application.Current.GetTestServices();
-        PodLogsViewModel viewModel = new(
+        using PodLogsViewModel viewModel = new(
             services.GetRequiredService<ILogger<PodLogsViewModel>>(),
             services.GetRequiredService<ISettingsService>(),
             new NoOpPodLogExportService(),

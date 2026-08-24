@@ -28,6 +28,7 @@ public sealed class PodLogsLauncher(
 
         if (!factory.AddToBottom(viewModel))
         {
+            viewModel.Dispose();
             return;
         }
 

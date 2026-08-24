@@ -23,6 +23,8 @@ public sealed class PodLogsLauncherTests
         V1Pod pod = CreatePod("rejected");
 
         await launcher.LaunchAsync(workspace, pod, "Pod");
+        using PodLogsViewModel viewModel = factory.FindDockableById($"PodLogsViewModel-{workspace.Runtime.Name}-Pod-default-rejected-all")
+            .ShouldBeOfType<PodLogsViewModel>();
         await Should.NotThrowAsync(() => launcher.LaunchAsync(workspace, pod, "Pod"));
     }
 
@@ -38,7 +40,7 @@ public sealed class PodLogsLauncherTests
         await launcher.LaunchAsync(workspace, pod, "Pod");
 
         IDockable dockable = factory.FindDockableById($"PodLogsViewModel-{workspace.Runtime.Name}-Pod-default-accepted-all").ShouldNotBeNull();
-        PodLogsViewModel viewModel = dockable.ShouldBeOfType<PodLogsViewModel>();
+        using PodLogsViewModel viewModel = dockable.ShouldBeOfType<PodLogsViewModel>();
         viewModel.Cluster.ShouldBe(workspace.Runtime);
         viewModel.Object.ShouldBe(pod);
         viewModel.ContainerName.ShouldBeEmpty();
