@@ -327,6 +327,29 @@ public class NavigationViewModelTests
     }
 
     [AvaloniaFact]
+    public async Task navigation_expands_when_connected_event_precedes_connected_status_event()
+    {
+        var services = Application.Current.GetTestServices();
+        var workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        workspace.Runtime.Status = ClusterStatus.Connecting;
+
+        using var vm = CreateViewModel();
+        vm.ClusterCatalog.Clusters.Add(workspace);
+        await TestApplicationExtensions.WaitForUiAsync();
+
+        var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
+        clusterNode.IsExpanded.ShouldBeFalse();
+
+        workspace.Runtime.Connected = true;
+        await TestApplicationExtensions.WaitForUiAsync();
+        clusterNode.IsExpanded.ShouldBeFalse();
+
+        workspace.Runtime.Status = ClusterStatus.Connected;
+        await TestApplicationExtensions.WaitForUiAsync();
+        clusterNode.IsExpanded.ShouldBeTrue();
+    }
+
+    [AvaloniaFact]
     public async Task initial_custom_resource_definitions_populate_navigation_after_connect()
     {
         var crd = NavigationTestCustomResourceDefinitionFactory.Create(

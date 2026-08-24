@@ -331,11 +331,11 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
                     runtime.Connected,
                     node.NavigationItems.Count);
                 node.UpdateConnectionNavigation(runtime.Connected);
+            }
 
-                if (runtime.Connected && runtime.Status == ClusterStatus.Connected)
-                {
-                    node.IsExpanded = true;
-                }
+            if (runtime.Connected && runtime.Status == ClusterStatus.Connected)
+            {
+                node.IsExpanded = true;
             }
 
             if (runtime.Connected
