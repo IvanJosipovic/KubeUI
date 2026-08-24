@@ -27,11 +27,13 @@ public sealed partial class PodLogsViewModel
     private bool DecrementActiveReaders(CancellationTokenSource connectionCts)
     {
         var isCurrentConnection = IsCurrentConnection(connectionCts);
+        var isLastReaderForConnection = false;
         if (_readerCounts.TryGetValue(connectionCts, out var remainingReaders))
         {
             remainingReaders = _readerCounts.AddOrUpdate(connectionCts, 0, static (_, count) => count - 1);
             if (remainingReaders <= 0 && _readerCounts.TryRemove(connectionCts, out _))
             {
+                isLastReaderForConnection = true;
                 if (isCurrentConnection)
                 {
                     IsConnected = false;
@@ -58,8 +60,8 @@ public sealed partial class PodLogsViewModel
             return false;
         }
 
-        var isLastActiveReader = Interlocked.Decrement(ref _activeReaderCount) == 0;
-        if (!isLastActiveReader)
+        Interlocked.Decrement(ref _activeReaderCount);
+        if (!isLastReaderForConnection)
         {
             return false;
         }
