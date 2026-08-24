@@ -1,31 +1,30 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-    <LangVersion>latest</LangVersion>
-    <IsPackable>false</IsPackable>
-    <IsTestProject>true</IsTestProject>
-    <NoWarn>CS8602,CS8618,CS8625,CS8604,CS8605,CS8600</NoWarn>
-    <WarningsAsErrors>xUnit1031</WarningsAsErrors>
+    <OutputType>Exe</OutputType>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Avalonia.Headless.XUnit" Version="12.0.1" />
-    <PackageReference Include="Microsoft.Testing.Extensions.CodeCoverage" Version="18.6.2" />
-    <PackageReference Include="Shouldly" Version="4.3.0" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.5.0" />
-    <PackageReference Include="Moq" Version="4.20.72" />
+    <PackageReference Include="Avalonia.Headless.XUnit" Version="12.1.1" />
+    <PackageReference Include="dotacp.client" Version="2026.7.19" PrivateAssets="all" />
+    <PackageReference Include="dotacp.protocol" Version="2026.7.19" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.Testing.Extensions.CodeCoverage" Version="18.10.0" />
+    <PackageReference Include="Microsoft.Testing.Extensions.CrashDump" Version="2.3.3" />
+    <PackageReference Include="Microsoft.Testing.Extensions.HangDump" Version="2.3.3" />
+    <PackageReference Include="Microsoft.Testing.Extensions.TrxReport" Version="2.3.3" />
+    <PackageReference Include="StreamJsonRpc" Version="2.25.29" PrivateAssets="all" />
     <PackageReference Include="xunit.v3.mtp-v2" Version="3.2.2" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\KubeUI.Avalonia\KubeUI.Avalonia.csproj" />
+    <ProjectReference Include="..\..\src\KubeUI.Desktop\KubeUI.Desktop.csproj" />
+    <ProjectReference Include="..\..\src\KubeUI.Kubernetes\KubeUI.Kubernetes.csproj" />
+    <ProjectReference Include="..\KubeUI.Testing\KubeUI.Testing.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="KubeUI.Benchmarks" />
   </ItemGroup>
 
   <ItemGroup>
@@ -39,14 +38,13 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="..\Shared\Infra\TestClusterRuntime.cs" Link="Infra\TestClusterRuntime.cs" />
-    <Compile Include="..\KubeUI.Kubernetes.Tests\Infra\IClusterScenarioHarness.cs" Link="Infra\IClusterScenarioHarness.cs" />
-    <Compile Include="..\KubeUI.Kubernetes.Tests\Infra\MockClusterScenarioHarness.cs" Link="Infra\MockClusterScenarioHarness.cs" />
-    <Compile Include="..\KubeUI.Kubernetes.Tests\Infra\SharedScenarioData.cs" Link="Infra\SharedScenarioData.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectCapability Include="Avalonia" />
   </ItemGroup>
+
+  <Target Name="DisableAnalyzers" BeforeTargets="CoreCompile">
+    <ItemGroup>
+      <Analyzer Remove="@(Analyzer)" Condition="'%(Filename)' == 'Avalonia.Markup.Declarative.SourceGenerator'" />
+    </ItemGroup>
+  </Target>
 
 </Project>

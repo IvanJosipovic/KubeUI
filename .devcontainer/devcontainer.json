@@ -1,8 +1,9 @@
 {
+    "$schema": "https://raw.githubusercontent.com/devcontainers/spec/refs/heads/main/schemas/devContainer.schema.json",
     "name": ".NET in Codespaces",
     "image": "mcr.microsoft.com/devcontainers/dotnet:10.0",
     "features": {
-        "ghcr.io/devcontainers/features/docker-in-docker:2": {},
+        "ghcr.io/devcontainers/features/docker-in-docker:4": {},
         "ghcr.io/devcontainers/features/powershell:2": {},
         "ghcr.io/devcontainers/features/common-utils:2": {},
         "ghcr.io/devcontainers/features/git-lfs:1": {},
@@ -16,11 +17,12 @@
     "customizations": {
         "vscode": {
             "extensions": [
-                "GitHub.copilot",
+                "github.copilot-chat",
                 "GitHub.vscode-github-actions",
                 "ms-dotnettools.csdevkit",
-                "avaloniateam.vscode-avalonia",
-                "ms-vscode.PowerShell"
+                "ms-dotnettools.msbuild-binlog-analyzer",
+                "ms-vscode.PowerShell",
+                "openai.chatgpt"
             ]
         }
     },

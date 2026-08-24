@@ -1,12 +1,9 @@
-using System.Collections;
-using System.Collections.ObjectModel;
-using System.ComponentModel;
-using Avalonia;
-using Avalonia.Controls;
-using Avalonia.Media;
+using Avalonia.Controls.Documents;
+using Avalonia.Markup.Xaml.MarkupExtensions;
 using AvaloniaEdit.CodeCompletion;
 using AvaloniaEdit.Document;
 using AvaloniaEdit.Editing;
+using KubeUI.Avalonia.Styles;
 
 namespace KubeUI.Avalonia.Features.Resources.Yaml;
 
@@ -17,7 +14,7 @@ internal sealed class YamlCompletionData(YamlCompletionItemInfo item) : IComplet
     public object Content => item.Text;
 
     public object Description => item.Documentation == null
-        ? item.Type.Name
+        ? item.Schema.TypeName
         : YamlDocumentationViewFactory.Create(item.Documentation);
 
     public double Priority => 0;
@@ -32,7 +29,7 @@ internal sealed class YamlCompletionData(YamlCompletionItemInfo item) : IComplet
 
     private string GetInsertionText(TextArea textArea, ISegment completionSegment)
     {
-        if (!RequiresNestedBlock(item.Type))
+        if (!item.Schema.IsObject && !item.Schema.IsSequence)
         {
             return item.InsertionText;
         }
@@ -41,7 +38,7 @@ internal sealed class YamlCompletionData(YamlCompletionItemInfo item) : IComplet
         var keyIndent = completionSegment.Offset - line.Offset;
         var childIndent = keyIndent + 2;
         var newLine = textArea.Document.Text.Contains("\r\n", StringComparison.Ordinal) ? "\r\n" : "\n";
-        if (IsSequenceType(item.Type))
+        if (item.Schema.IsSequence)
         {
             return $"{item.Text}:{newLine}{new string(' ', childIndent)}- ";
         }
@@ -49,77 +46,6 @@ internal sealed class YamlCompletionData(YamlCompletionItemInfo item) : IComplet
         return $"{item.Text}:{newLine}{new string(' ', childIndent)}";
     }
 
-    private static bool IsSequenceType(Type type)
-    {
-        return type != typeof(string)
-            && typeof(IEnumerable).IsAssignableFrom(type)
-            && !typeof(IDictionary).IsAssignableFrom(type);
-    }
-
-    private static bool RequiresNestedBlock(Type type)
-    {
-        return !IsScalarType(type) && !typeof(IDictionary).IsAssignableFrom(type);
-    }
-
-    private static bool IsScalarType(Type type)
-    {
-        return type == typeof(string)
-            || type.IsPrimitive
-            || type.IsEnum
-            || type == typeof(decimal)
-            || type == typeof(DateTime)
-            || type == typeof(DateTimeOffset)
-            || type == typeof(Guid);
-    }
-}
-
-internal sealed class YamlDocumentationOverloadProvider : IOverloadProvider
-{
-    private readonly ObservableCollection<YamlDocumentationInfo> _items = [];
-    private int _selectedIndex;
-
-    public YamlDocumentationOverloadProvider(YamlDocumentationInfo documentation)
-    {
-        _items.Add(documentation);
-        _selectedIndex = 0;
-    }
-
-    public event PropertyChangedEventHandler? PropertyChanged;
-
-    public int SelectedIndex
-    {
-        get => _selectedIndex;
-        set
-        {
-            var nextIndex = Math.Clamp(value, 0, Math.Max(0, _items.Count - 1));
-            if (_selectedIndex == nextIndex)
-            {
-                return;
-            }
-
-            _selectedIndex = nextIndex;
-            RaiseAllPropertiesChanged();
-        }
-    }
-
-    public int Count => _items.Count;
-
-    public string CurrentIndexText => string.Empty;
-
-    public object? CurrentHeader => null;
-
-    public object CurrentContent => _items.Count == 0
-        ? string.Empty
-        : YamlDocumentationViewFactory.Create(_items[SelectedIndex]);
-
-    private void RaiseAllPropertiesChanged()
-    {
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(SelectedIndex)));
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Count)));
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(CurrentIndexText)));
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(CurrentHeader)));
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(CurrentContent)));
-    }
 }
 
 internal static class YamlDocumentationViewFactory
@@ -139,24 +65,22 @@ internal static class YamlDocumentationViewFactory
             TextWrapping = TextWrapping.Wrap,
         });
 
-        panel.Children.Add(new TextBlock
+        var typeText = new TextBlock
         {
-            Text = FormatTypeDisplayName(documentation.Type),
-            FontSize = 12,
+            Text = documentation.TypeName,
             Opacity = 0.78,
             TextWrapping = TextWrapping.Wrap,
             TextAlignment = TextAlignment.Left,
-        });
+        };
+        typeText
+            .FontFamily(new DynamicResourceExtension(Typography.CodeFontFamilyResourceKey))
+            .FontSize(new DynamicResourceExtension(Typography.CodeFontSizeResourceKey));
+        panel.Children.Add(typeText);
 
         if (!string.IsNullOrWhiteSpace(documentation.PropertySummary))
         {
             panel.Children.Add(CreateSummaryBlock(documentation.PropertySummary));
         }
-        else if (!string.IsNullOrWhiteSpace(documentation.TypeSummary))
-        {
-            panel.Children.Add(CreateSummaryBlock(documentation.TypeSummary));
-        }
-
         return panel;
     }
 
@@ -170,30 +94,4 @@ internal static class YamlDocumentationViewFactory
         };
     }
 
-    private static string FormatTypeDisplayName(Type type)
-    {
-        var normalizedType = Nullable.GetUnderlyingType(type) ?? type;
-        if (normalizedType.IsArray)
-        {
-            return $"{FormatTypeDisplayName(normalizedType.GetElementType() ?? typeof(object))}[]";
-        }
-
-        if (!normalizedType.IsGenericType)
-        {
-            return normalizedType.FullName ?? normalizedType.Name;
-        }
-
-        var genericTypeDefinition = normalizedType.GetGenericTypeDefinition();
-        var genericTypeName = genericTypeDefinition.FullName ?? genericTypeDefinition.Name;
-        var tickIndex = genericTypeName.IndexOf('`');
-        if (tickIndex >= 0)
-        {
-            genericTypeName = genericTypeName[..tickIndex];
-        }
-
-        var genericArguments = normalizedType.GetGenericArguments()
-            .Select(FormatTypeDisplayName);
-
-        return $"{genericTypeName}<{string.Join(", ", genericArguments)}>";
-    }
 }

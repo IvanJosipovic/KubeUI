@@ -1,12 +1,12 @@
 using Avalonia.Collections;
-using Avalonia.Controls;
 using FluentAvalonia.UI.Controls;
 using FluentIcons.Common;
 using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using k8s.Models;
+using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Features.Resources.Common;
-using KubeUI.Avalonia.Resources.Network.v1.Service.Views;
+using KubeUI.Avalonia.Infrastructure.Platform;
 using KubeUI.Kubernetes;
 
 namespace KubeUI.Avalonia.Resources.Network.v1.Service;
@@ -15,17 +15,20 @@ public sealed partial class V1ServiceConfig : ResourceConfigBase<V1Service>
 {
     private static readonly AuthorizationRequest[] s_portForwardAuthorizationRequests =
     [
-        new(typeof(V1Pod), Verb.Create, "portforward"),
-        new(typeof(V1EndpointSlice), Verb.List, null),
-        new(typeof(V1EndpointSlice), Verb.Watch, null),
+        new(GroupApiVersionKind.From<V1Pod>(), Verb.Create, "portforward"),
+        new(GroupApiVersionKind.From<V1EndpointSlice>(), Verb.List, null),
+        new(GroupApiVersionKind.From<V1EndpointSlice>(), Verb.Watch, null),
     ];
 
-    public V1ServiceConfig(IServiceProvider serviceProvider)
+    private readonly IPlatformServices _platformServices;
+
+    public V1ServiceConfig(IServiceProvider serviceProvider, IPlatformServices platformServices)
         : base(serviceProvider)
     {
+        _platformServices = platformServices;
     }
     public override bool IsNamespaced => true;
-    public override string Category => CategoryString("ResourceConfig_Category_Network", "Network");
+    public override string Category => Assets.Resources.ResourceConfig_Category_Network!;
     public override int Order => 0;
 
     public override IList<IResourceListColumn> Columns()
@@ -35,21 +38,24 @@ public sealed partial class V1ServiceConfig : ResourceConfigBase<V1Service>
             NamespaceColumn(),
             new ResourceListColumn<V1Service, string>()
             {
-                Name = "Type",
+                Key = "type",
+                Name = Assets.Resources.V1ServiceConfig_Type!,
                 Field = x => x.Spec.Type,
                 Width = nameof(DataGridLengthUnitType.SizeToCells)
             },
             new ResourceListColumn<V1Service, string>()
             {
-                Name = "Cluster IP",
+                Key = "cluster-ip",
+                Name = Assets.Resources.V1ServiceConfig_Cluster_IP!,
                 Field = x => x.Spec.ClusterIP,
                 Width = nameof(DataGridLengthUnitType.SizeToCells)
             },
             new ResourceListColumn<V1Service, int>()
             {
-                Name = "Ports",
-                Display = x => x.Spec?.Ports?.Select((a) => $"{a.Port}{(string.IsNullOrEmpty(a.Name) ? "" : ":" + a.Name)}/{a.Protocol}").Aggregate((a,b) => a + ", " + b) ?? "",
-                Field = x => x.Spec.Ports?.FirstOrDefault()?.Port ?? 0,
+                Key = "ports",
+                Name = Assets.Resources.V1ServiceConfig_Ports!,
+                Display = x => x.Spec?.Ports is { Count: > 0 } ports ? string.Join(", ", ports.Select(x => $"{x.Port}{(string.IsNullOrEmpty(x.Name) ? "" : ":" + x.Name)}/{x.Protocol}")) : "",
+                Field = x => x.Spec?.Ports?.FirstOrDefault()?.Port ?? 0,
                 Width = nameof(DataGridLengthUnitType.SizeToCells)
             },
             AgeColumn(),
@@ -68,13 +74,13 @@ public sealed partial class V1ServiceConfig : ResourceConfigBase<V1Service>
         return [
             new()
             {
-                Header = "Port Forwarding",
+                Title = Assets.Resources.V1ServiceConfig_MenuItem_PortForwarding,
                 FluentIcon = Icon.CloudFlow,
                 Items = selectedItem?.Spec?.Ports == null
                     ? null
                     : new AvaloniaList<MenuItemViewModel>(selectedItem.Spec.Ports.Select(p => new MenuItemViewModel()
                     {
-                        Header = $"{p.Name} - {p.Port}",
+                        Title = string.Format(Assets.Resources.V1ServiceConfig_MenuItem_PortFormat, p.Name, p.Port),
                         Command = PortForwardServiceCommand,
                         CommandParameter = new ArrayList { selectedItem, p },
                     }).ToList()),
@@ -87,14 +93,14 @@ public sealed partial class V1ServiceConfig : ResourceConfigBase<V1Service>
     {
         if (parameters[0] is V1Service service && parameters[1] is V1ServicePort containerPort)
         {
-            var pf = Cluster.AddServicePortForward(service.Namespace(), service.Name(), containerPort.Port);
+            var pf = Cluster.Runtime.AddServicePortForward(service.Namespace(), service.Name(), service.Uid(), containerPort.Port);
 
             ContentDialogSettings settings = new()
             {
-                Title = Assets.Resources.ResourceListViewModel_PortForward_Title,
-                Content = string.Format(Assets.Resources.ResourceListViewModel_PortForward_Content, containerPort.Port, pf.LocalPort),
-                PrimaryButtonText = Assets.Resources.ResourceListViewModel_PortForward_Primary,
-                SecondaryButtonText = Assets.Resources.ResourceListViewModel_PortForward_Secondary,
+                Title = Assets.Resources.ResourceListView_PortForward_Title,
+                Content = string.Format(Assets.Resources.ResourceListView_PortForward_Content, containerPort.Port, pf.LocalPort),
+                PrimaryButtonText = Assets.Resources.ResourceListView_PortForward_Primary,
+                SecondaryButtonText = Assets.Resources.ResourceListView_PortForward_Secondary,
                 DefaultButton = FAContentDialogButton.Secondary
             };
 
@@ -102,7 +108,7 @@ public sealed partial class V1ServiceConfig : ResourceConfigBase<V1Service>
 
             if (result == FAContentDialogResult.Primary)
             {
-                await App.TopLevel!.Launcher.LaunchUriAsync(new Uri($"http://localhost:{pf.LocalPort}"));
+                await _platformServices.LaunchUriAsync(new Uri($"http://localhost:{pf.LocalPort}"));
             }
         }
     }
@@ -113,9 +119,9 @@ public sealed partial class V1ServiceConfig : ResourceConfigBase<V1Service>
         {
             return servicePort?.Port > 0 &&
                    servicePort.Protocol == "TCP" &&
-                   Cluster.CanI<V1Pod>(Verb.Create, service.Namespace(), "portforward") &&
-                   Cluster.CanI<V1EndpointSlice>(Verb.List, service.Namespace()) &&
-                   Cluster.CanI<V1EndpointSlice>(Verb.Watch, service.Namespace());
+                   Cluster.Runtime.Permissions.CanI<V1Pod>(Verb.Create, service.Namespace(), "portforward") &&
+                   Cluster.Runtime.Permissions.CanI<V1EndpointSlice>(Verb.List, service.Namespace()) &&
+                   Cluster.Runtime.Permissions.CanI<V1EndpointSlice>(Verb.Watch, service.Namespace());
         }
 
         return false;
@@ -123,4 +129,3 @@ public sealed partial class V1ServiceConfig : ResourceConfigBase<V1Service>
 
     public override Control[] Properties(V1Service resource) => [new PropertiesView()];
 }
-

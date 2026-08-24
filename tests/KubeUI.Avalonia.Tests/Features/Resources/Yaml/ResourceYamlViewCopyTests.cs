@@ -1,26 +1,52 @@
-using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Input.Platform;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
+using k8s;
 using k8s.Models;
-using KubeUI.Avalonia.Infrastructure.DependencyInjection;
 using KubeUI.Avalonia.Tests.Infra;
-using Microsoft.Extensions.DependencyInjection;
+using KubeUI.Kubernetes;
+using KubernetesClient.Informer.Client;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Features.Resources.Yaml;
 
-public sealed class ResourceYamlViewCopyTests : AvaloniaTestBase
+public sealed class ResourceYamlViewCopyTests
 {
+    [AvaloniaFact]
+    public async Task Generic_resource_yaml_view_can_attach_to_logical_tree()
+    {
+        var services = Application.Current.GetTestServices();
+        using var cluster = await Application.Current.CreateClusterAsync();
+        var kind = new GroupApiVersionKind("tests.kubeui.com", "v1", "Widget", "widgets");
+        var viewModel = services.GetRequiredService<ResourceYamlViewModel>();
+        var resource = KubernetesJson.Deserialize<GenericKubernetesObject>("""
+            {"apiVersion":"tests.kubeui.com/v1","kind":"Widget","metadata":{"name":"widget","namespace":"default"}}
+            """);
+        viewModel.Initialize(cluster, resource);
+
+        var view = new ResourceYamlView { DataContext = viewModel };
+        var window = new Window { Content = view, Width = 800, Height = 600 };
+        try
+        {
+            window.Show();
+            await TestApplicationExtensions.WaitForUiAsync();
+            view.FindControl<AvaloniaEdit.TextEditor>("Editor").ShouldNotBeNull();
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
     [AvaloniaFact]
     public async Task Editor_copy_writes_selected_yaml_text_to_the_clipboard()
     {
-        var cluster = new TestCluster().CreateWorkspace();
-        await cluster.EnsureWorkspaceStateInitializedAsync();
+        var services = Application.Current.GetTestServices();
+        using var cluster = await Application.Current.CreateClusterAsync();
 
-        var viewModel = TestApp.CurrentServices!.GetRequiredService<ResourceYamlViewModel>();
+        var viewModel = services.GetRequiredService<ResourceYamlViewModel>();
         viewModel.Initialize(cluster, new V1Pod
         {
             Metadata = new V1ObjectMeta
@@ -46,17 +72,17 @@ public sealed class ResourceYamlViewCopyTests : AvaloniaTestBase
             window.Show();
             window.Measure(Size.Infinity);
             window.Arrange(new Rect(window.DesiredSize));
-            Dispatcher.UIThread.RunJobs();
-            Dispatcher.UIThread.RunJobs();
+            await TestApplicationExtensions.WaitForUiAsync();
+            await TestApplicationExtensions.WaitForUiAsync();
 
             var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
             editor.ShouldNotBeNull();
 
             editor.Select(0, editor.Text.Length);
-            Dispatcher.UIThread.RunJobs();
+            await TestApplicationExtensions.WaitForUiAsync();
 
             editor.Copy();
-            Dispatcher.UIThread.RunJobs();
+            await TestApplicationExtensions.WaitForUiAsync();
 
             var clipboard = TopLevel.GetTopLevel(window)?.Clipboard;
             clipboard.ShouldNotBeNull();
@@ -65,14 +91,14 @@ public sealed class ResourceYamlViewCopyTests : AvaloniaTestBase
             var stopwatch = System.Diagnostics.Stopwatch.StartNew();
             while (stopwatch.ElapsedMilliseconds < 2000)
             {
-                Dispatcher.UIThread.RunJobs();
+                await TestApplicationExtensions.WaitForUiAsync();
                 copiedText = await clipboard!.TryGetTextAsync();
                 if (copiedText == editor.Text)
                 {
                     break;
                 }
 
-                await Task.Delay(20);
+                await TestWait.NextPollAsync(TimeSpan.FromMilliseconds(20), TestContext.Current.CancellationToken);
             }
 
             copiedText.ShouldBe(editor.Text);
@@ -86,10 +112,10 @@ public sealed class ResourceYamlViewCopyTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task Editor_context_menu_copy_writes_selected_yaml_text_to_the_clipboard()
     {
-        var cluster = new TestCluster().CreateWorkspace();
-        await cluster.EnsureWorkspaceStateInitializedAsync();
+        var services = Application.Current.GetTestServices();
+        using var cluster = await Application.Current.CreateClusterAsync();
 
-        var viewModel = TestApp.CurrentServices!.GetRequiredService<ResourceYamlViewModel>();
+        var viewModel = services.GetRequiredService<ResourceYamlViewModel>();
         viewModel.Initialize(cluster, new V1Pod
         {
             Metadata = new V1ObjectMeta
@@ -115,21 +141,21 @@ public sealed class ResourceYamlViewCopyTests : AvaloniaTestBase
             window.Show();
             window.Measure(Size.Infinity);
             window.Arrange(new Rect(window.DesiredSize));
-            Dispatcher.UIThread.RunJobs();
-            Dispatcher.UIThread.RunJobs();
+            await TestApplicationExtensions.WaitForUiAsync();
+            await TestApplicationExtensions.WaitForUiAsync();
 
             var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
             editor.ShouldNotBeNull();
 
             editor.Select(0, editor.Text.Length);
-            Dispatcher.UIThread.RunJobs();
+            await TestApplicationExtensions.WaitForUiAsync();
 
             var contextMenu = editor.ContextMenu.ShouldBeOfType<ContextMenu>();
             var copyMenuItem = contextMenu.Items.OfType<MenuItem>()
                 .Single(item => string.Equals(item.Header?.ToString(), "Copy", StringComparison.Ordinal));
 
             copyMenuItem.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
-            Dispatcher.UIThread.RunJobs();
+            await TestApplicationExtensions.WaitForUiAsync();
 
             var clipboard = TopLevel.GetTopLevel(window)?.Clipboard;
             clipboard.ShouldNotBeNull();
@@ -138,14 +164,14 @@ public sealed class ResourceYamlViewCopyTests : AvaloniaTestBase
             var stopwatch = System.Diagnostics.Stopwatch.StartNew();
             while (stopwatch.ElapsedMilliseconds < 2000)
             {
-                Dispatcher.UIThread.RunJobs();
+                await TestApplicationExtensions.WaitForUiAsync();
                 copiedText = await clipboard!.TryGetTextAsync();
                 if (copiedText == editor.Text)
                 {
                     break;
                 }
 
-                await Task.Delay(20);
+                await TestWait.NextPollAsync(TimeSpan.FromMilliseconds(20), TestContext.Current.CancellationToken);
             }
 
             copiedText.ShouldBe(editor.Text);

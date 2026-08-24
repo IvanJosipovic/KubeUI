@@ -1,8 +1,5 @@
-using System.Globalization;
-using System.Text;
 using System.Text.Json;
 using Avalonia.Controls.Notifications;
-using Avalonia.Styling;
 using Dock.Model.Core;
 using FluentAvalonia.UI.Controls;
 using FluentIcons.Common;
@@ -12,15 +9,16 @@ using Humanizer;
 using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
-using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
+using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Features.Resources.Common;
+using KubeUI.Avalonia.Features.Resources.List;
 using KubeUI.Avalonia.Features.Resources.List.Controls;
-using KubeUI.Avalonia.Features.Resources.Properties.ViewModels;
-using KubeUI.Avalonia.Features.Resources.Yaml.ViewModels;
+using KubeUI.Avalonia.Features.Resources.Properties;
+using KubeUI.Avalonia.Features.Resources.Visualization;
+using KubeUI.Avalonia.Features.Resources.Yaml;
 using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Infrastructure.Docking;
 using KubeUI.Kubernetes;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace KubeUI.Avalonia.Resources;
 
@@ -41,20 +39,13 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
         _notificationManager = serviceProvider.GetRequiredService<INotificationManager>();
     }
 
-    public Type Type { get; } = typeof(T);
+    public virtual GroupApiVersionKind Kind => GroupApiVersionKind.From<T>();
 
-    public GroupApiVersionKind Kind { get; } = GroupApiVersionKind.From<T>();
-
-    public ClusterWorkspaceViewModel Cluster { get; private set; }
+    public ClusterWorkspace Cluster { get; private set; }
 
     public virtual string Name => Kind.Kind.Humanize(LetterCasing.Title).Pluralize();
 
-    public virtual string? Category { get; } = null;
-
-    protected static string CategoryString(string resourceKey, string fallback)
-    {
-        return Assets.Resources.ResourceManager.GetString(resourceKey, CultureInfo.CurrentUICulture) ?? fallback;
-    }
+    public virtual string? Category { get; }
 
     public virtual bool ShowNewResource { get; } = true;
 
@@ -62,13 +53,22 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
 
     public virtual bool IsCustomResource => false;
 
-    public bool CanListAndWatch { get; private set; }
+    public virtual bool SeedOnConnect => false;
 
-    public bool PermissionsLoaded { get; private set; }
+    public bool CanListAndWatch { get; protected set; }
+
+    public bool PermissionsLoaded { get; protected set; }
+
+    public Task SeedResource(bool waitForReady = false)
+    {
+        return IsCustomResource
+            ? Cluster.Runtime.SeedResource(Kind, waitForReady)
+            : Cluster.Runtime.SeedResource<T>(waitForReady);
+    }
 
     public virtual int Order { get; }
 
-    public virtual IStyle ListStyle() => new global::Avalonia.Styling.Style();
+    public virtual Style[] ListStyle() => [];
 
     public virtual IList<IResourceListColumn> Columns()
     {
@@ -100,11 +100,6 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
 
     public virtual IList<(Verb verb, string? subResource)> CustomPermissions() => [];
 
-    protected virtual Task RefreshPermissionAsync(Verb verb, string? subResource)
-    {
-        return Cluster.UpdatePermissionsAllNamespaceAsync<T>(verb, subResource);
-    }
-
     public IEnumerable<(Verb verb, string? subresource)> Permissions()
     {
         return DefaultPermissions()
@@ -114,7 +109,15 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
 
     public virtual IEnumerable<AuthorizationRequest> AuthorizationRequests()
     {
-        return Permissions().Select(permission => new AuthorizationRequest(Type, permission.verb, permission.subresource));
+        return Permissions().Select(permission => new AuthorizationRequest(Kind, permission.verb, permission.subresource));
+    }
+
+    public virtual IEnumerable<AuthorizationRequest> ListWatchAuthorizationRequests()
+    {
+        return [
+            new AuthorizationRequest(Kind, Verb.List, null),
+            new AuthorizationRequest(Kind, Verb.Watch, null),
+        ];
     }
 
     public virtual Control[] Properties(T resource) => [];
@@ -124,7 +127,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
         return new ResourceListColumn<T, string>()
         {
             Key = "name",
-            Name = "Name",
+            Name = Assets.Resources.ResourceListView_Name!,
             Field = x => x.Metadata.Name,
             Width = "2*",
             Sort = sort,
@@ -136,7 +139,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
         return new ResourceListColumn<T, string>()
         {
             Key = "namespace",
-            Name = "Namespace",
+            Name = Assets.Resources.ResourceListView_Namespace!,
             Field = x => x.Metadata.NamespaceProperty,
             Width = "*",
         };
@@ -147,16 +150,24 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
         return new ResourceListColumn<T, DateTime?>()
         {
             Key = "age",
-            Name = "Age",
+            Name = Assets.Resources.ResourceListView_Age!,
             CustomControl = typeof(AgeCell),
             Field = x => x.Metadata.CreationTimestamp,
             Width = "80"
         };
     }
 
-    public void Initialize(ClusterWorkspaceViewModel cluster)
+    public void Initialize(ClusterWorkspace cluster)
     {
         Cluster = cluster;
+
+        if (!IsCustomResource)
+        {
+            Cluster.Runtime.ModelCatalog.RegisterResource(
+                Kind,
+                typeof(T),
+                waitForReady => Cluster.Runtime.SeedResource<T>(waitForReady));
+        }
     }
 
     public IEnumerable<MenuItemViewModel> GetDefaultMenuItems(IEnumerable? selectedItems)
@@ -167,21 +178,29 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
     protected virtual IEnumerable<MenuItemViewModel> CreateDefaultMenuItems(IEnumerable<T>? selectedItems) => [
         new()
         {
-            Header = "View",
+            Title = Assets.Resources.ResourceConfigBase_MenuItem_View,
             Command = ViewCommand,
             CommandParameter = selectedItems?.ToList(),
             FluentIcon = Icon.PanelRight,
+            ShowInPropertiesView = false,
         },
         new()
         {
-            Header = "View Yaml",
+            Title = Assets.Resources.ResourceConfigBase_MenuItem_ViewYaml,
             Command = ViewYamlCommand,
             CommandParameter = selectedItems?.ToList(),
             FluentIcon = Icon.Code,
         },
         new()
         {
-            Header = "Delete",
+            Title = Assets.Resources.ResourceConfigBase_MenuItem_Visualize,
+            Command = VisualizeCommand,
+            CommandParameter = selectedItems?.ToList(),
+            FluentIcon = Icon.DataUsage,
+        },
+        new()
+        {
+            Title = Assets.Resources.ResourceConfigBase_MenuItem_Delete,
             Command = DeleteCommand,
             CommandParameter = selectedItems?.ToList(),
             FluentIcon = Icon.Delete,
@@ -191,69 +210,60 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
     public IList<(Verb verb, string? subResource)> DefaultPermissions() => [
         (Verb.Create, null),
         (Verb.Delete, null),
-        //(Verb.Get, null),
         (Verb.List, null),
         (Verb.Patch, null),
         (Verb.Update, null),
         (Verb.Watch, null),
     ];
 
-    public async Task UpdatePermissions()
+    public virtual Task EvaluateListWatchAccessAsync()
     {
         PermissionsLoaded = false;
         CanListAndWatch = false;
 
         try
         {
-            var canList = await Cluster.UpdateCanIAnyNamespaceAsync<T>(Verb.List).ConfigureAwait(false);
-            var canWatch = await Cluster.UpdateCanIAnyNamespaceAsync<T>(Verb.Watch).ConfigureAwait(false);
-            CanListAndWatch = canList && canWatch;
+            CanListAndWatch = HasListAndWatchAccess();
         }
         catch (Exception ex)
         {
-            _logger.LogDebug(ex, "Unable to evaluate cached list/watch permissions for {Type}", typeof(T).FullName);
+            _logger.LogDebug(ex, "Unable to evaluate cached list/watch permissions for {Kind}", Kind);
             CanListAndWatch = false;
         }
 
-        if (!CanListAndWatch)
-        {
-            PermissionsLoaded = true;
-            return;
-        }
-
-        var exceptions = new List<Exception>();
-
-        foreach (var (verb, subResource) in DefaultPermissions())
-        {
-            try
-            {
-                await RefreshPermissionAsync(verb, subResource).ConfigureAwait(false);
-            }
-            catch (Exception ex)
-            {
-                exceptions.Add(ex);
-            }
-        }
-
-        foreach (var (verb, subResource) in CustomPermissions())
-        {
-            try
-            {
-                await RefreshPermissionAsync(verb, subResource).ConfigureAwait(false);
-            }
-            catch (Exception ex)
-            {
-                exceptions.Add(ex);
-            }
-        }
-
-        if (exceptions.Count > 0)
-        {
-            _logger.LogDebug(new AggregateException(exceptions), "Unable to refresh non-list permissions for {Type}", typeof(T).FullName);
-            return;
-        }
-
         PermissionsLoaded = true;
+        return Task.CompletedTask;
+    }
+
+    private bool HasListAndWatchAccess()
+    {
+        if (Cluster.Runtime.Permissions.CanIAnyNamespace(Kind, IsNamespaced, Verb.List)
+            && Cluster.Runtime.Permissions.CanIAnyNamespace(Kind, IsNamespaced, Verb.Watch))
+        {
+            return true;
+        }
+
+        if (!IsNamespaced)
+        {
+            return false;
+        }
+
+        foreach (var @namespace in Cluster.Runtime.Namespaces)
+        {
+            var namespaceName = @namespace.Name();
+            if (string.IsNullOrWhiteSpace(namespaceName))
+            {
+                continue;
+            }
+
+            if (Cluster.Runtime.Permissions.CanI(Kind, Verb.List, namespaceName)
+                && Cluster.Runtime.Permissions.CanI(Kind, Verb.Watch, namespaceName))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     #region Actions
@@ -261,7 +271,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
     [RelayCommand(CanExecute = nameof(CanNewResource))]
     public void NewResource()
     {
-        var resource = Activator.CreateInstance<T>();
+        var resource = new T();
         resource.Kind = Kind.Kind;
         resource.ApiVersion = Kind.GroupApiVersion;
         resource.Metadata = new()
@@ -283,7 +293,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
 
     public bool CanNewResource()
     {
-        return Cluster.CanIAnyNamespace<T>(Verb.Create);
+        return Cluster.Runtime.Permissions.CanIAnyNamespace(Kind, IsNamespaced, Verb.Create);
     }
 
     [RelayCommand(CanExecute = nameof(CanDelete))]
@@ -291,10 +301,10 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
     {
         ContentDialogSettings settings = new()
         {
-            Title = Assets.Resources.ResourceListViewModel_Delete_Title,
-            Content = string.Format(Assets.Resources.ResourceListViewModel_Delete_Content, items.Count),
-            PrimaryButtonText = Assets.Resources.ResourceListViewModel_Delete_Primary,
-            SecondaryButtonText = Assets.Resources.ResourceListViewModel_Delete_Secondary,
+            Title = Assets.Resources.ResourceListView_Delete_Title,
+            Content = string.Format(Assets.Resources.ResourceListView_Delete_Content, items.Count),
+            PrimaryButtonText = Assets.Resources.ResourceListView_Delete_Primary,
+            SecondaryButtonText = Assets.Resources.ResourceListView_Delete_Secondary,
             DefaultButton = FAContentDialogButton.Secondary
         };
 
@@ -308,7 +318,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
             {
                 try
                 {
-                    await Cluster.DeleteResource<T>(item);
+                    await Cluster.Runtime.DeleteResource(item);
                 }
                 catch (JsonException ex)
                 {
@@ -337,7 +347,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
 
         foreach (var item in items.Cast<T>().ToList().GroupBy(x => x.Namespace()))
         {
-            if (!Cluster.CanI<T>(Verb.Delete, item.Key))
+            if (!Cluster.Runtime.Permissions.CanI(Kind, Verb.Delete, item.Key))
             {
                 return false;
             }
@@ -376,21 +386,32 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
         return items?.Count == 1;
     }
 
+    [RelayCommand(CanExecute = nameof(CanVisualize))]
+    public void Visualize(IList items)
+    {
+        var selectedItem = items.Cast<T>().Single();
+        var vm = ServiceProvider.GetRequiredService<VisualizationViewModel>();
+        vm.Initialize(Cluster, selectedItem);
+        _factory.AddToDocuments(vm);
+    }
+
+    public bool CanVisualize(IList? items) => items?.Count == 1;
+
     [RelayCommand(CanExecute = nameof(CanRestart))]
     private async Task Restart(IList items)
     {
         ContentDialogSettings settings = new()
         {
-            Title = Assets.Resources.ResourceListViewModel_Restart_Title,
-            Content = string.Format(Assets.Resources.ResourceListViewModel_Restart_Content, items.Count),
-            PrimaryButtonText = Assets.Resources.ResourceListViewModel_Restart_Primary,
-            SecondaryButtonText = Assets.Resources.ResourceListViewModel_Restart_Secondary,
+            Title = Assets.Resources.ResourceListView_Restart_Title,
+            Content = string.Format(Assets.Resources.ResourceListView_Restart_Content, items.Count),
+            PrimaryButtonText = Assets.Resources.ResourceListView_Restart_Primary,
+            SecondaryButtonText = Assets.Resources.ResourceListView_Restart_Secondary,
             DefaultButton = FAContentDialogButton.Secondary
         };
 
         var result = await _dialogService.ShowContentDialogAsync(this, settings);
 
-        string sRestartControllerPatch = $$"""
+        var sRestartControllerPatch = $$"""
                 {
                     "spec": {
                         "template": {
@@ -412,7 +433,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
             {
                 try
                 {
-                    using var genClient = KubeUI.Kubernetes.KubernetesClientExtensions.GetGenericClient(Cluster.Client, item);
+                    using var genClient = Cluster.Runtime.Client!.GetGenericClient(Kind);
 
                     await genClient.PatchNamespacedAsync<T>(new V1Patch(sRestartControllerPatch, V1Patch.PatchType.MergePatch), item.Metadata.NamespaceProperty, item.Metadata.Name);
                 }
@@ -443,7 +464,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
 
         foreach (var item in items.Cast<T>().ToList().GroupBy(x => x.Namespace()))
         {
-            if (!Cluster.CanI<T>(Verb.Patch, item.Key))
+            if (!Cluster.Runtime.Permissions.CanI(Kind, Verb.Patch, item.Key))
             {
                 return false;
             }
@@ -454,141 +475,3 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
 
     #endregion
 }
-
-
-public class ResourceListColumn<T, TValue> : IResourceListColumn where T : class, IKubernetesObject<V1ObjectMeta>, new()
-{
-    private const string NullableValueMissingMessage = "Nullable object must have a value.";
-    private Func<T, TValue>? _fieldAccessor;
-    private IDataGridColumnValueAccessor? _valueAccessor;
-    private string? _key;
-
-    public string Key
-    {
-        get
-        {
-            if (_key != null)
-            {
-                return _key;
-            }
-
-            _key = NormalizeKey(Name);
-            return _key;
-        }
-        set => _key = value;
-    }
-
-    public required string Name { get; set; }
-
-    public required Func<T, TValue> Field { get; set; }
-
-    public Func<T, string>? Display { get; set; }
-
-    public SortDirection Sort { get; set; } = SortDirection.None;
-
-    public Type CustomControl { get; set; } = typeof(ResourceTextCell);
-
-    public string? Width { get; set; }
-
-    public Type ItemType => typeof(T);
-
-    public Type ValueType => typeof(TValue);
-
-    public IDataGridColumnValueAccessor ValueAccessor => _valueAccessor ??= new LambdaColumnValueAccessor(GetFieldAccessor());
-
-    public Func<object, IComparable?> SortKey =>
-        o => GetFieldValue((T)o) as IComparable;
-
-    public Func<object, string> DisplayValue =>
-        o =>
-        {
-            var t = (T)o;
-            if (Display != null)
-                return Display(t);
-            var v = GetFieldValue(t);
-            return v?.ToString() ?? "";
-        };
-
-    private Func<T, TValue> GetFieldAccessor()
-    {
-        _fieldAccessor ??= Field;
-        return _fieldAccessor;
-    }
-
-    private object? GetFieldValue(T item)
-    {
-        try
-        {
-            return GetFieldAccessor()(item);
-        }
-        catch (InvalidOperationException ex) when (ex.Message == NullableValueMissingMessage)
-        {
-            return null;
-        }
-    }
-
-    private static string NormalizeKey(string value)
-    {
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            return string.Empty;
-        }
-
-        var builder = new StringBuilder(value.Length);
-        var pendingDash = false;
-
-        foreach (var ch in value)
-        {
-            if (char.IsLetterOrDigit(ch))
-            {
-                if (pendingDash && builder.Length > 0)
-                {
-                    builder.Append('-');
-                }
-
-                builder.Append(char.ToLowerInvariant(ch));
-                pendingDash = false;
-                continue;
-            }
-
-            pendingDash = true;
-        }
-
-        return builder.ToString().Trim('-');
-    }
-
-    private sealed class LambdaColumnValueAccessor : IDataGridColumnValueAccessor
-    {
-        private readonly Func<T, TValue> _getter;
-
-        public LambdaColumnValueAccessor(Func<T, TValue> getter)
-        {
-            _getter = getter;
-        }
-
-        public Type ItemType => typeof(T);
-
-        public Type ValueType => typeof(TValue);
-
-        public bool CanWrite => false;
-
-        public object GetValue(object item)
-        {
-            try
-            {
-                return _getter((T)item)!;
-            }
-            catch (InvalidOperationException ex) when (ex.Message == NullableValueMissingMessage)
-            {
-                return null!;
-            }
-        }
-
-        public void SetValue(object item, object value)
-        {
-            throw new NotSupportedException();
-        }
-    }
-}
-
-

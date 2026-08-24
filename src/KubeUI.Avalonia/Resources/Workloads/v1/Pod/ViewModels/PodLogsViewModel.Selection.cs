@@ -65,6 +65,16 @@ public sealed partial class PodLogsViewModel
             }
         }
 
+        IList<V1EphemeralContainer>? ephemeralContainers = pod.Spec?.EphemeralContainers;
+        if (ephemeralContainers is not null)
+        {
+            for (int i = 0; i < ephemeralContainers.Count; i++)
+            {
+                V1EphemeralContainer container = ephemeralContainers[i];
+                containers.Add(new PodLogContainerOption(container.Name, $"{container.Name} (ephemeral)", IsInitContainer: false, IsEphemeralContainer: true));
+            }
+        }
+
         return containers;
     }
 
@@ -88,7 +98,7 @@ public sealed partial class PodLogsViewModel
         for (int i = 0; i < containers.Count; i++)
         {
             PodLogContainerOption container = containers[i];
-            items.Add(new PodLogContainerSelectionItem(container.Name, container.DisplayName, container.IsInitContainer, false));
+            items.Add(new PodLogContainerSelectionItem(container.Name, container.DisplayName, container.IsInitContainer, false, container.IsEphemeralContainer));
         }
 
         return items;
@@ -112,7 +122,7 @@ public sealed partial class PodLogsViewModel
             selectionItems,
             item => item.IsAll,
             GetContainerSelectionKey,
-            key => FindContainerSelectionItem(selectionItems, key.Name, key.IsInitContainer),
+            key => FindContainerSelectionItem(selectionItems, key.Name, key.IsInitContainer, key.IsEphemeralContainer),
             () => FindContainerSelectionItem(selectionItems, selectedContainerName));
     }
 
@@ -255,7 +265,11 @@ public sealed partial class PodLogsViewModel
         return null;
     }
 
-    private static PodLogContainerSelectionItem? FindContainerSelectionItem(IReadOnlyList<PodLogContainerSelectionItem> items, string containerName, bool? isInitContainer = null)
+    private static PodLogContainerSelectionItem? FindContainerSelectionItem(
+        IReadOnlyList<PodLogContainerSelectionItem> items,
+        string containerName,
+        bool? isInitContainer = null,
+        bool? isEphemeralContainer = null)
     {
         for (int i = 0; i < items.Count; i++)
         {
@@ -271,6 +285,11 @@ public sealed partial class PodLogsViewModel
             }
 
             if (isInitContainer.HasValue && item.IsInitContainer != isInitContainer.Value)
+            {
+                continue;
+            }
+
+            if (isEphemeralContainer.HasValue && item.IsEphemeralContainer != isEphemeralContainer.Value)
             {
                 continue;
             }
@@ -295,6 +314,12 @@ public sealed partial class PodLogsViewModel
             return containerName;
         }
 
+        containerName = FindEphemeralContainerName(pod.Spec?.EphemeralContainers, requestedContainerName);
+        if (!string.IsNullOrWhiteSpace(containerName))
+        {
+            return containerName;
+        }
+
         if (pod.Spec?.Containers is { Count: > 0 })
         {
             return pod.Spec.Containers[0].Name;
@@ -303,6 +328,11 @@ public sealed partial class PodLogsViewModel
         if (pod.Spec?.InitContainers is { Count: > 0 })
         {
             return pod.Spec.InitContainers[0].Name;
+        }
+
+        if (pod.Spec?.EphemeralContainers is { Count: > 0 })
+        {
+            return pod.Spec.EphemeralContainers[0].Name;
         }
 
         return requestedContainerName;
@@ -327,10 +357,30 @@ public sealed partial class PodLogsViewModel
         return null;
     }
 
+    private static string? FindEphemeralContainerName(IList<V1EphemeralContainer>? containers, string requestedContainerName)
+    {
+        if (containers is null || containers.Count == 0)
+        {
+            return null;
+        }
+
+        for (int i = 0; i < containers.Count; i++)
+        {
+            V1EphemeralContainer container = containers[i];
+            if (string.Equals(container.Name, requestedContainerName, StringComparison.Ordinal))
+            {
+                return container.Name;
+            }
+        }
+
+        return null;
+    }
+
     private static bool HasPreviousLogs(V1Pod pod, string containerName)
     {
         return GetRestartCount(pod.Status?.ContainerStatuses, containerName) > 0
-            || GetRestartCount(pod.Status?.InitContainerStatuses, containerName) > 0;
+            || GetRestartCount(pod.Status?.InitContainerStatuses, containerName) > 0
+            || GetRestartCount(pod.Status?.EphemeralContainerStatuses, containerName) > 0;
     }
 
     private static int GetRestartCount(IList<V1ContainerStatus>? containerStatuses, string containerName)
@@ -354,12 +404,12 @@ public sealed partial class PodLogsViewModel
 
     private static PodLogContainerSelectionKey GetContainerSelectionKey(PodLogContainerSelectionItem item)
     {
-        return new PodLogContainerSelectionKey(item.Name, item.IsInitContainer);
+        return new PodLogContainerSelectionKey(item.Name, item.IsInitContainer, item.IsEphemeralContainer);
     }
 
     private static PodLogContainerSelectionKey GetContainerSelectionKey(PodLogContainerOption item)
     {
-        return new PodLogContainerSelectionKey(item.Name, item.IsInitContainer);
+        return new PodLogContainerSelectionKey(item.Name, item.IsInitContainer, item.IsEphemeralContainer);
     }
 
     private static ObservableCollection<TItem> CreateSelection<TItem>(TItem item)

@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <DebugType>embedded</DebugType>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="KubeUI.Avalonia.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Keep ACP compile assets private while allowing the runtime assemblies to reach the app host. -->
+    <PackageReference Include="dotacp.client" Version="2026.7.19" PrivateAssets="compile;contentfiles;build;buildTransitive;analyzers" />
+    <PackageReference Include="dotacp.protocol" Version="2026.7.19" PrivateAssets="compile;contentfiles;build;buildTransitive;analyzers" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.4" PrivateAssets="compile;contentfiles;build;buildTransitive;analyzers" />
+    <!-- Override dotacp.client's vulnerable transitive StreamJsonRpc version without exposing its compile-time API. -->
+    <PackageReference Include="StreamJsonRpc" Version="2.25.29" PrivateAssets="compile;contentfiles;build;buildTransitive;analyzers" />
+  </ItemGroup>
+</Project>

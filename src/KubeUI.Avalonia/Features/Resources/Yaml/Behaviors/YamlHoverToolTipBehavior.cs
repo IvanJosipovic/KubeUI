@@ -1,27 +1,33 @@
-using System.ComponentModel;
-using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
+using Avalonia.Controls.Primitives.PopupPositioning;
 using Avalonia.Input;
-using Avalonia.Threading;
 using Avalonia.Xaml.Interactivity;
 using AvaloniaEdit;
 using AvaloniaEdit.Document;
-using KubeUI.Avalonia.Features.Resources.Yaml.ViewModels;
-using KubeUI.Avalonia.Resources.Workloads.v1.Pod.Views;
+using AvaloniaEdit.Rendering;
+using KubeUI.Avalonia.Infrastructure.Platform;
+using KubeUI.Avalonia.Styles;
+using KubeUI.Kubernetes;
+using KubernetesClient.Informer.Client;
 
 namespace KubeUI.Avalonia.Features.Resources.Yaml.Behaviors;
 
 public sealed class YamlHoverToolTipBehavior : Behavior<TextEditor>
 {
-    private static readonly TimeSpan HoverDelay = TimeSpan.FromMilliseconds(250);
+    private const double HoverPopupHorizontalOffset = 8;
+    private const double HoverPopupVerticalOffset = 0;
 
     private ResourceYamlViewModel? _currentViewModel;
-    private bool _hoverTooltipOpen;
+    private Popup? _hoverPopup;
+    private int _hoverRequest;
     private ScrollViewer? _scrollViewer;
+    private Task? _schemaLoadTask;
     private Vector? _tooltipScrollOffset;
-    private readonly DispatcherTimer _hoverTimer = new() { Interval = HoverDelay };
-    private Point? _pendingHoverPoint;
+    private YamlSchemaNode? _schemaRoot;
+    private ClusterModelCatalog? _schemaCatalog;
+    private GroupApiVersionKind _schemaKind;
+    private long _schemaVersion = -1;
 
     protected override void OnAttached()
     {
@@ -38,12 +44,8 @@ public sealed class YamlHoverToolTipBehavior : Behavior<TextEditor>
         AssociatedObject.AttachedToVisualTree += OnAttachedToVisualTree;
         AssociatedObject.DetachedFromVisualTree += OnDetachedFromVisualTree;
         AssociatedObject.TextArea.TextView.PointerHover += TextViewOnPointerHover;
-        AssociatedObject.TextArea.TextView.PointerMoved += TextViewOnPointerMoved;
-        AssociatedObject.TextArea.TextView.PointerExited += TextViewOnPointerExited;
-        _hoverTimer.Tick += HoverTimerOnTick;
-
-        ToolTip.SetPlacement(AssociatedObject, PlacementMode.Pointer);
-        ToolTip.SetVerticalOffset(AssociatedObject, 14);
+        AssociatedObject.TextArea.TextView.PointerHoverStopped += TextViewOnPointerHoverStopped;
+        Application.Current?.ActualThemeVariantChanged += OnActualThemeVariantChanged;
 
         UpdateCurrentViewModel(AssociatedObject.DataContext as ResourceYamlViewModel);
         AttachScrollViewer();
@@ -51,6 +53,7 @@ public sealed class YamlHoverToolTipBehavior : Behavior<TextEditor>
 
     protected override void OnDetaching()
     {
+        Interlocked.Increment(ref _hoverRequest);
         if (AssociatedObject != null)
         {
             AssociatedObject.DataContextChanged -= OnDataContextChanged;
@@ -59,15 +62,15 @@ public sealed class YamlHoverToolTipBehavior : Behavior<TextEditor>
             AssociatedObject.AttachedToVisualTree -= OnAttachedToVisualTree;
             AssociatedObject.DetachedFromVisualTree -= OnDetachedFromVisualTree;
             AssociatedObject.TextArea.TextView.PointerHover -= TextViewOnPointerHover;
-            AssociatedObject.TextArea.TextView.PointerMoved -= TextViewOnPointerMoved;
-            AssociatedObject.TextArea.TextView.PointerExited -= TextViewOnPointerExited;
+            AssociatedObject.TextArea.TextView.PointerHoverStopped -= TextViewOnPointerHoverStopped;
+            Application.Current?.ActualThemeVariantChanged -= OnActualThemeVariantChanged;
         }
 
-        _hoverTimer.Tick -= HoverTimerOnTick;
-        StopPendingHover();
         DetachScrollViewer();
         DetachViewModel(_currentViewModel);
         _currentViewModel = null;
+        _schemaLoadTask = null;
+        _schemaRoot = null;
         CloseHoverToolTip();
 
         base.OnDetaching();
@@ -81,34 +84,35 @@ public sealed class YamlHoverToolTipBehavior : Behavior<TextEditor>
     private void OnDetachedFromVisualTree(object? sender, VisualTreeAttachmentEventArgs e)
     {
         DetachScrollViewer();
-        StopPendingHover();
-        CloseHoverToolTip();
+        InvalidateHover();
+    }
+
+    private void OnLayoutUpdated(object? sender, EventArgs e)
+    {
+        if (_hoverPopup?.IsOpen == true
+            && _tooltipScrollOffset is Vector offset
+            && GetCurrentScrollOffset() != offset)
+        {
+            InvalidateHover();
+        }
     }
 
     private void OnDataContextChanged(object? sender, EventArgs e)
     {
         UpdateCurrentViewModel(AssociatedObject?.DataContext as ResourceYamlViewModel);
-        StopPendingHover();
-        CloseHoverToolTip();
+        _schemaLoadTask = null;
+        _schemaRoot = null;
+        InvalidateHover();
     }
 
     private void OnTextChanged(object? sender, EventArgs e)
     {
-        StopPendingHover();
-        CloseHoverToolTip();
+        InvalidateHover();
     }
 
-    private void OnLayoutUpdated(object? sender, EventArgs e)
+    private void OnActualThemeVariantChanged(object? sender, EventArgs e)
     {
-        if (!_hoverTooltipOpen || _tooltipScrollOffset == null)
-        {
-            return;
-        }
-
-        if (GetCurrentScrollOffset() != _tooltipScrollOffset.Value)
-        {
-            CloseHoverToolTip();
-        }
+        InvalidateHover();
     }
 
     private void UpdateCurrentViewModel(ResourceYamlViewModel? nextViewModel)
@@ -145,39 +149,51 @@ public sealed class YamlHoverToolTipBehavior : Behavior<TextEditor>
             or nameof(ResourceYamlViewModel.ValidationDiagnostics)
             or nameof(ResourceYamlViewModel.HideNoisyFields))
         {
-            StopPendingHover();
-            CloseHoverToolTip();
+            InvalidateHover();
         }
     }
 
-    private void TextViewOnPointerHover(object? sender, PointerEventArgs e)
+    private async void TextViewOnPointerHover(object? sender, PointerEventArgs e)
     {
+        var request = Interlocked.Increment(ref _hoverRequest);
         AttachScrollViewer();
-        QueueHover(e.GetPosition(AssociatedObject!.TextArea.TextView));
-    }
-
-    private void TextViewOnPointerMoved(object? sender, PointerEventArgs e)
-    {
-        AttachScrollViewer();
-        var point = e.GetPosition(AssociatedObject!.TextArea.TextView);
-        TryShowHoverTooltipAtPoint(point, onlyWhenOpen: true);
-        QueueHover(point);
-    }
-
-    private void TextViewOnPointerExited(object? sender, PointerEventArgs e)
-    {
-        StopPendingHover();
-        CloseHoverToolTip();
-    }
-
-    private void HoverTimerOnTick(object? sender, EventArgs e)
-    {
-        _hoverTimer.Stop();
-
-        if (_pendingHoverPoint is { } point)
+        if (_currentViewModel?.Cluster is { } cluster)
         {
-            TryShowHoverTooltipAtPoint(point);
+            if (!await EnsureSchemaLoadAsync(cluster.Runtime.EnsureOpenApiSchemasAsync).ConfigureAwait(true))
+            {
+                return;
+            }
         }
+
+        if (request != Volatile.Read(ref _hoverRequest))
+        {
+            return;
+        }
+
+        var textView = AssociatedObject!.TextArea.TextView;
+        var point = e.GetPosition(textView);
+        TryShowHoverTooltipAtPoint(point);
+    }
+
+    internal async Task<bool> EnsureSchemaLoadAsync(Func<Task> loadSchemas)
+    {
+        try
+        {
+            _schemaLoadTask ??= loadSchemas();
+            await _schemaLoadTask.ConfigureAwait(true);
+            return true;
+        }
+        catch (Exception)
+        {
+            _schemaLoadTask = null;
+            return false;
+        }
+    }
+
+    private void TextViewOnPointerHoverStopped(object? sender, PointerEventArgs e)
+    {
+        Interlocked.Increment(ref _hoverRequest);
+        CloseHoverToolTip();
     }
 
     private void AttachScrollViewer()
@@ -215,27 +231,13 @@ public sealed class YamlHoverToolTipBehavior : Behavior<TextEditor>
     {
         if (e.Property == ScrollViewer.OffsetProperty)
         {
-            StopPendingHover();
-            CloseHoverToolTip();
+            InvalidateHover();
         }
-    }
-
-    private void QueueHover(Point point)
-    {
-        _pendingHoverPoint = point;
-        _hoverTimer.Stop();
-        _hoverTimer.Start();
-    }
-
-    private void StopPendingHover()
-    {
-        _hoverTimer.Stop();
-        _pendingHoverPoint = null;
     }
 
     private bool TryShowHoverTooltipAtOffset(int offset, bool onlyWhenOpen = false)
     {
-        if (onlyWhenOpen && !_hoverTooltipOpen)
+        if (onlyWhenOpen && _hoverPopup?.IsOpen != true)
         {
             return false;
         }
@@ -247,18 +249,23 @@ public sealed class YamlHoverToolTipBehavior : Behavior<TextEditor>
 
         if (TryCreateDocumentationTip(offset, out var documentationTip))
         {
-            ShowHoverToolTip(documentationTip);
+            ShowHoverToolTip(documentationTip, offset);
             return true;
         }
 
         var diagnosticMessage = YamlDiagnosticRenderingBehavior.GetRenderer(AssociatedObject)?.TryGetMessageAt(offset);
         if (string.IsNullOrEmpty(diagnosticMessage))
         {
-            CloseHoverToolTip();
+            InvalidateHover();
             return false;
         }
 
-        ShowHoverToolTip(diagnosticMessage);
+        ShowHoverToolTip(new TextBlock
+        {
+            Text = diagnosticMessage,
+            TextWrapping = TextWrapping.Wrap,
+            MaxWidth = 520,
+        }, offset);
         return true;
     }
 
@@ -266,16 +273,16 @@ public sealed class YamlHoverToolTipBehavior : Behavior<TextEditor>
     {
         if (!TryGetPointerOffset(point, out var offset))
         {
-            CloseHoverToolTip();
+            InvalidateHover();
             return false;
         }
 
         return TryShowHoverTooltipAtOffset(offset, onlyWhenOpen);
     }
 
-    private bool TryCreateDocumentationTip(int offset, out object tip)
+    private bool TryCreateDocumentationTip(int offset, out Control? tip)
     {
-        tip = null!;
+        tip = null;
 
         if (AssociatedObject?.Document == null || _currentViewModel?.Object == null || _currentViewModel.Cluster == null)
         {
@@ -285,10 +292,9 @@ public sealed class YamlHoverToolTipBehavior : Behavior<TextEditor>
         var context = YamlSchemaContext.Resolve(
             AssociatedObject.Document,
             offset,
-            _currentViewModel.Object.GetType(),
-            _currentViewModel.Cluster.ModelCache);
+            GetSchemaRoot(_currentViewModel));
 
-        if (context.Documentation == null || context.CurrentProperty == null || !IsWithinFieldName(AssociatedObject.Document, offset, context))
+        if (context.Documentation == null || !IsWithinFieldName(offset, context))
         {
             return false;
         }
@@ -297,29 +303,64 @@ public sealed class YamlHoverToolTipBehavior : Behavior<TextEditor>
         return true;
     }
 
-    private void ShowHoverToolTip(object tip)
+    private void ShowHoverToolTip(Control tip, int offset)
     {
         if (AssociatedObject == null)
         {
             return;
         }
 
-        ToolTip.SetTip(AssociatedObject, tip);
-        ToolTip.SetIsOpen(AssociatedObject, true);
-        _hoverTooltipOpen = true;
+        var textView = AssociatedObject.TextArea.TextView;
+        _hoverPopup ??= new Popup
+        {
+            PlacementTarget = textView,
+            Placement = PlacementMode.AnchorAndGravity,
+            PlacementAnchor = PopupAnchor.TopLeft,
+            PlacementGravity = PopupGravity.BottomRight,
+            PlacementConstraintAdjustment = PopupPositionerConstraintAdjustment.SlideX
+                | PopupPositionerConstraintAdjustment.SlideY,
+            IsLightDismissEnabled = false,
+        };
+
+        _hoverPopup.Child = new ContentControl
+        {
+            Content = tip,
+            Foreground = ApplicationBrushResources.GetBrush("SystemBaseHighColor"),
+            Padding = new Thickness(10, 8),
+            CornerRadius = new CornerRadius(4),
+            IsHitTestVisible = false,
+            Background = ApplicationBrushResources.GetBrush("SystemRegionBrush"),
+        };
+        var location = AssociatedObject.Document!.GetLocation(offset);
+        var position = new TextViewPosition(location.Line, location.Column);
+        var lineTop = textView.GetVisualPosition(position, VisualYPosition.LineTop) - textView.ScrollOffset;
+        var lineBottom = textView.GetVisualPosition(position, VisualYPosition.LineBottom) - textView.ScrollOffset;
+        _hoverPopup.PlacementRect = new Rect(
+            lineTop.X,
+            lineTop.Y,
+            1,
+            Math.Max(1, lineBottom.Y - lineTop.Y));
+        _hoverPopup.HorizontalOffset = HoverPopupHorizontalOffset;
+        _hoverPopup.VerticalOffset = HoverPopupVerticalOffset;
+        _hoverPopup.IsOpen = true;
         _tooltipScrollOffset = GetCurrentScrollOffset();
     }
 
     private void CloseHoverToolTip()
     {
-        if (AssociatedObject != null)
+        if (_hoverPopup != null)
         {
-            ToolTip.SetIsOpen(AssociatedObject, false);
-            ToolTip.SetTip(AssociatedObject, null);
+            _hoverPopup.IsOpen = false;
+            _hoverPopup.Child = null;
         }
 
-        _hoverTooltipOpen = false;
         _tooltipScrollOffset = null;
+    }
+
+    private void InvalidateHover()
+    {
+        Interlocked.Increment(ref _hoverRequest);
+        CloseHoverToolTip();
     }
 
     private Vector GetCurrentScrollOffset()
@@ -329,12 +370,8 @@ public sealed class YamlHoverToolTipBehavior : Behavior<TextEditor>
             return default;
         }
 
-        if (_scrollViewer != null)
-        {
-            return _scrollViewer.Offset;
-        }
-
-        return new Vector(AssociatedObject.HorizontalOffset, AssociatedObject.VerticalOffset);
+        return _scrollViewer?.Offset
+            ?? new Vector(AssociatedObject.HorizontalOffset, AssociatedObject.VerticalOffset);
     }
 
     private bool TryGetPointerOffset(Point point, out int offset)
@@ -363,9 +400,27 @@ public sealed class YamlHoverToolTipBehavior : Behavior<TextEditor>
         return true;
     }
 
-    private static bool IsWithinFieldName(TextDocument document, int offset, YamlContextResult context)
+    private static bool IsWithinFieldName(int offset, YamlContextResult context)
     {
-        _ = document;
         return offset >= context.Key.StartOffset && offset <= context.Key.EndOffset;
+    }
+
+    internal YamlSchemaNode GetSchemaRoot(ResourceYamlViewModel vm)
+    {
+        var catalog = vm.Cluster!.Runtime.ModelCatalog;
+        var kind = vm.ResourceKind;
+        var version = catalog.OpenApiSchemas.Version;
+        if (_schemaRoot is null
+            || !ReferenceEquals(_schemaCatalog, catalog)
+            || _schemaKind != kind
+            || _schemaVersion != version)
+        {
+            _schemaRoot = YamlSchemaContext.CreateRoot(kind, catalog);
+            _schemaCatalog = catalog;
+            _schemaKind = kind;
+            _schemaVersion = version;
+        }
+
+        return _schemaRoot;
     }
 }

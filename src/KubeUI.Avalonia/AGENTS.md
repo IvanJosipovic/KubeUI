@@ -5,10 +5,6 @@ This guide supplements the repository root `AGENTS.md` and defines the Avalonia-
 ## 1) Folder structure
 
 - `Features/<FeatureName>/` and `Shell/<Area>/` must each follow the same internal structure when they contain UI code:
-  - `Views/` for XAML views and their code-behind
-  - `ViewModels/` for view models and supporting presentation models
-  - `Controls/` for reusable controls scoped to that feature or shell area
-  - `Behaviors/` for behaviors scoped to that feature or shell area
 - Keep shared, cross-feature UI helpers out of feature folders only when they are truly shared across multiple areas.
 
 ## 2) Avalonia UI best practices
@@ -18,14 +14,14 @@ References:
 - https://docs.avaloniaui.net
 
 ### Views and styling
-- Use XAML for layout and visuals; avoid creating controls in code.
-- Define styles and resources in dedicated resource dictionaries and merge them in `App.axaml`.
+- Use C# for layout and visuals;
 - Prefer `StaticResource` for immutable resources and `DynamicResource` when runtime updates are required.
 
 ### Data binding
-- Use compiled bindings only with explicit `x:DataType` on all binding scopes.
+- Use compiled bindings only on all binding scopes.
+- Never use `new Binding()` when compiled binding can express the required source and path.
+- Use `new Binding()` only when compiled binding cannot represent the required binding scenario, such as a source mode or binding feature unavailable through the compiled-binding API; document that limitation at the call site.
 - Keep bindings one-way unless user input must update the ViewModel.
-- Use `DataTemplates` or a custom `ViewLocator` for view lookup.
 
 ### Custom controls
 - Use `StyledProperty` only for values that must participate in styling.
@@ -83,9 +79,13 @@ References:
 
 ## 9) Code conventions
 
+- Keep this file focused on rules shared across Avalonia features. Create a nested `AGENTS.md` for feature-specific requirements when a feature has distinct architecture, UI, or testing rules, and update that file whenever the feature changes.
 - No code-behind event handlers.
 - Avoid static state except truly immutable constants.
 - Prefer explicit types where clarity is improved; avoid `var` in public APIs.
 - All public APIs must be documented and unit-tested.
 - No hacks or weird workarounds; if you think you need one, ask for guidance.
 - UI text should be added to resources.
+- Prefer fluent declarative collection options in C# Avalonia views, such as dataGrid.Columns([...]) instead of dataGrid.Columns.Add(...).
+- Keep view code in the Build methods, only create methods for large sections or repeated view code.
+- If a class inherits from ObservableObject, always use [ObservableProperty] etc for properties

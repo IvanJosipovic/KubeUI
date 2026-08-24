@@ -1,6 +1,4 @@
-using Avalonia.Controls;
 using k8s.Models;
-using KubeUI.Avalonia.Resources.Configuration.v1.RuntimeClass.Views;
 
 namespace KubeUI.Avalonia.Resources.Configuration.v1.RuntimeClass;
 
@@ -10,7 +8,7 @@ public sealed partial class V1RuntimeClassConfig : ResourceConfigBase<V1RuntimeC
         : base(serviceProvider)
     {
     }
-    public override string Category => CategoryString("ResourceConfig_Category_Configuration", "Configuration");
+    public override string Category => Assets.Resources.ResourceConfig_Category_Configuration!;
     public override int Order => 7;
 
     public override IList<IResourceListColumn> Columns()
@@ -19,7 +17,8 @@ public sealed partial class V1RuntimeClassConfig : ResourceConfigBase<V1RuntimeC
             NameColumn(SortDirection.Ascending),
             new ResourceListColumn<V1RuntimeClass, string>()
             {
-                Name = "Handler",
+                Key = "handler",
+                Name = Assets.Resources.V1RuntimeClassConfig_Handler!,
                 Field = x => x.Handler,
                 Width = nameof(DataGridLengthUnitType.SizeToCells)
             },
@@ -29,4 +28,3 @@ public sealed partial class V1RuntimeClassConfig : ResourceConfigBase<V1RuntimeC
 
     public override Control[] Properties(V1RuntimeClass resource) => [new PropertiesView()];
 }
-

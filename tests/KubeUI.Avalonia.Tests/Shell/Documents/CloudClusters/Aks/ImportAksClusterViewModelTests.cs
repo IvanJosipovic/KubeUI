@@ -1,49 +1,54 @@
-using System.Collections.Generic;
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
-using k8s;
 using k8s.KubeConfigModels;
-using KubeUI.Avalonia.Features.Clusters.Workspace;
-using KubeUI.Avalonia.Shell.Documents.CloudClusters.Aks.ViewModels;
+using KubeUI.Avalonia.Shell.Documents.CloudClusters.Aks;
 using KubeUI.Avalonia.Tests.Infra;
-using KubeUI.Kubernetes;
 using Microsoft.Extensions.Logging;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Shell.Documents.CloudClusters.Aks;
 
-public sealed class ImportAksClusterViewModelTests : AvaloniaTestBase
+public sealed class ImportAksClusterViewModelTests
 {
     [AvaloniaFact]
     public async Task connect_imports_aks_credentials_into_cluster_catalog()
     {
-        var catalog = TestApp.CurrentServices!.GetRequiredService<ClusterWorkspaceCatalog>();
+        var services = Application.Current.GetTestServices();
+        var catalog = services.GetRequiredService<ClusterWorkspaceCatalog>();
+        var runtimeCatalog = services.GetRequiredService<IClusterRuntimeCatalog>();
         var viewModel = new ImportAksClusterViewModel(
             new FakeAksClusterService(),
-            catalog,
-            TestApp.CurrentServices!.GetRequiredService<ILogger<ImportAksClusterViewModel>>());
+            runtimeCatalog,
+            services.GetRequiredService<ILogger<ImportAksClusterViewModel>>());
 
         await WaitForAsync(() => viewModel.Subscriptions.Count == 1 && viewModel.Clusters.Count == 1);
+        await WaitForAsync(() => !viewModel.IsBusy && viewModel.ImportCommand.CanExecute(null));
 
         viewModel.SelectedCluster.ShouldNotBeNull();
         var clusterName = viewModel.SelectedCluster!.Name;
 
-        viewModel.ImportCommand.Execute(null);
-        await WaitForAsync(() => catalog.Clusters.Any(x => x.Name == clusterName));
+        await viewModel.ImportCommand.ExecuteAsync(null).WaitAsync(TestContext.Current.CancellationToken);
+        viewModel.StatusMessage.ShouldBe(string.Format(
+            Assets.Resources.ImportAksClusterView_Imported,
+            clusterName));
+        runtimeCatalog.Clusters.Select(x => x.Name).ShouldContain(clusterName);
+        await WaitForAsync(() => catalog.Clusters.Any(x => x.Runtime.Name == clusterName));
 
-        catalog.Clusters.Any(x => x.Name == clusterName).ShouldBeTrue();
+        catalog.Clusters.Any(x => x.Runtime.Name == clusterName).ShouldBeTrue();
     }
 
     [AvaloniaFact]
     public async Task refresh_shows_empty_state_when_no_subscriptions_are_available()
     {
-        var catalog = TestApp.CurrentServices!.GetRequiredService<ClusterWorkspaceCatalog>();
+        var services = Application.Current.GetTestServices();
+        var catalog = services.GetRequiredService<ClusterWorkspaceCatalog>();
+        var runtimeCatalog = services.GetRequiredService<IClusterRuntimeCatalog>();
         var viewModel = new ImportAksClusterViewModel(
             new EmptyAksClusterService(),
-            catalog,
-            TestApp.CurrentServices!.GetRequiredService<ILogger<ImportAksClusterViewModel>>());
+            runtimeCatalog,
+            services.GetRequiredService<ILogger<ImportAksClusterViewModel>>());
 
-        await WaitForAsync(() => viewModel.StatusMessage == KubeUI.Avalonia.Assets.Resources.ImportAksClusterView_NoSubscriptions);
+        await WaitForAsync(() => viewModel.StatusMessage == Assets.Resources.ImportAksClusterView_NoSubscriptions);
 
         viewModel.Subscriptions.ShouldBeEmpty();
         viewModel.Clusters.ShouldBeEmpty();
@@ -54,13 +59,15 @@ public sealed class ImportAksClusterViewModelTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task refresh_is_disabled_while_busy()
     {
-        var catalog = TestApp.CurrentServices!.GetRequiredService<ClusterWorkspaceCatalog>();
+        var services = Application.Current.GetTestServices();
+        var catalog = services.GetRequiredService<ClusterWorkspaceCatalog>();
+        var runtimeCatalog = services.GetRequiredService<IClusterRuntimeCatalog>();
         var viewModel = new ImportAksClusterViewModel(
             new EmptyAksClusterService(),
-            catalog,
-            TestApp.CurrentServices!.GetRequiredService<ILogger<ImportAksClusterViewModel>>());
+            runtimeCatalog,
+            services.GetRequiredService<ILogger<ImportAksClusterViewModel>>());
 
-        await WaitForAsync(() => viewModel.StatusMessage == KubeUI.Avalonia.Assets.Resources.ImportAksClusterView_NoSubscriptions);
+        await WaitForAsync(() => viewModel.StatusMessage == Assets.Resources.ImportAksClusterView_NoSubscriptions);
 
         viewModel.RefreshCommand.CanExecute(null).ShouldBeTrue();
 
@@ -71,21 +78,11 @@ public sealed class ImportAksClusterViewModelTests : AvaloniaTestBase
 
     private static async Task WaitForAsync(Func<bool> predicate, int timeoutMs = 3000)
     {
-        var deadline = DateTime.UtcNow.AddMilliseconds(timeoutMs);
-
-        while (DateTime.UtcNow < deadline)
-        {
-            Dispatcher.UIThread.RunJobs();
-            if (predicate())
-            {
-                return;
-            }
-
-            await Task.Delay(25);
-        }
-
-        Dispatcher.UIThread.RunJobs();
-        predicate().ShouldBeTrue();
+        await TestWait.UntilAsync(
+            predicate,
+            timeoutMs,
+            TestContext.Current.CancellationToken,
+            () => Dispatcher.UIThread.RunJobs());
     }
 
     private sealed class FakeAksClusterService : IAksClusterService

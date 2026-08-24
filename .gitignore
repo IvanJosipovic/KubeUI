@@ -402,3 +402,6 @@ FodyWeavers.xsd
 packed
 
 *.lscache
+
+.dotnet
+.testagent

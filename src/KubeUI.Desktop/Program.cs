@@ -1,14 +1,26 @@
+using System.Diagnostics;
 using System.Reflection;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Markup.Declarative;
+using Avalonia.Threading;
+#if DEBUG
+using Declarative.Avalonia.AgentTools;
+#endif
 using KubeUI.Avalonia;
-using KubeUI.Avalonia.Assets;
+using KubeUI.AI.Diagnostics;
+using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
+using KubeUI.Avalonia.Infrastructure.Mcp;
+using KubeUI.Avalonia.Infrastructure.Platform;
 using KubeUI.Avalonia.Services.Settings;
 using KubeUI.Kubernetes;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
 using NReco.Logging.File;
 using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
@@ -20,80 +32,150 @@ namespace KubeUI.Desktop;
 
 internal static class Program
 {
-    private static readonly object HostLock = new();
-    private static IHost? _host;
+    public static ActivitySource Source { get; } = new ActivitySource("com.KubeUI.Desktop", "1.0.0");
 
     [STAThread]
     public static void Main(string[] args)
     {
         VelopackApp.Build().Run();
 
-        EnsureHostInitialized();
+        EnsureMacOsPath();
 
-        BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
+        var host = CreateHostBuilder(args).Build();
+        ConfigureMcpEndpoint(host);
+        host.Services.ConfigureKubeUIKubernetesJsonLogging();
+        host.Start();
 
-        _host.StopAsync().GetAwaiter().GetResult();
+        var builder = CreateAppBuilder(host.Services);
 
-        _host.Dispose();
-        _host = null;
+        try
+        {
+            builder.StartWithClassicDesktopLifetime(args);
+        }
+        finally
+        {
+            Task.Run(async () =>
+            {
+                await host.StopAsync().ConfigureAwait(false);
+                await host.DisposeAsync().ConfigureAwait(false);
+            }).GetAwaiter().GetResult();
+        }
     }
 
-    public static AppBuilder BuildAvaloniaApp()
-            => AppBuilder.Configure(() => new App(EnsureHostInitialized().Services))
+    internal static AppBuilder CreateAppBuilder(
+        IServiceProvider services,
+        Func<AppBuilder, AppBuilder>? configurePlatform = null,
+        bool enableDevelopmentTools = true)
+    {
+        RegisterAvaloniaShutdown(services);
+
+        var builder = AppBuilder.Configure(() => new App(services));
+        builder = (configurePlatform ?? (static builder => builder.UsePlatformDetect()))(builder);
+
+        builder = builder
             .ConfigureFonts(fontManager => fontManager.AddFontCollection(new CascadiaMonoFontCollection()))
             .WithInterFont()
-            .UsePlatformDetect();
-
-    private static IHost EnsureHostInitialized()
-    {
-        if (_host != null)
+            .UseServiceProvider(services)
+            .UseComponentControlFactory(type => (Control)ActivatorUtilities.CreateInstance(services, type))
+            .UseViewInitializationStrategy(ViewInitializationStrategy.Lazy);
+#if DEBUG
+        if (enableDevelopmentTools)
         {
-            return _host;
+            builder = builder
+                .UseHotReload()
+                .UseAgentInspector(o =>
+                {
+                    o.EnableInteraction = true;
+                    o.Services = services;
+                });
         }
-
-        lock (HostLock)
-        {
-            if (_host == null)
-            {
-                _host = CreateHostBuilder(Environment.GetCommandLineArgs()).Build();
-                _host.Services.ConfigureKubeUIKubernetesJsonLogging();
-                _host.StartAsync().GetAwaiter().GetResult();
-            }
-        }
-
-        return _host;
+#endif
+        return builder;
     }
 
-    private static HostApplicationBuilder CreateHostBuilder(string[] args)
+    internal static void RegisterAvaloniaShutdown(IServiceProvider services, Action? shutdownAvalonia = null)
     {
-        var builder = Host.CreateApplicationBuilder(args);
-        var settings = SettingsService.LoadSettingsFromFile();
+        shutdownAvalonia ??= static () =>
+        {
+            static void ShutdownAvalonia()
+            {
+                if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+                    desktop.TryShutdown();
+            }
 
+            if (Dispatcher.UIThread.CheckAccess())
+                ShutdownAvalonia();
+            else
+                Dispatcher.UIThread.Post(ShutdownAvalonia);
+        };
+
+        services.GetRequiredService<IHostApplicationLifetime>().ApplicationStopping.Register(shutdownAvalonia);
+    }
+
+    internal static WebApplicationBuilder CreateHostBuilder(
+        string[] args,
+        bool includeOptionalServices = true,
+        Action<IServiceCollection>? configureServices = null,
+        int? mcpPortOverride = null,
+        bool? mcpEnabledOverride = null)
+    {
+        var builder = WebApplication.CreateSlimBuilder(new WebApplicationOptions
+        {
+            ApplicationName = "KubeUI",
+            Args = args
+        });
         builder.Logging.SetMinimumLevel(LogLevel.Debug);
 
+        var settings = SettingsPersistenceLoader.Load();
         builder.Services.AddKubeUIAppServices();
 
-        if (settings.TelemetryEnabled)
+        if (mcpEnabledOverride ?? settings.Settings.McpServerEnabled)
+        {
+            builder.Services.AddMcpServer()
+                .WithHttpTransport(options => options.Stateless = true)
+                .WithTools<McpTools>();
+            var port = mcpPortOverride ?? McpServerConfiguration.GetValidatedPort(settings.Settings);
+            builder.WebHost.ConfigureKestrel(options => options.ListenLocalhost(port));
+        }
+
+        if (includeOptionalServices && settings.Settings.TelemetryEnabled)
         {
             builder.Services.AddTelemetry();
         }
 
-        if (settings.LoggingEnabled)
+        if (includeOptionalServices && settings.Settings.LoggingEnabled)
         {
             builder.Services.AddFileLogging();
         }
 
-        builder.Services.AddSingleton<ServiceDescriptor[]>([.. builder.Services]);
+        configureServices?.Invoke(builder.Services);
         return builder;
+    }
+
+    internal static void ConfigureMcpEndpoint(WebApplication application)
+    {
+        var settings = application.Services.GetRequiredService<ISettingsService>().Settings;
+        if (settings.McpServerEnabled)
+        {
+            application.MapMcp(McpServerConfiguration.Path);
+        }
+    }
+
+    internal static WebApplication CreateAndConfigureMcpEndpoint(WebApplicationBuilder builder)
+    {
+        var application = builder.Build();
+        ConfigureMcpEndpoint(application);
+        return application;
     }
 
     private static IServiceCollection AddFileLogging(this IServiceCollection services)
     {
         services.AddLogging(loggingBuilder =>
         {
-            if (SettingsService.EnsureSettingDirExists())
+            var settingsDirectory = SettingsPersistenceLoader.SettingsDirectory;
+            if (SettingsPersistenceLoader.EnsureDirectoryExists())
             {
-                loggingBuilder.AddFile(Path.Combine(SettingsService.GetSettingsPath(), "app.log"), x =>
+                loggingBuilder.AddFile(Path.Combine(settingsDirectory, "app.log"), x =>
                 {
                     x.Append = false;
                     x.FileSizeLimitBytes = 1024L * 1024 * 1024;
@@ -133,9 +215,8 @@ internal static class Program
 #if DEBUG
                     e.Endpoint = new Uri("http://localhost:4317");
 #else
-                    e.Endpoint = new Uri("https://otel.kubeui.com/v1/logs");
-                    e.Headers = $"key={key}";
-                    e.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.HttpProtobuf;
+                    e.Endpoint = new Uri("https://otel-grpc.kubeui.com");
+                    e.Headers = $"x-otlp-api-key={key}";
 #endif
                 });
             },
@@ -152,14 +233,11 @@ internal static class Program
                     .AddMeter(Instrumentation.MeterName)
                     .AddOtlpExporter((e, readerOptions) =>
                     {
-                        readerOptions.PeriodicExportingMetricReaderOptions.ExportIntervalMilliseconds = 5000;
-                        readerOptions.PeriodicExportingMetricReaderOptions.ExportTimeoutMilliseconds = 30000;
 #if DEBUG
                         e.Endpoint = new Uri("http://localhost:4317");
 #else
-                        e.Endpoint = new Uri("https://otel.kubeui.com/v1/metrics");
-                        e.Headers = $"key={key}";
-                        e.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.HttpProtobuf;
+                        e.Endpoint = new Uri("https://otel-grpc.kubeui.com");
+                        e.Headers = $"x-otlp-api-key={key}";
 #endif
                     });
             })
@@ -167,6 +245,10 @@ internal static class Program
             .WithTracing(tracingProvider =>
             {
                 tracingProvider
+                    .AddSource(Source.Name)
+                    .AddSource(AgentActivitySource.SourceName)
+                    .AddSource(Kubernetes.Client.KubeInstrumentation.SourceName)
+                    .AddSource(Instrumentation.SourceName)
                     .AddHttpClientInstrumentation()
                     .AddOtlpExporter(e =>
                     {
@@ -178,6 +260,36 @@ internal static class Program
 
         return services;
     }
+
+    private static void EnsureMacOsPath()
+    {
+        if (!OperatingSystem.IsMacOS())
+            return;
+
+        var macOsDefaultPaths = new[]
+        {
+            "/opt/homebrew/bin",
+            "/opt/homebrew/sbin",
+            "/usr/local/bin",
+            "/usr/bin",
+            "/bin",
+            "/usr/sbin",
+            "/sbin"
+        };
+
+        var existingPath = Environment.GetEnvironmentVariable("PATH");
+
+        var paths = existingPath?
+            .Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .ToList()
+            ?? [];
+
+        foreach (var path in macOsDefaultPaths)
+        {
+            if (!paths.Contains(path, StringComparer.Ordinal))
+                paths.Add(path);
+        }
+
+        Environment.SetEnvironmentVariable("PATH", string.Join(Path.PathSeparator, paths));
+    }
 }
-
-

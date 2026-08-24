@@ -1,7 +1,8 @@
 using System.Reflection;
-using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
+using Avalonia.Controls.Primitives.PopupPositioning;
+using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
 using Avalonia.Input;
 using Avalonia.Threading;
@@ -10,7 +11,6 @@ using Avalonia.Xaml.Interactivity;
 using AvaloniaEdit;
 using AvaloniaEdit.CodeCompletion;
 using AvaloniaEdit.Document;
-using AvaloniaEdit.Editing;
 using AvaloniaEdit.Folding;
 using AvaloniaEdit.Rendering;
 using Dock.Avalonia.Controls;
@@ -18,73 +18,27 @@ using Dock.Model.Controls;
 using Dock.Model.Core;
 using FluentAvalonia.UI.Controls;
 using k8s.Models;
+using KubernetesJson = k8s.KubernetesJson;
 using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Features.Resources.Yaml.Behaviors;
+using KubeUI.Avalonia.Infrastructure.Platform;
+using KubeUI.Avalonia.Shell.Documents.About;
+using KubeUI.Avalonia.Shell.Main;
 using KubeUI.Avalonia.Tests.Infra;
+using KubeUI.Kubernetes.Serialization;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Features.Resources.Yaml;
 
-public class ResourceYamlViewModelTests : AvaloniaTestBase
+public class ResourceYamlViewModelTests
 {
-    private readonly List<IDisposable> _disposables = [];
-    private readonly List<Window> _windows = [];
-
-    public override void Dispose()
-    {
-        foreach (var window in _windows)
-        {
-            window.Content = null;
-            window.Close();
-        }
-
-        foreach (var disposable in _disposables)
-        {
-            disposable.Dispose();
-        }
-
-        base.Dispose();
-    }
-
-    private Window CreateWindow(double width = 1200, double height = 900, object? content = null)
-    {
-        var window = new Window
-        {
-            Content = content,
-            Width = width,
-            Height = height,
-        };
-
-        _windows.Add(window);
-        return window;
-    }
-
-    private ClusterWorkspaceViewModel CreateTestWorkspace()
-    {
-        var cluster = new TestCluster().CreateWorkspace();
-        _disposables.Add(cluster);
-        return cluster;
-    }
-
-    private T ResolveService<T>() where T : class
-    {
-        var services = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
-        var service = services.GetRequiredService<T>();
-        if (service is IDisposable disposable)
-        {
-            _disposables.Add(disposable);
-        }
-
-        return service;
-    }
-
     private static async Task WaitForValidationDebounceAsync(Func<bool>? predicate = null, int timeoutMs = 2500)
     {
         var sw = System.Diagnostics.Stopwatch.StartNew();
         do
         {
-            await Task.Delay(25);
-            Dispatcher.UIThread.RunJobs();
+            await TestWait.NextPollAsync(TimeSpan.FromMilliseconds(25), TestContext.Current.CancellationToken);
+            await TestApplicationExtensions.WaitForUiAsync();
             if (predicate == null || predicate())
             {
                 return;
@@ -92,8 +46,78 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
         }
         while (sw.ElapsedMilliseconds < timeoutMs);
 
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
         (predicate?.Invoke() ?? true).ShouldBeTrue();
+    }
+
+    private static async Task WaitForUiAsync(Func<bool> predicate, int timeoutMs = 5000)
+    {
+        var deadline = DateTime.UtcNow.AddMilliseconds(timeoutMs);
+        while (DateTime.UtcNow < deadline)
+        {
+            if (await Dispatcher.UIThread.InvokeAsync(predicate))
+            {
+                return;
+            }
+
+            await TestWait.NextPollAsync(TimeSpan.FromMilliseconds(25), TestContext.Current.CancellationToken);
+        }
+
+        (await Dispatcher.UIThread.InvokeAsync(predicate)).ShouldBeTrue();
+    }
+
+    [AvaloniaFact]
+    public void Utilities_CloneObject_PreservesNestedTypedResourceFields()
+    {
+        var pod = new V1Pod
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "test",
+                NamespaceProperty = "default",
+            },
+            Spec = new V1PodSpec
+            {
+                Containers =
+                [
+                    new V1Container
+                    {
+                        Name = "app",
+                        Image = "nginx:1.27",
+                        Command = ["/bin/sh", "-c"],
+                    },
+                ],
+            },
+        };
+
+        var clone = Utilities.CloneObject(pod);
+        clone.ShouldBeOfType<V1Pod>();
+        var yaml = KubernetesYaml.Serialize(clone);
+
+        yaml.ShouldContain("spec:");
+        yaml.ShouldContain("containers:");
+        yaml.ShouldContain("image: nginx:1.27");
+        yaml.ShouldContain("command:");
+        yaml.ShouldContain("- /bin/sh");
+    }
+
+    [Fact]
+    public void Utilities_CloneObject_PreservesGenericResourceTypeAndDocument()
+    {
+        var resource = KubernetesJson.Deserialize<GenericKubernetesObject>("""
+            {
+              "apiVersion": "example.com/v1alpha1",
+              "kind": "Widget",
+              "metadata": { "name": "test" },
+              "spec": { "replicas": 3 }
+            }
+            """)!;
+
+        var clone = Utilities.CloneObject(resource);
+
+        clone.ShouldBeOfType<GenericKubernetesObject>();
+        clone.ShouldNotBeSameAs(resource);
+        clone.Properties["spec"].GetProperty("replicas").GetInt32().ShouldBe(3);
     }
 
     [AvaloniaFact]
@@ -113,6 +137,234 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
         foldings.Count.ShouldBe(2);
         foldings[0].Name.TrimEnd().ShouldBe($"prop2:");
         foldings[1].Name.TrimEnd().ShouldBe($"  prop2Nested:");
+    }
+
+    [AvaloniaFact]
+    public void YamlFoldingStrategy_IdentifiesMultilineNoisyMetadataFields()
+    {
+        var text = new TextDocument("""
+            apiVersion: v1
+            kind: Pod
+            metadata:
+              annotations:
+                example.com/keep: value
+                kubectl.kubernetes.io/last-applied-configuration: |
+                  {"apiVersion":"v1","kind":"Pod"}
+              managedFields:
+                - manager: kubectl
+                  operation: Apply
+            """.ReplaceLineEndings("\n"));
+
+        var foldings = YamlFoldingStrategy.CreateNewFoldings(text, out _).ToList();
+        foldings.Select(folding => folding.Name.Trim()).ShouldBe(
+        [
+            "metadata:",
+            "annotations:",
+            "kubectl.kubernetes.io/last-applied-configuration: |",
+            "managedFields:",
+            "- manager: kubectl",
+        ]);
+        var noisyFoldings = foldings
+            .Where(folding => YamlFoldingStrategy.IsNoisyFieldFolding(text, folding))
+            .Select(folding => folding.Name.Trim())
+            .ToArray();
+
+        noisyFoldings.ShouldBe(
+        [
+            "kubectl.kubernetes.io/last-applied-configuration: |",
+            "managedFields:",
+        ]);
+    }
+
+    [AvaloniaFact]
+    public void YamlFoldingStrategy_DoesNotIdentifySingleLineLastAppliedConfiguration()
+    {
+        var text = new TextDocument("""
+            metadata:
+              annotations:
+                kubectl.kubernetes.io/last-applied-configuration: compact
+            """.ReplaceLineEndings("\n"));
+
+        var foldings = YamlFoldingStrategy.CreateNewFoldings(text, out _).ToList();
+
+        foldings.Any(folding => YamlFoldingStrategy.IsNoisyFieldFolding(text, folding)).ShouldBeFalse();
+    }
+
+    [AvaloniaFact]
+    public async Task ResourceYamlView_PreservesNoisyFieldsInSerializedYaml()
+    {
+        var cluster = await Application.Current.CreateClusterAsync();
+        var resource = KubernetesJson.Deserialize<GenericKubernetesObject>("""
+            {
+              "apiVersion": "v1",
+              "kind": "Pod",
+              "metadata": {
+                "name": "test",
+                "managedFields": [{"manager": "kubectl", "operation": "Apply"}],
+                "annotations": {
+                  "kubectl.kubernetes.io/last-applied-configuration": "compact"
+                }
+              }
+            }
+            """)!;
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
+
+        vm.Initialize(cluster, resource);
+
+        vm.YamlDocument.Text.ShouldContain("managedFields:");
+        vm.YamlDocument.Text.ShouldContain("kubectl.kubernetes.io/last-applied-configuration:");
+    }
+
+    [AvaloniaFact]
+    public async Task ResourceYamlView_HideNoisyFieldsToggleControlsNoisyFoldState()
+    {
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
+
+        var cluster = await Application.Current.CreateClusterAsync();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
+        vm.Initialize(cluster, new V1Pod
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "test",
+                ManagedFields =
+                [
+                    new V1ManagedFieldsEntry
+                    {
+                        Manager = "kubectl",
+                        Operation = "Apply",
+                    },
+                ],
+                Annotations = new Dictionary<string, string>
+                {
+                    ["example.com/keep"] = "value",
+                },
+            },
+        });
+
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
+        view.DataContext = vm;
+        window.Content = view;
+        window.Show();
+
+        await TestApplicationExtensions.WaitForUiAsync();
+
+        var editor = view.FindControl<TextEditor>("Editor");
+        editor.ShouldNotBeNull();
+        var behavior = Interaction.GetBehaviors(editor).OfType<YamlEditorBehavior>().Single();
+        var foldingManager = GetFoldingManager(behavior);
+        foldingManager.ShouldNotBeNull();
+
+        await WaitForUiAsync(
+            () => foldingManager.AllFoldings.Any(folding =>
+                YamlFoldingStrategy.IsNoisyFieldFolding(editor.Document!, folding.StartOffset, folding.EndOffset)));
+
+        FoldingSection[] GetNoisyFoldings() => foldingManager.AllFoldings
+            .Where(folding => YamlFoldingStrategy.IsNoisyFieldFolding(editor.Document!, folding.StartOffset, folding.EndOffset))
+            .ToArray();
+
+        var noisyFoldings = GetNoisyFoldings();
+        noisyFoldings.ShouldNotBeEmpty();
+        noisyFoldings.ShouldAllBe(folding => folding.IsFolded);
+
+        vm.HideNoisyFields = false;
+        await WaitForUiAsync(() => GetNoisyFoldings().All(folding => !folding.IsFolded));
+
+        vm.HideNoisyFields = true;
+        await WaitForUiAsync(() => GetNoisyFoldings().All(folding => folding.IsFolded));
+    }
+
+    [AvaloniaFact]
+    public async Task ResourceYamlView_FoldsNewNoisyFieldsImmediatelyWhenObjectRefreshes()
+    {
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
+
+        var cluster = await Application.Current.CreateClusterAsync();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
+        vm.Initialize(cluster, new V1Pod
+        {
+            Metadata = new V1ObjectMeta { Name = "test" },
+        });
+
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
+        view.DataContext = vm;
+        window.Content = view;
+        window.Show();
+
+        await TestApplicationExtensions.WaitForUiAsync();
+
+        var editor = view.FindControl<TextEditor>("Editor");
+        editor.ShouldNotBeNull();
+        var behavior = Interaction.GetBehaviors(editor).OfType<YamlEditorBehavior>().Single();
+        var foldingManager = GetFoldingManager(behavior);
+        foldingManager.ShouldNotBeNull();
+
+        vm.Object = new V1Pod
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "test",
+                ManagedFields =
+                [
+                    new V1ManagedFieldsEntry
+                    {
+                        Manager = "kubectl",
+                        Operation = "Apply",
+                    },
+                ],
+            },
+        };
+
+        await WaitForUiAsync(
+            () => foldingManager.AllFoldings.Any(folding =>
+                YamlFoldingStrategy.IsNoisyFieldFolding(editor.Document!, folding.StartOffset, folding.EndOffset)));
+
+        var noisyFoldings = foldingManager.AllFoldings
+            .Where(folding => YamlFoldingStrategy.IsNoisyFieldFolding(
+                editor.Document!, folding.StartOffset, folding.EndOffset))
+            .ToArray();
+
+        noisyFoldings.ShouldNotBeEmpty();
+        noisyFoldings.ShouldAllBe(folding => folding.IsFolded);
+    }
+
+    [AvaloniaFact]
+    public async Task ResourceYamlView_PreservesUserFoldingsWhenObjectRefreshes()
+    {
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
+
+        var cluster = await Application.Current.CreateClusterAsync();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
+        vm.Initialize(cluster, CreatePod("before", includeLabels: false, extraEnv: true));
+
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
+        view.DataContext = vm;
+        window.Content = view;
+        window.Show();
+
+        await TestApplicationExtensions.WaitForUiAsync();
+
+        var editor = view.FindControl<TextEditor>("Editor");
+        editor.ShouldNotBeNull();
+        var behavior = Interaction.GetBehaviors(editor).OfType<YamlEditorBehavior>().Single();
+        var foldingManager = GetFoldingManager(behavior);
+        foldingManager.ShouldNotBeNull();
+
+        await WaitForUiAsync(
+            () => foldingManager.AllFoldings.Any(folding => folding.Title.TrimEnd() == "spec:"));
+
+        foldingManager.AllFoldings.Single(folding => folding.Title.TrimEnd() == "spec:").IsFolded = true;
+
+        vm.Object = CreatePod("after", includeLabels: false, extraEnv: true);
+
+        await WaitForUiAsync(
+            () => editor.Document!.Text.Contains("after", StringComparison.Ordinal)
+                && foldingManager.AllFoldings.Any(folding => folding.Title.TrimEnd() == "spec:"));
+
+        foldingManager.AllFoldings
+            .Single(folding => folding.Title.TrimEnd() == "spec:")
+            .IsFolded
+            .ShouldBeTrue();
     }
 
     [AvaloniaFact]
@@ -234,8 +486,8 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task ResourceYamlView_PreservesFoldState_WhenActiveDockableChanges()
     {
-        var cluster = CreateTestWorkspace();
-        var factory = ResolveService<IFactory>();
+        var cluster = await Application.Current.CreateClusterAsync();
+        var factory = Application.Current.GetRequiredTestService<IFactory>();
         var layout = factory.CreateLayout();
         factory.InitLayout(layout);
         var documents = factory.GetDockable<IDocumentDock>("Documents");
@@ -246,10 +498,10 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
             Layout = layout,
         };
 
-        var window = CreateWindow(content: dockControl);
+        using var window = Application.Current.CreateTestWindow(content: dockControl);
         window.Show();
 
-        var vm = ResolveService<ResourceYamlViewModel>();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Namespace
         {
             Metadata = new V1ObjectMeta
@@ -258,7 +510,7 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
             },
         });
 
-        var otherDockable = ResolveService<AboutViewModel>();
+        var otherDockable = Application.Current.GetRequiredTestService<AboutViewModel>();
         otherDockable.Id = nameof(AboutViewModel);
 
         factory.AddToDocuments(vm);
@@ -270,13 +522,13 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
                 child: value
             """.ReplaceLineEndings("\n");
 
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         factory.SetActiveDockable(vm);
         factory.SetFocusedDockable(documents, vm);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
-        var editor = WaitForValue(() => FindVisibleYamlEditor(window, vm), 3000);
+        var editor = await WaitForValueAsync(() => FindVisibleYamlEditor(window, vm), 3000);
         editor.ShouldNotBeNull();
 
         var behavior = Interaction.GetBehaviors(editor).OfType<YamlEditorBehavior>().Single();
@@ -288,13 +540,13 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
 
         factory.SetActiveDockable(otherDockable);
         factory.SetFocusedDockable(documents, otherDockable);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         factory.SetActiveDockable(vm);
         factory.SetFocusedDockable(documents, vm);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
-        var restoredEditor = WaitForValue(() => FindVisibleYamlEditor(window, vm), 3000);
+        var restoredEditor = await WaitForValueAsync(() => FindVisibleYamlEditor(window, vm), 3000);
         restoredEditor.ShouldNotBeNull();
 
         behavior = Interaction.GetBehaviors(restoredEditor).OfType<YamlEditorBehavior>().Single();
@@ -305,10 +557,52 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
     }
 
     [AvaloniaFact]
+    public async Task ResourceYamlView_DoesNotReplaceUnsavedYaml_WhenResourceUpdatesDuringEdit()
+    {
+        var cluster = await Application.Current.CreateClusterAsync();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
+        vm.Initialize(cluster, new V1Namespace
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "test",
+            },
+        });
+        vm.EditMode = true;
+        vm.YamlDocument.Text = """
+            apiVersion: v1
+            kind: Namespace
+            metadata:
+              name: local-edit
+            """.ReplaceLineEndings("\n");
+
+        await cluster.Runtime.AddOrUpdateResource(new V1Namespace
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "test",
+                Labels = new Dictionary<string, string>
+                {
+                    ["server-update"] = "true",
+                },
+            },
+        });
+
+        await WaitForUiAsync(
+            () => vm.Object?.Metadata.Labels?.ContainsKey("server-update") == true);
+
+        vm.YamlDocument.Text.ShouldContain("name: local-edit");
+
+        vm.EditMode = false;
+        await WaitForUiAsync(() => vm.YamlDocument.Text.Contains("server-update", StringComparison.Ordinal));
+        vm.YamlDocument.Text.ShouldNotContain("name: local-edit");
+    }
+
+    [AvaloniaFact]
     public async Task ResourceYamlView_PreservesScrollOffset_WhenActiveDockableChanges()
     {
-        var cluster = CreateTestWorkspace();
-        var factory = ResolveService<IFactory>();
+        var cluster = await Application.Current.CreateClusterAsync();
+        var factory = Application.Current.GetRequiredTestService<IFactory>();
         var layout = factory.CreateLayout();
         factory.InitLayout(layout);
         var documents = factory.GetDockable<IDocumentDock>("Documents");
@@ -319,77 +613,63 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
             Layout = layout,
         };
 
-        var window = CreateWindow(content: dockControl);
+        using var window = Application.Current.CreateTestWindow(content: dockControl);
         window.Show();
 
-        var vm = ResolveService<ResourceYamlViewModel>();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Namespace { Metadata = new V1ObjectMeta { Name = "test" } });
         vm.YamlDocument.Text = string.Join('\n', Enumerable.Range(0, 400).Select(i => $"line{i}: value"));
 
-        var otherDockable = ResolveService<AboutViewModel>();
+        var otherDockable = Application.Current.GetRequiredTestService<AboutViewModel>();
         otherDockable.Id = nameof(AboutViewModel);
 
         factory.AddToDocuments(vm);
         factory.AddToDocuments(otherDockable);
 
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         factory.SetActiveDockable(vm);
         factory.SetFocusedDockable(documents, vm);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
-        var editor = WaitForValue(() => FindVisibleYamlEditor(window, vm), 3000);
+        var editor = await WaitForValueAsync(() => FindVisibleYamlEditor(window, vm), 3000);
         editor.ShouldNotBeNull();
 
         var scrollViewer = editor.GetScrollViewer();
         scrollViewer.ShouldNotBeNull();
 
-        WaitFor(() =>
+        await WaitForAsync(() =>
         {
-            Dispatcher.UIThread.RunJobs();
             return scrollViewer.Extent.Height > scrollViewer.Viewport.Height;
         }, 3000);
 
         var targetOffset = new Vector(0, Math.Max(0, scrollViewer.Extent.Height - scrollViewer.Viewport.Height));
         scrollViewer.Offset = targetOffset;
-        Dispatcher.UIThread.RunJobs();
-        WaitFor(() => vm.ScrollOffset == targetOffset, 3000);
+        await TestApplicationExtensions.WaitForUiAsync();
+        await WaitForAsync(() => vm.ScrollOffset == targetOffset, 3000);
 
         factory.SetActiveDockable(otherDockable);
         factory.SetFocusedDockable(documents, otherDockable);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         vm.ScrollOffset.ShouldBe(targetOffset);
 
         factory.SetActiveDockable(vm);
         factory.SetFocusedDockable(documents, vm);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
-        var restoredEditor = WaitForValue(() => FindVisibleYamlEditor(window, vm), 3000);
+        var restoredEditor = await WaitForValueAsync(() => FindVisibleYamlEditor(window, vm), 3000);
         restoredEditor.ShouldNotBeNull();
 
         var restoredScrollViewer = restoredEditor.GetScrollViewer();
         restoredScrollViewer.ShouldNotBeNull();
 
-        WaitFor(() =>
+        await WaitForAsync(() =>
         {
-            Dispatcher.UIThread.RunJobs();
             return restoredScrollViewer.Extent.Height > restoredScrollViewer.Viewport.Height;
         }, 3000);
 
-        var restored = SpinWait.SpinUntil(() =>
-        {
-            Dispatcher.UIThread.RunJobs();
-            return restoredScrollViewer.Offset == targetOffset;
-        }, 3000);
-
-        if (!restored)
-        {
-            throw new ShouldAssertException(
-                $"Expected restored offset {targetOffset} but got {restoredScrollViewer.Offset}. "
-                + $"Saved view-model offset is {vm.ScrollOffset}. "
-                + $"Dock reused editor instance: {ReferenceEquals(editor, restoredEditor)}.");
-        }
+        await WaitForAsync(() => restoredScrollViewer.Offset == targetOffset, 3000);
 
         vm.ScrollOffset.ShouldBe(targetOffset);
 
@@ -398,10 +678,10 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task ResourceYamlView_PreservesFoldState_WhenResourceIsUpdated()
     {
-        var window = CreateWindow(width: 800, height: 600);
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = CreateTestWorkspace();
-        var vm = ResolveService<ResourceYamlViewModel>();
+        var cluster = await Application.Current.CreateClusterAsync();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
 
         var resource = new V1Namespace
         {
@@ -413,7 +693,7 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
 
         vm.Initialize(cluster, resource);
 
-        var view = ResolveService<ResourceYamlView>();
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
         view.DataContext = vm;
         window.Content = view;
         window.Show();
@@ -424,11 +704,11 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
                 child: value
             """.ReplaceLineEndings("\n");
 
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         vm.YamlDocument.Text.ShouldNotContain("updated: \"true\"");
 
-        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        var editor = view.FindControl<TextEditor>("Editor");
         editor.ShouldNotBeNull();
 
         var behavior = Interaction.GetBehaviors(editor).OfType<YamlEditorBehavior>().Single();
@@ -450,8 +730,10 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
             ["updated"] = "true",
         };
 
-        await cluster.AddOrUpdateResource(updatedResource);
-        Dispatcher.UIThread.RunJobs();
+        await cluster.Runtime.AddOrUpdateResource(updatedResource);
+        await WaitForUiAsync(
+            () => vm.YamlDocument.Text.Contains("updated: \"true\"", StringComparison.OrdinalIgnoreCase));
+        await TestApplicationExtensions.WaitForUiAsync();
 
         vm.YamlDocument.Text.ShouldContain("updated: \"true\"");
 
@@ -464,10 +746,10 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task ResourceYamlView_ShowsCompletion_WhenCompletionIsRequested()
     {
-        var window = CreateWindow(width: 800, height: 600);
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = CreateTestWorkspace();
-        var vm = ResolveService<ResourceYamlViewModel>();
+        var cluster = await Application.Current.CreateClusterAsync();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
             Metadata = new V1ObjectMeta
@@ -479,16 +761,15 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
         vm.ValidationDebounceDelay = TimeSpan.Zero;
         vm.EditMode = true;
 
-        var view = ResolveService<ResourceYamlView>();
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
         view.DataContext = vm;
         window.Content = view;
         window.Show();
 
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
-        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        var editor = view.FindControl<TextEditor>("Editor");
         editor.ShouldNotBeNull();
-
         var keyBinding = editor.KeyBindings.OfType<KeyBinding>()
             .Single(binding => binding.Command == vm.RequestCompletionCommand);
         keyBinding.Command.ShouldBe(vm.RequestCompletionCommand);
@@ -500,7 +781,7 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
             });
 
         vm.RequestCompletionCommand.Execute(null);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var behavior = Interaction.GetBehaviors(editor).OfType<YamlEditorBehavior>().Single();
         var completionWindow = GetCompletionWindow(behavior);
@@ -509,12 +790,85 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
     }
 
     [AvaloniaFact]
-    public void ResourceYamlView_ShowsDocumentationPopupOnHoverOverFieldName()
+    public async Task ResourceYamlView_DoesNotShowEmptyCompletion_WhenTypedPrefixHasNoMatches()
     {
-        var window = CreateWindow(width: 800, height: 600);
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = CreateTestWorkspace();
-        var vm = ResolveService<ResourceYamlViewModel>();
+        var cluster = await Application.Current.CreateClusterAsync();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
+        vm.Initialize(cluster, new V1Pod
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "test",
+                NamespaceProperty = "default",
+            },
+        });
+        vm.EditMode = true;
+        vm.YamlDocument.Text = "metadata:\n  name: temp\n  sdsdsds";
+
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
+        view.DataContext = vm;
+        window.Content = view;
+        window.Show();
+
+        Dispatcher.UIThread.RunJobs();
+
+        var editor = view.FindControl<TextEditor>("Editor");
+        editor.ShouldNotBeNull();
+        editor.CaretOffset = editor.Text.Length;
+        editor.TextArea.PerformTextInput("s");
+        Dispatcher.UIThread.RunJobs();
+
+        var behavior = Interaction.GetBehaviors(editor).OfType<YamlEditorBehavior>().Single();
+        GetCompletionWindow(behavior).ShouldBeNull();
+    }
+
+    [AvaloniaFact]
+    public async Task ResourceYamlView_ClosesCompletion_WhenTextIsDeleted()
+    {
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
+
+        var cluster = await Application.Current.CreateClusterAsync();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
+        vm.Initialize(cluster, new V1Pod
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "test",
+                NamespaceProperty = "default",
+            },
+        });
+        vm.EditMode = true;
+
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
+        view.DataContext = vm;
+        window.Content = view;
+        window.Show();
+
+        Dispatcher.UIThread.RunJobs();
+
+        var editor = view.FindControl<TextEditor>("Editor");
+        editor.ShouldNotBeNull();
+        var behavior = Interaction.GetBehaviors(editor).OfType<YamlEditorBehavior>().Single();
+
+        vm.RequestCompletionCommand.Execute(null);
+        Dispatcher.UIThread.RunJobs();
+        GetCompletionWindow(behavior).ShouldNotBeNull();
+
+        editor.Document!.Remove(0, 1);
+        Dispatcher.UIThread.RunJobs();
+
+        GetCompletionWindow(behavior).ShouldBeNull();
+    }
+
+    [AvaloniaFact]
+    public async Task ResourceYamlView_DebouncesFoldingUpdates_WhenTextChanges()
+    {
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
+
+        var cluster = await Application.Current.CreateClusterAsync();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
             Metadata = new V1ObjectMeta
@@ -524,7 +878,51 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
             },
         });
 
-        var view = ResolveService<ResourceYamlView>();
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
+        view.DataContext = vm;
+        window.Content = view;
+        window.Show();
+
+        await TestApplicationExtensions.WaitForUiAsync();
+
+        var editor = view.FindControl<TextEditor>("Editor");
+        editor.ShouldNotBeNull();
+        var behavior = Interaction.GetBehaviors(editor).OfType<YamlEditorBehavior>().Single();
+        var foldingManager = GetFoldingManager(behavior);
+        foldingManager.ShouldNotBeNull();
+        var initialTitles = foldingManager.AllFoldings.Select(folding => folding.Title).ToArray();
+
+        vm.YamlDocument.Text = "root:\n  nested:\n    value: test";
+        await TestApplicationExtensions.WaitForUiAsync();
+
+        var timerField = typeof(YamlEditorBehavior).GetField("_foldingUpdateTimer", BindingFlags.Instance | BindingFlags.NonPublic);
+        var timer = timerField?.GetValue(behavior) as DispatcherTimer;
+        timer.ShouldNotBeNull();
+        timer!.IsEnabled.ShouldBeTrue();
+        foldingManager.AllFoldings.Select(folding => folding.Title).ShouldBe(initialTitles);
+
+        await WaitForUiAsync(
+            () => foldingManager.AllFoldings.Any(folding => folding.Title.TrimEnd() == "root:"),
+            timeoutMs: 1000);
+    }
+
+    [AvaloniaFact]
+    public async Task ResourceYamlView_ShowsDocumentationPopupOnHoverOverFieldName()
+    {
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
+
+        var cluster = await Application.Current.CreateClusterAsync();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
+        vm.Initialize(cluster, new V1Pod
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "test",
+                NamespaceProperty = "default",
+            },
+        });
+
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
         view.DataContext = vm;
         window.Content = view;
         window.Show();
@@ -541,7 +939,7 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
             """.ReplaceLineEndings("\n");
         Dispatcher.UIThread.RunJobs();
 
-        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        var editor = view.FindControl<TextEditor>("Editor");
         editor.ShouldNotBeNull();
 
         var fieldNameOffset = editor.Document!.Text.IndexOf("spec", StringComparison.Ordinal) + 1;
@@ -553,7 +951,7 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
         var popup = GetDocumentationWindow(editor);
         popup.ShouldNotBeNull();
         popup!.ShouldBeOfType<StackPanel>();
-        ToolTip.GetIsOpen(editor).ShouldBeTrue();
+        IsDocumentationPopupOpen(editor).ShouldBeTrue();
 
         var panel = (StackPanel)popup;
         var title = panel.Children.OfType<TextBlock>().FirstOrDefault();
@@ -565,16 +963,349 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
         shown.ShouldBeFalse();
         Dispatcher.UIThread.RunJobs();
 
-        ToolTip.GetIsOpen(editor).ShouldBeFalse();
+        IsDocumentationPopupOpen(editor).ShouldBeFalse();
     }
 
     [AvaloniaFact]
-    public void ResourceYamlView_ShowsDocumentationPopupOnNestedFieldName()
+    public async Task ResourceYamlView_ShowsDocumentationPopupForPodMetadataNameAndNamespace()
     {
-        var window = CreateWindow(width: 800, height: 600);
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
+        var cluster = await Application.Current.CreateClusterAsync();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
+        vm.Initialize(cluster, new V1Pod
+        {
+            Metadata = new V1ObjectMeta { Name = "test", NamespaceProperty = "default" },
+        });
 
-        var cluster = CreateTestWorkspace();
-        var vm = ResolveService<ResourceYamlViewModel>();
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
+        view.DataContext = vm;
+        window.Content = view;
+        window.Show();
+        Dispatcher.UIThread.RunJobs();
+
+        vm.YamlDocument.Text = """
+            apiVersion: v1
+            kind: Pod
+            metadata:
+              name: test
+              namespace: default
+            """.ReplaceLineEndings("\n");
+        Dispatcher.UIThread.RunJobs();
+
+        var editor = view.FindControl<TextEditor>("Editor").ShouldNotBeNull();
+        foreach (var field in new[] { "name", "namespace" })
+        {
+            var offset = editor.Document!.Text.IndexOf(field, StringComparison.Ordinal) + 1;
+            InvokeHoverTooltip(editor, offset).ShouldBeTrue(field);
+            GetDocumentationWindow(editor).ShouldNotBeNull(field);
+            IsDocumentationPopupOpen(editor).ShouldBeTrue(field);
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task ResourceYamlView_ShowsDocumentationPopupForMetadataNameAtEndOfDocument()
+    {
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
+        var cluster = await Application.Current.CreateClusterAsync();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
+        vm.Initialize(cluster, new V1Pod
+        {
+            Metadata = new V1ObjectMeta { Name = "test", NamespaceProperty = "default" },
+        });
+
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
+        view.DataContext = vm;
+        window.Content = view;
+        window.Show();
+        await TestApplicationExtensions.WaitForUiAsync();
+
+        vm.YamlDocument.Text = "apiVersion: v1\nkind: Pod\nmetadata:\n  name: temp";
+        await TestApplicationExtensions.WaitForUiAsync();
+
+        var editor = view.FindControl<TextEditor>("Editor").ShouldNotBeNull();
+        var offset = editor.Document!.Text.IndexOf("name", StringComparison.Ordinal) + 1;
+        var editorPoint = GetPointForOffset(editor, offset);
+        var windowPoint = editor.TextArea.TextView.TranslatePoint(editorPoint, window);
+        windowPoint.ShouldNotBeNull();
+
+        window.MouseMove(windowPoint!.Value);
+
+        await WaitForAsync(() => IsDocumentationPopupOpen(editor), 1000);
+        GetDocumentationWindow(editor).ShouldNotBeNull();
+        var popup = GetDocumentationPopup(editor).ShouldNotBeNull();
+        popup.PlacementTarget.ShouldBe(editor.TextArea.TextView);
+        popup.Placement.ShouldBe(PlacementMode.AnchorAndGravity);
+        popup.PlacementAnchor.ShouldBe(PopupAnchor.TopLeft);
+        popup.PlacementGravity.ShouldBe(PopupGravity.BottomRight);
+        popup.PlacementConstraintAdjustment.ShouldBe(
+            PopupPositionerConstraintAdjustment.SlideX | PopupPositionerConstraintAdjustment.SlideY);
+        popup.PlacementRect.ShouldNotBeNull().X.ShouldBeGreaterThan(0);
+        popup.HorizontalOffset.ShouldBe(8);
+        popup.VerticalOffset.ShouldBe(0);
+
+        var surface = popup.Child.ShouldBeOfType<ContentControl>();
+        surface.IsHitTestVisible.ShouldBeFalse();
+        Application.Current.TryGetResource("SystemRegionBrush", Application.Current.ActualThemeVariant, out var background).ShouldBeTrue();
+        surface.Background.ShouldBe(background);
+        surface.Foreground.ShouldNotBeNull();
+    }
+
+    [AvaloniaFact]
+    public async Task ResourceYamlView_ShowsTooltipForBuiltInResourceSchema()
+    {
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
+        var cluster = await Application.Current.CreateClusterAsync();
+        var kind = GroupApiVersionKind.From<V1Pod>();
+        cluster.Runtime.ModelCatalog.OpenApiSchemas.GetSchema(kind).ShouldNotBeNull();
+
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
+        vm.Initialize(cluster, new V1Pod
+        {
+            Metadata = new V1ObjectMeta { Name = "test", NamespaceProperty = "default" },
+        });
+
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
+        view.DataContext = vm;
+        window.Content = view;
+        window.Show();
+        Dispatcher.UIThread.RunJobs();
+
+        vm.YamlDocument.Text = "apiVersion: v1\nkind: Pod\nspec:\n";
+        Dispatcher.UIThread.RunJobs();
+
+        var editor = view.FindControl<TextEditor>("Editor").ShouldNotBeNull();
+        var offset = editor.Document!.Text.IndexOf("spec", StringComparison.Ordinal) + 1;
+
+        InvokeHoverTooltipAtPoint(editor, GetPointForOffset(editor, offset)).ShouldBeTrue();
+        var tip = GetDocumentationWindow(editor).ShouldBeOfType<StackPanel>();
+        tip.Children.OfType<TextBlock>().Select(x => x.Text).ShouldContain("Pod specification");
+        tip.Children.OfType<TextBlock>().Select(x => x.Text).ShouldContain("object");
+        IsDocumentationPopupOpen(editor).ShouldBeTrue();
+    }
+
+    [AvaloniaFact]
+    public async Task ResourceYamlView_ShowsTooltipForBuiltInResourceThroughWindowPointerMove()
+    {
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
+        var cluster = await Application.Current.CreateClusterAsync();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
+        vm.Initialize(cluster, new V1Pod
+        {
+            Metadata = new V1ObjectMeta { Name = "test", NamespaceProperty = "default" },
+        });
+
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
+        view.DataContext = vm;
+        window.Content = view;
+        window.Show();
+        Dispatcher.UIThread.RunJobs();
+
+        vm.YamlDocument.Text = "apiVersion: v1\nkind: Pod\nspec:\n";
+        Dispatcher.UIThread.RunJobs();
+
+        var editor = view.FindControl<TextEditor>("Editor").ShouldNotBeNull();
+        var offset = editor.Document!.Text.IndexOf("spec", StringComparison.Ordinal) + 1;
+        var textView = editor.TextArea.TextView;
+        var editorPoint = GetPointForOffset(editor, offset);
+        var windowPoint = textView.TranslatePoint(editorPoint, window);
+        windowPoint.ShouldNotBeNull();
+
+        window.MouseMove(windowPoint!.Value);
+
+        await WaitForAsync(() => IsDocumentationPopupOpen(editor), 1000);
+        IsDocumentationPopupOpen(editor).ShouldBeTrue();
+        GetDocumentationWindow(editor).ShouldNotBeNull();
+    }
+
+    [AvaloniaFact]
+    public async Task ResourceYamlView_ShowsTooltipForBuiltInResourceWhenPresentedByDock()
+    {
+        var cluster = await Application.Current.CreateClusterAsync();
+        cluster.Runtime.ModelCatalog.OpenApiSchemas.GetSchema(GroupApiVersionKind.From<V1Pod>()).ShouldNotBeNull();
+
+        var factory = Application.Current.GetRequiredTestService<IFactory>();
+        var layout = factory.CreateLayout();
+        factory.InitLayout(layout);
+        var documents = factory.GetDockable<IDocumentDock>("Documents").ShouldNotBeNull();
+        var dockControl = new DockControl { Layout = layout };
+
+        using var window = Application.Current.CreateTestWindow(content: dockControl);
+        window.Show();
+
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
+        vm.Initialize(cluster, new V1Pod
+        {
+            Metadata = new V1ObjectMeta { Name = "test", NamespaceProperty = "default" },
+        });
+        vm.YamlDocument.Text = "apiVersion: v1\nkind: Pod\nspec:\n";
+        factory.AddToDocuments(vm);
+        factory.SetActiveDockable(vm);
+        factory.SetFocusedDockable(documents, vm);
+
+        var editor = await WaitForValueAsync(() => FindVisibleYamlEditor(window, vm), 3000);
+        editor.ShouldNotBeNull();
+        var offset = editor.Document!.Text.IndexOf("spec", StringComparison.Ordinal) + 1;
+        var editorPoint = GetPointForOffset(editor, offset);
+        var windowPoint = editor.TextArea.TextView.TranslatePoint(editorPoint, window);
+        windowPoint.ShouldNotBeNull();
+        TextView? hitTextView = null;
+        await WaitForAsync(() =>
+        {
+            hitTextView = window.InputHitTest(windowPoint!.Value) as TextView;
+            return hitTextView is not null;
+        }, 3000);
+        hitTextView.ShouldNotBeNull();
+
+        window.MouseMove(windowPoint!.Value);
+
+        await WaitForAsync(() => IsDocumentationPopupOpen(editor), 1000);
+        IsDocumentationPopupOpen(editor).ShouldBeTrue();
+        GetDocumentationWindow(editor).ShouldNotBeNull();
+    }
+
+    [AvaloniaFact]
+    public async Task MainView_ShowsTooltipForV1PodYaml()
+    {
+        var cluster = await Application.Current.CreateClusterAsync();
+        var mainViewModel = Application.Current.GetRequiredTestService<MainViewModel>();
+        var factory = Application.Current.GetRequiredTestService<IFactory>();
+        var previousLayout = mainViewModel.Layout;
+        var layout = factory.CreateLayout();
+        factory.InitLayout(layout);
+        mainViewModel.Layout = layout;
+
+        using var window = Application.Current.CreateTestWindow(content: new MainView
+        {
+            DataContext = mainViewModel,
+        });
+        window.Show();
+
+        var pod = new V1Pod
+        {
+            Metadata = new V1ObjectMeta { Name = "test", NamespaceProperty = "default" },
+        };
+        var yamlViewModel = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
+        try
+        {
+            yamlViewModel.Initialize(cluster, pod);
+            yamlViewModel.YamlDocument.Text = "apiVersion: v1\nkind: Pod\nspec:\n";
+            factory.AddToBottom(yamlViewModel);
+
+            var editor = await WaitForValueAsync(() => FindVisibleYamlEditor(window, yamlViewModel), 3000);
+            var offset = editor.Document!.Text.IndexOf("spec", StringComparison.Ordinal) + 1;
+            var windowPoint = editor.TextArea.TextView.TranslatePoint(GetPointForOffset(editor, offset), window);
+            windowPoint.ShouldNotBeNull();
+            window.MouseMove(windowPoint.Value);
+
+            await WaitForAsync(() => IsDocumentationPopupOpen(editor), 1000);
+            GetDocumentationWindow(editor).ShouldNotBeNull();
+            var popup = GetDocumentationPopup(editor).ShouldNotBeNull();
+            popup.PlacementTarget.ShouldBe(editor.TextArea.TextView);
+            popup.Placement.ShouldBe(PlacementMode.AnchorAndGravity);
+        }
+        finally
+        {
+            factory.RemoveDockable(yamlViewModel, collapse: false);
+            yamlViewModel.Dispose();
+            if (previousLayout is not null)
+            {
+                factory.InitLayout(previousLayout);
+            }
+
+            mainViewModel.Layout = previousLayout;
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task MainWindow_ShowsTooltipForV1PodYaml()
+    {
+        var cluster = await Application.Current.CreateClusterAsync();
+        var mainViewModel = Application.Current.GetRequiredTestService<MainViewModel>();
+        var factory = Application.Current.GetRequiredTestService<IFactory>();
+        var previousLayout = mainViewModel.Layout;
+        var layout = factory.CreateLayout();
+        factory.InitLayout(layout);
+        mainViewModel.Layout = layout;
+
+        var window = new MainWindow
+        {
+            Width = 1200,
+            Height = 800,
+            DataContext = mainViewModel,
+        };
+        window.Show();
+
+        var pod = new V1Pod
+        {
+            Metadata = new V1ObjectMeta { Name = "test", NamespaceProperty = "default" },
+        };
+        var yamlViewModel = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
+        try
+        {
+            yamlViewModel.Initialize(cluster, pod);
+            yamlViewModel.YamlDocument.Text = "apiVersion: v1\nkind: Pod\nspec:\n";
+            factory.AddToBottom(yamlViewModel);
+
+            var editor = await WaitForValueAsync(() => FindVisibleYamlEditor(window, yamlViewModel), 3000);
+            var offset = editor.Document!.Text.IndexOf("spec", StringComparison.Ordinal) + 1;
+            var windowPoint = editor.TextArea.TextView.TranslatePoint(GetPointForOffset(editor, offset), window);
+            windowPoint.ShouldNotBeNull();
+            window.MouseMove(windowPoint.Value);
+
+            await WaitForAsync(() => IsDocumentationPopupOpen(editor), 1000);
+            GetDocumentationWindow(editor).ShouldNotBeNull();
+            var popup = GetDocumentationPopup(editor).ShouldNotBeNull();
+            popup.PlacementTarget.ShouldBe(editor.TextArea.TextView);
+            popup.Placement.ShouldBe(PlacementMode.AnchorAndGravity);
+        }
+        finally
+        {
+            factory.RemoveDockable(yamlViewModel, collapse: false);
+            yamlViewModel.Dispose();
+            window.DataContext = null;
+            window.Content = null;
+            window.Close();
+            mainViewModel.Layout = previousLayout;
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task ResourceYamlView_ShowsTooltipForCustomResourceSchema()
+    {
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
+        var cluster = await Application.Current.CreateClusterAsync();
+        var kind = new GroupApiVersionKind("example.com", "v1", "Widget", "widgets");
+        cluster.Runtime.ModelCatalog.RegisterCustomResourceDefinition(kind);
+        cluster.Runtime.ModelCatalog.OpenApiSchemas.GetSchema(kind).ShouldNotBeNull();
+
+        var resource = KubernetesJson.Deserialize<GenericKubernetesObject>("{\"apiVersion\":\"example.com/v1\",\"kind\":\"Widget\",\"metadata\":{\"name\":\"test\"}}");
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
+        vm.Initialize(cluster, resource);
+
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
+        view.DataContext = vm;
+        window.Content = view;
+        window.Show();
+        Dispatcher.UIThread.RunJobs();
+
+        vm.YamlDocument.Text = "apiVersion: example.com/v1\nkind: Widget\nspec:\n";
+        Dispatcher.UIThread.RunJobs();
+
+        var editor = view.FindControl<TextEditor>("Editor").ShouldNotBeNull();
+        var offset = editor.Document!.Text.IndexOf("spec", StringComparison.Ordinal) + 1;
+
+        InvokeHoverTooltip(editor, offset).ShouldBeTrue();
+        GetDocumentationWindow(editor).ShouldNotBeNull();
+        IsDocumentationPopupOpen(editor).ShouldBeTrue();
+    }
+
+    [AvaloniaFact]
+    public async Task ResourceYamlView_ShowsDocumentationPopupOnNestedFieldName()
+    {
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
+
+        var cluster = await Application.Current.CreateClusterAsync();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
             Metadata = new V1ObjectMeta
@@ -584,7 +1315,7 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
             },
         });
 
-        var view = ResolveService<ResourceYamlView>();
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
         view.DataContext = vm;
         window.Content = view;
         window.Show();
@@ -602,7 +1333,7 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
             """.ReplaceLineEndings("\n");
         Dispatcher.UIThread.RunJobs();
 
-        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        var editor = view.FindControl<TextEditor>("Editor");
         editor.ShouldNotBeNull();
 
         var fieldNameOffset = editor.Document!.Text.IndexOf("ownerReferences", StringComparison.Ordinal) + 1;
@@ -620,12 +1351,12 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
     }
 
     [AvaloniaFact]
-    public void ResourceYamlView_ShowsDocumentationPopupOnFieldNamePastTenthLine()
+    public async Task ResourceYamlView_ShowsDocumentationPopupOnFieldNamePastTenthLine()
     {
-        var window = CreateWindow(width: 800, height: 600);
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = CreateTestWorkspace();
-        var vm = ResolveService<ResourceYamlViewModel>();
+        var cluster = await Application.Current.CreateClusterAsync();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
             Metadata = new V1ObjectMeta
@@ -635,7 +1366,7 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
             },
         });
 
-        var view = ResolveService<ResourceYamlView>();
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
         view.DataContext = vm;
         window.Content = view;
         window.Show();
@@ -661,7 +1392,7 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
             """.ReplaceLineEndings("\n");
         Dispatcher.UIThread.RunJobs();
 
-        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        var editor = view.FindControl<TextEditor>("Editor");
         editor.ShouldNotBeNull();
 
         var fieldNameOffset = editor.Document.Text.IndexOf("containers", StringComparison.Ordinal) + 1;
@@ -677,15 +1408,16 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
         var title = panel.Children.OfType<TextBlock>().FirstOrDefault();
         title.ShouldNotBeNull();
         title!.Text.ShouldBe("containers");
+        panel.Children.OfType<TextBlock>().Skip(1).First().Text.ShouldBe("array");
     }
 
     [AvaloniaFact]
-    public void ResourceYamlView_ShowsDocumentationPopupOnNestedFieldPastTenthLine()
+    public async Task ResourceYamlView_ShowsDocumentationPopupOnNestedFieldPastTenthLine()
     {
-        var window = CreateWindow(width: 800, height: 600);
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = CreateTestWorkspace();
-        var vm = ResolveService<ResourceYamlViewModel>();
+        var cluster = await Application.Current.CreateClusterAsync();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
             Metadata = new V1ObjectMeta
@@ -695,7 +1427,7 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
             },
         });
 
-        var view = ResolveService<ResourceYamlView>();
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
         view.DataContext = vm;
         window.Content = view;
         window.Show();
@@ -721,7 +1453,7 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
             """.ReplaceLineEndings("\n");
         Dispatcher.UIThread.RunJobs();
 
-        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        var editor = view.FindControl<TextEditor>("Editor");
         editor.ShouldNotBeNull();
 
         var lineNumber = editor.Document!.GetLineByOffset(editor.Document.Text.IndexOf("ownerReferences", StringComparison.Ordinal)).LineNumber;
@@ -742,12 +1474,12 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
     }
 
     [AvaloniaFact]
-    public void ResourceYamlView_ShowsDocumentationPopupOnKeyAtEndOfLine()
+    public async Task ResourceYamlView_ShowsDocumentationPopupOnKeyAtEndOfLine()
     {
-        var window = CreateWindow(width: 800, height: 600);
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = CreateTestWorkspace();
-        var vm = ResolveService<ResourceYamlViewModel>();
+        var cluster = await Application.Current.CreateClusterAsync();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
             Metadata = new V1ObjectMeta
@@ -757,7 +1489,7 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
             },
         });
 
-        var view = ResolveService<ResourceYamlView>();
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
         view.DataContext = vm;
         window.Content = view;
         window.Show();
@@ -784,7 +1516,7 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
             """.ReplaceLineEndings("\n");
         Dispatcher.UIThread.RunJobs();
 
-        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        var editor = view.FindControl<TextEditor>("Editor");
         editor.ShouldNotBeNull();
 
         var fieldNameOffset = editor.Document!.Text.IndexOf("imagePullPolicy", StringComparison.Ordinal) + 2;
@@ -803,12 +1535,12 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
     }
 
     [AvaloniaFact]
-    public void ResourceYamlView_ShowsDocumentationPopupOnSequenceItemFieldName()
+    public async Task ResourceYamlView_ShowsDocumentationPopupOnSequenceItemFieldName()
     {
-        var window = CreateWindow(width: 800, height: 600);
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = CreateTestWorkspace();
-        var vm = ResolveService<ResourceYamlViewModel>();
+        var cluster = await Application.Current.CreateClusterAsync();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
             Metadata = new V1ObjectMeta
@@ -818,7 +1550,7 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
             },
         });
 
-        var view = ResolveService<ResourceYamlView>();
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
         view.DataContext = vm;
         window.Content = view;
         window.Show();
@@ -847,7 +1579,7 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
             """.ReplaceLineEndings("\n");
         Dispatcher.UIThread.RunJobs();
 
-        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        var editor = view.FindControl<TextEditor>("Editor");
         editor.ShouldNotBeNull();
 
         var fieldNameOffset = editor.Document!.Text.IndexOf("name: FIRST", StringComparison.Ordinal) + 1;
@@ -866,12 +1598,12 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
     }
 
     [AvaloniaFact]
-    public void ResourceYamlView_UpdatesDocumentationPopupWhenHoverMovesBetweenFields()
+    public async Task ResourceYamlView_UpdatesDocumentationPopupWhenHoverMovesBetweenFields()
     {
-        var window = CreateWindow(width: 800, height: 600);
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = CreateTestWorkspace();
-        var vm = ResolveService<ResourceYamlViewModel>();
+        var cluster = await Application.Current.CreateClusterAsync();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
             Metadata = new V1ObjectMeta
@@ -881,7 +1613,7 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
             },
         });
 
-        var view = ResolveService<ResourceYamlView>();
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
         view.DataContext = vm;
         window.Content = view;
         window.Show();
@@ -907,7 +1639,7 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
             """.ReplaceLineEndings("\n");
         Dispatcher.UIThread.RunJobs();
 
-        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        var editor = view.FindControl<TextEditor>("Editor");
         editor.ShouldNotBeNull();
 
         var nameOffset = editor.Document!.Text.IndexOf("name: cert-manager", StringComparison.Ordinal) + 1;
@@ -938,12 +1670,12 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
     }
 
     [AvaloniaFact]
-    public void ResourceYamlView_ShowsDocumentationPopupAfterBlankLinesAndComments()
+    public async Task ResourceYamlView_ShowsDocumentationPopupAfterBlankLinesAndComments()
     {
-        var window = CreateWindow(width: 800, height: 600);
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = CreateTestWorkspace();
-        var vm = ResolveService<ResourceYamlViewModel>();
+        var cluster = await Application.Current.CreateClusterAsync();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
             Metadata = new V1ObjectMeta
@@ -953,7 +1685,7 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
             },
         });
 
-        var view = ResolveService<ResourceYamlView>();
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
         view.DataContext = vm;
         window.Content = view;
         window.Show();
@@ -982,7 +1714,7 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
             """.ReplaceLineEndings("\n");
         Dispatcher.UIThread.RunJobs();
 
-        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        var editor = view.FindControl<TextEditor>("Editor");
         editor.ShouldNotBeNull();
 
         var fieldNameOffset = editor.Document!.Text.IndexOf("containers", StringComparison.Ordinal) + 1;
@@ -1001,12 +1733,12 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
     }
 
     [AvaloniaFact]
-    public void ResourceYamlView_DoesNotShowDocumentationPopupOnColonOrValueBoundary()
+    public async Task ResourceYamlView_DoesNotShowDocumentationPopupOnColonOrValueBoundary()
     {
-        var window = CreateWindow(width: 800, height: 600);
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = CreateTestWorkspace();
-        var vm = ResolveService<ResourceYamlViewModel>();
+        var cluster = await Application.Current.CreateClusterAsync();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
             Metadata = new V1ObjectMeta
@@ -1016,7 +1748,7 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
             },
         });
 
-        var view = ResolveService<ResourceYamlView>();
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
         view.DataContext = vm;
         window.Content = view;
         window.Show();
@@ -1040,7 +1772,7 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
             """.ReplaceLineEndings("\n");
         Dispatcher.UIThread.RunJobs();
 
-        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        var editor = view.FindControl<TextEditor>("Editor");
         editor.ShouldNotBeNull();
 
         var colonOffset = editor.Document!.Text.IndexOf("imagePullPolicy:", StringComparison.Ordinal) + "imagePullPolicy".Length;
@@ -1054,16 +1786,16 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
 
         Dispatcher.UIThread.RunJobs();
 
-        ToolTip.GetIsOpen(editor).ShouldBeFalse();
+        IsDocumentationPopupOpen(editor).ShouldBeFalse();
     }
 
     [AvaloniaFact]
-    public void ResourceYamlView_ClosesDocumentationPopupWhenScrolled()
+    public async Task ResourceYamlView_ClosesDocumentationPopupWhenScrolled()
     {
-        var window = CreateWindow(width: 800, height: 600);
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = CreateTestWorkspace();
-        var vm = ResolveService<ResourceYamlViewModel>();
+        var cluster = await Application.Current.CreateClusterAsync();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
             Metadata = new V1ObjectMeta
@@ -1073,7 +1805,7 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
             },
         });
 
-        var view = ResolveService<ResourceYamlView>();
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
         view.DataContext = vm;
         window.Content = view;
         window.Show();
@@ -1139,7 +1871,7 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
             """.ReplaceLineEndings("\n");
         Dispatcher.UIThread.RunJobs();
 
-        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        var editor = view.FindControl<TextEditor>("Editor");
         editor.ShouldNotBeNull();
 
         var fieldNameOffset = editor.Document!.Text.IndexOf("imagePullPolicy", StringComparison.Ordinal) + 2;
@@ -1148,23 +1880,23 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
 
         Dispatcher.UIThread.RunJobs();
 
-        ToolTip.GetIsOpen(editor).ShouldBeTrue();
+        IsDocumentationPopupOpen(editor).ShouldBeTrue();
 
         var scrollViewer = editor.GetScrollViewer();
         scrollViewer.ShouldNotBeNull();
         scrollViewer.Offset = new Vector(0, 80);
         Dispatcher.UIThread.RunJobs();
 
-        ToolTip.GetIsOpen(editor).ShouldBeFalse();
+        IsDocumentationPopupOpen(editor).ShouldBeFalse();
     }
 
     [AvaloniaFact]
-    public void ResourceYamlView_ShowsDocumentationPopupFromRenderedPointOnRootField()
+    public async Task ResourceYamlView_ShowsDocumentationPopupFromRenderedPointOnRootField()
     {
-        var window = CreateWindow(width: 800, height: 600);
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = CreateTestWorkspace();
-        var vm = ResolveService<ResourceYamlViewModel>();
+        var cluster = await Application.Current.CreateClusterAsync();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
             Metadata = new V1ObjectMeta
@@ -1174,7 +1906,7 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
             },
         });
 
-        var view = ResolveService<ResourceYamlView>();
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
         view.DataContext = vm;
         window.Content = view;
         window.Show();
@@ -1189,7 +1921,7 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
             """.ReplaceLineEndings("\n");
         Dispatcher.UIThread.RunJobs();
 
-        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        var editor = view.FindControl<TextEditor>("Editor");
         editor.ShouldNotBeNull();
 
         var specOffset = editor.Document!.Text.IndexOf("spec", StringComparison.Ordinal) + 1;
@@ -1206,12 +1938,12 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
     }
 
     [AvaloniaFact]
-    public void ResourceYamlView_ShowsDocumentationPopupFromRenderedPointOnNestedSequenceField()
+    public async Task ResourceYamlView_ShowsDocumentationPopupFromRenderedPointOnNestedSequenceField()
     {
-        var window = CreateWindow(width: 800, height: 600);
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = CreateTestWorkspace();
-        var vm = ResolveService<ResourceYamlViewModel>();
+        var cluster = await Application.Current.CreateClusterAsync();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
             Metadata = new V1ObjectMeta
@@ -1221,7 +1953,7 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
             },
         });
 
-        var view = ResolveService<ResourceYamlView>();
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
         view.DataContext = vm;
         window.Content = view;
         window.Show();
@@ -1242,7 +1974,7 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
             """.ReplaceLineEndings("\n");
         Dispatcher.UIThread.RunJobs();
 
-        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        var editor = view.FindControl<TextEditor>("Editor");
         editor.ShouldNotBeNull();
 
         var nameOffset = editor.Document!.Text.IndexOf("name: FIRST", StringComparison.Ordinal) + 1;
@@ -1259,12 +1991,12 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
     }
 
     [AvaloniaFact]
-    public void ResourceYamlView_ShowsDocumentationPopupFromRenderedPointPastTenthLine()
+    public async Task ResourceYamlView_ShowsDocumentationPopupFromRenderedPointPastTenthLine()
     {
-        var window = CreateWindow(width: 800, height: 600);
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = CreateTestWorkspace();
-        var vm = ResolveService<ResourceYamlViewModel>();
+        var cluster = await Application.Current.CreateClusterAsync();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
             Metadata = new V1ObjectMeta
@@ -1274,7 +2006,7 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
             },
         });
 
-        var view = ResolveService<ResourceYamlView>();
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
         view.DataContext = vm;
         window.Content = view;
         window.Show();
@@ -1301,7 +2033,7 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
             """.ReplaceLineEndings("\n");
         Dispatcher.UIThread.RunJobs();
 
-        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        var editor = view.FindControl<TextEditor>("Editor");
         editor.ShouldNotBeNull();
 
         var fieldOffset = editor.Document!.Text.IndexOf("imagePullPolicy", StringComparison.Ordinal) + 2;
@@ -1319,12 +2051,12 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
     }
 
     [AvaloniaFact]
-    public void ResourceYamlView_DoesNotShowDocumentationPopupFromRenderedPointOnValue()
+    public async Task ResourceYamlView_DoesNotShowDocumentationPopupFromRenderedPointOnValue()
     {
-        var window = CreateWindow(width: 800, height: 600);
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = CreateTestWorkspace();
-        var vm = ResolveService<ResourceYamlViewModel>();
+        var cluster = await Application.Current.CreateClusterAsync();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
             Metadata = new V1ObjectMeta
@@ -1334,7 +2066,7 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
             },
         });
 
-        var view = ResolveService<ResourceYamlView>();
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
         view.DataContext = vm;
         window.Content = view;
         window.Show();
@@ -1349,7 +2081,7 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
             """.ReplaceLineEndings("\n");
         Dispatcher.UIThread.RunJobs();
 
-        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        var editor = view.FindControl<TextEditor>("Editor");
         editor.ShouldNotBeNull();
 
         var valueOffset = editor.Document!.Text.IndexOf("IfNotPresent", StringComparison.Ordinal) + 2;
@@ -1358,16 +2090,16 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
 
         Dispatcher.UIThread.RunJobs();
 
-        ToolTip.GetIsOpen(editor).ShouldBeFalse();
+        IsDocumentationPopupOpen(editor).ShouldBeFalse();
     }
 
     [AvaloniaFact]
-    public void ResourceYamlView_ShowsDocumentationPopupForImagePullPolicyInCalicoControllerManifest()
+    public async Task ResourceYamlView_ShowsDocumentationPopupForImagePullPolicyInCalicoControllerManifest()
     {
-        var window = CreateWindow(width: 800, height: 600);
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = CreateTestWorkspace();
-        var vm = ResolveService<ResourceYamlViewModel>();
+        var cluster = await Application.Current.CreateClusterAsync();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
             Metadata = new V1ObjectMeta
@@ -1377,7 +2109,7 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
             },
         });
 
-        var view = ResolveService<ResourceYamlView>();
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
         view.DataContext = vm;
         window.Content = view;
         window.Show();
@@ -1421,11 +2153,11 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
             """.ReplaceLineEndings("\n");
         Dispatcher.UIThread.RunJobs();
 
-        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        var editor = view.FindControl<TextEditor>("Editor");
         editor.ShouldNotBeNull();
 
         var fieldOffset = editor.Document!.Text.LastIndexOf("imagePullPolicy", StringComparison.Ordinal) + 2;
-        var shown = InvokeHoverTooltipAtPoint(editor, GetViewportPointForOffset(editor, fieldOffset));
+        var shown = InvokeHoverTooltip(editor, fieldOffset);
         shown.ShouldBeTrue();
 
         Dispatcher.UIThread.RunJobs();
@@ -1438,12 +2170,12 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
     }
 
     [AvaloniaFact]
-    public void ResourceYamlView_ShowsDocumentationPopupForImagePullPolicyInCalicoControllerManifestWithoutTrailingNewline()
+    public async Task ResourceYamlView_ShowsDocumentationPopupForImagePullPolicyInCalicoControllerManifestWithoutTrailingNewline()
     {
-        var window = CreateWindow(width: 800, height: 600);
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = CreateTestWorkspace();
-        var vm = ResolveService<ResourceYamlViewModel>();
+        var cluster = await Application.Current.CreateClusterAsync();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
             Metadata = new V1ObjectMeta
@@ -1453,7 +2185,7 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
             },
         });
 
-        var view = ResolveService<ResourceYamlView>();
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
         view.DataContext = vm;
         window.Content = view;
         window.Show();
@@ -1500,11 +2232,11 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
             .TrimEnd('\r', '\n');
         Dispatcher.UIThread.RunJobs();
 
-        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        var editor = view.FindControl<TextEditor>("Editor");
         editor.ShouldNotBeNull();
 
         var fieldOffset = editor.Document!.Text.LastIndexOf("imagePullPolicy", StringComparison.Ordinal) + 2;
-        var shown = InvokeHoverTooltipAtPoint(editor, GetViewportPointForOffset(editor, fieldOffset));
+        var shown = InvokeHoverTooltip(editor, fieldOffset);
         shown.ShouldBeTrue();
 
         Dispatcher.UIThread.RunJobs();
@@ -1517,12 +2249,12 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
     }
 
     [AvaloniaFact]
-    public void ResourceYamlView_ShowsDocumentationPopupForImagePullPolicyInCalicoControllerManifestAfterScroll()
+    public async Task ResourceYamlView_ShowsDocumentationPopupForImagePullPolicyInCalicoControllerManifestAfterScroll()
     {
-        var window = CreateWindow(width: 800, height: 250);
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 250);
 
-        var cluster = CreateTestWorkspace();
-        var vm = ResolveService<ResourceYamlViewModel>();
+        var cluster = await Application.Current.CreateClusterAsync();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
             Metadata = new V1ObjectMeta
@@ -1532,7 +2264,7 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
             },
         });
 
-        var view = ResolveService<ResourceYamlView>();
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
         view.DataContext = vm;
         window.Content = view;
         window.Show();
@@ -1576,14 +2308,13 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
             """.ReplaceLineEndings("\n");
         Dispatcher.UIThread.RunJobs();
 
-        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        var editor = view.FindControl<TextEditor>("Editor");
         editor.ShouldNotBeNull();
 
         var scrollViewer = editor.GetScrollViewer();
         scrollViewer.ShouldNotBeNull();
-        WaitFor(() =>
+        await WaitForAsync(() =>
         {
-            Dispatcher.UIThread.RunJobs();
             return scrollViewer.Extent.Height > scrollViewer.Viewport.Height;
         }, 3000);
 
@@ -1604,12 +2335,12 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
     }
 
     [AvaloniaFact]
-    public void ResourceYamlView_ResolvesViewportPointToImagePullPolicyOffsetAfterScroll()
+    public async Task ResourceYamlView_ResolvesViewportPointToImagePullPolicyOffsetAfterScroll()
     {
-        var window = CreateWindow(width: 800, height: 250);
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 250);
 
-        var cluster = CreateTestWorkspace();
-        var vm = ResolveService<ResourceYamlViewModel>();
+        var cluster = await Application.Current.CreateClusterAsync();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
             Metadata = new V1ObjectMeta
@@ -1619,7 +2350,7 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
             },
         });
 
-        var view = ResolveService<ResourceYamlView>();
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
         view.DataContext = vm;
         window.Content = view;
         window.Show();
@@ -1663,14 +2394,13 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
             """.ReplaceLineEndings("\n");
         Dispatcher.UIThread.RunJobs();
 
-        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        var editor = view.FindControl<TextEditor>("Editor");
         editor.ShouldNotBeNull();
 
         var scrollViewer = editor.GetScrollViewer();
         scrollViewer.ShouldNotBeNull();
-        WaitFor(() =>
+        await WaitForAsync(() =>
         {
-            Dispatcher.UIThread.RunJobs();
             return scrollViewer.Extent.Height > scrollViewer.Viewport.Height;
         }, 3000);
 
@@ -1685,12 +2415,12 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
     }
 
     [AvaloniaFact]
-    public void ResourceYamlView_CreatesDocumentationTipForImagePullPolicyOffsetAfterScroll()
+    public async Task ResourceYamlView_CreatesDocumentationTipForImagePullPolicyOffsetAfterScroll()
     {
-        var window = CreateWindow(width: 800, height: 250);
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 250);
 
-        var cluster = CreateTestWorkspace();
-        var vm = ResolveService<ResourceYamlViewModel>();
+        var cluster = await Application.Current.CreateClusterAsync();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
             Metadata = new V1ObjectMeta
@@ -1700,7 +2430,7 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
             },
         });
 
-        var view = ResolveService<ResourceYamlView>();
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
         view.DataContext = vm;
         window.Content = view;
         window.Show();
@@ -1744,14 +2474,13 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
             """.ReplaceLineEndings("\n");
         Dispatcher.UIThread.RunJobs();
 
-        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        var editor = view.FindControl<TextEditor>("Editor");
         editor.ShouldNotBeNull();
 
         var scrollViewer = editor.GetScrollViewer();
         scrollViewer.ShouldNotBeNull();
-        WaitFor(() =>
+        await WaitForAsync(() =>
         {
-            Dispatcher.UIThread.RunJobs();
             return scrollViewer.Extent.Height > scrollViewer.Viewport.Height;
         }, 3000);
 
@@ -1767,10 +2496,10 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task ResourceYamlView_DoesNotShowCompletion_WhenEnterCreatesNewLine()
     {
-        var window = CreateWindow(width: 800, height: 600);
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = CreateTestWorkspace();
-        var vm = ResolveService<ResourceYamlViewModel>();
+        var cluster = await Application.Current.CreateClusterAsync();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
             Metadata = new V1ObjectMeta
@@ -1782,17 +2511,17 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
         vm.ValidationDebounceDelay = TimeSpan.Zero;
         vm.EditMode = true;
 
-        var view = ResolveService<ResourceYamlView>();
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
         view.DataContext = vm;
         window.Content = view;
         window.Show();
 
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
-        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        var editor = view.FindControl<TextEditor>("Editor");
         editor.ShouldNotBeNull();
         editor.TextArea.PerformTextInput("\n");
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var behavior = Interaction.GetBehaviors(editor).OfType<YamlEditorBehavior>().Single();
         var completionWindow = GetCompletionWindow(behavior);
@@ -1802,10 +2531,10 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task ResourceYamlView_InsertsSequenceMarker_WhenEnterIsPressedOnSequenceProperty()
     {
-        var window = CreateWindow(width: 800, height: 600);
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = CreateTestWorkspace();
-        var vm = ResolveService<ResourceYamlViewModel>();
+        var cluster = await Application.Current.CreateClusterAsync();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
             Metadata = new V1ObjectMeta
@@ -1826,19 +2555,19 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
               containers:
             """.ReplaceLineEndings("\n");
 
-        var view = ResolveService<ResourceYamlView>();
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
         view.DataContext = vm;
         window.Content = view;
         window.Show();
 
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
-        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        var editor = view.FindControl<TextEditor>("Editor");
         editor.ShouldNotBeNull();
         editor.CaretOffset = editor.Text.LastIndexOf("containers:", StringComparison.Ordinal) + "containers:".Length;
 
         editor.TextArea.PerformTextInput("\n");
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         editor.Text.ShouldBe(
             "apiVersion: v1\n"
@@ -1854,10 +2583,10 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task ResourceYamlView_AlignsNestedSequenceMarker_WhenEnterIsPressedOnSequenceItemProperty()
     {
-        var window = CreateWindow(width: 800, height: 600);
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = CreateTestWorkspace();
-        var vm = ResolveService<ResourceYamlViewModel>();
+        var cluster = await Application.Current.CreateClusterAsync();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
             Metadata = new V1ObjectMeta
@@ -1879,19 +2608,19 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
                 - command:
             """.ReplaceLineEndings("\n");
 
-        var view = ResolveService<ResourceYamlView>();
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
         view.DataContext = vm;
         window.Content = view;
         window.Show();
 
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
-        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        var editor = view.FindControl<TextEditor>("Editor");
         editor.ShouldNotBeNull();
         editor.CaretOffset = editor.Text.LastIndexOf("command:", StringComparison.Ordinal) + "command:".Length;
 
         editor.TextArea.PerformTextInput("\n");
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         editor.Text.ShouldBe(
             "apiVersion: v1\n"
@@ -1906,12 +2635,121 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
     }
 
     [AvaloniaFact]
+    public async Task ResourceYamlView_ContinuesSequenceItemMapping_WhenEnterIsPressedAfterValue()
+    {
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
+
+        var cluster = await Application.Current.CreateClusterAsync();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
+        vm.Initialize(cluster, new V1Pod
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "test",
+                NamespaceProperty = "default",
+            },
+        });
+        vm.ValidationDebounceDelay = TimeSpan.Zero;
+        vm.EditMode = true;
+        vm.YamlDocument.Text = """
+            apiVersion: v1
+            kind: Pod
+            metadata:
+              name: temp
+              namespace: default
+            spec:
+              containers:
+                - imagePullPolicy: Always
+            """.ReplaceLineEndings("\n");
+
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
+        view.DataContext = vm;
+        window.Content = view;
+        window.Show();
+
+        await TestApplicationExtensions.WaitForUiAsync();
+
+        var editor = view.FindControl<TextEditor>("Editor");
+        editor.ShouldNotBeNull();
+        editor.CaretOffset = editor.Text.Length;
+
+        editor.TextArea.PerformTextInput("\n");
+        await TestApplicationExtensions.WaitForUiAsync();
+
+        editor.Text.ShouldBe(
+            "apiVersion: v1\n"
+            + "kind: Pod\n"
+            + "metadata:\n"
+            + "  name: temp\n"
+            + "  namespace: default\n"
+            + "spec:\n"
+            + "  containers:\n"
+            + "    - imagePullPolicy: Always\n"
+            + "      ");
+    }
+
+    [AvaloniaFact]
+    public async Task ResourceYamlView_ForcesNewSequenceItem_WhenControlEnterIsPressedAfterValue()
+    {
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
+
+        var cluster = await Application.Current.CreateClusterAsync();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
+        vm.Initialize(cluster, new V1Pod
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "test",
+                NamespaceProperty = "default",
+            },
+        });
+        vm.ValidationDebounceDelay = TimeSpan.Zero;
+        vm.EditMode = true;
+        vm.YamlDocument.Text = """
+            apiVersion: v1
+            kind: Pod
+            metadata:
+              name: temp
+              namespace: default
+            spec:
+              containers:
+                - imagePullPolicy: Always
+            """.ReplaceLineEndings("\n");
+
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
+        view.DataContext = vm;
+        window.Content = view;
+        window.Show();
+
+        await TestApplicationExtensions.WaitForUiAsync();
+
+        var editor = view.FindControl<TextEditor>("Editor");
+        editor.ShouldNotBeNull();
+        editor.CaretOffset = editor.Text.Length;
+        editor.TextArea.Focus();
+
+        window.KeyPress(Key.Enter, RawInputModifiers.Control, PhysicalKey.Enter, null);
+        await TestApplicationExtensions.WaitForUiAsync();
+
+        editor.Text.ShouldBe(
+            "apiVersion: v1\n"
+            + "kind: Pod\n"
+            + "metadata:\n"
+            + "  name: temp\n"
+            + "  namespace: default\n"
+            + "spec:\n"
+            + "  containers:\n"
+            + "    - imagePullPolicy: Always\n"
+            + "    - ");
+    }
+
+    [AvaloniaFact]
     public async Task ResourceYamlView_ContinuesListItem_WhenEnterIsPressedAtEndOfSequenceEntry()
     {
-        var window = CreateWindow(width: 800, height: 600);
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = CreateTestWorkspace();
-        var vm = ResolveService<ResourceYamlViewModel>();
+        var cluster = await Application.Current.CreateClusterAsync();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
             Metadata = new V1ObjectMeta
@@ -1930,19 +2768,19 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
                 - test
             """.ReplaceLineEndings("\n");
 
-        var view = ResolveService<ResourceYamlView>();
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
         view.DataContext = vm;
         window.Content = view;
         window.Show();
 
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
-        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        var editor = view.FindControl<TextEditor>("Editor");
         editor.ShouldNotBeNull();
         editor.CaretOffset = editor.Text.Length;
 
         editor.TextArea.PerformTextInput("\n");
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         editor.Text.ShouldBe(
             "apiVersion: v1\n"
@@ -1956,10 +2794,10 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task ResourceYamlView_ExitsList_WhenEnterIsPressedOnBlankSequenceEntry()
     {
-        var window = CreateWindow(width: 800, height: 600);
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = CreateTestWorkspace();
-        var vm = ResolveService<ResourceYamlViewModel>();
+        var cluster = await Application.Current.CreateClusterAsync();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
             Metadata = new V1ObjectMeta
@@ -1974,22 +2812,22 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
             kind: Pod
             spec:
               containers:
-                - 
+                -
             """.ReplaceLineEndings("\n");
 
-        var view = ResolveService<ResourceYamlView>();
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
         view.DataContext = vm;
         window.Content = view;
         window.Show();
 
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
-        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        var editor = view.FindControl<TextEditor>("Editor");
         editor.ShouldNotBeNull();
         editor.CaretOffset = editor.Text.Length;
 
         editor.TextArea.PerformTextInput("\n");
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         editor.Text.ShouldBe(
             "apiVersion: v1\n"
@@ -2002,10 +2840,10 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task ResourceYamlView_DoesNotShowCompletion_WhenTypingScalarSequenceItem()
     {
-        var window = CreateWindow(width: 800, height: 600);
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = CreateTestWorkspace();
-        var vm = ResolveService<ResourceYamlViewModel>();
+        var cluster = await Application.Current.CreateClusterAsync();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
             Metadata = new V1ObjectMeta
@@ -2024,22 +2862,22 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
             spec:
               containers:
                 - command:
-                  - 
+                  -
             """.ReplaceLineEndings("\n");
 
-        var view = ResolveService<ResourceYamlView>();
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
         view.DataContext = vm;
         window.Content = view;
         window.Show();
 
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
-        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        var editor = view.FindControl<TextEditor>("Editor");
         editor.ShouldNotBeNull();
         editor.CaretOffset = editor.Text.Length;
 
         editor.TextArea.PerformTextInput("s");
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var behavior = Interaction.GetBehaviors(editor).OfType<YamlEditorBehavior>().Single();
         var completionWindow = GetCompletionWindow(behavior);
@@ -2049,10 +2887,10 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task ResourceYamlView_InsertsStarterSequence_WhenSelectingListCompletion()
     {
-        var window = CreateWindow(width: 800, height: 600);
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = CreateTestWorkspace();
-        var vm = ResolveService<ResourceYamlViewModel>();
+        var cluster = await Application.Current.CreateClusterAsync();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
             Metadata = new V1ObjectMeta
@@ -2071,22 +2909,22 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
             spec:
               containers:
                 - name: test
-                  ar
+                  co
             """.ReplaceLineEndings("\n");
 
-        var view = ResolveService<ResourceYamlView>();
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
         view.DataContext = vm;
         window.Content = view;
         window.Show();
 
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
-        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        var editor = view.FindControl<TextEditor>("Editor");
         editor.ShouldNotBeNull();
         editor.CaretOffset = editor.Text.Length;
 
         vm.RequestCompletionCommand.Execute(null);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var behavior = Interaction.GetBehaviors(editor).OfType<YamlEditorBehavior>().Single();
         var completionWindow = GetCompletionWindow(behavior);
@@ -2094,7 +2932,7 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
 
         var completionData = completionWindow!.CompletionList.CompletionData
             .OfType<YamlCompletionData>()
-            .Single(data => data.Text == "args");
+            .Single(data => data.Text == "command");
 
         completionData.Complete(
             editor.TextArea,
@@ -2104,7 +2942,7 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
                 Length = completionWindow.EndOffset - completionWindow.StartOffset,
             },
             EventArgs.Empty);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         editor.Text.ShouldBe(
             "apiVersion: v1\n"
@@ -2115,17 +2953,17 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
             + "spec:\n"
             + "  containers:\n"
             + "    - name: test\n"
-            + "      args:\n"
+            + "      command:\n"
             + "        - ");
     }
 
     [AvaloniaFact]
     public async Task ResourceYamlView_InsertsStarterObjectBlock_WhenSelectingObjectCompletion()
     {
-        var window = CreateWindow(width: 800, height: 600);
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = CreateTestWorkspace();
-        var vm = ResolveService<ResourceYamlViewModel>();
+        var cluster = await Application.Current.CreateClusterAsync();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
             Metadata = new V1ObjectMeta
@@ -2144,19 +2982,19 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
             sp
             """.ReplaceLineEndings("\n");
 
-        var view = ResolveService<ResourceYamlView>();
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
         view.DataContext = vm;
         window.Content = view;
         window.Show();
 
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
-        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        var editor = view.FindControl<TextEditor>("Editor");
         editor.ShouldNotBeNull();
         editor.CaretOffset = editor.Text.Length;
 
         vm.RequestCompletionCommand.Execute(null);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         var behavior = Interaction.GetBehaviors(editor).OfType<YamlEditorBehavior>().Single();
         var completionWindow = GetCompletionWindow(behavior);
@@ -2174,7 +3012,7 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
                 Length = completionWindow.EndOffset - completionWindow.StartOffset,
             },
             EventArgs.Empty);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         editor.Text.ShouldBe(
             "apiVersion: v1\n"
@@ -2189,7 +3027,7 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
     [AvaloniaFact]
     public void YamlSyntaxValidationService_ReturnsDiagnostic_ForMalformedYaml()
     {
-        var service = ResolveService<IYamlValidationService>();
+        var service = Application.Current.GetRequiredTestService<IYamlValidationService>();
 
         var diagnostics = service.Validate("""
             apiVersion: v1
@@ -2206,10 +3044,110 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
     }
 
     [AvaloniaFact]
+    public void YamlSyntaxValidationService_AnchorsDuplicateKeyDiagnostic_ToDuplicateKey()
+    {
+        var service = Application.Current.GetRequiredTestService<IYamlValidationService>();
+
+        var diagnostics = service.Validate("""
+            apiVersion: azure.upbound.io/v1beta1
+            kind: ResourceGroup
+            metadata:
+              name: temp
+              namespace: default
+            spec:
+              forProvider:
+                location: test
+                managedBy: tes
+                tags:
+                  test: val
+                  test: 2
+                  test: 4
+            """.ReplaceLineEndings("\n"));
+
+        diagnostics.Count.ShouldBe(1);
+        diagnostics[0].Message.ShouldContain("duplicate key test");
+        diagnostics[0].StartLine.ShouldBe(12);
+        diagnostics[0].StartColumn.ShouldBe(7);
+    }
+
+    [AvaloniaFact]
+    public void YamlSyntaxValidationService_AnchorsDuplicateKeyInSequenceMapping_ToDuplicateKey()
+    {
+        var service = Application.Current.GetRequiredTestService<IYamlValidationService>();
+
+        var diagnostics = service.Validate("""
+            apiVersion: v1
+            kind: Pod
+            metadata:
+              name: temp
+            spec:
+              containers:
+                - name: app
+                  image: first
+                  image: second
+            """.ReplaceLineEndings("\n"));
+
+        diagnostics.Count.ShouldBe(1);
+        diagnostics[0].Message.ShouldContain("duplicate key image");
+        diagnostics[0].StartLine.ShouldBe(9);
+        diagnostics[0].StartColumn.ShouldBe(7);
+    }
+
+    [AvaloniaFact]
+    public void YamlSyntaxValidationService_AcceptsCrdInstanceWithJsonModel()
+    {
+        var service = Application.Current.GetRequiredTestService<IYamlValidationService>();
+        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+
+        var crd = KubernetesYaml.Deserialize<V1CustomResourceDefinition>(KubernetesTestData.CustomResourceDefinitionYaml);
+        var version = crd.Spec.Versions.First(version => version.Served && version.Storage).Name;
+        var kind = new GroupApiVersionKind(crd.Spec.Group, version, crd.Spec.Names.Kind, crd.Spec.Names.Plural);
+        try
+        {
+            cluster.Runtime.ModelCatalog.RegisterCustomResourceDefinition(kind);
+
+            cluster.Runtime.ModelCatalog.IsCustomResource(kind).ShouldBeTrue();
+
+            var diagnostics = service.Validate(KubernetesTestData.CustomResourceYaml, cluster.Runtime.ModelCatalog);
+
+            diagnostics.ShouldBeEmpty();
+        }
+        finally
+        {
+            cluster.Runtime.ModelCatalog.RemoveCustomResourceDefinition(kind);
+        }
+    }
+
+    [AvaloniaFact]
+    public void YamlSyntaxValidationService_AcceptsRegisteredCnpgCluster()
+    {
+        var service = Application.Current.GetRequiredTestService<IYamlValidationService>();
+        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var kind = new GroupApiVersionKind("postgresql.cnpg.io", "v1", "Cluster", "clusters");
+        const string yaml = """
+            apiVersion: postgresql.cnpg.io/v1
+            kind: Cluster
+            metadata:
+              name: app
+            """;
+
+        try
+        {
+            cluster.Runtime.ModelCatalog.RegisterCustomResourceDefinition(kind);
+
+            service.Validate(yaml.ReplaceLineEndings("\n"), cluster.Runtime.ModelCatalog).ShouldBeEmpty();
+        }
+        finally
+        {
+            cluster.Runtime.ModelCatalog.RemoveCustomResourceDefinition(kind);
+        }
+    }
+
+    [AvaloniaFact]
     public void YamlSyntaxValidationService_ReturnsDiagnostic_ForUnknownKubernetesField()
     {
-        var service = ResolveService<IYamlValidationService>();
-        var cluster = CreateTestWorkspace();
+        var service = Application.Current.GetRequiredTestService<IYamlValidationService>();
+        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
 
         var diagnostics = service.Validate("""
             apiVersion: v1
@@ -2219,7 +3157,7 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
               namespace: default
             spec:
               unknownField: value
-            """.ReplaceLineEndings("\n"), cluster.ModelCache);
+            """.ReplaceLineEndings("\n"), cluster.Runtime.ModelCatalog);
 
         diagnostics.Count.ShouldBe(1);
         diagnostics[0].Severity.ShouldBe(YamlDiagnosticSeverity.Error);
@@ -2229,8 +3167,8 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
     [AvaloniaFact]
     public void YamlSyntaxValidationService_AnchorsTypedScalarConversionError_ToValue()
     {
-        var service = ResolveService<IYamlValidationService>();
-        var cluster = CreateTestWorkspace();
+        var service = Application.Current.GetRequiredTestService<IYamlValidationService>();
+        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
 
         var diagnostics = service.Validate("""
             apiVersion: v1
@@ -2240,7 +3178,7 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
               namespace: default
             spec:
               activeDeadlineSeconds: a
-            """.ReplaceLineEndings("\n"), cluster.ModelCache);
+            """.ReplaceLineEndings("\n"), cluster.Runtime.ModelCatalog);
 
         diagnostics.Count.ShouldBe(1);
         diagnostics[0].Severity.ShouldBe(YamlDiagnosticSeverity.Error);
@@ -2347,7 +3285,7 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
     [AvaloniaFact]
     public void YamlSyntaxValidationService_AnchorsUnknownTypeDiagnostic_ToKindHeader()
     {
-        var service = ResolveService<IYamlValidationService>();
+        var service = Application.Current.GetRequiredTestService<IYamlValidationService>();
 
         var diagnostics = service.Validate("""
             apiVersion: example.io/v1
@@ -2367,10 +3305,10 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task ResourceYamlView_TracksYamlSyntaxDiagnostics()
     {
-        var window = CreateWindow(width: 800, height: 600);
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = CreateTestWorkspace();
-        var vm = ResolveService<ResourceYamlViewModel>();
+        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
             Metadata = new V1ObjectMeta
@@ -2381,12 +3319,12 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
         });
         vm.EditMode = true;
 
-        var view = ResolveService<ResourceYamlView>();
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
         view.DataContext = vm;
         window.Content = view;
         window.Show();
 
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         vm.YamlDocument.Text = """
             apiVersion: v1
@@ -2400,7 +3338,7 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
         vm.ValidationDiagnostics[0].Message.ShouldNotContain("Exception during serialization");
         vm.ValidationDiagnostics[0].Message.ShouldNotContain("Exception during deserialization");
 
-        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        var editor = view.FindControl<TextEditor>("Editor");
         editor.ShouldNotBeNull();
 
         GetDiagnosticMessages(editor).ShouldContain(message => message.Contains("expected", StringComparison.OrdinalIgnoreCase));
@@ -2416,10 +3354,10 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task ResourceYamlView_TracksStrictKubernetesDiagnostics()
     {
-        var window = CreateWindow(width: 800, height: 600);
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = CreateTestWorkspace();
-        var vm = ResolveService<ResourceYamlViewModel>();
+        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
             Metadata = new V1ObjectMeta
@@ -2430,12 +3368,12 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
         });
         vm.EditMode = true;
 
-        var view = ResolveService<ResourceYamlView>();
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
         view.DataContext = vm;
         window.Content = view;
         window.Show();
 
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         vm.YamlDocument.Text = """
             apiVersion: v1
@@ -2454,7 +3392,7 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
         vm.ActionResultTitle.ShouldBe("Validation failed");
         vm.ActionResultMessage.ShouldContain("unknownField");
 
-        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        var editor = view.FindControl<TextEditor>("Editor");
         editor.ShouldNotBeNull();
 
         GetDiagnosticMessages(editor).ShouldContain(message => message.Contains("unknownField", StringComparison.OrdinalIgnoreCase));
@@ -2463,10 +3401,10 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task ResourceYamlView_TracksUnknownTypeDiagnostics()
     {
-        var window = CreateWindow(width: 800, height: 600);
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = CreateTestWorkspace();
-        var vm = ResolveService<ResourceYamlViewModel>();
+        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
             Metadata = new V1ObjectMeta
@@ -2477,12 +3415,12 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
         });
         vm.EditMode = true;
 
-        var view = ResolveService<ResourceYamlView>();
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
         view.DataContext = vm;
         window.Content = view;
         window.Show();
 
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         vm.YamlDocument.Text = """
             apiVersion: example.io/v1
@@ -2499,7 +3437,7 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
         vm.ActionResultTitle.ShouldBe("Validation failed");
         vm.ActionResultMessage.ShouldContain("MadeUpKind");
 
-        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        var editor = view.FindControl<TextEditor>("Editor");
         editor.ShouldNotBeNull();
 
         GetDiagnosticMessages(editor).ShouldContain(message => message.Contains("MadeUpKind", StringComparison.OrdinalIgnoreCase));
@@ -2508,10 +3446,10 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task ResourceYamlView_SaveShowsInlineFailure_WhenYamlIsInvalid()
     {
-        var window = CreateWindow(width: 800, height: 600);
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = CreateTestWorkspace();
-        var vm = ResolveService<ResourceYamlViewModel>();
+        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
             Metadata = new V1ObjectMeta
@@ -2522,12 +3460,12 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
         });
         vm.EditMode = true;
 
-        var view = ResolveService<ResourceYamlView>();
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
         view.DataContext = vm;
         window.Content = view;
         window.Show();
 
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         vm.YamlDocument.Text = """
             apiVersion: v1
@@ -2537,8 +3475,8 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
             """.ReplaceLineEndings("\n");
         await WaitForValidationDebounceAsync(() => vm.ValidationDiagnostics.Count == 1);
 
-        await vm.SaveCommand.ExecuteAsync(null);
-        Dispatcher.UIThread.RunJobs();
+        await vm.SaveCommand.ExecuteAsync(null).WaitAsync(TestContext.Current.CancellationToken);
+        await TestApplicationExtensions.WaitForUiAsync();
 
         vm.HasActionFailureResult.ShouldBeTrue();
         vm.ActionResultTitle.ShouldBe("Save failed");
@@ -2548,16 +3486,16 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
         actionBar.ShouldNotBeNull();
         actionBar.IsOpen.ShouldBeTrue();
         actionBar.Severity.ShouldBe(FAInfoBarSeverity.Error);
-        TestApp.LastNotification.ShouldBeNull();
+        (Application.Current as TestApp)?.Notification.ShouldBeNull();
     }
 
     [AvaloniaFact]
     public async Task ResourceYamlView_DisablesSaveAndDryRun_WhenValidationErrorsExist()
     {
-        var window = CreateWindow(width: 800, height: 600);
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = CreateTestWorkspace();
-        var vm = ResolveService<ResourceYamlViewModel>();
+        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
             Metadata = new V1ObjectMeta
@@ -2568,12 +3506,12 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
         });
         vm.EditMode = true;
 
-        var view = ResolveService<ResourceYamlView>();
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
         view.DataContext = vm;
         window.Content = view;
         window.Show();
 
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         vm.YamlDocument.Text = """
             apiVersion: v1
@@ -2592,10 +3530,10 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
     }
 
     [AvaloniaFact]
-    public async Task ResourceYamlView_DebouncesValidationWhileTypingPartialPropertyName()
+    public async Task ResourceYamlView_DebouncesValidationWhileTypingInvalidYaml()
     {
-        var cluster = CreateTestWorkspace();
-        var vm = ResolveService<ResourceYamlViewModel>();
+        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
             Metadata = new V1ObjectMeta
@@ -2613,10 +3551,9 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
             metadata:
               name: test
               namespace: default
-            spec:
-              con
+              labels: [test
             """.ReplaceLineEndings("\n");
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         vm.ValidationDiagnostics.ShouldBeEmpty();
         vm.HasActionResult.ShouldBeFalse();
@@ -2630,10 +3567,11 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task ResourceYamlView_DryRunShowsInlineSuccess_WhenYamlIsValid()
     {
-        var window = CreateWindow(width: 800, height: 600);
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = CreateTestWorkspace();
-        var vm = ResolveService<ResourceYamlViewModel>();
+        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        await cluster.Connect();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
             Metadata = new V1ObjectMeta
@@ -2644,12 +3582,12 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
         });
         vm.EditMode = true;
 
-        var view = ResolveService<ResourceYamlView>();
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
         view.DataContext = vm;
         window.Content = view;
         window.Show();
 
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         vm.YamlDocument.Text = """
             apiVersion: v1
@@ -2662,14 +3600,14 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
                 - name: app
                   image: nginx
             """.ReplaceLineEndings("\n");
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         vm.DryRunCommand.CanExecute(null).ShouldBeTrue();
 
-        await vm.DryRunCommand.ExecuteAsync(null);
-        Dispatcher.UIThread.RunJobs();
+        await vm.DryRunCommand.ExecuteAsync(null).WaitAsync(TestContext.Current.CancellationToken);
+        await TestApplicationExtensions.WaitForUiAsync();
 
-        TestApp.LastNotification.ShouldBeNull();
+        (Application.Current as TestApp)?.Notification.ShouldBeNull();
         vm.HasActionSuccessResult.ShouldBeTrue();
         vm.ActionResultTitle.ShouldBe("Dry run succeeded");
         vm.ActionResultMessage.ShouldBe("The server accepted the manifest using dry-run.");
@@ -2682,16 +3620,13 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task ResourceYamlView_DryRunShowsInlineFailure_WhenServerValidationFails()
     {
-        var window = CreateWindow(width: 800, height: 600);
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var runtime = new TestCluster
-        {
-            DryRunYamlBehavior = _ => Task.FromException(new InvalidOperationException("Server-side validation failed.")),
-        };
-        var cluster = runtime.CreateWorkspace();
-        _disposables.Add(cluster);
+        var services = Application.Current.GetTestServices();
+        var cluster = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        await cluster.Connect();
 
-        var vm = ResolveService<ResourceYamlViewModel>();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
             Metadata = new V1ObjectMeta
@@ -2702,12 +3637,12 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
         });
         vm.EditMode = true;
 
-        var view = ResolveService<ResourceYamlView>();
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
         view.DataContext = vm;
         window.Content = view;
         window.Show();
 
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         vm.YamlDocument.Text = """
             apiVersion: v1
@@ -2715,20 +3650,17 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
             metadata:
               name: test
               namespace: default
-            spec:
-              containers:
-                - name: app
-                  image: nginx
+            spec: {}
             """.ReplaceLineEndings("\n");
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
-        await vm.DryRunCommand.ExecuteAsync(null);
-        Dispatcher.UIThread.RunJobs();
+        await vm.DryRunCommand.ExecuteAsync(null).WaitAsync(TestContext.Current.CancellationToken);
+        await TestApplicationExtensions.WaitForUiAsync();
 
-        TestApp.LastNotification.ShouldBeNull();
+        (Application.Current as TestApp)?.Notification.ShouldBeNull();
         vm.HasActionFailureResult.ShouldBeTrue();
         vm.ActionResultTitle.ShouldBe("Dry run failed");
-        vm.ActionResultMessage.ShouldBe("Server-side validation failed.");
+        vm.ActionResultMessage.ShouldNotBeNullOrWhiteSpace();
         var actionBar = view.FindControl<FAInfoBar>("ActionResultBar");
         actionBar.ShouldNotBeNull();
         actionBar.IsOpen.ShouldBeTrue();
@@ -2738,10 +3670,11 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task ResourceYamlView_KeepsActionResultVisible_WhenYamlChanges()
     {
-        var window = CreateWindow(width: 800, height: 600);
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = CreateTestWorkspace();
-        var vm = ResolveService<ResourceYamlViewModel>();
+        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        await cluster.Connect();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
             Metadata = new V1ObjectMeta
@@ -2752,12 +3685,12 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
         });
         vm.EditMode = true;
 
-        var view = ResolveService<ResourceYamlView>();
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
         view.DataContext = vm;
         window.Content = view;
         window.Show();
 
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         vm.YamlDocument.Text = """
             apiVersion: v1
@@ -2770,15 +3703,15 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
                 - name: app
                   image: nginx
             """.ReplaceLineEndings("\n");
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
-        await vm.DryRunCommand.ExecuteAsync(null);
-        Dispatcher.UIThread.RunJobs();
+        await vm.DryRunCommand.ExecuteAsync(null).WaitAsync(TestContext.Current.CancellationToken);
+        await TestApplicationExtensions.WaitForUiAsync();
 
         vm.HasActionResult.ShouldBeTrue();
 
         vm.YamlDocument.Insert(vm.YamlDocument.TextLength, "\n# note");
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         vm.HasActionResult.ShouldBeTrue();
         vm.ActionResultTitle.ShouldBe("Dry run succeeded");
@@ -2791,10 +3724,11 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task ResourceYamlView_ClearsActionResult_WhenDismissed()
     {
-        var window = CreateWindow(width: 800, height: 600);
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = CreateTestWorkspace();
-        var vm = ResolveService<ResourceYamlViewModel>();
+        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        await cluster.Connect();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
             Metadata = new V1ObjectMeta
@@ -2805,12 +3739,12 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
         });
         vm.EditMode = true;
 
-        var view = ResolveService<ResourceYamlView>();
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
         view.DataContext = vm;
         window.Content = view;
         window.Show();
 
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         vm.YamlDocument.Text = """
             apiVersion: v1
@@ -2823,10 +3757,10 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
                 - name: app
                   image: nginx
             """.ReplaceLineEndings("\n");
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
-        await vm.DryRunCommand.ExecuteAsync(null);
-        Dispatcher.UIThread.RunJobs();
+        await vm.DryRunCommand.ExecuteAsync(null).WaitAsync(TestContext.Current.CancellationToken);
+        await TestApplicationExtensions.WaitForUiAsync();
 
         vm.HasActionSuccessResult.ShouldBeTrue();
         vm.DismissActionResultCommand.CanExecute(null).ShouldBeTrue();
@@ -2836,7 +3770,7 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
         actionBar.IsClosable.ShouldBeTrue();
 
         vm.DismissActionResultCommand.Execute(null);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         vm.HasActionResult.ShouldBeFalse();
         vm.DismissActionResultCommand.CanExecute(null).ShouldBeFalse();
@@ -2847,8 +3781,8 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
     [AvaloniaFact]
     public void ResourceYamlView_HidesActionResultBar_WhenThereIsNoMessage()
     {
-        var vm = ResolveService<ResourceYamlViewModel>();
-        var view = ResolveService<ResourceYamlView>();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
         view.DataContext = vm;
 
         var actionBar = view.FindControl<FAInfoBar>("ActionResultBar");
@@ -2860,8 +3794,8 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
     [AvaloniaFact]
     public void ResourceYamlView_HideNoisyFieldsToggle_BindsDirectlyToViewModel()
     {
-        var vm = ResolveService<ResourceYamlViewModel>();
-        var view = ResolveService<ResourceYamlView>();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
         view.DataContext = vm;
 
         var toggleButton = view.FindControl<ToggleButton>("HideNoisyFieldsToggle");
@@ -2879,7 +3813,7 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
     [AvaloniaFact]
     public void YamlEditorBehavior_UnindentsEmptyLineByTwoSpaces()
     {
-        var editor = new AvaloniaEdit.TextEditor
+        var editor = new TextEditor
         {
             Document = new TextDocument("        "),
         };
@@ -2895,7 +3829,7 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
     [AvaloniaFact]
     public void YamlEditorBehavior_DoesNotUnindentNonEmptyLine()
     {
-        var editor = new AvaloniaEdit.TextEditor
+        var editor = new TextEditor
         {
             Document = new TextDocument("      a"),
         };
@@ -2911,7 +3845,7 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
     [AvaloniaFact]
     public void YamlEditorBehavior_UnindentsEmptyLineForShiftTabPath()
     {
-        var editor = new AvaloniaEdit.TextEditor
+        var editor = new TextEditor
         {
             Document = new TextDocument("    "),
         };
@@ -2927,7 +3861,7 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
     [AvaloniaFact]
     public void YamlEditorBehavior_UnindentsCurrentLineForShiftTabPath()
     {
-        var editor = new AvaloniaEdit.TextEditor
+        var editor = new TextEditor
         {
             Document = new TextDocument("    value"),
         };
@@ -2943,7 +3877,7 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
     [AvaloniaFact]
     public void YamlEditorBehavior_IndentsSelectedLinesByTwoSpaces()
     {
-        var editor = new AvaloniaEdit.TextEditor
+        var editor = new TextEditor
         {
             Document = new TextDocument("a\nb\n"),
         };
@@ -2958,7 +3892,7 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
     [AvaloniaFact]
     public void YamlEditorBehavior_UnindentsSelectedLinesByTwoSpaces()
     {
-        var editor = new AvaloniaEdit.TextEditor
+        var editor = new TextEditor
         {
             Document = new TextDocument("  a\n  b\n"),
         };
@@ -2973,10 +3907,10 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task ResourceYamlView_UsesTwoSpaceIndentationOptions()
     {
-        var window = CreateWindow(width: 800, height: 600);
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = CreateTestWorkspace();
-        var vm = ResolveService<ResourceYamlViewModel>();
+        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
             Metadata = new V1ObjectMeta
@@ -2987,14 +3921,14 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
         });
         vm.EditMode = true;
 
-        var view = ResolveService<ResourceYamlView>();
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
         view.DataContext = vm;
         window.Content = view;
         window.Show();
 
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
-        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        var editor = view.FindControl<TextEditor>("Editor");
         editor.ShouldNotBeNull();
         editor.Options.IndentationSize.ShouldBe(2);
         editor.Options.ConvertTabsToSpaces.ShouldBeTrue();
@@ -3004,10 +3938,10 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task ResourceYamlView_LeavesScrollBelowDocumentEnabled()
     {
-        var window = CreateWindow(width: 800, height: 600);
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = CreateTestWorkspace();
-        var vm = ResolveService<ResourceYamlViewModel>();
+        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
             Metadata = new V1ObjectMeta
@@ -3017,14 +3951,14 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
             },
         });
 
-        var view = ResolveService<ResourceYamlView>();
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
         view.DataContext = vm;
         window.Content = view;
         window.Show();
 
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
-        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        var editor = view.FindControl<TextEditor>("Editor");
         editor.ShouldNotBeNull();
         editor.Options.AllowScrollBelowDocument.ShouldBeTrue();
     }
@@ -3032,21 +3966,21 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task ResourceYamlView_PreservesParentFoldState_WhenResourceGrowsAboveFold()
     {
-        var window = CreateWindow(width: 800, height: 600);
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = CreateTestWorkspace();
-        var vm = ResolveService<ResourceYamlViewModel>();
+        var cluster = await Application.Current.CreateClusterAsync();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         var resource = CreatePod("test", includeLabels: false, extraEnv: false);
         vm.Initialize(cluster, resource);
 
-        var view = ResolveService<ResourceYamlView>();
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
         view.DataContext = vm;
         window.Content = view;
         window.Show();
 
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
-        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        var editor = view.FindControl<TextEditor>("Editor");
         editor.ShouldNotBeNull();
 
         var behavior = Interaction.GetBehaviors(editor).OfType<YamlEditorBehavior>().Single();
@@ -3056,8 +3990,8 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
         var specFold = foldingManager.AllFoldings.Single(x => x.Title.TrimEnd() == "spec:");
         specFold.IsFolded = true;
 
-        await cluster.AddOrUpdateResource(CreatePod("test", includeLabels: true, extraEnv: false));
-        Dispatcher.UIThread.RunJobs();
+        await cluster.Runtime.AddOrUpdateResource(CreatePod("test", includeLabels: true, extraEnv: false));
+        await TestApplicationExtensions.WaitForUiAsync();
 
         foldingManager = GetFoldingManager(behavior);
         foldingManager.ShouldNotBeNull();
@@ -3068,21 +4002,21 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task ResourceYamlView_PreservesParentFoldState_WhenResourceGrowsBelowFold()
     {
-        var window = CreateWindow(width: 800, height: 600);
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = CreateTestWorkspace();
-        var vm = ResolveService<ResourceYamlViewModel>();
+        var cluster = await Application.Current.CreateClusterAsync();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         var resource = CreatePod("test", includeLabels: true, extraEnv: false);
         vm.Initialize(cluster, resource);
 
-        var view = ResolveService<ResourceYamlView>();
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
         view.DataContext = vm;
         window.Content = view;
         window.Show();
 
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
-        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        var editor = view.FindControl<TextEditor>("Editor");
         editor.ShouldNotBeNull();
 
         var behavior = Interaction.GetBehaviors(editor).OfType<YamlEditorBehavior>().Single();
@@ -3092,8 +4026,8 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
         var metadataFold = foldingManager.AllFoldings.Single(x => x.Title.TrimEnd() == "metadata:");
         metadataFold.IsFolded = true;
 
-        await cluster.AddOrUpdateResource(CreatePod("test", includeLabels: true, extraEnv: true));
-        Dispatcher.UIThread.RunJobs();
+        await cluster.Runtime.AddOrUpdateResource(CreatePod("test", includeLabels: true, extraEnv: true));
+        await TestApplicationExtensions.WaitForUiAsync();
 
         foldingManager = GetFoldingManager(behavior);
         foldingManager.ShouldNotBeNull();
@@ -3104,21 +4038,21 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task ResourceYamlView_PreservesNestedFoldState_WhenResourceUpdatesInsideParent()
     {
-        var window = CreateWindow(width: 800, height: 600);
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = CreateTestWorkspace();
-        var vm = ResolveService<ResourceYamlViewModel>();
+        var cluster = await Application.Current.CreateClusterAsync();
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         var resource = CreatePod("test", includeLabels: true, extraEnv: false);
         vm.Initialize(cluster, resource);
 
-        var view = ResolveService<ResourceYamlView>();
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
         view.DataContext = vm;
         window.Content = view;
         window.Show();
 
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
-        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        var editor = view.FindControl<TextEditor>("Editor");
         editor.ShouldNotBeNull();
 
         var behavior = Interaction.GetBehaviors(editor).OfType<YamlEditorBehavior>().Single();
@@ -3128,8 +4062,8 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
         var nestedFold = foldingManager.AllFoldings.Single(x => x.Title.Trim() == "containers:");
         nestedFold.IsFolded = true;
 
-        await cluster.AddOrUpdateResource(CreatePod("test", includeLabels: true, extraEnv: true));
-        Dispatcher.UIThread.RunJobs();
+        await cluster.Runtime.AddOrUpdateResource(CreatePod("test", includeLabels: true, extraEnv: true));
+        await TestApplicationExtensions.WaitForUiAsync();
 
         foldingManager = GetFoldingManager(behavior);
         foldingManager.ShouldNotBeNull();
@@ -3149,7 +4083,7 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
         return field?.GetValue(behavior) as CompletionWindow;
     }
 
-    private static bool InvokeHoverTooltip(AvaloniaEdit.TextEditor editor, int offset, bool onlyWhenOpen = false)
+    private static bool InvokeHoverTooltip(TextEditor editor, int offset, bool onlyWhenOpen = false)
     {
         var behavior = Interaction.GetBehaviors(editor).OfType<YamlHoverToolTipBehavior>().Single();
         var method = typeof(YamlHoverToolTipBehavior).GetMethod("TryShowHoverTooltipAtOffset", BindingFlags.Instance | BindingFlags.NonPublic);
@@ -3157,7 +4091,7 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
         return (bool)method.Invoke(behavior, [offset, onlyWhenOpen])!;
     }
 
-    private static bool InvokeHoverTooltipAtPoint(AvaloniaEdit.TextEditor editor, Point point, bool onlyWhenOpen = false)
+    private static bool InvokeHoverTooltipAtPoint(TextEditor editor, Point point, bool onlyWhenOpen = false)
     {
         var behavior = Interaction.GetBehaviors(editor).OfType<YamlHoverToolTipBehavior>().Single();
         var method = typeof(YamlHoverToolTipBehavior).GetMethod("TryShowHoverTooltipAtPoint", BindingFlags.Instance | BindingFlags.NonPublic);
@@ -3165,7 +4099,7 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
         return (bool)method.Invoke(behavior, [point, onlyWhenOpen])!;
     }
 
-    private static int? TryGetHoverOffset(AvaloniaEdit.TextEditor editor, Point point)
+    private static int? TryGetHoverOffset(TextEditor editor, Point point)
     {
         var behavior = Interaction.GetBehaviors(editor).OfType<YamlHoverToolTipBehavior>().Single();
         var method = typeof(YamlHoverToolTipBehavior).GetMethod("TryGetPointerOffset", BindingFlags.Instance | BindingFlags.NonPublic);
@@ -3176,7 +4110,7 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
         return resolved ? (int)args[1] : null;
     }
 
-    private static object? TryCreateHoverDocumentationTip(AvaloniaEdit.TextEditor editor, int offset)
+    private static object? TryCreateHoverDocumentationTip(TextEditor editor, int offset)
     {
         var behavior = Interaction.GetBehaviors(editor).OfType<YamlHoverToolTipBehavior>().Single();
         var method = typeof(YamlHoverToolTipBehavior).GetMethod("TryCreateDocumentationTip", BindingFlags.Instance | BindingFlags.NonPublic);
@@ -3187,25 +4121,39 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
         return created ? args[1] : null;
     }
 
-    private static Point GetPointForOffset(AvaloniaEdit.TextEditor editor, int offset)
+    private static Point GetPointForOffset(TextEditor editor, int offset)
     {
+        editor.UpdateLayout();
+        editor.TextArea.TextView.UpdateLayout();
         var location = editor.Document!.GetLocation(offset);
         var point = editor.TextArea.TextView.GetVisualPosition(new TextViewPosition(location.Line, location.Column), VisualYPosition.LineMiddle);
         return new Point(point.X + 2, point.Y);
     }
 
-    private static Point GetViewportPointForOffset(AvaloniaEdit.TextEditor editor, int offset)
+    private static Point GetViewportPointForOffset(TextEditor editor, int offset)
     {
         var point = GetPointForOffset(editor, offset);
         return point - editor.TextArea.TextView.ScrollOffset;
     }
 
-    private static object? GetDocumentationWindow(AvaloniaEdit.TextEditor editor)
+    private static Popup? GetDocumentationPopup(TextEditor editor)
     {
-        return global::Avalonia.Controls.ToolTip.GetTip(editor);
+        var behavior = Interaction.GetBehaviors(editor).OfType<YamlHoverToolTipBehavior>().Single();
+        var field = typeof(YamlHoverToolTipBehavior).GetField("_hoverPopup", BindingFlags.Instance | BindingFlags.NonPublic);
+        return field?.GetValue(behavior) as Popup;
     }
 
-    private static IReadOnlyList<string> GetDiagnosticMessages(AvaloniaEdit.TextEditor editor)
+    private static bool IsDocumentationPopupOpen(TextEditor editor)
+    {
+        return GetDocumentationPopup(editor)?.IsOpen == true;
+    }
+
+    private static object? GetDocumentationWindow(TextEditor editor)
+    {
+        return (GetDocumentationPopup(editor)?.Child as ContentControl)?.Content;
+    }
+
+    private static IReadOnlyList<string> GetDiagnosticMessages(TextEditor editor)
     {
         var behavior = Interaction.GetBehaviors(editor).OfType<YamlDiagnosticRenderingBehavior>().Single();
         var field = typeof(YamlDiagnosticRenderingBehavior).GetField("_renderer", BindingFlags.Instance | BindingFlags.NonPublic);
@@ -3254,17 +4202,17 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
         return pod;
     }
 
-    private static AvaloniaEdit.TextEditor? FindVisibleYamlEditor(Visual root, ResourceYamlViewModel vm)
+    private static TextEditor? FindVisibleYamlEditor(Visual root, ResourceYamlViewModel vm)
     {
         return root.GetVisualDescendants()
-            .OfType<AvaloniaEdit.TextEditor>()
+            .OfType<TextEditor>()
             .FirstOrDefault(editor => editor.IsVisible && ReferenceEquals(editor.DataContext, vm));
     }
 
-    private static T WaitForValue<T>(Func<T?> getter, int timeoutMs = 1000) where T : class
+    private static async Task<T> WaitForValueAsync<T>(Func<T?> getter, int timeoutMs = 1000) where T : class
     {
         T? value = null;
-        WaitFor(() =>
+        await WaitForAsync(() =>
         {
             value = getter();
             return value != null;
@@ -3272,15 +4220,15 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
         return value!;
     }
 
-    private static void WaitFor(Func<bool> predicate, int timeoutMs = 1000)
+    private static async Task WaitForAsync(Func<bool> predicate, int timeoutMs = 1000)
     {
-        var sw = System.Diagnostics.Stopwatch.StartNew();
-        while (sw.ElapsedMilliseconds < timeoutMs)
+        var deadline = DateTime.UtcNow.AddMilliseconds(timeoutMs);
+        while (DateTime.UtcNow < deadline)
         {
-            Dispatcher.UIThread.RunJobs();
+            await TestApplicationExtensions.WaitForUiAsync();
             if (predicate())
                 return;
-            System.Threading.Thread.Sleep(10);
+            await TestWait.NextPollAsync(TimeSpan.FromMilliseconds(25), TestContext.Current.CancellationToken);
         }
         predicate().ShouldBeTrue();
     }

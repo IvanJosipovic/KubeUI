@@ -5,8 +5,8 @@ namespace KubeUI.Avalonia.Tests.Infra;
 
 public sealed class TestSettingsService : SettingsService
 {
-    public TestSettingsService(ILogger<SettingsService> logger)
-        : base(logger)
+    public TestSettingsService(ILogger<SettingsService> logger, ISettingsPersistence persistence)
+        : base(logger, persistence)
     {
     }
 

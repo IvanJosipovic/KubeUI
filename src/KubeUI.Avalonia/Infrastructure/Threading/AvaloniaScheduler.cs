@@ -1,6 +1,6 @@
 using System.Reactive.Concurrency;
 using System.Reactive.Disposables;
-using KubeUI.Avalonia.Infrastructure.Threading;
+using KubeUI.Kubernetes;
 
 namespace KubeUI.Avalonia.Infrastructure.Threading;
 
@@ -8,11 +8,11 @@ namespace KubeUI.Avalonia.Infrastructure.Threading;
 /// Provides a scheduler that executes actions on the Avalonia UI thread, enabling scheduling of work to run on the
 /// dispatcher.
 /// </summary>
-/// <remarks>Use <see cref="AvaloniaScheduler.Instance"/> to access the singleton instance. This scheduler is
+/// <remarks>Use <see cref="Instance"/> to access the singleton instance. This scheduler is
 /// typically used to marshal work onto the Avalonia UI thread, ensuring thread-safe interaction with UI components.
 /// Actions scheduled with zero delay may be executed immediately if already on the dispatcher thread, but excessive
 /// immediate scheduling is limited to prevent stack overflows.</remarks>
-public sealed class AvaloniaScheduler : LocalScheduler
+public sealed class AvaloniaScheduler : LocalScheduler, IThreadDispatcher
 {
     /// <summary>
     /// Gets the singleton instance of the AvaloniaScheduler.
@@ -30,6 +30,23 @@ public sealed class AvaloniaScheduler : LocalScheduler
     private const int MaxReentrantSchedules = 32;
 
     private int _reentrancyGuard;
+
+    /// <inheritdoc />
+    public IScheduler Scheduler => this;
+
+    /// <inheritdoc />
+    public void Invoke(Action action)
+    {
+        ArgumentNullException.ThrowIfNull(action);
+
+        if (Dispatcher.UIThread.CheckAccess())
+        {
+            action();
+            return;
+        }
+
+        Dispatcher.UIThread.Invoke(action);
+    }
 
     /// <summary>
     /// Initializes a new instance of the <see cref="AvaloniaScheduler"/> class.
@@ -101,4 +118,3 @@ public sealed class AvaloniaScheduler : LocalScheduler
         }
     }
 }
-

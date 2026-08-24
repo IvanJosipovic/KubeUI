@@ -1,15 +1,10 @@
-using Avalonia;
 using Avalonia.Xaml.Interactivity;
 using AvaloniaEdit;
 using AvaloniaEdit.Document;
-using Dock.Model.Controls;
 using Dock.Model.Core;
 using Dock.Model.Core.Events;
-using KubeUI.Avalonia;
-using KubeUI.Avalonia.Features.Resources.Yaml.ViewModels;
-using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
-using KubeUI.Avalonia.Resources.Workloads.v1.Pod.Views;
+using KubeUI.Avalonia.Infrastructure.Platform;
 
 namespace KubeUI.Avalonia.Features.Resources.Yaml.Behaviors;
 
@@ -32,7 +27,7 @@ public sealed class YamlEditorScrollBehavior : Behavior<TextEditor>
             return true;
         }
 
-        if (!TryGetServices(out IServiceProvider services))
+        if (!TryGetServices(out var services))
         {
             return false;
         }

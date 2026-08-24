@@ -1,6 +1,4 @@
-using Avalonia.Controls;
 using k8s.Models;
-using KubeUI.Avalonia.Resources.Configuration.v2.HorizontalPodAutoscaler.Views;
 
 namespace KubeUI.Avalonia.Resources.Configuration.v2.HorizontalPodAutoscaler;
 
@@ -11,7 +9,7 @@ public sealed partial class V2HorizontalPodAutoscalerConfig : ResourceConfigBase
     {
     }
     public override bool IsNamespaced => true;
-    public override string Category => CategoryString("ResourceConfig_Category_Configuration", "Configuration");
+    public override string Category => Assets.Resources.ResourceConfig_Category_Configuration!;
     public override int Order => 4;
 
     public override IList<IResourceListColumn> Columns()
@@ -21,26 +19,30 @@ public sealed partial class V2HorizontalPodAutoscalerConfig : ResourceConfigBase
             NamespaceColumn(),
             new ResourceListColumn<V2HorizontalPodAutoscaler, int>()
             {
-                Name = "Min Pods",
+                Key = "min-pods",
+                Name = Assets.Resources.V2HorizontalPodAutoscalerConfig_Min_Pods!,
                 Field = x => x.Spec.MinReplicas ?? 0,
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },
             new ResourceListColumn<V2HorizontalPodAutoscaler, int>()
             {
-                Name = "Max Pods",
+                Key = "max-pods",
+                Name = Assets.Resources.V2HorizontalPodAutoscalerConfig_Max_Pods!,
                 Field = x => x.Spec.MaxReplicas,
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },
             new ResourceListColumn<V2HorizontalPodAutoscaler, int>()
             {
-                Name = "Replica",
+                Key = "replica",
+                Name = Assets.Resources.V2HorizontalPodAutoscalerConfig_Replica!,
                 Field = x => x.Status.CurrentReplicas ?? 0,
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },
             AgeColumn(),
             new ResourceListColumn<V2HorizontalPodAutoscaler, string>()
             {
-                Name = "Conditions",
+                Key = "conditions",
+                Name = Assets.Resources.V2HorizontalPodAutoscalerConfig_Conditions!,
                 Field = x => x.Status.Conditions?.FirstOrDefault(y => y.Status == "True")?.Type ?? "",
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },
@@ -49,4 +51,3 @@ public sealed partial class V2HorizontalPodAutoscalerConfig : ResourceConfigBase
 
     public override Control[] Properties(V2HorizontalPodAutoscaler resource) => [new PropertiesView()];
 }
-

@@ -1,11 +1,6 @@
-using Avalonia.Controls;
 using FluentIcons.Common;
-using HanumanInstitute.MvvmDialogs;
-using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
-using k8s;
 using k8s.Models;
 using KubeUI.Avalonia.Features.Resources.Common;
-using KubeUI.Avalonia.Resources.Workloads.v1.StatefulSet.Views;
 
 namespace KubeUI.Avalonia.Resources.Workloads.v1.StatefulSet;
 
@@ -16,7 +11,7 @@ public sealed partial class V1StatefulSetConfig : ResourceConfigBase<V1StatefulS
     {
     }
     public override bool IsNamespaced => true;
-    public override string Category => CategoryString("ResourceConfig_Category_Workloads", "Workloads");
+    public override string Category => Assets.Resources.ResourceConfig_Category_Workloads!;
 
     public override int Order => 3;
 
@@ -27,7 +22,8 @@ public sealed partial class V1StatefulSetConfig : ResourceConfigBase<V1StatefulS
             NamespaceColumn(),
             new ResourceListColumn<V1StatefulSet, int>()
             {
-                Name = "Replicas",
+                Key = "replicas",
+                Name = Assets.Resources.V1StatefulSetConfig_Replicas!,
                 Field = x => x.Status.Replicas,
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },
@@ -40,7 +36,7 @@ public sealed partial class V1StatefulSetConfig : ResourceConfigBase<V1StatefulS
         return [
             new()
             {
-                Header = "Restart",
+                Title = Assets.Resources.V1StatefulSetConfig_MenuItem_Restart,
                 FluentIcon = Icon.ArrowSync,
                 Command = RestartCommand,
                 CommandParameter = selectedItems?.ToList()
@@ -50,5 +46,4 @@ public sealed partial class V1StatefulSetConfig : ResourceConfigBase<V1StatefulS
 
     public override Control[] Properties(V1StatefulSet resource) => [new PropertiesView()];
 }
-
 
