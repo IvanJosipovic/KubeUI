@@ -811,7 +811,9 @@ public abstract class ClusterRuntimeAssertions
                     "default").WaitAsync(cancellationToken);
                 return;
             }
-            catch (HttpOperationException exception) when (exception.Response.StatusCode == HttpStatusCode.NotFound)
+            catch (HttpOperationException exception) when (
+                exception.Response.StatusCode == HttpStatusCode.NotFound
+                || exception.Response.StatusCode == HttpStatusCode.TooManyRequests)
             {
             }
 
