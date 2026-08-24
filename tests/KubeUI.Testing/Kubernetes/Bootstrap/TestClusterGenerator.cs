@@ -272,7 +272,10 @@ public sealed class TestClusterGenerator
                 client.Dispose();
                 clientConfig = KubernetesClientConfiguration.BuildConfigFromConfigObject(kubeConfig, null, null);
                 clientConfig.FirstMessageHandlerSetup = config.FirstMessageHandlerSetup;
-                client = CreateClient(clientConfig, terminalHandler: null, CreateHttpHandlers(config, out _));
+                client = CreateClient(
+                    clientConfig,
+                    terminalHandler: null,
+                    CreateHttpHandlers(config, out _, includeConfiguredHandlers: false));
 
                 return await CreateTestClusterAsync(
                     client,
@@ -284,7 +287,7 @@ public sealed class TestClusterGenerator
                     clientFactory: configuration => CreateClient(
                         configuration,
                         terminalHandler: null,
-                        CreateHttpHandlers(config, out _))).ConfigureAwait(false);
+                        CreateHttpHandlers(config, out _, includeConfiguredHandlers: false))).ConfigureAwait(false);
             }
             catch
             {
@@ -374,7 +377,7 @@ public sealed class TestClusterGenerator
         List<DelegatingHandler> handlers = [conditionHandler];
         if (includeConfiguredHandlers)
         {
-            handlers.AddRange(config.HttpHandlers);
+            handlers.AddRange(config.HttpHandlerFactory?.Invoke() ?? config.HttpHandlers);
         }
 
         return handlers;

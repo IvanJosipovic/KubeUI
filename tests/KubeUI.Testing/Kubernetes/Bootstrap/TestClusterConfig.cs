@@ -25,6 +25,8 @@ public sealed class TestClusterConfig
 
     public IReadOnlyCollection<DelegatingHandler> HttpHandlers { get; set; } = Array.Empty<DelegatingHandler>();
 
+    public Func<IReadOnlyCollection<DelegatingHandler>>? HttpHandlerFactory { get; set; }
+
     public Action<SocketsHttpHandler>? FirstMessageHandlerSetup { get; set; }
 
     public TimeSpan ResponseLatency { get; set; }
