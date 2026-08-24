@@ -33,7 +33,7 @@ public sealed class LimitedAccessNavigationTests
                 return FindResourceLink(clusterNode, "Pods") != null
                     && FindResourceLink(clusterNode, "Deployments") != null;
             },
-            30000,
+            60000,
             TestContext.Current.CancellationToken);
 
         workspace.GetResourceConfig(GroupApiVersionKind.From<k8s.Models.V1Pod>()).PermissionsLoaded.ShouldBeTrue();

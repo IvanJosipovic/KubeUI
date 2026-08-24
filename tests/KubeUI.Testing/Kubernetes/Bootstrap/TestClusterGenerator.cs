@@ -155,7 +155,7 @@ public sealed class TestClusterGenerator
             api.AddYaml(config.InitialYaml, _services.GetRequiredService<KubeUI.Kubernetes.KubernetesModelCatalog>().GetYamlTypeMap());
         }
 
-        var kubeConfig = CreateFakeKubeConfig();
+        var kubeConfig = CreateFakeKubeConfig(config.Name ?? "fake");
         var clientConfig = KubernetesClientConfiguration.BuildConfigFromConfigObject(
             kubeConfig,
             kubeConfig.CurrentContext,
@@ -504,12 +504,12 @@ public sealed class TestClusterGenerator
         await genericClient.CreateNamespacedAsync(resource, resource.Namespace(), cancellationToken).ConfigureAwait(false);
     }
 
-    private static K8SConfiguration CreateFakeKubeConfig()
+    private static K8SConfiguration CreateFakeKubeConfig(string contextName)
         => new()
         {
             ApiVersion = "v1",
             Kind = "Config",
-            CurrentContext = "fake",
+            CurrentContext = contextName,
             Clusters =
             [
                 new k8s.KubeConfigModels.Cluster
@@ -521,6 +521,6 @@ public sealed class TestClusterGenerator
             Users =
             [new User { Name = "fake-user", UserCredentials = new UserCredentials { Token = "fake-token" } }],
             Contexts =
-            [new Context { Name = "fake", ContextDetails = new ContextDetails { Cluster = "fake-cluster", User = "fake-user" } }],
+            [new Context { Name = contextName, ContextDetails = new ContextDetails { Cluster = "fake-cluster", User = "fake-user" } }],
         };
 }

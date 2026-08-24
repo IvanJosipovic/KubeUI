@@ -5,6 +5,7 @@ using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Features.Resources.Common;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Resources;
+using KubeUI.Kubernetes;
 
 namespace KubeUI.Avalonia.Features.Resources.Properties;
 
@@ -13,7 +14,7 @@ public sealed partial class ResourcePropertiesViewModel<T> : ViewModelBase, IDis
     [ObservableProperty]
     public partial ClusterWorkspace? Cluster { get; set; }
 
-    public GroupApiVersionKind Kind { get; } = GroupApiVersionKind.From<T>();
+    public GroupApiVersionKind Kind { get; private set; }
 
     private T? _object;
 
@@ -43,6 +44,7 @@ public sealed partial class ResourcePropertiesViewModel<T> : ViewModelBase, IDis
     {
         Cluster = cluster;
         Object = resource;
+        Kind = resource.GetResourceKind(cluster.Runtime.ModelCatalog);
         ResourceConfig = Cluster.GetResourceConfig<T>(Kind);
         Cluster.Runtime.OnChange += Cluster_OnChange;
     }

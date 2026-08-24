@@ -113,7 +113,51 @@ public sealed class TestCluster : IDisposable, IAsyncDisposable
         var kindClient = new k8s.Kubernetes(
             kindConfiguration);
 #pragma warning restore CA2000
+        if (useNamespaceFallback)
+        {
+            await WaitForLimitedAccessAuthorizationAsync(kindClient, cancellationToken).ConfigureAwait(false);
+        }
         return await CreateAdditionalClusterAsync(kindClient, kindKubeConfig, kindName, useNamespaceFallback, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async Task WaitForLimitedAccessAuthorizationAsync(
+        IKubernetes client,
+        CancellationToken cancellationToken)
+    {
+        using var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(25));
+        var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(10);
+        while (true)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var review = await client.AuthorizationV1.CreateSelfSubjectAccessReviewAsync(
+                new V1SelfSubjectAccessReview
+                {
+                    ApiVersion = V1SelfSubjectAccessReview.KubeGroup + "/" + V1SelfSubjectAccessReview.KubeApiVersion,
+                    Kind = V1SelfSubjectAccessReview.KubeKind,
+                    Spec = new V1SelfSubjectAccessReviewSpec
+                    {
+                        ResourceAttributes = new V1ResourceAttributes
+                        {
+                            NamespaceProperty = "my-app",
+                            Resource = "pods",
+                            Subresource = "portforward",
+                            Verb = "create",
+                            Version = "v1",
+                        },
+                    },
+                },
+                cancellationToken: cancellationToken).ConfigureAwait(false);
+            if (review.Status?.Allowed == true)
+            {
+                return;
+            }
+
+            var remaining = deadline - DateTime.UtcNow;
+            if (remaining <= TimeSpan.Zero || !await timer.WaitForNextTickAsync(cancellationToken).ConfigureAwait(false))
+            {
+                throw new TimeoutException("Kind did not apply the limited-access RoleBinding within 00:00:10.");
+            }
+        }
     }
 
     private async Task<IClusterRuntime> CreateAdditionalClusterAsync(

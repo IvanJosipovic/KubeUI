@@ -1,5 +1,7 @@
+using System.Diagnostics;
 using System.Net;
 using System.Net.Http.Json;
+using KubeUI.Kubernetes.Client;
 namespace KubeUI.Kubernetes;
 
 /// <summary>
@@ -69,30 +71,49 @@ public sealed class KubernetesApiDiscoveryClient
             request.Headers.TryAddWithoutValidation("If-None-Match", etag);
         }
 
-        using var response = await _client.SendAuthenticatedAsync(request, cancellationToken).ConfigureAwait(false);
-        if (response.StatusCode == HttpStatusCode.NotModified)
-        {
-            return core
-                ? Core ?? throw new InvalidOperationException("Core API discovery cache is empty.")
-                : Groups ?? throw new InvalidOperationException("Grouped API discovery cache is empty.");
-        }
+        using var activity = KubeInstrumentation.Source.StartActivity(
+            "kubernetes.discovery",
+            ActivityKind.Client);
+        activity?.SetTag("http.request.method", request.Method.Method);
+        activity?.SetTag("url.full", request.RequestUri?.ToString());
+        activity?.SetTag("url.path", request.RequestUri?.AbsolutePath);
 
-        response.EnsureSuccessStatusCode();
-        if (response.Headers.ETag is { } responseETag)
+        try
         {
-            if (core)
+            using var response = await _client.SendAuthenticatedAsync(request, cancellationToken).ConfigureAwait(false);
+            activity?.SetTag("http.response.status_code", (int)response.StatusCode);
+            if (response.StatusCode == HttpStatusCode.NotModified)
             {
-                _coreETag = responseETag.Tag;
+                activity?.SetStatus(ActivityStatusCode.Ok);
+                return core
+                    ? Core ?? throw new InvalidOperationException("Core API discovery cache is empty.")
+                    : Groups ?? throw new InvalidOperationException("Grouped API discovery cache is empty.");
             }
-            else
-            {
-                _groupedETag = responseETag.Tag;
-            }
-        }
 
-        return await response.Content.ReadFromJsonAsync(
-                CustomSourceGenerationContext.Default.V2beta1APIGroupDiscoveryList,
-                cancellationToken).ConfigureAwait(false)
-            ?? throw new InvalidOperationException("API group discovery response was empty.");
+            response.EnsureSuccessStatusCode();
+            if (response.Headers.ETag is { } responseETag)
+            {
+                if (core)
+                {
+                    _coreETag = responseETag.Tag;
+                }
+                else
+                {
+                    _groupedETag = responseETag.Tag;
+                }
+            }
+
+            var result = await response.Content.ReadFromJsonAsync(
+                    CustomSourceGenerationContext.Default.V2beta1APIGroupDiscoveryList,
+                    cancellationToken).ConfigureAwait(false)
+                ?? throw new InvalidOperationException("API group discovery response was empty.");
+            activity?.SetStatus(ActivityStatusCode.Ok);
+            return result;
+        }
+        catch
+        {
+            activity?.SetStatus(ActivityStatusCode.Error);
+            throw;
+        }
     }
 }

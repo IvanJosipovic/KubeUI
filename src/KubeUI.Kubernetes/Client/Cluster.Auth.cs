@@ -118,10 +118,36 @@ public partial class Cluster
         return _permissionIndex.TryGetValue(BuildReviewKey(kind, verbString, @namespace, subresource), out var allowed) && allowed;
     }
 
+    private IReadOnlyCollection<string> GetKnownNamespaceNames()
+    {
+        if (Namespaces is { Count: > 0 })
+        {
+            return Namespaces
+                .Select(static item => item.Name())
+                .Where(static name => !string.IsNullOrWhiteSpace(name))
+                .ToArray();
+        }
+
+        if (Objects.TryGetValue(GroupApiVersionKind.From<V1Namespace>(), out var container)
+            && container is ContainerClass<V1Namespace> namespaceContainer)
+        {
+            var cachedNamespaces = namespaceContainer.Items.Items
+                .Select(static item => item.Name())
+                .Where(static name => !string.IsNullOrWhiteSpace(name))
+                .ToArray();
+            if (cachedNamespaces.Length > 0)
+            {
+                return cachedNamespaces;
+            }
+        }
+
+        return _settings.GetClusterNamespaces(this);
+    }
+
     public bool CanIAnyNamespace(GroupApiVersionKind kind, bool namespaced, Verb verb, string? subresource = null)
     {
         return CanI(kind, verb, subresource: subresource)
-            || (namespaced && Namespaces.Any(item => CanI(kind, verb, item.Name(), subresource)));
+            || (namespaced && GetKnownNamespaceNames().Any(@namespace => CanI(kind, verb, @namespace, subresource)));
     }
 
     public async Task UpdatePermissionsAllNamespaceAsync(GroupApiVersionKind kind, bool namespaced, Verb verb, string? subresource = null)
@@ -132,7 +158,7 @@ public partial class Cluster
             return;
         }
 
-        await Parallel.ForEachAsync(Namespaces.Select(item => item.Name()).Where(static name => !string.IsNullOrWhiteSpace(name)),
+        await Parallel.ForEachAsync(GetKnownNamespaceNames(),
             new ParallelOptions { MaxDegreeOfParallelism = MaximumConcurrentNamespaceAuthorizationReviews },
             async (namespaceName, _) => await BuildPermissionAsync(kind, verb, namespaceName, subresource).ConfigureAwait(false)).ConfigureAwait(false);
     }
@@ -175,7 +201,7 @@ public partial class Cluster
         }
 
         await Parallel.ForEachAsync(
-            Namespaces.Select(static item => item.Name()).Where(static name => !string.IsNullOrWhiteSpace(name)),
+            GetKnownNamespaceNames(),
             new ParallelOptions { MaxDegreeOfParallelism = MaximumConcurrentNamespaceAuthorizationReviews },
             async (@namespace, _) => await UpdateCanI<T>(verb, @namespace, subresource).ConfigureAwait(false)).ConfigureAwait(false);
     }
