@@ -96,6 +96,13 @@ public abstract class ClusterRuntimeAssertions
         await RefreshPermissionsAsync<V1Pod>(rootCluster, (Verb.Get, "log"), (Verb.Create, "exec"), (Verb.Create, "portforward"));
         await RefreshPermissionsAsync<V1Pod>(limitedCluster, (Verb.Get, "log"), (Verb.Create, "exec"), (Verb.Create, "portforward"));
 
+        await TestWait.UntilAsync(
+            () => limitedCluster.Permissions.CanI<V1Pod>(Verb.Get, "my-app", "log")
+                && limitedCluster.Permissions.CanI<V1Pod>(Verb.Create, "my-app", "exec")
+                && limitedCluster.Permissions.CanI<V1Pod>(Verb.Create, "my-app", "portforward"),
+            TimeSpan.FromSeconds(5),
+            cancellationToken: TestContext.Current.CancellationToken);
+
         rootCluster.Permissions.CanI<V1Pod>(Verb.Get, "my-app", "log").ShouldBeTrue();
         rootCluster.Permissions.CanI<V1Pod>(Verb.Create, "my-app", "exec").ShouldBeTrue();
         rootCluster.Permissions.CanI<V1Pod>(Verb.Create, "my-app", "portforward").ShouldBeTrue();
