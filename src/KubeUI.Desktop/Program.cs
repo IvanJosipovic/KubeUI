@@ -1,5 +1,9 @@
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Net;
+using System.Net.Sockets;
 using System.Reflection;
+using System.Runtime.ExceptionServices;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
@@ -21,6 +25,9 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Hosting.Server;
+using Microsoft.AspNetCore.Hosting.Server.Features;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 using NReco.Logging.File;
 using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
@@ -30,26 +37,23 @@ using Velopack;
 
 namespace KubeUI.Desktop;
 
-internal static class Program
+internal static partial class Program
 {
     public static ActivitySource Source { get; } = new ActivitySource("com.KubeUI.Desktop", "1.0.0");
 
     [STAThread]
+    [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "Host is disposed in finally; WebApplication implements IDisposable explicitly so the analyzer cannot track it.")]
     public static void Main(string[] args)
     {
         VelopackApp.Build().Run();
 
         EnsureMacOsPath();
 
-        var host = CreateHostBuilder(args).Build();
-        ConfigureMcpEndpoint(host);
-        host.Services.ConfigureKubeUIKubernetesJsonLogging();
-        host.Start();
-
-        var builder = CreateAppBuilder(host.Services);
+        var host = StartHost(args);
 
         try
         {
+            var builder = CreateAppBuilder(host.Services);
             builder.StartWithClassicDesktopLifetime(args);
         }
         finally
@@ -135,7 +139,7 @@ internal static class Program
                 .WithHttpTransport(options => options.Stateless = true)
                 .WithTools<McpTools>();
             var port = mcpPortOverride ?? McpServerConfiguration.GetValidatedPort(settings.Settings);
-            builder.WebHost.ConfigureKestrel(options => options.ListenLocalhost(port));
+            builder.WebHost.ConfigureKestrel(options => ConfigureMcpListenAddresses(options, port));
         }
 
         if (includeOptionalServices && settings.Settings.TelemetryEnabled)
@@ -166,6 +170,164 @@ internal static class Program
         var application = builder.Build();
         ConfigureMcpEndpoint(application);
         return application;
+    }
+
+    private static void ConfigureMcpListenAddresses(KestrelServerOptions options, int port)
+    {
+        if (port == 0)
+        {
+            options.Listen(IPAddress.Loopback, port);
+            options.Listen(IPAddress.IPv6Loopback, port);
+            return;
+        }
+
+        options.ListenLocalhost(port);
+    }
+
+    /// <summary>
+    /// Builds and starts the application host. If the MCP server port cannot be bound,
+    /// the host is restarted on an ephemeral port and <see cref="Options.Settings.McpServerPort"/>
+    /// is updated so the reported MCP endpoint matches the listening port.
+    /// </summary>
+    [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "Host disposal is guaranteed via try/finally; WebApplication implements IDisposable explicitly so the analyzer cannot track it.")]
+    internal static WebApplication StartHost(
+        string[] args,
+        bool includeOptionalServices = true,
+        Action<IServiceCollection>? configureServices = null,
+        int? mcpPortOverride = null,
+        bool? mcpEnabledOverride = null)
+    {
+        const int ephemeralPort = 0;
+
+        WebApplication? application = BuildApplication(args, includeOptionalServices, configureServices, mcpPortOverride, mcpEnabledOverride);
+        try
+        {
+            var configuredPort = mcpPortOverride ?? McpServerConfiguration.GetValidatedPort(application.Services.GetRequiredService<ISettingsService>().Settings);
+
+            var failure = TryStart(application);
+            if (failure is not null)
+            {
+                if (!IsMcpBindFailure(failure) || !IsMcpServerEnabled(application))
+                {
+                    ExceptionDispatchInfo.Capture(failure).Throw();
+                }
+
+                LogMcpPortFallback(application.Logger, failure, McpServerConfiguration.Host, configuredPort);
+
+                ((IDisposable)application).Dispose();
+                application = BuildApplication(args, includeOptionalServices, configureServices, ephemeralPort, mcpEnabledOverride);
+
+                failure = TryStart(application);
+                if (failure is not null)
+                {
+                    ExceptionDispatchInfo.Capture(failure).Throw();
+                }
+            }
+
+            SynchronizeMcpPort(application);
+            var owned = application;
+            application = null;
+            return owned;
+        }
+        finally
+        {
+            if (application is not null)
+            {
+                ((IDisposable)application).Dispose();
+            }
+        }
+    }
+
+    private static Exception? TryStart(WebApplication application)
+    {
+        try
+        {
+            application.Start();
+            return null;
+        }
+        catch (Exception exception)
+        {
+            return exception;
+        }
+    }
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Unable to bind the MCP server to http://{Host}:{Port}, falling back to an ephemeral port")]
+    private static partial void LogMcpPortFallback(ILogger logger, Exception exception, string host, int port);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "MCP server listening on http://{Host}:{Port}{Path}")]
+    private static partial void LogMcpListening(ILogger logger, string host, int port, string path);
+
+    private static WebApplication BuildApplication(
+        string[] args,
+        bool includeOptionalServices,
+        Action<IServiceCollection>? configureServices,
+        int? mcpPortOverride,
+        bool? mcpEnabledOverride)
+    {
+        var application = CreateAndConfigureMcpEndpoint(CreateHostBuilder(args, includeOptionalServices, configureServices, mcpPortOverride, mcpEnabledOverride));
+        application.Services.ConfigureKubeUIKubernetesJsonLogging();
+        return application;
+    }
+
+    private static void SynchronizeMcpPort(WebApplication application)
+    {
+        var settings = application.Services.GetRequiredService<ISettingsService>().Settings;
+        if (!settings.McpServerEnabled)
+        {
+            return;
+        }
+
+        var boundPort = GetBoundPort(application);
+        if (boundPort.HasValue && boundPort.Value != settings.McpServerPort)
+        {
+            LogMcpListening(application.Logger, McpServerConfiguration.Host, boundPort.Value, McpServerConfiguration.Path);
+            settings.McpServerPort = boundPort.Value;
+        }
+    }
+
+    private static int? GetBoundPort(WebApplication application)
+    {
+        var addresses = application.Services.GetRequiredService<IServer>().Features.Get<IServerAddressesFeature>()?.Addresses;
+
+        foreach (var address in addresses ?? [])
+        {
+            if (Uri.TryCreate(address, UriKind.Absolute, out var uri) && uri.Port > 0)
+            {
+                return uri.Port;
+            }
+        }
+
+        return null;
+    }
+
+    private static bool IsMcpServerEnabled(WebApplication application)
+    {
+        return application.Services.GetRequiredService<ISettingsService>().Settings.McpServerEnabled;
+    }
+
+    internal static bool IsMcpBindFailure(Exception exception)
+    {
+        for (Exception? current = exception; current is not null; current = current.InnerException)
+        {
+            if (current is SocketException socketException &&
+                socketException.SocketErrorCode is SocketError.AddressAlreadyInUse or SocketError.AccessDenied)
+            {
+                return true;
+            }
+
+            if (current is AggregateException aggregateException)
+            {
+                foreach (var innerException in aggregateException.InnerExceptions)
+                {
+                    if (IsMcpBindFailure(innerException))
+                    {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
     }
 
     private static IServiceCollection AddFileLogging(this IServiceCollection services)
