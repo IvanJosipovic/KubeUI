@@ -84,7 +84,7 @@ internal sealed class NavigationSelectionHandler
         {
             Title = Assets.Resources.NavigationView_LoadYaml,
             AllowMultiple = true,
-            FileTypeFilter = [new("Yaml") { Patterns = ["*.yaml", ".yml"] }]
+            FileTypeFilter = [new("Yaml") { Patterns = ["*.yaml", "*.yml"] }]
         }).ConfigureAwait(false);
 
         foreach (var file in files)

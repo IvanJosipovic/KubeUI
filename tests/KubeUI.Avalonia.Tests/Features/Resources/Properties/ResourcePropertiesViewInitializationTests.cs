@@ -21,7 +21,7 @@ public sealed class ResourcePropertiesViewInitializationTests
     public async Task crd_properties_view_initializes_from_generic_resource()
     {
         var services = Application.Current.GetTestServices();
-        await using var workspace = await Application.Current.CreateClusterAsync();
+        using var workspace = await Application.Current.CreateClusterAsync();
         var config = ActivatorUtilities.CreateInstance<CRDResourceConfig>(services);
         config.Initialize(workspace);
         config.Configure(new V1CustomResourceDefinition
@@ -74,8 +74,8 @@ public sealed class ResourcePropertiesViewInitializationTests
         try
         {
             window.Show();
-            await TestApplicationExtensions.WaitForUiAsync();
-            await TestApplicationExtensions.WaitForUiAsync();
+            await TestApplicationExtensions.WaitForUiAsync(TestContext.Current.CancellationToken);
+            await TestApplicationExtensions.WaitForUiAsync(TestContext.Current.CancellationToken);
 
             var items = view.FindControl<StackPanel>("PART_Items")!.Children.OfType<PropertyItem>().ToList();
             items.ShouldContain(item => item.Key == AppResources.ResourcePropertiesView_Name);
@@ -90,7 +90,7 @@ public sealed class ResourcePropertiesViewInitializationTests
     public async Task cluster_aware_property_controls_are_initialized_once()
     {
         var services = Application.Current.GetTestServices();
-        await using var workspace = await Application.Current.CreateClusterAsync();
+        using var workspace = await Application.Current.CreateClusterAsync();
 
         var trackingConfig = new TrackingResourceConfig(services);
         trackingConfig.Initialize(workspace);
@@ -118,8 +118,8 @@ public sealed class ResourcePropertiesViewInitializationTests
         try
         {
             window.Show();
-            await TestApplicationExtensions.WaitForUiAsync();
-            await TestApplicationExtensions.WaitForUiAsync();
+            await TestApplicationExtensions.WaitForUiAsync(TestContext.Current.CancellationToken);
+            await TestApplicationExtensions.WaitForUiAsync(TestContext.Current.CancellationToken);
 
             trackingConfig.TrackingControl.InitializeCount.ShouldBe(1);
             view.FindControl<StackPanel>("PART_Items")!.Children.ShouldContain(trackingConfig.TrackingControl);
@@ -134,7 +134,7 @@ public sealed class ResourcePropertiesViewInitializationTests
     public async Task properties_view_populates_on_first_attach()
     {
         var services = Application.Current.GetTestServices();
-        await using var workspace = await Application.Current.CreateClusterAsync();
+        using var workspace = await Application.Current.CreateClusterAsync();
 
         var viewModel = services.GetRequiredService<ResourcePropertiesViewModel<V1Pod>>();
         viewModel.Initialize(workspace, new V1Pod
@@ -159,8 +159,8 @@ public sealed class ResourcePropertiesViewInitializationTests
         try
         {
             window.Show();
-            await TestApplicationExtensions.WaitForUiAsync();
-            await TestApplicationExtensions.WaitForUiAsync();
+            await TestApplicationExtensions.WaitForUiAsync(TestContext.Current.CancellationToken);
+            await TestApplicationExtensions.WaitForUiAsync(TestContext.Current.CancellationToken);
 
             var items = view.FindControl<StackPanel>("PART_Items")!.Children.OfType<PropertyItem>().ToList();
 
@@ -181,7 +181,7 @@ public sealed class ResourcePropertiesViewInitializationTests
         var layout = factory.CreateLayout();
         factory.InitLayout(layout);
         var rightDock = factory.GetDockable<IToolDock>("RightDock")!;
-        await using var workspace = await Application.Current.CreateClusterAsync();
+        using var workspace = await Application.Current.CreateClusterAsync();
         var config = (ResourceConfigBase<V1Pod>)workspace.GetResourceConfig(GroupApiVersionKind.From<V1Pod>());
         var podA = new V1Pod
         {
