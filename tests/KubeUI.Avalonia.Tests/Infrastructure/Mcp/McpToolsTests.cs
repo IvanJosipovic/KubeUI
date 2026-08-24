@@ -142,15 +142,55 @@ public sealed class McpToolsTests
         session.VerifyNoOtherCalls();
     }
 
+    [Fact]
+    public void endpoint_tool_prefers_the_bound_port_when_available()
+    {
+        var state = new McpServerState();
+        state.SetBoundPort(54321);
+        var tools = CreateTools(
+            new Mock<IMcpClusterSession>(MockBehavior.Strict),
+            settings: new Settings { McpServerEnabled = true, McpServerPort = 62888 },
+            mcpServerState: state);
+
+        tools.GetEndpoint().ShouldBe("http://127.0.0.1:54321/mcp");
+    }
+
+    [Fact]
+    public void endpoint_tool_uses_the_configured_port_without_bound_state()
+    {
+        var tools = CreateTools(
+            new Mock<IMcpClusterSession>(MockBehavior.Strict),
+            settings: new Settings { McpServerEnabled = true, McpServerPort = 62888 });
+
+        tools.GetEndpoint().ShouldBe("http://127.0.0.1:62888/mcp");
+    }
+
+    [Fact]
+    public void endpoint_tool_rejects_a_disabled_mcp_server()
+    {
+        var tools = CreateTools(
+            new Mock<IMcpClusterSession>(MockBehavior.Strict),
+            settings: new Settings { McpServerEnabled = false });
+
+        Should.Throw<InvalidOperationException>(() => tools.GetEndpoint());
+    }
+
     private static McpTools CreateTools(
         Mock<IMcpClusterSession> session,
         IAgentPermissionService? permissionService = null,
-        IResourceNavigationService? resourceNavigationService = null)
-        => new(
+        IResourceNavigationService? resourceNavigationService = null,
+        IMcpServerState? mcpServerState = null,
+        Settings? settings = null)
+    {
+        var settingsService = new Mock<ISettingsService>();
+        settingsService.SetupGet(service => service.Settings).Returns(settings ?? new Settings());
+        return new(
             new Mock<IClusterRuntimeCatalog>().Object,
             session.Object,
             new Mock<IKubernetesYamlSerializer>().Object,
-            new Mock<ISettingsService>().Object,
+            settingsService.Object,
             permissionService,
-            resourceNavigationService);
+            resourceNavigationService,
+            mcpServerState);
+    }
 }

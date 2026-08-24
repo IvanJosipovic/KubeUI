@@ -1,4 +1,6 @@
 using System.Diagnostics;
+using System.Net;
+using System.Net.Sockets;
 using System.Reflection;
 using Avalonia;
 using Avalonia.Controls;
@@ -21,6 +23,9 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Hosting.Server;
+using Microsoft.AspNetCore.Hosting.Server.Features;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 using NReco.Logging.File;
 using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
@@ -41,23 +46,17 @@ internal static class Program
 
         EnsureMacOsPath();
 
-        var host = CreateHostBuilder(args).Build();
-        ConfigureMcpEndpoint(host);
-        host.Services.ConfigureKubeUIKubernetesJsonLogging();
-        host.Start();
-
-        var builder = CreateAppBuilder(host.Services);
+        using var host = CreateStartedHost(args);
 
         try
         {
-            builder.StartWithClassicDesktopLifetime(args);
+            CreateAppBuilder(host.Services).StartWithClassicDesktopLifetime(args);
         }
         finally
         {
             Task.Run(async () =>
             {
                 await host.StopAsync().ConfigureAwait(false);
-                await host.DisposeAsync().ConfigureAwait(false);
             }).GetAwaiter().GetResult();
         }
     }
@@ -135,7 +134,13 @@ internal static class Program
                 .WithHttpTransport(options => options.Stateless = true)
                 .WithTools<McpTools>();
             var port = mcpPortOverride ?? McpServerConfiguration.GetValidatedPort(settings.Settings);
-            builder.WebHost.ConfigureKestrel(options => options.ListenLocalhost(port));
+            builder.WebHost.ConfigureKestrel(options => ConfigureKestrelEndpoints(options, port));
+        }
+        else
+        {
+            // Without an explicit endpoint Kestrel claims its default address http://localhost:5000,
+            // which makes a second app instance fail to start; bind an OS-assigned loopback port instead.
+            builder.WebHost.ConfigureKestrel(options => ConfigureKestrelEndpoints(options, McpServerConfiguration.DynamicPort));
         }
 
         if (includeOptionalServices && settings.Settings.TelemetryEnabled)
@@ -150,6 +155,110 @@ internal static class Program
 
         configureServices?.Invoke(builder.Services);
         return builder;
+    }
+
+    private static void ConfigureKestrelEndpoints(KestrelServerOptions options, int port)
+    {
+        if (port == McpServerConfiguration.DynamicPort)
+        {
+            // ListenLocalhost does not support dynamic ports; bind the IPv4 loopback directly
+            // and let the operating system assign an available port. The advertised MCP endpoint
+            // host is 127.0.0.1, so IPv6 loopback is not needed.
+            options.Listen(IPAddress.Loopback, port);
+            return;
+        }
+
+        options.ListenLocalhost(port);
+    }
+
+    /// <summary>
+    /// Builds and starts the application host. When the configured MCP port cannot be bound
+    /// (already in use or blocked by the operating system), the host is rebuilt with an
+    /// OS-assigned port so the app still starts.
+    /// </summary>
+    internal static WebApplication CreateStartedHost(
+        string[] args,
+        bool includeOptionalServices = true,
+        Action<IServiceCollection>? configureServices = null,
+        int? mcpPortOverride = null,
+        bool? mcpEnabledOverride = null)
+    {
+        var application = CreateApplication(args, includeOptionalServices, configureServices, mcpPortOverride, mcpEnabledOverride);
+        try
+        {
+            application.Start();
+            RecordMcpBoundPort(application.Services);
+            return application;
+        }
+        catch (Exception exception) when (IsPortBindFailure(exception))
+        {
+            application.DisposeAsync().AsTask().GetAwaiter().GetResult();
+
+            application = CreateApplication(args, includeOptionalServices, configureServices, McpServerConfiguration.DynamicPort, mcpEnabledOverride);
+            application.Services.GetRequiredService<ILoggerFactory>()
+                .CreateLogger(typeof(Program))
+                .LogWarning(exception, "The configured MCP server port could not be bound; retrying with an operating system assigned port.");
+            application.Start();
+            RecordMcpBoundPort(application.Services);
+            return application;
+        }
+    }
+
+    private static WebApplication CreateApplication(
+        string[] args,
+        bool includeOptionalServices,
+        Action<IServiceCollection>? configureServices,
+        int? mcpPortOverride,
+        bool? mcpEnabledOverride)
+    {
+        var application = CreateHostBuilder(
+            args,
+            includeOptionalServices,
+            configureServices,
+            mcpPortOverride,
+            mcpEnabledOverride).Build();
+        ConfigureMcpEndpoint(application);
+        application.Services.ConfigureKubeUIKubernetesJsonLogging();
+        return application;
+    }
+
+    internal static void RecordMcpBoundPort(IServiceProvider services)
+    {
+        var addresses = services.GetRequiredService<IServer>()
+            .Features
+            .Get<IServerAddressesFeature>()?
+            .Addresses;
+        RecordMcpBoundPort(services.GetService<McpServerState>(), addresses);
+    }
+
+    internal static void RecordMcpBoundPort(McpServerState? state, IEnumerable<string?>? addresses)
+    {
+        if (state is null || addresses is null)
+            return;
+
+        foreach (var address in addresses)
+        {
+            if (!Uri.TryCreate(address, UriKind.Absolute, out var uri)
+                || uri.Scheme is not ("http" or "https")
+                || !uri.IsLoopback)
+                continue;
+
+            state.SetBoundPort(uri.Port);
+            return;
+        }
+    }
+
+    internal static bool IsPortBindFailure(Exception exception)
+    {
+        switch (exception)
+        {
+            case SocketException:
+                return true;
+            case AggregateException aggregate:
+                return aggregate.InnerExceptions.Any(IsPortBindFailure);
+            default:
+                return exception.InnerException is not null && IsPortBindFailure(exception.InnerException);
+        }
     }
 
     internal static void ConfigureMcpEndpoint(WebApplication application)

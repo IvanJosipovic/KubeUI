@@ -20,7 +20,8 @@ public sealed class McpTools(
     IKubernetesYamlSerializer yamlSerializer,
     Services.Settings.ISettingsService settingsService,
     IAgentPermissionService? permissionService = null,
-    IResourceNavigationService? resourceNavigationService = null)
+    IResourceNavigationService? resourceNavigationService = null,
+    IMcpServerState? mcpServerState = null)
 {
     private readonly IAgentPermissionService _permissionService = permissionService ?? new DenyByDefaultAgentPermissionService();
     private readonly IResourceNavigationService? _resourceNavigationService = resourceNavigationService;
@@ -125,7 +126,7 @@ public sealed class McpTools(
     {
         if (!settingsService.Settings.McpServerEnabled)
             throw new InvalidOperationException("The embedded MCP server is disabled in KubeUI settings.");
-        return McpServerConfiguration.GetEndpoint(settingsService.Settings);
+        return McpServerConfiguration.GetEndpoint(settingsService.Settings, mcpServerState?.BoundPort);
     }
 
     [McpServerTool(Name = "kubeui_open_resource_list", Title = "Open Kubernetes resource list", Destructive = false, ReadOnly = true, Idempotent = true), Description("Opens the KubeUI resource list for a Kubernetes resource type.")]
