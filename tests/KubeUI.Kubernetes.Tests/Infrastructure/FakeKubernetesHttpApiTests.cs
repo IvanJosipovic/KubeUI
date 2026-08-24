@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Net;
 using System.Net.Http.Json;
 using k8s;
@@ -51,6 +52,30 @@ public sealed class FakeKubernetesHttpApiTests
 
         api.RequestUris.Count(uri => uri?.AbsolutePath == "/api").ShouldBe(2);
         api.RequestUris.Count(uri => uri?.AbsolutePath == "/apis").ShouldBe(2);
+    }
+
+    [Fact]
+    public async Task AggregatedDiscoveryClient_traces_discovery_requests()
+    {
+        var activities = new List<Activity>();
+        using var listener = new ActivityListener
+        {
+            ShouldListenTo = source => source.Name == KubeUI.Kubernetes.Client.KubeInstrumentation.SourceName,
+            Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllData,
+            ActivityStarted = activity => activities.Add(activity),
+        };
+        ActivitySource.AddActivityListener(listener);
+
+        using var api = new FakeKubernetesHttpApi();
+        using var client = KubernetesClientMaterializer.Create(
+            new KubernetesClientConfiguration { Host = "http://fake-kubernetes" },
+            api);
+        var discovery = new KubernetesApiDiscoveryClient(client);
+
+        await discovery.RefreshAsync(TestContext.Current.CancellationToken);
+
+        activities.Count.ShouldBe(2);
+        activities.Select(activity => activity.GetTagItem("url.path")).ShouldBe(["/api", "/apis"]);
     }
 
     [Fact]
