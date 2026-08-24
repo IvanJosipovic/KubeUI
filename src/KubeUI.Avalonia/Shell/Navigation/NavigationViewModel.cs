@@ -127,11 +127,6 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
 
         if (cluster.Runtime.Connected)
         {
-            foreach (var resourceConfig in cluster.GetResourceConfigs())
-            {
-                ApplyResourceConfigNavigation(cluster, resourceConfig);
-            }
-
             clusterNode.IsExpanded = !clusterNode.IsExpanded;
             return;
         }

@@ -128,6 +128,19 @@ public partial class Cluster
                 .ToArray();
         }
 
+        if (Objects.TryGetValue(GroupApiVersionKind.From<V1Namespace>(), out var container)
+            && container is ContainerClass<V1Namespace> namespaceContainer)
+        {
+            var cachedNamespaces = namespaceContainer.Items.Items
+                .Select(static item => item.Name())
+                .Where(static name => !string.IsNullOrWhiteSpace(name))
+                .ToArray();
+            if (cachedNamespaces.Length > 0)
+            {
+                return cachedNamespaces;
+            }
+        }
+
         return _settings.GetClusterNamespaces(this);
     }
 
