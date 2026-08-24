@@ -544,7 +544,14 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
             _definitions[DefinitionKey(group, version, plural)] = new ResourceDefinition(
                 new GroupApiVersionKind(group, version, kind, plural),
                 string.Equals(scope, "Namespaced", StringComparison.Ordinal));
+            InvalidateGroupedDiscoveryETag();
         }
+    }
+
+    private void InvalidateGroupedDiscoveryETag()
+    {
+        var revision = Interlocked.Increment(ref _state.GroupedDiscoveryRevision);
+        _state.GroupedDiscoveryETag = $"\"fake-discovery-groups-v{revision}\"";
     }
 
     private void RegisterPolicyResources(JsonObject resource)
@@ -1141,6 +1148,7 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
         public int RequireAuthorizationForDiscovery;
         public string CoreDiscoveryETag = "\"fake-discovery-core-v1\"";
         public string GroupedDiscoveryETag = "\"fake-discovery-groups-v1\"";
+        public long GroupedDiscoveryRevision = 1;
         public long ResourceVersion;
     }
 
