@@ -8,14 +8,16 @@ using KubeUI.Avalonia.Resources.Workloads.v1.Pod.ViewModels;
 
 namespace KubeUI.Avalonia.Resources.Workloads.v1.Pod.Services;
 
+/// <summary>Creates and docks pod-log view models.</summary>
 public sealed class PodLogsLauncher(
     IServiceProvider serviceProvider,
     IFactory factory,
     ILogger<PodLogsLauncher> logger) : IPodLogsLauncher
 {
+    /// <inheritdoc />
     public async Task LaunchAsync(ClusterWorkspace cluster, IKubernetesObject<V1ObjectMeta> resource, string resourceKind)
     {
-        PodLogsViewModel viewModel = serviceProvider.GetRequiredService<PodLogsViewModel>();
+        var viewModel = serviceProvider.GetRequiredService<PodLogsViewModel>();
         viewModel.Cluster = cluster.Runtime;
         viewModel.Object = resource;
         viewModel.ContainerName = string.Empty;

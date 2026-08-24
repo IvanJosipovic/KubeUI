@@ -102,6 +102,27 @@ public sealed class TestClusterGeneratorTests
     }
 
     [Fact]
+    public async Task HttpHandlerFactoryTakesPrecedenceAndCreatesHandlersPerCluster()
+    {
+        using RecordingHandler configuredHandler = new();
+        using RecordingHandler fallbackHandler = new();
+        var config = TestClusterConfig.Fake(httpHandlers: [fallbackHandler]);
+        var factoryCalls = 0;
+        config.HttpHandlerFactory = () =>
+        {
+            factoryCalls++;
+            return [configuredHandler];
+        };
+
+        await using var cluster = await new TestClusterGenerator().CreateAsync(config, TestContext.Current.CancellationToken);
+        await cluster.Client.CoreV1.ListNamespaceAsync(cancellationToken: TestContext.Current.CancellationToken);
+
+        factoryCalls.ShouldBeGreaterThan(0);
+        configuredHandler.RequestCount.ShouldBeGreaterThan(0);
+        fallbackHandler.RequestCount.ShouldBe(0);
+    }
+
+    [Fact]
     public async Task FakeResponseLatencyCanBeCancelled()
     {
         TestClusterConfig config = new()

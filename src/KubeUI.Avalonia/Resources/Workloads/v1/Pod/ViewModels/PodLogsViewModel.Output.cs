@@ -35,6 +35,16 @@ public sealed partial class PodLogsViewModel
                 if (isCurrentConnection)
                 {
                     IsConnected = false;
+                    Dispatcher.UIThread.InvokeAsync(
+                        () =>
+                        {
+                            if (ReferenceEquals(_connectionCts, connectionCts) && !_readerCounts.ContainsKey(connectionCts))
+                            {
+                                _connectionCts = null;
+                                connectionCts.Dispose();
+                            }
+                        },
+                        DispatcherPriority.Background);
                 }
                 else
                 {
@@ -180,11 +190,9 @@ public sealed partial class PodLogsViewModel
             && Volatile.Read(ref _activeReaderCount) == 1;
     }
 
-    private bool IsTerminalPod(V1Pod pod)
+    private static bool IsTerminalPod(V1Pod pod)
     {
-        V1Pod? currentPod = Cluster.GetResource<V1Pod>(pod.Namespace(), pod.Name()) ?? pod;
-        return string.Equals(currentPod.Status?.Phase, "Succeeded", StringComparison.Ordinal)
-            || string.Equals(currentPod.Status?.Phase, "Failed", StringComparison.Ordinal);
+        return pod.Status?.Phase is "Succeeded" or "Failed";
     }
 
     private void ScheduleReconnectAfterStreamEnd(CancellationTokenSource connectionCts)
@@ -207,11 +215,6 @@ public sealed partial class PodLogsViewModel
                 await Task.Delay(TimeSpan.FromSeconds(delaySeconds), connectionCts.Token);
             }
             catch (OperationCanceledException)
-            {
-                return;
-            }
-
-            if (!IsCurrentConnection(connectionCts))
             {
                 return;
             }

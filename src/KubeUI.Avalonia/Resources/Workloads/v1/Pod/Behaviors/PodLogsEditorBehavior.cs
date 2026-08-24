@@ -23,6 +23,7 @@ public sealed class PodLogsEditorBehavior : Behavior<TextEditor>, IDeclarativeVi
             true,
             BindingMode.TwoWay);
 
+    /// <summary>Identifies the two-way jump-to-present request property.</summary>
     public static readonly DirectProperty<PodLogsEditorBehavior, bool> JumpToPresentRequestedProperty =
         AvaloniaProperty.RegisterDirect<PodLogsEditorBehavior, bool>(
             nameof(JumpToPresentRequested),
@@ -31,6 +32,7 @@ public sealed class PodLogsEditorBehavior : Behavior<TextEditor>, IDeclarativeVi
             false,
             BindingMode.TwoWay);
 
+    /// <summary>Identifies the two-way persisted scroll-offset property.</summary>
     public static readonly DirectProperty<PodLogsEditorBehavior, Vector> ScrollOffsetProperty =
         AvaloniaProperty.RegisterDirect<PodLogsEditorBehavior, Vector>(
             nameof(ScrollOffset),
@@ -52,12 +54,14 @@ public sealed class PodLogsEditorBehavior : Behavior<TextEditor>, IDeclarativeVi
     private bool _stickToBottomQueued;
     private bool _jumpToPresentQueued;
 
+    /// <summary>Gets or sets whether new output keeps the editor at the bottom.</summary>
     public bool AutoScrollToBottom
     {
         get => _autoScrollToBottom;
         set => SetAndRaise(AutoScrollToBottomProperty, ref _autoScrollToBottom, value);
     }
 
+    /// <summary>Gets or sets the request state for jumping to the newest output.</summary>
     public bool JumpToPresentRequested
     {
         get => _jumpToPresentRequested;
@@ -77,6 +81,7 @@ public sealed class PodLogsEditorBehavior : Behavior<TextEditor>, IDeclarativeVi
         }
     }
 
+    /// <summary>Gets or sets the persisted editor scroll offset.</summary>
     public Vector ScrollOffset
     {
         get => _scrollOffset;
@@ -368,8 +373,3 @@ public sealed class PodLogsEditorBehavior : Behavior<TextEditor>, IDeclarativeVi
             : ThemeName.DarkPlus;
     }
 }
-    /// <summary>Gets or sets whether the editor should jump to the newest output. Supports two-way binding.</summary>
-    /// <summary>Gets or sets the persisted editor scroll offset. Supports two-way binding.</summary>
-    /// <summary>Gets or sets whether new output keeps the editor at the bottom.</summary>
-    /// <summary>Gets or sets the request state for jumping to the newest output.</summary>
-    /// <summary>Gets or sets the persisted editor scroll offset.</summary>

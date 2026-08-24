@@ -111,17 +111,22 @@ public sealed class PodLogsViewTests
         };
 
         window.Show();
-        Dispatcher.UIThread.RunJobs();
+        try
+        {
+            Dispatcher.UIThread.RunJobs();
 
-        Control topBar = view.FindControl<Control>("TopBar") ?? throw new InvalidOperationException("Top bar was not found.");
-        Control podSelector = view.FindControl<Control>("PodSelectionComboBox") ?? throw new InvalidOperationException("Pod selector was not found.");
-        Control containerSelector = view.FindControl<Control>("ContainerSelectionComboBox") ?? throw new InvalidOperationException("Container selector was not found.");
+            Control topBar = view.FindControl<Control>("TopBar") ?? throw new InvalidOperationException("Top bar was not found.");
+            Control podSelector = view.FindControl<Control>("PodSelectionComboBox") ?? throw new InvalidOperationException("Pod selector was not found.");
+            Control containerSelector = view.FindControl<Control>("ContainerSelectionComboBox") ?? throw new InvalidOperationException("Container selector was not found.");
 
-        topBar.Bounds.Height.ShouldBeLessThanOrEqualTo(32);
-        podSelector.Bounds.Height.ShouldBeLessThanOrEqualTo(32);
-        containerSelector.Bounds.Height.ShouldBeLessThanOrEqualTo(32);
-
-        window.Close();
+            topBar.Bounds.Height.ShouldBeLessThanOrEqualTo(32);
+            podSelector.Bounds.Height.ShouldBeLessThanOrEqualTo(32);
+            containerSelector.Bounds.Height.ShouldBeLessThanOrEqualTo(32);
+        }
+        finally
+        {
+            window.Close();
+        }
     }
 
     [AvaloniaFact]
@@ -157,19 +162,24 @@ public sealed class PodLogsViewTests
         };
 
         window.Show();
-        Dispatcher.UIThread.RunJobs();
+        try
+        {
+            Dispatcher.UIThread.RunJobs();
 
-        TextEditor editor = view.GetVisualDescendants().OfType<TextEditor>().Single();
-        ScrollViewer scrollViewer = await WaitForScrollViewerAsync(editor);
-        await WaitForAsync(() => scrollViewer.Offset.Y >= scrollViewer.ScrollBarMaximum.Y - 1.0);
+            TextEditor editor = view.GetVisualDescendants().OfType<TextEditor>().Single();
+            ScrollViewer scrollViewer = await WaitForScrollViewerAsync(editor);
+            await WaitForAsync(() => scrollViewer.Offset.Y >= scrollViewer.ScrollBarMaximum.Y - 1.0);
 
-        var previousBottom = scrollViewer.Offset.Y;
-        await Dispatcher.UIThread.InvokeAsync(() => viewModel.Logs.Insert(viewModel.Logs.TextLength, Environment.NewLine + "tail line"));
+            var previousBottom = scrollViewer.Offset.Y;
+            await Dispatcher.UIThread.InvokeAsync(() => viewModel.Logs.Insert(viewModel.Logs.TextLength, Environment.NewLine + "tail line"));
 
-        await WaitForAsync(() => scrollViewer.Offset.Y > previousBottom);
-        scrollViewer.Offset.Y.ShouldBeGreaterThan(previousBottom);
-
-        window.Close();
+            await WaitForAsync(() => scrollViewer.Offset.Y > previousBottom);
+            scrollViewer.Offset.Y.ShouldBeGreaterThan(previousBottom);
+        }
+        finally
+        {
+            window.Close();
+        }
     }
 
     [AvaloniaFact]
@@ -205,19 +215,24 @@ public sealed class PodLogsViewTests
         };
 
         window.Show();
-        Dispatcher.UIThread.RunJobs();
+        try
+        {
+            Dispatcher.UIThread.RunJobs();
 
-        TextEditor editor = view.GetVisualDescendants().OfType<TextEditor>().Single();
-        ScrollViewer scrollViewer = await WaitForScrollViewerAsync(editor);
-        await WaitForAsync(() => Math.Abs(scrollViewer.Offset.Y - 80) < 1.0);
+            TextEditor editor = view.GetVisualDescendants().OfType<TextEditor>().Single();
+            ScrollViewer scrollViewer = await WaitForScrollViewerAsync(editor);
+            await WaitForAsync(() => Math.Abs(scrollViewer.Offset.Y - 80) < 1.0);
 
-        var beforeAppend = scrollViewer.Offset.Y;
-        await Dispatcher.UIThread.InvokeAsync(() => viewModel.Logs.Insert(viewModel.Logs.TextLength, Environment.NewLine + "older line"));
+            var beforeAppend = scrollViewer.Offset.Y;
+            await Dispatcher.UIThread.InvokeAsync(() => viewModel.Logs.Insert(viewModel.Logs.TextLength, Environment.NewLine + "older line"));
 
-        await WaitForAsync(() => Math.Abs(scrollViewer.Offset.Y - beforeAppend) < 1.0);
-        scrollViewer.Offset.Y.ShouldBe(beforeAppend, tolerance: 1.0);
-
-        window.Close();
+            await WaitForAsync(() => Math.Abs(scrollViewer.Offset.Y - beforeAppend) < 1.0);
+            scrollViewer.Offset.Y.ShouldBe(beforeAppend, tolerance: 1.0);
+        }
+        finally
+        {
+            window.Close();
+        }
     }
 
     [AvaloniaFact]
@@ -253,20 +268,25 @@ public sealed class PodLogsViewTests
         };
 
         window.Show();
-        Dispatcher.UIThread.RunJobs();
+        try
+        {
+            Dispatcher.UIThread.RunJobs();
 
-        TextEditor editor = view.GetVisualDescendants().OfType<TextEditor>().Single();
-        ScrollViewer scrollViewer = await WaitForScrollViewerAsync(editor);
-        await WaitForAsync(() => Math.Abs(scrollViewer.Offset.Y - 80) < 1.0);
+            TextEditor editor = view.GetVisualDescendants().OfType<TextEditor>().Single();
+            ScrollViewer scrollViewer = await WaitForScrollViewerAsync(editor);
+            await WaitForAsync(() => Math.Abs(scrollViewer.Offset.Y - 80) < 1.0);
 
-        viewModel.JumpToPresent();
+            viewModel.JumpToPresent();
 
-        await WaitForAsync(() => scrollViewer.Offset.Y >= scrollViewer.ScrollBarMaximum.Y - 1.0);
+            await WaitForAsync(() => scrollViewer.Offset.Y >= scrollViewer.ScrollBarMaximum.Y - 1.0);
 
-        viewModel.JumpToPresentRequested.ShouldBeFalse();
-        viewModel.AutoScrollToBottom.ShouldBeTrue();
-
-        window.Close();
+            viewModel.JumpToPresentRequested.ShouldBeFalse();
+            viewModel.AutoScrollToBottom.ShouldBeTrue();
+        }
+        finally
+        {
+            window.Close();
+        }
     }
 
     private static V1Pod CreatePod()
