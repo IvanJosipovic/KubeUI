@@ -20,7 +20,7 @@ using KubeUI.Avalonia.Features.Resources.Visualization;
 using KubeUI.Avalonia.Features.Resources.Yaml;
 using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Infrastructure.Docking;
-using KubeUI.Avalonia.Resources.Workloads.v1.Pod.ViewModels;
+using KubeUI.Avalonia.Resources.Workloads.v1.Pod.Services;
 using KubeUI.Kubernetes;
 
 namespace KubeUI.Avalonia.Resources;
@@ -32,6 +32,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
     protected readonly IDialogService _dialogService;
     protected readonly INotificationManager _notificationManager;
     protected readonly IFactory _factory;
+    private readonly IPodLogsLauncher _podLogsLauncher;
 
     protected ResourceConfigBase(IServiceProvider serviceProvider)
     {
@@ -39,6 +40,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
         _logger = serviceProvider.GetRequiredService<ILogger<ResourceConfigBase<T>>>();
         _dialogService = serviceProvider.GetRequiredService<IDialogService>();
         _factory = serviceProvider.GetRequiredService<IFactory>();
+        _podLogsLauncher = serviceProvider.GetRequiredService<IPodLogsLauncher>();
         _notificationManager = serviceProvider.GetRequiredService<INotificationManager>();
     }
 
@@ -142,26 +144,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
             return;
         }
 
-        var viewModel = ServiceProvider.GetRequiredService<PodLogsViewModel>();
-        viewModel.Cluster = Cluster.Runtime;
-        viewModel.Object = resource;
-        viewModel.ContainerName = string.Empty;
-        viewModel.SelectedContainerItems = new ObservableCollection<PodLogContainerSelectionItem>([
-            new PodLogContainerSelectionItem(string.Empty, Assets.Resources.PodLogsView_AllContainers, false, true),
-        ]);
-        viewModel.Id = $"{nameof(PodLogsViewModel)}-{Cluster.Runtime.Name}-{Kind.Kind}-{resource.Namespace()}-{resource.Name()}-all";
-
-        if (_factory.AddToBottom(viewModel))
-        {
-            try
-            {
-                await viewModel.Connect();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error viewing logs for {Kind} {Namespace}/{Name}", Kind.Kind, resource.Namespace(), resource.Name());
-            }
-        }
+        await _podLogsLauncher.LaunchAsync(Cluster, resource, Kind.Kind);
     }
 
     private bool CanViewPodLogs(T? resource)

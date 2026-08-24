@@ -421,10 +421,7 @@ public sealed partial class PodLogsViewModel
             ?? FindContainerStatus(pod.Status?.InitContainerStatuses, containerName)
             ?? FindContainerStatus(pod.Status?.EphemeralContainerStatuses, containerName);
 
-        return status is null
-            || status.State?.Waiting is null
-            || status.State.Running is not null
-            || status.State.Terminated is not null;
+        return status is null || status.State?.Waiting is null;
     }
 
     private static V1ContainerStatus? FindContainerStatus(IList<V1ContainerStatus>? statuses, string containerName)

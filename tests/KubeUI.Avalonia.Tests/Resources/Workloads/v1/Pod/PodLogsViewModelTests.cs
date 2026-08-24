@@ -2820,6 +2820,52 @@ public sealed class PodLogsViewModelTests
         }
     }
 
+    private sealed class SynchronizedList<T> : IReadOnlyList<T>
+    {
+        private readonly object _gate = new();
+        private readonly List<T> _items = [];
+
+        public int Count
+        {
+            get
+            {
+                lock (_gate)
+                {
+                    return _items.Count;
+                }
+            }
+        }
+
+        public T this[int index]
+        {
+            get
+            {
+                lock (_gate)
+                {
+                    return _items[index];
+                }
+            }
+        }
+
+        public void Add(T item)
+        {
+            lock (_gate)
+            {
+                _items.Add(item);
+            }
+        }
+
+        public IEnumerator<T> GetEnumerator()
+        {
+            lock (_gate)
+            {
+                return _items.ToArray().AsEnumerable().GetEnumerator();
+            }
+        }
+
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
+    }
+
     private sealed class RecordingPodLogStreamClient : IPodLogStreamClient
     {
         private readonly Queue<string> _payloads;
@@ -2829,7 +2875,7 @@ public sealed class PodLogsViewModelTests
             _payloads = new Queue<string>(payloads ?? []);
         }
 
-        public List<PodLogReadOptions> Requests { get; } = [];
+        public SynchronizedList<PodLogReadOptions> Requests { get; } = [];
 
         public Task<Stream> OpenAsync(IClusterRuntime cluster, PodLogReadOptions options, CancellationToken cancellationToken = default)
         {
@@ -2852,7 +2898,7 @@ public sealed class PodLogsViewModelTests
             _secondPayload = secondPayload;
         }
 
-        public List<PodLogReadOptions> Requests { get; } = [];
+        public SynchronizedList<PodLogReadOptions> Requests { get; } = [];
 
         public Task<Stream> OpenAsync(IClusterRuntime cluster, PodLogReadOptions options, CancellationToken cancellationToken = default)
         {
@@ -2878,7 +2924,7 @@ public sealed class PodLogsViewModelTests
                 : Encoding.UTF8.GetBytes(reconnectPayload.ReplaceLineEndings("\n"));
         }
 
-        public List<PodLogReadOptions> Requests { get; } = [];
+        public SynchronizedList<PodLogReadOptions> Requests { get; } = [];
 
         public Task<Stream> OpenAsync(IClusterRuntime cluster, PodLogReadOptions options, CancellationToken cancellationToken = default)
         {
@@ -2903,7 +2949,7 @@ public sealed class PodLogsViewModelTests
     {
         private int _requestCount;
 
-        public List<PodLogReadOptions> Requests { get; } = [];
+        public SynchronizedList<PodLogReadOptions> Requests { get; } = [];
 
         public int RequestCount => Volatile.Read(ref _requestCount);
 
@@ -2922,7 +2968,7 @@ public sealed class PodLogsViewModelTests
     {
         private readonly List<Stream> _streams = [];
 
-        public List<PodLogReadOptions> Requests { get; } = [];
+        public SynchronizedList<PodLogReadOptions> Requests { get; } = [];
 
         public Task<Stream> OpenAsync(IClusterRuntime cluster, PodLogReadOptions options, CancellationToken cancellationToken = default)
         {
@@ -3065,7 +3111,7 @@ public sealed class PodLogsViewModelTests
             _payload = payload;
         }
 
-        public List<PodLogReadOptions> Requests { get; } = [];
+        public SynchronizedList<PodLogReadOptions> Requests { get; } = [];
 
         public Task WaitForFirstRequestAsync()
         {

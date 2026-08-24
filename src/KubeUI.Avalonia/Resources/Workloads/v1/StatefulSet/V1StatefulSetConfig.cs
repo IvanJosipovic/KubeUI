@@ -47,6 +47,7 @@ public sealed partial class V1StatefulSetConfig : ResourceConfigBase<V1StatefulS
         ];
     }
 
+    /// <summary>Requests permission to read pod logs for stateful set workloads.</summary>
     public override IEnumerable<AuthorizationRequest> AuthorizationRequests()
     {
         return base.AuthorizationRequests().Append(

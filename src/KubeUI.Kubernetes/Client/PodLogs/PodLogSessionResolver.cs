@@ -56,10 +56,6 @@ public interface IPodLogSessionResolver
     /// </summary>
     PodLogSessionResolution? TryResolve(IClusterRuntime cluster, PodLogSessionState state);
 
-    /// <summary>
-    /// Builds the log request parameters for the resolved pod.
-    /// </summary>
-    PodLogReadOptions CreateReadOptions(PodLogSessionState state, PodLogSessionResolution resolution, bool follow = true);
 }
 
 /// <inheritdoc />
@@ -98,11 +94,12 @@ public sealed class PodLogSessionResolver : IPodLogSessionResolver
         ArgumentNullException.ThrowIfNull(state);
 
         var resources = GetResources(cluster);
+        var indexes = BuildIndexes(resources);
         var pods = GetPods(resources);
         var currentPod = TryGetCurrentPod(pods, state);
         var relatedPods = state.ResourceKind == V1Pod.KubeKind
             ? GetRelatedPods(pods, state, currentPod)
-            : GetDescendantPods(resources, pods, state);
+            : GetDescendantPods(pods, state, indexes);
 
         if (currentPod is null)
         {
@@ -125,22 +122,6 @@ public sealed class PodLogSessionResolver : IPodLogSessionResolver
         var podChanged = !string.Equals(state.ResourceUid, currentPod.Metadata?.Uid, StringComparison.Ordinal);
 
         return new PodLogSessionResolution(currentPod, resolvedContainerName, relatedPods, podChanged, previousLogsAvailable);
-    }
-
-    /// <inheritdoc />
-    public PodLogReadOptions CreateReadOptions(PodLogSessionState state, PodLogSessionResolution resolution, bool follow = true)
-    {
-        ArgumentNullException.ThrowIfNull(state);
-        ArgumentNullException.ThrowIfNull(resolution);
-
-        return new PodLogReadOptions(
-            resolution.Pod.Namespace(),
-            resolution.Pod.Name(),
-            resolution.ContainerName,
-            state.Previous && resolution.PreviousLogsAvailable,
-            state.Timestamps,
-            follow,
-            state.TailLines > 0 ? state.TailLines : DefaultTailLines);
     }
 
     private static V1Pod? TryGetCurrentPod(IReadOnlyList<V1Pod> pods, PodLogSessionState state)
@@ -191,9 +172,9 @@ public sealed class PodLogSessionResolver : IPodLogSessionResolver
     }
 
     private static List<V1Pod> GetDescendantPods(
-        IReadOnlyList<ResourceEntry> resources,
         IReadOnlyList<V1Pod> pods,
-        PodLogSessionState state)
+        PodLogSessionState state,
+        ResourceIndexes indexes)
     {
         ResourceIdentity target = new(
             state.ResourceNamespace,
@@ -206,7 +187,7 @@ public sealed class PodLogSessionResolver : IPodLogSessionResolver
         {
             var pod = pods[i];
             if (string.Equals(pod.Namespace(), state.ResourceNamespace, StringComparison.Ordinal)
-                && IsDescendantOf(pod, target, resources))
+                && IsDescendantOf(pod, target, indexes))
             {
                 relatedPods.Add(pod);
             }
@@ -216,7 +197,7 @@ public sealed class PodLogSessionResolver : IPodLogSessionResolver
         return relatedPods;
     }
 
-    private static bool IsDescendantOf(V1Pod pod, ResourceIdentity target, IReadOnlyList<ResourceEntry> resources)
+    private static bool IsDescendantOf(V1Pod pod, ResourceIdentity target, ResourceIndexes indexes)
     {
         var ownerReferences = pod.Metadata?.OwnerReferences;
         if (ownerReferences is null || ownerReferences.Count == 0)
@@ -235,7 +216,7 @@ public sealed class PodLogSessionResolver : IPodLogSessionResolver
                 return true;
             }
 
-            var owner = FindResource(resources, pod.Namespace(), ownerReference);
+            var owner = FindResource(indexes, pod.Namespace(), ownerReference);
             if (owner is null)
             {
                 continue;
@@ -271,7 +252,11 @@ public sealed class PodLogSessionResolver : IPodLogSessionResolver
         for (var i = 0; i < ownerReferences.Count; i++)
         {
             var ownerReference = ownerReferences[i];
-            if (MatchesOwner(ownerReference, new ResourceIdentity(pod.Namespace(), ownerName ?? string.Empty, ownerUid, ownerKind ?? string.Empty)))
+            if ((!string.IsNullOrWhiteSpace(ownerUid) && string.Equals(ownerReference.Uid, ownerUid, StringComparison.Ordinal))
+                || (string.IsNullOrWhiteSpace(ownerUid)
+                    && string.Equals(ownerReference.Name, ownerName, StringComparison.Ordinal)
+                    && (string.IsNullOrWhiteSpace(ownerKind)
+                        || string.Equals(ownerReference.Kind, ownerKind, StringComparison.Ordinal))))
             {
                 return true;
             }
@@ -293,34 +278,23 @@ public sealed class PodLogSessionResolver : IPodLogSessionResolver
     }
 
     private static ResourceEntry? FindResource(
-        IReadOnlyList<ResourceEntry> resources,
+        ResourceIndexes indexes,
         string? resourceNamespace,
         V1OwnerReference ownerReference)
     {
         if (!string.IsNullOrWhiteSpace(ownerReference.Uid))
         {
-            for (var i = 0; i < resources.Count; i++)
+            indexes.ByUid.TryGetValue(ownerReference.Uid, out var resourceByUid);
+            if (resourceByUid is not null)
             {
-                var resource = resources[i];
-                if (string.Equals(resource.Resource.Metadata?.Uid, ownerReference.Uid, StringComparison.Ordinal))
-                {
-                    return resource;
-                }
+                return resourceByUid;
             }
         }
 
-        for (var i = 0; i < resources.Count; i++)
-        {
-            var resource = resources[i];
-            if (string.Equals(resource.Resource.Namespace(), resourceNamespace, StringComparison.Ordinal)
-                && string.Equals(resource.Resource.Name(), ownerReference.Name, StringComparison.Ordinal)
-                && string.Equals(resource.Kind, ownerReference.Kind, StringComparison.Ordinal))
-            {
-                return resource;
-            }
-        }
-
-        return null;
+        indexes.ByName.TryGetValue(
+            (resourceNamespace ?? string.Empty, ownerReference.Kind ?? string.Empty, ownerReference.Name ?? string.Empty),
+            out var resourceByName);
+        return resourceByName;
     }
 
     private static List<ResourceEntry> GetResources(IClusterRuntime cluster)
@@ -380,6 +354,29 @@ public sealed class PodLogSessionResolver : IPodLogSessionResolver
     }
 
     private sealed record ResourceEntry(IKubernetesObject<V1ObjectMeta> Resource, string Kind);
+
+    private sealed record ResourceIndexes(
+        IReadOnlyDictionary<string, ResourceEntry> ByUid,
+        IReadOnlyDictionary<(string Namespace, string Kind, string Name), ResourceEntry> ByName);
+
+    private static ResourceIndexes BuildIndexes(IReadOnlyList<ResourceEntry> resources)
+    {
+        Dictionary<string, ResourceEntry> byUid = new(StringComparer.Ordinal);
+        Dictionary<(string Namespace, string Kind, string Name), ResourceEntry> byName = [];
+        for (var i = 0; i < resources.Count; i++)
+        {
+            var resource = resources[i];
+            var uid = resource.Resource.Metadata?.Uid;
+            if (!string.IsNullOrWhiteSpace(uid))
+            {
+                byUid.TryAdd(uid, resource);
+            }
+
+            byName.TryAdd((resource.Resource.Namespace() ?? string.Empty, resource.Kind, resource.Resource.Name() ?? string.Empty), resource);
+        }
+
+        return new ResourceIndexes(byUid, byName);
+    }
 
     private sealed record ResourceIdentity(string Namespace, string Name, string? Uid, string Kind);
 

@@ -61,6 +61,7 @@ public sealed partial class V1ReplicaSetConfig : ResourceConfigBase<V1ReplicaSet
         ];
     }
 
+    /// <summary>Requests permission to read pod logs for replica set workloads.</summary>
     public override IEnumerable<AuthorizationRequest> AuthorizationRequests()
     {
         return base.AuthorizationRequests().Append(

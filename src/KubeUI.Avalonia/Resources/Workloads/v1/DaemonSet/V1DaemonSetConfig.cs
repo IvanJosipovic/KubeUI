@@ -54,6 +54,7 @@ public sealed partial class V1DaemonSetConfig : ResourceConfigBase<V1DaemonSet>
         ];
     }
 
+    /// <summary>Requests permission to read pod logs for daemon set workloads.</summary>
     public override IEnumerable<AuthorizationRequest> AuthorizationRequests()
     {
         return base.AuthorizationRequests().Append(

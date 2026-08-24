@@ -44,6 +44,7 @@ public sealed partial class V1JobConfig : ResourceConfigBase<V1Job>
         return [CreatePodLogsMenuItem(selectedItems)];
     }
 
+    /// <summary>Requests permission to read pod logs for job workloads.</summary>
     public override IEnumerable<AuthorizationRequest> AuthorizationRequests()
     {
         return base.AuthorizationRequests().Append(

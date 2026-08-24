@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Collections.Concurrent;
 using System.IO;
 using System.Reactive.Linq;
 using AvaloniaEdit.Document;
@@ -16,6 +17,7 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
 {
     private const int DefaultTailLines = 100;
     private const int MaxLogEntries = 10_000;
+    private const int MaxAutomaticReconnectAttempts = 5;
 
     private readonly ILogger<PodLogsViewModel> _logger;
     private readonly IPodLogExportService _exportService;
@@ -28,6 +30,7 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
     private readonly List<PodLogOutputEntry> _outputEntries = [];
     private readonly List<Stream> _streams = [];
     private readonly List<StreamReader> _streamReaders = [];
+    private readonly ConcurrentDictionary<CancellationTokenSource, int> _readerCounts = new();
     private bool _hasLoadedSession;
     private bool _isApplyingSession;
     private bool _isNormalizingPodSelection;
@@ -39,6 +42,7 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
     private bool _pendingReconnect;
     private bool _preserveOutputOnNextConnect;
     private int _streamEndedReconnectPending;
+    private int _streamEndedReconnectAttempts;
     private int _activeReaderCount;
     private int _outputGeneration;
     private IDisposable? _resourceChangesSubscription;
@@ -56,7 +60,7 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
         _exportService = exportService;
         _sessionResolver = sessionResolver;
         _streamClient = streamClient;
-        Title = Assets.Resources.PodLogsViewModel_Title;
+        Title = Assets.Resources.PodLogsView_Title;
         SelectedPodItems.CollectionChanged += SelectedPodItemsOnCollectionChanged;
         SelectedContainerItems.CollectionChanged += SelectedContainerItemsOnCollectionChanged;
     }
@@ -172,6 +176,10 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
 
             var preserveOutput = _preserveOutputOnNextConnect;
             _preserveOutputOnNextConnect = false;
+            if (!preserveOutput)
+            {
+                _streamEndedReconnectAttempts = 0;
+            }
             ResetConnection();
 
             IsConnecting = true;
@@ -268,6 +276,7 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
             IsConnected = true;
             _hasLoadedSession = true;
             _activeReaderCount = options.Count;
+            _readerCounts[connectionCts] = options.Count;
             EnsureResourceChangeSubscription();
 
             for (var i = 0; i < options.Count; i++)
@@ -285,7 +294,7 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
                     StreamReader reader = new(stream);
                     _streams.Add(stream);
                     _streamReaders.Add(reader);
-                    _ = Task.Run(() => ReadLogsAsync(reader, option, connectionCts));
+                    _ = Task.Run(() => ReadLogsAsync(reader, option, connectionCts, resolution));
                 }
                 catch (Exception ex)
                 {
@@ -342,7 +351,25 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
     public Task DownloadLogs()
     {
         var suggestedFileName = BuildSuggestedFileName();
-        return _exportService.ExportAsync(suggestedFileName, Logs.Text);
+        return DownloadLogsAsync(suggestedFileName);
+    }
+
+    private async Task DownloadLogsAsync(string suggestedFileName)
+    {
+        try
+        {
+            await _exportService.ExportAsync(suggestedFileName, Logs.Text);
+        }
+        catch (IOException ex)
+        {
+            _logger.LogError(ex, "Unable to export pod logs.");
+            ConnectionError = ex.Message;
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            _logger.LogError(ex, "Unable to export pod logs.");
+            ConnectionError = ex.Message;
+        }
     }
 
     [RelayCommand]
@@ -374,13 +401,21 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
         }
 
         _disposed = true;
+        SelectedPodItems.CollectionChanged -= SelectedPodItemsOnCollectionChanged;
+        SelectedContainerItems.CollectionChanged -= SelectedContainerItemsOnCollectionChanged;
         _resourceChangesSubscription?.Dispose();
         _resourceChangesSubscription = null;
         _subscribedCluster = null;
 
         var connectionCts = _connectionCts;
         _connectionCts = null;
-        connectionCts?.Cancel();
+        try
+        {
+            connectionCts?.Cancel();
+        }
+        catch (ObjectDisposedException)
+        {
+        }
         for (var i = 0; i < _streamReaders.Count; i++)
         {
             _streamReaders[i].Dispose();
@@ -389,6 +424,11 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
         for (var i = 0; i < _streams.Count; i++)
         {
             _streams[i].Dispose();
+        }
+
+        if (connectionCts is not null && !_readerCounts.ContainsKey(connectionCts))
+        {
+            connectionCts.Dispose();
         }
 
         // Connect may still be awaiting OpenAsync and will release the gate in its finally block.
@@ -550,7 +590,14 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
 
     private void ResetConnection()
     {
-        _connectionCts?.Cancel();
+        CancellationTokenSource? previousConnectionCts = _connectionCts;
+        try
+        {
+            previousConnectionCts?.Cancel();
+        }
+        catch (ObjectDisposedException)
+        {
+        }
 
         for (var i = 0; i < _streamReaders.Count; i++)
         {
@@ -567,6 +614,10 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
         _streams.Clear();
 
         _connectionCts = null;
+        if (previousConnectionCts is not null && !_readerCounts.ContainsKey(previousConnectionCts))
+        {
+            previousConnectionCts.Dispose();
+        }
 
         _activeReaderCount = 0;
         _streamEndedReconnectPending = 0;

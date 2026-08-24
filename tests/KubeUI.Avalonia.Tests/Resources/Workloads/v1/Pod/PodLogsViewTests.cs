@@ -51,13 +51,18 @@ public sealed class PodLogsViewTests
             Height = 600,
         };
 
-        window.Show();
-        Dispatcher.UIThread.RunJobs();
+        try
+        {
+            window.Show();
+            Dispatcher.UIThread.RunJobs();
 
-        TextEditor editor = view.GetVisualDescendants().OfType<TextEditor>().Single();
-        editor.SearchPanel.ShouldNotBeNull();
-
-        window.Close();
+            TextEditor editor = view.GetVisualDescendants().OfType<TextEditor>().Single();
+            editor.SearchPanel.ShouldNotBeNull();
+        }
+        finally
+        {
+            window.Close();
+        }
     }
 
     [AvaloniaFact]
@@ -302,8 +307,14 @@ public sealed class PodLogsViewTests
 
     private static async Task<ScrollViewer> WaitForScrollViewerAsync(TextEditor editor)
     {
-        await WaitForAsync(() => editor.GetVisualDescendants().OfType<ScrollViewer>().Any(scrollViewer => scrollViewer.ScrollBarMaximum.Y > 0));
-        return editor.GetVisualDescendants().OfType<ScrollViewer>().FirstOrDefault()
+        ScrollViewer? scrollViewer = null;
+        await WaitForAsync(() =>
+        {
+            scrollViewer = editor.GetVisualDescendants().OfType<ScrollViewer>()
+                .FirstOrDefault(candidate => candidate.ScrollBarMaximum.Y > 0);
+            return scrollViewer is not null;
+        });
+        return scrollViewer
             ?? throw new InvalidOperationException("ScrollViewer was not created.");
     }
 

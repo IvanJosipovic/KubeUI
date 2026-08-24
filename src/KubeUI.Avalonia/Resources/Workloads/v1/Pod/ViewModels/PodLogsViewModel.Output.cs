@@ -26,7 +26,24 @@ public sealed partial class PodLogsViewModel
 
     private void DecrementActiveReaders(CancellationTokenSource connectionCts)
     {
-        if (!IsCurrentConnection(connectionCts))
+        var isCurrentConnection = IsCurrentConnection(connectionCts);
+        if (_readerCounts.TryGetValue(connectionCts, out var remainingReaders))
+        {
+            remainingReaders = _readerCounts.AddOrUpdate(connectionCts, 0, static (_, count) => count - 1);
+            if (remainingReaders <= 0 && _readerCounts.TryRemove(connectionCts, out _))
+            {
+                if (isCurrentConnection)
+                {
+                    IsConnected = false;
+                }
+                else
+                {
+                    connectionCts.Dispose();
+                }
+            }
+        }
+
+        if (!isCurrentConnection)
         {
             return;
         }
@@ -60,11 +77,16 @@ public sealed partial class PodLogsViewModel
         return fileName.ReplaceInvalidFileNameChars();
     }
 
-    private async Task ReadLogsAsync(StreamReader reader, PodLogReadOptions option, CancellationTokenSource connectionCts)
+    private async Task ReadLogsAsync(
+        StreamReader reader,
+        PodLogReadOptions option,
+        CancellationTokenSource connectionCts,
+        PodLogSessionResolution connectionResolution)
     {
         var cancellationToken = connectionCts.Token;
         var streamEnded = false;
         var appendedOutput = false;
+        List<PodLogOutputEntry> pendingOutput = [];
         List<string>? reconnectBuffer = HasExistingOutput(option) ? [] : null;
         var outputGeneration = Volatile.Read(ref _outputGeneration);
         try
@@ -80,7 +102,9 @@ public sealed partial class PodLogsViewModel
 
                 if (reconnectBuffer is null)
                 {
-                    AppendLogEntry(option, log, connectionCts, outputGeneration);
+                    QueueOutputEntry(pendingOutput, option, log);
+                    FlushOutputEntries(pendingOutput, connectionCts, outputGeneration);
+                    pendingOutput.Clear();
                     appendedOutput = true;
                 }
                 else
@@ -91,7 +115,9 @@ public sealed partial class PodLogsViewModel
                         reconnectBuffer = null;
                         for (var i = 0; i < lines.Count; i++)
                         {
-                            AppendLogEntry(option, lines[i], connectionCts, outputGeneration);
+                            QueueOutputEntry(pendingOutput, option, lines[i]);
+                            FlushOutputEntries(pendingOutput, connectionCts, outputGeneration);
+                            pendingOutput.Clear();
                         }
 
                         appendedOutput = lines.Count > 0;
@@ -125,13 +151,17 @@ public sealed partial class PodLogsViewModel
             {
                 for (var i = 0; i < lines.Count; i++)
                 {
-                    AppendLogEntry(option, lines[i], connectionCts, outputGeneration);
+                    QueueOutputEntry(pendingOutput, option, lines[i]);
+                    FlushOutputEntries(pendingOutput, connectionCts, outputGeneration);
+                    pendingOutput.Clear();
                 }
 
                 appendedOutput = lines.Count > 0;
             }
 
-            if (streamEnded && appendedOutput && ShouldReconnectAfterStreamEnd(reader, option, cancellationToken))
+            FlushOutputEntries(pendingOutput, connectionCts, outputGeneration);
+
+            if (streamEnded && appendedOutput && ShouldReconnectAfterStreamEnd(reader, option, connectionResolution.Pod, cancellationToken))
             {
                 ScheduleReconnectAfterStreamEnd(connectionCts);
             }
@@ -140,24 +170,18 @@ public sealed partial class PodLogsViewModel
         }
     }
 
-    private bool ShouldReconnectAfterStreamEnd(StreamReader reader, PodLogReadOptions option, CancellationToken cancellationToken)
+    private bool ShouldReconnectAfterStreamEnd(StreamReader reader, PodLogReadOptions option, V1Pod resolvedPod, CancellationToken cancellationToken)
     {
         return option.Follow
             && !option.Previous
             && !cancellationToken.IsCancellationRequested
             && !reader.BaseStream.CanSeek
-            && !IsTerminalPod()
+            && !IsTerminalPod(resolvedPod)
             && Volatile.Read(ref _activeReaderCount) == 1;
     }
 
-    private bool IsTerminalPod()
+    private bool IsTerminalPod(V1Pod pod)
     {
-        V1Pod? pod = SessionResolution?.Pod;
-        if (pod is null)
-        {
-            return false;
-        }
-
         V1Pod? currentPod = Cluster.GetResource<V1Pod>(pod.Namespace(), pod.Name()) ?? pod;
         return string.Equals(currentPod.Status?.Phase, "Succeeded", StringComparison.Ordinal)
             || string.Equals(currentPod.Status?.Phase, "Failed", StringComparison.Ordinal);
@@ -165,6 +189,11 @@ public sealed partial class PodLogsViewModel
 
     private void ScheduleReconnectAfterStreamEnd(CancellationTokenSource connectionCts)
     {
+        if (Interlocked.Increment(ref _streamEndedReconnectAttempts) > MaxAutomaticReconnectAttempts)
+        {
+            return;
+        }
+
         if (Interlocked.Exchange(ref _streamEndedReconnectPending, 1) == 1)
         {
             return;
@@ -174,7 +203,8 @@ public sealed partial class PodLogsViewModel
         {
             try
             {
-                await Task.Delay(TimeSpan.FromSeconds(1), connectionCts.Token);
+                var delaySeconds = Math.Min(30, 1 << Math.Min(_streamEndedReconnectAttempts - 1, 4));
+                await Task.Delay(TimeSpan.FromSeconds(delaySeconds), connectionCts.Token);
             }
             catch (OperationCanceledException)
             {
@@ -202,17 +232,56 @@ public sealed partial class PodLogsViewModel
         }
     }
 
-    private void AppendLogEntry(
-        PodLogReadOptions option,
-        string message,
+    private static void QueueOutputEntry(List<PodLogOutputEntry> pendingOutput, PodLogReadOptions option, string message)
+    {
+        pendingOutput.Add(new PodLogOutputEntry(option.PodName, option.ContainerName, message));
+    }
+
+    private void FlushOutputEntries(
+        IReadOnlyList<PodLogOutputEntry> entries,
         CancellationTokenSource connectionCts,
         int outputGeneration)
     {
-        PodLogOutputEntry entry = new(option.PodName, option.ContainerName, message);
-        AddOutputEntry(entry);
+        if (entries.Count == 0)
+        {
+            return;
+        }
+
+        PodLogOutputEntry[] batch = entries.ToArray();
+        for (var i = 0; i < batch.Length; i++)
+        {
+            AddOutputEntry(batch[i]);
+        }
+
         Dispatcher.UIThread.InvokeAsync(
-            () => AppendOutputEntry(entry, connectionCts, outputGeneration),
+            () => AppendOutputEntries(batch, connectionCts, outputGeneration),
             DispatcherPriority.Background);
+    }
+
+    private void AppendOutputEntries(
+        IReadOnlyList<PodLogOutputEntry> entries,
+        CancellationTokenSource connectionCts,
+        int outputGeneration)
+    {
+        if (!IsCurrentConnection(connectionCts) || outputGeneration != Volatile.Read(ref _outputGeneration))
+        {
+            return;
+        }
+
+        var displayMode = GetCurrentDisplayMode();
+        StringBuilder builder = new();
+        for (var i = 0; i < entries.Count; i++)
+        {
+            if (i > 0 || Logs.TextLength > 0)
+            {
+                builder.AppendLine();
+            }
+
+            builder.Append(FormatOutputEntry(entries[i], ShowResourceNames, displayMode));
+        }
+
+        Logs.Insert(Logs.TextLength, builder.ToString());
+        TrimLogDocument();
     }
 
     private void AppendOutputEntry(PodLogOutputEntry entry, CancellationTokenSource connectionCts, int outputGeneration)
@@ -269,6 +338,7 @@ public sealed partial class PodLogsViewModel
         }
 
         StringBuilder builder = new();
+        var displayMode = GetCurrentDisplayMode();
         for (var i = 0; i < entries.Length; i++)
         {
             if (i > 0)
@@ -276,7 +346,7 @@ public sealed partial class PodLogsViewModel
                 builder.AppendLine();
             }
 
-            builder.Append(FormatOutputEntry(entries[i], ShowResourceNames, GetCurrentDisplayMode()));
+            builder.Append(FormatOutputEntry(entries[i], ShowResourceNames, displayMode));
         }
 
         Logs.Text = builder.ToString();
@@ -350,12 +420,6 @@ public sealed partial class PodLogsViewModel
         var history = GetRecentMessages(option);
         var overlap = GetSuffixPrefixOverlap(history, pending);
 
-        if (!atEnd && overlap == pending.Count && HasLongerOverlap(history, pending))
-        {
-            lines = [];
-            return false;
-        }
-
         if (!atEnd && overlap == pending.Count)
         {
             lines = [];
@@ -408,34 +472,6 @@ public sealed partial class PodLogsViewModel
         }
 
         return 0;
-    }
-
-    private static bool HasLongerOverlap(IReadOnlyList<string> history, IReadOnlyList<string> pending)
-    {
-        if (pending.Count >= history.Count)
-        {
-            return false;
-        }
-
-        for (var length = pending.Count + 1; length <= history.Count; length++)
-        {
-            var matches = true;
-            for (var i = 0; i < pending.Count; i++)
-            {
-                if (!string.Equals(history[history.Count - length + i], pending[i], StringComparison.Ordinal))
-                {
-                    matches = false;
-                    break;
-                }
-            }
-
-            if (matches)
-            {
-                return true;
-            }
-        }
-
-        return false;
     }
 
 }

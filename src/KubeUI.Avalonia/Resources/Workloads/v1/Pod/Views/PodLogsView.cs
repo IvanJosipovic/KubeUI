@@ -16,6 +16,7 @@ using Ursa.Controls;
 
 namespace KubeUI.Avalonia.Resources.Workloads.v1.Pod.Views;
 
+/// <summary>Displays streamed pod logs with pod and container selection.</summary>
 public sealed partial class PodLogsView : ViewBase<PodLogsViewModel>
 {
     private static readonly FuncValueConverter<string?, bool> HasErrorConverter = new(

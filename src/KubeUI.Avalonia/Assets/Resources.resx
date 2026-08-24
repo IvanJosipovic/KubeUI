@@ -2553,16 +2553,12 @@
     <value>• {0}</value>
     <comment/>
   </data>
-  <data name="PodLogsViewModel_Title" xml:space="preserve">
-    <value>Pod Logs</value>
-    <comment/>
-  </data>
   <data name="PodLogsView_ContainerLabel" xml:space="preserve">
     <value>Container:</value>
     <comment/>
   </data>
-  <data name="Action_Copy" xml:space="preserve">
-    <value>Copy</value>
+  <data name="PodLogsView_FileTypeText" xml:space="preserve">
+    <value>Text files</value>
     <comment/>
   </data>
   <data name="PodLogsView_JumpToPresent" xml:space="preserve">

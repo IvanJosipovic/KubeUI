@@ -65,6 +65,7 @@ public sealed partial class V1CronJobConfig : ResourceConfigBase<V1CronJob>
         ];
     }
 
+    /// <summary>Requests permissions to create jobs and read pod logs for cron job actions.</summary>
     public override IEnumerable<AuthorizationRequest> AuthorizationRequests()
     {
         return base.AuthorizationRequests()

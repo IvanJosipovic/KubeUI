@@ -17,7 +17,7 @@ public sealed class PodLogExportService : IPodLogExportService
             SuggestedFileName = suggestedFileName,
             FileTypeChoices =
             [
-                new FilePickerFileType("Text files")
+                new FilePickerFileType(global::KubeUI.Avalonia.Assets.Resources.PodLogsView_FileTypeText)
                 {
                     Patterns = ["*.log", "*.txt"],
                 },

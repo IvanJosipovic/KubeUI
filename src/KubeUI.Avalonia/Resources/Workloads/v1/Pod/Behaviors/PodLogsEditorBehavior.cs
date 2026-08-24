@@ -11,8 +11,10 @@ using static AvaloniaEdit.TextMate.TextMate;
 
 namespace KubeUI.Avalonia.Resources.Workloads.v1.Pod.Behaviors;
 
+/// <summary>Provides scrolling, syntax highlighting, and search behavior for the pod log editor.</summary>
 public sealed class PodLogsEditorBehavior : Behavior<TextEditor>, IDeclarativeViewBase
 {
+    /// <summary>Gets or sets whether new output keeps the editor at the bottom. Supports two-way binding.</summary>
     public static readonly DirectProperty<PodLogsEditorBehavior, bool> AutoScrollToBottomProperty =
         AvaloniaProperty.RegisterDirect<PodLogsEditorBehavior, bool>(
             nameof(AutoScrollToBottom),
@@ -218,6 +220,7 @@ public sealed class PodLogsEditorBehavior : Behavior<TextEditor>, IDeclarativeVi
 
         if (_scrollViewer.Extent.Width <= _scrollViewer.Viewport.Width && _scrollViewer.Extent.Height <= _scrollViewer.Viewport.Height)
         {
+            _pendingRestoreOffset = null;
             return;
         }
 
@@ -330,7 +333,7 @@ public sealed class PodLogsEditorBehavior : Behavior<TextEditor>, IDeclarativeVi
             _scrollViewer.Offset = new Vector(_scrollViewer.Offset.X, _scrollViewer.ScrollBarMaximum.Y);
             _suppressScrollSync = false;
             _isStuckToBottom = IsAtBottom(_scrollViewer);
-            PersistScrollOffset();
+            ScrollOffset = new Vector(_scrollViewer.Offset.X, _scrollViewer.Offset.Y);
         }
         finally
         {
@@ -365,3 +368,8 @@ public sealed class PodLogsEditorBehavior : Behavior<TextEditor>, IDeclarativeVi
             : ThemeName.DarkPlus;
     }
 }
+    /// <summary>Gets or sets whether the editor should jump to the newest output. Supports two-way binding.</summary>
+    /// <summary>Gets or sets the persisted editor scroll offset. Supports two-way binding.</summary>
+    /// <summary>Gets or sets whether new output keeps the editor at the bottom.</summary>
+    /// <summary>Gets or sets the request state for jumping to the newest output.</summary>
+    /// <summary>Gets or sets the persisted editor scroll offset.</summary>

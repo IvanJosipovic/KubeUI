@@ -40,6 +40,7 @@ public static partial class KubeUIShellServiceCollectionExtensions
         services.AddSingleton<DataGridColumnFilterService>();
         services.AddSingleton<DataGridColumnFilterFlyoutFactory>();
         services.AddSingleton<IPodLogExportService, PodLogExportService>();
+        services.AddSingleton<IPodLogsLauncher, PodLogsLauncher>();
         services.AddSingleton<IDataTemplate>(sp => sp.GetRequiredService<ViewLocator>());
         services.AddSingleton<ISettingsPersistence, FileSettingsPersistence>();
         services.AddSingleton<ISettingsService, SettingsService>();
