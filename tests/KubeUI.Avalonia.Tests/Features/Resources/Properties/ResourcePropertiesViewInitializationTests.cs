@@ -78,7 +78,8 @@ public sealed class ResourcePropertiesViewInitializationTests
             await TestApplicationExtensions.WaitForUiAsync(TestContext.Current.CancellationToken);
 
             var items = view.FindControl<StackPanel>("PART_Items")!.Children.OfType<PropertyItem>().ToList();
-            items.ShouldContain(item => item.Key == AppResources.ResourcePropertiesView_Name);
+            var nameItem = items.Single(item => item.Key == AppResources.ResourcePropertiesView_Name);
+            nameItem.Value.ShouldBe("example-1");
         }
         finally
         {
