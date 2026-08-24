@@ -380,21 +380,55 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
             resourceConfig.Initialize(this);
             resourceConfig.Configure(crd);
 
+            _logger.LogDebug(
+                "Custom resource definition discovered for {ClusterName}: Definition={DefinitionName}; ResourceKind={ResourceKind}; Generation={Generation}",
+                Runtime.Name,
+                definitionName,
+                resourceConfig.Kind,
+                generation);
+
             await UpdateResourceConfigPermissionsAndEvaluateAsync(resourceConfig).ConfigureAwait(false);
+
+            _logger.LogDebug(
+                "Custom resource definition access evaluated for {ClusterName}: Definition={DefinitionName}; ResourceKind={ResourceKind}; PermissionsLoaded={PermissionsLoaded}; CanListAndWatch={CanListAndWatch}; Generation={Generation}",
+                Runtime.Name,
+                definitionName,
+                resourceConfig.Kind,
+                resourceConfig.PermissionsLoaded,
+                resourceConfig.CanListAndWatch,
+                generation);
 
             if (!resourceConfig.CanListAndWatch)
             {
+                _logger.LogDebug(
+                    "Custom resource definition skipped for {ClusterName}: list/watch access denied; Definition={DefinitionName}; ResourceKind={ResourceKind}",
+                    Runtime.Name,
+                    definitionName,
+                    resourceConfig.Kind);
                 return;
             }
 
             if (!_customResourceDefinitionGenerations.TryGetValue(definitionName, out var currentGeneration)
                 || currentGeneration != generation)
             {
+                _logger.LogDebug(
+                    "Custom resource definition skipped for {ClusterName}: stale generation; Definition={DefinitionName}; ResourceKind={ResourceKind}; ExpectedGeneration={CurrentGeneration}; Generation={Generation}",
+                    Runtime.Name,
+                    definitionName,
+                    resourceConfig.Kind,
+                    currentGeneration,
+                    generation);
                 return;
             }
 
             RemoveOtherCustomResourceVersions(resourceConfig.Kind);
             _resourceConfigs[resourceConfig.Kind] = resourceConfig;
+            _logger.LogDebug(
+                "Custom resource definition registered for {ClusterName}: Definition={DefinitionName}; ResourceKind={ResourceKind}; ConfigCount={ConfigCount}",
+                Runtime.Name,
+                definitionName,
+                resourceConfig.Kind,
+                _resourceConfigs.Count);
             ProcessResourceConfigPermissionsUpdated(resourceConfig);
         }
         catch (OperationCanceledException) when (_disposeCancellation.IsCancellationRequested)
