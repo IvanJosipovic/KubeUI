@@ -37,16 +37,6 @@ public sealed partial class PodLogsViewModel
                 if (isCurrentConnection)
                 {
                     IsConnected = false;
-                    Dispatcher.UIThread.InvokeAsync(
-                        () =>
-                        {
-                            if (ReferenceEquals(_connectionCts, connectionCts) && !_readerCounts.ContainsKey(connectionCts))
-                            {
-                                _connectionCts = null;
-                                connectionCts.Dispose();
-                            }
-                        },
-                        DispatcherPriority.Background);
                 }
                 else
                 {
