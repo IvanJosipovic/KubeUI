@@ -23,6 +23,8 @@ public static class KubeUIAvaloniaServiceCollectionExtensions
         services.AddKubeUIKubernetesServices();
         services.Replace(ServiceDescriptor.Singleton<IThreadDispatcher>(AvaloniaScheduler.Instance));
         services.AddKubeUIDialogServices();
+        services.AddSingleton<McpServerState>();
+        services.AddSingleton<IMcpServerState>(sp => sp.GetRequiredService<McpServerState>());
         services.AddSingleton<IMcpClusterSession, McpClusterSession>();
         services.AddSingleton<IResourceNavigationService>(sp => new NavigationDocumentService(
             sp,

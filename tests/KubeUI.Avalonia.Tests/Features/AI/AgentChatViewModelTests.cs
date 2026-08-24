@@ -1,5 +1,6 @@
 using KubeUI.AI.Agents;
 using KubeUI.Avalonia.Features.AI;
+using KubeUI.Avalonia.Infrastructure.Mcp;
 using KubeUI.Avalonia.Options;
 using KubeUI.Avalonia.Services.Settings;
 using System.Threading.Channels;
@@ -168,6 +169,49 @@ public sealed class AgentChatViewModelTests
         await vm.SendCommand.ExecuteAsync(null);
 
         agent.Options!.Context!.SelectedResources.ShouldBe(context.SelectedResources);
+        await vm.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task send_passes_the_live_mcp_endpoint_to_agent_session()
+    {
+        await using var session = new TestSession("session-live-endpoint", []);
+        var agent = new TestAgent(session);
+        var settingsService = new Mock<ISettingsService>();
+        settingsService.SetupGet(service => service.Settings).Returns(new Settings
+        {
+            McpServerEnabled = true,
+            McpServerPort = 62888
+        });
+        var serverState = new McpServerState();
+        serverState.SetEndpoint("http://127.0.0.1:54321/mcp");
+        var vm = new AgentChatViewModel(
+            new TestRegistry(agent),
+            settingsService.Object,
+            mcpServerState: serverState) { Prompt = "Inspect" };
+
+        await vm.SendCommand.ExecuteAsync(null);
+
+        agent.Options!.McpEndpoint.ShouldBe("http://127.0.0.1:54321/mcp");
+        await vm.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task send_passes_the_configured_mcp_endpoint_without_a_live_endpoint()
+    {
+        await using var session = new TestSession("session-configured-endpoint", []);
+        var agent = new TestAgent(session);
+        var settingsService = new Mock<ISettingsService>();
+        settingsService.SetupGet(service => service.Settings).Returns(new Settings
+        {
+            McpServerEnabled = true,
+            McpServerPort = 62888
+        });
+        var vm = new AgentChatViewModel(new TestRegistry(agent), settingsService.Object) { Prompt = "Inspect" };
+
+        await vm.SendCommand.ExecuteAsync(null);
+
+        agent.Options!.McpEndpoint.ShouldBe("http://127.0.0.1:62888/mcp");
         await vm.DisposeAsync();
     }
 
