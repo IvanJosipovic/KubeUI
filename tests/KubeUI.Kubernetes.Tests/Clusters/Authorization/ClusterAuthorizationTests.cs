@@ -38,6 +38,10 @@ public sealed class ClusterAuthorizationTests
             () => cluster.Namespaces.Any(item => item.Name() == "my-app"),
             TimeSpan.FromSeconds(10),
             cancellationToken: TestContext.Current.CancellationToken);
+        await TestWait.UntilAsync(
+            () => cluster.IsResourceNamespaced<V1Pod>(),
+            TimeSpan.FromSeconds(10),
+            cancellationToken: TestContext.Current.CancellationToken);
         await cluster.Permissions.UpdatePermissionsAllNamespaceAsync<V1Pod>(Verb.Create, "portforward");
 
         await TestWait.UntilAsync(
