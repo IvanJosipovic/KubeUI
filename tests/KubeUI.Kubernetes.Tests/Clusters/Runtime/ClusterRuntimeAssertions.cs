@@ -491,6 +491,11 @@ public abstract class ClusterRuntimeAssertions
         await harness.Cluster.Permissions.UpdatePermissionsAllNamespaceAsync(kind, namespaced: true, verb: Verb.List);
         await harness.Cluster.Permissions.UpdatePermissionsAllNamespaceAsync(kind, namespaced: true, verb: Verb.Watch);
 
+        await WaitForCustomResourceApiAsync(
+            harness.Cluster,
+            kind,
+            TestContext.Current.CancellationToken);
+
         await harness.Cluster.ImportYaml(new MemoryStream(Encoding.UTF8.GetBytes(KubernetesTestData.CustomResourceYaml)));
 
         await harness.Cluster.SeedResource(kind, waitForReady: true);
@@ -784,6 +789,37 @@ public abstract class ClusterRuntimeAssertions
             await cluster.Permissions
                 .UpdatePermissionsAllNamespaceAsync<T>(request.Verb, request.Subresource)
                 .WaitAsync(TestContext.Current.CancellationToken);
+        }
+    }
+
+    private static async Task WaitForCustomResourceApiAsync(
+        IClusterRuntime cluster,
+        GroupApiVersionKind kind,
+        CancellationToken cancellationToken)
+    {
+        using var client = cluster.Client!.GetGenericClient(kind);
+        using var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(25));
+        var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(10);
+
+        while (true)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            try
+            {
+                await client.ListNamespacedAsync<GenericKubernetesObject>(
+                    "default").WaitAsync(cancellationToken);
+                return;
+            }
+            catch (HttpOperationException exception) when (exception.Response.StatusCode == HttpStatusCode.NotFound)
+            {
+            }
+
+            var remaining = deadline - DateTime.UtcNow;
+            if (remaining <= TimeSpan.Zero || !await timer.WaitForNextTickAsync(cancellationToken))
+            {
+                throw new TimeoutException($"Custom resource API {kind} was not ready within 00:00:10.");
+            }
         }
     }
 
