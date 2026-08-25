@@ -28,10 +28,22 @@ public sealed class ProviderConfigUsageRelationshipProvider : IResourceRelations
         }
 
         if (!context.TryGet(resourceReference.ApiVersion, resourceReference.Kind, resource.Namespace(), resourceReference.Name, out var source)
-            || source == null
-            || !TryGetProviderConfig(context, usage, providerConfigReference, out var target)
+            || source == null)
+        {
+            return;
+        }
+
+        if (!TryGetProviderConfig(context, usage, providerConfigReference, out var target)
             || target == null)
         {
+            var namespaceName = string.Equals(providerConfigReference.Kind, "ClusterProviderConfig", StringComparison.Ordinal)
+                ? null
+                : usage.Namespace();
+            context.RecordUnresolved(
+                GetApiGroup(usage.ApiVersion),
+                providerConfigReference.Kind,
+                namespaceName,
+                providerConfigReference.Name);
             return;
         }
 

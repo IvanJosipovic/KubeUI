@@ -749,6 +749,71 @@ public sealed class ResourceRelationshipBuilderTests
     }
 
     [Fact]
+    public void Relates_azuread_group_to_cluster_provider_config_from_selected_namespace()
+    {
+        var resource = CreateResource(
+            "groups.azuread.m.upbound.io/v1beta1",
+            "Group",
+            "platform-dev-ijosipov-data-product",
+            "nonprod-admins-abcd6c");
+        var providerConfig = CreateResource(
+            "azuread.m.upbound.io/v1beta1",
+            "ClusterProviderConfig",
+            null,
+            "azure-ad");
+        var usage = CreateProviderConfigUsage(
+            "azuread.m.upbound.io/v1beta1",
+            resource.Namespace(),
+            providerConfig.Name()!,
+            providerConfig.Kind,
+            resource.ApiVersion!,
+            resource.Kind!,
+            resource.Name()!);
+
+        var graph = new ResourceRelationshipBuilder().Build(
+            [resource, providerConfig, usage],
+            new HashSet<string> { resource.Namespace()! },
+            hideNoise: true);
+
+        graph.Relationships.ShouldContain(new ResourceRelationship(
+            new(resource.ApiVersion!, resource.Kind!, resource.Namespace(), resource.Name()!, resource.Uid()),
+            new(providerConfig.ApiVersion!, providerConfig.Kind!, providerConfig.Namespace(), providerConfig.Name()!, providerConfig.Uid()),
+            ResourceRelationshipKind.Reference,
+            "uses"));
+        graph.Resources.ShouldContain(providerConfig);
+    }
+
+    [Fact]
+    public void Records_missing_cluster_provider_config_as_pending_reference()
+    {
+        var resource = CreateResource(
+            "groups.azuread.m.upbound.io/v1beta1",
+            "Group",
+            "platform-dev-ijosipov-data-product",
+            "nonprod-admins-abcd6c");
+        var usage = CreateProviderConfigUsage(
+            "azuread.m.upbound.io/v1beta1",
+            resource.Namespace(),
+            "azure-ad",
+            "ClusterProviderConfig",
+            resource.ApiVersion!,
+            resource.Kind!,
+            resource.Name()!);
+
+        var graph = new ResourceRelationshipBuilder().Build(
+            [resource, usage],
+            new HashSet<string> { resource.Namespace()! },
+            hideNoise: true);
+
+        graph.PendingReferences.ShouldContain(new UnresolvedResourceReference(
+            "azuread.m.upbound.io",
+            null,
+            "ClusterProviderConfig",
+            null,
+            "azure-ad"));
+    }
+
+    [Fact]
     public void Relates_cluster_resource_to_cluster_provider_config_when_kind_label_is_missing()
     {
         var resource = CreateResource("compute.example.io/v1beta1", "ClusterJob", null, "job");
