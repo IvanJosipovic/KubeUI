@@ -690,6 +690,65 @@ public sealed class ResourceRelationshipBuilderTests
     }
 
     [Fact]
+    public void Relates_provider_config_usage_with_spec_reference_and_owner_reference_to_cluster_provider_config()
+    {
+        var resource = CreateResource(
+            "unity.databricks.m.crossplane.io/v1beta1",
+            "Grant",
+            "platform-dev-ijosipov-data-product",
+            "dest-catalog-platform-developer-abcd6c");
+        resource.Metadata!.Uid = "f1fedee6-6fde-4c9c-bf8a-84afbff07908";
+        var providerConfig = CreateResource(
+            "databricks.m.crossplane.io/v1beta1",
+            "ClusterProviderConfig",
+            null,
+            "daplatform");
+        var usage = KubernetesJson.Deserialize<GenericKubernetesObject>("""
+            {
+              "apiVersion": "databricks.m.crossplane.io/v1beta1",
+              "kind": "ProviderConfigUsage",
+              "metadata": {
+                "name": "f1fedee6-6fde-4c9c-bf8a-84afbff07908",
+                "namespace": "platform-dev-ijosipov-data-product",
+                "uid": "0c36159d-3013-477a-adff-b5c89ea804e1",
+                "labels": {
+                  "crossplane.io/provider-config": "daplatform",
+                  "crossplane.io/provider-config-kind": "ClusterProviderConfig"
+                },
+                "ownerReferences": [
+                  {
+                    "apiVersion": "unity.databricks.m.crossplane.io/v1beta1",
+                    "kind": "Grant",
+                    "name": "dest-catalog-platform-developer-abcd6c",
+                    "uid": "f1fedee6-6fde-4c9c-bf8a-84afbff07908"
+                  }
+                ]
+              },
+              "providerConfigRef": {
+                "kind": "ClusterProviderConfig",
+                "name": "daplatform"
+              },
+              "resourceRef": {
+                "apiVersion": "unity.databricks.m.crossplane.io/v1beta1",
+                "kind": "Grant",
+                "name": "dest-catalog-platform-developer-abcd6c"
+              }
+            }
+            """);
+
+        var graph = new ResourceRelationshipBuilder().Build(
+            [resource, providerConfig, usage],
+            new HashSet<string> { resource.Namespace()! },
+            hideNoise: true);
+
+        graph.Relationships.ShouldContain(new ResourceRelationship(
+            new(resource.ApiVersion!, resource.Kind!, resource.Namespace(), resource.Name(), resource.Uid()),
+            new(providerConfig.ApiVersion!, providerConfig.Kind!, providerConfig.Namespace(), providerConfig.Name(), providerConfig.Uid()),
+            ResourceRelationshipKind.Reference,
+            "uses"));
+    }
+
+    [Fact]
     public void Relates_cluster_resource_to_cluster_provider_config_when_kind_label_is_missing()
     {
         var resource = CreateResource("compute.example.io/v1beta1", "ClusterJob", null, "job");
@@ -741,9 +800,7 @@ public sealed class ResourceRelationshipBuilderTests
               "apiVersion": "{{apiVersion}}",
               "kind": "ProviderConfigUsage",
               "metadata": { "name": "usage"{{namespaceJson}}, "labels": { "crossplane.io/provider-config": "{{providerConfigName}}"{{kindLabelJson}} } },
-              "spec": {
-                "resourceRef": { "apiVersion": "{{resourceApiVersion}}", "kind": "{{resourceKind}}", "name": "{{resourceName}}" }
-              }
+              "resourceRef": { "apiVersion": "{{resourceApiVersion}}", "kind": "{{resourceKind}}", "name": "{{resourceName}}" }
             }
             """);
     }

@@ -41,7 +41,7 @@ public sealed class ProviderConfigUsageRelationshipProvider : IResourceRelations
     private static bool TryReadResourceReference(GenericKubernetesObject usage, out ResourceReference reference)
     {
         reference = default;
-        var value = GetSpecProperty(usage, "resourceRef");
+        var value = RelationshipProviderHelpers.Property(usage, "resourceRef");
         var apiVersion = RelationshipProviderHelpers.String(Property(value, "apiVersion"));
         var kind = RelationshipProviderHelpers.String(Property(value, "kind"));
         var name = RelationshipProviderHelpers.String(Property(value, "name"));
@@ -60,7 +60,7 @@ public sealed class ProviderConfigUsageRelationshipProvider : IResourceRelations
         var labels = usage.Metadata?.Labels;
         var labelName = GetLabel(labels, ProviderConfigNameLabel);
         var labelKind = GetLabel(labels, ProviderConfigKindLabel);
-        var providerConfigRef = GetSpecProperty(usage, "providerConfigRef");
+        var providerConfigRef = RelationshipProviderHelpers.Property(usage, "providerConfigRef");
         var specName = RelationshipProviderHelpers.String(Property(providerConfigRef, "name"));
         var specKind = RelationshipProviderHelpers.String(Property(providerConfigRef, "kind"));
 
@@ -95,9 +95,6 @@ public sealed class ProviderConfigUsageRelationshipProvider : IResourceRelations
 
         return context.TryGetUniqueByName(reference.Kind, namespaceName, reference.Name, out providerConfig);
     }
-
-    private static JsonElement? GetSpecProperty(GenericKubernetesObject resource, string name)
-        => RelationshipProviderHelpers.Property(resource, "spec") is { } spec ? RelationshipProviderHelpers.Property(spec, name) : null;
 
     private static JsonElement? Property(JsonElement? source, string name)
         => source is { } value ? RelationshipProviderHelpers.Property(value, name) : null;
