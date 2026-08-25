@@ -172,6 +172,34 @@ public class ClusterWorkspaceTests
 
     [AvaloniaTheory, KubernetesBackendData]
     [Trait("Category", "Kind")]
+    public async Task resource_config_processed_event_is_published_after_crd_registration(KubernetesBackend backend)
+    {
+        var workspace = await Application.Current.CreateClusterAsync(
+            config => config.Type = backend);
+        await workspace.Runtime.SeedResource<V1CustomResourceDefinition>(true);
+        List<IResourceConfig> observedConfigs = [];
+        workspace.ResourceConfigProcessed += (_, resourceConfig) =>
+            observedConfigs.Add(workspace.GetResourceConfig(resourceConfig.Kind));
+        var crd = ClusterWorkspaceTestCustomResourceDefinitionFactory.Create("events.kubeui.com", "events", "value");
+
+        await workspace.Runtime.CreateAsync(crd, TestContext.Current.CancellationToken);
+
+        var resourceConfig = await TestWait.UntilValueAsync(
+            () => GetCustomResourceConfig(workspace, crd),
+            TimeSpan.FromSeconds(10),
+            cancellationToken: TestContext.Current.CancellationToken,
+            beforePoll: () => Dispatcher.UIThread.RunJobs());
+        await TestWait.UntilAsync(
+            () => observedConfigs.Count > 0,
+            TimeSpan.FromSeconds(10),
+            cancellationToken: TestContext.Current.CancellationToken,
+            beforePoll: () => Dispatcher.UIThread.RunJobs());
+
+        observedConfigs.ShouldHaveSingleItem().ShouldBeSameAs(resourceConfig);
+    }
+
+    [AvaloniaTheory, KubernetesBackendData]
+    [Trait("Category", "Kind")]
     public async Task updated_crd_updates_resource_config_gvk_entry_and_seeded_informer(KubernetesBackend backend)
     {
         var workspace = await Application.Current.CreateClusterAsync(
