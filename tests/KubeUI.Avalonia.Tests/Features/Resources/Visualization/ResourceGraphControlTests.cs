@@ -547,6 +547,52 @@ public sealed class ResourceGraphControlTests
         reopenedView.Dispose();
     }
 
+    [AvaloniaFact]
+    public async Task reloading_visualization_before_initial_snapshot_completes_rebuilds_graph()
+    {
+        var cluster = await Application.Current.CreateClusterAsync(config => config.Type = KubernetesBackend.Fake);
+        cluster.SelectedNamespaces.Add(new V1Namespace { Metadata = new() { Name = "default" } });
+        await cluster.Runtime.SeedResource<V1Pod>(true);
+        V1Pod pod = CreatePod("reload-before-snapshot");
+        await cluster.Runtime.AddOrUpdateResource(pod);
+
+        using (VisualizationViewModel firstView = new(new ResourceRelationshipBuilder()))
+        {
+            firstView.Initialize(cluster);
+        }
+
+        using VisualizationViewModel reloadedView = new(new ResourceRelationshipBuilder());
+        reloadedView.Initialize(cluster);
+
+        await WaitForAsync(() => reloadedView.Graph!.Resources.Any(resource => resource.Name() == pod.Name()));
+    }
+
+    [AvaloniaFact]
+    public async Task modifying_unrelated_cluster_resource_does_not_restart_visualization_build()
+    {
+        var cluster = await Application.Current.CreateClusterAsync(config => config.Type = KubernetesBackend.Fake);
+        cluster.SelectedNamespaces.Add(new V1Namespace { Metadata = new() { Name = "default" } });
+        var builder = new BuildCaptureRelationshipBuilder();
+        using VisualizationViewModel viewModel = new(builder);
+        await cluster.Runtime.SeedResource<V1Node>(true);
+        viewModel.Initialize(cluster);
+        await builder.WaitForBuildAsync(1);
+
+        V1Node unrelated = new()
+        {
+            ApiVersion = V1Node.KubeApiVersion,
+            Kind = V1Node.KubeKind,
+            Metadata = new() { Name = "unrelated-node" },
+        };
+        await cluster.Runtime.AddOrUpdateResource(unrelated);
+        unrelated.Metadata!.Labels = new Dictionary<string, string> { ["updated"] = "true" };
+        await cluster.Runtime.AddOrUpdateResource(unrelated);
+
+        await TestApplicationExtensions.WaitForUiAsync();
+        await WaitForNextPollAsync();
+        builder.BuildCount.ShouldBe(1);
+    }
+
     [Fact]
     public void root_filter_does_not_expand_downward_from_parents()
     {
@@ -1359,9 +1405,8 @@ public sealed class ResourceGraphControlTests
             Metadata = new() { Name = "unrelated-node" },
         });
 
-        var delta = await builder.WaitForAdditionAsync();
-
-        delta.Resources.ShouldBeEmpty();
+        await TestApplicationExtensions.WaitForUiAsync();
+        builder.AdditionStarted.ShouldBeFalse();
     }
 
     [AvaloniaTheory, KubernetesBackendData]
@@ -2049,6 +2094,8 @@ public sealed class ResourceGraphControlTests
         private readonly ResourceRelationshipBuilder _inner = new();
         private readonly TaskCompletionSource _initialBuild = new(TaskCreationOptions.RunContinuationsAsynchronously);
         private readonly TaskCompletionSource<ResourceRelationshipGraph> _addition = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public bool AdditionStarted => _addition.Task.IsCompleted;
 
         public ResourceRelationshipGraph Build(
             IEnumerable<IKubernetesObject<V1ObjectMeta>> resources,

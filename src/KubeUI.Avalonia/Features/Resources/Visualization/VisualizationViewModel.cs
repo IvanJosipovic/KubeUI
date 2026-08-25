@@ -618,6 +618,11 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
             return;
         }
 
+        if (!ResourceCanAffectGraph(change.Resource))
+        {
+            return;
+        }
+
         if (change.EventType == WatchEventType.Modified)
         {
             _buildCoordinator.Invalidate();
@@ -757,14 +762,13 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
             return;
         }
 
-        if (_requiredSeedKinds.Contains(resourceConfig.Kind)
+        var seedRequested = _requiredSeedKinds.Contains(resourceConfig.Kind)
             && resourceConfig.PermissionsLoaded
-            && resourceConfig.CanListAndWatch)
+            && resourceConfig.CanListAndWatch;
+        if (seedRequested)
         {
             _ = SeedResourceOffUiThreadAsync(resourceConfig);
         }
-
-        Run();
 
         var ownerReferenceFound = false;
         IReadOnlyList<IKubernetesObject<V1ObjectMeta>> resources = _resourceStore.Snapshot();
@@ -776,7 +780,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                 resourceConfig.PermissionsLoaded && resourceConfig.CanListAndWatch);
         }
 
-        if (ownerReferenceFound)
+        if (seedRequested || ownerReferenceFound)
         {
             Run();
         }
@@ -868,8 +872,15 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         }
 
         var namespaceName = resource.Namespace();
-        return string.IsNullOrEmpty(namespaceName)
-            || SelectedNamespaces.Any(selected => selected.Name() == namespaceName);
+        if (!string.IsNullOrEmpty(namespaceName))
+        {
+            return SelectedNamespaces.Any(selected => selected.Name() == namespaceName);
+        }
+
+        var identity = GetIdentity(resource);
+        return _completeGraph.Resources.Any(current => GetIdentity(current) == identity)
+            || _resourceStore.HasOwnerReferencesTo(resource)
+            || _completeGraph.PendingReferences.Any(reference => Matches(reference, resource));
     }
 
     private void Run()
