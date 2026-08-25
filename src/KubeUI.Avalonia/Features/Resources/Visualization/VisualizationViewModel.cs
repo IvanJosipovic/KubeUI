@@ -755,10 +755,11 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 
     private void OnResourceSeeded(IClusterRuntime runtime, GroupApiVersionKind kind)
     {
-        if (_disposed || Cluster?.Runtime != runtime || !_completeGraph.RequiredSeedPrerequisites.Any(prerequisite =>
+        if (_disposed || Cluster?.Runtime != runtime || !(_requiredSeedKinds.Contains(kind)
+            || _completeGraph.RequiredSeedPrerequisites.Any(prerequisite =>
                 prerequisite.Kind == kind
                 || prerequisite.MatchAnyApiGroup && string.Equals(prerequisite.Kind.Kind, kind.Kind, StringComparison.Ordinal)
-                || prerequisite.AllowServedVersionFallback && VisualizationSeedPlanner.MatchesSeedKind(prerequisite.Kind, kind)))
+                || prerequisite.AllowServedVersionFallback && VisualizationSeedPlanner.MatchesSeedKind(prerequisite.Kind, kind))))
         {
             return;
         }

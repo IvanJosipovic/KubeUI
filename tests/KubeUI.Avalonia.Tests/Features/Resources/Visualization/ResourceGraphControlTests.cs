@@ -1654,6 +1654,29 @@ public sealed class ResourceGraphControlTests
         await builder.WaitForBuildAsync(2);
     }
 
+    [AvaloniaTheory, KubernetesBackendData]
+    [Trait("Category", "Kind")]
+    public async Task seeded_pending_reference_triggers_graph_rebuild(KubernetesBackend backend)
+    {
+        var cluster = await Application.Current.CreateClusterAsync(config => config.Type = backend);
+        await WaitForAsync(() =>
+        {
+            var deploymentConfig = cluster.GetResourceConfig(GroupApiVersionKind.From<V1Deployment>());
+            return deploymentConfig.PermissionsLoaded && deploymentConfig.CanListAndWatch;
+        });
+
+        var builder = new BuildCaptureRelationshipBuilder();
+        using VisualizationViewModel viewModel = new(builder);
+        cluster.SelectedNamespaces.Add(new V1Namespace { Metadata = new() { Name = "default" } });
+        viewModel.Initialize(cluster);
+        await builder.WaitForBuildAsync(1);
+
+        var pending = new UnresolvedResourceReference("apps", "v1", V1Deployment.KubeKind, "default", "pending");
+        await viewModel.ApplyGraphAsync(new ResourceRelationshipGraph([], [], new HashSet<UnresolvedResourceReference> { pending }));
+        await cluster.Runtime.SeedResource(GroupApiVersionKind.From<V1Deployment>());
+        await builder.WaitForBuildAsync(2);
+    }
+
     private sealed class LeakyAdditionRelationshipBuilder : IResourceRelationshipBuilder
     {
         private readonly TaskCompletionSource _initialBuild = new(TaskCreationOptions.RunContinuationsAsynchronously);
