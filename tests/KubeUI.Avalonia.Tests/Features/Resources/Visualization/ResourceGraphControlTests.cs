@@ -58,9 +58,9 @@ public sealed class ResourceGraphControlTests
         var differentKind = new GroupApiVersionKind("gateway.networking.k8s.io", "v1beta1", "Gateway", "gateways");
         var differentGroup = new GroupApiVersionKind("example.io", "v1", "HTTPRoute", "httproutes");
 
-        VisualizationViewModel.MatchesSeedKind(prerequisite, servedVersion).ShouldBeTrue();
-        VisualizationViewModel.MatchesSeedKind(prerequisite, differentKind).ShouldBeFalse();
-        VisualizationViewModel.MatchesSeedKind(prerequisite, differentGroup).ShouldBeFalse();
+        VisualizationSeedPlanner.MatchesSeedKind(prerequisite, servedVersion).ShouldBeTrue();
+        VisualizationSeedPlanner.MatchesSeedKind(prerequisite, differentKind).ShouldBeFalse();
+        VisualizationSeedPlanner.MatchesSeedKind(prerequisite, differentGroup).ShouldBeFalse();
     }
 
     [Fact]
@@ -461,7 +461,7 @@ public sealed class ResourceGraphControlTests
                 new(GetIdentity(root), GetIdentity(child), ResourceRelationshipKind.Owner),
             ]);
 
-        var filtered = VisualizationViewModel.FilterToRootResource(graph, root);
+        var filtered = ResourceGraphProjection.ToRootResource(graph, root);
 
         filtered.Resources.Select(resource => resource.Name()).ShouldBe(["grandparent", "parent", "root", "child"]);
     }
@@ -480,7 +480,7 @@ public sealed class ResourceGraphControlTests
                 new(GetIdentity(childParent), GetIdentity(child), ResourceRelationshipKind.Owner),
             ]);
 
-        var filtered = VisualizationViewModel.FilterToRootResource(graph, root);
+        var filtered = ResourceGraphProjection.ToRootResource(graph, root);
 
         filtered.Resources.Select(resource => resource.Name()).ShouldBe(["root", "child"]);
     }
@@ -525,7 +525,7 @@ public sealed class ResourceGraphControlTests
             new HashSet<string>(),
             hideNoise: true);
         delta.Resources.Select(resource => resource.Name()).ShouldBe(["database", "database-0", "database-root"]);
-        var filtered = VisualizationViewModel.FilterToRootResource(graph, root);
+        var filtered = ResourceGraphProjection.ToRootResource(graph, root);
 
         filtered.Resources.Select(resource => resource.Name()).ShouldBe(["database", "database-0", "database-root"]);
     }
@@ -606,7 +606,7 @@ public sealed class ResourceGraphControlTests
             new HashSet<string>(),
             hideNoise: true);
 
-        var filtered = VisualizationViewModel.FilterToSelectedNamespaces(
+        var filtered = ResourceGraphProjection.ToSelectedNamespaces(
             graph,
             new HashSet<string> { "workload" });
 
@@ -658,7 +658,7 @@ public sealed class ResourceGraphControlTests
             new HashSet<string>(),
             hideNoise: true);
 
-        var filtered = VisualizationViewModel.FilterToSelectedNamespaces(
+        var filtered = ResourceGraphProjection.ToSelectedNamespaces(
             graph,
             new HashSet<string> { "workload" });
 
@@ -695,7 +695,7 @@ public sealed class ResourceGraphControlTests
                 new(GetIdentity(direct), GetIdentity(unrelated), ResourceRelationshipKind.Owner),
             ]);
 
-        var filtered = VisualizationViewModel.FilterToSelectedNamespaces(
+        var filtered = ResourceGraphProjection.ToSelectedNamespaces(
             graph,
             new HashSet<string> { "crossplane-system" });
 
@@ -743,7 +743,7 @@ public sealed class ResourceGraphControlTests
                 new(GetIdentity(functionRevision), GetIdentity(functionDeployment), ResourceRelationshipKind.Owner),
             ]);
 
-        var filtered = VisualizationViewModel.FilterToSelectedNamespaces(
+        var filtered = ResourceGraphProjection.ToSelectedNamespaces(
             graph,
             new HashSet<string> { "crossplane-system" });
 
@@ -777,7 +777,7 @@ public sealed class ResourceGraphControlTests
             [route, gateway],
             [new(GetIdentity(route), GetIdentity(gateway), ResourceRelationshipKind.Reference)]);
 
-        var filtered = VisualizationViewModel.FilterToSelectedNamespaces(
+        var filtered = ResourceGraphProjection.ToSelectedNamespaces(
             graph,
             new HashSet<string> { "frigate" });
 
@@ -813,7 +813,7 @@ public sealed class ResourceGraphControlTests
             new HashSet<string> { "crossplane-system" },
             hideNoise: true);
 
-        var filtered = VisualizationViewModel.FilterIncrementalDelta(
+        var filtered = ResourceGraphProjection.ToSelectedNamespacesIncremental(
             delta,
             new HashSet<string> { "crossplane-system" },
             new HashSet<ResourceIdentity> { new("pkg.crossplane.io/v1", "Provider", "crossplane-system", "provider-databricks", null) });
