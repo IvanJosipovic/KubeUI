@@ -1233,6 +1233,44 @@ public sealed class ResourceGraphControlTests
     }
 
     [AvaloniaFact]
+    public async Task noise_resource_change_does_not_discard_pending_incremental_resource()
+    {
+        var cluster = await Application.Current.CreateClusterAsync(config => config.Type = KubernetesBackend.Fake);
+        cluster.SelectedNamespaces.Add(new V1Namespace { Metadata = new() { Name = "default" } });
+        await cluster.Runtime.SeedResource<V1Pod>(true);
+        await cluster.Runtime.SeedResource<V1ReplicaSet>(true);
+
+        var builder = new LateAdditionRelationshipBuilder();
+        using VisualizationViewModel viewModel = new(builder);
+        viewModel.Initialize(cluster);
+        await builder.WaitForInitialBuildAsync();
+
+        await cluster.Runtime.AddOrUpdateResource(CreatePod("pending"));
+        await builder.WaitForAdditionStartedAsync();
+
+        await cluster.Runtime.AddOrUpdateResource(new V1ReplicaSet
+        {
+            ApiVersion = "apps/v1",
+            Kind = V1ReplicaSet.KubeKind,
+            Metadata = new() { Name = "noise", NamespaceProperty = "default" },
+            Status = new() { Replicas = 0 },
+        });
+
+        try
+        {
+            builder.ReleaseAddition();
+            await builder.WaitForAdditionCompletedAsync();
+            await WaitForAsync(
+                () => viewModel.Graph!.Resources.Any(resource => resource.Name() == "pending"),
+                cancellationToken: TestContext.Current.CancellationToken);
+        }
+        finally
+        {
+            builder.ReleaseAddition();
+        }
+    }
+
+    [AvaloniaFact]
     public async Task repeated_incremental_deltas_do_not_accumulate_resources_from_unselected_namespaces()
     {
         var cluster = await Application.Current.CreateClusterAsync(

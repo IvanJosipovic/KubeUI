@@ -660,11 +660,10 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
             return;
         }
 
-        var changeVersion = Interlocked.Increment(ref _rebuildVersion);
-
         var key = GetResourceKey(change.Resource);
         if (change.EventType == WatchEventType.Deleted)
         {
+            Interlocked.Increment(ref _rebuildVersion);
             RemoveOwnerReferenceIndex(change.Resource, key);
             _resourcesByKey.Remove(key);
             RemoveResourceFromGraph(change.Resource);
@@ -687,6 +686,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 
         if (change.EventType == WatchEventType.Modified)
         {
+            Interlocked.Increment(ref _rebuildVersion);
             Run();
             return;
         }
@@ -697,12 +697,14 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                 || _rebuildRunning
                 || _pendingRebuild != null)
             {
+                Interlocked.Increment(ref _rebuildVersion);
                 Run();
                 return;
             }
 
             if (ResourceCanAffectGraph(change.Resource))
             {
+                var changeVersion = Interlocked.Increment(ref _rebuildVersion);
                 _ = AddResourceIncrementallyAsync(change.Resource, key, changeVersion);
             }
 
@@ -711,6 +713,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 
         if (ResourceCanAffectGraph(change.Resource))
         {
+            Interlocked.Increment(ref _rebuildVersion);
             Run();
         }
     }
