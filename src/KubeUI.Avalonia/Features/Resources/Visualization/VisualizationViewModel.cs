@@ -56,6 +56,11 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
     [ObservableProperty]
     public partial ResourceRelationshipGraph? Graph { get; set; } = ResourceRelationshipGraph.Empty;
 
+    [ObservableProperty]
+    public partial Exception? Error { get; set; }
+
+    public string? ErrorMessage => Error?.Message;
+
     public ObservableCollection<string> ResourceTypes { get; } = [];
 
     public ObservableCollection<string> SelectedResourceTypes { get; } = [];
@@ -93,7 +98,11 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
     protected override void OnPropertyChanged(PropertyChangedEventArgs e)
     {
         base.OnPropertyChanged(e);
-        if (e.PropertyName == nameof(HideNoise))
+        if (e.PropertyName == nameof(Error))
+        {
+            OnPropertyChanged(nameof(ErrorMessage));
+        }
+        else if (e.PropertyName == nameof(HideNoise))
         {
             Run();
         }
@@ -172,28 +181,35 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 
         await Dispatcher.UIThread.InvokeAsync(() =>
         {
-            if (_disposed
-                || initializationVersion != _initializationVersion
-                || !ReferenceEquals(Cluster?.Runtime, runtime))
+            try
             {
-                return;
-            }
+                if (_disposed
+                    || initializationVersion != _initializationVersion
+                    || !ReferenceEquals(Cluster?.Runtime, runtime))
+                {
+                    return;
+                }
 
-            _resourcesByKey = state.ResourcesByKey;
-            _resourcesByOwnerUid = state.ResourcesByOwnerUid;
-            foreach (var resourceKind in state.RequiredSeedKinds)
+                _resourcesByKey = state.ResourcesByKey;
+                _resourcesByOwnerUid = state.ResourcesByOwnerUid;
+                foreach (var resourceKind in state.RequiredSeedKinds)
+                {
+                    RequireSeed(Cluster!, resourceKind);
+                }
+
+                _suppressResourceChanges = false;
+                foreach (var change in _deferredResourceChanges)
+                {
+                    ApplyResourceChange(change);
+                }
+
+                _deferredResourceChanges.Clear();
+                Run();
+            }
+            catch (Exception exception)
             {
-                RequireSeed(Cluster!, resourceKind);
+                ReportError(exception);
             }
-
-            _suppressResourceChanges = false;
-            foreach (var change in _deferredResourceChanges)
-            {
-                ApplyResourceChange(change);
-            }
-
-            _deferredResourceChanges.Clear();
-            Run();
         });
     }
 
@@ -644,13 +660,20 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 
     private void ProcessResourceChangeOnUiThread(ResourceChange change)
     {
-        if (_suppressResourceChanges)
+        try
         {
-            _deferredResourceChanges.Add(change);
-            return;
-        }
+            if (_suppressResourceChanges)
+            {
+                _deferredResourceChanges.Add(change);
+                return;
+            }
 
-        ApplyResourceChange(change);
+            ApplyResourceChange(change);
+        }
+        catch (Exception exception)
+        {
+            ReportError(exception);
+        }
     }
 
     private void ApplyResourceChange(ResourceChange change)
@@ -994,11 +1017,27 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
             return;
         }
 
-        var resourceConfig = cluster.GetResourceConfig(resourceKind);
+        var resourceConfig = cluster.GetResourceConfigs().FirstOrDefault(config => config.Kind == resourceKind);
         if (resourceConfig is { PermissionsLoaded: true, CanListAndWatch: true })
         {
-            _ = SeedResourceOffUiThreadAsync(cluster.GetResourceConfig(resourceKind));
+            _ = SeedResourceOffUiThreadAsync(resourceConfig);
         }
+    }
+
+    private void ReportError(Exception exception)
+    {
+        if (_disposed)
+        {
+            return;
+        }
+
+        if (!Dispatcher.UIThread.CheckAccess())
+        {
+            Dispatcher.UIThread.Post(() => ReportError(exception));
+            return;
+        }
+
+        Error = exception;
     }
 
     private static async Task SeedResourceOffUiThreadAsync(IResourceConfig resourceConfig)
@@ -1170,6 +1209,10 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
             catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
             {
             }
+            catch (Exception exception)
+            {
+                ReportError(exception);
+            }
             finally
             {
                 if (ReferenceEquals(_rebuildCancellation, cancellation))
@@ -1287,7 +1330,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         return new ResourceRelationshipGraph(resources, relationships, graph.UnresolvedReferences, graph.RequiredSeedPrerequisites);
     }
 
-    private void SeedOwnerReferenceResourceKinds(IKubernetesObject<V1ObjectMeta> resource)
+    internal void SeedOwnerReferenceResourceKinds(IKubernetesObject<V1ObjectMeta> resource)
     {
         var cluster = Cluster;
         if (cluster == null)

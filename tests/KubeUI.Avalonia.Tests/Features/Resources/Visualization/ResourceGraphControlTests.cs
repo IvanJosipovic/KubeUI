@@ -6,6 +6,10 @@ using Avalonia.Markup.Xaml.MarkupExtensions;
 using Avalonia.Markup.Declarative;
 using Avalonia.Styling;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
+using Dock.Avalonia.Controls;
+using Dock.Model.Controls;
+using Dock.Model.Core;
 using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
@@ -19,6 +23,33 @@ namespace KubeUI.Avalonia.Tests.Features.Resources.Visualization;
 
 public sealed class ResourceGraphControlTests
 {
+    [Fact]
+    public void visualization_pipeline_error_is_available_to_the_view()
+    {
+        using VisualizationViewModel viewModel = new(new ResourceRelationshipBuilder());
+        viewModel.Error = new KeyNotFoundException("missing visualization resource config");
+
+        viewModel.ErrorMessage.ShouldBe("missing visualization resource config");
+    }
+
+    [AvaloniaFact]
+    public void visualization_view_displays_pipeline_error()
+    {
+        using VisualizationViewModel viewModel = new(new ResourceRelationshipBuilder())
+        {
+            Error = new InvalidOperationException("visualization failed"),
+        };
+        var view = new VisualizationView { DataContext = viewModel };
+        using var window = Application.Current.CreateTestWindow(content: view);
+
+        window.Show();
+        Dispatcher.UIThread.RunJobs();
+
+        view.GetVisualDescendants().OfType<SelectableTextBlock>()
+            .Select(control => control.Text)
+            .ShouldContain("visualization failed");
+    }
+
     [Fact]
     public void Served_seed_prerequisite_matches_same_group_and_kind_across_api_versions()
     {
@@ -370,6 +401,45 @@ public sealed class ResourceGraphControlTests
         reopenedView.Initialize(cluster, namespaceResource);
 
         await WaitForAsync(() => reopenedView.Graph!.Resources.Any(resource => resource.Name() == secret.Name()));
+    }
+
+    [AvaloniaFact]
+    public async Task closing_and_reopening_visualization_document_rebuilds_graph()
+    {
+        var cluster = await Application.Current.CreateClusterAsync(config => config.Type = KubernetesBackend.Fake);
+        var namespaceResource = new V1Namespace
+        {
+            ApiVersion = V1Namespace.KubeApiVersion,
+            Kind = V1Namespace.KubeKind,
+            Metadata = new() { Name = "default", Uid = "default-namespace-uid" },
+        };
+        cluster.SelectedNamespaces.Add(namespaceResource);
+        var pod = CreatePod("reopened");
+        await cluster.Runtime.AddOrUpdateResource(pod);
+
+        var factory = Application.Current.GetRequiredTestService<IFactory>();
+        var layout = factory.CreateLayout();
+        factory.InitLayout(layout);
+        var documents = factory.GetDockable<IDocumentDock>("Documents");
+        documents.ShouldNotBeNull();
+        using var window = Application.Current.CreateTestWindow(content: new DockControl { Layout = layout });
+        window.Show();
+
+        var firstView = Application.Current.GetRequiredTestService<VisualizationViewModel>();
+        firstView.Initialize(cluster);
+        factory.AddToDocuments(firstView).ShouldBeTrue();
+        await WaitForAsync(() => firstView.Graph!.Resources.Any(resource => resource.Name() == pod.Name()));
+
+        factory.CloseDockable(firstView);
+        documents.VisibleDockables.ShouldNotContain(firstView);
+
+        var reopenedView = Application.Current.GetRequiredTestService<VisualizationViewModel>();
+        reopenedView.Initialize(cluster);
+        factory.AddToDocuments(reopenedView).ShouldBeTrue();
+        documents.VisibleDockables.ShouldContain(reopenedView);
+        await WaitForAsync(() => reopenedView.Graph!.Resources.Any(resource => resource.Name() == pod.Name()));
+
+        reopenedView.Dispose();
     }
 
     [Fact]
@@ -1089,6 +1159,50 @@ public sealed class ResourceGraphControlTests
         {
             cluster.Runtime.ResourceSeeded -= OnResourceSeeded;
         }
+    }
+
+    [AvaloniaFact]
+    public async Task owner_reference_to_unconfigured_custom_kind_does_not_stop_visualization_updates()
+    {
+        var cluster = await Application.Current.CreateClusterAsync(config => config.Type = KubernetesBackend.Fake);
+        cluster.SelectedNamespaces.Add(new V1Namespace { Metadata = new() { Name = "default" } });
+        var ownerKind = new GroupApiVersionKind(
+            "apiextensions.crossplane.io",
+            "v1",
+            "CompositeResourceDefinition",
+            "compositeresourcedefinitions");
+        cluster.Runtime.ModelCatalog.RegisterCustomResourceDefinition(ownerKind);
+
+        using VisualizationViewModel viewModel = new(new ResourceRelationshipBuilder());
+        viewModel.Initialize(cluster);
+        var pod = new V1Pod
+        {
+            ApiVersion = "v1",
+            Kind = V1Pod.KubeKind,
+            Metadata = new()
+            {
+                Name = "owned-by-unconfigured-kind",
+                NamespaceProperty = "default",
+                OwnerReferences =
+                [
+                    new()
+                    {
+                        ApiVersion = "apiextensions.crossplane.io/v1",
+                        Kind = "CompositeResourceDefinition",
+                        Name = "owner",
+                        Uid = "owner",
+                    },
+                ],
+            },
+            Spec = new() { Containers = [new() { Name = "owned", Image = "busybox" }] },
+        };
+        Should.NotThrow(() => viewModel.SeedOwnerReferenceResourceKinds(pod));
+        await cluster.Runtime.AddOrUpdateResource(pod);
+
+        await WaitForAsync(
+            () => viewModel.Graph?.Resources.Any(resource => resource.Name() == "owned-by-unconfigured-kind") == true,
+            timeoutMs: 5000,
+            cancellationToken: TestContext.Current.CancellationToken);
     }
 
     [AvaloniaTheory, KubernetesBackendData]
