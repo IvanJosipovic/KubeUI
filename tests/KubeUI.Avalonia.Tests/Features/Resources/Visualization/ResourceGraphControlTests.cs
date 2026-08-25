@@ -1167,6 +1167,42 @@ public sealed class ResourceGraphControlTests
         builder.BuildCount.ShouldBe(fullBuildCount);
     }
 
+    [AvaloniaFact]
+    public async Task graph_affecting_deletion_rebuilds_simplified_relationships()
+    {
+        var cluster = await Application.Current.CreateClusterAsync(config => config.Type = KubernetesBackend.Fake);
+        cluster.SelectedNamespaces.Add(new V1Namespace { Metadata = new() { Name = "default" } });
+        await cluster.Runtime.SeedResource<V1Pod>(true);
+
+        V1Pod root = CreatePod("root");
+        V1Pod intermediate = CreatePod("intermediate");
+        V1Pod leaf = CreatePod("leaf");
+        await cluster.Runtime.AddOrUpdateResource(root);
+        await cluster.Runtime.AddOrUpdateResource(intermediate);
+        await cluster.Runtime.AddOrUpdateResource(leaf);
+
+        var builder = new SimplifyingRelationshipBuilder();
+        using VisualizationViewModel viewModel = new(builder);
+        viewModel.Initialize(cluster);
+
+        ResourceIdentity rootIdentity = GetIdentity(root);
+        ResourceIdentity intermediateIdentity = GetIdentity(intermediate);
+        ResourceIdentity leafIdentity = GetIdentity(leaf);
+        ResourceRelationship indirectRoot = new(rootIdentity, intermediateIdentity, ResourceRelationshipKind.Reference);
+        ResourceRelationship indirectLeaf = new(intermediateIdentity, leafIdentity, ResourceRelationshipKind.Reference);
+        ResourceRelationship direct = new(rootIdentity, leafIdentity, ResourceRelationshipKind.Reference);
+
+        await viewModel.ApplyGraphAsync(new ResourceRelationshipGraph(
+            [root, intermediate, leaf],
+            [indirectRoot, indirectLeaf]));
+
+        await cluster.Runtime.DeleteAsync(intermediate, TestContext.Current.CancellationToken);
+
+        await WaitForAsync(() => viewModel.Graph!.Relationships.Contains(direct));
+        viewModel.Graph.Resources.ShouldNotContain(resource => resource.Name() == intermediate.Name());
+        builder.BuildCount.ShouldBeGreaterThan(1);
+    }
+
     private static ResourceIdentity GetIdentity(IKubernetesObject<V1ObjectMeta> resource)
         => new(resource.ApiVersion!, resource.Kind!, resource.Namespace(), resource.Name()!, resource.Uid());
 
@@ -2033,6 +2069,46 @@ public sealed class ResourceGraphControlTests
             IReadOnlySet<string> selectedNamespaces,
             bool hideNoise)
             => ResourceRelationshipGraph.Empty;
+
+        public ResourceRelationshipGraph BuildAdditionDelta(
+            IEnumerable<IKubernetesObject<V1ObjectMeta>> resources,
+            ResourceKey addedResource,
+            IReadOnlySet<string> selectedNamespaces,
+            bool hideNoise)
+            => ResourceRelationshipGraph.Empty;
+    }
+
+    private sealed class SimplifyingRelationshipBuilder : IResourceRelationshipBuilder
+    {
+        private int _buildCount;
+
+        public int BuildCount => Volatile.Read(ref _buildCount);
+
+        public ResourceRelationshipGraph Build(
+            IEnumerable<IKubernetesObject<V1ObjectMeta>> resources,
+            IReadOnlySet<string> selectedNamespaces,
+            bool hideNoise)
+        {
+            Interlocked.Increment(ref _buildCount);
+            var resourceArray = resources.ToArray();
+            var byName = resourceArray.ToDictionary(resource => resource.Name()!, StringComparer.Ordinal);
+            List<ResourceRelationship> relationships = [];
+
+            if (byName.TryGetValue("root", out var root)
+                && byName.TryGetValue("intermediate", out var intermediate)
+                && byName.TryGetValue("leaf", out var leaf))
+            {
+                relationships.Add(new(GetIdentity(root), GetIdentity(intermediate), ResourceRelationshipKind.Reference));
+                relationships.Add(new(GetIdentity(intermediate), GetIdentity(leaf), ResourceRelationshipKind.Reference));
+            }
+            else if (byName.TryGetValue("root", out root)
+                && byName.TryGetValue("leaf", out leaf))
+            {
+                relationships.Add(new(GetIdentity(root), GetIdentity(leaf), ResourceRelationshipKind.Reference));
+            }
+
+            return new ResourceRelationshipGraph(resourceArray, relationships);
+        }
 
         public ResourceRelationshipGraph BuildAdditionDelta(
             IEnumerable<IKubernetesObject<V1ObjectMeta>> resources,

@@ -54,9 +54,15 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
     [ObservableProperty]
     public partial ResourceRelationshipGraph? Graph { get; set; } = ResourceRelationshipGraph.Empty;
 
+    /// <summary>
+    /// Gets or sets the most recent visualization pipeline error.
+    /// </summary>
     [ObservableProperty]
     public partial Exception? Error { get; set; }
 
+    /// <summary>
+    /// Gets the message from the most recent visualization pipeline error.
+    /// </summary>
     public string? ErrorMessage => Error?.Message;
 
     public ObservableCollection<string> ResourceTypes { get; } = [];
@@ -601,13 +607,19 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         var key = GetResourceKey(change.Resource);
         if (change.EventType == WatchEventType.Deleted)
         {
-            if (ResourceCanAffectGraph(change.Resource))
+            var affectsGraph = ResourceCanAffectGraph(change.Resource);
+            if (affectsGraph)
             {
                 _buildCoordinator.Invalidate();
             }
 
             _resourceStore.Remove(key, change.Resource);
             RemoveResourceFromGraph(change.Resource);
+            if (affectsGraph)
+            {
+                Run();
+            }
+
             return;
         }
 
@@ -627,8 +639,11 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 
         if (change.EventType == WatchEventType.Modified)
         {
-            if (previousResource is not null
-                && GetIdentity(previousResource) == GetIdentity(change.Resource))
+            var identity = GetIdentity(change.Resource);
+            var conflictingIdentity = _completeGraph.Resources.Any(item =>
+                GetResourceKey(item) == key && GetIdentity(item) != identity);
+            if ((previousResource is null || GetIdentity(previousResource) == identity)
+                && !conflictingIdentity)
             {
                 var changeVersion = _buildCoordinator.Invalidate();
                 _ = AddResourceIncrementallyAsync(change.Resource, key, changeVersion, replaceExisting: true);

@@ -97,6 +97,14 @@ public sealed class ResourceRelationshipContext
                 && string.Equals(candidate.Name(), name, StringComparison.Ordinal))) != null;
     }
 
+    /// <summary>
+    /// Finds a resource only when exactly one resource matches the kind, namespace, and name.
+    /// </summary>
+    /// <param name="kind">The resource kind to match.</param>
+    /// <param name="namespaceName">The namespace to match, or <see langword="null"/> for cluster-scoped resources.</param>
+    /// <param name="name">The resource name to match.</param>
+    /// <param name="resource">The unique matching resource, when found.</param>
+    /// <returns><see langword="true"/> only for exactly one non-blank named match; otherwise, <see langword="false"/>.</returns>
     public bool TryGetUniqueByName(string kind, string? namespaceName, string? name, out IKubernetesObject<V1ObjectMeta>? resource)
     {
         resource = null;
