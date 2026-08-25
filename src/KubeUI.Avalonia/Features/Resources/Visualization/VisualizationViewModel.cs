@@ -663,7 +663,11 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         var key = GetResourceKey(change.Resource);
         if (change.EventType == WatchEventType.Deleted)
         {
-            Interlocked.Increment(ref _rebuildVersion);
+            if (ResourceCanAffectGraph(change.Resource))
+            {
+                Interlocked.Increment(ref _rebuildVersion);
+            }
+
             RemoveOwnerReferenceIndex(change.Resource, key);
             _resourcesByKey.Remove(key);
             RemoveResourceFromGraph(change.Resource);

@@ -1248,13 +1248,19 @@ public sealed class ResourceGraphControlTests
         await cluster.Runtime.AddOrUpdateResource(CreatePod("pending"));
         await builder.WaitForAdditionStartedAsync();
 
-        await cluster.Runtime.AddOrUpdateResource(new V1ReplicaSet
+        V1ReplicaSet noise = new()
         {
             ApiVersion = "apps/v1",
             Kind = V1ReplicaSet.KubeKind,
             Metadata = new() { Name = "noise", NamespaceProperty = "default" },
             Status = new() { Replicas = 0 },
-        });
+        };
+        await cluster.Runtime.AddOrUpdateResource(noise);
+        await cluster.Runtime.DeleteAsync(noise, TestContext.Current.CancellationToken);
+        await TestWait.UntilAsync(
+            () => cluster.Runtime.GetResource<V1ReplicaSet>("default", "noise") is null,
+            TimeSpan.FromSeconds(5),
+            cancellationToken: TestContext.Current.CancellationToken);
 
         try
         {
