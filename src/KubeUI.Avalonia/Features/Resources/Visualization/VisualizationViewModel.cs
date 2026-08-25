@@ -8,12 +8,14 @@ using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Resources;
 using KubeUI.Kubernetes;
 using KubeUI.Kubernetes.Resources.Relationships;
+using Microsoft.Extensions.Logging;
 
 namespace KubeUI.Avalonia.Features.Resources.Visualization;
 
 public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeCluster, IDisposable
 {
     private readonly IResourceRelationshipBuilder _resourceRelationshipBuilder;
+    private readonly ILogger<VisualizationViewModel>? _logger;
     private Dictionary<ResourceKey, IKubernetesObject<V1ObjectMeta>> _resourcesByKey = [];
     private Dictionary<string, HashSet<ResourceKey>> _resourcesByOwnerUid = new(StringComparer.Ordinal);
     private readonly HashSet<GroupApiVersionKind> _requiredSeedKinds = [];
@@ -81,9 +83,10 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 
     public bool IsNamespaceSelectorVisible => RootResource == null || RootResource is V1Namespace;
 
-    public VisualizationViewModel()
+    public VisualizationViewModel(ILogger<VisualizationViewModel>? logger = null)
     {
         _resourceRelationshipBuilder = new ResourceRelationshipBuilder();
+        _logger = logger;
         SelectedResourceTypes.CollectionChanged += SelectedResourceTypes_CollectionChanged;
         Title = Assets.Resources.VisualizationView_Title!;
     }
@@ -124,6 +127,12 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         IsNamespaceSelectionLinked = !isNamespaceRoot;
         SelectRootNamespace(rootResource);
         Id = nameof(VisualizationViewModel) + "-" + cluster.Title + "-" + (rootResource?.Uid() ?? "null");
+        _logger?.LogWarning(
+            "Visualization initialized for cluster {Cluster}, root {Root}, linked namespaces {Linked}, selected namespaces {Namespaces}",
+            cluster.Title,
+            rootResource?.Name(),
+            IsNamespaceSelectionLinked,
+            string.Join(",", SelectedNamespaces.Select(namespaceResource => namespaceResource.Name())));
 
         _initializationCancellation?.Cancel();
         var initializationVersion = Interlocked.Increment(ref _initializationVersion);
@@ -178,6 +187,11 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         {
             return;
         }
+        catch (Exception exception)
+        {
+            ReportError(exception);
+            return;
+        }
 
         await Dispatcher.UIThread.InvokeAsync(() =>
         {
@@ -192,18 +206,28 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 
                 _resourcesByKey = state.ResourcesByKey;
                 _resourcesByOwnerUid = state.ResourcesByOwnerUid;
+                _logger?.LogWarning(
+                    "Visualization snapshot loaded with {ResourceCount} resources across {ResourceTypeCount} types; selected namespaces {Namespaces}",
+                    _resourcesByKey.Count,
+                    _resourcesByKey.Keys.Select(key => key.Kind).Distinct(StringComparer.Ordinal).Count(),
+                    string.Join(",", SelectedNamespaces.Select(namespaceResource => namespaceResource.Name())));
                 foreach (var resourceKind in state.RequiredSeedKinds)
                 {
                     RequireSeed(Cluster!, resourceKind);
                 }
 
-                _suppressResourceChanges = false;
-                foreach (var change in _deferredResourceChanges)
+                // Keep the feed suppressed while replaying the changes that arrived during
+                // snapshot creation. Otherwise every replayed Added/Modified change schedules
+                // another rebuild, causing a large cluster to repeatedly rebuild its graph.
+                foreach (var change in _deferredResourceChanges
+                    .GroupBy(change => GetResourceKey(change.Resource))
+                    .Select(changes => changes.Last()))
                 {
                     ApplyResourceChange(change);
                 }
 
                 _deferredResourceChanges.Clear();
+                _suppressResourceChanges = false;
                 Run();
             }
             catch (Exception exception)
@@ -367,6 +391,12 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
             }
 
             Graph = application.FilteredGraph;
+            _logger?.LogWarning(
+                "Visualization graph applied: complete {CompleteCount}, filtered {FilteredCount}, selected types {SelectedTypes}, namespaces {Namespaces}",
+                application.CompleteGraph.Resources.Count,
+                application.FilteredGraph.Resources.Count,
+                string.Join(",", SelectedResourceTypes),
+                string.Join(",", SelectedNamespaces.Select(namespaceResource => namespaceResource.Name())));
         });
     }
 
