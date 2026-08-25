@@ -66,6 +66,37 @@ public sealed class VisualizationViewModelTests
     }
 
     [Fact]
+    public void selecting_namespace_preserves_non_reference_cluster_scoped_resource()
+    {
+        var pod = Pod("namespace-a", "pod-a");
+        var clusterRole = ClusterResource("rbac.authorization.k8s.io/v1", "ClusterRole", "read-pods", "cluster-role-uid");
+        var relationship = new ResourceRelationship(Identity(clusterRole), Identity(pod), ResourceRelationshipKind.Rbac);
+
+        var selected = ResourceGraphProjection.ToSelectedNamespaces(
+            new ResourceRelationshipGraph([pod, clusterRole], [relationship]),
+            new HashSet<string>(["namespace-a"], StringComparer.Ordinal));
+
+        selected.Resources.Select(resource => resource.Name()).ShouldBe(["pod-a", "read-pods"]);
+        selected.Relationships.ShouldContain(relationship);
+    }
+
+    [Fact]
+    public void incremental_namespace_projection_preserves_non_reference_cluster_scoped_resource()
+    {
+        var pod = Pod("namespace-a", "pod-a");
+        var clusterRole = ClusterResource("rbac.authorization.k8s.io/v1", "ClusterRole", "read-pods", "cluster-role-uid");
+        var relationship = new ResourceRelationship(Identity(clusterRole), Identity(pod), ResourceRelationshipKind.Rbac);
+
+        var selected = ResourceGraphProjection.ToSelectedNamespacesIncremental(
+            new ResourceRelationshipGraph([pod, clusterRole], [relationship]),
+            new HashSet<string>(["namespace-a"], StringComparer.Ordinal),
+            new HashSet<ResourceIdentity> { Identity(pod) });
+
+        selected.Resources.Select(resource => resource.Name()).ShouldBe(["pod-a", "read-pods"]);
+        selected.Relationships.ShouldContain(relationship);
+    }
+
+    [Fact]
     public void selecting_namespace_preserves_crossplane_owner_ancestors_without_descending()
     {
         var deployment = Pod("crossplane-system", "provider-databricks");
@@ -80,19 +111,6 @@ public sealed class VisualizationViewModelTests
             "CustomResourceDefinition",
             "apps.apps.databricks.crossplane.io",
             "crd-uid");
-
-        providerRevision.Metadata!.OwnerReferences =
-        [new V1OwnerReference { ApiVersion = "pkg.crossplane.io/v1", Kind = "Provider", Name = "provider-databricks" }];
-        managedResourceDefinition.Metadata!.OwnerReferences =
-        [new V1OwnerReference { ApiVersion = "pkg.crossplane.io/v1", Kind = "ProviderRevision", Name = "provider-databricks", Uid = providerRevision.Uid() }];
-        customResourceDefinition.Metadata!.OwnerReferences =
-        [new V1OwnerReference
-        {
-            ApiVersion = "apiextensions.crossplane.io/v1alpha1",
-            Kind = "ManagedResourceDefinition",
-            Name = managedResourceDefinition.Name(),
-            Uid = managedResourceDefinition.Uid(),
-        }];
 
         ResourceRelationshipGraph graph = new(
             [deployment, providerRevision, managedResourceDefinition, customResourceDefinition],
@@ -222,6 +240,9 @@ public sealed class VisualizationViewModelTests
         store.Upsert(ownerKey, owner);
         store.Upsert(childKey, child);
         store.HasOwnerReferencesTo(owner).ShouldBeTrue();
+        store.Remove(childKey, replacement).ShouldBeTrue();
+        store.HasOwnerReferencesTo(owner).ShouldBeFalse();
+        store.Upsert(childKey, child);
         store.Upsert(childKey, replacement);
 
         store.HasOwnerReferencesTo(owner).ShouldBeFalse();
@@ -288,6 +309,42 @@ public sealed class VisualizationViewModelTests
         await TestWait.UntilAsync(() => !coordinator.IsPendingOrRunning, TimeSpan.FromSeconds(5));
 
         started.ShouldBe([1, 2]);
+    }
+
+    [Fact]
+    public async Task build_coordinator_passes_pending_request_version_not_live_version()
+    {
+        List<(int Request, int Version)> started = [];
+        var firstStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var secondStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseSecond = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using VisualizationBuildCoordinator<int> coordinator = new(async (request, version, cancellationToken) =>
+        {
+            started.Add((request, version));
+            if (request == 1)
+            {
+                firstStarted.SetResult();
+                var canceled = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                using CancellationTokenRegistration registration = cancellationToken.Register(canceled.SetResult);
+                await canceled.Task;
+                cancellationToken.ThrowIfCancellationRequested();
+            }
+            else
+            {
+                secondStarted.SetResult();
+                await releaseSecond.Task;
+            }
+        });
+
+        coordinator.Enqueue(1);
+        await firstStarted.Task;
+        coordinator.Enqueue(2);
+        coordinator.Invalidate();
+        await secondStarted.Task;
+        releaseSecond.SetResult();
+        await TestWait.UntilAsync(() => !coordinator.IsPendingOrRunning, TimeSpan.FromSeconds(5));
+
+        started.ShouldBe([(1, 1), (2, 2)]);
     }
 
     [AvaloniaFact]

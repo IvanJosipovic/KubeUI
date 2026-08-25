@@ -110,6 +110,18 @@ public sealed class ResourceGraphControlTests
     }
 
     [AvaloniaFact]
+    public async Task successful_graph_application_clears_previous_visualization_error()
+    {
+        using VisualizationViewModel viewModel = new(new ResourceRelationshipBuilder());
+        viewModel.Error = new InvalidOperationException("stale visualization failure");
+
+        await viewModel.ApplyGraphAsync(new ResourceRelationshipGraph([], []));
+
+        viewModel.Error.ShouldBeNull();
+        viewModel.ErrorMessage.ShouldBeNull();
+    }
+
+    [AvaloniaFact]
     public async Task changing_root_resource_rebuilds_between_root_and_namespace_scopes()
     {
         var cluster = await Application.Current.CreateClusterAsync(config => config.Type = KubernetesBackend.Fake);
@@ -2032,14 +2044,16 @@ public sealed class ResourceGraphControlTests
 
     private sealed class OwnerRelationshipBuilder : IResourceRelationshipBuilder
     {
-        public int BuildCount { get; private set; }
+        private int _buildCount;
+
+        public int BuildCount => Volatile.Read(ref _buildCount);
 
         public ResourceRelationshipGraph Build(
             IEnumerable<IKubernetesObject<V1ObjectMeta>> resources,
             IReadOnlySet<string> selectedNamespaces,
             bool hideNoise)
         {
-            BuildCount++;
+            Interlocked.Increment(ref _buildCount);
             var resourceArray = resources.ToArray();
             var resourcesByUid = resourceArray
                 .Where(resource => resource.Uid() is not null)
@@ -2080,13 +2094,14 @@ public sealed class ResourceGraphControlTests
             var resourcesByUid = resourceArray
                 .Where(item => item.Uid() is not null)
                 .ToDictionary(item => item.Uid()!, StringComparer.Ordinal);
-            var related = resource.Metadata?.OwnerReferences?
+            var owners = (resource.Metadata?.OwnerReferences ?? [])
                 .Where(owner => owner.Uid is not null && resourcesByUid.ContainsKey(owner.Uid))
                 .Select(owner => new ResourceRelationship(GetIdentity(resourcesByUid[owner.Uid!]), identity, ResourceRelationshipKind.Owner))
-                .Concat(resourceArray
-                    .Where(item => item.Metadata?.OwnerReferences?.Any(owner => owner.Uid == resource.Uid()) == true)
-                    .Select(item => new ResourceRelationship(identity, GetIdentity(item), ResourceRelationshipKind.Owner)))
-                .ToArray() ?? [];
+                .ToArray();
+            var children = resourceArray
+                .Where(item => item.Metadata?.OwnerReferences?.Any(owner => owner.Uid == resource.Uid()) == true)
+                .Select(item => new ResourceRelationship(identity, GetIdentity(item), ResourceRelationshipKind.Owner));
+            var related = owners.Concat(children).ToArray();
             var relatedIdentities = related
                 .SelectMany(relationship => new[] { relationship.Source, relationship.Target })
                 .ToHashSet();

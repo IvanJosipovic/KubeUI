@@ -105,20 +105,33 @@ public sealed class ResourceRelationshipContext
             return false;
         }
 
-        var matches = _resourcesByGroupAndKind.Values
-            .SelectMany(static resources => resources)
-            .Where(candidate => string.Equals(candidate.Kind, kind, StringComparison.Ordinal)
-                && string.Equals(candidate.Namespace(), namespaceName, StringComparison.Ordinal)
-                && string.Equals(candidate.Name(), name, StringComparison.Ordinal))
-            .Take(2)
-            .ToArray();
-        if (matches.Length != 1)
+        IKubernetesObject<V1ObjectMeta>? match = null;
+        foreach (var entry in _resourcesByGroupAndKind)
         {
-            return false;
+            if (!string.Equals(entry.Key.Kind, kind, StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            foreach (var candidate in entry.Value)
+            {
+                if (!string.Equals(candidate.Namespace(), namespaceName, StringComparison.Ordinal)
+                    || !string.Equals(candidate.Name(), name, StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                if (match != null)
+                {
+                    return false;
+                }
+
+                match = candidate;
+            }
         }
 
-        resource = matches[0];
-        return true;
+        resource = match;
+        return match != null;
     }
 
     public IEnumerable<IKubernetesObject<V1ObjectMeta>> SelectByLabelSelector(

@@ -5,6 +5,7 @@ internal sealed class VisualizationBuildCoordinator<TRequest> : IDisposable
 {
     private readonly Func<TRequest, int, CancellationToken, Task> _buildAndPublish;
     private TRequest? _pending;
+    private int _pendingVersion;
     private bool _hasPending;
     private bool _running;
     private int _version;
@@ -25,6 +26,7 @@ internal sealed class VisualizationBuildCoordinator<TRequest> : IDisposable
         ObjectDisposedException.ThrowIf(_disposed, this);
         var version = ++_version;
         _pending = request;
+        _pendingVersion = version;
         _hasPending = true;
         _cancellation?.Cancel();
         if (!_running)
@@ -63,13 +65,14 @@ internal sealed class VisualizationBuildCoordinator<TRequest> : IDisposable
         while (!_disposed && _hasPending)
         {
             var request = _pending!;
+            var requestVersion = _pendingVersion;
             _pending = default;
             _hasPending = false;
             using CancellationTokenSource cancellation = new();
             _cancellation = cancellation;
             try
             {
-                await _buildAndPublish(request, _version, cancellation.Token).ConfigureAwait(true);
+                await _buildAndPublish(request, requestVersion, cancellation.Token).ConfigureAwait(true);
             }
             catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
             {

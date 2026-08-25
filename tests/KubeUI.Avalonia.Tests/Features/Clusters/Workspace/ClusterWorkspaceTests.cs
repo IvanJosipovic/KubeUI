@@ -177,9 +177,9 @@ public class ClusterWorkspaceTests
         var workspace = await Application.Current.CreateClusterAsync(
             config => config.Type = backend);
         await workspace.Runtime.SeedResource<V1CustomResourceDefinition>(true);
-        List<IResourceConfig> observedConfigs = [];
+        System.Collections.Concurrent.ConcurrentQueue<IResourceConfig> observedConfigs = new();
         workspace.ResourceConfigProcessed += (_, resourceConfig) =>
-            observedConfigs.Add(workspace.GetResourceConfig(resourceConfig.Kind));
+            observedConfigs.Enqueue(workspace.GetResourceConfig(resourceConfig.Kind));
         var crd = ClusterWorkspaceTestCustomResourceDefinitionFactory.Create("events.kubeui.com", "events", "value");
 
         await workspace.Runtime.CreateAsync(crd, TestContext.Current.CancellationToken);
@@ -195,7 +195,7 @@ public class ClusterWorkspaceTests
             cancellationToken: TestContext.Current.CancellationToken,
             beforePoll: () => Dispatcher.UIThread.RunJobs());
 
-        observedConfigs.ShouldHaveSingleItem().ShouldBeSameAs(resourceConfig);
+        observedConfigs.ToArray().ShouldHaveSingleItem().ShouldBeSameAs(resourceConfig);
     }
 
     [AvaloniaTheory, KubernetesBackendData]

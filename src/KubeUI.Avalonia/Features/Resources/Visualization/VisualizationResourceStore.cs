@@ -42,7 +42,7 @@ internal sealed class VisualizationResourceStore
 
     public bool Remove(ResourceKey key, IKubernetesObject<V1ObjectMeta> resource)
     {
-        RemoveOwnerReferenceIndex(resource, key);
+        RemoveOwnerReferenceIndex(_resources.TryGetValue(key, out var stored) ? stored : resource, key);
         return _resources.Remove(key);
     }
 

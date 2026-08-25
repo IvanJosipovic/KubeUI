@@ -112,6 +112,13 @@ public static class ResourceGraphProjection
                 included.Add(relationship.Source);
                 included.Add(relationship.Target);
             }
+
+            if (relationship.Kind != ResourceRelationshipKind.GitOps
+                && ConnectsSelectedNamespaceToClusterResource(relationship, selected, selectedNamespaces))
+            {
+                included.Add(relationship.Source);
+                included.Add(relationship.Target);
+            }
         }
 
         IncludeSelectedNamespaceOwners(graph.Relationships, selectedNamespaces, included);
@@ -139,27 +146,37 @@ public static class ResourceGraphProjection
 
         foreach (var relationship in delta.Relationships)
         {
-            if (!(currentIdentities.Contains(relationship.Source) || currentIdentities.Contains(relationship.Target))
-                || relationship.Kind is not (ResourceRelationshipKind.Reference or ResourceRelationshipKind.GitOps))
+            if (relationship.Kind == ResourceRelationshipKind.GitOps)
+            {
+                if (currentIdentities.Contains(relationship.Target))
+                {
+                    included.Add(relationship.Source);
+                }
+
+                continue;
+            }
+
+            var sourceInScope = currentIdentities.Contains(relationship.Source)
+                || selectedNamespaces.Contains(relationship.Source.Namespace ?? string.Empty);
+            var targetInScope = currentIdentities.Contains(relationship.Target)
+                || selectedNamespaces.Contains(relationship.Target.Namespace ?? string.Empty);
+            if (!sourceInScope && !targetInScope)
             {
                 continue;
             }
 
-            if (relationship.Kind != ResourceRelationshipKind.GitOps
-                && (selectedNamespaces.Contains(relationship.Source.Namespace ?? string.Empty) || string.IsNullOrEmpty(relationship.Source.Namespace)))
-            {
-                included.Add(relationship.Source);
-            }
-
-            if (relationship.Kind == ResourceRelationshipKind.GitOps && currentIdentities.Contains(relationship.Target))
-            {
-                included.Add(relationship.Source);
-            }
-
-            if (relationship.Kind != ResourceRelationshipKind.GitOps
-                && (selectedNamespaces.Contains(relationship.Target.Namespace ?? string.Empty) || string.IsNullOrEmpty(relationship.Target.Namespace)))
+            if (sourceInScope && (selectedNamespaces.Contains(relationship.Source.Namespace ?? string.Empty)
+                || string.IsNullOrEmpty(relationship.Source.Namespace)
+                    && IsClusterScoped(relationship.Target)))
             {
                 included.Add(relationship.Target);
+            }
+
+            if (targetInScope && (selectedNamespaces.Contains(relationship.Target.Namespace ?? string.Empty)
+                || string.IsNullOrEmpty(relationship.Target.Namespace)
+                    && IsClusterScoped(relationship.Source)))
+            {
+                included.Add(relationship.Source);
             }
         }
 
@@ -200,6 +217,18 @@ public static class ResourceGraphProjection
             graph.Relationships.Where(relationship => included.Contains(relationship.Source) && included.Contains(relationship.Target)).ToArray(),
             graph.UnresolvedReferences,
             graph.RequiredSeedPrerequisites);
+
+    private static bool ConnectsSelectedNamespaceToClusterResource(
+        ResourceRelationship relationship,
+        IReadOnlySet<ResourceIdentity> selected,
+        IReadOnlySet<string> selectedNamespaces)
+        => selected.Contains(relationship.Source) && IsClusterScoped(relationship.Target)
+            || selected.Contains(relationship.Target) && IsClusterScoped(relationship.Source)
+            || selectedNamespaces.Contains(relationship.Source.Namespace ?? string.Empty) && IsClusterScoped(relationship.Target)
+            || selectedNamespaces.Contains(relationship.Target.Namespace ?? string.Empty) && IsClusterScoped(relationship.Source);
+
+    private static bool IsClusterScoped(ResourceIdentity identity)
+        => string.IsNullOrEmpty(identity.Namespace);
 
     private static ResourceIdentity Identity(IKubernetesObject<V1ObjectMeta> resource)
         => new(resource.ApiVersion ?? string.Empty, resource.Kind ?? string.Empty, resource.Namespace(), resource.Name() ?? string.Empty, resource.Uid());

@@ -687,6 +687,8 @@ public sealed class ResourceRelationshipBuilderTests
             new(providerConfig.ApiVersion!, providerConfig.Kind!, providerConfig.Namespace(), providerConfig.Name()!, providerConfig.Uid()),
             ResourceRelationshipKind.Reference,
             "uses"));
+        graph.Relationships.ShouldNotContain(relationship =>
+            relationship.Target.ApiVersion == providerConfigFromOtherGroup.ApiVersion);
     }
 
     [Fact]
@@ -1509,7 +1511,7 @@ public sealed class ResourceRelationshipBuilderTests
     }
 
     [Fact]
-    public void Includes_crossplane_managed_resource_definition_chain_for_selected_provider()
+    public void Excludes_crossplane_managed_resource_definition_chain_for_selected_provider()
     {
         GenericKubernetesObject providerRevision = Crossplane("pkg.crossplane.io/v1", "ProviderRevision", "provider-revision", "provider-revision-uid");
         GenericKubernetesObject providerDeployment = Crossplane("apps/v1", "Deployment", "provider-revision", "deployment-uid", "crossplane-system", ("provider-revision-uid", "ProviderRevision", "pkg.crossplane.io/v1"));

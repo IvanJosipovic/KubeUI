@@ -18,10 +18,11 @@ internal static class VisualizationSeedPlanner
             return requiredSeedKinds;
         }
 
+        var resourceConfigs = cluster.GetResourceConfigs();
         foreach (var prerequisite in graph.RequiredSeedPrerequisites)
         {
             var kind = prerequisite.Kind;
-            var matchingConfigs = cluster.GetResourceConfigs()
+            var matchingConfigs = resourceConfigs
                 .Where(resourceConfig => resourceConfig.Kind == kind
                     || prerequisite.MatchAnyApiGroup && string.Equals(resourceConfig.Kind.Kind, kind.Kind, StringComparison.Ordinal)
                     || prerequisite.AllowServedVersionFallback && MatchesSeedKind(kind, resourceConfig.Kind))
@@ -45,7 +46,7 @@ internal static class VisualizationSeedPlanner
 
         foreach (var reference in pendingReferences)
         {
-            foreach (var resourceConfig in cluster.GetResourceConfigs())
+            foreach (var resourceConfig in resourceConfigs)
             {
                 if (string.Equals(resourceConfig.Kind.Group, reference.ApiGroup, StringComparison.Ordinal)
                     && string.Equals(resourceConfig.Kind.Kind, reference.Kind, StringComparison.Ordinal)

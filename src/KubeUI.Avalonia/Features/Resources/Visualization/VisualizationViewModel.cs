@@ -125,12 +125,12 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         IsNamespaceSelectionLinked = !isNamespaceRoot;
         SelectRootNamespace(rootResource);
         Id = nameof(VisualizationViewModel) + "-" + cluster.Title + "-" + (rootResource?.Uid() ?? "null");
-        _logger?.LogWarning(
+        _logger?.LogDebug(
             "Visualization initialized for cluster {Cluster}, root {Root}, linked namespaces {Linked}, selected namespaces {Namespaces}",
             cluster.Title,
             rootResource?.Name(),
             IsNamespaceSelectionLinked,
-            string.Join(",", SelectedNamespaces.Select(namespaceResource => namespaceResource.Name())));
+            SelectedNamespaces.Select(namespaceResource => namespaceResource.Name()));
 
         _initializationCancellation?.Cancel();
         var initializationVersion = Interlocked.Increment(ref _initializationVersion);
@@ -202,11 +202,11 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                 }
 
                 _resourceStore.Replace(state.ResourcesByKey, state.ResourcesByOwnerUid);
-                _logger?.LogWarning(
-                    "Visualization snapshot loaded with {ResourceCount} resources across {ResourceTypeCount} types; selected namespaces {Namespaces}",
+                _logger?.LogDebug(
+                    "Visualization snapshot loaded with {ResourceCount} resources across types {ResourceTypes}; selected namespaces {Namespaces}",
                     _resourceStore.Count,
-                    state.ResourcesByKey.Keys.Select(key => key.Kind).Distinct(StringComparer.Ordinal).Count(),
-                    string.Join(",", SelectedNamespaces.Select(namespaceResource => namespaceResource.Name())));
+                    state.ResourcesByKey.Keys.Select(key => key.Kind).Distinct(StringComparer.Ordinal),
+                    SelectedNamespaces.Select(namespaceResource => namespaceResource.Name()));
                 foreach (var resourceKind in state.RequiredSeedKinds)
                 {
                     RequireSeed(Cluster!, resourceKind);
@@ -387,12 +387,13 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
             }
 
             Graph = application.FilteredGraph;
-            _logger?.LogWarning(
+            Error = null;
+            _logger?.LogDebug(
                 "Visualization graph applied: complete {CompleteCount}, filtered {FilteredCount}, selected types {SelectedTypes}, namespaces {Namespaces}",
                 application.CompleteGraph.Resources.Count,
                 application.FilteredGraph.Resources.Count,
-                string.Join(",", SelectedResourceTypes),
-                string.Join(",", SelectedNamespaces.Select(namespaceResource => namespaceResource.Name())));
+                SelectedResourceTypes,
+                SelectedNamespaces.Select(namespaceResource => namespaceResource.Name()));
         });
     }
 
@@ -694,11 +695,16 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         await Dispatcher.UIThread.InvokeAsync(async () =>
         {
             if (_disposed
-                || changeVersion != _buildCoordinator.CurrentVersion
                 || !ReferenceEquals(Cluster, cluster)
                 || !_resourceStore.TryGet(key, out var currentResource)
                 || !ReferenceEquals(currentResource, resource))
             {
+                return;
+            }
+
+            if (changeVersion != _buildCoordinator.CurrentVersion)
+            {
+                Run();
                 return;
             }
 
