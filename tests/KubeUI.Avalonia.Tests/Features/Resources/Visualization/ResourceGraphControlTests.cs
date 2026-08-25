@@ -1088,7 +1088,8 @@ public sealed class ResourceGraphControlTests
             GroupApiVersionKind.From<V1Deployment>(),
             GroupApiVersionKind.From<V1Pod>());
         cluster.SelectedNamespaces.Add(new V1Namespace { Metadata = new() { Name = "default" } });
-        using VisualizationViewModel viewModel = new(new OwnerRelationshipBuilder());
+        var builder = new OwnerRelationshipBuilder();
+        using VisualizationViewModel viewModel = new(builder);
         await cluster.Runtime.SeedResource<V1Deployment>(true);
         await cluster.Runtime.SeedResource<V1Pod>(true);
         viewModel.Initialize(cluster);
@@ -1111,6 +1112,8 @@ public sealed class ResourceGraphControlTests
         ResourceRelationship initialRelationship = new(firstOwnerIdentity, podIdentity, ResourceRelationshipKind.Owner);
         ResourceRelationship changedRelationship = new(secondOwnerIdentity, podIdentity, ResourceRelationshipKind.Owner);
         await viewModel.ApplyGraphAsync(new ResourceRelationshipGraph([firstOwner, secondOwner, pod], [initialRelationship]));
+        await WaitForAsync(() => !viewModel.IsRebuildPendingOrRunning);
+        var fullBuildCount = builder.BuildCount;
 
         await TestWait.UntilAsync(
             () => cluster.Runtime.GetResource<V1Pod>("default", "owned-pod") is not null,
@@ -1149,6 +1152,7 @@ public sealed class ResourceGraphControlTests
 
         viewModel.Graph!.Relationships.ShouldContain(changedRelationship);
         viewModel.Graph.Relationships.ShouldNotContain(initialRelationship);
+        builder.BuildCount.ShouldBe(fullBuildCount);
     }
 
     private static ResourceIdentity GetIdentity(IKubernetesObject<V1ObjectMeta> resource)
@@ -1748,9 +1752,10 @@ public sealed class ResourceGraphControlTests
                 TestContext.Current.CancellationToken),
             TestContext.Current.CancellationToken);
 
-        await WaitForAsync(() => builder.BuildCount > 1, cancellationToken: TestContext.Current.CancellationToken);
+        var fullBuildCount = builder.BuildCount;
+        await builder.WaitForAdditionAsync();
 
-        builder.BuildCount.ShouldBeGreaterThan(1);
+        builder.BuildCount.ShouldBe(fullBuildCount);
     }
 
     [AvaloniaTheory, KubernetesBackendData]
@@ -2004,11 +2009,14 @@ public sealed class ResourceGraphControlTests
 
     private sealed class OwnerRelationshipBuilder : IResourceRelationshipBuilder
     {
+        public int BuildCount { get; private set; }
+
         public ResourceRelationshipGraph Build(
             IEnumerable<IKubernetesObject<V1ObjectMeta>> resources,
             IReadOnlySet<string> selectedNamespaces,
             bool hideNoise)
         {
+            BuildCount++;
             var resourceArray = resources.ToArray();
             var resourcesByUid = resourceArray
                 .Where(resource => resource.Uid() is not null)
@@ -2036,7 +2044,34 @@ public sealed class ResourceGraphControlTests
             ResourceKey addedResource,
             IReadOnlySet<string> selectedNamespaces,
             bool hideNoise)
-            => ResourceRelationshipGraph.Empty;
+        {
+            var resourceArray = resources.ToArray();
+            var resource = resourceArray.FirstOrDefault(item =>
+                new ResourceKey(item.ApiVersion ?? string.Empty, item.Kind ?? string.Empty, item.Namespace(), item.Name() ?? string.Empty) == addedResource);
+            if (resource is null)
+            {
+                return ResourceRelationshipGraph.Empty;
+            }
+
+            var identity = GetIdentity(resource);
+            var resourcesByUid = resourceArray
+                .Where(item => item.Uid() is not null)
+                .ToDictionary(item => item.Uid()!, StringComparer.Ordinal);
+            var related = resource.Metadata?.OwnerReferences?
+                .Where(owner => owner.Uid is not null && resourcesByUid.ContainsKey(owner.Uid))
+                .Select(owner => new ResourceRelationship(GetIdentity(resourcesByUid[owner.Uid!]), identity, ResourceRelationshipKind.Owner))
+                .Concat(resourceArray
+                    .Where(item => item.Metadata?.OwnerReferences?.Any(owner => owner.Uid == resource.Uid()) == true)
+                    .Select(item => new ResourceRelationship(identity, GetIdentity(item), ResourceRelationshipKind.Owner)))
+                .ToArray() ?? [];
+            var relatedIdentities = related
+                .SelectMany(relationship => new[] { relationship.Source, relationship.Target })
+                .ToHashSet();
+            relatedIdentities.Add(identity);
+            return new ResourceRelationshipGraph(
+                resourceArray.Where(item => relatedIdentities.Contains(GetIdentity(item))).ToArray(),
+                related);
+        }
     }
 
     private sealed class AdditionSnapshotRelationshipBuilder : IResourceRelationshipBuilder
@@ -2227,6 +2262,7 @@ public sealed class ResourceGraphControlTests
     private sealed class BuildCaptureRelationshipBuilder : IResourceRelationshipBuilder
     {
         private readonly ConcurrentDictionary<int, TaskCompletionSource<BuildInput>> _builds = [];
+        private readonly TaskCompletionSource _addition = new(TaskCreationOptions.RunContinuationsAsynchronously);
         private int _buildCount;
         private int _buildOnUiThread;
 
@@ -2254,7 +2290,13 @@ public sealed class ResourceGraphControlTests
             ResourceKey addedResource,
             IReadOnlySet<string> selectedNamespaces,
             bool hideNoise)
-            => ResourceRelationshipGraph.Empty;
+        {
+            _addition.TrySetResult();
+            return ResourceRelationshipGraph.Empty;
+        }
+
+        public async Task WaitForAdditionAsync()
+            => await _addition.Task.WaitAsync(TestContext.Current.CancellationToken);
 
         public async Task<BuildInput> WaitForBuildAsync(int buildNumber)
         {

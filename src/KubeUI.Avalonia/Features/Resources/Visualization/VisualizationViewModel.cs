@@ -610,6 +610,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
             return;
         }
 
+        _resourceStore.TryGet(key, out var previousResource);
         _resourceStore.Upsert(key, change.Resource);
         SeedOwnerReferenceResourceKinds(change.Resource);
 
@@ -625,8 +626,18 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 
         if (change.EventType == WatchEventType.Modified)
         {
-            _buildCoordinator.Invalidate();
-            Run();
+            if (previousResource is not null
+                && GetIdentity(previousResource) == GetIdentity(change.Resource))
+            {
+                var changeVersion = _buildCoordinator.Invalidate();
+                _ = AddResourceIncrementallyAsync(change.Resource, key, changeVersion, replaceExisting: true);
+            }
+            else
+            {
+                _buildCoordinator.Invalidate();
+                Run();
+            }
+
             return;
         }
 
@@ -659,7 +670,8 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
     private async Task AddResourceIncrementallyAsync(
         IKubernetesObject<V1ObjectMeta> resource,
         ResourceKey key,
-        int changeVersion)
+        int changeVersion,
+        bool replaceExisting = false)
     {
         var cluster = Cluster;
         if (cluster == null)
@@ -685,21 +697,26 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                 || changeVersion != _buildCoordinator.CurrentVersion
                 || !ReferenceEquals(Cluster, cluster)
                 || !_resourceStore.TryGet(key, out var currentResource)
-                || !ReferenceEquals(currentResource, resource)
-                || delta.Resources.Count == 0)
+                || !ReferenceEquals(currentResource, resource))
             {
                 return;
             }
 
-            if (_buildCoordinator.IsPendingOrRunning)
+            if (_buildCoordinator.IsPendingOrRunning && !replaceExisting)
             {
                 Run();
                 return;
             }
 
-            var current = _completeGraph;
-            var currentIdentities = current.Resources.Select(GetIdentity).ToHashSet();
             var identity = GetIdentity(resource);
+            var current = _completeGraph;
+            var currentResources = replaceExisting
+                ? current.Resources.Where(item => GetIdentity(item) != identity).ToArray()
+                : current.Resources;
+            var currentRelationships = replaceExisting
+                ? current.Relationships.Where(relationship => relationship.Source != identity && relationship.Target != identity).ToArray()
+                : current.Relationships;
+            var currentIdentities = currentResources.Select(GetIdentity).ToHashSet();
             if (RootResource != null
                 && identity != GetIdentity(RootResource)
                 && !delta.Relationships.Any(relationship => currentIdentities.Contains(relationship.Source) || currentIdentities.Contains(relationship.Target)))
@@ -711,19 +728,19 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
             if (RootResource == null)
             {
                 delta = ResourceGraphProjection.ToSelectedNamespacesIncremental(delta, namespaces, currentIdentities);
-                if (delta.Resources.Count == 0)
+                if (!replaceExisting && delta.Resources.Count == 0)
                 {
                     return;
                 }
             }
 
-            IReadOnlyList<IKubernetesObject<V1ObjectMeta>> resources = current.Resources
+            IReadOnlyList<IKubernetesObject<V1ObjectMeta>> resources = currentResources
                 .Concat(delta.Resources)
                 .GroupBy(GetIdentity)
                 .Select(group => group.First())
                 .ToArray();
             var relationships = ResourceRelationshipBuilder.SimplifyRelationships(
-                current.Relationships.Concat(delta.Relationships));
+                currentRelationships.Concat(delta.Relationships));
             ResourceRelationshipGraph merged = new(
                 resources,
                 relationships,
