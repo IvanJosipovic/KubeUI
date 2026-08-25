@@ -346,6 +346,11 @@ public sealed class ResourceRelationshipBuilder : IResourceRelationshipBuilder
                 foreach (var relationship in outgoingRelationships)
                 {
                     var target = relationship.Target;
+                    if (relationship.Kind is ResourceRelationshipKind.Owner or ResourceRelationshipKind.GitOps)
+                    {
+                        continue;
+                    }
+
                     if (CanTraverse(relationship, source, target) && included.Add(target))
                     {
                         changed = true;

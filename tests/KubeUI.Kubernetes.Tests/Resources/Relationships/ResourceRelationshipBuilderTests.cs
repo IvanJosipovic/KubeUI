@@ -1052,20 +1052,44 @@ public sealed class ResourceRelationshipBuilderTests
         graph.Resources.Select(resource => resource.Name()).ShouldBe(
         [
             "provider-aws",
-            "provider-aws-abc123",
             "function-go-templating",
-            "function-go-templating-abc123",
             "provider-usage",
             "function-usage",
         ]);
-        graph.Relationships.ShouldContain(new ResourceRelationship(
-            new(provider.ApiVersion!, provider.Kind!, null, provider.Name()!, provider.Uid()),
-            new(providerRevision.ApiVersion!, providerRevision.Kind!, null, providerRevision.Name()!, providerRevision.Uid()),
-            ResourceRelationshipKind.Owner));
-        graph.Relationships.ShouldContain(new ResourceRelationship(
-            new(function.ApiVersion!, function.Kind!, null, function.Name()!, function.Uid()),
-            new(functionRevision.ApiVersion!, functionRevision.Kind!, null, functionRevision.Name()!, functionRevision.Uid()),
-            ResourceRelationshipKind.Owner));
+    }
+
+    [Fact]
+    public void Does_not_descend_from_flux_kustomization_when_projecting_a_namespace()
+    {
+        V1Pod selected = new()
+        {
+            ApiVersion = "v1",
+            Kind = V1Pod.KubeKind,
+            Metadata = new() { Name = "gateway", NamespaceProperty = "envoy-gateway-system", Uid = "gateway-uid" },
+        };
+        TestDynamicResource kustomization = new()
+        {
+            ApiVersion = "kustomize.toolkit.fluxcd.io/v1",
+            Kind = "Kustomization",
+            Metadata = new() { Name = "envoy-gateway", NamespaceProperty = "envoy-gateway-system", Uid = "kustomization-uid" },
+        };
+        V1Pod unrelatedChild = new()
+        {
+            ApiVersion = "v1",
+            Kind = V1Pod.KubeKind,
+            Metadata = new()
+            {
+                Name = "unrelated-child",
+                NamespaceProperty = "other-namespace",
+            },
+        };
+
+        var graph = new ResourceRelationshipBuilder([new FluxKustomizationRelationshipProvider()]).Build(
+            [selected, kustomization, unrelatedChild],
+            new HashSet<string> { "envoy-gateway-system" },
+            hideNoise: true);
+
+        graph.Resources.Select(resource => resource.Name()).ShouldBe(["gateway", "envoy-gateway"]);
     }
 
     [Fact]
@@ -1360,6 +1384,50 @@ public sealed class ResourceRelationshipBuilderTests
             hideNoise: true);
 
         graph.Resources.Select(resource => resource.Name()).ShouldBe(["owner"]);
+    }
+
+    [Fact]
+    public void Includes_crossplane_managed_resource_definition_chain_for_selected_provider()
+    {
+        GenericKubernetesObject providerRevision = Crossplane("pkg.crossplane.io/v1", "ProviderRevision", "provider-revision", "provider-revision-uid");
+        GenericKubernetesObject providerDeployment = Crossplane("apps/v1", "Deployment", "provider-revision", "deployment-uid", "crossplane-system", ("provider-revision-uid", "ProviderRevision", "pkg.crossplane.io/v1"));
+        GenericKubernetesObject managedResourceDefinition = Crossplane("apiextensions.crossplane.io/v1alpha1", "ManagedResourceDefinition", "apps.apps.databricks.crossplane.io", "mrd-uid", null, ("provider-revision-uid", "ProviderRevision", "pkg.crossplane.io/v1"));
+        GenericKubernetesObject customResourceDefinition = Crossplane("apiextensions.k8s.io/v1", "CustomResourceDefinition", "apps.apps.databricks.crossplane.io", "crd-uid", null, ("mrd-uid", "ManagedResourceDefinition", "apiextensions.crossplane.io/v1alpha1"));
+
+        var graph = new ResourceRelationshipBuilder().Build(
+            [providerRevision, providerDeployment, managedResourceDefinition, customResourceDefinition],
+            new HashSet<string> { "crossplane-system" },
+            hideNoise: true);
+
+        graph.Resources.Select(resource => resource.Kind).ShouldBe(["ProviderRevision", "Deployment"]);
+    }
+
+    private static GenericKubernetesObject Crossplane(
+        string apiVersion,
+        string kind,
+        string name,
+        string uid,
+        string? namespaceName = null,
+        params (string Uid, string Kind, string ApiVersion)[] owners)
+    {
+        return new GenericKubernetesObject
+        {
+            ApiVersion = apiVersion,
+            Kind = kind,
+            Metadata = new V1ObjectMeta
+            {
+                Name = name,
+                NamespaceProperty = namespaceName,
+                Uid = uid,
+                OwnerReferences = owners.Select(owner => new V1OwnerReference
+                {
+                    Uid = owner.Uid,
+                    Name = owner.Uid,
+                    Kind = owner.Kind,
+                    ApiVersion = owner.ApiVersion,
+                }).ToList(),
+            },
+        };
     }
 
     [Fact]
@@ -1796,6 +1864,29 @@ public sealed class ResourceRelationshipBuilderTests
             }
 
             context.Add(relationships, resource, related, ResourceRelationshipKind.Reference);
+        }
+    }
+
+    private sealed class FluxKustomizationRelationshipProvider : IResourceRelationshipProvider
+    {
+        public void AddRelationships(
+            IKubernetesObject<V1ObjectMeta> resource,
+            ResourceRelationshipContext context,
+            ICollection<ResourceRelationship> relationships)
+        {
+            if (resource.Kind != V1Pod.KubeKind
+                || !context.TryGet(
+                    "kustomize.toolkit.fluxcd.io/v1",
+                    "Kustomization",
+                    "envoy-gateway-system",
+                    "envoy-gateway",
+                    out var kustomization)
+                || kustomization == null)
+            {
+                return;
+            }
+
+            context.Add(relationships, kustomization, resource, ResourceRelationshipKind.GitOps);
         }
     }
 

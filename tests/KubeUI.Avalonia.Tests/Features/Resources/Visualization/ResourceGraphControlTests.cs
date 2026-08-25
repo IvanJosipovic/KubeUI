@@ -33,6 +33,111 @@ public sealed class ResourceGraphControlTests
     }
 
     [AvaloniaFact]
+    public async Task graph_control_exposes_area_and_ignores_reassigning_same_graph()
+    {
+        using ResourceGraphControl control = new(Application.Current.GetRequiredTestService<IResourceIconService>());
+        control.FactoryRootArea.ShouldBe(control.Area);
+        control.Graph = ResourceRelationshipGraph.Empty;
+        control.Graph = ResourceRelationshipGraph.Empty;
+
+        await TestApplicationExtensions.WaitForUiAsync();
+        control.Graph.ShouldBe(ResourceRelationshipGraph.Empty);
+    }
+
+    [AvaloniaFact]
+    public async Task graph_assignment_after_detaching_does_not_rebuild()
+    {
+        using ResourceGraphControl control = new(Application.Current.GetRequiredTestService<IResourceIconService>());
+        using var window = Application.Current.CreateTestWindow(content: control);
+        try
+        {
+            window.Show();
+            await TestApplicationExtensions.WaitForUiAsync();
+            window.Close();
+            await TestApplicationExtensions.WaitForUiAsync();
+
+            control.Graph = ResourceRelationshipGraph.Empty;
+            control.Graph.ShouldBe(ResourceRelationshipGraph.Empty);
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task fire_and_forget_graph_application_publishes_the_graph()
+    {
+        using VisualizationViewModel viewModel = new(new ResourceRelationshipBuilder());
+        V1Pod pod = CreatePod("direct-apply");
+
+        viewModel.ApplyGraph(new ResourceRelationshipGraph([pod], []));
+
+        await WaitForAsync(() => viewModel.Graph!.Resources.Contains(pod));
+    }
+
+    [AvaloniaFact]
+    public async Task matching_resource_clears_pending_reference()
+    {
+        using VisualizationViewModel viewModel = new(new ResourceRelationshipBuilder());
+        UnresolvedResourceReference pending = new("apps", "v1", "Deployment", "default", "deployment");
+
+        await viewModel.ApplyGraphAsync(new ResourceRelationshipGraph([], [], new HashSet<UnresolvedResourceReference> { pending }));
+        viewModel.Graph!.PendingReferences.ShouldContain(pending);
+
+        V1Deployment deployment = new()
+        {
+            ApiVersion = "apps/v1",
+            Kind = V1Deployment.KubeKind,
+            Metadata = new() { Name = "deployment", NamespaceProperty = "default" },
+        };
+        await viewModel.ApplyGraphAsync(new ResourceRelationshipGraph([deployment], []));
+
+        viewModel.Graph!.PendingReferences.ShouldBeEmpty();
+    }
+
+    [AvaloniaFact]
+    public async Task build_failure_is_reported_as_visualization_error()
+    {
+        var cluster = await Application.Current.CreateClusterAsync(config => config.Type = KubernetesBackend.Fake);
+        cluster.SelectedNamespaces.Add(new V1Namespace { Metadata = new() { Name = "default" } });
+        using VisualizationViewModel viewModel = new(new ThrowingRelationshipBuilder());
+
+        viewModel.Initialize(cluster);
+
+        await WaitForAsync(() => viewModel.Error is InvalidOperationException);
+        viewModel.ErrorMessage.ShouldBe("relationship build failed");
+    }
+
+    [AvaloniaFact]
+    public async Task changing_root_resource_rebuilds_between_root_and_namespace_scopes()
+    {
+        var cluster = await Application.Current.CreateClusterAsync(config => config.Type = KubernetesBackend.Fake);
+        cluster.SelectedNamespaces.Add(new V1Namespace { Metadata = new() { Name = "default" } });
+        using VisualizationViewModel viewModel = new(new ResourceRelationshipBuilder());
+        viewModel.Initialize(cluster);
+        await WaitForAsync(() => !viewModel.IsRebuildPendingOrRunning);
+
+        viewModel.RootResource = CreatePod("root");
+        await WaitForAsync(() => !viewModel.IsNamespaceSelectorVisible);
+        viewModel.RootResource = null;
+        await WaitForAsync(() => viewModel.IsNamespaceSelectorVisible);
+    }
+
+    [AvaloniaFact]
+    public async Task changing_resource_type_selection_updates_display_filter()
+    {
+        using VisualizationViewModel viewModel = new(new ResourceRelationshipBuilder());
+        V1Pod pod = CreatePod("filter");
+
+        await viewModel.ApplyGraphAsync(new ResourceRelationshipGraph([pod], []));
+        viewModel.SelectedResourceTypes.Remove(V1Pod.KubeKind);
+        await WaitForAsync(() => viewModel.Graph!.Resources.Count == 0);
+        viewModel.SelectedResourceTypes.Add(V1Pod.KubeKind);
+        await WaitForAsync(() => viewModel.Graph!.Resources.Contains(pod));
+    }
+
+    [AvaloniaFact]
     public void visualization_view_displays_pipeline_error()
     {
         using VisualizationViewModel viewModel = new(new ResourceRelationshipBuilder())
@@ -1025,6 +1130,22 @@ public sealed class ResourceGraphControlTests
         },
     };
 
+    private sealed class ThrowingRelationshipBuilder : IResourceRelationshipBuilder
+    {
+        public ResourceRelationshipGraph Build(
+            IEnumerable<IKubernetesObject<V1ObjectMeta>> resources,
+            IReadOnlySet<string> selectedNamespaces,
+            bool hideNoise)
+            => throw new InvalidOperationException("relationship build failed");
+
+        public ResourceRelationshipGraph BuildAdditionDelta(
+            IEnumerable<IKubernetesObject<V1ObjectMeta>> resources,
+            ResourceKey addedResource,
+            IReadOnlySet<string> selectedNamespaces,
+            bool hideNoise)
+            => throw new InvalidOperationException("relationship build failed");
+    }
+
     private static V1Pod CreatePodWithOwner(string name, V1Deployment owner) => new()
     {
         ApiVersion = "v1",
@@ -1665,6 +1786,24 @@ public sealed class ResourceGraphControlTests
             new(deployment, replicaSet, ResourceRelationshipKind.Owner),
             new(replicaSet, pod, ResourceRelationshipKind.Owner),
         ]);
+    }
+
+    [Fact]
+    public void graph_transitive_owner_filter_skips_duplicate_descendant_visits()
+    {
+        ResourceIdentity owner = new("v1", "Pod", "default", "owner", "owner");
+        ResourceIdentity child = new("v1", "Pod", "default", "child", "child");
+        ResourceIdentity leaf = new("v1", "Pod", "default", "leaf", "leaf");
+
+        var filtered = ResourceGraphControl.RemoveTransitiveOwnerRelationships(
+        [
+            new(owner, child, ResourceRelationshipKind.Owner),
+            new(owner, child, ResourceRelationshipKind.Owner),
+            new(child, leaf, ResourceRelationshipKind.Owner),
+        ]);
+
+        filtered.ShouldContain(new ResourceRelationship(owner, child, ResourceRelationshipKind.Owner));
+        filtered.ShouldContain(new ResourceRelationship(child, leaf, ResourceRelationshipKind.Owner));
     }
 
     [AvaloniaFact]

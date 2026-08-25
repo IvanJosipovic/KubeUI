@@ -1,5 +1,6 @@
 using k8s;
 using k8s.Models;
+using Avalonia.Headless.XUnit;
 using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Features.Resources.Visualization;
 using KubeUI.Kubernetes.Resources.Relationships;
@@ -62,6 +63,71 @@ public sealed class VisualizationViewModelTests
 
         selected.Resources.Select(resource => resource.Name()).ShouldBe(["pod-a", "node-a"]);
         selected.Relationships.Count.ShouldBe(1);
+    }
+
+    [Fact]
+    public void selecting_namespace_preserves_crossplane_owner_ancestors_without_descending()
+    {
+        var deployment = Pod("crossplane-system", "provider-databricks");
+        var providerRevision = ClusterResource("pkg.crossplane.io/v1", "ProviderRevision", "provider-databricks", "provider-revision-uid");
+        var managedResourceDefinition = ClusterResource(
+            "apiextensions.crossplane.io/v1alpha1",
+            "ManagedResourceDefinition",
+            "apps.apps.databricks.crossplane.io",
+            "mrd-uid");
+        var customResourceDefinition = ClusterResource(
+            "apiextensions.k8s.io/v1",
+            "CustomResourceDefinition",
+            "apps.apps.databricks.crossplane.io",
+            "crd-uid");
+
+        providerRevision.Metadata!.OwnerReferences =
+        [new V1OwnerReference { ApiVersion = "pkg.crossplane.io/v1", Kind = "Provider", Name = "provider-databricks" }];
+        managedResourceDefinition.Metadata!.OwnerReferences =
+        [new V1OwnerReference { ApiVersion = "pkg.crossplane.io/v1", Kind = "ProviderRevision", Name = "provider-databricks", Uid = providerRevision.Uid() }];
+        customResourceDefinition.Metadata!.OwnerReferences =
+        [new V1OwnerReference
+        {
+            ApiVersion = "apiextensions.crossplane.io/v1alpha1",
+            Kind = "ManagedResourceDefinition",
+            Name = managedResourceDefinition.Name(),
+            Uid = managedResourceDefinition.Uid(),
+        }];
+
+        ResourceRelationshipGraph graph = new(
+            [deployment, providerRevision, managedResourceDefinition, customResourceDefinition],
+            [
+                new ResourceRelationship(Identity(providerRevision), Identity(deployment), ResourceRelationshipKind.Owner),
+                new ResourceRelationship(Identity(providerRevision), Identity(managedResourceDefinition), ResourceRelationshipKind.Owner),
+                new ResourceRelationship(Identity(managedResourceDefinition), Identity(customResourceDefinition), ResourceRelationshipKind.Owner),
+            ]);
+
+        var selected = ResourceGraphProjection.ToSelectedNamespaces(
+            graph,
+            new HashSet<string>(["crossplane-system"], StringComparer.Ordinal));
+
+        selected.Resources.Select(resource => resource.Kind).ShouldBe(["Pod", "ProviderRevision"]);
+    }
+
+    [Fact]
+    public void selecting_namespace_does_not_descend_from_an_owner_in_another_namespace()
+    {
+        var selected = Pod("envoy-gateway-system", "selected");
+        var kustomization = ClusterResource("kustomize.toolkit.fluxcd.io/v1", "Kustomization", "envoy-gateway", "kustomization-uid");
+        var unrelatedChild = Pod("other-namespace", "unrelated-child");
+
+        ResourceRelationshipGraph graph = new(
+            [selected, kustomization, unrelatedChild],
+            [
+                new ResourceRelationship(Identity(kustomization), Identity(selected), ResourceRelationshipKind.Owner),
+                new ResourceRelationship(Identity(kustomization), Identity(unrelatedChild), ResourceRelationshipKind.Owner),
+            ]);
+
+        var projected = ResourceGraphProjection.ToSelectedNamespaces(
+            graph,
+            new HashSet<string>(["envoy-gateway-system"], StringComparer.Ordinal));
+
+        projected.Resources.Select(resource => resource.Name()).ShouldBe(["selected", "envoy-gateway"]);
     }
 
     [Fact]
@@ -163,6 +229,33 @@ public sealed class VisualizationViewModelTests
     }
 
     [Fact]
+    public void resource_store_removes_owner_index_and_clear_removes_remaining_resources()
+    {
+        var owner = Pod("namespace-a", "owner");
+        owner.Metadata!.Uid = "owner-uid";
+        var child = Pod("namespace-a", "child");
+        child.Metadata!.OwnerReferences = [new V1OwnerReference { Uid = "owner-uid", Name = "owner", Kind = "Pod", ApiVersion = "v1" }];
+        var ownerKey = new ResourceKey("v1", "Pod", "namespace-a", "owner");
+        var childKey = new ResourceKey("v1", "Pod", "namespace-a", "child");
+        var store = new VisualizationResourceStore();
+
+        store.Replace(
+            new Dictionary<ResourceKey, IKubernetesObject<V1ObjectMeta>> { [ownerKey] = owner },
+            new Dictionary<string, HashSet<ResourceKey>>());
+        store.Count.ShouldBe(1);
+
+        store.Upsert(ownerKey, owner);
+        store.Upsert(childKey, child);
+        store.Remove(childKey, child).ShouldBeTrue();
+        store.HasOwnerReferencesTo(owner).ShouldBeFalse();
+        store.TryGet(childKey, out _).ShouldBeFalse();
+
+        store.Clear();
+        store.Count.ShouldBe(0);
+        store.Snapshot().ShouldBeEmpty();
+    }
+
+    [Fact]
     public async Task build_coordinator_cancels_superseded_request_and_publishes_latest_request()
     {
         List<int> started = [];
@@ -197,6 +290,28 @@ public sealed class VisualizationViewModelTests
         started.ShouldBe([1, 2]);
     }
 
+    [AvaloniaFact]
+    public async Task seed_planner_resolves_pending_reference_to_a_configured_kind()
+    {
+        var cluster = await Application.Current.CreateClusterAsync(config => config.Type = KubernetesBackend.Fake);
+        await cluster.Connect();
+        var pending = new UnresolvedResourceReference(string.Empty, "v1", V1Pod.KubeKind, "default", "pending");
+
+        var required = VisualizationSeedPlanner.FindRequiredSeedKinds(
+            new ResourceRelationshipGraph(
+                [],
+                [],
+                SeedPrerequisites: new HashSet<ResourceSeedPrerequisite>
+                {
+                    new(GroupApiVersionKind.From<V1Node>(), allowServedVersionFallback: true),
+                }),
+            new HashSet<UnresolvedResourceReference> { pending },
+            cluster);
+
+        required.ShouldContain(GroupApiVersionKind.From<V1Node>());
+        required.ShouldContain(GroupApiVersionKind.From<V1Pod>());
+    }
+
     private static ResourceRelationshipGraph Graph(params V1Pod[] pods)
         => new(pods, []);
 
@@ -211,6 +326,14 @@ public sealed class VisualizationViewModelTests
                 Name = name,
                 Uid = $"uid-{name}",
             },
+        };
+
+    private static GenericKubernetesObject ClusterResource(string apiVersion, string kind, string name, string uid)
+        => new()
+        {
+            ApiVersion = apiVersion,
+            Kind = kind,
+            Metadata = new V1ObjectMeta { Name = name, Uid = uid },
         };
 
     private static ResourceIdentity Identity(IKubernetesObject<V1ObjectMeta> resource)
