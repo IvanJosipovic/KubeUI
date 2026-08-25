@@ -85,6 +85,9 @@ public sealed class ResourceRelationshipContext
         return resources.Count > 0;
     }
 
+    internal bool TryGetByExactGroupAndKind(string apiGroup, string kind, out IReadOnlyList<IKubernetesObject<V1ObjectMeta>> resources)
+        => _resourcesByGroupAndKind.TryGetValue((apiGroup, kind), out resources!);
+
     public bool TryGetByName(string apiGroup, string kind, string? namespaceName, string? name, out IKubernetesObject<V1ObjectMeta>? resource)
     {
         resource = null;
@@ -92,6 +95,30 @@ public sealed class ResourceRelationshipContext
             && (resource = resources.FirstOrDefault(candidate =>
                 string.Equals(candidate.Namespace(), namespaceName, StringComparison.Ordinal)
                 && string.Equals(candidate.Name(), name, StringComparison.Ordinal))) != null;
+    }
+
+    public bool TryGetUniqueByName(string kind, string? namespaceName, string? name, out IKubernetesObject<V1ObjectMeta>? resource)
+    {
+        resource = null;
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            return false;
+        }
+
+        var matches = _resourcesByGroupAndKind.Values
+            .SelectMany(static resources => resources)
+            .Where(candidate => string.Equals(candidate.Kind, kind, StringComparison.Ordinal)
+                && string.Equals(candidate.Namespace(), namespaceName, StringComparison.Ordinal)
+                && string.Equals(candidate.Name(), name, StringComparison.Ordinal))
+            .Take(2)
+            .ToArray();
+        if (matches.Length != 1)
+        {
+            return false;
+        }
+
+        resource = matches[0];
+        return true;
     }
 
     public IEnumerable<IKubernetesObject<V1ObjectMeta>> SelectByLabelSelector(
@@ -193,6 +220,7 @@ public sealed class ResourceRelationshipBuilder : IResourceRelationshipBuilder
         [
             new Providers.OwnerReferenceRelationshipProvider(),
             new Providers.CrossplaneUsageRelationshipProvider(),
+            new Providers.ProviderConfigUsageRelationshipProvider(),
             new Providers.GatewayApiRelationshipProvider(),
             new Providers.IngressRelationshipProvider(),
             new Providers.EndpointSliceRelationshipProvider(),

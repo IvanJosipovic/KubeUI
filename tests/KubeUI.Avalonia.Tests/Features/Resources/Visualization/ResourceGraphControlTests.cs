@@ -51,6 +51,16 @@ public sealed class ResourceGraphControlTests
         prerequisite.AllowServedVersionFallback.ShouldBeTrue();
     }
 
+    [Fact]
+    public void Resource_seed_prerequisite_can_match_kind_across_api_groups()
+    {
+        var prerequisite = new ResourceSeedPrerequisite(
+            new GroupApiVersionKind(string.Empty, string.Empty, "ProviderConfigUsage", "providerconfigusages"),
+            matchAnyApiGroup: true);
+
+        prerequisite.MatchAnyApiGroup.ShouldBeTrue();
+    }
+
     [AvaloniaFact]
     public async Task updating_resource_node_raises_a_short_lived_update_signal()
     {

@@ -164,6 +164,9 @@ public sealed class ResourceRelationshipBuilderTests
             new GroupApiVersionKind("protection.crossplane.io", "v1beta1", "Usage", "usages"),
             allowServedVersionFallback: true));
         graph.RequiredSeedPrerequisites.ShouldContain(new ResourceSeedPrerequisite(
+            new GroupApiVersionKind(string.Empty, string.Empty, "ProviderConfigUsage", "providerconfigusages"),
+            matchAnyApiGroup: true));
+        graph.RequiredSeedPrerequisites.ShouldContain(new ResourceSeedPrerequisite(
             new GroupApiVersionKind("argoproj.io", "v1alpha1", "Application", "applications"),
             allowServedVersionFallback: true));
         graph.RequiredSeedPrerequisites.ShouldContain(new ResourceSeedPrerequisite(
@@ -632,6 +635,86 @@ public sealed class ResourceRelationshipBuilderTests
         graph.Relationships.ShouldBeEmpty();
     }
 
+    [Fact]
+    public void Relates_namespaced_resource_to_namespaced_provider_config_from_provider_config_usage_labels()
+    {
+        var resource = CreateResource("compute.example.io/v1beta1", "Job", "platform", "job");
+        var providerConfig = CreateResource("databricks.example.io/v1beta1", "ProviderConfig", "platform", "ijtest5");
+        var usage = CreateProviderConfigUsage(
+            "databricks.example.io/v1beta1",
+            "platform",
+            "ijtest5",
+            "ProviderConfig",
+            resource.ApiVersion!,
+            resource.Kind!,
+            resource.Name()!);
+
+        var graph = new ResourceRelationshipBuilder().Build(
+            [resource, providerConfig, usage],
+            new HashSet<string> { "platform" },
+            hideNoise: true);
+
+        graph.Relationships.ShouldContain(new ResourceRelationship(
+            new(resource.ApiVersion!, resource.Kind!, resource.Namespace(), resource.Name()!, resource.Uid()),
+            new(providerConfig.ApiVersion!, providerConfig.Kind!, providerConfig.Namespace(), providerConfig.Name()!, providerConfig.Uid()),
+            ResourceRelationshipKind.Reference,
+            "uses"));
+        graph.Relationships.ShouldNotContain(relationship => relationship.Source.Kind == "ProviderConfigUsage");
+    }
+
+    [Fact]
+    public void Relates_namespaced_resource_to_cluster_provider_config_from_provider_config_usage_labels()
+    {
+        var resource = CreateResource("compute.example.io/v1beta1", "Job", "platform", "job");
+        var providerConfig = CreateResource("databricks.example.io/v1beta1", "ClusterProviderConfig", null, "daplatform");
+        var providerConfigFromOtherGroup = CreateResource("other.example.io/v1beta1", "ClusterProviderConfig", null, "daplatform");
+        var usage = CreateProviderConfigUsage(
+            "databricks.example.io/v1beta1",
+            "platform",
+            "daplatform",
+            "ClusterProviderConfig",
+            resource.ApiVersion!,
+            resource.Kind!,
+            resource.Name()!);
+
+        var graph = new ResourceRelationshipBuilder().Build(
+            [resource, providerConfig, providerConfigFromOtherGroup, usage],
+            new HashSet<string> { "platform" },
+            hideNoise: true);
+
+        graph.Relationships.ShouldContain(new ResourceRelationship(
+            new(resource.ApiVersion!, resource.Kind!, resource.Namespace(), resource.Name()!, resource.Uid()),
+            new(providerConfig.ApiVersion!, providerConfig.Kind!, providerConfig.Namespace(), providerConfig.Name()!, providerConfig.Uid()),
+            ResourceRelationshipKind.Reference,
+            "uses"));
+    }
+
+    [Fact]
+    public void Relates_cluster_resource_to_cluster_provider_config_when_kind_label_is_missing()
+    {
+        var resource = CreateResource("compute.example.io/v1beta1", "ClusterJob", null, "job");
+        var providerConfig = CreateResource("databricks.example.io/v1beta1", "ClusterProviderConfig", null, "default");
+        var usage = CreateProviderConfigUsage(
+            "databricks.example.io/v1beta1",
+            null,
+            "default",
+            null,
+            resource.ApiVersion!,
+            resource.Kind!,
+            resource.Name()!);
+
+        var graph = new ResourceRelationshipBuilder().Build(
+            [resource, providerConfig, usage],
+            new HashSet<string>(),
+            hideNoise: true);
+
+        graph.Relationships.ShouldContain(new ResourceRelationship(
+            new(resource.ApiVersion!, resource.Kind!, resource.Namespace(), resource.Name()!, resource.Uid()),
+            new(providerConfig.ApiVersion!, providerConfig.Kind!, providerConfig.Namespace(), providerConfig.Name()!, providerConfig.Uid()),
+            ResourceRelationshipKind.Reference,
+            "uses"));
+    }
+
     private static TestDynamicUsageReference CreateReference(string kind, string name)
         => new()
         {
@@ -639,6 +722,31 @@ public sealed class ResourceRelationshipBuilderTests
             Kind = kind,
             ResourceRef = new() { Name = name },
         };
+
+    private static GenericKubernetesObject CreateProviderConfigUsage(
+        string apiVersion,
+        string? namespaceName,
+        string providerConfigName,
+        string? providerConfigKind,
+        string resourceApiVersion,
+        string resourceKind,
+        string resourceName)
+    {
+        var namespaceJson = namespaceName == null ? string.Empty : $", \"namespace\": \"{namespaceName}\"";
+        var kindLabelJson = providerConfigKind == null
+            ? string.Empty
+            : $", \"crossplane.io/provider-config-kind\": \"{providerConfigKind}\"";
+        return KubernetesJson.Deserialize<GenericKubernetesObject>($$"""
+            {
+              "apiVersion": "{{apiVersion}}",
+              "kind": "ProviderConfigUsage",
+              "metadata": { "name": "usage"{{namespaceJson}}, "labels": { "crossplane.io/provider-config": "{{providerConfigName}}"{{kindLabelJson}} } },
+              "spec": {
+                "resourceRef": { "apiVersion": "{{resourceApiVersion}}", "kind": "{{resourceKind}}", "name": "{{resourceName}}" }
+              }
+            }
+            """);
+    }
 
     [Fact]
     public void Relates_persistent_volumes_and_claims_to_their_storage_class()

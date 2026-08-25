@@ -406,6 +406,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
             var kind = prerequisite.Kind;
             var matchingConfigs = cluster.GetResourceConfigs()
                 .Where(resourceConfig => resourceConfig.Kind == kind
+                    || prerequisite.MatchAnyApiGroup && string.Equals(resourceConfig.Kind.Kind, kind.Kind, StringComparison.Ordinal)
                     || prerequisite.AllowServedVersionFallback && MatchesSeedKind(kind, resourceConfig.Kind))
                 .ToArray();
 
@@ -932,6 +933,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
     {
         if (_disposed || Cluster?.Runtime != runtime || !_completeGraph.RequiredSeedPrerequisites.Any(prerequisite =>
                 prerequisite.Kind == kind
+                || prerequisite.MatchAnyApiGroup && string.Equals(prerequisite.Kind.Kind, kind.Kind, StringComparison.Ordinal)
                 || prerequisite.AllowServedVersionFallback && MatchesSeedKind(prerequisite.Kind, kind)))
         {
             return;
