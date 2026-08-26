@@ -918,6 +918,8 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         Error = exception;
     }
 
+    internal void ReportGraphError(Exception exception) => ReportError(exception);
+
     private static async Task SeedResourceOffUiThreadAsync(IResourceConfig resourceConfig)
     {
         try

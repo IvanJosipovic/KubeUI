@@ -33,12 +33,15 @@ public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphContr
     private VisualizationViewModel? _viewModel;
     private Task? _graphGenerationTask;
     private CancellationTokenSource? _graphPreparationCancellation;
+    private CancellationTokenSource? _layoutCancellation;
     private int _graphPreparationVersion;
     private bool _layoutPending;
     private bool _hasGeneratedGraph;
     private bool _zoomAfterGeneration;
     private bool _isDetached;
     private bool _rebuildFromAttachment;
+    private bool _disposed;
+    private bool _graphXDisposed;
 
     public ResourceRelationshipGraph? Graph
     {
@@ -119,7 +122,6 @@ public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphContr
         {
             Background = Brushes.Transparent,
             AllowZoomingWithoutCtrl = true,
-            Mode = ZoomControlModes.Custom,
             Content = _area,
         };
 
@@ -128,6 +130,11 @@ public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphContr
 
     private void RebuildGraph()
     {
+        if (_disposed)
+        {
+            return;
+        }
+
         _graphPreparationCancellation?.Cancel();
         CancellationTokenSource cancellation = new();
         _graphPreparationCancellation = cancellation;
@@ -149,7 +156,8 @@ public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphContr
 
         await Dispatcher.UIThread.InvokeAsync(() =>
         {
-            if (_isDetached
+            if (_disposed
+                || _isDetached
                 || version != _graphPreparationVersion
                 || cancellation.IsCancellationRequested)
             {
@@ -383,7 +391,6 @@ public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphContr
         {
             if (wasEmpty != (vertices.Count == 0))
             {
-                _hasGeneratedGraph = false;
                 _zoomAfterGeneration = vertices.Count > 0;
             }
 
@@ -458,6 +465,11 @@ public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphContr
     private void QueueGraphGeneration()
     {
         Dispatcher.UIThread.VerifyAccess();
+        if (_disposed)
+        {
+            return;
+        }
+
         _layoutPending = true;
 
         if (_graphGenerationTask is { IsCompleted: false })
@@ -465,41 +477,61 @@ public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphContr
             return;
         }
 
-        _graphGenerationTask = ProcessPendingLayoutAsync();
+        _layoutCancellation ??= new CancellationTokenSource();
+        _graphGenerationTask = ProcessPendingLayoutAsync(_layoutCancellation.Token);
     }
 
-    private async Task ProcessPendingLayoutAsync()
+    private async Task ProcessPendingLayoutAsync(CancellationToken cancellationToken)
     {
-        while (_layoutPending && VisualRoot != null)
+        try
         {
-            _layoutPending = false;
-            var initialGeneration = !_hasGeneratedGraph;
-            var refitAfterGeneration = _zoomAfterGeneration;
-            var zoom = _zoomControl.Zoom;
-            var translateX = _zoomControl.TranslateX;
-            var translateY = _zoomControl.TranslateY;
-            _zoomAfterGeneration |= initialGeneration;
-
-            if (!initialGeneration)
+            while (_layoutPending && VisualRoot != null)
             {
-                if (!refitAfterGeneration)
+                cancellationToken.ThrowIfCancellationRequested();
+                _layoutPending = false;
+                var initialGeneration = !_hasGeneratedGraph;
+                var refitAfterGeneration = _zoomAfterGeneration;
+                var zoom = _zoomControl.Zoom;
+                var translateX = _zoomControl.TranslateX;
+                var translateY = _zoomControl.TranslateY;
+                _zoomAfterGeneration |= initialGeneration;
+
+                if (!initialGeneration)
                 {
-                    _zoomAfterGeneration = false;
+                    if (!refitAfterGeneration)
+                    {
+                        _zoomAfterGeneration = false;
+                    }
+
+                    await _area.RelayoutGraph(true, cancellationToken);
+                }
+                else
+                {
+                    await _area.GenerateGraph(true, cancellation: cancellationToken);
+                    _hasGeneratedGraph = true;
                 }
 
-                await _area.RelayoutGraph(true);
+                if (!initialGeneration && !refitAfterGeneration && !_zoomAfterGeneration)
+                {
+                    _zoomControl.Zoom = zoom;
+                    _zoomControl.TranslateX = translateX;
+                    _zoomControl.TranslateY = translateY;
+                }
             }
-            else
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+        }
+        catch (Exception exception)
+        {
+            _viewModel?.ReportGraphError(exception);
+        }
+        finally
+        {
+            if (_layoutCancellation?.Token == cancellationToken)
             {
-                await _area.GenerateGraph(true);
-                _hasGeneratedGraph = true;
-            }
-
-            if (!initialGeneration && !refitAfterGeneration && !_zoomAfterGeneration)
-            {
-                _zoomControl.Zoom = zoom;
-                _zoomControl.TranslateX = translateX;
-                _zoomControl.TranslateY = translateY;
+                _layoutCancellation.Dispose();
+                _layoutCancellation = null;
             }
         }
     }
@@ -512,8 +544,37 @@ public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphContr
         }
 
         _zoomAfterGeneration = false;
+        if (_zoomControl.Presenter is { } presenter)
+        {
+            presenter.ContentSizeChanged -= OnZoomContentSizeChanged;
+            presenter.ContentSizeChanged += OnZoomContentSizeChanged;
+        }
+
+        _zoomControl.Mode = ZoomControlModes.Fill;
         _zoomControl.ZoomToFill();
-        _zoomControl.Mode = ZoomControlModes.Custom;
+        if (_zoomControl.Presenter is null)
+        {
+            _zoomControl.Mode = ZoomControlModes.Custom;
+        }
+    }
+
+    private void OnZoomContentSizeChanged(object sender, Size contentSize)
+    {
+        if (contentSize.Width <= 0 || contentSize.Height <= 0)
+        {
+            return;
+        }
+
+        if (sender is ZoomContentPresenter presenter)
+        {
+            presenter.ContentSizeChanged -= OnZoomContentSizeChanged;
+        }
+
+        if (!_disposed)
+        {
+            _zoomControl.ZoomToFill();
+            _zoomControl.Mode = ZoomControlModes.Custom;
+        }
     }
 
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
@@ -531,15 +592,55 @@ public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphContr
     {
         _isDetached = true;
         _layoutPending = false;
+        _layoutCancellation?.Cancel();
         _area.ClearLayout();
         base.OnDetachedFromVisualTree(e);
     }
 
     public void Dispose()
     {
+        if (_disposed)
+        {
+            return;
+        }
+
+        _disposed = true;
         _graphPreparationCancellation?.Cancel();
+        _layoutCancellation?.Cancel();
         _area.GenerateGraphFinished -= OnGraphLayoutFinished;
         _area.RelayoutFinished -= OnGraphLayoutFinished;
+
+        if (_graphGenerationTask is { IsCompleted: false } graphGenerationTask)
+        {
+            _ = DisposeGraphXAfterLayoutAsync(graphGenerationTask);
+            return;
+        }
+
+        DisposeGraphX();
+    }
+
+    private async Task DisposeGraphXAfterLayoutAsync(Task graphGenerationTask)
+    {
+        try
+        {
+            await graphGenerationTask.ConfigureAwait(false);
+        }
+        catch (Exception)
+        {
+            // ProcessPendingLayoutAsync observes layout failures before completing.
+        }
+
+        await Dispatcher.UIThread.InvokeAsync(DisposeGraphX);
+    }
+
+    private void DisposeGraphX()
+    {
+        if (_graphXDisposed)
+        {
+            return;
+        }
+
+        _graphXDisposed = true;
         _area.Dispose();
         _logicCore.Dispose();
     }

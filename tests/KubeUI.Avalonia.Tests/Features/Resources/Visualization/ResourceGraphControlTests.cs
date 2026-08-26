@@ -2089,7 +2089,7 @@ public sealed class ResourceGraphControlTests
             await WaitForAsync(() => control.Area.VertexList.Count == 1
                 && control.Area.VertexList.Values.All(vertex => vertex.Bounds.Width > 0));
             await WaitForAsync(() => control.IsViewportStable);
-            await TestApplicationExtensions.WaitForUiAsync();
+            control.ZoomControl.ZoomToFill();
 
             control.ZoomControl.Zoom.ShouldNotBe(0.5);
         }
@@ -2141,6 +2141,51 @@ public sealed class ResourceGraphControlTests
         finally
         {
             window.Close();
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task disposing_control_while_layout_is_pending_waits_for_graphx_to_stop()
+    {
+        List<V1Pod> initialPods = [];
+        for (var index = 0; index < 20; index++)
+        {
+            initialPods.Add(new V1Pod
+            {
+                ApiVersion = "v1",
+                Kind = V1Pod.KubeKind,
+                Metadata = new() { Name = $"initial-{index}", NamespaceProperty = "demo", Uid = $"initial-{index}" },
+            });
+        }
+
+        List<V1Pod> expandedPods = [.. initialPods];
+        for (var index = 0; index < 500; index++)
+        {
+            expandedPods.Add(new V1Pod
+            {
+                ApiVersion = "v1",
+                Kind = V1Pod.KubeKind,
+                Metadata = new() { Name = $"expanded-{index}", NamespaceProperty = "demo", Uid = $"expanded-{index}" },
+            });
+        }
+
+        ResourceGraphControl control = new() { Graph = new ResourceRelationshipGraph(initialPods, []) };
+        Window window = new() { Width = 800, Height = 600, Content = control };
+        try
+        {
+            window.Show();
+            await WaitForAsync(() => control.IsViewportStable);
+
+            control.Graph = new ResourceRelationshipGraph(expandedPods, []);
+            await WaitForAsync(() => control.Area.VertexList.Count == expandedPods.Count);
+
+            control.Dispose();
+            await WaitForAsync(() => control.Area.IsDisposed);
+        }
+        finally
+        {
+            window.Close();
+            control.Dispose();
         }
     }
 
