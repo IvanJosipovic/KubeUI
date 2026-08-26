@@ -30,6 +30,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
     private int _filterVersion;
     private int _graphApplicationVersion;
     private int _initializationVersion;
+    private int _incrementalBuildRunning;
     private readonly List<ResourceChange> _deferredResourceChanges = [];
     private readonly ObservableCollection<V1Namespace> _localSelectedNamespaces = [];
     private ResourceRelationshipGraph _completeGraph = ResourceRelationshipGraph.Empty;
@@ -642,9 +643,16 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
             var identity = GetIdentity(change.Resource);
             var conflictingIdentity = _completeGraph.Resources.Any(item =>
                 GetResourceKey(item) == key && GetIdentity(item) != identity);
-            if ((previousResource is null || GetIdentity(previousResource) == identity)
+            if (_buildCoordinator.IsPendingOrRunning
+                || Volatile.Read(ref _incrementalBuildRunning) != 0)
+            {
+                _buildCoordinator.Invalidate();
+                Run();
+            }
+            else if ((previousResource is null || GetIdentity(previousResource) == identity)
                 && !conflictingIdentity)
             {
+                Interlocked.Exchange(ref _incrementalBuildRunning, 1);
                 var changeVersion = _buildCoordinator.Invalidate();
                 _ = AddResourceIncrementallyAsync(change.Resource, key, changeVersion, replaceExisting: true);
             }
@@ -660,7 +668,8 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         if (change.EventType == WatchEventType.Added)
         {
             if (_resourceStore.HasOwnerReferencesTo(change.Resource)
-                || _buildCoordinator.IsPendingOrRunning)
+                || _buildCoordinator.IsPendingOrRunning
+                || Volatile.Read(ref _incrementalBuildRunning) != 0)
             {
                 _buildCoordinator.Invalidate();
                 Run();
@@ -689,89 +698,96 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         int changeVersion,
         bool replaceExisting = false)
     {
-        var cluster = Cluster;
-        if (cluster == null)
+        try
         {
-            return;
-        }
-
-        var namespaces = SelectedNamespaces.Select(x => x.Name()).OfType<string>().ToHashSet(StringComparer.Ordinal);
-        var hideNoise = HideNoise;
-        IReadOnlyList<IKubernetesObject<V1ObjectMeta>> source = _resourceStore.Snapshot();
-        IReadOnlySet<string> buildNamespaces = RootResource == null
-            ? namespaces
-            : new HashSet<string>(StringComparer.Ordinal);
-        var delta = await Task.Run(() => _resourceRelationshipBuilder.BuildAdditionDelta(
-            source,
-            key,
-            buildNamespaces,
-            hideNoise)).ConfigureAwait(false);
-
-        await Dispatcher.UIThread.InvokeAsync(async () =>
-        {
-            if (_disposed
-                || !ReferenceEquals(Cluster, cluster)
-                || !_resourceStore.TryGet(key, out var currentResource)
-                || !ReferenceEquals(currentResource, resource))
+            var cluster = Cluster;
+            if (cluster == null)
             {
                 return;
             }
 
-            if (changeVersion != _buildCoordinator.CurrentVersion)
-            {
-                Run();
-                return;
-            }
+            var namespaces = SelectedNamespaces.Select(x => x.Name()).OfType<string>().ToHashSet(StringComparer.Ordinal);
+            var hideNoise = HideNoise;
+            IReadOnlyList<IKubernetesObject<V1ObjectMeta>> source = _resourceStore.Snapshot();
+            IReadOnlySet<string> buildNamespaces = RootResource == null
+                ? namespaces
+                : new HashSet<string>(StringComparer.Ordinal);
+            var delta = await Task.Run(() => _resourceRelationshipBuilder.BuildAdditionDelta(
+                source,
+                key,
+                buildNamespaces,
+                hideNoise)).ConfigureAwait(false);
 
-            if (_buildCoordinator.IsPendingOrRunning && !replaceExisting)
+            await Dispatcher.UIThread.InvokeAsync(async () =>
             {
-                Run();
-                return;
-            }
-
-            var identity = GetIdentity(resource);
-            var current = _completeGraph;
-            var currentResources = replaceExisting
-                ? current.Resources.Where(item => GetIdentity(item) != identity).ToArray()
-                : current.Resources;
-            var currentRelationships = replaceExisting
-                ? current.Relationships.Where(relationship => relationship.Source != identity && relationship.Target != identity).ToArray()
-                : current.Relationships;
-            var currentIdentities = currentResources.Select(GetIdentity).ToHashSet();
-            if (RootResource != null
-                && identity != GetIdentity(RootResource)
-                && !delta.Relationships.Any(relationship => currentIdentities.Contains(relationship.Source) || currentIdentities.Contains(relationship.Target)))
-            {
-                Run();
-                return;
-            }
-
-            if (RootResource == null)
-            {
-                delta = ResourceGraphProjection.ToSelectedNamespacesIncremental(delta, namespaces, currentIdentities);
-                if (!replaceExisting && delta.Resources.Count == 0)
+                if (_disposed
+                    || !ReferenceEquals(Cluster, cluster)
+                    || !_resourceStore.TryGet(key, out var currentResource)
+                    || !ReferenceEquals(currentResource, resource))
                 {
                     return;
                 }
-            }
 
-            IReadOnlyList<IKubernetesObject<V1ObjectMeta>> resources = currentResources
-                .Concat(delta.Resources)
-                .GroupBy(GetIdentity)
-                .Select(group => group.First())
-                .ToArray();
-            var relationships = ResourceRelationshipBuilder.SimplifyRelationships(
-                currentRelationships.Concat(delta.Relationships));
-            ResourceRelationshipGraph merged = new(
-                resources,
-                relationships,
-                current.PendingReferences.Union(delta.PendingReferences).ToHashSet(),
-                current.RequiredSeedPrerequisites.Union(delta.RequiredSeedPrerequisites).ToHashSet());
-            var completeGraph = RootResource is { } root
-                ? ResourceGraphProjection.ToRootResource(merged, root)
-                : ResourceGraphProjection.ToSelectedNamespaces(merged, namespaces);
-            await ApplyGraphAsync(completeGraph);
-        });
+                if (changeVersion != _buildCoordinator.CurrentVersion)
+                {
+                    Run();
+                    return;
+                }
+
+                if (_buildCoordinator.IsPendingOrRunning && !replaceExisting)
+                {
+                    Run();
+                    return;
+                }
+
+                var identity = GetIdentity(resource);
+                var current = _completeGraph;
+                var currentResources = replaceExisting
+                    ? current.Resources.Where(item => GetIdentity(item) != identity).ToArray()
+                    : current.Resources;
+                var currentRelationships = replaceExisting
+                    ? current.Relationships.Where(relationship => relationship.Source != identity && relationship.Target != identity).ToArray()
+                    : current.Relationships;
+                var currentIdentities = currentResources.Select(GetIdentity).ToHashSet();
+                if (RootResource != null
+                    && identity != GetIdentity(RootResource)
+                    && !delta.Relationships.Any(relationship => currentIdentities.Contains(relationship.Source) || currentIdentities.Contains(relationship.Target)))
+                {
+                    Run();
+                    return;
+                }
+
+                if (RootResource == null)
+                {
+                    delta = ResourceGraphProjection.ToSelectedNamespacesIncremental(delta, namespaces, currentIdentities);
+                    if (!replaceExisting && delta.Resources.Count == 0)
+                    {
+                        return;
+                    }
+                }
+
+                IReadOnlyList<IKubernetesObject<V1ObjectMeta>> resources = currentResources
+                    .Concat(delta.Resources)
+                    .GroupBy(GetIdentity)
+                    .Select(group => group.First())
+                    .ToArray();
+                var relationships = ResourceRelationshipBuilder.SimplifyRelationships(
+                    currentRelationships.Concat(delta.Relationships));
+                ResourceRelationshipGraph merged = new(
+                    resources,
+                    relationships,
+                    current.PendingReferences.Union(delta.PendingReferences).ToHashSet(),
+                    current.RequiredSeedPrerequisites.Union(delta.RequiredSeedPrerequisites).ToHashSet());
+                var completeGraph = RootResource is { } root
+                    ? ResourceGraphProjection.ToRootResource(merged, root)
+                    : ResourceGraphProjection.ToSelectedNamespaces(merged, namespaces);
+                await ApplyGraphAsync(completeGraph);
+            });
+        }
+        finally
+        {
+            Interlocked.Exchange(ref _incrementalBuildRunning, 0);
+        }
     }
 
     private void OnResourceSeeded(IClusterRuntime runtime, GroupApiVersionKind kind)

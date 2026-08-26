@@ -1206,6 +1206,36 @@ public sealed class ResourceGraphControlTests
         builder.BuildCount.ShouldBeGreaterThan(1);
     }
 
+    [AvaloniaFact]
+    public async Task resource_changes_do_not_start_concurrent_incremental_relationship_builds()
+    {
+        var cluster = await Application.Current.CreateClusterAsync(config => config.Type = KubernetesBackend.Fake);
+        cluster.SelectedNamespaces.Add(new V1Namespace { Metadata = new() { Name = "default" } });
+        await cluster.Runtime.SeedResource<V1Pod>(true);
+
+        var builder = new BlockingAdditionRelationshipBuilder();
+        using VisualizationViewModel viewModel = new(builder);
+        viewModel.Initialize(cluster);
+        await builder.WaitForInitialBuildAsync();
+        await WaitForAsync(() => !viewModel.IsRebuildPendingOrRunning);
+
+        await cluster.Runtime.AddOrUpdateResource(CreatePod("first"));
+        await builder.WaitForAdditionStartedAsync();
+        try
+        {
+            await cluster.Runtime.AddOrUpdateResource(CreatePod("second"));
+            await cluster.Runtime.AddOrUpdateResource(CreatePod("third"));
+
+            builder.MaxConcurrentAdditions.ShouldBe(1);
+        }
+        finally
+        {
+            builder.ReleaseAddition();
+        }
+
+        await WaitForAsync(() => !viewModel.IsRebuildPendingOrRunning);
+    }
+
     private static ResourceIdentity GetIdentity(IKubernetesObject<V1ObjectMeta> resource)
         => new(resource.ApiVersion!, resource.Kind!, resource.Namespace(), resource.Name()!, resource.Uid());
 
@@ -2079,6 +2109,55 @@ public sealed class ResourceGraphControlTests
             IReadOnlySet<string> selectedNamespaces,
             bool hideNoise)
             => ResourceRelationshipGraph.Empty;
+    }
+
+    private sealed class BlockingAdditionRelationshipBuilder : IResourceRelationshipBuilder
+    {
+        private readonly TaskCompletionSource _initialBuild = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource _additionStarted = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource _releaseAddition = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private int _activeAdditions;
+        private int _maxConcurrentAdditions;
+
+        public int MaxConcurrentAdditions => Volatile.Read(ref _maxConcurrentAdditions);
+
+        public ResourceRelationshipGraph Build(
+            IEnumerable<IKubernetesObject<V1ObjectMeta>> resources,
+            IReadOnlySet<string> selectedNamespaces,
+            bool hideNoise)
+        {
+            _initialBuild.TrySetResult();
+            return new ResourceRelationshipGraph(resources.ToArray(), []);
+        }
+
+        public ResourceRelationshipGraph BuildAdditionDelta(
+            IEnumerable<IKubernetesObject<V1ObjectMeta>> resources,
+            ResourceKey addedResource,
+            IReadOnlySet<string> selectedNamespaces,
+            bool hideNoise)
+        {
+            var active = Interlocked.Increment(ref _activeAdditions);
+            while (active > Volatile.Read(ref _maxConcurrentAdditions))
+            {
+                var currentMaximum = Volatile.Read(ref _maxConcurrentAdditions);
+                if (active <= currentMaximum
+                    || Interlocked.CompareExchange(ref _maxConcurrentAdditions, active, currentMaximum) == currentMaximum)
+                {
+                    break;
+                }
+            }
+
+            _additionStarted.TrySetResult();
+            _releaseAddition.Task.GetAwaiter().GetResult();
+            Interlocked.Decrement(ref _activeAdditions);
+            return new ResourceRelationshipGraph(resources.ToArray(), []);
+        }
+
+        public async Task WaitForInitialBuildAsync() => await WaitForSignalAsync(_initialBuild.Task, "initial visualization build");
+
+        public async Task WaitForAdditionStartedAsync() => await WaitForSignalAsync(_additionStarted.Task, "incremental addition");
+
+        public void ReleaseAddition() => _releaseAddition.TrySetResult();
     }
 
     private sealed class SimplifyingRelationshipBuilder : IResourceRelationshipBuilder
