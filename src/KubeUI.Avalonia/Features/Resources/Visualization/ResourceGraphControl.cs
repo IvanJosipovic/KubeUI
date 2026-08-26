@@ -11,6 +11,7 @@ using QuikGraph;
 using Westermo.GraphX.Common.Enums;
 using Westermo.GraphX.Controls.Controls;
 using Westermo.GraphX.Controls.Controls.ZoomControl;
+using Westermo.GraphX.Controls.Controls.ZoomControl.SupportClasses;
 using Westermo.GraphX.Controls.Models.Interfaces;
 using Westermo.GraphX.Logic.Algorithms.LayoutAlgorithms;
 using Westermo.GraphX.Logic.Algorithms.OverlapRemoval;
@@ -63,6 +64,12 @@ public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphContr
 
     internal GraphArea<ResourceGraphVertex, ResourceGraphEdge, BidirectionalGraph<ResourceGraphVertex, ResourceGraphEdge>> Area => _area;
 
+    internal ZoomControl ZoomControl => _zoomControl;
+
+    internal bool HasGeneratedGraph => _hasGeneratedGraph && (_graphGenerationTask is null || _graphGenerationTask.IsCompleted);
+
+    internal bool IsViewportStable => HasGeneratedGraph && !_zoomAfterGeneration;
+
     public GraphAreaBase FactoryRootArea => _area;
 
     public ResourceGraphControl(IResourceIconService? iconService = null)
@@ -112,6 +119,7 @@ public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphContr
         {
             Background = Brushes.Transparent,
             AllowZoomingWithoutCtrl = true,
+            Mode = ZoomControlModes.Custom,
             Content = _area,
         };
 
@@ -148,7 +156,6 @@ public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphContr
                 return;
             }
 
-            _hasGeneratedGraph = false;
             var incremental = VisualRoot != null && _logicCore.Graph != null && !_rebuildFromAttachment;
             _rebuildFromAttachment = false;
             if (incremental)
@@ -157,11 +164,18 @@ public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphContr
                 return;
             }
 
+            _hasGeneratedGraph = false;
+            var wasEmpty = _vertices.Count == 0;
             _vertices.Clear();
             foreach (var resource in prepared.Resources)
             {
                 var vertex = CreateVertex(resource, prepared.Cluster);
                 _vertices.Add(vertex.Identity, vertex);
+            }
+
+            if (wasEmpty && _vertices.Count > 0)
+            {
+                _zoomAfterGeneration = true;
             }
 
             BidirectionalGraph<ResourceGraphVertex, ResourceGraphEdge> graph = new();
@@ -280,6 +294,7 @@ public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphContr
     {
         var graph = _logicCore.Graph;
         var vertices = _vertices;
+        var wasEmpty = vertices.Count == 0;
         var relationships = RemoveTransitiveOwnerRelationships(current.Relationships);
         HashSet<ResourceIdentity> desiredIdentities = new(current.Resources.Count);
         foreach (var resource in current.Resources)
@@ -366,6 +381,12 @@ public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphContr
 
         if (structureChanged)
         {
+            if (wasEmpty != (vertices.Count == 0))
+            {
+                _hasGeneratedGraph = false;
+                _zoomAfterGeneration = vertices.Count > 0;
+            }
+
             QueueGraphGeneration();
         }
     }
@@ -453,16 +474,32 @@ public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphContr
         {
             _layoutPending = false;
             var initialGeneration = !_hasGeneratedGraph;
+            var refitAfterGeneration = _zoomAfterGeneration;
+            var zoom = _zoomControl.Zoom;
+            var translateX = _zoomControl.TranslateX;
+            var translateY = _zoomControl.TranslateY;
             _zoomAfterGeneration |= initialGeneration;
 
             if (!initialGeneration)
             {
+                if (!refitAfterGeneration)
+                {
+                    _zoomAfterGeneration = false;
+                }
+
                 await _area.RelayoutGraph(true);
             }
             else
             {
                 await _area.GenerateGraph(true);
                 _hasGeneratedGraph = true;
+            }
+
+            if (!initialGeneration && !refitAfterGeneration && !_zoomAfterGeneration)
+            {
+                _zoomControl.Zoom = zoom;
+                _zoomControl.TranslateX = translateX;
+                _zoomControl.TranslateY = translateY;
             }
         }
     }
@@ -476,6 +513,7 @@ public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphContr
 
         _zoomAfterGeneration = false;
         _zoomControl.ZoomToFill();
+        _zoomControl.Mode = ZoomControlModes.Custom;
     }
 
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)

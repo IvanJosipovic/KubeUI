@@ -2065,6 +2065,86 @@ public sealed class ResourceGraphControlTests
     }
 
     [AvaloniaFact]
+    public async Task graph_refits_when_resources_return_after_becoming_empty()
+    {
+        V1Pod pod = new()
+        {
+            ApiVersion = "v1",
+            Kind = V1Pod.KubeKind,
+            Metadata = new() { Name = "pod", NamespaceProperty = "demo", Uid = "pod" },
+        };
+
+        using ResourceGraphControl control = new() { Graph = ResourceRelationshipGraph.Empty };
+        Window window = new() { Width = 800, Height = 600, Content = control };
+        try
+        {
+            window.Show();
+            await WaitForAsync(() => control.Area.LogicCore?.Graph is not null);
+
+            control.ZoomControl.Zoom = 0.5;
+            control.ZoomControl.TranslateX = 400;
+            control.ZoomControl.TranslateY = 300;
+            control.Graph = new ResourceRelationshipGraph([pod], []);
+
+            await WaitForAsync(() => control.Area.VertexList.Count == 1
+                && control.Area.VertexList.Values.All(vertex => vertex.Bounds.Width > 0));
+            await WaitForAsync(() => control.IsViewportStable);
+            await TestApplicationExtensions.WaitForUiAsync();
+
+            control.ZoomControl.Zoom.ShouldNotBe(0.5);
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task graph_updates_preserve_user_zoom_and_pan()
+    {
+        V1Pod first = new()
+        {
+            ApiVersion = "v1",
+            Kind = V1Pod.KubeKind,
+            Metadata = new() { Name = "first", NamespaceProperty = "demo", Uid = "first" },
+        };
+        V1Pod second = new()
+        {
+            ApiVersion = "v1",
+            Kind = V1Pod.KubeKind,
+            Metadata = new() { Name = "second", NamespaceProperty = "demo", Uid = "second" },
+        };
+
+        using ResourceGraphControl control = new() { Graph = new ResourceRelationshipGraph([first], []) };
+        Window window = new() { Width = 800, Height = 600, Content = control };
+        try
+        {
+            window.Show();
+            await WaitForAsync(() => control.Area.VertexList.Count == 1
+                && control.Area.VertexList.Values.All(vertex => vertex.Bounds.Width > 0));
+            await TestApplicationExtensions.WaitForUiAsync();
+
+            control.ZoomControl.Zoom = 0.5;
+            control.ZoomControl.TranslateX = 400;
+            control.ZoomControl.TranslateY = 300;
+            control.Graph = new ResourceRelationshipGraph([first, second], []);
+
+            await WaitForAsync(() => control.Area.VertexList.Count == 2
+                && control.Area.VertexList.Values.All(vertex => vertex.Bounds.Width > 0));
+            await WaitForAsync(() => control.IsViewportStable);
+            await TestApplicationExtensions.WaitForUiAsync();
+
+            control.ZoomControl.Zoom.ShouldBe(0.5);
+            control.ZoomControl.TranslateX.ShouldBe(400);
+            control.ZoomControl.TranslateY.ShouldBe(300);
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    [AvaloniaFact]
     public async Task graph_preserves_vertices_and_edges_when_control_is_detached_and_reattached()
     {
         V1Pod source = new() { ApiVersion = "v1", Kind = V1Pod.KubeKind, Metadata = new() { Name = "source", NamespaceProperty = "demo", Uid = "source" } };
