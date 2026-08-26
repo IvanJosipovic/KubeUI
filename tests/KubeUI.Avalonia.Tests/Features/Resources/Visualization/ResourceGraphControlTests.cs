@@ -1071,13 +1071,17 @@ public sealed class ResourceGraphControlTests
 
         viewModel.HideNoise = false;
         await builder.WaitForSecondBuildAsync().WaitAsync(TimeSpan.FromSeconds(15), TestContext.Current.CancellationToken);
-        await WaitForAsync(() => viewModel.Graph is { Resources.Count: 0 });
+        await WaitForAsync(
+            () => viewModel.Graph is { Resources.Count: 0 },
+            timeoutMs: 15000);
 
         try
         {
             builder.ReleaseAddition();
             await builder.WaitForAdditionCompletedAsync().WaitAsync(TimeSpan.FromSeconds(15), TestContext.Current.CancellationToken);
-            await WaitForAsync(() => viewModel.Graph is { Resources.Count: 0 });
+            await WaitForAsync(
+                () => viewModel.Graph is { Resources.Count: 0 },
+                timeoutMs: 15000);
         }
         finally
         {
