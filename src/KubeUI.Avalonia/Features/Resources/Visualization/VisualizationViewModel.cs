@@ -14,6 +14,10 @@ namespace KubeUI.Avalonia.Features.Resources.Visualization;
 
 public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeCluster, IDisposable
 {
+    private readonly record struct PendingIncrementalChange(
+        IKubernetesObject<V1ObjectMeta> Resource,
+        bool ReplaceExisting);
+
     private readonly IResourceRelationshipBuilder _resourceRelationshipBuilder;
     private readonly ILogger<VisualizationViewModel>? _logger;
     private readonly VisualizationResourceStore _resourceStore = new();
@@ -32,6 +36,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
     private int _initializationVersion;
     private int _incrementalBuildRunning;
     private readonly List<ResourceChange> _deferredResourceChanges = [];
+    private readonly Dictionary<ResourceKey, PendingIncrementalChange> _pendingIncrementalChanges = [];
     private readonly ObservableCollection<V1Namespace> _localSelectedNamespaces = [];
     private ResourceRelationshipGraph _completeGraph = ResourceRelationshipGraph.Empty;
 
@@ -643,11 +648,15 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
             var identity = GetIdentity(change.Resource);
             var conflictingIdentity = _completeGraph.Resources.Any(item =>
                 GetResourceKey(item) == key && GetIdentity(item) != identity);
-            if (_buildCoordinator.IsPendingOrRunning
-                || Volatile.Read(ref _incrementalBuildRunning) != 0)
+            if (_buildCoordinator.IsPendingOrRunning)
             {
+                _pendingIncrementalChanges.Clear();
                 _buildCoordinator.Invalidate();
                 Run();
+            }
+            else if (Volatile.Read(ref _incrementalBuildRunning) != 0)
+            {
+                _pendingIncrementalChanges[key] = new(change.Resource, true);
             }
             else if ((previousResource is null || GetIdentity(previousResource) == identity)
                 && !conflictingIdentity)
@@ -668,11 +677,17 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         if (change.EventType == WatchEventType.Added)
         {
             if (_resourceStore.HasOwnerReferencesTo(change.Resource)
-                || _buildCoordinator.IsPendingOrRunning
-                || Volatile.Read(ref _incrementalBuildRunning) != 0)
+                || _buildCoordinator.IsPendingOrRunning)
             {
+                _pendingIncrementalChanges.Clear();
                 _buildCoordinator.Invalidate();
                 Run();
+                return;
+            }
+
+            if (Volatile.Read(ref _incrementalBuildRunning) != 0)
+            {
+                _pendingIncrementalChanges[key] = new(change.Resource, false);
                 return;
             }
 
@@ -788,7 +803,38 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         finally
         {
             Interlocked.Exchange(ref _incrementalBuildRunning, 0);
+            Dispatcher.UIThread.Post(StartPendingIncrementalChange);
         }
+    }
+
+    private void StartPendingIncrementalChange()
+    {
+        if (_disposed || _pendingIncrementalChanges.Count == 0)
+        {
+            return;
+        }
+
+        if (_buildCoordinator.IsPendingOrRunning)
+        {
+            _pendingIncrementalChanges.Clear();
+            return;
+        }
+
+        var pending = _pendingIncrementalChanges.First();
+        _pendingIncrementalChanges.Remove(pending.Key);
+        if (!_resourceStore.TryGet(pending.Key, out var resource))
+        {
+            StartPendingIncrementalChange();
+            return;
+        }
+
+        Interlocked.Exchange(ref _incrementalBuildRunning, 1);
+        var changeVersion = _buildCoordinator.Invalidate();
+        _ = AddResourceIncrementallyAsync(
+            resource,
+            pending.Key,
+            changeVersion,
+            pending.Value.ReplaceExisting);
     }
 
     private void OnResourceSeeded(IClusterRuntime runtime, GroupApiVersionKind kind)

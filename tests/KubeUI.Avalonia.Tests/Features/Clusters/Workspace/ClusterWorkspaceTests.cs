@@ -219,7 +219,9 @@ public class ClusterWorkspaceTests
         GetInformers(originalContainer).Count.ShouldBe(1);
 
         var updatedCrd = ClusterWorkspaceTestCustomResourceDefinitionFactory.Create("tests.kubeui.com", "tests", "otherString");
-        updatedCrd.Metadata.Uid = workspace.Runtime.GetResource<V1CustomResourceDefinition>(null, originalCrd.Name()).ShouldNotBeNull().Metadata.Uid;
+        var currentCrd = workspace.Runtime.GetResource<V1CustomResourceDefinition>(null, originalCrd.Name()).ShouldNotBeNull();
+        updatedCrd.Metadata.Uid = currentCrd.Metadata.Uid;
+        updatedCrd.Metadata.ResourceVersion = currentCrd.Metadata.ResourceVersion;
         await workspace.Runtime.ReplaceAsync(updatedCrd, TestContext.Current.CancellationToken);
 
         var updatedKind = await WaitForRegisteredCustomResourceKind(workspace.Runtime, updatedCrd);
