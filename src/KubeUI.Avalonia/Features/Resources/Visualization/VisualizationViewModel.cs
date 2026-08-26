@@ -678,6 +678,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 
             if (ResourceCanAffectGraph(change.Resource))
             {
+                Interlocked.Exchange(ref _incrementalBuildRunning, 1);
                 var changeVersion = _buildCoordinator.Invalidate();
                 _ = AddResourceIncrementallyAsync(change.Resource, key, changeVersion);
             }

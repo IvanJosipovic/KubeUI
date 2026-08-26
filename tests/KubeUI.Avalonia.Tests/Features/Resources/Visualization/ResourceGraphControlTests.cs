@@ -1225,6 +1225,9 @@ public sealed class ResourceGraphControlTests
         {
             await cluster.Runtime.AddOrUpdateResource(CreatePod("second"));
             await cluster.Runtime.AddOrUpdateResource(CreatePod("third"));
+            await WaitForAsync(() => cluster.Runtime.GetResource<V1Pod>("default", "third") is not null);
+            await TestApplicationExtensions.WaitForUiAsync();
+            await WaitForNextPollAsync();
 
             builder.MaxConcurrentAdditions.ShouldBe(1);
         }
