@@ -1125,13 +1125,16 @@ public sealed class ResourceGraphControlTests
         ResourceRelationship changedRelationship = new(secondOwnerIdentity, podIdentity, ResourceRelationshipKind.Owner);
         await viewModel.ApplyGraphAsync(new ResourceRelationshipGraph([firstOwner, secondOwner, pod], [initialRelationship]));
         await WaitForAsync(() => !viewModel.IsRebuildPendingOrRunning);
-        var fullBuildCount = builder.BuildCount;
 
         await TestWait.UntilAsync(
             () => cluster.Runtime.GetResource<V1Pod>("default", "owned-pod") is not null,
             TimeSpan.FromSeconds(5),
             cancellationToken: TestContext.Current.CancellationToken);
         pod = cluster.Runtime.GetResource<V1Pod>("default", "owned-pod").ShouldNotBeNull();
+        await WaitForAsync(() => viewModel.Graph!.Resources.Any(resource => resource.Name() == pod.Name())
+            && !viewModel.IsRebuildPendingOrRunning);
+        var fullBuildCount = builder.BuildCount;
+
         await cluster.Runtime.Client!.GetGenericClient<V1Pod>().PatchNamespacedAsync<V1Pod>(
             new V1Patch(
                 KubernetesJson.Serialize(new
