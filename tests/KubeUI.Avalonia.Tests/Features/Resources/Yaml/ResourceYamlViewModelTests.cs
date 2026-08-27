@@ -295,25 +295,28 @@ public class ResourceYamlViewModelTests
         editor.ShouldNotBeNull();
         var foldingMargin = editor.TextArea.LeftMargins.OfType<FoldingMargin>().Single();
 
-        vm.YamlDocument.Text = string.Join(
-            "\n",
-            Enumerable.Range(0, 300).Select(i => $"value-{i}:\n  nested: {i}"));
-
         var behavior = Interaction.GetBehaviors(editor).OfType<YamlEditorBehavior>().Single();
         var foldingManager = GetFoldingManager(behavior);
         foldingManager.ShouldNotBeNull();
-        await WaitForUiAsync(() => foldingManager.AllFoldings.Count() == 300);
-        foldingManager.AllFoldings.Count().ShouldBe(300);
 
-        for (var i = 0; i < 200; i++)
+        for (var refreshIndex = 0; refreshIndex < 3; refreshIndex++)
         {
-            editor.ScrollToLine(i);
-            await TestApplicationExtensions.WaitForUiAsync();
-        }
+            vm.YamlDocument.Text = string.Join(
+                "\n",
+                Enumerable.Range(0, 300).Select(i => $"value-{refreshIndex}-{i}:\n  nested: {i}"));
+            await WaitForUiAsync(() => foldingManager.AllFoldings.Count() == 300);
+            foldingManager.AllFoldings.Count().ShouldBe(300);
 
-        ((ILogical)foldingMargin).LogicalChildren
-            .Count()
-            .ShouldBeLessThan(100);
+            for (var lineIndex = 0; lineIndex < 200; lineIndex++)
+            {
+                editor.ScrollToLine(lineIndex);
+                await TestApplicationExtensions.WaitForUiAsync();
+            }
+
+            ((ILogical)foldingMargin).LogicalChildren
+                .Count()
+                .ShouldBeLessThan(100);
+        }
     }
 
     [AvaloniaFact]
