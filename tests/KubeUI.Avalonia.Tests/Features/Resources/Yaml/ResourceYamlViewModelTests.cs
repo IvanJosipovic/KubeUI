@@ -301,10 +301,14 @@ public class ResourceYamlViewModelTests
 
         for (var refreshIndex = 0; refreshIndex < 3; refreshIndex++)
         {
+            var foldingTitlePrefix = $"value-{refreshIndex}-";
             vm.YamlDocument.Text = string.Join(
                 "\n",
-                Enumerable.Range(0, 300).Select(i => $"value-{refreshIndex}-{i}:\n  nested: {i}"));
-            await WaitForUiAsync(() => foldingManager.AllFoldings.Count() == 300);
+                Enumerable.Range(0, 300).Select(i => $"{foldingTitlePrefix}{i}:\n  nested: {i}"));
+            await WaitForUiAsync(
+                () => foldingManager.AllFoldings.Count() == 300
+                    && foldingManager.AllFoldings.All(folding =>
+                        folding.Title.StartsWith(foldingTitlePrefix, StringComparison.Ordinal)));
             foldingManager.AllFoldings.Count().ShouldBe(300);
 
             for (var lineIndex = 0; lineIndex < 200; lineIndex++)
