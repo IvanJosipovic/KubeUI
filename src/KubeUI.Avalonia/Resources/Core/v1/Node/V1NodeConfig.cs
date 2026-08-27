@@ -26,31 +26,31 @@ public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>
             {
                 Key = "instance-type",
                 Name = Assets.Resources.V1NodeConfig_Instance_Type!,
-                Field = x => x.Metadata.Labels.TryGetValue("node.kubernetes.io/instance-type", out var value) ? value : "",
+                Field = x => x?.Metadata?.Labels?.TryGetValue("node.kubernetes.io/instance-type", out var value) == true ? value : string.Empty,
                 Width = nameof(DataGridLengthUnitType.SizeToCells)
             },
             new ResourceListColumn<V1Node, decimal>()
             {
                 Key = "cpu",
                 Name = Assets.Resources.V1NodeConfig_CPU!,
-                Field = x => x.Status?.Capacity?.TryGetValue("cpu", out var value) == true ? value.ToDecimal() : 0,
-                Display = x => x.Status?.Capacity?.TryGetValue("cpu", out var value) == true ? value.ToDecimal().ToString("0.##") + "c" : "0c",
+                Field = x => x?.Status ?.Capacity ?.TryGetValue("cpu", out var value) == true && value != null ? value.ToDecimal() : 0,
+                Display = x => x?.Status?.Capacity?.TryGetValue("cpu", out var value) == true && value != null ? value.ToDecimal().ToString("0.##") + "c" : "0c",
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },
             new ResourceListColumn<V1Node, decimal>()
             {
                 Key = "memory",
                 Name = Assets.Resources.V1NodeConfig_Memory!,
-                Field = x => x.Status?.Capacity?.TryGetValue("memory", out var value) == true ? value.ToDecimal() : 0,
-                Display = x => x.Status?.Capacity?.TryGetValue("memory", out var value) == true ? (value.ToDecimal() / 1048576 / 1024).ToString("0.##") + "Gi" : "0Gi",
+                Field = x => x?.Status ?.Capacity ?.TryGetValue("memory", out var value) == true && value != null ? value.ToDecimal() : 0,
+                Display = x => x?.Status?.Capacity?.TryGetValue("memory", out var value) == true && value != null ? (value.ToDecimal() / 1048576 / 1024).ToString("0.##") + "Gi" : "0Gi",
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },
             new ResourceListColumn<V1Node, decimal>()
             {
                 Key = "disk",
                 Name = Assets.Resources.V1NodeConfig_Disk!,
-                Field = x => x.Status?.Capacity?.TryGetValue("ephemeral-storage", out var value) == true ? value.ToDecimal() : 0,
-                Display = x => x.Status?.Capacity?.TryGetValue("ephemeral-storage", out var value) == true ? (value.ToDecimal() / 1048576 / 1024).ToString("0.##") + "Gi" : "0Gi",
+                Field = x => x?.Status ?.Capacity ?.TryGetValue("ephemeral-storage", out var value) == true && value != null ? value.ToDecimal() : 0,
+                Display = x => x?.Status?.Capacity?.TryGetValue("ephemeral-storage", out var value) == true && value != null ? (value.ToDecimal() / 1048576 / 1024).ToString("0.##") + "Gi" : "0Gi",
                 Width = nameof(DataGridLengthUnitType.SizeToCells)
             },
             new ResourceListColumn<V1Node, string>()
@@ -64,14 +64,14 @@ public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>
             {
                 Key = "version",
                 Name = Assets.Resources.V1NodeConfig_Version!,
-                Field = x => x.Status.NodeInfo.KubeletVersion,
+                Field = x => x?.Status?.NodeInfo?.KubeletVersion ?? string.Empty,
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },
             new ResourceListColumn<V1Node, string>()
             {
                 Key = "status",
                 Name = Assets.Resources.V1NodeConfig_Status!,
-                Field = x => x.Status.Conditions.FirstOrDefault(x => x.Type == "Ready")?.Reason ?? "",
+                Field = x => x?.Status?.Conditions?.FirstOrDefault(x => x.Type == "Ready")?.Reason ?? string.Empty,
                 Width = nameof(DataGridLengthUnitType.SizeToCells)
             },
             AgeColumn(),
