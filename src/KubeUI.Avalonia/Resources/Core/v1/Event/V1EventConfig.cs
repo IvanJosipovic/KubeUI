@@ -49,7 +49,7 @@ public sealed class V1EventConfig(IServiceProvider serviceProvider) : ResourceCo
             {
                 Key = "count",
                 Name = Assets.Resources.V1EventConfig_Count,
-                Field = x => x.Count ?? 0,
+                Field = x => x?.Count ?? 0,
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },
             new ResourceListColumn<Corev1Event, DateTime?>()

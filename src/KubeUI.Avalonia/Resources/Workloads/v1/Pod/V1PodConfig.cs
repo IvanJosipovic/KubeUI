@@ -55,7 +55,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
                 {
                     Key = "controlled-by",
                     Name = Assets.Resources.V1PodConfig_Controlled_By!,
-                    Field = x => x.Metadata.OwnerReferences?.FirstOrDefault()?.Name ?? "",
+                    Field = x => x?.Metadata?.OwnerReferences?.FirstOrDefault()?.Name ?? "",
                     Width = nameof(DataGridLengthUnitType.SizeToHeader)
                 },
                 new ResourceListColumn<V1Pod, string>()
