@@ -297,8 +297,13 @@ public class ResourceYamlViewModelTests
 
         vm.YamlDocument.Text = string.Join(
             "\n",
-            Enumerable.Range(0, 300).Select(i => $"value-{i}: {i}"));
-        await TestApplicationExtensions.WaitForUiAsync();
+            Enumerable.Range(0, 300).Select(i => $"value-{i}:\n  nested: {i}"));
+
+        var behavior = Interaction.GetBehaviors(editor).OfType<YamlEditorBehavior>().Single();
+        var foldingManager = GetFoldingManager(behavior);
+        foldingManager.ShouldNotBeNull();
+        await WaitForUiAsync(() => foldingManager.AllFoldings.Count() == 300);
+        foldingManager.AllFoldings.Count().ShouldBe(300);
 
         for (var i = 0; i < 200; i++)
         {
