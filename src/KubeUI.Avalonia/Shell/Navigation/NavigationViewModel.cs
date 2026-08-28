@@ -121,17 +121,18 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
         }
     }
 
-    private async Task HandleClusterSelectionAsync(ClusterNavigationNode clusterNode)
+    private Task HandleClusterSelectionAsync(ClusterNavigationNode clusterNode)
     {
         var cluster = clusterNode.Cluster;
 
         if (cluster.Runtime.Connected)
         {
             clusterNode.IsExpanded = !clusterNode.IsExpanded;
-            return;
+            return Task.CompletedTask;
         }
 
-        await ConnectIfIdleAsync(clusterNode).ConfigureAwait(false);
+        _ = ConnectAndExpandAsync(clusterNode);
+        return Task.CompletedTask;
     }
 
     [RelayCommand]
@@ -149,18 +150,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
             return;
         }
 
-        await ConnectIfIdleAsync(clusterNode).ConfigureAwait(false);
-    }
-
-    private Task ConnectIfIdleAsync(ClusterNavigationNode clusterNode)
-    {
-        if (clusterNode.Cluster.Runtime.Status == ClusterStatus.Connecting)
-        {
-            return Task.CompletedTask;
-        }
-
         _ = ConnectAndExpandAsync(clusterNode);
-        return Task.CompletedTask;
     }
 
     private async Task ConnectAndExpandAsync(ClusterNavigationNode clusterNode)
