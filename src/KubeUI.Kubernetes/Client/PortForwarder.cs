@@ -203,16 +203,7 @@ public partial class PortForwarder : ObservableObject, IEquatable<PortForwarder>
                     return;
                 }
 
-                var pod = _cluster.GetResourceSourceCache<V1Pod>()
-                    .Lookup(new ResourceCacheKey(Namespace, selectedPod))
-                    .ValueOrDefault();
-                if (pod is null)
-                {
-                    Status = "No pods found for Service";
-                    return;
-                }
-
-                podName = pod.Name();
+                podName = selectedPod;
                 podPort = (int)portData.Port;
             }
 
