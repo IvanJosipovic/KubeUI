@@ -131,10 +131,8 @@ public sealed partial class PodLogsViewModel
                 }
             }
         }
-        catch (IOException) when (cancellationToken.IsCancellationRequested)
-        {
-        }
-        catch (ObjectDisposedException) when (cancellationToken.IsCancellationRequested)
+        catch (Exception ex) when (cancellationToken.IsCancellationRequested
+            && ex is OperationCanceledException or IOException or ObjectDisposedException)
         {
         }
         catch (Exception ex) when (ex is IOException or HttpRequestException)
@@ -213,11 +211,6 @@ public sealed partial class PodLogsViewModel
     private void ScheduleReconnectAfterStreamEnd(CancellationTokenSource connectionCts)
     {
         if (Interlocked.Increment(ref _streamEndedReconnectAttempts) > MaxAutomaticReconnectAttempts)
-        {
-            return;
-        }
-
-        if (Interlocked.Exchange(ref _streamEndedReconnectPending, 1) == 1)
         {
             return;
         }
@@ -349,12 +342,6 @@ public sealed partial class PodLogsViewModel
             entries = _outputEntries.ToArray();
         }
 
-        if (entries.Length == 0)
-        {
-            Logs.Text = string.Empty;
-            return;
-        }
-
         StringBuilder builder = new();
         var displayMode = GetCurrentDisplayMode();
         for (var i = 0; i < entries.Length; i++)
@@ -388,7 +375,7 @@ public sealed partial class PodLogsViewModel
 
     private PodLogDisplayMode GetCurrentDisplayMode()
     {
-        if (SelectedPodItems.Count > 1 || ContainsAllSelection(SelectedPodItems) && AvailablePods.Count > 1)
+        if (IsViewingMultiplePods())
         {
             return PodLogDisplayMode.PodAndContainer;
         }
@@ -399,6 +386,12 @@ public sealed partial class PodLogsViewModel
         }
 
         return PodLogDisplayMode.None;
+    }
+
+    private bool IsViewingMultiplePods()
+    {
+        return SelectedPodItems.Count > 1
+            || ContainsAllSelection(SelectedPodItems) && AvailablePods.Count > 1;
     }
 
     private static string BuildDisplayPrefix(string podName, string containerName, PodLogDisplayMode displayMode)

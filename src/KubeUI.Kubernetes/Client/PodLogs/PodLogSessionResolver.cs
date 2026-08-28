@@ -27,7 +27,8 @@ public sealed record PodLogSessionResolution(
     string ContainerName,
     IReadOnlyList<V1Pod> RelatedPods,
     bool PodChanged,
-    bool PreviousLogsAvailable);
+    bool PreviousLogsAvailable,
+    IKubernetesObject<V1ObjectMeta>? ParentResource);
 
 /// <summary>
 /// Describes the concrete log request that should be sent to the Kubernetes API.
@@ -120,8 +121,36 @@ public sealed class PodLogSessionResolver : IPodLogSessionResolver
         var resolvedContainerName = ResolveContainerName(currentPod, state.ContainerName);
         var previousLogsAvailable = HasPreviousLogs(currentPod, resolvedContainerName);
         var podChanged = !string.Equals(state.ResourceUid, currentPod.Metadata?.Uid, StringComparison.Ordinal);
+        var scopeResource = state.ResourceKind == V1Pod.KubeKind
+            ? currentPod
+            : FindScopeResource(indexes, state);
+        var parentResource = FindParentResource(indexes, scopeResource);
 
-        return new PodLogSessionResolution(currentPod, resolvedContainerName, relatedPods, podChanged, previousLogsAvailable);
+        return new PodLogSessionResolution(currentPod, resolvedContainerName, relatedPods, podChanged, previousLogsAvailable, parentResource);
+    }
+
+    private static IKubernetesObject<V1ObjectMeta>? FindScopeResource(ResourceIndexes indexes, PodLogSessionState state)
+    {
+        if (!string.IsNullOrWhiteSpace(state.ResourceUid)
+            && indexes.ByUid.TryGetValue(state.ResourceUid, out var resourceByUid))
+        {
+            return resourceByUid.Resource;
+        }
+
+        indexes.ByName.TryGetValue(
+            (state.ResourceNamespace, state.ResourceKind, state.ResourceName),
+            out var resourceByName);
+        return resourceByName?.Resource;
+    }
+
+    private static IKubernetesObject<V1ObjectMeta>? FindParentResource(
+        ResourceIndexes indexes,
+        IKubernetesObject<V1ObjectMeta>? resource)
+    {
+        var ownerReference = GetPreferredOwnerReference(resource?.Metadata?.OwnerReferences);
+        return ownerReference is null
+            ? null
+            : FindResource(indexes, resource?.Namespace(), ownerReference)?.Resource;
     }
 
     private static V1Pod? TryGetCurrentPod(IReadOnlyList<V1Pod> pods, PodLogSessionState state)

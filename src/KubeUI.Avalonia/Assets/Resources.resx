@@ -225,6 +225,14 @@
     <value>Pod Logs</value>
     <comment/>
   </data>
+  <data name="PodLogsView_ResourceTitleFormat" xml:space="preserve">
+    <value>{0} Logs</value>
+    <comment/>
+  </data>
+  <data name="PodLogsView_NamespaceLabel" xml:space="preserve">
+    <value>Namespace:</value>
+    <comment/>
+  </data>
   <data name="PodLogsView_AutoScrollToBottom" xml:space="preserve">
     <value>Auto-scroll to bottom</value>
     <comment/>

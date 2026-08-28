@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.Net;
 using System.Net.Http;
 using System.Text;
@@ -182,7 +183,7 @@ public sealed class PodLogsViewModelTests
             && viewModel.Logs.Text.Contains("sidecar-line", StringComparison.Ordinal), 60000);
 
         viewModel.CanShowResourceNames.ShouldBeTrue();
-        viewModel.ShowResourceNames = true;
+        viewModel.ShowResourceNames.ShouldBeTrue();
         await WaitForAsync(() => viewModel.Logs.Text.Contains("[app] app-line", StringComparison.Ordinal)
             && viewModel.Logs.Text.Contains("[sidecar] sidecar-line", StringComparison.Ordinal), 60000);
         viewModel.ShowResourceNames.ShouldBeTrue();
@@ -584,7 +585,7 @@ public sealed class PodLogsViewModelTests
 
     [AvaloniaTheory, KubernetesBackendData]
     [Trait("Category", "Kind")]
-    public async Task Refresh_should_open_a_container_after_it_changes_from_waiting_to_running(KubernetesBackend backend)
+    public async Task Container_becoming_ready_should_open_logs_without_manual_refresh(KubernetesBackend backend)
     {
         V1Pod waitingPod = CreatePod(
             name: "app-7c9dd9f4f4-abcde",
@@ -672,15 +673,591 @@ public sealed class PodLogsViewModelTests
         await WaitForAsync(() => workspace.Runtime.GetResourceList<V1Pod>().Any(item =>
             item.Name() == runningPod.Name()
             && item.Status?.ContainerStatuses?.FirstOrDefault(status => status.Name == "app")?.State?.Running is not null), 60000);
-        await viewModel.Refresh();
 
         await WaitForAsync(() => viewModel.Logs.Text.Contains("app line", StringComparison.Ordinal), 60000);
         viewModel.Logs.Text.ShouldContain("app line");
     }
 
+    [AvaloniaFact]
+    public async Task Controller_scope_should_connect_when_its_first_pod_appears()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync();
+        await workspace.Runtime.SeedResource<V1Deployment>(true);
+        V1Deployment deployment = CreateKindDeployment("api", "api", "unused");
+        deployment.Metadata!.Uid = "deployment-uid";
+        await workspace.Runtime.AddOrUpdateResource(deployment);
+        RecordingPodLogStreamClient streamClient = new(["first pod line\n"]);
+        using PodLogsViewModel viewModel = CreateViewModel(workspace.Runtime, streamClient);
+        viewModel.Object = deployment;
+        viewModel.SelectedContainerItems = new ObservableCollection<PodLogContainerSelectionItem>(
+        [
+            new PodLogContainerSelectionItem(
+                string.Empty,
+                KubeUI.Avalonia.Assets.Resources.PodLogsView_AllContainers,
+                false,
+                true),
+        ]);
+
+        await viewModel.Connect();
+        viewModel.SessionResolution.ShouldBeNull();
+        streamClient.Requests.ShouldBeEmpty();
+
+        V1Pod pod = CreatePod(
+            "api-pod",
+            "default",
+            "pod-uid",
+            deployment.Uid(),
+            deployment.Name(),
+            V1Deployment.KubeKind,
+            ["app"]);
+        pod.Metadata!.OwnerReferences![0].ApiVersion = "apps/v1";
+        ConfigureRunningContainer(pod, "app", "echo first pod line");
+        await workspace.Runtime.AddOrUpdateResource(pod);
+
+        await WaitForAsync(() => streamClient.Requests.Count == 1);
+        await WaitForAsync(() => viewModel.Logs.Text.Contains("first pod line", StringComparison.Ordinal));
+        viewModel.AvailablePods.Select(item => item.Name()).ShouldBe(["api-pod"]);
+        viewModel.SelectedPodItems.Single().IsAll.ShouldBeTrue();
+    }
+
+    [AvaloniaTheory]
+    [InlineData("status-added")]
+    [InlineData("status-renamed")]
+    [InlineData("restart")]
+    [InlineData("waiting")]
+    [InlineData("terminated")]
+    [InlineData("exit-code")]
+    [InlineData("finished-at")]
+    [InlineData("last-finished-at")]
+    [InlineData("init-restart")]
+    [InlineData("ephemeral-restart")]
+    public async Task Container_log_state_changes_should_reevaluate_the_active_session(string change)
+    {
+        using var workspace = await Application.Current.CreateClusterAsync();
+        await workspace.Runtime.SeedResource<V1Pod>(true);
+        V1Pod pod = CreatePod("api-pod", "default", "pod-uid", containers: ["app"]);
+        pod.Spec!.InitContainers = [new V1Container { Name = "init", Image = "busybox" }];
+        pod.Spec.EphemeralContainers =
+        [
+            new V1EphemeralContainer
+            {
+                Name = "debugger",
+                Image = "busybox",
+                TargetContainerName = "app",
+            },
+        ];
+        ConfigureRunningContainer(pod, "app", "echo line");
+        pod.Status!.InitContainerStatuses =
+        [
+            new V1ContainerStatus
+            {
+                Name = "init",
+                State = new V1ContainerState
+                {
+                    Terminated = new V1ContainerStateTerminated { ExitCode = 0 },
+                },
+            },
+        ];
+        pod.Status.EphemeralContainerStatuses =
+        [
+            new V1ContainerStatus
+            {
+                Name = "debugger",
+                State = new V1ContainerState { Running = new V1ContainerStateRunning() },
+            },
+        ];
+        if (change is "exit-code" or "finished-at" or "last-finished-at")
+        {
+            pod.Status.ContainerStatuses![0].State = new V1ContainerState
+            {
+                Terminated = new V1ContainerStateTerminated
+                {
+                    ExitCode = 0,
+                    FinishedAt = DateTime.Parse(
+                        "2026-01-01T00:00:00Z",
+                        CultureInfo.InvariantCulture,
+                        DateTimeStyles.AdjustToUniversal),
+                },
+            };
+            pod.Status.ContainerStatuses[0].LastState = new V1ContainerState
+            {
+                Terminated = new V1ContainerStateTerminated
+                {
+                    ExitCode = 0,
+                    FinishedAt = DateTime.Parse(
+                        "2025-12-31T23:00:00Z",
+                        CultureInfo.InvariantCulture,
+                        DateTimeStyles.AdjustToUniversal),
+                },
+            };
+        }
+
+        await workspace.Runtime.AddOrUpdateResource(pod);
+        using StatusChangingPodLogStreamClient streamClient = new("initial line\n");
+        using PodLogsViewModel viewModel = CreateViewModel(workspace.Runtime, streamClient);
+        viewModel.Object = pod;
+        viewModel.ContainerName = "app";
+        await viewModel.Connect();
+        await WaitForAsync(() => streamClient.Requests.Count == 1);
+
+        V1Pod updatedPod = KubernetesJson.Deserialize<V1Pod>(
+            KubernetesJson.Serialize(viewModel.SessionResolution!.Pod));
+        updatedPod.Metadata!.Annotations = new Dictionary<string, string>
+        {
+            ["kubeui.test/change"] = change,
+        };
+        V1ContainerStatus appStatus = updatedPod.Status!.ContainerStatuses![0];
+        switch (change)
+        {
+            case "status-added":
+                updatedPod.Status.ContainerStatuses.Add(new V1ContainerStatus
+                {
+                    Name = "other",
+                    State = new V1ContainerState { Waiting = new V1ContainerStateWaiting() },
+                });
+                break;
+            case "status-renamed":
+                appStatus.Name = "renamed";
+                break;
+            case "restart":
+                appStatus.RestartCount++;
+                break;
+            case "waiting":
+                appStatus.State = new V1ContainerState { Waiting = new V1ContainerStateWaiting() };
+                break;
+            case "terminated":
+                appStatus.State = new V1ContainerState
+                {
+                    Terminated = new V1ContainerStateTerminated { ExitCode = 0 },
+                };
+                break;
+            case "exit-code":
+                appStatus.State!.Terminated!.ExitCode = 1;
+                break;
+            case "finished-at":
+                appStatus.State!.Terminated!.FinishedAt = DateTime.Parse(
+                    "2026-01-02T00:00:00Z",
+                    CultureInfo.InvariantCulture,
+                    DateTimeStyles.AdjustToUniversal);
+                break;
+            case "last-finished-at":
+                appStatus.LastState!.Terminated!.FinishedAt = DateTime.Parse(
+                    "2026-01-01T01:00:00Z",
+                    CultureInfo.InvariantCulture,
+                    DateTimeStyles.AdjustToUniversal);
+                break;
+            case "init-restart":
+                updatedPod.Status.InitContainerStatuses![0].RestartCount++;
+                break;
+            case "ephemeral-restart":
+                updatedPod.Status.EphemeralContainerStatuses![0].RestartCount++;
+                break;
+            default:
+                throw new InvalidOperationException($"Unknown container state change '{change}'.");
+        }
+
+        await workspace.Runtime.AddOrUpdateResource(updatedPod);
+
+        await WaitForAsync(() =>
+            viewModel.Object?.Metadata?.Annotations is { } annotations
+            && annotations.TryGetValue("kubeui.test/change", out var appliedChange)
+            && appliedChange == change);
+        viewModel.SessionResolution!.Pod.Metadata!.Annotations!["kubeui.test/change"].ShouldBe(change);
+    }
+
+    [AvaloniaTheory]
+    [InlineData("DaemonSet")]
+    [InlineData("StatefulSet")]
+    [InlineData("Job")]
+    [InlineData("CronJob")]
+    [InlineData("UnknownController")]
+    public async Task Parent_kind_fallback_should_keep_pod_logs_available(string ownerKind)
+    {
+        using var workspace = await Application.Current.CreateClusterAsync();
+        V1Pod pod = CreatePod(
+            "api-pod",
+            "default",
+            "pod-uid",
+            "owner-uid",
+            "owner",
+            ownerKind,
+            ["app"]);
+        pod.Metadata!.OwnerReferences![0].ApiVersion = string.Empty;
+        pod.Metadata.OwnerReferences[0].Controller = ownerKind == "UnknownController" ? false : true;
+        ConfigureRunningContainer(pod, "app", "echo line");
+        IKubernetesObject<V1ObjectMeta>? parent = ownerKind switch
+        {
+            "DaemonSet" => new V1DaemonSet { Metadata = CreateOwnerMetadata() },
+            "StatefulSet" => new V1StatefulSet { Metadata = CreateOwnerMetadata() },
+            "Job" => new V1Job { Metadata = CreateOwnerMetadata() },
+            "CronJob" => new V1CronJob { Metadata = CreateOwnerMetadata() },
+            _ => null,
+        };
+        switch (parent)
+        {
+            case V1DaemonSet daemonSet:
+                await workspace.Runtime.AddOrUpdateResource(daemonSet);
+                break;
+            case V1StatefulSet statefulSet:
+                await workspace.Runtime.AddOrUpdateResource(statefulSet);
+                break;
+            case V1Job job:
+                await workspace.Runtime.AddOrUpdateResource(job);
+                break;
+            case V1CronJob cronJob:
+                await workspace.Runtime.AddOrUpdateResource(cronJob);
+                break;
+        }
+
+        await workspace.Runtime.AddOrUpdateResource(pod);
+        RecordingPodLogStreamClient streamClient = new(["pod line\n"]);
+        using PodLogsViewModel viewModel = CreateViewModel(workspace.Runtime, streamClient);
+        viewModel.Object = pod;
+        viewModel.ContainerName = "app";
+
+        await viewModel.Connect();
+
+        await WaitForAsync(() => streamClient.Requests.Count == 1);
+        viewModel.CanJumpToController.ShouldBe(parent is not null);
+
+        static V1ObjectMeta CreateOwnerMetadata()
+        {
+            return new V1ObjectMeta
+            {
+                Name = "owner",
+                NamespaceProperty = "default",
+                Uid = "owner-uid",
+            };
+        }
+    }
+
+    [AvaloniaTheory]
+    [InlineData("same-uid")]
+    [InlineData("different-uid")]
+    [InlineData("uidless-same")]
+    [InlineData("uidless-name")]
+    [InlineData("uidless-type")]
+    public async Task Parent_identity_changes_should_reevaluate_by_uid_or_resource_coordinates(string change)
+    {
+        using var workspace = await Application.Current.CreateClusterAsync();
+        await workspace.Runtime.SeedResource<V1ReplicaSet>(true);
+        await workspace.Runtime.SeedResource<V1Deployment>(true);
+        var initialUid = change.StartsWith("uidless", StringComparison.Ordinal) ? null : "initial-owner-uid";
+        V1ReplicaSet initialParent = new()
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "initial-parent",
+                NamespaceProperty = "default",
+                Uid = initialUid,
+            },
+        };
+        V1Pod pod = CreatePod(
+            "api-pod",
+            "default",
+            "pod-uid",
+            initialUid,
+            initialParent.Name(),
+            V1ReplicaSet.KubeKind,
+            ["app"]);
+        pod.Metadata!.OwnerReferences =
+        [
+            new V1OwnerReference
+            {
+                ApiVersion = string.Empty,
+                Kind = V1ReplicaSet.KubeKind,
+                Name = initialParent.Name(),
+                Uid = initialUid,
+                Controller = true,
+            },
+        ];
+        ConfigureRunningContainer(pod, "app", "echo line");
+        await workspace.Runtime.AddOrUpdateResource(initialParent);
+        await workspace.Runtime.AddOrUpdateResource(pod);
+        using StatusChangingPodLogStreamClient streamClient = new("initial line\n");
+        using PodLogsViewModel viewModel = CreateViewModel(workspace.Runtime, streamClient);
+        viewModel.Object = pod;
+        viewModel.ContainerName = "app";
+        await viewModel.Connect();
+        await WaitForAsync(() => streamClient.Requests.Count == 1);
+
+        var nextName = change is "different-uid" or "uidless-name" ? "next-parent" : initialParent.Name();
+        var nextUid = change switch
+        {
+            "different-uid" => "next-owner-uid",
+            "same-uid" => initialUid,
+            _ => null,
+        };
+        IKubernetesObject<V1ObjectMeta> nextParent;
+        if (change == "uidless-type")
+        {
+            V1Deployment deployment = new()
+            {
+                Metadata = new V1ObjectMeta
+                {
+                    Name = nextName,
+                    NamespaceProperty = "default",
+                    Annotations = new Dictionary<string, string> { ["kubeui.test/identity"] = change },
+                },
+            };
+            await workspace.Runtime.AddOrUpdateResource(deployment);
+            nextParent = deployment;
+        }
+        else if (nextName == initialParent.Name())
+        {
+            V1ReplicaSet cachedParent = workspace.Runtime.GetResourceList<V1ReplicaSet>()
+                .Single(item => item.Name() == initialParent.Name());
+            V1ReplicaSet replacement = KubernetesJson.Deserialize<V1ReplicaSet>(
+                KubernetesJson.Serialize(cachedParent));
+            replacement.Metadata!.Annotations = new Dictionary<string, string>
+            {
+                ["kubeui.test/identity"] = change,
+            };
+            await workspace.Runtime.AddOrUpdateResource(replacement);
+            replacement = workspace.Runtime.GetResourceList<V1ReplicaSet>()
+                .Single(item => item.Name() == nextName);
+            nextUid = replacement.Uid();
+            nextParent = replacement;
+        }
+        else
+        {
+            V1ReplicaSet replacement = new()
+            {
+                Metadata = new V1ObjectMeta
+                {
+                    Name = nextName,
+                    NamespaceProperty = "default",
+                    Uid = nextUid,
+                    Annotations = new Dictionary<string, string> { ["kubeui.test/identity"] = change },
+                },
+            };
+            await workspace.Runtime.AddOrUpdateResource(replacement);
+            nextParent = replacement;
+        }
+
+        V1Pod updatedPod = KubernetesJson.Deserialize<V1Pod>(
+            KubernetesJson.Serialize(viewModel.SessionResolution!.Pod));
+        updatedPod.Metadata!.Annotations = new Dictionary<string, string>
+        {
+            ["kubeui.test/identity"] = change,
+        };
+        updatedPod.Metadata.OwnerReferences![0].Name = nextName;
+        updatedPod.Metadata.OwnerReferences[0].Uid = nextUid;
+        updatedPod.Metadata.OwnerReferences[0].Kind = nextParent is V1Deployment
+            ? V1Deployment.KubeKind
+            : V1ReplicaSet.KubeKind;
+        updatedPod.Status!.ContainerStatuses![0].RestartCount++;
+        await workspace.Runtime.AddOrUpdateResource(updatedPod);
+
+        await WaitForAsync(() =>
+            viewModel.Object?.Metadata?.Annotations is { } annotations
+            && annotations.TryGetValue("kubeui.test/identity", out var appliedChange)
+            && appliedChange == change);
+        viewModel.SessionResolution!.ParentResource.ShouldNotBeNull();
+        viewModel.SessionResolution.ParentResource.Name().ShouldBe(nextName);
+        viewModel.SessionResolution.ParentResource.GetType().ShouldBe(nextParent.GetType());
+    }
+
+    [AvaloniaFact]
+    public async Task Public_scope_and_selection_edges_should_remain_stable()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync();
+        await workspace.Runtime.SeedResource<V1Pod>(true);
+        V1Pod pod = CreatePod("api-pod", "default", "pod-uid", containers: ["app", "sidecar", "metrics"]);
+        ConfigureRunningContainer(pod, "app", "echo line");
+        pod.Status!.ContainerStatuses!.Add(new V1ContainerStatus
+        {
+            Name = "sidecar",
+            State = new V1ContainerState { Running = new V1ContainerStateRunning() },
+        });
+        pod.Status.ContainerStatuses.Add(new V1ContainerStatus
+        {
+            Name = "metrics",
+            State = new V1ContainerState { Running = new V1ContainerStateRunning() },
+        });
+        await workspace.Runtime.AddOrUpdateResource(pod);
+        using StatusChangingPodLogStreamClient streamClient = new("initial line\n");
+        using PodLogsViewModel viewModel = CreateViewModel(workspace.Runtime, streamClient);
+        viewModel.Object = pod;
+        viewModel.ContainerName = "app";
+        await viewModel.Connect();
+        await WaitForAsync(() => streamClient.Requests.Count == 1);
+
+        viewModel.ShowResourceNames = true;
+        viewModel.ShowResourceNames = true;
+        viewModel.ShowResourceNames.ShouldBeTrue();
+        await viewModel.JumpToControlledByLogs();
+        viewModel.Object.ShouldBeOfType<V1Pod>();
+
+        viewModel.SelectedPodItems = [];
+        viewModel.SelectedContainerItems = [];
+        Dispatcher.UIThread.RunJobs();
+
+        await WaitForAsync(() =>
+            viewModel.SelectedPodItems.Count == 1
+            && viewModel.SelectedPodItems[0].IsAll
+            && viewModel.SelectedContainerItems.Count == 1
+            && viewModel.SelectedContainerItems[0].IsAll);
+
+        PodLogPodSelectionItem podItem = viewModel.PodSelectionItems[1];
+        viewModel.SelectedPodItems.Add(podItem);
+        viewModel.SelectedPodItems.Remove(podItem);
+        PodLogContainerSelectionItem containerItem = viewModel.ContainerSelectionItems[1];
+        viewModel.SelectedContainerItems.Add(containerItem);
+        viewModel.SelectedContainerItems.Remove(containerItem);
+        Dispatcher.UIThread.RunJobs();
+
+        viewModel.SelectedPodItems.ShouldHaveSingleItem().IsAll.ShouldBeTrue();
+        viewModel.SelectedContainerItems.ShouldHaveSingleItem().IsAll.ShouldBeTrue();
+
+        viewModel.SelectedContainerItems =
+            new ObservableCollection<PodLogContainerSelectionItem>([viewModel.ContainerSelectionItems[1]]);
+        viewModel.SelectedContainerItems.Add(viewModel.ContainerSelectionItems[2]);
+        Dispatcher.UIThread.RunJobs();
+        viewModel.SelectedContainerItems.Count.ShouldBe(2);
+        viewModel.SelectedContainerItems.Add(viewModel.ContainerSelectionItems[3]);
+        Dispatcher.UIThread.RunJobs();
+        viewModel.SelectedContainerItems.ShouldHaveSingleItem().IsAll.ShouldBeTrue();
+    }
+
+    [AvaloniaTheory]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    public async Task Stale_container_kind_selection_should_fall_back_to_the_resolved_container(
+        bool isInitContainer,
+        bool isEphemeralContainer)
+    {
+        using var workspace = await Application.Current.CreateClusterAsync();
+        await workspace.Runtime.SeedResource<V1Pod>(true);
+        V1Pod pod = CreatePod("api-pod", "default", "pod-uid", containers: ["app"]);
+        ConfigureRunningContainer(pod, "app", "echo line");
+        await workspace.Runtime.AddOrUpdateResource(pod);
+        RecordingPodLogStreamClient streamClient = new(["line\n"]);
+        using PodLogsViewModel viewModel = CreateViewModel(workspace.Runtime, streamClient);
+        viewModel.Object = pod;
+        viewModel.ContainerName = "app";
+        viewModel.SelectedContainerItems = new ObservableCollection<PodLogContainerSelectionItem>(
+        [
+            new PodLogContainerSelectionItem(
+                "app",
+                "stale app",
+                isInitContainer,
+                false,
+                isEphemeralContainer),
+        ]);
+
+        await viewModel.Connect();
+
+        await WaitForAsync(() => streamClient.Requests.Count == 1);
+        viewModel.SelectedContainerItems.ShouldHaveSingleItem().DisplayName.ShouldBe("app");
+    }
+
+    [AvaloniaFact]
+    public void Scope_titles_should_cover_all_supported_controller_kinds()
+    {
+        IServiceProvider services = Application.Current.GetTestServices();
+        using PodLogsViewModel viewModel = new(
+            services.GetRequiredService<ILogger<PodLogsViewModel>>(),
+            services.GetRequiredService<ISettingsService>(),
+            new NoOpPodLogExportService(),
+            new PodLogSessionResolver(),
+            new RecordingPodLogStreamClient());
+        (IKubernetesObject<V1ObjectMeta>? Resource, string Title)[] cases =
+        [
+            (null, "Pod Logs"),
+            (new V1Pod(), "Pod Logs"),
+            (new V1Deployment(), "Deployment Logs"),
+            (new V1ReplicaSet(), "ReplicaSet Logs"),
+            (new V1DaemonSet(), "DaemonSet Logs"),
+            (new V1StatefulSet(), "StatefulSet Logs"),
+            (new V1Job(), "Job Logs"),
+            (new V1CronJob(), "CronJob Logs"),
+            (new V1ConfigMap { Kind = "CustomWorkload" }, "CustomWorkload Logs"),
+            (null, "Pod Logs"),
+        ];
+
+        foreach (var (resource, expectedTitle) in cases)
+        {
+            viewModel.Object = resource;
+            viewModel.Title.ShouldBe(expectedTitle);
+        }
+    }
+
+    [AvaloniaTheory, KubernetesBackendData]
+    public async Task Optional_parent_load_timeout_should_not_block_pod_logs(KubernetesBackend backend)
+    {
+        V1Pod pod = CreatePod(
+            "api-pod",
+            "default",
+            null,
+            "deployment-uid",
+            "api",
+            V1Deployment.KubeKind,
+            ["app"]);
+        pod.Metadata!.OwnerReferences![0].ApiVersion = "apps/v1";
+        ConfigureRunningContainer(pod, "app", "echo pod line");
+        using var workspace = await Application.Current.CreateClusterAsync(config =>
+        {
+            config.Type = backend;
+            config.HttpHandlerFactory = () => [new FakeParentResourceTimeoutHandler()];
+        });
+        await workspace.Runtime.AddOrUpdateResource(pod);
+        await workspace.Runtime.SeedResource<V1Pod>(true);
+        pod = workspace.Runtime.GetResourceList<V1Pod>().Single(item => item.Name() == pod.Name());
+        RecordingPodLogStreamClient streamClient = new(["pod line\n"]);
+        using PodLogsViewModel viewModel = CreateViewModel(workspace.Runtime, streamClient);
+        viewModel.Object = pod;
+        viewModel.ContainerName = "app";
+        viewModel.SelectedContainerItems = new ObservableCollection<PodLogContainerSelectionItem>(
+            [new PodLogContainerSelectionItem("app", "app", false, false)]);
+
+        await viewModel.Connect();
+
+        await WaitForAsync(() => streamClient.Requests.Count == 1);
+        await WaitForAsync(() => viewModel.Logs.Text.Contains("pod line", StringComparison.Ordinal));
+        viewModel.ConnectionError.ShouldBeNull();
+    }
+
+    [AvaloniaFact]
+    public async Task Dispose_during_parent_loading_should_prevent_current_and_queued_connections()
+    {
+        TaskCompletionSource parentRequestStarted =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var workspace = await Application.Current.CreateClusterAsync(config =>
+        {
+            config.HttpHandlerFactory = () => [new FakeParentResourceTimeoutHandler(parentRequestStarted)];
+        });
+        V1Pod pod = CreatePod(
+            "api-pod",
+            "default",
+            null,
+            "deployment-uid",
+            "api",
+            V1Deployment.KubeKind,
+            ["app"]);
+        pod.Metadata!.OwnerReferences![0].ApiVersion = "apps/v1";
+        ConfigureRunningContainer(pod, "app", "echo pod line");
+        await workspace.Runtime.AddOrUpdateResource(pod);
+        await workspace.Runtime.SeedResource<V1Pod>(true);
+        pod = workspace.Runtime.GetResourceList<V1Pod>().Single(item => item.Name() == pod.Name());
+        RecordingPodLogStreamClient streamClient = new(["unexpected\n"]);
+        PodLogsViewModel viewModel = CreateViewModel(workspace.Runtime, streamClient);
+        viewModel.Object = pod;
+        viewModel.ContainerName = "app";
+
+        Task firstConnect = viewModel.Connect();
+        await parentRequestStarted.Task;
+        Task queuedConnect = viewModel.Connect();
+        viewModel.Dispose();
+        await Task.WhenAll(firstConnect, queuedConnect);
+
+        viewModel.IsConnected.ShouldBeFalse();
+        streamClient.Requests.ShouldBeEmpty();
+    }
+
     [AvaloniaTheory, KubernetesBackendData]
     [Trait("Category", "Kind")]
-    public async Task Show_resource_names_should_toggle_rendered_prefixes(KubernetesBackend backend)
+    public async Task Multiple_pod_logs_should_enable_resource_names_and_allow_toggling_rendered_prefixes(KubernetesBackend backend)
     {
         const string deploymentName = "show-resource-names-deployment";
         const string appLabel = "show-resource-names-deployment";
@@ -770,12 +1347,8 @@ public sealed class PodLogsViewModelTests
         await viewModel.Connect();
 
         await WaitForAsync(() => viewModel.Logs.Text.Contains("newer app line", StringComparison.Ordinal));
-        viewModel.ShowResourceNames.ShouldBeFalse();
-        viewModel.Logs.Text.ShouldContain("newer app line");
-        viewModel.Logs.Text.ShouldNotContain("[app-7c9dd9f4f4-fghij/app] newer app line");
-
-        viewModel.ShowResourceNames = true;
-        await WaitForAsync(() => viewModel.Logs.Text.Contains("[app-7c9dd9f4f4-fghij/app] newer app line", StringComparison.Ordinal));
+        viewModel.CanShowResourceNames.ShouldBeTrue();
+        viewModel.ShowResourceNames.ShouldBeTrue();
         viewModel.Logs.Text.ShouldContain("[app-7c9dd9f4f4-fghij/app] newer app line");
         viewModel.Logs.Text.ShouldContain("[app-7c9dd9f4f4-abcde/sidecar] older sidecar line");
 
@@ -783,6 +1356,10 @@ public sealed class PodLogsViewModelTests
         await WaitForAsync(() => !viewModel.Logs.Text.Contains("[app-7c9dd9f4f4-fghij/app]", StringComparison.Ordinal));
         viewModel.Logs.Text.ShouldContain("newer app line");
         viewModel.Logs.Text.ShouldNotContain("[app-7c9dd9f4f4-fghij/app] newer app line");
+
+        await viewModel.Refresh();
+
+        viewModel.ShowResourceNames.ShouldBeFalse();
     }
 
     [AvaloniaTheory, KubernetesBackendData]
@@ -1987,17 +2564,309 @@ public sealed class PodLogsViewModelTests
 
         await viewModel.Connect();
         await WaitForAsync(() => viewModel.Logs.Text.Contains("older app line", StringComparison.Ordinal), timeoutMs: 60000);
+        viewModel.Title.ShouldBe(KubeUI.Avalonia.Assets.Resources.PodLogsView_Title);
+        viewModel.IsPodScope.ShouldBeTrue();
+        viewModel.IsControllerScope.ShouldBeFalse();
+        viewModel.ScopeResourceName.ShouldBe(olderPod.Name());
+        viewModel.CanJumpToController.ShouldBeTrue();
 
         await viewModel.JumpToControlledByLogs();
 
         await WaitForAsync(() => viewModel.Logs.Text.Contains("[app-7c9dd9f4f4-fghij/app] newer app line", StringComparison.Ordinal)
             && viewModel.Logs.Text.Contains("[app-7c9dd9f4f4-abcde/app] older app line", StringComparison.Ordinal), timeoutMs: 60000);
 
+        viewModel.Object.ShouldBeOfType<V1Deployment>().Name().ShouldBe(deploymentName);
+        viewModel.Title.ShouldBe("Deployment Logs");
+        viewModel.IsPodScope.ShouldBeFalse();
+        viewModel.IsControllerScope.ShouldBeTrue();
+        viewModel.SelectedPodItems.Count.ShouldBe(1);
+        viewModel.SelectedPodItems[0].IsAll.ShouldBeTrue();
         viewModel.SelectedContainerItems.Count.ShouldBe(1);
-        viewModel.SelectedContainerItems[0].Name.ShouldBe("app");
+        viewModel.SelectedContainerItems[0].IsAll.ShouldBeTrue();
         viewModel.CanShowResourceNames.ShouldBeTrue();
+        viewModel.CanJumpToController.ShouldBeFalse();
         viewModel.Logs.Text.ShouldContain("[app-7c9dd9f4f4-fghij/app] newer app line");
         viewModel.Logs.Text.ShouldContain("[app-7c9dd9f4f4-abcde/app] older app line");
+    }
+
+    [AvaloniaFact]
+    public async Task JumpToControlledByLogs_should_navigate_pod_to_replica_set_to_deployment()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync();
+        await workspace.Runtime.SeedResource<V1Deployment>(true);
+        await workspace.Runtime.SeedResource<V1ReplicaSet>(true);
+        await workspace.Runtime.SeedResource<V1Pod>(true);
+        V1Deployment deployment = CreateKindDeployment("api", "api", "unused");
+        deployment.Metadata!.Uid = "deployment-uid";
+        V1ReplicaSet replicaSet = CreateOwnedReplicaSet("api-rs", "replicaset-uid", deployment);
+        replicaSet.Metadata!.OwnerReferences![0].ApiVersion = "apps/v1";
+        V1Pod pod = CreatePod(
+            "api-pod",
+            "default",
+            "pod-uid",
+            replicaSet.Uid(),
+            replicaSet.Name(),
+            V1ReplicaSet.KubeKind,
+            ["app"]);
+        pod.Metadata!.OwnerReferences![0].ApiVersion = "apps/v1";
+        ConfigureRunningContainer(pod, "app", "echo line");
+        await workspace.Runtime.AddOrUpdateResource(deployment);
+        await workspace.Runtime.AddOrUpdateResource(replicaSet);
+        await workspace.Runtime.AddOrUpdateResource(pod);
+
+        using PodLogsViewModel viewModel = CreateViewModel(
+            workspace.Runtime,
+            new RecordingPodLogStreamClient());
+        viewModel.Object = pod;
+        viewModel.ContainerName = "app";
+        viewModel.SelectedContainerItems = new ObservableCollection<PodLogContainerSelectionItem>(
+        [
+            new PodLogContainerSelectionItem(
+                string.Empty,
+                KubeUI.Avalonia.Assets.Resources.PodLogsView_AllContainers,
+                false,
+                true),
+        ]);
+
+        await viewModel.Connect();
+        viewModel.Title.ShouldBe("Pod Logs");
+        viewModel.CanJumpToController.ShouldBeTrue();
+
+        await viewModel.JumpToControlledByLogs();
+        viewModel.Object.ShouldBeOfType<V1ReplicaSet>().Name().ShouldBe("api-rs");
+        viewModel.Title.ShouldBe("ReplicaSet Logs");
+        viewModel.SelectedPodItems.Single().IsAll.ShouldBeTrue();
+        viewModel.SelectedContainerItems.Single().IsAll.ShouldBeTrue();
+        viewModel.CanJumpToController.ShouldBeTrue();
+
+        await viewModel.JumpToControlledByLogs();
+        viewModel.Object.ShouldBeOfType<V1Deployment>().Name().ShouldBe("api");
+        viewModel.Title.ShouldBe("Deployment Logs");
+        viewModel.SelectedPodItems.Single().IsAll.ShouldBeTrue();
+        viewModel.SelectedContainerItems.Single().IsAll.ShouldBeTrue();
+        viewModel.CanJumpToController.ShouldBeFalse();
+    }
+
+    [AvaloniaFact]
+    public async Task JumpToControlledByLogs_should_navigate_from_a_stateful_set_to_a_custom_controller()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync();
+        V1StatefulSet statefulSet = new()
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "prometheus-kube-prometheus-alertmanager",
+                NamespaceProperty = "monitoring",
+                Uid = "statefulset-uid",
+                OwnerReferences =
+                [
+                    new V1OwnerReference
+                    {
+                        ApiVersion = "monitoring.coreos.com/v1",
+                        Kind = "Alertmanager",
+                        Name = "kube-prometheus-alertmanager",
+                        Uid = "alertmanager-uid",
+                        Controller = true,
+                    },
+                ],
+            },
+        };
+        V1ConfigMap dynamicallyLoadedParent = new()
+        {
+            Kind = "Alertmanager",
+            Metadata = new V1ObjectMeta
+            {
+                Name = "kube-prometheus-alertmanager",
+                NamespaceProperty = "monitoring",
+                Uid = "alertmanager-uid",
+            },
+        };
+
+        using PodLogsViewModel viewModel = CreateViewModel(
+            workspace.Runtime,
+            new RecordingPodLogStreamClient());
+        viewModel.SetScope(statefulSet, V1StatefulSet.KubeKind);
+        viewModel.SessionResolution = new PodLogSessionResolution(
+            new V1Pod(),
+            string.Empty,
+            [],
+            false,
+            false,
+            dynamicallyLoadedParent);
+
+        viewModel.CanJumpToController.ShouldBeTrue();
+        await viewModel.JumpToControlledByLogs();
+
+        viewModel.Object.ShouldBeSameAs(dynamicallyLoadedParent);
+        viewModel.Title.ShouldBe("Alertmanager Logs");
+    }
+
+    [AvaloniaFact]
+    public async Task JumpToControlledByLogs_should_navigate_pod_to_job_to_cron_job()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync();
+        await workspace.Runtime.SeedResource<V1CronJob>(true);
+        await workspace.Runtime.SeedResource<V1Job>(true);
+        await workspace.Runtime.SeedResource<V1Pod>(true);
+        V1CronJob cronJob = new()
+        {
+            ApiVersion = "batch/v1",
+            Kind = V1CronJob.KubeKind,
+            Metadata = new V1ObjectMeta
+            {
+                Name = "backup",
+                NamespaceProperty = "default",
+                Uid = "cronjob-uid",
+            },
+        };
+        V1Job job = new()
+        {
+            ApiVersion = "batch/v1",
+            Kind = V1Job.KubeKind,
+            Metadata = new V1ObjectMeta
+            {
+                Name = "backup-job",
+                NamespaceProperty = "default",
+                Uid = "job-uid",
+                OwnerReferences =
+                [
+                    new V1OwnerReference
+                    {
+                        ApiVersion = "batch/v1",
+                        Kind = V1CronJob.KubeKind,
+                        Name = cronJob.Name(),
+                        Uid = cronJob.Uid(),
+                        Controller = true,
+                    },
+                ],
+            },
+        };
+        V1Pod pod = CreatePod(
+            "backup-pod",
+            "default",
+            "pod-uid",
+            job.Uid(),
+            job.Name(),
+            V1Job.KubeKind,
+            ["backup"]);
+        pod.Metadata!.OwnerReferences![0].ApiVersion = "batch/v1";
+        ConfigureRunningContainer(pod, "backup", "echo line");
+        await workspace.Runtime.AddOrUpdateResource(cronJob);
+        await workspace.Runtime.AddOrUpdateResource(job);
+        await workspace.Runtime.AddOrUpdateResource(pod);
+
+        using PodLogsViewModel viewModel = CreateViewModel(
+            workspace.Runtime,
+            new RecordingPodLogStreamClient());
+        viewModel.Object = pod;
+        viewModel.ContainerName = "backup";
+        viewModel.SelectedContainerItems = new ObservableCollection<PodLogContainerSelectionItem>(
+        [
+            new PodLogContainerSelectionItem(
+                string.Empty,
+                KubeUI.Avalonia.Assets.Resources.PodLogsView_AllContainers,
+                false,
+                true),
+        ]);
+
+        await viewModel.Connect();
+        await viewModel.JumpToControlledByLogs();
+
+        viewModel.Object.ShouldBeOfType<V1Job>().Name().ShouldBe("backup-job");
+        viewModel.Title.ShouldBe("Job Logs");
+        viewModel.CanJumpToController.ShouldBeTrue();
+
+        await viewModel.JumpToControlledByLogs();
+
+        viewModel.Object.ShouldBeOfType<V1CronJob>().Name().ShouldBe("backup");
+        viewModel.Title.ShouldBe("CronJob Logs");
+        viewModel.SelectedPodItems.Single().IsAll.ShouldBeTrue();
+        viewModel.SelectedContainerItems.Single().IsAll.ShouldBeTrue();
+        viewModel.CanJumpToController.ShouldBeFalse();
+    }
+
+    [AvaloniaFact]
+    public async Task Parent_resource_changes_should_update_controller_navigation_without_pod_changes()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync();
+        await workspace.Runtime.SeedResource<V1Pod>(true);
+        V1Pod pod = CreatePod(
+            "api-pod",
+            "default",
+            "pod-uid",
+            "replicaset-uid",
+            "api-rs",
+            V1ReplicaSet.KubeKind,
+            ["app"]);
+        pod.Metadata!.OwnerReferences![0].ApiVersion = "apps/v1";
+        ConfigureRunningContainer(pod, "app", "echo line");
+        await workspace.Runtime.AddOrUpdateResource(pod);
+        using PodLogsViewModel viewModel = CreateViewModel(
+            workspace.Runtime,
+            new RecordingPodLogStreamClient());
+        viewModel.Object = pod;
+        viewModel.ContainerName = "app";
+
+        await viewModel.Connect();
+        viewModel.CanJumpToController.ShouldBeFalse();
+
+        V1ReplicaSet replicaSet = new()
+        {
+            ApiVersion = "apps/v1",
+            Kind = V1ReplicaSet.KubeKind,
+            Metadata = new V1ObjectMeta
+            {
+                Name = "api-rs",
+                NamespaceProperty = "default",
+                Uid = "replicaset-uid",
+            },
+        };
+        await workspace.Runtime.AddOrUpdateResource(replicaSet);
+
+        await WaitForAsync(() => viewModel.CanJumpToController);
+        viewModel.SessionResolution!.ParentResource.ShouldBeOfType<V1ReplicaSet>().Name().ShouldBe("api-rs");
+    }
+
+    [AvaloniaFact]
+    public async Task JumpToControlledByLogs_should_clear_old_scope_output_when_parent_has_no_readable_targets()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync();
+        await workspace.Runtime.SeedResource<V1Deployment>(true);
+        await workspace.Runtime.SeedResource<V1Pod>(true);
+        V1Deployment deployment = CreateKindDeployment("api", "api", "unused");
+        deployment.Metadata!.Uid = "deployment-uid";
+        V1Pod pod = CreatePod(
+            "api-pod",
+            "default",
+            "pod-uid",
+            deployment.Uid(),
+            deployment.Name(),
+            V1Deployment.KubeKind,
+            ["app"]);
+        pod.Metadata!.OwnerReferences![0].ApiVersion = "apps/v1";
+        ConfigureRunningContainer(pod, "app", "echo line");
+        await workspace.Runtime.AddOrUpdateResource(deployment);
+        await workspace.Runtime.AddOrUpdateResource(pod);
+        using PodLogsViewModel viewModel = CreateViewModel(
+            workspace.Runtime,
+            new RecordingPodLogStreamClient());
+        viewModel.Object = pod;
+        viewModel.ContainerName = "app";
+
+        await viewModel.Connect();
+        pod.Status!.ContainerStatuses![0].State = new V1ContainerState
+        {
+            Waiting = new V1ContainerStateWaiting { Reason = "Pending" },
+        };
+        await workspace.Runtime.AddOrUpdateResource(pod);
+        await WaitForAsync(() => !viewModel.IsConnected);
+        viewModel.Logs.Text = "old pod scope output";
+
+        await viewModel.JumpToControlledByLogs();
+
+        viewModel.Title.ShouldBe("Deployment Logs");
+        viewModel.Logs.Text.ShouldBeEmpty();
+        viewModel.IsConnected.ShouldBeFalse();
     }
 
     [AvaloniaFact]
@@ -3160,6 +4029,25 @@ public sealed class PodLogsViewModelTests
             var payload = _payloads.Count > 0 ? _payloads.Dequeue() : string.Empty;
             var bytes = Encoding.UTF8.GetBytes(payload.ReplaceLineEndings("\n"));
             return Task.FromResult<Stream>(new MemoryStream(bytes));
+        }
+    }
+
+    private sealed class FakeParentResourceTimeoutHandler(
+        TaskCompletionSource? requestStarted = null) : DelegatingHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request,
+            CancellationToken cancellationToken)
+        {
+            if (request.Method == HttpMethod.Get
+                && request.RequestUri?.AbsolutePath.EndsWith("/apis/apps/v1/deployments", StringComparison.Ordinal) == true)
+            {
+                requestStarted?.TrySetResult();
+                return Task.FromException<HttpResponseMessage>(
+                    new TaskCanceledException("The optional parent resource request timed out."));
+            }
+
+            return base.SendAsync(request, cancellationToken);
         }
     }
 

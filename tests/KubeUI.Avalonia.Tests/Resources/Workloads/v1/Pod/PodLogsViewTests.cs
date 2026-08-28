@@ -2,7 +2,9 @@ using System.Collections.ObjectModel;
 using System.Text;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Headless.XUnit;
+using Avalonia.Media;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Avalonia.Xaml.Interactivity;
@@ -20,11 +22,302 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Shouldly;
 using System.Reflection;
+using Ursa.Controls;
 
 namespace KubeUI.Avalonia.Tests.Resources.Workloads.v1.Pod;
 
 public sealed class PodLogsViewTests
 {
+    [AvaloniaFact]
+    public async Task scope_switch_updates_pod_name_selector_and_controller_button()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync();
+        IServiceProvider services = Application.Current.GetTestServices();
+        V1Pod pod = CreatePod();
+        V1ReplicaSet replicaSet = new()
+        {
+            Metadata = new V1ObjectMeta { Name = "app-rs", NamespaceProperty = "default" },
+        };
+        V1Deployment deployment = new()
+        {
+            Metadata = new V1ObjectMeta { Name = "app", NamespaceProperty = "default" },
+        };
+        using PodLogsViewModel viewModel = new(
+            services.GetRequiredService<ILogger<PodLogsViewModel>>(),
+            services.GetRequiredService<ISettingsService>(),
+            new NoOpPodLogExportService(),
+            new PodLogSessionResolver(),
+            new NoOpPodLogStreamClient())
+        {
+            Cluster = workspace.Runtime,
+            Object = pod,
+            ContainerName = "app",
+            SessionResolution = new PodLogSessionResolution(
+                pod,
+                "app",
+                [pod],
+                false,
+                false,
+                replicaSet),
+        };
+        PodLogsView view = new()
+        {
+            DataContext = viewModel,
+        };
+        Window window = new()
+        {
+            Content = view,
+            Width = 800,
+            Height = 300,
+        };
+
+        window.Show();
+        try
+        {
+            Dispatcher.UIThread.RunJobs();
+            MultiComboBox[] selectors = view.GetVisualDescendants().OfType<MultiComboBox>().ToArray();
+            Control podSelector = selectors[0];
+            StackPanel selectionControls = podSelector.Parent.ShouldBeOfType<StackPanel>();
+            Grid logControlsBar = selectionControls.Parent.ShouldBeOfType<Grid>();
+            Grid topBar = logControlsBar.Parent.ShouldBeOfType<Grid>();
+            selectionControls.Children
+                .OfType<Label>()
+                .ShouldBeEmpty();
+            StackPanel actionControls = logControlsBar.Children
+                .OfType<StackPanel>()
+                .Single(panel => Grid.GetColumn(panel) == 1);
+            actionControls.Children
+                .OfType<TemplatedControl>()
+                .Select(control => ToolTip.GetTip(control))
+                .ShouldBe(
+                [
+                    KubeUI.Avalonia.Assets.Resources.PodLogsView_Clear,
+                    KubeUI.Avalonia.Assets.Resources.PodLogsView_Download,
+                    KubeUI.Avalonia.Assets.Resources.PodLogsView_JumpToPresent,
+                    KubeUI.Avalonia.Assets.Resources.PodLogsView_Controller,
+                    KubeUI.Avalonia.Assets.Resources.PodLogsView_Previous,
+                    KubeUI.Avalonia.Assets.Resources.PodLogsView_Timestamps,
+                    KubeUI.Avalonia.Assets.Resources.PodLogsView_ShowResourceNames,
+                    KubeUI.Avalonia.Assets.Resources.PodLogsView_WordWrap,
+                ]);
+            StackPanel scopeIdentityBar = topBar.Children
+                .OfType<StackPanel>()
+                .Single(panel => Grid.GetRow(panel) == 0);
+            TextBlock scopeHeading = scopeIdentityBar.Children.OfType<TextBlock>().Single();
+            Border namespaceChip = scopeIdentityBar.Children.OfType<Border>().Single();
+            TextBlock namespaceName = namespaceChip.Child.ShouldBeOfType<TextBlock>();
+            Control controllerButton = view.GetVisualDescendants()
+                .OfType<Button>()
+                .Single(button => ReferenceEquals(button.Command, viewModel.JumpToControlledByLogsCommand));
+            scopeHeading.Text.ShouldBe(pod.Name());
+            scopeHeading.FontWeight.ShouldBe(FontWeight.SemiBold);
+            namespaceChip.IsVisible.ShouldBeTrue();
+            namespaceName.Text.ShouldBe("default");
+            Grid.GetRow(scopeIdentityBar).ShouldBe(0);
+            Grid.GetRow(logControlsBar).ShouldBe(1);
+            podSelector.IsVisible.ShouldBeFalse();
+            controllerButton.IsVisible.ShouldBeTrue();
+            viewModel.Title.ShouldBe("Pod Logs");
+
+            viewModel.Object = deployment;
+            viewModel.SessionResolution = new PodLogSessionResolution(
+                pod,
+                "app",
+                [pod],
+                true,
+                false,
+                null);
+            Dispatcher.UIThread.RunJobs();
+
+            scopeHeading.Text.ShouldBe(deployment.Name());
+            viewModel.Title.ShouldBe("Deployment Logs");
+            namespaceChip.IsVisible.ShouldBeTrue();
+            namespaceName.Text.ShouldBe("default");
+            podSelector.IsVisible.ShouldBeTrue();
+            controllerButton.IsVisible.ShouldBeFalse();
+            viewModel.Title.ShouldBe("Deployment Logs");
+
+            deployment.Metadata.NamespaceProperty = null;
+            viewModel.Object = null;
+            viewModel.Object = deployment;
+            Dispatcher.UIThread.RunJobs();
+
+            namespaceChip.IsVisible.ShouldBeFalse();
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task resource_name_toggle_is_selected_when_multiple_pods_are_viewed()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync();
+        IServiceProvider services = Application.Current.GetTestServices();
+        using PodLogsViewModel viewModel = new(
+            services.GetRequiredService<ILogger<PodLogsViewModel>>(),
+            services.GetRequiredService<ISettingsService>(),
+            new NoOpPodLogExportService(),
+            new PodLogSessionResolver(),
+            new NoOpPodLogStreamClient())
+        {
+            Cluster = workspace.Runtime,
+            Object = CreatePod(),
+            ContainerName = "app",
+        };
+
+        viewModel.PodSelectionItems = CreatePodSelectionItems(2);
+        viewModel.AvailablePods = viewModel.PodSelectionItems.Skip(1).Select(item => item.Pod!).ToArray();
+        viewModel.SelectedPodItems = new ObservableCollection<PodLogPodSelectionItem>([viewModel.PodSelectionItems[0]]);
+
+        PodLogsView view = new()
+        {
+            DataContext = viewModel,
+        };
+        Window window = new()
+        {
+            Content = view,
+            Width = 800,
+            Height = 300,
+        };
+
+        window.Show();
+        try
+        {
+            Dispatcher.UIThread.RunJobs();
+
+            ToggleButton toggle = view.GetVisualDescendants()
+                .OfType<ToggleButton>()
+                .Single(control => Equals(ToolTip.GetTip(control), KubeUI.Avalonia.Assets.Resources.PodLogsView_ShowResourceNames));
+            viewModel.ShowResourceNames.ShouldBeTrue();
+            toggle.IsEnabled.ShouldBeTrue();
+            toggle.IsChecked.ShouldBe(true);
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task resource_name_toggle_is_selected_when_all_containers_are_viewed()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync();
+        IServiceProvider services = Application.Current.GetTestServices();
+        using PodLogsViewModel viewModel = new(
+            services.GetRequiredService<ILogger<PodLogsViewModel>>(),
+            services.GetRequiredService<ISettingsService>(),
+            new NoOpPodLogExportService(),
+            new PodLogSessionResolver(),
+            new NoOpPodLogStreamClient())
+        {
+            Cluster = workspace.Runtime,
+            Object = CreatePod(),
+            ContainerName = "app",
+            AvailableContainers =
+            [
+                new PodLogContainerOption("app", "app", false),
+                new PodLogContainerOption("sidecar", "sidecar", false),
+                new PodLogContainerOption("metrics", "metrics", false),
+            ],
+            ContainerSelectionItems =
+            [
+                new PodLogContainerSelectionItem(string.Empty, "All Containers", false, true),
+                new PodLogContainerSelectionItem("app", "app", false, false),
+                new PodLogContainerSelectionItem("sidecar", "sidecar", false, false),
+                new PodLogContainerSelectionItem("metrics", "metrics", false, false),
+            ],
+        };
+
+        viewModel.SelectedContainerItems = new ObservableCollection<PodLogContainerSelectionItem>(
+            [viewModel.ContainerSelectionItems[0]]);
+
+        PodLogsView view = new()
+        {
+            DataContext = viewModel,
+        };
+        Window window = new()
+        {
+            Content = view,
+            Width = 800,
+            Height = 300,
+        };
+
+        window.Show();
+        try
+        {
+            Dispatcher.UIThread.RunJobs();
+
+            ToggleButton toggle = view.GetVisualDescendants()
+                .OfType<ToggleButton>()
+                .Single(control => Equals(ToolTip.GetTip(control), KubeUI.Avalonia.Assets.Resources.PodLogsView_ShowResourceNames));
+            viewModel.ShowResourceNames.ShouldBeTrue();
+            toggle.IsEnabled.ShouldBeTrue();
+            toggle.IsChecked.ShouldBe(true);
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task jump_to_present_button_is_only_visible_when_logs_are_not_at_the_bottom()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync();
+        IServiceProvider services = Application.Current.GetTestServices();
+        using PodLogsViewModel viewModel = new(
+            services.GetRequiredService<ILogger<PodLogsViewModel>>(),
+            services.GetRequiredService<ISettingsService>(),
+            new NoOpPodLogExportService(),
+            new PodLogSessionResolver(),
+            new NoOpPodLogStreamClient())
+        {
+            Cluster = workspace.Runtime,
+            Object = CreatePod(),
+            ContainerName = "app",
+            ScrollOffset = new Vector(0, 100000),
+            Logs = new AvaloniaEdit.Document.TextDocument(CreateManyLines(300)),
+        };
+        PodLogsView view = new()
+        {
+            DataContext = viewModel,
+        };
+        Window window = new()
+        {
+            Content = view,
+            Width = 800,
+            Height = 300,
+        };
+
+        window.Show();
+        try
+        {
+            Dispatcher.UIThread.RunJobs();
+            Button jumpToPresentButton = view.GetVisualDescendants()
+                .OfType<Button>()
+                .Single(button => ReferenceEquals(button.Command, viewModel.JumpToPresentCommand));
+            TextEditor editor = view.GetVisualDescendants().OfType<TextEditor>().Single();
+            ScrollViewer scrollViewer = await WaitForScrollViewerAsync(editor);
+            await WaitForAsync(() => scrollViewer.Offset.Y >= scrollViewer.ScrollBarMaximum.Y - 1.0);
+            jumpToPresentButton.IsVisible.ShouldBeFalse();
+
+            await Dispatcher.UIThread.InvokeAsync(() => scrollViewer.Offset = new Vector(scrollViewer.Offset.X, 80));
+            await WaitForAsync(() => !viewModel.AutoScrollToBottom && jumpToPresentButton.IsVisible);
+
+            viewModel.JumpToPresent();
+            await WaitForAsync(
+                () => viewModel.AutoScrollToBottom
+                    && !jumpToPresentButton.IsVisible
+                    && scrollViewer.Offset.Y >= scrollViewer.ScrollBarMaximum.Y - 1.0);
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
     [AvaloniaFact]
     public async Task view_installs_the_avaloniaedit_search_panel_and_behavior()
     {
@@ -128,6 +421,42 @@ public sealed class PodLogsViewTests
     }
 
     [AvaloniaFact]
+    public void editor_behavior_detaches_cleanly_after_scroll_state_changes()
+    {
+        TextEditor editor = new();
+        PodLogsEditorBehavior behavior = new();
+        var behaviors = Interaction.GetBehaviors(editor);
+        behaviors.Add(behavior);
+        Window window = new()
+        {
+            Content = editor,
+            Width = 800,
+            Height = 600,
+        };
+
+        try
+        {
+            window.Show();
+            Dispatcher.UIThread.RunJobs();
+            behavior.AutoScrollToBottom = false;
+            behavior.AutoScrollToBottom = false;
+            behavior.ScrollOffset = new Vector(8, 16);
+            behavior.JumpToPresentRequested = true;
+            Dispatcher.UIThread.RunJobs();
+
+            behaviors.Remove(behavior).ShouldBeTrue();
+
+            behavior.JumpToPresentRequested.ShouldBeFalse();
+            behavior.ScrollOffset.ShouldBe(default);
+            behavior.AutoScrollToBottom.ShouldBeTrue();
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    [AvaloniaFact]
     public async Task selected_pods_and_containers_do_not_increase_the_toolbar_height()
     {
         using var workspace = await Application.Current.CreateClusterAsync();
@@ -177,11 +506,13 @@ public sealed class PodLogsViewTests
         {
             Dispatcher.UIThread.RunJobs();
 
-            Control topBar = view.FindControl<Control>("TopBar") ?? throw new InvalidOperationException("Top bar was not found.");
-            Control podSelector = view.FindControl<Control>("PodSelectionComboBox") ?? throw new InvalidOperationException("Pod selector was not found.");
-            Control containerSelector = view.FindControl<Control>("ContainerSelectionComboBox") ?? throw new InvalidOperationException("Container selector was not found.");
+            MultiComboBox[] selectors = view.GetVisualDescendants().OfType<MultiComboBox>().ToArray();
+            Control podSelector = selectors[0];
+            Control containerSelector = selectors[1];
+            Control topBar = podSelector.Parent?.Parent?.Parent.ShouldBeOfType<Grid>();
 
-            topBar.Bounds.Height.ShouldBeLessThanOrEqualTo(32);
+            topBar.Bounds.Height.ShouldBeLessThanOrEqualTo(64);
+            podSelector.Width.ShouldBe(containerSelector.Width);
             podSelector.Bounds.Height.ShouldBeLessThanOrEqualTo(32);
             containerSelector.Bounds.Height.ShouldBeLessThanOrEqualTo(32);
         }

@@ -1,10 +1,12 @@
 using System.Collections.ObjectModel;
 using System.Collections.Concurrent;
+using System.Globalization;
 using System.IO;
 using System.Reactive.Linq;
 using AvaloniaEdit.Document;
 using Dock.Model.Core;
 using k8s;
+using k8s.Autorest;
 using k8s.Models;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Resources.Workloads.v1.Pod.Services;
@@ -41,12 +43,16 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
     private PodLogSelectionNormalization _pendingContainerSelectionNormalization;
     private bool _pendingReconnect;
     private bool _preserveOutputOnNextConnect;
-    private int _streamEndedReconnectPending;
+    private bool _clearOutputBeforeNextConnect;
     private int _streamEndedReconnectAttempts;
     private int _activeReaderCount;
     private int _outputGeneration;
+    private PodLogDisplayMode _resourceNameDisplayMode;
+    private bool _awaitingReadableTargets;
     private IDisposable? _resourceChangesSubscription;
     private IClusterRuntime? _subscribedCluster;
+    private bool _isSettingScope;
+    private string? _scopeResourceKind;
 
     public PodLogsViewModel(
         ILogger<PodLogsViewModel> logger,
@@ -66,6 +72,20 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
     }
 
     public ISettingsService SettingsService { get; }
+
+    public string ScopeResourceName => Object?.Name() ?? string.Empty;
+
+    public string ScopeNamespace => Object?.Namespace() ?? string.Empty;
+
+    public bool HasScopeNamespace => !string.IsNullOrWhiteSpace(ScopeNamespace);
+
+    public string ScopeResourceKind => GetScopeResourceKind();
+
+    public bool IsPodScope => string.Equals(ScopeResourceKind, V1Pod.KubeKind, StringComparison.Ordinal);
+
+    public bool IsControllerScope => Object is not null && !IsPodScope;
+
+    public bool CanJumpToController => SessionResolution?.ParentResource is not null;
 
     [ObservableProperty]
     public partial IClusterRuntime Cluster { get; set; }
@@ -105,6 +125,9 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
 
     [ObservableProperty]
     public partial bool AutoScrollToBottom { get; set; } = true;
+
+    /// <summary>Gets whether the user can jump from an older scroll position to the newest log output.</summary>
+    public bool CanJumpToPresent => !AutoScrollToBottom;
 
     [ObservableProperty]
     public partial bool WordWrap { get; set; }
@@ -176,26 +199,59 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
 
             var preserveOutput = _preserveOutputOnNextConnect;
             _preserveOutputOnNextConnect = false;
+            var clearOutputBeforeResolve = _clearOutputBeforeNextConnect;
+            _clearOutputBeforeNextConnect = false;
             if (!preserveOutput)
             {
                 _streamEndedReconnectAttempts = 0;
             }
             ResetConnection();
+            if (clearOutputBeforeResolve)
+            {
+                ClearOutput();
+            }
 
             IsConnecting = true;
             ConnectionError = null;
 
+            IKubernetesObject<V1ObjectMeta> scopeResource =
+                Object ?? throw new InvalidOperationException("The pod log view model is not initialized.");
+            await PodLogResourceLoader.EnsureScopeResourcesAsync(
+                Cluster,
+                scopeResource);
+            try
+            {
+                await PodLogResourceLoader
+                    .EnsureParentResourceAsync(Cluster, scopeResource)
+                    .WaitAsync(TimeSpan.FromSeconds(2));
+            }
+            catch (Exception ex) when (ex is HttpOperationException
+                or HttpRequestException
+                or TaskCanceledException
+                or TimeoutException)
+            {
+                LogUnableToLoadParentResource(ex, scopeResource.Namespace(), scopeResource.Name());
+            }
+
+            if (_disposed)
+            {
+                return;
+            }
+
             var state = _sessionResolver.CreateState(
-                Object ?? throw new InvalidOperationException("The pod log view model is not initialized."),
+                scopeResource,
                 ContainerName,
                 Previous,
                 Timestamps,
                 DefaultTailLines);
+            SessionState = state;
+            _hasLoadedSession = true;
+            EnsureResourceChangeSubscription();
 
             var resolution = _sessionResolver.TryResolve(Cluster, state);
             if (resolution is null)
             {
-                SessionState = state;
+                _awaitingReadableTargets = true;
                 SessionResolution = null;
                 if (Object is V1Pod unresolvedPod)
                 {
@@ -230,7 +286,10 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
                 AvailablePods = resolution.RelatedPods;
                 AvailableContainers = BuildContainerOptions(resolution.RelatedPods);
                 PodSelectionItems = BuildPodSelectionItems(resolution.RelatedPods);
-                ObservableCollection<PodLogPodSelectionItem> selectedPodItems = BuildSelectedPodItems(resolution.Pod, PodSelectionItems);
+                ObservableCollection<PodLogPodSelectionItem> selectedPodItems =
+                    Object is not V1Pod && SelectedPodItems.Count == 0
+                        ? new ObservableCollection<PodLogPodSelectionItem>([PodSelectionItems[0]])
+                        : BuildSelectedPodItems(resolution.Pod, PodSelectionItems);
                 if (previousResolution is not null
                     && Object is not V1Pod
                     && !ContainsAllSelection(SelectedPodItems)
@@ -262,10 +321,12 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
             var options = BuildReadTargets(state, resolution);
             if (options.Count == 0)
             {
+                _awaitingReadableTargets = true;
                 return;
             }
 
-            if (!preserveOutput)
+            _awaitingReadableTargets = false;
+            if (!preserveOutput && !clearOutputBeforeResolve)
             {
                 ClearOutput();
             }
@@ -274,10 +335,8 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
             _connectionCts = connectionCts;
 
             IsConnected = true;
-            _hasLoadedSession = true;
             _activeReaderCount = options.Count;
             _readerCounts[connectionCts] = options.Count;
-            EnsureResourceChangeSubscription();
 
             for (var i = 0; i < options.Count; i++)
             {
@@ -384,7 +443,8 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
     [RelayCommand]
     public Task JumpToControlledByLogs()
     {
-        if (SessionResolution?.RelatedPods.Count is not > 1 || Object is not V1Pod)
+        IKubernetesObject<V1ObjectMeta>? parentResource = SessionResolution?.ParentResource;
+        if (parentResource is null)
         {
             return Task.CompletedTask;
         }
@@ -392,7 +452,20 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
         _isApplyingSession = true;
         try
         {
-            SelectAllPods();
+            SetScope(parentResource, parentResource.Kind);
+            ContainerName = string.Empty;
+            ReplaceSelectedPodItems([]);
+            ReplaceSelectedContainerItems(
+            [
+                new PodLogContainerSelectionItem(
+                    string.Empty,
+                    Assets.Resources.PodLogsView_AllContainers,
+                    false,
+                    true),
+            ]);
+            _preserveOutputOnNextConnect = false;
+            _pendingReconnect = false;
+            _clearOutputBeforeNextConnect = true;
         }
         finally
         {
@@ -436,14 +509,14 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
         RequestReconnect();
     }
 
+    partial void OnAutoScrollToBottomChanged(bool value)
+    {
+        OnPropertyChanged(nameof(CanJumpToPresent));
+    }
+
     partial void OnSelectedPodItemsChanged(ObservableCollection<PodLogPodSelectionItem> value)
     {
         value.CollectionChanged += SelectedPodItemsOnCollectionChanged;
-        if (_isApplyingSession)
-        {
-            return;
-        }
-
         if (SelectedPodItems.Count == 0)
         {
             QueueNormalizeSelectedPodItems(PodLogSelectionNormalization.SelectAll);
@@ -456,11 +529,6 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
     partial void OnSelectedContainerItemsChanged(ObservableCollection<PodLogContainerSelectionItem> value)
     {
         value.CollectionChanged += SelectedContainerItemsOnCollectionChanged;
-        if (_isApplyingSession)
-        {
-            return;
-        }
-
         if (SelectedContainerItems.Count == 0)
         {
             QueueNormalizeSelectedContainerItems(PodLogSelectionNormalization.SelectAll);
@@ -472,6 +540,12 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
 
     partial void OnObjectChanged(IKubernetesObject<V1ObjectMeta>? value)
     {
+        if (!_isSettingScope)
+        {
+            _scopeResourceKind = null;
+        }
+
+        UpdateScopePresentation();
         if (_isApplyingSession)
         {
             return;
@@ -479,6 +553,11 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
 
         UpdateResourceNameToggleState();
         RequestReconnect();
+    }
+
+    partial void OnSessionResolutionChanged(PodLogSessionResolution? value)
+    {
+        OnPropertyChanged(nameof(CanJumpToController));
     }
 
     partial void OnContainerNameChanged(string value)
@@ -517,6 +596,75 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
         _ = Connect();
     }
 
+    private void UpdateScopePresentation()
+    {
+        OnPropertyChanged(nameof(ScopeResourceName));
+        OnPropertyChanged(nameof(ScopeNamespace));
+        OnPropertyChanged(nameof(HasScopeNamespace));
+        OnPropertyChanged(nameof(ScopeResourceKind));
+        OnPropertyChanged(nameof(IsPodScope));
+        OnPropertyChanged(nameof(IsControllerScope));
+        var resourceKind = ScopeResourceKind;
+        Title = Object is null || IsPodScope
+            ? Assets.Resources.PodLogsView_Title
+            : string.Format(
+                CultureInfo.CurrentCulture,
+                Assets.Resources.PodLogsView_ResourceTitleFormat,
+                resourceKind);
+    }
+
+    internal void SetScope(IKubernetesObject<V1ObjectMeta> resource, string? resourceKind)
+    {
+        _scopeResourceKind = GetKnownResourceKind(resource)
+            ?? (string.IsNullOrWhiteSpace(resourceKind) ? resource.Kind : resourceKind);
+        _isSettingScope = true;
+        try
+        {
+            Object = resource;
+        }
+        finally
+        {
+            _isSettingScope = false;
+        }
+
+        UpdateScopePresentation();
+    }
+
+    private string GetScopeResourceKind()
+    {
+        if (!string.IsNullOrWhiteSpace(_scopeResourceKind))
+        {
+            return _scopeResourceKind;
+        }
+
+        return GetKnownResourceKind(Object)
+            ?? Object?.Kind
+            ?? string.Empty;
+    }
+
+    private static string? GetKnownResourceKind(IKubernetesObject<V1ObjectMeta>? resource)
+    {
+        return resource switch
+        {
+            V1Pod => V1Pod.KubeKind,
+            V1Deployment => V1Deployment.KubeKind,
+            V1ReplicaSet => V1ReplicaSet.KubeKind,
+            V1DaemonSet => V1DaemonSet.KubeKind,
+            V1StatefulSet => V1StatefulSet.KubeKind,
+            V1Job => V1Job.KubeKind,
+            V1CronJob => V1CronJob.KubeKind,
+            _ => null,
+        };
+    }
+
+    [LoggerMessage(
+        Level = LogLevel.Warning,
+        Message = "Unable to load the parent resource for {ResourceNamespace}/{ResourceName}; pod logs remain available.")]
+    private partial void LogUnableToLoadParentResource(
+        Exception exception,
+        string? resourceNamespace,
+        string? resourceName);
+
     private void EnsureResourceChangeSubscription()
     {
         if (ReferenceEquals(_subscribedCluster, Cluster))
@@ -533,7 +681,7 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
 
     private void QueueResourceReevaluation()
     {
-        if (_disposed || SessionState is null || SessionResolution is null)
+        if (_disposed || IsConnecting || SessionState is null)
         {
             return;
         }
@@ -541,47 +689,21 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
         Dispatcher.UIThread.Post(
             () =>
             {
-                if (_disposed || SessionState is null || SessionResolution is null)
+                if (_disposed || SessionState is null)
                 {
                     return;
                 }
 
                 PodLogSessionResolution? resolution = _sessionResolver.TryResolve(Cluster, SessionState);
-                if (resolution is not null && HasLogTopologyChanged(SessionResolution, resolution))
+                if (resolution is not null
+                    && (SessionResolution is null
+                        || _awaitingReadableTargets && !IsTerminalPod(resolution.Pod)
+                        || PodLogTopologyComparer.HasChanged(SessionResolution, resolution)))
                 {
-                    RequestReconnect(preserveOutput: true);
+                    RequestReconnect(preserveOutput: SessionResolution is not null);
                 }
             },
             DispatcherPriority.ApplicationIdle);
-    }
-
-    private static bool HasLogTopologyChanged(PodLogSessionResolution current, PodLogSessionResolution next)
-    {
-        if (!string.Equals(current.Pod.Metadata?.Uid, next.Pod.Metadata?.Uid, StringComparison.Ordinal)
-            || current.RelatedPods.Count != next.RelatedPods.Count)
-        {
-            return true;
-        }
-
-        for (var i = 0; i < current.RelatedPods.Count; i++)
-        {
-            V1Pod currentPod = current.RelatedPods[i];
-            V1Pod nextPod = next.RelatedPods[i];
-            if (!string.Equals(currentPod.Metadata?.Uid, nextPod.Metadata?.Uid, StringComparison.Ordinal)
-                || !GetContainerNames(currentPod).SequenceEqual(GetContainerNames(nextPod), StringComparer.Ordinal))
-            {
-                return true;
-            }
-        }
-
-        return !string.Equals(current.ContainerName, next.ContainerName, StringComparison.Ordinal);
-    }
-
-    private static IEnumerable<string?> GetContainerNames(V1Pod pod)
-    {
-        return (pod.Spec?.Containers ?? []).Select(container => container.Name)
-            .Concat((pod.Spec?.InitContainers ?? []).Select(container => container.Name))
-            .Concat((pod.Spec?.EphemeralContainers ?? []).Select(container => container.Name));
     }
 
     private void ResetConnection()
@@ -616,7 +738,6 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
         }
 
         _activeReaderCount = 0;
-        _streamEndedReconnectPending = 0;
         IsConnected = false;
     }
 

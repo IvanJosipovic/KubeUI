@@ -92,11 +92,6 @@ public sealed class PodLogsEditorBehavior : Behavior<TextEditor>, IDeclarativeVi
     {
         base.OnAttached();
 
-        if (AssociatedObject is null)
-        {
-            return;
-        }
-
         _registryOptions = new RegistryOptions(GetThemeName());
         EnsureTextMateInstallation();
         SearchPanel.Install(AssociatedObject);
@@ -248,7 +243,7 @@ public sealed class PodLogsEditorBehavior : Behavior<TextEditor>, IDeclarativeVi
         try
         {
             _scrollViewer.Offset = targetOffset;
-            _isStuckToBottom = IsAtBottom(_scrollViewer);
+            SynchronizePinnedState(_scrollViewer);
             if (_scrollViewer.Offset == targetOffset)
             {
                 _pendingRestoreOffset = null;
@@ -279,7 +274,7 @@ public sealed class PodLogsEditorBehavior : Behavior<TextEditor>, IDeclarativeVi
         }
 
         ScrollOffset = new Vector(_scrollViewer.Offset.X, _scrollViewer.Offset.Y);
-        _isStuckToBottom = IsAtBottom(_scrollViewer);
+        SynchronizePinnedState(_scrollViewer);
     }
 
     private void AttachScrollViewer()
@@ -322,7 +317,7 @@ public sealed class PodLogsEditorBehavior : Behavior<TextEditor>, IDeclarativeVi
             return;
         }
 
-        _isStuckToBottom = IsAtBottom(scrollViewer);
+        SynchronizePinnedState(scrollViewer);
         PersistScrollOffset();
     }
 
@@ -379,6 +374,12 @@ public sealed class PodLogsEditorBehavior : Behavior<TextEditor>, IDeclarativeVi
     {
         const double threshold = 1.0;
         return scrollViewer.ScrollBarMaximum.Y - scrollViewer.Offset.Y <= threshold;
+    }
+
+    private void SynchronizePinnedState(ScrollViewer scrollViewer)
+    {
+        _isStuckToBottom = IsAtBottom(scrollViewer);
+        AutoScrollToBottom = _isStuckToBottom;
     }
 
     private static ThemeName GetThemeName()

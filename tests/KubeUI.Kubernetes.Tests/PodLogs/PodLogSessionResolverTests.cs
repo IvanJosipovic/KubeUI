@@ -52,6 +52,56 @@ public sealed class PodLogSessionResolverTests
         resolution.ShouldNotBeNull();
         resolution!.Pod.Name().ShouldBe("api-7c9dd9f4f4-abcde");
         resolution.RelatedPods.Select(x => x.Name()).ShouldBe(["api-7c9dd9f4f4-abcde"]);
+        resolution.ParentResource.ShouldBeNull();
+    }
+
+    [Fact]
+    public async Task Resolution_exposes_the_immediate_parent_one_level_at_a_time()
+    {
+        await using var harness = await new TestClusterGenerator().CreateAsync(
+            new TestClusterConfig { Type = KubernetesBackend.Fake },
+            TestContext.Current.CancellationToken);
+        V1Deployment deployment = new()
+        {
+            Metadata = Metadata("api", "deployment-uid"),
+        };
+        V1ReplicaSet replicaSet = new()
+        {
+            Metadata = Metadata(
+                "api-rs",
+                "replicaset-uid",
+                new V1OwnerReference
+                {
+                    Kind = V1Deployment.KubeKind,
+                    Name = deployment.Name(),
+                    Uid = deployment.Uid(),
+                    Controller = true,
+                }),
+        };
+        V1Pod pod = CreatePod(
+            "api-pod",
+            "pod-uid",
+            new V1OwnerReference
+            {
+                Kind = V1ReplicaSet.KubeKind,
+                Name = replicaSet.Name(),
+                Uid = replicaSet.Uid(),
+                Controller = true,
+            });
+        AddResources(harness.Cluster, deployment, replicaSet, pod);
+        PodLogSessionResolver resolver = new();
+
+        PodLogSessionResolution? podResolution = resolver.TryResolve(
+            harness.Cluster,
+            resolver.CreateState(pod, "app", false, false));
+        PodLogSessionResolution? replicaSetResolution = resolver.TryResolve(
+            harness.Cluster,
+            resolver.CreateState(replicaSet, "app", false, false));
+
+        podResolution.ShouldNotBeNull();
+        podResolution.ParentResource.ShouldBeSameAs(replicaSet);
+        replicaSetResolution.ShouldNotBeNull();
+        replicaSetResolution.ParentResource.ShouldBeSameAs(deployment);
     }
 
     [Fact]
@@ -94,9 +144,15 @@ public sealed class PodLogSessionResolverTests
         var state = resolver.CreateState(cronJob, string.Empty, false, false);
 
         var resolution = resolver.TryResolve(harness.Cluster, state);
+        PodLogSessionResolution? jobResolution = resolver.TryResolve(
+            harness.Cluster,
+            resolver.CreateState(job, string.Empty, false, false));
 
         resolution.ShouldNotBeNull();
         resolution!.Pod.Name().ShouldBe("backup-123-pod");
+        resolution.ParentResource.ShouldBeNull();
+        jobResolution.ShouldNotBeNull();
+        jobResolution.ParentResource.ShouldBeSameAs(cronJob);
     }
 
     [Fact]

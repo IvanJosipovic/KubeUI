@@ -23,4 +23,9 @@ public sealed class AvaloniaPlatformServices : IPlatformServices
     {
         return GetRequiredTopLevel().StorageProvider.OpenFolderPickerAsync(options);
     }
+
+    public Task<IStorageFile?> SaveFilePickerAsync(FilePickerSaveOptions options)
+    {
+        return GetRequiredTopLevel().StorageProvider.SaveFilePickerAsync(options);
+    }
 }

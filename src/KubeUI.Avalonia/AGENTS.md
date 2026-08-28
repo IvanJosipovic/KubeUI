@@ -77,6 +77,8 @@ References:
 - Unit-test ViewModels and UI-facing services.
 - UI tests should validate navigation flows, docking, and editor behaviors.
 - Pod log tests must cover connect, disposal/disconnect races, transient HTTP open/read failures, pod add/remove, terminal failure, and container restart behavior.
+- Pod log views must enable resource-name prefixes by default when logs from multiple pods or containers are displayed.
+- Launching logs from a workload must seed pods and any intermediate owner resources required to resolve its descendant pods.
 
 ## 9) Code conventions
 

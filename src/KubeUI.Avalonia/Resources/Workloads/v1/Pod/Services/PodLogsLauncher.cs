@@ -19,12 +19,13 @@ public sealed class PodLogsLauncher(
     {
         var viewModel = serviceProvider.GetRequiredService<PodLogsViewModel>();
         viewModel.Cluster = cluster.Runtime;
-        viewModel.Object = resource;
+        viewModel.SetScope(resource, resourceKind);
+        var scopeResourceKind = viewModel.ScopeResourceKind;
         viewModel.ContainerName = string.Empty;
         viewModel.SelectedContainerItems = new ObservableCollection<PodLogContainerSelectionItem>([
             new PodLogContainerSelectionItem(string.Empty, Assets.Resources.PodLogsView_AllContainers, false, true),
         ]);
-        viewModel.Id = $"{nameof(PodLogsViewModel)}-{cluster.Runtime.Name}-{resourceKind}-{resource.Namespace()}-{resource.Name()}-all";
+        viewModel.Id = $"{nameof(PodLogsViewModel)}-{cluster.Runtime.Name}-{scopeResourceKind}-{resource.Namespace()}-{resource.Name()}-all";
 
         if (!factory.AddToBottom(viewModel))
         {
@@ -38,7 +39,9 @@ public sealed class PodLogsLauncher(
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error viewing logs for {Kind} {Namespace}/{Name}", resourceKind, resource.Namespace(), resource.Name());
+            logger.LogError(ex, "Error viewing logs for {Kind} {Namespace}/{Name}", scopeResourceKind, resource.Namespace(), resource.Name());
+            viewModel.ConnectionError = ex.Message;
         }
     }
+
 }

@@ -5,12 +5,11 @@ using KubeUI.Avalonia.Infrastructure.Platform;
 
 namespace KubeUI.Avalonia.Resources.Workloads.v1.Pod.Services;
 
-public sealed class PodLogExportService : IPodLogExportService
+public sealed class PodLogExportService(IPlatformServices platformServices) : IPodLogExportService
 {
     public async Task ExportAsync(string suggestedFileName, string content, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        var topLevel = TopLevelAccessor.GetRequired();
         FilePickerSaveOptions options = new()
         {
             Title = global::KubeUI.Avalonia.Assets.Resources.PodLogsView_Download,
@@ -24,7 +23,7 @@ public sealed class PodLogExportService : IPodLogExportService
             ],
         };
 
-        var file = await topLevel.StorageProvider.SaveFilePickerAsync(options);
+        var file = await platformServices.SaveFilePickerAsync(options);
         cancellationToken.ThrowIfCancellationRequested();
         if (file is null)
         {

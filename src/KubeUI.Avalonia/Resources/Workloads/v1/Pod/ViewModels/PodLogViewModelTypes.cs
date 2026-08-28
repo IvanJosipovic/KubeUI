@@ -1,5 +1,6 @@
 using System.IO;
 using System.Text;
+using k8s;
 using k8s.Models;
 
 namespace KubeUI.Avalonia.Resources.Workloads.v1.Pod.ViewModels;
@@ -46,9 +47,9 @@ internal static class PodLogFileNameExtensions
         return builder.ToString();
     }
 
-    internal static V1OwnerReference? GetControllerReference(V1Pod pod)
+    internal static V1OwnerReference? GetControllerReference(IKubernetesObject<V1ObjectMeta> resource)
     {
-        var ownerReferences = pod.Metadata?.OwnerReferences;
+        var ownerReferences = resource.Metadata?.OwnerReferences;
         if (ownerReferences is null)
         {
             return null;

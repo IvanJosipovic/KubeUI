@@ -16,7 +16,7 @@ public sealed partial class PodLogsViewModel
         for (var i = 0; i < pods.Count; i++)
         {
             var pod = pods[i];
-            var containers = ResolveSelectedContainers(pod, state.ContainerName);
+            var containers = ResolveSelectedContainers(pod);
 
             for (var j = 0; j < containers.Count; j++)
             {
@@ -162,11 +162,6 @@ public sealed partial class PodLogsViewModel
         Func<TItem?> findFallbackItem)
         where TItem : class
     {
-        if (selectionItems.Count == 0)
-        {
-            return [];
-        }
-
         if (currentSelection.Count == 0)
         {
             return CreateSelection(findFallbackItem() ?? selectionItems[0]);
@@ -209,11 +204,6 @@ public sealed partial class PodLogsViewModel
             }
         }
 
-        if (selectedNames.Count == 0)
-        {
-            return [fallbackPod];
-        }
-
         List<V1Pod> selectedPods = [];
         for (var i = 0; i < availablePods.Count; i++)
         {
@@ -227,7 +217,7 @@ public sealed partial class PodLogsViewModel
         return selectedPods.Count > 0 ? selectedPods : [fallbackPod];
     }
 
-    private IReadOnlyList<PodLogContainerOption> ResolveSelectedContainers(V1Pod pod, string fallbackContainerName)
+    private IReadOnlyList<PodLogContainerOption> ResolveSelectedContainers(V1Pod pod)
     {
         List<PodLogContainerOption> availableContainers = [.. BuildContainerOptions(pod)];
         if (SelectedContainerItems.Count == 0 || ContainsAllSelection(SelectedContainerItems))
@@ -245,11 +235,6 @@ public sealed partial class PodLogsViewModel
             }
         }
 
-        if (selectedKeys.Count == 0)
-        {
-            return ResolveFallbackContainers(pod, fallbackContainerName);
-        }
-
         List<PodLogContainerOption> selectedContainers = [];
         for (var i = 0; i < availableContainers.Count; i++)
         {
@@ -261,21 +246,6 @@ public sealed partial class PodLogsViewModel
         }
 
         return selectedContainers;
-    }
-
-    private static IReadOnlyList<PodLogContainerOption> ResolveFallbackContainers(V1Pod pod, string fallbackContainerName)
-    {
-        var resolvedContainerName = ResolveContainerName(pod, fallbackContainerName);
-        List<PodLogContainerOption> containers = [.. BuildContainerOptions(pod)];
-        for (var i = 0; i < containers.Count; i++)
-        {
-            if (string.Equals(containers[i].Name, resolvedContainerName, StringComparison.Ordinal))
-            {
-                return [containers[i]];
-            }
-        }
-
-        return containers.Count > 0 ? [containers[0]] : [];
     }
 
     private static PodLogPodSelectionItem? FindPodSelectionItem(IReadOnlyList<PodLogPodSelectionItem> items, string podName)
@@ -322,82 +292,6 @@ public sealed partial class PodLogsViewModel
             }
 
             return item;
-        }
-
-        return null;
-    }
-
-    private static string ResolveContainerName(V1Pod pod, string requestedContainerName)
-    {
-        var containerName = FindContainerName(pod.Spec?.Containers, requestedContainerName);
-        if (!string.IsNullOrWhiteSpace(containerName))
-        {
-            return containerName;
-        }
-
-        containerName = FindContainerName(pod.Spec?.InitContainers, requestedContainerName);
-        if (!string.IsNullOrWhiteSpace(containerName))
-        {
-            return containerName;
-        }
-
-        containerName = FindEphemeralContainerName(pod.Spec?.EphemeralContainers, requestedContainerName);
-        if (!string.IsNullOrWhiteSpace(containerName))
-        {
-            return containerName;
-        }
-
-        if (pod.Spec?.Containers is { Count: > 0 })
-        {
-            return pod.Spec.Containers[0].Name;
-        }
-
-        if (pod.Spec?.InitContainers is { Count: > 0 })
-        {
-            return pod.Spec.InitContainers[0].Name;
-        }
-
-        if (pod.Spec?.EphemeralContainers is { Count: > 0 })
-        {
-            return pod.Spec.EphemeralContainers[0].Name;
-        }
-
-        return requestedContainerName;
-    }
-
-    private static string? FindContainerName(IList<V1Container>? containers, string requestedContainerName)
-    {
-        if (containers is null || containers.Count == 0)
-        {
-            return null;
-        }
-
-        for (var i = 0; i < containers.Count; i++)
-        {
-            var container = containers[i];
-            if (string.Equals(container.Name, requestedContainerName, StringComparison.Ordinal))
-            {
-                return container.Name;
-            }
-        }
-
-        return null;
-    }
-
-    private static string? FindEphemeralContainerName(IList<V1EphemeralContainer>? containers, string requestedContainerName)
-    {
-        if (containers is null || containers.Count == 0)
-        {
-            return null;
-        }
-
-        for (var i = 0; i < containers.Count; i++)
-        {
-            var container = containers[i];
-            if (string.Equals(container.Name, requestedContainerName, StringComparison.Ordinal))
-            {
-                return container.Name;
-            }
         }
 
         return null;
@@ -548,26 +442,6 @@ public sealed partial class PodLogsViewModel
         RequestReconnect();
     }
 
-    private void SelectAllPods()
-    {
-        if (PodSelectionItems.Count == 0)
-        {
-            return;
-        }
-
-        _isNormalizingPodSelection = true;
-        try
-        {
-            SelectAllPodItem();
-        }
-        finally
-        {
-            _isNormalizingPodSelection = false;
-        }
-
-        UpdateResourceNameToggleState();
-    }
-
     private PodLogSelectionNormalization GetPodSelectionNormalization(NotifyCollectionChangedEventArgs e)
     {
         if (SelectedPodItems.Count == 0)
@@ -656,7 +530,18 @@ public sealed partial class PodLogsViewModel
 
     private void UpdateResourceNameToggleState()
     {
+        var displayMode = GetCurrentDisplayMode();
         OnPropertyChanged(nameof(CanShowResourceNames));
+        if (displayMode != PodLogDisplayMode.None
+            && displayMode != _resourceNameDisplayMode
+            && !ShowResourceNames)
+        {
+            _resourceNameDisplayMode = displayMode;
+            ShowResourceNames = true;
+            return;
+        }
+
+        _resourceNameDisplayMode = displayMode;
         if (ShowResourceNames)
         {
             RenderOutputEntries();
@@ -735,6 +620,7 @@ public sealed partial class PodLogsViewModel
         {
             SelectedPodItems.Add(PodSelectionItems[0]);
         }
+
     }
 
     private void NormalizeSelectedContainerItems()
@@ -783,6 +669,7 @@ public sealed partial class PodLogsViewModel
         {
             SelectedContainerItems.Add(ContainerSelectionItems[0]);
         }
+
     }
 
     private void ReplaceSelectedPodItems(IEnumerable<PodLogPodSelectionItem> items)
