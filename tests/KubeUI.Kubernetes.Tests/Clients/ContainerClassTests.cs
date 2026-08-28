@@ -48,7 +48,7 @@ public sealed class ContainerClassTests
 
         container.Items.AddOrUpdate(existing);
 
-        var exception = Record.Exception(() => container.Remove(deleted));
+        var exception = Record.Exception(() => container.Items.Remove(deleted));
 
         exception.ShouldBeNull();
         container.Items.Items.ShouldBeEmpty();

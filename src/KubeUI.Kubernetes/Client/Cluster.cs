@@ -412,7 +412,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
                         container.Items.AddOrUpdate(generic);
                         break;
                     case WatchEventType.Deleted:
-                        container.Remove(generic);
+                        container.Items.Remove(generic);
                         break;
                 }
 
@@ -474,24 +474,19 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
             var kind = GroupApiVersionKind.From<T>();
             ResourceInformerCallbackGuard.Execute(_logger, eventType, kind, item, () =>
             {
-                if (!Objects.TryGetValue(kind, out var objectContainer)
-                    || objectContainer is not ContainerClass<T> container)
-                {
-                    return;
-                }
-
+                var items = GetResourceSourceCache<T>();
                 switch (eventType)
                 {
                     case WatchEventType.Added:
-                        container.Items.AddOrUpdate(item);
+                        items.AddOrUpdate(item);
                         RegisterCustomResourceDefinition(item as V1CustomResourceDefinition);
                         break;
                     case WatchEventType.Modified:
-                        container.Items.AddOrUpdate(item);
+                        items.AddOrUpdate(item);
                         RegisterCustomResourceDefinition(item as V1CustomResourceDefinition);
                         break;
                     case WatchEventType.Deleted:
-                        container.Remove(item);
+                        items.Remove(item);
                         if (item is V1CustomResourceDefinition crd2)
                         {
                             RemoveCustomResourceDefinitionArtifacts(crd2);
@@ -1056,8 +1051,6 @@ public partial class ContainerClass<T> : ObservableObject, IClearableResourceCon
     public bool IsSeeded => InformerCount > 0;
 
     public ISourceCache<T, ResourceCacheKey> Items { get; } = new SourceCache<T, ResourceCacheKey>(ResourceCacheKey.From);
-
-    public void Remove(T resource) => Items.Remove(resource);
 
     public IObservable<ResourceChange> ConnectChanges(GroupApiVersionKind kind)
     {
