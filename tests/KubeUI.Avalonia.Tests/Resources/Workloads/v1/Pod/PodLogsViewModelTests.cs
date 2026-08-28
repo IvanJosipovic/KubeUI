@@ -2022,6 +2022,230 @@ public sealed class PodLogsViewModelTests
         viewModel.PreviousLogsAvailable.ShouldBeFalse();
     }
 
+    [AvaloniaFact]
+    public async Task Connect_without_an_object_should_report_the_initialization_error()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync();
+        RecordingPodLogStreamClient streamClient = new();
+        using PodLogsViewModel viewModel = CreateViewModel(workspace.Runtime, streamClient);
+
+        await viewModel.Connect();
+
+        viewModel.IsConnecting.ShouldBeFalse();
+        viewModel.IsConnected.ShouldBeFalse();
+        viewModel.ConnectionError.ShouldBe("The pod log view model is not initialized.");
+        streamClient.Requests.ShouldBeEmpty();
+    }
+
+    [AvaloniaFact]
+    public async Task Open_failure_should_disconnect_and_render_the_error()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync();
+        V1Pod pod = CreatePod("app", "default", "pod-uid", containers: ["app"]);
+        await workspace.Runtime.AddOrUpdateResource(pod);
+        await workspace.Runtime.SeedResource<V1Pod>(true);
+        ThrowingPodLogStreamClient streamClient = new(new InvalidOperationException("log endpoint unavailable"));
+        using PodLogsViewModel viewModel = CreateViewModel(workspace.Runtime, streamClient);
+        viewModel.Object = pod;
+        viewModel.ContainerName = "app";
+
+        await viewModel.Connect();
+        await WaitForAsync(() => viewModel.Logs.Text.Contains("log endpoint unavailable", StringComparison.Ordinal));
+
+        viewModel.IsConnecting.ShouldBeFalse();
+        viewModel.IsConnected.ShouldBeFalse();
+        viewModel.ConnectionError.ShouldBe("log endpoint unavailable");
+        streamClient.Requests.Count.ShouldBe(1);
+    }
+
+    [AvaloniaFact]
+    public async Task Http_open_failure_should_reconnect_and_stream_logs()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync();
+        V1Pod pod = CreatePod("app", "default", "pod-uid", containers: ["app"]);
+        pod.Status!.Phase = "Running";
+        await workspace.Runtime.AddOrUpdateResource(pod);
+        await workspace.Runtime.SeedResource<V1Pod>(true);
+        RecoveringOpenPodLogStreamClient streamClient = new();
+        using PodLogsViewModel viewModel = CreateViewModel(workspace.Runtime, streamClient);
+        viewModel.Object = pod;
+        viewModel.ContainerName = "app";
+
+        await viewModel.Connect();
+        await WaitForAsync(() => streamClient.Requests.Count == 2
+            && viewModel.Logs.Text.Contains("reconnected", StringComparison.Ordinal), timeoutMs: 5000);
+
+        viewModel.ConnectionError.ShouldBeNull();
+        viewModel.Logs.Text.ShouldContain("reconnected");
+    }
+
+    [AvaloniaFact]
+    public async Task Read_failure_should_disconnect_and_report_the_error()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync();
+        V1Pod pod = CreatePod("app", "default", "pod-uid", containers: ["app"]);
+        await workspace.Runtime.AddOrUpdateResource(pod);
+        await workspace.Runtime.SeedResource<V1Pod>(true);
+        ThrowingReadPodLogStreamClient streamClient = new();
+        using PodLogsViewModel viewModel = CreateViewModel(workspace.Runtime, streamClient);
+        viewModel.Object = pod;
+        viewModel.ContainerName = "app";
+
+        await viewModel.Connect();
+        await WaitForAsync(() => viewModel.ConnectionError == "stream read failed");
+
+        viewModel.IsConnected.ShouldBeFalse();
+        viewModel.Logs.Text.ShouldBeEmpty();
+        streamClient.Requests.Count.ShouldBe(1);
+    }
+
+    [AvaloniaFact]
+    public async Task Http_stream_disconnect_should_reconnect_and_continue_without_duplicate_lines()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync();
+        V1Pod pod = CreatePod("app", "default", "pod-uid", containers: ["app"]);
+        pod.Status!.Phase = "Running";
+        await workspace.Runtime.AddOrUpdateResource(pod);
+        await workspace.Runtime.SeedResource<V1Pod>(true);
+        DisconnectingPodLogStreamClient streamClient = new();
+        using PodLogsViewModel viewModel = CreateViewModel(workspace.Runtime, streamClient);
+        viewModel.Object = pod;
+        viewModel.ContainerName = "app";
+
+        await viewModel.Connect();
+        await WaitForAsync(() => streamClient.Requests.Count == 2
+            && viewModel.Logs.Text.Contains("after reconnect", StringComparison.Ordinal), timeoutMs: 5000);
+
+        CountOccurrences(viewModel.Logs.Text, "before disconnect").ShouldBe(1);
+        viewModel.Logs.Text.ShouldContain("after reconnect");
+        viewModel.ConnectionError.ShouldBeNull();
+    }
+
+    [AvaloniaFact]
+    public async Task Dispose_while_connecting_should_disconnect_and_dispose_the_opened_stream()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync();
+        V1Pod pod = CreatePod("app", "default", "pod-uid", containers: ["app"]);
+        await workspace.Runtime.AddOrUpdateResource(pod);
+        await workspace.Runtime.SeedResource<V1Pod>(true);
+        DelayedPodLogStreamClient streamClient = new();
+        PodLogsViewModel viewModel = CreateViewModel(workspace.Runtime, streamClient);
+        viewModel.Object = pod;
+        viewModel.ContainerName = "app";
+
+        Task connectTask = viewModel.Connect();
+        await streamClient.WaitForRequestAsync();
+
+        viewModel.Dispose();
+        streamClient.Release();
+        await connectTask;
+
+        viewModel.IsConnecting.ShouldBeFalse();
+        viewModel.IsConnected.ShouldBeFalse();
+        streamClient.Stream.IsDisposed.ShouldBeTrue();
+    }
+
+    [AvaloniaFact]
+    public async Task Failed_pod_should_disconnect_without_reconnecting()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync();
+        V1Pod pod = CreatePod("failed-job", "default", "pod-uid", containers: ["job"]);
+        pod.Status!.Phase = "Failed";
+        pod.Status.ContainerStatuses![0].State = new V1ContainerState
+        {
+            Terminated = new V1ContainerStateTerminated { ExitCode = 1 },
+        };
+        await workspace.Runtime.AddOrUpdateResource(pod);
+        await workspace.Runtime.SeedResource<V1Pod>(true);
+        RestartingPodLogStreamClient streamClient = new("failed line\n", "unexpected reconnect\n");
+        using PodLogsViewModel viewModel = CreateViewModel(workspace.Runtime, streamClient);
+        viewModel.Object = pod;
+        viewModel.ContainerName = "job";
+
+        await viewModel.Connect();
+        await WaitForAsync(() => viewModel.Logs.Text.Contains("failed line", StringComparison.Ordinal)
+            && !viewModel.IsConnected);
+
+        await Should.ThrowAsync<TimeoutException>(() => TestWait.UntilAsync(
+            () => streamClient.Requests.Count > 1,
+            TimeSpan.FromSeconds(2),
+            cancellationToken: TestContext.Current.CancellationToken,
+            beforePoll: () => Dispatcher.UIThread.RunJobs()));
+        streamClient.Requests.Count.ShouldBe(1);
+    }
+
+    [AvaloniaFact]
+    public async Task Changing_timestamps_should_reconnect_with_updated_options()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync();
+        V1Pod pod = CreatePod("app", "default", "pod-uid", containers: ["app"]);
+        await workspace.Runtime.AddOrUpdateResource(pod);
+        await workspace.Runtime.SeedResource<V1Pod>(true);
+        RecordingPodLogStreamClient streamClient = new(["first\n", "second\n"]);
+        using PodLogsViewModel viewModel = CreateViewModel(workspace.Runtime, streamClient);
+        viewModel.Object = pod;
+        viewModel.ContainerName = "app";
+
+        await viewModel.Connect();
+        await WaitForAsync(() => viewModel.Logs.Text.Contains("first", StringComparison.Ordinal));
+
+        viewModel.Timestamps = true;
+        await WaitForAsync(() => streamClient.Requests.Count == 2
+            && viewModel.Logs.Text.Contains("second", StringComparison.Ordinal));
+
+        streamClient.Requests[0].Timestamps.ShouldBeFalse();
+        streamClient.Requests[1].Timestamps.ShouldBeTrue();
+    }
+
+    [AvaloniaFact]
+    public async Task Clear_should_remove_the_rendered_and_buffered_logs()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync();
+        V1Pod pod = CreatePod("app", "default", "pod-uid", containers: ["app"]);
+        await workspace.Runtime.AddOrUpdateResource(pod);
+        await workspace.Runtime.SeedResource<V1Pod>(true);
+        RecordingPodLogStreamClient streamClient = new(["line\n"]);
+        using PodLogsViewModel viewModel = CreateViewModel(workspace.Runtime, streamClient);
+        viewModel.Object = pod;
+        viewModel.ContainerName = "app";
+
+        await viewModel.Connect();
+        await WaitForAsync(() => viewModel.Logs.Text.Contains("line", StringComparison.Ordinal));
+
+        viewModel.Clear();
+        viewModel.ShowResourceNames = true;
+
+        viewModel.Logs.Text.ShouldBeEmpty();
+    }
+
+    [AvaloniaFact]
+    public async Task DownloadLogs_should_report_io_failures()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync();
+        using PodLogsViewModel viewModel = CreateViewModel(
+            workspace.Runtime,
+            new RecordingPodLogStreamClient(),
+            new ThrowingPodLogExportService(new IOException("disk full")));
+
+        await viewModel.DownloadLogs();
+
+        viewModel.ConnectionError.ShouldBe("disk full");
+    }
+
+    [AvaloniaFact]
+    public async Task DownloadLogs_should_report_access_failures()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync();
+        using PodLogsViewModel viewModel = CreateViewModel(
+            workspace.Runtime,
+            new RecordingPodLogStreamClient(),
+            new ThrowingPodLogExportService(new UnauthorizedAccessException("access denied")));
+
+        await viewModel.DownloadLogs();
+
+        viewModel.ConnectionError.ShouldBe("access denied");
+    }
+
     private static PodLogsViewModel CreateViewModel(
         IClusterRuntime runtime,
         IPodLogStreamClient streamClient,
@@ -2939,6 +3163,150 @@ public sealed class PodLogsViewModelTests
         }
     }
 
+    private sealed class ThrowingPodLogStreamClient(Exception exception) : IPodLogStreamClient
+    {
+        public SynchronizedList<PodLogReadOptions> Requests { get; } = [];
+
+        public Task<Stream> OpenAsync(IClusterRuntime cluster, PodLogReadOptions options, CancellationToken cancellationToken = default)
+        {
+            Requests.Add(options);
+            return Task.FromException<Stream>(exception);
+        }
+    }
+
+    private sealed class ThrowingReadPodLogStreamClient : IPodLogStreamClient
+    {
+        public SynchronizedList<PodLogReadOptions> Requests { get; } = [];
+
+        public Task<Stream> OpenAsync(IClusterRuntime cluster, PodLogReadOptions options, CancellationToken cancellationToken = default)
+        {
+            Requests.Add(options);
+            return Task.FromResult<Stream>(new ThrowingReadStream());
+        }
+    }
+
+    private sealed class RecoveringOpenPodLogStreamClient : IPodLogStreamClient
+    {
+        public SynchronizedList<PodLogReadOptions> Requests { get; } = [];
+
+        public Task<Stream> OpenAsync(IClusterRuntime cluster, PodLogReadOptions options, CancellationToken cancellationToken = default)
+        {
+            Requests.Add(options);
+            return Requests.Count == 1
+                ? Task.FromException<Stream>(new HttpRequestException("connection refused"))
+                : Task.FromResult<Stream>(new MemoryStream(Encoding.UTF8.GetBytes("reconnected\n")));
+        }
+    }
+
+    private sealed class ThrowingReadStream : MemoryStream
+    {
+        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            return ValueTask.FromException<int>(new InvalidOperationException("stream read failed"));
+        }
+    }
+
+    private sealed class DisconnectingPodLogStreamClient : IPodLogStreamClient
+    {
+        public SynchronizedList<PodLogReadOptions> Requests { get; } = [];
+
+        public Task<Stream> OpenAsync(IClusterRuntime cluster, PodLogReadOptions options, CancellationToken cancellationToken = default)
+        {
+            Requests.Add(options);
+            if (Requests.Count == 1)
+            {
+                return Task.FromResult<Stream>(
+                    new DisconnectingReadStream(Encoding.UTF8.GetBytes("before disconnect\n")));
+            }
+
+            return Task.FromResult<Stream>(
+                new MemoryStream(Encoding.UTF8.GetBytes("before disconnect\nafter reconnect\n")));
+        }
+    }
+
+    private sealed class DisconnectingReadStream(byte[] buffer) : Stream
+    {
+        private int _position;
+
+        public override bool CanRead => true;
+
+        public override bool CanSeek => false;
+
+        public override bool CanWrite => false;
+
+        public override long Length => buffer.Length;
+
+        public override long Position
+        {
+            get => _position;
+            set => throw new NotSupportedException();
+        }
+
+        public override void Flush()
+        {
+        }
+
+        public override int Read(byte[] destination, int offset, int count)
+        {
+            return ReadAsync(destination.AsMemory(offset, count)).AsTask().GetAwaiter().GetResult();
+        }
+
+        public override ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken = default)
+        {
+            if (_position < buffer.Length)
+            {
+                var length = Math.Min(destination.Length, buffer.Length - _position);
+                buffer.AsMemory(_position, length).CopyTo(destination);
+                _position += length;
+                return ValueTask.FromResult(length);
+            }
+
+            return ValueTask.FromException<int>(new IOException("connection dropped"));
+        }
+
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+
+        public override void SetLength(long value) => throw new NotSupportedException();
+
+        public override void Write(byte[] source, int offset, int count) => throw new NotSupportedException();
+    }
+
+    private sealed class DelayedPodLogStreamClient : IPodLogStreamClient
+    {
+        private readonly TaskCompletionSource _requestStarted = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource _release = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public TrackingMemoryStream Stream { get; } = new(Encoding.UTF8.GetBytes("late line\n"));
+
+        public Task WaitForRequestAsync()
+        {
+            return _requestStarted.Task;
+        }
+
+        public void Release()
+        {
+            _release.TrySetResult();
+        }
+
+        public async Task<Stream> OpenAsync(IClusterRuntime cluster, PodLogReadOptions options, CancellationToken cancellationToken = default)
+        {
+            _requestStarted.TrySetResult();
+            await _release.Task;
+            return Stream;
+        }
+    }
+
+    private sealed class TrackingMemoryStream(byte[] buffer) : MemoryStream(buffer)
+    {
+        public bool IsDisposed { get; private set; }
+
+        protected override void Dispose(bool disposing)
+        {
+            IsDisposed = true;
+            base.Dispose(disposing);
+        }
+    }
+
     private sealed class RestartingPodLogStreamClient : IPodLogStreamClient
     {
         private readonly string _firstPayload;
@@ -3208,6 +3576,14 @@ public sealed class PodLogsViewModelTests
             SuggestedFileName = suggestedFileName;
             Content = content;
             return Task.CompletedTask;
+        }
+    }
+
+    private sealed class ThrowingPodLogExportService(Exception exception) : IPodLogExportService
+    {
+        public Task ExportAsync(string suggestedFileName, string content, CancellationToken cancellationToken = default)
+        {
+            return Task.FromException(exception);
         }
     }
 }

@@ -110,7 +110,7 @@ public sealed class PodLogSessionResolver : IPodLogSessionResolver
 
             currentPod = relatedPods[0];
         }
-        else if (!ContainsPodWithUid(relatedPods, currentPod.Metadata?.Uid))
+        else if (!ContainsPod(relatedPods, currentPod))
         {
             relatedPods.Add(currentPod);
         }
@@ -157,12 +157,7 @@ public sealed class PodLogSessionResolver : IPodLogSessionResolver
             }
         }
 
-        if (currentPod is not null && !ContainsPodWithUid(relatedPods, currentPod.Metadata?.Uid))
-        {
-            relatedPods.Add(currentPod);
-        }
-
-        if (relatedPods.Count == 0 && currentPod is not null)
+        if (currentPod is not null && !ContainsPod(relatedPods, currentPod))
         {
             relatedPods.Add(currentPod);
         }
@@ -380,16 +375,16 @@ public sealed class PodLogSessionResolver : IPodLogSessionResolver
 
     private sealed record ResourceIdentity(string Namespace, string Name, string? Uid, string Kind);
 
-    private static bool ContainsPodWithUid(IEnumerable<V1Pod> pods, string? uid)
+    private static bool ContainsPod(IEnumerable<V1Pod> pods, V1Pod candidate)
     {
-        if (string.IsNullOrWhiteSpace(uid))
-        {
-            return false;
-        }
-
+        var uid = candidate.Metadata?.Uid;
         foreach (var pod in pods)
         {
-            if (string.Equals(pod.Metadata?.Uid, uid, StringComparison.Ordinal))
+            if (!string.IsNullOrWhiteSpace(uid)
+                ? string.Equals(pod.Metadata?.Uid, uid, StringComparison.Ordinal)
+                : ReferenceEquals(pod, candidate)
+                    || (string.Equals(pod.Namespace(), candidate.Namespace(), StringComparison.Ordinal)
+                        && string.Equals(pod.Name(), candidate.Name(), StringComparison.Ordinal)))
             {
                 return true;
             }

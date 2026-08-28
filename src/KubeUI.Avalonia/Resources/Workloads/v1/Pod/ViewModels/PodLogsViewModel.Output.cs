@@ -90,6 +90,7 @@ public sealed partial class PodLogsViewModel
     {
         var cancellationToken = connectionCts.Token;
         var streamEnded = false;
+        var transientReadFailure = false;
         var appendedOutput = false;
         List<PodLogOutputEntry> pendingOutput = [];
         List<string>? reconnectBuffer = HasExistingOutput(option) ? [] : null;
@@ -136,6 +137,20 @@ public sealed partial class PodLogsViewModel
         catch (ObjectDisposedException) when (cancellationToken.IsCancellationRequested)
         {
         }
+        catch (Exception ex) when (ex is IOException or HttpRequestException)
+        {
+            transientReadFailure = true;
+            _logger.LogWarning(ex, "Pod log stream disconnected for {PodNamespace}/{PodName} container {ContainerName}.", option.PodNamespace, option.PodName, option.ContainerName);
+            Dispatcher.UIThread.Post(
+                () =>
+                {
+                    if (IsCurrentConnection(connectionCts))
+                    {
+                        ConnectionError = ex.Message;
+                    }
+                },
+                DispatcherPriority.Background);
+        }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Unable to read pod log stream for {PodNamespace}/{PodName} container {ContainerName}.", option.PodNamespace, option.PodName, option.ContainerName);
@@ -167,7 +182,8 @@ public sealed partial class PodLogsViewModel
             FlushOutputEntries(pendingOutput, connectionCts, outputGeneration);
 
             var isLastActiveReader = DecrementActiveReaders(connectionCts);
-            if (streamEnded && appendedOutput && ShouldReconnectAfterStreamEnd(reader, option, connectionResolution.Pod, cancellationToken, isLastActiveReader))
+            if (((streamEnded && appendedOutput) || transientReadFailure)
+                && ShouldReconnectAfterStreamEnd(reader, option, connectionResolution.Pod, cancellationToken, isLastActiveReader))
             {
                 ScheduleReconnectAfterStreamEnd(connectionCts);
             }

@@ -299,9 +299,18 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Unable to open pod log stream for {PodNamespace}/{PodName} container {ContainerName}.", option.PodNamespace, option.PodName, option.ContainerName);
-                    DecrementActiveReaders(connectionCts);
+                    var isLastActiveReader = DecrementActiveReaders(connectionCts);
                     AppendStatusLine(option.PodName, option.ContainerName, ex.Message, connectionCts);
                     ConnectionError = ex.Message;
+                    if (ex is IOException or HttpRequestException
+                        && option.Follow
+                        && !option.Previous
+                        && !connectionCts.IsCancellationRequested
+                        && !IsTerminalPod(resolution.Pod)
+                        && isLastActiveReader)
+                    {
+                        ScheduleReconnectAfterStreamEnd(connectionCts);
+                    }
                 }
             }
 
@@ -407,29 +416,7 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
         _resourceChangesSubscription = null;
         _subscribedCluster = null;
 
-        var connectionCts = _connectionCts;
-        _connectionCts = null;
-        try
-        {
-            connectionCts?.Cancel();
-        }
-        catch (ObjectDisposedException)
-        {
-        }
-        for (var i = 0; i < _streamReaders.Count; i++)
-        {
-            _streamReaders[i].Dispose();
-        }
-
-        for (var i = 0; i < _streams.Count; i++)
-        {
-            _streams[i].Dispose();
-        }
-
-        if (connectionCts is not null && !_readerCounts.ContainsKey(connectionCts))
-        {
-            connectionCts.Dispose();
-        }
+        ResetConnection();
 
         TextDocument logs = Logs;
         logs.Text = string.Empty;

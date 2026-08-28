@@ -76,6 +76,7 @@ References:
 - UI tests must use Avalonia Headless and follow the headless testing guidance and helpers for input simulation.
 - Unit-test ViewModels and UI-facing services.
 - UI tests should validate navigation flows, docking, and editor behaviors.
+- Pod log tests must cover connect, disposal/disconnect races, transient HTTP open/read failures, pod add/remove, terminal failure, and container restart behavior.
 
 ## 9) Code conventions
 
