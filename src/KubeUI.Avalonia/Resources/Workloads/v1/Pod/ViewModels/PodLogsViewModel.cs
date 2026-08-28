@@ -77,7 +77,7 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
     public partial string ContainerName { get; set; }
 
     [ObservableProperty]
-    public partial TextDocument Logs { get; set; } = new();
+    public partial TextDocument Logs { get; set; } = CreateLogDocument();
 
     [ObservableProperty]
     public partial IReadOnlyList<V1Pod> AvailablePods { get; set; } = [];
@@ -431,6 +431,9 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
             connectionCts.Dispose();
         }
 
+        ClearOutput();
+        Logs = CreateLogDocument();
+
         // Connect may still be awaiting OpenAsync and will release the gate in its finally block.
         // Keep the gate and CTS alive until those asynchronous operations have drained.
     }
@@ -632,6 +635,13 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
         {
             _outputEntries.Clear();
         }
+    }
+
+    private static TextDocument CreateLogDocument()
+    {
+        TextDocument document = new();
+        document.UndoStack.SizeLimit = 0;
+        return document;
     }
 
 }

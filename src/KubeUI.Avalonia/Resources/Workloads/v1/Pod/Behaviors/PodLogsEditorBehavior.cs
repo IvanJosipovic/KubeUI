@@ -97,8 +97,7 @@ public sealed class PodLogsEditorBehavior : Behavior<TextEditor>, IDeclarativeVi
             return;
         }
 
-        _registryOptions = new RegistryOptions(GetThemeName());
-        _textMateInstallation = AssociatedObject.InstallTextMate(_registryOptions, false);
+        EnsureTextMateInstallation();
         SearchPanel.Install(AssociatedObject);
 
         AssociatedObject.TextChanged += AssociatedObjectOnTextChanged;
@@ -136,7 +135,7 @@ public sealed class PodLogsEditorBehavior : Behavior<TextEditor>, IDeclarativeVi
         PersistScrollOffset();
         DetachScrollViewer();
 
-        _textMateInstallation = null;
+        DisposeTextMateInstallation();
         _registryOptions = null;
 
         base.OnDetaching();
@@ -164,6 +163,8 @@ public sealed class PodLogsEditorBehavior : Behavior<TextEditor>, IDeclarativeVi
 
     private void AssociatedObjectOnAttachedToVisualTree(object? sender, VisualTreeAttachmentEventArgs e)
     {
+        EnsureTextMateInstallation();
+        ApplyTheme();
         AttachScrollViewer();
         RequestRestoreScrollOffset();
     }
@@ -171,6 +172,24 @@ public sealed class PodLogsEditorBehavior : Behavior<TextEditor>, IDeclarativeVi
     private void AssociatedObjectOnDetachedFromVisualTree(object? sender, VisualTreeAttachmentEventArgs e)
     {
         PersistScrollOffset();
+        DisposeTextMateInstallation();
+    }
+
+    private void EnsureTextMateInstallation()
+    {
+        if (AssociatedObject is null || _textMateInstallation is not null)
+        {
+            return;
+        }
+
+        _registryOptions ??= new RegistryOptions(GetThemeName());
+        _textMateInstallation = AssociatedObject.InstallTextMate(_registryOptions, false);
+    }
+
+    private void DisposeTextMateInstallation()
+    {
+        _textMateInstallation?.Dispose();
+        _textMateInstallation = null;
     }
 
     private void AssociatedObjectOnLayoutUpdated(object? sender, EventArgs e)

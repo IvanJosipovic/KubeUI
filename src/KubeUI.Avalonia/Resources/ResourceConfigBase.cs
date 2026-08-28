@@ -162,7 +162,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
         {
             Key = "name",
             Name = Assets.Resources.ResourceListView_Name!,
-            Field = x => x.Metadata.Name,
+            Field = x => x?.Metadata?.Name ?? string.Empty,
             Width = "2*",
             Sort = sort,
         };
@@ -174,7 +174,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
         {
             Key = "namespace",
             Name = Assets.Resources.ResourceListView_Namespace!,
-            Field = x => x.Metadata.NamespaceProperty,
+            Field = x => x?.Metadata?.NamespaceProperty ?? string.Empty,
             Width = "*",
         };
     }
