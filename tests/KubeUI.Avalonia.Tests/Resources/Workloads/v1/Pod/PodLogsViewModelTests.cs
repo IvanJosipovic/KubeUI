@@ -1423,6 +1423,33 @@ public sealed class PodLogsViewModelTests
     }
 
     [AvaloniaFact]
+    public async Task Logs_should_not_record_undo_history()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync();
+        using PodLogsViewModel viewModel = CreateViewModel(workspace.Runtime, new RecordingPodLogStreamClient());
+
+        viewModel.Logs.Insert(0, "line");
+
+        viewModel.Logs.UndoStack.CanUndo.ShouldBeFalse();
+    }
+
+    [AvaloniaFact]
+    public async Task Dispose_should_clear_and_replace_the_log_document()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync();
+        PodLogsViewModel viewModel = CreateViewModel(workspace.Runtime, new RecordingPodLogStreamClient());
+        AvaloniaEdit.Document.TextDocument previousLogs = viewModel.Logs;
+        previousLogs.Text = "line";
+
+        viewModel.Dispose();
+
+        previousLogs.Text.ShouldBeEmpty();
+        viewModel.Logs.ShouldNotBeSameAs(previousLogs);
+        viewModel.Logs.Text.ShouldBeEmpty();
+        viewModel.Logs.UndoStack.CanUndo.ShouldBeFalse();
+    }
+
+    [AvaloniaFact]
     public async Task Connect_should_resolve_ephemeral_container_logs()
     {
         using var workspace = await Application.Current.CreateClusterAsync();
