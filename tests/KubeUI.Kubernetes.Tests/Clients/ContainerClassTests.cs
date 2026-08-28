@@ -23,6 +23,21 @@ public sealed class ContainerClassTests
         container.Items.Lookup("uid-second").ValueOrDefault().ShouldBe(second);
     }
 
+    [Fact]
+    public void Source_cache_removes_resource_when_delete_notification_has_no_uid()
+    {
+        ContainerClass<V1Secret> container = new();
+        V1Secret existing = Secret("uid-existing");
+        V1Secret deleted = Secret(null);
+
+        container.Items.AddOrUpdate(existing);
+
+        Exception? exception = Record.Exception(() => container.Remove(deleted));
+
+        exception.ShouldBeNull();
+        container.Items.Items.ShouldBeEmpty();
+    }
+
     private static V1Pod Pod(string uid)
     {
         return new V1Pod
@@ -30,6 +45,19 @@ public sealed class ContainerClassTests
             Metadata = new V1ObjectMeta
             {
                 NamespaceProperty = "default",
+                Name = "same-name",
+                Uid = uid,
+            },
+        };
+    }
+
+    private static V1Secret Secret(string? uid)
+    {
+        return new V1Secret
+        {
+            Metadata = new V1ObjectMeta
+            {
+                NamespaceProperty = "kube-system",
                 Name = "same-name",
                 Uid = uid,
             },

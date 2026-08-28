@@ -412,7 +412,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
                         container.Items.AddOrUpdate(generic);
                         break;
                     case WatchEventType.Deleted:
-                        container.Items.Remove(generic);
+                        container.Remove(generic);
                         break;
                 }
 
@@ -474,19 +474,24 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
             var kind = GroupApiVersionKind.From<T>();
             ResourceInformerCallbackGuard.Execute(_logger, eventType, kind, item, () =>
             {
-                var items = GetResourceSourceCache<T>();
+                if (!Objects.TryGetValue(kind, out var objectContainer)
+                    || objectContainer is not ContainerClass<T> container)
+                {
+                    return;
+                }
+
                 switch (eventType)
                 {
                     case WatchEventType.Added:
-                        items.AddOrUpdate(item);
+                        container.Items.AddOrUpdate(item);
                         RegisterCustomResourceDefinition(item as V1CustomResourceDefinition);
                         break;
                     case WatchEventType.Modified:
-                        items.AddOrUpdate(item);
+                        container.Items.AddOrUpdate(item);
                         RegisterCustomResourceDefinition(item as V1CustomResourceDefinition);
                         break;
                     case WatchEventType.Deleted:
-                        items.Remove(item);
+                        container.Remove(item);
                         if (item is V1CustomResourceDefinition crd2)
                         {
                             RemoveCustomResourceDefinitionArtifacts(crd2);
@@ -1051,6 +1056,24 @@ public partial class ContainerClass<T> : ObservableObject, IClearableResourceCon
     public bool IsSeeded => InformerCount > 0;
 
     public ISourceCache<T, string> Items { get; } = new SourceCache<T, string>(GetResourceCacheKey);
+
+    public void Remove(T resource)
+    {
+        if (!string.IsNullOrEmpty(resource.Uid()))
+        {
+            Items.Remove(resource);
+            return;
+        }
+
+        var cachedResource = Items.Items.FirstOrDefault(item =>
+            string.Equals(item.Namespace(), resource.Namespace(), StringComparison.Ordinal)
+            && string.Equals(item.Name(), resource.Name(), StringComparison.Ordinal));
+
+        if (cachedResource != null)
+        {
+            Items.Remove(cachedResource);
+        }
+    }
 
     private static string GetResourceCacheKey(T resource)
     {
