@@ -24,7 +24,6 @@ public sealed partial class PodLogsView : ViewBase<PodLogsViewModel>
             ? ThemeName.Light
             : ThemeName.DarkPlus);
 
-        Application.Current.ActualThemeVariantChanged += Current_ActualThemeVariantChanged;
     }
 
     protected override object Build(PodLogsViewModel vm)
@@ -103,6 +102,9 @@ public sealed partial class PodLogsView : ViewBase<PodLogsViewModel>
     protected override void OnLoaded(RoutedEventArgs e)
     {
         base.OnLoaded(e);
+        Application.Current.ActualThemeVariantChanged += Current_ActualThemeVariantChanged;
+        EnsureTextMateInstallation();
+        ApplyThemeVariant();
         SetOffset();
     }
 
@@ -111,6 +113,8 @@ public sealed partial class PodLogsView : ViewBase<PodLogsViewModel>
         base.OnUnloaded(e);
         GetOffset();
         Application.Current.ActualThemeVariantChanged -= Current_ActualThemeVariantChanged;
+        _textMateInstallation?.Dispose();
+        _textMateInstallation = null;
     }
 
     private void Current_ActualThemeVariantChanged(object? sender, EventArgs e) => ApplyThemeVariant();
