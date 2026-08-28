@@ -93,7 +93,7 @@ public sealed partial class V1ServiceConfig : ResourceConfigBase<V1Service>
     {
         if (parameters[0] is V1Service service && parameters[1] is V1ServicePort containerPort)
         {
-            var pf = Cluster.Runtime.AddServicePortForward(service.Namespace(), service.Name(), service.Uid(), containerPort.Port);
+            var pf = Cluster.Runtime.AddServicePortForward(service.Namespace(), service.Name(), containerPort.Port);
 
             ContentDialogSettings settings = new()
             {

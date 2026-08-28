@@ -59,7 +59,6 @@ public sealed class ClusterResourceChangeFeedTests
             {
                 Name = secret.Name(),
                 NamespaceProperty = secret.Namespace(),
-                Uid = secret.Uid(),
                 ResourceVersion = secret.ResourceVersion(),
                 Labels = new Dictionary<string, string> { ["version"] = "two" },
             },
