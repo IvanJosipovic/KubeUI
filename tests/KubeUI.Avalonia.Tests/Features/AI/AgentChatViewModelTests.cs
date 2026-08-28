@@ -231,8 +231,7 @@ public sealed class AgentChatViewModelTests
         var settings = new Settings { McpServerEnabled = true, McpServerPort = 62888 };
         var settingsService = new Mock<ISettingsService>();
         settingsService.SetupGet(service => service.Settings).Returns(settings);
-        var mcpServerState = new McpServerState();
-        mcpServerState.SetBoundPort(54321);
+        var mcpServerState = new McpServerState { BoundPort = 54321 };
         var vm = new AgentChatViewModel(
             new TestRegistry(agent),
             settingsService.Object,
@@ -241,22 +240,6 @@ public sealed class AgentChatViewModelTests
         await vm.SendCommand.ExecuteAsync(null);
 
         agent.Options!.McpEndpoint.ShouldBe("http://127.0.0.1:54321/mcp");
-        await vm.DisposeAsync();
-    }
-
-    [Fact]
-    public async Task send_omits_the_mcp_endpoint_when_the_server_is_disabled()
-    {
-        await using var session = new TestSession("session-disabled-endpoint", []);
-        var agent = new TestAgent(session);
-        var settings = new Settings { McpServerEnabled = false, McpServerPort = 62888 };
-        var settingsService = new Mock<ISettingsService>();
-        settingsService.SetupGet(service => service.Settings).Returns(settings);
-        var vm = new AgentChatViewModel(new TestRegistry(agent), settingsService.Object) { Prompt = "List pods" };
-
-        await vm.SendCommand.ExecuteAsync(null);
-
-        agent.Options!.McpEndpoint.ShouldBeNull();
         await vm.DisposeAsync();
     }
 

@@ -27,7 +27,7 @@ public sealed partial class AgentChatViewModel : ViewModelBase, IAsyncDisposable
     private readonly IAgentRegistry _registry;
     private readonly ISettingsService? _settingsService;
     private readonly IAgentContextService? _contextService;
-    private readonly IMcpServerState? _mcpServerState;
+    private readonly McpServerState? _mcpServerState;
     private IAgentSession? _session;
     private CancellationTokenSource? _turnCancellation;
 
@@ -51,7 +51,7 @@ public sealed partial class AgentChatViewModel : ViewModelBase, IAsyncDisposable
         IAgentRegistry registry,
         ISettingsService? settingsService = null,
         IAgentContextService? contextService = null,
-        IMcpServerState? mcpServerState = null)
+        McpServerState? mcpServerState = null)
     {
         _registry = registry;
         _settingsService = settingsService;

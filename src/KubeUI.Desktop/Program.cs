@@ -37,6 +37,8 @@ namespace KubeUI.Desktop;
 
 internal static class Program
 {
+    private const int DynamicPort = 0;
+
     public static ActivitySource Source { get; } = new ActivitySource("com.KubeUI.Desktop", "1.0.0");
 
     [STAThread]
@@ -128,20 +130,18 @@ internal static class Program
         var settings = SettingsPersistenceLoader.Load();
         builder.Services.AddKubeUIAppServices();
 
-        if (mcpEnabledOverride ?? settings.Settings.McpServerEnabled)
+        var mcpEnabled = mcpEnabledOverride ?? settings.Settings.McpServerEnabled;
+        if (mcpEnabled)
         {
             builder.Services.AddMcpServer()
                 .WithHttpTransport(options => options.Stateless = true)
                 .WithTools<McpTools>();
-            var port = mcpPortOverride ?? McpServerConfiguration.GetValidatedPort(settings.Settings);
-            builder.WebHost.ConfigureKestrel(options => ConfigureKestrelEndpoints(options, port));
         }
-        else
-        {
-            // Without an explicit endpoint Kestrel claims its default address http://localhost:5000,
-            // which makes a second app instance fail to start; bind an OS-assigned loopback port instead.
-            builder.WebHost.ConfigureKestrel(options => ConfigureKestrelEndpoints(options, McpServerConfiguration.DynamicPort));
-        }
+
+        var port = mcpEnabled
+            ? mcpPortOverride ?? McpServerConfiguration.GetValidatedPort(settings.Settings)
+            : DynamicPort;
+        builder.WebHost.ConfigureKestrel(options => options.Listen(IPAddress.Loopback, port));
 
         if (includeOptionalServices && settings.Settings.TelemetryEnabled)
         {
@@ -157,25 +157,6 @@ internal static class Program
         return builder;
     }
 
-    private static void ConfigureKestrelEndpoints(KestrelServerOptions options, int port)
-    {
-        if (port == McpServerConfiguration.DynamicPort)
-        {
-            // ListenLocalhost does not support dynamic ports; bind the IPv4 loopback directly
-            // and let the operating system assign an available port. The advertised MCP endpoint
-            // host is 127.0.0.1, so IPv6 loopback is not needed.
-            options.Listen(IPAddress.Loopback, port);
-            return;
-        }
-
-        options.ListenLocalhost(port);
-    }
-
-    /// <summary>
-    /// Builds and starts the application host. When the configured MCP port cannot be bound
-    /// (already in use or blocked by the operating system), the host is rebuilt with an
-    /// OS-assigned port so the app still starts.
-    /// </summary>
     internal static WebApplication CreateStartedHost(
         string[] args,
         bool includeOptionalServices = true,
@@ -194,7 +175,7 @@ internal static class Program
         {
             application.DisposeAsync().AsTask().GetAwaiter().GetResult();
 
-            application = CreateApplication(args, includeOptionalServices, configureServices, McpServerConfiguration.DynamicPort, mcpEnabledOverride);
+            application = CreateApplication(args, includeOptionalServices, configureServices, DynamicPort, mcpEnabledOverride);
             application.Services.GetRequiredService<ILoggerFactory>()
                 .CreateLogger(typeof(Program))
                 .LogWarning(exception, "The configured MCP server port could not be bound; retrying with an operating system assigned port.");
@@ -224,28 +205,12 @@ internal static class Program
 
     internal static void RecordMcpBoundPort(IServiceProvider services)
     {
-        var addresses = services.GetRequiredService<IServer>()
+        var address = services.GetRequiredService<IServer>()
             .Features
-            .Get<IServerAddressesFeature>()?
-            .Addresses;
-        RecordMcpBoundPort(services.GetService<McpServerState>(), addresses);
-    }
-
-    internal static void RecordMcpBoundPort(McpServerState? state, IEnumerable<string?>? addresses)
-    {
-        if (state is null || addresses is null)
-            return;
-
-        foreach (var address in addresses)
-        {
-            if (!Uri.TryCreate(address, UriKind.Absolute, out var uri)
-                || uri.Scheme is not ("http" or "https")
-                || !uri.IsLoopback)
-                continue;
-
-            state.SetBoundPort(uri.Port);
-            return;
-        }
+            .Get<IServerAddressesFeature>()!
+            .Addresses
+            .Single();
+        services.GetRequiredService<McpServerState>().BoundPort = new Uri(address).Port;
     }
 
     internal static bool IsPortBindFailure(Exception exception)

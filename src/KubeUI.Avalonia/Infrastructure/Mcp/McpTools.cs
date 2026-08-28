@@ -21,7 +21,7 @@ public sealed class McpTools(
     Services.Settings.ISettingsService settingsService,
     IAgentPermissionService? permissionService = null,
     IResourceNavigationService? resourceNavigationService = null,
-    IMcpServerState? mcpServerState = null)
+    McpServerState? mcpServerState = null)
 {
     private readonly IAgentPermissionService _permissionService = permissionService ?? new DenyByDefaultAgentPermissionService();
     private readonly IResourceNavigationService? _resourceNavigationService = resourceNavigationService;

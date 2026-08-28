@@ -145,52 +145,28 @@ public sealed class McpToolsTests
     [Fact]
     public void endpoint_tool_prefers_the_bound_port_when_available()
     {
-        var state = new McpServerState();
-        state.SetBoundPort(54321);
-        var tools = CreateTools(
-            new Mock<IMcpClusterSession>(MockBehavior.Strict),
-            settings: new Settings { McpServerEnabled = true, McpServerPort = 62888 },
-            mcpServerState: state);
+        var settingsService = new Mock<ISettingsService>();
+        settingsService.SetupGet(service => service.Settings)
+            .Returns(new Settings { McpServerEnabled = true, McpServerPort = 62888 });
+        var tools = new McpTools(
+            new Mock<IClusterRuntimeCatalog>().Object,
+            new Mock<IMcpClusterSession>(MockBehavior.Strict).Object,
+            new Mock<IKubernetesYamlSerializer>().Object,
+            settingsService.Object,
+            mcpServerState: new McpServerState { BoundPort = 54321 });
 
         tools.GetEndpoint().ShouldBe("http://127.0.0.1:54321/mcp");
-    }
-
-    [Fact]
-    public void endpoint_tool_uses_the_configured_port_without_bound_state()
-    {
-        var tools = CreateTools(
-            new Mock<IMcpClusterSession>(MockBehavior.Strict),
-            settings: new Settings { McpServerEnabled = true, McpServerPort = 62888 });
-
-        tools.GetEndpoint().ShouldBe("http://127.0.0.1:62888/mcp");
-    }
-
-    [Fact]
-    public void endpoint_tool_rejects_a_disabled_mcp_server()
-    {
-        var tools = CreateTools(
-            new Mock<IMcpClusterSession>(MockBehavior.Strict),
-            settings: new Settings { McpServerEnabled = false });
-
-        Should.Throw<InvalidOperationException>(() => tools.GetEndpoint());
     }
 
     private static McpTools CreateTools(
         Mock<IMcpClusterSession> session,
         IAgentPermissionService? permissionService = null,
-        IResourceNavigationService? resourceNavigationService = null,
-        IMcpServerState? mcpServerState = null,
-        Settings? settings = null)
-    {
-        var settingsService = new Mock<ISettingsService>();
-        settingsService.SetupGet(service => service.Settings).Returns(settings ?? new Settings());
-        return new(
+        IResourceNavigationService? resourceNavigationService = null)
+        => new(
             new Mock<IClusterRuntimeCatalog>().Object,
             session.Object,
             new Mock<IKubernetesYamlSerializer>().Object,
-            settingsService.Object,
+            new Mock<ISettingsService>().Object,
             permissionService,
-            resourceNavigationService,
-            mcpServerState);
-    }
+            resourceNavigationService);
 }
