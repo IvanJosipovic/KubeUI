@@ -1120,6 +1120,121 @@ public sealed class PodLogsViewModelTests
         viewModel.SelectedContainerItems.ShouldHaveSingleItem().IsAll.ShouldBeTrue();
     }
 
+    [AvaloniaFact]
+    public async Task Changing_pod_selection_should_not_publish_errors_from_the_superseded_connection()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync();
+        await workspace.Runtime.SeedResource<V1Deployment>(true);
+        await workspace.Runtime.SeedResource<V1Pod>(true);
+        V1Deployment deployment = CreateKindDeployment("api", "api", "unused");
+        deployment.Metadata!.Uid = "deployment-uid";
+        deployment.Spec!.Replicas = 0;
+        V1Pod olderPod = CreatePod(
+            "api-old",
+            "default",
+            "old-uid",
+            deployment.Uid(),
+            deployment.Name(),
+            V1Deployment.KubeKind,
+            ["app"]);
+        V1Pod newerPod = CreatePod(
+            "api-new",
+            "default",
+            "new-uid",
+            deployment.Uid(),
+            deployment.Name(),
+            V1Deployment.KubeKind,
+            ["app"]);
+        foreach (V1Pod pod in new[] { olderPod, newerPod })
+        {
+            pod.Metadata!.OwnerReferences![0].ApiVersion = "apps/v1";
+            ConfigureRunningContainer(pod, "app", "echo line");
+        }
+
+        await workspace.Runtime.AddOrUpdateResource(deployment);
+        await workspace.Runtime.AddOrUpdateResource(olderPod);
+        await workspace.Runtime.AddOrUpdateResource(newerPod);
+
+        SupersededConnectionPodLogStreamClient streamClient = new();
+        using PodLogsViewModel viewModel = CreateViewModel(
+            workspace.Runtime,
+            streamClient);
+        viewModel.SetScope(deployment, V1Deployment.KubeKind);
+        viewModel.ContainerName = "app";
+        List<string> publishedErrors = [];
+        viewModel.PropertyChanged += (_, args) =>
+        {
+            if (args.PropertyName == nameof(PodLogsViewModel.ConnectionError)
+                && viewModel.ConnectionError is not null)
+            {
+                publishedErrors.Add(viewModel.ConnectionError);
+            }
+        };
+
+        Task initialConnect = viewModel.Connect();
+        await streamClient.WaitForFirstRequestAsync();
+
+        PodLogPodSelectionItem newerPodItem =
+            viewModel.PodSelectionItems.Single(item => item.Pod?.Name() == newerPod.Name());
+        viewModel.SelectedPodItems =
+            new ObservableCollection<PodLogPodSelectionItem>([newerPodItem]);
+        streamClient.FailFirstRequest();
+
+        await initialConnect;
+        await WaitForAsync(() => streamClient.RequestCount >= 3 && !viewModel.IsConnecting);
+
+        publishedErrors.ShouldBeEmpty();
+        viewModel.ConnectionError.ShouldBeNull();
+        streamClient.Requests[^1].PodName.ShouldBe(newerPod.Name());
+    }
+
+    [AvaloniaFact]
+    public async Task Changing_multiple_pod_selection_should_not_mutate_the_bound_collection_reentrantly()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync();
+        await workspace.Runtime.SeedResource<V1Deployment>(true);
+        await workspace.Runtime.SeedResource<V1Pod>(true);
+        V1Deployment deployment = CreateKindDeployment("api", "api", "unused");
+        deployment.Metadata!.Uid = "deployment-uid";
+        deployment.Spec!.Replicas = 0;
+        await workspace.Runtime.AddOrUpdateResource(deployment);
+
+        for (var i = 0; i < 3; i++)
+        {
+            V1Pod pod = CreatePod(
+                $"api-{i}",
+                "default",
+                $"pod-{i}-uid",
+                deployment.Uid(),
+                deployment.Name(),
+                V1Deployment.KubeKind,
+                ["app"]);
+            pod.Metadata!.OwnerReferences![0].ApiVersion = "apps/v1";
+            ConfigureRunningContainer(pod, "app", "echo line");
+            await workspace.Runtime.AddOrUpdateResource(pod);
+        }
+
+        using PodLogsViewModel viewModel = CreateViewModel(
+            workspace.Runtime,
+            new RecordingPodLogStreamClient());
+        viewModel.SetScope(deployment, V1Deployment.KubeKind);
+        viewModel.ContainerName = "app";
+        await viewModel.Connect();
+
+        viewModel.SelectedPodItems =
+            new ObservableCollection<PodLogPodSelectionItem>([viewModel.PodSelectionItems[1]]);
+        Dispatcher.UIThread.RunJobs();
+        await WaitForAsync(() => !viewModel.IsConnecting);
+        viewModel.SelectedPodItems.CollectionChanged += static (_, _) => { };
+
+        viewModel.SelectedPodItems.Add(viewModel.PodSelectionItems[2]);
+        Dispatcher.UIThread.RunJobs();
+        await WaitForAsync(() => !viewModel.IsConnecting);
+
+        viewModel.ConnectionError.ShouldBeNull();
+        viewModel.SelectedPodItems.Count.ShouldBe(2);
+    }
+
     [AvaloniaTheory]
     [InlineData(true, false)]
     [InlineData(false, true)]
@@ -4029,6 +4144,45 @@ public sealed class PodLogsViewModelTests
             var payload = _payloads.Count > 0 ? _payloads.Dequeue() : string.Empty;
             var bytes = Encoding.UTF8.GetBytes(payload.ReplaceLineEndings("\n"));
             return Task.FromResult<Stream>(new MemoryStream(bytes));
+        }
+    }
+
+    private sealed class SupersededConnectionPodLogStreamClient : IPodLogStreamClient
+    {
+        private readonly TaskCompletionSource _firstRequestStarted =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource _failFirstRequest =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private int _requestCount;
+
+        public SynchronizedList<PodLogReadOptions> Requests { get; } = [];
+
+        public int RequestCount => Volatile.Read(ref _requestCount);
+
+        public Task WaitForFirstRequestAsync()
+        {
+            return _firstRequestStarted.Task;
+        }
+
+        public void FailFirstRequest()
+        {
+            _failFirstRequest.TrySetResult();
+        }
+
+        public async Task<Stream> OpenAsync(
+            IClusterRuntime cluster,
+            PodLogReadOptions options,
+            CancellationToken cancellationToken = default)
+        {
+            Requests.Add(options);
+            if (Interlocked.Increment(ref _requestCount) == 1)
+            {
+                _firstRequestStarted.TrySetResult();
+                await _failFirstRequest.Task.WaitAsync(cancellationToken);
+                throw new IOException("superseded Pod request failed");
+            }
+
+            return new MemoryStream();
         }
     }
 

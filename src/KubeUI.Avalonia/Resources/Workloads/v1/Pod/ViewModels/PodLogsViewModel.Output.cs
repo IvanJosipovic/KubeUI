@@ -142,7 +142,7 @@ public sealed partial class PodLogsViewModel
             Dispatcher.UIThread.Post(
                 () =>
                 {
-                    if (IsCurrentConnection(connectionCts))
+                    if (!_pendingReconnect && IsCurrentConnection(connectionCts))
                     {
                         ConnectionError = ex.Message;
                     }
@@ -155,7 +155,7 @@ public sealed partial class PodLogsViewModel
             Dispatcher.UIThread.Post(
                 () =>
                 {
-                    if (IsCurrentConnection(connectionCts))
+                    if (!_pendingReconnect && IsCurrentConnection(connectionCts))
                     {
                         ConnectionError = ex.Message;
                     }

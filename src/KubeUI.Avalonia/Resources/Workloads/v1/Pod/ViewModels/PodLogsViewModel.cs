@@ -39,6 +39,7 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
     private bool _isNormalizingContainerSelection;
     private bool _pendingNormalizePodSelection;
     private bool _pendingNormalizeContainerSelection;
+    private bool _pendingSelectionReconnect;
     private PodLogSelectionNormalization _pendingPodSelectionNormalization;
     private PodLogSelectionNormalization _pendingContainerSelectionNormalization;
     private bool _pendingReconnect;
@@ -359,9 +360,14 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
                 {
                     _logger.LogError(ex, "Unable to open pod log stream for {PodNamespace}/{PodName} container {ContainerName}.", option.PodNamespace, option.PodName, option.ContainerName);
                     var isLastActiveReader = DecrementActiveReaders(connectionCts);
-                    AppendStatusLine(option.PodName, option.ContainerName, ex.Message, connectionCts);
-                    ConnectionError = ex.Message;
-                    if (ex is IOException or HttpRequestException
+                    if (!_pendingReconnect && IsCurrentConnection(connectionCts))
+                    {
+                        AppendStatusLine(option.PodName, option.ContainerName, ex.Message, connectionCts);
+                        ConnectionError = ex.Message;
+                    }
+
+                    if (!_pendingReconnect
+                        && ex is IOException or HttpRequestException
                         && option.Follow
                         && !option.Previous
                         && !connectionCts.IsCancellationRequested
@@ -382,7 +388,10 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
         catch (Exception ex)
         {
             _logger.LogError(ex, "Unable to view pod logs.");
-            ConnectionError = ex.Message;
+            if (!_pendingReconnect)
+            {
+                ConnectionError = ex.Message;
+            }
         }
         finally
         {
@@ -523,7 +532,7 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
         }
 
         UpdateResourceNameToggleState();
-        RequestReconnect();
+        QueueSelectionReconnect();
     }
 
     partial void OnSelectedContainerItemsChanged(ObservableCollection<PodLogContainerSelectionItem> value)
@@ -535,7 +544,7 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
         }
 
         UpdateResourceNameToggleState();
-        RequestReconnect();
+        QueueSelectionReconnect();
     }
 
     partial void OnObjectChanged(IKubernetesObject<V1ObjectMeta>? value)

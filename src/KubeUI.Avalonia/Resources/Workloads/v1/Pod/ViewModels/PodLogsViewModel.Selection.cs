@@ -420,7 +420,7 @@ public sealed partial class PodLogsViewModel
         }
 
         UpdateResourceNameToggleState();
-        RequestReconnect();
+        QueueSelectionReconnect();
     }
 
     private void SelectedContainerItemsOnCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
@@ -439,7 +439,7 @@ public sealed partial class PodLogsViewModel
         }
 
         UpdateResourceNameToggleState();
-        RequestReconnect();
+        QueueSelectionReconnect();
     }
 
     private PodLogSelectionNormalization GetPodSelectionNormalization(NotifyCollectionChangedEventArgs e)
@@ -597,7 +597,7 @@ public sealed partial class PodLogsViewModel
         }
 
         UpdateResourceNameToggleState();
-        RequestReconnect();
+        QueueSelectionReconnect();
     }
 
     private void SelectAllPodItem()
@@ -646,7 +646,39 @@ public sealed partial class PodLogsViewModel
         }
 
         UpdateResourceNameToggleState();
-        RequestReconnect();
+        QueueSelectionReconnect();
+    }
+
+    private void QueueSelectionReconnect()
+    {
+        ConnectionError = null;
+        if (!_hasLoadedSession)
+        {
+            return;
+        }
+
+        if (IsConnecting)
+        {
+            _pendingReconnect = true;
+            return;
+        }
+
+        if (_pendingSelectionReconnect)
+        {
+            return;
+        }
+
+        _pendingSelectionReconnect = true;
+        Dispatcher.UIThread.Post(
+            () =>
+            {
+                _pendingSelectionReconnect = false;
+                if (!_disposed)
+                {
+                    RequestReconnect();
+                }
+            },
+            DispatcherPriority.Background);
     }
 
     private void SelectAllContainerItem()
