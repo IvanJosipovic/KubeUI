@@ -5,8 +5,10 @@ using KubeUI.Avalonia.Infrastructure.Platform;
 
 namespace KubeUI.Avalonia.Resources.Workloads.v1.Pod.Services;
 
+/// <inheritdoc />
 public sealed class PodLogExportService(IPlatformServices platformServices) : IPodLogExportService
 {
+    /// <inheritdoc />
     public async Task ExportAsync(string suggestedFileName, string content, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
