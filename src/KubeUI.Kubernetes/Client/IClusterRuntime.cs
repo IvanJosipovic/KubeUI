@@ -34,10 +34,8 @@ public interface IClusterRuntime
     bool IsResourceNamespaced(GroupApiVersionKind kind);
     bool IsResourceNamespaced<T>();
     PortForwarder AddPodPortForward(string @namespace, string podName, int containerPort);
-    PortForwarder AddPodPortForward(string @namespace, string podName, string? podUid, int containerPort);
     Task AddPodEphemeralDebugContainer(V1Pod pod, string? targetContainerName, string image);
     PortForwarder AddServicePortForward(string @namespace, string serviceName, int servicePort);
-    PortForwarder AddServicePortForward(string @namespace, string serviceName, string? serviceUid, int servicePort);
     void RemovePortForward(PortForwarder pf);
     Task AddOrUpdateResource<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new();
     Task Connect();
@@ -52,8 +50,8 @@ public interface IClusterRuntime
     Task<bool> IsResourceReady<T>(CancellationToken? token = null) where T : class, IKubernetesObject<V1ObjectMeta>, new();
     T? GetResource<T>(string? @namespace, string name) where T : class, IKubernetesObject<V1ObjectMeta>, new();
     IReadOnlyList<T> GetResourceList<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new();
-    ISourceCache<T, string> GetResourceSourceCache<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new();
-    ISourceCache<T, string> GetResourceSourceCache<T>(GroupApiVersionKind kind) where T : class, IKubernetesObject<V1ObjectMeta>, new();
+    ISourceCache<T, ResourceCacheKey> GetResourceSourceCache<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new();
+    ISourceCache<T, ResourceCacheKey> GetResourceSourceCache<T>(GroupApiVersionKind kind) where T : class, IKubernetesObject<V1ObjectMeta>, new();
     IObservable<int> GetResourceCount(GroupApiVersionKind kind);
     IObservable<int> GetResourceCount<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new();
     IObservable<ResourceChange> ConnectResources() => ClusterResourceChangeFeed.Connect(this);

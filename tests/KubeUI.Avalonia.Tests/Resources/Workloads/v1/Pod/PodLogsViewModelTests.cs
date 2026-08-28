@@ -4,6 +4,7 @@ using System.Net.Http;
 using System.Text;
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
+using AvaloniaEdit.Document;
 using Dock.Model.Core;
 using k8s;
 using k8s.Models;
@@ -1448,6 +1449,57 @@ public sealed class PodLogsViewModelTests
         viewModel.AvailableContainers[1].IsEphemeralContainer.ShouldBeTrue();
         viewModel.ContainerSelectionItems[2].IsEphemeralContainer.ShouldBeTrue();
         streamClient.Requests[0].ContainerName.ShouldBe("debug");
+    }
+
+    [AvaloniaFact]
+    public async Task Connect_should_not_create_undo_history()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync();
+        V1Pod pod = CreatePod(
+            name: "app",
+            namespaceName: "default",
+            uid: "pod-uid",
+            containers: ["app"]);
+        await workspace.Runtime.AddOrUpdateResource(pod);
+        await workspace.Runtime.SeedResource<V1Pod>(true);
+        RecordingPodLogStreamClient streamClient = new(["line\n"]);
+        using PodLogsViewModel viewModel = CreateViewModel(workspace.Runtime, streamClient);
+        viewModel.Object = pod;
+        viewModel.ContainerName = "app";
+
+        await viewModel.Connect();
+
+        await WaitForAsync(() => viewModel.Logs.Text.Contains("line", StringComparison.Ordinal));
+
+        viewModel.Logs.UndoStack.CanUndo.ShouldBeFalse();
+    }
+
+    [AvaloniaFact]
+    public async Task Dispose_should_clear_and_replace_the_log_document()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync();
+        V1Pod pod = CreatePod(
+            name: "app",
+            namespaceName: "default",
+            uid: "pod-uid",
+            containers: ["app"]);
+        await workspace.Runtime.AddOrUpdateResource(pod);
+        await workspace.Runtime.SeedResource<V1Pod>(true);
+        RecordingPodLogStreamClient streamClient = new(["line\n"]);
+        using PodLogsViewModel viewModel = CreateViewModel(workspace.Runtime, streamClient);
+        viewModel.Object = pod;
+        viewModel.ContainerName = "app";
+        TextDocument previousLogs = viewModel.Logs;
+
+        await viewModel.Connect();
+        await WaitForAsync(() => viewModel.Logs.Text.Contains("line", StringComparison.Ordinal));
+
+        viewModel.Dispose();
+
+        previousLogs.Text.ShouldBeEmpty();
+        viewModel.Logs.ShouldNotBeSameAs(previousLogs);
+        viewModel.Logs.Text.ShouldBeEmpty();
+        viewModel.Logs.UndoStack.CanUndo.ShouldBeFalse();
     }
 
     [AvaloniaFact]

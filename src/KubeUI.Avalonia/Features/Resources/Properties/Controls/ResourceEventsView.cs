@@ -9,6 +9,7 @@ using k8s.Models;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Infrastructure.Threading;
+using KubeUI.Kubernetes;
 
 namespace KubeUI.Avalonia.Features.Resources.Properties.Controls;
 
@@ -19,7 +20,7 @@ public sealed partial class ResourceEventsView : UserControl, IInitializeCluster
     private static readonly FuncValueConverter<bool, bool> NotConverter = new(value => !value);
     private readonly DispatcherTimer _timer = new(DispatcherPriority.Background);
     private static readonly IReadOnlyList<ResourceEventItem> EmptyItems = Array.Empty<ResourceEventItem>();
-    private ISourceCache<Corev1Event, string>? _eventCache;
+    private ISourceCache<Corev1Event, ResourceCacheKey>? _eventCache;
     private IDisposable? _eventCacheSubscription;
     private readonly ReadOnlyObservableCollection<Corev1Event> _emptyEvents = new([]);
     private ReadOnlyObservableCollection<Corev1Event> _matchedEvents;

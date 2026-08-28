@@ -51,7 +51,7 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
     public partial ObservableCollection<V1Namespace> SelectedNamespaces { get; set; } = [];
 
     /// <summary>
-    /// Raised after a resource config has been processed by the workspace.
+    /// Raised after a resource config has been permission-evaluated and registered by the workspace.
     /// </summary>
     public event Action<ClusterWorkspace, IResourceConfig>? ResourceConfigProcessed;
     public event Action<ClusterWorkspace, GroupApiVersionKind>? CustomResourceDefinitionRemoved;
@@ -142,10 +142,12 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
         }
     }
 
-    private async Task UpdateResourceConfigPermissionsAndEvaluateAsync(IResourceConfig resourceConfig)
+    private async Task UpdateResourceConfigPermissionsAndEvaluateAsync(
+        IResourceConfig resourceConfig,
+        bool notifyProcessed = true)
     {
         await UpdateResourceConfigPermissionsAsync(resourceConfig).ConfigureAwait(false);
-        await EvaluateResourceConfigAccessCoreAsync(resourceConfig).ConfigureAwait(false);
+        await EvaluateResourceConfigAccessCoreAsync(resourceConfig, notifyProcessed).ConfigureAwait(false);
     }
 
     public async Task Disconnect()
@@ -232,7 +234,9 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
         }
     }
 
-    private async Task EvaluateResourceConfigAccessCoreAsync(IResourceConfig resourceConfig)
+    private async Task EvaluateResourceConfigAccessCoreAsync(
+        IResourceConfig resourceConfig,
+        bool notifyProcessed = true)
     {
         ArgumentNullException.ThrowIfNull(resourceConfig);
 
@@ -246,7 +250,10 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
             _logger.LogDebug(ex, "Unable to evaluate permissions for {Kind}", resourceConfig.Kind);
         }
 
-        ProcessResourceConfigPermissionsUpdated(resourceConfig);
+        if (notifyProcessed)
+        {
+            ProcessResourceConfigPermissionsUpdated(resourceConfig);
+        }
     }
 
     private async Task SeedResourcesConfiguredForConnectAsync()
@@ -387,7 +394,7 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
                 resourceConfig.Kind,
                 generation);
 
-            await UpdateResourceConfigPermissionsAndEvaluateAsync(resourceConfig).ConfigureAwait(false);
+            await UpdateResourceConfigPermissionsAndEvaluateAsync(resourceConfig, notifyProcessed: false).ConfigureAwait(false);
 
             _logger.LogDebug(
                 "Custom resource definition access evaluated for {ClusterName}: Definition={DefinitionName}; ResourceKind={ResourceKind}; PermissionsLoaded={PermissionsLoaded}; CanListAndWatch={CanListAndWatch}; Generation={Generation}",

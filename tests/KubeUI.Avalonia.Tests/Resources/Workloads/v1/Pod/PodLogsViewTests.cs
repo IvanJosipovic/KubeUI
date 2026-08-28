@@ -5,9 +5,11 @@ using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
+using Avalonia.Xaml.Interactivity;
 using AvaloniaEdit;
 using Dock.Model.Core;
 using k8s.Models;
+using KubeUI.Avalonia.Resources.Workloads.v1.Pod.Behaviors;
 using KubeUI.Avalonia.Resources.Workloads.v1.Pod.Services;
 using KubeUI.Avalonia.Resources.Workloads.v1.Pod.ViewModels;
 using KubeUI.Avalonia.Resources.Workloads.v1.Pod.Views;
@@ -17,6 +19,7 @@ using KubeUI.Kubernetes;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Shouldly;
+using System.Reflection;
 
 namespace KubeUI.Avalonia.Tests.Resources.Workloads.v1.Pod;
 
@@ -58,6 +61,65 @@ public sealed class PodLogsViewTests
 
             TextEditor editor = view.GetVisualDescendants().OfType<TextEditor>().Single();
             editor.SearchPanel.ShouldNotBeNull();
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task view_disposes_textmate_installation_when_unloaded()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync();
+        IServiceProvider services = Application.Current.GetTestServices();
+        using PodLogsViewModel viewModel = new(
+            services.GetRequiredService<ILogger<PodLogsViewModel>>(),
+            services.GetRequiredService<ISettingsService>(),
+            new NoOpPodLogExportService(),
+            new PodLogSessionResolver(),
+            new NoOpPodLogStreamClient())
+        {
+            Cluster = workspace.Runtime,
+            Object = CreatePod(),
+            ContainerName = "app",
+        };
+
+        PodLogsView view = new()
+        {
+            DataContext = viewModel,
+        };
+
+        Window window = new()
+        {
+            Content = view,
+            Width = 800,
+            Height = 600,
+        };
+
+        try
+        {
+            window.Show();
+            Dispatcher.UIThread.RunJobs();
+
+            TextEditor editor = view.GetVisualDescendants().OfType<TextEditor>().Single();
+            PodLogsEditorBehavior behavior = Interaction.GetBehaviors(editor).OfType<PodLogsEditorBehavior>().Single();
+            FieldInfo installationField = typeof(PodLogsEditorBehavior).GetField("_textMateInstallation", BindingFlags.Instance | BindingFlags.NonPublic)
+                ?? throw new InvalidOperationException("Pod log editor installation field was not found.");
+
+            installationField.GetValue(behavior).ShouldNotBeNull();
+
+            window.Content = null;
+            Dispatcher.UIThread.RunJobs();
+
+            installationField.GetValue(behavior).ShouldBeNull();
+
+            window.Content = view;
+            Dispatcher.UIThread.RunJobs();
+
+            editor = view.GetVisualDescendants().OfType<TextEditor>().Single();
+            behavior = Interaction.GetBehaviors(editor).OfType<PodLogsEditorBehavior>().Single();
+            installationField.GetValue(behavior).ShouldNotBeNull();
         }
         finally
         {

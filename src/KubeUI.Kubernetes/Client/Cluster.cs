@@ -623,12 +623,12 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
         return GetResourceSourceCache<T>().Items;
     }
 
-    public ISourceCache<T, string> GetResourceSourceCache<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    public ISourceCache<T, ResourceCacheKey> GetResourceSourceCache<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
         return GetResourceSourceCache<T>(GroupApiVersionKind.From<T>());
     }
 
-    public ISourceCache<T, string> GetResourceSourceCache<T>(GroupApiVersionKind kind) where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    public ISourceCache<T, ResourceCacheKey> GetResourceSourceCache<T>(GroupApiVersionKind kind) where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
         if (Objects.TryGetValue(kind, out var obj) && obj is ContainerClass<T> container)
         {
@@ -1050,13 +1050,7 @@ public partial class ContainerClass<T> : ObservableObject, IClearableResourceCon
 
     public bool IsSeeded => InformerCount > 0;
 
-    public ISourceCache<T, string> Items { get; } = new SourceCache<T, string>(GetResourceCacheKey);
-
-    private static string GetResourceCacheKey(T resource)
-    {
-        return resource.Uid() ?? throw new InvalidOperationException(
-            $"Resource {typeof(T).Name} '{resource.Namespace()}/{resource.Name()}' has no metadata UID.");
-    }
+    public ISourceCache<T, ResourceCacheKey> Items { get; } = new SourceCache<T, ResourceCacheKey>(ResourceCacheKey.From);
 
     public IObservable<ResourceChange> ConnectChanges(GroupApiVersionKind kind)
     {
