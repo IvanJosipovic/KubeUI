@@ -156,9 +156,15 @@ public class ClusterWorkspaceTests
         var workspace = await Application.Current.CreateClusterAsync(
             config => config.Type = backend);
         await workspace.Runtime.SeedResource<V1CustomResourceDefinition>(true);
-        System.Collections.Concurrent.ConcurrentQueue<IResourceConfig> processedConfigs = new();
+        TaskCompletionSource<IResourceConfig> processedConfig =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
         workspace.ResourceConfigProcessed += (_, resourceConfig) =>
-            processedConfigs.Enqueue(workspace.GetResourceConfig(resourceConfig.Kind));
+        {
+            if (resourceConfig.IsCustomResource)
+            {
+                processedConfig.TrySetResult(workspace.GetResourceConfig(resourceConfig.Kind));
+            }
+        };
         var crd = ClusterWorkspaceTestCustomResourceDefinitionFactory.Create("tests.kubeui.com", "tests", "someString");
 
         await workspace.Runtime.CreateAsync(crd, TestContext.Current.CancellationToken);
@@ -168,12 +174,8 @@ public class ClusterWorkspaceTests
             TimeSpan.FromSeconds(10),
             cancellationToken: TestContext.Current.CancellationToken,
             beforePoll: () => Dispatcher.UIThread.RunJobs());
-        await TestWait.UntilAsync(
-            () => processedConfigs.Count > 0,
-            TimeSpan.FromSeconds(10),
-            cancellationToken: TestContext.Current.CancellationToken,
-            beforePoll: () => Dispatcher.UIThread.RunJobs());
-        processedConfigs.ToArray().ShouldHaveSingleItem().ShouldBeSameAs(resourceConfig);
+        var observedConfig = await processedConfig.Task.WaitAsync(TestContext.Current.CancellationToken);
+        observedConfig.ShouldBeSameAs(resourceConfig);
     }
 
     [AvaloniaTheory, KubernetesBackendData]
