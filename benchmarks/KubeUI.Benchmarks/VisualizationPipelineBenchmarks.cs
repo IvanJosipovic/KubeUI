@@ -31,7 +31,6 @@ public class VisualizationPipelineBenchmarks
                 {
                     NamespaceProperty = index % 2 == 0 ? "namespace-a" : "namespace-b",
                     Name = $"pod-{index}",
-                    Uid = $"uid-{index}",
                 },
             });
         }

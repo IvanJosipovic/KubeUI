@@ -628,12 +628,12 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
         return GetResourceSourceCache<T>().Items;
     }
 
-    public ISourceCache<T, string> GetResourceSourceCache<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    public ISourceCache<T, ResourceCacheKey> GetResourceSourceCache<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
         return GetResourceSourceCache<T>(GroupApiVersionKind.From<T>());
     }
 
-    public ISourceCache<T, string> GetResourceSourceCache<T>(GroupApiVersionKind kind) where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    public ISourceCache<T, ResourceCacheKey> GetResourceSourceCache<T>(GroupApiVersionKind kind) where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
         if (Objects.TryGetValue(kind, out var obj) && obj is ContainerClass<T> container)
         {
@@ -1055,31 +1055,9 @@ public partial class ContainerClass<T> : ObservableObject, IClearableResourceCon
 
     public bool IsSeeded => InformerCount > 0;
 
-    public ISourceCache<T, string> Items { get; } = new SourceCache<T, string>(GetResourceCacheKey);
+    public ISourceCache<T, ResourceCacheKey> Items { get; } = new SourceCache<T, ResourceCacheKey>(ResourceCacheKey.From);
 
-    public void Remove(T resource)
-    {
-        if (!string.IsNullOrEmpty(resource.Uid()))
-        {
-            Items.Remove(resource);
-            return;
-        }
-
-        var cachedResource = Items.Items.FirstOrDefault(item =>
-            string.Equals(item.Namespace(), resource.Namespace(), StringComparison.Ordinal)
-            && string.Equals(item.Name(), resource.Name(), StringComparison.Ordinal));
-
-        if (cachedResource != null)
-        {
-            Items.Remove(cachedResource);
-        }
-    }
-
-    private static string GetResourceCacheKey(T resource)
-    {
-        return resource.Uid() ?? throw new InvalidOperationException(
-            $"Resource {typeof(T).Name} '{resource.Namespace()}/{resource.Name()}' has no metadata UID.");
-    }
+    public void Remove(T resource) => Items.Remove(resource);
 
     public IObservable<ResourceChange> ConnectChanges(GroupApiVersionKind kind)
     {

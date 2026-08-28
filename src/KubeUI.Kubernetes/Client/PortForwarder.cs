@@ -20,8 +20,6 @@ public partial class PortForwarder : ObservableObject, IEquatable<PortForwarder>
 
     public int Port { get; private set; }
 
-    public string? ResourceUid { get; private set; }
-
     public string Type { get; private set; }
 
     [ObservableProperty]
@@ -52,26 +50,14 @@ public partial class PortForwarder : ObservableObject, IEquatable<PortForwarder>
 
     public void SetPod(string podName, int containerPort)
     {
-        SetPod(podName, null, containerPort);
-    }
-
-    public void SetPod(string podName, string? podUid, int containerPort)
-    {
         Name = podName;
-        ResourceUid = podUid;
         Port = containerPort;
         Type = "Pod";
     }
 
     public void SetService(string serviceName, int servicePort)
     {
-        SetService(serviceName, null, servicePort);
-    }
-
-    public void SetService(string serviceName, string? serviceUid, int servicePort)
-    {
         Name = serviceName;
-        ResourceUid = serviceUid;
         Port = servicePort;
         Type = "Service";
     }
@@ -178,33 +164,12 @@ public partial class PortForwarder : ObservableObject, IEquatable<PortForwarder>
         {
             var podName = Name;
             var podPort = Port;
-            if (Type == "Pod")
+            if (Type == "Service")
             {
-                if (ResourceUid is null)
-                {
-                    Status = "Pod UID is required";
-                    return;
-                }
-
-                var pod = _cluster.GetResourceSourceCache<V1Pod>().Lookup(ResourceUid!).ValueOrDefault();
-                if (pod is null)
-                {
-                    Status = "Pod not found";
-                    return;
-                }
-
-                podName = pod.Name();
-            }
-            else if (Type == "Service")
-            {
-                if (ResourceUid is null)
-                {
-                    Status = "Service UID is required";
-                    return;
-                }
-
-                var service = _cluster.GetResourceSourceCache<V1Service>().Lookup(ResourceUid!).ValueOrDefault();
-                if (service == null)
+                var service = _cluster.GetResourceSourceCache<V1Service>()
+                    .Lookup(new ResourceCacheKey(Namespace, Name))
+                    .ValueOrDefault();
+                if (service is null)
                 {
                     Status = "Service not found";
                     return;
@@ -232,28 +197,22 @@ public partial class PortForwarder : ObservableObject, IEquatable<PortForwarder>
                     return;
                 }
 
-                if (!TrySelectPod(endpointSlice, out var selectedPod, out var selectedPodUid))
+                if (!TrySelectPod(endpointSlice, out var selectedPod))
                 {
                     Status = "No pods found for Service";
                     return;
                 }
 
-                if (selectedPodUid is not null)
-                {
-                    var pod = _cluster.GetResourceSourceCache<V1Pod>().Lookup(selectedPodUid).ValueOrDefault();
-                    if (pod is null)
-                    {
-                        Status = "No pods found for Service";
-                        return;
-                    }
-
-                    podName = pod.Name();
-                }
-                else
+                var pod = _cluster.GetResourceSourceCache<V1Pod>()
+                    .Lookup(new ResourceCacheKey(Namespace, selectedPod))
+                    .ValueOrDefault();
+                if (pod is null)
                 {
                     Status = "No pods found for Service";
                     return;
                 }
+
+                podName = pod.Name();
                 podPort = (int)portData.Port;
             }
 
@@ -358,10 +317,9 @@ public partial class PortForwarder : ObservableObject, IEquatable<PortForwarder>
         return null;
     }
 
-    private static bool TrySelectPod(V1EndpointSlice endpointSlice, out string podName, out string? podUid)
+    private static bool TrySelectPod(V1EndpointSlice endpointSlice, out string podName)
     {
         podName = string.Empty;
-        podUid = null;
 
         var endpoints = endpointSlice.Endpoints;
         if (endpoints == null)
@@ -389,7 +347,6 @@ public partial class PortForwarder : ObservableObject, IEquatable<PortForwarder>
             if (Random.Shared.Next(eligiblePods) == 0)
             {
                 selectedPod = targetRef.Name;
-                podUid = targetRef.Uid;
             }
         }
 
@@ -488,8 +445,7 @@ public partial class PortForwarder : ObservableObject, IEquatable<PortForwarder>
             && other.Name == Name
             && other.Namespace == Namespace
             && other.Port == Port
-            && other.Type == Type
-            && other.ResourceUid == ResourceUid;
+            && other.Type == Type;
     }
 
     public void Dispose()
