@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Net;
 using System.Net.Http.Json;
@@ -57,7 +58,7 @@ public sealed class FakeKubernetesHttpApiTests
     [Fact]
     public async Task AggregatedDiscoveryClient_traces_discovery_requests()
     {
-        var activities = new List<Activity>();
+        var activities = new ConcurrentBag<Activity>();
         using var listener = new ActivityListener
         {
             ShouldListenTo = source => source.Name == KubeUI.Kubernetes.Client.KubeInstrumentation.SourceName,
@@ -68,14 +69,20 @@ public sealed class FakeKubernetesHttpApiTests
 
         using var api = new FakeKubernetesHttpApi();
         using var client = KubernetesClientMaterializer.Create(
-            new KubernetesClientConfiguration { Host = "http://fake-kubernetes" },
+            new KubernetesClientConfiguration { Host = "http://fake-kubernetes-tracing" },
             api);
         var discovery = new KubernetesApiDiscoveryClient(client);
 
         await discovery.RefreshAsync(TestContext.Current.CancellationToken);
 
-        activities.Count.ShouldBe(2);
-        activities.Select(activity => activity.GetTagItem("url.path")).ShouldBe(["/api", "/apis"]);
+        Activity[] discoveryActivities = activities
+            .Where(activity => activity.GetTagItem("url.full") is string url
+                && url.StartsWith("http://fake-kubernetes-tracing/", StringComparison.Ordinal))
+            .ToArray();
+        discoveryActivities.Length.ShouldBe(2);
+        discoveryActivities.Select(activity => activity.GetTagItem("url.path"))
+            .OrderBy(path => path)
+            .ShouldBe(["/api", "/apis"]);
     }
 
     [Fact]

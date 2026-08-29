@@ -131,6 +131,8 @@ namespace KubeUI.Kubernetes;
 
 [JsonSerializable(typeof(V2beta1APIGroupDiscoveryList))]
 
+[JsonSerializable(typeof(Watcher<V1Status>.WatchEvent))]
+
 [JsonSourceGenerationOptions(
     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase,

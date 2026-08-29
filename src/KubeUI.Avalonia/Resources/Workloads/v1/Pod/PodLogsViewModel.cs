@@ -8,6 +8,8 @@ namespace KubeUI.Avalonia.Resources.Workloads.v1.Pod;
 
 public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
 {
+    private const int MaxLogEntries = 10_000;
+
     private readonly ILogger<PodLogsViewModel> _logger;
 
     [ObservableProperty]
@@ -20,7 +22,7 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
     public partial string ContainerName { get; set; }
 
     [ObservableProperty]
-    public partial TextDocument Logs { get; set; } = new();
+    public partial TextDocument Logs { get; set; } = CreateLogDocument();
 
     [ObservableProperty]
     public partial bool Previous { get; set; }
@@ -113,6 +115,10 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
     public void Dispose()
     {
         StopCurrentConnection();
+
+        TextDocument logs = Logs;
+        logs.Text = string.Empty;
+        Logs = CreateLogDocument();
     }
 
     internal Task ReadLogStreamForTesting(Stream stream)
@@ -136,7 +142,16 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
                 if (log.Length > 0)
                 {
                     await Dispatcher.UIThread.InvokeAsync(
-                        () => Logs.Insert(Logs.TextLength, log + Environment.NewLine),
+                        () =>
+                        {
+                            Logs.Insert(Logs.TextLength, log + Environment.NewLine);
+
+                            while (Logs.LineCount > MaxLogEntries)
+                            {
+                                var firstLine = Logs.GetLineByNumber(1);
+                                Logs.Remove(firstLine.Offset, firstLine.TotalLength);
+                            }
+                        },
                         DispatcherPriority.Background,
                         cancellationToken);
                 }
@@ -167,5 +182,12 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
         _connectionCancellation = null;
         _streamReader = null;
         _stream = null;
+    }
+
+    private static TextDocument CreateLogDocument()
+    {
+        TextDocument document = new();
+        document.UndoStack.SizeLimit = 0;
+        return document;
     }
 }
