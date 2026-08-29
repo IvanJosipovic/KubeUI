@@ -77,6 +77,7 @@ public sealed class PodLogsViewTests
             Dispatcher.UIThread.RunJobs();
             MultiComboBox[] selectors = view.GetVisualDescendants().OfType<MultiComboBox>().ToArray();
             Control podSelector = selectors[0];
+            MultiComboBox containerSelector = selectors[1];
             StackPanel selectionControls = podSelector.Parent.ShouldBeOfType<StackPanel>();
             Grid logControlsBar = selectionControls.Parent.ShouldBeOfType<Grid>();
             Grid topBar = logControlsBar.Parent.ShouldBeOfType<Grid>();
@@ -93,7 +94,7 @@ public sealed class PodLogsViewTests
                 [
                     KubeUI.Avalonia.Assets.Resources.PodLogsView_Clear,
                     KubeUI.Avalonia.Assets.Resources.PodLogsView_Download,
-                    KubeUI.Avalonia.Assets.Resources.PodLogsView_JumpToPresent,
+                    KubeUI.Avalonia.Assets.Resources.PodLogsView_FollowLogs,
                     KubeUI.Avalonia.Assets.Resources.PodLogsView_Controller,
                     KubeUI.Avalonia.Assets.Resources.PodLogsView_Previous,
                     KubeUI.Avalonia.Assets.Resources.PodLogsView_Timestamps,
@@ -103,21 +104,63 @@ public sealed class PodLogsViewTests
             StackPanel scopeIdentityBar = topBar.Children
                 .OfType<StackPanel>()
                 .Single(panel => Grid.GetRow(panel) == 0);
-            TextBlock scopeHeading = scopeIdentityBar.Children.OfType<TextBlock>().Single();
-            Border namespaceChip = scopeIdentityBar.Children.OfType<Border>().Single();
-            TextBlock namespaceName = namespaceChip.Child.ShouldBeOfType<TextBlock>();
+            StackPanel[] scopeFields = scopeIdentityBar.Children.OfType<StackPanel>().ToArray();
+            TextBlock[] nameField = scopeFields[0].Children.OfType<TextBlock>().ToArray();
+            TextBlock[] namespaceField = scopeFields[1].Children.OfType<TextBlock>().ToArray();
+            TextBlock scopeName = nameField[1];
+            TextBlock namespaceName = namespaceField[1];
             Control controllerButton = view.GetVisualDescendants()
                 .OfType<Button>()
                 .Single(button => ReferenceEquals(button.Command, viewModel.JumpToControlledByLogsCommand));
-            scopeHeading.Text.ShouldBe(pod.Name());
-            scopeHeading.FontWeight.ShouldBe(FontWeight.SemiBold);
-            namespaceChip.IsVisible.ShouldBeTrue();
+            Button followLogsButton = view.GetVisualDescendants()
+                .OfType<Button>()
+                .Single(button => ReferenceEquals(button.Command, viewModel.FollowLogsCommand));
+            Button clearButton = view.GetVisualDescendants()
+                .OfType<Button>()
+                .Single(button => ReferenceEquals(button.Command, viewModel.ClearCommand));
+            new[] { nameField[0].Text, namespaceField[0].Text }.ShouldBe(
+            [
+                $"{KubeUI.Avalonia.Assets.Resources.ResourcePropertiesView_Name}:",
+                $"{KubeUI.Avalonia.Assets.Resources.ResourcePropertiesView_Namespace}:",
+            ]);
+            new[] { nameField[0], namespaceField[0] }
+                .ShouldAllBe(label => label.FontWeight == FontWeight.SemiBold);
+            scopeFields.ShouldAllBe(field =>
+                field.Orientation == global::Avalonia.Layout.Orientation.Horizontal && field.Spacing == 4);
+            scopeName.Text.ShouldBe(pod.Name());
+            scopeName.FontWeight.ShouldBe(FontWeight.Normal);
             namespaceName.Text.ShouldBe("default");
+            scopeIdentityBar.Height.ShouldBe(24);
+            scopeIdentityBar.Margin.ShouldBe(new Thickness(2, 0));
+            scopeIdentityBar.Spacing.ShouldBe(16);
+            scopeFields[0].Margin.ShouldBe(new Thickness(4, 0, 0, 0));
+            scopeIdentityBar.Children.OfType<Border>().ShouldBeEmpty();
+            logControlsBar.Margin.ShouldBe(new Thickness(2, 0));
+            selectors.ShouldAllBe(selector =>
+                selector.MaxHeight == 20
+                && selector.Margin == new Thickness(0, 0, 2, 0)
+                && selector.Classes.Contains("ClearButton"));
             Grid.GetRow(scopeIdentityBar).ShouldBe(0);
             Grid.GetRow(logControlsBar).ShouldBe(1);
             podSelector.IsVisible.ShouldBeFalse();
+            containerSelector.IsVisible.ShouldBeTrue();
             controllerButton.IsVisible.ShouldBeTrue();
+            followLogsButton.Content
+                .ShouldBeOfType<FluentIcons.Avalonia.FluentIcon>()
+                .Icon.ShouldBe(FluentIcons.Common.Icon.ArrowDownload);
+            followLogsButton.IsVisible.ShouldBeTrue();
+            followLogsButton.IsEnabled.ShouldBeFalse();
+            clearButton.Content
+                .ShouldBeOfType<FluentIcons.Avalonia.FluentIcon>()
+                .Icon.ShouldBe(FluentIcons.Common.Icon.Broom);
+            actionControls.Children.OfType<Border>().ShouldBeEmpty();
             viewModel.Title.ShouldBe("Pod Logs");
+
+            viewModel.AutoScrollToBottom = false;
+            Dispatcher.UIThread.RunJobs();
+
+            followLogsButton.IsVisible.ShouldBeTrue();
+            followLogsButton.IsEnabled.ShouldBeTrue();
 
             viewModel.Object = deployment;
             viewModel.SessionResolution = new PodLogSessionResolution(
@@ -129,9 +172,9 @@ public sealed class PodLogsViewTests
                 null);
             Dispatcher.UIThread.RunJobs();
 
-            scopeHeading.Text.ShouldBe(deployment.Name());
+            scopeName.Text.ShouldBe(deployment.Name());
             viewModel.Title.ShouldBe("Deployment Logs");
-            namespaceChip.IsVisible.ShouldBeTrue();
+            scopeFields[1].IsVisible.ShouldBeTrue();
             namespaceName.Text.ShouldBe("default");
             podSelector.IsVisible.ShouldBeTrue();
             controllerButton.IsVisible.ShouldBeFalse();
@@ -142,7 +185,7 @@ public sealed class PodLogsViewTests
             viewModel.Object = deployment;
             Dispatcher.UIThread.RunJobs();
 
-            namespaceChip.IsVisible.ShouldBeFalse();
+            scopeFields[1].IsVisible.ShouldBeFalse();
         }
         finally
         {
@@ -263,7 +306,7 @@ public sealed class PodLogsViewTests
     }
 
     [AvaloniaFact]
-    public async Task jump_to_present_button_is_only_visible_when_logs_are_not_at_the_bottom()
+    public async Task follow_logs_button_is_enabled_only_when_logs_are_not_at_the_bottom()
     {
         using var workspace = await Application.Current.CreateClusterAsync();
         IServiceProvider services = Application.Current.GetTestServices();
@@ -295,22 +338,75 @@ public sealed class PodLogsViewTests
         try
         {
             Dispatcher.UIThread.RunJobs();
-            Button jumpToPresentButton = view.GetVisualDescendants()
+            Button followLogsButton = view.GetVisualDescendants()
                 .OfType<Button>()
-                .Single(button => ReferenceEquals(button.Command, viewModel.JumpToPresentCommand));
+                .Single(button => ReferenceEquals(button.Command, viewModel.FollowLogsCommand));
             TextEditor editor = view.GetVisualDescendants().OfType<TextEditor>().Single();
             ScrollViewer scrollViewer = await WaitForScrollViewerAsync(editor);
             await WaitForAsync(() => scrollViewer.Offset.Y >= scrollViewer.ScrollBarMaximum.Y - 1.0);
-            jumpToPresentButton.IsVisible.ShouldBeFalse();
+            followLogsButton.IsVisible.ShouldBeTrue();
+            followLogsButton.IsEnabled.ShouldBeFalse();
 
             await Dispatcher.UIThread.InvokeAsync(() => scrollViewer.Offset = new Vector(scrollViewer.Offset.X, 80));
-            await WaitForAsync(() => !viewModel.AutoScrollToBottom && jumpToPresentButton.IsVisible);
+            await WaitForAsync(() => !viewModel.AutoScrollToBottom && followLogsButton.IsEnabled);
 
-            viewModel.JumpToPresent();
+            viewModel.FollowLogs();
             await WaitForAsync(
                 () => viewModel.AutoScrollToBottom
-                    && !jumpToPresentButton.IsVisible
+                    && !followLogsButton.IsEnabled
                     && scrollViewer.Offset.Y >= scrollViewer.ScrollBarMaximum.Y - 1.0);
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task follow_logs_button_is_enabled_when_resizing_creates_vertical_overflow()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync();
+        IServiceProvider services = Application.Current.GetTestServices();
+        using PodLogsViewModel viewModel = new(
+            services.GetRequiredService<ILogger<PodLogsViewModel>>(),
+            services.GetRequiredService<ISettingsService>(),
+            new NoOpPodLogExportService(),
+            new PodLogSessionResolver(),
+            new NoOpPodLogStreamClient())
+        {
+            Cluster = workspace.Runtime,
+            Object = CreatePod(),
+            ContainerName = "app",
+            Logs = new AvaloniaEdit.Document.TextDocument(CreateManyLines(20)),
+        };
+        PodLogsView view = new()
+        {
+            DataContext = viewModel,
+        };
+        Window window = new()
+        {
+            Content = view,
+            Width = 800,
+            Height = 600,
+        };
+
+        window.Show();
+        try
+        {
+            Dispatcher.UIThread.RunJobs();
+            Button followLogsButton = view.GetVisualDescendants()
+                .OfType<Button>()
+                .Single(button => ReferenceEquals(button.Command, viewModel.FollowLogsCommand));
+            TextEditor editor = view.GetVisualDescendants().OfType<TextEditor>().Single();
+            ScrollViewer scrollViewer = await WaitForScrollViewerAsync(editor);
+            await WaitForAsync(() => scrollViewer.ScrollBarMaximum.Y == 0);
+            followLogsButton.IsEnabled.ShouldBeFalse();
+
+            window.Height = 180;
+
+            await WaitForAsync(() => scrollViewer.ScrollBarMaximum.Y > 0);
+            await WaitForAsync(() => followLogsButton.IsEnabled);
+            viewModel.AutoScrollToBottom.ShouldBeFalse();
         }
         finally
         {
@@ -441,12 +537,12 @@ public sealed class PodLogsViewTests
             behavior.AutoScrollToBottom = false;
             behavior.AutoScrollToBottom = false;
             behavior.ScrollOffset = new Vector(8, 16);
-            behavior.JumpToPresentRequested = true;
+            behavior.FollowLogsRequested = true;
             Dispatcher.UIThread.RunJobs();
 
             behaviors.Remove(behavior).ShouldBeTrue();
 
-            behavior.JumpToPresentRequested.ShouldBeFalse();
+            behavior.FollowLogsRequested.ShouldBeFalse();
             behavior.ScrollOffset.ShouldBe(default);
             behavior.AutoScrollToBottom.ShouldBeTrue();
         }
@@ -669,11 +765,11 @@ public sealed class PodLogsViewTests
             ScrollViewer scrollViewer = await WaitForScrollViewerAsync(editor);
             await WaitForAsync(() => Math.Abs(scrollViewer.Offset.Y - 80) < 1.0);
 
-            viewModel.JumpToPresent();
+            viewModel.FollowLogs();
 
             await WaitForAsync(() => scrollViewer.Offset.Y >= scrollViewer.ScrollBarMaximum.Y - 1.0);
 
-            viewModel.JumpToPresentRequested.ShouldBeFalse();
+            viewModel.FollowLogsRequested.ShouldBeFalse();
             viewModel.AutoScrollToBottom.ShouldBeTrue();
         }
         finally

@@ -49,33 +49,38 @@ public sealed partial class PodLogsView : ViewBase<PodLogsViewModel>
     {
         return new StackPanel()
             .Row(0)
-            .Height(32)
+            .Height(24)
             .ClipToBounds(true)
             .Orientation(Orientation.Horizontal)
-            .Spacing(8)
-            .Margin(8, 0)
+            .Spacing(16)
+            .Margin(2, 0)
             .Children(
-                new FluentIcon()
+                new StackPanel()
                     .VerticalAlignment(VerticalAlignment.Center)
-                    .Icon(Icon.TextDescription),
-                new TextBlock()
-                    .VerticalAlignment(VerticalAlignment.Center)
-                    .FontWeight(FontWeight.SemiBold)
-                    .Text(vm, x => x.ScopeResourceName)
-                    .TextTrimming(TextTrimming.CharacterEllipsis),
-                new Border()
-                    .VerticalAlignment(VerticalAlignment.Center)
-                    .Padding(8, 2)
-                    .CornerRadius(10)
-                    .BorderThickness(1)
-                    .BorderBrush(new DynamicResourceExtension("SystemChromeHighColor"))
-                    .Background(new DynamicResourceExtension("SystemAltHighColor"))
-                    .IsVisible(vm, x => x.HasScopeNamespace)
-                    .ToolTip_Tip(Assets.Resources.PodLogsView_NamespaceLabel)
-                    .Child(
+                    .Orientation(Orientation.Horizontal)
+                    .Spacing(4)
+                    .Margin(4, 0, 0, 0)
+                    .Children(
                         new TextBlock()
-                            .Opacity(0.8)
-                            .Text(vm, x => x.ScopeNamespace)));
+                            .FontWeight(FontWeight.SemiBold)
+                            .Text($"{Assets.Resources.ResourcePropertiesView_Name}:"),
+                        new TextBlock()
+                            .FontWeight(FontWeight.Normal)
+                            .Text(vm, x => x.ScopeResourceName)
+                            .TextTrimming(TextTrimming.CharacterEllipsis)),
+                new StackPanel()
+                    .VerticalAlignment(VerticalAlignment.Center)
+                    .Orientation(Orientation.Horizontal)
+                    .Spacing(4)
+                    .IsVisible(vm, x => x.HasScopeNamespace)
+                    .Children(
+                        new TextBlock()
+                            .FontWeight(FontWeight.SemiBold)
+                            .Text($"{Assets.Resources.ResourcePropertiesView_Namespace}:"),
+                        new TextBlock()
+                            .FontWeight(FontWeight.Normal)
+                            .Text(vm, x => x.ScopeNamespace)
+                            .TextTrimming(TextTrimming.CharacterEllipsis)));
     }
 
     private Grid CreateLogControlsBar(PodLogsViewModel vm)
@@ -85,7 +90,7 @@ public sealed partial class PodLogsView : ViewBase<PodLogsViewModel>
             .Height(32)
             .ClipToBounds(true)
             .Cols("*,Auto")
-            .Margin(6, 0)
+            .Margin(2, 0)
             .Children(
                 CreateSelectionControls(vm),
                 CreateActionControls(vm));
@@ -118,23 +123,21 @@ public sealed partial class PodLogsView : ViewBase<PodLogsViewModel>
                 new Button()
                     .Command(vm, x => x.ClearCommand)
                     .ToolTip_Tip(Assets.Resources.PodLogsView_Clear)
-                    .Content(new FluentIcon().Icon(Icon.Delete)),
+                    .Content(new FluentIcon().Icon(Icon.Broom)),
                 new Button()
                     .Command(vm, x => x.DownloadLogsCommand)
                     .ToolTip_Tip(Assets.Resources.PodLogsView_Download)
                     .Content(new FluentIcon().Icon(Icon.Save)),
-                CreateActionSeparator(),
                 new Button()
-                    .Command(vm, x => x.JumpToPresentCommand)
-                    .IsVisible(vm, x => x.CanJumpToPresent)
-                    .ToolTip_Tip(Assets.Resources.PodLogsView_JumpToPresent)
-                    .Content(new FluentIcon().Icon(Icon.ArrowDown)),
+                    .Command(vm, x => x.FollowLogsCommand)
+                    .IsEnabled(vm, x => x.CanFollowLogs)
+                    .ToolTip_Tip(Assets.Resources.PodLogsView_FollowLogs)
+                    .Content(new FluentIcon().Icon(Icon.ArrowDownload)),
                 new Button()
                     .Command(vm, x => x.JumpToControlledByLogsCommand)
                     .IsVisible(vm, x => x.CanJumpToController)
                     .ToolTip_Tip(Assets.Resources.PodLogsView_Controller)
                     .Content(new FluentIcon().Icon(Icon.ArrowUp)),
-                CreateActionSeparator(),
                 new ToggleButton()
                     .IsChecked(vm, x => x.Previous, BindingMode.TwoWay)
                     .ToolTip_Tip(Assets.Resources.PodLogsView_Previous)
@@ -143,7 +146,6 @@ public sealed partial class PodLogsView : ViewBase<PodLogsViewModel>
                     .IsChecked(vm, x => x.Timestamps, BindingMode.TwoWay)
                     .ToolTip_Tip(Assets.Resources.PodLogsView_Timestamps)
                     .Content(new FluentIcon().Icon(Icon.Timer)),
-                CreateActionSeparator(),
                 new ToggleButton()
                     .IsChecked(vm, x => x.ShowResourceNames, BindingMode.TwoWay)
                     .IsEnabled(vm, x => x.CanShowResourceNames)
@@ -155,16 +157,6 @@ public sealed partial class PodLogsView : ViewBase<PodLogsViewModel>
                     .Content(new FluentIcon().Icon(Icon.TextWrap)));
     }
 
-    private static Border CreateActionSeparator()
-    {
-        return new Border()
-            .Width(1)
-            .Height(20)
-            .Margin(4, 0)
-            .VerticalAlignment(VerticalAlignment.Center)
-            .Background(new DynamicResourceExtension("SystemChromeHighColor"));
-    }
-
     private static MultiComboBox CreatePodSelector(PodLogsViewModel vm)
     {
         FuncDataTemplate<PodLogPodSelectionItem> template = new(
@@ -172,10 +164,10 @@ public sealed partial class PodLogsView : ViewBase<PodLogsViewModel>
 
         return new MultiComboBox()
             .Width(SelectorWidth)
-            .Height(24)
-            .MaxHeight(24)
-            .Margin(0, 0, 8, 0)
+            .MaxHeight(20)
+            .Margin(0, 0, 2, 0)
             .VerticalAlignment(VerticalAlignment.Center)
+            .Classes("ClearButton")
             .IsVisible(vm, x => x.IsControllerScope)
             .ItemsSource(vm, x => x.PodSelectionItems)
             .SelectedItems(vm, x => x.SelectedPodItems, BindingMode.TwoWay)
@@ -191,10 +183,10 @@ public sealed partial class PodLogsView : ViewBase<PodLogsViewModel>
 
         return new MultiComboBox()
             .Width(SelectorWidth)
-            .Height(24)
-            .MaxHeight(24)
-            .Margin(0, 0, 8, 0)
+            .MaxHeight(20)
+            .Margin(0, 0, 2, 0)
             .VerticalAlignment(VerticalAlignment.Center)
+            .Classes("ClearButton")
             .ItemsSource(vm, x => x.ContainerSelectionItems)
             .SelectedItems(vm, x => x.SelectedContainerItems, BindingMode.TwoWay)
             .ToolTip_Tip(Assets.Resources.PodLogsView_ContainerLabel)
@@ -206,7 +198,7 @@ public sealed partial class PodLogsView : ViewBase<PodLogsViewModel>
     {
         PodLogsEditorBehavior behavior = new();
         behavior.AutoScrollToBottom(vm, x => x.AutoScrollToBottom);
-        behavior.JumpToPresentRequested(vm, x => x.JumpToPresentRequested);
+        behavior.FollowLogsRequested(vm, x => x.FollowLogsRequested);
         behavior.ScrollOffset(vm, x => x.ScrollOffset);
 
         var editor = new TextEditor()

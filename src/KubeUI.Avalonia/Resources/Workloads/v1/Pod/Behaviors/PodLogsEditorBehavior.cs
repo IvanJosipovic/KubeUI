@@ -23,12 +23,12 @@ public sealed class PodLogsEditorBehavior : Behavior<TextEditor>, IDeclarativeVi
             true,
             BindingMode.TwoWay);
 
-    /// <summary>Identifies the two-way jump-to-present request property.</summary>
-    public static readonly DirectProperty<PodLogsEditorBehavior, bool> JumpToPresentRequestedProperty =
+    /// <summary>Identifies the two-way follow-logs request property.</summary>
+    public static readonly DirectProperty<PodLogsEditorBehavior, bool> FollowLogsRequestedProperty =
         AvaloniaProperty.RegisterDirect<PodLogsEditorBehavior, bool>(
-            nameof(JumpToPresentRequested),
-            behavior => behavior.JumpToPresentRequested,
-            (behavior, value) => behavior.JumpToPresentRequested = value,
+            nameof(FollowLogsRequested),
+            behavior => behavior.FollowLogsRequested,
+            (behavior, value) => behavior.FollowLogsRequested = value,
             false,
             BindingMode.TwoWay);
 
@@ -46,13 +46,13 @@ public sealed class PodLogsEditorBehavior : Behavior<TextEditor>, IDeclarativeVi
     private ScrollViewer? _scrollViewer;
     private Vector? _pendingRestoreOffset;
     private bool _autoScrollToBottom = true;
-    private bool _jumpToPresentRequested;
+    private bool _followLogsRequested;
     private Vector _scrollOffset;
     private bool _isRestoringScrollOffset;
     private bool _suppressScrollSync;
     private bool _isStuckToBottom = true;
     private bool _stickToBottomQueued;
-    private bool _jumpToPresentQueued;
+    private bool _followLogsQueued;
 
     /// <summary>Gets or sets whether new output keeps the editor at the bottom.</summary>
     public bool AutoScrollToBottom
@@ -61,22 +61,22 @@ public sealed class PodLogsEditorBehavior : Behavior<TextEditor>, IDeclarativeVi
         set => SetAndRaise(AutoScrollToBottomProperty, ref _autoScrollToBottom, value);
     }
 
-    /// <summary>Gets or sets the request state for jumping to the newest output.</summary>
-    public bool JumpToPresentRequested
+    /// <summary>Gets or sets the request state for resuming live log following.</summary>
+    public bool FollowLogsRequested
     {
-        get => _jumpToPresentRequested;
+        get => _followLogsRequested;
         set
         {
-            if (_jumpToPresentRequested == value)
+            if (_followLogsRequested == value)
             {
                 return;
             }
 
-            SetAndRaise(JumpToPresentRequestedProperty, ref _jumpToPresentRequested, value);
+            SetAndRaise(FollowLogsRequestedProperty, ref _followLogsRequested, value);
             if (value)
             {
-                _jumpToPresentQueued = true;
-                Dispatcher.UIThread.Post(JumpToPresent, DispatcherPriority.Loaded);
+                _followLogsQueued = true;
+                Dispatcher.UIThread.Post(FollowLogs, DispatcherPriority.Loaded);
             }
         }
     }
@@ -153,7 +153,7 @@ public sealed class PodLogsEditorBehavior : Behavior<TextEditor>, IDeclarativeVi
         PersistScrollOffset();
         _isStuckToBottom = true;
         _stickToBottomQueued = false;
-        _jumpToPresentQueued = false;
+        _followLogsQueued = false;
         AttachScrollViewer();
         RequestRestoreScrollOffset();
     }
@@ -187,9 +187,9 @@ public sealed class PodLogsEditorBehavior : Behavior<TextEditor>, IDeclarativeVi
             StickToBottom();
         }
 
-        if (_jumpToPresentQueued)
+        if (_followLogsQueued)
         {
-            JumpToPresent();
+            FollowLogs();
         }
     }
 
@@ -291,7 +291,7 @@ public sealed class PodLogsEditorBehavior : Behavior<TextEditor>, IDeclarativeVi
 
         DetachScrollViewer();
         _scrollViewer = scrollViewer;
-        _scrollViewer.PropertyChanged += ScrollViewerOnPropertyChanged;
+        _scrollViewer.ScrollChanged += ScrollViewerOnScrollChanged;
     }
 
     private void DetachScrollViewer()
@@ -301,13 +301,13 @@ public sealed class PodLogsEditorBehavior : Behavior<TextEditor>, IDeclarativeVi
             return;
         }
 
-        _scrollViewer.PropertyChanged -= ScrollViewerOnPropertyChanged;
+        _scrollViewer.ScrollChanged -= ScrollViewerOnScrollChanged;
         _scrollViewer = null;
     }
 
-    private void ScrollViewerOnPropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
+    private void ScrollViewerOnScrollChanged(object? sender, ScrollChangedEventArgs e)
     {
-        if (e.Property != ScrollViewer.OffsetProperty || sender is not ScrollViewer scrollViewer)
+        if (sender is not ScrollViewer scrollViewer)
         {
             return;
         }
@@ -357,16 +357,16 @@ public sealed class PodLogsEditorBehavior : Behavior<TextEditor>, IDeclarativeVi
         }
     }
 
-    private void JumpToPresent()
+    private void FollowLogs()
     {
-        _jumpToPresentQueued = false;
+        _followLogsQueued = false;
 
         if (!AutoScrollToBottom)
         {
             AutoScrollToBottom = true;
         }
 
-        JumpToPresentRequested = false;
+        FollowLogsRequested = false;
         StickToBottom();
     }
 

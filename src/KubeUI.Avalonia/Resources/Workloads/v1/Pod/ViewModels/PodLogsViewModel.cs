@@ -127,8 +127,8 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     public partial bool AutoScrollToBottom { get; set; } = true;
 
-    /// <summary>Gets whether the user can jump from an older scroll position to the newest log output.</summary>
-    public bool CanJumpToPresent => !AutoScrollToBottom;
+    /// <summary>Gets whether the user can resume following the newest log output.</summary>
+    public bool CanFollowLogs => !AutoScrollToBottom;
 
     [ObservableProperty]
     public partial bool WordWrap { get; set; }
@@ -160,7 +160,7 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
     }
 
     [ObservableProperty]
-    public partial bool JumpToPresentRequested { get; set; }
+    public partial bool FollowLogsRequested { get; set; }
 
     [ObservableProperty]
     public partial Vector ScrollOffset { get; set; }
@@ -423,10 +423,10 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
     }
 
     [RelayCommand]
-    public void JumpToPresent()
+    public void FollowLogs()
     {
         AutoScrollToBottom = true;
-        JumpToPresentRequested = true;
+        FollowLogsRequested = true;
     }
 
     [RelayCommand]
@@ -525,7 +525,7 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
 
     partial void OnAutoScrollToBottomChanged(bool value)
     {
-        OnPropertyChanged(nameof(CanJumpToPresent));
+        OnPropertyChanged(nameof(CanFollowLogs));
     }
 
     partial void OnSelectedPodItemsChanging(ObservableCollection<PodLogPodSelectionItem> value)

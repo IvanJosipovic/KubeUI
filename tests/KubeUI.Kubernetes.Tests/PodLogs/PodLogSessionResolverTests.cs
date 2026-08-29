@@ -352,6 +352,66 @@ public sealed class PodLogSessionResolverTests
     }
 
     [Fact]
+    public async Task Cluster_scoped_workload_resolves_descendant_pods_across_namespaces()
+    {
+        await using var harness = await new TestClusterGenerator().CreateAsync(
+            new TestClusterConfig { Type = KubernetesBackend.Fake },
+            TestContext.Current.CancellationToken);
+        V1ConfigMap clusterPolicy = new()
+        {
+            ApiVersion = "nvidia.com/v1",
+            Kind = "ClusterPolicy",
+            Metadata = new V1ObjectMeta
+            {
+                Name = "gpu-cluster-policy",
+                Uid = "cluster-policy-uid",
+            },
+        };
+        V1DaemonSet daemonSet = new()
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "gpu-feature-discovery",
+                NamespaceProperty = "gpu-operator",
+                Uid = "daemonset-uid",
+                OwnerReferences =
+                [
+                    new V1OwnerReference
+                    {
+                        Kind = "ClusterPolicy",
+                        Name = clusterPolicy.Name(),
+                        Uid = clusterPolicy.Uid(),
+                        Controller = true,
+                    },
+                ],
+            },
+        };
+        V1Pod pod = CreatePod(
+            "gpu-feature-discovery-rt9k9",
+            "pod-uid",
+            new V1OwnerReference
+            {
+                Kind = V1DaemonSet.KubeKind,
+                Name = daemonSet.Name(),
+                Uid = daemonSet.Uid(),
+                Controller = true,
+            });
+        pod.Metadata!.NamespaceProperty = "gpu-operator";
+        AddResource(harness.Cluster, GroupApiVersionKind.From<V1ConfigMap>(), clusterPolicy);
+        AddResource(harness.Cluster, GroupApiVersionKind.From<V1DaemonSet>(), daemonSet);
+        AddResource(harness.Cluster, GroupApiVersionKind.From<V1Pod>(), pod);
+        PodLogSessionResolver resolver = new();
+
+        PodLogSessionResolution? resolution = resolver.TryResolve(
+            harness.Cluster,
+            resolver.CreateState(clusterPolicy, string.Empty, false, false));
+
+        resolution.ShouldNotBeNull();
+        resolution!.Pod.ShouldBeSameAs(pod);
+        resolution.RelatedPods.ShouldBe([pod]);
+    }
+
+    [Fact]
     public async Task Workload_resolution_uses_name_indexes_and_ignores_broken_owner_chains()
     {
         await using var harness = await new TestClusterGenerator().CreateAsync(

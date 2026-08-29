@@ -2577,8 +2577,8 @@
     <value>Text files</value>
     <comment/>
   </data>
-  <data name="PodLogsView_JumpToPresent" xml:space="preserve">
-    <value>Jump to Present</value>
+  <data name="PodLogsView_FollowLogs" xml:space="preserve">
+    <value>Follow Logs</value>
     <comment/>
   </data>
   <data name="PodLogsView_Download" xml:space="preserve">

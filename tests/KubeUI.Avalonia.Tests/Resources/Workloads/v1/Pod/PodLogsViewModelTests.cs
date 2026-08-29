@@ -2257,15 +2257,15 @@ public sealed class PodLogsViewModelTests
     }
 
     [AvaloniaFact]
-    public async Task JumpToPresent_should_request_live_following()
+    public async Task FollowLogs_should_request_live_following()
     {
         using var workspace = await Application.Current.CreateClusterAsync();
         using PodLogsViewModel viewModel = CreateViewModel(workspace.Runtime, new RecordingPodLogStreamClient());
 
-        viewModel.JumpToPresent();
+        viewModel.FollowLogs();
 
         viewModel.AutoScrollToBottom.ShouldBeTrue();
-        viewModel.JumpToPresentRequested.ShouldBeTrue();
+        viewModel.FollowLogsRequested.ShouldBeTrue();
     }
 
     [AvaloniaTheory, KubernetesBackendData]
@@ -2760,6 +2760,81 @@ public sealed class PodLogsViewModelTests
         viewModel.SelectedPodItems.Single().IsAll.ShouldBeTrue();
         viewModel.SelectedContainerItems.Single().IsAll.ShouldBeTrue();
         viewModel.CanJumpToController.ShouldBeFalse();
+    }
+
+    [AvaloniaFact]
+    public async Task JumpToControlledByLogs_should_keep_logs_working_for_a_cluster_scoped_parent()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync();
+        await workspace.Runtime.SeedResource<V1ConfigMap>(true);
+        await workspace.Runtime.SeedResource<V1DaemonSet>(true);
+        await workspace.Runtime.SeedResource<V1Pod>(true);
+        V1ConfigMap clusterPolicy = new()
+        {
+            ApiVersion = "nvidia.com/v1",
+            Kind = "ClusterPolicy",
+            Metadata = new V1ObjectMeta
+            {
+                Name = "gpu-cluster-policy",
+                Uid = "cluster-policy-uid",
+            },
+        };
+        V1DaemonSet daemonSet = new()
+        {
+            ApiVersion = "apps/v1",
+            Kind = V1DaemonSet.KubeKind,
+            Metadata = new V1ObjectMeta
+            {
+                Name = "gpu-feature-discovery",
+                NamespaceProperty = "gpu-operator",
+                Uid = "daemonset-uid",
+                OwnerReferences =
+                [
+                    new V1OwnerReference
+                    {
+                        ApiVersion = "nvidia.com/v1",
+                        Kind = "ClusterPolicy",
+                        Name = clusterPolicy.Name(),
+                        Uid = clusterPolicy.Uid(),
+                        Controller = true,
+                    },
+                ],
+            },
+        };
+        V1Pod pod = CreatePod(
+            "gpu-feature-discovery-rt9k9",
+            "gpu-operator",
+            "pod-uid",
+            daemonSet.Uid(),
+            daemonSet.Name(),
+            V1DaemonSet.KubeKind,
+            ["app"]);
+        pod.Metadata!.OwnerReferences![0].ApiVersion = "apps/v1";
+        ConfigureRunningContainer(pod, "app", "echo line");
+        await workspace.Runtime.AddOrUpdateResource(clusterPolicy);
+        await workspace.Runtime.AddOrUpdateResource(daemonSet);
+        await workspace.Runtime.AddOrUpdateResource(pod);
+        RecordingPodLogStreamClient streamClient = new();
+        using PodLogsViewModel viewModel = CreateViewModel(workspace.Runtime, streamClient);
+        viewModel.Object = pod;
+        viewModel.ContainerName = "app";
+
+        await viewModel.Connect();
+        await viewModel.JumpToControlledByLogs();
+        await viewModel.JumpToControlledByLogs();
+
+        viewModel.Object.ShouldBeOfType<V1ConfigMap>().Name().ShouldBe(clusterPolicy.Name());
+        viewModel.Title.ShouldBe("ClusterPolicy Logs");
+        viewModel.ScopeNamespace.ShouldBeEmpty();
+        viewModel.HasScopeNamespace.ShouldBeFalse();
+        viewModel.AvailablePods.Select(item => item.Name()).ShouldBe([pod.Name()]);
+        viewModel.SelectedPodItems.Single().IsAll.ShouldBeTrue();
+        viewModel.SelectedContainerItems.Single().IsAll.ShouldBeTrue();
+        viewModel.ConnectionError.ShouldBeNull();
+        streamClient.Requests.Count.ShouldBe(3);
+        streamClient.Requests[^1].PodNamespace.ShouldBe("gpu-operator");
+        streamClient.Requests[^1].PodName.ShouldBe("gpu-feature-discovery-rt9k9");
+        streamClient.Requests[^1].ContainerName.ShouldBe("app");
     }
 
     [AvaloniaFact]

@@ -212,7 +212,8 @@ public sealed class PodLogSessionResolver : IPodLogSessionResolver
         for (var i = 0; i < pods.Count; i++)
         {
             var pod = pods[i];
-            if (string.Equals(pod.Namespace(), state.ResourceNamespace, StringComparison.Ordinal)
+            if ((string.IsNullOrWhiteSpace(state.ResourceNamespace)
+                    || string.Equals(pod.Namespace(), state.ResourceNamespace, StringComparison.Ordinal))
                 && IsDescendantOf(pod, target, indexes))
             {
                 relatedPods.Add(pod);
