@@ -523,35 +523,52 @@ public sealed class PodLogSessionResolverTests
     }
 
     [Fact]
-    public async Task Mismatched_workload_state_can_still_resolve_a_same_named_current_pod()
+    public async Task Deployment_state_ignores_an_unrelated_same_named_pod()
     {
         await using var harness = await new TestClusterGenerator().CreateAsync(
             new TestClusterConfig { Type = KubernetesBackend.Fake },
             TestContext.Current.CancellationToken);
-        V1Pod pod = CreatePod(
+        V1Deployment deployment = new()
+        {
+            Metadata = Metadata("api", "deployment-uid"),
+        };
+        V1ReplicaSet replicaSet = new()
+        {
+            Metadata = Metadata(
+                "api-rs",
+                "replicaset-uid",
+                new V1OwnerReference
+                {
+                    Kind = V1Deployment.KubeKind,
+                    Name = deployment.Name(),
+                    Uid = deployment.Uid(),
+                    Controller = true,
+                }),
+        };
+        V1Pod descendantPod = CreatePod(
+            "api-rs-pod",
+            "descendant-pod-uid",
+            new V1OwnerReference
+            {
+                Kind = V1ReplicaSet.KubeKind,
+                Name = replicaSet.Name(),
+                Uid = replicaSet.Uid(),
+                Controller = true,
+            });
+        V1Pod unrelatedPod = CreatePod(
             "api",
-            "pod-uid",
+            "unrelated-pod-uid",
             new V1OwnerReference { Kind = V1ReplicaSet.KubeKind, Name = "unrelated", Uid = "unrelated-uid" });
-        AddResource(harness.Cluster, GroupApiVersionKind.From<V1Pod>(), pod);
-        PodLogSessionState state = new(
-            "default",
-            "api",
-            "pod-uid",
-            V1Deployment.KubeKind,
-            null,
-            null,
-            null,
-            "app",
-            false,
-            false,
-            100);
+        AddResources(harness.Cluster, deployment, replicaSet, descendantPod);
+        AddResource(harness.Cluster, GroupApiVersionKind.From<V1Pod>(), unrelatedPod);
         PodLogSessionResolver resolver = new();
+        PodLogSessionState state = resolver.CreateState(deployment, "app", false, false);
 
         PodLogSessionResolution? resolution = resolver.TryResolve(harness.Cluster, state);
 
         resolution.ShouldNotBeNull();
-        resolution!.Pod.ShouldBeSameAs(pod);
-        resolution.RelatedPods.ShouldBe([pod]);
+        resolution!.Pod.ShouldBeSameAs(descendantPod);
+        resolution.RelatedPods.ShouldBe([descendantPod]);
     }
 
     [Fact]

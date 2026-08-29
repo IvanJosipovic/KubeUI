@@ -97,7 +97,9 @@ public sealed class PodLogSessionResolver : IPodLogSessionResolver
         var resources = GetResources(cluster);
         var indexes = BuildIndexes(resources);
         var pods = GetPods(resources);
-        var currentPod = TryGetCurrentPod(pods, state);
+        var currentPod = state.ResourceKind == V1Pod.KubeKind
+            ? TryGetCurrentPod(pods, state)
+            : null;
         var relatedPods = state.ResourceKind == V1Pod.KubeKind
             ? GetRelatedPods(pods, state, currentPod)
             : GetDescendantPods(pods, state, indexes);

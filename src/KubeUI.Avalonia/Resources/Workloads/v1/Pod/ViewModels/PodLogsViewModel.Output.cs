@@ -126,7 +126,7 @@ public sealed partial class PodLogsViewModel
                             pendingOutput.Clear();
                         }
 
-                        appendedOutput = lines.Count > 0;
+                        appendedOutput |= lines.Count > 0;
                     }
                 }
             }
@@ -174,7 +174,7 @@ public sealed partial class PodLogsViewModel
                     pendingOutput.Clear();
                 }
 
-                appendedOutput = lines.Count > 0;
+                appendedOutput |= lines.Count > 0;
             }
 
             FlushOutputEntries(pendingOutput, connectionCts, outputGeneration);

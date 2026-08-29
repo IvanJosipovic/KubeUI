@@ -348,6 +348,11 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
                     if (_disposed || connectionCts.IsCancellationRequested)
                     {
                         stream.Dispose();
+                        for (var remaining = i; remaining < options.Count; remaining++)
+                        {
+                            DecrementActiveReaders(connectionCts);
+                        }
+
                         break;
                     }
 
@@ -523,6 +528,11 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
         OnPropertyChanged(nameof(CanJumpToPresent));
     }
 
+    partial void OnSelectedPodItemsChanging(ObservableCollection<PodLogPodSelectionItem> value)
+    {
+        SelectedPodItems.CollectionChanged -= SelectedPodItemsOnCollectionChanged;
+    }
+
     partial void OnSelectedPodItemsChanged(ObservableCollection<PodLogPodSelectionItem> value)
     {
         value.CollectionChanged += SelectedPodItemsOnCollectionChanged;
@@ -533,6 +543,11 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
 
         UpdateResourceNameToggleState();
         QueueSelectionReconnect();
+    }
+
+    partial void OnSelectedContainerItemsChanging(ObservableCollection<PodLogContainerSelectionItem> value)
+    {
+        SelectedContainerItems.CollectionChanged -= SelectedContainerItemsOnCollectionChanged;
     }
 
     partial void OnSelectedContainerItemsChanged(ObservableCollection<PodLogContainerSelectionItem> value)

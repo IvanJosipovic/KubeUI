@@ -130,7 +130,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
         var selectedList = selectedItems?.ToList();
         return new MenuItemViewModel
         {
-            Title = Assets.Resources.V1PodConfig_MenuItem_ViewLogs,
+            Title = Assets.Resources.Shared_ViewLogs,
             FluentIcon = Icon.TextDescription,
             Command = new AsyncRelayCommand<T?>(ViewPodLogsAsync, CanViewPodLogs),
             CommandParameter = selectedList?.Count == 1 ? selectedList[0] : null,

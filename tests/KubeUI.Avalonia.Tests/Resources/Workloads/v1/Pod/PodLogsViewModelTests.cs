@@ -3130,6 +3130,58 @@ public sealed class PodLogsViewModelTests
     }
 
     [AvaloniaFact]
+    public async Task Dispose_while_opening_multiple_streams_should_dispose_the_connection_token()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync();
+        V1Pod pod = CreatePod("app", "default", "pod-uid", containers: ["app", "sidecar"]);
+        await workspace.Runtime.AddOrUpdateResource(pod);
+        await workspace.Runtime.SeedResource<V1Pod>(true);
+        DelayedPodLogStreamClient streamClient = new();
+        PodLogsViewModel viewModel = CreateViewModel(workspace.Runtime, streamClient);
+        viewModel.Object = pod;
+        viewModel.SelectedContainerItems = new ObservableCollection<PodLogContainerSelectionItem>(
+            [new PodLogContainerSelectionItem(string.Empty, "all", false, true)]);
+
+        Task connectTask = viewModel.Connect();
+        await streamClient.WaitForRequestAsync();
+
+        viewModel.Dispose();
+        streamClient.Release();
+        await connectTask;
+
+        streamClient.ConnectionWaitHandle.SafeWaitHandle.IsClosed.ShouldBeTrue();
+    }
+
+    [AvaloniaFact]
+    public async Task Replaced_container_selection_should_not_trigger_reconnects()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync();
+        V1Pod pod = CreatePod("app", "default", "pod-uid", containers: ["app", "sidecar"]);
+        await workspace.Runtime.AddOrUpdateResource(pod);
+        await workspace.Runtime.SeedResource<V1Pod>(true);
+        RecordingPodLogStreamClient streamClient = new(["first\n", "second\n", "unexpected\n"]);
+        using PodLogsViewModel viewModel = CreateViewModel(workspace.Runtime, streamClient);
+        viewModel.Object = pod;
+        viewModel.ContainerName = "app";
+        await viewModel.Connect();
+        await WaitForAsync(() => streamClient.Requests.Count == 1);
+        ObservableCollection<PodLogContainerSelectionItem> replacedItems = viewModel.SelectedContainerItems;
+
+        viewModel.SelectedContainerItems = new ObservableCollection<PodLogContainerSelectionItem>(
+            [new PodLogContainerSelectionItem("app", "app", false, false)]);
+        await WaitForAsync(() => streamClient.Requests.Count == 2);
+
+        replacedItems.Add(new PodLogContainerSelectionItem("sidecar", "sidecar", false, false));
+
+        await Should.ThrowAsync<TimeoutException>(() => TestWait.UntilAsync(
+            () => streamClient.Requests.Count > 2,
+            500,
+            TestContext.Current.CancellationToken,
+            () => Dispatcher.UIThread.RunJobs()));
+        streamClient.Requests.Count.ShouldBe(2);
+    }
+
+    [AvaloniaFact]
     public async Task Failed_pod_should_disconnect_without_reconnecting()
     {
         using var workspace = await Application.Current.CreateClusterAsync();
@@ -4320,6 +4372,8 @@ public sealed class PodLogsViewModelTests
 
         public TrackingMemoryStream Stream { get; } = new(Encoding.UTF8.GetBytes("late line\n"));
 
+        public WaitHandle ConnectionWaitHandle { get; private set; } = null!;
+
         public Task WaitForRequestAsync()
         {
             return _requestStarted.Task;
@@ -4332,6 +4386,7 @@ public sealed class PodLogsViewModelTests
 
         public async Task<Stream> OpenAsync(IClusterRuntime cluster, PodLogReadOptions options, CancellationToken cancellationToken = default)
         {
+            ConnectionWaitHandle = cancellationToken.WaitHandle;
             _requestStarted.TrySetResult();
             await _release.Task;
             return Stream;

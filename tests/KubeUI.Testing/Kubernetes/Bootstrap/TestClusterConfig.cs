@@ -25,8 +25,10 @@ public sealed class TestClusterConfig
 
     public IReadOnlyCollection<DelegatingHandler> HttpHandlers { get; set; } = Array.Empty<DelegatingHandler>();
 
-    /// <summary>Creates handlers for each Kubernetes client.</summary>
-    /// <remarks><see cref="HttpHandlers"/> is used when this factory is not configured.</remarks>
+    /// <summary>Creates handlers for Fake and named kubeconfig clients.</summary>
+    /// <remarks>
+    /// <see cref="HttpHandlers"/> is used when this factory is not configured and for Kind clients.
+    /// </remarks>
     public Func<IReadOnlyCollection<DelegatingHandler>>? HttpHandlerFactory { get; set; }
 
     public Action<SocketsHttpHandler>? FirstMessageHandlerSetup { get; set; }
