@@ -141,7 +141,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
                 CommandParameter = selectedList,
             },
         ];
-        if (_podLogsLauncher.CanAddToActive(Cluster))
+        if (Cluster is not null && _podLogsLauncher.CanAddToActive(Cluster))
         {
             actions.Add(new MenuItemViewModel
             {
@@ -162,7 +162,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
 
     private async Task ViewPodLogsAsync(IReadOnlyList<T>? resources)
     {
-        if (resources is not { Count: > 0 } || resources.Count > PodLogsViewModel.MaxScopeCount)
+        if (Cluster is null || resources is not { Count: > 0 } || resources.Count > PodLogsViewModel.MaxScopeCount)
         {
             return;
         }
@@ -172,7 +172,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
 
     private async Task AddToPodLogsAsync(IReadOnlyList<T>? resources)
     {
-        if (resources is not { Count: > 0 } || resources.Count > PodLogsViewModel.MaxScopeCount)
+        if (Cluster is null || resources is not { Count: > 0 } || resources.Count > PodLogsViewModel.MaxScopeCount)
         {
             return;
         }
@@ -182,7 +182,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
 
     private bool CanViewPodLogs(IReadOnlyList<T>? resources)
     {
-        if (resources is not { Count: > 0 })
+        if (Cluster is null || resources is not { Count: > 0 })
         {
             return false;
         }
