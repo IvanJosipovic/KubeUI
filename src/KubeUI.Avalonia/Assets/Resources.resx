@@ -2413,10 +2413,6 @@
     <value>View Console</value>
     <comment/>
   </data>
-  <data name="V1PodConfig_MenuItem_ViewLogs" xml:space="preserve">
-    <value>View Logs</value>
-    <comment/>
-  </data>
   <data name="V1PodConfig_MenuItem_Attach" xml:space="preserve">
     <value>Attach</value>
     <comment/>
@@ -2595,6 +2591,50 @@
   </data>
   <data name="PodLogsView_AllContainers" xml:space="preserve">
     <value>All Containers</value>
+    <comment/>
+  </data>
+  <data name="PodLogsView_Sources" xml:space="preserve">
+    <value>Sources</value>
+    <comment/>
+  </data>
+  <data name="PodLogsView_ClearResources" xml:space="preserve">
+    <value>Clear All</value>
+    <comment/>
+  </data>
+  <data name="PodLogsView_RemoveResource" xml:space="preserve">
+    <value>Remove Resource</value>
+    <comment/>
+  </data>
+  <data name="PodLogsView_NoResources" xml:space="preserve">
+    <value>No resources selected.</value>
+    <comment/>
+  </data>
+  <data name="PodLogsView_StreamLimitExceeded" xml:space="preserve">
+    <value>{0} log streams were selected. Narrow the Pod or container selection to {1} streams or fewer.</value>
+    <comment/>
+  </data>
+  <data name="PodLogsView_StreamLimitWarning" xml:space="preserve">
+    <value>{0} log streams selected; more than {1} may affect performance.</value>
+    <comment/>
+  </data>
+  <data name="PodLogsView_Active" xml:space="preserve">
+    <value>Active</value>
+    <comment/>
+  </data>
+  <data name="PodLogsView_Resolving" xml:space="preserve">
+    <value>Resolving</value>
+    <comment/>
+  </data>
+  <data name="PodLogsView_ScopeLimitExceeded" xml:space="preserve">
+    <value>A logs view can include up to {0} resources.</value>
+    <comment/>
+  </data>
+  <data name="Shared_OpenNewLogsView" xml:space="preserve">
+    <value>Open New Logs View</value>
+    <comment/>
+  </data>
+  <data name="Shared_AddToCurrentLogsView" xml:space="preserve">
+    <value>Add to Current Logs View</value>
     <comment/>
   </data>
   <data name="PodLogsView_Controller" xml:space="preserve">

@@ -106,8 +106,11 @@ public sealed class PodLogsLauncherTests
         viewModel.AvailablePods.Select(item => item.Name()).ShouldContain("api-pod");
         viewModel.Title.ShouldBe("Deployment Logs");
         viewModel.IsControllerScope.ShouldBeTrue();
-        viewModel.SelectedPodItems.Single().IsAll.ShouldBeTrue();
-        viewModel.SelectedContainerItems.Single().IsAll.ShouldBeTrue();
+        viewModel.SourceTreeItems.SelectMany(static resource => resource.Children)
+            .ShouldAllBe(static pod => pod.IsChecked == true);
+        viewModel.SourceTreeItems.SelectMany(static resource => resource.Children)
+            .SelectMany(static pod => pod.Children)
+            .ShouldAllBe(static container => container.IsChecked == true);
     }
 
     [AvaloniaFact]
@@ -165,6 +168,77 @@ public sealed class PodLogsLauncherTests
             .FindDockableById($"PodLogsViewModel-{workspace.Runtime.Name}-Deployment-monitoring-alertmanager-all")
             .ShouldBeOfType<PodLogsViewModel>();
         viewModel.Title.ShouldBe("Deployment Logs");
+    }
+
+    [AvaloniaFact]
+    public async Task Multi_resource_launch_uses_one_stable_logs_tool()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync();
+        IServiceProvider services = Application.Current.GetTestServices();
+        IFactory factory = services.GetRequiredService<IFactory>();
+        PodLogsLauncher launcher = new(services, factory, services.GetRequiredService<ILogger<PodLogsLauncher>>());
+        V1Pod firstPod = CreatePod("first");
+        firstPod.Metadata!.Uid = "first-uid";
+        V1Pod secondPod = CreatePod("second");
+        secondPod.Metadata!.Uid = "second-uid";
+
+        await launcher.LaunchAsync(
+            workspace,
+            new IKubernetesObject<V1ObjectMeta>[] { firstPod, secondPod },
+            V1Pod.KubeKind);
+        await launcher.LaunchAsync(
+            workspace,
+            new IKubernetesObject<V1ObjectMeta>[] { secondPod, firstPod },
+            V1Pod.KubeKind);
+
+        PodLogsViewModel viewModel = factory.GetDockable<Dock.Model.Controls.IToolDock>("BottomDock")!
+            .VisibleDockables!
+            .OfType<PodLogsViewModel>()
+            .Where(static logs => logs.IsMultiScope)
+            .Single()
+            .ShouldBeOfType<PodLogsViewModel>();
+        viewModel.ScopeItems.Count.ShouldBe(2);
+        viewModel.ScopeSummary.ShouldBe("2 Pods - default");
+        viewModel.Title.ShouldBe("2 Pod Logs");
+        viewModel.Id.ShouldContain("-multi-");
+    }
+
+    [AvaloniaFact]
+    public async Task Add_to_active_merges_resources_into_the_existing_logs_tool()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync();
+        IServiceProvider services = Application.Current.GetTestServices();
+        IFactory factory = services.GetRequiredService<IFactory>();
+        PodLogsLauncher launcher = new(services, factory, services.GetRequiredService<ILogger<PodLogsLauncher>>());
+        V1Pod firstPod = CreatePod("first-added");
+        firstPod.Metadata!.Uid = "first-added-uid";
+        V1Deployment deployment = new()
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "api-added",
+                NamespaceProperty = "default",
+                Uid = "api-added-uid",
+            },
+        };
+
+        launcher.CanAddToActive(workspace).ShouldBeFalse();
+        await launcher.LaunchAsync(workspace, firstPod, V1Pod.KubeKind);
+        PodLogsViewModel viewModel = factory.FindDockableById(
+                $"PodLogsViewModel-{workspace.Runtime.Name}-Pod-default-first-added-all")
+            .ShouldBeOfType<PodLogsViewModel>();
+        var originalId = viewModel.Id;
+        launcher.CanAddToActive(workspace).ShouldBeTrue();
+
+        await launcher.AddToActiveAsync(
+            workspace,
+            new IKubernetesObject<V1ObjectMeta>[] { deployment },
+            V1Deployment.KubeKind);
+
+        viewModel.ScopeItems.Select(static item => item.ResourceKind)
+            .ShouldBe([V1Pod.KubeKind, V1Deployment.KubeKind]);
+        viewModel.IsMultiScope.ShouldBeTrue();
+        viewModel.Id.ShouldBe(originalId);
     }
 
     private static V1Pod CreatePod(string name)

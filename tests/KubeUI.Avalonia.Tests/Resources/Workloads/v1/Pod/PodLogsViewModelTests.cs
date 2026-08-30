@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Collections.Concurrent;
 using System.Globalization;
 using System.Net;
 using System.Net.Http;
@@ -176,9 +177,8 @@ public sealed class PodLogsViewModelTests
         viewModel.ContainerName = "app";
 
         await viewModel.Connect();
-        await WaitForAsync(() => viewModel.ContainerSelectionItems.Count == 3, 60000);
-        viewModel.SelectedContainerItems = new ObservableCollection<PodLogContainerSelectionItem>(
-            [viewModel.ContainerSelectionItems[1], viewModel.ContainerSelectionItems[2]]);
+        await WaitForAsync(() => GetContainerNodes(viewModel).Count == 2, 60000);
+        SelectOnlyContainers(viewModel, "app", "sidecar");
         await WaitForAsync(() => viewModel.Logs.Text.Contains("app-line", StringComparison.Ordinal)
             && viewModel.Logs.Text.Contains("sidecar-line", StringComparison.Ordinal), 60000);
 
@@ -327,16 +327,12 @@ public sealed class PodLogsViewModelTests
         viewModel.AvailableContainers.Select(x => x.Name).ShouldBe(["init-db", "app", "sidecar"]);
         viewModel.AvailableContainers[0].DisplayName.ShouldBe("init-db (init)");
         viewModel.AvailableContainers[1].DisplayName.ShouldBe("app");
-        viewModel.PodSelectionItems.Count.ShouldBe(3);
-        viewModel.PodSelectionItems[0].IsAll.ShouldBeTrue();
-        viewModel.PodSelectionItems[0].DisplayName.ShouldBe(KubeUI.Avalonia.Assets.Resources.PodLogsView_AllPods);
-        viewModel.SelectedPodItems.Count.ShouldBe(1);
-        viewModel.SelectedPodItems[0].Pod!.Name().ShouldBe("app-7c9dd9f4f4-abcde");
-        viewModel.ContainerSelectionItems.Count.ShouldBe(4);
-        viewModel.ContainerSelectionItems[0].IsAll.ShouldBeTrue();
-        viewModel.ContainerSelectionItems[0].DisplayName.ShouldBe(KubeUI.Avalonia.Assets.Resources.PodLogsView_AllContainers);
-        viewModel.SelectedContainerItems.Count.ShouldBe(1);
-        viewModel.SelectedContainerItems[0].Name.ShouldBe("app");
+        GetPodNodes(viewModel).Count.ShouldBe(2);
+        GetPodNodes(viewModel).ShouldAllBe(static node => node.IsChecked == null);
+        GetContainerNodes(viewModel).Count.ShouldBe(6);
+        GetContainerNodes(viewModel)
+            .Where(static node => node.IsChecked == true)
+            .ShouldAllBe(static node => ((PodLogContainerOption)node.Value).Name == "app");
     }
 
     [AvaloniaTheory, KubernetesBackendData]
@@ -405,9 +401,11 @@ public sealed class PodLogsViewModelTests
         viewModel.AvailableContainers.Count.ShouldBe(3);
         viewModel.AvailableContainers.Select(container => container.Name).ShouldBe(["init-db", "app", "sidecar"]);
         viewModel.AvailableContainers[0].DisplayName.ShouldBe("init-db (init)");
-        viewModel.ContainerSelectionItems.Count.ShouldBe(4);
-        viewModel.SelectedContainerItems.Count.ShouldBe(1);
-        viewModel.SelectedContainerItems[0].Name.ShouldBe("app");
+        GetContainerNodes(viewModel).Count.ShouldBe(3);
+        GetContainerNodes(viewModel)
+            .Single(static node => node.IsChecked == true)
+            .Value.ShouldBeOfType<PodLogContainerOption>()
+            .Name.ShouldBe("app");
     }
 
     [AvaloniaTheory, KubernetesBackendData]
@@ -504,23 +502,15 @@ public sealed class PodLogsViewModelTests
         viewModel.Object = olderPod;
         viewModel.ContainerName = "app";
         viewModel.ShowResourceNames = true;
-        viewModel.SelectedPodItems = new ObservableCollection<PodLogPodSelectionItem>(
-            [
-                new PodLogPodSelectionItem(olderPod, olderPod.Name(), false),
-                new PodLogPodSelectionItem(newerPod, newerPod.Name(), false),
-            ]);
-        viewModel.SelectedContainerItems = new ObservableCollection<PodLogContainerSelectionItem>(
-            [
-                new PodLogContainerSelectionItem("app", "app", false, false),
-                new PodLogContainerSelectionItem("sidecar", "sidecar", false, false),
-            ]);
-
         await viewModel.Connect();
+        SelectOnlyPods(viewModel, olderPod.Name(), newerPod.Name());
+        SelectOnlyContainers(viewModel, "app", "sidecar");
+        viewModel.Clear();
         await WaitForAsync(() => viewModel.Logs.Text.Contains("older sidecar line", StringComparison.Ordinal)
             && viewModel.Logs.Text.Contains("newer app line", StringComparison.Ordinal), 60000);
 
-        viewModel.SelectedPodItems.Count.ShouldBe(2);
-        viewModel.SelectedContainerItems.Count.ShouldBe(2);
+        GetPodNodes(viewModel).Count(static node => node.IsChecked == true).ShouldBe(2);
+        GetContainerNodes(viewModel).Count(static node => node.IsChecked == true).ShouldBe(4);
         viewModel.Logs.Text.ShouldContain("[app-7c9dd9f4f4-fghij/app] newer app line");
         viewModel.Logs.Text.ShouldContain("[app-7c9dd9f4f4-abcde/sidecar] older sidecar line");
     }
@@ -573,8 +563,6 @@ public sealed class PodLogsViewModelTests
             services.GetRequiredService<IPodLogStreamClient>());
         viewModel.Object = pod;
         viewModel.ContainerName = "app";
-        viewModel.SelectedContainerItems = new ObservableCollection<PodLogContainerSelectionItem>(
-            [new PodLogContainerSelectionItem("app", "app", false, false)]);
 
         await viewModel.Connect();
 
@@ -661,11 +649,12 @@ public sealed class PodLogsViewModelTests
             workspace.Runtime,
             services.GetRequiredService<IPodLogStreamClient>());
         viewModel.Object = waitingPod;
-        viewModel.ContainerName = "app";
-        viewModel.SelectedContainerItems = new ObservableCollection<PodLogContainerSelectionItem>(
-            [new PodLogContainerSelectionItem(string.Empty, "all", false, true)]);
+        viewModel.ContainerName = string.Empty;
 
         await viewModel.Connect();
+        GetContainerNodes(viewModel).Count.ShouldBe(2);
+        GetContainerNodes(viewModel).ShouldAllBe(static node => node.IsChecked == true);
+        viewModel.PlannedStreamCount.ShouldBe(1);
         await WaitForAsync(() => viewModel.Logs.Text.Contains("sidecar line", StringComparison.Ordinal), 60000);
         viewModel.Logs.Text.ShouldNotContain("app line");
 
@@ -689,14 +678,7 @@ public sealed class PodLogsViewModelTests
         RecordingPodLogStreamClient streamClient = new(["first pod line\n"]);
         using PodLogsViewModel viewModel = CreateViewModel(workspace.Runtime, streamClient);
         viewModel.Object = deployment;
-        viewModel.SelectedContainerItems = new ObservableCollection<PodLogContainerSelectionItem>(
-        [
-            new PodLogContainerSelectionItem(
-                string.Empty,
-                KubeUI.Avalonia.Assets.Resources.PodLogsView_AllContainers,
-                false,
-                true),
-        ]);
+        viewModel.ContainerName = string.Empty;
 
         await viewModel.Connect();
         viewModel.SessionResolution.ShouldBeNull();
@@ -717,7 +699,21 @@ public sealed class PodLogsViewModelTests
         await WaitForAsync(() => streamClient.Requests.Count == 1);
         await WaitForAsync(() => viewModel.Logs.Text.Contains("first pod line", StringComparison.Ordinal));
         viewModel.AvailablePods.Select(item => item.Name()).ShouldBe(["api-pod"]);
-        viewModel.SelectedPodItems.Single().IsAll.ShouldBeTrue();
+        GetPodNodes(viewModel).Single().IsChecked.ShouldBe(true);
+    }
+
+    [AvaloniaFact]
+    public async Task Dispose_from_background_thread_should_clear_logs_on_ui_thread()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync();
+        using PodLogsViewModel viewModel = CreateViewModel(
+            workspace.Runtime,
+            new RecordingPodLogStreamClient());
+
+        await Dispatcher.UIThread.InvokeAsync(() => viewModel.Logs.Text = "log line");
+        await Task.Run(viewModel.Dispose);
+
+        viewModel.Logs.Text.ShouldBeEmpty();
     }
 
     [AvaloniaTheory]
@@ -1059,7 +1055,7 @@ public sealed class PodLogsViewModelTests
     }
 
     [AvaloniaFact]
-    public async Task Public_scope_and_selection_edges_should_remain_stable()
+    public async Task Canonical_source_nodes_should_remain_stable_across_selection_reconnects()
     {
         using var workspace = await Application.Current.CreateClusterAsync();
         await workspace.Runtime.SeedResource<V1Pod>(true);
@@ -1089,35 +1085,19 @@ public sealed class PodLogsViewModelTests
         await viewModel.JumpToControlledByLogs();
         viewModel.Object.ShouldBeOfType<V1Pod>();
 
-        viewModel.SelectedPodItems = [];
-        viewModel.SelectedContainerItems = [];
+        PodLogSourceTreeNode podNode = GetPodNodes(viewModel).Single();
+        PodLogSourceTreeNode appNode = GetContainerNodes(viewModel)
+            .Single(static node => ((PodLogContainerOption)node.Value).Name == "app");
+        appNode.IsChecked = false;
+        appNode.IsChecked = true;
         Dispatcher.UIThread.RunJobs();
+        await WaitForAsync(() => !viewModel.IsConnecting);
 
-        await WaitForAsync(() =>
-            viewModel.SelectedPodItems.Count == 1
-            && viewModel.SelectedPodItems[0].IsAll
-            && viewModel.SelectedContainerItems.Count == 1
-            && viewModel.SelectedContainerItems[0].IsAll);
-
-        PodLogPodSelectionItem podItem = viewModel.PodSelectionItems[1];
-        viewModel.SelectedPodItems.Add(podItem);
-        viewModel.SelectedPodItems.Remove(podItem);
-        PodLogContainerSelectionItem containerItem = viewModel.ContainerSelectionItems[1];
-        viewModel.SelectedContainerItems.Add(containerItem);
-        viewModel.SelectedContainerItems.Remove(containerItem);
-        Dispatcher.UIThread.RunJobs();
-
-        viewModel.SelectedPodItems.ShouldHaveSingleItem().IsAll.ShouldBeTrue();
-        viewModel.SelectedContainerItems.ShouldHaveSingleItem().IsAll.ShouldBeTrue();
-
-        viewModel.SelectedContainerItems =
-            new ObservableCollection<PodLogContainerSelectionItem>([viewModel.ContainerSelectionItems[1]]);
-        viewModel.SelectedContainerItems.Add(viewModel.ContainerSelectionItems[2]);
-        Dispatcher.UIThread.RunJobs();
-        viewModel.SelectedContainerItems.Count.ShouldBe(2);
-        viewModel.SelectedContainerItems.Add(viewModel.ContainerSelectionItems[3]);
-        Dispatcher.UIThread.RunJobs();
-        viewModel.SelectedContainerItems.ShouldHaveSingleItem().IsAll.ShouldBeTrue();
+        GetPodNodes(viewModel).Single().ShouldBeSameAs(podNode);
+        GetContainerNodes(viewModel)
+            .Single(static node => ((PodLogContainerOption)node.Value).Name == "app")
+            .ShouldBeSameAs(appNode);
+        appNode.IsChecked.ShouldBe(true);
     }
 
     [AvaloniaFact]
@@ -1174,10 +1154,7 @@ public sealed class PodLogsViewModelTests
         Task initialConnect = viewModel.Connect();
         await streamClient.WaitForFirstRequestAsync();
 
-        PodLogPodSelectionItem newerPodItem =
-            viewModel.PodSelectionItems.Single(item => item.Pod?.Name() == newerPod.Name());
-        viewModel.SelectedPodItems =
-            new ObservableCollection<PodLogPodSelectionItem>([newerPodItem]);
+        SelectOnlyPods(viewModel, newerPod.Name());
         streamClient.FailFirstRequest();
 
         await initialConnect;
@@ -1189,7 +1166,7 @@ public sealed class PodLogsViewModelTests
     }
 
     [AvaloniaFact]
-    public async Task Changing_multiple_pod_selection_should_not_mutate_the_bound_collection_reentrantly()
+    public async Task Changing_multiple_pod_selection_should_update_canonical_nodes_in_place()
     {
         using var workspace = await Application.Current.CreateClusterAsync();
         await workspace.Runtime.SeedResource<V1Deployment>(true);
@@ -1221,26 +1198,22 @@ public sealed class PodLogsViewModelTests
         viewModel.ContainerName = "app";
         await viewModel.Connect();
 
-        viewModel.SelectedPodItems =
-            new ObservableCollection<PodLogPodSelectionItem>([viewModel.PodSelectionItems[1]]);
+        PodLogSourceTreeNode[] podNodes = [.. GetPodNodes(viewModel)];
+        SelectOnlyPods(viewModel, ((V1Pod)podNodes[0].Value).Name());
         Dispatcher.UIThread.RunJobs();
         await WaitForAsync(() => !viewModel.IsConnecting);
-        viewModel.SelectedPodItems.CollectionChanged += static (_, _) => { };
 
-        viewModel.SelectedPodItems.Add(viewModel.PodSelectionItems[2]);
+        podNodes[1].IsChecked = true;
         Dispatcher.UIThread.RunJobs();
         await WaitForAsync(() => !viewModel.IsConnecting);
 
         viewModel.ConnectionError.ShouldBeNull();
-        viewModel.SelectedPodItems.Count.ShouldBe(2);
+        GetPodNodes(viewModel).Count(static node => node.IsChecked == true).ShouldBe(2);
+        GetPodNodes(viewModel)[0].ShouldBeSameAs(podNodes[0]);
     }
 
-    [AvaloniaTheory]
-    [InlineData(true, false)]
-    [InlineData(false, true)]
-    public async Task Stale_container_kind_selection_should_fall_back_to_the_resolved_container(
-        bool isInitContainer,
-        bool isEphemeralContainer)
+    [AvaloniaFact]
+    public async Task Source_tree_should_use_the_resolved_container_kind()
     {
         using var workspace = await Application.Current.CreateClusterAsync();
         await workspace.Runtime.SeedResource<V1Pod>(true);
@@ -1251,20 +1224,16 @@ public sealed class PodLogsViewModelTests
         using PodLogsViewModel viewModel = CreateViewModel(workspace.Runtime, streamClient);
         viewModel.Object = pod;
         viewModel.ContainerName = "app";
-        viewModel.SelectedContainerItems = new ObservableCollection<PodLogContainerSelectionItem>(
-        [
-            new PodLogContainerSelectionItem(
-                "app",
-                "stale app",
-                isInitContainer,
-                false,
-                isEphemeralContainer),
-        ]);
 
         await viewModel.Connect();
 
         await WaitForAsync(() => streamClient.Requests.Count == 1);
-        viewModel.SelectedContainerItems.ShouldHaveSingleItem().DisplayName.ShouldBe("app");
+        PodLogContainerOption selectedContainer = GetContainerNodes(viewModel)
+            .Single(static node => node.IsChecked == true)
+            .Value.ShouldBeOfType<PodLogContainerOption>();
+        selectedContainer.DisplayName.ShouldBe("app");
+        selectedContainer.IsInitContainer.ShouldBeFalse();
+        selectedContainer.IsEphemeralContainer.ShouldBeFalse();
     }
 
     [AvaloniaFact]
@@ -1323,8 +1292,6 @@ public sealed class PodLogsViewModelTests
         using PodLogsViewModel viewModel = CreateViewModel(workspace.Runtime, streamClient);
         viewModel.Object = pod;
         viewModel.ContainerName = "app";
-        viewModel.SelectedContainerItems = new ObservableCollection<PodLogContainerSelectionItem>(
-            [new PodLogContainerSelectionItem("app", "app", false, false)]);
 
         await viewModel.Connect();
 
@@ -1448,18 +1415,9 @@ public sealed class PodLogsViewModelTests
             services.GetRequiredService<IPodLogStreamClient>());
         viewModel.Object = olderPod;
         viewModel.ContainerName = "app";
-        viewModel.SelectedPodItems = new ObservableCollection<PodLogPodSelectionItem>(
-            [
-                new PodLogPodSelectionItem(olderPod, olderPod.Name(), false),
-                new PodLogPodSelectionItem(newerPod, newerPod.Name(), false),
-            ]);
-        viewModel.SelectedContainerItems = new ObservableCollection<PodLogContainerSelectionItem>(
-            [
-                new PodLogContainerSelectionItem("app", "app", false, false),
-                new PodLogContainerSelectionItem("sidecar", "sidecar", false, false),
-            ]);
 
         await viewModel.Connect();
+        SelectOnlyContainers(viewModel, "app", "sidecar");
 
         await WaitForAsync(() => viewModel.Logs.Text.Contains("newer app line", StringComparison.Ordinal));
         viewModel.CanShowResourceNames.ShouldBeTrue();
@@ -1607,7 +1565,7 @@ public sealed class PodLogsViewModelTests
             ownerUid: "deployment-uid",
             ownerName: deploymentName,
             ownerKind: "Deployment",
-            containers: ["app"],
+            containers: ["app", "sidecar"],
             creationTimestamp: new DateTime(2026, 4, 1, 12, 0, 0, DateTimeKind.Utc));
         originalPod.Metadata!.Labels = new Dictionary<string, string> { ["app"] = appLabel };
         V1Pod addedPod = CreatePod(
@@ -1617,21 +1575,26 @@ public sealed class PodLogsViewModelTests
             ownerUid: "deployment-uid",
             ownerName: deploymentName,
             ownerKind: "Deployment",
-            containers: ["app"],
+            containers: ["app", "sidecar"],
             creationTimestamp: new DateTime(2026, 4, 1, 12, 5, 0, DateTimeKind.Utc));
         addedPod.Metadata!.Labels = new Dictionary<string, string> { ["app"] = appLabel };
         foreach (var pod in new[] { originalPod, addedPod })
         {
             pod.Metadata!.OwnerReferences![0].ApiVersion = "apps/v1";
             pod.Spec!.RestartPolicy = "Never";
-            pod.Spec.Containers[0].Image = "busybox:1.36";
             var line = pod == addedPod ? "added line" : "original line";
-            pod.Spec.Containers[0].Command = ["sh", "-c", $"echo {line}; sleep 300"];
             pod.Status!.Phase = "Running";
-            pod.Status.ContainerStatuses![0].State = new V1ContainerState
+            pod.Status.ContainerStatuses = [];
+            foreach (V1Container container in pod.Spec.Containers)
             {
-                Running = new V1ContainerStateRunning(),
-            };
+                container.Image = "busybox:1.36";
+                container.Command = ["sh", "-c", $"echo {line}; sleep 300"];
+                pod.Status.ContainerStatuses.Add(new V1ContainerStatus
+                {
+                    Name = container.Name,
+                    State = new V1ContainerState { Running = new V1ContainerStateRunning() },
+                });
+            }
         }
 
         using var workspace = await Application.Current.CreateClusterAsync(config =>
@@ -1659,10 +1622,12 @@ public sealed class PodLogsViewModelTests
             workspace.Runtime,
             services.GetRequiredService<IPodLogStreamClient>());
         viewModel.Object = originalPod;
-        viewModel.ContainerName = "app";
+        viewModel.ContainerName = string.Empty;
 
         await viewModel.Connect();
         await WaitForAsync(() => viewModel.Logs.Text.Contains("original line", StringComparison.Ordinal), 60000);
+        SelectOnlyContainers(viewModel, "sidecar");
+        await WaitForAsync(() => !viewModel.IsConnecting);
 
         await workspace.Runtime.AddOrUpdateResource(addedPod);
         await WaitForAsync(() => workspace.Runtime.GetResourceList<V1Pod>().Any(item =>
@@ -1676,13 +1641,18 @@ public sealed class PodLogsViewModelTests
 
         viewModel.Object.Name().ShouldBe(originalPod.Name());
         viewModel.AvailablePods.Select(pod => pod.Name()).ShouldBe([addedPod.Name(), originalPod.Name()]);
+        PodLogSourceTreeNode addedPodNode = GetPodNodes(viewModel)
+            .Single(node => ((V1Pod)node.Value).Name() == addedPod.Name());
+        addedPodNode.Children.Single(node => ((PodLogContainerOption)node.Value).Name == "app")
+            .IsChecked.ShouldBe(false);
+        addedPodNode.Children.Single(node => ((PodLogContainerOption)node.Value).Name == "sidecar")
+            .IsChecked.ShouldBe(true);
 
-        PodLogPodSelectionItem addedPodSelection = viewModel.PodSelectionItems.Single(item => item.Pod?.Name() == addedPod.Name());
-        viewModel.SelectedPodItems = new ObservableCollection<PodLogPodSelectionItem>([addedPodSelection]);
+        SelectOnlyPods(viewModel, addedPod.Name());
         await WaitForAsync(() => viewModel.Logs.Text.Contains("added line", StringComparison.Ordinal), 60000);
 
-        viewModel.SelectedPodItems.Count.ShouldBe(1);
-        viewModel.SelectedPodItems[0].Pod!.Name().ShouldBe(addedPod.Name());
+        GetPodNodes(viewModel).Single(static node => node.IsChecked == true)
+            .Value.ShouldBeOfType<V1Pod>().Name().ShouldBe(addedPod.Name());
         viewModel.Logs.Text.ShouldContain("added line");
     }
 
@@ -1814,12 +1784,14 @@ public sealed class PodLogsViewModelTests
         await WaitForAsync(() => workspace.Runtime.GetResource<V1Pod>("default", pod.Name())?.Spec?.EphemeralContainers?.Count == 1);
         await viewModel.Refresh();
 
-        await WaitForAsync(() => viewModel.ContainerSelectionItems.Count == 3);
+        await WaitForAsync(() => GetContainerNodes(viewModel).Count == 2);
 
         viewModel.AvailableContainers.Count.ShouldBe(2);
         viewModel.AvailableContainers[0].Name.ShouldBe("app");
         viewModel.AvailableContainers[1].IsEphemeralContainer.ShouldBeTrue();
-        viewModel.ContainerSelectionItems.Count(item => item.IsEphemeralContainer).ShouldBe(1);
+        GetContainerNodes(viewModel)
+            .Count(static node => ((PodLogContainerOption)node.Value).IsEphemeralContainer)
+            .ShouldBe(1);
     }
 
     [AvaloniaTheory, KubernetesBackendData]
@@ -2034,11 +2006,12 @@ public sealed class PodLogsViewModelTests
             workspace.Runtime,
             services.GetRequiredService<IPodLogStreamClient>());
         viewModel.Object = pod;
-        viewModel.ContainerName = "app";
-        viewModel.SelectedContainerItems = new ObservableCollection<PodLogContainerSelectionItem>(
-            [new PodLogContainerSelectionItem(string.Empty, "all", false, true)]);
+        viewModel.ContainerName = string.Empty;
 
         await viewModel.Connect();
+        GetContainerNodes(viewModel).Count.ShouldBe(3);
+        GetContainerNodes(viewModel).ShouldAllBe(static node => node.IsChecked == true);
+        viewModel.PlannedStreamCount.ShouldBe(3);
 
         await WaitForAsync(() => viewModel.Logs.Text.Contains("init line", StringComparison.Ordinal)
             && viewModel.Logs.Text.Contains("app line", StringComparison.Ordinal)
@@ -2070,9 +2043,7 @@ public sealed class PodLogsViewModelTests
         ReplayingPodLogStreamClient streamClient = new();
         using PodLogsViewModel viewModel = CreateViewModel(workspace.Runtime, streamClient);
         viewModel.Object = pod;
-        viewModel.ContainerName = "app";
-        viewModel.SelectedContainerItems = new ObservableCollection<PodLogContainerSelectionItem>(
-            [new PodLogContainerSelectionItem(string.Empty, "all", false, true)]);
+        viewModel.ContainerName = string.Empty;
 
         await viewModel.Connect();
 
@@ -2139,7 +2110,9 @@ public sealed class PodLogsViewModelTests
         viewModel.AvailableContainers.Select(container => container.Name).ShouldBe(["app", "debug"]);
         viewModel.AvailableContainers[1].DisplayName.ShouldBe("debug (ephemeral)");
         viewModel.AvailableContainers[1].IsEphemeralContainer.ShouldBeTrue();
-        viewModel.ContainerSelectionItems[2].IsEphemeralContainer.ShouldBeTrue();
+        GetContainerNodes(viewModel)
+            .Single(static node => ((PodLogContainerOption)node.Value).Name == "debug")
+            .Value.ShouldBeOfType<PodLogContainerOption>().IsEphemeralContainer.ShouldBeTrue();
         streamClient.Requests[0].ContainerName.ShouldBe("debug");
     }
 
@@ -2205,7 +2178,7 @@ public sealed class PodLogsViewModelTests
     }
 
     [AvaloniaFact]
-    public async Task Selecting_all_while_connecting_should_queue_a_follow_up_reconnect()
+    public async Task Multiple_log_streams_should_open_in_parallel()
     {
         using var workspace = await Application.Current.CreateClusterAsync();
 
@@ -2241,19 +2214,71 @@ public sealed class PodLogsViewModelTests
         Task connectTask = viewModel.Connect();
         await streamClient.WaitForFirstRequestAsync();
 
-        viewModel.SelectedPodItems = new ObservableCollection<PodLogPodSelectionItem>([viewModel.PodSelectionItems[0]]);
+        try
+        {
+            await WaitForAsync(() => streamClient.Requests.Count >= 2);
+        }
+        finally
+        {
+            streamClient.ReleaseFirstRequest();
+            await connectTask;
+        }
+
+        streamClient.Requests.Select(static request => request.PodName)
+            .ShouldBe([olderPod.Name(), newerPod.Name()], ignoreOrder: true);
+    }
+
+    [AvaloniaFact]
+    public async Task Selecting_an_additional_container_while_connecting_should_queue_a_follow_up_reconnect()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync();
+
+        V1Pod olderPod = CreatePod(
+            name: "app-7c9dd9f4f4-abcde",
+            namespaceName: "default",
+            uid: "old-pod-uid",
+            ownerUid: "replicaset-uid",
+            ownerName: "app-7c9dd9f4f4",
+            ownerKind: "ReplicaSet",
+            containers: ["app", "sidecar"],
+            creationTimestamp: new DateTime(2026, 4, 1, 12, 0, 0, DateTimeKind.Utc));
+
+        V1Pod newerPod = CreatePod(
+            name: "app-7c9dd9f4f4-fghij",
+            namespaceName: "default",
+            uid: "new-pod-uid",
+            ownerUid: "replicaset-uid",
+            ownerName: "app-7c9dd9f4f4",
+            ownerKind: "ReplicaSet",
+            containers: ["app"],
+            creationTimestamp: new DateTime(2026, 4, 1, 12, 5, 0, DateTimeKind.Utc));
+
+        await workspace.Runtime.AddOrUpdateResource(olderPod);
+        await workspace.Runtime.AddOrUpdateResource(newerPod);
+        await workspace.Runtime.SeedResource<V1Pod>(true);
+
+        BlockingPodLogStreamClient streamClient = new("initial line\n");
+        using PodLogsViewModel viewModel = CreateViewModel(workspace.Runtime, streamClient);
+        viewModel.Object = olderPod;
+        viewModel.ContainerName = "app";
+
+        Task connectTask = viewModel.Connect();
+        await streamClient.WaitForFirstRequestAsync();
+
+        GetContainerNodes(viewModel)
+            .Single(static node => ((PodLogContainerOption)node.Value).Name == "sidecar")
+            .IsChecked = true;
         streamClient.ReleaseFirstRequest();
 
-        await WaitForAsync(() => streamClient.Requests.Count == 3 && viewModel.SelectedPodItems.Count == 1 && viewModel.SelectedPodItems[0].IsAll);
+        await WaitForAsync(() => streamClient.Requests.Any(static request => request.ContainerName == "sidecar")
+            && GetContainerNodes(viewModel).All(static node => node.IsChecked == true));
 
         await connectTask;
 
-        streamClient.Requests.Count.ShouldBe(3);
-        streamClient.Requests[0].PodName.ShouldBe("app-7c9dd9f4f4-abcde");
-        streamClient.Requests[1].PodName.ShouldBe("app-7c9dd9f4f4-fghij");
-        streamClient.Requests[2].PodName.ShouldBe("app-7c9dd9f4f4-abcde");
-        viewModel.SelectedPodItems.Count.ShouldBe(1);
-        viewModel.SelectedPodItems[0].IsAll.ShouldBeTrue();
+        streamClient.Requests.Count.ShouldBeGreaterThanOrEqualTo(2);
+        streamClient.Requests[0].ContainerName.ShouldBe("app");
+        streamClient.Requests.ShouldContain(static request => request.ContainerName == "sidecar");
+        GetContainerNodes(viewModel).ShouldAllBe(static node => node.IsChecked == true);
     }
 
     [AvaloniaFact]
@@ -2336,18 +2361,16 @@ public sealed class PodLogsViewModelTests
         viewModel.ContainerName = "app";
 
         await viewModel.Connect();
-        await WaitForAsync(() => viewModel.ContainerSelectionItems.Count == 3, timeoutMs: 60000);
+        await WaitForAsync(() => GetContainerNodes(viewModel).Count == 2, timeoutMs: 60000);
+        SelectOnlyContainers(viewModel, "app", "sidecar");
 
-        viewModel.SelectedContainerItems = new ObservableCollection<PodLogContainerSelectionItem>(
-            [viewModel.ContainerSelectionItems[1], viewModel.ContainerSelectionItems[2]]);
-
-        viewModel.SelectedContainerItems.Count.ShouldBe(2);
+        GetContainerNodes(viewModel).Count(static node => node.IsChecked == true).ShouldBe(2);
         viewModel.CanShowResourceNames.ShouldBeTrue();
     }
 
     [AvaloniaTheory, KubernetesBackendData]
     [Trait("Category", "Kind")]
-    public async Task Selecting_all_containers_should_not_throw_and_should_normalize_selection(KubernetesBackend backend)
+    public async Task Selecting_a_pod_node_should_select_all_container_descendants(KubernetesBackend backend)
     {
         using var workspace = await Application.Current.CreateClusterAsync(config =>
         {
@@ -2377,17 +2400,14 @@ public sealed class PodLogsViewModelTests
 
         await viewModel.Connect();
 
-        await WaitForAsync(() => viewModel.ContainerSelectionItems.Count == 3, timeoutMs: 60000);
+        await WaitForAsync(() => GetContainerNodes(viewModel).Count == 2, timeoutMs: 60000);
+        SelectOnlyContainers(viewModel, "app");
 
-        viewModel.SelectedContainerItems = new ObservableCollection<PodLogContainerSelectionItem>(
-            [viewModel.ContainerSelectionItems[1]]);
+        PodLogSourceTreeNode podNode = GetPodNodes(viewModel).Single();
+        Should.NotThrow(() => podNode.IsChecked = true);
 
-        Should.NotThrow(() => viewModel.SelectedContainerItems.Add(viewModel.ContainerSelectionItems[0]));
-
-        await WaitForAsync(() => viewModel.SelectedContainerItems.Count == 1 && viewModel.SelectedContainerItems[0].IsAll, timeoutMs: 60000);
-
-        viewModel.SelectedContainerItems.Count.ShouldBe(1);
-        viewModel.SelectedContainerItems[0].IsAll.ShouldBeTrue();
+        podNode.Children.ShouldAllBe(static node => node.IsChecked == true);
+        podNode.IsChecked.ShouldBe(true);
     }
 
     [AvaloniaTheory, KubernetesBackendData]
@@ -2417,16 +2437,36 @@ public sealed class PodLogsViewModelTests
         viewModel.ContainerName = "app";
 
         await viewModel.Connect();
-        await WaitForAsync(() => viewModel.ContainerSelectionItems.Count == 3, timeoutMs: 60000);
+        await WaitForAsync(() => GetContainerNodes(viewModel).Count == 2, timeoutMs: 60000);
 
-        viewModel.SelectedContainerItems.Clear();
-        viewModel.SelectedContainerItems.Add(viewModel.ContainerSelectionItems[0]);
-        await WaitForAsync(() => viewModel.SelectedContainerItems.Count == 1 && viewModel.SelectedContainerItems[0].IsAll, timeoutMs: 60000);
-        viewModel.SelectedContainerItems.Add(viewModel.ContainerSelectionItems[2]);
+        SelectOnlyContainers(viewModel, "sidecar");
+        await WaitForAsync(() => !viewModel.IsConnecting, timeoutMs: 60000);
 
-        await WaitForAsync(() => viewModel.SelectedContainerItems.Count == 1 && !viewModel.SelectedContainerItems[0].IsAll, timeoutMs: 60000);
+        GetContainerNodes(viewModel).Single(static node => node.IsChecked == true)
+            .Value.ShouldBeOfType<PodLogContainerOption>().Name.ShouldBe("sidecar");
+    }
 
-        viewModel.SelectedContainerItems[0].Name.ShouldBe("sidecar");
+    [AvaloniaFact]
+    public async Task Unchecking_the_only_container_should_keep_an_intentional_zero_stream_selection()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync();
+        V1Pod pod = CreatePod("app", "default", "pod-uid", containers: ["app"]);
+        ConfigureRunningContainer(pod, "app", "unused");
+        await workspace.Runtime.AddOrUpdateResource(pod);
+        await workspace.Runtime.SeedResource<V1Pod>(true);
+        using StatusChangingPodLogStreamClient streamClient = new("line\n");
+        using PodLogsViewModel viewModel = CreateViewModel(workspace.Runtime, streamClient);
+        viewModel.Object = pod;
+        viewModel.ContainerName = "app";
+        await viewModel.Connect();
+        await WaitForAsync(() => streamClient.Requests.Count == 1);
+
+        GetContainerNodes(viewModel).Single().IsChecked = false;
+
+        await WaitForAsync(() => viewModel.PlannedStreamCount == 0 && !viewModel.IsConnecting);
+        GetContainerNodes(viewModel).Single().IsChecked.ShouldBe(false);
+        viewModel.IsConnected.ShouldBeFalse();
+        streamClient.Requests.Count.ShouldBe(1);
     }
 
     [AvaloniaTheory, KubernetesBackendData]
@@ -2496,14 +2536,14 @@ public sealed class PodLogsViewModelTests
         viewModel.ContainerName = "app";
 
         await viewModel.Connect();
-        await WaitForAsync(() => viewModel.PodSelectionItems.Count == 3, timeoutMs: 60000);
+        await WaitForAsync(() => GetPodNodes(viewModel).Count == 2, timeoutMs: 60000);
 
-        viewModel.SelectedPodItems.Add(viewModel.PodSelectionItems[0]);
+        foreach (PodLogSourceTreeNode podNode in GetPodNodes(viewModel))
+        {
+            podNode.IsChecked = true;
+        }
 
-        await WaitForAsync(() => viewModel.SelectedPodItems.Count == 1 && viewModel.SelectedPodItems[0].IsAll, timeoutMs: 60000);
-
-        viewModel.SelectedPodItems.Count.ShouldBe(1);
-        viewModel.SelectedPodItems[0].IsAll.ShouldBeTrue();
+        await WaitForAsync(() => GetPodNodes(viewModel).All(static node => node.IsChecked == true), timeoutMs: 60000);
     }
 
     [AvaloniaTheory, KubernetesBackendData]
@@ -2573,17 +2613,13 @@ public sealed class PodLogsViewModelTests
         viewModel.ContainerName = "app";
 
         await viewModel.Connect();
-        await WaitForAsync(() => viewModel.PodSelectionItems.Count == 3, timeoutMs: 60000);
+        await WaitForAsync(() => GetPodNodes(viewModel).Count == 2, timeoutMs: 60000);
 
-        viewModel.SelectedPodItems.Clear();
-        viewModel.SelectedPodItems.Add(viewModel.PodSelectionItems[0]);
-        await WaitForAsync(() => viewModel.SelectedPodItems.Count == 1 && viewModel.SelectedPodItems[0].IsAll, timeoutMs: 60000);
+        SelectOnlyPods(viewModel, newerPod.Name());
+        await WaitForAsync(() => !viewModel.IsConnecting, timeoutMs: 60000);
 
-        viewModel.SelectedPodItems.Add(viewModel.PodSelectionItems.Single(item => item.Pod?.Name() == newerPod.Name()));
-
-        await WaitForAsync(() => viewModel.SelectedPodItems.Count == 1 && !viewModel.SelectedPodItems[0].IsAll, timeoutMs: 60000);
-
-        viewModel.SelectedPodItems[0].Pod!.Name().ShouldBe("app-7c9dd9f4f4-fghij");
+        GetPodNodes(viewModel).Single(static node => node.IsChecked == true)
+            .Value.ShouldBeOfType<V1Pod>().Name().ShouldBe("app-7c9dd9f4f4-fghij");
     }
 
     [AvaloniaFact]
@@ -2605,6 +2641,256 @@ public sealed class PodLogsViewModelTests
 
         exportService.SuggestedFileName.ShouldBe("default-app-7c9dd9f4f4-abcde-app.log");
         exportService.Content.ShouldBe("alpha\nbeta\n");
+    }
+
+    [AvaloniaFact]
+    public async Task Multi_resource_download_should_include_a_manifest()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync();
+        RecordingPodLogExportService exportService = new();
+        using PodLogsViewModel viewModel = CreateViewModel(workspace.Runtime, new RecordingPodLogStreamClient(), exportService);
+        V1Pod firstPod = CreatePod("first", "default", "first-uid", containers: ["app"]);
+        V1Pod secondPod = CreatePod("second", "other", "second-uid", containers: ["sidecar"]);
+        viewModel.SetScopes([firstPod, secondPod], V1Pod.KubeKind);
+        viewModel.Logs.Text = "[first/app] alpha\n[second/sidecar] beta\n";
+
+        await viewModel.DownloadLogs();
+
+        exportService.SuggestedFileName.ShouldStartWith("kubeui-logs-2-resources-");
+        exportService.SuggestedFileName.ShouldEndWith(".log");
+        exportService.Content.ShouldContain("# KubeUI multi-resource log export");
+        exportService.Content.ShouldContain("# Resources: 2");
+        exportService.Content.ShouldContain("# - Pod/default/first");
+        exportService.Content.ShouldContain("# - Pod/other/second");
+        exportService.Content.ShouldContain("# Cross-stream lines are shown in arrival order.");
+        exportService.Content.ShouldEndWith(viewModel.Logs.Text);
+    }
+
+    [AvaloniaFact]
+    public async Task ClearScopes_should_keep_an_intentional_empty_logs_state()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync();
+        using PodLogsViewModel viewModel = CreateViewModel(workspace.Runtime, new RecordingPodLogStreamClient());
+        viewModel.SetScopes(
+            [
+                CreatePod("first", "default", "first-uid", containers: ["app"]),
+                CreatePod("second", "default", "second-uid", containers: ["app"]),
+            ],
+            V1Pod.KubeKind);
+
+        viewModel.ClearScopesCommand.Execute(null);
+        await viewModel.Connect();
+
+        viewModel.ScopeItems.ShouldBeEmpty();
+        viewModel.Object.ShouldBeNull();
+        viewModel.ConnectionError.ShouldBe(Assets.Resources.PodLogsView_NoResources);
+    }
+
+    [AvaloniaFact]
+    public async Task Resource_selector_uncheck_should_remove_only_that_scope()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync();
+        using PodLogsViewModel viewModel = CreateViewModel(workspace.Runtime, new RecordingPodLogStreamClient());
+        viewModel.SetScopes(
+            [
+                CreatePod("first", "default", "first-uid", containers: ["app"]),
+                CreatePod("second", "default", "second-uid", containers: ["app"]),
+            ],
+            V1Pod.KubeKind);
+
+        viewModel.SelectedScopeItems.RemoveAt(1);
+
+        viewModel.ScopeItems.Count.ShouldBe(1);
+        viewModel.ScopeItems[0].Resource.Name().ShouldBe("first");
+        viewModel.Object!.Name().ShouldBe("first");
+    }
+
+    [AvaloniaFact]
+    public async Task Resource_selector_clear_should_keep_an_intentional_empty_logs_state()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync();
+        using PodLogsViewModel viewModel = CreateViewModel(workspace.Runtime, new RecordingPodLogStreamClient());
+        viewModel.SetScopes(
+            [
+                CreatePod("first", "default", "first-uid", containers: ["app"]),
+                CreatePod("second", "default", "second-uid", containers: ["app"]),
+            ],
+            V1Pod.KubeKind);
+
+        viewModel.SelectedScopeItems.Clear();
+        Dispatcher.UIThread.RunJobs();
+
+        viewModel.ScopeItems.ShouldBeEmpty();
+        viewModel.Object.ShouldBeNull();
+        viewModel.ConnectionError.ShouldBe(Assets.Resources.PodLogsView_NoResources);
+    }
+
+    [AvaloniaFact]
+    public async Task Last_resource_token_removal_should_win_if_control_transiently_reselects_it()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync();
+        using PodLogsViewModel viewModel = CreateViewModel(workspace.Runtime, new RecordingPodLogStreamClient());
+        viewModel.SetScope(
+            CreatePod("only", "default", "only-uid", containers: ["app"]),
+            V1Pod.KubeKind);
+        PodLogScopeSelectionItem selectedScope = viewModel.SelectedScopeItems.Single();
+
+        viewModel.SelectedScopeItems.Clear();
+        viewModel.SelectedScopeItems.Add(selectedScope);
+        Dispatcher.UIThread.RunJobs();
+
+        viewModel.ScopeItems.ShouldBeEmpty();
+        viewModel.SelectedScopeItems.ShouldBeEmpty();
+        viewModel.Object.ShouldBeNull();
+        viewModel.ConnectionError.ShouldBe(Assets.Resources.PodLogsView_NoResources);
+    }
+
+    [AvaloniaFact]
+    public async Task Adding_resource_should_refresh_all_selected_streams_with_the_full_tail()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync();
+        V1Pod firstPod = CreatePod("first", "default", "first-uid", containers: ["app"]);
+        V1Pod secondPod = CreatePod("second", "default", "second-uid", containers: ["app"]);
+        ConfigureRunningContainer(firstPod, "app", "unused");
+        ConfigureRunningContainer(secondPod, "app", "unused");
+        await workspace.Runtime.AddOrUpdateResource(firstPod);
+        await workspace.Runtime.AddOrUpdateResource(secondPod);
+        await workspace.Runtime.SeedResource<V1Pod>(true);
+        PodHistoryBlockingLogStreamClient streamClient = new();
+        using PodLogsViewModel viewModel = CreateViewModel(workspace.Runtime, streamClient);
+        viewModel.SetScope(firstPod, V1Pod.KubeKind);
+
+        await viewModel.Connect();
+        await WaitForAsync(() => viewModel.Logs.Text.Contains("first-load-1", StringComparison.Ordinal));
+
+        await viewModel.AddScopesAsync([secondPod], V1Pod.KubeKind);
+        await WaitForAsync(() =>
+            viewModel.Logs.Text.Contains("first-load-2", StringComparison.Ordinal)
+            && viewModel.Logs.Text.Contains("second-load-1", StringComparison.Ordinal));
+
+        viewModel.Logs.Text.ShouldNotContain("first-load-1");
+        streamClient.Requests.Count.ShouldBe(3);
+        streamClient.Requests.Skip(1).ShouldAllBe(request => request.TailLines == 500);
+        streamClient.Requests.Skip(1).Select(static request => request.PodName)
+            .ShouldBe(["first", "second"], ignoreOrder: true);
+        viewModel.SourceTreeItems.Count.ShouldBe(2);
+        viewModel.SourceTreeItems.ShouldAllBe(static resource => resource.IsChecked == true);
+        viewModel.SourceTreeItems
+            .SelectMany(static resource => resource.Children)
+            .ShouldAllBe(static pod => pod.IsChecked == true);
+        viewModel.SourceTreeItems
+            .SelectMany(static resource => resource.Children)
+            .SelectMany(static pod => pod.Children)
+            .ShouldAllBe(static container => container.IsChecked == true);
+    }
+
+    [AvaloniaFact]
+    public async Task Adding_resource_should_preserve_existing_filters_and_select_only_the_new_scope()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync();
+        V1Pod firstPod = CreatePod("first", "default", "first-uid", containers: ["app", "sidecar"]);
+        V1Pod secondPod = CreatePod("second", "default", "second-uid", containers: ["app", "sidecar"]);
+        ConfigureRunningContainer(firstPod, "app", "unused");
+        ConfigureRunningContainer(firstPod, "sidecar", "unused");
+        ConfigureRunningContainer(secondPod, "app", "unused");
+        ConfigureRunningContainer(secondPod, "sidecar", "unused");
+        await workspace.Runtime.AddOrUpdateResource(firstPod);
+        await workspace.Runtime.AddOrUpdateResource(secondPod);
+        await workspace.Runtime.SeedResource<V1Pod>(true);
+        using PodLogsViewModel viewModel = CreateViewModel(workspace.Runtime, new RecordingPodLogStreamClient());
+        viewModel.SetScope(firstPod, V1Pod.KubeKind);
+        viewModel.ContainerName = string.Empty;
+        await viewModel.Connect();
+        SelectOnlyContainers(viewModel, "sidecar");
+        await WaitForAsync(() => !viewModel.IsConnecting);
+
+        await viewModel.AddScopesAsync([secondPod], V1Pod.KubeKind);
+
+        PodLogSourceTreeNode firstPodNode = GetPodNodes(viewModel)
+            .Single(node => ((V1Pod)node.Value).Name() == firstPod.Name());
+        firstPodNode.Children.Single(node => ((PodLogContainerOption)node.Value).Name == "app")
+            .IsChecked.ShouldBe(false);
+        firstPodNode.Children.Single(node => ((PodLogContainerOption)node.Value).Name == "sidecar")
+            .IsChecked.ShouldBe(true);
+
+        PodLogSourceTreeNode secondPodNode = GetPodNodes(viewModel)
+            .Single(node => ((V1Pod)node.Value).Name() == secondPod.Name());
+        secondPodNode.Children.ShouldAllBe(static node => node.IsChecked == true);
+    }
+
+    [AvaloniaFact]
+    public async Task Resource_selector_should_keep_selected_item_after_resolution_status_updates()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync();
+        V1Pod pod = CreatePod("selected", "default", "selected-uid", containers: ["app"]);
+        await workspace.Runtime.AddOrUpdateResource(pod);
+        await workspace.Runtime.SeedResource<V1Pod>(true);
+        using PodLogsViewModel viewModel = CreateViewModel(workspace.Runtime, new RecordingPodLogStreamClient());
+        viewModel.SetScope(pod, V1Pod.KubeKind);
+
+        await viewModel.Connect();
+
+        viewModel.SelectedScopeItems.Count.ShouldBe(1);
+        ReferenceEquals(viewModel.SelectedScopeItems[0], viewModel.ScopeItems[0]).ShouldBeTrue();
+        viewModel.SelectedScopeItems[0].ResolutionStatus.ShouldBe(Assets.Resources.PodLogsView_Active);
+    }
+
+    [AvaloniaFact]
+    public async Task SetScopes_should_reject_more_than_the_supported_resource_count()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync();
+        using PodLogsViewModel viewModel = CreateViewModel(workspace.Runtime, new RecordingPodLogStreamClient());
+        V1Pod[] pods = Enumerable.Range(0, PodLogsViewModel.MaxScopeCount + 1)
+            .Select(index => CreatePod($"pod-{index}", "default", $"uid-{index}", containers: ["app"]))
+            .ToArray();
+
+        Should.Throw<ArgumentOutOfRangeException>(() => viewModel.SetScopes(pods, V1Pod.KubeKind));
+    }
+
+    [AvaloniaFact]
+    public async Task Stream_warning_should_describe_fan_out_above_the_warning_threshold()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync();
+        using PodLogsViewModel viewModel = CreateViewModel(workspace.Runtime, new RecordingPodLogStreamClient());
+        viewModel.PlannedStreamCount = PodLogsViewModel.StreamWarningThreshold + 1;
+
+        viewModel.HasStreamLimitWarning.ShouldBeTrue();
+        viewModel.StreamLimitWarning.ShouldContain((PodLogsViewModel.StreamWarningThreshold + 1).ToString(CultureInfo.CurrentCulture));
+    }
+
+    [AvaloniaFact]
+    public async Task sources_tree_projects_hierarchy_and_updates_selection()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync();
+        V1Pod pod = CreatePod("api", "default", "pod-uid", containers: ["app", "sidecar"]);
+        ConfigureRunningContainer(pod, "app", "echo app");
+        ConfigureRunningContainer(pod, "sidecar", "echo sidecar");
+        await workspace.Runtime.AddOrUpdateResource(pod);
+        await workspace.Runtime.SeedResource<V1Pod>(true);
+        using PodLogsViewModel viewModel = CreateViewModel(workspace.Runtime, new RecordingPodLogStreamClient());
+        viewModel.SetScope(pod, V1Pod.KubeKind);
+        viewModel.ContainerName = string.Empty;
+        await viewModel.Connect();
+
+        PodLogSourceTreeNode resourceNode = viewModel.SourceTreeItems.Single();
+        PodLogSourceTreeNode podNode = resourceNode.Children.Single();
+        podNode.Children.Select(static node => node.DisplayName).ShouldBe(["app", "sidecar"]);
+        resourceNode.IsChecked.ShouldBe(true);
+        podNode.IsChecked.ShouldBe(true);
+
+        podNode.Children[0].IsChecked = false;
+
+        resourceNode = viewModel.SourceTreeItems.Single();
+        podNode = resourceNode.Children.Single();
+        resourceNode.IsChecked.ShouldBeNull();
+        podNode.IsChecked.ShouldBeNull();
+        podNode.Children.Select(static node => node.IsChecked).ShouldBe([false, true]);
+
+        resourceNode.IsChecked = false;
+        Dispatcher.UIThread.RunJobs();
+
+        viewModel.SelectedScopeItems.ShouldBeEmpty();
+        viewModel.SourceTreeItems.ShouldBeEmpty();
     }
 
     [AvaloniaTheory, KubernetesBackendData]
@@ -2694,10 +2980,8 @@ public sealed class PodLogsViewModelTests
         viewModel.Title.ShouldBe("Deployment Logs");
         viewModel.IsPodScope.ShouldBeFalse();
         viewModel.IsControllerScope.ShouldBeTrue();
-        viewModel.SelectedPodItems.Count.ShouldBe(1);
-        viewModel.SelectedPodItems[0].IsAll.ShouldBeTrue();
-        viewModel.SelectedContainerItems.Count.ShouldBe(1);
-        viewModel.SelectedContainerItems[0].IsAll.ShouldBeTrue();
+        GetPodNodes(viewModel).ShouldAllBe(static node => node.IsChecked == true);
+        GetContainerNodes(viewModel).ShouldAllBe(static node => node.IsChecked == true);
         viewModel.CanShowResourceNames.ShouldBeTrue();
         viewModel.CanJumpToController.ShouldBeFalse();
         viewModel.Logs.Text.ShouldContain("[app-7c9dd9f4f4-fghij/app] newer app line");
@@ -2733,15 +3017,7 @@ public sealed class PodLogsViewModelTests
             workspace.Runtime,
             new RecordingPodLogStreamClient());
         viewModel.Object = pod;
-        viewModel.ContainerName = "app";
-        viewModel.SelectedContainerItems = new ObservableCollection<PodLogContainerSelectionItem>(
-        [
-            new PodLogContainerSelectionItem(
-                string.Empty,
-                KubeUI.Avalonia.Assets.Resources.PodLogsView_AllContainers,
-                false,
-                true),
-        ]);
+        viewModel.ContainerName = string.Empty;
 
         await viewModel.Connect();
         viewModel.Title.ShouldBe("Pod Logs");
@@ -2750,15 +3026,15 @@ public sealed class PodLogsViewModelTests
         await viewModel.JumpToControlledByLogs();
         viewModel.Object.ShouldBeOfType<V1ReplicaSet>().Name().ShouldBe("api-rs");
         viewModel.Title.ShouldBe("ReplicaSet Logs");
-        viewModel.SelectedPodItems.Single().IsAll.ShouldBeTrue();
-        viewModel.SelectedContainerItems.Single().IsAll.ShouldBeTrue();
+        GetPodNodes(viewModel).ShouldAllBe(static node => node.IsChecked == true);
+        GetContainerNodes(viewModel).ShouldAllBe(static node => node.IsChecked == true);
         viewModel.CanJumpToController.ShouldBeTrue();
 
         await viewModel.JumpToControlledByLogs();
         viewModel.Object.ShouldBeOfType<V1Deployment>().Name().ShouldBe("api");
         viewModel.Title.ShouldBe("Deployment Logs");
-        viewModel.SelectedPodItems.Single().IsAll.ShouldBeTrue();
-        viewModel.SelectedContainerItems.Single().IsAll.ShouldBeTrue();
+        GetPodNodes(viewModel).ShouldAllBe(static node => node.IsChecked == true);
+        GetContainerNodes(viewModel).ShouldAllBe(static node => node.IsChecked == true);
         viewModel.CanJumpToController.ShouldBeFalse();
     }
 
@@ -2828,8 +3104,8 @@ public sealed class PodLogsViewModelTests
         viewModel.ScopeNamespace.ShouldBeEmpty();
         viewModel.HasScopeNamespace.ShouldBeFalse();
         viewModel.AvailablePods.Select(item => item.Name()).ShouldBe([pod.Name()]);
-        viewModel.SelectedPodItems.Single().IsAll.ShouldBeTrue();
-        viewModel.SelectedContainerItems.Single().IsAll.ShouldBeTrue();
+        GetPodNodes(viewModel).ShouldAllBe(static node => node.IsChecked == true);
+        GetContainerNodes(viewModel).ShouldAllBe(static node => node.IsChecked == true);
         viewModel.ConnectionError.ShouldBeNull();
         streamClient.Requests.Count.ShouldBe(3);
         streamClient.Requests[^1].PodNamespace.ShouldBe("gpu-operator");
@@ -2949,15 +3225,7 @@ public sealed class PodLogsViewModelTests
             workspace.Runtime,
             new RecordingPodLogStreamClient());
         viewModel.Object = pod;
-        viewModel.ContainerName = "backup";
-        viewModel.SelectedContainerItems = new ObservableCollection<PodLogContainerSelectionItem>(
-        [
-            new PodLogContainerSelectionItem(
-                string.Empty,
-                KubeUI.Avalonia.Assets.Resources.PodLogsView_AllContainers,
-                false,
-                true),
-        ]);
+        viewModel.ContainerName = string.Empty;
 
         await viewModel.Connect();
         await viewModel.JumpToControlledByLogs();
@@ -2970,8 +3238,8 @@ public sealed class PodLogsViewModelTests
 
         viewModel.Object.ShouldBeOfType<V1CronJob>().Name().ShouldBe("backup");
         viewModel.Title.ShouldBe("CronJob Logs");
-        viewModel.SelectedPodItems.Single().IsAll.ShouldBeTrue();
-        viewModel.SelectedContainerItems.Single().IsAll.ShouldBeTrue();
+        GetPodNodes(viewModel).ShouldAllBe(static node => node.IsChecked == true);
+        GetContainerNodes(viewModel).ShouldAllBe(static node => node.IsChecked == true);
         viewModel.CanJumpToController.ShouldBeFalse();
     }
 
@@ -3214,8 +3482,7 @@ public sealed class PodLogsViewModelTests
         DelayedPodLogStreamClient streamClient = new();
         PodLogsViewModel viewModel = CreateViewModel(workspace.Runtime, streamClient);
         viewModel.Object = pod;
-        viewModel.SelectedContainerItems = new ObservableCollection<PodLogContainerSelectionItem>(
-            [new PodLogContainerSelectionItem(string.Empty, "all", false, true)]);
+        viewModel.ContainerName = string.Empty;
 
         Task connectTask = viewModel.Connect();
         await streamClient.WaitForRequestAsync();
@@ -3225,35 +3492,6 @@ public sealed class PodLogsViewModelTests
         await connectTask;
 
         streamClient.ConnectionWaitHandle.SafeWaitHandle.IsClosed.ShouldBeTrue();
-    }
-
-    [AvaloniaFact]
-    public async Task Replaced_container_selection_should_not_trigger_reconnects()
-    {
-        using var workspace = await Application.Current.CreateClusterAsync();
-        V1Pod pod = CreatePod("app", "default", "pod-uid", containers: ["app", "sidecar"]);
-        await workspace.Runtime.AddOrUpdateResource(pod);
-        await workspace.Runtime.SeedResource<V1Pod>(true);
-        RecordingPodLogStreamClient streamClient = new(["first\n", "second\n", "unexpected\n"]);
-        using PodLogsViewModel viewModel = CreateViewModel(workspace.Runtime, streamClient);
-        viewModel.Object = pod;
-        viewModel.ContainerName = "app";
-        await viewModel.Connect();
-        await WaitForAsync(() => streamClient.Requests.Count == 1);
-        ObservableCollection<PodLogContainerSelectionItem> replacedItems = viewModel.SelectedContainerItems;
-
-        viewModel.SelectedContainerItems = new ObservableCollection<PodLogContainerSelectionItem>(
-            [new PodLogContainerSelectionItem("app", "app", false, false)]);
-        await WaitForAsync(() => streamClient.Requests.Count == 2);
-
-        replacedItems.Add(new PodLogContainerSelectionItem("sidecar", "sidecar", false, false));
-
-        await Should.ThrowAsync<TimeoutException>(() => TestWait.UntilAsync(
-            () => streamClient.Requests.Count > 2,
-            500,
-            TestContext.Current.CancellationToken,
-            () => Dispatcher.UIThread.RunJobs()));
-        streamClient.Requests.Count.ShouldBe(2);
     }
 
     [AvaloniaFact]
@@ -3372,6 +3610,44 @@ public sealed class PodLogsViewModelTests
         {
             Cluster = runtime,
         };
+    }
+
+    private static IReadOnlyList<PodLogSourceTreeNode> GetPodNodes(PodLogsViewModel viewModel)
+    {
+        return viewModel.SourceTreeItems
+            .SelectMany(static resource => resource.Children)
+            .ToArray();
+    }
+
+    private static IReadOnlyList<PodLogSourceTreeNode> GetContainerNodes(PodLogsViewModel viewModel)
+    {
+        return GetPodNodes(viewModel)
+            .SelectMany(static pod => pod.Children)
+            .ToArray();
+    }
+
+    private static void SelectOnlyPods(PodLogsViewModel viewModel, params string[] podNames)
+    {
+        HashSet<string> selected = new(podNames, StringComparer.Ordinal);
+        foreach (PodLogSourceTreeNode podNode in GetPodNodes(viewModel))
+        {
+            podNode.IsChecked = podNode.Value is V1Pod pod && selected.Contains(pod.Name());
+        }
+    }
+
+    private static void SelectOnlyContainers(PodLogsViewModel viewModel, params string[] containerNames)
+    {
+        HashSet<string> selected = new(containerNames, StringComparer.Ordinal);
+        foreach (PodLogSourceTreeNode podNode in GetPodNodes(viewModel))
+        {
+            var podSelected = podNode.IsChecked != false;
+            foreach (PodLogSourceTreeNode containerNode in podNode.Children)
+            {
+                containerNode.IsChecked = podSelected
+                    && containerNode.Value is PodLogContainerOption container
+                    && selected.Contains(container.Name);
+            }
+        }
     }
 
     private static V1Deployment CreateKindDeployment(string name, string appLabel, string message)
@@ -4726,6 +5002,24 @@ public sealed class PodLogsViewModelTests
 
             var bytes = Encoding.UTF8.GetBytes(_payload.ReplaceLineEndings("\n"));
             return new MemoryStream(bytes);
+        }
+    }
+
+    private sealed class PodHistoryBlockingLogStreamClient : IPodLogStreamClient
+    {
+        private readonly ConcurrentDictionary<string, int> _requestCounts = new(StringComparer.Ordinal);
+
+        public SynchronizedList<PodLogReadOptions> Requests { get; } = [];
+
+        public Task<Stream> OpenAsync(
+            IClusterRuntime cluster,
+            PodLogReadOptions options,
+            CancellationToken cancellationToken = default)
+        {
+            Requests.Add(options);
+            var requestCount = _requestCounts.AddOrUpdate(options.PodName, 1, static (_, count) => count + 1);
+            var bytes = Encoding.UTF8.GetBytes($"{options.PodName}-load-{requestCount}\n");
+            return Task.FromResult<Stream>(new BlockingReadStream(bytes));
         }
     }
 

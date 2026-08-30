@@ -1,5 +1,3 @@
-using System.Collections.ObjectModel;
-using System.Collections.Specialized;
 using Avalonia.Threading;
 using k8s.Models;
 using KubeUI.Kubernetes;
@@ -8,25 +6,34 @@ namespace KubeUI.Avalonia.Resources.Workloads.v1.Pod.ViewModels;
 
 public sealed partial class PodLogsViewModel
 {
-    private List<PodLogReadOptions> BuildReadTargets(PodLogSessionState state, PodLogSessionResolution resolution)
+    private List<PodLogReadOptions> BuildReadTargets(PodLogSessionState state)
     {
         List<PodLogReadOptions> targets = [];
-        var pods = ResolveSelectedPods(resolution.RelatedPods, resolution.Pod);
-
-        for (var i = 0; i < pods.Count; i++)
+        HashSet<string> seenTargets = new(StringComparer.Ordinal);
+        foreach (PodLogSourceTreeNode resourceNode in SourceTreeItems)
         {
-            var pod = pods[i];
-            var containers = ResolveSelectedContainers(pod);
-
-            for (var j = 0; j < containers.Count; j++)
+            foreach (PodLogSourceTreeNode podNode in resourceNode.Children)
             {
-                var container = containers[j];
-                if (!IsContainerReadyForLogs(pod, container.Name, state.Previous))
+                if (podNode.Value is not V1Pod pod)
                 {
                     continue;
                 }
 
-                targets.Add(CreateReadOptionsForPod(state, pod, container.Name));
+                foreach (PodLogSourceTreeNode containerNode in podNode.Children)
+                {
+                    if (containerNode.IsChecked != true
+                        || containerNode.Value is not PodLogContainerOption container
+                        || !IsContainerReadyForLogs(pod, container.Name, state.Previous))
+                    {
+                        continue;
+                    }
+
+                    var targetKey = $"{BuildPodSourceKey(pod)}\n{BuildContainerSourceKey(container)}";
+                    if (seenTargets.Add(targetKey))
+                    {
+                        targets.Add(CreateReadOptionsForPod(state, pod, container.Name));
+                    }
+                }
             }
         }
 
@@ -105,196 +112,362 @@ public sealed partial class PodLogsViewModel
         return containers;
     }
 
-    private static IReadOnlyList<PodLogPodSelectionItem> BuildPodSelectionItems(IReadOnlyList<V1Pod> pods)
+    private void ReconcileSourceTree()
     {
-        List<PodLogPodSelectionItem> items = [new PodLogPodSelectionItem(null, Assets.Resources.PodLogsView_AllPods, true)];
-
-        for (var i = 0; i < pods.Count; i++)
+        if (MultiSessionResolution is null)
         {
-            var pod = pods[i];
-            items.Add(new PodLogPodSelectionItem(pod, pod.Name(), false));
+            SourceTreeItems.Clear();
+            return;
         }
 
-        return items;
-    }
-
-    private static IReadOnlyList<PodLogContainerSelectionItem> BuildContainerSelectionItems(IReadOnlyList<PodLogContainerOption> containers)
-    {
-        List<PodLogContainerSelectionItem> items = [new PodLogContainerSelectionItem(string.Empty, Assets.Resources.PodLogsView_AllContainers, false, true)];
-
-        for (var i = 0; i < containers.Count; i++)
+        SourceTreeSelectionSnapshot selection = CaptureSourceTreeSelection();
+        HashSet<string> assignedPods = new(StringComparer.Ordinal);
+        HashSet<string> desiredResourceKeys = new(StringComparer.Ordinal);
+        for (var scopeIndex = 0; scopeIndex < _scopeItems.Count; scopeIndex++)
         {
-            var container = containers[i];
-            items.Add(new PodLogContainerSelectionItem(container.Name, container.DisplayName, container.IsInitContainer, false, container.IsEphemeralContainer));
-        }
-
-        return items;
-    }
-
-    private ObservableCollection<PodLogPodSelectionItem> BuildSelectedPodItems(V1Pod currentPod, IReadOnlyList<PodLogPodSelectionItem> selectionItems)
-    {
-        return BuildSelectedItems(
-            SelectedPodItems,
-            selectionItems,
-            item => item.IsAll,
-            item => item.Pod?.Name() ?? string.Empty,
-            key => FindPodSelectionItem(selectionItems, key),
-            () => FindPodSelectionItem(selectionItems, currentPod.Name()));
-    }
-
-    private ObservableCollection<PodLogContainerSelectionItem> BuildSelectedContainerItems(string selectedContainerName, IReadOnlyList<PodLogContainerSelectionItem> selectionItems)
-    {
-        return BuildSelectedItems(
-            SelectedContainerItems,
-            selectionItems,
-            item => item.IsAll,
-            GetContainerSelectionKey,
-            key => FindContainerSelectionItem(selectionItems, key.Name, key.IsInitContainer, key.IsEphemeralContainer),
-            () => FindContainerSelectionItem(selectionItems, selectedContainerName));
-    }
-
-    private static ObservableCollection<TItem> BuildSelectedItems<TItem, TKey>(
-        IReadOnlyCollection<TItem> currentSelection,
-        IReadOnlyList<TItem> selectionItems,
-        Func<TItem, bool> isAll,
-        Func<TItem, TKey> getSelectionKey,
-        Func<TKey, TItem?> findSelectionItem,
-        Func<TItem?> findFallbackItem)
-        where TItem : class
-    {
-        if (currentSelection.Count == 0)
-        {
-            return CreateSelection(findFallbackItem() ?? selectionItems[0]);
-        }
-
-        if (ContainsAllSelection(currentSelection, isAll))
-        {
-            return CreateSelection(selectionItems[0]);
-        }
-
-        List<TItem> selected = [];
-        foreach (var selectedItem in currentSelection)
-        {
-            var item = findSelectionItem(getSelectionKey(selectedItem));
-            if (item is not null)
+            PodLogScopeSelectionItem scopeItem = _scopeItems[scopeIndex];
+            var resourceKey = BuildScopeIdentity(scopeItem.Resource, scopeItem.ResourceKind);
+            desiredResourceKeys.Add(resourceKey);
+            PodLogSourceTreeNode? resourceNode = FindSourceNode(SourceTreeItems, resourceKey);
+            var resourceIsNew = resourceNode is null;
+            resourceNode ??= new PodLogSourceTreeNode(
+                PodLogSourceNodeKind.Resource,
+                resourceKey,
+                BuildSourceResourceDisplayName(scopeItem),
+                scopeItem,
+                true,
+                SourceTreeSelectionChanged);
+            resourceNode.Update(BuildSourceResourceDisplayName(scopeItem), scopeItem);
+            if (resourceIsNew)
             {
-                selected.Add(item);
+                SourceTreeItems.Add(resourceNode);
+            }
+
+            PodLogScopeResolution? scopeResolution = FindScopeResolution(scopeItem);
+            var selectResolvedResource = _resourceKeysToSelectOnResolve.Contains(resourceKey);
+            ReconcilePodNodes(
+                resourceNode,
+                scopeResolution?.Pods ?? [],
+                assignedPods,
+                selectResolvedResource,
+                selection);
+            if (selectResolvedResource && resourceNode.Children.Count > 0)
+            {
+                _resourceKeysToSelectOnResolve.Remove(resourceKey);
             }
         }
 
-        return selected.Count > 0
-            ? new ObservableCollection<TItem>(selected)
-            : CreateSelection(findFallbackItem() ?? selectionItems[0]);
+        RemoveMissingNodes(SourceTreeItems, desiredResourceKeys);
+        UpdateSourceTreeParentStates();
     }
 
-    private IReadOnlyList<V1Pod> ResolveSelectedPods(IReadOnlyList<V1Pod> availablePods, V1Pod fallbackPod)
+    private void ReconcilePodNodes(
+        PodLogSourceTreeNode resourceNode,
+        IReadOnlyList<V1Pod> pods,
+        HashSet<string> assignedPods,
+        bool selectAllNewNodes,
+        SourceTreeSelectionSnapshot selection)
     {
-        if (SelectedPodItems.Count == 0 || ContainsAllSelection(SelectedPodItems))
+        HashSet<string> desiredPodKeys = new(StringComparer.Ordinal);
+        for (var podIndex = 0; podIndex < pods.Count; podIndex++)
         {
-            return availablePods;
-        }
-
-        HashSet<string> selectedNames = new(StringComparer.Ordinal);
-        for (var i = 0; i < SelectedPodItems.Count; i++)
-        {
-            var item = SelectedPodItems[i];
-            if (!item.IsAll && item.Pod is not null)
+            V1Pod pod = pods[podIndex];
+            var podKey = BuildPodSourceKey(pod);
+            if (!assignedPods.Add(podKey))
             {
-                selectedNames.Add(item.Pod.Name());
+                continue;
             }
-        }
 
-        List<V1Pod> selectedPods = [];
-        for (var i = 0; i < availablePods.Count; i++)
-        {
-            var pod = availablePods[i];
-            if (selectedNames.Contains(pod.Name()))
+            desiredPodKeys.Add(podKey);
+            PodLogSourceTreeNode? podNode = FindSourceNode(resourceNode.Children, podKey);
+            var podIsNew = podNode is null;
+            podNode ??= new PodLogSourceTreeNode(
+                PodLogSourceNodeKind.Pod,
+                podKey,
+                pod.Name(),
+                pod,
+                false,
+                SourceTreeSelectionChanged);
+            podNode.Update(pod.Name(), pod);
+            if (podIsNew)
             {
-                selectedPods.Add(pod);
+                resourceNode.Children.Add(podNode);
             }
+
+            ReconcileContainerNodes(
+                podNode,
+                BuildContainerOptions(pod),
+                podIsNew,
+                selectAllNewNodes,
+                selection);
         }
 
-        return selectedPods.Count > 0 ? selectedPods : [fallbackPod];
+        RemoveMissingNodes(resourceNode.Children, desiredPodKeys);
     }
 
-    private IReadOnlyList<PodLogContainerOption> ResolveSelectedContainers(V1Pod pod)
+    private void ReconcileContainerNodes(
+        PodLogSourceTreeNode podNode,
+        IReadOnlyList<PodLogContainerOption> containers,
+        bool podIsNew,
+        bool selectAllNewNodes,
+        SourceTreeSelectionSnapshot selection)
     {
-        List<PodLogContainerOption> availableContainers = [.. BuildContainerOptions(pod)];
-        if (SelectedContainerItems.Count == 0 || ContainsAllSelection(SelectedContainerItems))
+        HashSet<string> desiredContainerKeys = new(StringComparer.Ordinal);
+        var hadContainers = podNode.Children.Count > 0;
+        var allExistingContainersSelected = AreAllChildrenSelected(podNode.Children);
+        var initiallyRequestedContainer = SessionState?.ContainerName ?? ContainerName;
+        for (var containerIndex = 0; containerIndex < containers.Count; containerIndex++)
         {
-            return availableContainers;
-        }
-
-        HashSet<PodLogContainerSelectionKey> selectedKeys = [];
-        for (var i = 0; i < SelectedContainerItems.Count; i++)
-        {
-            var item = SelectedContainerItems[i];
-            if (!item.IsAll)
+            PodLogContainerOption container = containers[containerIndex];
+            var containerKey = BuildContainerSourceKey(container);
+            desiredContainerKeys.Add(containerKey);
+            PodLogSourceTreeNode? containerNode = FindSourceNode(podNode.Children, containerKey);
+            var containerIsNew = containerNode is null;
+            var selectNewContainer = selectAllNewNodes
+                || podIsNew && selection.HasPods
+                    && selection.SelectNewPods
+                    && (selection.AllContainersSelected || selection.CommonContainerKeys.Contains(containerKey))
+                || podIsNew && !selection.HasPods
+                    && (string.IsNullOrWhiteSpace(initiallyRequestedContainer)
+                        || string.Equals(container.Name, initiallyRequestedContainer, StringComparison.Ordinal))
+                || !podIsNew && hadContainers && allExistingContainersSelected;
+            containerNode ??= new PodLogSourceTreeNode(
+                PodLogSourceNodeKind.Container,
+                containerKey,
+                container.DisplayName,
+                container,
+                selectNewContainer,
+                SourceTreeSelectionChanged);
+            containerNode.Update(container.DisplayName, container);
+            if (containerIsNew)
             {
-                selectedKeys.Add(GetContainerSelectionKey(item));
+                podNode.Children.Add(containerNode);
             }
         }
 
-        List<PodLogContainerOption> selectedContainers = [];
-        for (var i = 0; i < availableContainers.Count; i++)
-        {
-            var container = availableContainers[i];
-            if (selectedKeys.Contains(GetContainerSelectionKey(container)))
-            {
-                selectedContainers.Add(container);
-            }
-        }
-
-        return selectedContainers;
+        RemoveMissingNodes(podNode.Children, desiredContainerKeys);
     }
 
-    private static PodLogPodSelectionItem? FindPodSelectionItem(IReadOnlyList<PodLogPodSelectionItem> items, string podName)
+    private SourceTreeSelectionSnapshot CaptureSourceTreeSelection()
     {
-        for (var i = 0; i < items.Count; i++)
+        var hasPods = false;
+        var selectNewPods = true;
+        var allContainersSelected = true;
+        HashSet<string>? commonContainerKeys = null;
+        foreach (PodLogSourceTreeNode resourceNode in SourceTreeItems)
         {
-            var item = items[i];
-            if (!item.IsAll && item.Pod is not null && string.Equals(item.Pod.Name(), podName, StringComparison.Ordinal))
+            foreach (PodLogSourceTreeNode podNode in resourceNode.Children)
             {
-                return item;
+                hasPods = true;
+                var selectedContainerKeys = podNode.Children
+                    .Where(static node => node.IsChecked == true)
+                    .Select(static node => node.Key)
+                    .ToHashSet(StringComparer.Ordinal);
+                if (selectedContainerKeys.Count == 0)
+                {
+                    selectNewPods = false;
+                }
+
+                if (podNode.Children.Count == 0 || selectedContainerKeys.Count != podNode.Children.Count)
+                {
+                    allContainersSelected = false;
+                }
+
+                if (commonContainerKeys is null)
+                {
+                    commonContainerKeys = selectedContainerKeys;
+                }
+                else
+                {
+                    commonContainerKeys.IntersectWith(selectedContainerKeys);
+                }
+            }
+        }
+
+        return new SourceTreeSelectionSnapshot(
+            hasPods,
+            selectNewPods,
+            allContainersSelected,
+            commonContainerKeys ?? []);
+    }
+
+    private sealed record SourceTreeSelectionSnapshot(
+        bool HasPods,
+        bool SelectNewPods,
+        bool AllContainersSelected,
+        IReadOnlySet<string> CommonContainerKeys);
+
+    private static PodLogSourceTreeNode? FindSourceNode(
+        IEnumerable<PodLogSourceTreeNode> nodes,
+        string key)
+    {
+        foreach (PodLogSourceTreeNode node in nodes)
+        {
+            if (string.Equals(node.Key, key, StringComparison.Ordinal))
+            {
+                return node;
             }
         }
 
         return null;
     }
 
-    private static PodLogContainerSelectionItem? FindContainerSelectionItem(
-        IReadOnlyList<PodLogContainerSelectionItem> items,
-        string containerName,
-        bool? isInitContainer = null,
-        bool? isEphemeralContainer = null)
+    private static void RemoveMissingNodes(
+        IList<PodLogSourceTreeNode> nodes,
+        IReadOnlySet<string> desiredKeys)
     {
-        for (var i = 0; i < items.Count; i++)
+        for (var i = nodes.Count - 1; i >= 0; i--)
         {
-            var item = items[i];
-            if (item.IsAll)
+            if (!desiredKeys.Contains(nodes[i].Key))
             {
-                continue;
+                nodes.RemoveAt(i);
+            }
+        }
+    }
+
+    private static bool AreAllChildrenSelected(IReadOnlyCollection<PodLogSourceTreeNode> nodes)
+    {
+        return nodes.Count == 0 || nodes.All(static node => node.IsChecked == true);
+    }
+
+    private static string BuildPodSourceKey(V1Pod pod)
+    {
+        return $"{pod.Namespace()}\n{pod.Metadata?.Uid ?? pod.Name()}";
+    }
+
+    private static string BuildContainerSourceKey(PodLogContainerOption container)
+    {
+        return $"{container.Name}\n{container.IsInitContainer}\n{container.IsEphemeralContainer}";
+    }
+
+    private static string BuildSourceResourceDisplayName(PodLogScopeSelectionItem scopeItem)
+    {
+        if (string.IsNullOrWhiteSpace(scopeItem.ResolutionStatus))
+        {
+            return scopeItem.DisplayName;
+        }
+
+        return $"{scopeItem.DisplayName} ({scopeItem.ResolutionStatus}, {scopeItem.ResolvedPodCount} Pods)";
+    }
+
+    private PodLogScopeResolution? FindScopeResolution(PodLogScopeSelectionItem scopeItem)
+    {
+        if (MultiSessionResolution is null)
+        {
+            return null;
+        }
+
+        for (var i = 0; i < MultiSessionResolution.Scopes.Count; i++)
+        {
+            PodLogScopeResolution resolution = MultiSessionResolution.Scopes[i];
+            if (!string.IsNullOrWhiteSpace(resolution.Scope.ResourceUid)
+                && string.Equals(resolution.Scope.ResourceUid, scopeItem.Resource.Metadata?.Uid, StringComparison.Ordinal)
+                && string.Equals(resolution.Scope.ResourceKind, scopeItem.ResourceKind, StringComparison.Ordinal))
+            {
+                return resolution;
             }
 
-            if (!string.Equals(item.Name, containerName, StringComparison.Ordinal))
+            if (string.Equals(resolution.Scope.ResourceName, scopeItem.Resource.Name(), StringComparison.Ordinal)
+                && string.Equals(resolution.Scope.ResourceNamespace, scopeItem.Resource.Namespace(), StringComparison.Ordinal)
+                && string.Equals(resolution.Scope.ResourceKind, scopeItem.ResourceKind, StringComparison.Ordinal))
             {
-                continue;
+                return resolution;
             }
-
-            if (isInitContainer.HasValue && item.IsInitContainer != isInitContainer.Value)
-            {
-                continue;
-            }
-
-            if (isEphemeralContainer.HasValue && item.IsEphemeralContainer != isEphemeralContainer.Value)
-            {
-                continue;
-            }
-
-            return item;
         }
 
         return null;
+    }
+
+    private static bool? GetAggregateSelection(IReadOnlyCollection<PodLogSourceTreeNode> children, bool emptyValue)
+    {
+        if (children.Count == 0)
+        {
+            return emptyValue;
+        }
+
+        bool? aggregate = null;
+        foreach (PodLogSourceTreeNode child in children)
+        {
+            if (!child.IsChecked.HasValue)
+            {
+                return null;
+            }
+
+            aggregate ??= child.IsChecked;
+            if (aggregate != child.IsChecked)
+            {
+                return null;
+            }
+        }
+
+        return aggregate;
+    }
+
+    private void SourceTreeSelectionChanged(PodLogSourceTreeNode node, bool isSelected)
+    {
+        switch (node.Kind)
+        {
+            case PodLogSourceNodeKind.Resource:
+                if (!isSelected)
+                {
+                    SelectedScopeItems.Remove((PodLogScopeSelectionItem)node.Value);
+                    return;
+                }
+
+                SetDescendantsSelected(node, true);
+                break;
+            case PodLogSourceNodeKind.Pod:
+                SetDescendantsSelected(node, isSelected);
+                break;
+        }
+
+        UpdateSourceTreeParentStates();
+        UpdateResourceNameToggleState();
+        QueueSelectionReconnect();
+    }
+
+    private static void SetDescendantsSelected(PodLogSourceTreeNode node, bool isSelected)
+    {
+        foreach (PodLogSourceTreeNode child in node.Children)
+        {
+            child.UpdateIsChecked(isSelected);
+            SetDescendantsSelected(child, isSelected);
+        }
+    }
+
+    private void UpdateSourceTreeParentStates()
+    {
+        foreach (PodLogSourceTreeNode resourceNode in SourceTreeItems)
+        {
+            foreach (PodLogSourceTreeNode podNode in resourceNode.Children)
+            {
+                podNode.UpdateIsChecked(GetAggregateSelection(podNode.Children, false));
+            }
+
+            resourceNode.UpdateIsChecked(GetAggregateSelection(resourceNode.Children, true));
+        }
+    }
+
+    private (int PodCount, int TargetCount) GetSelectedSourceCounts()
+    {
+        HashSet<string> selectedPods = new(StringComparer.Ordinal);
+        HashSet<string> selectedTargets = new(StringComparer.Ordinal);
+        foreach (PodLogSourceTreeNode resourceNode in SourceTreeItems)
+        {
+            foreach (PodLogSourceTreeNode podNode in resourceNode.Children)
+            {
+                foreach (PodLogSourceTreeNode containerNode in podNode.Children)
+                {
+                    if (containerNode.IsChecked == true)
+                    {
+                        selectedPods.Add(podNode.Key);
+                        selectedTargets.Add($"{podNode.Key}\n{containerNode.Key}");
+                    }
+                }
+            }
+        }
+
+        return (selectedPods.Count, selectedTargets.Count);
     }
 
     private static bool HasPreviousLogs(V1Pod pod, string containerName)
@@ -355,177 +528,9 @@ public sealed partial class PodLogsViewModel
         return 0;
     }
 
-    private static PodLogContainerSelectionKey GetContainerSelectionKey(PodLogContainerSelectionItem item)
-    {
-        return new PodLogContainerSelectionKey(item.Name, item.IsInitContainer, item.IsEphemeralContainer);
-    }
-
     private static PodLogContainerSelectionKey GetContainerSelectionKey(PodLogContainerOption item)
     {
         return new PodLogContainerSelectionKey(item.Name, item.IsInitContainer, item.IsEphemeralContainer);
-    }
-
-    private static ObservableCollection<TItem> CreateSelection<TItem>(TItem item)
-    {
-        return new ObservableCollection<TItem>([item]);
-    }
-
-    private static bool ContainsAllSelection<TSelectionItem>(IEnumerable<TSelectionItem> selectedItems, Func<TSelectionItem, bool> isAll)
-    {
-        foreach (var selectedItem in selectedItems)
-        {
-            if (isAll(selectedItem))
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private static bool ContainsAllSelection<TSelectionItem>(IReadOnlyCollection<TSelectionItem> selectedItems)
-    {
-        if (selectedItems.Count == 0)
-        {
-            return true;
-        }
-
-        foreach (var selectedItem in selectedItems)
-        {
-            switch (selectedItem)
-            {
-                case PodLogPodSelectionItem podSelectionItem when podSelectionItem.IsAll:
-                    return true;
-                case PodLogContainerSelectionItem containerSelectionItem when containerSelectionItem.IsAll:
-                    return true;
-            }
-        }
-
-        return false;
-    }
-
-    private void SelectedPodItemsOnCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
-    {
-        if (_isApplyingSession || _isNormalizingPodSelection)
-        {
-            return;
-        }
-
-        var normalization = GetPodSelectionNormalization(e);
-        if (normalization != PodLogSelectionNormalization.None)
-        {
-            QueueNormalizeSelectedPodItems(normalization);
-            UpdateResourceNameToggleState();
-            return;
-        }
-
-        UpdateResourceNameToggleState();
-        QueueSelectionReconnect();
-    }
-
-    private void SelectedContainerItemsOnCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
-    {
-        if (_isApplyingSession || _isNormalizingContainerSelection)
-        {
-            return;
-        }
-
-        var normalization = GetContainerSelectionNormalization(e);
-        if (normalization != PodLogSelectionNormalization.None)
-        {
-            QueueNormalizeSelectedContainerItems(normalization);
-            UpdateResourceNameToggleState();
-            return;
-        }
-
-        UpdateResourceNameToggleState();
-        QueueSelectionReconnect();
-    }
-
-    private PodLogSelectionNormalization GetPodSelectionNormalization(NotifyCollectionChangedEventArgs e)
-    {
-        if (SelectedPodItems.Count == 0)
-        {
-            return PodLogSelectionNormalization.SelectAll;
-        }
-
-        if (ContainsAllPodSelection(e.NewItems))
-        {
-            return PodLogSelectionNormalization.SelectAll;
-        }
-
-        if (ContainsAllSelection(SelectedPodItems))
-        {
-            return PodLogSelectionNormalization.RemoveAll;
-        }
-
-        if (SelectedPodItems.Count == PodSelectionItems.Count - 1 && SelectedPodItems.Count > 1)
-        {
-            return PodLogSelectionNormalization.SelectAll;
-        }
-
-        return PodLogSelectionNormalization.None;
-    }
-
-    private static bool ContainsAllPodSelection(System.Collections.IList? items)
-    {
-        if (items is null)
-        {
-            return false;
-        }
-
-        for (var i = 0; i < items.Count; i++)
-        {
-            if (items[i] is PodLogPodSelectionItem { IsAll: true })
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private PodLogSelectionNormalization GetContainerSelectionNormalization(NotifyCollectionChangedEventArgs e)
-    {
-        if (SelectedContainerItems.Count == 0)
-        {
-            return PodLogSelectionNormalization.SelectAll;
-        }
-
-        if (ContainsAllContainerSelection(e.NewItems))
-        {
-            return PodLogSelectionNormalization.SelectAll;
-        }
-
-        if (ContainsAllSelection(SelectedContainerItems))
-        {
-            return PodLogSelectionNormalization.RemoveAll;
-        }
-
-        if (SelectedContainerItems.Count == ContainerSelectionItems.Count - 1 && SelectedContainerItems.Count > 1)
-        {
-            return PodLogSelectionNormalization.SelectAll;
-        }
-
-        return PodLogSelectionNormalization.None;
-    }
-
-    private static bool ContainsAllContainerSelection(System.Collections.IList? items)
-    {
-        if (items is null)
-        {
-            return false;
-        }
-
-        for (var i = 0; i < items.Count; i++)
-        {
-            if (items[i] is PodLogContainerSelectionItem { IsAll: true })
-            {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     private void UpdateResourceNameToggleState()
@@ -546,107 +551,6 @@ public sealed partial class PodLogsViewModel
         {
             RenderOutputEntries();
         }
-    }
-
-    private void QueueNormalizeSelectedPodItems(PodLogSelectionNormalization normalization)
-    {
-        if (_pendingNormalizePodSelection || PodSelectionItems.Count == 0)
-        {
-            _pendingPodSelectionNormalization = normalization;
-            return;
-        }
-
-        _pendingPodSelectionNormalization = normalization;
-        _pendingNormalizePodSelection = true;
-        Dispatcher.UIThread.Post(NormalizeSelectedPodItems, DispatcherPriority.Background);
-    }
-
-    private void QueueNormalizeSelectedContainerItems(PodLogSelectionNormalization normalization)
-    {
-        if (_pendingNormalizeContainerSelection || ContainerSelectionItems.Count == 0)
-        {
-            _pendingContainerSelectionNormalization = normalization;
-            return;
-        }
-
-        _pendingContainerSelectionNormalization = normalization;
-        _pendingNormalizeContainerSelection = true;
-        Dispatcher.UIThread.Post(NormalizeSelectedContainerItems, DispatcherPriority.Background);
-    }
-
-    private void NormalizeSelectedPodItems()
-    {
-        _pendingNormalizePodSelection = false;
-        var normalization = _pendingPodSelectionNormalization;
-        _pendingPodSelectionNormalization = PodLogSelectionNormalization.None;
-        _isNormalizingPodSelection = true;
-        try
-        {
-            if (normalization == PodLogSelectionNormalization.SelectAll && PodSelectionItems.Count > 0)
-            {
-                SelectAllPodItem();
-            }
-            else if (normalization == PodLogSelectionNormalization.RemoveAll)
-            {
-                RemoveAllPodItem();
-            }
-        }
-        finally
-        {
-            _isNormalizingPodSelection = false;
-        }
-
-        UpdateResourceNameToggleState();
-        QueueSelectionReconnect();
-    }
-
-    private void SelectAllPodItem()
-    {
-        SelectedPodItems.Clear();
-        SelectedPodItems.Add(PodSelectionItems[0]);
-    }
-
-    private void RemoveAllPodItem()
-    {
-        for (var i = SelectedPodItems.Count - 1; i >= 0; i--)
-        {
-            if (SelectedPodItems[i].IsAll)
-            {
-                SelectedPodItems.RemoveAt(i);
-            }
-        }
-
-        if (SelectedPodItems.Count == 0 && PodSelectionItems.Count > 0)
-        {
-            SelectedPodItems.Add(PodSelectionItems[0]);
-        }
-
-    }
-
-    private void NormalizeSelectedContainerItems()
-    {
-        _pendingNormalizeContainerSelection = false;
-        var normalization = _pendingContainerSelectionNormalization;
-        _pendingContainerSelectionNormalization = PodLogSelectionNormalization.None;
-        _isNormalizingContainerSelection = true;
-        try
-        {
-            if (normalization == PodLogSelectionNormalization.SelectAll && ContainerSelectionItems.Count > 0)
-            {
-                SelectAllContainerItem();
-            }
-            else if (normalization == PodLogSelectionNormalization.RemoveAll)
-            {
-                RemoveAllContainerItem();
-            }
-        }
-        finally
-        {
-            _isNormalizingContainerSelection = false;
-        }
-
-        UpdateResourceNameToggleState();
-        QueueSelectionReconnect();
     }
 
     private void QueueSelectionReconnect()
@@ -679,57 +583,6 @@ public sealed partial class PodLogsViewModel
                 }
             },
             DispatcherPriority.Background);
-    }
-
-    private void SelectAllContainerItem()
-    {
-        SelectedContainerItems.Clear();
-        SelectedContainerItems.Add(ContainerSelectionItems[0]);
-    }
-
-    private void RemoveAllContainerItem()
-    {
-        for (var i = SelectedContainerItems.Count - 1; i >= 0; i--)
-        {
-            if (SelectedContainerItems[i].IsAll)
-            {
-                SelectedContainerItems.RemoveAt(i);
-            }
-        }
-
-        if (SelectedContainerItems.Count == 0 && ContainerSelectionItems.Count > 0)
-        {
-            SelectedContainerItems.Add(ContainerSelectionItems[0]);
-        }
-
-    }
-
-    private void ReplaceSelectedPodItems(IEnumerable<PodLogPodSelectionItem> items)
-    {
-        ReplaceSelectedItems(SelectedPodItems, items);
-    }
-
-    private void ReplaceSelectedContainerItems(IEnumerable<PodLogContainerSelectionItem> items)
-    {
-        ReplaceSelectedItems(SelectedContainerItems, items);
-    }
-
-    private void ReplaceSelectedItems<TItem>(ObservableCollection<TItem> selectedItems, IEnumerable<TItem> items)
-    {
-        var wasApplyingSession = _isApplyingSession;
-        _isApplyingSession = true;
-        try
-        {
-            selectedItems.Clear();
-            foreach (var item in items)
-            {
-                selectedItems.Add(item);
-            }
-        }
-        finally
-        {
-            _isApplyingSession = wasApplyingSession;
-        }
     }
 
 }

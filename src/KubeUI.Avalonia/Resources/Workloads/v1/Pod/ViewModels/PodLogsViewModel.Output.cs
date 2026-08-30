@@ -71,6 +71,11 @@ public sealed partial class PodLogsViewModel
 
     private string BuildSuggestedFileName()
     {
+        if (IsMultiScope)
+        {
+            return $"kubeui-logs-{_scopeItems.Count}-resources-{DateTime.UtcNow:yyyyMMdd-HHmmss}.log";
+        }
+
         var podName = Object?.Metadata?.Name ?? "pod";
         var containerName = string.IsNullOrWhiteSpace(ContainerName) ? "logs" : ContainerName;
         var namespaceName = Object?.Metadata?.NamespaceProperty;
@@ -80,6 +85,31 @@ public sealed partial class PodLogsViewModel
             : $"{podName}-{containerName}.log";
 
         return fileName.ReplaceInvalidFileNameChars();
+    }
+
+    private string BuildExportContent()
+    {
+        if (!IsMultiScope)
+        {
+            return Logs.Text;
+        }
+
+        StringBuilder builder = new();
+        builder.AppendLine("# KubeUI multi-resource log export");
+        builder.AppendLine($"# Exported: {DateTimeOffset.UtcNow:O}");
+        builder.AppendLine($"# Resources: {_scopeItems.Count}");
+        builder.AppendLine($"# Resolved Pods: {AvailablePods.Count}");
+        builder.AppendLine($"# Streams: {PlannedStreamCount}");
+        builder.AppendLine("# Cross-stream lines are shown in arrival order.");
+        for (var i = 0; i < _scopeItems.Count; i++)
+        {
+            builder.Append("# - ");
+            builder.AppendLine(_scopeItems[i].DisplayName);
+        }
+
+        builder.AppendLine();
+        builder.Append(Logs.Text);
+        return builder.ToString();
     }
 
     private async Task ReadLogsAsync(
@@ -375,23 +405,18 @@ public sealed partial class PodLogsViewModel
 
     private PodLogDisplayMode GetCurrentDisplayMode()
     {
-        if (IsViewingMultiplePods())
+        var selectedSources = GetSelectedSourceCounts();
+        if (selectedSources.PodCount > 1)
         {
             return PodLogDisplayMode.PodAndContainer;
         }
 
-        if (SelectedContainerItems.Count > 1 || ContainsAllSelection(SelectedContainerItems) && AvailableContainers.Count > 1)
+        if (selectedSources.TargetCount > 1)
         {
             return PodLogDisplayMode.Container;
         }
 
         return PodLogDisplayMode.None;
-    }
-
-    private bool IsViewingMultiplePods()
-    {
-        return SelectedPodItems.Count > 1
-            || ContainsAllSelection(SelectedPodItems) && AvailablePods.Count > 1;
     }
 
     private static string BuildDisplayPrefix(string podName, string containerName, PodLogDisplayMode displayMode)

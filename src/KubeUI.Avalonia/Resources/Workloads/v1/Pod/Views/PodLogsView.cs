@@ -3,6 +3,7 @@ using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Templates;
 using Avalonia.Input;
 using Avalonia.Markup.Xaml.MarkupExtensions;
+using Avalonia.Styling;
 using Avalonia.Xaml.Interactions.Core;
 using AvaloniaEdit;
 using FluentIcons.Avalonia;
@@ -19,7 +20,7 @@ namespace KubeUI.Avalonia.Resources.Workloads.v1.Pod.Views;
 /// <summary>Displays streamed pod logs with pod and container selection.</summary>
 public sealed partial class PodLogsView : ViewBase<PodLogsViewModel>
 {
-    private const double SelectorWidth = 220;
+    private const double SourcesWidth = 300;
     private static readonly StringNotNullOrEmptyConverter HasErrorConverter = new();
 
     protected override object Build(PodLogsViewModel vm)
@@ -39,54 +40,14 @@ public sealed partial class PodLogsView : ViewBase<PodLogsViewModel>
     {
         return new Grid()
             .Row(0)
-            .Rows("Auto,Auto")
-            .Children(
-                CreateScopeIdentityBar(vm),
-                CreateLogControlsBar(vm));
-    }
-
-    private StackPanel CreateScopeIdentityBar(PodLogsViewModel vm)
-    {
-        return new StackPanel()
-            .Row(0)
-            .Height(24)
-            .ClipToBounds(true)
-            .Orientation(Orientation.Horizontal)
-            .Spacing(16)
-            .Margin(2, 0)
-            .Children(
-                new StackPanel()
-                    .VerticalAlignment(VerticalAlignment.Center)
-                    .Orientation(Orientation.Horizontal)
-                    .Spacing(4)
-                    .Margin(4, 0, 0, 0)
-                    .Children(
-                        new TextBlock()
-                            .FontWeight(FontWeight.SemiBold)
-                            .Text($"{Assets.Resources.ResourcePropertiesView_Name}:"),
-                        new TextBlock()
-                            .FontWeight(FontWeight.Normal)
-                            .Text(vm, x => x.ScopeResourceName)
-                            .TextTrimming(TextTrimming.CharacterEllipsis)),
-                new StackPanel()
-                    .VerticalAlignment(VerticalAlignment.Center)
-                    .Orientation(Orientation.Horizontal)
-                    .Spacing(4)
-                    .IsVisible(vm, x => x.HasScopeNamespace)
-                    .Children(
-                        new TextBlock()
-                            .FontWeight(FontWeight.SemiBold)
-                            .Text($"{Assets.Resources.ResourcePropertiesView_Namespace}:"),
-                        new TextBlock()
-                            .FontWeight(FontWeight.Normal)
-                            .Text(vm, x => x.ScopeNamespace)
-                            .TextTrimming(TextTrimming.CharacterEllipsis)));
+            .Rows("Auto")
+            .Children(CreateLogControlsBar(vm));
     }
 
     private Grid CreateLogControlsBar(PodLogsViewModel vm)
     {
         return new Grid()
-            .Row(1)
+            .Row(0)
             .Height(32)
             .ClipToBounds(true)
             .Cols("*,Auto")
@@ -103,14 +64,57 @@ public sealed partial class PodLogsView : ViewBase<PodLogsViewModel>
             .Orientation(Orientation.Horizontal)
             .Spacing(4)
             .Children(
-                CreatePodSelector(vm),
-                CreateContainerSelector(vm),
-                new TextBlock()
+               CreateSourcesSelector(vm),
+               new TextBlock()
                     .MaxWidth(400)
                     .VerticalAlignment(VerticalAlignment.Center)
                     .Text(vm, x => x.ConnectionError)
                     .IsVisible(vm, x => x.ConnectionError, converter: HasErrorConverter)
-                    .TextTrimming(TextTrimming.CharacterEllipsis));
+                    .TextTrimming(TextTrimming.CharacterEllipsis),
+                new StackPanel()
+                    .Orientation(Orientation.Horizontal)
+                    .Spacing(4)
+                    .VerticalAlignment(VerticalAlignment.Center)
+                    .IsVisible(vm, x => x.StreamLimitWarning, converter: HasErrorConverter)
+                    .Children(
+                        new FluentIcon().Icon(Icon.Warning),
+                        new TextBlock()
+                            .MaxWidth(320)
+                            .Text(vm, x => x.StreamLimitWarning)
+                            .TextTrimming(TextTrimming.CharacterEllipsis)));
+    }
+
+    private static TreeComboBox CreateSourcesSelector(PodLogsViewModel vm)
+    {
+        FuncTreeDataTemplate<PodLogSourceTreeNode> template = new(
+            (node, _) => new CheckBox()
+                .VerticalAlignment(VerticalAlignment.Center)
+                .Content(node.DisplayName)
+                .IsChecked(node, x => x.IsChecked, BindingMode.TwoWay),
+            node => node.Children);
+
+        ControlTheme itemTheme = new(typeof(TreeComboBoxItem))
+        {
+            BasedOn = Application.Current?.FindResource(typeof(TreeComboBoxItem)) as ControlTheme,
+        };
+        itemTheme.Setters.Add(new Setter(Layoutable.MinHeightProperty, 20d));
+        itemTheme.Setters.Add(new Setter(TemplatedControl.PaddingProperty, new Thickness(0)));
+
+        return new TreeComboBox
+        {
+            ItemContainerTheme = itemTheme,
+        }
+            .Width(SourcesWidth)
+            .MaxHeight(32)
+            .MaxDropDownHeight(500)
+            .VerticalAlignment(VerticalAlignment.Center)
+            .PlaceholderText(Assets.Resources.PodLogsView_Sources)
+            .ItemsSource(vm, x => x.SourceTreeItems)
+            .ItemTemplate(template)
+            .Styles(
+                new Style<TreeComboBoxItem>()
+                    .Setter(TreeComboBoxItem.IsExpandedProperty, true)
+                    .Setter(TreeComboBoxItem.IsSelectableProperty, false));
     }
 
     private StackPanel CreateActionControls(PodLogsViewModel vm)
@@ -128,9 +132,8 @@ public sealed partial class PodLogsView : ViewBase<PodLogsViewModel>
                     .Command(vm, x => x.DownloadLogsCommand)
                     .ToolTip_Tip(Assets.Resources.PodLogsView_Download)
                     .Content(new FluentIcon().Icon(Icon.Save)),
-                new Button()
-                    .Command(vm, x => x.FollowLogsCommand)
-                    .IsEnabled(vm, x => x.CanFollowLogs)
+                new ToggleButton()
+                    .IsChecked(vm, x => x.AutoScrollToBottom, BindingMode.TwoWay)
                     .ToolTip_Tip(Assets.Resources.PodLogsView_FollowLogs)
                     .Content(new FluentIcon().Icon(Icon.ArrowDownload)),
                 new Button()
@@ -155,43 +158,6 @@ public sealed partial class PodLogsView : ViewBase<PodLogsViewModel>
                     .IsChecked(vm, x => x.WordWrap, BindingMode.TwoWay)
                     .ToolTip_Tip(Assets.Resources.PodLogsView_WordWrap)
                     .Content(new FluentIcon().Icon(Icon.TextWrap)));
-    }
-
-    private static MultiComboBox CreatePodSelector(PodLogsViewModel vm)
-    {
-        FuncDataTemplate<PodLogPodSelectionItem> template = new(
-            (item, _) => new TextBlock().Text(item, x => x.DisplayName));
-
-        return new MultiComboBox()
-            .Width(SelectorWidth)
-            .MaxHeight(20)
-            .Margin(0, 0, 2, 0)
-            .VerticalAlignment(VerticalAlignment.Center)
-            .Classes("ClearButton")
-            .IsVisible(vm, x => x.IsControllerScope)
-            .ItemsSource(vm, x => x.PodSelectionItems)
-            .SelectedItems(vm, x => x.SelectedPodItems, BindingMode.TwoWay)
-            .ToolTip_Tip(Assets.Resources.PodLogsView_PodLabel)
-            .ItemTemplate(template)
-            .SelectedItemTemplate(template);
-    }
-
-    private static MultiComboBox CreateContainerSelector(PodLogsViewModel vm)
-    {
-        FuncDataTemplate<PodLogContainerSelectionItem> template = new(
-            (item, _) => new TextBlock().Text(item, x => x.DisplayName));
-
-        return new MultiComboBox()
-            .Width(SelectorWidth)
-            .MaxHeight(20)
-            .Margin(0, 0, 2, 0)
-            .VerticalAlignment(VerticalAlignment.Center)
-            .Classes("ClearButton")
-            .ItemsSource(vm, x => x.ContainerSelectionItems)
-            .SelectedItems(vm, x => x.SelectedContainerItems, BindingMode.TwoWay)
-            .ToolTip_Tip(Assets.Resources.PodLogsView_ContainerLabel)
-            .ItemTemplate(template)
-            .SelectedItemTemplate(template);
     }
 
     private TextEditor CreateEditor(PodLogsViewModel vm)

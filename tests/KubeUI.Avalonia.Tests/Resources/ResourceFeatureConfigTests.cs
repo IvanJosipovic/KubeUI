@@ -149,6 +149,36 @@ public sealed class ResourceFeatureConfigTests
     }
 
     [AvaloniaFact]
+    public async Task pod_logs_menu_only_shows_explicit_session_destinations()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync();
+        var config = ResolveConfig<V1PodConfig>();
+        config.Initialize(workspace);
+        V1Pod pod = new()
+        {
+            Metadata = new V1ObjectMeta { Name = "api", NamespaceProperty = "default" },
+            Spec = new V1PodSpec
+            {
+                Containers =
+                [
+                    new V1Container { Name = "app" },
+                    new V1Container { Name = "sidecar" },
+                ],
+            },
+        };
+
+        MenuItemViewModel action = config.GetCustomMenuItems(new[] { pod })
+            .Single(item => item.Title == Assets.Resources.Shared_ViewLogs);
+
+        action.Command.ShouldBeNull();
+        action.Items.ShouldNotBeNull();
+        action.Items[0].Title.ShouldBe(Assets.Resources.Shared_OpenNewLogsView);
+        action.Items.Select(static item => item.Title).ShouldAllBe(title =>
+            title == Assets.Resources.Shared_OpenNewLogsView
+            || title == Assets.Resources.Shared_AddToCurrentLogsView);
+    }
+
+    [AvaloniaFact]
     public void service_config_uses_service_properties_view()
     {
         var config = ResolveConfig<V1ServiceConfig>();

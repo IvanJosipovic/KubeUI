@@ -19,6 +19,44 @@ public sealed record PodLogSessionState(
     bool Timestamps,
     int TailLines);
 
+/// <summary>Identifies a resource selected as a source for a multi-resource pod log session.</summary>
+public sealed record PodLogScopeIdentity(
+    string ResourceNamespace,
+    string ResourceName,
+    string? ResourceUid,
+    string ResourceKind);
+
+/// <summary>Captures one selected resource and the owner information needed to resolve its Pods.</summary>
+public sealed record PodLogScopeState(
+    PodLogScopeIdentity Identity,
+    string? OwnerUid,
+    string? OwnerName,
+    string? OwnerKind);
+
+/// <summary>Captures all selected resources and shared log options for a multi-resource session.</summary>
+public sealed record PodLogMultiSessionState(
+    IReadOnlyList<PodLogScopeState> Scopes,
+    string ContainerName,
+    bool Previous,
+    bool Timestamps,
+    int TailLines);
+
+/// <summary>Describes the outcome of resolving one selected log resource.</summary>
+public sealed record PodLogScopeResolution(
+    PodLogScopeIdentity Scope,
+    IReadOnlyList<V1Pod> Pods,
+    IKubernetesObject<V1ObjectMeta>? Resource,
+    IKubernetesObject<V1ObjectMeta>? ParentResource,
+    string? Error);
+
+/// <summary>Describes the deduplicated Pods resolved from all selected log resources.</summary>
+public sealed record PodLogMultiSessionResolution(
+    IReadOnlyList<PodLogScopeResolution> Scopes,
+    IReadOnlyList<V1Pod> RelatedPods,
+    V1Pod? PrimaryPod,
+    string ContainerName,
+    bool PreviousLogsAvailable);
+
 /// <summary>
 /// Describes the pod that should currently be queried for logs.
 /// </summary>
@@ -50,19 +88,30 @@ public interface IPodLogSessionResolver
     /// <summary>
     /// Captures the current pod or workload identity and log preferences into a reusable session state.
     /// </summary>
-    PodLogSessionState CreateState(IKubernetesObject<V1ObjectMeta> resource, string containerName, bool previous, bool timestamps, int tailLines = 100);
+    PodLogSessionState CreateState(IKubernetesObject<V1ObjectMeta> resource, string containerName, bool previous, bool timestamps, int tailLines = 500);
+
+    /// <summary>Captures multiple selected resources and their shared log preferences.</summary>
+    PodLogMultiSessionState CreateMultiState(
+        IReadOnlyList<IKubernetesObject<V1ObjectMeta>> resources,
+        string containerName,
+        bool previous,
+        bool timestamps,
+        int tailLines = 500);
 
     /// <summary>
     /// Resolves the session state against the current cluster contents.
     /// </summary>
     PodLogSessionResolution? TryResolve(IClusterRuntime cluster, PodLogSessionState state);
 
+    /// <summary>Resolves all selected resources and returns a deduplicated Pod union.</summary>
+    PodLogMultiSessionResolution TryResolve(IClusterRuntime cluster, PodLogMultiSessionState state);
+
 }
 
 /// <inheritdoc />
 public sealed class PodLogSessionResolver : IPodLogSessionResolver
 {
-    private const int DefaultTailLines = 100;
+    private const int DefaultTailLines = 500;
 
     /// <inheritdoc />
     public PodLogSessionState CreateState(IKubernetesObject<V1ObjectMeta> resource, string containerName, bool previous, bool timestamps, int tailLines = DefaultTailLines)
@@ -82,6 +131,42 @@ public sealed class PodLogSessionResolver : IPodLogSessionResolver
             owner?.Uid,
             owner?.Name,
             owner?.Kind,
+            containerName,
+            previous,
+            timestamps,
+            tailLines > 0 ? tailLines : DefaultTailLines);
+    }
+
+    /// <inheritdoc />
+    public PodLogMultiSessionState CreateMultiState(
+        IReadOnlyList<IKubernetesObject<V1ObjectMeta>> resources,
+        string containerName,
+        bool previous,
+        bool timestamps,
+        int tailLines = DefaultTailLines)
+    {
+        ArgumentNullException.ThrowIfNull(resources);
+
+        List<PodLogScopeState> scopes = new(resources.Count);
+        HashSet<PodLogScopeIdentity> identities = [];
+        for (var i = 0; i < resources.Count; i++)
+        {
+            IKubernetesObject<V1ObjectMeta> resource = resources[i]
+                ?? throw new ArgumentException("Selected log resources cannot contain null values.", nameof(resources));
+            PodLogSessionState state = CreateState(resource, containerName, previous, timestamps, tailLines);
+            PodLogScopeIdentity identity = new(
+                state.ResourceNamespace,
+                state.ResourceName,
+                state.ResourceUid,
+                state.ResourceKind);
+            if (identities.Add(identity))
+            {
+                scopes.Add(new PodLogScopeState(identity, state.OwnerUid, state.OwnerName, state.OwnerKind));
+            }
+        }
+
+        return new PodLogMultiSessionState(
+            scopes,
             containerName,
             previous,
             timestamps,
@@ -129,6 +214,103 @@ public sealed class PodLogSessionResolver : IPodLogSessionResolver
         var parentResource = FindParentResource(indexes, scopeResource);
 
         return new PodLogSessionResolution(currentPod, resolvedContainerName, relatedPods, podChanged, previousLogsAvailable, parentResource);
+    }
+
+    /// <inheritdoc />
+    public PodLogMultiSessionResolution TryResolve(IClusterRuntime cluster, PodLogMultiSessionState state)
+    {
+        ArgumentNullException.ThrowIfNull(cluster);
+        ArgumentNullException.ThrowIfNull(state);
+
+        List<PodLogScopeResolution> scopeResolutions = new(state.Scopes.Count);
+        List<V1Pod> relatedPods = [];
+        HashSet<PodIdentity> podIdentities = [];
+        V1Pod? primaryPod = null;
+        var resolvedContainerName = state.ContainerName;
+        var previousLogsAvailable = false;
+
+        for (var i = 0; i < state.Scopes.Count; i++)
+        {
+            PodLogScopeState scope = state.Scopes[i];
+            PodLogSessionState scopeState = new(
+                scope.Identity.ResourceNamespace,
+                scope.Identity.ResourceName,
+                scope.Identity.ResourceUid,
+                scope.Identity.ResourceKind,
+                scope.OwnerUid,
+                scope.OwnerName,
+                scope.OwnerKind,
+                state.ContainerName,
+                state.Previous,
+                state.Timestamps,
+                state.TailLines);
+            PodLogSessionResolution? resolution = TryResolve(cluster, scopeState);
+            if (resolution is null)
+            {
+                scopeResolutions.Add(new PodLogScopeResolution(
+                    scope.Identity,
+                    [],
+                    null,
+                    null,
+                    "No matching Pods are currently available."));
+                continue;
+            }
+
+            primaryPod ??= resolution.Pod;
+            if (string.IsNullOrWhiteSpace(resolvedContainerName))
+            {
+                resolvedContainerName = resolution.ContainerName;
+            }
+
+            previousLogsAvailable |= resolution.PreviousLogsAvailable;
+            for (var j = 0; j < resolution.RelatedPods.Count; j++)
+            {
+                V1Pod pod = resolution.RelatedPods[j];
+                PodIdentity podIdentity = new(
+                    pod.Namespace(),
+                    string.IsNullOrWhiteSpace(pod.Metadata?.Uid) ? pod.Name() : pod.Metadata!.Uid!);
+                if (podIdentities.Add(podIdentity))
+                {
+                    relatedPods.Add(pod);
+                }
+            }
+
+            IKubernetesObject<V1ObjectMeta>? resource = scope.Identity.ResourceKind == V1Pod.KubeKind
+                ? resolution.Pod
+                : FindResourceByIdentity(cluster, scope.Identity);
+            scopeResolutions.Add(new PodLogScopeResolution(
+                scope.Identity,
+                resolution.RelatedPods,
+                resource,
+                resolution.ParentResource,
+                null));
+        }
+
+        SortPodsByNewestFirst(relatedPods);
+        return new PodLogMultiSessionResolution(
+            scopeResolutions,
+            relatedPods,
+            primaryPod,
+            resolvedContainerName,
+            previousLogsAvailable);
+    }
+
+    private static IKubernetesObject<V1ObjectMeta>? FindResourceByIdentity(
+        IClusterRuntime cluster,
+        PodLogScopeIdentity identity)
+    {
+        IReadOnlyList<ResourceEntry> resources = GetResources(cluster);
+        ResourceIndexes indexes = BuildIndexes(resources);
+        if (!string.IsNullOrWhiteSpace(identity.ResourceUid)
+            && indexes.ByUid.TryGetValue(identity.ResourceUid, out ResourceEntry? byUid))
+        {
+            return byUid.Resource;
+        }
+
+        indexes.ByName.TryGetValue(
+            (identity.ResourceNamespace, identity.ResourceKind, identity.ResourceName),
+            out ResourceEntry? byName);
+        return byName?.Resource;
     }
 
     private static IKubernetesObject<V1ObjectMeta>? FindScopeResource(ResourceIndexes indexes, PodLogSessionState state)
@@ -406,6 +588,8 @@ public sealed class PodLogSessionResolver : IPodLogSessionResolver
     }
 
     private sealed record ResourceIdentity(string Namespace, string Name, string? Uid, string Kind);
+
+    private readonly record struct PodIdentity(string Namespace, string UidOrName);
 
     private static bool ContainsPod(IEnumerable<V1Pod> pods, V1Pod candidate)
     {

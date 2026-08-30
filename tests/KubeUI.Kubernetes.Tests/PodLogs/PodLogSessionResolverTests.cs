@@ -192,7 +192,7 @@ public sealed class PodLogSessionResolverTests
         state.ContainerName.ShouldBe("app");
         state.Previous.ShouldBeTrue();
         state.Timestamps.ShouldBeTrue();
-        state.TailLines.ShouldBe(100);
+        state.TailLines.ShouldBe(500);
         Should.Throw<ArgumentNullException>(() => resolver.CreateState(null!, string.Empty, false, false));
     }
 
@@ -277,7 +277,7 @@ public sealed class PodLogSessionResolverTests
         resolution.PodChanged.ShouldBeTrue();
         resolver.TryResolve(harness.Cluster, missingState).ShouldBeNull();
         Should.Throw<ArgumentNullException>(() => resolver.TryResolve(null!, missingState));
-        Should.Throw<ArgumentNullException>(() => resolver.TryResolve(harness.Cluster, null!));
+        Should.Throw<ArgumentNullException>(() => resolver.TryResolve(harness.Cluster, (PodLogSessionState)null!));
     }
 
     [Fact]
@@ -660,6 +660,81 @@ public sealed class PodLogSessionResolverTests
         noOwnersState.OwnerUid.ShouldBeNull();
         emptyOwnersState.OwnerUid.ShouldBeNull();
         fallbackState.OwnerName.ShouldBe("first");
+    }
+
+    [Fact]
+    public async Task Multi_resource_state_resolves_and_deduplicates_pods()
+    {
+        await using var harness = await new TestClusterGenerator().CreateAsync(
+            new TestClusterConfig { Type = KubernetesBackend.Fake },
+            TestContext.Current.CancellationToken);
+        V1Deployment firstDeployment = new() { Metadata = Metadata("api", "api-deployment-uid") };
+        V1Deployment secondDeployment = new() { Metadata = Metadata("worker", "worker-deployment-uid") };
+        V1ReplicaSet firstReplicaSet = new()
+        {
+            Metadata = Metadata(
+                "api-rs",
+                "api-rs-uid",
+                new V1OwnerReference
+                {
+                    Kind = V1Deployment.KubeKind,
+                    Name = firstDeployment.Name(),
+                    Uid = firstDeployment.Uid(),
+                    Controller = true,
+                }),
+        };
+        V1ReplicaSet secondReplicaSet = new()
+        {
+            Metadata = Metadata(
+                "worker-rs",
+                "worker-rs-uid",
+                new V1OwnerReference
+                {
+                    Kind = V1Deployment.KubeKind,
+                    Name = secondDeployment.Name(),
+                    Uid = secondDeployment.Uid(),
+                    Controller = true,
+                }),
+        };
+        V1Pod firstPod = CreatePod(
+            "api-pod",
+            "api-pod-uid",
+            new V1OwnerReference
+            {
+                Kind = V1ReplicaSet.KubeKind,
+                Name = firstReplicaSet.Name(),
+                Uid = firstReplicaSet.Uid(),
+                Controller = true,
+            });
+        V1Pod secondPod = CreatePod(
+            "worker-pod",
+            "worker-pod-uid",
+            new V1OwnerReference
+            {
+                Kind = V1ReplicaSet.KubeKind,
+                Name = secondReplicaSet.Name(),
+                Uid = secondReplicaSet.Uid(),
+                Controller = true,
+            });
+        AddResource(harness.Cluster, GroupApiVersionKind.From<V1Deployment>(), firstDeployment);
+        AddResource(harness.Cluster, GroupApiVersionKind.From<V1Deployment>(), secondDeployment);
+        AddResource(harness.Cluster, GroupApiVersionKind.From<V1ReplicaSet>(), firstReplicaSet);
+        AddResource(harness.Cluster, GroupApiVersionKind.From<V1ReplicaSet>(), secondReplicaSet);
+        AddResource(harness.Cluster, GroupApiVersionKind.From<V1Pod>(), firstPod);
+        AddResource(harness.Cluster, GroupApiVersionKind.From<V1Pod>(), secondPod);
+        PodLogSessionResolver resolver = new();
+        PodLogMultiSessionState state = resolver.CreateMultiState(
+            [firstDeployment, secondDeployment, firstDeployment],
+            "app",
+            false,
+            false);
+
+        PodLogMultiSessionResolution resolution = resolver.TryResolve(harness.Cluster, state);
+
+        state.Scopes.Count.ShouldBe(2);
+        resolution.Scopes.Count.ShouldBe(2);
+        resolution.Scopes.ShouldAllBe(scope => scope.Error == null);
+        resolution.RelatedPods.Select(pod => pod.Name()).Order().ShouldBe(["api-pod", "worker-pod"]);
     }
 
     private static V1ObjectMeta Metadata(string name, string uid, V1OwnerReference? owner = null)

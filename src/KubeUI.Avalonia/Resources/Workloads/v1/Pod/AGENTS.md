@@ -6,10 +6,13 @@
 - Pod-specific supporting views and view models stay local to this folder.
 
 ## Pod Logs
-- A pod-scoped log view uses the title `Pod Logs`, displays the pod name, hides the pod selector, and selects all containers when launched from the pod's View Logs action.
-- The first toolbar row presents the resource name and namespace as standard labeled values in a compact 24px row; its Name field has a subtle 4px offset beyond the resource-list toolbar inset.
-- Pod and container selectors use the same compact 20px height, 2px trailing margin, and clear-button styling as the resource-list namespace selector.
-- A controller-scoped log view uses the title `{Kind} Logs`, shows the pod selector on the second toolbar row, and selects all descendant pods and all containers by default.
+- A pod-scoped log view uses the title `Pod Logs` and selects all containers when launched from the pod's View Logs action.
+- Present sources in one compact Ursa TreeComboBox in the toolbar: Resource -> Pod -> Container.
+- Keep the popup hierarchy expanded, show partial parent selection, and let parent checks apply to descendants without closing the popup.
+- Treat the source tree as the canonical Pod/container selection state. Do not add parallel selector collections or projection synchronization.
+- Reconcile stable resource, Pod, and container nodes by identity so checked state and bound node instances survive topology refreshes.
+- Unchecking a resource removes it from the session. Pod and container checks directly define the effective streams, including an intentional zero-stream selection.
+- A controller-scoped log view uses the title `{Kind} Logs` and selects all descendant pods and all containers by default.
 - Controller navigation advances exactly one owner level at a time, such as `Pod -> ReplicaSet -> Deployment` and `Pod -> Job -> CronJob`.
 - Allow controller navigation to resolved custom-resource owners as well as built-in workload controllers, and display the actual parent kind.
 - Cluster-scoped parent resources resolve descendant pods across namespaces so navigating to them keeps pod and container log selection functional.
@@ -23,3 +26,8 @@
 - Use a broom icon for Clear Logs so the action does not imply deleting a Kubernetes resource or file.
 - Loading an optional parent controller must not prevent otherwise authorized pod logs from opening.
 - Tests must cover cold-cache workload launches, scope presentation, owner navigation, topology changes, connection failures, and reconnect behavior.
+- Multi-resource logs accept up to 20 selected Pods or controllers, deduplicate overlapping resolved Pods, warn above 25 Pod/container streams, and refuse to connect above 100 streams.
+- Keep one-resource launches behavior-compatible. Resource nodes expose resolution status and resolved Pod count; removing the final resource produces an intentional empty logs state.
+- Resource Lists expose one View Logs action. When a compatible logs tool is active for the cluster, its submenu explicitly offers Open New Logs View or Add to Current Logs View; never assume the user wants selections grouped.
+- Combined exports use a multi-resource filename and manifest, and describe cross-stream output as arrival-ordered.
+- New sessions and resource-add refreshes open all selected Pod/container streams concurrently, load the last 500 lines from each, and then follow live output.

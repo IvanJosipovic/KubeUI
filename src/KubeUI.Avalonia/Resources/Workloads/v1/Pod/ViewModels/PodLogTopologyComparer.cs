@@ -9,16 +9,26 @@ internal static class PodLogTopologyComparer
     internal static bool HasChanged(PodLogSessionResolution current, PodLogSessionResolution next)
     {
         if (!string.Equals(current.Pod.Metadata?.Uid, next.Pod.Metadata?.Uid, StringComparison.Ordinal)
-            || current.RelatedPods.Count != next.RelatedPods.Count
             || !IsSameResource(current.ParentResource, next.ParentResource))
         {
             return true;
         }
 
-        for (var i = 0; i < current.RelatedPods.Count; i++)
+        return HavePodsChanged(current.RelatedPods, next.RelatedPods)
+            || !string.Equals(current.ContainerName, next.ContainerName, StringComparison.Ordinal);
+    }
+
+    internal static bool HavePodsChanged(IReadOnlyList<V1Pod> current, IReadOnlyList<V1Pod> next)
+    {
+        if (current.Count != next.Count)
         {
-            V1Pod currentPod = current.RelatedPods[i];
-            V1Pod nextPod = next.RelatedPods[i];
+            return true;
+        }
+
+        for (var i = 0; i < current.Count; i++)
+        {
+            V1Pod currentPod = current[i];
+            V1Pod nextPod = next[i];
             if (!string.Equals(currentPod.Metadata?.Uid, nextPod.Metadata?.Uid, StringComparison.Ordinal)
                 || !GetContainerNames(currentPod).SequenceEqual(GetContainerNames(nextPod), StringComparer.Ordinal)
                 || !HaveSameContainerLogStates(currentPod, nextPod))
@@ -27,7 +37,7 @@ internal static class PodLogTopologyComparer
             }
         }
 
-        return !string.Equals(current.ContainerName, next.ContainerName, StringComparison.Ordinal);
+        return false;
     }
 
     private static bool HaveSameContainerLogStates(V1Pod current, V1Pod next)
@@ -80,7 +90,7 @@ internal static class PodLogTopologyComparer
         return true;
     }
 
-    private static bool IsSameResource(
+    internal static bool IsSameResource(
         IKubernetesObject<V1ObjectMeta>? current,
         IKubernetesObject<V1ObjectMeta>? next)
     {
