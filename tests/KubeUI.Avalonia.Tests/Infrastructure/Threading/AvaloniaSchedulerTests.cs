@@ -1,5 +1,6 @@
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
+using System.Reactive.Concurrency;
 using KubeUI.Avalonia.Infrastructure.Threading;
 using Shouldly;
 
