@@ -225,6 +225,14 @@
     <value>Pod Logs</value>
     <comment/>
   </data>
+  <data name="PodLogsView_ResourceTitleFormat" xml:space="preserve">
+    <value>{0} Logs</value>
+    <comment/>
+  </data>
+  <data name="PodLogsView_NamespaceLabel" xml:space="preserve">
+    <value>Namespace:</value>
+    <comment/>
+  </data>
   <data name="PodLogsView_AutoScrollToBottom" xml:space="preserve">
     <value>Auto-scroll to bottom</value>
     <comment/>
@@ -1385,6 +1393,10 @@
     <value>Name</value>
     <comment/>
   </data>
+  <data name="Shared_ViewLogs" xml:space="preserve">
+    <value>View Logs</value>
+    <comment/>
+  </data>
   <data name="Shared_Phase" xml:space="preserve">
     <value>Phase</value>
     <comment/>
@@ -2401,10 +2413,6 @@
     <value>View Console</value>
     <comment/>
   </data>
-  <data name="V1PodConfig_MenuItem_ViewLogs" xml:space="preserve">
-    <value>View Logs</value>
-    <comment/>
-  </data>
   <data name="V1PodConfig_MenuItem_Attach" xml:space="preserve">
     <value>Attach</value>
     <comment/>
@@ -2555,6 +2563,94 @@
   </data>
   <data name="AgentChatView_PlanStepFormat" xml:space="preserve">
     <value>• {0}</value>
+    <comment/>
+  </data>
+  <data name="PodLogsView_ContainerLabel" xml:space="preserve">
+    <value>Container:</value>
+    <comment/>
+  </data>
+  <data name="PodLogsView_FileTypeText" xml:space="preserve">
+    <value>Text files</value>
+    <comment/>
+  </data>
+  <data name="PodLogsView_FollowLogs" xml:space="preserve">
+    <value>Follow Logs</value>
+    <comment/>
+  </data>
+  <data name="PodLogsView_Download" xml:space="preserve">
+    <value>Download Logs</value>
+    <comment/>
+  </data>
+  <data name="PodLogsView_ShowResourceNames" xml:space="preserve">
+    <value>Show Resource Names</value>
+    <comment/>
+  </data>
+  <data name="PodLogsView_AllPods" xml:space="preserve">
+    <value>All Pods</value>
+    <comment/>
+  </data>
+  <data name="PodLogsView_AllContainers" xml:space="preserve">
+    <value>All Containers</value>
+    <comment/>
+  </data>
+  <data name="PodLogsView_Sources" xml:space="preserve">
+    <value>Sources</value>
+    <comment/>
+  </data>
+  <data name="PodLogsView_ClearResources" xml:space="preserve">
+    <value>Clear All</value>
+    <comment/>
+  </data>
+  <data name="PodLogsView_RemoveResource" xml:space="preserve">
+    <value>Remove Resource</value>
+    <comment/>
+  </data>
+  <data name="PodLogsView_NoResources" xml:space="preserve">
+    <value>No resources selected.</value>
+    <comment/>
+  </data>
+  <data name="PodLogsView_StreamLimitExceeded" xml:space="preserve">
+    <value>{0} log streams were selected. Narrow the Pod or container selection to {1} streams or fewer.</value>
+    <comment/>
+  </data>
+  <data name="PodLogsView_StreamLimitWarning" xml:space="preserve">
+    <value>{0} log streams selected; more than {1} may affect performance.</value>
+    <comment/>
+  </data>
+  <data name="PodLogsView_Active" xml:space="preserve">
+    <value>Active</value>
+    <comment/>
+  </data>
+  <data name="PodLogsView_Resolving" xml:space="preserve">
+    <value>Resolving</value>
+    <comment/>
+  </data>
+  <data name="PodLogsView_ScopeLimitExceeded" xml:space="preserve">
+    <value>A logs view can include up to {0} resources.</value>
+    <comment/>
+  </data>
+  <data name="Shared_OpenNewLogsView" xml:space="preserve">
+    <value>Open New Logs View</value>
+    <comment/>
+  </data>
+  <data name="Shared_AddToCurrentLogsView" xml:space="preserve">
+    <value>Add to Current Logs View</value>
+    <comment/>
+  </data>
+  <data name="PodLogsView_Controller" xml:space="preserve">
+    <value>Jump to Controlled By Logs</value>
+    <comment/>
+  </data>
+  <data name="PodLogsView_Search" xml:space="preserve">
+    <value>Search Logs</value>
+    <comment/>
+  </data>
+  <data name="PodLogsView_SearchPrevious" xml:space="preserve">
+    <value>Previous Match</value>
+    <comment/>
+  </data>
+  <data name="PodLogsView_SearchNext" xml:space="preserve">
+    <value>Next Match</value>
     <comment/>
   </data>
 </root>

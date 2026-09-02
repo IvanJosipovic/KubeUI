@@ -1,5 +1,8 @@
+using System.Collections.ObjectModel;
 using System.Text.Json;
+using Avalonia.Collections;
 using Avalonia.Controls.Notifications;
+using CommunityToolkit.Mvvm.Input;
 using Dock.Model.Core;
 using FluentAvalonia.UI.Controls;
 using FluentIcons.Common;
@@ -18,6 +21,8 @@ using KubeUI.Avalonia.Features.Resources.Visualization;
 using KubeUI.Avalonia.Features.Resources.Yaml;
 using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Infrastructure.Docking;
+using KubeUI.Avalonia.Resources.Workloads.v1.Pod.Services;
+using KubeUI.Avalonia.Resources.Workloads.v1.Pod.ViewModels;
 using KubeUI.Kubernetes;
 
 namespace KubeUI.Avalonia.Resources;
@@ -29,6 +34,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
     protected readonly IDialogService _dialogService;
     protected readonly INotificationManager _notificationManager;
     protected readonly IFactory _factory;
+    private readonly IPodLogsLauncher _podLogsLauncher;
 
     protected ResourceConfigBase(IServiceProvider serviceProvider)
     {
@@ -36,6 +42,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
         _logger = serviceProvider.GetRequiredService<ILogger<ResourceConfigBase<T>>>();
         _dialogService = serviceProvider.GetRequiredService<IDialogService>();
         _factory = serviceProvider.GetRequiredService<IFactory>();
+        _podLogsLauncher = serviceProvider.GetRequiredService<IPodLogsLauncher>();
         _notificationManager = serviceProvider.GetRequiredService<INotificationManager>();
     }
 
@@ -118,6 +125,79 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
             new AuthorizationRequest(Kind, Verb.List, null),
             new AuthorizationRequest(Kind, Verb.Watch, null),
         ];
+    }
+
+    protected MenuItemViewModel CreatePodLogsMenuItem(IEnumerable<T>? selectedItems)
+    {
+        var selectedList = selectedItems?.ToList();
+        AsyncRelayCommand<IReadOnlyList<T>?> openCommand = new(ViewPodLogsAsync, CanViewPodLogs);
+        AvaloniaList<MenuItemViewModel> actions =
+        [
+            new()
+            {
+                Title = Assets.Resources.Shared_OpenNewLogsView,
+                FluentIcon = Icon.Open,
+                Command = openCommand,
+                CommandParameter = selectedList,
+            },
+        ];
+        if (Cluster is not null && _podLogsLauncher.CanAddToActive(Cluster))
+        {
+            actions.Add(new MenuItemViewModel
+            {
+                Title = Assets.Resources.Shared_AddToCurrentLogsView,
+                FluentIcon = Icon.Add,
+                Command = new AsyncRelayCommand<IReadOnlyList<T>?>(AddToPodLogsAsync, CanViewPodLogs),
+                CommandParameter = selectedList,
+            });
+        }
+
+        return new MenuItemViewModel
+        {
+            Title = Assets.Resources.Shared_ViewLogs,
+            FluentIcon = Icon.TextDescription,
+            Items = actions,
+        };
+    }
+
+    private async Task ViewPodLogsAsync(IReadOnlyList<T>? resources)
+    {
+        if (Cluster is null || resources is not { Count: > 0 } || resources.Count > PodLogsViewModel.MaxScopeCount)
+        {
+            return;
+        }
+
+        await _podLogsLauncher.LaunchAsync(Cluster, resources, Kind.Kind);
+    }
+
+    private async Task AddToPodLogsAsync(IReadOnlyList<T>? resources)
+    {
+        if (Cluster is null || resources is not { Count: > 0 } || resources.Count > PodLogsViewModel.MaxScopeCount)
+        {
+            return;
+        }
+
+        await _podLogsLauncher.AddToActiveAsync(Cluster, resources, Kind.Kind);
+    }
+
+    private bool CanViewPodLogs(IReadOnlyList<T>? resources)
+    {
+        if (Cluster is null || resources is not { Count: > 0 })
+        {
+            return false;
+        }
+
+        for (var i = 0; i < resources.Count; i++)
+        {
+            T resource = resources[i];
+            if (!string.IsNullOrWhiteSpace(resource.Name())
+                && Cluster.Runtime.Permissions.CanI<V1Pod>(Verb.Get, resource.Namespace(), "log"))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public virtual Control[] Properties(T resource) => [];
