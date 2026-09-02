@@ -10,8 +10,8 @@ namespace KubeUI.Avalonia.Infrastructure.Threading;
 /// </summary>
 /// <remarks>Use <see cref="Instance"/> to access the singleton instance. This scheduler is
 /// typically used to marshal work onto the Avalonia UI thread, ensuring thread-safe interaction with UI components.
-/// Actions scheduled with zero delay may be executed immediately if already on the dispatcher thread, but excessive
-/// immediate scheduling is limited to prevent stack overflows.</remarks>
+/// Actions scheduled with zero delay are posted to the dispatcher to prevent recursive scheduling from growing the
+/// call stack.</remarks>
 public sealed class AvaloniaScheduler : LocalScheduler, IThreadDispatcher
 {
     /// <summary>
@@ -20,16 +20,6 @@ public sealed class AvaloniaScheduler : LocalScheduler, IThreadDispatcher
     /// <remarks>Use this property to access the default scheduler for Avalonia operations. The instance is
     /// thread-safe and intended for global use throughout the application.</remarks>
     public static readonly AvaloniaScheduler Instance = new();
-
-    /// <summary>
-    /// Users can schedule actions on the dispatcher thread while being on the correct thread already.
-    /// We are optimizing this case by invoking user callback immediately which can lead to stack overflows in certain cases.
-    /// To prevent this we are limiting amount of reentrant calls to <see cref="Schedule{TState}"/> before we will
-    /// schedule on a dispatcher anyway.
-    /// </summary>
-    private const int MaxReentrantSchedules = 32;
-
-    private int _reentrancyGuard;
 
     /// <inheritdoc />
     public IScheduler Scheduler => this;
@@ -59,10 +49,7 @@ public sealed class AvaloniaScheduler : LocalScheduler, IThreadDispatcher
     public override IDisposable Schedule<TState>(
         TState state, TimeSpan dueTime, Func<IScheduler, TState, IDisposable> action)
     {
-        if (action is null)
-        {
-            throw new ArgumentNullException(nameof(action));
-        }
+        ArgumentNullException.ThrowIfNull(action);
 
         IDisposable PostOnDispatcher()
         {
@@ -87,26 +74,7 @@ public sealed class AvaloniaScheduler : LocalScheduler, IThreadDispatcher
 
         if (dueTime == TimeSpan.Zero)
         {
-            if (!Dispatcher.UIThread.CheckAccess())
-            {
-                return PostOnDispatcher();
-            }
-
-            if (_reentrancyGuard >= MaxReentrantSchedules)
-            {
-                return PostOnDispatcher();
-            }
-
-            try
-            {
-                _reentrancyGuard++;
-
-                return action(this, state);
-            }
-            finally
-            {
-                _reentrancyGuard--;
-            }
+            return PostOnDispatcher();
         }
 
         {
