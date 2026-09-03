@@ -1,4 +1,6 @@
 using System.Diagnostics;
+using System.Net;
+using System.Net.Sockets;
 using System.Reflection;
 using Avalonia;
 using Avalonia.Controls;
@@ -21,6 +23,9 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Hosting.Server;
+using Microsoft.AspNetCore.Hosting.Server.Features;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 using NReco.Logging.File;
 using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
@@ -32,6 +37,8 @@ namespace KubeUI.Desktop;
 
 internal static class Program
 {
+    private const int DynamicPort = 0;
+
     public static ActivitySource Source { get; } = new ActivitySource("com.KubeUI.Desktop", "1.0.0");
 
     [STAThread]
@@ -41,23 +48,17 @@ internal static class Program
 
         EnsureMacOsPath();
 
-        var host = CreateHostBuilder(args).Build();
-        ConfigureMcpEndpoint(host);
-        host.Services.ConfigureKubeUIKubernetesJsonLogging();
-        host.Start();
-
-        var builder = CreateAppBuilder(host.Services);
+        using var host = CreateStartedHost(args);
 
         try
         {
-            builder.StartWithClassicDesktopLifetime(args);
+            CreateAppBuilder(host.Services).StartWithClassicDesktopLifetime(args);
         }
         finally
         {
             Task.Run(async () =>
             {
                 await host.StopAsync().ConfigureAwait(false);
-                await host.DisposeAsync().ConfigureAwait(false);
             }).GetAwaiter().GetResult();
         }
     }
@@ -129,14 +130,18 @@ internal static class Program
         var settings = SettingsPersistenceLoader.Load();
         builder.Services.AddKubeUIAppServices();
 
-        if (mcpEnabledOverride ?? settings.Settings.McpServerEnabled)
+        var mcpEnabled = mcpEnabledOverride ?? settings.Settings.McpServerEnabled;
+        if (mcpEnabled)
         {
             builder.Services.AddMcpServer()
                 .WithHttpTransport(options => options.Stateless = true)
                 .WithTools<McpTools>();
-            var port = mcpPortOverride ?? McpServerConfiguration.GetValidatedPort(settings.Settings);
-            builder.WebHost.ConfigureKestrel(options => options.ListenLocalhost(port));
         }
+
+        var port = mcpEnabled
+            ? mcpPortOverride ?? McpServerConfiguration.GetValidatedPort(settings.Settings)
+            : DynamicPort;
+        builder.WebHost.ConfigureKestrel(options => options.Listen(IPAddress.Loopback, port));
 
         if (includeOptionalServices && settings.Settings.TelemetryEnabled)
         {
@@ -150,6 +155,75 @@ internal static class Program
 
         configureServices?.Invoke(builder.Services);
         return builder;
+    }
+
+    internal static WebApplication CreateStartedHost(
+        string[] args,
+        bool includeOptionalServices = true,
+        Action<IServiceCollection>? configureServices = null,
+        int? mcpPortOverride = null,
+        bool? mcpEnabledOverride = null)
+    {
+        var application = CreateApplication(args, includeOptionalServices, configureServices, mcpPortOverride, mcpEnabledOverride);
+        try
+        {
+            application.Start();
+            RecordMcpBoundPort(application.Services);
+            return application;
+        }
+        catch (Exception exception) when (IsPortBindFailure(exception))
+        {
+            application.DisposeAsync().AsTask().GetAwaiter().GetResult();
+
+            application = CreateApplication(args, includeOptionalServices, configureServices, DynamicPort, mcpEnabledOverride);
+            application.Services.GetRequiredService<ILoggerFactory>()
+                .CreateLogger(typeof(Program))
+                .LogWarning(exception, "The configured MCP server port could not be bound; retrying with an operating system assigned port.");
+            application.Start();
+            RecordMcpBoundPort(application.Services);
+            return application;
+        }
+    }
+
+    private static WebApplication CreateApplication(
+        string[] args,
+        bool includeOptionalServices,
+        Action<IServiceCollection>? configureServices,
+        int? mcpPortOverride,
+        bool? mcpEnabledOverride)
+    {
+        var application = CreateHostBuilder(
+            args,
+            includeOptionalServices,
+            configureServices,
+            mcpPortOverride,
+            mcpEnabledOverride).Build();
+        ConfigureMcpEndpoint(application);
+        application.Services.ConfigureKubeUIKubernetesJsonLogging();
+        return application;
+    }
+
+    internal static void RecordMcpBoundPort(IServiceProvider services)
+    {
+        var address = services.GetRequiredService<IServer>()
+            .Features
+            .Get<IServerAddressesFeature>()!
+            .Addresses
+            .Single();
+        services.GetRequiredService<McpServerState>().BoundPort = new Uri(address).Port;
+    }
+
+    internal static bool IsPortBindFailure(Exception exception)
+    {
+        switch (exception)
+        {
+            case SocketException:
+                return true;
+            case AggregateException aggregate:
+                return aggregate.InnerExceptions.Any(IsPortBindFailure);
+            default:
+                return exception.InnerException is not null && IsPortBindFailure(exception.InnerException);
+        }
     }
 
     internal static void ConfigureMcpEndpoint(WebApplication application)

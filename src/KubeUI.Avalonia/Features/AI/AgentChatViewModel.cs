@@ -27,6 +27,7 @@ public sealed partial class AgentChatViewModel : ViewModelBase, IAsyncDisposable
     private readonly IAgentRegistry _registry;
     private readonly ISettingsService? _settingsService;
     private readonly IAgentContextService? _contextService;
+    private readonly McpServerState? _mcpServerState;
     private IAgentSession? _session;
     private CancellationTokenSource? _turnCancellation;
 
@@ -49,11 +50,13 @@ public sealed partial class AgentChatViewModel : ViewModelBase, IAsyncDisposable
     public AgentChatViewModel(
         IAgentRegistry registry,
         ISettingsService? settingsService = null,
-        IAgentContextService? contextService = null)
+        IAgentContextService? contextService = null,
+        McpServerState? mcpServerState = null)
     {
         _registry = registry;
         _settingsService = settingsService;
         _contextService = contextService;
+        _mcpServerState = mcpServerState;
         Messages.CollectionChanged += MessagesOnCollectionChanged;
         if (_settingsService is not null)
             _settingsService.Settings.PropertyChanged += SettingsOnPropertyChanged;
@@ -83,7 +86,7 @@ public sealed partial class AgentChatViewModel : ViewModelBase, IAsyncDisposable
             await DisposeSessionAsync();
             _turnCancellation = new CancellationTokenSource();
             var mcpEndpoint = _settingsService is not null && _settingsService.Settings.McpServerEnabled
-                ? McpServerConfiguration.GetEndpoint(_settingsService.Settings)
+                ? McpServerConfiguration.GetEndpoint(_settingsService.Settings, _mcpServerState?.BoundPort)
                 : null;
             _session = await SelectedAgent.CreateSessionAsync(new AgentSessionOptions
             {

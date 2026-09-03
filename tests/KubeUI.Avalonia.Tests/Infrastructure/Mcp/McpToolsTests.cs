@@ -142,6 +142,22 @@ public sealed class McpToolsTests
         session.VerifyNoOtherCalls();
     }
 
+    [Fact]
+    public void endpoint_tool_prefers_the_bound_port_when_available()
+    {
+        var settingsService = new Mock<ISettingsService>();
+        settingsService.SetupGet(service => service.Settings)
+            .Returns(new Settings { McpServerEnabled = true, McpServerPort = 62888 });
+        var tools = new McpTools(
+            new Mock<IClusterRuntimeCatalog>().Object,
+            new Mock<IMcpClusterSession>(MockBehavior.Strict).Object,
+            new Mock<IKubernetesYamlSerializer>().Object,
+            settingsService.Object,
+            mcpServerState: new McpServerState { BoundPort = 54321 });
+
+        tools.GetEndpoint().ShouldBe("http://127.0.0.1:54321/mcp");
+    }
+
     private static McpTools CreateTools(
         Mock<IMcpClusterSession> session,
         IAgentPermissionService? permissionService = null,
