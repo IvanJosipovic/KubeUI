@@ -141,7 +141,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
                 CommandParameter = selectedList,
             },
         ];
-        if (_podLogsLauncher.CanAddToActive(Cluster))
+        if (Cluster is not null && _podLogsLauncher.CanAddToActive(Cluster))
         {
             actions.Add(new MenuItemViewModel
             {
