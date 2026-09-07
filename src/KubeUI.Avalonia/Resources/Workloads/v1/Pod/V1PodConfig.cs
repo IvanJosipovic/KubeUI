@@ -109,9 +109,13 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
     protected override IEnumerable<MenuItemViewModel> CreateCustomMenuItems(IEnumerable<V1Pod>? selectedItems)
     {
         var selectedList = selectedItems?.ToList();
-        if (selectedList == null || selectedList.Count != 1)
+        if (selectedList is not { Count: > 0 })
         {
             return [];
+        }
+        if (selectedList.Count > 1)
+        {
+            return [CreatePodLogsMenuItem(selectedList)];
         }
 
         var selectedItem = selectedList[0];
@@ -194,43 +198,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
                     },
                 ]),
             },
-            new()
-            {
-                Title = Assets.Resources.V1PodConfig_MenuItem_ViewLogs,
-                FluentIcon = Icon.TextDescription,
-                Items = selectedItem == null ? null : new AvaloniaList<MenuItemViewModel>([
-                    new()
-                    {
-                        Title = Assets.Resources.V1PodConfig_MenuItem_Init,
-                        Items = [.. initContainers.Select(c => new MenuItemViewModel()
-                        {
-                            Title = c.Name,
-                            Command = ViewLogsCommand,
-                            CommandParameter = new ArrayList { selectedItem, c },
-                        }).ToList()],
-                    },
-                    new()
-                    {
-                        Title = Assets.Resources.V1PodConfig_MenuItem_Normal,
-                        Items = [.. containers.Select(c => new MenuItemViewModel()
-                        {
-                            Title = c.Name,
-                            Command = ViewLogsCommand,
-                            CommandParameter = new ArrayList { selectedItem, c },
-                        }).ToList()],
-                    },
-                    new()
-                    {
-                        Title = Assets.Resources.V1PodConfig_MenuItem_Ephemeral,
-                        Items = [.. ephemeralContainers.Select(c => new MenuItemViewModel()
-                        {
-                            Title = c.Name,
-                            Command = ViewLogsCommand,
-                            CommandParameter = new ArrayList { selectedItem, c },
-                        }).ToList()],
-                    },
-                ]),
-            },
+            CreatePodLogsMenuItem(selectedList),
             new()
             {
                 Title = Assets.Resources.V1PodConfig_DebugContainer,
@@ -333,65 +301,6 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
         (Verb.Create, "attach"),
         (Verb.Update, "ephemeralcontainers"),
     ];
-
-    [RelayCommand(CanExecute = nameof(CanViewLogs))]
-    private async Task ViewLogs(IList parameters)
-    {
-        if (parameters.Count != 2 || parameters[0] is not V1Pod pod)
-        {
-            return;
-        }
-
-        string? containerName = null;
-
-        if (parameters[1] is V1Container container)
-        {
-            containerName = container.Name;
-        }
-        else if (parameters[1] is V1EphemeralContainer ephemeral)
-        {
-            containerName = ephemeral.Name;
-        }
-
-        if (containerName == null)
-        {
-            return;
-        }
-
-        var vm = ServiceProvider.GetRequiredService<PodLogsViewModel>();
-        vm.Cluster = Cluster;
-        vm.Object = pod;
-        vm.ContainerName = containerName;
-        vm.Id = $"{nameof(ViewLogs)}-{Cluster.Runtime.Name}-{pod.Namespace()} - {pod.Name()}-{containerName}";
-
-        if (_factory.AddToBottom(vm))
-        {
-            try
-            {
-                await vm.Connect();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error viewing logs");
-                return;
-            }
-        }
-    }
-
-    private bool CanViewLogs(IList? parameters)
-    {
-        if (parameters?.Count != 2)
-        {
-            return false;
-        }
-
-        if (parameters?[0] is V1Pod pod && (parameters?[1] is V1Container || parameters?[1] is V1EphemeralContainer))
-        {
-            return Cluster.Runtime.Permissions.CanI<V1Pod>(Verb.Get, pod.Namespace(), "log");
-        }
-
-        return false;
-    }
 
     [RelayCommand(CanExecute = nameof(CanViewConsole))]
     private void ViewConsole(IList parameters)

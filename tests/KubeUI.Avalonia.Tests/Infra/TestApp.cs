@@ -172,6 +172,9 @@ public class TestApp : App, IDisposable
 
         public Task<IReadOnlyList<IStorageFolder>> OpenFolderPickerAsync(FolderPickerOpenOptions options)
             => Task.FromResult<IReadOnlyList<IStorageFolder>>([]);
+
+        public Task<IStorageFile?> SaveFilePickerAsync(FilePickerSaveOptions options)
+            => Task.FromResult<IStorageFile?>(null);
     }
 
     private sealed class TestTimeProvider : TimeProvider

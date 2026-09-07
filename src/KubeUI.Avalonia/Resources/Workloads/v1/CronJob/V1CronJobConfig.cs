@@ -65,14 +65,18 @@ public sealed partial class V1CronJobConfig : ResourceConfigBase<V1CronJob>
         ];
     }
 
+    /// <summary>Requests permissions to create jobs and read pod logs for cron job actions.</summary>
     public override IEnumerable<AuthorizationRequest> AuthorizationRequests()
     {
-        return base.AuthorizationRequests().Concat(s_startAuthorizationRequests);
+        return base.AuthorizationRequests()
+            .Concat(s_startAuthorizationRequests)
+            .Append(new AuthorizationRequest(GroupApiVersionKind.From<V1Pod>(), Verb.Get, "log"));
     }
 
     protected override IEnumerable<MenuItemViewModel> CreateCustomMenuItems(IEnumerable<V1CronJob>? selectedItems)
     {
         return [
+            CreatePodLogsMenuItem(selectedItems),
             new()
             {
                 Title = Assets.Resources.V1CronJobConfig_Start!,
