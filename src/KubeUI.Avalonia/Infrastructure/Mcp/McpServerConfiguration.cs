@@ -20,12 +20,6 @@ public static class McpServerConfiguration
     public static string GetEndpoint(AppSettings settings)
     {
         ArgumentNullException.ThrowIfNull(settings);
-        return GetEndpoint(settings, boundPort: null);
-    }
-
-    public static string GetEndpoint(AppSettings settings, int? boundPort)
-    {
-        ArgumentNullException.ThrowIfNull(settings);
-        return $"http://{Host}:{(boundPort ?? GetValidatedPort(settings))}{Path}";
+        return $"http://{Host}:{GetValidatedPort(settings)}{Path}";
     }
 }
