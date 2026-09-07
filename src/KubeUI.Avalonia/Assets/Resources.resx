@@ -2645,6 +2645,10 @@
     <value>Search Logs</value>
     <comment/>
   </data>
+  <data name="PodLogsView_Filter" xml:space="preserve">
+    <value>Show only matching log lines</value>
+    <comment/>
+  </data>
   <data name="PodLogsView_SearchPrevious" xml:space="preserve">
     <value>Previous Match</value>
     <comment/>

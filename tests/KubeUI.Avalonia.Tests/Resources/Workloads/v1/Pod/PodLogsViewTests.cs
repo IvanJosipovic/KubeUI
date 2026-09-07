@@ -28,6 +28,101 @@ namespace KubeUI.Avalonia.Tests.Resources.Workloads.v1.Pod;
 
 public sealed class PodLogsViewTests
 {
+    [AvaloniaTheory]
+    [InlineData("", "keep", false, "")]
+    [InlineData("skip\nkeep", "", false, "skip\nkeep")]
+    [InlineData("skip\nkeep", "missing", false, "")]
+    [InlineData("skip\r\nkeep\r\nlast", "keep", false, "keep\r\n")]
+    [InlineData("keep keep\nskip\nkeep", "keep", false, "keep keep\nkeep")]
+    [InlineData("skip\nkeep", "(?=keep)", true, "keep")]
+    [InlineData("skip\nkeep", "\\z", true, "keep")]
+    [InlineData("skip\nalpha\nbeta\nlast", "alpha\\nbeta", true, "alpha\nbeta\n")]
+    public async Task filter_handles_empty_queries_line_endings_and_regex_boundaries(
+        string source, string query, bool regex, string expected)
+    {
+        TextEditor editor = new() { Document = new AvaloniaEdit.Document.TextDocument(source) };
+        PodLogsEditorBehavior behavior = new();
+        var behaviors = Interaction.GetBehaviors(editor);
+        behaviors.Add(behavior);
+        Window window = new() { Content = editor, Width = 800, Height = 600 };
+        try
+        {
+            window.Show();
+            Dispatcher.UIThread.RunJobs();
+            var search = editor.SearchPanel.ShouldNotBeNull();
+            search.Open();
+            await WaitForAsync(() => search.GetVisualDescendants().OfType<ToggleButton>()
+                .Any(button => button.Classes.Contains("PodLogsFilterToggle")));
+            var toggle = search.GetVisualDescendants().OfType<ToggleButton>()
+                .Single(button => button.Classes.Contains("PodLogsFilterToggle"));
+            var original = editor.Document;
+            search.UseRegex = regex;
+            search.SearchPattern = query;
+            toggle.IsChecked = true;
+            await WaitForAsync(() => editor.Document.Text == expected);
+            original.Text.ShouldBe(source);
+            toggle.IsChecked = false;
+            editor.Document.ShouldBeSameAs(original);
+            search.SearchPattern.ShouldBe(query);
+        }
+        finally
+        {
+            behaviors.Remove(behavior);
+            window.Close();
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task active_filter_tracks_replacement_clear_and_detach_without_retaining_old_source()
+    {
+        TextEditor editor = new() { Document = new AvaloniaEdit.Document.TextDocument("keep old\nskip") };
+        PodLogsEditorBehavior behavior = new();
+        var behaviors = Interaction.GetBehaviors(editor);
+        behaviors.Add(behavior);
+        Window window = new() { Content = editor, Width = 800, Height = 600 };
+        try
+        {
+            window.Show();
+            Dispatcher.UIThread.RunJobs();
+            var search = editor.SearchPanel.ShouldNotBeNull();
+            search.Open();
+            await WaitForAsync(() => search.GetVisualDescendants().OfType<ToggleButton>()
+                .Any(button => button.Classes.Contains("PodLogsFilterToggle")));
+            var toggle = search.GetVisualDescendants().OfType<ToggleButton>()
+                .Single(button => button.Classes.Contains("PodLogsFilterToggle"));
+            var original = editor.Document;
+            search.SearchPattern = "keep";
+            toggle.IsChecked = true;
+            await WaitForAsync(() => editor.Document.Text == "keep old\n");
+            editor.Document = null;
+            original.Text = "keep removed source";
+            editor.Document.ShouldBeNull();
+            var replacement = new AvaloniaEdit.Document.TextDocument("skip\nkeep new");
+            editor.Document = replacement;
+            await WaitForAsync(() => editor.Document.Text == "keep new");
+            original.Text = "keep stale";
+            editor.Document.Text.ShouldBe("keep new");
+            replacement.Text = string.Empty;
+            await WaitForAsync(() => editor.Document.Text == string.Empty);
+            replacement.Text = "keep resumed";
+            await WaitForAsync(() => editor.Document.Text == "keep resumed");
+            behaviors.Remove(behavior).ShouldBeTrue();
+            editor.Document.ShouldBeSameAs(replacement);
+            search.GetVisualDescendants().OfType<ToggleButton>()
+                .Any(button => button.Classes.Contains("PodLogsFilterToggle")).ShouldBeFalse();
+            var detachedDisplay = editor.Document;
+            original.Text = "keep detached";
+            search.SearchPattern = "missing";
+            editor.Document.ShouldBeSameAs(detachedDisplay);
+            editor.Document.Text.ShouldBe("keep resumed");
+        }
+        finally
+        {
+            behaviors.Remove(behavior);
+            window.Close();
+        }
+    }
+
     [AvaloniaFact]
     public async Task scope_switch_updates_pod_name_selector_and_controller_button()
     {
@@ -79,6 +174,21 @@ public sealed class PodLogsViewTests
                 .OfType<Ursa.Controls.TreeComboBox>()
                 .Single();
             StackPanel selectionControls = sourcesSelector.Parent.ShouldBeOfType<StackPanel>();
+            bool? selected = null;
+            PodLogSourceTreeNode templateNode = new(
+                PodLogSourceNodeKind.Container, "test", "app", pod, true,
+                (_, value) => selected = value);
+            var sourceCheckBox = sourcesSelector.ItemTemplate.ShouldNotBeNull()
+                .Build(templateNode).ShouldBeOfType<CheckBox>();
+            sourceCheckBox.Content.ShouldBe("app");
+            sourceCheckBox.IsChecked.ShouldBe(true);
+            sourceCheckBox.IsChecked = false;
+            templateNode.IsChecked.ShouldBe(false);
+            selected.ShouldBe(false);
+            templateNode.UpdateIsChecked(null);
+            sourceCheckBox.IsChecked.ShouldBeNull();
+            templateNode.UpdateIsChecked(true);
+            sourceCheckBox.IsChecked.ShouldBe(true);
             Grid logControlsBar = selectionControls.Parent.ShouldBeOfType<Grid>();
             Grid topBar = logControlsBar.Parent.ShouldBeOfType<Grid>();
             StackPanel actionControls = logControlsBar.Children
@@ -433,6 +543,228 @@ public sealed class PodLogsViewTests
     }
 
     [AvaloniaFact]
+    public async Task search_panel_contains_a_pod_log_filter_toggle()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync();
+        IServiceProvider services = Application.Current.GetTestServices();
+        using PodLogsViewModel viewModel = new(
+            services.GetRequiredService<ILogger<PodLogsViewModel>>(),
+            services.GetRequiredService<ISettingsService>(),
+            new NoOpPodLogExportService(),
+            new PodLogSessionResolver(),
+            new NoOpPodLogStreamClient())
+        {
+            Cluster = workspace.Runtime,
+            Object = CreatePod(),
+            ContainerName = "app",
+        };
+
+        PodLogsView view = new()
+        {
+            DataContext = viewModel,
+        };
+        Window window = new()
+        {
+            Content = view,
+        };
+
+        window.Show();
+        try
+        {
+            Dispatcher.UIThread.RunJobs();
+
+            TextEditor editor = view.GetVisualDescendants().OfType<TextEditor>().Single();
+            editor.SearchPanel.ShouldNotBeNull().Open();
+            await WaitForAsync(() => view.GetVisualDescendants().OfType<TextBox>().Any());
+
+            await WaitForAsync(
+                () => editor.SearchPanel
+                    .GetVisualDescendants()
+                    .OfType<ToggleButton>()
+                    .Any(button => button.Classes.Contains("PodLogsFilterToggle")));
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task filter_toggle_uses_search_panel_options_to_filter_displayed_lines()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync();
+        IServiceProvider services = Application.Current.GetTestServices();
+        using PodLogsViewModel viewModel = new(
+            services.GetRequiredService<ILogger<PodLogsViewModel>>(),
+            services.GetRequiredService<ISettingsService>(),
+            new NoOpPodLogExportService(),
+            new PodLogSessionResolver(),
+            new NoOpPodLogStreamClient())
+        {
+            Cluster = workspace.Runtime,
+            Object = CreatePod(),
+            ContainerName = "app",
+            Logs = new AvaloniaEdit.Document.TextDocument("keep keep first\nkeepable\nskip this\nKEEP second keep"),
+        };
+
+        PodLogsView view = new()
+        {
+            DataContext = viewModel,
+        };
+        Window window = new()
+        {
+            Content = view,
+        };
+
+        window.Show();
+        try
+        {
+            Dispatcher.UIThread.RunJobs();
+
+            TextEditor editor = view.GetVisualDescendants().OfType<TextEditor>().Single();
+            AvaloniaEdit.Search.SearchPanel searchPanel = editor.SearchPanel.ShouldNotBeNull();
+            searchPanel.Open();
+            await WaitForAsync(() => view.GetVisualDescendants().OfType<TextBox>().Any());
+            ToggleButton? filterToggle = null;
+            await WaitForAsync(() =>
+            {
+                filterToggle = view.GetVisualDescendants()
+                    .OfType<ToggleButton>()
+                    .SingleOrDefault(button => button.Classes.Contains("PodLogsFilterToggle"));
+                return filterToggle is not null;
+            });
+
+            searchPanel.SearchPattern = "keep";
+            filterToggle!.IsChecked = true;
+
+            await WaitForAsync(() => editor.Document.Text == "keep keep first\nkeepable\nKEEP second keep");
+            var expectedMatchCount = string.Format(AvaloniaEdit.SR.SearchXMatches, 5);
+            await WaitForAsync(
+                () => searchPanel.GetVisualDescendants()
+                    .OfType<TextBlock>()
+                    .Any(textBlock => textBlock.Text == expectedMatchCount));
+            editor.Document.ShouldNotBeSameAs(viewModel.Logs);
+            viewModel.Logs.Text.ShouldBe("keep keep first\nkeepable\nskip this\nKEEP second keep");
+
+            filterToggle.IsChecked = false;
+            await WaitForAsync(() => ReferenceEquals(editor.Document, viewModel.Logs));
+            var expectedSearchPosition = string.Format(AvaloniaEdit.SR.SearchXOfY, 1, 5);
+            await WaitForAsync(
+                () => searchPanel.GetVisualDescendants()
+                    .OfType<TextBlock>()
+                    .Any(textBlock => textBlock.Text == expectedSearchPosition));
+
+            filterToggle.IsChecked = true;
+            await WaitForAsync(() => editor.Document.Text == "keep keep first\nkeepable\nKEEP second keep");
+
+            searchPanel.WholeWords = true;
+            searchPanel.MatchCase = true;
+            searchPanel.SearchPattern = "KEEP";
+            await WaitForAsync(() => editor.Document.Text == "KEEP second keep");
+
+            searchPanel.UseRegex = true;
+            searchPanel.SearchPattern = "^KEEP";
+            await WaitForAsync(() => editor.Document.Text == "KEEP second keep");
+
+            searchPanel.SearchPattern = "[";
+            viewModel.Logs.Insert(0, "unrelated output\n");
+            editor.Document.Text.ShouldBe("KEEP second keep");
+            searchPanel.SearchPattern = "^KEEP";
+            await WaitForAsync(() => editor.Document.Text == "KEEP second keep");
+
+            searchPanel.MatchCase = false;
+            searchPanel.WholeWords = false;
+            searchPanel.UseRegex = false;
+            searchPanel.SearchPattern = "keep";
+            await WaitForAsync(() => editor.Document.Text == "keep keep first\nkeepable\nKEEP second keep");
+
+            viewModel.Logs.Insert(viewModel.Logs.TextLength, "\nkeep third");
+            await WaitForAsync(() => editor.Document.Text == "keep keep first\nkeepable\nKEEP second keep\nkeep third");
+
+            searchPanel.FindNext(0);
+            var displayedVersion = editor.Document.Version;
+            var selectedText = editor.SelectedText;
+            viewModel.Logs.Insert(0, "unrelated output\n");
+            editor.Document.Version.ShouldBeSameAs(displayedVersion);
+            editor.SelectedText.ShouldBe(selectedText);
+
+            searchPanel.Close();
+            await WaitForAsync(() => ReferenceEquals(editor.Document, viewModel.Logs));
+            filterToggle.IsChecked.ShouldBe(false);
+            searchPanel.Open();
+            filterToggle.IsChecked = true;
+            await WaitForAsync(() => editor.Document.Text == "keep keep first\nkeepable\nKEEP second keep\nkeep third");
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task filter_keeps_all_lines_spanned_by_a_regex_match_for_search_count()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync();
+        IServiceProvider services = Application.Current.GetTestServices();
+        using PodLogsViewModel viewModel = new(
+            services.GetRequiredService<ILogger<PodLogsViewModel>>(),
+            services.GetRequiredService<ISettingsService>(),
+            new NoOpPodLogExportService(),
+            new PodLogSessionResolver(),
+            new NoOpPodLogStreamClient())
+        {
+            Cluster = workspace.Runtime,
+            Object = CreatePod(),
+            ContainerName = "app",
+            Logs = new AvaloniaEdit.Document.TextDocument("alpha\nmiddle\nomega"),
+        };
+
+        PodLogsView view = new()
+        {
+            DataContext = viewModel,
+        };
+        Window window = new()
+        {
+            Content = view,
+        };
+
+        window.Show();
+        try
+        {
+            Dispatcher.UIThread.RunJobs();
+
+            TextEditor editor = view.GetVisualDescendants().OfType<TextEditor>().Single();
+            AvaloniaEdit.Search.SearchPanel searchPanel = editor.SearchPanel.ShouldNotBeNull();
+            searchPanel.Open();
+            await WaitForAsync(() => view.GetVisualDescendants().OfType<TextBox>().Any());
+
+            ToggleButton? filterToggle = null;
+            await WaitForAsync(() =>
+            {
+                filterToggle = view.GetVisualDescendants()
+                    .OfType<ToggleButton>()
+                    .SingleOrDefault(button => button.Classes.Contains("PodLogsFilterToggle"));
+                return filterToggle is not null;
+            });
+
+            searchPanel.UseRegex = true;
+            searchPanel.SearchPattern = "alpha[\\s\\S]*omega";
+            filterToggle!.IsChecked = true;
+
+            await WaitForAsync(() => editor.Document.Text == "alpha\nmiddle\nomega");
+            var expectedSearchCount = AvaloniaEdit.SR.Search1Match;
+            await WaitForAsync(
+                () => searchPanel.GetVisualDescendants()
+                    .OfType<TextBlock>()
+                    .Any(textBlock => textBlock.Text == expectedSearchCount));
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    [AvaloniaFact]
     public async Task view_disposes_textmate_installation_when_unloaded()
     {
         using var workspace = await Application.Current.CreateClusterAsync();
@@ -472,6 +804,22 @@ public sealed class PodLogsViewTests
                 ?? throw new InvalidOperationException("Pod log editor installation field was not found.");
 
             installationField.GetValue(behavior).ShouldNotBeNull();
+
+            var application = Application.Current.ShouldNotBeNull();
+            var originalTheme = application.RequestedThemeVariant;
+            try
+            {
+                application.RequestedThemeVariant = global::Avalonia.Styling.ThemeVariant.Light;
+                Dispatcher.UIThread.RunJobs();
+                installationField.GetValue(behavior).ShouldNotBeNull();
+                application.RequestedThemeVariant = global::Avalonia.Styling.ThemeVariant.Dark;
+                Dispatcher.UIThread.RunJobs();
+                installationField.GetValue(behavior).ShouldNotBeNull();
+            }
+            finally
+            {
+                application.RequestedThemeVariant = originalTheme;
+            }
 
             window.Content = null;
             Dispatcher.UIThread.RunJobs();

@@ -1,11 +1,15 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Data;
 using Avalonia.Styling;
 using Avalonia.Xaml.Interactivity;
+using Avalonia.VisualTree;
 using AvaloniaEdit;
+using AvaloniaEdit.Document;
 using AvaloniaEdit.Search;
 using KubeUI.Avalonia.Infrastructure.Platform;
+using System.Text;
 using TextMateSharp.Grammars;
 using static AvaloniaEdit.TextMate.TextMate;
 
@@ -53,6 +57,12 @@ public sealed class PodLogsEditorBehavior : Behavior<TextEditor>, IDeclarativeVi
     private bool _isStuckToBottom = true;
     private bool _stickToBottomQueued;
     private bool _followLogsQueued;
+    private SearchPanel? _searchPanel;
+    private TextDocument? _sourceDocument;
+    private readonly TextDocument _filteredDocument = new();
+    private ToggleButton? _filterToggle;
+    private bool _filterEnabled;
+    private IDisposable? _documentSubscription;
 
     /// <summary>Gets or sets whether new output keeps the editor at the bottom.</summary>
     public bool AutoScrollToBottom
@@ -94,13 +104,14 @@ public sealed class PodLogsEditorBehavior : Behavior<TextEditor>, IDeclarativeVi
 
         _registryOptions = new RegistryOptions(GetThemeName());
         EnsureTextMateInstallation();
-        SearchPanel.Install(AssociatedObject);
+        _filteredDocument.UndoStack.SizeLimit = 0;
 
         AssociatedObject.TextChanged += AssociatedObjectOnTextChanged;
         AssociatedObject.DataContextChanged += AssociatedObjectOnDataContextChanged;
         AssociatedObject.AttachedToVisualTree += AssociatedObjectOnAttachedToVisualTree;
         AssociatedObject.DetachedFromVisualTree += AssociatedObjectOnDetachedFromVisualTree;
         AssociatedObject.LayoutUpdated += AssociatedObjectOnLayoutUpdated;
+        _documentSubscription = AssociatedObject.GetObservable(TextEditor.DocumentProperty).Subscribe(OnEditorDocumentChanged);
 
         if (Application.Current is not null)
         {
@@ -122,6 +133,31 @@ public sealed class PodLogsEditorBehavior : Behavior<TextEditor>, IDeclarativeVi
             AssociatedObject.DetachedFromVisualTree -= AssociatedObjectOnDetachedFromVisualTree;
             AssociatedObject.LayoutUpdated -= AssociatedObjectOnLayoutUpdated;
         }
+
+        if (_filterEnabled && _sourceDocument is not null)
+        {
+            _filterEnabled = false;
+            SetDisplayedDocument(_sourceDocument);
+        }
+
+        _documentSubscription?.Dispose();
+        _documentSubscription = null;
+        DetachSourceDocument();
+        if (_searchPanel is not null)
+        {
+            _searchPanel.SearchOptionsChanged -= SearchPanelOnSearchOptionsChanged;
+            _searchPanel = null;
+        }
+        if (_filterToggle is not null)
+        {
+            _filterToggle.PropertyChanged -= FilterToggleOnPropertyChanged;
+            if (_filterToggle.Parent is Panel parent)
+            {
+                parent.Children.Remove(_filterToggle);
+            }
+        }
+        _filterToggle = null;
+        _filterEnabled = false;
 
         if (Application.Current is not null)
         {
@@ -191,11 +227,173 @@ public sealed class PodLogsEditorBehavior : Behavior<TextEditor>, IDeclarativeVi
         {
             FollowLogs();
         }
+
+        EnsureFilterToggle();
     }
 
     private void CurrentOnActualThemeVariantChanged(object? sender, EventArgs e)
     {
         ApplyTheme();
+    }
+
+    private void OnEditorDocumentChanged(TextDocument? document)
+    {
+        if (ReferenceEquals(document, _filteredDocument) || ReferenceEquals(document, _sourceDocument))
+        {
+            return;
+        }
+
+        DetachSourceDocument();
+        _sourceDocument = document;
+        if (_sourceDocument is not null)
+        {
+            _sourceDocument.TextChanged += SourceDocumentOnTextChanged;
+        }
+
+        UpdateFilteredDocument();
+    }
+
+    private void DetachSourceDocument()
+    {
+        if (_sourceDocument is not null)
+        {
+            _sourceDocument.TextChanged -= SourceDocumentOnTextChanged;
+            _sourceDocument = null;
+        }
+    }
+
+    private void SourceDocumentOnTextChanged(object? sender, EventArgs e)
+    {
+        if (_filterEnabled)
+        {
+            UpdateFilteredDocument();
+        }
+    }
+
+    private void SearchPanelOnSearchOptionsChanged(object? sender, SearchOptionsChangedEventArgs e)
+    {
+        if (_filterEnabled)
+        {
+            UpdateFilteredDocument();
+        }
+    }
+
+    private void EnsureSearchPanel()
+    {
+        if (_searchPanel is not null || AssociatedObject?.SearchPanel is null)
+        {
+            return;
+        }
+
+        _searchPanel = AssociatedObject.SearchPanel;
+        _searchPanel.SearchOptionsChanged += SearchPanelOnSearchOptionsChanged;
+    }
+
+    private void EnsureFilterToggle()
+    {
+        EnsureSearchPanel();
+        if (_searchPanel is { IsOpened: false } && _filterEnabled)
+        {
+            _filterToggle!.IsChecked = false;
+        }
+
+        if (_filterToggle is not null || _searchPanel is null || !_searchPanel.IsOpened)
+        {
+            return;
+        }
+
+        TextBox? searchTextBox = _searchPanel.GetVisualDescendants().OfType<TextBox>().FirstOrDefault();
+        if (searchTextBox?.InnerRightContent is not Panel rightContent)
+        {
+            return;
+        }
+
+        _filterToggle = new ToggleButton()
+            .Classes("PodLogsFilterToggle")
+            .Width(22)
+            .Height(22)
+            .Padding(4)
+            .Focusable(false)
+            .ToolTip_Tip(Assets.Resources.PodLogsView_Filter)
+            .Content(new FluentIcons.Avalonia.FluentIcon().Icon(FluentIcons.Common.Icon.Filter));
+        _filterToggle.PropertyChanged += FilterToggleOnPropertyChanged;
+        rightContent.Children.Add(_filterToggle);
+    }
+
+    private void FilterToggleOnPropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
+    {
+        if (e.Property == ToggleButton.IsCheckedProperty)
+        {
+            _filterEnabled = _filterToggle?.IsChecked == true;
+            UpdateFilteredDocument();
+            if (!_filterEnabled && _searchPanel is { IsOpened: true })
+            {
+                _searchPanel?.FindNext(0);
+            }
+        }
+    }
+
+    private void UpdateFilteredDocument()
+    {
+        if (AssociatedObject is null || _sourceDocument is null)
+        {
+            return;
+        }
+
+        var searchPattern = _searchPanel?.SearchPattern;
+        if (!_filterEnabled || string.IsNullOrEmpty(searchPattern))
+        {
+            SetDisplayedDocument(_sourceDocument);
+            return;
+        }
+
+        try
+        {
+            var strategy = SearchStrategyFactory.Create(
+                searchPattern,
+                ignoreCase: !_searchPanel!.MatchCase,
+                matchWholeWords: _searchPanel.WholeWords,
+                mode: _searchPanel.UseRegex ? SearchMode.RegEx : SearchMode.Normal);
+            var matchingLines = new bool[_sourceDocument.LineCount + 1];
+            foreach (ISearchResult result in strategy.FindAll(_sourceDocument, 0, _sourceDocument.TextLength))
+            {
+                var firstLineNumber = _sourceDocument.GetLineByOffset(result.Offset).LineNumber;
+                var lastMatchOffset = result.Offset + Math.Max(result.Length - 1, 0);
+                var lastLineNumber = _sourceDocument.GetLineByOffset(lastMatchOffset).LineNumber;
+                for (var lineNumber = firstLineNumber; lineNumber <= lastLineNumber; lineNumber++)
+                {
+                    matchingLines[lineNumber] = true;
+                }
+            }
+
+            var filteredText = new StringBuilder();
+            foreach (DocumentLine line in _sourceDocument.Lines)
+            {
+                if (matchingLines[line.LineNumber])
+                {
+                    filteredText.Append(_sourceDocument.GetText(line.Offset, line.TotalLength));
+                }
+            }
+
+            var text = filteredText.ToString();
+            if (_filteredDocument.Text != text)
+            {
+                _filteredDocument.Text = text;
+            }
+            SetDisplayedDocument(_filteredDocument);
+        }
+        catch (SearchPatternException)
+        {
+            // Keep the last valid view while the user edits an incomplete regex.
+        }
+    }
+
+    private void SetDisplayedDocument(TextDocument document)
+    {
+        if (AssociatedObject is not null && !ReferenceEquals(AssociatedObject.Document, document))
+        {
+            AssociatedObject.SetCurrentValue(TextEditor.DocumentProperty, document);
+        }
     }
 
     private void ApplyTheme()
@@ -307,7 +505,7 @@ public sealed class PodLogsEditorBehavior : Behavior<TextEditor>, IDeclarativeVi
 
     private void ScrollViewerOnScrollChanged(object? sender, ScrollChangedEventArgs e)
     {
-        if (sender is not ScrollViewer scrollViewer)
+        if (sender is not ScrollViewer)
         {
             return;
         }
@@ -317,7 +515,6 @@ public sealed class PodLogsEditorBehavior : Behavior<TextEditor>, IDeclarativeVi
             return;
         }
 
-        SynchronizePinnedState(scrollViewer);
         PersistScrollOffset();
     }
 

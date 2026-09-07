@@ -31,3 +31,5 @@
 - Resource Lists expose one View Logs action. When a compatible logs tool is active for the cluster, its submenu explicitly offers Open New Logs View or Add to Current Logs View; never assume the user wants selections grouped.
 - Combined exports use a multi-resource filename and manifest, and describe cross-stream output as arrival-ordered.
 - New sessions and resource-add refreshes open all selected Pod/container streams concurrently, load the last 500 lines from each, and then follow live output.
+- Ctrl+F search panel exposes a pod-log filter toggle. Filtering uses AvaloniaEdit search options and a separate bounded display document while preserving canonical logs for streaming and export; closing search clears the filter.
+- Closing search resets the filter toggle. Incomplete regexes retain the last valid filtered view; unchanged matching output must preserve the displayed document and selection.
