@@ -1,5 +1,6 @@
 using KubeUI.AI.Agents;
 using KubeUI.Avalonia.Features.AI;
+using KubeUI.Avalonia.Infrastructure.Mcp;
 using KubeUI.Avalonia.Options;
 using KubeUI.Avalonia.Services.Settings;
 using System.Threading.Channels;
@@ -219,6 +220,26 @@ public sealed class AgentChatViewModelTests
 
         vm.IsBusy.ShouldBeFalse();
         vm.Messages.Select(message => message.Text).ShouldBe(["Connect", "Authentication required."]);
+        await vm.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task send_passes_the_bound_mcp_endpoint_to_the_agent_session()
+    {
+        await using var session = new TestSession("session-bound-endpoint", []);
+        var agent = new TestAgent(session);
+        var settings = new Settings { McpServerEnabled = true, McpServerPort = 62888 };
+        var settingsService = new Mock<ISettingsService>();
+        settingsService.SetupGet(service => service.Settings).Returns(settings);
+        var mcpServerState = new McpServerState { BoundPort = 54321 };
+        var vm = new AgentChatViewModel(
+            new TestRegistry(agent),
+            settingsService.Object,
+            mcpServerState: mcpServerState) { Prompt = "List pods" };
+
+        await vm.SendCommand.ExecuteAsync(null);
+
+        agent.Options!.McpEndpoint.ShouldBe("http://127.0.0.1:54321/mcp");
         await vm.DisposeAsync();
     }
 
