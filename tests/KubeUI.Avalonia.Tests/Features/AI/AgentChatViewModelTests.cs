@@ -16,7 +16,7 @@ public sealed class AgentChatViewModelTests
     {
         await using var session = new TestSession("session-1", [new AgentMessageEvent(new AgentMessage("assistant", "Pod is healthy."))]);
         var agent = new TestAgent(session);
-        var vm = new AgentChatViewModel(new TestRegistry(agent)) { Prompt = " Diagnose pod " };
+        var vm = CreateViewModel(new TestRegistry(agent), prompt: " Diagnose pod ");
 
         await vm.SendCommand.ExecuteAsync(null);
 
@@ -29,7 +29,7 @@ public sealed class AgentChatViewModelTests
     public async Task send_adds_kubeui_operating_guidance_to_agent_prompt()
     {
         await using var session = new TestSession("session-guidance", []);
-        var vm = new AgentChatViewModel(new TestRegistry(new TestAgent(session))) { Prompt = "List pods" };
+        var vm = CreateViewModel(new TestRegistry(new TestAgent(session)), prompt: "List pods");
 
         await vm.SendCommand.ExecuteAsync(null);
 
@@ -50,7 +50,7 @@ public sealed class AgentChatViewModelTests
             new AgentMessageEvent(new AgentMessage("assistant", "checking the cluster.")),
             new AgentTurnCompletedEvent()
         ]);
-        var vm = new AgentChatViewModel(new TestRegistry(new TestAgent(session))) { Prompt = "Inspect" };
+        var vm = CreateViewModel(new TestRegistry(new TestAgent(session)), prompt: "Inspect");
 
         await vm.SendCommand.ExecuteAsync(null);
 
@@ -62,7 +62,7 @@ public sealed class AgentChatViewModelTests
     public async Task send_displays_streamed_message_before_agent_turn_completes()
     {
         await using var session = new StreamingTestSession();
-        var vm = new AgentChatViewModel(new TestRegistry(new StreamingTestAgent(session))) { Prompt = "Inspect" };
+        var vm = CreateViewModel(new TestRegistry(new StreamingTestAgent(session)), prompt: "Inspect");
         var sendTask = vm.SendCommand.ExecuteAsync(null);
 
         await session.FirstChunkSent.Task;
@@ -87,7 +87,7 @@ public sealed class AgentChatViewModelTests
             new AgentStatusEvent("Inspecting cluster"),
             new AgentTurnCompletedEvent()
         ]);
-        var vm = new AgentChatViewModel(new TestRegistry(new TestAgent(session))) { Prompt = "Inspect" };
+        var vm = CreateViewModel(new TestRegistry(new TestAgent(session)), prompt: "Inspect");
 
         await vm.SendCommand.ExecuteAsync(null);
 
@@ -106,7 +106,7 @@ public sealed class AgentChatViewModelTests
     {
         await using var session = new TestSession("unused", []);
         var agent = new TestAgent(session);
-        var vm = new AgentChatViewModel(new TestRegistry(agent)) { Prompt = "  " };
+        var vm = CreateViewModel(new TestRegistry(agent), prompt: "  ");
 
         await vm.SendCommand.ExecuteAsync(null);
 
@@ -122,7 +122,7 @@ public sealed class AgentChatViewModelTests
             new AgentMessageEvent(new AgentMessage("assistant", "Done.")),
             new AgentTurnCompletedEvent()
         ], keepOpenAfterCompletion: true);
-        var vm = new AgentChatViewModel(new TestRegistry(new TestAgent(session))) { Prompt = "Check pod" };
+        var vm = CreateViewModel(new TestRegistry(new TestAgent(session)), prompt: "Check pod");
 
         await vm.SendCommand.ExecuteAsync(null);
 
@@ -142,7 +142,7 @@ public sealed class AgentChatViewModelTests
             Namespace = "default",
             SelectedResources = [new KubernetesResourceReference("v1", "Pod", "api", "default")]
         };
-        var vm = new AgentChatViewModel(new TestRegistry(agent)) { Prompt = "Diagnose", Context = context };
+        var vm = CreateViewModel(new TestRegistry(agent), prompt: "Diagnose", context: context);
 
         await vm.SendCommand.ExecuteAsync(null);
 
@@ -164,7 +164,7 @@ public sealed class AgentChatViewModelTests
                 new KubernetesResourceReference("v1", "Pod", "worker", "default")
             ]
         };
-        var vm = new AgentChatViewModel(new TestRegistry(agent)) { Prompt = "Inspect", Context = context };
+        var vm = CreateViewModel(new TestRegistry(agent), prompt: "Inspect", context: context);
 
         await vm.SendCommand.ExecuteAsync(null);
 
@@ -182,7 +182,7 @@ public sealed class AgentChatViewModelTests
         var settings = new Settings { SelectedAgentId = "second" };
         var settingsService = new Mock<ISettingsService>();
         settingsService.SetupGet(service => service.Settings).Returns(settings);
-        var vm = new AgentChatViewModel(new TestRegistry(first, second), settingsService.Object);
+        var vm = CreateViewModel(new TestRegistry(first, second), settingsService.Object);
 
         vm.SelectedAgent.ShouldBeSameAs(second);
         settings.SelectedAgentId = "first";
@@ -195,7 +195,7 @@ public sealed class AgentChatViewModelTests
     public async Task cancel_command_cancels_the_active_agent_turn()
     {
         await using var session = new BlockingTestSession();
-        var vm = new AgentChatViewModel(new TestRegistry(new BlockingTestAgent(session))) { Prompt = "Stop" };
+        var vm = CreateViewModel(new TestRegistry(new BlockingTestAgent(session)), prompt: "Stop");
         var sendTask = vm.SendCommand.ExecuteAsync(null);
         await session.Started.Task;
 
@@ -211,10 +211,9 @@ public sealed class AgentChatViewModelTests
     [Fact]
     public async Task send_surfaces_agent_startup_errors_and_clears_busy_state()
     {
-        var vm = new AgentChatViewModel(new TestRegistry(new FailingAgent("Authentication required.")))
-        {
-            Prompt = "Connect"
-        };
+        var vm = CreateViewModel(
+            new TestRegistry(new FailingAgent("Authentication required.")),
+            prompt: "Connect");
 
         await vm.SendCommand.ExecuteAsync(null);
 
@@ -224,7 +223,7 @@ public sealed class AgentChatViewModelTests
     }
 
     [Fact]
-    public async Task send_passes_the_bound_mcp_endpoint_to_the_agent_session()
+    public async Task send_passes_the_configured_mcp_endpoint_to_the_agent_session()
     {
         await using var session = new TestSession("session-bound-endpoint", []);
         var agent = new TestAgent(session);
@@ -233,14 +232,16 @@ public sealed class AgentChatViewModelTests
         settingsService.SetupGet(service => service.Settings).Returns(settings);
         var mcpServerState = new McpServerState();
         mcpServerState.SetBoundPort(54321);
-        var vm = new AgentChatViewModel(
+        var vm = CreateViewModel(
             new TestRegistry(agent),
             settingsService.Object,
-            mcpServerState: mcpServerState) { Prompt = "List pods" };
+            new AgentContextService(),
+            mcpServerState,
+            prompt: "List pods");
 
         await vm.SendCommand.ExecuteAsync(null);
 
-        agent.Options!.McpEndpoint.ShouldBe("http://127.0.0.1:54321/mcp");
+        agent.Options!.McpEndpoint.ShouldBe("http://127.0.0.1:62888/mcp");
         await vm.DisposeAsync();
     }
 
@@ -252,12 +253,38 @@ public sealed class AgentChatViewModelTests
         var settings = new Settings { McpServerEnabled = false, McpServerPort = 62888 };
         var settingsService = new Mock<ISettingsService>();
         settingsService.SetupGet(service => service.Settings).Returns(settings);
-        var vm = new AgentChatViewModel(new TestRegistry(agent), settingsService.Object) { Prompt = "List pods" };
+        var vm = CreateViewModel(new TestRegistry(agent), settingsService.Object, prompt: "List pods");
 
         await vm.SendCommand.ExecuteAsync(null);
 
         agent.Options!.McpEndpoint.ShouldBeNull();
         await vm.DisposeAsync();
+    }
+
+    private static AgentChatViewModel CreateViewModel(
+        IAgentRegistry registry,
+        ISettingsService? settingsService = null,
+        IAgentContextService? contextService = null,
+        IMcpServerState? mcpServerState = null,
+        string? prompt = null,
+        AgentContext? context = null)
+    {
+        settingsService ??= CreateSettingsService(new Settings());
+        var viewModel = new AgentChatViewModel(
+            registry,
+            settingsService,
+            contextService ?? new AgentContextService(),
+            mcpServerState ?? new McpServerState());
+        viewModel.Prompt = prompt ?? string.Empty;
+        viewModel.Context = context;
+        return viewModel;
+    }
+
+    private static ISettingsService CreateSettingsService(Settings settings)
+    {
+        var settingsService = new Mock<ISettingsService>();
+        settingsService.SetupGet(service => service.Settings).Returns(settings);
+        return settingsService.Object;
     }
 
     private sealed class TestRegistry(params IAgent[] agents) : IAgentRegistry

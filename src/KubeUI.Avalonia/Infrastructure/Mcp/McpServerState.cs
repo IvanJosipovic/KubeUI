@@ -6,7 +6,7 @@ namespace KubeUI.Avalonia.Infrastructure.Mcp;
 public interface IMcpServerState
 {
     /// <summary>
-    /// Gets the port the embedded MCP server actually bound to, or null when no port was recorded and consumers should assume the configured port.
+    /// Gets the port the embedded MCP server actually bound to, or null when the server did not bind.
     /// </summary>
     int? BoundPort { get; }
 }

@@ -143,16 +143,13 @@ public sealed class McpToolsTests
     }
 
     [Fact]
-    public void endpoint_tool_prefers_the_bound_port_when_available()
+    public void endpoint_tool_uses_the_configured_port()
     {
-        var state = new McpServerState();
-        state.SetBoundPort(54321);
         var tools = CreateTools(
             new Mock<IMcpClusterSession>(MockBehavior.Strict),
-            settings: new Settings { McpServerEnabled = true, McpServerPort = 62888 },
-            mcpServerState: state);
+            settings: new Settings { McpServerEnabled = true, McpServerPort = 62888 });
 
-        tools.GetEndpoint().ShouldBe("http://127.0.0.1:54321/mcp");
+        tools.GetEndpoint().ShouldBe("http://127.0.0.1:62888/mcp");
     }
 
     [Fact]
@@ -179,7 +176,6 @@ public sealed class McpToolsTests
         Mock<IMcpClusterSession> session,
         IAgentPermissionService? permissionService = null,
         IResourceNavigationService? resourceNavigationService = null,
-        IMcpServerState? mcpServerState = null,
         Settings? settings = null)
     {
         var settingsService = new Mock<ISettingsService>();
@@ -190,7 +186,6 @@ public sealed class McpToolsTests
             new Mock<IKubernetesYamlSerializer>().Object,
             settingsService.Object,
             permissionService,
-            resourceNavigationService,
-            mcpServerState);
+            resourceNavigationService);
     }
 }

@@ -20,14 +20,15 @@ public sealed partial class AgentChatViewModel : ViewModelBase, IAsyncDisposable
         Ask for approval before using external tools, skills, or any operation that can change resources.
         Do not use another MCP server unless the user has explicitly approved that server in this chat.
         Never invent cluster state or claim an operation succeeded without tool confirmation.
-        If KubeUI MCP is unavailable, say so clearly and explain what access is missing and how to enable it.
+        If KubeUI MCP is unavailable, try communicating with it using standard http requests.
+        Finally, If KubeUI MCP is unavailable, say so clearly and explain what access is missing and how to enable it.
         Keep responses concise and focused on the user's request.
         """;
 
     private readonly IAgentRegistry _registry;
-    private readonly ISettingsService? _settingsService;
-    private readonly IAgentContextService? _contextService;
-    private readonly IMcpServerState? _mcpServerState;
+    private readonly ISettingsService _settingsService;
+    private readonly IAgentContextService _contextService;
+    private readonly IMcpServerState _mcpServerState;
     private IAgentSession? _session;
     private CancellationTokenSource? _turnCancellation;
 
@@ -49,22 +50,18 @@ public sealed partial class AgentChatViewModel : ViewModelBase, IAsyncDisposable
 
     public AgentChatViewModel(
         IAgentRegistry registry,
-        ISettingsService? settingsService = null,
-        IAgentContextService? contextService = null,
-        IMcpServerState? mcpServerState = null)
+        ISettingsService settingsService,
+        IAgentContextService contextService,
+        IMcpServerState mcpServerState)
     {
         _registry = registry;
         _settingsService = settingsService;
         _contextService = contextService;
         _mcpServerState = mcpServerState;
         Messages.CollectionChanged += MessagesOnCollectionChanged;
-        if (_settingsService is not null)
-            _settingsService.Settings.PropertyChanged += SettingsOnPropertyChanged;
-        if (_contextService is not null)
-        {
-            Context = _contextService.Context;
-            _contextService.ContextChanged += ContextServiceOnContextChanged;
-        }
+        _settingsService.Settings.PropertyChanged += SettingsOnPropertyChanged;
+        Context = _contextService.Context;
+        _contextService.ContextChanged += ContextServiceOnContextChanged;
         SelectedAgent = ResolveConfiguredAgent();
         Id = nameof(AgentChatViewModel);
         Title = Assets.Resources.AgentChatView_Title;
@@ -85,8 +82,9 @@ public sealed partial class AgentChatViewModel : ViewModelBase, IAsyncDisposable
         {
             await DisposeSessionAsync();
             _turnCancellation = new CancellationTokenSource();
-            var mcpEndpoint = _settingsService is not null && _settingsService.Settings.McpServerEnabled
-                ? McpServerConfiguration.GetEndpoint(_settingsService.Settings, _mcpServerState?.BoundPort)
+            var mcpEndpoint = _settingsService.Settings.McpServerEnabled
+                && _mcpServerState.BoundPort is not null
+                ? McpServerConfiguration.GetEndpoint(_settingsService.Settings)
                 : null;
             _session = await SelectedAgent.CreateSessionAsync(new AgentSessionOptions
             {
@@ -163,16 +161,14 @@ public sealed partial class AgentChatViewModel : ViewModelBase, IAsyncDisposable
     public async ValueTask DisposeAsync()
     {
         Messages.CollectionChanged -= MessagesOnCollectionChanged;
-        if (_settingsService is not null)
-            _settingsService.Settings.PropertyChanged -= SettingsOnPropertyChanged;
-        if (_contextService is not null)
-            _contextService.ContextChanged -= ContextServiceOnContextChanged;
+        _settingsService.Settings.PropertyChanged -= SettingsOnPropertyChanged;
+        _contextService.ContextChanged -= ContextServiceOnContextChanged;
         await DisposeSessionAsync();
     }
 
     private void ContextServiceOnContextChanged(object? sender, EventArgs e)
     {
-        Context = _contextService?.Context;
+        Context = _contextService.Context;
     }
 
     private void SettingsOnPropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -184,7 +180,7 @@ public sealed partial class AgentChatViewModel : ViewModelBase, IAsyncDisposable
     private IAgent? ResolveConfiguredAgent()
         => Agents.FirstOrDefault(agent => string.Equals(
             agent.Id,
-            _settingsService?.Settings.SelectedAgentId,
+            _settingsService.Settings.SelectedAgentId,
             StringComparison.Ordinal)) ?? Agents.FirstOrDefault();
 
     private async Task DisposeSessionAsync()

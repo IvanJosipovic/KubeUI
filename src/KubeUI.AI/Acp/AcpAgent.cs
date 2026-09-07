@@ -88,7 +88,7 @@ public sealed class AcpAgent : IAgent
                     Cwd = options.WorkingDirectory ?? Environment.CurrentDirectory,
                     McpServers = string.IsNullOrWhiteSpace(options.McpEndpoint)
                         ? []
-                        : [AcpMcpServerFactory.Create(this, options.McpEndpoint)]
+                        : [new McpServerHttp { Name = "kubeui", Url = options.McpEndpoint, Headers = [] }]
                 }, cancellationToken).ConfigureAwait(false);
                 sessionActivity?.SetTag("agent.session.id", session.SessionId.ToString());
             }
