@@ -1,5 +1,4 @@
 using BenchmarkDotNet.Attributes;
-using System.Globalization;
 using KubeUI.Avalonia.Infrastructure.DataGrid;
 
 namespace KubeUI.Benchmarks;
@@ -9,7 +8,7 @@ namespace KubeUI.Benchmarks;
 [BenchmarkCategory("DataGrid", "Selection")]
 public class IdentityPreservingSelectionModelBenchmarks : IDisposable
 {
-    private IdentityPreservingSelectionModel<BenchmarkItem> _model = null!;
+    private IdentityPreservingSelectionModel<BenchmarkItem, string> _model = null!;
     private List<BenchmarkItem> _source = null!;
     private BenchmarkItem[] _orderA = null!;
     private BenchmarkItem[] _orderB = null!;
@@ -20,9 +19,6 @@ public class IdentityPreservingSelectionModelBenchmarks : IDisposable
 
     [Params(1, 10, 100)]
     public int SelectedCount { get; set; }
-
-    [Params("UID", "NameNamespace")]
-    public string IdentityMode { get; set; } = null!;
 
     [GlobalSetup]
     public void Setup()
@@ -39,10 +35,7 @@ public class IdentityPreservingSelectionModelBenchmarks : IDisposable
         Array.Copy(items, selectionCount, _orderB, 0, ItemCount - selectionCount);
         Array.Copy(items, 0, _orderB, ItemCount - selectionCount, selectionCount);
         _source = new List<BenchmarkItem>(items);
-        var useUid = string.Equals(IdentityMode, "UID", StringComparison.Ordinal);
-        _model = new IdentityPreservingSelectionModel<BenchmarkItem>(item => useUid
-            ? item.Uid
-            : string.Create(CultureInfo.InvariantCulture, $"{item.Id}"))
+        _model = new IdentityPreservingSelectionModel<BenchmarkItem, string>(static item => item.Id)
         {
             Source = _source
         };
@@ -79,10 +72,8 @@ public class IdentityPreservingSelectionModelBenchmarks : IDisposable
         public BenchmarkItem(string id)
         {
             Id = id;
-            Uid = $"uid-{id}";
         }
 
         public string Id { get; }
-        public string Uid { get; }
     }
 }

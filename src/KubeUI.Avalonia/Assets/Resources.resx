@@ -409,6 +409,10 @@
     <value>Items: {0}</value>
     <comment/>
   </data>
+  <data name="VisualizationView_ErrorHeader" xml:space="preserve">
+    <value>Visualization error</value>
+    <comment/>
+  </data>
   <data name="VisualizationView_HideNoiseTooltip" xml:space="preserve">
     <value>Hide noisy resources like inactive Replica Sets</value>
     <comment/>

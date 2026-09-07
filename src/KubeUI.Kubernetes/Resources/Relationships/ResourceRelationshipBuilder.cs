@@ -85,6 +85,9 @@ public sealed class ResourceRelationshipContext
         return resources.Count > 0;
     }
 
+    internal bool TryGetByExactGroupAndKind(string apiGroup, string kind, out IReadOnlyList<IKubernetesObject<V1ObjectMeta>> resources)
+        => _resourcesByGroupAndKind.TryGetValue((apiGroup, kind), out resources!);
+
     public bool TryGetByName(string apiGroup, string kind, string? namespaceName, string? name, out IKubernetesObject<V1ObjectMeta>? resource)
     {
         resource = null;
@@ -92,6 +95,51 @@ public sealed class ResourceRelationshipContext
             && (resource = resources.FirstOrDefault(candidate =>
                 string.Equals(candidate.Namespace(), namespaceName, StringComparison.Ordinal)
                 && string.Equals(candidate.Name(), name, StringComparison.Ordinal))) != null;
+    }
+
+    /// <summary>
+    /// Finds a resource only when exactly one resource matches the kind, namespace, and name.
+    /// </summary>
+    /// <param name="kind">The resource kind to match.</param>
+    /// <param name="namespaceName">The namespace to match, or <see langword="null"/> for cluster-scoped resources.</param>
+    /// <param name="name">The resource name to match.</param>
+    /// <param name="resource">The unique matching resource, when found.</param>
+    /// <returns><see langword="true"/> only for exactly one non-blank named match; otherwise, <see langword="false"/>.</returns>
+    public bool TryGetUniqueByName(string kind, string? namespaceName, string? name, out IKubernetesObject<V1ObjectMeta>? resource)
+    {
+        resource = null;
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            return false;
+        }
+
+        IKubernetesObject<V1ObjectMeta>? match = null;
+        foreach (var entry in _resourcesByGroupAndKind)
+        {
+            if (!string.Equals(entry.Key.Kind, kind, StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            foreach (var candidate in entry.Value)
+            {
+                if (!string.Equals(candidate.Namespace(), namespaceName, StringComparison.Ordinal)
+                    || !string.Equals(candidate.Name(), name, StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                if (match != null)
+                {
+                    return false;
+                }
+
+                match = candidate;
+            }
+        }
+
+        resource = match;
+        return match != null;
     }
 
     public IEnumerable<IKubernetesObject<V1ObjectMeta>> SelectByLabelSelector(
@@ -193,6 +241,7 @@ public sealed class ResourceRelationshipBuilder : IResourceRelationshipBuilder
         [
             new Providers.OwnerReferenceRelationshipProvider(),
             new Providers.CrossplaneUsageRelationshipProvider(),
+            new Providers.ProviderConfigUsageRelationshipProvider(),
             new Providers.GatewayApiRelationshipProvider(),
             new Providers.IngressRelationshipProvider(),
             new Providers.EndpointSliceRelationshipProvider(),
@@ -318,6 +367,11 @@ public sealed class ResourceRelationshipBuilder : IResourceRelationshipBuilder
                 foreach (var relationship in outgoingRelationships)
                 {
                     var target = relationship.Target;
+                    if (relationship.Kind is ResourceRelationshipKind.Owner or ResourceRelationshipKind.GitOps)
+                    {
+                        continue;
+                    }
+
                     if (CanTraverse(relationship, source, target) && included.Add(target))
                     {
                         changed = true;

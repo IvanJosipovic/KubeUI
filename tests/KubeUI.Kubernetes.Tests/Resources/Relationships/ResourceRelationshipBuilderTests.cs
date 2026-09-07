@@ -164,6 +164,9 @@ public sealed class ResourceRelationshipBuilderTests
             new GroupApiVersionKind("protection.crossplane.io", "v1beta1", "Usage", "usages"),
             allowServedVersionFallback: true));
         graph.RequiredSeedPrerequisites.ShouldContain(new ResourceSeedPrerequisite(
+            new GroupApiVersionKind(string.Empty, string.Empty, "ProviderConfigUsage", "providerconfigusages"),
+            matchAnyApiGroup: true));
+        graph.RequiredSeedPrerequisites.ShouldContain(new ResourceSeedPrerequisite(
             new GroupApiVersionKind("argoproj.io", "v1alpha1", "Application", "applications"),
             allowServedVersionFallback: true));
         graph.RequiredSeedPrerequisites.ShouldContain(new ResourceSeedPrerequisite(
@@ -632,6 +635,212 @@ public sealed class ResourceRelationshipBuilderTests
         graph.Relationships.ShouldBeEmpty();
     }
 
+    [Fact]
+    public void Relates_namespaced_resource_to_namespaced_provider_config_from_provider_config_usage_labels()
+    {
+        var resource = CreateResource("compute.example.io/v1beta1", "Job", "platform", "job");
+        var providerConfig = CreateResource("databricks.example.io/v1beta1", "ProviderConfig", "platform", "ijtest5");
+        var usage = CreateProviderConfigUsage(
+            "databricks.example.io/v1beta1",
+            "platform",
+            "ijtest5",
+            "ProviderConfig",
+            resource.ApiVersion!,
+            resource.Kind!,
+            resource.Name()!);
+
+        var graph = new ResourceRelationshipBuilder().Build(
+            [resource, providerConfig, usage],
+            new HashSet<string> { "platform" },
+            hideNoise: true);
+
+        graph.Relationships.ShouldContain(new ResourceRelationship(
+            new(resource.ApiVersion!, resource.Kind!, resource.Namespace(), resource.Name()!, resource.Uid()),
+            new(providerConfig.ApiVersion!, providerConfig.Kind!, providerConfig.Namespace(), providerConfig.Name()!, providerConfig.Uid()),
+            ResourceRelationshipKind.Reference,
+            "uses"));
+        graph.Relationships.ShouldNotContain(relationship => relationship.Source.Kind == "ProviderConfigUsage");
+    }
+
+    [Fact]
+    public void Relates_namespaced_resource_to_cluster_provider_config_from_provider_config_usage_labels()
+    {
+        var resource = CreateResource("compute.example.io/v1beta1", "Job", "platform", "job");
+        var providerConfig = CreateResource("databricks.example.io/v1beta1", "ClusterProviderConfig", null, "daplatform");
+        var providerConfigFromOtherGroup = CreateResource("other.example.io/v1beta1", "ClusterProviderConfig", null, "daplatform");
+        var usage = CreateProviderConfigUsage(
+            "databricks.example.io/v1beta1",
+            "platform",
+            "daplatform",
+            "ClusterProviderConfig",
+            resource.ApiVersion!,
+            resource.Kind!,
+            resource.Name()!);
+
+        var graph = new ResourceRelationshipBuilder().Build(
+            [resource, providerConfig, providerConfigFromOtherGroup, usage],
+            new HashSet<string> { "platform" },
+            hideNoise: true);
+
+        graph.Relationships.ShouldContain(new ResourceRelationship(
+            new(resource.ApiVersion!, resource.Kind!, resource.Namespace(), resource.Name()!, resource.Uid()),
+            new(providerConfig.ApiVersion!, providerConfig.Kind!, providerConfig.Namespace(), providerConfig.Name()!, providerConfig.Uid()),
+            ResourceRelationshipKind.Reference,
+            "uses"));
+        graph.Relationships.ShouldNotContain(relationship =>
+            relationship.Target.ApiVersion == providerConfigFromOtherGroup.ApiVersion);
+    }
+
+    [Fact]
+    public void Relates_provider_config_usage_with_spec_reference_and_owner_reference_to_cluster_provider_config()
+    {
+        var resource = CreateResource(
+            "unity.databricks.m.crossplane.io/v1beta1",
+            "Grant",
+            "platform-dev-ijosipov-data-product",
+            "dest-catalog-platform-developer-abcd6c");
+        resource.Metadata!.Uid = "f1fedee6-6fde-4c9c-bf8a-84afbff07908";
+        var providerConfig = CreateResource(
+            "databricks.m.crossplane.io/v1beta1",
+            "ClusterProviderConfig",
+            null,
+            "daplatform");
+        var usage = KubernetesJson.Deserialize<GenericKubernetesObject>("""
+            {
+              "apiVersion": "databricks.m.crossplane.io/v1beta1",
+              "kind": "ProviderConfigUsage",
+              "metadata": {
+                "name": "f1fedee6-6fde-4c9c-bf8a-84afbff07908",
+                "namespace": "platform-dev-ijosipov-data-product",
+                "uid": "0c36159d-3013-477a-adff-b5c89ea804e1",
+                "labels": {
+                  "crossplane.io/provider-config": "daplatform",
+                  "crossplane.io/provider-config-kind": "ClusterProviderConfig"
+                },
+                "ownerReferences": [
+                  {
+                    "apiVersion": "unity.databricks.m.crossplane.io/v1beta1",
+                    "kind": "Grant",
+                    "name": "dest-catalog-platform-developer-abcd6c",
+                    "uid": "f1fedee6-6fde-4c9c-bf8a-84afbff07908"
+                  }
+                ]
+              },
+              "providerConfigRef": {
+                "kind": "ClusterProviderConfig",
+                "name": "daplatform"
+              },
+              "resourceRef": {
+                "apiVersion": "unity.databricks.m.crossplane.io/v1beta1",
+                "kind": "Grant",
+                "name": "dest-catalog-platform-developer-abcd6c"
+              }
+            }
+            """);
+
+        var graph = new ResourceRelationshipBuilder().Build(
+            [resource, providerConfig, usage],
+            new HashSet<string> { resource.Namespace()! },
+            hideNoise: true);
+
+        graph.Relationships.ShouldContain(new ResourceRelationship(
+            new(resource.ApiVersion!, resource.Kind!, resource.Namespace(), resource.Name(), resource.Uid()),
+            new(providerConfig.ApiVersion!, providerConfig.Kind!, providerConfig.Namespace(), providerConfig.Name(), providerConfig.Uid()),
+            ResourceRelationshipKind.Reference,
+            "uses"));
+    }
+
+    [Fact]
+    public void Relates_azuread_group_to_cluster_provider_config_from_selected_namespace()
+    {
+        var resource = CreateResource(
+            "groups.azuread.m.upbound.io/v1beta1",
+            "Group",
+            "platform-dev-ijosipov-data-product",
+            "nonprod-admins-abcd6c");
+        var providerConfig = CreateResource(
+            "azuread.m.upbound.io/v1beta1",
+            "ClusterProviderConfig",
+            null,
+            "azure-ad");
+        var usage = CreateProviderConfigUsage(
+            "azuread.m.upbound.io/v1beta1",
+            resource.Namespace(),
+            providerConfig.Name()!,
+            providerConfig.Kind,
+            resource.ApiVersion!,
+            resource.Kind!,
+            resource.Name()!);
+
+        var graph = new ResourceRelationshipBuilder().Build(
+            [resource, providerConfig, usage],
+            new HashSet<string> { resource.Namespace()! },
+            hideNoise: true);
+
+        graph.Relationships.ShouldContain(new ResourceRelationship(
+            new(resource.ApiVersion!, resource.Kind!, resource.Namespace(), resource.Name()!, resource.Uid()),
+            new(providerConfig.ApiVersion!, providerConfig.Kind!, providerConfig.Namespace(), providerConfig.Name()!, providerConfig.Uid()),
+            ResourceRelationshipKind.Reference,
+            "uses"));
+        graph.Resources.ShouldContain(providerConfig);
+    }
+
+    [Fact]
+    public void Records_missing_cluster_provider_config_as_pending_reference()
+    {
+        var resource = CreateResource(
+            "groups.azuread.m.upbound.io/v1beta1",
+            "Group",
+            "platform-dev-ijosipov-data-product",
+            "nonprod-admins-abcd6c");
+        var usage = CreateProviderConfigUsage(
+            "azuread.m.upbound.io/v1beta1",
+            resource.Namespace(),
+            "azure-ad",
+            "ClusterProviderConfig",
+            resource.ApiVersion!,
+            resource.Kind!,
+            resource.Name()!);
+
+        var graph = new ResourceRelationshipBuilder().Build(
+            [resource, usage],
+            new HashSet<string> { resource.Namespace()! },
+            hideNoise: true);
+
+        graph.PendingReferences.ShouldContain(new UnresolvedResourceReference(
+            "azuread.m.upbound.io",
+            null,
+            "ClusterProviderConfig",
+            null,
+            "azure-ad"));
+    }
+
+    [Fact]
+    public void Relates_cluster_resource_to_cluster_provider_config_when_kind_label_is_missing()
+    {
+        var resource = CreateResource("compute.example.io/v1beta1", "ClusterJob", null, "job");
+        var providerConfig = CreateResource("databricks.example.io/v1beta1", "ClusterProviderConfig", null, "default");
+        var usage = CreateProviderConfigUsage(
+            "databricks.example.io/v1beta1",
+            null,
+            "default",
+            null,
+            resource.ApiVersion!,
+            resource.Kind!,
+            resource.Name()!);
+
+        var graph = new ResourceRelationshipBuilder().Build(
+            [resource, providerConfig, usage],
+            new HashSet<string>(),
+            hideNoise: true);
+
+        graph.Relationships.ShouldContain(new ResourceRelationship(
+            new(resource.ApiVersion!, resource.Kind!, resource.Namespace(), resource.Name()!, resource.Uid()),
+            new(providerConfig.ApiVersion!, providerConfig.Kind!, providerConfig.Namespace(), providerConfig.Name()!, providerConfig.Uid()),
+            ResourceRelationshipKind.Reference,
+            "uses"));
+    }
+
     private static TestDynamicUsageReference CreateReference(string kind, string name)
         => new()
         {
@@ -639,6 +848,29 @@ public sealed class ResourceRelationshipBuilderTests
             Kind = kind,
             ResourceRef = new() { Name = name },
         };
+
+    private static GenericKubernetesObject CreateProviderConfigUsage(
+        string apiVersion,
+        string? namespaceName,
+        string providerConfigName,
+        string? providerConfigKind,
+        string resourceApiVersion,
+        string resourceKind,
+        string resourceName)
+    {
+        var namespaceJson = namespaceName == null ? string.Empty : $", \"namespace\": \"{namespaceName}\"";
+        var kindLabelJson = providerConfigKind == null
+            ? string.Empty
+            : $", \"crossplane.io/provider-config-kind\": \"{providerConfigKind}\"";
+        return KubernetesJson.Deserialize<GenericKubernetesObject>($$"""
+            {
+              "apiVersion": "{{apiVersion}}",
+              "kind": "ProviderConfigUsage",
+              "metadata": { "name": "usage"{{namespaceJson}}, "labels": { "crossplane.io/provider-config": "{{providerConfigName}}"{{kindLabelJson}} } },
+              "resourceRef": { "apiVersion": "{{resourceApiVersion}}", "kind": "{{resourceKind}}", "name": "{{resourceName}}" }
+            }
+            """);
+    }
 
     [Fact]
     public void Relates_persistent_volumes_and_claims_to_their_storage_class()
@@ -944,20 +1176,44 @@ public sealed class ResourceRelationshipBuilderTests
         graph.Resources.Select(resource => resource.Name()).ShouldBe(
         [
             "provider-aws",
-            "provider-aws-abc123",
             "function-go-templating",
-            "function-go-templating-abc123",
             "provider-usage",
             "function-usage",
         ]);
-        graph.Relationships.ShouldContain(new ResourceRelationship(
-            new(provider.ApiVersion!, provider.Kind!, null, provider.Name()!, provider.Uid()),
-            new(providerRevision.ApiVersion!, providerRevision.Kind!, null, providerRevision.Name()!, providerRevision.Uid()),
-            ResourceRelationshipKind.Owner));
-        graph.Relationships.ShouldContain(new ResourceRelationship(
-            new(function.ApiVersion!, function.Kind!, null, function.Name()!, function.Uid()),
-            new(functionRevision.ApiVersion!, functionRevision.Kind!, null, functionRevision.Name()!, functionRevision.Uid()),
-            ResourceRelationshipKind.Owner));
+    }
+
+    [Fact]
+    public void Does_not_descend_from_flux_kustomization_when_projecting_a_namespace()
+    {
+        V1Pod selected = new()
+        {
+            ApiVersion = "v1",
+            Kind = V1Pod.KubeKind,
+            Metadata = new() { Name = "gateway", NamespaceProperty = "envoy-gateway-system", Uid = "gateway-uid" },
+        };
+        TestDynamicResource kustomization = new()
+        {
+            ApiVersion = "kustomize.toolkit.fluxcd.io/v1",
+            Kind = "Kustomization",
+            Metadata = new() { Name = "envoy-gateway", NamespaceProperty = "envoy-gateway-system", Uid = "kustomization-uid" },
+        };
+        V1Pod unrelatedChild = new()
+        {
+            ApiVersion = "v1",
+            Kind = V1Pod.KubeKind,
+            Metadata = new()
+            {
+                Name = "unrelated-child",
+                NamespaceProperty = "other-namespace",
+            },
+        };
+
+        var graph = new ResourceRelationshipBuilder([new FluxKustomizationRelationshipProvider()]).Build(
+            [selected, kustomization, unrelatedChild],
+            new HashSet<string> { "envoy-gateway-system" },
+            hideNoise: true);
+
+        graph.Resources.Select(resource => resource.Name()).ShouldBe(["gateway", "envoy-gateway"]);
     }
 
     [Fact]
@@ -1252,6 +1508,50 @@ public sealed class ResourceRelationshipBuilderTests
             hideNoise: true);
 
         graph.Resources.Select(resource => resource.Name()).ShouldBe(["owner"]);
+    }
+
+    [Fact]
+    public void Excludes_crossplane_managed_resource_definition_chain_for_selected_provider()
+    {
+        GenericKubernetesObject providerRevision = Crossplane("pkg.crossplane.io/v1", "ProviderRevision", "provider-revision", "provider-revision-uid");
+        GenericKubernetesObject providerDeployment = Crossplane("apps/v1", "Deployment", "provider-revision", "deployment-uid", "crossplane-system", ("provider-revision-uid", "ProviderRevision", "pkg.crossplane.io/v1"));
+        GenericKubernetesObject managedResourceDefinition = Crossplane("apiextensions.crossplane.io/v1alpha1", "ManagedResourceDefinition", "apps.apps.databricks.crossplane.io", "mrd-uid", null, ("provider-revision-uid", "ProviderRevision", "pkg.crossplane.io/v1"));
+        GenericKubernetesObject customResourceDefinition = Crossplane("apiextensions.k8s.io/v1", "CustomResourceDefinition", "apps.apps.databricks.crossplane.io", "crd-uid", null, ("mrd-uid", "ManagedResourceDefinition", "apiextensions.crossplane.io/v1alpha1"));
+
+        var graph = new ResourceRelationshipBuilder().Build(
+            [providerRevision, providerDeployment, managedResourceDefinition, customResourceDefinition],
+            new HashSet<string> { "crossplane-system" },
+            hideNoise: true);
+
+        graph.Resources.Select(resource => resource.Kind).ShouldBe(["ProviderRevision", "Deployment"]);
+    }
+
+    private static GenericKubernetesObject Crossplane(
+        string apiVersion,
+        string kind,
+        string name,
+        string uid,
+        string? namespaceName = null,
+        params (string Uid, string Kind, string ApiVersion)[] owners)
+    {
+        return new GenericKubernetesObject
+        {
+            ApiVersion = apiVersion,
+            Kind = kind,
+            Metadata = new V1ObjectMeta
+            {
+                Name = name,
+                NamespaceProperty = namespaceName,
+                Uid = uid,
+                OwnerReferences = owners.Select(owner => new V1OwnerReference
+                {
+                    Uid = owner.Uid,
+                    Name = owner.Uid,
+                    Kind = owner.Kind,
+                    ApiVersion = owner.ApiVersion,
+                }).ToList(),
+            },
+        };
     }
 
     [Fact]
@@ -1688,6 +1988,29 @@ public sealed class ResourceRelationshipBuilderTests
             }
 
             context.Add(relationships, resource, related, ResourceRelationshipKind.Reference);
+        }
+    }
+
+    private sealed class FluxKustomizationRelationshipProvider : IResourceRelationshipProvider
+    {
+        public void AddRelationships(
+            IKubernetesObject<V1ObjectMeta> resource,
+            ResourceRelationshipContext context,
+            ICollection<ResourceRelationship> relationships)
+        {
+            if (resource.Kind != V1Pod.KubeKind
+                || !context.TryGet(
+                    "kustomize.toolkit.fluxcd.io/v1",
+                    "Kustomization",
+                    "envoy-gateway-system",
+                    "envoy-gateway",
+                    out var kustomization)
+                || kustomization == null)
+            {
+                return;
+            }
+
+            context.Add(relationships, kustomization, resource, ResourceRelationshipKind.GitOps);
         }
     }
 

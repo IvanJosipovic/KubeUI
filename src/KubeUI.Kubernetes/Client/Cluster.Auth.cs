@@ -120,14 +120,6 @@ public partial class Cluster
 
     private IReadOnlyCollection<string> GetKnownNamespaceNames()
     {
-        if (Namespaces is { Count: > 0 })
-        {
-            return Namespaces
-                .Select(static item => item.Name())
-                .Where(static name => !string.IsNullOrWhiteSpace(name))
-                .ToArray();
-        }
-
         if (Objects.TryGetValue(GroupApiVersionKind.From<V1Namespace>(), out var container)
             && container is ContainerClass<V1Namespace> namespaceContainer)
         {

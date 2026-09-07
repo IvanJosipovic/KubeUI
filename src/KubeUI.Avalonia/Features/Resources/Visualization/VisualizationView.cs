@@ -33,7 +33,8 @@ public sealed partial class VisualizationView : ViewBase<VisualizationViewModel>
             .Children(
                 CreateLeftToolbar(vm),
                 CreateRightToolbar(vm),
-                CreateGraphViewer(vm));
+                CreateGraphViewer(vm),
+                CreateErrorViewer(vm));
     }
 
     private static StackPanel CreateLeftToolbar(VisualizationViewModel vm)
@@ -102,6 +103,24 @@ public sealed partial class VisualizationView : ViewBase<VisualizationViewModel>
         return new ResourceGraphControl()
             .Row(1)
             .BindValue(ResourceGraphControl.GraphProperty, CompiledBinding.Create<VisualizationViewModel, Kubernetes.Resources.Relationships.ResourceRelationshipGraph?>(x => x.Graph, source: vm));
+    }
+
+    private static Border CreateErrorViewer(VisualizationViewModel vm)
+    {
+        return new Border()
+            .Row(1)
+            .Padding(12)
+            .IsVisible(vm, x => x.ErrorMessage, converter: Converters.Converters.NotNull)
+            .Child(new Grid()
+                .Rows("Auto,*")
+                .Children(
+                    new TextBlock()
+                        .Row(0)
+                        .Text(Assets.Resources.VisualizationView_ErrorHeader),
+                    new SelectableTextBlock()
+                        .Row(1)
+                        .Text(vm, x => x.ErrorMessage)
+                        .TextWrapping(TextWrapping.Wrap)));
     }
 
     internal static Border CreateResourceNode(ResourceNodeViewModel node)

@@ -23,10 +23,7 @@ jobs:
         run: |
           dotnet test \
             --configuration Release \
-            --no-build \
-            --max-threads 2
-        env:
-          KUBEUI_RUN_KIND_TESTS: 1
+            --no-build
 
       - name: Upload test dump
         if: failure()

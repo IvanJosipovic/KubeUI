@@ -94,11 +94,6 @@ public class ResourceListViewModelTests
 
     private static async Task AddOrUpdateAsync<T>(ClusterWorkspace cluster, T resource) where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
-        if (resource.Metadata.Uid is null)
-        {
-            resource.Metadata.Uid = cluster.Runtime.GetResource<T>(resource.Namespace(), resource.Name())?.Uid();
-        }
-
         await cluster.Runtime.AddOrUpdateResource(resource);
         await TestApplicationExtensions.WaitForUiAsync();
     }
@@ -757,11 +752,6 @@ public class ResourceListViewModelTests
         var baseTimestamp = DateTime.UtcNow.AddHours(-1);
         var events = Enumerable.Range(0, 400)
             .Select(index => Event("ns", $"event-{index:D3}", baseTimestamp.AddMinutes(index), index))
-            .Select(item =>
-            {
-                item.Metadata.Uid = item.Name();
-                return item;
-            })
             .ToArray();
 
         cluster.Runtime.GetResourceSourceCache<Corev1Event>().Edit(updater => updater.AddOrUpdate(events));
@@ -1052,11 +1042,6 @@ public class ResourceListViewModelTests
         var cluster = await Application.Current.CreateClusterAsync();
         var events = Enumerable.Range(0, 126)
             .Select(index => Event($"ns-{index % 3}", $"event-{index:D3}", DateTime.UtcNow.AddMinutes(index), index))
-            .Select(item =>
-            {
-                item.Metadata.Uid = item.Name();
-                return item;
-            })
             .ToArray();
 
         cluster.Runtime.GetResourceSourceCache<Corev1Event>().Edit(updater => updater.AddOrUpdate(events));
@@ -1092,11 +1077,6 @@ public class ResourceListViewModelTests
 
         var events = Enumerable.Range(0, 125)
             .Select(index => Event("default", $"event-{index}"))
-            .Select(item =>
-            {
-                item.Metadata.Uid = item.Name();
-                return item;
-            })
             .ToArray();
 
         await Task.Run(
@@ -2595,11 +2575,6 @@ public class ResourceListViewModelTests
                 "ns",
                 $"event-{index:D3}",
                 index < 50 ? now.AddMinutes(-1) : now.AddYears(-10)))
-            .Select(item =>
-            {
-                item.Metadata.Uid = item.Name();
-                return item;
-            })
             .ToArray();
         cluster.Runtime.GetResourceSourceCache<Corev1Event>().Edit(updater => updater.AddOrUpdate(events));
 

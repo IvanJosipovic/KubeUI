@@ -1,5 +1,6 @@
 using k8s.Models;
 using KubeUI.Avalonia.Infrastructure.DataGrid;
+using KubeUI.Kubernetes;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Infrastructure.DataGrid;
@@ -7,13 +8,13 @@ namespace KubeUI.Avalonia.Tests.Infrastructure.DataGrid;
 public sealed class IdentityPreservingSelectionModelTests
 {
     [Fact]
-    public void Restores_selection_by_uid_when_same_name_resources_reorder()
+    public void Restores_selection_by_namespace_and_name_when_resources_reorder()
     {
-        V1Pod first = Pod("uid-first");
-        V1Pod second = Pod("uid-second");
+        V1Pod first = Pod("namespace-a", "same-name");
+        V1Pod second = Pod("namespace-b", "same-name");
         List<V1Pod> source = [first, second];
 
-        using var model = new IdentityPreservingSelectionModel<V1Pod>(static pod => pod.Uid())
+        using var model = new IdentityPreservingSelectionModel<V1Pod, ResourceCacheKey>(ResourceCacheKey.From)
         {
             Source = source
         };
@@ -28,15 +29,14 @@ public sealed class IdentityPreservingSelectionModelTests
         model.SelectedItem.ShouldBe(first);
     }
 
-    private static V1Pod Pod(string uid)
+    private static V1Pod Pod(string @namespace, string name)
     {
         return new V1Pod
         {
             Metadata = new V1ObjectMeta
             {
-                NamespaceProperty = "default",
-                Name = "same-name",
-                Uid = uid,
+                NamespaceProperty = @namespace,
+                Name = name,
             },
         };
     }

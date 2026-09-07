@@ -11,6 +11,7 @@ using DynamicData;
 using DynamicData.Binding;
 using k8s.Models;
 using KubeUI.Avalonia.Features.Resources.List;
+using KubeUI.Kubernetes;
 using KubeUI.Avalonia.Resources;
 
 namespace KubeUI.Benchmarks;
@@ -20,7 +21,7 @@ namespace KubeUI.Benchmarks;
 [BenchmarkCategory("ResourceList", "DynamicData")]
 public class ResourceListPipelineBenchmarks : IDisposable
 {
-    private SourceCache<V1Pod, string> _cache = null!;
+    private SourceCache<V1Pod, ResourceCacheKey> _cache = null!;
     private BehaviorSubject<Func<V1Pod, bool>> _filterSubject = null!;
     private BehaviorSubject<IComparer<V1Pod>> _sortSubject = null!;
     private IDisposable _subscription = null!;
@@ -51,7 +52,7 @@ public class ResourceListPipelineBenchmarks : IDisposable
         _ascendingComparer = Comparer<V1Pod>.Create(static (left, right) => string.CompareOrdinal(left.Name(), right.Name()));
         _descendingComparer = Comparer<V1Pod>.Create(static (left, right) => string.CompareOrdinal(right.Name(), left.Name()));
 
-        _cache = new SourceCache<V1Pod, string>(pod => pod.Name());
+        _cache = new SourceCache<V1Pod, ResourceCacheKey>(ResourceCacheKey.From);
         _filterSubject = new(_nonMatchingFilter);
         _sortSubject = new(_ascendingComparer);
         _subscription = _cache.Connect()

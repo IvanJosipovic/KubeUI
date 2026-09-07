@@ -927,6 +927,38 @@ public class NavigationViewModelTests
     }
 
     [AvaloniaFact]
+    public async Task selecting_cluster_node_while_connection_is_in_progress_expands_after_connection_completes()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync(
+            config =>
+            {
+                config.Type = KubernetesBackend.Fake;
+                config.InitialResources = [];
+                config.InitialYaml = null;
+                config.HttpHandlers = [];
+                config.ResponseLatency = TimeSpan.FromMilliseconds(10);
+                config.ThrowOnConnect = false;
+                config.AuthenticatedUser = "system:admin";
+            },
+            connect: false);
+
+        var connectTask = workspace.Connect();
+        await WaitForAsync(() => workspace.Runtime.Status == ClusterStatus.Connecting);
+
+        using var vm = CreateViewModel();
+        await TestApplicationExtensions.WaitForUiAsync();
+
+        var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
+        await vm.TreeViewSelectionChangedAsync(clusterNode);
+
+        clusterNode.IsExpanded.ShouldBeFalse();
+
+        await connectTask;
+
+        await WaitForAsync(() => clusterNode.IsExpanded);
+    }
+
+    [AvaloniaFact]
     public async Task connect_path_publishes_ready_resources_without_waiting_for_unrelated_slow_permission_refresh()
     {
         var services = Application.Current.GetTestServices();

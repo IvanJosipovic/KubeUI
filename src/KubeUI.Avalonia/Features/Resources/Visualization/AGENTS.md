@@ -10,3 +10,12 @@
 - Seed relationship-provider prerequisites and unresolved references through the cluster runtime. Rebuild when a required resource type is seeded so newly available relationships are reflected.
 - Keep graph metadata, including pending references and required seed prerequisites, when applying type/readiness filters.
 - Dispose runtime, workspace, and namespace subscriptions together with the view model; do not leave resource-change handlers active after disposal.
+
+## Pipeline stage ownership
+- `VisualizationResourceStore` owns keyed resource snapshots and owner-reference indexing; the ViewModel must not maintain a second resource index.
+- `VisualizationBuildCoordinator` owns pending rebuild coalescing, cancellation, and latest-request-wins version checks.
+- `ResourceGraphProjection` owns root, namespace, and incremental namespace reachability and must preserve graph metadata.
+- `ResourceGraphDisplayFilter` owns display-only type/readiness filtering and must not mutate the complete graph.
+- `VisualizationSeedPlanner` owns unresolved-reference and seed-prerequisite resolution; seed planning must remain pure and separate from informer/resource mutation.
+- `VisualizationPipelineState` is the immutable boundary published from background preparation to the UI thread; stale versions must not publish it.
+- `ResourceGraphControl` consumes immutable display graphs and owns GraphX conversion, diffing, attachment, and layout scheduling.

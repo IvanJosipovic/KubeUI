@@ -69,7 +69,7 @@ public sealed class FakeKubernetesHttpApiTests
 
         using var api = new FakeKubernetesHttpApi();
         using var client = KubernetesClientMaterializer.Create(
-            new KubernetesClientConfiguration { Host = "http://fake-kubernetes" },
+            new KubernetesClientConfiguration { Host = "http://fake-kubernetes-tracing" },
             api);
         var discovery = new KubernetesApiDiscoveryClient(client);
 

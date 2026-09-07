@@ -151,12 +151,26 @@ internal sealed class NavigationResourceSynchronizer
         var rootId = $"{cluster.Runtime.Name}-custom-resource-definitions";
         var root = node.NavigationItems.FirstOrDefault(item => item.Id == rootId);
 
+        _logger.LogDebug(
+            "Custom resource navigation evaluating for {ClusterName}: Changed={ChangedKind}; DefinitionPermissionsLoaded={DefinitionPermissionsLoaded}; DefinitionCanListAndWatch={DefinitionCanListAndWatch}; RootPresent={RootPresent}; ConfigCount={ConfigCount}",
+            cluster.Runtime.Name,
+            changedConfig.Kind,
+            definition.PermissionsLoaded,
+            definition.CanListAndWatch,
+            root is not null,
+            configs.Count);
+
         if (definition is not { PermissionsLoaded: true, CanListAndWatch: true })
         {
             if (root != null)
             {
                 node.NavigationItems.Remove(root);
             }
+
+            _logger.LogDebug(
+                "Custom resource navigation hidden for {ClusterName}: Definition access unavailable; RootRemoved={RootRemoved}",
+                cluster.Runtime.Name,
+                root is not null);
 
             return;
         }
@@ -170,6 +184,11 @@ internal sealed class NavigationResourceSynchronizer
                 Order = ResourceCategories.CustomResourceDefinitionsNavigationOrder,
             };
             node.NavigationItems.Add(root);
+
+            _logger.LogDebug(
+                "Custom resource navigation root created for {ClusterName}: RootId={RootId}",
+                cluster.Runtime.Name,
+                rootId);
 
             UpdateCustomResourceLink(root, cluster, definition);
             foreach (var config in configs
@@ -196,6 +215,13 @@ internal sealed class NavigationResourceSynchronizer
                 RemoveEmptyCategories(root.NavigationItems, cluster);
             }
         }
+
+        _logger.LogDebug(
+            "Custom resource navigation updated for {ClusterName}: RootPresent={RootPresent}; RootChildren={RootChildren}; TopLevelItems={TopLevelItems}",
+            cluster.Runtime.Name,
+            node.NavigationItems.Any(item => item.Id == rootId),
+            root.NavigationItems.Count,
+            node.NavigationItems.Count);
     }
 
     private void UpdatePortForwardersNavigation(ClusterNavigationNode node)

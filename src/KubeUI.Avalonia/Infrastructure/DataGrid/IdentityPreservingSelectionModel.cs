@@ -3,14 +3,16 @@ using Avalonia.Controls.Selection;
 
 namespace KubeUI.Avalonia.Infrastructure.DataGrid;
 
-internal sealed class IdentityPreservingSelectionModel<T> : ISelectionModel, INotifyPropertyChanged, IDisposable where T : notnull
+internal sealed class IdentityPreservingSelectionModel<T, TIdentity> : ISelectionModel, INotifyPropertyChanged, IDisposable
+    where T : notnull
+    where TIdentity : notnull
 {
     private readonly SelectionModel<object?> _inner = new();
-    private readonly Func<T, object?> _identitySelector;
-    private readonly List<object> _selectionSnapshot = [];
-    private readonly HashSet<object> _selectionIdentities = [];
+    private readonly Func<T, TIdentity> _identitySelector;
+    private readonly List<TIdentity> _selectionSnapshot = [];
+    private readonly HashSet<TIdentity> _selectionIdentities = [];
     private readonly List<int> _restoredIndexes = [];
-    private readonly Dictionary<T, object?> _identityCache = new();
+    private readonly Dictionary<T, TIdentity> _identityCache = new();
     private INotifyCollectionChanged? _sourceNotifications;
     private IEnumerable? _identitySource;
     private INotifyCollectionChanged? _identitySourceNotifications;
@@ -18,7 +20,7 @@ internal sealed class IdentityPreservingSelectionModel<T> : ISelectionModel, INo
     private bool _suppressSnapshotUpdates;
     private int _sourceChangeVersion;
 
-    public IdentityPreservingSelectionModel(Func<T, object?> identitySelector)
+    public IdentityPreservingSelectionModel(Func<T, TIdentity> identitySelector)
     {
         _identitySelector = identitySelector ?? throw new ArgumentNullException(nameof(identitySelector));
 
@@ -223,7 +225,7 @@ internal sealed class IdentityPreservingSelectionModel<T> : ISelectionModel, INo
         }, DispatcherPriority.Normal);
     }
 
-    private void RestoreSelectionSnapshot(IReadOnlyList<object> snapshot)
+    private void RestoreSelectionSnapshot(IReadOnlyList<TIdentity> snapshot)
     {
         if (snapshot.Count == 0 || Source is null)
         {
@@ -295,7 +297,7 @@ internal sealed class IdentityPreservingSelectionModel<T> : ISelectionModel, INo
         return true;
     }
 
-    private List<int> FindIndexes(IReadOnlyList<object> snapshot)
+    private List<int> FindIndexes(IReadOnlyList<TIdentity> snapshot)
     {
         if (snapshot.Count <= 4)
         {
@@ -306,7 +308,7 @@ internal sealed class IdentityPreservingSelectionModel<T> : ISelectionModel, INo
             {
                 foreach (var item in fastSource)
                 {
-                    if (item is not null && Equals(identity, GetIdentity(item)))
+                    if (item is T typedItem && EqualityComparer<TIdentity>.Default.Equals(identity, GetIdentity(typedItem)))
                     {
                         indexes.Add(fastSourceIndex);
                         break;
@@ -339,7 +341,7 @@ internal sealed class IdentityPreservingSelectionModel<T> : ISelectionModel, INo
                     continue;
                 }
 
-                if (_selectionIdentities.Contains(GetIdentity(item)!))
+                if (item is T typedItem && _selectionIdentities.Contains(GetIdentity(typedItem)))
                 {
                     _restoredIndexes.Add(index);
                 }
@@ -351,7 +353,7 @@ internal sealed class IdentityPreservingSelectionModel<T> : ISelectionModel, INo
         var sourceIndex = 0;
         foreach (var item in source)
         {
-            if (item is not null && _selectionIdentities.Contains(GetIdentity(item)!))
+            if (item is T typedItem && _selectionIdentities.Contains(GetIdentity(typedItem)))
             {
                 _restoredIndexes.Add(sourceIndex);
             }
@@ -362,13 +364,26 @@ internal sealed class IdentityPreservingSelectionModel<T> : ISelectionModel, INo
         return _restoredIndexes;
     }
 
-    private object? GetIdentity(object? item)
+    private bool TryGetIdentity(object? item, out TIdentity identity)
     {
         if (item is not T typedItem)
         {
-            return item;
+            identity = default!;
+            return false;
         }
 
+        if (_identityCache.TryGetValue(typedItem, out identity))
+        {
+            return true;
+        }
+
+        identity = _identitySelector(typedItem);
+        _identityCache.Add(typedItem, identity);
+        return true;
+    }
+
+    private TIdentity GetIdentity(T typedItem)
+    {
         if (_identityCache.TryGetValue(typedItem, out var identity))
         {
             return identity;
@@ -384,8 +399,7 @@ internal sealed class IdentityPreservingSelectionModel<T> : ISelectionModel, INo
         _selectionSnapshot.Clear();
         foreach (var selectedItem in _inner.SelectedItems)
         {
-            var identity = GetIdentity(selectedItem);
-            if (identity is not null)
+            if (TryGetIdentity(selectedItem, out var identity))
             {
                 _selectionSnapshot.Add(identity);
             }

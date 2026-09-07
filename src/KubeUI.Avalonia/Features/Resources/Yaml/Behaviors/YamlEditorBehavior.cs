@@ -57,6 +57,7 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
     private Installation? _textMateInstallation;
     private RegistryOptions _registryOptions = null!;
     private FoldingManager? _foldingManager;
+    private LeakSafeFoldingMargin? _foldingMargin;
     private ResourceYamlViewModel? _currentViewModel;
     private readonly Dictionary<string, Queue<bool>> _savedFoldStates = new(StringComparer.Ordinal);
     private CompletionWindow? _completionWindow;
@@ -178,6 +179,14 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
         if (_foldingManager == null)
         {
             _foldingManager = FoldingManager.Install(AssociatedObject.TextArea);
+            var defaultMargin = AssociatedObject.TextArea.LeftMargins.OfType<FoldingMargin>().Single();
+            _foldingMargin = new LeakSafeFoldingMargin
+            {
+                FoldingManager = defaultMargin.FoldingManager,
+            };
+            var marginIndex = AssociatedObject.TextArea.LeftMargins.IndexOf(defaultMargin);
+            AssociatedObject.TextArea.LeftMargins.RemoveAt(marginIndex);
+            AssociatedObject.TextArea.LeftMargins.Insert(marginIndex, _foldingMargin);
         }
 
         UpdateFoldings();
@@ -237,6 +246,13 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
 
         if (_foldingManager != null)
         {
+            if (_foldingMargin != null)
+            {
+                LeakSafeFoldingMargin.ClearLogicalChildren(_foldingMargin);
+                AssociatedObject?.TextArea.LeftMargins.Remove(_foldingMargin);
+                _foldingMargin = null;
+            }
+
             FoldingManager.Uninstall(_foldingManager);
             _foldingManager = null;
         }

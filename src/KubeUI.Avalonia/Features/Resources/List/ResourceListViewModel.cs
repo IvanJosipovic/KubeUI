@@ -51,7 +51,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     public GroupApiVersionKind Kind => _kind;
 
     [ObservableProperty]
-    public partial ISourceCache<T, string> Objects { get; set; }
+    public partial ISourceCache<T, ResourceCacheKey> Objects { get; set; }
 
     public T? SelectedItem => _selectionModel.SelectedItem as T;
 
@@ -76,7 +76,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     private readonly Subject<string> _searchQueryChanges = new();
     private readonly IDisposable _searchQuerySubscription;
 
-    private readonly IdentityPreservingSelectionModel<T> _selectionModel = new(GetResourceIdentity)
+    private readonly IdentityPreservingSelectionModel<T, ResourceCacheKey> _selectionModel = new(ResourceCacheKey.From)
     {
         SingleSelect = false
     };
@@ -643,7 +643,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
             return -1;
         }
 
-        var identity = GetResourceIdentity(resource);
+        var identity = ResourceCacheKey.From(resource);
 
         for (var i = 0; i < list.Count; i++)
         {
@@ -652,7 +652,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                 return i;
             }
 
-            if (list[i] is T candidate && string.Equals(GetResourceIdentity(candidate), identity, StringComparison.Ordinal))
+            if (list[i] is T candidate && ResourceCacheKey.From(candidate).Equals(identity))
             {
                 return i;
             }
@@ -661,11 +661,6 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         return -1;
     }
 
-    private static string GetResourceIdentity(T resource)
-    {
-        return resource.Uid() ?? throw new InvalidOperationException(
-            $"Resource {resource.ApiVersion}/{resource.Kind} '{resource.Namespace()}/{resource.Name()}' has no metadata UID.");
-    }
 }
 
 public sealed class DynamicDataSortingAdapterFactory<T> : IDataGridSortingAdapterFactory where T : class, IKubernetesObject<V1ObjectMeta>, new()
