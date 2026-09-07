@@ -8,7 +8,11 @@ using Avalonia;
 using LiveMarkdown.Avalonia;
 using KubeUI.AI.Configuration;
 using KubeUI.Avalonia.Features.AI;
+using KubeUI.Avalonia.Infrastructure.Mcp;
+using KubeUI.Avalonia.Options;
+using KubeUI.Avalonia.Services.Settings;
 using KubeUI.Avalonia.Tests.Infra;
+using Moq;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Features.AI;
@@ -20,7 +24,7 @@ public sealed class AgentChatViewTests
     {
         var view = new AgentChatView
         {
-            DataContext = new AgentChatViewModel(new AcpAgentRegistry([
+            DataContext = CreateViewModel(new AcpAgentRegistry([
                 new AcpAgentDefinition
                 {
                     Id = "test",
@@ -51,7 +55,7 @@ public sealed class AgentChatViewTests
     [AvaloniaFact]
     public async Task conversation_messages_are_hosted_in_a_vertical_scroll_viewer()
     {
-        await using var vm = new AgentChatViewModel(new AcpAgentRegistry([
+        await using var vm = CreateViewModel(new AcpAgentRegistry([
             new AcpAgentDefinition
             {
                 Id = "test",
@@ -164,7 +168,7 @@ public sealed class AgentChatViewTests
     [AvaloniaFact]
     public async Task streaming_message_updates_append_only_to_the_markdown_buffer()
     {
-        await using var vm = new AgentChatViewModel(new AcpAgentRegistry([
+        await using var vm = CreateViewModel(new AcpAgentRegistry([
             new AcpAgentDefinition
             {
                 Id = "test",
@@ -190,9 +194,20 @@ public sealed class AgentChatViewTests
         renderer.MarkdownBuilder.ToString().ShouldBe("**assistant**\n\nhello world");
     }
 
+    private static AgentChatViewModel CreateViewModel(AcpAgentRegistry registry)
+    {
+        var settingsService = new Mock<ISettingsService>();
+        settingsService.SetupGet(service => service.Settings).Returns(new Settings());
+        return new AgentChatViewModel(
+            registry,
+            settingsService.Object,
+            new AgentContextService(),
+            new McpServerState());
+    }
+
     private static AgentChatViewModel CreateScrollableChatViewModel()
     {
-        var vm = new AgentChatViewModel(new AcpAgentRegistry([
+        var vm = CreateViewModel(new AcpAgentRegistry([
             new AcpAgentDefinition
             {
                 Id = "test",

@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Net.Sockets;
 using System.Reflection;
 using Avalonia;
 using Avalonia.Controls;
@@ -15,12 +16,9 @@ using KubeUI.Avalonia.Infrastructure.DependencyInjection;
 using KubeUI.Avalonia.Infrastructure.Mcp;
 using KubeUI.Avalonia.Infrastructure.Platform;
 using KubeUI.Avalonia.Services.Settings;
-using KubeUI.Kubernetes;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
 using NReco.Logging.File;
 using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
@@ -41,23 +39,17 @@ internal static class Program
 
         EnsureMacOsPath();
 
-        var host = CreateHostBuilder(args).Build();
-        ConfigureMcpEndpoint(host);
-        host.Services.ConfigureKubeUIKubernetesJsonLogging();
-        host.Start();
-
-        var builder = CreateAppBuilder(host.Services);
+        using var host = CreateStartedHost(args);
 
         try
         {
-            builder.StartWithClassicDesktopLifetime(args);
+            CreateAppBuilder(host.Services).StartWithClassicDesktopLifetime(args);
         }
         finally
         {
             Task.Run(async () =>
             {
                 await host.StopAsync().ConfigureAwait(false);
-                await host.DisposeAsync().ConfigureAwait(false);
             }).GetAwaiter().GetResult();
         }
     }
@@ -112,14 +104,22 @@ internal static class Program
         services.GetRequiredService<IHostApplicationLifetime>().ApplicationStopping.Register(shutdownAvalonia);
     }
 
-    internal static WebApplicationBuilder CreateHostBuilder(
+    internal static HostApplicationBuilder CreateHostBuilder(
         string[] args,
         bool includeOptionalServices = true,
-        Action<IServiceCollection>? configureServices = null,
-        int? mcpPortOverride = null,
-        bool? mcpEnabledOverride = null)
+        Action<IServiceCollection>? configureServices = null)
     {
-        var builder = WebApplication.CreateSlimBuilder(new WebApplicationOptions
+        return CreateDesktopHostBuilder(args, includeOptionalServices, configureServices, null, null);
+    }
+
+    private static HostApplicationBuilder CreateDesktopHostBuilder(
+        string[] args,
+        bool includeOptionalServices,
+        Action<IServiceCollection>? configureServices,
+        int? mcpPortOverride,
+        bool? mcpEnabledOverride)
+    {
+        var builder = Host.CreateEmptyApplicationBuilder(new HostApplicationBuilderSettings
         {
             ApplicationName = "KubeUI",
             Args = args
@@ -131,41 +131,56 @@ internal static class Program
 
         if (mcpEnabledOverride ?? settings.Settings.McpServerEnabled)
         {
+            builder.Services.AddRouting();
+            builder.Services.AddSingleton<DiagnosticListener>(
+                static _ => new DiagnosticListener("KubeUI.Mcp"));
             builder.Services.AddMcpServer()
                 .WithHttpTransport(options => options.Stateless = true)
                 .WithTools<McpTools>();
-            var port = mcpPortOverride ?? McpServerConfiguration.GetValidatedPort(settings.Settings);
-            builder.WebHost.ConfigureKestrel(options => options.ListenLocalhost(port));
+            var port = mcpPortOverride ?? settings.Settings.McpServerPort;
+            builder.Services.AddSingleton<IHostedService>(services =>
+                new McpServerHostedService(services, port));
         }
 
         if (includeOptionalServices && settings.Settings.TelemetryEnabled)
-        {
             builder.Services.AddTelemetry();
-        }
 
         if (includeOptionalServices && settings.Settings.LoggingEnabled)
-        {
             builder.Services.AddFileLogging();
-        }
 
         configureServices?.Invoke(builder.Services);
         return builder;
     }
 
-    internal static void ConfigureMcpEndpoint(WebApplication application)
+    /// <summary>
+    /// Builds and starts the desktop application host. MCP bind failure does not stop desktop startup.
+    /// </summary>
+    internal static IHost CreateStartedHost(
+        string[] args,
+        bool includeOptionalServices = true,
+        Action<IServiceCollection>? configureServices = null,
+        int? mcpPortOverride = null,
+        bool? mcpEnabledOverride = null)
     {
-        var settings = application.Services.GetRequiredService<ISettingsService>().Settings;
-        if (settings.McpServerEnabled)
-        {
-            application.MapMcp(McpServerConfiguration.Path);
-        }
+        var host = CreateDesktopHostBuilder(
+            args,
+            includeOptionalServices,
+            configureServices,
+            mcpPortOverride,
+            mcpEnabledOverride).Build();
+        host.Start();
+        return host;
     }
 
-    internal static WebApplication CreateAndConfigureMcpEndpoint(WebApplicationBuilder builder)
+    internal static bool IsPortBindFailure(Exception exception)
     {
-        var application = builder.Build();
-        ConfigureMcpEndpoint(application);
-        return application;
+        return exception switch
+        {
+            SocketException => true,
+            AggregateException aggregate => aggregate.InnerExceptions.Any(IsPortBindFailure),
+            _ when exception.InnerException is not null => IsPortBindFailure(exception.InnerException),
+            _ => false
+        };
     }
 
     private static IServiceCollection AddFileLogging(this IServiceCollection services)
