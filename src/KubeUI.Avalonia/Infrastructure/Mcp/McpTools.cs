@@ -13,6 +13,13 @@ namespace KubeUI.Avalonia.Infrastructure.Mcp;
 
 public sealed record McpClusterInfo(string Name, string KubeConfigPath, bool IsDefault, bool Connected, string Status, string? LastError, bool RequiresNamespaceSelectionPrompt);
 
+/// <summary>Provides MCP tools for interacting with KubeUI and its Kubernetes clusters.</summary>
+/// <param name="clusterCatalog">Catalog of clusters known to KubeUI.</param>
+/// <param name="clusterSession">Session used to query connected cluster data.</param>
+/// <param name="yamlSerializer">Serializer used for Kubernetes YAML documents.</param>
+/// <param name="settingsService">Provides current KubeUI settings.</param>
+/// <param name="permissionService">Optional service for approving protected operations.</param>
+/// <param name="resourceNavigationService">Optional service for opening KubeUI resource views.</param>
 [McpServerToolType]
 public sealed class McpTools(
     IClusterRuntimeCatalog clusterCatalog,

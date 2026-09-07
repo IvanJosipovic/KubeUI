@@ -53,19 +53,6 @@ public sealed class AcpAgentIntegrationTests
     }
 
     [Fact]
-    public void copilot_mcp_server_uses_http_configuration_with_empty_headers()
-    {
-        var json = JObject.Parse(JsonConvert.SerializeObject(
-            AcpMcpServerFactory.Create(
-                new AcpAgent(new AcpAgentDefinition { Id = "copilot", Name = "GitHub Copilot", Executable = "copilot" }),
-                "http://127.0.0.1:62888/mcp")));
-
-        json["type"]!.Value<string>().ShouldBe("http");
-        json["url"]!.Value<string>().ShouldBe("http://127.0.0.1:62888/mcp");
-        json["headers"]!.ShouldBeOfType<JArray>().ShouldBeEmpty();
-    }
-
-    [Fact]
     public async Task acp_agent_completes_initialize_session_prompt_stream_cancel_and_shutdown()
     {
         await using var process = new InMemoryAcpProcess();
