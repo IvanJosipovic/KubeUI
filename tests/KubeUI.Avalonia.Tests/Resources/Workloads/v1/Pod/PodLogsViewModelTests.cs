@@ -3449,6 +3449,47 @@ public sealed class PodLogsViewModelTests
     }
 
     [AvaloniaFact]
+    public async Task Stream_end_reconnect_should_capture_attempt_before_connection_reset()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync();
+        V1Pod pod = CreatePod("app", "default", "pod-uid", containers: ["app"]);
+        pod.Status!.Phase = "Running";
+        await workspace.Runtime.AddOrUpdateResource(pod);
+        await workspace.Runtime.SeedResource<V1Pod>(true);
+        DisconnectingPodLogStreamClient streamClient = new();
+        ConcurrentQueue<int> reconnectAttempts = new();
+        TaskCompletionSource<bool> delayStarted = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        TaskCompletionSource<bool> releaseDelay = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        using PodLogsViewModel viewModel = CreateViewModel(
+            workspace.Runtime,
+            streamClient,
+            reconnectDelay: (attempt, _) =>
+            {
+                reconnectAttempts.Enqueue(attempt);
+                delayStarted.TrySetResult(true);
+                return releaseDelay.Task;
+            });
+        viewModel.Object = pod;
+        viewModel.ContainerName = "app";
+
+        try
+        {
+            await viewModel.Connect();
+            await WaitForAsync(() => viewModel.Logs.Text.Contains("before disconnect", StringComparison.Ordinal));
+            await delayStarted.Task.WaitAsync(TestContext.Current.CancellationToken);
+
+            viewModel.Timestamps = true;
+            await WaitForAsync(() => streamClient.Requests.Count >= 2);
+
+            reconnectAttempts.ShouldBe([1]);
+        }
+        finally
+        {
+            releaseDelay.TrySetResult(true);
+        }
+    }
+
+    [AvaloniaFact]
     public async Task Dispose_while_connecting_should_disconnect_and_dispose_the_opened_stream()
     {
         using var workspace = await Application.Current.CreateClusterAsync();
@@ -3598,14 +3639,33 @@ public sealed class PodLogsViewModelTests
     private static PodLogsViewModel CreateViewModel(
         IClusterRuntime runtime,
         IPodLogStreamClient streamClient,
-        IPodLogExportService? exportService = null)
+        IPodLogExportService? exportService = null,
+        Func<int, CancellationToken, Task>? reconnectDelay = null)
     {
         IServiceProvider services = Application.Current.GetTestServices();
+        ILogger<PodLogsViewModel> logger = services.GetRequiredService<ILogger<PodLogsViewModel>>();
+        ISettingsService settingsService = services.GetRequiredService<ISettingsService>();
+        IPodLogExportService resolvedExportService = exportService ?? new NoOpPodLogExportService();
+        IPodLogSessionResolver sessionResolver = new PodLogSessionResolver();
+        if (reconnectDelay is not null)
+        {
+            return new PodLogsViewModel(
+                logger,
+                settingsService,
+                resolvedExportService,
+                sessionResolver,
+                streamClient,
+                reconnectDelay)
+            {
+                Cluster = runtime,
+            };
+        }
+
         return new PodLogsViewModel(
-            services.GetRequiredService<ILogger<PodLogsViewModel>>(),
-            services.GetRequiredService<ISettingsService>(),
-            exportService ?? new NoOpPodLogExportService(),
-            new PodLogSessionResolver(),
+            logger,
+            settingsService,
+            resolvedExportService,
+            sessionResolver,
             streamClient)
         {
             Cluster = runtime,

@@ -32,6 +32,7 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
     private readonly IPodLogExportService _exportService;
     private readonly IPodLogSessionResolver _sessionResolver;
     private readonly IPodLogStreamClient _streamClient;
+    private readonly Func<int, CancellationToken, Task> _automaticReconnectDelay;
     private readonly SemaphoreSlim _connectionGate = new(1, 1);
     private CancellationTokenSource? _connectionCts;
     private bool _disposed;
@@ -69,12 +70,24 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
         IPodLogExportService exportService,
         IPodLogSessionResolver sessionResolver,
         IPodLogStreamClient streamClient)
+        : this(logger, settingsService, exportService, sessionResolver, streamClient, DelayAutomaticReconnectAsync)
+    {
+    }
+
+    internal PodLogsViewModel(
+        ILogger<PodLogsViewModel> logger,
+        ISettingsService settingsService,
+        IPodLogExportService exportService,
+        IPodLogSessionResolver sessionResolver,
+        IPodLogStreamClient streamClient,
+        Func<int, CancellationToken, Task> automaticReconnectDelay)
     {
         _logger = logger;
         SettingsService = settingsService;
         _exportService = exportService;
         _sessionResolver = sessionResolver;
         _streamClient = streamClient;
+        _automaticReconnectDelay = automaticReconnectDelay;
         Title = Assets.Resources.PodLogsView_Title;
         SelectedScopeItems.CollectionChanged += SelectedScopeItemsOnCollectionChanged;
     }

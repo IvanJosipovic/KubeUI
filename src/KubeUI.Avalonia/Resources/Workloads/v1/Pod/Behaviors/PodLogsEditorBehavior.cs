@@ -404,12 +404,15 @@ public sealed class PodLogsEditorBehavior : Behavior<TextEditor>, IDeclarativeVi
             || change.InsertionLength == 0
             || change.Offset + change.InsertionLength != _sourceDocument.TextLength
             || change.Offset > 0 && _sourceDocument.GetCharAt(change.Offset - 1) != '\n'
-            || _searchPanel?.UseRegex == true)
+            || _searchPanel?.UseRegex == true
+            || _searchPanel?.SearchPattern.Contains('\r') == true
+            || _searchPanel?.SearchPattern.Contains('\n') == true)
         {
             return false;
         }
 
-        var matchingLines = new bool[_sourceDocument.LineCount + 1];
+        StringBuilder appendedText = new(change.InsertionLength);
+        var lastAppendedLine = 0;
         foreach (ISearchResult result in strategy.FindAll(
             _sourceDocument,
             change.Offset,
@@ -418,21 +421,13 @@ public sealed class PodLogsEditorBehavior : Behavior<TextEditor>, IDeclarativeVi
             var firstLineNumber = _sourceDocument.GetLineByOffset(result.Offset).LineNumber;
             var lastMatchOffset = result.Offset + Math.Max(result.Length - 1, 0);
             var lastLineNumber = _sourceDocument.GetLineByOffset(lastMatchOffset).LineNumber;
-            for (var lineNumber = firstLineNumber; lineNumber <= lastLineNumber; lineNumber++)
-            {
-                matchingLines[lineNumber] = true;
-            }
-        }
-
-        StringBuilder appendedText = new(change.InsertionLength);
-        var firstLine = _sourceDocument.GetLineByOffset(change.Offset).LineNumber;
-        for (var lineNumber = firstLine; lineNumber <= _sourceDocument.LineCount; lineNumber++)
-        {
-            if (matchingLines[lineNumber])
+            for (var lineNumber = Math.Max(firstLineNumber, lastAppendedLine + 1); lineNumber <= lastLineNumber; lineNumber++)
             {
                 DocumentLine line = _sourceDocument.GetLineByNumber(lineNumber);
                 appendedText.Append(_sourceDocument.GetText(line.Offset, line.TotalLength));
             }
+
+            lastAppendedLine = Math.Max(lastAppendedLine, lastLineNumber);
         }
 
         _filteredDocument.Insert(_filteredDocument.TextLength, appendedText.ToString());

@@ -124,6 +124,42 @@ public sealed class PodLogsViewTests
     }
 
     [AvaloniaFact]
+    public async Task normal_multiline_filter_rebuilds_when_append_completes_a_match()
+    {
+        AvaloniaEdit.Document.TextDocument source = new("prefix\nalpha\n");
+        TextEditor editor = new() { Document = source };
+        PodLogsEditorBehavior behavior = new();
+        var behaviors = Interaction.GetBehaviors(editor);
+        behaviors.Add(behavior);
+        Window window = new() { Content = editor, Width = 800, Height = 600 };
+
+        try
+        {
+            window.Show();
+            Dispatcher.UIThread.RunJobs();
+            var search = editor.SearchPanel.ShouldNotBeNull();
+            search.Open();
+            await WaitForAsync(() => search.GetVisualDescendants().OfType<ToggleButton>()
+                .Any(button => button.Classes.Contains("PodLogsFilterToggle")));
+            var toggle = search.GetVisualDescendants().OfType<ToggleButton>()
+                .Single(button => button.Classes.Contains("PodLogsFilterToggle"));
+
+            search.SearchPattern = "alpha\nbeta";
+            toggle.IsChecked = true;
+            await WaitForAsync(() => editor.Document.Text == string.Empty);
+
+            await Dispatcher.UIThread.InvokeAsync(() => source.Insert(source.TextLength, "beta"));
+
+            await WaitForAsync(() => editor.Document.Text == "alpha\nbeta");
+        }
+        finally
+        {
+            behaviors.Remove(behavior);
+            window.Close();
+        }
+    }
+
+    [AvaloniaFact]
     public async Task scope_switch_updates_pod_name_selector_and_controller_button()
     {
         using var workspace = await Application.Current.CreateClusterAsync();

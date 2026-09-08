@@ -241,7 +241,8 @@ public sealed partial class PodLogsViewModel
             return;
         }
 
-        if (Interlocked.Increment(ref _streamEndedReconnectAttempts) > MaxAutomaticReconnectAttempts)
+        var reconnectAttempt = Interlocked.Increment(ref _streamEndedReconnectAttempts);
+        if (reconnectAttempt > MaxAutomaticReconnectAttempts)
         {
             Interlocked.Exchange(ref _streamEndedReconnectPending, 0);
             return;
@@ -251,8 +252,7 @@ public sealed partial class PodLogsViewModel
         {
             try
             {
-                var delaySeconds = Math.Min(30, 1 << Math.Min(_streamEndedReconnectAttempts - 1, 4));
-                await Task.Delay(TimeSpan.FromSeconds(delaySeconds), connectionCts.Token);
+                await _automaticReconnectDelay(reconnectAttempt, connectionCts.Token);
             }
             catch (OperationCanceledException)
             {
@@ -268,6 +268,12 @@ public sealed partial class PodLogsViewModel
                 },
                 DispatcherPriority.Background);
         }, CancellationToken.None);
+    }
+
+    private static Task DelayAutomaticReconnectAsync(int reconnectAttempt, CancellationToken cancellationToken)
+    {
+        var delaySeconds = Math.Min(30, 1 << Math.Min(reconnectAttempt - 1, 4));
+        return Task.Delay(TimeSpan.FromSeconds(delaySeconds), cancellationToken);
     }
 
     private void AddOutputEntry(PodLogOutputEntry entry)
