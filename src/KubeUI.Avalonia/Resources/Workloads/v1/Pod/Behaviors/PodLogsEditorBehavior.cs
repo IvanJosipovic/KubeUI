@@ -574,7 +574,8 @@ public sealed class PodLogsEditorBehavior : Behavior<TextEditor>, IDeclarativeVi
 
     private void RequestRestoreScrollOffset()
     {
-        _pendingRestoreOffset = ScrollOffset;
+        var targetOffset = ScrollOffset;
+        _pendingRestoreOffset = targetOffset == default ? null : targetOffset;
         Dispatcher.UIThread.Post(RestoreScrollOffset, DispatcherPriority.Loaded);
     }
 
