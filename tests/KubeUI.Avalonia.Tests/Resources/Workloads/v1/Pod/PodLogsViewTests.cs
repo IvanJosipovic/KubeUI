@@ -527,12 +527,16 @@ public sealed class PodLogsViewTests
             window.Height = 180;
 
             await WaitForAsync(() => scrollViewer.ScrollBarMaximum.Y > 0);
-            await WaitForAsync(() => !viewModel.AutoScrollToBottom && followLogsButton.IsEnabled);
+            await WaitForAsync(() => viewModel.AutoScrollToBottom
+                && scrollViewer.Offset.Y >= scrollViewer.ScrollBarMaximum.Y - 1.0
+                && followLogsButton.IsEnabled);
+            followLogsButton.IsEnabled.ShouldBeTrue();
+            followLogsButton.IsChecked.ShouldBe(true);
 
             await Dispatcher.UIThread.InvokeAsync(() =>
-                scrollViewer.Offset = new Vector(scrollViewer.Offset.X, scrollViewer.ScrollBarMaximum.Y));
+                scrollViewer.Offset = new Vector(scrollViewer.Offset.X, scrollViewer.ScrollBarMaximum.Y - 4));
             await WaitForAsync(() => viewModel.AutoScrollToBottom);
-            followLogsButton.IsEnabled.ShouldBeTrue();
+            followLogsButton.IsChecked.ShouldBe(true);
         }
         finally
         {
@@ -956,6 +960,42 @@ public sealed class PodLogsViewTests
 
             topBar.Bounds.Height.ShouldBeLessThanOrEqualTo(32);
             sourcesSelector.Bounds.Height.ShouldBeLessThanOrEqualTo(32);
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task view_follows_initial_logs_after_the_editor_is_measured()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync();
+        IServiceProvider services = Application.Current.GetTestServices();
+        using PodLogsViewModel viewModel = new(
+            services.GetRequiredService<ILogger<PodLogsViewModel>>(),
+            services.GetRequiredService<ISettingsService>(),
+            new NoOpPodLogExportService(),
+            new PodLogSessionResolver(),
+            new NoOpPodLogStreamClient())
+        {
+            Cluster = workspace.Runtime,
+            Object = CreatePod(),
+            ContainerName = "app",
+            Logs = new AvaloniaEdit.Document.TextDocument(CreateManyLines(300)),
+        };
+
+        PodLogsView view = new() { DataContext = viewModel };
+        Window window = new() { Content = view, Width = 800, Height = 300 };
+        window.Show();
+        try
+        {
+            TextEditor editor = view.GetVisualDescendants().OfType<TextEditor>().Single();
+            ScrollViewer scrollViewer = await WaitForScrollViewerAsync(editor);
+            await WaitForAsync(() => scrollViewer.ScrollBarMaximum.Y > 0);
+            await WaitForAsync(() => scrollViewer.Offset.Y >= scrollViewer.ScrollBarMaximum.Y - 1.0);
+
+            viewModel.AutoScrollToBottom.ShouldBeTrue();
         }
         finally
         {

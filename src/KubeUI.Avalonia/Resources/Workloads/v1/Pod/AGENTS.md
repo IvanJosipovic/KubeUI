@@ -20,7 +20,10 @@
 - Pod and container selection changes clear errors from the previous connection immediately; failures from the new selection remain visible.
 - Resource-name prefixes default to enabled when entering a multi-pod or multi-container display mode, while explicit user changes survive reconnects in the same mode.
 - Label the action that controls automatic scrolling as `Follow Logs`; keep it visible and enabled, with its checked state indicating whether the editor follows the newest output.
+- When Follow Logs is disabled or the editor is scrolled away from the bottom, freeze the displayed document while continuing to buffer incoming lines; show the pending line count and a Resume Following action.
 - Recompute Follow Logs state when either the editor scroll offset or viewport changes, including when resizing introduces vertical overflow.
+- Treat extent and viewport changes as layout changes rather than user scrolling; a view already pinned to the bottom must remain pinned and keep Follow Logs enabled while resizing.
+- Consider the view pinned when the remaining scroll distance is within half a rendered line so fractional line visibility does not disable Follow Logs.
 - Use the down-arrow-to-line icon for Follow Logs so it reads as returning to the bottom of the output.
 - Keep the log action toolbar compact without visual separators between action groups.
 - Use a broom icon for Clear Logs so the action does not imply deleting a Kubernetes resource or file.

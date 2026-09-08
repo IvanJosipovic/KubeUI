@@ -2321,6 +2321,25 @@ public sealed class PodLogsViewModelTests
         viewModel.FollowLogsRequested.ShouldBeTrue();
     }
 
+    [AvaloniaFact]
+    public async Task Disabling_follow_logs_should_pause_the_display_until_resumed()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync();
+        using PodLogsViewModel viewModel = CreateViewModel(workspace.Runtime, new RecordingPodLogStreamClient());
+
+        viewModel.Logs.Text = "existing line";
+        viewModel.AutoScrollToBottom = false;
+
+        viewModel.IsDisplayPaused.ShouldBeTrue();
+        viewModel.LogUpdateStatus.ShouldBe(KubeUI.Avalonia.Assets.Resources.PodLogsView_UpdatesPaused);
+
+        viewModel.FollowLogs();
+
+        viewModel.IsDisplayPaused.ShouldBeFalse();
+        viewModel.HasPendingLogUpdates.ShouldBeFalse();
+        viewModel.LogUpdateStatus.ShouldBe(string.Empty);
+    }
+
     [AvaloniaTheory, KubernetesBackendData]
     [Trait("Category", "Kind")]
     public async Task Connect_should_disable_resource_names_in_single_pod_single_container_mode(KubernetesBackend backend)

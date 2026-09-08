@@ -19,7 +19,6 @@ public sealed partial class PodLogsViewModel
         }
 
         PodLogOutputEntry entry = new(podName, containerName, message);
-        AddOutputEntry(entry);
         var outputGeneration = Volatile.Read(ref _outputGeneration);
         Dispatcher.UIThread.InvokeAsync(
             () => AppendOutputEntry(entry, connectionCts, outputGeneration),
@@ -89,7 +88,13 @@ public sealed partial class PodLogsViewModel
     {
         if (!IsMultiScope)
         {
-            return Logs.Text;
+            PodLogOutputEntry[] singleScopeEntries;
+            lock (_outputEntriesGate)
+            {
+                singleScopeEntries = _outputEntries.ToArray();
+            }
+
+            return singleScopeEntries.Length == 0 ? Logs.Text : BuildOutputText(singleScopeEntries);
         }
 
         StringBuilder builder = new();
@@ -106,7 +111,13 @@ public sealed partial class PodLogsViewModel
         }
 
         builder.AppendLine();
-        builder.Append(Logs.Text);
+        PodLogOutputEntry[] exportEntries;
+        lock (_outputEntriesGate)
+        {
+            exportEntries = _outputEntries.ToArray();
+        }
+
+        builder.Append(exportEntries.Length == 0 ? Logs.Text : BuildOutputText(exportEntries));
         return builder.ToString();
     }
 
@@ -318,10 +329,6 @@ public sealed partial class PodLogsViewModel
         }
 
         PodLogOutputEntry[] batch = entries.ToArray();
-        for (var i = 0; i < batch.Length; i++)
-        {
-            AddOutputEntry(batch[i]);
-        }
 
         // Backpressure bounds outstanding dispatcher work to one batch per reader.
         await Dispatcher.UIThread.InvokeAsync(
@@ -336,6 +343,17 @@ public sealed partial class PodLogsViewModel
     {
         if (!IsCurrentConnection(connectionCts) || outputGeneration != Volatile.Read(ref _outputGeneration))
         {
+            return;
+        }
+
+        for (var i = 0; i < entries.Count; i++)
+        {
+            AddOutputEntry(entries[i]);
+        }
+
+        if (_displayPaused)
+        {
+            PendingLogCount += entries.Count;
             return;
         }
 
@@ -362,6 +380,14 @@ public sealed partial class PodLogsViewModel
     {
         if (!IsCurrentConnection(connectionCts) || outputGeneration != Volatile.Read(ref _outputGeneration))
         {
+            return;
+        }
+
+        AddOutputEntry(entry);
+
+        if (_displayPaused)
+        {
+            PendingLogCount++;
             return;
         }
 
@@ -393,21 +419,30 @@ public sealed partial class PodLogsViewModel
 
     private void RenderOutputEntries()
     {
+        if (_displayPaused)
+        {
+            return;
+        }
+
         PodLogOutputEntry[] entries;
         lock (_outputEntriesGate)
         {
             if (_outputEntries.Count == 0)
             {
-                Logs.Text = string.Empty;
                 return;
             }
 
             entries = _outputEntries.ToArray();
         }
 
+        Logs.Text = BuildOutputText(entries);
+    }
+
+    private string BuildOutputText(IReadOnlyList<PodLogOutputEntry> entries)
+    {
         StringBuilder builder = new();
         var displayMode = GetCurrentDisplayMode();
-        for (var i = 0; i < entries.Length; i++)
+        for (var i = 0; i < entries.Count; i++)
         {
             if (i > 0)
             {
@@ -417,7 +452,7 @@ public sealed partial class PodLogsViewModel
             builder.Append(FormatOutputEntry(entries[i], ShowResourceNames, displayMode));
         }
 
-        Logs.Text = builder.ToString();
+        return builder.ToString();
     }
 
     private static string FormatOutputEntry(PodLogOutputEntry entry, bool showResourceNames, PodLogDisplayMode displayMode)

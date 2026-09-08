@@ -55,6 +55,7 @@ public sealed class PodLogsEditorBehavior : Behavior<TextEditor>, IDeclarativeVi
     private bool _isRestoringScrollOffset;
     private bool _suppressScrollSync;
     private bool _isStuckToBottom = true;
+    private bool _initialLayoutComplete;
     private bool _stickToBottomQueued;
     private bool _followLogsQueued;
     private SearchPanel? _searchPanel;
@@ -122,6 +123,7 @@ public sealed class PodLogsEditorBehavior : Behavior<TextEditor>, IDeclarativeVi
 
         ApplyTheme();
         AttachScrollViewer();
+        _initialLayoutComplete = false;
         RestoreScrollOffset();
     }
 
@@ -190,6 +192,7 @@ public sealed class PodLogsEditorBehavior : Behavior<TextEditor>, IDeclarativeVi
     {
         PersistScrollOffset();
         _isStuckToBottom = true;
+        _initialLayoutComplete = false;
         _stickToBottomQueued = false;
         _followLogsQueued = false;
         AttachScrollViewer();
@@ -214,6 +217,20 @@ public sealed class PodLogsEditorBehavior : Behavior<TextEditor>, IDeclarativeVi
     private void AssociatedObjectOnLayoutUpdated(object? sender, EventArgs e)
     {
         AttachScrollViewer();
+
+        if (_scrollViewer is not null && !_initialLayoutComplete && _scrollViewer.Viewport.Height > 0)
+        {
+            _initialLayoutComplete = true;
+            if (AutoScrollToBottom && ScrollOffset == default)
+            {
+                _isStuckToBottom = true;
+                QueueStickToBottom();
+            }
+            else
+            {
+                SynchronizePinnedState(_scrollViewer);
+            }
+        }
 
         if (_pendingRestoreOffset is not null)
         {
@@ -561,6 +578,22 @@ public sealed class PodLogsEditorBehavior : Behavior<TextEditor>, IDeclarativeVi
             return;
         }
 
+        if (!_initialLayoutComplete)
+        {
+            return;
+        }
+
+        if (e.ExtentDelta != default || e.ViewportDelta != default)
+        {
+            ScrollOffset = new Vector(_scrollViewer.Offset.X, _scrollViewer.Offset.Y);
+            if (AutoScrollToBottom && _isStuckToBottom)
+            {
+                QueueStickToBottom();
+            }
+
+            return;
+        }
+
         PersistScrollOffset();
     }
 
@@ -615,8 +648,11 @@ public sealed class PodLogsEditorBehavior : Behavior<TextEditor>, IDeclarativeVi
 
     private static bool IsAtBottom(ScrollViewer scrollViewer)
     {
-        const double threshold = 1.0;
-        return scrollViewer.ScrollBarMaximum.Y - scrollViewer.Offset.Y <= threshold;
+        const double MinimumBottomTolerance = 1.0;
+        const double HalfLineBottomTolerance = 8.0;
+        var remainingScroll = scrollViewer.ScrollBarMaximum.Y - scrollViewer.Offset.Y;
+        var tolerance = Math.Max(MinimumBottomTolerance, HalfLineBottomTolerance);
+        return remainingScroll <= tolerance;
     }
 
     private void SynchronizePinnedState(ScrollViewer scrollViewer)
