@@ -313,6 +313,22 @@ public sealed partial class PodLogsViewModel
         }
     }
 
+    private void AddOutputEntries(IReadOnlyList<PodLogOutputEntry> entries)
+    {
+        lock (_outputEntriesGate)
+        {
+            for (var i = 0; i < entries.Count; i++)
+            {
+                _outputEntries.Add(entries[i]);
+            }
+
+            if (_outputEntries.Count > MaxLogEntries)
+            {
+                _outputEntries.RemoveRange(0, _outputEntries.Count - MaxLogEntries);
+            }
+        }
+    }
+
     private static void QueueOutputEntry(List<PodLogOutputEntry> pendingOutput, PodLogReadOptions option, string message)
     {
         pendingOutput.Add(new PodLogOutputEntry(option.PodName, option.ContainerName, message));
@@ -346,10 +362,7 @@ public sealed partial class PodLogsViewModel
             return;
         }
 
-        for (var i = 0; i < entries.Count; i++)
-        {
-            AddOutputEntry(entries[i]);
-        }
+        AddOutputEntries(entries);
 
         if (_displayPaused)
         {

@@ -2340,6 +2340,40 @@ public sealed class PodLogsViewModelTests
         viewModel.LogUpdateStatus.ShouldBe(string.Empty);
     }
 
+    [AvaloniaFact]
+    public async Task Paused_display_should_buffer_streamed_output_until_following_resumes()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync();
+        V1Pod pod = CreatePod(
+            name: "app",
+            namespaceName: "default",
+            uid: "app-uid",
+            containers: ["app"]);
+        await workspace.Runtime.AddOrUpdateResource(pod);
+        await workspace.Runtime.SeedResource<V1Pod>(true);
+
+        BlockingPodLogStreamClient streamClient = new("new line 1\nnew line 2\n");
+        using PodLogsViewModel viewModel = CreateViewModel(workspace.Runtime, streamClient);
+        viewModel.Object = pod;
+        viewModel.ContainerName = "app";
+
+        Task connectTask = viewModel.Connect();
+        await streamClient.WaitForFirstRequestAsync();
+
+        viewModel.Logs.Text = "existing line";
+        viewModel.AutoScrollToBottom = false;
+        streamClient.ReleaseFirstRequest();
+
+        await WaitForAsync(() => viewModel.PendingLogCount == 2);
+        viewModel.Logs.Text.ShouldBe("existing line");
+
+        viewModel.FollowLogs();
+
+        await WaitForAsync(() => viewModel.Logs.Text.Contains("new line 2", StringComparison.Ordinal));
+        viewModel.PendingLogCount.ShouldBe(0);
+        await connectTask;
+    }
+
     [AvaloniaTheory, KubernetesBackendData]
     [Trait("Category", "Kind")]
     public async Task Connect_should_disable_resource_names_in_single_pod_single_container_mode(KubernetesBackend backend)
