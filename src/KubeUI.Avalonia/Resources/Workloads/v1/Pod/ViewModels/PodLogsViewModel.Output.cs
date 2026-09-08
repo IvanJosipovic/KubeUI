@@ -34,11 +34,7 @@ public sealed partial class PodLogsViewModel
             if (remainingReaders <= 0 && _readerCounts.TryRemove(connectionCts, out _))
             {
                 isLastReaderForConnection = true;
-                if (isCurrentConnection)
-                {
-                    IsConnected = false;
-                }
-                else
+                if (!isCurrentConnection)
                 {
                     connectionCts.Dispose();
                 }
@@ -129,7 +125,7 @@ public sealed partial class PodLogsViewModel
         {
             while (!cancellationToken.IsCancellationRequested)
             {
-                var log = await reader.ReadLineAsync();
+                var log = await reader.ReadLineAsync(cancellationToken);
                 if (log is null)
                 {
                     streamEnded = true;
@@ -240,8 +236,14 @@ public sealed partial class PodLogsViewModel
 
     private void ScheduleReconnectAfterStreamEnd(CancellationTokenSource connectionCts)
     {
+        if (Interlocked.Exchange(ref _streamEndedReconnectPending, 1) != 0)
+        {
+            return;
+        }
+
         if (Interlocked.Increment(ref _streamEndedReconnectAttempts) > MaxAutomaticReconnectAttempts)
         {
+            Interlocked.Exchange(ref _streamEndedReconnectPending, 0);
             return;
         }
 
@@ -254,10 +256,17 @@ public sealed partial class PodLogsViewModel
             }
             catch (OperationCanceledException)
             {
+                Interlocked.Exchange(ref _streamEndedReconnectPending, 0);
                 return;
             }
 
-            Dispatcher.UIThread.Post(() => RequestReconnect(preserveOutput: true), DispatcherPriority.Background);
+            Dispatcher.UIThread.Post(
+                () =>
+                {
+                    Interlocked.Exchange(ref _streamEndedReconnectPending, 0);
+                    RequestReconnect(preserveOutput: true);
+                },
+                DispatcherPriority.Background);
         }, CancellationToken.None);
     }
 

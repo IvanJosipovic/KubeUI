@@ -190,7 +190,8 @@ public sealed class PodLogsViewTests
             templateNode.UpdateIsChecked(true);
             sourceCheckBox.IsChecked.ShouldBe(true);
             Grid logControlsBar = selectionControls.Parent.ShouldBeOfType<Grid>();
-            Grid topBar = logControlsBar.Parent.ShouldBeOfType<Grid>();
+            ScrollViewer topBarScrollViewer = logControlsBar.Parent.ShouldBeOfType<ScrollViewer>();
+            Grid topBar = topBarScrollViewer.Parent.ShouldBeOfType<Grid>();
             StackPanel actionControls = logControlsBar.Children
                 .OfType<StackPanel>()
                 .Single(panel => Grid.GetColumn(panel) == 1);
@@ -387,7 +388,7 @@ public sealed class PodLogsViewTests
     }
 
     [AvaloniaFact]
-    public async Task follow_logs_button_is_enabled_only_when_logs_are_not_at_the_bottom()
+    public async Task follow_logs_button_remains_enabled_at_and_away_from_the_bottom()
     {
         using var workspace = await Application.Current.CreateClusterAsync();
         IServiceProvider services = Application.Current.GetTestServices();
@@ -447,7 +448,7 @@ public sealed class PodLogsViewTests
     }
 
     [AvaloniaFact]
-    public async Task follow_logs_button_is_enabled_when_resizing_creates_vertical_overflow()
+    public async Task follow_logs_button_remains_enabled_when_resizing_creates_vertical_overflow()
     {
         using var workspace = await Application.Current.CreateClusterAsync();
         IServiceProvider services = Application.Current.GetTestServices();
@@ -490,8 +491,12 @@ public sealed class PodLogsViewTests
             window.Height = 180;
 
             await WaitForAsync(() => scrollViewer.ScrollBarMaximum.Y > 0);
-            await WaitForAsync(() => followLogsButton.IsEnabled);
-            viewModel.AutoScrollToBottom.ShouldBeFalse();
+            await WaitForAsync(() => !viewModel.AutoScrollToBottom && followLogsButton.IsEnabled);
+
+            await Dispatcher.UIThread.InvokeAsync(() =>
+                scrollViewer.Offset = new Vector(scrollViewer.Offset.X, scrollViewer.ScrollBarMaximum.Y));
+            await WaitForAsync(() => viewModel.AutoScrollToBottom);
+            followLogsButton.IsEnabled.ShouldBeTrue();
         }
         finally
         {
@@ -800,10 +805,7 @@ public sealed class PodLogsViewTests
 
             TextEditor editor = view.GetVisualDescendants().OfType<TextEditor>().Single();
             PodLogsEditorBehavior behavior = Interaction.GetBehaviors(editor).OfType<PodLogsEditorBehavior>().Single();
-            FieldInfo installationField = typeof(PodLogsEditorBehavior).GetField("_textMateInstallation", BindingFlags.Instance | BindingFlags.NonPublic)
-                ?? throw new InvalidOperationException("Pod log editor installation field was not found.");
-
-            installationField.GetValue(behavior).ShouldNotBeNull();
+            behavior.IsTextMateInstalled.ShouldBeTrue();
 
             var application = Application.Current.ShouldNotBeNull();
             var originalTheme = application.RequestedThemeVariant;
@@ -811,10 +813,10 @@ public sealed class PodLogsViewTests
             {
                 application.RequestedThemeVariant = global::Avalonia.Styling.ThemeVariant.Light;
                 Dispatcher.UIThread.RunJobs();
-                installationField.GetValue(behavior).ShouldNotBeNull();
+                behavior.IsTextMateInstalled.ShouldBeTrue();
                 application.RequestedThemeVariant = global::Avalonia.Styling.ThemeVariant.Dark;
                 Dispatcher.UIThread.RunJobs();
-                installationField.GetValue(behavior).ShouldNotBeNull();
+                behavior.IsTextMateInstalled.ShouldBeTrue();
             }
             finally
             {
@@ -824,14 +826,14 @@ public sealed class PodLogsViewTests
             window.Content = null;
             Dispatcher.UIThread.RunJobs();
 
-            installationField.GetValue(behavior).ShouldBeNull();
+            behavior.IsTextMateInstalled.ShouldBeFalse();
 
             window.Content = view;
             Dispatcher.UIThread.RunJobs();
 
             editor = view.GetVisualDescendants().OfType<TextEditor>().Single();
             behavior = Interaction.GetBehaviors(editor).OfType<PodLogsEditorBehavior>().Single();
-            installationField.GetValue(behavior).ShouldNotBeNull();
+            behavior.IsTextMateInstalled.ShouldBeTrue();
         }
         finally
         {

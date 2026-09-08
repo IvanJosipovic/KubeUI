@@ -98,6 +98,8 @@ public sealed class PodLogsEditorBehavior : Behavior<TextEditor>, IDeclarativeVi
         set => SetAndRaise(ScrollOffsetProperty, ref _scrollOffset, value);
     }
 
+    internal bool IsTextMateInstalled => _textMateInstallation is not null;
+
     protected override void OnAttached()
     {
         base.OnAttached();
@@ -247,7 +249,7 @@ public sealed class PodLogsEditorBehavior : Behavior<TextEditor>, IDeclarativeVi
         _sourceDocument = document;
         if (_sourceDocument is not null)
         {
-            _sourceDocument.TextChanged += SourceDocumentOnTextChanged;
+            _sourceDocument.Changed += SourceDocumentOnTextChanged;
         }
 
         UpdateFilteredDocument();
@@ -257,16 +259,16 @@ public sealed class PodLogsEditorBehavior : Behavior<TextEditor>, IDeclarativeVi
     {
         if (_sourceDocument is not null)
         {
-            _sourceDocument.TextChanged -= SourceDocumentOnTextChanged;
+            _sourceDocument.Changed -= SourceDocumentOnTextChanged;
             _sourceDocument = null;
         }
     }
 
-    private void SourceDocumentOnTextChanged(object? sender, EventArgs e)
+    private void SourceDocumentOnTextChanged(object? sender, DocumentChangeEventArgs e)
     {
         if (_filterEnabled)
         {
-            UpdateFilteredDocument();
+            UpdateFilteredDocument(e);
         }
     }
 
@@ -333,7 +335,7 @@ public sealed class PodLogsEditorBehavior : Behavior<TextEditor>, IDeclarativeVi
         }
     }
 
-    private void UpdateFilteredDocument()
+    private void UpdateFilteredDocument(DocumentChangeEventArgs? change = null)
     {
         if (AssociatedObject is null || _sourceDocument is null)
         {
@@ -354,6 +356,13 @@ public sealed class PodLogsEditorBehavior : Behavior<TextEditor>, IDeclarativeVi
                 ignoreCase: !_searchPanel!.MatchCase,
                 matchWholeWords: _searchPanel.WholeWords,
                 mode: _searchPanel.UseRegex ? SearchMode.RegEx : SearchMode.Normal);
+
+            if (change is not null && TryAppendFilteredDocument(strategy, change))
+            {
+                SetDisplayedDocument(_filteredDocument);
+                return;
+            }
+
             var matchingLines = new bool[_sourceDocument.LineCount + 1];
             foreach (ISearchResult result in strategy.FindAll(_sourceDocument, 0, _sourceDocument.TextLength))
             {
@@ -366,7 +375,7 @@ public sealed class PodLogsEditorBehavior : Behavior<TextEditor>, IDeclarativeVi
                 }
             }
 
-            var filteredText = new StringBuilder();
+            var filteredText = new StringBuilder(_sourceDocument.TextLength);
             foreach (DocumentLine line in _sourceDocument.Lines)
             {
                 if (matchingLines[line.LineNumber])
@@ -386,6 +395,48 @@ public sealed class PodLogsEditorBehavior : Behavior<TextEditor>, IDeclarativeVi
         {
             // Keep the last valid view while the user edits an incomplete regex.
         }
+    }
+
+    private bool TryAppendFilteredDocument(ISearchStrategy strategy, DocumentChangeEventArgs change)
+    {
+        if (_sourceDocument is null
+            || change.RemovalLength != 0
+            || change.InsertionLength == 0
+            || change.Offset + change.InsertionLength != _sourceDocument.TextLength
+            || change.Offset > 0 && _sourceDocument.GetCharAt(change.Offset - 1) != '\n'
+            || _searchPanel?.UseRegex == true)
+        {
+            return false;
+        }
+
+        var matchingLines = new bool[_sourceDocument.LineCount + 1];
+        foreach (ISearchResult result in strategy.FindAll(
+            _sourceDocument,
+            change.Offset,
+            change.InsertionLength))
+        {
+            var firstLineNumber = _sourceDocument.GetLineByOffset(result.Offset).LineNumber;
+            var lastMatchOffset = result.Offset + Math.Max(result.Length - 1, 0);
+            var lastLineNumber = _sourceDocument.GetLineByOffset(lastMatchOffset).LineNumber;
+            for (var lineNumber = firstLineNumber; lineNumber <= lastLineNumber; lineNumber++)
+            {
+                matchingLines[lineNumber] = true;
+            }
+        }
+
+        StringBuilder appendedText = new(change.InsertionLength);
+        var firstLine = _sourceDocument.GetLineByOffset(change.Offset).LineNumber;
+        for (var lineNumber = firstLine; lineNumber <= _sourceDocument.LineCount; lineNumber++)
+        {
+            if (matchingLines[lineNumber])
+            {
+                DocumentLine line = _sourceDocument.GetLineByNumber(lineNumber);
+                appendedText.Append(_sourceDocument.GetText(line.Offset, line.TotalLength));
+            }
+        }
+
+        _filteredDocument.Insert(_filteredDocument.TextLength, appendedText.ToString());
+        return true;
     }
 
     private void SetDisplayedDocument(TextDocument document)

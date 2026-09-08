@@ -11,7 +11,7 @@ namespace KubeUI.Avalonia.Resources.Workloads.v1.Pod.Services;
 
 /// <summary>Creates and docks pod-log view models.</summary>
 public sealed class PodLogsLauncher(
-    IServiceProvider serviceProvider,
+    Func<PodLogsViewModel> viewModelFactory,
     IFactory factory,
     ILogger<PodLogsLauncher> logger) : IPodLogsLauncher
 {
@@ -35,7 +35,7 @@ public sealed class PodLogsLauncher(
             throw new ArgumentException("At least one resource is required.", nameof(resources));
         }
 
-        var viewModel = serviceProvider.GetRequiredService<PodLogsViewModel>();
+        PodLogsViewModel viewModel = viewModelFactory();
         viewModel.Cluster = cluster.Runtime;
         viewModel.SetScopes(resources, resourceKind);
         var scopeResourceKind = viewModel.ScopeResourceKind;
@@ -87,7 +87,9 @@ public sealed class PodLogsLauncher(
         return LaunchAsync(cluster, resources, resourceKind);
     }
 
-    private static string BuildDocumentId(string clusterName, IReadOnlyList<PodLogScopeSelectionItem> scopes)
+    private static string BuildDocumentId(
+        string clusterName,
+        IReadOnlyList<PodLogScopeSelectionItem> scopes)
     {
         if (scopes.Count == 1)
         {

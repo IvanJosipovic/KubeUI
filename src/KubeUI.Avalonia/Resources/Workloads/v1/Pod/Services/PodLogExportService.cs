@@ -5,7 +5,7 @@ using KubeUI.Avalonia.Infrastructure.Platform;
 
 namespace KubeUI.Avalonia.Resources.Workloads.v1.Pod.Services;
 
-/// <inheritdoc />
+/// <summary>Exports pod log text through the platform save-file picker.</summary>
 public sealed class PodLogExportService(IPlatformServices platformServices) : IPodLogExportService
 {
     /// <inheritdoc />

@@ -229,6 +229,26 @@
     <value>{0} Logs</value>
     <comment/>
   </data>
+  <data name="PodLogsView_MultiScopeKindNamespace" xml:space="preserve">
+    <value>{0} {1} - {2}</value>
+    <comment/>
+  </data>
+  <data name="PodLogsView_MultiScopeKindNamespaces" xml:space="preserve">
+    <value>{0} {1} - {2} namespaces</value>
+    <comment/>
+  </data>
+  <data name="PodLogsView_MultiScopeSummary" xml:space="preserve">
+    <value>{0} resources - {1} kinds - {2} namespaces</value>
+    <comment/>
+  </data>
+  <data name="PodLogsView_MultiScopeTitleKind" xml:space="preserve">
+    <value>{0} {1} Logs</value>
+    <comment/>
+  </data>
+  <data name="PodLogsView_MultiScopeTitle" xml:space="preserve">
+    <value>{0} Resource Logs</value>
+    <comment/>
+  </data>
   <data name="PodLogsView_NamespaceLabel" xml:space="preserve">
     <value>Namespace:</value>
     <comment/>

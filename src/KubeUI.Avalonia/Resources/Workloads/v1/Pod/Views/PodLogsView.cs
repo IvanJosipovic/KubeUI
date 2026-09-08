@@ -41,7 +41,11 @@ public sealed partial class PodLogsView : ViewBase<PodLogsViewModel>
         return new Grid()
             .Row(0)
             .Rows("Auto")
-            .Children(CreateLogControlsBar(vm));
+            .Children(
+                new ScrollViewer()
+                    .HorizontalScrollBarVisibility(ScrollBarVisibility.Auto)
+                    .VerticalScrollBarVisibility(ScrollBarVisibility.Disabled)
+                    .Content(CreateLogControlsBar(vm)));
     }
 
     private Grid CreateLogControlsBar(PodLogsViewModel vm)
@@ -49,7 +53,6 @@ public sealed partial class PodLogsView : ViewBase<PodLogsViewModel>
         return new Grid()
             .Row(0)
             .Height(32)
-            .ClipToBounds(true)
             .Cols("*,Auto")
             .Margin(2, 0)
             .Children(

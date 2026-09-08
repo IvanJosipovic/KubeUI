@@ -6,18 +6,6 @@ namespace KubeUI.Avalonia.Resources.Workloads.v1.Pod.ViewModels;
 
 internal static class PodLogTopologyComparer
 {
-    internal static bool HasChanged(PodLogSessionResolution current, PodLogSessionResolution next)
-    {
-        if (!string.Equals(current.Pod.Metadata?.Uid, next.Pod.Metadata?.Uid, StringComparison.Ordinal)
-            || !IsSameResource(current.ParentResource, next.ParentResource))
-        {
-            return true;
-        }
-
-        return HavePodsChanged(current.RelatedPods, next.RelatedPods)
-            || !string.Equals(current.ContainerName, next.ContainerName, StringComparison.Ordinal);
-    }
-
     internal static bool HavePodsChanged(IReadOnlyList<V1Pod> current, IReadOnlyList<V1Pod> next)
     {
         if (current.Count != next.Count)
