@@ -366,7 +366,16 @@ public sealed partial class PodLogsViewModel
             {
                 return resolution;
             }
+        }
 
+        if (!string.IsNullOrWhiteSpace(scopeItem.Resource.Metadata?.Uid))
+        {
+            return null;
+        }
+
+        for (var i = 0; i < MultiSessionResolution.Scopes.Count; i++)
+        {
+            PodLogScopeResolution resolution = MultiSessionResolution.Scopes[i];
             if (string.Equals(resolution.Scope.ResourceName, scopeItem.Resource.Name(), StringComparison.Ordinal)
                 && string.Equals(resolution.Scope.ResourceNamespace, scopeItem.Resource.Namespace(), StringComparison.Ordinal)
                 && string.Equals(resolution.Scope.ResourceKind, scopeItem.ResourceKind, StringComparison.Ordinal))

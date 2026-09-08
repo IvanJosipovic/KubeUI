@@ -34,11 +34,7 @@ public sealed partial class PodLogsViewModel
             if (remainingReaders <= 0 && _readerCounts.TryRemove(connectionCts, out _))
             {
                 isLastReaderForConnection = true;
-                if (isCurrentConnection)
-                {
-                    IsConnected = false;
-                }
-                else
+                if (!isCurrentConnection)
                 {
                     connectionCts.Dispose();
                 }
@@ -129,7 +125,7 @@ public sealed partial class PodLogsViewModel
         {
             while (!cancellationToken.IsCancellationRequested)
             {
-                var log = await reader.ReadLineAsync();
+                var log = await reader.ReadLineAsync(cancellationToken);
                 if (log is null)
                 {
                     streamEnded = true;
@@ -240,8 +236,15 @@ public sealed partial class PodLogsViewModel
 
     private void ScheduleReconnectAfterStreamEnd(CancellationTokenSource connectionCts)
     {
-        if (Interlocked.Increment(ref _streamEndedReconnectAttempts) > MaxAutomaticReconnectAttempts)
+        if (Interlocked.Exchange(ref _streamEndedReconnectPending, 1) != 0)
         {
+            return;
+        }
+
+        var reconnectAttempt = Interlocked.Increment(ref _streamEndedReconnectAttempts);
+        if (reconnectAttempt > MaxAutomaticReconnectAttempts)
+        {
+            Interlocked.Exchange(ref _streamEndedReconnectPending, 0);
             return;
         }
 
@@ -249,16 +252,28 @@ public sealed partial class PodLogsViewModel
         {
             try
             {
-                var delaySeconds = Math.Min(30, 1 << Math.Min(_streamEndedReconnectAttempts - 1, 4));
-                await Task.Delay(TimeSpan.FromSeconds(delaySeconds), connectionCts.Token);
+                await _automaticReconnectDelay(reconnectAttempt, connectionCts.Token);
             }
             catch (OperationCanceledException)
             {
+                Interlocked.Exchange(ref _streamEndedReconnectPending, 0);
                 return;
             }
 
-            Dispatcher.UIThread.Post(() => RequestReconnect(preserveOutput: true), DispatcherPriority.Background);
+            Dispatcher.UIThread.Post(
+                () =>
+                {
+                    Interlocked.Exchange(ref _streamEndedReconnectPending, 0);
+                    RequestReconnect(preserveOutput: true);
+                },
+                DispatcherPriority.Background);
         }, CancellationToken.None);
+    }
+
+    private static Task DelayAutomaticReconnectAsync(int reconnectAttempt, CancellationToken cancellationToken)
+    {
+        var delaySeconds = Math.Min(30, 1 << Math.Min(reconnectAttempt - 1, 4));
+        return Task.Delay(TimeSpan.FromSeconds(delaySeconds), cancellationToken);
     }
 
     private void AddOutputEntry(PodLogOutputEntry entry)

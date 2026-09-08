@@ -27,7 +27,7 @@ public sealed class TestClusterConfig
 
     /// <summary>Creates handlers for Fake and named kubeconfig clients.</summary>
     /// <remarks>
-    /// <see cref="HttpHandlers"/> is used when this factory is not configured and for Kind clients.
+    /// Kind clients use <see cref="HttpHandlers"/> directly; they do not use this factory.
     /// </remarks>
     public Func<IReadOnlyCollection<DelegatingHandler>>? HttpHandlerFactory { get; set; }
 

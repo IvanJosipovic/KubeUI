@@ -19,8 +19,8 @@
 - Scope changes clear output from the previous scope and reconnect without mixing log entries.
 - Pod and container selection changes clear errors from the previous connection immediately; failures from the new selection remain visible.
 - Resource-name prefixes default to enabled when entering a multi-pod or multi-container display mode, while explicit user changes survive reconnects in the same mode.
-- Label the action that resumes automatic scrolling as `Follow Logs`; keep it visible and disable it while the editor is already following the newest output.
-- Recompute Follow Logs availability when either the editor scroll offset or viewport changes, including when resizing introduces vertical overflow.
+- Label the action that controls automatic scrolling as `Follow Logs`; keep it visible and enabled, with its checked state indicating whether the editor follows the newest output.
+- Recompute Follow Logs state when either the editor scroll offset or viewport changes, including when resizing introduces vertical overflow.
 - Use the down-arrow-to-line icon for Follow Logs so it reads as returning to the bottom of the output.
 - Keep the log action toolbar compact without visual separators between action groups.
 - Use a broom icon for Clear Logs so the action does not imply deleting a Kubernetes resource or file.

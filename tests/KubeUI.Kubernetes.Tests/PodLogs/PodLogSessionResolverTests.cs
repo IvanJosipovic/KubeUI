@@ -669,7 +669,6 @@ public sealed class PodLogSessionResolverTests
             new TestClusterConfig { Type = KubernetesBackend.Fake },
             TestContext.Current.CancellationToken);
         V1Deployment firstDeployment = new() { Metadata = Metadata("api", "api-deployment-uid") };
-        V1Deployment secondDeployment = new() { Metadata = Metadata("worker", "worker-deployment-uid") };
         V1ReplicaSet firstReplicaSet = new()
         {
             Metadata = Metadata(
@@ -683,19 +682,6 @@ public sealed class PodLogSessionResolverTests
                     Controller = true,
                 }),
         };
-        V1ReplicaSet secondReplicaSet = new()
-        {
-            Metadata = Metadata(
-                "worker-rs",
-                "worker-rs-uid",
-                new V1OwnerReference
-                {
-                    Kind = V1Deployment.KubeKind,
-                    Name = secondDeployment.Name(),
-                    Uid = secondDeployment.Uid(),
-                    Controller = true,
-                }),
-        };
         V1Pod firstPod = CreatePod(
             "api-pod",
             "api-pod-uid",
@@ -706,25 +692,12 @@ public sealed class PodLogSessionResolverTests
                 Uid = firstReplicaSet.Uid(),
                 Controller = true,
             });
-        V1Pod secondPod = CreatePod(
-            "worker-pod",
-            "worker-pod-uid",
-            new V1OwnerReference
-            {
-                Kind = V1ReplicaSet.KubeKind,
-                Name = secondReplicaSet.Name(),
-                Uid = secondReplicaSet.Uid(),
-                Controller = true,
-            });
         AddResource(harness.Cluster, GroupApiVersionKind.From<V1Deployment>(), firstDeployment);
-        AddResource(harness.Cluster, GroupApiVersionKind.From<V1Deployment>(), secondDeployment);
         AddResource(harness.Cluster, GroupApiVersionKind.From<V1ReplicaSet>(), firstReplicaSet);
-        AddResource(harness.Cluster, GroupApiVersionKind.From<V1ReplicaSet>(), secondReplicaSet);
         AddResource(harness.Cluster, GroupApiVersionKind.From<V1Pod>(), firstPod);
-        AddResource(harness.Cluster, GroupApiVersionKind.From<V1Pod>(), secondPod);
         PodLogSessionResolver resolver = new();
         PodLogMultiSessionState state = resolver.CreateMultiState(
-            [firstDeployment, secondDeployment, firstDeployment],
+            [firstDeployment, firstReplicaSet],
             "app",
             false,
             false);
@@ -734,7 +707,7 @@ public sealed class PodLogSessionResolverTests
         state.Scopes.Count.ShouldBe(2);
         resolution.Scopes.Count.ShouldBe(2);
         resolution.Scopes.ShouldAllBe(scope => scope.Error == null);
-        resolution.RelatedPods.Select(pod => pod.Name()).Order().ShouldBe(["api-pod", "worker-pod"]);
+        resolution.RelatedPods.Select(pod => pod.Name()).ShouldBe(["api-pod"]);
     }
 
     private static V1ObjectMeta Metadata(string name, string uid, V1OwnerReference? owner = null)

@@ -7,6 +7,7 @@ using System.Reactive.Linq;
 using Avalonia.Threading;
 using AvaloniaEdit.Document;
 using Dock.Model.Core;
+using Humanizer;
 using k8s;
 using k8s.Autorest;
 using k8s.Models;
@@ -17,6 +18,7 @@ using KubeUI.Kubernetes;
 
 namespace KubeUI.Avalonia.Resources.Workloads.v1.Pod.ViewModels;
 
+/// <summary>Coordinates pod-log selection, streaming, reconnects, and display state.</summary>
 public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
 {
     private const int DefaultTailLines = 500;
@@ -30,6 +32,7 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
     private readonly IPodLogExportService _exportService;
     private readonly IPodLogSessionResolver _sessionResolver;
     private readonly IPodLogStreamClient _streamClient;
+    private readonly Func<int, CancellationToken, Task> _automaticReconnectDelay;
     private readonly SemaphoreSlim _connectionGate = new(1, 1);
     private CancellationTokenSource? _connectionCts;
     private bool _disposed;
@@ -46,6 +49,7 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
     private bool _preserveOutputOnNextConnect;
     private bool _clearOutputBeforeNextConnect;
     private int _streamEndedReconnectAttempts;
+    private int _streamEndedReconnectPending;
     private int _activeReaderCount;
     private int _outputGeneration;
     private PodLogDisplayMode _resourceNameDisplayMode;
@@ -59,28 +63,45 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
     private bool _isNormalizingScopeSelection;
     private readonly HashSet<string> _resourceKeysToSelectOnResolve = new(StringComparer.Ordinal);
 
+    /// <summary>Initializes a pod-log view model with its streaming and export services.</summary>
     public PodLogsViewModel(
         ILogger<PodLogsViewModel> logger,
         ISettingsService settingsService,
         IPodLogExportService exportService,
         IPodLogSessionResolver sessionResolver,
         IPodLogStreamClient streamClient)
+        : this(logger, settingsService, exportService, sessionResolver, streamClient, DelayAutomaticReconnectAsync)
+    {
+    }
+
+    internal PodLogsViewModel(
+        ILogger<PodLogsViewModel> logger,
+        ISettingsService settingsService,
+        IPodLogExportService exportService,
+        IPodLogSessionResolver sessionResolver,
+        IPodLogStreamClient streamClient,
+        Func<int, CancellationToken, Task> automaticReconnectDelay)
     {
         _logger = logger;
         SettingsService = settingsService;
         _exportService = exportService;
         _sessionResolver = sessionResolver;
         _streamClient = streamClient;
+        _automaticReconnectDelay = automaticReconnectDelay;
         Title = Assets.Resources.PodLogsView_Title;
         SelectedScopeItems.CollectionChanged += SelectedScopeItemsOnCollectionChanged;
     }
 
+    /// <summary>Gets the settings service used by the log view.</summary>
     public ISettingsService SettingsService { get; }
 
+    /// <summary>Gets the selected resource name.</summary>
     public string ScopeResourceName => Object?.Name() ?? string.Empty;
 
+    /// <summary>Gets the selected resource namespace.</summary>
     public string ScopeNamespace => Object?.Namespace() ?? string.Empty;
 
+    /// <summary>Gets whether the selected resource has a namespace.</summary>
     public bool HasScopeNamespace => !string.IsNullOrWhiteSpace(ScopeNamespace);
 
     /// <summary>Gets whether the compact single-resource identity should be shown.</summary>
@@ -97,7 +118,7 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
 
     internal ObservableCollection<PodLogSourceTreeNode> SourceTreeItems { get; } = [];
 
-    /// <summary>Gets whether more than one resource contributes to this log session.</summary>
+    /// <summary>Gets whether more than one resource contributes to this session.</summary>
     public bool IsMultiScope => _scopeItems.Count > 1;
 
     /// <summary>Gets a compact summary of all resources contributing to this log session.</summary>
@@ -122,15 +143,30 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
 
             if (distinctKinds.Length == 1 && distinctNamespaces.Length == 1)
             {
-                return $"{_scopeItems.Count} {distinctKinds[0]}s - {distinctNamespaces[0]}";
+                return string.Format(
+                    CultureInfo.CurrentCulture,
+                    Assets.Resources.PodLogsView_MultiScopeKindNamespace,
+                    _scopeItems.Count,
+                    PluralizeKind(distinctKinds[0]),
+                    distinctNamespaces[0]);
             }
 
             if (distinctKinds.Length == 1)
             {
-                return $"{_scopeItems.Count} {distinctKinds[0]}s - {distinctNamespaces.Length} namespaces";
+                return string.Format(
+                    CultureInfo.CurrentCulture,
+                    Assets.Resources.PodLogsView_MultiScopeKindNamespaces,
+                    _scopeItems.Count,
+                    PluralizeKind(distinctKinds[0]),
+                    distinctNamespaces.Length);
             }
 
-            return $"{_scopeItems.Count} resources - {distinctKinds.Length} kinds - {distinctNamespaces.Length} namespaces";
+            return string.Format(
+                CultureInfo.CurrentCulture,
+                Assets.Resources.PodLogsView_MultiScopeSummary,
+                _scopeItems.Count,
+                distinctKinds.Length,
+                distinctNamespaces.Length);
         }
     }
 
@@ -151,51 +187,63 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
         }
     }
 
+    /// <summary>Gets the resource kind used to resolve the selected scopes.</summary>
     public string ScopeResourceKind => GetScopeResourceKind();
 
+    /// <summary>Gets whether all selected scopes are Pods.</summary>
     public bool IsPodScope => _scopeItems.Count > 0
         ? _scopeItems.All(scope => string.Equals(scope.ResourceKind, V1Pod.KubeKind, StringComparison.Ordinal))
         : string.Equals(ScopeResourceKind, V1Pod.KubeKind, StringComparison.Ordinal);
 
+    /// <summary>Gets whether the primary scope is a workload controller.</summary>
     public bool IsControllerScope => Object is not null && !IsPodScope;
 
+    /// <summary>Gets whether the selected Pod can navigate to its controller logs.</summary>
     public bool CanJumpToController => !IsMultiScope && SessionResolution?.ParentResource is not null;
 
     [ObservableProperty]
+    /// <summary>Gets or sets the cluster that supplies the logs.</summary>
     public partial IClusterRuntime Cluster { get; set; }
 
     [ObservableProperty]
+    /// <summary>Gets or sets the primary selected resource.</summary>
     public partial IKubernetesObject<V1ObjectMeta>? Object { get; set; }
 
     [ObservableProperty]
+    /// <summary>Gets or sets the container name, or an empty value for all containers.</summary>
     public partial string ContainerName { get; set; }
 
     [ObservableProperty]
+    /// <summary>Gets the document containing the displayed log output.</summary>
     public partial TextDocument Logs { get; set; } = CreateLogDocument();
 
     [ObservableProperty]
+    /// <summary>Gets the Pods currently resolved from the selected scopes.</summary>
     public partial IReadOnlyList<V1Pod> AvailablePods { get; set; } = [];
 
     [ObservableProperty]
+    /// <summary>Gets the containers available in the resolved Pods.</summary>
     public partial IReadOnlyList<PodLogContainerOption> AvailableContainers { get; set; } = [];
 
     [ObservableProperty]
+    /// <summary>Gets or sets whether previous container logs are requested.</summary>
     public partial bool Previous { get; set; }
 
     [ObservableProperty]
+    /// <summary>Gets or sets whether timestamps are shown in the log output.</summary>
     public partial bool Timestamps { get; set; }
 
     [ObservableProperty]
+    /// <summary>Gets or sets whether output keeps the editor at the bottom.</summary>
     public partial bool AutoScrollToBottom { get; set; } = true;
 
-    /// <summary>Gets whether the user can resume following the newest log output.</summary>
-    public bool CanFollowLogs => !AutoScrollToBottom;
-
     [ObservableProperty]
+    /// <summary>Gets or sets whether long log lines wrap in the editor.</summary>
     public partial bool WordWrap { get; set; }
 
     private bool _showResourceNames;
 
+    /// <summary>Gets or sets whether output lines include resource-name prefixes.</summary>
     public bool ShowResourceNames
     {
         get => _showResourceNames;
@@ -212,6 +260,7 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
         }
     }
 
+    /// <summary>Gets whether resource-name prefixes are meaningful for the current output.</summary>
     public bool CanShowResourceNames
     {
         get
@@ -221,33 +270,43 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
     }
 
     [ObservableProperty]
+    /// <summary>Gets or sets the request to resume following the newest logs.</summary>
     public partial bool FollowLogsRequested { get; set; }
 
     [ObservableProperty]
+    /// <summary>Gets or sets the persisted editor scroll offset.</summary>
     public partial Vector ScrollOffset { get; set; }
 
     [ObservableProperty]
+    /// <summary>Gets or sets the resolved single-scope session state.</summary>
     public partial PodLogSessionState? SessionState { get; set; }
 
     [ObservableProperty]
+    /// <summary>Gets or sets the resolved single-scope log target.</summary>
     public partial PodLogSessionResolution? SessionResolution { get; set; }
 
     [ObservableProperty]
+    /// <summary>Gets or sets the resolved multi-scope session state.</summary>
     public partial PodLogMultiSessionState? MultiSessionState { get; set; }
 
     [ObservableProperty]
+    /// <summary>Gets or sets the resolved multi-scope log targets.</summary>
     public partial PodLogMultiSessionResolution? MultiSessionResolution { get; set; }
 
     [ObservableProperty]
+    /// <summary>Gets whether previous logs are available for the current target.</summary>
     public partial bool PreviousLogsAvailable { get; set; }
 
     [ObservableProperty]
+    /// <summary>Gets whether the view is resolving or opening log streams.</summary>
     public partial bool IsConnecting { get; set; }
 
     [ObservableProperty]
+    /// <summary>Gets whether at least one log stream is active.</summary>
     public partial bool IsConnected { get; set; }
 
     [ObservableProperty]
+    /// <summary>Gets the number of streams planned for the current selection.</summary>
     public partial int PlannedStreamCount { get; set; }
 
     /// <summary>Gets whether the selected targets exceed the recommended stream count.</summary>
@@ -263,8 +322,10 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
         : string.Empty;
 
     [ObservableProperty]
+    /// <summary>Gets the latest user-visible connection error.</summary>
     public partial string? ConnectionError { get; set; }
 
+    /// <summary>Resolves the selected resources and opens their log streams.</summary>
     public async Task Connect()
     {
         if (_disposed)
@@ -318,24 +379,13 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
             }
 
             IKubernetesObject<V1ObjectMeta> scopeResource = scopeItems[0].Resource;
+            var loadTasks = new Task[scopeItems.Count];
             for (var scopeIndex = 0; scopeIndex < scopeItems.Count; scopeIndex++)
             {
-                IKubernetesObject<V1ObjectMeta> selectedResource = scopeItems[scopeIndex].Resource;
-                await PodLogResourceLoader.EnsureScopeResourcesAsync(Cluster, selectedResource);
-                try
-                {
-                    await PodLogResourceLoader
-                        .EnsureParentResourceAsync(Cluster, selectedResource)
-                        .WaitAsync(TimeSpan.FromSeconds(2));
-                }
-                catch (Exception ex) when (ex is HttpOperationException
-                    or HttpRequestException
-                    or TaskCanceledException
-                    or TimeoutException)
-                {
-                    LogUnableToLoadParentResource(ex, selectedResource.Namespace(), selectedResource.Name());
-                }
+                loadTasks[scopeIndex] = LoadScopeResourcesAsync(scopeItems[scopeIndex].Resource);
             }
+
+            await Task.WhenAll(loadTasks);
 
             if (_disposed)
             {
@@ -484,6 +534,24 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
         }
     }
 
+    private async Task LoadScopeResourcesAsync(IKubernetesObject<V1ObjectMeta> selectedResource)
+    {
+        await PodLogResourceLoader.EnsureScopeResourcesAsync(Cluster, selectedResource);
+        try
+        {
+            await PodLogResourceLoader
+                .EnsureParentResourceAsync(Cluster, selectedResource)
+                .WaitAsync(TimeSpan.FromSeconds(2));
+        }
+        catch (Exception ex) when (ex is HttpOperationException
+            or HttpRequestException
+            or TaskCanceledException
+            or TimeoutException)
+        {
+            LogUnableToLoadParentResource(ex, selectedResource.Namespace(), selectedResource.Name());
+        }
+    }
+
     private async Task OpenAndReadLogsAsync(
         PodLogReadOptions option,
         CancellationTokenSource connectionCts,
@@ -588,18 +656,21 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
     }
 
     [RelayCommand]
+    /// <summary>Clears the displayed and buffered log output.</summary>
     public void Clear()
     {
         ClearOutput();
     }
 
     [RelayCommand]
+    /// <summary>Reconnects and reloads the current log session.</summary>
     public Task Refresh()
     {
         return Connect();
     }
 
     [RelayCommand]
+    /// <summary>Requests that the editor follow the newest output.</summary>
     public void FollowLogs()
     {
         AutoScrollToBottom = true;
@@ -607,6 +678,7 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
     }
 
     [RelayCommand]
+    /// <summary>Exports the current log output through the platform picker.</summary>
     public Task DownloadLogs()
     {
         var suggestedFileName = BuildSuggestedFileName();
@@ -632,6 +704,7 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
     }
 
     [RelayCommand]
+    /// <summary>Opens the logs for the selected resource's controller.</summary>
     public Task JumpToControlledByLogs()
     {
         IKubernetesObject<V1ObjectMeta>? parentResource = SessionResolution?.ParentResource;
@@ -658,6 +731,7 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
         return Connect();
     }
 
+    /// <summary>Stops active streams and releases the view's subscriptions.</summary>
     public void Dispose()
     {
         if (_disposed)
@@ -705,7 +779,6 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
 
     partial void OnAutoScrollToBottomChanged(bool value)
     {
-        OnPropertyChanged(nameof(CanFollowLogs));
         if (value)
         {
             FollowLogsRequested = true;
@@ -824,8 +897,20 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
             .Distinct(StringComparer.Ordinal)
             .ToArray();
         return distinctKinds.Length == 1
-            ? $"{_scopeItems.Count} {distinctKinds[0]} Logs"
-            : $"{_scopeItems.Count} Resource Logs";
+            ? string.Format(
+                CultureInfo.CurrentCulture,
+                Assets.Resources.PodLogsView_MultiScopeTitleKind,
+                _scopeItems.Count,
+                PluralizeKind(distinctKinds[0]))
+            : string.Format(
+                CultureInfo.CurrentCulture,
+                Assets.Resources.PodLogsView_MultiScopeTitle,
+                _scopeItems.Count);
+    }
+
+    private static string PluralizeKind(string kind)
+    {
+        return kind.Humanize(LetterCasing.Title).Pluralize();
     }
 
     private void UpdateScopeResolutionPresentation(PodLogMultiSessionResolution resolution)
@@ -1003,8 +1088,16 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
         _resourceKeysToSelectOnResolve.Remove(BuildScopeIdentity(scope.Resource, scope.ResourceKind));
         if (ReferenceEquals(Object, scope.Resource))
         {
-            Object = _scopeItems[0].Resource;
-            _scopeResourceKind = _scopeItems[0].ResourceKind;
+            _isSettingScope = true;
+            try
+            {
+                _scopeResourceKind = _scopeItems[0].ResourceKind;
+                Object = _scopeItems[0].Resource;
+            }
+            finally
+            {
+                _isSettingScope = false;
+            }
         }
 
         UpdateScopePresentation();
