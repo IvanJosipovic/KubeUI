@@ -189,6 +189,28 @@ public class DockFactory : Factory
     }
 
     /// <summary>
+    /// Keeps non-closeable layout docks available during structural cleanup.
+    /// </summary>
+    /// <param name="dockable">The dockable being removed.</param>
+    /// <param name="collapse">Whether empty parent docks may collapse.</param>
+    public override void RemoveDockable(IDockable dockable, bool collapse)
+    {
+        try
+        {
+            if (!dockable.CanClose)
+            {
+                return;
+            }
+
+            base.RemoveDockable(dockable, collapse);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error removing dockable");
+        }
+    }
+
+    /// <summary>
     /// Creates a document-hosted floating window for tools opened in the main document dock.
     /// </summary>
     /// <param name="dockable">The dockable to float.</param>
