@@ -86,6 +86,12 @@ jobs:
         working-directory: src/KubeUI.Desktop
         run: dotnet publish -c Release -r ${{ matrix.rid }} -o bin/publish -p:Version=${{ inputs.package_version }} --tl:off -clp:ErrorsOnly
 
+      - name: Clean Output
+        shell: pwsh
+        working-directory: src/KubeUI.Desktop/bin/publish
+        run: |
+          Remove-Item -Path *.xml
+
       - name: Replace single file
         if: matrix.runs-on == 'macos-latest'
         uses: richardrigutins/replace-in-files@v3
