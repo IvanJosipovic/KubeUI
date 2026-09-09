@@ -76,7 +76,9 @@ public sealed class FakeKubernetesHttpApiTests
         await discovery.RefreshAsync(TestContext.Current.CancellationToken);
 
         var discoveryActivities = activities
-            .Where(activity => activity.OperationName == "kubernetes.discovery")
+            .Where(activity => activity.OperationName == "kubernetes.discovery"
+                && activity.GetTagItem("url.full") is string url
+                && url.StartsWith("http://fake-kubernetes-tracing/", StringComparison.Ordinal))
             .ToArray();
 
         discoveryActivities.Length.ShouldBe(2);

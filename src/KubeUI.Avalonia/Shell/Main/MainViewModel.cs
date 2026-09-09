@@ -66,10 +66,11 @@ public sealed partial class MainViewModel : ViewModelBase
 
         DebugFactoryEvents(_factory);
 
-        Layout = _factory.CreateLayout();
-        if (Layout is not null)
+        var layout = _factory.CreateLayout();
+        if (layout is not null)
         {
-            _factory.InitLayout(Layout);
+            _factory.InitLayout(layout);
+            Layout = layout;
         }
 
         _ = Task.Run(CheckForUpdates);
@@ -77,6 +78,8 @@ public sealed partial class MainViewModel : ViewModelBase
 
     [ObservableProperty]
     public partial IRootDock? Layout { get; set; }
+
+    internal IFactory Factory => _factory;
 
     private void DebugFactoryEvents(IFactory factory)
     {
@@ -214,24 +217,20 @@ public sealed partial class MainViewModel : ViewModelBase
                 dock.Close.Execute(null);
             }
         }
+
+        Layout = null;
     }
 
     [RelayCommand]
     private void ResetLayout()
     {
-        if (Layout is not null)
-        {
-            if (Layout.Close.CanExecute(null))
-            {
-                Layout.Close.Execute(null);
-            }
-        }
+        CloseLayout();
 
         var layout = _factory?.CreateLayout();
         if (layout is not null)
         {
-            Layout = layout;
             _factory?.InitLayout(layout);
+            Layout = layout;
         }
     }
 

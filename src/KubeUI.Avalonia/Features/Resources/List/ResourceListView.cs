@@ -1,7 +1,10 @@
 using System.Globalization;
 using System.Windows.Input;
 using Avalonia.Controls.DataGridFiltering;
+using Avalonia.Controls.DataGridSearching;
+using Avalonia.Controls.DataGridSorting;
 using Avalonia.Controls.Primitives;
+using Avalonia.Controls.Selection;
 using Avalonia.Controls.Templates;
 using Avalonia.Data.Converters;
 using Avalonia.Input;
@@ -22,9 +25,11 @@ namespace KubeUI.Avalonia.Features.Resources.List;
 public partial class ResourceListView : ViewBase<IResourceListViewModel>
 {
     private const DataGridStateSections RestoredStateSections =
-        DataGridStateSections.All & ~DataGridStateSections.Searching;
+        DataGridStateSections.All & ~DataGridStateSections.Searching & ~DataGridStateSections.Scroll;
 
     private DataGrid _grid;
+    private DataGrid? _stateRestoredGrid;
+    private IResourceListViewModel? _stateRestoredViewModel;
     private DataGridColumnFilterFlyoutFactory? _filterFlyoutFactory;
 
     public ResourceListView()
@@ -36,20 +41,40 @@ public partial class ResourceListView : ViewBase<IResourceListViewModel>
     {
         base.OnAttachedToVisualTree(e);
 
-        if (_grid is DataGrid grid && DataContext is IResourceListViewModel vm && vm.DataGridRuntimeState is { } state)
+        TryScheduleStateRestore();
+    }
+
+    private void TryScheduleStateRestore()
+    {
+        if (_grid is not DataGrid grid ||
+            DataContext is not IResourceListViewModel vm ||
+            vm.DataGridRuntimeState is not { } state ||
+            (ReferenceEquals(_stateRestoredGrid, grid) && ReferenceEquals(_stateRestoredViewModel, vm)))
         {
-            Dispatcher.UIThread.Post(
-                static state =>
-                {
-                    var (view, grid, vm, dataGridState) = ((ResourceListView View, DataGrid Grid, IResourceListViewModel ViewModel, DataGridState State))state!;
-                    if (view._grid == grid && ReferenceEquals(view.DataContext, vm) && view.VisualRoot is not null)
-                    {
-                        grid.RestoreState(PrepareStateForRestore(grid, dataGridState), RestoredStateSections, CreateStateOptions(grid));
-                    }
-                },
-                (this, grid, vm, state),
-                DispatcherPriority.Loaded);
+            return;
         }
+
+        // Mark only pairs with state to restore. The first attachment normally
+        // has no snapshot; it must remain eligible after the first detach.
+        _stateRestoredGrid = grid;
+        _stateRestoredViewModel = vm;
+
+        Dispatcher.UIThread.Post(
+            static state =>
+            {
+                var (view, grid, vm, dataGridState) = ((ResourceListView View, DataGrid Grid, IResourceListViewModel ViewModel, DataGridState State))state!;
+                if (view._grid == grid &&
+                    ReferenceEquals(view.DataContext, vm) &&
+                    view.VisualRoot is not null)
+                {
+                    grid.RestoreState(
+                        PrepareStateForRestore(grid, dataGridState),
+                        RestoredStateSections,
+                        CreateStateOptions(grid));
+                }
+            },
+            (this, grid, vm, state),
+            DispatcherPriority.Loaded);
     }
 
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
@@ -132,7 +157,7 @@ public partial class ResourceListView : ViewBase<IResourceListViewModel>
         var grid = new Grid()
             .Rows("Auto,*")
             .Children(
-                CreateTopBar(vm),
+                CreateTopBar(),
                 new DataGrid
                 {
                     ReferenceIndexResolver = vm.ReferenceIndexResolver,
@@ -146,15 +171,15 @@ public partial class ResourceListView : ViewBase<IResourceListViewModel>
                     .CanUserReorderColumns(true)
                     .CanUserResizeColumns(true)
                     .CanUserSortColumns(true)
-                    .ColumnDefinitionsSource(vm, x => x.ColumnDefinitions)
-                    .FilteringModel(vm, x => x.FilteringModel)
+                    .ColumnDefinitionsSource(CompiledBinding.Create<IResourceListViewModel, IList<DataGridColumnDefinition>>(x => x.ColumnDefinitions))
+                    .FilteringModel(CompiledBinding.Create<IResourceListViewModel, IFilteringModel>(x => x.FilteringModel))
                     .GridLinesVisibility(DataGridGridLinesVisibility.All)
                     .IsReadOnly(true)
-                    .ItemsSource(vm, x => x.View)
-                    .SearchModel(vm, x => x.SearchModel)
-                    .Selection(vm, x => x.SelectionModel)
+                    .ItemsSource(CompiledBinding.Create<IResourceListViewModel, IList>(x => x.View))
+                    .SearchModel(CompiledBinding.Create<IResourceListViewModel, ISearchModel>(x => x.SearchModel))
+                    .Selection(CompiledBinding.Create<IResourceListViewModel, ISelectionModel>(x => x.SelectionModel))
                     .SelectionMode(DataGridSelectionMode.Extended)
-                    .SortingModel(vm, x => x.SortingModel)
+                    .SortingModel(CompiledBinding.Create<IResourceListViewModel, ISortingModel>(x => x.SortingModel))
                     .UseLogicalScrollable(true)
                     .ContextMenu(CreateContextMenu())
                     .RowHeightEstimator(new DefaultRowHeightEstimator())
@@ -183,7 +208,7 @@ public partial class ResourceListView : ViewBase<IResourceListViewModel>
         return grid;
     }
 
-    private static Grid CreateTopBar(IResourceListViewModel vm)
+    private static Grid CreateTopBar()
     {
         return new Grid()
             .Row(0)
@@ -194,8 +219,8 @@ public partial class ResourceListView : ViewBase<IResourceListViewModel>
                 new Button()
                     .Col(0)
                     .Margin(2, 0, 0, 0)
-                    .Command(vm, x => x.ResourceConfig.NewResourceCommand)
-                    .IsVisible(vm, x => x.ResourceConfig.ShowNewResource)
+                    .Command(CompiledBinding.Create<IResourceListViewModel, ICommand?>(x => x.ResourceConfig.NewResourceCommand))
+                    .IsVisible(CompiledBinding.Create<IResourceListViewModel, bool>(x => x.ResourceConfig.ShowNewResource))
                     .ToolTip_Tip(Assets.Resources.ResourceListView_NewResource)
                     .Content(new FluentIcon().Icon(Icon.AddSquare)),
                 new Label()
@@ -219,17 +244,17 @@ public partial class ResourceListView : ViewBase<IResourceListViewModel>
                             .VerticalContentAlignment(VerticalAlignment.Center)
                             .Background(Brushes.Transparent)
                             .PlaceholderText(Assets.Resources.ResourceListView_SearchWatermark)
-                            .Text(vm, x => x.SearchQuery, BindingMode.TwoWay),
-                        CreateNamespaceSelector(vm),
+                            .Text(CompiledBinding.Create<IResourceListViewModel, string?>(x => x.SearchQuery, mode: BindingMode.TwoWay)),
+                        CreateNamespaceSelector(),
                         new ToggleButton()
                             .Margin(0, 0, 2, 0)
-                            .IsChecked(vm, x => x.IsNamespaceSelectionLinked, BindingMode.TwoWay)
-                            .IsVisible(vm, x => x.ResourceConfig.IsNamespaced)
+                            .IsChecked(CompiledBinding.Create<IResourceListViewModel, bool>(x => x.IsNamespaceSelectionLinked, mode: BindingMode.TwoWay))
+                            .IsVisible(CompiledBinding.Create<IResourceListViewModel, bool>(x => x.ResourceConfig.IsNamespaced))
                             .ToolTip_Tip(Assets.Resources.ResourceListView_NamespaceLink)
                             .Content(new FluentIcon().Icon(Icon.Link))));
     }
 
-    private static MultiComboBox CreateNamespaceSelector(IResourceListViewModel vm)
+    private static MultiComboBox CreateNamespaceSelector()
     {
         var template = new FuncDataTemplate<V1Namespace>((ns, _) =>
             new TextBlock().Text(ns?.Metadata?.Name ?? string.Empty));
@@ -241,10 +266,10 @@ public partial class ResourceListView : ViewBase<IResourceListViewModel>
             .Margin(0, 0, 2, 0)
             .HorizontalAlignment(HorizontalAlignment.Stretch)
             .Classes("ClearButton")
-            .IsVisible(vm, x => x.ResourceConfig.IsNamespaced)
-            .ItemsSource(vm, x => x.Cluster.Runtime.Namespaces)
+            .IsVisible(CompiledBinding.Create<IResourceListViewModel, bool>(x => x.ResourceConfig.IsNamespaced))
+            .ItemsSource(CompiledBinding.Create<IResourceListViewModel, IEnumerable>(x => x.Cluster.Runtime.Namespaces))
             .PlaceholderText(Assets.Resources.ResourceListView_SelectNamespace)
-            .SelectedItems(vm, x => x.SelectedNamespaces)
+            .SelectedItems(CompiledBinding.Create<IResourceListViewModel, IList>(x => x.SelectedNamespaces))
             .ItemTemplate(template)
             .SelectedItemTemplate(template);
     }
@@ -305,13 +330,22 @@ public partial class ResourceListView : ViewBase<IResourceListViewModel>
             _grid.SortingAdapterFactory = vm.SortingAdapterFactory;
             _grid.FilteringAdapterFactory = vm.FilteringAdapterFactory;
             _grid.SearchAdapterFactory = vm.SearchAdapterFactory;
-            //_grid.SortingModel = vm.SortingModel;
-            //_grid.FilteringModel = vm.FilteringModel;
-            //_grid.SearchModel = vm.SearchModel;
-            //_grid.Selection = vm.SelectionModel;
+
+            if (_grid.KeyBindings.Count >= 2)
+            {
+                _grid.KeyBindings[0].Command = vm.ResourceConfig.ViewCommand;
+                _grid.KeyBindings[0].CommandParameter = vm.SelectionModel.SelectedItems;
+                _grid.KeyBindings[1].Command = vm.ResourceConfig.DeleteCommand;
+                _grid.KeyBindings[1].CommandParameter = vm.SelectionModel.SelectedItems;
+            }
 
             AttachFilterFlyouts(vm);
+            if (VisualRoot is not null)
+            {
+                TryScheduleStateRestore();
+            }
         }
+
     }
 
     private static IResourceListColumn? GetResourceListColumn(DataGridColumnDefinition columnDefinition)
