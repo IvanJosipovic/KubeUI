@@ -6,6 +6,7 @@ using Dock.Model.Controls;
 using Dock.Model.Core;
 using Dock.Model.Mvvm.Controls;
 using KubeUI.Avalonia.Shell.Documents.CloudClusters.Aks;
+using KubeUI.Avalonia.Infrastructure.Docking;
 using KubeUI.Avalonia.Shell.Main;
 using KubeUI.Avalonia.Tests.Infra;
 using Shouldly;
@@ -90,6 +91,38 @@ public sealed class MainViewModelTests
         factory.FindRoot(tool)!.Window!.Host!.ShouldBeOfType<HostWindow>().IsToolWindow.ShouldBeFalse();
 
         factory.DockAsDocument(tool);
+    }
+
+    [AvaloniaFact]
+    public void closing_last_bottom_viewer_keeps_bottom_dock_available_for_next_viewer()
+    {
+        CreateViewModel().Initialize();
+        IFactory factory = Application.Current.GetRequiredTestService<IFactory>();
+        IToolDock bottomDock = factory.GetDockable<IToolDock>("BottomDock")
+            .ShouldNotBeNull();
+        IProportionalDockSplitter splitter = factory.GetDockable<IProportionalDockSplitter>("BottomDockSplitter")
+            .ShouldNotBeNull();
+        Tool firstViewer = new()
+        {
+            Id = "YamlViewer1",
+            Title = "YAML viewer 1",
+            CanClose = true
+        };
+        Tool secondViewer = new()
+        {
+            Id = "YamlViewer2",
+            Title = "YAML viewer 2",
+            CanClose = true
+        };
+
+        factory.AddToBottom(firstViewer).ShouldBeTrue();
+        factory.CloseDockable(firstViewer);
+        bottomDock.Owner.ShouldNotBeNull();
+        factory.AddToBottom(secondViewer).ShouldBeTrue();
+
+        factory.GetDockable<IToolDock>("BottomDock").ShouldBeSameAs(bottomDock);
+        bottomDock.VisibleDockables.ShouldContain(secondViewer);
+        splitter.CanResize.ShouldBeTrue();
     }
 
     [AvaloniaFact]
