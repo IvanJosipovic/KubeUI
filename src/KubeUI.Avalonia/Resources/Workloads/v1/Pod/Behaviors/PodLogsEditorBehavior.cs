@@ -62,6 +62,7 @@ public sealed class PodLogsEditorBehavior : Behavior<TextEditor>, IDeclarativeVi
     private Size _lastViewport;
     private bool _hasScrollMetrics;
     private IDisposable? _scrollViewerOffsetSubscription;
+    private bool _followWasEnabledBeforeOverflow;
     private SearchPanel? _searchPanel;
     private TextDocument? _sourceDocument;
     private readonly TextDocument _filteredDocument = new();
@@ -247,13 +248,16 @@ public sealed class PodLogsEditorBehavior : Behavior<TextEditor>, IDeclarativeVi
         {
             var metricsChanged = UpdateScrollMetrics(_scrollViewer);
 
-            if (_scrollViewer.ScrollBarMaximum.Y > 0
+            if (_scrollViewer.ScrollBarMaximum.Y <= 0)
+            {
+                _followWasEnabledBeforeOverflow = AutoScrollToBottom;
+            }
+            else if (_followWasEnabledBeforeOverflow
                 && ScrollOffset == default
-                && _scrollViewer.Offset == ScrollOffset
+                && AutoScrollToBottom
                 && _pendingRestoreOffset is null)
             {
                 _isStuckToBottom = true;
-                AutoScrollToBottom = true;
                 QueueStickToBottom();
                 Dispatcher.UIThread.Post(StickToBottom, DispatcherPriority.ApplicationIdle);
             }
@@ -667,12 +671,15 @@ public sealed class PodLogsEditorBehavior : Behavior<TextEditor>, IDeclarativeVi
 
         if (ScrollOffset == default
             && _scrollViewer.Offset == ScrollOffset
-            && _scrollViewer.ScrollBarMaximum.Y > 0)
+            && _followWasEnabledBeforeOverflow)
         {
-            _isStuckToBottom = true;
-            AutoScrollToBottom = true;
-            QueueStickToBottom();
-            Dispatcher.UIThread.Post(StickToBottom, DispatcherPriority.ApplicationIdle);
+            if (AutoScrollToBottom && _scrollViewer.ScrollBarMaximum.Y > 0)
+            {
+                _isStuckToBottom = true;
+                QueueStickToBottom();
+                Dispatcher.UIThread.Post(StickToBottom, DispatcherPriority.ApplicationIdle);
+            }
+
             return;
         }
 
@@ -702,11 +709,16 @@ public sealed class PodLogsEditorBehavior : Behavior<TextEditor>, IDeclarativeVi
             return;
         }
 
-        if (ScrollOffset == default && _scrollViewer.Offset == ScrollOffset)
+        if (ScrollOffset == default
+            && _scrollViewer.Offset == ScrollOffset
+            && _followWasEnabledBeforeOverflow)
         {
-            _isStuckToBottom = true;
-            AutoScrollToBottom = true;
-            QueueStickToBottom();
+            if (AutoScrollToBottom)
+            {
+                _isStuckToBottom = true;
+                QueueStickToBottom();
+            }
+
             return;
         }
 
@@ -794,6 +806,14 @@ public sealed class PodLogsEditorBehavior : Behavior<TextEditor>, IDeclarativeVi
 
     private void SynchronizePinnedState(ScrollViewer scrollViewer)
     {
+        if (_followWasEnabledBeforeOverflow
+            && ScrollOffset == default
+            && scrollViewer.Offset == default)
+        {
+            _isStuckToBottom = true;
+            return;
+        }
+
         _isStuckToBottom = IsAtBottom(scrollViewer);
         AutoScrollToBottom = _isStuckToBottom;
     }
