@@ -30,7 +30,7 @@
     <PackageReference Include="KubernetesClient" Version="19.0.2" />
     <PackageReference Include="KubernetesClient.Informer" Version="1.4.0" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="11.0.0-rc.1.26425.128" />
-    <PackageReference Include="Microsoft.Extensions.Http.Resilience" Version="10.9.0" />
+    <PackageReference Include="Microsoft.Extensions.Http.Resilience" Version="10.10.0" />
     <PackageReference Include="Microsoft.OpenApi" Version="3.10.2" />
     <PackageReference Include="Swordfish.NET.CollectionsV3" Version="3.3.16" />
     <PackageReference Include="YamlDotNet.System.Text.Json" Version="1.8.0" />
