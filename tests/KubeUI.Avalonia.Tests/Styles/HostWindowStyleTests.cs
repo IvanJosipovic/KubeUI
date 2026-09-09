@@ -33,4 +33,23 @@ public sealed class HostWindowStyleTests
 
         window.Close();
     }
+
+    [AvaloniaFact]
+    public void floating_document_host_window_uses_themed_background()
+    {
+        var window = new HostWindow
+        {
+            IsToolWindow = false
+        };
+
+        window.Show();
+
+        Dispatcher.UIThread.RunJobs();
+
+        Application.Current!.TryFindResource("SystemRegionBrush", out var brush).ShouldBeTrue();
+        window.Background.ShouldBeOfType<SolidColorBrush>();
+        ((SolidColorBrush)window.Background!).Color.ShouldBe(((SolidColorBrush)brush!).Color);
+
+        window.Close();
+    }
 }
