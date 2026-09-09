@@ -63,7 +63,13 @@ public sealed class Fluent : AvaloniaStyles
                         new NameScope())
                 }));
 
-        Add(new Style<HostWindow>()
+        Add(new Style<HostWindow>(x => x.OfType<HostWindow>().Class(":toolwindow"))
+            .Background(new DynamicResourceExtension("SystemRegionBrush"))
+            .Opacity(1d)
+            .RequestedThemeVariant(CompiledBinding.Create<Application, ThemeVariant?>(x => x.RequestedThemeVariant, source: Application.Current))
+            .TransparencyLevelHint([WindowTransparencyLevel.None]));
+
+        Add(new Style<HostWindow>(x => x.OfType<HostWindow>().Not(x => x.Class(":toolwindow")))
             .Background(new DynamicResourceExtension("SystemRegionBrush"))
             .Opacity(1d)
             .RequestedThemeVariant(CompiledBinding.Create<Application, ThemeVariant?>(x => x.RequestedThemeVariant, source: Application.Current))

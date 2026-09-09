@@ -218,6 +218,7 @@ public class DockFactory : Factory
             }
 
             AddDockable(targetDocumentDock, dockable);
+            targetDocumentDock.ActiveDockable = dockable;
             window = base.CreateWindowFrom(targetDocumentDock);
         }
 

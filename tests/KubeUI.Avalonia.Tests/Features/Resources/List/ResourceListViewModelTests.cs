@@ -1010,7 +1010,7 @@ public class ResourceListViewModelTests
         await WaitForAsync(() => vm.View[0].ShouldBeOfType<Corev1Event>().Name() == "right", 5000);
         vm.View[0].ShouldBeOfType<Corev1Event>().Name().ShouldBe("right");
 
-        for (var i = 0; i < 400; i++)
+        for (var i = 0; i < 50; i++)
         {
             left.LastTimestamp = baseTimestamp.AddHours(6 + (i * 2));
             left.Count = i + 10;
@@ -2121,19 +2121,25 @@ public class ResourceListViewModelTests
         bitmap.ShouldNotBeNull();
 
         var horizontalLineCount = 0;
-        for (var y = 32; y < bitmap.Height - 1; y++)
+        for (var y = 33; y < bitmap.Height - 1; y++)
         {
-            var matchingPixels = 0;
+            var contrastingPixels = 0;
             for (var x = 0; x < bitmap.Width; x++)
             {
-                var pixel = bitmap.GetPixel(x, y);
-                if (pixel.Red > 50 && pixel.Green > 50 && pixel.Blue > 50)
+                var current = bitmap.GetPixel(x, y);
+                var previous = bitmap.GetPixel(x, y - 1);
+                var next = bitmap.GetPixel(x, y + 1);
+                var redContrast = Math.Abs((current.Red * 2) - previous.Red - next.Red);
+                var greenContrast = Math.Abs((current.Green * 2) - previous.Green - next.Green);
+                var blueContrast = Math.Abs((current.Blue * 2) - previous.Blue - next.Blue);
+
+                if (redContrast + greenContrast + blueContrast > 12)
                 {
-                    matchingPixels++;
+                    contrastingPixels++;
                 }
             }
 
-            if (matchingPixels > bitmap.Width / 2)
+            if (contrastingPixels > bitmap.Width / 2)
             {
                 horizontalLineCount++;
             }

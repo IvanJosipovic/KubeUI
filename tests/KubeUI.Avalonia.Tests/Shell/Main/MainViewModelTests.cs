@@ -84,7 +84,8 @@ public sealed class MainViewModelTests
         factory.FloatDockable(tool);
         await TestApplicationExtensions.WaitForUiAsync();
 
-        tool.Owner.ShouldBeAssignableTo<IDocumentDock>();
+        IDocumentDock floatingDocuments = tool.Owner.ShouldBeAssignableTo<IDocumentDock>();
+        floatingDocuments.ActiveDockable.ShouldBeSameAs(tool);
         tool.Owner.ShouldNotBeSameAs(bottomDock);
         factory.FindRoot(tool)!.Window!.Host!.ShouldBeOfType<HostWindow>().IsToolWindow.ShouldBeFalse();
 
