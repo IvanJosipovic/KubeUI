@@ -52,6 +52,7 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
     private int _streamEndedReconnectPending;
     private int _activeReaderCount;
     private int _outputGeneration;
+    private bool _displayPaused;
     private PodLogDisplayMode _resourceNameDisplayMode;
     private bool _awaitingReadableTargets;
     private IDisposable? _resourceChangesSubscription;
@@ -272,6 +273,23 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     /// <summary>Gets or sets the request to resume following the newest logs.</summary>
     public partial bool FollowLogsRequested { get; set; }
+
+    [ObservableProperty]
+    /// <summary>Gets the number of log entries received while the display was paused.</summary>
+    public partial int PendingLogCount { get; private set; }
+
+    /// <summary>Gets whether log entries are waiting to be displayed.</summary>
+    public bool HasPendingLogUpdates => PendingLogCount > 0;
+
+    /// <summary>Gets whether the displayed log document is paused while the stream continues.</summary>
+    public bool IsDisplayPaused => _displayPaused;
+
+    /// <summary>Gets the status shown while the display is paused and new entries arrive.</summary>
+    public string LogUpdateStatus => !IsDisplayPaused
+        ? string.Empty
+        : HasPendingLogUpdates
+            ? string.Format(CultureInfo.CurrentCulture, Assets.Resources.PodLogsView_LogUpdatesPaused, PendingLogCount)
+            : Assets.Resources.PodLogsView_UpdatesPaused;
 
     [ObservableProperty]
     /// <summary>Gets or sets the persisted editor scroll offset.</summary>
@@ -781,8 +799,33 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
     {
         if (value)
         {
+            SetDisplayPaused(false);
+            PendingLogCount = 0;
+            RenderOutputEntries();
             FollowLogsRequested = true;
         }
+        else
+        {
+            SetDisplayPaused(true);
+        }
+    }
+
+    partial void OnPendingLogCountChanged(int value)
+    {
+        OnPropertyChanged(nameof(HasPendingLogUpdates));
+        OnPropertyChanged(nameof(LogUpdateStatus));
+    }
+
+    private void SetDisplayPaused(bool value)
+    {
+        if (_displayPaused == value)
+        {
+            return;
+        }
+
+        _displayPaused = value;
+        OnPropertyChanged(nameof(IsDisplayPaused));
+        OnPropertyChanged(nameof(LogUpdateStatus));
     }
 
     partial void OnObjectChanged(IKubernetesObject<V1ObjectMeta>? value)
@@ -1358,6 +1401,8 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
     {
         Interlocked.Increment(ref _outputGeneration);
         Logs.Text = string.Empty;
+        SetDisplayPaused(!AutoScrollToBottom);
+        PendingLogCount = 0;
         lock (_outputEntriesGate)
         {
             _outputEntries.Clear();

@@ -84,7 +84,23 @@ public sealed partial class PodLogsView : ViewBase<PodLogsViewModel>
                         new TextBlock()
                             .MaxWidth(320)
                             .Text(vm, x => x.StreamLimitWarning)
-                            .TextTrimming(TextTrimming.CharacterEllipsis)));
+                            .TextTrimming(TextTrimming.CharacterEllipsis)),
+                new StackPanel()
+                    .Orientation(Orientation.Horizontal)
+                    .Spacing(4)
+                    .VerticalAlignment(VerticalAlignment.Center)
+                    .IsVisible(vm, x => x.IsDisplayPaused)
+                    .Children(
+                        new FluentIcon().Icon(Icon.Warning),
+                        new TextBlock()
+                            .MaxWidth(320)
+                            .VerticalAlignment(VerticalAlignment.Center)
+                            .Text(vm, x => x.LogUpdateStatus)
+                            .TextTrimming(TextTrimming.CharacterEllipsis),
+                        new Button()
+                            .VerticalAlignment(VerticalAlignment.Center)
+                            .Command(vm, x => x.FollowLogsCommand)
+                            .Content(Assets.Resources.PodLogsView_ResumeFollowing)));
     }
 
     private static TreeComboBox CreateSourcesSelector(PodLogsViewModel vm)

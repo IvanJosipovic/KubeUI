@@ -1077,6 +1077,18 @@
     <value>Clear Logs</value>
     <comment/>
   </data>
+  <data name="PodLogsView_LogUpdatesPaused" xml:space="preserve">
+    <value>Live log updates paused · {0} new lines</value>
+    <comment/>
+  </data>
+  <data name="PodLogsView_UpdatesPaused" xml:space="preserve">
+    <value>Live log updates paused</value>
+    <comment/>
+  </data>
+  <data name="PodLogsView_ResumeFollowing" xml:space="preserve">
+    <value>Resume Following</value>
+    <comment/>
+  </data>
   <data name="V1PodConfig_DebugContainer" xml:space="preserve">
     <value>Add Debug Container</value>
     <comment/>

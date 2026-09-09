@@ -20,7 +20,10 @@
 - Pod and container selection changes clear errors from the previous connection immediately; failures from the new selection remain visible.
 - Resource-name prefixes default to enabled when entering a multi-pod or multi-container display mode, while explicit user changes survive reconnects in the same mode.
 - Label the action that controls automatic scrolling as `Follow Logs`; keep it visible and enabled, with its checked state indicating whether the editor follows the newest output.
+- When Follow Logs is disabled or the editor is scrolled away from the bottom, freeze the displayed document while continuing to buffer incoming lines; show the pending line count and a Resume Following action.
 - Recompute Follow Logs state when either the editor scroll offset or viewport changes, including when resizing introduces vertical overflow.
+- Treat extent and viewport changes as layout changes rather than user scrolling; a view already pinned to the bottom must remain pinned and keep Follow Logs enabled while resizing.
+- Consider the view pinned when the remaining scroll distance is within half a rendered line so fractional line visibility does not disable Follow Logs.
 - Use the down-arrow-to-line icon for Follow Logs so it reads as returning to the bottom of the output.
 - Keep the log action toolbar compact without visual separators between action groups.
 - Use a broom icon for Clear Logs so the action does not imply deleting a Kubernetes resource or file.
@@ -31,5 +34,6 @@
 - Resource Lists expose one View Logs action. When a compatible logs tool is active for the cluster, its submenu explicitly offers Open New Logs View or Add to Current Logs View; never assume the user wants selections grouped.
 - Combined exports use a multi-resource filename and manifest, and describe cross-stream output as arrival-ordered.
 - New sessions and resource-add refreshes open all selected Pod/container streams concurrently, load the last 500 lines from each, and then follow live output.
+- Batch buffered log output into bounded UI updates and await each update before queuing another from the same reader. Flush pending lines before waiting for more network output, and trim retained lines in one document update.
 - Ctrl+F search panel exposes a pod-log filter toggle. Filtering uses AvaloniaEdit search options and a separate bounded display document while preserving canonical logs for streaming and export; closing search clears the filter.
 - Closing search resets the filter toggle. Incomplete regexes retain the last valid filtered view; unchanged matching output must preserve the displayed document and selection.

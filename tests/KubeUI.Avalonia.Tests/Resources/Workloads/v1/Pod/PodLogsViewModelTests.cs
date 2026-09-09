@@ -22,6 +22,34 @@ namespace KubeUI.Avalonia.Tests.Resources.Workloads.v1.Pod;
 
 public sealed class PodLogsViewModelTests
 {
+    [AvaloniaFact]
+    public async Task Connect_should_batch_buffered_logs_to_keep_ui_updates_bounded()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync();
+        V1Pod pod = CreatePod("app", "default", "pod-uid", containers: ["app"]);
+        await workspace.Runtime.AddOrUpdateResource(pod);
+        await workspace.Runtime.SeedResource<V1Pod>(true);
+        var payload = string.Join('\n', Enumerable.Range(1, 500).Select(index => $"line-{index}"));
+        RecordingPodLogStreamClient streamClient = new([payload]);
+        using PodLogsViewModel viewModel = CreateViewModel(workspace.Runtime, streamClient);
+        viewModel.Object = pod;
+        viewModel.ContainerName = "app";
+        var updates = 0;
+        EventHandler onChanged = (_, _) => updates++;
+        viewModel.Logs.TextChanged += onChanged;
+        try
+        {
+            await viewModel.Connect();
+            await WaitForAsync(() => viewModel.Logs.Text.EndsWith("line-500", StringComparison.Ordinal));
+            viewModel.Logs.Text.ShouldBe(payload.Replace("\n", Environment.NewLine));
+            updates.ShouldBeLessThan(20);
+        }
+        finally
+        {
+            viewModel.Logs.TextChanged -= onChanged;
+        }
+    }
+
     [AvaloniaTheory, KubernetesBackendData]
     [Trait("Category", "Kind")]
     public async Task Deployment_rollout_should_switch_logs_to_the_new_pod_without_refresh(KubernetesBackend backend)
@@ -2291,6 +2319,59 @@ public sealed class PodLogsViewModelTests
 
         viewModel.AutoScrollToBottom.ShouldBeTrue();
         viewModel.FollowLogsRequested.ShouldBeTrue();
+    }
+
+    [AvaloniaFact]
+    public async Task Disabling_follow_logs_should_pause_the_display_until_resumed()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync();
+        using PodLogsViewModel viewModel = CreateViewModel(workspace.Runtime, new RecordingPodLogStreamClient());
+
+        viewModel.Logs.Text = "existing line";
+        viewModel.AutoScrollToBottom = false;
+
+        viewModel.IsDisplayPaused.ShouldBeTrue();
+        viewModel.LogUpdateStatus.ShouldBe(KubeUI.Avalonia.Assets.Resources.PodLogsView_UpdatesPaused);
+
+        viewModel.FollowLogs();
+
+        viewModel.IsDisplayPaused.ShouldBeFalse();
+        viewModel.HasPendingLogUpdates.ShouldBeFalse();
+        viewModel.LogUpdateStatus.ShouldBe(string.Empty);
+    }
+
+    [AvaloniaFact]
+    public async Task Paused_display_should_buffer_streamed_output_until_following_resumes()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync();
+        V1Pod pod = CreatePod(
+            name: "app",
+            namespaceName: "default",
+            uid: "app-uid",
+            containers: ["app"]);
+        await workspace.Runtime.AddOrUpdateResource(pod);
+        await workspace.Runtime.SeedResource<V1Pod>(true);
+
+        BlockingPodLogStreamClient streamClient = new("new line 1\nnew line 2\n");
+        using PodLogsViewModel viewModel = CreateViewModel(workspace.Runtime, streamClient);
+        viewModel.Object = pod;
+        viewModel.ContainerName = "app";
+
+        Task connectTask = viewModel.Connect();
+        await streamClient.WaitForFirstRequestAsync();
+
+        viewModel.Logs.Text = "existing line";
+        viewModel.AutoScrollToBottom = false;
+        streamClient.ReleaseFirstRequest();
+
+        await WaitForAsync(() => viewModel.PendingLogCount == 2);
+        viewModel.Logs.Text.ShouldBe("existing line");
+
+        viewModel.FollowLogs();
+
+        await WaitForAsync(() => viewModel.Logs.Text.Contains("new line 2", StringComparison.Ordinal));
+        viewModel.PendingLogCount.ShouldBe(0);
+        await connectTask;
     }
 
     [AvaloniaTheory, KubernetesBackendData]
