@@ -2,6 +2,7 @@ using System.Diagnostics;
 using Avalonia.Markup.Xaml.Styling;
 using Dock.Model.Controls;
 using Dock.Model.Core;
+using Dock.Settings;
 using k8s;
 using KubeUI.Avalonia.Features.Clusters.Error;
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
@@ -79,6 +80,9 @@ public partial class App : Application, IServiceProviderHost
 
     public override void Initialize()
     {
+        DockSettings.MinimumHorizontalDragDistance = 8;
+        DockSettings.MinimumVerticalDragDistance = 8;
+
         var fluent = new Fluent();
         Styles.Add(fluent);
         Resources.MergedDictionaries.Add(new ResourceInclude(new Uri("avares://LiveMarkdown.Avalonia/Defaults.axaml"))
@@ -99,7 +103,11 @@ public partial class App : Application, IServiceProviderHost
             var mainViewModel = Services.GetRequiredService<MainViewModel>();
             mainWindow.DataContext = mainViewModel;
             TopLevel = desktop.MainWindow;
-            desktop.ShutdownRequested += (_, _) => GracefulShutdown();
+            desktop.ShutdownRequested += (_, _) =>
+            {
+                mainViewModel.CloseLayoutCommand.Execute(null);
+                GracefulShutdown();
+            };
 
             Dispatcher.UIThread.Post(mainViewModel.Initialize, DispatcherPriority.Background);
         }

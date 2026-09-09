@@ -27,6 +27,7 @@ public sealed class MainView : ViewBase<MainViewModel>
                     .Col(0)
                     .Row(1)
                     .Margin(4)
+                    .Factory(vm, vm => vm.Factory)
                     .Layout(vm, vm => vm.Layout));
     }
 

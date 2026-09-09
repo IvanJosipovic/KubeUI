@@ -1,4 +1,5 @@
 using Dock.Avalonia.Controls;
+using Avalonia.Platform;
 using Dock.Model.Controls;
 using Dock.Model.Core;
 using Dock.Model.Mvvm;
@@ -157,7 +158,10 @@ public class DockFactory : Factory
 
         HostWindowLocator = new Dictionary<string, Func<IHostWindow?>>
         {
-            [nameof(IDockWindow)] = () => new HostWindow()
+            [nameof(IDockWindow)] = () => new HostWindow
+            {
+                Icon = new WindowIcon(AssetLoader.Open(new Uri("avares://KubeUI.Avalonia/Assets/icon.ico")))
+            }
         };
 
         base.InitLayout(layout);
@@ -185,25 +189,70 @@ public class DockFactory : Factory
     }
 
     /// <summary>
-    /// Prevents closing dockables that shouldn't be closed
+    /// Creates a document-hosted floating window for tools opened in the main document dock.
     /// </summary>
-    /// <param name="dockable"></param>
-    /// <param name="collapse"></param>
-    public override void RemoveDockable(IDockable dockable, bool collapse)
+    /// <param name="dockable">The dockable to float.</param>
+    /// <returns>The floating window, or <see langword="null"/> when it cannot be created.</returns>
+    public override IDockWindow? CreateWindowFrom(IDockable dockable)
     {
-        try
+        IDockWindow? window;
+
+        if (dockable is not ITool)
         {
-            if (!dockable.CanClose)
+            window = base.CreateWindowFrom(dockable);
+        }
+        else
+        {
+            var sourceDocumentDock = dockable.Owner as IDocumentDock;
+            var targetDocumentDock = CreateDocumentDock();
+            targetDocumentDock.Title = nameof(IDocumentDock);
+            targetDocumentDock.Id = (dockable.Owner as IDock)?.Id ?? dockable.Id;
+            targetDocumentDock.CanCreateDocument = sourceDocumentDock?.CanCreateDocument ?? false;
+            targetDocumentDock.EnableWindowDrag = sourceDocumentDock?.EnableWindowDrag ?? false;
+            targetDocumentDock.VisibleDockables = CreateList<IDockable>();
+
+            if (sourceDocumentDock is IDocumentDockContent sourceContent
+                && targetDocumentDock is IDocumentDockContent targetContent)
             {
-                return;
+                targetContent.DocumentTemplate = sourceContent.DocumentTemplate;
             }
 
-            base.RemoveDockable(dockable, collapse);
+            AddDockable(targetDocumentDock, dockable);
+            window = base.CreateWindowFrom(targetDocumentDock);
         }
-        catch (Exception ex)
+
+        if (window is not null)
         {
-            _logger.LogError(ex, "Error removing dockable");
+            var floatingWindowCount = _rootDock?.Windows?.Count ?? HostWindows.Count;
+            window.Title = $"KubeUI {floatingWindowCount + 2}";
         }
+
+        return window;
+    }
+
+    /// <summary>
+    /// Docks a dockable into the main document dock, including dockables hosted
+    /// in a floating window.
+    /// </summary>
+    /// <param name="dockable">The dockable to dock as a document.</param>
+    public override void DockAsDocument(IDockable dockable)
+    {
+        if (!dockable.CanDockAsDocument
+            || dockable.Owner is not IDock sourceDock
+            || _documentDock is null)
+        {
+            return;
+        }
+
+        if (sourceDock == _documentDock)
+        {
+            return;
+        }
+
+        var targetDockable = _documentDock.VisibleDockables?.LastOrDefault();
+        MoveDockable(sourceDock, _documentDock, dockable, targetDockable);
+        SetActiveDockable(dockable);
+        SetFocusedDockable(_documentDock, dockable);
     }
 
     public override void SplitToDock(IDock dock, IDockable dockable, DockOperation operation)

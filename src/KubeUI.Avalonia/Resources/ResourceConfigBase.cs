@@ -351,12 +351,14 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
     [RelayCommand(CanExecute = nameof(CanNewResource))]
     public void NewResource()
     {
-        var resource = new T();
-        resource.Kind = Kind.Kind;
-        resource.ApiVersion = Kind.GroupApiVersion;
-        resource.Metadata = new()
+        var resource = new T
         {
-            Name = "temp",
+            Kind = Kind.Kind,
+            ApiVersion = Kind.GroupApiVersion,
+            Metadata = new()
+            {
+                Name = "temp",
+            }
         };
 
         if (IsNamespaced)
@@ -442,6 +444,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
         var instance = ServiceProvider.GetRequiredService<ResourcePropertiesViewModel<T>>();
         instance.Initialize(Cluster, (T)items[0]!);
         instance.CanFloat = false;
+        instance.CanDockAsDocument = false;
 
         _factory.AddToRight(instance);
     }

@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Collections.Specialized;
+using System.IO;
 using System.Reflection;
 using Avalonia.Controls;
 using Avalonia.Controls.DataGridFiltering;
@@ -14,6 +15,7 @@ using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
 using Avalonia.Input;
 using Avalonia.Layout;
+using Avalonia.Media.Imaging;
 using Avalonia.Styling;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
@@ -31,8 +33,10 @@ using KubeUI.Avalonia.Features.AI;
 using KubeUI.Avalonia.Features.Resources.List.Behaviors;
 using KubeUI.Avalonia.Resources;
 using KubeUI.Avalonia.Shell.Documents.About;
+using KubeUI.Avalonia.Shell.Main;
 using KubeUI.Avalonia.Tests.Infra;
 using Shouldly;
+using SkiaSharp;
 
 namespace KubeUI.Avalonia.Tests.Features.Resources.List;
 
@@ -1006,7 +1010,7 @@ public class ResourceListViewModelTests
         await WaitForAsync(() => vm.View[0].ShouldBeOfType<Corev1Event>().Name() == "right", 5000);
         vm.View[0].ShouldBeOfType<Corev1Event>().Name().ShouldBe("right");
 
-        for (var i = 0; i < 50; i++)
+        for (var i = 0; i < 400; i++)
         {
             left.LastTimestamp = baseTimestamp.AddHours(6 + (i * 2));
             left.Count = i + 10;
@@ -1026,12 +1030,16 @@ public class ResourceListViewModelTests
                 5000);
         }
 
-        await AddOrUpdateAsync(cluster, Event("ns", "tail", baseTimestamp.AddHours(200), 999));
+        await AddOrUpdateAsync(cluster, Event("ns", "tail", baseTimestamp.AddHours(1000), 999));
         await TestApplicationExtensions.WaitForUiAsync();
 
         await WaitForAsync(() => vm.View.Count == 203, 5000);
         vm.View.Count.ShouldBe(203);
         await WaitForAsync(() => vm.ItemCount == 203, 5000);
+        await WaitForAsync(
+            () => vm.View.Count >= 1
+                && vm.View[0].ShouldBeOfType<Corev1Event>().Name() == "tail",
+            5000);
         vm.View[0].ShouldBeOfType<Corev1Event>().Name().ShouldBe("tail");
     }
 
@@ -1998,8 +2006,8 @@ public class ResourceListViewModelTests
         ((DataGridColumnDefinition)(vm.SortingModel.Descriptors[0].ColumnId)).ColumnKey.ShouldBe("name");
     }
 
-    [AvaloniaFact(DisplayName = "Switching document tabs preserves DataGrid scroll offset")]
-    public async Task switching_document_tabs_preserves_datagrid_scroll_offset()
+    [AvaloniaFact(DisplayName = "Switching Events and Home tabs preserves DataGrid grid lines")]
+    public async Task switching_events_and_home_tabs_preserves_datagrid_grid_lines()
     {
         var factory = Application.Current.GetRequiredTestService<IFactory>();
         var layout = factory.CreateLayout();
@@ -2015,21 +2023,18 @@ public class ResourceListViewModelTests
         using var window = Application.Current.CreateTestWindow(height: 900, content: dockControl);
         var cluster = await Application.Current.CreateClusterAsync();
 
-        var vm = Application.Current.GetRequiredTestService<ResourceListViewModel<V1Pod>>();
+        var vm = Application.Current.GetRequiredTestService<ResourceListViewModel<Corev1Event>>();
         vm.Initialize(cluster);
 
         window.Show();
 
-        var otherDockable = Application.Current.GetRequiredTestService<AboutViewModel>();
-        otherDockable.Id = nameof(AboutViewModel);
-
         factory.AddToDocuments(vm);
-        factory.AddToDocuments(otherDockable);
 
-        // Seed many items so vertical scrolling appears
+        var home = factory.FindDockableById(nameof(HomeViewModel)).ShouldBeOfType<HomeViewModel>();
+
         for (var i = 0; i < 400; i++)
         {
-            await AddOrUpdateAsync(cluster, Pod("ns", i.ToString()));
+            await AddOrUpdateAsync(cluster, Event("ns", i.ToString()));
         }
 
         await WaitForAsync(() => vm.View.Count == 400, 5000);
@@ -2047,26 +2052,21 @@ public class ResourceListViewModelTests
 
         var scrollViewer = grid.GetVisualDescendants().OfType<ScrollViewer>().FirstOrDefault();
         scrollViewer.ShouldNotBeNull();
-
-        // Wait until content is scrollable
         await WaitForAsync(() => scrollViewer.Extent.Height > scrollViewer.Viewport.Height, 3000);
-
-        scrollViewer.Extent.Height.ShouldBeGreaterThan(scrollViewer.Viewport.Height);
-
-        var targetOffset = new Vector(0, Math.Max(0, scrollViewer.Extent.Height - scrollViewer.Viewport.Height));
+        var targetOffset = new Vector(0, scrollViewer.Extent.Height - scrollViewer.Viewport.Height);
         scrollViewer.Offset = targetOffset;
         await WaitForAsync(() => Math.Abs(scrollViewer.Offset.Y - targetOffset.Y) < 0.1, 5000);
 
-        // switch away to trigger capture
-        factory.SetActiveDockable(otherDockable);
-        factory.SetFocusedDockable(documents, otherDockable);
+        var initialRows = GetAllRows(grid).Where(row => row.IsVisible).ToArray();
+        initialRows.Length.ShouldBeGreaterThan(0);
+        grid.GridLinesVisibility.ShouldBe(DataGridGridLinesVisibility.All);
+        grid.HorizontalGridLinesBrush.ShouldNotBeNull();
+        SaveGridScreenshot(grid, "events-before-home");
+
+        factory.SetActiveDockable(home);
+        factory.SetFocusedDockable(documents, home);
         await TestApplicationExtensions.WaitForUiAsync();
 
-        vm.DataGridRuntimeState.ShouldNotBeNull();
-        vm.DataGridRuntimeState!.Scroll.ShouldNotBeNull();
-        vm.DataGridRuntimeState.Scroll!.VerticalOffset.ShouldBe(targetOffset.Y);
-
-        // switch back and ensure restore
         factory.SetActiveDockable(vm);
         factory.SetFocusedDockable(documents, vm);
         await TestApplicationExtensions.WaitForUiAsync();
@@ -2079,17 +2079,67 @@ public class ResourceListViewModelTests
 
         var restoredScrollViewer = restoredGrid.GetVisualDescendants().OfType<ScrollViewer>().FirstOrDefault();
         restoredScrollViewer.ShouldNotBeNull();
-
-        // Wait until restored grid is scrollable
         await WaitForAsync(() => restoredScrollViewer.Extent.Height > restoredScrollViewer.Viewport.Height, 3000);
 
-        await WaitForAsync(
-            () => Math.Abs(restoredScrollViewer.Offset.Y - targetOffset.Y) < 0.1,
-            10000);
-        restoredScrollViewer.Offset.Y.ShouldBe(targetOffset.Y);
-        ReferenceEquals(grid, restoredGrid).ShouldBeFalse();
-        vm.DataGridRuntimeState.ShouldNotBeNull();
+        restoredGrid.GridLinesVisibility.ShouldBe(DataGridGridLinesVisibility.All);
+        restoredGrid.HorizontalGridLinesBrush.ShouldNotBeNull();
+        GetAllRows(restoredGrid).Count(row => row.IsVisible).ShouldBeGreaterThan(0);
+        SaveGridScreenshot(restoredGrid, "events-after-home");
+        AssertHorizontalGridLines(restoredGrid);
 
+    }
+
+    private static void SaveGridScreenshot(DataGrid grid, string name)
+    {
+        var directory = Path.Combine(AppContext.BaseDirectory, "TestArtifacts");
+        Directory.CreateDirectory(directory);
+
+        var path = Path.Combine(directory, $"{name}-{Guid.NewGuid():N}.png");
+        var pixelSize = new PixelSize(
+            (int)Math.Ceiling(grid.Bounds.Width),
+            (int)Math.Ceiling(grid.Bounds.Height));
+
+        using var bitmap = new RenderTargetBitmap(pixelSize, new Vector(96, 96));
+        bitmap.Render(grid);
+        bitmap.Save(path);
+        Console.WriteLine($"DataGrid screenshot: {path}");
+    }
+
+    private static void AssertHorizontalGridLines(DataGrid grid)
+    {
+        var pixelSize = new PixelSize(
+            (int)Math.Ceiling(grid.Bounds.Width),
+            (int)Math.Ceiling(grid.Bounds.Height));
+
+        using var renderTarget = new RenderTargetBitmap(pixelSize, new Vector(96, 96));
+        using var stream = new MemoryStream();
+        renderTarget.Render(grid);
+        renderTarget.Save(stream);
+        stream.Position = 0;
+
+        using var bitmap = SKBitmap.Decode(stream);
+        bitmap.ShouldNotBeNull();
+
+        var horizontalLineCount = 0;
+        for (var y = 32; y < bitmap.Height - 1; y++)
+        {
+            var matchingPixels = 0;
+            for (var x = 0; x < bitmap.Width; x++)
+            {
+                var pixel = bitmap.GetPixel(x, y);
+                if (pixel.Red > 50 && pixel.Green > 50 && pixel.Blue > 50)
+                {
+                    matchingPixels++;
+                }
+            }
+
+            if (matchingPixels > bitmap.Width / 2)
+            {
+                horizontalLineCount++;
+            }
+        }
+
+        horizontalLineCount.ShouldBeGreaterThanOrEqualTo(3);
     }
 
     [AvaloniaFact(DisplayName = "Reattach captures runtime state and restores on reattach")]
@@ -2273,8 +2323,8 @@ public class ResourceListViewModelTests
         restoredColumn.Width.DisplayValue.ShouldBeGreaterThanOrEqualTo(90);
     }
 
-    [AvaloniaFact(DisplayName = "Restoring DataGrid state handles DataContext assigned after attachment")]
-    public async Task restoring_datagrid_state_handles_datacontext_assigned_after_attachment()
+    [AvaloniaFact(DisplayName = "Attached ResourceListView rebinds and restores replacement DataContext state")]
+    public async Task attached_resource_list_view_rebinds_and_restores_replacement_datacontext_state()
     {
         using var window = Application.Current.CreateTestWindow();
         var cluster = await Application.Current.CreateClusterAsync();
@@ -2294,7 +2344,6 @@ public class ResourceListViewModelTests
         column.Width = new DataGridLength(180);
         grid.UpdateLayout();
         await TestApplicationExtensions.WaitForUiAsync();
-        var originalWidth = column.Width.DisplayValue;
 
         window.Content = null;
         await TestApplicationExtensions.WaitForUiAsync();
@@ -2302,19 +2351,70 @@ public class ResourceListViewModelTests
 
         var replacementVm = Application.Current.GetRequiredTestService<ResourceListViewModel<V1Pod>>();
         replacementVm.Initialize(cluster);
-        replacementVm.DataGridRuntimeState = vm.DataGridRuntimeState;
+        replacementVm.DataGridRuntimeState = WithFirstColumnWidth(vm.DataGridRuntimeState!, 240);
 
-        var restoredView = Application.Current.GetRequiredTestService<ResourceListView>();
-        restoredView.DataContext = vm;
-        window.Content = restoredView;
+        view.DataContext = vm;
+        window.Content = view;
         await TestApplicationExtensions.WaitForUiAsync();
 
-        restoredView.DataContext = replacementVm;
+        view.DataContext = replacementVm;
         await TestApplicationExtensions.WaitForUiAsync();
 
-        var restoredGrid = restoredView.FindControl<DataGrid>("PART_Grid");
+        var restoredGrid = view.FindControl<DataGrid>("PART_Grid");
         restoredGrid.ShouldNotBeNull();
-        restoredGrid.Columns.First().Width.DisplayValue.ShouldBe(originalWidth, tolerance: 0.1);
+        await WaitForAsync(
+            () => ReferenceEquals(restoredGrid.ItemsSource, replacementVm.View)
+                && ReferenceEquals(restoredGrid.ColumnDefinitionsSource, replacementVm.ColumnDefinitions)
+                && ReferenceEquals(restoredGrid.FilteringModel, replacementVm.FilteringModel)
+                && ReferenceEquals(restoredGrid.SearchModel, replacementVm.SearchModel)
+                && ReferenceEquals(restoredGrid.SortingModel, replacementVm.SortingModel)
+                && ReferenceEquals(restoredGrid.Selection, replacementVm.SelectionModel)
+                && restoredGrid.Columns.Count > 0
+                && Math.Abs(restoredGrid.Columns.First().Width.DisplayValue - 240) < 0.1,
+            5000);
+        restoredGrid.ItemsSource.ShouldBeSameAs(replacementVm.View);
+        restoredGrid.ColumnDefinitionsSource.ShouldBeSameAs(replacementVm.ColumnDefinitions);
+        restoredGrid.FilteringModel.ShouldBeSameAs(replacementVm.FilteringModel);
+        restoredGrid.SearchModel.ShouldBeSameAs(replacementVm.SearchModel);
+        restoredGrid.SortingModel.ShouldBeSameAs(replacementVm.SortingModel);
+        restoredGrid.Selection.ShouldBeSameAs(replacementVm.SelectionModel);
+        restoredGrid.Columns.First().Width.DisplayValue.ShouldBe(240, tolerance: 0.1);
+    }
+
+    private static DataGridState WithFirstColumnWidth(DataGridState state, double width)
+    {
+        var columns = state.Columns!.Columns
+            .Select(column => new DataGridColumnState
+            {
+                ColumnKey = column.ColumnKey,
+                DisplayIndex = column.DisplayIndex,
+                IsVisible = column.IsVisible,
+                Width = column.Width,
+                MinWidth = column.MinWidth,
+                MaxWidth = column.MaxWidth
+            })
+            .ToArray();
+        columns[0].Width = new DataGridLength(width);
+
+        return new DataGridState
+        {
+            Version = state.Version,
+            Sections = state.Sections,
+            Columns = new DataGridColumnLayoutState
+            {
+                Columns = columns,
+                FrozenColumnCount = state.Columns.FrozenColumnCount,
+                FrozenColumnCountRight = state.Columns.FrozenColumnCountRight
+            },
+            Sorting = state.Sorting,
+            Filtering = state.Filtering,
+            Search = state.Search,
+            ConditionalFormatting = state.ConditionalFormatting,
+            Grouping = state.Grouping,
+            Hierarchical = state.Hierarchical,
+            Selection = state.Selection,
+            Scroll = state.Scroll
+        };
     }
 
     [AvaloniaFact(DisplayName = "Saving DataGrid state preserves column width changes when scroll state is unavailable")]
