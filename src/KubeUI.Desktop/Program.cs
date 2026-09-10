@@ -39,11 +39,20 @@ internal static class Program
 
         EnsureMacOsPath();
 
-        using var host = CreateStartedHost(args);
+        using var host = CreateHostBuilder(args).Build();
 
         try
         {
-            CreateAppBuilder(host.Services).StartWithClassicDesktopLifetime(args);
+            using var lifetime = new ClassicDesktopStyleApplicationLifetime
+            {
+                Args = args
+            };
+            var appBuilder = CreateAppBuilder(host.Services);
+
+            StartHostAfterAvaloniaSetup(
+                host,
+                () => appBuilder.SetupWithLifetime(lifetime),
+                () => lifetime.Start(args));
         }
         catch (Exception exception)
         {
@@ -92,6 +101,16 @@ internal static class Program
         }
 #endif
         return builder;
+    }
+
+    internal static void StartHostAfterAvaloniaSetup(
+        IHost host,
+        Action setupAvalonia,
+        Action runAvalonia)
+    {
+        setupAvalonia();
+        host.Start();
+        runAvalonia();
     }
 
     internal static void RegisterAvaloniaShutdown(IServiceProvider services, Action? shutdownAvalonia = null)
