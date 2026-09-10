@@ -30,13 +30,13 @@ jobs:
           - rid: win-x64
             fileName: KubeUI.Desktop.exe
             runs-on: windows-latest
-            packParams: ''
+            packParams: '--msi'
             signingParams: --azureTrustedSignFile metadata.json --verbose --signExclude \.dll$
             icon: src/KubeUI.Avalonia/Assets/icon.ico
           - rid: win-arm64
             fileName: KubeUI.Desktop.exe
             runs-on: windows-latest
-            packParams: ''
+            packParams: '--msi'
             signingParams: --azureTrustedSignFile metadata.json --verbose --signExclude \.dll$
             icon: src/KubeUI.Avalonia/Assets/icon.ico
           - rid: linux-x64
