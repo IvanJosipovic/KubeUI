@@ -557,7 +557,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                 _logger.LogError(ex, "Error creating Control");
                 return new TextBlock { Text = ex.Message };
             }
-        }, supportsRecycling: false);
+        }, supportsRecycling: true);
     }
 
     private static DataGridColumnDefinitionOptions BuildColumnOptions(IResourceListColumn columnDefinition)

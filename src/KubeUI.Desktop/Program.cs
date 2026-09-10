@@ -45,8 +45,17 @@ internal static class Program
         {
             CreateAppBuilder(host.Services).StartWithClassicDesktopLifetime(args);
         }
+        catch (Exception exception)
+        {
+            host.Services.GetRequiredService<ILoggerFactory>().CreateLogger("KubeUI.Desktop.Program").LogCritical(
+                exception,
+                "Avalonia startup failed");
+            throw;
+        }
         finally
         {
+            host.Services.GetRequiredService<ILoggerFactory>().CreateLogger("KubeUI.Desktop.Program").LogWarning(
+                "Avalonia lifetime ended; stopping host");
             Task.Run(async () =>
             {
                 await host.StopAsync().ConfigureAwait(false);

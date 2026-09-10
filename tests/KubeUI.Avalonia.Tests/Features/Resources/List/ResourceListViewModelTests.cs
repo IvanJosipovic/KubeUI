@@ -3,13 +3,13 @@ using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Collections.Specialized;
-using System.IO;
 using System.Reflection;
 using Avalonia.Controls;
 using Avalonia.Controls.DataGridFiltering;
 using Avalonia.Controls.DataGridSearching;
 using Avalonia.Controls.DataGridSorting;
 using Avalonia.Controls.Primitives;
+using Avalonia.Controls.Templates;
 using Avalonia.Controls.Selection;
 using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
@@ -34,7 +34,6 @@ using KubeUI.Avalonia.Features.Resources.List.Behaviors;
 using KubeUI.Avalonia.Resources;
 using KubeUI.Avalonia.Shell.Documents.About;
 using KubeUI.Avalonia.Shell.Main;
-using KubeUI.Avalonia.Tests.Infra;
 using Shouldly;
 using SkiaSharp;
 
@@ -784,6 +783,23 @@ public class ResourceListViewModelTests
             .Cast<Corev1Event>()
             .Select(item => item.Name())
             .ShouldBe(["event-398", "event-399", "event-397"]);
+    }
+
+    [AvaloniaFact(DisplayName = "Resource list custom cells support recycling")]
+    public async Task resource_list_custom_cells_support_recycling()
+    {
+        var cluster = await Application.Current.CreateClusterAsync();
+        var vm = Application.Current.GetRequiredTestService<ResourceListViewModel<Corev1Event>>();
+        vm.Initialize(cluster);
+
+        var column = vm.ColumnDefinitions
+            .Single(column => Equals(column.ColumnKey, "last-seen"))
+            .ShouldBeOfType<DataGridControlTemplateColumnDefinition>();
+
+        var template = column.CellTemplate.ShouldBeOfType<FuncDataTemplate<Corev1Event>>();
+        var recyclingField = template.GetType().GetField("_supportsRecycling", BindingFlags.Instance | BindingFlags.NonPublic);
+        recyclingField.ShouldNotBeNull();
+        recyclingField!.GetValue(template).ShouldBe(true);
     }
 
     [AvaloniaFact(DisplayName = "Update check DataGrid Text update")]
