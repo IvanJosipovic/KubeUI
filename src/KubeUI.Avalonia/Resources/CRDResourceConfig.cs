@@ -1,11 +1,9 @@
-using System.Text.Json;
 using System.Text.RegularExpressions;
 using Humanizer;
-using k8s;
+using JsonPathLINQ;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
 using KubeUI.Kubernetes;
-using JsonPathLINQ;
 
 namespace KubeUI.Avalonia.Resources;
 

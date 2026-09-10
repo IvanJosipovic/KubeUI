@@ -1,15 +1,14 @@
 using System.Globalization;
+using Avalonia.Controls.Documents;
 using Avalonia.Controls.Shapes;
 using Avalonia.Controls.Templates;
-using Avalonia.Controls.Documents;
-using Avalonia.Media;
 using Avalonia.Markup.Xaml.MarkupExtensions;
 using Avalonia.Markup.Xaml.Styling;
 using Avalonia.Themes.Fluent;
 using Avalonia.Xaml.Interactivity;
 using Dock.Avalonia.Controls;
-using Dock.Model.Core;
 using Dock.Avalonia.Themes.Fluent;
+using Dock.Model.Core;
 using FluentAvalonia.Styling;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
 using Semi.Avalonia;

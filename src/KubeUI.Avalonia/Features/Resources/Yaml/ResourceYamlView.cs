@@ -3,7 +3,6 @@ using Avalonia.Data.Converters;
 using Avalonia.Input;
 using Avalonia.Markup.Xaml.MarkupExtensions;
 using Avalonia.Xaml.Interactions.Core;
-using KubeUI.Avalonia.Styles;
 using AvaloniaEdit;
 using FluentAvalonia.UI.Controls;
 using FluentIcons.Avalonia;
@@ -12,6 +11,7 @@ using k8s.Models;
 using KubeUI.Avalonia.Features.Resources.Yaml.Behaviors;
 using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
+using KubeUI.Avalonia.Styles;
 
 namespace KubeUI.Avalonia.Features.Resources.Yaml;
 

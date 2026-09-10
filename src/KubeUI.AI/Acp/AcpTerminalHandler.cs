@@ -161,7 +161,9 @@ internal sealed class AcpTerminalHandler(IAgentPermissionService permissionServi
 
         public void Dispose()
         {
-            try { if (!Process.HasExited) Process.Kill(entireProcessTree: true); } catch { }
+            try
+            { if (!Process.HasExited) Process.Kill(entireProcessTree: true); }
+            catch { }
             Process.Dispose();
         }
     }

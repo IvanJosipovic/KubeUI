@@ -2,7 +2,6 @@ using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
-using KubeUI.Avalonia.Resources;
 using KubeUI.Kubernetes;
 using KubeUI.Kubernetes.Resources.Relationships;
 

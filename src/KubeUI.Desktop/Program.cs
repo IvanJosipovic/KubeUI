@@ -141,7 +141,7 @@ internal static class Program
         if (mcpEnabledOverride ?? settings.Settings.McpServerEnabled)
         {
             builder.Services.AddRouting();
-            builder.Services.AddSingleton<DiagnosticListener>(
+            builder.Services.AddSingleton(
                 static _ => new DiagnosticListener("KubeUI.Mcp"));
             builder.Services.AddMcpServer()
                 .WithHttpTransport(options => options.Stateless = true)

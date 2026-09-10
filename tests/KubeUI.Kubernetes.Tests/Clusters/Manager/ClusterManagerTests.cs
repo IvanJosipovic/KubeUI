@@ -1,10 +1,9 @@
+using System.Reactive.Concurrency;
 using k8s;
 using k8s.KubeConfigModels;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Shouldly;
-
-using System.Reactive.Concurrency;
 
 namespace KubeUI.Kubernetes.Tests.Clusters.Manager;
 

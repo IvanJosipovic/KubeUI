@@ -1,15 +1,14 @@
-using Dock.Avalonia.Controls;
 using Avalonia.Platform;
+using Dock.Avalonia.Controls;
 using Dock.Model.Controls;
 using Dock.Model.Core;
 using Dock.Model.Mvvm;
 using Dock.Model.Mvvm.Controls;
-using KubeUI.Avalonia.Shell.Main;
-using KubeUI.Avalonia.Shell.Navigation;
 using KubeUI.Avalonia.Features.AI;
 using KubeUI.Avalonia.Services.Settings;
+using KubeUI.Avalonia.Shell.Main;
+using KubeUI.Avalonia.Shell.Navigation;
 using Orientation = Dock.Model.Core.Orientation;
-using Dock.Model;
 
 namespace KubeUI.Avalonia.Infrastructure.Docking;
 

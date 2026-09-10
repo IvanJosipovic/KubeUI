@@ -1,6 +1,5 @@
 using System.Text.Json;
 using k8s;
-using KubeUI.Kubernetes;
 using KubernetesClient.Informer.Client;
 using Shouldly;
 

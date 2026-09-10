@@ -81,19 +81,19 @@ internal static class AcpMapper
             case SessionUpdateUserMessageChunk user when GetText(user.Content) is { Length: > 0 } text:
                 return new AgentMessageEvent(new AgentMessage("user", text));
             case ToolCall toolCall:
-            {
-                var name = toolCall.Title ?? toolCall.Kind.ToString();
-                return toolCall.Status is ToolCallStatus.Completed or ToolCallStatus.Failed
-                    ? new AgentToolCompletedEvent(new AgentToolResult(name, toolCall.Status == ToolCallStatus.Completed, Serialize(toolCall.RawOutput)))
-                    : new AgentToolStartedEvent(new AgentToolCall(name, Serialize(toolCall.RawInput)));
-            }
+                {
+                    var name = toolCall.Title ?? toolCall.Kind.ToString();
+                    return toolCall.Status is ToolCallStatus.Completed or ToolCallStatus.Failed
+                        ? new AgentToolCompletedEvent(new AgentToolResult(name, toolCall.Status == ToolCallStatus.Completed, Serialize(toolCall.RawOutput)))
+                        : new AgentToolStartedEvent(new AgentToolCall(name, Serialize(toolCall.RawInput)));
+                }
             case SessionUpdateToolCallUpdate tool:
-            {
-                var name = tool.Title ?? tool.Kind.ToString();
-                return tool.Status is ToolCallStatus.Completed or ToolCallStatus.Failed
-                    ? new AgentToolCompletedEvent(new AgentToolResult(name, tool.Status == ToolCallStatus.Completed, Serialize(tool.RawOutput)))
-                    : new AgentToolStartedEvent(new AgentToolCall(name, Serialize(tool.RawInput)));
-            }
+                {
+                    var name = tool.Title ?? tool.Kind.ToString();
+                    return tool.Status is ToolCallStatus.Completed or ToolCallStatus.Failed
+                        ? new AgentToolCompletedEvent(new AgentToolResult(name, tool.Status == ToolCallStatus.Completed, Serialize(tool.RawOutput)))
+                        : new AgentToolStartedEvent(new AgentToolCall(name, Serialize(tool.RawInput)));
+                }
             case Plan plan:
                 return new AgentPlanChangedEvent(new AgentPlan(
                     plan.Entries?.Select(static entry => entry.Content).Where(static content => content is not null).Cast<string>().ToArray()

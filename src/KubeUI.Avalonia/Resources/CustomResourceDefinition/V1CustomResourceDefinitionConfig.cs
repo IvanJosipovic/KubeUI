@@ -1,11 +1,9 @@
 using FluentIcons.Common;
 using k8s.Models;
-using KubernetesClient.Informer.Client;
-using KubeUI.Kubernetes;
 using KubeUI.Avalonia.Features.Resources.Common;
 using KubeUI.Avalonia.Features.Resources.List;
 using KubeUI.Avalonia.Infrastructure.Docking;
-using KubeUI.Avalonia.Infrastructure.Presentation;
+using KubeUI.Kubernetes;
 
 namespace KubeUI.Avalonia.Resources.CustomResourceDefinition;
 

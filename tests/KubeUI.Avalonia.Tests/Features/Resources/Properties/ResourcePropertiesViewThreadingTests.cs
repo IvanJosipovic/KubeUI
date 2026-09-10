@@ -1,8 +1,6 @@
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
-using Avalonia.Threading;
 using k8s.Models;
-using KubeUI.Avalonia.Tests.Infra;
 
 namespace KubeUI.Avalonia.Tests.Features.Resources.Properties;
 

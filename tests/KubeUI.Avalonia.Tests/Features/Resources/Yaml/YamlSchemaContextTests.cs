@@ -1,9 +1,9 @@
+using System.Text.Json.Nodes;
 using AvaloniaEdit.Document;
 using k8s.Models;
-using Microsoft.OpenApi;
 using KubernetesClient.Informer.Client;
+using Microsoft.OpenApi;
 using Shouldly;
-using System.Text.Json.Nodes;
 
 namespace KubeUI.Avalonia.Tests.Features.Resources.Yaml;
 

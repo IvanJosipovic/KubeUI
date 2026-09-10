@@ -1,15 +1,13 @@
-using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Primitives.PopupPositioning;
 using Avalonia.Input;
 using Avalonia.Xaml.Interactivity;
 using AvaloniaEdit;
-using AvaloniaEdit.Document;
 using AvaloniaEdit.Rendering;
+using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Infrastructure.Platform;
 using KubeUI.Avalonia.Styles;
 using KubeUI.Kubernetes;
-using KubernetesClient.Informer.Client;
 
 namespace KubeUI.Avalonia.Features.Resources.Yaml.Behaviors;
 

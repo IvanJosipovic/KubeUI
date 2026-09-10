@@ -1,6 +1,4 @@
 using Avalonia.Markup.Xaml.MarkupExtensions;
-using Avalonia.Data;
-using LiveChartsCore.Measure;
 using AvaloniaStyles = Avalonia.Styling.Styles;
 using NumericUpDown = Ursa.Controls.NumericUpDown;
 

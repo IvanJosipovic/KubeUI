@@ -1,20 +1,13 @@
-using System.Collections.ObjectModel;
 using System.Collections.Concurrent;
 using System.Globalization;
 using System.Net;
-using System.Net.Http;
 using System.Text;
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
-using AvaloniaEdit.Document;
-using Dock.Model.Core;
 using k8s;
 using k8s.Models;
 using KubeUI.Avalonia.Resources.Workloads.v1.Pod.Services;
 using KubeUI.Avalonia.Resources.Workloads.v1.Pod.ViewModels;
-using KubeUI.Avalonia.Services.Settings;
-using KubeUI.Avalonia.Tests.Infra;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Shouldly;
 
@@ -26,12 +19,12 @@ public sealed class PodLogsViewModelTests
     public async Task Connect_should_batch_buffered_logs_to_keep_ui_updates_bounded()
     {
         using var workspace = await Application.Current.CreateClusterAsync();
-        V1Pod pod = CreatePod("app", "default", "pod-uid", containers: ["app"]);
+        var pod = CreatePod("app", "default", "pod-uid", containers: ["app"]);
         await workspace.Runtime.AddOrUpdateResource(pod);
         await workspace.Runtime.SeedResource<V1Pod>(true);
         var payload = string.Join('\n', Enumerable.Range(1, 500).Select(index => $"line-{index}"));
         RecordingPodLogStreamClient streamClient = new([payload]);
-        using PodLogsViewModel viewModel = CreateViewModel(workspace.Runtime, streamClient);
+        using var viewModel = CreateViewModel(workspace.Runtime, streamClient);
         viewModel.Object = pod;
         viewModel.ContainerName = "app";
         var updates = 0;
@@ -56,13 +49,13 @@ public sealed class PodLogsViewModelTests
     {
         const string deploymentName = "api";
         const string appLabel = "api";
-        V1Deployment deployment = CreateKindDeployment(deploymentName, appLabel, "old pod line");
-        V1ReplicaSet oldReplicaSet = CreateOwnedReplicaSet("api-old", "old-replicaset-uid", deployment);
-        V1Pod oldPod = CreatePod(
+        var deployment = CreateKindDeployment(deploymentName, appLabel, "old pod line");
+        var oldReplicaSet = CreateOwnedReplicaSet("api-old", "old-replicaset-uid", deployment);
+        var oldPod = CreatePod(
             "api-old-pod", "default", "old-pod-uid", "old-replicaset-uid", "api-old", "ReplicaSet", ["app"],
             creationTimestamp: new DateTime(2026, 4, 1, 12, 0, 0, DateTimeKind.Utc));
-        V1ReplicaSet newReplicaSet = CreateOwnedReplicaSet("api-new", "new-replicaset-uid", deployment);
-        V1Pod newPod = CreatePod(
+        var newReplicaSet = CreateOwnedReplicaSet("api-new", "new-replicaset-uid", deployment);
+        var newPod = CreatePod(
             "api-new-pod", "default", "new-pod-uid", "new-replicaset-uid", "api-new", "ReplicaSet", ["app"],
             creationTimestamp: new DateTime(2026, 4, 1, 12, 5, 0, DateTimeKind.Utc));
         oldReplicaSet.Metadata!.OwnerReferences![0].Uid = "deployment-uid";
@@ -89,8 +82,8 @@ public sealed class PodLogsViewModelTests
                 status.Name == "app" && status.State?.Running is not null) == true), 60000);
         deployment = workspace.Runtime.GetResource<V1Deployment>("default", deploymentName).ShouldNotBeNull();
 
-        IServiceProvider services = Application.Current.GetTestServices();
-        using PodLogsViewModel viewModel = CreateViewModel(
+        var services = Application.Current.GetTestServices();
+        using var viewModel = CreateViewModel(
             workspace.Runtime,
             services.GetRequiredService<IPodLogStreamClient>());
         viewModel.Object = deployment;
@@ -119,8 +112,8 @@ public sealed class PodLogsViewModelTests
     {
         const string jobName = "terminal-job";
         const string appLabel = "terminal-job";
-        V1Job job = CreateTerminalJob(jobName, appLabel);
-        V1Pod fakePod = CreatePod(
+        var job = CreateTerminalJob(jobName, appLabel);
+        var fakePod = CreatePod(
             "terminal-job-pod", "default", "terminal-pod-uid", "job-uid", jobName, "Job", ["job"]);
         fakePod.Metadata!.Labels = new Dictionary<string, string> { ["app"] = appLabel };
         fakePod.Status!.Phase = "Succeeded";
@@ -145,8 +138,8 @@ public sealed class PodLogsViewModelTests
                 status.Name == "job" && (status.State?.Running is not null || status.State?.Terminated is not null)) == true), 60000);
         job = workspace.Runtime.GetResource<V1Job>("default", jobName).ShouldNotBeNull();
 
-        IServiceProvider services = Application.Current.GetTestServices();
-        using PodLogsViewModel viewModel = CreateViewModel(
+        var services = Application.Current.GetTestServices();
+        using var viewModel = CreateViewModel(
             workspace.Runtime,
             services.GetRequiredService<IPodLogStreamClient>());
         viewModel.Object = job;
@@ -163,7 +156,7 @@ public sealed class PodLogsViewModelTests
     public async Task Multi_container_logs_should_show_resource_names(KubernetesBackend backend)
     {
         const string podName = "multi-container-pod";
-        V1Pod pod = CreatePod(podName, "default", null, containers: ["app", "sidecar"]);
+        var pod = CreatePod(podName, "default", null, containers: ["app", "sidecar"]);
         pod.Metadata!.Labels = new Dictionary<string, string> { ["app"] = podName };
         pod.Status!.Phase = "Running";
         pod.Status.ContainerStatuses =
@@ -197,8 +190,8 @@ public sealed class PodLogsViewModelTests
             status.State?.Running is not null) == 2, 60000);
         pod = workspace.Runtime.GetResourceList<V1Pod>().Single(item => item.Name() == podName);
 
-        IServiceProvider services = Application.Current.GetTestServices();
-        using PodLogsViewModel viewModel = CreateViewModel(
+        var services = Application.Current.GetTestServices();
+        using var viewModel = CreateViewModel(
             workspace.Runtime,
             services.GetRequiredService<IPodLogStreamClient>());
         viewModel.Object = pod;
@@ -222,7 +215,7 @@ public sealed class PodLogsViewModelTests
     [AvaloniaFact]
     public async Task Connect_should_retarget_to_the_newest_matching_pod_and_stream_logs()
     {
-        V1Pod originalPod = CreatePod(
+        var originalPod = CreatePod(
             name: "app-7c9dd9f4f4-abcde",
             namespaceName: "default",
             uid: "old-pod-uid",
@@ -232,7 +225,7 @@ public sealed class PodLogsViewModelTests
             containers: ["app"],
             creationTimestamp: new DateTime(2026, 4, 1, 12, 0, 0, DateTimeKind.Utc));
 
-        V1Pod replacementPod = CreatePod(
+        var replacementPod = CreatePod(
             name: "app-7c9dd9f4f4-fghij",
             namespaceName: "default",
             uid: "new-pod-uid",
@@ -246,7 +239,7 @@ public sealed class PodLogsViewModelTests
         await workspace.Runtime.AddOrUpdateResource(replacementPod);
         await workspace.Runtime.SeedResource<V1Pod>(true);
         RecordingPodLogStreamClient streamClient = new(["first line\nsecond line\n"]);
-        using PodLogsViewModel viewModel = CreateViewModel(workspace.Runtime, streamClient);
+        using var viewModel = CreateViewModel(workspace.Runtime, streamClient);
         viewModel.Object = originalPod;
         viewModel.ContainerName = "app";
 
@@ -271,10 +264,10 @@ public sealed class PodLogsViewModelTests
     {
         const string deploymentName = "related-pods-deployment";
         const string appLabel = "related-pods-deployment";
-        V1Deployment deployment = CreateKindDeployment(deploymentName, appLabel, "unused");
+        var deployment = CreateKindDeployment(deploymentName, appLabel, "unused");
         deployment.Spec!.Replicas = 0;
 
-        V1Pod olderPod = CreatePod(
+        var olderPod = CreatePod(
             name: "app-7c9dd9f4f4-abcde",
             namespaceName: "default",
             uid: null,
@@ -285,7 +278,7 @@ public sealed class PodLogsViewModelTests
             initContainers: ["init-db"],
             creationTimestamp: new DateTime(2026, 4, 1, 12, 0, 0, DateTimeKind.Utc));
 
-        V1Pod newerPod = CreatePod(
+        var newerPod = CreatePod(
             name: "app-7c9dd9f4f4-fghij",
             namespaceName: "default",
             uid: null,
@@ -339,8 +332,8 @@ public sealed class PodLogsViewModelTests
         olderPod = workspace.Runtime.GetResourceList<V1Pod>().Single(item => item.Name() == olderPod.Name());
         newerPod = workspace.Runtime.GetResourceList<V1Pod>().Single(item => item.Name() == newerPod.Name());
 
-        IServiceProvider services = Application.Current.GetTestServices();
-        using PodLogsViewModel viewModel = CreateViewModel(
+        var services = Application.Current.GetTestServices();
+        using var viewModel = CreateViewModel(
             workspace.Runtime,
             services.GetRequiredService<IPodLogStreamClient>());
         viewModel.Object = olderPod;
@@ -369,10 +362,10 @@ public sealed class PodLogsViewModelTests
     {
         const string deploymentName = "multi-container-deployment";
         const string appLabel = "multi-container-deployment";
-        V1Deployment deployment = CreateMultiContainerDeployment(deploymentName, appLabel);
-        V1ReplicaSet replicaSet = CreateOwnedReplicaSet("multi-container-deployment-rs", "multi-container-rs-uid", deployment);
+        var deployment = CreateMultiContainerDeployment(deploymentName, appLabel);
+        var replicaSet = CreateOwnedReplicaSet("multi-container-deployment-rs", "multi-container-rs-uid", deployment);
         replicaSet.Metadata!.OwnerReferences![0].Uid = "deployment-uid";
-        V1Pod pod = CreatePod(
+        var pod = CreatePod(
             "multi-container-deployment-pod",
             "default",
             "multi-container-pod-uid",
@@ -415,8 +408,8 @@ public sealed class PodLogsViewModelTests
                 status.Name == "app" && status.State?.Running is not null) == true), 60000);
         deployment = workspace.Runtime.GetResourceList<V1Deployment>().Single(item => item.Name() == deploymentName);
 
-        IServiceProvider services = Application.Current.GetTestServices();
-        using PodLogsViewModel viewModel = CreateViewModel(
+        var services = Application.Current.GetTestServices();
+        using var viewModel = CreateViewModel(
             workspace.Runtime,
             services.GetRequiredService<IPodLogStreamClient>());
         viewModel.Object = deployment;
@@ -442,10 +435,10 @@ public sealed class PodLogsViewModelTests
     {
         const string deploymentName = "multi-select-deployment";
         const string appLabel = "multi-select-deployment";
-        V1Deployment deployment = CreateKindDeployment(deploymentName, appLabel, "unused");
+        var deployment = CreateKindDeployment(deploymentName, appLabel, "unused");
         deployment.Spec!.Replicas = 0;
 
-        V1Pod olderPod = CreatePod(
+        var olderPod = CreatePod(
             name: "app-7c9dd9f4f4-abcde",
             namespaceName: "default",
             uid: null,
@@ -455,7 +448,7 @@ public sealed class PodLogsViewModelTests
             containers: ["app", "sidecar"],
             creationTimestamp: new DateTime(2026, 4, 1, 12, 0, 0, DateTimeKind.Utc));
 
-        V1Pod newerPod = CreatePod(
+        var newerPod = CreatePod(
             name: "app-7c9dd9f4f4-fghij",
             namespaceName: "default",
             uid: null,
@@ -465,7 +458,7 @@ public sealed class PodLogsViewModelTests
             containers: ["app", "sidecar"],
             creationTimestamp: new DateTime(2026, 4, 1, 12, 5, 0, DateTimeKind.Utc));
 
-        V1Pod newestPod = CreatePod(
+        var newestPod = CreatePod(
             name: "app-7c9dd9f4f4-klmno",
             namespaceName: "default",
             uid: null,
@@ -515,7 +508,7 @@ public sealed class PodLogsViewModelTests
         await WaitForAsync(() => workspace.Runtime.GetResourceList<V1Pod>().Where(item =>
             item.Metadata?.Labels?.TryGetValue("app", out var value) == true && value == appLabel)
             .All(item => item.Status?.ContainerStatuses?.All(status => status.State?.Running is not null) == true), 60000);
-        V1Pod[] currentPods = workspace.Runtime.GetResourceList<V1Pod>()
+        var currentPods = workspace.Runtime.GetResourceList<V1Pod>()
             .Where(item => item.Metadata?.Labels?.TryGetValue("app", out var value) == true && value == appLabel)
             .OrderBy(item => item.Metadata?.CreationTimestamp)
             .ToArray();
@@ -523,8 +516,8 @@ public sealed class PodLogsViewModelTests
         newerPod = currentPods.Single(item => item.Name() == "app-7c9dd9f4f4-fghij");
         newestPod = currentPods.Single(item => item.Name() == "app-7c9dd9f4f4-klmno");
 
-        IServiceProvider services = Application.Current.GetTestServices();
-        using PodLogsViewModel viewModel = CreateViewModel(
+        var services = Application.Current.GetTestServices();
+        using var viewModel = CreateViewModel(
             workspace.Runtime,
             services.GetRequiredService<IPodLogStreamClient>());
         viewModel.Object = olderPod;
@@ -547,7 +540,7 @@ public sealed class PodLogsViewModelTests
     [Trait("Category", "Kind")]
     public async Task Connect_should_not_open_logs_for_a_container_that_is_waiting_to_start(KubernetesBackend backend)
     {
-        V1Pod pod = CreatePod(
+        var pod = CreatePod(
             name: "app-7c9dd9f4f4-abcde",
             namespaceName: "default",
             uid: null,
@@ -585,8 +578,8 @@ public sealed class PodLogsViewModelTests
             && item.Status.ContainerStatuses.Any(status => status.Name == "sidecar" && status.State?.Running is not null)), 60000);
         pod = workspace.Runtime.GetResourceList<V1Pod>().Single(item => item.Name() == pod.Name());
 
-        IServiceProvider services = Application.Current.GetTestServices();
-        using PodLogsViewModel viewModel = CreateViewModel(
+        var services = Application.Current.GetTestServices();
+        using var viewModel = CreateViewModel(
             workspace.Runtime,
             services.GetRequiredService<IPodLogStreamClient>());
         viewModel.Object = pod;
@@ -603,7 +596,7 @@ public sealed class PodLogsViewModelTests
     [Trait("Category", "Kind")]
     public async Task Container_becoming_ready_should_open_logs_without_manual_refresh(KubernetesBackend backend)
     {
-        V1Pod waitingPod = CreatePod(
+        var waitingPod = CreatePod(
             name: "app-7c9dd9f4f4-abcde",
             namespaceName: "default",
             uid: null,
@@ -627,7 +620,7 @@ public sealed class PodLogsViewModelTests
                 State = new V1ContainerState { Running = new V1ContainerStateRunning() },
             },
         ];
-        V1Pod runningPod = CreatePod(
+        var runningPod = CreatePod(
             name: waitingPod.Name(),
             namespaceName: "default",
             uid: null,
@@ -672,8 +665,8 @@ public sealed class PodLogsViewModelTests
             Running = new V1ContainerStateRunning(),
         };
 
-        IServiceProvider services = Application.Current.GetTestServices();
-        using PodLogsViewModel viewModel = CreateViewModel(
+        var services = Application.Current.GetTestServices();
+        using var viewModel = CreateViewModel(
             workspace.Runtime,
             services.GetRequiredService<IPodLogStreamClient>());
         viewModel.Object = waitingPod;
@@ -700,11 +693,11 @@ public sealed class PodLogsViewModelTests
     {
         using var workspace = await Application.Current.CreateClusterAsync();
         await workspace.Runtime.SeedResource<V1Deployment>(true);
-        V1Deployment deployment = CreateKindDeployment("api", "api", "unused");
+        var deployment = CreateKindDeployment("api", "api", "unused");
         deployment.Metadata!.Uid = "deployment-uid";
         await workspace.Runtime.AddOrUpdateResource(deployment);
         RecordingPodLogStreamClient streamClient = new(["first pod line\n"]);
-        using PodLogsViewModel viewModel = CreateViewModel(workspace.Runtime, streamClient);
+        using var viewModel = CreateViewModel(workspace.Runtime, streamClient);
         viewModel.Object = deployment;
         viewModel.ContainerName = string.Empty;
 
@@ -712,7 +705,7 @@ public sealed class PodLogsViewModelTests
         viewModel.SessionResolution.ShouldBeNull();
         streamClient.Requests.ShouldBeEmpty();
 
-        V1Pod pod = CreatePod(
+        var pod = CreatePod(
             "api-pod",
             "default",
             "pod-uid",
@@ -734,7 +727,7 @@ public sealed class PodLogsViewModelTests
     public async Task Dispose_from_background_thread_should_clear_logs_on_ui_thread()
     {
         using var workspace = await Application.Current.CreateClusterAsync();
-        using PodLogsViewModel viewModel = CreateViewModel(
+        using var viewModel = CreateViewModel(
             workspace.Runtime,
             new RecordingPodLogStreamClient());
 
@@ -759,7 +752,7 @@ public sealed class PodLogsViewModelTests
     {
         using var workspace = await Application.Current.CreateClusterAsync();
         await workspace.Runtime.SeedResource<V1Pod>(true);
-        V1Pod pod = CreatePod("api-pod", "default", "pod-uid", containers: ["app"]);
+        var pod = CreatePod("api-pod", "default", "pod-uid", containers: ["app"]);
         pod.Spec!.InitContainers = [new V1Container { Name = "init", Image = "busybox" }];
         pod.Spec.EphemeralContainers =
         [
@@ -818,19 +811,19 @@ public sealed class PodLogsViewModelTests
 
         await workspace.Runtime.AddOrUpdateResource(pod);
         using StatusChangingPodLogStreamClient streamClient = new("initial line\n");
-        using PodLogsViewModel viewModel = CreateViewModel(workspace.Runtime, streamClient);
+        using var viewModel = CreateViewModel(workspace.Runtime, streamClient);
         viewModel.Object = pod;
         viewModel.ContainerName = "app";
         await viewModel.Connect();
         await WaitForAsync(() => streamClient.Requests.Count == 1);
 
-        V1Pod updatedPod = KubernetesJson.Deserialize<V1Pod>(
+        var updatedPod = KubernetesJson.Deserialize<V1Pod>(
             KubernetesJson.Serialize(viewModel.SessionResolution!.Pod));
         updatedPod.Metadata!.Annotations = new Dictionary<string, string>
         {
             ["kubeui.test/change"] = change,
         };
-        V1ContainerStatus appStatus = updatedPod.Status!.ContainerStatuses![0];
+        var appStatus = updatedPod.Status!.ContainerStatuses![0];
         switch (change)
         {
             case "status-added":
@@ -898,7 +891,7 @@ public sealed class PodLogsViewModelTests
     public async Task Parent_kind_fallback_should_keep_pod_logs_available(string ownerKind)
     {
         using var workspace = await Application.Current.CreateClusterAsync();
-        V1Pod pod = CreatePod(
+        var pod = CreatePod(
             "api-pod",
             "default",
             "pod-uid",
@@ -935,7 +928,7 @@ public sealed class PodLogsViewModelTests
 
         await workspace.Runtime.AddOrUpdateResource(pod);
         RecordingPodLogStreamClient streamClient = new(["pod line\n"]);
-        using PodLogsViewModel viewModel = CreateViewModel(workspace.Runtime, streamClient);
+        using var viewModel = CreateViewModel(workspace.Runtime, streamClient);
         viewModel.Object = pod;
         viewModel.ContainerName = "app";
 
@@ -976,7 +969,7 @@ public sealed class PodLogsViewModelTests
                 Uid = initialUid,
             },
         };
-        V1Pod pod = CreatePod(
+        var pod = CreatePod(
             "api-pod",
             "default",
             "pod-uid",
@@ -999,7 +992,7 @@ public sealed class PodLogsViewModelTests
         await workspace.Runtime.AddOrUpdateResource(initialParent);
         await workspace.Runtime.AddOrUpdateResource(pod);
         using StatusChangingPodLogStreamClient streamClient = new("initial line\n");
-        using PodLogsViewModel viewModel = CreateViewModel(workspace.Runtime, streamClient);
+        using var viewModel = CreateViewModel(workspace.Runtime, streamClient);
         viewModel.Object = pod;
         viewModel.ContainerName = "app";
         await viewModel.Connect();
@@ -1029,9 +1022,9 @@ public sealed class PodLogsViewModelTests
         }
         else if (nextName == initialParent.Name())
         {
-            V1ReplicaSet cachedParent = workspace.Runtime.GetResourceList<V1ReplicaSet>()
+            var cachedParent = workspace.Runtime.GetResourceList<V1ReplicaSet>()
                 .Single(item => item.Name() == initialParent.Name());
-            V1ReplicaSet replacement = KubernetesJson.Deserialize<V1ReplicaSet>(
+            var replacement = KubernetesJson.Deserialize<V1ReplicaSet>(
                 KubernetesJson.Serialize(cachedParent));
             replacement.Metadata!.Annotations = new Dictionary<string, string>
             {
@@ -1059,7 +1052,7 @@ public sealed class PodLogsViewModelTests
             nextParent = replacement;
         }
 
-        V1Pod updatedPod = KubernetesJson.Deserialize<V1Pod>(
+        var updatedPod = KubernetesJson.Deserialize<V1Pod>(
             KubernetesJson.Serialize(viewModel.SessionResolution!.Pod));
         updatedPod.Metadata!.Annotations = new Dictionary<string, string>
         {
@@ -1087,7 +1080,7 @@ public sealed class PodLogsViewModelTests
     {
         using var workspace = await Application.Current.CreateClusterAsync();
         await workspace.Runtime.SeedResource<V1Pod>(true);
-        V1Pod pod = CreatePod("api-pod", "default", "pod-uid", containers: ["app", "sidecar", "metrics"]);
+        var pod = CreatePod("api-pod", "default", "pod-uid", containers: ["app", "sidecar", "metrics"]);
         ConfigureRunningContainer(pod, "app", "echo line");
         pod.Status!.ContainerStatuses!.Add(new V1ContainerStatus
         {
@@ -1101,7 +1094,7 @@ public sealed class PodLogsViewModelTests
         });
         await workspace.Runtime.AddOrUpdateResource(pod);
         using StatusChangingPodLogStreamClient streamClient = new("initial line\n");
-        using PodLogsViewModel viewModel = CreateViewModel(workspace.Runtime, streamClient);
+        using var viewModel = CreateViewModel(workspace.Runtime, streamClient);
         viewModel.Object = pod;
         viewModel.ContainerName = "app";
         await viewModel.Connect();
@@ -1113,8 +1106,8 @@ public sealed class PodLogsViewModelTests
         await viewModel.JumpToControlledByLogs();
         viewModel.Object.ShouldBeOfType<V1Pod>();
 
-        PodLogSourceTreeNode podNode = GetPodNodes(viewModel).Single();
-        PodLogSourceTreeNode appNode = GetContainerNodes(viewModel)
+        var podNode = GetPodNodes(viewModel).Single();
+        var appNode = GetContainerNodes(viewModel)
             .Single(static node => ((PodLogContainerOption)node.Value).Name == "app");
         appNode.IsChecked = false;
         appNode.IsChecked = true;
@@ -1134,10 +1127,10 @@ public sealed class PodLogsViewModelTests
         using var workspace = await Application.Current.CreateClusterAsync();
         await workspace.Runtime.SeedResource<V1Deployment>(true);
         await workspace.Runtime.SeedResource<V1Pod>(true);
-        V1Deployment deployment = CreateKindDeployment("api", "api", "unused");
+        var deployment = CreateKindDeployment("api", "api", "unused");
         deployment.Metadata!.Uid = "deployment-uid";
         deployment.Spec!.Replicas = 0;
-        V1Pod olderPod = CreatePod(
+        var olderPod = CreatePod(
             "api-old",
             "default",
             "old-uid",
@@ -1145,7 +1138,7 @@ public sealed class PodLogsViewModelTests
             deployment.Name(),
             V1Deployment.KubeKind,
             ["app"]);
-        V1Pod newerPod = CreatePod(
+        var newerPod = CreatePod(
             "api-new",
             "default",
             "new-uid",
@@ -1153,7 +1146,7 @@ public sealed class PodLogsViewModelTests
             deployment.Name(),
             V1Deployment.KubeKind,
             ["app"]);
-        foreach (V1Pod pod in new[] { olderPod, newerPod })
+        foreach (var pod in new[] { olderPod, newerPod })
         {
             pod.Metadata!.OwnerReferences![0].ApiVersion = "apps/v1";
             ConfigureRunningContainer(pod, "app", "echo line");
@@ -1164,7 +1157,7 @@ public sealed class PodLogsViewModelTests
         await workspace.Runtime.AddOrUpdateResource(newerPod);
 
         SupersededConnectionPodLogStreamClient streamClient = new();
-        using PodLogsViewModel viewModel = CreateViewModel(
+        using var viewModel = CreateViewModel(
             workspace.Runtime,
             streamClient);
         viewModel.SetScope(deployment, V1Deployment.KubeKind);
@@ -1179,7 +1172,7 @@ public sealed class PodLogsViewModelTests
             }
         };
 
-        Task initialConnect = viewModel.Connect();
+        var initialConnect = viewModel.Connect();
         await streamClient.WaitForFirstRequestAsync();
 
         SelectOnlyPods(viewModel, newerPod.Name());
@@ -1199,14 +1192,14 @@ public sealed class PodLogsViewModelTests
         using var workspace = await Application.Current.CreateClusterAsync();
         await workspace.Runtime.SeedResource<V1Deployment>(true);
         await workspace.Runtime.SeedResource<V1Pod>(true);
-        V1Deployment deployment = CreateKindDeployment("api", "api", "unused");
+        var deployment = CreateKindDeployment("api", "api", "unused");
         deployment.Metadata!.Uid = "deployment-uid";
         deployment.Spec!.Replicas = 0;
         await workspace.Runtime.AddOrUpdateResource(deployment);
 
         for (var i = 0; i < 3; i++)
         {
-            V1Pod pod = CreatePod(
+            var pod = CreatePod(
                 $"api-{i}",
                 "default",
                 $"pod-{i}-uid",
@@ -1219,7 +1212,7 @@ public sealed class PodLogsViewModelTests
             await workspace.Runtime.AddOrUpdateResource(pod);
         }
 
-        using PodLogsViewModel viewModel = CreateViewModel(
+        using var viewModel = CreateViewModel(
             workspace.Runtime,
             new RecordingPodLogStreamClient());
         viewModel.SetScope(deployment, V1Deployment.KubeKind);
@@ -1245,18 +1238,18 @@ public sealed class PodLogsViewModelTests
     {
         using var workspace = await Application.Current.CreateClusterAsync();
         await workspace.Runtime.SeedResource<V1Pod>(true);
-        V1Pod pod = CreatePod("api-pod", "default", "pod-uid", containers: ["app"]);
+        var pod = CreatePod("api-pod", "default", "pod-uid", containers: ["app"]);
         ConfigureRunningContainer(pod, "app", "echo line");
         await workspace.Runtime.AddOrUpdateResource(pod);
         RecordingPodLogStreamClient streamClient = new(["line\n"]);
-        using PodLogsViewModel viewModel = CreateViewModel(workspace.Runtime, streamClient);
+        using var viewModel = CreateViewModel(workspace.Runtime, streamClient);
         viewModel.Object = pod;
         viewModel.ContainerName = "app";
 
         await viewModel.Connect();
 
         await WaitForAsync(() => streamClient.Requests.Count == 1);
-        PodLogContainerOption selectedContainer = GetContainerNodes(viewModel)
+        var selectedContainer = GetContainerNodes(viewModel)
             .Single(static node => node.IsChecked == true)
             .Value.ShouldBeOfType<PodLogContainerOption>();
         selectedContainer.DisplayName.ShouldBe("app");
@@ -1267,7 +1260,7 @@ public sealed class PodLogsViewModelTests
     [AvaloniaFact]
     public void Scope_titles_should_cover_all_supported_controller_kinds()
     {
-        IServiceProvider services = Application.Current.GetTestServices();
+        var services = Application.Current.GetTestServices();
         using PodLogsViewModel viewModel = new(
             services.GetRequiredService<ILogger<PodLogsViewModel>>(),
             services.GetRequiredService<ISettingsService>(),
@@ -1298,7 +1291,7 @@ public sealed class PodLogsViewModelTests
     [AvaloniaTheory, KubernetesBackendData]
     public async Task Optional_parent_load_timeout_should_not_block_pod_logs(KubernetesBackend backend)
     {
-        V1Pod pod = CreatePod(
+        var pod = CreatePod(
             "api-pod",
             "default",
             null,
@@ -1317,7 +1310,7 @@ public sealed class PodLogsViewModelTests
         await workspace.Runtime.SeedResource<V1Pod>(true);
         pod = workspace.Runtime.GetResourceList<V1Pod>().Single(item => item.Name() == pod.Name());
         RecordingPodLogStreamClient streamClient = new(["pod line\n"]);
-        using PodLogsViewModel viewModel = CreateViewModel(workspace.Runtime, streamClient);
+        using var viewModel = CreateViewModel(workspace.Runtime, streamClient);
         viewModel.Object = pod;
         viewModel.ContainerName = "app";
 
@@ -1337,7 +1330,7 @@ public sealed class PodLogsViewModelTests
         {
             config.HttpHandlerFactory = () => [new FakeParentResourceTimeoutHandler(parentRequestStarted)];
         });
-        V1Pod pod = CreatePod(
+        var pod = CreatePod(
             "api-pod",
             "default",
             null,
@@ -1351,13 +1344,13 @@ public sealed class PodLogsViewModelTests
         await workspace.Runtime.SeedResource<V1Pod>(true);
         pod = workspace.Runtime.GetResourceList<V1Pod>().Single(item => item.Name() == pod.Name());
         RecordingPodLogStreamClient streamClient = new(["unexpected\n"]);
-        PodLogsViewModel viewModel = CreateViewModel(workspace.Runtime, streamClient);
+        var viewModel = CreateViewModel(workspace.Runtime, streamClient);
         viewModel.Object = pod;
         viewModel.ContainerName = "app";
 
-        Task firstConnect = viewModel.Connect();
+        var firstConnect = viewModel.Connect();
         await parentRequestStarted.Task;
-        Task queuedConnect = viewModel.Connect();
+        var queuedConnect = viewModel.Connect();
         viewModel.Dispose();
         await Task.WhenAll(firstConnect, queuedConnect);
 
@@ -1371,10 +1364,10 @@ public sealed class PodLogsViewModelTests
     {
         const string deploymentName = "show-resource-names-deployment";
         const string appLabel = "show-resource-names-deployment";
-        V1Deployment deployment = CreateKindDeployment(deploymentName, appLabel, "unused");
+        var deployment = CreateKindDeployment(deploymentName, appLabel, "unused");
         deployment.Spec!.Replicas = 0;
 
-        V1Pod olderPod = CreatePod(
+        var olderPod = CreatePod(
             name: "app-7c9dd9f4f4-abcde",
             namespaceName: "default",
             uid: null,
@@ -1384,7 +1377,7 @@ public sealed class PodLogsViewModelTests
             containers: ["app", "sidecar"],
             creationTimestamp: new DateTime(2026, 4, 1, 12, 0, 0, DateTimeKind.Utc));
 
-        V1Pod newerPod = CreatePod(
+        var newerPod = CreatePod(
             name: "app-7c9dd9f4f4-fghij",
             namespaceName: "default",
             uid: null,
@@ -1437,8 +1430,8 @@ public sealed class PodLogsViewModelTests
         olderPod = workspace.Runtime.GetResourceList<V1Pod>().Single(item => item.Name() == olderPod.Name());
         newerPod = workspace.Runtime.GetResourceList<V1Pod>().Single(item => item.Name() == newerPod.Name());
 
-        IServiceProvider services = Application.Current.GetTestServices();
-        using PodLogsViewModel viewModel = CreateViewModel(
+        var services = Application.Current.GetTestServices();
+        using var viewModel = CreateViewModel(
             workspace.Runtime,
             services.GetRequiredService<IPodLogStreamClient>());
         viewModel.Object = olderPod;
@@ -1467,7 +1460,7 @@ public sealed class PodLogsViewModelTests
     [Trait("Category", "Kind")]
     public async Task Changing_previous_should_restart_the_session_with_updated_log_options(KubernetesBackend backend)
     {
-        V1Pod pod = CreatePod(
+        var pod = CreatePod(
             name: "app-7c9dd9f4f4-abcde",
             namespaceName: "default",
             uid: null,
@@ -1515,8 +1508,8 @@ public sealed class PodLogsViewModelTests
             status.RestartCount >= 1 && status.State?.Running is not null) == true, 60000);
         pod = workspace.Runtime.GetResource<V1Pod>("default", pod.Name()).ShouldNotBeNull();
 
-        IServiceProvider services = Application.Current.GetTestServices();
-        using PodLogsViewModel viewModel = CreateViewModel(
+        var services = Application.Current.GetTestServices();
+        using var viewModel = CreateViewModel(
             workspace.Runtime,
             services.GetRequiredService<IPodLogStreamClient>());
         viewModel.Object = pod;
@@ -1544,7 +1537,7 @@ public sealed class PodLogsViewModelTests
             config.Type = backend;
             config.HttpHandlerFactory = () => [new FakeMultipleSelectedPodsLogHandler()];
         });
-        V1Pod pod = CreatePod(
+        var pod = CreatePod(
             name: "app-7c9dd9f4f4-abcde",
             namespaceName: "default",
             uid: null,
@@ -1560,7 +1553,7 @@ public sealed class PodLogsViewModelTests
             status.Name == "app" && status.State?.Running is not null) == true, timeoutMs: 60000);
         pod = workspace.Runtime.GetResource<V1Pod>("default", pod.Name()).ShouldNotBeNull();
 
-        using PodLogsViewModel viewModel = CreateViewModel(
+        using var viewModel = CreateViewModel(
             workspace.Runtime,
             Application.Current.GetTestServices().GetRequiredService<IPodLogStreamClient>());
         viewModel.Object = pod;
@@ -1584,9 +1577,9 @@ public sealed class PodLogsViewModelTests
     {
         const string deploymentName = "related-pod-deployment";
         const string appLabel = "related-pod-deployment";
-        V1Deployment deployment = CreateKindDeployment(deploymentName, appLabel, "unused");
+        var deployment = CreateKindDeployment(deploymentName, appLabel, "unused");
         deployment.Spec!.Replicas = 0;
-        V1Pod originalPod = CreatePod(
+        var originalPod = CreatePod(
             name: "app-7c9dd9f4f4-abcde",
             namespaceName: "default",
             uid: null,
@@ -1596,7 +1589,7 @@ public sealed class PodLogsViewModelTests
             containers: ["app", "sidecar"],
             creationTimestamp: new DateTime(2026, 4, 1, 12, 0, 0, DateTimeKind.Utc));
         originalPod.Metadata!.Labels = new Dictionary<string, string> { ["app"] = appLabel };
-        V1Pod addedPod = CreatePod(
+        var addedPod = CreatePod(
             name: "app-7c9dd9f4f4-fghij",
             namespaceName: "default",
             uid: null,
@@ -1613,7 +1606,7 @@ public sealed class PodLogsViewModelTests
             var line = pod == addedPod ? "added line" : "original line";
             pod.Status!.Phase = "Running";
             pod.Status.ContainerStatuses = [];
-            foreach (V1Container container in pod.Spec.Containers)
+            foreach (var container in pod.Spec.Containers)
             {
                 container.Image = "busybox:1.36";
                 container.Command = ["sh", "-c", $"echo {line}; sleep 300"];
@@ -1645,8 +1638,8 @@ public sealed class PodLogsViewModelTests
             && item.Status?.ContainerStatuses?.FirstOrDefault(status => status.Name == "app")?.State?.Running is not null), 60000);
         originalPod = workspace.Runtime.GetResourceList<V1Pod>().Single(item => item.Name() == originalPod.Name());
 
-        IServiceProvider services = Application.Current.GetTestServices();
-        using PodLogsViewModel viewModel = CreateViewModel(
+        var services = Application.Current.GetTestServices();
+        using var viewModel = CreateViewModel(
             workspace.Runtime,
             services.GetRequiredService<IPodLogStreamClient>());
         viewModel.Object = originalPod;
@@ -1669,7 +1662,7 @@ public sealed class PodLogsViewModelTests
 
         viewModel.Object.Name().ShouldBe(originalPod.Name());
         viewModel.AvailablePods.Select(pod => pod.Name()).ShouldBe([addedPod.Name(), originalPod.Name()]);
-        PodLogSourceTreeNode addedPodNode = GetPodNodes(viewModel)
+        var addedPodNode = GetPodNodes(viewModel)
             .Single(node => ((V1Pod)node.Value).Name() == addedPod.Name());
         addedPodNode.Children.Single(node => ((PodLogContainerOption)node.Value).Name == "app")
             .IsChecked.ShouldBe(false);
@@ -1690,7 +1683,7 @@ public sealed class PodLogsViewModelTests
     {
         const string deploymentName = "fallback-deployment";
         const string appLabel = "fallback-deployment";
-        V1Deployment deployment = CreateKindDeployment(deploymentName, appLabel, "unused");
+        var deployment = CreateKindDeployment(deploymentName, appLabel, "unused");
         deployment.Spec!.Replicas = 0;
 
         using var workspace = await Application.Current.CreateClusterAsync(config =>
@@ -1704,7 +1697,7 @@ public sealed class PodLogsViewModelTests
         await WaitForAsync(() => workspace.Runtime.GetResourceList<V1Deployment>().Any(item => item.Name() == deploymentName), 60000);
         deployment = workspace.Runtime.GetResourceList<V1Deployment>().Single(item => item.Name() == deploymentName);
 
-        V1Pod remainingPod = CreatePod(
+        var remainingPod = CreatePod(
             name: "app-7c9dd9f4f4-abcde",
             namespaceName: "default",
             uid: null,
@@ -1714,7 +1707,7 @@ public sealed class PodLogsViewModelTests
             containers: ["app"],
             creationTimestamp: new DateTime(2026, 4, 1, 12, 0, 0, DateTimeKind.Utc));
         remainingPod.Metadata!.Labels = new Dictionary<string, string> { ["app"] = appLabel };
-        V1Pod removedPod = CreatePod(
+        var removedPod = CreatePod(
             name: "app-7c9dd9f4f4-fghij",
             namespaceName: "default",
             uid: null,
@@ -1745,7 +1738,7 @@ public sealed class PodLogsViewModelTests
         await WaitForAsync(() => workspace.Runtime.GetResourceList<V1Pod>().Where(item =>
             item.Metadata?.Labels?.TryGetValue("app", out var value) == true && value == appLabel)
             .All(item => item.Status?.ContainerStatuses?.FirstOrDefault(status => status.Name == "app")?.State?.Running is not null), 60000);
-        V1Pod[] relatedPods = workspace.Runtime.GetResourceList<V1Pod>()
+        var relatedPods = workspace.Runtime.GetResourceList<V1Pod>()
             .Where(item => item.Metadata?.Labels?.TryGetValue("app", out var value) == true && value == appLabel)
             .OrderBy(item => item.Metadata?.CreationTimestamp)
             .ToArray();
@@ -1753,8 +1746,8 @@ public sealed class PodLogsViewModelTests
         removedPod = relatedPods[1];
         removedPod.Metadata!.OwnerReferences![0].Uid.ShouldBe(remainingPod.Metadata!.OwnerReferences![0].Uid);
 
-        IServiceProvider services = Application.Current.GetTestServices();
-        using PodLogsViewModel viewModel = CreateViewModel(
+        var services = Application.Current.GetTestServices();
+        using var viewModel = CreateViewModel(
             workspace.Runtime,
             services.GetRequiredService<IPodLogStreamClient>());
         viewModel.Object = removedPod;
@@ -1785,7 +1778,7 @@ public sealed class PodLogsViewModelTests
             config.Type = backend;
             config.HttpHandlerFactory = () => [new FakeEphemeralContainerLogHandler()];
         });
-        V1Pod pod = CreatePod(
+        var pod = CreatePod(
             name: "app-7c9dd9f4f4-abcde",
             namespaceName: "default",
             uid: null,
@@ -1797,10 +1790,10 @@ public sealed class PodLogsViewModelTests
         await workspace.Runtime.AddOrUpdateResource(pod);
         await workspace.Runtime.SeedResource<V1Pod>(true);
         await WaitForAsync(() => workspace.Runtime.GetResource<V1Pod>("default", pod.Name())?.Metadata?.Uid is not null);
-        V1Pod currentPod = workspace.Runtime.GetResource<V1Pod>("default", pod.Name()).ShouldNotBeNull();
+        var currentPod = workspace.Runtime.GetResource<V1Pod>("default", pod.Name()).ShouldNotBeNull();
 
-        IServiceProvider services = Application.Current.GetTestServices();
-        using PodLogsViewModel viewModel = CreateViewModel(
+        var services = Application.Current.GetTestServices();
+        using var viewModel = CreateViewModel(
             workspace.Runtime,
             services.GetRequiredService<IPodLogStreamClient>());
         viewModel.Object = currentPod;
@@ -1826,7 +1819,7 @@ public sealed class PodLogsViewModelTests
     [Trait("Category", "Kind")]
     public async Task Current_follow_stream_ending_should_reconnect_to_continue_after_container_restart(KubernetesBackend backend)
     {
-        V1Pod pod = CreatePod(
+        var pod = CreatePod(
             name: "app-7c9dd9f4f4-abcde",
             namespaceName: "default",
             uid: null,
@@ -1864,8 +1857,8 @@ public sealed class PodLogsViewModelTests
         await WaitForAsync(() => workspace.Runtime.GetResource<V1Pod>("default", pod.Name())?.Status?.Phase == "Running", 60000);
         pod = workspace.Runtime.GetResource<V1Pod>("default", pod.Name()).ShouldNotBeNull();
 
-        IServiceProvider services = Application.Current.GetTestServices();
-        using PodLogsViewModel viewModel = CreateViewModel(
+        var services = Application.Current.GetTestServices();
+        using var viewModel = CreateViewModel(
             workspace.Runtime,
             services.GetRequiredService<IPodLogStreamClient>());
         viewModel.Object = pod;
@@ -1884,7 +1877,7 @@ public sealed class PodLogsViewModelTests
     [Trait("Category", "Kind")]
     public async Task Terminal_pod_should_not_reconnect_after_follow_stream_ends(KubernetesBackend backend)
     {
-        V1Pod pod = CreatePod(
+        var pod = CreatePod(
             name: "job-completed",
             namespaceName: "default",
             uid: null,
@@ -1911,8 +1904,8 @@ public sealed class PodLogsViewModelTests
             && item.Status.ContainerStatuses?.FirstOrDefault(status => status.Name == "job")?.State?.Terminated is not null), 60000);
         pod = workspace.Runtime.GetResourceList<V1Pod>().Single(item => item.Name() == pod.Name());
 
-        IServiceProvider services = Application.Current.GetTestServices();
-        using PodLogsViewModel viewModel = CreateViewModel(
+        var services = Application.Current.GetTestServices();
+        using var viewModel = CreateViewModel(
             workspace.Runtime,
             services.GetRequiredService<IPodLogStreamClient>());
         viewModel.Object = pod;
@@ -1930,7 +1923,7 @@ public sealed class PodLogsViewModelTests
     [Trait("Category", "Kind")]
     public async Task Running_pod_becoming_succeeded_should_stop_follow_reconnects(KubernetesBackend backend)
     {
-        V1Pod pod = CreatePod(
+        var pod = CreatePod(
             name: "job-transition",
             namespaceName: "default",
             uid: null,
@@ -1954,8 +1947,8 @@ public sealed class PodLogsViewModelTests
         await WaitForAsync(() => workspace.Runtime.GetResource<V1Pod>("default", pod.Name())?.Status?.Phase == "Running", 60000);
         pod = workspace.Runtime.GetResource<V1Pod>("default", pod.Name()).ShouldNotBeNull();
 
-        IServiceProvider services = Application.Current.GetTestServices();
-        using PodLogsViewModel viewModel = CreateViewModel(
+        var services = Application.Current.GetTestServices();
+        using var viewModel = CreateViewModel(
             workspace.Runtime,
             services.GetRequiredService<IPodLogStreamClient>());
         viewModel.Object = pod;
@@ -1976,7 +1969,7 @@ public sealed class PodLogsViewModelTests
     [Trait("Category", "Kind")]
     public async Task Ending_one_multi_container_stream_should_not_reconnect_all_streams(KubernetesBackend backend)
     {
-        V1Pod pod = CreatePod(
+        var pod = CreatePod(
             name: "app-7c9dd9f4f4-abcde",
             namespaceName: "default",
             uid: null,
@@ -2029,8 +2022,8 @@ public sealed class PodLogsViewModelTests
             status.Name == "sidecar" && status.State?.Running is not null) == true, 60000);
         pod = workspace.Runtime.GetResource<V1Pod>("default", pod.Name()).ShouldNotBeNull();
 
-        IServiceProvider services = Application.Current.GetTestServices();
-        using PodLogsViewModel viewModel = CreateViewModel(
+        var services = Application.Current.GetTestServices();
+        using var viewModel = CreateViewModel(
             workspace.Runtime,
             services.GetRequiredService<IPodLogStreamClient>());
         viewModel.Object = pod;
@@ -2057,7 +2050,7 @@ public sealed class PodLogsViewModelTests
     public async Task Reconnecting_multiple_container_streams_should_stop_when_replayed_tail_has_no_new_lines()
     {
         using var workspace = await Application.Current.CreateClusterAsync();
-        V1Pod pod = CreatePod(
+        var pod = CreatePod(
             name: "app-7c9dd9f4f4-abcde",
             namespaceName: "default",
             uid: "pod-uid",
@@ -2069,7 +2062,7 @@ public sealed class PodLogsViewModelTests
 
         workspace.Runtime.GetResource<V1Pod>("default", pod.Name()).ShouldNotBeNull().Status!.Phase.ShouldBe("Running");
         ReplayingPodLogStreamClient streamClient = new();
-        using PodLogsViewModel viewModel = CreateViewModel(workspace.Runtime, streamClient);
+        using var viewModel = CreateViewModel(workspace.Runtime, streamClient);
         viewModel.Object = pod;
         viewModel.ContainerName = string.Empty;
 
@@ -2090,7 +2083,7 @@ public sealed class PodLogsViewModelTests
     public async Task Connect_should_retain_only_the_newest_log_entries()
     {
         using var workspace = await Application.Current.CreateClusterAsync();
-        V1Pod pod = CreatePod(
+        var pod = CreatePod(
             name: "app",
             namespaceName: "default",
             uid: "pod-uid",
@@ -2101,7 +2094,7 @@ public sealed class PodLogsViewModelTests
             Environment.NewLine,
             Enumerable.Range(1, 10_001).Select(index => $"line-{index}"));
         RecordingPodLogStreamClient streamClient = new([payload]);
-        using PodLogsViewModel viewModel = CreateViewModel(workspace.Runtime, streamClient);
+        using var viewModel = CreateViewModel(workspace.Runtime, streamClient);
         viewModel.Object = pod;
         viewModel.ContainerName = "app";
 
@@ -2118,7 +2111,7 @@ public sealed class PodLogsViewModelTests
     public async Task Connect_should_resolve_ephemeral_container_logs()
     {
         using var workspace = await Application.Current.CreateClusterAsync();
-        V1Pod pod = CreatePod(
+        var pod = CreatePod(
             name: "app",
             namespaceName: "default",
             uid: "pod-uid",
@@ -2127,7 +2120,7 @@ public sealed class PodLogsViewModelTests
         await workspace.Runtime.AddOrUpdateResource(pod);
         await workspace.Runtime.SeedResource<V1Pod>(true);
         RecordingPodLogStreamClient streamClient = new(["debug line\n"]);
-        using PodLogsViewModel viewModel = CreateViewModel(workspace.Runtime, streamClient);
+        using var viewModel = CreateViewModel(workspace.Runtime, streamClient);
         viewModel.Object = pod;
         viewModel.ContainerName = "debug";
 
@@ -2148,7 +2141,7 @@ public sealed class PodLogsViewModelTests
     public async Task Connect_should_not_create_undo_history()
     {
         using var workspace = await Application.Current.CreateClusterAsync();
-        V1Pod pod = CreatePod(
+        var pod = CreatePod(
             name: "app",
             namespaceName: "default",
             uid: "pod-uid",
@@ -2156,7 +2149,7 @@ public sealed class PodLogsViewModelTests
         await workspace.Runtime.AddOrUpdateResource(pod);
         await workspace.Runtime.SeedResource<V1Pod>(true);
         RecordingPodLogStreamClient streamClient = new(["line\n"]);
-        using PodLogsViewModel viewModel = CreateViewModel(workspace.Runtime, streamClient);
+        using var viewModel = CreateViewModel(workspace.Runtime, streamClient);
         viewModel.Object = pod;
         viewModel.ContainerName = "app";
 
@@ -2171,7 +2164,7 @@ public sealed class PodLogsViewModelTests
     public async Task Dispose_should_clear_and_replace_the_log_document()
     {
         using var workspace = await Application.Current.CreateClusterAsync();
-        V1Pod pod = CreatePod(
+        var pod = CreatePod(
             name: "app",
             namespaceName: "default",
             uid: "pod-uid",
@@ -2179,10 +2172,10 @@ public sealed class PodLogsViewModelTests
         await workspace.Runtime.AddOrUpdateResource(pod);
         await workspace.Runtime.SeedResource<V1Pod>(true);
         RecordingPodLogStreamClient streamClient = new(["line\n"]);
-        using PodLogsViewModel viewModel = CreateViewModel(workspace.Runtime, streamClient);
+        using var viewModel = CreateViewModel(workspace.Runtime, streamClient);
         viewModel.Object = pod;
         viewModel.ContainerName = "app";
-        TextDocument previousLogs = viewModel.Logs;
+        var previousLogs = viewModel.Logs;
 
         await viewModel.Connect();
         await WaitForAsync(() => viewModel.Logs.Text.Contains("line", StringComparison.Ordinal));
@@ -2199,7 +2192,7 @@ public sealed class PodLogsViewModelTests
     public async Task Dispose_should_be_idempotent()
     {
         using var workspace = await Application.Current.CreateClusterAsync();
-        using PodLogsViewModel viewModel = CreateViewModel(workspace.Runtime, new RecordingPodLogStreamClient());
+        using var viewModel = CreateViewModel(workspace.Runtime, new RecordingPodLogStreamClient());
 
         viewModel.Dispose();
         Should.NotThrow(() => viewModel.Dispose());
@@ -2210,7 +2203,7 @@ public sealed class PodLogsViewModelTests
     {
         using var workspace = await Application.Current.CreateClusterAsync();
 
-        V1Pod olderPod = CreatePod(
+        var olderPod = CreatePod(
             name: "app-7c9dd9f4f4-abcde",
             namespaceName: "default",
             uid: "old-pod-uid",
@@ -2220,7 +2213,7 @@ public sealed class PodLogsViewModelTests
             containers: ["app"],
             creationTimestamp: new DateTime(2026, 4, 1, 12, 0, 0, DateTimeKind.Utc));
 
-        V1Pod newerPod = CreatePod(
+        var newerPod = CreatePod(
             name: "app-7c9dd9f4f4-fghij",
             namespaceName: "default",
             uid: "new-pod-uid",
@@ -2235,11 +2228,11 @@ public sealed class PodLogsViewModelTests
         await workspace.Runtime.SeedResource<V1Pod>(true);
 
         BlockingPodLogStreamClient streamClient = new("initial line\n");
-        using PodLogsViewModel viewModel = CreateViewModel(workspace.Runtime, streamClient);
+        using var viewModel = CreateViewModel(workspace.Runtime, streamClient);
         viewModel.Object = olderPod;
         viewModel.ContainerName = "app";
 
-        Task connectTask = viewModel.Connect();
+        var connectTask = viewModel.Connect();
         await streamClient.WaitForFirstRequestAsync();
 
         try
@@ -2261,7 +2254,7 @@ public sealed class PodLogsViewModelTests
     {
         using var workspace = await Application.Current.CreateClusterAsync();
 
-        V1Pod olderPod = CreatePod(
+        var olderPod = CreatePod(
             name: "app-7c9dd9f4f4-abcde",
             namespaceName: "default",
             uid: "old-pod-uid",
@@ -2271,7 +2264,7 @@ public sealed class PodLogsViewModelTests
             containers: ["app", "sidecar"],
             creationTimestamp: new DateTime(2026, 4, 1, 12, 0, 0, DateTimeKind.Utc));
 
-        V1Pod newerPod = CreatePod(
+        var newerPod = CreatePod(
             name: "app-7c9dd9f4f4-fghij",
             namespaceName: "default",
             uid: "new-pod-uid",
@@ -2286,11 +2279,11 @@ public sealed class PodLogsViewModelTests
         await workspace.Runtime.SeedResource<V1Pod>(true);
 
         BlockingPodLogStreamClient streamClient = new("initial line\n");
-        using PodLogsViewModel viewModel = CreateViewModel(workspace.Runtime, streamClient);
+        using var viewModel = CreateViewModel(workspace.Runtime, streamClient);
         viewModel.Object = olderPod;
         viewModel.ContainerName = "app";
 
-        Task connectTask = viewModel.Connect();
+        var connectTask = viewModel.Connect();
         await streamClient.WaitForFirstRequestAsync();
 
         GetContainerNodes(viewModel)
@@ -2313,7 +2306,7 @@ public sealed class PodLogsViewModelTests
     public async Task FollowLogs_should_request_live_following()
     {
         using var workspace = await Application.Current.CreateClusterAsync();
-        using PodLogsViewModel viewModel = CreateViewModel(workspace.Runtime, new RecordingPodLogStreamClient());
+        using var viewModel = CreateViewModel(workspace.Runtime, new RecordingPodLogStreamClient());
 
         viewModel.FollowLogs();
 
@@ -2325,13 +2318,13 @@ public sealed class PodLogsViewModelTests
     public async Task Disabling_follow_logs_should_pause_the_display_until_resumed()
     {
         using var workspace = await Application.Current.CreateClusterAsync();
-        using PodLogsViewModel viewModel = CreateViewModel(workspace.Runtime, new RecordingPodLogStreamClient());
+        using var viewModel = CreateViewModel(workspace.Runtime, new RecordingPodLogStreamClient());
 
         viewModel.Logs.Text = "existing line";
         viewModel.AutoScrollToBottom = false;
 
         viewModel.IsDisplayPaused.ShouldBeTrue();
-        viewModel.LogUpdateStatus.ShouldBe(KubeUI.Avalonia.Assets.Resources.PodLogsView_UpdatesPaused);
+        viewModel.LogUpdateStatus.ShouldBe(Assets.Resources.PodLogsView_UpdatesPaused);
 
         viewModel.FollowLogs();
 
@@ -2344,7 +2337,7 @@ public sealed class PodLogsViewModelTests
     public async Task Paused_display_should_buffer_streamed_output_until_following_resumes()
     {
         using var workspace = await Application.Current.CreateClusterAsync();
-        V1Pod pod = CreatePod(
+        var pod = CreatePod(
             name: "app",
             namespaceName: "default",
             uid: "app-uid",
@@ -2353,11 +2346,11 @@ public sealed class PodLogsViewModelTests
         await workspace.Runtime.SeedResource<V1Pod>(true);
 
         BlockingPodLogStreamClient streamClient = new("new line 1\nnew line 2\n");
-        using PodLogsViewModel viewModel = CreateViewModel(workspace.Runtime, streamClient);
+        using var viewModel = CreateViewModel(workspace.Runtime, streamClient);
         viewModel.Object = pod;
         viewModel.ContainerName = "app";
 
-        Task connectTask = viewModel.Connect();
+        var connectTask = viewModel.Connect();
         await streamClient.WaitForFirstRequestAsync();
 
         viewModel.Logs.Text = "existing line";
@@ -2383,7 +2376,7 @@ public sealed class PodLogsViewModelTests
             config.Type = backend;
             config.HttpHandlerFactory = () => [new FakeMultipleSelectedPodsLogHandler()];
         });
-        V1Pod pod = CreatePod(
+        var pod = CreatePod(
             name: "app-7c9dd9f4f4-abcde",
             namespaceName: "default",
             uid: null,
@@ -2397,7 +2390,7 @@ public sealed class PodLogsViewModelTests
             status.Name == "app" && status.State?.Running is not null) == true, timeoutMs: 60000);
         pod = workspace.Runtime.GetResource<V1Pod>("default", pod.Name()).ShouldNotBeNull();
 
-        using PodLogsViewModel viewModel = CreateViewModel(
+        using var viewModel = CreateViewModel(
             workspace.Runtime,
             Application.Current.GetTestServices().GetRequiredService<IPodLogStreamClient>());
         viewModel.Object = pod;
@@ -2420,7 +2413,7 @@ public sealed class PodLogsViewModelTests
             config.Type = backend;
             config.HttpHandlerFactory = () => [new FakeMultipleSelectedPodsLogHandler()];
         });
-        V1Pod pod = CreatePod(
+        var pod = CreatePod(
             name: "app-7c9dd9f4f4-abcde",
             namespaceName: "default",
             uid: null,
@@ -2435,7 +2428,7 @@ public sealed class PodLogsViewModelTests
             && workspace.Runtime.GetResource<V1Pod>("default", pod.Name())!.Status.ContainerStatuses.All(status => status.State?.Running is not null), timeoutMs: 60000);
         pod = workspace.Runtime.GetResource<V1Pod>("default", pod.Name()).ShouldNotBeNull();
 
-        using PodLogsViewModel viewModel = CreateViewModel(
+        using var viewModel = CreateViewModel(
             workspace.Runtime,
             Application.Current.GetTestServices().GetRequiredService<IPodLogStreamClient>());
         viewModel.Object = pod;
@@ -2458,7 +2451,7 @@ public sealed class PodLogsViewModelTests
             config.Type = backend;
             config.HttpHandlerFactory = () => [new FakeMultipleSelectedPodsLogHandler()];
         });
-        V1Pod pod = CreatePod(
+        var pod = CreatePod(
             name: "app-7c9dd9f4f4-abcde",
             namespaceName: "default",
             uid: null,
@@ -2473,7 +2466,7 @@ public sealed class PodLogsViewModelTests
             && workspace.Runtime.GetResource<V1Pod>("default", pod.Name())!.Status.ContainerStatuses.All(status => status.State?.Running is not null), timeoutMs: 60000);
         pod = workspace.Runtime.GetResource<V1Pod>("default", pod.Name()).ShouldNotBeNull();
 
-        using PodLogsViewModel viewModel = CreateViewModel(
+        using var viewModel = CreateViewModel(
             workspace.Runtime,
             Application.Current.GetTestServices().GetRequiredService<IPodLogStreamClient>());
         viewModel.Object = pod;
@@ -2484,7 +2477,7 @@ public sealed class PodLogsViewModelTests
         await WaitForAsync(() => GetContainerNodes(viewModel).Count == 2, timeoutMs: 60000);
         SelectOnlyContainers(viewModel, "app");
 
-        PodLogSourceTreeNode podNode = GetPodNodes(viewModel).Single();
+        var podNode = GetPodNodes(viewModel).Single();
         Should.NotThrow(() => podNode.IsChecked = true);
 
         podNode.Children.ShouldAllBe(static node => node.IsChecked == true);
@@ -2500,7 +2493,7 @@ public sealed class PodLogsViewModelTests
             config.Type = backend;
             config.HttpHandlerFactory = () => [new FakeMultipleSelectedPodsLogHandler()];
         });
-        V1Pod pod = CreatePod(
+        var pod = CreatePod(
             name: "app-7c9dd9f4f4-abcde",
             namespaceName: "default",
             uid: null,
@@ -2511,7 +2504,7 @@ public sealed class PodLogsViewModelTests
         await workspace.Runtime.AddOrUpdateResource(pod);
         await workspace.Runtime.SeedResource<V1Pod>(true);
 
-        using PodLogsViewModel viewModel = CreateViewModel(
+        using var viewModel = CreateViewModel(
             workspace.Runtime,
             Application.Current.GetTestServices().GetRequiredService<IPodLogStreamClient>());
         viewModel.Object = pod;
@@ -2531,12 +2524,12 @@ public sealed class PodLogsViewModelTests
     public async Task Unchecking_the_only_container_should_keep_an_intentional_zero_stream_selection()
     {
         using var workspace = await Application.Current.CreateClusterAsync();
-        V1Pod pod = CreatePod("app", "default", "pod-uid", containers: ["app"]);
+        var pod = CreatePod("app", "default", "pod-uid", containers: ["app"]);
         ConfigureRunningContainer(pod, "app", "unused");
         await workspace.Runtime.AddOrUpdateResource(pod);
         await workspace.Runtime.SeedResource<V1Pod>(true);
         using StatusChangingPodLogStreamClient streamClient = new("line\n");
-        using PodLogsViewModel viewModel = CreateViewModel(workspace.Runtime, streamClient);
+        using var viewModel = CreateViewModel(workspace.Runtime, streamClient);
         viewModel.Object = pod;
         viewModel.ContainerName = "app";
         await viewModel.Connect();
@@ -2556,10 +2549,10 @@ public sealed class PodLogsViewModelTests
     {
         const string deploymentName = "select-all-pods-deployment";
         const string appLabel = "select-all-pods-deployment";
-        V1Deployment deployment = CreateKindDeployment(deploymentName, appLabel, "unused");
+        var deployment = CreateKindDeployment(deploymentName, appLabel, "unused");
         deployment.Spec!.Replicas = 0;
 
-        V1Pod olderPod = CreatePod(
+        var olderPod = CreatePod(
             name: "app-7c9dd9f4f4-abcde",
             namespaceName: "default",
             uid: null,
@@ -2569,7 +2562,7 @@ public sealed class PodLogsViewModelTests
             containers: ["app"],
             creationTimestamp: new DateTime(2026, 4, 1, 12, 0, 0, DateTimeKind.Utc));
 
-        V1Pod newerPod = CreatePod(
+        var newerPod = CreatePod(
             name: "app-7c9dd9f4f4-fghij",
             namespaceName: "default",
             uid: null,
@@ -2610,7 +2603,7 @@ public sealed class PodLogsViewModelTests
         olderPod = workspace.Runtime.GetResourceList<V1Pod>().Single(item => item.Name() == olderPod.Name());
         newerPod = workspace.Runtime.GetResourceList<V1Pod>().Single(item => item.Name() == newerPod.Name());
 
-        using PodLogsViewModel viewModel = CreateViewModel(
+        using var viewModel = CreateViewModel(
             workspace.Runtime,
             Application.Current.GetTestServices().GetRequiredService<IPodLogStreamClient>());
         viewModel.Object = olderPod;
@@ -2619,7 +2612,7 @@ public sealed class PodLogsViewModelTests
         await viewModel.Connect();
         await WaitForAsync(() => GetPodNodes(viewModel).Count == 2, timeoutMs: 60000);
 
-        foreach (PodLogSourceTreeNode podNode in GetPodNodes(viewModel))
+        foreach (var podNode in GetPodNodes(viewModel))
         {
             podNode.IsChecked = true;
         }
@@ -2633,10 +2626,10 @@ public sealed class PodLogsViewModelTests
     {
         const string deploymentName = "select-specific-pod-deployment";
         const string appLabel = "select-specific-pod-deployment";
-        V1Deployment deployment = CreateKindDeployment(deploymentName, appLabel, "unused");
+        var deployment = CreateKindDeployment(deploymentName, appLabel, "unused");
         deployment.Spec!.Replicas = 0;
 
-        V1Pod olderPod = CreatePod(
+        var olderPod = CreatePod(
             name: "app-7c9dd9f4f4-abcde",
             namespaceName: "default",
             uid: null,
@@ -2646,7 +2639,7 @@ public sealed class PodLogsViewModelTests
             containers: ["app"],
             creationTimestamp: new DateTime(2026, 4, 1, 12, 0, 0, DateTimeKind.Utc));
 
-        V1Pod newerPod = CreatePod(
+        var newerPod = CreatePod(
             name: "app-7c9dd9f4f4-fghij",
             namespaceName: "default",
             uid: null,
@@ -2687,7 +2680,7 @@ public sealed class PodLogsViewModelTests
         olderPod = workspace.Runtime.GetResourceList<V1Pod>().Single(item => item.Name() == olderPod.Name());
         newerPod = workspace.Runtime.GetResourceList<V1Pod>().Single(item => item.Name() == newerPod.Name());
 
-        using PodLogsViewModel viewModel = CreateViewModel(
+        using var viewModel = CreateViewModel(
             workspace.Runtime,
             Application.Current.GetTestServices().GetRequiredService<IPodLogStreamClient>());
         viewModel.Object = olderPod;
@@ -2708,7 +2701,7 @@ public sealed class PodLogsViewModelTests
     {
         using var workspace = await Application.Current.CreateClusterAsync();
         RecordingPodLogExportService exportService = new();
-        using PodLogsViewModel viewModel = CreateViewModel(workspace.Runtime, new RecordingPodLogStreamClient(), exportService);
+        using var viewModel = CreateViewModel(workspace.Runtime, new RecordingPodLogStreamClient(), exportService);
 
         viewModel.Object = CreatePod(
             name: "app-7c9dd9f4f4-abcde",
@@ -2729,9 +2722,9 @@ public sealed class PodLogsViewModelTests
     {
         using var workspace = await Application.Current.CreateClusterAsync();
         RecordingPodLogExportService exportService = new();
-        using PodLogsViewModel viewModel = CreateViewModel(workspace.Runtime, new RecordingPodLogStreamClient(), exportService);
-        V1Pod firstPod = CreatePod("first", "default", "first-uid", containers: ["app"]);
-        V1Pod secondPod = CreatePod("second", "other", "second-uid", containers: ["sidecar"]);
+        using var viewModel = CreateViewModel(workspace.Runtime, new RecordingPodLogStreamClient(), exportService);
+        var firstPod = CreatePod("first", "default", "first-uid", containers: ["app"]);
+        var secondPod = CreatePod("second", "other", "second-uid", containers: ["sidecar"]);
         viewModel.SetScopes([firstPod, secondPod], V1Pod.KubeKind);
         viewModel.Logs.Text = "[first/app] alpha\n[second/sidecar] beta\n";
 
@@ -2751,7 +2744,7 @@ public sealed class PodLogsViewModelTests
     public async Task ClearScopes_should_keep_an_intentional_empty_logs_state()
     {
         using var workspace = await Application.Current.CreateClusterAsync();
-        using PodLogsViewModel viewModel = CreateViewModel(workspace.Runtime, new RecordingPodLogStreamClient());
+        using var viewModel = CreateViewModel(workspace.Runtime, new RecordingPodLogStreamClient());
         viewModel.SetScopes(
             [
                 CreatePod("first", "default", "first-uid", containers: ["app"]),
@@ -2771,7 +2764,7 @@ public sealed class PodLogsViewModelTests
     public async Task Resource_selector_uncheck_should_remove_only_that_scope()
     {
         using var workspace = await Application.Current.CreateClusterAsync();
-        using PodLogsViewModel viewModel = CreateViewModel(workspace.Runtime, new RecordingPodLogStreamClient());
+        using var viewModel = CreateViewModel(workspace.Runtime, new RecordingPodLogStreamClient());
         viewModel.SetScopes(
             [
                 CreatePod("first", "default", "first-uid", containers: ["app"]),
@@ -2790,7 +2783,7 @@ public sealed class PodLogsViewModelTests
     public async Task Resource_selector_clear_should_keep_an_intentional_empty_logs_state()
     {
         using var workspace = await Application.Current.CreateClusterAsync();
-        using PodLogsViewModel viewModel = CreateViewModel(workspace.Runtime, new RecordingPodLogStreamClient());
+        using var viewModel = CreateViewModel(workspace.Runtime, new RecordingPodLogStreamClient());
         viewModel.SetScopes(
             [
                 CreatePod("first", "default", "first-uid", containers: ["app"]),
@@ -2810,11 +2803,11 @@ public sealed class PodLogsViewModelTests
     public async Task Last_resource_token_removal_should_win_if_control_transiently_reselects_it()
     {
         using var workspace = await Application.Current.CreateClusterAsync();
-        using PodLogsViewModel viewModel = CreateViewModel(workspace.Runtime, new RecordingPodLogStreamClient());
+        using var viewModel = CreateViewModel(workspace.Runtime, new RecordingPodLogStreamClient());
         viewModel.SetScope(
             CreatePod("only", "default", "only-uid", containers: ["app"]),
             V1Pod.KubeKind);
-        PodLogScopeSelectionItem selectedScope = viewModel.SelectedScopeItems.Single();
+        var selectedScope = viewModel.SelectedScopeItems.Single();
 
         viewModel.SelectedScopeItems.Clear();
         viewModel.SelectedScopeItems.Add(selectedScope);
@@ -2830,15 +2823,15 @@ public sealed class PodLogsViewModelTests
     public async Task Adding_resource_should_refresh_all_selected_streams_with_the_full_tail()
     {
         using var workspace = await Application.Current.CreateClusterAsync();
-        V1Pod firstPod = CreatePod("first", "default", "first-uid", containers: ["app"]);
-        V1Pod secondPod = CreatePod("second", "default", "second-uid", containers: ["app"]);
+        var firstPod = CreatePod("first", "default", "first-uid", containers: ["app"]);
+        var secondPod = CreatePod("second", "default", "second-uid", containers: ["app"]);
         ConfigureRunningContainer(firstPod, "app", "unused");
         ConfigureRunningContainer(secondPod, "app", "unused");
         await workspace.Runtime.AddOrUpdateResource(firstPod);
         await workspace.Runtime.AddOrUpdateResource(secondPod);
         await workspace.Runtime.SeedResource<V1Pod>(true);
         PodHistoryBlockingLogStreamClient streamClient = new();
-        using PodLogsViewModel viewModel = CreateViewModel(workspace.Runtime, streamClient);
+        using var viewModel = CreateViewModel(workspace.Runtime, streamClient);
         viewModel.SetScope(firstPod, V1Pod.KubeKind);
 
         await viewModel.Connect();
@@ -2869,8 +2862,8 @@ public sealed class PodLogsViewModelTests
     public async Task Adding_resource_should_preserve_existing_filters_and_select_only_the_new_scope()
     {
         using var workspace = await Application.Current.CreateClusterAsync();
-        V1Pod firstPod = CreatePod("first", "default", "first-uid", containers: ["app", "sidecar"]);
-        V1Pod secondPod = CreatePod("second", "default", "second-uid", containers: ["app", "sidecar"]);
+        var firstPod = CreatePod("first", "default", "first-uid", containers: ["app", "sidecar"]);
+        var secondPod = CreatePod("second", "default", "second-uid", containers: ["app", "sidecar"]);
         ConfigureRunningContainer(firstPod, "app", "unused");
         ConfigureRunningContainer(firstPod, "sidecar", "unused");
         ConfigureRunningContainer(secondPod, "app", "unused");
@@ -2878,7 +2871,7 @@ public sealed class PodLogsViewModelTests
         await workspace.Runtime.AddOrUpdateResource(firstPod);
         await workspace.Runtime.AddOrUpdateResource(secondPod);
         await workspace.Runtime.SeedResource<V1Pod>(true);
-        using PodLogsViewModel viewModel = CreateViewModel(workspace.Runtime, new RecordingPodLogStreamClient());
+        using var viewModel = CreateViewModel(workspace.Runtime, new RecordingPodLogStreamClient());
         viewModel.SetScope(firstPod, V1Pod.KubeKind);
         viewModel.ContainerName = string.Empty;
         await viewModel.Connect();
@@ -2887,14 +2880,14 @@ public sealed class PodLogsViewModelTests
 
         await viewModel.AddScopesAsync([secondPod], V1Pod.KubeKind);
 
-        PodLogSourceTreeNode firstPodNode = GetPodNodes(viewModel)
+        var firstPodNode = GetPodNodes(viewModel)
             .Single(node => ((V1Pod)node.Value).Name() == firstPod.Name());
         firstPodNode.Children.Single(node => ((PodLogContainerOption)node.Value).Name == "app")
             .IsChecked.ShouldBe(false);
         firstPodNode.Children.Single(node => ((PodLogContainerOption)node.Value).Name == "sidecar")
             .IsChecked.ShouldBe(true);
 
-        PodLogSourceTreeNode secondPodNode = GetPodNodes(viewModel)
+        var secondPodNode = GetPodNodes(viewModel)
             .Single(node => ((V1Pod)node.Value).Name() == secondPod.Name());
         secondPodNode.Children.ShouldAllBe(static node => node.IsChecked == true);
     }
@@ -2903,10 +2896,10 @@ public sealed class PodLogsViewModelTests
     public async Task Resource_selector_should_keep_selected_item_after_resolution_status_updates()
     {
         using var workspace = await Application.Current.CreateClusterAsync();
-        V1Pod pod = CreatePod("selected", "default", "selected-uid", containers: ["app"]);
+        var pod = CreatePod("selected", "default", "selected-uid", containers: ["app"]);
         await workspace.Runtime.AddOrUpdateResource(pod);
         await workspace.Runtime.SeedResource<V1Pod>(true);
-        using PodLogsViewModel viewModel = CreateViewModel(workspace.Runtime, new RecordingPodLogStreamClient());
+        using var viewModel = CreateViewModel(workspace.Runtime, new RecordingPodLogStreamClient());
         viewModel.SetScope(pod, V1Pod.KubeKind);
 
         await viewModel.Connect();
@@ -2920,8 +2913,8 @@ public sealed class PodLogsViewModelTests
     public async Task SetScopes_should_reject_more_than_the_supported_resource_count()
     {
         using var workspace = await Application.Current.CreateClusterAsync();
-        using PodLogsViewModel viewModel = CreateViewModel(workspace.Runtime, new RecordingPodLogStreamClient());
-        V1Pod[] pods = Enumerable.Range(0, PodLogsViewModel.MaxScopeCount + 1)
+        using var viewModel = CreateViewModel(workspace.Runtime, new RecordingPodLogStreamClient());
+        var pods = Enumerable.Range(0, PodLogsViewModel.MaxScopeCount + 1)
             .Select(index => CreatePod($"pod-{index}", "default", $"uid-{index}", containers: ["app"]))
             .ToArray();
 
@@ -2932,7 +2925,7 @@ public sealed class PodLogsViewModelTests
     public async Task Stream_warning_should_describe_fan_out_above_the_warning_threshold()
     {
         using var workspace = await Application.Current.CreateClusterAsync();
-        using PodLogsViewModel viewModel = CreateViewModel(workspace.Runtime, new RecordingPodLogStreamClient());
+        using var viewModel = CreateViewModel(workspace.Runtime, new RecordingPodLogStreamClient());
         viewModel.PlannedStreamCount = PodLogsViewModel.StreamWarningThreshold + 1;
 
         viewModel.HasStreamLimitWarning.ShouldBeTrue();
@@ -2943,18 +2936,18 @@ public sealed class PodLogsViewModelTests
     public async Task sources_tree_projects_hierarchy_and_updates_selection()
     {
         using var workspace = await Application.Current.CreateClusterAsync();
-        V1Pod pod = CreatePod("api", "default", "pod-uid", containers: ["app", "sidecar"]);
+        var pod = CreatePod("api", "default", "pod-uid", containers: ["app", "sidecar"]);
         ConfigureRunningContainer(pod, "app", "echo app");
         ConfigureRunningContainer(pod, "sidecar", "echo sidecar");
         await workspace.Runtime.AddOrUpdateResource(pod);
         await workspace.Runtime.SeedResource<V1Pod>(true);
-        using PodLogsViewModel viewModel = CreateViewModel(workspace.Runtime, new RecordingPodLogStreamClient());
+        using var viewModel = CreateViewModel(workspace.Runtime, new RecordingPodLogStreamClient());
         viewModel.SetScope(pod, V1Pod.KubeKind);
         viewModel.ContainerName = string.Empty;
         await viewModel.Connect();
 
-        PodLogSourceTreeNode resourceNode = viewModel.SourceTreeItems.Single();
-        PodLogSourceTreeNode podNode = resourceNode.Children.Single();
+        var resourceNode = viewModel.SourceTreeItems.Single();
+        var podNode = resourceNode.Children.Single();
         podNode.Children.Select(static node => node.DisplayName).ShouldBe(["app", "sidecar"]);
         resourceNode.IsChecked.ShouldBe(true);
         podNode.IsChecked.ShouldBe(true);
@@ -2980,10 +2973,10 @@ public sealed class PodLogsViewModelTests
     {
         const string deploymentName = "jump-controlled-by-deployment";
         const string appLabel = "jump-controlled-by-deployment";
-        V1Deployment deployment = CreateKindDeployment(deploymentName, appLabel, "unused");
+        var deployment = CreateKindDeployment(deploymentName, appLabel, "unused");
         deployment.Spec!.Replicas = 0;
 
-        V1Pod olderPod = CreatePod(
+        var olderPod = CreatePod(
             name: "app-7c9dd9f4f4-abcde",
             namespaceName: "default",
             uid: null,
@@ -2993,7 +2986,7 @@ public sealed class PodLogsViewModelTests
             containers: ["app", "sidecar"],
             creationTimestamp: new DateTime(2026, 4, 1, 12, 0, 0, DateTimeKind.Utc));
 
-        V1Pod newerPod = CreatePod(
+        var newerPod = CreatePod(
             name: "app-7c9dd9f4f4-fghij",
             namespaceName: "default",
             uid: null,
@@ -3037,7 +3030,7 @@ public sealed class PodLogsViewModelTests
         olderPod = workspace.Runtime.GetResourceList<V1Pod>().Single(item => item.Name() == olderPod.Name());
         newerPod = workspace.Runtime.GetResourceList<V1Pod>().Single(item => item.Name() == newerPod.Name());
 
-        using PodLogsViewModel viewModel = CreateViewModel(
+        using var viewModel = CreateViewModel(
             workspace.Runtime,
             Application.Current.GetTestServices().GetRequiredService<IPodLogStreamClient>());
         viewModel.Object = olderPod;
@@ -3046,7 +3039,7 @@ public sealed class PodLogsViewModelTests
 
         await viewModel.Connect();
         await WaitForAsync(() => viewModel.Logs.Text.Contains("older app line", StringComparison.Ordinal), timeoutMs: 60000);
-        viewModel.Title.ShouldBe(KubeUI.Avalonia.Assets.Resources.PodLogsView_Title);
+        viewModel.Title.ShouldBe(Assets.Resources.PodLogsView_Title);
         viewModel.IsPodScope.ShouldBeTrue();
         viewModel.IsControllerScope.ShouldBeFalse();
         viewModel.ScopeResourceName.ShouldBe(olderPod.Name());
@@ -3076,11 +3069,11 @@ public sealed class PodLogsViewModelTests
         await workspace.Runtime.SeedResource<V1Deployment>(true);
         await workspace.Runtime.SeedResource<V1ReplicaSet>(true);
         await workspace.Runtime.SeedResource<V1Pod>(true);
-        V1Deployment deployment = CreateKindDeployment("api", "api", "unused");
+        var deployment = CreateKindDeployment("api", "api", "unused");
         deployment.Metadata!.Uid = "deployment-uid";
-        V1ReplicaSet replicaSet = CreateOwnedReplicaSet("api-rs", "replicaset-uid", deployment);
+        var replicaSet = CreateOwnedReplicaSet("api-rs", "replicaset-uid", deployment);
         replicaSet.Metadata!.OwnerReferences![0].ApiVersion = "apps/v1";
-        V1Pod pod = CreatePod(
+        var pod = CreatePod(
             "api-pod",
             "default",
             "pod-uid",
@@ -3094,7 +3087,7 @@ public sealed class PodLogsViewModelTests
         await workspace.Runtime.AddOrUpdateResource(replicaSet);
         await workspace.Runtime.AddOrUpdateResource(pod);
 
-        using PodLogsViewModel viewModel = CreateViewModel(
+        using var viewModel = CreateViewModel(
             workspace.Runtime,
             new RecordingPodLogStreamClient());
         viewModel.Object = pod;
@@ -3158,7 +3151,7 @@ public sealed class PodLogsViewModelTests
                 ],
             },
         };
-        V1Pod pod = CreatePod(
+        var pod = CreatePod(
             "gpu-feature-discovery-rt9k9",
             "gpu-operator",
             "pod-uid",
@@ -3172,7 +3165,7 @@ public sealed class PodLogsViewModelTests
         await workspace.Runtime.AddOrUpdateResource(daemonSet);
         await workspace.Runtime.AddOrUpdateResource(pod);
         RecordingPodLogStreamClient streamClient = new();
-        using PodLogsViewModel viewModel = CreateViewModel(workspace.Runtime, streamClient);
+        using var viewModel = CreateViewModel(workspace.Runtime, streamClient);
         viewModel.Object = pod;
         viewModel.ContainerName = "app";
 
@@ -3229,7 +3222,7 @@ public sealed class PodLogsViewModelTests
             },
         };
 
-        using PodLogsViewModel viewModel = CreateViewModel(
+        using var viewModel = CreateViewModel(
             workspace.Runtime,
             new RecordingPodLogStreamClient());
         viewModel.SetScope(statefulSet, V1StatefulSet.KubeKind);
@@ -3288,7 +3281,7 @@ public sealed class PodLogsViewModelTests
                 ],
             },
         };
-        V1Pod pod = CreatePod(
+        var pod = CreatePod(
             "backup-pod",
             "default",
             "pod-uid",
@@ -3302,7 +3295,7 @@ public sealed class PodLogsViewModelTests
         await workspace.Runtime.AddOrUpdateResource(job);
         await workspace.Runtime.AddOrUpdateResource(pod);
 
-        using PodLogsViewModel viewModel = CreateViewModel(
+        using var viewModel = CreateViewModel(
             workspace.Runtime,
             new RecordingPodLogStreamClient());
         viewModel.Object = pod;
@@ -3329,7 +3322,7 @@ public sealed class PodLogsViewModelTests
     {
         using var workspace = await Application.Current.CreateClusterAsync();
         await workspace.Runtime.SeedResource<V1Pod>(true);
-        V1Pod pod = CreatePod(
+        var pod = CreatePod(
             "api-pod",
             "default",
             "pod-uid",
@@ -3340,7 +3333,7 @@ public sealed class PodLogsViewModelTests
         pod.Metadata!.OwnerReferences![0].ApiVersion = "apps/v1";
         ConfigureRunningContainer(pod, "app", "echo line");
         await workspace.Runtime.AddOrUpdateResource(pod);
-        using PodLogsViewModel viewModel = CreateViewModel(
+        using var viewModel = CreateViewModel(
             workspace.Runtime,
             new RecordingPodLogStreamClient());
         viewModel.Object = pod;
@@ -3372,9 +3365,9 @@ public sealed class PodLogsViewModelTests
         using var workspace = await Application.Current.CreateClusterAsync();
         await workspace.Runtime.SeedResource<V1Deployment>(true);
         await workspace.Runtime.SeedResource<V1Pod>(true);
-        V1Deployment deployment = CreateKindDeployment("api", "api", "unused");
+        var deployment = CreateKindDeployment("api", "api", "unused");
         deployment.Metadata!.Uid = "deployment-uid";
-        V1Pod pod = CreatePod(
+        var pod = CreatePod(
             "api-pod",
             "default",
             "pod-uid",
@@ -3386,7 +3379,7 @@ public sealed class PodLogsViewModelTests
         ConfigureRunningContainer(pod, "app", "echo line");
         await workspace.Runtime.AddOrUpdateResource(deployment);
         await workspace.Runtime.AddOrUpdateResource(pod);
-        using PodLogsViewModel viewModel = CreateViewModel(
+        using var viewModel = CreateViewModel(
             workspace.Runtime,
             new RecordingPodLogStreamClient());
         viewModel.Object = pod;
@@ -3412,14 +3405,14 @@ public sealed class PodLogsViewModelTests
     public async Task Connect_should_leave_session_unresolved_when_no_log_session_can_be_resolved()
     {
         using var workspace = await Application.Current.CreateClusterAsync();
-        V1Pod pod = CreatePod(
+        var pod = CreatePod(
             name: "app-7c9dd9f4f4-abcde",
             namespaceName: "default",
             uid: "pod-uid",
             containers: ["app"]);
 
         RecordingPodLogStreamClient streamClient = new();
-        using PodLogsViewModel viewModel = CreateViewModel(workspace.Runtime, streamClient);
+        using var viewModel = CreateViewModel(workspace.Runtime, streamClient);
         viewModel.Object = pod;
         viewModel.ContainerName = "app";
 
@@ -3435,7 +3428,7 @@ public sealed class PodLogsViewModelTests
     {
         using var workspace = await Application.Current.CreateClusterAsync();
         RecordingPodLogStreamClient streamClient = new();
-        using PodLogsViewModel viewModel = CreateViewModel(workspace.Runtime, streamClient);
+        using var viewModel = CreateViewModel(workspace.Runtime, streamClient);
 
         await viewModel.Connect();
 
@@ -3449,11 +3442,11 @@ public sealed class PodLogsViewModelTests
     public async Task Open_failure_should_disconnect_and_render_the_error()
     {
         using var workspace = await Application.Current.CreateClusterAsync();
-        V1Pod pod = CreatePod("app", "default", "pod-uid", containers: ["app"]);
+        var pod = CreatePod("app", "default", "pod-uid", containers: ["app"]);
         await workspace.Runtime.AddOrUpdateResource(pod);
         await workspace.Runtime.SeedResource<V1Pod>(true);
         ThrowingPodLogStreamClient streamClient = new(new InvalidOperationException("log endpoint unavailable"));
-        using PodLogsViewModel viewModel = CreateViewModel(workspace.Runtime, streamClient);
+        using var viewModel = CreateViewModel(workspace.Runtime, streamClient);
         viewModel.Object = pod;
         viewModel.ContainerName = "app";
 
@@ -3470,12 +3463,12 @@ public sealed class PodLogsViewModelTests
     public async Task Http_open_failure_should_reconnect_and_stream_logs()
     {
         using var workspace = await Application.Current.CreateClusterAsync();
-        V1Pod pod = CreatePod("app", "default", "pod-uid", containers: ["app"]);
+        var pod = CreatePod("app", "default", "pod-uid", containers: ["app"]);
         pod.Status!.Phase = "Running";
         await workspace.Runtime.AddOrUpdateResource(pod);
         await workspace.Runtime.SeedResource<V1Pod>(true);
         RecoveringOpenPodLogStreamClient streamClient = new();
-        using PodLogsViewModel viewModel = CreateViewModel(workspace.Runtime, streamClient);
+        using var viewModel = CreateViewModel(workspace.Runtime, streamClient);
         viewModel.Object = pod;
         viewModel.ContainerName = "app";
 
@@ -3491,11 +3484,11 @@ public sealed class PodLogsViewModelTests
     public async Task Read_failure_should_disconnect_and_report_the_error()
     {
         using var workspace = await Application.Current.CreateClusterAsync();
-        V1Pod pod = CreatePod("app", "default", "pod-uid", containers: ["app"]);
+        var pod = CreatePod("app", "default", "pod-uid", containers: ["app"]);
         await workspace.Runtime.AddOrUpdateResource(pod);
         await workspace.Runtime.SeedResource<V1Pod>(true);
         ThrowingReadPodLogStreamClient streamClient = new();
-        using PodLogsViewModel viewModel = CreateViewModel(workspace.Runtime, streamClient);
+        using var viewModel = CreateViewModel(workspace.Runtime, streamClient);
         viewModel.Object = pod;
         viewModel.ContainerName = "app";
 
@@ -3511,12 +3504,12 @@ public sealed class PodLogsViewModelTests
     public async Task Http_stream_disconnect_should_reconnect_and_continue_without_duplicate_lines()
     {
         using var workspace = await Application.Current.CreateClusterAsync();
-        V1Pod pod = CreatePod("app", "default", "pod-uid", containers: ["app"]);
+        var pod = CreatePod("app", "default", "pod-uid", containers: ["app"]);
         pod.Status!.Phase = "Running";
         await workspace.Runtime.AddOrUpdateResource(pod);
         await workspace.Runtime.SeedResource<V1Pod>(true);
         DisconnectingPodLogStreamClient streamClient = new();
-        using PodLogsViewModel viewModel = CreateViewModel(workspace.Runtime, streamClient);
+        using var viewModel = CreateViewModel(workspace.Runtime, streamClient);
         viewModel.Object = pod;
         viewModel.ContainerName = "app";
 
@@ -3533,7 +3526,7 @@ public sealed class PodLogsViewModelTests
     public async Task Stream_end_reconnect_should_capture_attempt_before_connection_reset()
     {
         using var workspace = await Application.Current.CreateClusterAsync();
-        V1Pod pod = CreatePod("app", "default", "pod-uid", containers: ["app"]);
+        var pod = CreatePod("app", "default", "pod-uid", containers: ["app"]);
         pod.Status!.Phase = "Running";
         await workspace.Runtime.AddOrUpdateResource(pod);
         await workspace.Runtime.SeedResource<V1Pod>(true);
@@ -3541,7 +3534,7 @@ public sealed class PodLogsViewModelTests
         ConcurrentQueue<int> reconnectAttempts = new();
         TaskCompletionSource<bool> delayStarted = new(TaskCreationOptions.RunContinuationsAsynchronously);
         TaskCompletionSource<bool> releaseDelay = new(TaskCreationOptions.RunContinuationsAsynchronously);
-        using PodLogsViewModel viewModel = CreateViewModel(
+        using var viewModel = CreateViewModel(
             workspace.Runtime,
             streamClient,
             reconnectDelay: (attempt, _) =>
@@ -3574,15 +3567,15 @@ public sealed class PodLogsViewModelTests
     public async Task Dispose_while_connecting_should_disconnect_and_dispose_the_opened_stream()
     {
         using var workspace = await Application.Current.CreateClusterAsync();
-        V1Pod pod = CreatePod("app", "default", "pod-uid", containers: ["app"]);
+        var pod = CreatePod("app", "default", "pod-uid", containers: ["app"]);
         await workspace.Runtime.AddOrUpdateResource(pod);
         await workspace.Runtime.SeedResource<V1Pod>(true);
         DelayedPodLogStreamClient streamClient = new();
-        PodLogsViewModel viewModel = CreateViewModel(workspace.Runtime, streamClient);
+        var viewModel = CreateViewModel(workspace.Runtime, streamClient);
         viewModel.Object = pod;
         viewModel.ContainerName = "app";
 
-        Task connectTask = viewModel.Connect();
+        var connectTask = viewModel.Connect();
         await streamClient.WaitForRequestAsync();
 
         viewModel.Dispose();
@@ -3598,15 +3591,15 @@ public sealed class PodLogsViewModelTests
     public async Task Dispose_while_opening_multiple_streams_should_dispose_the_connection_token()
     {
         using var workspace = await Application.Current.CreateClusterAsync();
-        V1Pod pod = CreatePod("app", "default", "pod-uid", containers: ["app", "sidecar"]);
+        var pod = CreatePod("app", "default", "pod-uid", containers: ["app", "sidecar"]);
         await workspace.Runtime.AddOrUpdateResource(pod);
         await workspace.Runtime.SeedResource<V1Pod>(true);
         DelayedPodLogStreamClient streamClient = new();
-        PodLogsViewModel viewModel = CreateViewModel(workspace.Runtime, streamClient);
+        var viewModel = CreateViewModel(workspace.Runtime, streamClient);
         viewModel.Object = pod;
         viewModel.ContainerName = string.Empty;
 
-        Task connectTask = viewModel.Connect();
+        var connectTask = viewModel.Connect();
         await streamClient.WaitForRequestAsync();
 
         viewModel.Dispose();
@@ -3620,7 +3613,7 @@ public sealed class PodLogsViewModelTests
     public async Task Failed_pod_should_disconnect_without_reconnecting()
     {
         using var workspace = await Application.Current.CreateClusterAsync();
-        V1Pod pod = CreatePod("failed-job", "default", "pod-uid", containers: ["job"]);
+        var pod = CreatePod("failed-job", "default", "pod-uid", containers: ["job"]);
         pod.Status!.Phase = "Failed";
         pod.Status.ContainerStatuses![0].State = new V1ContainerState
         {
@@ -3629,7 +3622,7 @@ public sealed class PodLogsViewModelTests
         await workspace.Runtime.AddOrUpdateResource(pod);
         await workspace.Runtime.SeedResource<V1Pod>(true);
         RestartingPodLogStreamClient streamClient = new("failed line\n", "unexpected reconnect\n");
-        using PodLogsViewModel viewModel = CreateViewModel(workspace.Runtime, streamClient);
+        using var viewModel = CreateViewModel(workspace.Runtime, streamClient);
         viewModel.Object = pod;
         viewModel.ContainerName = "job";
 
@@ -3649,11 +3642,11 @@ public sealed class PodLogsViewModelTests
     public async Task Changing_timestamps_should_reconnect_with_updated_options()
     {
         using var workspace = await Application.Current.CreateClusterAsync();
-        V1Pod pod = CreatePod("app", "default", "pod-uid", containers: ["app"]);
+        var pod = CreatePod("app", "default", "pod-uid", containers: ["app"]);
         await workspace.Runtime.AddOrUpdateResource(pod);
         await workspace.Runtime.SeedResource<V1Pod>(true);
         RecordingPodLogStreamClient streamClient = new(["first\n", "second\n"]);
-        using PodLogsViewModel viewModel = CreateViewModel(workspace.Runtime, streamClient);
+        using var viewModel = CreateViewModel(workspace.Runtime, streamClient);
         viewModel.Object = pod;
         viewModel.ContainerName = "app";
 
@@ -3672,11 +3665,11 @@ public sealed class PodLogsViewModelTests
     public async Task Clear_should_remove_the_rendered_and_buffered_logs()
     {
         using var workspace = await Application.Current.CreateClusterAsync();
-        V1Pod pod = CreatePod("app", "default", "pod-uid", containers: ["app"]);
+        var pod = CreatePod("app", "default", "pod-uid", containers: ["app"]);
         await workspace.Runtime.AddOrUpdateResource(pod);
         await workspace.Runtime.SeedResource<V1Pod>(true);
         RecordingPodLogStreamClient streamClient = new(["line\n"]);
-        using PodLogsViewModel viewModel = CreateViewModel(workspace.Runtime, streamClient);
+        using var viewModel = CreateViewModel(workspace.Runtime, streamClient);
         viewModel.Object = pod;
         viewModel.ContainerName = "app";
 
@@ -3693,7 +3686,7 @@ public sealed class PodLogsViewModelTests
     public async Task DownloadLogs_should_report_io_failures()
     {
         using var workspace = await Application.Current.CreateClusterAsync();
-        using PodLogsViewModel viewModel = CreateViewModel(
+        using var viewModel = CreateViewModel(
             workspace.Runtime,
             new RecordingPodLogStreamClient(),
             new ThrowingPodLogExportService(new IOException("disk full")));
@@ -3707,7 +3700,7 @@ public sealed class PodLogsViewModelTests
     public async Task DownloadLogs_should_report_access_failures()
     {
         using var workspace = await Application.Current.CreateClusterAsync();
-        using PodLogsViewModel viewModel = CreateViewModel(
+        using var viewModel = CreateViewModel(
             workspace.Runtime,
             new RecordingPodLogStreamClient(),
             new ThrowingPodLogExportService(new UnauthorizedAccessException("access denied")));
@@ -3723,10 +3716,10 @@ public sealed class PodLogsViewModelTests
         IPodLogExportService? exportService = null,
         Func<int, CancellationToken, Task>? reconnectDelay = null)
     {
-        IServiceProvider services = Application.Current.GetTestServices();
-        ILogger<PodLogsViewModel> logger = services.GetRequiredService<ILogger<PodLogsViewModel>>();
-        ISettingsService settingsService = services.GetRequiredService<ISettingsService>();
-        IPodLogExportService resolvedExportService = exportService ?? new NoOpPodLogExportService();
+        var services = Application.Current.GetTestServices();
+        var logger = services.GetRequiredService<ILogger<PodLogsViewModel>>();
+        var settingsService = services.GetRequiredService<ISettingsService>();
+        var resolvedExportService = exportService ?? new NoOpPodLogExportService();
         IPodLogSessionResolver sessionResolver = new PodLogSessionResolver();
         if (reconnectDelay is not null)
         {
@@ -3770,7 +3763,7 @@ public sealed class PodLogsViewModelTests
     private static void SelectOnlyPods(PodLogsViewModel viewModel, params string[] podNames)
     {
         HashSet<string> selected = new(podNames, StringComparer.Ordinal);
-        foreach (PodLogSourceTreeNode podNode in GetPodNodes(viewModel))
+        foreach (var podNode in GetPodNodes(viewModel))
         {
             podNode.IsChecked = podNode.Value is V1Pod pod && selected.Contains(pod.Name());
         }
@@ -3779,10 +3772,10 @@ public sealed class PodLogsViewModelTests
     private static void SelectOnlyContainers(PodLogsViewModel viewModel, params string[] containerNames)
     {
         HashSet<string> selected = new(containerNames, StringComparer.Ordinal);
-        foreach (PodLogSourceTreeNode podNode in GetPodNodes(viewModel))
+        foreach (var podNode in GetPodNodes(viewModel))
         {
             var podSelected = podNode.IsChecked != false;
-            foreach (PodLogSourceTreeNode containerNode in podNode.Children)
+            foreach (var containerNode in podNode.Children)
             {
                 containerNode.IsChecked = podSelected
                     && containerNode.Value is PodLogContainerOption container
@@ -3992,12 +3985,12 @@ public sealed class PodLogsViewModelTests
 
     private static void ConfigureRunningContainer(V1Pod pod, string containerName, string command)
     {
-        V1Container container = pod.Spec!.Containers.Single(item => item.Name == containerName);
+        var container = pod.Spec!.Containers.Single(item => item.Name == containerName);
         container.Image = "busybox:1.36";
         container.Command = ["sh", "-c", command];
         pod.Status!.Phase = "Running";
         pod.Status.ContainerStatuses ??= [];
-        V1ContainerStatus? status = pod.Status.ContainerStatuses.SingleOrDefault(item => item.Name == containerName);
+        var status = pod.Status.ContainerStatuses.SingleOrDefault(item => item.Name == containerName);
         if (status is null)
         {
             pod.Status.ContainerStatuses.Add(new V1ContainerStatus { Name = containerName });
@@ -4097,7 +4090,7 @@ public sealed class PodLogsViewModelTests
             {
                 if (Interlocked.Exchange(ref _completed, 1) == 0 && InnerHandler is not null)
                 {
-                    V1Pod completedPod = KubernetesJson.Deserialize<V1Pod>(KubernetesJson.Serialize(_pod));
+                    var completedPod = KubernetesJson.Deserialize<V1Pod>(KubernetesJson.Serialize(_pod));
                     completedPod.Status ??= new V1PodStatus();
                     completedPod.Status.Phase = "Succeeded";
                     completedPod.Status.ContainerStatuses ??= [];

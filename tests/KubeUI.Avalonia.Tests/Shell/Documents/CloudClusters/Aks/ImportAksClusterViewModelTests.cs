@@ -2,7 +2,6 @@ using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
 using k8s.KubeConfigModels;
 using KubeUI.Avalonia.Shell.Documents.CloudClusters.Aks;
-using KubeUI.Avalonia.Tests.Infra;
 using Microsoft.Extensions.Logging;
 using Shouldly;
 

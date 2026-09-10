@@ -8,10 +8,10 @@ using AvaloniaEdit.Editing;
 using AvaloniaEdit.Folding;
 using AvaloniaEdit.Indentation;
 using AvaloniaEdit.TextMate;
+using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
 using KubeUI.Avalonia.Styles;
 using KubeUI.Kubernetes;
-using KubernetesClient.Informer.Client;
 using TextMateSharp.Grammars;
 using static AvaloniaEdit.TextMate.TextMate;
 
@@ -103,7 +103,7 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
         _forceNewSequenceItemBinding = new KeyBinding
         {
             Gesture = new KeyGesture(Key.Enter, KeyModifiers.Control),
-            Command = new CommunityToolkit.Mvvm.Input.RelayCommand(() => TryForceNewSequenceItem()),
+            Command = new RelayCommand(() => TryForceNewSequenceItem()),
         };
         AssociatedObject.KeyBindings.Add(_forceNewSequenceItemBinding);
         _foldingUpdateTimer = new DispatcherTimer
@@ -332,7 +332,7 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
             }
 
             states.Enqueue(folding.IsFolded);
-                foldings?.Add(new YamlFoldState(title, folding.IsFolded));
+            foldings?.Add(new YamlFoldState(title, folding.IsFolded));
         }
 
         if (foldings != null)

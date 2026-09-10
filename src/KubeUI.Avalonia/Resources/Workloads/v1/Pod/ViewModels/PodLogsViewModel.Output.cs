@@ -1,7 +1,4 @@
-using System.IO;
 using System.Text;
-using Avalonia.Threading;
-using AvaloniaEdit.Document;
 using k8s.Models;
 using KubeUI.Kubernetes;
 
@@ -344,7 +341,7 @@ public sealed partial class PodLogsViewModel
             return;
         }
 
-        PodLogOutputEntry[] batch = entries.ToArray();
+        var batch = entries.ToArray();
 
         // Backpressure bounds outstanding dispatcher work to one batch per reader.
         await Dispatcher.UIThread.InvokeAsync(

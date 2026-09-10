@@ -1,16 +1,11 @@
 using System.Net.Http.Headers;
-using System.Net.Http.Json;
 using System.Net.Sockets;
 using KubeUI.AI.Permissions;
 using KubeUI.Avalonia.Infrastructure.Mcp;
 using KubeUI.Avalonia.Shell.Navigation;
-using KubeUI.Avalonia.Services.Settings;
 using KubeUI.Desktop;
-using KubeUI.Kubernetes;
 using KubeUI.Kubernetes.Serialization;
 using Microsoft.AspNetCore.Hosting.Server;
-using Microsoft.AspNetCore.Hosting.Server.Features;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Moq;
 using Shouldly;
@@ -33,10 +28,10 @@ public sealed class McpServerHostTests
         using var host = Program.CreateStartedHost([], includeOptionalServices: false, configureServices: services =>
         {
             services.Replace(ServiceDescriptor.Singleton(settingsService.Object));
-            services.Replace(ServiceDescriptor.Singleton<IClusterRuntimeCatalog>(new Mock<IClusterRuntimeCatalog>(MockBehavior.Strict).Object));
-            services.Replace(ServiceDescriptor.Singleton<IMcpClusterSession>(new Mock<IMcpClusterSession>(MockBehavior.Strict).Object));
-            services.Replace(ServiceDescriptor.Singleton<IKubernetesYamlSerializer>(new Mock<IKubernetesYamlSerializer>(MockBehavior.Strict).Object));
-            services.Replace(ServiceDescriptor.Singleton<IAgentPermissionService>(new Mock<IAgentPermissionService>(MockBehavior.Strict).Object));
+            services.Replace(ServiceDescriptor.Singleton(new Mock<IClusterRuntimeCatalog>(MockBehavior.Strict).Object));
+            services.Replace(ServiceDescriptor.Singleton(new Mock<IMcpClusterSession>(MockBehavior.Strict).Object));
+            services.Replace(ServiceDescriptor.Singleton(new Mock<IKubernetesYamlSerializer>(MockBehavior.Strict).Object));
+            services.Replace(ServiceDescriptor.Singleton(new Mock<IAgentPermissionService>(MockBehavior.Strict).Object));
         }, mcpPortOverride: port, mcpEnabledOverride: true);
 
         try

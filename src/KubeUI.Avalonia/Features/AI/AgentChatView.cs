@@ -1,8 +1,6 @@
-using KubeUI.Avalonia.Infrastructure.DependencyInjection;
-using KubeUI.Avalonia.Infrastructure;
-using Avalonia;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
+using KubeUI.Avalonia.Infrastructure;
 using LiveMarkdown.Avalonia;
 
 namespace KubeUI.Avalonia.Features.AI;
@@ -38,9 +36,9 @@ public sealed class AgentChatView : ViewBase<AgentChatViewModel>
                             .HorizontalScrollBarVisibility(ScrollBarVisibility.Disabled)
                             .Row(1)
                             .Content(new MarkdownRenderer()
-                                        {
-                                            MarkdownBuilder = vm.MarkdownBuilder,
-                                        }
+                            {
+                                MarkdownBuilder = vm.MarkdownBuilder,
+                            }
                                         .HorizontalAlignment(HorizontalAlignment.Stretch)),
                         new Grid()
                             .Row(2)

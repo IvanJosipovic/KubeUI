@@ -151,9 +151,9 @@ public sealed class PodLogSessionResolver : IPodLogSessionResolver
         HashSet<PodLogScopeIdentity> identities = [];
         for (var i = 0; i < resources.Count; i++)
         {
-            IKubernetesObject<V1ObjectMeta> resource = resources[i]
+            var resource = resources[i]
                 ?? throw new ArgumentException("Selected log resources cannot contain null values.", nameof(resources));
-            PodLogSessionState state = CreateState(resource, containerName, previous, timestamps, tailLines);
+            var state = CreateState(resource, containerName, previous, timestamps, tailLines);
             PodLogScopeIdentity identity = new(
                 state.ResourceNamespace,
                 state.ResourceName,
@@ -231,7 +231,7 @@ public sealed class PodLogSessionResolver : IPodLogSessionResolver
 
         for (var i = 0; i < state.Scopes.Count; i++)
         {
-            PodLogScopeState scope = state.Scopes[i];
+            var scope = state.Scopes[i];
             PodLogSessionState scopeState = new(
                 scope.Identity.ResourceNamespace,
                 scope.Identity.ResourceName,
@@ -244,7 +244,7 @@ public sealed class PodLogSessionResolver : IPodLogSessionResolver
                 state.Previous,
                 state.Timestamps,
                 state.TailLines);
-            PodLogSessionResolution? resolution = TryResolve(cluster, scopeState);
+            var resolution = TryResolve(cluster, scopeState);
             if (resolution is null)
             {
                 scopeResolutions.Add(new PodLogScopeResolution(
@@ -265,7 +265,7 @@ public sealed class PodLogSessionResolver : IPodLogSessionResolver
             previousLogsAvailable |= resolution.PreviousLogsAvailable;
             for (var j = 0; j < resolution.RelatedPods.Count; j++)
             {
-                V1Pod pod = resolution.RelatedPods[j];
+                var pod = resolution.RelatedPods[j];
                 PodIdentity podIdentity = new(
                     pod.Namespace(),
                     string.IsNullOrWhiteSpace(pod.Metadata?.Uid) ? pod.Name() : pod.Metadata!.Uid!);
@@ -275,7 +275,7 @@ public sealed class PodLogSessionResolver : IPodLogSessionResolver
                 }
             }
 
-            IKubernetesObject<V1ObjectMeta>? resource = scope.Identity.ResourceKind == V1Pod.KubeKind
+            var resource = scope.Identity.ResourceKind == V1Pod.KubeKind
                 ? resolution.Pod
                 : FindResourceByIdentity(cluster, scope.Identity);
             scopeResolutions.Add(new PodLogScopeResolution(
@@ -300,16 +300,16 @@ public sealed class PodLogSessionResolver : IPodLogSessionResolver
         PodLogScopeIdentity identity)
     {
         IReadOnlyList<ResourceEntry> resources = GetResources(cluster);
-        ResourceIndexes indexes = BuildIndexes(resources);
+        var indexes = BuildIndexes(resources);
         if (!string.IsNullOrWhiteSpace(identity.ResourceUid)
-            && indexes.ByUid.TryGetValue(identity.ResourceUid, out ResourceEntry? byUid))
+            && indexes.ByUid.TryGetValue(identity.ResourceUid, out var byUid))
         {
             return byUid.Resource;
         }
 
         indexes.ByName.TryGetValue(
             (identity.ResourceNamespace, identity.ResourceKind, identity.ResourceName),
-            out ResourceEntry? byName);
+            out var byName);
         return byName?.Resource;
     }
 

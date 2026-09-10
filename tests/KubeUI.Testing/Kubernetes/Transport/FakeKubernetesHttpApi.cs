@@ -1,6 +1,5 @@
 using System.Collections.Concurrent;
 using System.Net;
-using System.Net.Http.Json;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
@@ -866,7 +865,7 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
         {
             Content = new StreamContent(new WatchStream(channel, cancellationToken, _shutdownCancellation.Token)),
         };
-        response.Content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/json");
+        response.Content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
         return response;
     }
 

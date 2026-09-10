@@ -1,4 +1,3 @@
-using Avalonia.Threading;
 using k8s.Models;
 using KubeUI.Kubernetes;
 
@@ -10,16 +9,16 @@ public sealed partial class PodLogsViewModel
     {
         List<PodLogReadOptions> targets = [];
         HashSet<string> seenTargets = new(StringComparer.Ordinal);
-        foreach (PodLogSourceTreeNode resourceNode in SourceTreeItems)
+        foreach (var resourceNode in SourceTreeItems)
         {
-            foreach (PodLogSourceTreeNode podNode in resourceNode.Children)
+            foreach (var podNode in resourceNode.Children)
             {
                 if (podNode.Value is not V1Pod pod)
                 {
                     continue;
                 }
 
-                foreach (PodLogSourceTreeNode containerNode in podNode.Children)
+                foreach (var containerNode in podNode.Children)
                 {
                     if (containerNode.IsChecked != true
                         || containerNode.Value is not PodLogContainerOption container
@@ -120,15 +119,15 @@ public sealed partial class PodLogsViewModel
             return;
         }
 
-        SourceTreeSelectionSnapshot selection = CaptureSourceTreeSelection();
+        var selection = CaptureSourceTreeSelection();
         HashSet<string> assignedPods = new(StringComparer.Ordinal);
         HashSet<string> desiredResourceKeys = new(StringComparer.Ordinal);
         for (var scopeIndex = 0; scopeIndex < _scopeItems.Count; scopeIndex++)
         {
-            PodLogScopeSelectionItem scopeItem = _scopeItems[scopeIndex];
+            var scopeItem = _scopeItems[scopeIndex];
             var resourceKey = BuildScopeIdentity(scopeItem.Resource, scopeItem.ResourceKind);
             desiredResourceKeys.Add(resourceKey);
-            PodLogSourceTreeNode? resourceNode = FindSourceNode(SourceTreeItems, resourceKey);
+            var resourceNode = FindSourceNode(SourceTreeItems, resourceKey);
             var resourceIsNew = resourceNode is null;
             resourceNode ??= new PodLogSourceTreeNode(
                 PodLogSourceNodeKind.Resource,
@@ -143,7 +142,7 @@ public sealed partial class PodLogsViewModel
                 SourceTreeItems.Add(resourceNode);
             }
 
-            PodLogScopeResolution? scopeResolution = FindScopeResolution(scopeItem);
+            var scopeResolution = FindScopeResolution(scopeItem);
             var selectResolvedResource = _resourceKeysToSelectOnResolve.Contains(resourceKey);
             ReconcilePodNodes(
                 resourceNode,
@@ -171,7 +170,7 @@ public sealed partial class PodLogsViewModel
         HashSet<string> desiredPodKeys = new(StringComparer.Ordinal);
         for (var podIndex = 0; podIndex < pods.Count; podIndex++)
         {
-            V1Pod pod = pods[podIndex];
+            var pod = pods[podIndex];
             var podKey = BuildPodSourceKey(pod);
             if (!assignedPods.Add(podKey))
             {
@@ -179,7 +178,7 @@ public sealed partial class PodLogsViewModel
             }
 
             desiredPodKeys.Add(podKey);
-            PodLogSourceTreeNode? podNode = FindSourceNode(resourceNode.Children, podKey);
+            var podNode = FindSourceNode(resourceNode.Children, podKey);
             var podIsNew = podNode is null;
             podNode ??= new PodLogSourceTreeNode(
                 PodLogSourceNodeKind.Pod,
@@ -218,10 +217,10 @@ public sealed partial class PodLogsViewModel
         var initiallyRequestedContainer = SessionState?.ContainerName ?? ContainerName;
         for (var containerIndex = 0; containerIndex < containers.Count; containerIndex++)
         {
-            PodLogContainerOption container = containers[containerIndex];
+            var container = containers[containerIndex];
             var containerKey = BuildContainerSourceKey(container);
             desiredContainerKeys.Add(containerKey);
-            PodLogSourceTreeNode? containerNode = FindSourceNode(podNode.Children, containerKey);
+            var containerNode = FindSourceNode(podNode.Children, containerKey);
             var containerIsNew = containerNode is null;
             var selectNewContainer = selectAllNewNodes
                 || podIsNew && selection.HasPods
@@ -254,9 +253,9 @@ public sealed partial class PodLogsViewModel
         var selectNewPods = true;
         var allContainersSelected = true;
         HashSet<string>? commonContainerKeys = null;
-        foreach (PodLogSourceTreeNode resourceNode in SourceTreeItems)
+        foreach (var resourceNode in SourceTreeItems)
         {
-            foreach (PodLogSourceTreeNode podNode in resourceNode.Children)
+            foreach (var podNode in resourceNode.Children)
             {
                 hasPods = true;
                 var selectedContainerKeys = podNode.Children
@@ -301,7 +300,7 @@ public sealed partial class PodLogsViewModel
         IEnumerable<PodLogSourceTreeNode> nodes,
         string key)
     {
-        foreach (PodLogSourceTreeNode node in nodes)
+        foreach (var node in nodes)
         {
             if (string.Equals(node.Key, key, StringComparison.Ordinal))
             {
@@ -359,7 +358,7 @@ public sealed partial class PodLogsViewModel
 
         for (var i = 0; i < MultiSessionResolution.Scopes.Count; i++)
         {
-            PodLogScopeResolution resolution = MultiSessionResolution.Scopes[i];
+            var resolution = MultiSessionResolution.Scopes[i];
             if (!string.IsNullOrWhiteSpace(resolution.Scope.ResourceUid)
                 && string.Equals(resolution.Scope.ResourceUid, scopeItem.Resource.Metadata?.Uid, StringComparison.Ordinal)
                 && string.Equals(resolution.Scope.ResourceKind, scopeItem.ResourceKind, StringComparison.Ordinal))
@@ -375,7 +374,7 @@ public sealed partial class PodLogsViewModel
 
         for (var i = 0; i < MultiSessionResolution.Scopes.Count; i++)
         {
-            PodLogScopeResolution resolution = MultiSessionResolution.Scopes[i];
+            var resolution = MultiSessionResolution.Scopes[i];
             if (string.Equals(resolution.Scope.ResourceName, scopeItem.Resource.Name(), StringComparison.Ordinal)
                 && string.Equals(resolution.Scope.ResourceNamespace, scopeItem.Resource.Namespace(), StringComparison.Ordinal)
                 && string.Equals(resolution.Scope.ResourceKind, scopeItem.ResourceKind, StringComparison.Ordinal))
@@ -395,7 +394,7 @@ public sealed partial class PodLogsViewModel
         }
 
         bool? aggregate = null;
-        foreach (PodLogSourceTreeNode child in children)
+        foreach (var child in children)
         {
             if (!child.IsChecked.HasValue)
             {
@@ -437,7 +436,7 @@ public sealed partial class PodLogsViewModel
 
     private static void SetDescendantsSelected(PodLogSourceTreeNode node, bool isSelected)
     {
-        foreach (PodLogSourceTreeNode child in node.Children)
+        foreach (var child in node.Children)
         {
             child.UpdateIsChecked(isSelected);
             SetDescendantsSelected(child, isSelected);
@@ -446,9 +445,9 @@ public sealed partial class PodLogsViewModel
 
     private void UpdateSourceTreeParentStates()
     {
-        foreach (PodLogSourceTreeNode resourceNode in SourceTreeItems)
+        foreach (var resourceNode in SourceTreeItems)
         {
-            foreach (PodLogSourceTreeNode podNode in resourceNode.Children)
+            foreach (var podNode in resourceNode.Children)
             {
                 podNode.UpdateIsChecked(GetAggregateSelection(podNode.Children, false));
             }
@@ -461,11 +460,11 @@ public sealed partial class PodLogsViewModel
     {
         HashSet<string> selectedPods = new(StringComparer.Ordinal);
         HashSet<string> selectedTargets = new(StringComparer.Ordinal);
-        foreach (PodLogSourceTreeNode resourceNode in SourceTreeItems)
+        foreach (var resourceNode in SourceTreeItems)
         {
-            foreach (PodLogSourceTreeNode podNode in resourceNode.Children)
+            foreach (var podNode in resourceNode.Children)
             {
-                foreach (PodLogSourceTreeNode containerNode in podNode.Children)
+                foreach (var containerNode in podNode.Children)
                 {
                     if (containerNode.IsChecked == true)
                     {
@@ -493,7 +492,7 @@ public sealed partial class PodLogsViewModel
             return true;
         }
 
-        V1ContainerStatus? status = FindContainerStatus(pod.Status?.ContainerStatuses, containerName)
+        var status = FindContainerStatus(pod.Status?.ContainerStatuses, containerName)
             ?? FindContainerStatus(pod.Status?.InitContainerStatuses, containerName)
             ?? FindContainerStatus(pod.Status?.EphemeralContainerStatuses, containerName);
 

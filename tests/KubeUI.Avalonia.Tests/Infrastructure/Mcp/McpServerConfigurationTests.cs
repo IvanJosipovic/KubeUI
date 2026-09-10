@@ -1,5 +1,4 @@
 using KubeUI.Avalonia.Infrastructure.Mcp;
-using KubeUI.Avalonia.Options;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Infrastructure.Mcp;

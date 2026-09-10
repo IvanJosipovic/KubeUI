@@ -54,6 +54,6 @@ public class FoldingMarginLeakBenchmarks
 
     private static int CountLogicalChildren(FoldingMargin margin)
     {
-        return ((ILogical)margin).LogicalChildren.Count();
+        return ((ILogical)margin).LogicalChildren.Count;
     }
 }

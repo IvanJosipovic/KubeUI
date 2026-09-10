@@ -1,6 +1,5 @@
 using k8s;
 using k8s.Models;
-using KubeUI.Kubernetes;
 
 namespace KubeUI.Avalonia.Resources.Workloads.v1.Pod.ViewModels;
 
@@ -15,8 +14,8 @@ internal static class PodLogTopologyComparer
 
         for (var i = 0; i < current.Count; i++)
         {
-            V1Pod currentPod = current[i];
-            V1Pod nextPod = next[i];
+            var currentPod = current[i];
+            var nextPod = next[i];
             if (!string.Equals(currentPod.Metadata?.Uid, nextPod.Metadata?.Uid, StringComparison.Ordinal)
                 || !GetContainerNames(currentPod).SequenceEqual(GetContainerNames(nextPod), StringComparer.Ordinal)
                 || !HaveSameContainerLogStates(currentPod, nextPod))
@@ -51,7 +50,7 @@ internal static class PodLogTopologyComparer
 
         for (var i = 0; i < current.Count; i++)
         {
-            V1ContainerStatus currentStatus = current[i];
+            var currentStatus = current[i];
             V1ContainerStatus? nextStatus = null;
             for (var j = 0; j < next.Count; j++)
             {

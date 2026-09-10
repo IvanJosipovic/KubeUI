@@ -1,6 +1,5 @@
 using KubeUI.AI.Agents;
 using KubeUI.Avalonia.Infrastructure.Presentation;
-using KubeUI.Avalonia.Options;
 using KubeUI.Avalonia.Services.Settings;
 
 namespace KubeUI.Avalonia.Shell.Documents.Settings;

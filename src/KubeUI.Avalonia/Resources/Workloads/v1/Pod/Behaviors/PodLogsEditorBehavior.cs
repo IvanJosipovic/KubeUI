@@ -1,15 +1,11 @@
-using Avalonia;
-using Avalonia.Controls;
+using System.Text;
 using Avalonia.Controls.Primitives;
-using Avalonia.Data;
-using Avalonia.Styling;
-using Avalonia.Xaml.Interactivity;
 using Avalonia.VisualTree;
+using Avalonia.Xaml.Interactivity;
 using AvaloniaEdit;
 using AvaloniaEdit.Document;
 using AvaloniaEdit.Search;
 using KubeUI.Avalonia.Infrastructure.Platform;
-using System.Text;
 using TextMateSharp.Grammars;
 using static AvaloniaEdit.TextMate.TextMate;
 
@@ -377,7 +373,7 @@ public sealed class PodLogsEditorBehavior : Behavior<TextEditor>, IDeclarativeVi
             return;
         }
 
-        TextBox? searchTextBox = _searchPanel.GetVisualDescendants().OfType<TextBox>().FirstOrDefault();
+        var searchTextBox = _searchPanel.GetVisualDescendants().OfType<TextBox>().FirstOrDefault();
         if (searchTextBox?.InnerRightContent is not Panel rightContent)
         {
             return;
@@ -437,7 +433,7 @@ public sealed class PodLogsEditorBehavior : Behavior<TextEditor>, IDeclarativeVi
             }
 
             var matchingLines = new bool[_sourceDocument.LineCount + 1];
-            foreach (ISearchResult result in strategy.FindAll(_sourceDocument, 0, _sourceDocument.TextLength))
+            foreach (var result in strategy.FindAll(_sourceDocument, 0, _sourceDocument.TextLength))
             {
                 var firstLineNumber = _sourceDocument.GetLineByOffset(result.Offset).LineNumber;
                 var lastMatchOffset = result.Offset + Math.Max(result.Length - 1, 0);
@@ -449,7 +445,7 @@ public sealed class PodLogsEditorBehavior : Behavior<TextEditor>, IDeclarativeVi
             }
 
             var filteredText = new StringBuilder(_sourceDocument.TextLength);
-            foreach (DocumentLine line in _sourceDocument.Lines)
+            foreach (var line in _sourceDocument.Lines)
             {
                 if (matchingLines[line.LineNumber])
                 {
@@ -486,7 +482,7 @@ public sealed class PodLogsEditorBehavior : Behavior<TextEditor>, IDeclarativeVi
 
         StringBuilder appendedText = new(change.InsertionLength);
         var lastAppendedLine = 0;
-        foreach (ISearchResult result in strategy.FindAll(
+        foreach (var result in strategy.FindAll(
             _sourceDocument,
             change.Offset,
             change.InsertionLength))
@@ -496,7 +492,7 @@ public sealed class PodLogsEditorBehavior : Behavior<TextEditor>, IDeclarativeVi
             var lastLineNumber = _sourceDocument.GetLineByOffset(lastMatchOffset).LineNumber;
             for (var lineNumber = Math.Max(firstLineNumber, lastAppendedLine + 1); lineNumber <= lastLineNumber; lineNumber++)
             {
-                DocumentLine line = _sourceDocument.GetLineByNumber(lineNumber);
+                var line = _sourceDocument.GetLineByNumber(lineNumber);
                 appendedText.Append(_sourceDocument.GetText(line.Offset, line.TotalLength));
             }
 

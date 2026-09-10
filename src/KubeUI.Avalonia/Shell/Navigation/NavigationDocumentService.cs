@@ -6,7 +6,6 @@ using KubeUI.Avalonia.Features.Resources.List;
 using KubeUI.Avalonia.Infrastructure.Docking;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Resources;
-using KubeUI.Kubernetes;
 
 namespace KubeUI.Avalonia.Shell.Navigation;
 

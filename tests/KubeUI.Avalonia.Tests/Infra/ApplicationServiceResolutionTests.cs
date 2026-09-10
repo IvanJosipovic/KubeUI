@@ -1,6 +1,4 @@
 using Avalonia.Headless.XUnit;
-using KubeUI.Avalonia;
-using KubeUI.Testing.Kubernetes.Scenarios;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Infra;

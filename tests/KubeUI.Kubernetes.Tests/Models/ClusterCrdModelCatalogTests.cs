@@ -1,4 +1,3 @@
-using KubeUI.Kubernetes;
 using KubernetesClient.Informer.Client;
 using Shouldly;
 

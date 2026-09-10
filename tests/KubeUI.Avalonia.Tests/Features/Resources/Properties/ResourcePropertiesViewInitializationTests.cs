@@ -1,6 +1,5 @@
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
-using Avalonia.Threading;
 using Dock.Model.Controls;
 using Dock.Model.Core;
 using k8s;
@@ -9,7 +8,6 @@ using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Features.Resources.Properties.Controls;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Resources;
-using KubeUI.Avalonia.Tests.Infra;
 using Shouldly;
 using AppResources = KubeUI.Avalonia.Assets.Resources;
 

@@ -35,7 +35,7 @@ public sealed class PodLogsLauncher(
             throw new ArgumentException("At least one resource is required.", nameof(resources));
         }
 
-        PodLogsViewModel viewModel = viewModelFactory();
+        var viewModel = viewModelFactory();
         viewModel.Cluster = cluster.Runtime;
         viewModel.SetScopes(resources, resourceKind);
         var scopeResourceKind = viewModel.ScopeResourceKind;
@@ -93,7 +93,7 @@ public sealed class PodLogsLauncher(
     {
         if (scopes.Count == 1)
         {
-            PodLogScopeSelectionItem scope = scopes[0];
+            var scope = scopes[0];
             return $"{nameof(PodLogsViewModel)}-{clusterName}-{scope.ResourceKind}-{scope.Resource.Namespace()}-{scope.Resource.Name()}-all";
         }
 

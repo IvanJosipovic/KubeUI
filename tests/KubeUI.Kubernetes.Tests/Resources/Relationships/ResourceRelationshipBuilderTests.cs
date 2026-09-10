@@ -1513,10 +1513,10 @@ public sealed class ResourceRelationshipBuilderTests
     [Fact]
     public void Excludes_crossplane_managed_resource_definition_chain_for_selected_provider()
     {
-        GenericKubernetesObject providerRevision = Crossplane("pkg.crossplane.io/v1", "ProviderRevision", "provider-revision", "provider-revision-uid");
-        GenericKubernetesObject providerDeployment = Crossplane("apps/v1", "Deployment", "provider-revision", "deployment-uid", "crossplane-system", ("provider-revision-uid", "ProviderRevision", "pkg.crossplane.io/v1"));
-        GenericKubernetesObject managedResourceDefinition = Crossplane("apiextensions.crossplane.io/v1alpha1", "ManagedResourceDefinition", "apps.apps.databricks.crossplane.io", "mrd-uid", null, ("provider-revision-uid", "ProviderRevision", "pkg.crossplane.io/v1"));
-        GenericKubernetesObject customResourceDefinition = Crossplane("apiextensions.k8s.io/v1", "CustomResourceDefinition", "apps.apps.databricks.crossplane.io", "crd-uid", null, ("mrd-uid", "ManagedResourceDefinition", "apiextensions.crossplane.io/v1alpha1"));
+        var providerRevision = Crossplane("pkg.crossplane.io/v1", "ProviderRevision", "provider-revision", "provider-revision-uid");
+        var providerDeployment = Crossplane("apps/v1", "Deployment", "provider-revision", "deployment-uid", "crossplane-system", ("provider-revision-uid", "ProviderRevision", "pkg.crossplane.io/v1"));
+        var managedResourceDefinition = Crossplane("apiextensions.crossplane.io/v1alpha1", "ManagedResourceDefinition", "apps.apps.databricks.crossplane.io", "mrd-uid", null, ("provider-revision-uid", "ProviderRevision", "pkg.crossplane.io/v1"));
+        var customResourceDefinition = Crossplane("apiextensions.k8s.io/v1", "CustomResourceDefinition", "apps.apps.databricks.crossplane.io", "crd-uid", null, ("mrd-uid", "ManagedResourceDefinition", "apiextensions.crossplane.io/v1alpha1"));
 
         var graph = new ResourceRelationshipBuilder().Build(
             [providerRevision, providerDeployment, managedResourceDefinition, customResourceDefinition],

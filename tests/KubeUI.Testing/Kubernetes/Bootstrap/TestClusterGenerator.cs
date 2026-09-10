@@ -152,7 +152,7 @@ public sealed class TestClusterGenerator
 
         if (!string.IsNullOrWhiteSpace(config.InitialYaml))
         {
-            api.AddYaml(config.InitialYaml, _services.GetRequiredService<KubeUI.Kubernetes.KubernetesModelCatalog>().GetYamlTypeMap());
+            api.AddYaml(config.InitialYaml, _services.GetRequiredService<KubernetesModelCatalog>().GetYamlTypeMap());
         }
 
         var kubeConfig = CreateFakeKubeConfig(config.Name ?? "fake");
@@ -198,7 +198,7 @@ public sealed class TestClusterGenerator
         try
         {
             await ApplyResourcesAsync(client, config.InitialResources, cancellationToken).ConfigureAwait(false);
-            await ApplyInitialYamlAsync(client, config.InitialYaml, _services.GetRequiredService<KubeUI.Kubernetes.KubernetesModelCatalog>().GetYamlTypeMap(), cancellationToken).ConfigureAwait(false);
+            await ApplyInitialYamlAsync(client, config.InitialYaml, _services.GetRequiredService<KubernetesModelCatalog>().GetYamlTypeMap(), cancellationToken).ConfigureAwait(false);
             client.Dispose();
             ApplyImpersonation(kubeConfig, config.AuthenticatedUser);
             clientConfig = KubernetesClientConfiguration.BuildConfigFromConfigObject(kubeConfig, config.Name, masterUrl: null);
@@ -248,7 +248,7 @@ public sealed class TestClusterGenerator
             try
             {
                 await ApplyResourcesAsync(client, config.InitialResources, cancellationToken).ConfigureAwait(false);
-                await ApplyInitialYamlAsync(client, config.InitialYaml, _services.GetRequiredService<KubeUI.Kubernetes.KubernetesModelCatalog>().GetYamlTypeMap(), cancellationToken).ConfigureAwait(false);
+                await ApplyInitialYamlAsync(client, config.InitialYaml, _services.GetRequiredService<KubernetesModelCatalog>().GetYamlTypeMap(), cancellationToken).ConfigureAwait(false);
                 if (!string.Equals(config.AuthenticatedUser, "system:admin", StringComparison.Ordinal))
                 {
                     var (namespaceName, serviceAccountName) = ParseServiceAccount(config.AuthenticatedUser);

@@ -1,10 +1,8 @@
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
-using Avalonia.Threading;
 using Avalonia.VisualTree;
 using k8s.Models;
 using KubeUI.Avalonia.Features.Resources.Properties.Controls;
-using KubeUI.Avalonia.Tests.Infra;
 using Shouldly;
 using AppResources = KubeUI.Avalonia.Assets.Resources;
 

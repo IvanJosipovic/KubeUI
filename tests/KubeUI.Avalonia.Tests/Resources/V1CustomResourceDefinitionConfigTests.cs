@@ -1,11 +1,8 @@
 using Avalonia.Headless.XUnit;
 using k8s;
 using k8s.Models;
-using KubeUI.Kubernetes;
 using KubeUI.Avalonia.Resources;
-using KubeUI.Avalonia.Features.Resources.List;
 using KubeUI.Avalonia.Tests.Features.Clusters.Workspace;
-using KubeUI.Avalonia.Tests.Infra;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Resources;
@@ -265,14 +262,14 @@ public class V1CustomResourceDefinitionConfigTests
 }
 
 [KubernetesEntity(Group = "example.com", ApiVersion = "v1", Kind = "IngressClass")]
-internal sealed class TestCustomResource : k8s.IKubernetesObject<V1ObjectMeta>
+internal sealed class TestCustomResource : IKubernetesObject<V1ObjectMeta>
 {
     public string ApiVersion { get; set; } = "example.com/v1";
     public string Kind { get; set; } = "IngressClass";
     public V1ObjectMeta Metadata { get; set; } = new();
 }
 
-internal sealed class NullableValueResource : k8s.IKubernetesObject<V1ObjectMeta>
+internal sealed class NullableValueResource : IKubernetesObject<V1ObjectMeta>
 {
     public string ApiVersion { get; set; } = "v1";
     public string Kind { get; set; } = "Test";
@@ -281,7 +278,7 @@ internal sealed class NullableValueResource : k8s.IKubernetesObject<V1ObjectMeta
 }
 
 [KubernetesEntity(Group = "example.com", ApiVersion = "v1", Kind = "Example")]
-internal sealed class TestCustomResourceWithSpec : k8s.IKubernetesObject<V1ObjectMeta>
+internal sealed class TestCustomResourceWithSpec : IKubernetesObject<V1ObjectMeta>
 {
     public string ApiVersion { get; set; } = "example.com/v1";
     public string Kind { get; set; } = "Example";

@@ -116,7 +116,8 @@ public sealed class ProviderConfigUsageRelationshipProvider : IResourceRelations
 
     private static string GetApiGroup(string? apiVersion)
     {
-        if (string.IsNullOrWhiteSpace(apiVersion)) return string.Empty;
+        if (string.IsNullOrWhiteSpace(apiVersion))
+            return string.Empty;
         var separator = apiVersion.IndexOf('/');
         return separator < 0 ? string.Empty : apiVersion[..separator];
     }

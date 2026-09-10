@@ -1,4 +1,3 @@
-using KubeUI.Kubernetes.Client;
 using KubernetesClient.Informer.Client;
 using Microsoft.OpenApi;
 

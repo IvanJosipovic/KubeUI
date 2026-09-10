@@ -82,43 +82,43 @@ public partial class Cluster
                 return;
             }
 
-        var model = new V1SelfSubjectAccessReview()
-        {
-            ApiVersion = V1SelfSubjectAccessReview.KubeGroup + "/" + V1SelfSubjectAccessReview.KubeApiVersion,
-            Kind = V1SelfSubjectAccessReview.KubeKind,
-            Spec = new()
+            var model = new V1SelfSubjectAccessReview()
             {
-                ResourceAttributes = new()
+                ApiVersion = V1SelfSubjectAccessReview.KubeGroup + "/" + V1SelfSubjectAccessReview.KubeApiVersion,
+                Kind = V1SelfSubjectAccessReview.KubeKind,
+                Spec = new()
                 {
-                    Group = "metrics.k8s.io",
-                    Resource = "pods",
-                    Verb = "list"
+                    ResourceAttributes = new()
+                    {
+                        Group = "metrics.k8s.io",
+                        Resource = "pods",
+                        Verb = "list"
+                    }
                 }
-            }
-        };
+            };
 
-        var resp = await kube.CreateSelfSubjectAccessReviewAsync(model);
+            var resp = await kube.CreateSelfSubjectAccessReviewAsync(model);
 
-        var model2 = new V1SelfSubjectAccessReview()
-        {
-            ApiVersion = V1SelfSubjectAccessReview.KubeGroup + "/" + V1SelfSubjectAccessReview.KubeApiVersion,
-            Kind = V1SelfSubjectAccessReview.KubeKind,
-            Spec = new()
+            var model2 = new V1SelfSubjectAccessReview()
             {
-                ResourceAttributes = new()
+                ApiVersion = V1SelfSubjectAccessReview.KubeGroup + "/" + V1SelfSubjectAccessReview.KubeApiVersion,
+                Kind = V1SelfSubjectAccessReview.KubeKind,
+                Spec = new()
                 {
-                    Group = "metrics.k8s.io",
-                    Resource = "nodes",
-                    Verb = "list"
+                    ResourceAttributes = new()
+                    {
+                        Group = "metrics.k8s.io",
+                        Resource = "nodes",
+                        Verb = "list"
+                    }
                 }
-            }
-        };
+            };
 
-        var resp2 = await kube.CreateSelfSubjectAccessReviewAsync(model2);
+            var resp2 = await kube.CreateSelfSubjectAccessReviewAsync(model2);
 
-        var APIGroups = await Client.Apis.GetAPIVersionsAsync();
+            var APIGroups = await Client.Apis.GetAPIVersionsAsync();
 
-        IsMetricsAvailable = APIGroups.Groups.Any(g => g.Name == "metrics.k8s.io") && resp.Status.Allowed && resp2.Status.Allowed;
+            IsMetricsAvailable = APIGroups.Groups.Any(g => g.Name == "metrics.k8s.io") && resp.Status.Allowed && resp2.Status.Allowed;
 
             if (IsMetricsAvailable)
             {

@@ -1,16 +1,16 @@
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
 using System.Collections.Specialized;
+using System.ComponentModel;
 using System.Reflection;
 using Avalonia.Controls;
 using Avalonia.Controls.DataGridFiltering;
 using Avalonia.Controls.DataGridSearching;
 using Avalonia.Controls.DataGridSorting;
 using Avalonia.Controls.Primitives;
-using Avalonia.Controls.Templates;
 using Avalonia.Controls.Selection;
+using Avalonia.Controls.Templates;
 using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
 using Avalonia.Input;
@@ -28,9 +28,9 @@ using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Controls.DataGridFilters;
-using KubeUI.Avalonia.Features.Resources.List.Controls;
 using KubeUI.Avalonia.Features.AI;
 using KubeUI.Avalonia.Features.Resources.List.Behaviors;
+using KubeUI.Avalonia.Features.Resources.List.Controls;
 using KubeUI.Avalonia.Resources;
 using KubeUI.Avalonia.Shell.Documents.About;
 using KubeUI.Avalonia.Shell.Main;
@@ -797,9 +797,7 @@ public class ResourceListViewModelTests
             .ShouldBeOfType<DataGridControlTemplateColumnDefinition>();
 
         var template = column.CellTemplate.ShouldBeOfType<FuncDataTemplate<Corev1Event>>();
-        var recyclingField = template.GetType().GetField("_supportsRecycling", BindingFlags.Instance | BindingFlags.NonPublic);
-        recyclingField.ShouldNotBeNull();
-        recyclingField!.GetValue(template).ShouldBe(true);
+        template.ShouldBeAssignableTo<IRecyclingDataTemplate>();
     }
 
     [AvaloniaFact(DisplayName = "Update check DataGrid Text update")]
@@ -2105,6 +2103,7 @@ public class ResourceListViewModelTests
 
     }
 
+    [Obsolete]
     private static void SaveGridScreenshot(DataGrid grid, string name)
     {
         var directory = Path.Combine(AppContext.BaseDirectory, "TestArtifacts");
@@ -2121,6 +2120,7 @@ public class ResourceListViewModelTests
         Console.WriteLine($"DataGrid screenshot: {path}");
     }
 
+    [Obsolete]
     private static void AssertHorizontalGridLines(DataGrid grid)
     {
         var pixelSize = new PixelSize(
@@ -2724,7 +2724,7 @@ public class ResourceListViewModelTests
                     resource,
                     LastSeen: GetCellText(grid, row, lastSeenColumn.DisplayIndex),
                     Age: GetCellText(grid, row, ageColumn.DisplayIndex));
-        })
+            })
             .ToArray();
 
         visibleRows.ShouldNotBeEmpty();

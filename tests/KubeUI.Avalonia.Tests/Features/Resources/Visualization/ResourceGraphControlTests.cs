@@ -2,8 +2,8 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
-using Avalonia.Markup.Xaml.MarkupExtensions;
 using Avalonia.Markup.Declarative;
+using Avalonia.Markup.Xaml.MarkupExtensions;
 using Avalonia.Styling;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
@@ -15,7 +15,6 @@ using k8s.Models;
 using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Features.Resources.Visualization;
 using KubeUI.Avalonia.Services.Icons;
-using KubeUI.Avalonia.Tests.Infra;
 using KubeUI.Kubernetes.Resources.Relationships;
 using Shouldly;
 
@@ -69,7 +68,7 @@ public sealed class ResourceGraphControlTests
     public async Task fire_and_forget_graph_application_publishes_the_graph()
     {
         using VisualizationViewModel viewModel = new(new ResourceRelationshipBuilder());
-        V1Pod pod = CreatePod("direct-apply");
+        var pod = CreatePod("direct-apply");
 
         viewModel.ApplyGraph(new ResourceRelationshipGraph([pod], []));
 
@@ -140,7 +139,7 @@ public sealed class ResourceGraphControlTests
     public async Task changing_resource_type_selection_updates_display_filter()
     {
         using VisualizationViewModel viewModel = new(new ResourceRelationshipBuilder());
-        V1Pod pod = CreatePod("filter");
+        var pod = CreatePod("filter");
 
         await viewModel.ApplyGraphAsync(new ResourceRelationshipGraph([pod], []));
         viewModel.SelectedResourceTypes.Remove(V1Pod.KubeKind);
@@ -565,7 +564,7 @@ public sealed class ResourceGraphControlTests
         var cluster = await Application.Current.CreateClusterAsync(config => config.Type = KubernetesBackend.Fake);
         cluster.SelectedNamespaces.Add(new V1Namespace { Metadata = new() { Name = "default" } });
         await cluster.Runtime.SeedResource<V1Pod>(true);
-        V1Pod pod = CreatePod("reload-before-snapshot");
+        var pod = CreatePod("reload-before-snapshot");
         await cluster.Runtime.AddOrUpdateResource(pod);
 
         using (VisualizationViewModel firstView = new(new ResourceRelationshipBuilder()))
@@ -1181,9 +1180,9 @@ public sealed class ResourceGraphControlTests
         cluster.SelectedNamespaces.Add(new V1Namespace { Metadata = new() { Name = "default" } });
         await cluster.Runtime.SeedResource<V1Pod>(true);
 
-        V1Pod root = CreatePod("root");
-        V1Pod intermediate = CreatePod("intermediate");
-        V1Pod leaf = CreatePod("leaf");
+        var root = CreatePod("root");
+        var intermediate = CreatePod("intermediate");
+        var leaf = CreatePod("leaf");
         await cluster.Runtime.AddOrUpdateResource(root);
         await cluster.Runtime.AddOrUpdateResource(intermediate);
         await cluster.Runtime.AddOrUpdateResource(leaf);
@@ -1192,9 +1191,9 @@ public sealed class ResourceGraphControlTests
         using VisualizationViewModel viewModel = new(builder);
         viewModel.Initialize(cluster);
 
-        ResourceIdentity rootIdentity = GetIdentity(root);
-        ResourceIdentity intermediateIdentity = GetIdentity(intermediate);
-        ResourceIdentity leafIdentity = GetIdentity(leaf);
+        var rootIdentity = GetIdentity(root);
+        var intermediateIdentity = GetIdentity(intermediate);
+        var leafIdentity = GetIdentity(leaf);
         ResourceRelationship indirectRoot = new(rootIdentity, intermediateIdentity, ResourceRelationshipKind.Reference);
         ResourceRelationship indirectLeaf = new(intermediateIdentity, leafIdentity, ResourceRelationshipKind.Reference);
         ResourceRelationship direct = new(rootIdentity, leafIdentity, ResourceRelationshipKind.Reference);

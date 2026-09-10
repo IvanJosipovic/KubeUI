@@ -16,7 +16,7 @@ public static class ResourceGraphProjection
         ArgumentNullException.ThrowIfNull(graph);
         ArgumentNullException.ThrowIfNull(root);
 
-        ResourceIdentity rootIdentity = Identity(root);
+        var rootIdentity = Identity(root);
         Dictionary<ResourceIdentity, List<ResourceIdentity>> parentsByChild = [];
         Dictionary<ResourceIdentity, List<ResourceIdentity>> childrenByParent = [];
         foreach (var relationship in graph.Relationships)

@@ -12,7 +12,6 @@ using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Services.Settings;
 using KubeUI.Avalonia.Shell.Main;
 using KubeUI.Avalonia.Styles;
-using LiveMarkdown.Avalonia;
 using Microsoft.Extensions.Hosting;
 using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;

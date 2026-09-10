@@ -1,9 +1,9 @@
 using System.Collections;
 using System.Diagnostics;
 using System.Reactive.Linq;
-using Avalonia.Headless.XUnit;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
+using Avalonia.Headless.XUnit;
 using Avalonia.Styling;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.Input;
@@ -17,7 +17,6 @@ using KubeUI.Avalonia.Resources;
 using KubeUI.Avalonia.Services.Icons;
 using KubeUI.Avalonia.Shell.Navigation;
 using KubeUI.Avalonia.Tests.Features.Clusters.Workspace;
-using KubeUI.Avalonia.Tests.Infra;
 using Microsoft.Extensions.Logging;
 using Shouldly;
 

@@ -150,7 +150,8 @@ public sealed class AcpAgent : IAgent
             | DomainAgentCapabilities.Permissions
             | DomainAgentCapabilities.Plans
             | DomainAgentCapabilities.Usage;
-        if (result.AgentCapabilities?.McpCapabilities != null) capabilities |= DomainAgentCapabilities.Mcp;
+        if (result.AgentCapabilities?.McpCapabilities != null)
+            capabilities |= DomainAgentCapabilities.Mcp;
         return capabilities;
     }
 

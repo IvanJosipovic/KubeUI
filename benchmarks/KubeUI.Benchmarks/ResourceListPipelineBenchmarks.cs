@@ -1,18 +1,11 @@
 #nullable enable
 
 using System.Collections.ObjectModel;
-using System.Reactive.Concurrency;
 using System.Reactive.Subjects;
-using Avalonia.Controls.DataGridFiltering;
-using Avalonia.Controls.DataGridSearching;
-using Avalonia.Controls.DataGridSorting;
 using BenchmarkDotNet.Attributes;
 using DynamicData;
-using DynamicData.Binding;
 using k8s.Models;
-using KubeUI.Avalonia.Features.Resources.List;
 using KubeUI.Kubernetes;
-using KubeUI.Avalonia.Resources;
 
 namespace KubeUI.Benchmarks;
 
@@ -40,6 +33,7 @@ public class ResourceListPipelineBenchmarks : IDisposable
     public int BindingResetThreshold { get; set; }
 
     [GlobalSetup]
+    [Obsolete]
     public void Setup()
     {
         _items = BuildItems(ItemCount);

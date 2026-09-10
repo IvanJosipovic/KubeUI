@@ -1,6 +1,5 @@
-using Avalonia.Svg.Skia;
-
 using Avalonia.Markup.Xaml.MarkupExtensions;
+using Avalonia.Svg.Skia;
 using KubeUI.Avalonia.Styles;
 
 namespace KubeUI.Avalonia.Shell.Main;

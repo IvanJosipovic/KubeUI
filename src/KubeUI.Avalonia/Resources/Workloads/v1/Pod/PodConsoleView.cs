@@ -1,7 +1,7 @@
 using Avalonia.Markup.Xaml.MarkupExtensions;
 using KubeUI.Avalonia.Infrastructure;
-using KubeUI.Avalonia.Styles;
 using KubeUI.Avalonia.Resources.Workloads.v1.Pod.Behaviors;
+using KubeUI.Avalonia.Styles;
 using SvcSystems.UI.Terminal;
 
 namespace KubeUI.Avalonia.Resources.Workloads.v1.Pod;

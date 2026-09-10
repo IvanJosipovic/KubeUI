@@ -1,12 +1,9 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
-using System.Net.Http.Json;
 using System.Reactive.Linq;
 using System.Text;
-using System.Text.Json;
 using DynamicData;
 using DynamicData.Binding;
-using DynamicData.Kernel;
 using k8s;
 using k8s.KubeConfigModels;
 using k8s.Models;

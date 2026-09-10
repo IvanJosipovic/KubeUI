@@ -1,5 +1,4 @@
 using Avalonia.Controls.Notifications;
-using Avalonia.Platform.Storage;
 using Dock.Model.Controls;
 using Dock.Model.Core;
 using FluentAvalonia.UI.Controls;
@@ -8,17 +7,12 @@ using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Features.Clusters.Error;
-using KubeUI.Avalonia.Features.Clusters.Overview;
 using KubeUI.Avalonia.Features.Clusters.Settings;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
-using KubeUI.Avalonia.Features.Resources.Visualization;
-using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Infrastructure.Docking;
 using KubeUI.Avalonia.Infrastructure.Platform;
 using KubeUI.Avalonia.Infrastructure.Presentation;
-using KubeUI.Avalonia.Infrastructure.Threading;
 using KubeUI.Avalonia.Resources;
-using KubeUI.Avalonia.Resources.Workloads.v1.Pod;
 using KubeUI.Avalonia.Services.Icons;
 using KubeUI.Kubernetes;
 

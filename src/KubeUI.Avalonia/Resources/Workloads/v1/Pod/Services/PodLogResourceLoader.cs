@@ -1,8 +1,8 @@
 using k8s;
 using k8s.Models;
+using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Resources.Workloads.v1.Pod.ViewModels;
 using KubeUI.Kubernetes;
-using KubernetesClient.Informer.Client;
 
 namespace KubeUI.Avalonia.Resources.Workloads.v1.Pod.Services;
 
@@ -28,9 +28,9 @@ internal static class PodLogResourceLoader
         IClusterRuntime cluster,
         IKubernetesObject<V1ObjectMeta> resource)
     {
-        V1OwnerReference? ownerReference = PodLogFileNameExtensions.GetControllerReference(resource);
+        var ownerReference = PodLogFileNameExtensions.GetControllerReference(resource);
         if (ownerReference is null
-            || !TryGetResourceKind(cluster, ownerReference, out GroupApiVersionKind ownerKind)
+            || !TryGetResourceKind(cluster, ownerReference, out var ownerKind)
             || !cluster.Permissions.CanI(ownerKind, Verb.List, resource.Namespace()))
         {
             return Task.CompletedTask;

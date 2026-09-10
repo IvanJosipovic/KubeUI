@@ -1,6 +1,5 @@
-using KubeUI.Avalonia.Infrastructure.DependencyInjection;
-
 using Avalonia.Markup.Xaml.MarkupExtensions;
+using KubeUI.Avalonia.Infrastructure.DependencyInjection;
 using KubeUI.Avalonia.Styles;
 
 namespace KubeUI.Avalonia.Features.Clusters.Settings;
