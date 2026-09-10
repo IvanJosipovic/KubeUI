@@ -3,14 +3,14 @@ using Dock.Model.Core;
 using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
+using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Infrastructure.Dialogs;
 using KubeUI.Avalonia.Infrastructure.Docking;
+using KubeUI.Avalonia.Infrastructure.Mcp;
 using KubeUI.Avalonia.Infrastructure.Platform;
 using KubeUI.Avalonia.Infrastructure.Threading;
-using KubeUI.Kubernetes;
-using KubeUI.Avalonia.Infrastructure.Mcp;
 using KubeUI.Avalonia.Shell.Navigation;
-using KubeUI.Avalonia.Features.Clusters.Workspace;
+using KubeUI.Kubernetes;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace KubeUI.Avalonia.Infrastructure.DependencyInjection;

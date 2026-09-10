@@ -1,9 +1,7 @@
+using System.Threading.Channels;
 using KubeUI.AI.Agents;
 using KubeUI.Avalonia.Features.AI;
 using KubeUI.Avalonia.Infrastructure.Mcp;
-using KubeUI.Avalonia.Options;
-using KubeUI.Avalonia.Services.Settings;
-using System.Threading.Channels;
 using Moq;
 using Shouldly;
 

@@ -1,6 +1,5 @@
 using System.Diagnostics;
 using System.Net;
-using System.Net.Http.Json;
 using KubeUI.Kubernetes.Client;
 namespace KubeUI.Kubernetes;
 

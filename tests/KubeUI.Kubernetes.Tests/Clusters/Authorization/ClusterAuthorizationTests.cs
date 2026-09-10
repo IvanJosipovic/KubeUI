@@ -1,5 +1,5 @@
-using System.Reflection;
 using System.Net;
+using System.Reflection;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
 using Shouldly;

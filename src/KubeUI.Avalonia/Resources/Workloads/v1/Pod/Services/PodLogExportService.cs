@@ -1,5 +1,4 @@
 using System.Text;
-using Avalonia.Controls;
 using Avalonia.Platform.Storage;
 using KubeUI.Avalonia.Infrastructure.Platform;
 
@@ -14,11 +13,11 @@ public sealed class PodLogExportService(IPlatformServices platformServices) : IP
         cancellationToken.ThrowIfCancellationRequested();
         FilePickerSaveOptions options = new()
         {
-            Title = global::KubeUI.Avalonia.Assets.Resources.PodLogsView_Download,
+            Title = Assets.Resources.PodLogsView_Download,
             SuggestedFileName = suggestedFileName,
             FileTypeChoices =
             [
-                new FilePickerFileType(global::KubeUI.Avalonia.Assets.Resources.PodLogsView_FileTypeText)
+                new FilePickerFileType(Assets.Resources.PodLogsView_FileTypeText)
                 {
                     Patterns = ["*.log", "*.txt"],
                 },

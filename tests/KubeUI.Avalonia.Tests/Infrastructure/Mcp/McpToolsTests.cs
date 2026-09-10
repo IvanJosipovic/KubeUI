@@ -1,14 +1,12 @@
 using System.Reflection;
 using k8s.Models;
-using KubeUI.Avalonia.Infrastructure.Mcp;
-using KubeUI.Avalonia.Shell.Navigation;
-using KubeUI.Avalonia.Services.Settings;
 using KubeUI.AI.Agents;
 using KubeUI.AI.Permissions;
-using KubeUI.Kubernetes;
+using KubeUI.Avalonia.Infrastructure.Mcp;
+using KubeUI.Avalonia.Shell.Navigation;
 using KubeUI.Kubernetes.Serialization;
-using Moq;
 using ModelContextProtocol.Server;
+using Moq;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Infrastructure.Mcp;

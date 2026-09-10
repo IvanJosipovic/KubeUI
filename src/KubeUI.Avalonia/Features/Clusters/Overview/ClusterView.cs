@@ -1,16 +1,15 @@
 using Avalonia.Collections;
+using Avalonia.Markup.Xaml.MarkupExtensions;
 using k8s.Models;
 using KubeUI.Avalonia.Features.Resources.List;
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
+using KubeUI.Avalonia.Styles;
 using LiveChartsCore;
 using LiveChartsCore.Kernel;
 using LiveChartsCore.Measure;
 using LiveChartsCore.SkiaSharpView.Avalonia;
 using LiveChartsCore.SkiaSharpView.Painting;
 using SkiaSharp;
-
-using Avalonia.Markup.Xaml.MarkupExtensions;
-using KubeUI.Avalonia.Styles;
 
 namespace KubeUI.Avalonia.Features.Clusters.Overview;
 

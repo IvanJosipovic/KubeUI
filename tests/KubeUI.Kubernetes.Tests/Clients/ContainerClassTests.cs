@@ -1,7 +1,6 @@
-using k8s.Models;
 using DynamicData;
 using DynamicData.Kernel;
-using KubeUI.Kubernetes.Client;
+using k8s.Models;
 using Shouldly;
 
 namespace KubeUI.Kubernetes.Tests.Clients;

@@ -4,14 +4,10 @@ using Avalonia.Headless.XUnit;
 using Avalonia.Input;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
-using Avalonia;
-using LiveMarkdown.Avalonia;
 using KubeUI.AI.Configuration;
 using KubeUI.Avalonia.Features.AI;
 using KubeUI.Avalonia.Infrastructure.Mcp;
-using KubeUI.Avalonia.Options;
-using KubeUI.Avalonia.Services.Settings;
-using KubeUI.Avalonia.Tests.Infra;
+using LiveMarkdown.Avalonia;
 using Moq;
 using Shouldly;
 

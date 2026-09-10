@@ -1,12 +1,9 @@
-using System.ComponentModel;
 using k8s;
-using k8s.Models;
-using KubeUI.Kubernetes;
-using KubeUI.Kubernetes.Serialization;
-using KubeUI.Avalonia.Shell.Navigation;
 using KubeUI.AI.Agents;
 using KubeUI.AI.Permissions;
-using KubernetesClient.Informer.Client;
+using KubeUI.Avalonia.Shell.Navigation;
+using KubeUI.Kubernetes;
+using KubeUI.Kubernetes.Serialization;
 using ModelContextProtocol.Server;
 
 namespace KubeUI.Avalonia.Infrastructure.Mcp;

@@ -2,12 +2,12 @@ using System.Reactive.Linq;
 using System.Windows.Input;
 using FluentIcons.Common;
 using k8s.Models;
+using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
+using KubeUI.Avalonia.Infrastructure.Threading;
 using KubeUI.Avalonia.Resources;
 using KubeUI.Avalonia.Services.Icons;
-using KubeUI.Avalonia.Infrastructure.Threading;
 using KubeUI.Kubernetes;
-using KubernetesClient.Informer.Client;
 
 namespace KubeUI.Avalonia.Shell.Navigation;
 

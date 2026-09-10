@@ -7,20 +7,20 @@ using Dock.Model.Core;
 using FluentAvalonia.UI.Controls;
 using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
-using KubeUI.Testing.Kubernetes.Bootstrap;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
-using KubeUI.Avalonia.Infrastructure.Platform;
-using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
 using KubeUI.Avalonia.Infrastructure.Docking;
+using KubeUI.Avalonia.Infrastructure.Platform;
+using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Services.Settings;
 using KubeUI.Avalonia.Styles;
-using KubeUI.Kubernetes;
-using KubeUI.Testing.Kubernetes.Scenarios;
-using KubeUI.Testing.Kubernetes.Infrastructure;
 using KubeUI.Desktop;
-using Microsoft.Extensions.DependencyInjection.Extensions;
+using KubeUI.Kubernetes;
+using KubeUI.Testing.Kubernetes.Bootstrap;
+using KubeUI.Testing.Kubernetes.Infrastructure;
+using KubeUI.Testing.Kubernetes.Scenarios;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Moq;
@@ -118,14 +118,14 @@ public class TestApp : App, IDisposable
                 var config = sp.GetRequiredService<TestClusterConfig>();
                 if (config.Type == KubernetesBackend.Fake)
                 {
-                        var manager = sp.GetRequiredService<ClusterManager>();
-                        if (manager.Clusters.Count == 0)
-                        {
-                            var generator = sp.GetRequiredService<TestClusterGenerator>();
-                            var cluster = generator.CreateAsync(config).GetAwaiter().GetResult();
-                            cluster.Cluster.EnsureOpenApiSchemasAsync().GetAwaiter().GetResult();
-                            manager.AddCluster(cluster.Cluster);
-                        }
+                    var manager = sp.GetRequiredService<ClusterManager>();
+                    if (manager.Clusters.Count == 0)
+                    {
+                        var generator = sp.GetRequiredService<TestClusterGenerator>();
+                        var cluster = generator.CreateAsync(config).GetAwaiter().GetResult();
+                        cluster.Cluster.EnsureOpenApiSchemasAsync().GetAwaiter().GetResult();
+                        manager.AddCluster(cluster.Cluster);
+                    }
                 }
 
                 return ActivatorUtilities.CreateInstance<ClusterWorkspaceCatalog>(sp);

@@ -1,11 +1,9 @@
-using System.Collections.ObjectModel;
 using KubeUI.AI.Agents;
-using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Infrastructure.Mcp;
-using KubeUI.Avalonia.Services.Settings;
-using Avalonia.Threading;
-using LiveMarkdown.Avalonia;
+using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Options;
+using KubeUI.Avalonia.Services.Settings;
+using LiveMarkdown.Avalonia;
 
 namespace KubeUI.Avalonia.Features.AI;
 
@@ -46,7 +44,7 @@ public sealed partial class AgentChatViewModel : ViewModelBase, IAsyncDisposable
     public partial bool IsBusy { get; set; }
 
     [ObservableProperty]
-    public partial AgentContext? Context { get; set; }
+    public new partial AgentContext? Context { get; set; }
 
     public AgentChatViewModel(
         IAgentRegistry registry,

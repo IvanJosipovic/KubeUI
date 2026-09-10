@@ -1,6 +1,5 @@
 using System.Collections;
 using System.Diagnostics;
-using System.Reflection;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Media;
@@ -11,8 +10,6 @@ using DynamicData;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Resources;
-using KubeUI.Avalonia.Tests.Infra;
-using KubeUI.Kubernetes;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Features.Clusters.Workspace;
@@ -198,7 +195,7 @@ public class ClusterWorkspaceTests
             cancellationToken: TestContext.Current.CancellationToken,
             beforePoll: () => Dispatcher.UIThread.RunJobs());
         await TestWait.UntilAsync(
-            () => observedConfigs.Count > 0,
+            () => !observedConfigs.IsEmpty,
             TimeSpan.FromSeconds(10),
             cancellationToken: TestContext.Current.CancellationToken,
             beforePoll: () => Dispatcher.UIThread.RunJobs());

@@ -1,28 +1,19 @@
-using System.Collections.ObjectModel;
 using System.Text;
-using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Headless.XUnit;
-using Avalonia.Media;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Avalonia.Xaml.Interactivity;
 using AvaloniaEdit;
-using Dock.Model.Core;
 using k8s;
 using k8s.Models;
 using KubeUI.Avalonia.Resources.Workloads.v1.Pod.Behaviors;
 using KubeUI.Avalonia.Resources.Workloads.v1.Pod.Services;
 using KubeUI.Avalonia.Resources.Workloads.v1.Pod.ViewModels;
 using KubeUI.Avalonia.Resources.Workloads.v1.Pod.Views;
-using KubeUI.Avalonia.Services.Settings;
-using KubeUI.Avalonia.Tests.Infra;
-using KubeUI.Kubernetes;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Shouldly;
-using System.Reflection;
 
 namespace KubeUI.Avalonia.Tests.Resources.Workloads.v1.Pod;
 
@@ -103,7 +94,7 @@ public sealed class PodLogsViewTests
             original.Text = "keep stale";
             editor.Document.Text.ShouldBe("keep new");
             replacement.Text = string.Empty;
-            await WaitForAsync(() => editor.Document.Text == string.Empty);
+            await WaitForAsync(() => string.IsNullOrEmpty(editor.Document.Text));
             replacement.Text = "keep resumed";
             await WaitForAsync(() => editor.Document.Text == "keep resumed");
             behaviors.Remove(behavior).ShouldBeTrue();
@@ -146,7 +137,7 @@ public sealed class PodLogsViewTests
 
             search.SearchPattern = "alpha\nbeta";
             toggle.IsChecked = true;
-            await WaitForAsync(() => editor.Document.Text == string.Empty);
+            await WaitForAsync(() => string.IsNullOrEmpty(editor.Document.Text));
 
             await Dispatcher.UIThread.InvokeAsync(() => source.Insert(source.TextLength, "beta"));
 
@@ -163,8 +154,8 @@ public sealed class PodLogsViewTests
     public async Task scope_switch_updates_pod_name_selector_and_controller_button()
     {
         using var workspace = await Application.Current.CreateClusterAsync();
-        IServiceProvider services = Application.Current.GetTestServices();
-        V1Pod pod = CreatePod();
+        var services = Application.Current.GetTestServices();
+        var pod = CreatePod();
         V1ReplicaSet replicaSet = new()
         {
             Metadata = new V1ObjectMeta { Name = "app-rs", NamespaceProperty = "default" },
@@ -206,10 +197,10 @@ public sealed class PodLogsViewTests
         try
         {
             Dispatcher.UIThread.RunJobs();
-            Ursa.Controls.TreeComboBox sourcesSelector = view.GetVisualDescendants()
+            var sourcesSelector = view.GetVisualDescendants()
                 .OfType<Ursa.Controls.TreeComboBox>()
                 .Single();
-            StackPanel selectionControls = sourcesSelector.Parent.ShouldBeOfType<StackPanel>();
+            var selectionControls = sourcesSelector.Parent.ShouldBeOfType<StackPanel>();
             bool? selected = null;
             PodLogSourceTreeNode templateNode = new(
                 PodLogSourceNodeKind.Container, "test", "app", pod, true,
@@ -225,10 +216,10 @@ public sealed class PodLogsViewTests
             sourceCheckBox.IsChecked.ShouldBeNull();
             templateNode.UpdateIsChecked(true);
             sourceCheckBox.IsChecked.ShouldBe(true);
-            Grid logControlsBar = selectionControls.Parent.ShouldBeOfType<Grid>();
-            ScrollViewer topBarScrollViewer = logControlsBar.Parent.ShouldBeOfType<ScrollViewer>();
-            Grid topBar = topBarScrollViewer.Parent.ShouldBeOfType<Grid>();
-            StackPanel actionControls = logControlsBar.Children
+            var logControlsBar = selectionControls.Parent.ShouldBeOfType<Grid>();
+            var topBarScrollViewer = logControlsBar.Parent.ShouldBeOfType<ScrollViewer>();
+            var topBar = topBarScrollViewer.Parent.ShouldBeOfType<Grid>();
+            var actionControls = logControlsBar.Children
                 .OfType<StackPanel>()
                 .Single(panel => Grid.GetColumn(panel) == 1);
             actionControls.Children
@@ -236,22 +227,22 @@ public sealed class PodLogsViewTests
                 .Select(control => ToolTip.GetTip(control))
                 .ShouldBe(
                 [
-                    KubeUI.Avalonia.Assets.Resources.PodLogsView_Clear,
-                    KubeUI.Avalonia.Assets.Resources.PodLogsView_Download,
-                    KubeUI.Avalonia.Assets.Resources.PodLogsView_FollowLogs,
-                    KubeUI.Avalonia.Assets.Resources.PodLogsView_Controller,
-                    KubeUI.Avalonia.Assets.Resources.PodLogsView_Previous,
-                    KubeUI.Avalonia.Assets.Resources.PodLogsView_Timestamps,
-                    KubeUI.Avalonia.Assets.Resources.PodLogsView_ShowResourceNames,
-                    KubeUI.Avalonia.Assets.Resources.PodLogsView_WordWrap,
+                    Assets.Resources.PodLogsView_Clear,
+                    Assets.Resources.PodLogsView_Download,
+                    Assets.Resources.PodLogsView_FollowLogs,
+                    Assets.Resources.PodLogsView_Controller,
+                    Assets.Resources.PodLogsView_Previous,
+                    Assets.Resources.PodLogsView_Timestamps,
+                    Assets.Resources.PodLogsView_ShowResourceNames,
+                    Assets.Resources.PodLogsView_WordWrap,
                 ]);
             Control controllerButton = view.GetVisualDescendants()
                 .OfType<Button>()
                 .Single(button => ReferenceEquals(button.Command, viewModel.JumpToControlledByLogsCommand));
-            ToggleButton followLogsButton = view.GetVisualDescendants()
+            var followLogsButton = view.GetVisualDescendants()
                 .OfType<ToggleButton>()
-                .Single(button => Equals(ToolTip.GetTip(button), KubeUI.Avalonia.Assets.Resources.PodLogsView_FollowLogs));
-            Button clearButton = view.GetVisualDescendants()
+                .Single(button => Equals(ToolTip.GetTip(button), Assets.Resources.PodLogsView_FollowLogs));
+            var clearButton = view.GetVisualDescendants()
                 .OfType<Button>()
                 .Single(button => ReferenceEquals(button.Command, viewModel.ClearCommand));
             viewModel.SelectedScopeItems.Single().DisplayName.ShouldBe("Pod/default/app-7c9dd9f4f4-abcde");
@@ -260,7 +251,7 @@ public sealed class PodLogsViewTests
             Grid.GetRow(logControlsBar).ShouldBe(0);
             view.GetVisualDescendants().OfType<Ursa.Controls.MultiComboBox>().ShouldBeEmpty();
             sourcesSelector.Width.ShouldBe(300);
-            sourcesSelector.PlaceholderText.ShouldBe(KubeUI.Avalonia.Assets.Resources.PodLogsView_Sources);
+            sourcesSelector.PlaceholderText.ShouldBe(Assets.Resources.PodLogsView_Sources);
             controllerButton.IsVisible.ShouldBeTrue();
             followLogsButton.Content
                 .ShouldBeOfType<FluentIcons.Avalonia.FluentIcon>()
@@ -281,7 +272,7 @@ public sealed class PodLogsViewTests
             followLogsButton.IsEnabled.ShouldBeTrue();
             followLogsButton.IsChecked.ShouldBe(false);
 
-            V1Pod secondPod = CreatePod();
+            var secondPod = CreatePod();
             secondPod.Metadata.Name = "app-second";
             secondPod.Metadata.Uid = "pod-second-uid";
             viewModel.SetScopes([pod, secondPod], V1Pod.KubeKind);
@@ -322,7 +313,7 @@ public sealed class PodLogsViewTests
     public async Task resource_name_toggle_is_selected_when_multiple_pods_are_viewed()
     {
         using var workspace = await Application.Current.CreateClusterAsync();
-        IServiceProvider services = Application.Current.GetTestServices();
+        var services = Application.Current.GetTestServices();
         using PodLogsViewModel viewModel = new(
             services.GetRequiredService<ILogger<PodLogsViewModel>>(),
             services.GetRequiredService<ISettingsService>(),
@@ -335,7 +326,7 @@ public sealed class PodLogsViewTests
             ContainerName = "app",
         };
 
-        V1Pod secondPod = CreatePod();
+        var secondPod = CreatePod();
         secondPod.Metadata.Name = "app-second";
         secondPod.Metadata.Uid = "pod-second-uid";
         SetResolvedSources(viewModel, [viewModel.Object.ShouldBeOfType<V1Pod>(), secondPod]);
@@ -356,9 +347,9 @@ public sealed class PodLogsViewTests
         {
             Dispatcher.UIThread.RunJobs();
 
-            ToggleButton toggle = view.GetVisualDescendants()
+            var toggle = view.GetVisualDescendants()
                 .OfType<ToggleButton>()
-                .Single(control => Equals(ToolTip.GetTip(control), KubeUI.Avalonia.Assets.Resources.PodLogsView_ShowResourceNames));
+                .Single(control => Equals(ToolTip.GetTip(control), Assets.Resources.PodLogsView_ShowResourceNames));
             viewModel.ShowResourceNames.ShouldBeTrue();
             toggle.IsEnabled.ShouldBeTrue();
             toggle.IsChecked.ShouldBe(true);
@@ -373,7 +364,7 @@ public sealed class PodLogsViewTests
     public async Task resource_name_toggle_is_selected_when_all_containers_are_viewed()
     {
         using var workspace = await Application.Current.CreateClusterAsync();
-        IServiceProvider services = Application.Current.GetTestServices();
+        var services = Application.Current.GetTestServices();
         using PodLogsViewModel viewModel = new(
             services.GetRequiredService<ILogger<PodLogsViewModel>>(),
             services.GetRequiredService<ISettingsService>(),
@@ -385,7 +376,7 @@ public sealed class PodLogsViewTests
             Object = CreatePod(),
             ContainerName = string.Empty,
         };
-        V1Pod sourcePod = viewModel.Object.ShouldBeOfType<V1Pod>();
+        var sourcePod = viewModel.Object.ShouldBeOfType<V1Pod>();
         sourcePod.Spec!.Containers =
         [
             new V1Container { Name = "app" },
@@ -410,9 +401,9 @@ public sealed class PodLogsViewTests
         {
             Dispatcher.UIThread.RunJobs();
 
-            ToggleButton toggle = view.GetVisualDescendants()
+            var toggle = view.GetVisualDescendants()
                 .OfType<ToggleButton>()
-                .Single(control => Equals(ToolTip.GetTip(control), KubeUI.Avalonia.Assets.Resources.PodLogsView_ShowResourceNames));
+                .Single(control => Equals(ToolTip.GetTip(control), Assets.Resources.PodLogsView_ShowResourceNames));
             viewModel.ShowResourceNames.ShouldBeTrue();
             toggle.IsEnabled.ShouldBeTrue();
             toggle.IsChecked.ShouldBe(true);
@@ -427,7 +418,7 @@ public sealed class PodLogsViewTests
     public async Task follow_logs_button_remains_enabled_at_and_away_from_the_bottom()
     {
         using var workspace = await Application.Current.CreateClusterAsync();
-        IServiceProvider services = Application.Current.GetTestServices();
+        var services = Application.Current.GetTestServices();
         using PodLogsViewModel viewModel = new(
             services.GetRequiredService<ILogger<PodLogsViewModel>>(),
             services.GetRequiredService<ISettingsService>(),
@@ -456,11 +447,11 @@ public sealed class PodLogsViewTests
         try
         {
             Dispatcher.UIThread.RunJobs();
-            ToggleButton followLogsButton = view.GetVisualDescendants()
+            var followLogsButton = view.GetVisualDescendants()
                 .OfType<ToggleButton>()
-                .Single(button => Equals(ToolTip.GetTip(button), KubeUI.Avalonia.Assets.Resources.PodLogsView_FollowLogs));
-            TextEditor editor = view.GetVisualDescendants().OfType<TextEditor>().Single();
-            ScrollViewer scrollViewer = await WaitForScrollViewerAsync(editor);
+                .Single(button => Equals(ToolTip.GetTip(button), Assets.Resources.PodLogsView_FollowLogs));
+            var editor = view.GetVisualDescendants().OfType<TextEditor>().Single();
+            var scrollViewer = await WaitForScrollViewerAsync(editor);
             viewModel.FollowLogs();
             await WaitForAsync(() => scrollViewer.Offset.Y >= scrollViewer.ScrollBarMaximum.Y - 1.0);
             followLogsButton.IsVisible.ShouldBeTrue();
@@ -487,7 +478,7 @@ public sealed class PodLogsViewTests
     public async Task follow_logs_button_remains_enabled_when_resizing_creates_vertical_overflow()
     {
         using var workspace = await Application.Current.CreateClusterAsync();
-        IServiceProvider services = Application.Current.GetTestServices();
+        var services = Application.Current.GetTestServices();
         using PodLogsViewModel viewModel = new(
             services.GetRequiredService<ILogger<PodLogsViewModel>>(),
             services.GetRequiredService<ISettingsService>(),
@@ -515,11 +506,11 @@ public sealed class PodLogsViewTests
         try
         {
             Dispatcher.UIThread.RunJobs();
-            ToggleButton followLogsButton = view.GetVisualDescendants()
+            var followLogsButton = view.GetVisualDescendants()
                 .OfType<ToggleButton>()
-                .Single(button => Equals(ToolTip.GetTip(button), KubeUI.Avalonia.Assets.Resources.PodLogsView_FollowLogs));
-            TextEditor editor = view.GetVisualDescendants().OfType<TextEditor>().Single();
-            ScrollViewer scrollViewer = await WaitForScrollViewerAsync(editor);
+                .Single(button => Equals(ToolTip.GetTip(button), Assets.Resources.PodLogsView_FollowLogs));
+            var editor = view.GetVisualDescendants().OfType<TextEditor>().Single();
+            var scrollViewer = await WaitForScrollViewerAsync(editor);
             await WaitForAsync(() => scrollViewer.ScrollBarMaximum.Y == 0);
             followLogsButton.IsEnabled.ShouldBeTrue();
             followLogsButton.IsChecked.ShouldBe(true);
@@ -548,7 +539,7 @@ public sealed class PodLogsViewTests
     public async Task view_installs_the_avaloniaedit_search_panel_and_behavior()
     {
         using var workspace = await Application.Current.CreateClusterAsync();
-        IServiceProvider services = Application.Current.GetTestServices();
+        var services = Application.Current.GetTestServices();
         using PodLogsViewModel viewModel = new(
             services.GetRequiredService<ILogger<PodLogsViewModel>>(),
             services.GetRequiredService<ISettingsService>(),
@@ -578,7 +569,7 @@ public sealed class PodLogsViewTests
             window.Show();
             Dispatcher.UIThread.RunJobs();
 
-            TextEditor editor = view.GetVisualDescendants().OfType<TextEditor>().Single();
+            var editor = view.GetVisualDescendants().OfType<TextEditor>().Single();
             editor.SearchPanel.ShouldNotBeNull();
         }
         finally
@@ -591,7 +582,7 @@ public sealed class PodLogsViewTests
     public async Task search_panel_contains_a_pod_log_filter_toggle()
     {
         using var workspace = await Application.Current.CreateClusterAsync();
-        IServiceProvider services = Application.Current.GetTestServices();
+        var services = Application.Current.GetTestServices();
         using PodLogsViewModel viewModel = new(
             services.GetRequiredService<ILogger<PodLogsViewModel>>(),
             services.GetRequiredService<ISettingsService>(),
@@ -618,7 +609,7 @@ public sealed class PodLogsViewTests
         {
             Dispatcher.UIThread.RunJobs();
 
-            TextEditor editor = view.GetVisualDescendants().OfType<TextEditor>().Single();
+            var editor = view.GetVisualDescendants().OfType<TextEditor>().Single();
             editor.SearchPanel.ShouldNotBeNull().Open();
             await WaitForAsync(() => view.GetVisualDescendants().OfType<TextBox>().Any());
 
@@ -638,7 +629,7 @@ public sealed class PodLogsViewTests
     public async Task filter_toggle_uses_search_panel_options_to_filter_displayed_lines()
     {
         using var workspace = await Application.Current.CreateClusterAsync();
-        IServiceProvider services = Application.Current.GetTestServices();
+        var services = Application.Current.GetTestServices();
         using PodLogsViewModel viewModel = new(
             services.GetRequiredService<ILogger<PodLogsViewModel>>(),
             services.GetRequiredService<ISettingsService>(),
@@ -666,8 +657,8 @@ public sealed class PodLogsViewTests
         {
             Dispatcher.UIThread.RunJobs();
 
-            TextEditor editor = view.GetVisualDescendants().OfType<TextEditor>().Single();
-            AvaloniaEdit.Search.SearchPanel searchPanel = editor.SearchPanel.ShouldNotBeNull();
+            var editor = view.GetVisualDescendants().OfType<TextEditor>().Single();
+            var searchPanel = editor.SearchPanel.ShouldNotBeNull();
             searchPanel.Open();
             await WaitForAsync(() => view.GetVisualDescendants().OfType<TextBox>().Any());
             ToggleButton? filterToggle = null;
@@ -683,7 +674,7 @@ public sealed class PodLogsViewTests
             filterToggle!.IsChecked = true;
 
             await WaitForAsync(() => editor.Document.Text == "keep keep first\nkeepable\nKEEP second keep");
-            var expectedMatchCount = string.Format(AvaloniaEdit.SR.SearchXMatches, 5);
+            var expectedMatchCount = string.Format(SR.SearchXMatches, 5);
             await WaitForAsync(
                 () => searchPanel.GetVisualDescendants()
                     .OfType<TextBlock>()
@@ -693,7 +684,7 @@ public sealed class PodLogsViewTests
 
             filterToggle.IsChecked = false;
             await WaitForAsync(() => ReferenceEquals(editor.Document, viewModel.Logs));
-            var expectedSearchPosition = string.Format(AvaloniaEdit.SR.SearchXOfY, 1, 5);
+            var expectedSearchPosition = string.Format(SR.SearchXOfY, 1, 5);
             await WaitForAsync(
                 () => searchPanel.GetVisualDescendants()
                     .OfType<TextBlock>()
@@ -750,7 +741,7 @@ public sealed class PodLogsViewTests
     public async Task filter_keeps_all_lines_spanned_by_a_regex_match_for_search_count()
     {
         using var workspace = await Application.Current.CreateClusterAsync();
-        IServiceProvider services = Application.Current.GetTestServices();
+        var services = Application.Current.GetTestServices();
         using PodLogsViewModel viewModel = new(
             services.GetRequiredService<ILogger<PodLogsViewModel>>(),
             services.GetRequiredService<ISettingsService>(),
@@ -778,8 +769,8 @@ public sealed class PodLogsViewTests
         {
             Dispatcher.UIThread.RunJobs();
 
-            TextEditor editor = view.GetVisualDescendants().OfType<TextEditor>().Single();
-            AvaloniaEdit.Search.SearchPanel searchPanel = editor.SearchPanel.ShouldNotBeNull();
+            var editor = view.GetVisualDescendants().OfType<TextEditor>().Single();
+            var searchPanel = editor.SearchPanel.ShouldNotBeNull();
             searchPanel.Open();
             await WaitForAsync(() => view.GetVisualDescendants().OfType<TextBox>().Any());
 
@@ -797,7 +788,7 @@ public sealed class PodLogsViewTests
             filterToggle!.IsChecked = true;
 
             await WaitForAsync(() => editor.Document.Text == "alpha\nmiddle\nomega");
-            var expectedSearchCount = AvaloniaEdit.SR.Search1Match;
+            var expectedSearchCount = SR.Search1Match;
             await WaitForAsync(
                 () => searchPanel.GetVisualDescendants()
                     .OfType<TextBlock>()
@@ -813,7 +804,7 @@ public sealed class PodLogsViewTests
     public async Task view_disposes_textmate_installation_when_unloaded()
     {
         using var workspace = await Application.Current.CreateClusterAsync();
-        IServiceProvider services = Application.Current.GetTestServices();
+        var services = Application.Current.GetTestServices();
         using PodLogsViewModel viewModel = new(
             services.GetRequiredService<ILogger<PodLogsViewModel>>(),
             services.GetRequiredService<ISettingsService>(),
@@ -843,8 +834,8 @@ public sealed class PodLogsViewTests
             window.Show();
             Dispatcher.UIThread.RunJobs();
 
-            TextEditor editor = view.GetVisualDescendants().OfType<TextEditor>().Single();
-            PodLogsEditorBehavior behavior = Interaction.GetBehaviors(editor).OfType<PodLogsEditorBehavior>().Single();
+            var editor = view.GetVisualDescendants().OfType<TextEditor>().Single();
+            var behavior = Interaction.GetBehaviors(editor).OfType<PodLogsEditorBehavior>().Single();
             behavior.IsTextMateInstalled.ShouldBeTrue();
 
             var application = Application.Current.ShouldNotBeNull();
@@ -921,7 +912,7 @@ public sealed class PodLogsViewTests
     public async Task sources_tree_combo_does_not_increase_the_toolbar_height()
     {
         using var workspace = await Application.Current.CreateClusterAsync();
-        IServiceProvider services = Application.Current.GetTestServices();
+        var services = Application.Current.GetTestServices();
         using PodLogsViewModel viewModel = new(
             services.GetRequiredService<ILogger<PodLogsViewModel>>(),
             services.GetRequiredService<ISettingsService>(),
@@ -951,7 +942,7 @@ public sealed class PodLogsViewTests
         {
             Dispatcher.UIThread.RunJobs();
 
-            Ursa.Controls.TreeComboBox sourcesSelector = view.GetVisualDescendants()
+            var sourcesSelector = view.GetVisualDescendants()
                 .OfType<Ursa.Controls.TreeComboBox>()
                 .Single();
             Control topBar = view.GetVisualDescendants()
@@ -971,7 +962,7 @@ public sealed class PodLogsViewTests
     public async Task view_follows_initial_logs_after_the_editor_is_measured()
     {
         using var workspace = await Application.Current.CreateClusterAsync();
-        IServiceProvider services = Application.Current.GetTestServices();
+        var services = Application.Current.GetTestServices();
         using PodLogsViewModel viewModel = new(
             services.GetRequiredService<ILogger<PodLogsViewModel>>(),
             services.GetRequiredService<ISettingsService>(),
@@ -990,8 +981,8 @@ public sealed class PodLogsViewTests
         window.Show();
         try
         {
-            TextEditor editor = view.GetVisualDescendants().OfType<TextEditor>().Single();
-            ScrollViewer scrollViewer = await WaitForScrollViewerAsync(editor);
+            var editor = view.GetVisualDescendants().OfType<TextEditor>().Single();
+            var scrollViewer = await WaitForScrollViewerAsync(editor);
             await WaitForAsync(() => scrollViewer.ScrollBarMaximum.Y > 0);
             await WaitForAsync(() => scrollViewer.Offset.Y >= scrollViewer.ScrollBarMaximum.Y - 1.0);
 
@@ -1007,7 +998,7 @@ public sealed class PodLogsViewTests
     public async Task view_sticks_to_bottom_when_logs_append_while_pinned()
     {
         using var workspace = await Application.Current.CreateClusterAsync();
-        IServiceProvider services = Application.Current.GetTestServices();
+        var services = Application.Current.GetTestServices();
         using PodLogsViewModel viewModel = new(
             services.GetRequiredService<ILogger<PodLogsViewModel>>(),
             services.GetRequiredService<ISettingsService>(),
@@ -1040,8 +1031,8 @@ public sealed class PodLogsViewTests
         {
             Dispatcher.UIThread.RunJobs();
 
-            TextEditor editor = view.GetVisualDescendants().OfType<TextEditor>().Single();
-            ScrollViewer scrollViewer = await WaitForScrollViewerAsync(editor);
+            var editor = view.GetVisualDescendants().OfType<TextEditor>().Single();
+            var scrollViewer = await WaitForScrollViewerAsync(editor);
             viewModel.FollowLogs();
             await WaitForAsync(() => scrollViewer.Offset.Y >= scrollViewer.ScrollBarMaximum.Y - 1.0);
 
@@ -1061,7 +1052,7 @@ public sealed class PodLogsViewTests
     public async Task view_does_not_force_scroll_when_reader_has_moved_away_from_the_bottom()
     {
         using var workspace = await Application.Current.CreateClusterAsync();
-        IServiceProvider services = Application.Current.GetTestServices();
+        var services = Application.Current.GetTestServices();
         using PodLogsViewModel viewModel = new(
             services.GetRequiredService<ILogger<PodLogsViewModel>>(),
             services.GetRequiredService<ISettingsService>(),
@@ -1094,8 +1085,8 @@ public sealed class PodLogsViewTests
         {
             Dispatcher.UIThread.RunJobs();
 
-            TextEditor editor = view.GetVisualDescendants().OfType<TextEditor>().Single();
-            ScrollViewer scrollViewer = await WaitForScrollViewerAsync(editor);
+            var editor = view.GetVisualDescendants().OfType<TextEditor>().Single();
+            var scrollViewer = await WaitForScrollViewerAsync(editor);
             await WaitForAsync(() => Math.Abs(scrollViewer.Offset.Y - 80) < 1.0);
 
             var beforeAppend = scrollViewer.Offset.Y;
@@ -1114,7 +1105,7 @@ public sealed class PodLogsViewTests
     public async Task view_jumps_to_present_when_requested()
     {
         using var workspace = await Application.Current.CreateClusterAsync();
-        IServiceProvider services = Application.Current.GetTestServices();
+        var services = Application.Current.GetTestServices();
         using PodLogsViewModel viewModel = new(
             services.GetRequiredService<ILogger<PodLogsViewModel>>(),
             services.GetRequiredService<ISettingsService>(),
@@ -1147,8 +1138,8 @@ public sealed class PodLogsViewTests
         {
             Dispatcher.UIThread.RunJobs();
 
-            TextEditor editor = view.GetVisualDescendants().OfType<TextEditor>().Single();
-            ScrollViewer scrollViewer = await WaitForScrollViewerAsync(editor);
+            var editor = view.GetVisualDescendants().OfType<TextEditor>().Single();
+            var scrollViewer = await WaitForScrollViewerAsync(editor);
             await WaitForAsync(() => Math.Abs(scrollViewer.Offset.Y - 80) < 1.0);
 
             viewModel.FollowLogs();

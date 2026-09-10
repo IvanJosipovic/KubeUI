@@ -1,6 +1,6 @@
+using Avalonia.Headless.XUnit;
 using k8s;
 using k8s.Models;
-using Avalonia.Headless.XUnit;
 using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Features.Resources.Visualization;
 using KubeUI.Kubernetes.Resources.Relationships;
@@ -175,9 +175,9 @@ public sealed class VisualizationViewModelTests
         var parent = Pod("namespace-a", "parent");
         var child = Pod("namespace-a", "child");
         var unrelated = Pod("namespace-a", "unrelated");
-        ResourceIdentity rootIdentity = Identity(root);
-        ResourceIdentity parentIdentity = Identity(parent);
-        ResourceIdentity childIdentity = Identity(child);
+        var rootIdentity = Identity(root);
+        var parentIdentity = Identity(parent);
+        var childIdentity = Identity(child);
 
         ResourceRelationshipGraph graph = new(
             [root, parent, child, unrelated],
@@ -290,7 +290,7 @@ public sealed class VisualizationViewModelTests
             {
                 firstStarted.SetResult();
                 var canceled = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-                using CancellationTokenRegistration registration = cancellationToken.Register(canceled.SetResult);
+                using var registration = cancellationToken.Register(canceled.SetResult);
                 await canceled.Task;
                 cancellationToken.ThrowIfCancellationRequested();
             }
@@ -325,7 +325,7 @@ public sealed class VisualizationViewModelTests
             {
                 firstStarted.SetResult();
                 var canceled = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-                using CancellationTokenRegistration registration = cancellationToken.Register(canceled.SetResult);
+                using var registration = cancellationToken.Register(canceled.SetResult);
                 await canceled.Task;
                 cancellationToken.ThrowIfCancellationRequested();
             }

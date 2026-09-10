@@ -1,13 +1,13 @@
 namespace KubeUI.Kubernetes.Tests.Clusters.Runtime;
 
-using DynamicData;
 using System.Reactive.Linq;
 using System.Reactive.Threading.Tasks;
+using DynamicData;
+using Shouldly;
 using V1Namespace = k8s.Models.V1Namespace;
 using V1ObjectMeta = k8s.Models.V1ObjectMeta;
 using V1Pod = k8s.Models.V1Pod;
 using V1Service = k8s.Models.V1Service;
-using Shouldly;
 
 [Trait("Category", "Kind")]
 public sealed class ClusterRuntimeTests : ClusterRuntimeAssertions

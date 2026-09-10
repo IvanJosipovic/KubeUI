@@ -8,7 +8,6 @@ using Avalonia.Controls.Selection;
 using Avalonia.Controls.Templates;
 using Avalonia.Data.Converters;
 using Avalonia.Input;
-using Avalonia.Threading;
 using FluentIcons.Avalonia;
 using FluentIcons.Common;
 using k8s.Models;

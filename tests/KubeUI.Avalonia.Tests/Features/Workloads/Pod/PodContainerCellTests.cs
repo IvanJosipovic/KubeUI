@@ -1,8 +1,7 @@
+using System.Globalization;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Media;
-using System.Globalization;
-using Avalonia.Threading;
 using k8s.Models;
 using KubeUI.Avalonia.Converters;
 using Shouldly;

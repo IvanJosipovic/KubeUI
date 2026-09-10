@@ -1,5 +1,5 @@
-using Avalonia.Platform.Storage;
 using Avalonia.Controls.Notifications;
+using Avalonia.Platform.Storage;
 using Dock.Model.Core;
 using KubeUI.Avalonia.Features.Clusters.Overview;
 using KubeUI.Avalonia.Features.Clusters.Settings;
@@ -8,7 +8,6 @@ using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Infrastructure.Platform;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Resources.Workloads.v1.Pod;
-using KubeUI.Kubernetes;
 
 namespace KubeUI.Avalonia.Shell.Navigation;
 

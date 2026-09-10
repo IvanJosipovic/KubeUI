@@ -1,12 +1,8 @@
-using System.Collections.ObjectModel;
 using System.Collections.Concurrent;
 using System.Collections.Specialized;
 using System.Globalization;
-using System.IO;
 using System.Reactive.Linq;
-using Avalonia.Threading;
 using AvaloniaEdit.Document;
-using Dock.Model.Core;
 using Humanizer;
 using k8s;
 using k8s.Autorest;
@@ -376,7 +372,7 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
             IsConnecting = true;
             ConnectionError = null;
 
-            IReadOnlyList<PodLogScopeSelectionItem> scopeItems = GetScopeItems();
+            var scopeItems = GetScopeItems();
             if (scopeItems.Count == 0)
             {
                 if (!_scopesExplicitlyCleared)
@@ -396,7 +392,7 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
                 return;
             }
 
-            IKubernetesObject<V1ObjectMeta> scopeResource = scopeItems[0].Resource;
+            var scopeResource = scopeItems[0].Resource;
             var loadTasks = new Task[scopeItems.Count];
             for (var scopeIndex = 0; scopeIndex < scopeItems.Count; scopeIndex++)
             {
@@ -410,14 +406,14 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
                 return;
             }
 
-            PodLogMultiSessionState multiState = _sessionResolver.CreateMultiState(
+            var multiState = _sessionResolver.CreateMultiState(
                 scopeItems.Select(static item => item.Resource).ToArray(),
                 ContainerName,
                 Previous,
                 Timestamps,
                 DefaultTailLines);
             MultiSessionState = multiState;
-            PodLogSessionState state = _sessionResolver.CreateState(
+            var state = _sessionResolver.CreateState(
                 scopeResource,
                 ContainerName,
                 Previous,
@@ -427,11 +423,11 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
             _hasLoadedSession = true;
             EnsureResourceChangeSubscription();
 
-            PodLogMultiSessionResolution multiResolution = _sessionResolver.TryResolve(Cluster, multiState);
+            var multiResolution = _sessionResolver.TryResolve(Cluster, multiState);
             MultiSessionResolution = multiResolution;
             UpdateScopeResolutionPresentation(multiResolution);
             OnPropertyChanged(nameof(ScopeStatusSummary));
-            PodLogSessionResolution? resolution = multiResolution.PrimaryPod is null
+            var resolution = multiResolution.PrimaryPod is null
                 ? null
                 : new PodLogSessionResolution(
                     multiResolution.PrimaryPod,
@@ -601,7 +597,7 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
                 return;
             }
 
-            StreamReader registeredReader = reader;
+            var registeredReader = reader;
             reader = null;
             _ = Task.Run(() => ReadLogsAsync(registeredReader, option, connectionCts, resolution));
         }
@@ -725,7 +721,7 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
     /// <summary>Opens the logs for the selected resource's controller.</summary>
     public Task JumpToControlledByLogs()
     {
-        IKubernetesObject<V1ObjectMeta>? parentResource = SessionResolution?.ParentResource;
+        var parentResource = SessionResolution?.ParentResource;
         if (parentResource is null)
         {
             return Task.CompletedTask;
@@ -767,7 +763,7 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
         void ClearLogDocument()
         {
             IsConnected = false;
-            TextDocument logs = Logs;
+            var logs = Logs;
             logs.Text = string.Empty;
             Logs = CreateLogDocument();
         }
@@ -960,8 +956,8 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
     {
         for (var itemIndex = 0; itemIndex < _scopeItems.Count; itemIndex++)
         {
-            PodLogScopeSelectionItem item = _scopeItems[itemIndex];
-            PodLogScopeResolution? scopeResolution = resolution.Scopes.FirstOrDefault(scope =>
+            var item = _scopeItems[itemIndex];
+            var scopeResolution = resolution.Scopes.FirstOrDefault(scope =>
                 string.Equals(scope.Scope.ResourceKind, item.ResourceKind, StringComparison.Ordinal)
                 && string.Equals(scope.Scope.ResourceNamespace, item.Resource.Namespace(), StringComparison.Ordinal)
                 && string.Equals(scope.Scope.ResourceName, item.Resource.Name(), StringComparison.Ordinal)
@@ -1000,7 +996,7 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
         var removed = 0;
         for (var scopeIndex = _scopeItems.Count - 1; scopeIndex >= 0; scopeIndex--)
         {
-            PodLogScopeSelectionItem scope = _scopeItems[scopeIndex];
+            var scope = _scopeItems[scopeIndex];
             if (!selectedIdentities.Contains(BuildScopeIdentity(scope.Resource, scope.ResourceKind)))
             {
                 _scopeItems.RemoveAt(scopeIndex);
@@ -1039,7 +1035,7 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
         try
         {
             SelectedScopeItems.Clear();
-            foreach (PodLogScopeSelectionItem item in items)
+            foreach (var item in items)
             {
                 SelectedScopeItems.Add(item);
             }
@@ -1097,7 +1093,7 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
         HashSet<string> identities = new(StringComparer.Ordinal);
         for (var i = 0; i < resources.Count; i++)
         {
-            IKubernetesObject<V1ObjectMeta> resource = resources[i];
+            var resource = resources[i];
             var kind = GetKnownResourceKind(resource)
                 ?? (string.IsNullOrWhiteSpace(resourceKind) ? resource.Kind : resourceKind);
             var identity = BuildScopeIdentity(resource, kind);
@@ -1163,7 +1159,7 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
         var added = false;
         for (var i = 0; i < resources.Count; i++)
         {
-            IKubernetesObject<V1ObjectMeta> resource = resources[i];
+            var resource = resources[i];
             var kind = GetKnownResourceKind(resource)
                 ?? (string.IsNullOrWhiteSpace(resourceKind) ? resource.Kind : resourceKind);
             var identity = BuildScopeIdentity(resource, kind);
@@ -1229,7 +1225,7 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
             return [];
         }
 
-        IKubernetesObject<V1ObjectMeta> resource = Object;
+        var resource = Object;
         var kind = GetScopeResourceKind();
         _scopeItems.Add(new PodLogScopeSelectionItem(resource, kind, BuildScopeDisplayName(resource, kind)));
         return _scopeItems;
@@ -1312,7 +1308,7 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
                     return;
                 }
 
-                PodLogMultiSessionResolution resolution = _sessionResolver.TryResolve(Cluster, MultiSessionState);
+                var resolution = _sessionResolver.TryResolve(Cluster, MultiSessionState);
                 if (_awaitingReadableTargets && resolution.PrimaryPod is not null && !IsTerminalPod(resolution.PrimaryPod)
                     || HasMultiScopeTopologyChanged(MultiSessionResolution, resolution))
                 {
@@ -1335,8 +1331,8 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
 
         for (var i = 0; i < current.Scopes.Count; i++)
         {
-            PodLogScopeResolution currentScope = current.Scopes[i];
-            PodLogScopeResolution nextScope = next.Scopes[i];
+            var currentScope = current.Scopes[i];
+            var nextScope = next.Scopes[i];
             if (!Equals(currentScope.Scope, nextScope.Scope)
                 || !string.Equals(currentScope.Error, nextScope.Error, StringComparison.Ordinal)
                 || !PodLogTopologyComparer.IsSameResource(
@@ -1354,7 +1350,7 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
 
     private void ResetConnection(bool updateConnectionState = true)
     {
-        CancellationTokenSource? previousConnectionCts = _connectionCts;
+        var previousConnectionCts = _connectionCts;
         try
         {
             previousConnectionCts?.Cancel();

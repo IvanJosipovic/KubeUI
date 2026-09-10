@@ -1,9 +1,8 @@
-using KubeUI.Testing.Kubernetes.Bootstrap;
-using KubernetesClient.Informer.Client;
 using k8s.Models;
+using KubernetesClient.Informer.Client;
+using KubeUI.Testing.Kubernetes.Bootstrap;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using KubeUI.Kubernetes;
 
 namespace KubeUI.Testing.Kubernetes.Infrastructure;
 

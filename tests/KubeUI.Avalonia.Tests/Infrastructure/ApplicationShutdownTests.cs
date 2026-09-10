@@ -1,10 +1,10 @@
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Hosting;
-using OpenTelemetry;
-using OpenTelemetry.Logs;
 using KubeUI.Avalonia.Infrastructure.Platform;
 using KubeUI.Avalonia.Infrastructure.Presentation;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Moq;
+using OpenTelemetry;
+using OpenTelemetry.Logs;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Infrastructure;

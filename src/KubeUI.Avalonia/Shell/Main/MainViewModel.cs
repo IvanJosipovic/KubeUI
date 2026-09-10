@@ -79,7 +79,7 @@ public sealed partial class MainViewModel : ViewModelBase
     [ObservableProperty]
     public partial IRootDock? Layout { get; set; }
 
-    internal IFactory Factory => _factory;
+    internal new IFactory Factory => _factory;
 
     private void DebugFactoryEvents(IFactory factory)
     {

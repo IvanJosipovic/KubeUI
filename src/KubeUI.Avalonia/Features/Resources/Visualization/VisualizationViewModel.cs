@@ -8,7 +8,6 @@ using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Resources;
 using KubeUI.Kubernetes;
 using KubeUI.Kubernetes.Resources.Relationships;
-using Microsoft.Extensions.Logging;
 
 namespace KubeUI.Avalonia.Features.Resources.Visualization;
 
@@ -724,7 +723,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 
             var namespaces = SelectedNamespaces.Select(x => x.Name()).OfType<string>().ToHashSet(StringComparer.Ordinal);
             var hideNoise = HideNoise;
-            IReadOnlyList<IKubernetesObject<V1ObjectMeta>> source = _resourceStore.Snapshot();
+            var source = _resourceStore.Snapshot();
             IReadOnlySet<string> buildNamespaces = RootResource == null
                 ? namespaces
                 : new HashSet<string>(StringComparer.Ordinal);
@@ -873,7 +872,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         }
 
         var ownerReferenceFound = false;
-        IReadOnlyList<IKubernetesObject<V1ObjectMeta>> resources = _resourceStore.Snapshot();
+        var resources = _resourceStore.Snapshot();
         foreach (var resource in resources)
         {
             ownerReferenceFound |= SeedOwnerReferenceResourceKind(
@@ -1015,7 +1014,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         var namespaces = SelectedNamespaces.Select(x => x.Name()).OfType<string>().ToHashSet(StringComparer.Ordinal);
         var root = RootResource;
         var hideNoise = HideNoise;
-        IReadOnlyList<IKubernetesObject<V1ObjectMeta>> source = _resourceStore.Snapshot();
+        var source = _resourceStore.Snapshot();
 
         _buildCoordinator.Enqueue(new RebuildRequest(source, root, namespaces, hideNoise));
     }

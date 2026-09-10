@@ -1,6 +1,6 @@
 using System.Threading.Channels;
-using dotacp.protocol;
 using dotacp.client;
+using dotacp.protocol;
 using KubeUI.AI.Agents;
 using KubeUI.AI.Diagnostics;
 

@@ -1,9 +1,7 @@
-using Avalonia;
 using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Templates;
 using Avalonia.Input;
 using Avalonia.Markup.Xaml.MarkupExtensions;
-using Avalonia.Styling;
 using Avalonia.Xaml.Interactions.Core;
 using AvaloniaEdit;
 using FluentIcons.Avalonia;
@@ -116,7 +114,7 @@ public sealed partial class PodLogsView : ViewBase<PodLogsViewModel>
         {
             BasedOn = Application.Current?.FindResource(typeof(TreeComboBoxItem)) as ControlTheme,
         };
-        itemTheme.Setters.Add(new Setter(Layoutable.MinHeightProperty, 20d));
+        itemTheme.Setters.Add(new Setter(MinHeightProperty, 20d));
         itemTheme.Setters.Add(new Setter(TemplatedControl.PaddingProperty, new Thickness(0)));
 
         return new TreeComboBox

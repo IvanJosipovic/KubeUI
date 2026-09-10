@@ -12,7 +12,6 @@ using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Services.Settings;
 using KubeUI.Avalonia.Shell.Main;
 using KubeUI.Avalonia.Styles;
-using LiveMarkdown.Avalonia;
 using Microsoft.Extensions.Hosting;
 using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
@@ -98,13 +97,18 @@ public partial class App : Application, IServiceProviderHost
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
+            _logger.LogInformation("Creating main window");
             var mainWindow = Services.GetRequiredService<MainWindow>();
+            _logger.LogInformation("Main window created");
             desktop.MainWindow = mainWindow;
             var mainViewModel = Services.GetRequiredService<MainViewModel>();
             mainWindow.DataContext = mainViewModel;
             TopLevel = desktop.MainWindow;
+            mainWindow.Opened += (_, _) => _logger.LogInformation("Main window opened");
+            mainWindow.Closed += (_, _) => _logger.LogWarning("Main window closed");
             desktop.ShutdownRequested += (_, _) =>
             {
+                _logger.LogWarning("Avalonia shutdown requested");
                 mainViewModel.CloseLayoutCommand.Execute(null);
                 GracefulShutdown();
             };

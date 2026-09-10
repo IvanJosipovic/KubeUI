@@ -2,11 +2,8 @@ using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Input.Platform;
 using Avalonia.Interactivity;
-using Avalonia.Threading;
 using k8s;
 using k8s.Models;
-using KubeUI.Avalonia.Tests.Infra;
-using KubeUI.Kubernetes;
 using KubernetesClient.Informer.Client;
 using Shouldly;
 

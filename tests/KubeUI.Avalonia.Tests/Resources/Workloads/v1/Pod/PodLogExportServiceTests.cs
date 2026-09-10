@@ -26,7 +26,7 @@ public sealed class PodLogExportServiceTests
 
         Encoding.UTF8.GetString(output.ToArray()).ShouldBe("first\nsecond");
         capturedOptions.ShouldNotBeNull();
-        capturedOptions.Title.ShouldBe(KubeUI.Avalonia.Assets.Resources.PodLogsView_Download);
+        capturedOptions.Title.ShouldBe(Assets.Resources.PodLogsView_Download);
         capturedOptions.SuggestedFileName.ShouldBe("api.log");
         capturedOptions.FileTypeChoices.ShouldHaveSingleItem()
             .Patterns.ShouldBe(["*.log", "*.txt"]);
@@ -74,7 +74,7 @@ public sealed class PodLogExportServiceTests
         PodLogExportService service = new(platform.Object);
         using CancellationTokenSource cancellation = new();
 
-        Task exportTask = service.ExportAsync("api.log", "content", cancellation.Token);
+        var exportTask = service.ExportAsync("api.log", "content", cancellation.Token);
         await cancellation.CancelAsync();
         picker.SetResult(file.Object);
 

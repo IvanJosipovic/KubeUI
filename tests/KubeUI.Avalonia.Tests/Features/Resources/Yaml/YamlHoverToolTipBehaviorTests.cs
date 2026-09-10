@@ -1,7 +1,6 @@
 using Avalonia.Headless.XUnit;
 using k8s.Models;
 using KubeUI.Avalonia.Features.Resources.Yaml.Behaviors;
-using KubeUI.Avalonia.Tests.Infra;
 using Microsoft.OpenApi;
 using Shouldly;
 

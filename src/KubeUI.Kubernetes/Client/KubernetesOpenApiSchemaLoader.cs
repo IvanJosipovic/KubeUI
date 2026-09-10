@@ -1,7 +1,6 @@
 using System.Diagnostics;
 using System.Text.Json;
 using KubeUI.Kubernetes.Client;
-using KubernetesClient.Informer.Client;
 using Microsoft.OpenApi;
 using Microsoft.OpenApi.Reader;
 

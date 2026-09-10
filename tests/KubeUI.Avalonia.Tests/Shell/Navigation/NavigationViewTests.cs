@@ -1,14 +1,12 @@
-using System.Reactive.Linq;
 using System.Globalization;
-using Avalonia.Data;
+using System.Reactive.Linq;
 using Avalonia.Controls;
+using Avalonia.Data;
 using Avalonia.Headless.XUnit;
-using Avalonia.Threading;
 using Avalonia.VisualTree;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Shell.Navigation;
-using KubeUI.Avalonia.Tests.Infra;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Shell.Navigation;

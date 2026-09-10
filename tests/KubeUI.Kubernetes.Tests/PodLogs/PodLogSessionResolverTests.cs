@@ -78,7 +78,7 @@ public sealed class PodLogSessionResolverTests
                     Controller = true,
                 }),
         };
-        V1Pod pod = CreatePod(
+        var pod = CreatePod(
             "api-pod",
             "pod-uid",
             new V1OwnerReference
@@ -91,10 +91,10 @@ public sealed class PodLogSessionResolverTests
         AddResources(harness.Cluster, deployment, replicaSet, pod);
         PodLogSessionResolver resolver = new();
 
-        PodLogSessionResolution? podResolution = resolver.TryResolve(
+        var podResolution = resolver.TryResolve(
             harness.Cluster,
             resolver.CreateState(pod, "app", false, false));
-        PodLogSessionResolution? replicaSetResolution = resolver.TryResolve(
+        var replicaSetResolution = resolver.TryResolve(
             harness.Cluster,
             resolver.CreateState(replicaSet, "app", false, false));
 
@@ -144,7 +144,7 @@ public sealed class PodLogSessionResolverTests
         var state = resolver.CreateState(cronJob, string.Empty, false, false);
 
         var resolution = resolver.TryResolve(harness.Cluster, state);
-        PodLogSessionResolution? jobResolution = resolver.TryResolve(
+        var jobResolution = resolver.TryResolve(
             harness.Cluster,
             resolver.CreateState(job, string.Empty, false, false));
 
@@ -180,7 +180,7 @@ public sealed class PodLogSessionResolverTests
         };
         PodLogSessionResolver resolver = new();
 
-        PodLogSessionState state = resolver.CreateState(pod, "app", previous: true, timestamps: true, tailLines: 0);
+        var state = resolver.CreateState(pod, "app", previous: true, timestamps: true, tailLines: 0);
 
         state.ResourceNamespace.ShouldBe("production");
         state.ResourceName.ShouldBe("api");
@@ -209,19 +209,19 @@ public sealed class PodLogSessionResolverTests
             Uid = "replicaset-uid",
             Controller = true,
         };
-        V1Pod current = CreatePod("current", "current-uid", owner);
+        var current = CreatePod("current", "current-uid", owner);
         current.Metadata!.CreationTimestamp = new DateTime(2026, 1, 1, 12, 0, 0, DateTimeKind.Utc);
-        V1Pod newest = CreatePod("newest", "newest-uid", owner);
+        var newest = CreatePod("newest", "newest-uid", owner);
         newest.Metadata!.CreationTimestamp = new DateTime(2026, 1, 1, 12, 2, 0, DateTimeKind.Utc);
-        V1Pod alpha = CreatePod("alpha", "alpha-uid", owner);
+        var alpha = CreatePod("alpha", "alpha-uid", owner);
         alpha.Metadata!.CreationTimestamp = new DateTime(2026, 1, 1, 12, 1, 0, DateTimeKind.Utc);
-        V1Pod beta = CreatePod("beta", "beta-uid", owner);
+        var beta = CreatePod("beta", "beta-uid", owner);
         beta.Metadata!.CreationTimestamp = alpha.Metadata.CreationTimestamp;
-        V1Pod unrelated = CreatePod(
+        var unrelated = CreatePod(
             "unrelated",
             "unrelated-uid",
             new V1OwnerReference { Kind = V1ReplicaSet.KubeKind, Name = "other", Uid = "other-uid", Controller = true });
-        V1Pod otherNamespace = CreatePod("other-namespace", "other-namespace-uid", owner);
+        var otherNamespace = CreatePod("other-namespace", "other-namespace-uid", owner);
         otherNamespace.Metadata!.NamespaceProperty = "other";
         AddResource(harness.Cluster, GroupApiVersionKind.From<V1Pod>(), current);
         AddResource(harness.Cluster, GroupApiVersionKind.From<V1Pod>(), newest);
@@ -231,7 +231,7 @@ public sealed class PodLogSessionResolverTests
         AddResource(harness.Cluster, GroupApiVersionKind.From<V1Pod>(), otherNamespace);
         PodLogSessionResolver resolver = new();
 
-        PodLogSessionResolution? resolution = resolver.TryResolve(
+        var resolution = resolver.TryResolve(
             harness.Cluster,
             resolver.CreateState(current, "app", false, false));
 
@@ -254,19 +254,19 @@ public sealed class PodLogSessionResolverTests
             Uid = "replicaset-uid",
             Controller = true,
         };
-        V1Pod removed = CreatePod("removed", "removed-uid", owner);
-        V1Pod older = CreatePod("older", "older-uid", owner);
+        var removed = CreatePod("removed", "removed-uid", owner);
+        var older = CreatePod("older", "older-uid", owner);
         older.Metadata!.CreationTimestamp = new DateTime(2026, 1, 1, 12, 0, 0, DateTimeKind.Utc);
-        V1Pod newer = CreatePod("newer", "newer-uid", owner);
+        var newer = CreatePod("newer", "newer-uid", owner);
         newer.Metadata!.CreationTimestamp = new DateTime(2026, 1, 1, 12, 1, 0, DateTimeKind.Utc);
         AddResource(harness.Cluster, GroupApiVersionKind.From<V1Pod>(), older);
         AddResource(harness.Cluster, GroupApiVersionKind.From<V1Pod>(), newer);
         PodLogSessionResolver resolver = new();
 
-        PodLogSessionResolution? resolution = resolver.TryResolve(
+        var resolution = resolver.TryResolve(
             harness.Cluster,
             resolver.CreateState(removed, "app", false, false));
-        PodLogSessionState missingState = resolver.CreateState(
+        var missingState = resolver.CreateState(
             new V1Pod { Metadata = Metadata("missing", "missing-uid") },
             "app",
             false,
@@ -305,13 +305,13 @@ public sealed class PodLogSessionResolverTests
         AddResource(harness.Cluster, GroupApiVersionKind.From<V1Pod>(), pod);
         PodLogSessionResolver resolver = new();
 
-        PodLogSessionResolution init = resolver.TryResolve(
+        var init = resolver.TryResolve(
             harness.Cluster,
             resolver.CreateState(pod, "setup", true, false)).ShouldNotBeNull();
-        PodLogSessionResolution ephemeral = resolver.TryResolve(
+        var ephemeral = resolver.TryResolve(
             harness.Cluster,
             resolver.CreateState(pod, "debug", true, false)).ShouldNotBeNull();
-        PodLogSessionResolution fallback = resolver.TryResolve(
+        var fallback = resolver.TryResolve(
             harness.Cluster,
             resolver.CreateState(pod, "missing", false, false)).ShouldNotBeNull();
 
@@ -334,7 +334,7 @@ public sealed class PodLogSessionResolverTests
             Kind = "Widget",
             Metadata = new V1ObjectMeta { Name = "custom", NamespaceProperty = "default" },
         };
-        V1Pod pod = CreatePod(
+        var pod = CreatePod(
             "custom-pod",
             "pod-uid",
             new V1OwnerReference { Kind = "Widget", Name = "custom", Controller = true });
@@ -342,8 +342,8 @@ public sealed class PodLogSessionResolverTests
         AddResource(harness.Cluster, GroupApiVersionKind.From<V1Pod>(), pod);
         PodLogSessionResolver resolver = new();
 
-        PodLogSessionState state = resolver.CreateState(workload, "app", false, false, tailLines: 25);
-        PodLogSessionResolution? resolution = resolver.TryResolve(harness.Cluster, state);
+        var state = resolver.CreateState(workload, "app", false, false, tailLines: 25);
+        var resolution = resolver.TryResolve(harness.Cluster, state);
 
         state.ResourceKind.ShouldBe("Widget");
         state.TailLines.ShouldBe(25);
@@ -386,7 +386,7 @@ public sealed class PodLogSessionResolverTests
                 ],
             },
         };
-        V1Pod pod = CreatePod(
+        var pod = CreatePod(
             "gpu-feature-discovery-rt9k9",
             "pod-uid",
             new V1OwnerReference
@@ -402,7 +402,7 @@ public sealed class PodLogSessionResolverTests
         AddResource(harness.Cluster, GroupApiVersionKind.From<V1Pod>(), pod);
         PodLogSessionResolver resolver = new();
 
-        PodLogSessionResolution? resolution = resolver.TryResolve(
+        var resolution = resolver.TryResolve(
             harness.Cluster,
             resolver.CreateState(clusterPolicy, string.Empty, false, false));
 
@@ -428,11 +428,11 @@ public sealed class PodLogSessionResolverTests
                 "replicaset-uid",
                 new V1OwnerReference { Kind = V1Deployment.KubeKind, Name = "api", Controller = true }),
         };
-        V1Pod matching = CreatePod(
+        var matching = CreatePod(
             "matching",
             "matching-uid",
             new V1OwnerReference { Kind = V1ReplicaSet.KubeKind, Name = "api-rs", Uid = "stale-replicaset-uid", Controller = true });
-        V1Pod missingOwner = CreatePod(
+        var missingOwner = CreatePod(
             "missing-owner",
             "missing-owner-uid",
             new V1OwnerReference { Kind = V1ReplicaSet.KubeKind, Name = "absent", Controller = true });
@@ -455,7 +455,7 @@ public sealed class PodLogSessionResolverTests
                 "cycle-b-uid",
                 new V1OwnerReference { Kind = V1ReplicaSet.KubeKind, Name = "cycle-a", Uid = "cycle-a-uid" }),
         };
-        V1Pod cyclic = CreatePod(
+        var cyclic = CreatePod(
             "cyclic",
             "cyclic-uid",
             new V1OwnerReference { Kind = V1ReplicaSet.KubeKind, Name = "cycle-a", Uid = "cycle-a-uid" });
@@ -470,7 +470,7 @@ public sealed class PodLogSessionResolverTests
         harness.Cluster.Objects[new GroupApiVersionKind("example.dev", "v1", "Ignored", "ignored")] = new object();
         PodLogSessionResolver resolver = new();
 
-        PodLogSessionResolution? resolution = resolver.TryResolve(
+        var resolution = resolver.TryResolve(
             harness.Cluster,
             resolver.CreateState(deployment, "app", false, false));
 
@@ -512,13 +512,13 @@ public sealed class PodLogSessionResolverTests
         AddResource(harness.Cluster, GroupApiVersionKind.From<V1Pod>(), ephemeralOnly);
         AddResource(harness.Cluster, GroupApiVersionKind.From<V1Pod>(), empty);
 
-        PodLogSessionResolution initResolution = resolver.TryResolve(
+        var initResolution = resolver.TryResolve(
             harness.Cluster,
             resolver.CreateState(initOnly, "missing", false, false)).ShouldNotBeNull();
-        PodLogSessionResolution ephemeralResolution = resolver.TryResolve(
+        var ephemeralResolution = resolver.TryResolve(
             harness.Cluster,
             resolver.CreateState(ephemeralOnly, "missing", false, false)).ShouldNotBeNull();
-        PodLogSessionResolution emptyResolution = resolver.TryResolve(
+        var emptyResolution = resolver.TryResolve(
             harness.Cluster,
             resolver.CreateState(empty, "requested", false, false)).ShouldNotBeNull();
 
@@ -551,11 +551,11 @@ public sealed class PodLogSessionResolverTests
                 V1CronJob.KubeKind,
             ]);
 
-        V1Pod pod = CreatePod(
+        var pod = CreatePod(
             "pod",
             "pod-uid",
             new V1OwnerReference { Kind = V1Job.KubeKind, Name = "job", Uid = "job-uid" });
-        PodLogSessionState state = resolver.CreateState(pod, "app", false, false);
+        var state = resolver.CreateState(pod, "app", false, false);
         state.OwnerUid.ShouldBe("job-uid");
     }
 
@@ -573,7 +573,7 @@ public sealed class PodLogSessionResolverTests
         AddResource(harness.Cluster, GroupApiVersionKind.From<V1Pod>(), pod);
         PodLogSessionResolver resolver = new();
 
-        PodLogSessionResolution? resolution = resolver.TryResolve(
+        var resolution = resolver.TryResolve(
             harness.Cluster,
             resolver.CreateState(pod, "app", false, false));
 
@@ -605,7 +605,7 @@ public sealed class PodLogSessionResolverTests
                     Controller = true,
                 }),
         };
-        V1Pod descendantPod = CreatePod(
+        var descendantPod = CreatePod(
             "api-rs-pod",
             "descendant-pod-uid",
             new V1OwnerReference
@@ -615,16 +615,16 @@ public sealed class PodLogSessionResolverTests
                 Uid = replicaSet.Uid(),
                 Controller = true,
             });
-        V1Pod unrelatedPod = CreatePod(
+        var unrelatedPod = CreatePod(
             "api",
             "unrelated-pod-uid",
             new V1OwnerReference { Kind = V1ReplicaSet.KubeKind, Name = "unrelated", Uid = "unrelated-uid" });
         AddResources(harness.Cluster, deployment, replicaSet, descendantPod);
         AddResource(harness.Cluster, GroupApiVersionKind.From<V1Pod>(), unrelatedPod);
         PodLogSessionResolver resolver = new();
-        PodLogSessionState state = resolver.CreateState(deployment, "app", false, false);
+        var state = resolver.CreateState(deployment, "app", false, false);
 
-        PodLogSessionResolution? resolution = resolver.TryResolve(harness.Cluster, state);
+        var resolution = resolver.TryResolve(harness.Cluster, state);
 
         resolution.ShouldNotBeNull();
         resolution!.Pod.ShouldBeSameAs(descendantPod);
@@ -650,10 +650,10 @@ public sealed class PodLogSessionResolverTests
             },
         };
 
-        PodLogSessionState missingMetadataState = resolver.CreateState(noMetadata, string.Empty, false, false);
-        PodLogSessionState noOwnersState = resolver.CreateState(noOwners, string.Empty, false, false);
-        PodLogSessionState emptyOwnersState = resolver.CreateState(emptyOwners, string.Empty, false, false);
-        PodLogSessionState fallbackState = resolver.CreateState(firstOwnerFallback, string.Empty, false, false);
+        var missingMetadataState = resolver.CreateState(noMetadata, string.Empty, false, false);
+        var noOwnersState = resolver.CreateState(noOwners, string.Empty, false, false);
+        var emptyOwnersState = resolver.CreateState(emptyOwners, string.Empty, false, false);
+        var fallbackState = resolver.CreateState(firstOwnerFallback, string.Empty, false, false);
 
         missingMetadataState.ResourceName.ShouldBeEmpty();
         missingMetadataState.ResourceNamespace.ShouldBeEmpty();
@@ -682,7 +682,7 @@ public sealed class PodLogSessionResolverTests
                     Controller = true,
                 }),
         };
-        V1Pod firstPod = CreatePod(
+        var firstPod = CreatePod(
             "api-pod",
             "api-pod-uid",
             new V1OwnerReference
@@ -696,13 +696,13 @@ public sealed class PodLogSessionResolverTests
         AddResource(harness.Cluster, GroupApiVersionKind.From<V1ReplicaSet>(), firstReplicaSet);
         AddResource(harness.Cluster, GroupApiVersionKind.From<V1Pod>(), firstPod);
         PodLogSessionResolver resolver = new();
-        PodLogMultiSessionState state = resolver.CreateMultiState(
+        var state = resolver.CreateMultiState(
             [firstDeployment, firstReplicaSet],
             "app",
             false,
             false);
 
-        PodLogMultiSessionResolution resolution = resolver.TryResolve(harness.Cluster, state);
+        var resolution = resolver.TryResolve(harness.Cluster, state);
 
         state.Scopes.Count.ShouldBe(2);
         resolution.Scopes.Count.ShouldBe(2);
@@ -752,9 +752,9 @@ public sealed class PodLogSessionResolverTests
     }
 
     private static void AddResource<T>(Cluster cluster, GroupApiVersionKind kind, T resource)
-        where T : class, k8s.IKubernetesObject<V1ObjectMeta>, new()
+        where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
-        ContainerClass<T> container = cluster.Objects.TryGetValue(kind, out var existing)
+        var container = cluster.Objects.TryGetValue(kind, out var existing)
             ? existing.ShouldBeOfType<ContainerClass<T>>()
             : new ContainerClass<T>();
         container.Items.AddOrUpdate(resource);

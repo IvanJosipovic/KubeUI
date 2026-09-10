@@ -72,7 +72,9 @@ internal sealed class AcpProcess(AcpAgentDefinition definition, AgentSessionOpti
     {
         if (_process is not null)
         {
-            try { await StopAsync(CancellationToken.None).ConfigureAwait(false); } catch { }
+            try
+            { await StopAsync(CancellationToken.None).ConfigureAwait(false); }
+            catch { }
             _process.Dispose();
             _process = null;
         }

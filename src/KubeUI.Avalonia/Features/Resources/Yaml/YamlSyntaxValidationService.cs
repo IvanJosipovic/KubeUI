@@ -1,7 +1,5 @@
 using System.Collections.Frozen;
-using k8s;
 using KubeUI.Kubernetes;
-using KubernetesClient.Informer.Client;
 using KubernetesYamlSerializer = KubeUI.Kubernetes.Serialization.KubernetesYaml;
 
 namespace KubeUI.Avalonia.Features.Resources.Yaml;

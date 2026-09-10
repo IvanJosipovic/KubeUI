@@ -1,8 +1,6 @@
-using System.Collections.ObjectModel;
 using System.Text.Json;
 using Avalonia.Collections;
 using Avalonia.Controls.Notifications;
-using CommunityToolkit.Mvvm.Input;
 using Dock.Model.Core;
 using FluentAvalonia.UI.Controls;
 using FluentIcons.Common;
@@ -14,7 +12,6 @@ using k8s.Models;
 using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Features.Resources.Common;
-using KubeUI.Avalonia.Features.Resources.List;
 using KubeUI.Avalonia.Features.Resources.List.Controls;
 using KubeUI.Avalonia.Features.Resources.Properties;
 using KubeUI.Avalonia.Features.Resources.Visualization;
@@ -189,7 +186,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
 
         for (var i = 0; i < resources.Count; i++)
         {
-            T resource = resources[i];
+            var resource = resources[i];
             if (!string.IsNullOrWhiteSpace(resource.Name())
                 && Cluster.Runtime.Permissions.CanI<V1Pod>(Verb.Get, resource.Namespace(), "log"))
             {

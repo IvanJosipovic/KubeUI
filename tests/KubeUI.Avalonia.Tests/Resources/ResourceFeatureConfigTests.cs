@@ -5,7 +5,6 @@ using CommunityToolkit.Mvvm.Input;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Resources;
-using KubeUI.Avalonia.Tests.Infra;
 using Shouldly;
 using ClusterRoleBindingPropertiesView = KubeUI.Avalonia.Resources.AccessControl.v1.ClusterRoleBinding.PropertiesView;
 using ClusterRolePropertiesView = KubeUI.Avalonia.Resources.AccessControl.v1.ClusterRole.PropertiesView;
@@ -167,7 +166,7 @@ public sealed class ResourceFeatureConfigTests
             },
         };
 
-        MenuItemViewModel action = config.GetCustomMenuItems(new[] { pod })
+        var action = config.GetCustomMenuItems(new[] { pod })
             .Single(item => item.Title == Assets.Resources.Shared_ViewLogs);
 
         action.Command.ShouldBeNull();

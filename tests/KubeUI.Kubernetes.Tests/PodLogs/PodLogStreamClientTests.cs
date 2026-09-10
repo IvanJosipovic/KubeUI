@@ -38,13 +38,13 @@ public sealed class PodLogStreamClientTests
             Spec = new V1PodSpec { Containers = [new V1Container { Name = "app" }] },
         });
 
-        await using Stream stream = await client.OpenAsync(
+        await using var stream = await client.OpenAsync(
             harness.Cluster,
             options,
             TestContext.Current.CancellationToken);
 
         stream.ShouldNotBeNull();
-        Uri requestUri = harness.FakeApi.RequestUris
+        var requestUri = harness.FakeApi.RequestUris
             .Single(uri => uri?.AbsolutePath.EndsWith("/log", StringComparison.Ordinal) == true)!;
         requestUri.Query.ShouldContain("previous=true");
         requestUri.Query.ShouldContain("timestamps=true");

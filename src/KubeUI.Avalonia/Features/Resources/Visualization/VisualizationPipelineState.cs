@@ -1,5 +1,5 @@
-using KubeUI.Kubernetes.Resources.Relationships;
 using KubernetesClient.Informer.Client;
+using KubeUI.Kubernetes.Resources.Relationships;
 
 namespace KubeUI.Avalonia.Features.Resources.Visualization;
 

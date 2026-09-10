@@ -1,14 +1,11 @@
 using Avalonia.Headless.XUnit;
-using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Dock.Avalonia.Controls;
 using Dock.Model.Controls;
 using Dock.Model.Core;
 using Dock.Model.Mvvm.Controls;
 using KubeUI.Avalonia.Shell.Documents.CloudClusters.Aks;
-using KubeUI.Avalonia.Infrastructure.Docking;
 using KubeUI.Avalonia.Shell.Main;
-using KubeUI.Avalonia.Tests.Infra;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Shell.Main;
@@ -40,10 +37,10 @@ public sealed class MainViewModelTests
     [AvaloniaFact]
     public async Task floating_home_can_be_docked_as_document()
     {
-        IFactory factory = Application.Current.GetRequiredTestService<IFactory>();
-        IDocumentDock documents = factory.GetDockable<IDocumentDock>("Documents")
+        var factory = Application.Current.GetRequiredTestService<IFactory>();
+        var documents = factory.GetDockable<IDocumentDock>("Documents")
             .ShouldNotBeNull();
-        HomeViewModel home = factory.FindDockableById(nameof(HomeViewModel))
+        var home = factory.FindDockableById(nameof(HomeViewModel))
             .ShouldBeOfType<HomeViewModel>();
 
         factory.FloatDockable(home);
@@ -69,8 +66,8 @@ public sealed class MainViewModelTests
     [AvaloniaFact]
     public async Task floating_tool_from_tool_dock_uses_document_window()
     {
-        IFactory factory = Application.Current.GetRequiredTestService<IFactory>();
-        IToolDock bottomDock = factory.GetDockable<IToolDock>("BottomDock")
+        var factory = Application.Current.GetRequiredTestService<IFactory>();
+        var bottomDock = factory.GetDockable<IToolDock>("BottomDock")
             .ShouldNotBeNull();
         Tool tool = new()
         {
@@ -85,7 +82,7 @@ public sealed class MainViewModelTests
         factory.FloatDockable(tool);
         await TestApplicationExtensions.WaitForUiAsync();
 
-        IDocumentDock floatingDocuments = tool.Owner.ShouldBeAssignableTo<IDocumentDock>();
+        var floatingDocuments = tool.Owner.ShouldBeAssignableTo<IDocumentDock>();
         floatingDocuments.ActiveDockable.ShouldBeSameAs(tool);
         tool.Owner.ShouldNotBeSameAs(bottomDock);
         factory.FindRoot(tool)!.Window!.Host!.ShouldBeOfType<HostWindow>().IsToolWindow.ShouldBeFalse();
@@ -97,10 +94,10 @@ public sealed class MainViewModelTests
     public void closing_last_bottom_viewer_keeps_bottom_dock_available_for_next_viewer()
     {
         CreateViewModel().Initialize();
-        IFactory factory = Application.Current.GetRequiredTestService<IFactory>();
-        IToolDock bottomDock = factory.GetDockable<IToolDock>("BottomDock")
+        var factory = Application.Current.GetRequiredTestService<IFactory>();
+        var bottomDock = factory.GetDockable<IToolDock>("BottomDock")
             .ShouldNotBeNull();
-        IProportionalDockSplitter splitter = factory.GetDockable<IProportionalDockSplitter>("BottomDockSplitter")
+        var splitter = factory.GetDockable<IProportionalDockSplitter>("BottomDockSplitter")
             .ShouldNotBeNull();
         Tool firstViewer = new()
         {
@@ -128,8 +125,8 @@ public sealed class MainViewModelTests
     [AvaloniaFact]
     public void reset_publishes_only_initialized_layouts()
     {
-        MainViewModel vm = CreateViewModel();
-        IFactory factory = Application.Current.GetRequiredTestService<IFactory>();
+        var vm = CreateViewModel();
+        var factory = Application.Current.GetRequiredTestService<IFactory>();
         IRootDock? publishedLayout = null;
 
         vm.PropertyChanged += (_, args) =>
@@ -149,9 +146,9 @@ public sealed class MainViewModelTests
     [AvaloniaFact]
     public void close_layout_clears_published_layout()
     {
-        MainViewModel vm = CreateViewModel();
-        IFactory factory = Application.Current.GetRequiredTestService<IFactory>();
-        IRootDock layout = factory.CreateLayout();
+        var vm = CreateViewModel();
+        var factory = Application.Current.GetRequiredTestService<IFactory>();
+        var layout = factory.CreateLayout();
         factory.InitLayout(layout);
         vm.Layout = layout;
 
@@ -163,10 +160,10 @@ public sealed class MainViewModelTests
     [AvaloniaFact]
     public async Task main_view_attaches_the_injected_factory_to_dock_control()
     {
-        MainViewModel vm = CreateViewModel();
-        IFactory factory = Application.Current.GetRequiredTestService<IFactory>();
+        var vm = CreateViewModel();
+        var factory = Application.Current.GetRequiredTestService<IFactory>();
         MainView view = new() { DataContext = vm };
-        using TestApplicationExtensions.TestWindow window = Application.Current.CreateTestWindow(content: view);
+        using var window = Application.Current.CreateTestWindow(content: view);
 
         window.Show();
         await TestApplicationExtensions.WaitForUiAsync();

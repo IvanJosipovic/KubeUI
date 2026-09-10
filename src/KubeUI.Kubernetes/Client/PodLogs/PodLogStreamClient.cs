@@ -1,4 +1,3 @@
-using System.IO;
 using k8s;
 
 namespace KubeUI.Kubernetes;

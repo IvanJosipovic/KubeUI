@@ -448,5 +448,10 @@ public partial class PortForwarder : ObservableObject, IEquatable<PortForwarder>
     {
         return Equals(obj as PortForwarder);
     }
+
+    public override int GetHashCode()
+    {
+        throw new NotImplementedException();
+    }
 }
 #pragma warning restore RCS1075

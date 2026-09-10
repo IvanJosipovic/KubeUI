@@ -1,8 +1,6 @@
 using k8s;
 using k8s.Models;
-using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Features.Resources.Visualization;
-using KubeUI.Kubernetes;
 using KubeUI.Kubernetes.Resources.Relationships;
 using Shouldly;
 
@@ -77,10 +75,10 @@ public sealed class VisualizationPrimitiveTests
     [MemberData(nameof(RelationshipKinds))]
     public void Graph_edge_uses_the_expected_theme_class(ResourceRelationshipKind kind, string themeClass)
     {
-        ResourceNodeViewModel sourceNode = Node("source");
-        ResourceNodeViewModel targetNode = Node("target");
-        ResourceGraphVertex source = Vertex(sourceNode);
-        ResourceGraphVertex target = Vertex(targetNode);
+        var sourceNode = Node("source");
+        var targetNode = Node("target");
+        var source = Vertex(sourceNode);
+        var target = Vertex(targetNode);
         ResourceGraphEdge edge = new(
             source,
             target,
@@ -108,8 +106,8 @@ public sealed class VisualizationPrimitiveTests
     [Fact]
     public void Graph_edge_includes_relationship_label()
     {
-        ResourceNodeViewModel sourceNode = Node("source");
-        ResourceNodeViewModel targetNode = Node("target");
+        var sourceNode = Node("source");
+        var targetNode = Node("target");
         ResourceGraphEdge edge = new(
             Vertex(sourceNode),
             Vertex(targetNode),
@@ -121,8 +119,8 @@ public sealed class VisualizationPrimitiveTests
     [Fact]
     public void Graph_vertex_describes_kind_and_name()
     {
-        ResourceNodeViewModel node = Node("widget");
-        ResourceGraphVertex vertex = Vertex(node);
+        var node = Node("widget");
+        var vertex = Vertex(node);
 
         vertex.ToString().ShouldBe("Pod/widget");
     }

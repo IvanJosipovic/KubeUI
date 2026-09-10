@@ -1,6 +1,5 @@
 using System.Text;
 using AvaloniaEdit.Document;
-using AvaloniaEdit.Folding;
 using FluentAvalonia.UI.Controls;
 using k8s;
 using k8s.Models;

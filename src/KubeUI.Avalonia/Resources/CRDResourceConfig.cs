@@ -1,11 +1,9 @@
-using System.Text.Json;
 using System.Text.RegularExpressions;
 using Humanizer;
-using k8s;
+using JsonPathLINQ;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
 using KubeUI.Kubernetes;
-using JsonPathLINQ;
 
 namespace KubeUI.Avalonia.Resources;
 
@@ -114,7 +112,7 @@ public sealed class CRDResourceConfig : ResourceConfigBase<GenericKubernetesObje
         string name,
         string jsonPath)
     {
-        var getter = JsonPath.GetExpression<GenericKubernetesObject, string?>(jsonPath, addNullChecks: true).Compile();
+        var getter = JsonPath.GetExpression<GenericKubernetesObject, object?>(jsonPath, addNullChecks: true).Compile();
         return new ResourceListColumn<GenericKubernetesObject, string>
         {
             Key = CreateColumnKey(name),
@@ -123,7 +121,7 @@ public sealed class CRDResourceConfig : ResourceConfigBase<GenericKubernetesObje
             {
                 try
                 {
-                    return getter(resource) ?? string.Empty;
+                    return getter(resource)?.ToString() ?? string.Empty;
                 }
                 catch (KeyNotFoundException)
                 {
@@ -140,7 +138,7 @@ public sealed class CRDResourceConfig : ResourceConfigBase<GenericKubernetesObje
         {
             Key = CreateColumnKey(name),
             Name = name,
-            Field = resource => DateTime.TryParse(getter(resource), out var value) ? value : null   
+            Field = resource => DateTime.TryParse(getter(resource), out var value) ? value : null
         };
     }
 

@@ -45,8 +45,17 @@ internal static class Program
         {
             CreateAppBuilder(host.Services).StartWithClassicDesktopLifetime(args);
         }
+        catch (Exception exception)
+        {
+            host.Services.GetRequiredService<ILoggerFactory>().CreateLogger("KubeUI.Desktop.Program").LogCritical(
+                exception,
+                "Avalonia startup failed");
+            throw;
+        }
         finally
         {
+            host.Services.GetRequiredService<ILoggerFactory>().CreateLogger("KubeUI.Desktop.Program").LogWarning(
+                "Avalonia lifetime ended; stopping host");
             Task.Run(async () =>
             {
                 await host.StopAsync().ConfigureAwait(false);
@@ -132,7 +141,7 @@ internal static class Program
         if (mcpEnabledOverride ?? settings.Settings.McpServerEnabled)
         {
             builder.Services.AddRouting();
-            builder.Services.AddSingleton<DiagnosticListener>(
+            builder.Services.AddSingleton(
                 static _ => new DiagnosticListener("KubeUI.Mcp"));
             builder.Services.AddMcpServer()
                 .WithHttpTransport(options => options.Stateless = true)

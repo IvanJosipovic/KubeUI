@@ -1,4 +1,3 @@
-using Avalonia.Controls.Documents;
 using Avalonia.Markup.Xaml.MarkupExtensions;
 using AvaloniaEdit.CodeCompletion;
 using AvaloniaEdit.Document;

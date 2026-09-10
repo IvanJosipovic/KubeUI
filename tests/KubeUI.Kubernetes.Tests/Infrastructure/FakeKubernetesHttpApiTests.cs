@@ -1,10 +1,8 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Net;
-using System.Net.Http.Json;
 using k8s;
 using k8s.Models;
-using KubeUI.Kubernetes;
 using Shouldly;
 
 namespace KubeUI.Kubernetes.Tests.Infrastructure;
@@ -61,7 +59,7 @@ public sealed class FakeKubernetesHttpApiTests
         var activities = new ConcurrentQueue<Activity>();
         using var listener = new ActivityListener
         {
-            ShouldListenTo = source => source.Name == KubeUI.Kubernetes.Client.KubeInstrumentation.SourceName,
+            ShouldListenTo = source => source.Name == Client.KubeInstrumentation.SourceName,
             Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllData,
             ActivityStarted = activity => activities.Enqueue(activity),
         };

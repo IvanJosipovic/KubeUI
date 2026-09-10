@@ -1,9 +1,6 @@
-using Avalonia;
 using Avalonia.Headless.XUnit;
 using k8s.Models;
 using KubeUI.Avalonia.Infrastructure.Mcp;
-using KubeUI.Avalonia.Tests.Infra;
-using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Infrastructure.Mcp;

@@ -1,6 +1,10 @@
 using Avalonia.Controls.Templates;
 using Avalonia.Logging;
+using KubeUI.AI.Agents;
+using KubeUI.AI.Configuration;
+using KubeUI.AI.Permissions;
 using KubeUI.Avalonia.Controls.DataGridFilters;
+using KubeUI.Avalonia.Features.AI;
 using KubeUI.Avalonia.Features.Resources.List.Controls;
 using KubeUI.Avalonia.Features.Resources.Yaml;
 using KubeUI.Avalonia.Infrastructure.Logging;
@@ -12,10 +16,6 @@ using KubeUI.Avalonia.Resources.Workloads.v1.Pod.ViewModels;
 using KubeUI.Avalonia.Services.Icons;
 using KubeUI.Avalonia.Services.Settings;
 using KubeUI.Kubernetes;
-using KubeUI.AI.Agents;
-using KubeUI.AI.Configuration;
-using KubeUI.AI.Permissions;
-using KubeUI.Avalonia.Features.AI;
 using ServiceScan.SourceGenerator;
 
 namespace KubeUI.Avalonia.Infrastructure.DependencyInjection;

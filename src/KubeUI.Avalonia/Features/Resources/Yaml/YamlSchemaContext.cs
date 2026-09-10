@@ -1,6 +1,6 @@
 using AvaloniaEdit.Document;
-using KubeUI.Kubernetes;
 using KubernetesClient.Informer.Client;
+using KubeUI.Kubernetes;
 using Microsoft.OpenApi;
 
 namespace KubeUI.Avalonia.Features.Resources.Yaml;

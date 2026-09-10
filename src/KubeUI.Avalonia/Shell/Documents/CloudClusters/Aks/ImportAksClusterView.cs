@@ -1,8 +1,7 @@
-using KubeUI.Avalonia.Infrastructure.DependencyInjection;
-using KubeUI.Kubernetes;
-
 using Avalonia.Markup.Xaml.MarkupExtensions;
+using KubeUI.Avalonia.Infrastructure.DependencyInjection;
 using KubeUI.Avalonia.Styles;
+using KubeUI.Kubernetes;
 
 namespace KubeUI.Avalonia.Shell.Documents.CloudClusters.Aks;
 

@@ -1,6 +1,5 @@
 using Avalonia.Headless.XUnit;
 using k8s.Models;
-using KubeUI.Avalonia.Tests.Infra;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Features.Workloads.Pod;

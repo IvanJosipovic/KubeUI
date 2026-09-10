@@ -1,6 +1,4 @@
-using System.Collections;
 using System.Net;
-using System.Reflection;
 using System.Reactive.Linq;
 using System.Text;
 using System.Text.Json;
@@ -410,57 +408,57 @@ public abstract class ClusterRuntimeAssertions
             await SeedResourceAsync<V1Pod>(harness.Cluster);
             await SeedResourceAsync<V1CustomResourceDefinition>(harness.Cluster);
 
-        var namespaceYaml = Serialization.KubernetesYaml.Serialize(new V1Namespace
-        {
-            ApiVersion = V1Namespace.KubeApiVersion,
-            Kind = V1Namespace.KubeKind,
-            Metadata = new V1ObjectMeta { Name = "test" }
-        });
-        var podYaml = Serialization.KubernetesYaml.Serialize(new V1Pod
-        {
-            ApiVersion = V1Pod.KubeApiVersion,
-            Kind = V1Pod.KubeKind,
-            Metadata = new V1ObjectMeta
+            var namespaceYaml = Serialization.KubernetesYaml.Serialize(new V1Namespace
             {
-                Name = "imported-pod",
-                NamespaceProperty = "default"
-            },
-            Spec = new V1PodSpec
+                ApiVersion = V1Namespace.KubeApiVersion,
+                Kind = V1Namespace.KubeKind,
+                Metadata = new V1ObjectMeta { Name = "test" }
+            });
+            var podYaml = Serialization.KubernetesYaml.Serialize(new V1Pod
             {
-                Containers =
-                [
-                    new V1Container
+                ApiVersion = V1Pod.KubeApiVersion,
+                Kind = V1Pod.KubeKind,
+                Metadata = new V1ObjectMeta
+                {
+                    Name = "imported-pod",
+                    NamespaceProperty = "default"
+                },
+                Spec = new V1PodSpec
+                {
+                    Containers =
+                    [
+                        new V1Container
                     {
                         Name = "app",
                         Image = "busybox:1.36"
                     }
-                ]
-            }
-        });
-        var crdYaml = KubernetesTestData.CustomResourceDefinitionYaml;
+                    ]
+                }
+            });
+            var crdYaml = KubernetesTestData.CustomResourceDefinitionYaml;
 
-        using var yamlStream = new MemoryStream(Encoding.UTF8.GetBytes(
-            $"{namespaceYaml}\n---\n{podYaml}\n---\n{crdYaml}"));
-        await harness.Cluster.ImportYaml(yamlStream);
+            using var yamlStream = new MemoryStream(Encoding.UTF8.GetBytes(
+                $"{namespaceYaml}\n---\n{podYaml}\n---\n{crdYaml}"));
+            await harness.Cluster.ImportYaml(yamlStream);
 
-        var resource = await WaitForResourceAsync<V1Namespace>(harness.Cluster, null, "test");
-        resource.ShouldNotBeNull();
-        resource.Name().ShouldBe("test");
+            var resource = await WaitForResourceAsync<V1Namespace>(harness.Cluster, null, "test");
+            resource.ShouldNotBeNull();
+            resource.Name().ShouldBe("test");
 
-        var pod = await WaitForResourceAsync<V1Pod>(harness.Cluster, "default", "imported-pod");
-        pod.ShouldNotBeNull();
-        pod.Name().ShouldBe("imported-pod");
+            var pod = await WaitForResourceAsync<V1Pod>(harness.Cluster, "default", "imported-pod");
+            pod.ShouldNotBeNull();
+            pod.Name().ShouldBe("imported-pod");
 
-        var crd = await WaitForResourceAsync<V1CustomResourceDefinition>(
-            harness.Cluster,
-            null,
-            "tests.kubeui.com");
-        crd.ShouldNotBeNull();
-        crd.Name().ShouldBe("tests.kubeui.com");
+            var crd = await WaitForResourceAsync<V1CustomResourceDefinition>(
+                harness.Cluster,
+                null,
+                "tests.kubeui.com");
+            crd.ShouldNotBeNull();
+            crd.Name().ShouldBe("tests.kubeui.com");
 
-        harness.Cluster.ModelCatalog.IsCustomResource(
-            new GroupApiVersionKind("kubeui.com", "v1beta1", "Test", "tests"))
-            .ShouldBeTrue();
+            harness.Cluster.ModelCatalog.IsCustomResource(
+                new GroupApiVersionKind("kubeui.com", "v1beta1", "Test", "tests"))
+                .ShouldBeTrue();
 
         }
         finally
@@ -476,77 +474,77 @@ public abstract class ClusterRuntimeAssertions
         {
             await SeedResourceAsync<V1CustomResourceDefinition>(harness.Cluster);
 
-        var crd = Serialization.KubernetesYaml.Deserialize<V1CustomResourceDefinition>(KubernetesTestData.CustomResourceDefinitionYaml);
-        await harness.CreateAsync(crd, TestContext.Current.CancellationToken);
+            var crd = Serialization.KubernetesYaml.Deserialize<V1CustomResourceDefinition>(KubernetesTestData.CustomResourceDefinitionYaml);
+            await harness.CreateAsync(crd, TestContext.Current.CancellationToken);
 
-        await WaitForResourceAsync<V1CustomResourceDefinition>(harness.Cluster, null, "tests.kubeui.com");
-        var version = crd.Spec.Versions.First(version => version.Served && version.Storage).Name;
-        var kind = new GroupApiVersionKind(crd.Spec.Group, version, crd.Spec.Names.Kind, crd.Spec.Names.Plural);
+            await WaitForResourceAsync<V1CustomResourceDefinition>(harness.Cluster, null, "tests.kubeui.com");
+            var version = crd.Spec.Versions.First(version => version.Served && version.Storage).Name;
+            var kind = new GroupApiVersionKind(crd.Spec.Group, version, crd.Spec.Names.Kind, crd.Spec.Names.Plural);
 
-        await TestWait.UntilAsync(
-            () => harness.Cluster.ModelCatalog.IsCustomResource(kind),
-            TimeSpan.FromSeconds(10),
-            cancellationToken: TestContext.Current.CancellationToken);
+            await TestWait.UntilAsync(
+                () => harness.Cluster.ModelCatalog.IsCustomResource(kind),
+                TimeSpan.FromSeconds(10),
+                cancellationToken: TestContext.Current.CancellationToken);
 
-        await harness.Cluster.Permissions.UpdatePermissionsAllNamespaceAsync(kind, namespaced: true, verb: Verb.List);
-        await harness.Cluster.Permissions.UpdatePermissionsAllNamespaceAsync(kind, namespaced: true, verb: Verb.Watch);
+            await harness.Cluster.Permissions.UpdatePermissionsAllNamespaceAsync(kind, namespaced: true, verb: Verb.List);
+            await harness.Cluster.Permissions.UpdatePermissionsAllNamespaceAsync(kind, namespaced: true, verb: Verb.Watch);
 
-        await WaitForCustomResourceApiAsync(
-            harness.Cluster,
-            kind,
-            TestContext.Current.CancellationToken);
+            await WaitForCustomResourceApiAsync(
+                harness.Cluster,
+                kind,
+                TestContext.Current.CancellationToken);
 
-        await harness.Cluster.ImportYaml(new MemoryStream(Encoding.UTF8.GetBytes(KubernetesTestData.CustomResourceYaml)));
+            await harness.Cluster.ImportYaml(new MemoryStream(Encoding.UTF8.GetBytes(KubernetesTestData.CustomResourceYaml)));
 
-        await harness.Cluster.SeedResource(kind, waitForReady: true);
+            await harness.Cluster.SeedResource(kind, waitForReady: true);
 
-        var items = harness.Cluster.GetResourceSourceCache<GenericKubernetesObject>(kind);
-        await TestWait.UntilAsync(
-            () => items.Count == 1,
-            TimeSpan.FromSeconds(10),
-            cancellationToken: TestContext.Current.CancellationToken);
+            var items = harness.Cluster.GetResourceSourceCache<GenericKubernetesObject>(kind);
+            await TestWait.UntilAsync(
+                () => items.Count == 1,
+                TimeSpan.FromSeconds(10),
+                cancellationToken: TestContext.Current.CancellationToken);
 
-        var observedCount = 0;
-        using var countSubscription = harness.Cluster.GetResourceCount(kind).Subscribe(count => observedCount = count);
-        await TestWait.UntilAsync(
-            () => observedCount == 1,
-            TimeSpan.FromSeconds(5),
-            cancellationToken: TestContext.Current.CancellationToken);
+            var observedCount = 0;
+            using var countSubscription = harness.Cluster.GetResourceCount(kind).Subscribe(count => observedCount = count);
+            await TestWait.UntilAsync(
+                () => observedCount == 1,
+                TimeSpan.FromSeconds(5),
+                cancellationToken: TestContext.Current.CancellationToken);
 
-        var item = items.Items.Single();
-        var updated = new GenericKubernetesObject
-        {
-            ApiVersion = item.ApiVersion,
-            Kind = item.Kind,
-            Metadata = item.Metadata,
-            Properties = new Dictionary<string, JsonElement>
+            var item = items.Items.Single();
+            var updated = new GenericKubernetesObject
             {
-                ["spec"] = JsonSerializer.SerializeToElement(new { someString = "updatedValue" }),
-            },
-        };
+                ApiVersion = item.ApiVersion,
+                Kind = item.Kind,
+                Metadata = item.Metadata,
+                Properties = new Dictionary<string, JsonElement>
+                {
+                    ["spec"] = JsonSerializer.SerializeToElement(new { someString = "updatedValue" }),
+                },
+            };
 
-        await harness.Cluster.AddOrUpdateResource(updated);
-        await TestWait.UntilAsync(
-            () => items.Items.Any(candidate =>
+            await harness.Cluster.AddOrUpdateResource(updated);
+            await TestWait.UntilAsync(
+                () => items.Items.Any(candidate =>
+                    candidate.Properties.TryGetValue("spec", out var spec)
+                    && spec.TryGetProperty("someString", out var value)
+                    && value.GetString() == "updatedValue"),
+                TimeSpan.FromSeconds(10),
+                cancellationToken: TestContext.Current.CancellationToken);
+
+            var observed = items.Items.Single(candidate =>
                 candidate.Properties.TryGetValue("spec", out var spec)
                 && spec.TryGetProperty("someString", out var value)
-                && value.GetString() == "updatedValue"),
-            TimeSpan.FromSeconds(10),
-            cancellationToken: TestContext.Current.CancellationToken);
+                && value.GetString() == "updatedValue");
+            observed.Name().ShouldBe("test1");
+            observed.Namespace().ShouldBe("default");
+            observed.Properties.ShouldNotBeNull();
+            await harness.Cluster.DeleteResource(updated);
 
-        var observed = items.Items.Single(candidate =>
-            candidate.Properties.TryGetValue("spec", out var spec)
-            && spec.TryGetProperty("someString", out var value)
-            && value.GetString() == "updatedValue");
-        observed.Name().ShouldBe("test1");
-        observed.Namespace().ShouldBe("default");
-        observed.Properties.ShouldNotBeNull();
-        await harness.Cluster.DeleteResource(updated);
-
-        await TestWait.UntilAsync(
-            () => items.Items.Count == 0,
-            TimeSpan.FromSeconds(10),
-            cancellationToken: TestContext.Current.CancellationToken);
+            await TestWait.UntilAsync(
+                () => items.Items.Count == 0,
+                TimeSpan.FromSeconds(10),
+                cancellationToken: TestContext.Current.CancellationToken);
 
         }
         finally

@@ -5,7 +5,6 @@ using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
 using KubeUI.Avalonia.Services.Icons;
-using KubeUI.Kubernetes;
 using KubeUI.Kubernetes.Resources.Relationships;
 using QuikGraph;
 using Westermo.GraphX.Common.Enums;

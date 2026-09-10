@@ -1,18 +1,13 @@
 using System.Net;
 using System.Text;
-using Avalonia;
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
 using Dock.Model.Core;
 using k8s;
 using k8s.Models;
-using KubeUI.Avalonia.Infrastructure.Docking;
+using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Resources.Workloads.v1.Pod.Services;
 using KubeUI.Avalonia.Resources.Workloads.v1.Pod.ViewModels;
-using KubeUI.Avalonia.Tests.Infra;
-using KubeUI.Kubernetes;
-using KubernetesClient.Informer.Client;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Shouldly;
 
@@ -52,7 +47,7 @@ public sealed class PodLogsLauncherTests
                 ],
             },
         };
-        V1Pod pod = CreatePod("api-pod");
+        var pod = CreatePod("api-pod");
         pod.Metadata!.Uid = "pod-uid";
         pod.Metadata.OwnerReferences =
         [
@@ -87,8 +82,8 @@ public sealed class PodLogsLauncherTests
         workspace.Runtime.Objects.ContainsKey(GroupApiVersionKind.From<V1ReplicaSet>()).ShouldBeFalse();
         workspace.Runtime.Objects.ContainsKey(GroupApiVersionKind.From<V1Pod>()).ShouldBeFalse();
 
-        IServiceProvider services = Application.Current.GetTestServices();
-        IFactory factory = services.GetRequiredService<IFactory>();
+        var services = Application.Current.GetTestServices();
+        var factory = services.GetRequiredService<IFactory>();
         PodLogsLauncher launcher = new(
             () => services.GetRequiredService<PodLogsViewModel>(),
             factory,
@@ -96,7 +91,7 @@ public sealed class PodLogsLauncherTests
 
         await launcher.LaunchAsync(workspace, deployment, V1Deployment.KubeKind);
 
-        using PodLogsViewModel viewModel = factory
+        using var viewModel = factory
             .FindDockableById($"PodLogsViewModel-{workspace.Runtime.Name}-Deployment-default-api-all")
             .ShouldBeOfType<PodLogsViewModel>();
         await TestWait.UntilAsync(
@@ -120,16 +115,16 @@ public sealed class PodLogsLauncherTests
     public async Task Rejected_docking_does_not_throw()
     {
         using var workspace = await Application.Current.CreateClusterAsync();
-        IServiceProvider services = Application.Current.GetTestServices();
-        IFactory factory = services.GetRequiredService<IFactory>();
+        var services = Application.Current.GetTestServices();
+        var factory = services.GetRequiredService<IFactory>();
         PodLogsLauncher launcher = new(
             () => services.GetRequiredService<PodLogsViewModel>(),
             factory,
             services.GetRequiredService<ILogger<PodLogsLauncher>>());
-        V1Pod pod = CreatePod("rejected");
+        var pod = CreatePod("rejected");
 
         await launcher.LaunchAsync(workspace, pod, "Pod");
-        using PodLogsViewModel viewModel = factory.FindDockableById($"PodLogsViewModel-{workspace.Runtime.Name}-Pod-default-rejected-all")
+        using var viewModel = factory.FindDockableById($"PodLogsViewModel-{workspace.Runtime.Name}-Pod-default-rejected-all")
             .ShouldBeOfType<PodLogsViewModel>();
         await Should.NotThrowAsync(() => launcher.LaunchAsync(workspace, pod, "Pod"));
         factory.FindDockableById(viewModel.Id).ShouldBeSameAs(viewModel);
@@ -139,18 +134,18 @@ public sealed class PodLogsLauncherTests
     public async Task Accepted_docking_initializes_pod_logs_view_model()
     {
         using var workspace = await Application.Current.CreateClusterAsync();
-        IServiceProvider services = Application.Current.GetTestServices();
-        IFactory factory = services.GetRequiredService<IFactory>();
+        var services = Application.Current.GetTestServices();
+        var factory = services.GetRequiredService<IFactory>();
         PodLogsLauncher launcher = new(
             () => services.GetRequiredService<PodLogsViewModel>(),
             factory,
             services.GetRequiredService<ILogger<PodLogsLauncher>>());
-        V1Pod pod = CreatePod("accepted");
+        var pod = CreatePod("accepted");
 
         await launcher.LaunchAsync(workspace, pod, "Pod");
 
-        IDockable dockable = factory.FindDockableById($"PodLogsViewModel-{workspace.Runtime.Name}-Pod-default-accepted-all").ShouldNotBeNull();
-        using PodLogsViewModel viewModel = dockable.ShouldBeOfType<PodLogsViewModel>();
+        var dockable = factory.FindDockableById($"PodLogsViewModel-{workspace.Runtime.Name}-Pod-default-accepted-all").ShouldNotBeNull();
+        using var viewModel = dockable.ShouldBeOfType<PodLogsViewModel>();
         viewModel.Cluster.ShouldBe(workspace.Runtime);
         viewModel.Object.ShouldBe(pod);
         viewModel.ContainerName.ShouldBeEmpty();
@@ -160,8 +155,8 @@ public sealed class PodLogsLauncherTests
     public async Task Launch_uses_the_runtime_kind_for_known_resources()
     {
         using var workspace = await Application.Current.CreateClusterAsync();
-        IServiceProvider services = Application.Current.GetTestServices();
-        IFactory factory = services.GetRequiredService<IFactory>();
+        var services = Application.Current.GetTestServices();
+        var factory = services.GetRequiredService<IFactory>();
         PodLogsLauncher launcher = new(
             () => services.GetRequiredService<PodLogsViewModel>(),
             factory,
@@ -177,7 +172,7 @@ public sealed class PodLogsLauncherTests
 
         await launcher.LaunchAsync(workspace, resource, resource.Name());
 
-        using PodLogsViewModel viewModel = factory
+        using var viewModel = factory
             .FindDockableById($"PodLogsViewModel-{workspace.Runtime.Name}-Deployment-monitoring-alertmanager-all")
             .ShouldBeOfType<PodLogsViewModel>();
         viewModel.Title.ShouldBe("Deployment Logs");
@@ -187,15 +182,15 @@ public sealed class PodLogsLauncherTests
     public async Task Multi_resource_launch_uses_one_stable_logs_tool()
     {
         using var workspace = await Application.Current.CreateClusterAsync();
-        IServiceProvider services = Application.Current.GetTestServices();
-        IFactory factory = services.GetRequiredService<IFactory>();
+        var services = Application.Current.GetTestServices();
+        var factory = services.GetRequiredService<IFactory>();
         PodLogsLauncher launcher = new(
             () => services.GetRequiredService<PodLogsViewModel>(),
             factory,
             services.GetRequiredService<ILogger<PodLogsLauncher>>());
-        V1Pod firstPod = CreatePod("first");
+        var firstPod = CreatePod("first");
         firstPod.Metadata!.Uid = "first-uid";
-        V1Pod secondPod = CreatePod("second");
+        var secondPod = CreatePod("second");
         secondPod.Metadata!.Uid = "second-uid";
 
         await launcher.LaunchAsync(
@@ -207,7 +202,7 @@ public sealed class PodLogsLauncherTests
             new IKubernetesObject<V1ObjectMeta>[] { secondPod, firstPod },
             V1Pod.KubeKind);
 
-        PodLogsViewModel viewModel = factory.GetDockable<Dock.Model.Controls.IToolDock>("BottomDock")!
+        var viewModel = factory.GetDockable<Dock.Model.Controls.IToolDock>("BottomDock")!
             .VisibleDockables!
             .OfType<PodLogsViewModel>()
             .Where(static logs => logs.IsMultiScope)
@@ -223,13 +218,13 @@ public sealed class PodLogsLauncherTests
     public async Task Add_to_active_merges_resources_into_the_existing_logs_tool()
     {
         using var workspace = await Application.Current.CreateClusterAsync();
-        IServiceProvider services = Application.Current.GetTestServices();
-        IFactory factory = services.GetRequiredService<IFactory>();
+        var services = Application.Current.GetTestServices();
+        var factory = services.GetRequiredService<IFactory>();
         PodLogsLauncher launcher = new(
             () => services.GetRequiredService<PodLogsViewModel>(),
             factory,
             services.GetRequiredService<ILogger<PodLogsLauncher>>());
-        V1Pod firstPod = CreatePod("first-added");
+        var firstPod = CreatePod("first-added");
         firstPod.Metadata!.Uid = "first-added-uid";
         V1Deployment deployment = new()
         {
@@ -246,7 +241,7 @@ public sealed class PodLogsLauncherTests
             workspace,
             new IKubernetesObject<V1ObjectMeta>[] { firstPod },
             V1Pod.KubeKind);
-        PodLogsViewModel viewModel = factory.FindDockableById(
+        var viewModel = factory.FindDockableById(
                 $"PodLogsViewModel-{workspace.Runtime.Name}-Pod-default-first-added-all")
             .ShouldBeOfType<PodLogsViewModel>();
         var originalId = viewModel.Id;
@@ -288,7 +283,7 @@ public sealed class PodLogsLauncherTests
                 };
             }
 
-            HttpResponseMessage response = await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
+            var response = await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
             if (isDeploymentWrite)
             {
                 await SendResourceAsync(replicaSet, "apis/apps/v1", "replicasets", cancellationToken).ConfigureAwait(false);

@@ -1,13 +1,11 @@
 using System.Globalization;
 using System.Linq.Expressions;
-using Avalonia.Controls.Templates;
 using Avalonia.Controls.Primitives;
+using Avalonia.Controls.Templates;
 using Avalonia.Data.Converters;
 using Avalonia.Markup.Xaml.MarkupExtensions;
-using Avalonia.Media;
 using KubeUI.AI.Agents;
 using KubeUI.Avalonia.Options;
-using KubeUI.Avalonia.Styles;
 
 namespace KubeUI.Avalonia.Shell.Documents.Settings;
 

@@ -1,6 +1,4 @@
 using Avalonia.Headless;
-using KubeUI.Avalonia.Styles;
-using KubeUI.Avalonia.Tests.Infra;
 
 [assembly: CollectionBehavior(DisableTestParallelization = true)]
 [assembly: AvaloniaTestApplication(typeof(TestAppBuilder))]

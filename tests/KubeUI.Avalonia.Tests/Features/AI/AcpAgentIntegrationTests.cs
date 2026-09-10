@@ -2,15 +2,13 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO.Pipelines;
 using System.Text;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using dotacp.protocol;
 using KubeUI.AI.Acp;
 using KubeUI.AI.Agents;
 using KubeUI.AI.Configuration;
 using KubeUI.AI.Diagnostics;
-using StreamJsonRpc;
 using Shouldly;
+using StreamJsonRpc;
 using DomainAgentCapabilities = KubeUI.AI.Agents.AgentCapabilities;
 
 namespace KubeUI.Avalonia.Tests.Features.AI;
@@ -340,7 +338,8 @@ public sealed class AcpAgentIntegrationTests
             if (WasDisposed)
                 return;
             WasDisposed = true;
-            try { await StopAsync(CancellationToken.None).ConfigureAwait(false); }
+            try
+            { await StopAsync(CancellationToken.None).ConfigureAwait(false); }
             catch (Exception exception) { ErrorReceived?.Invoke(exception.Message); }
             _clientInput?.Dispose();
             _clientOutput?.Dispose();

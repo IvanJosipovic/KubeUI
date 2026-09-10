@@ -65,7 +65,7 @@ public sealed class TestCluster : IDisposable, IAsyncDisposable
     {
         if (_fakeApi is not null)
         {
-            _fakeApi.AddYaml(yaml, _services.GetRequiredService<KubeUI.Kubernetes.KubernetesModelCatalog>().GetYamlTypeMap());
+            _fakeApi.AddYaml(yaml, _services.GetRequiredService<KubernetesModelCatalog>().GetYamlTypeMap());
 
             const string name = "http-limited";
             var kubeConfig = CloneKubeConfig(name);
@@ -214,7 +214,7 @@ public sealed class TestCluster : IDisposable, IAsyncDisposable
 
         foreach (var resource in KubeUI.Kubernetes.Serialization.KubernetesYaml.LoadAllFromString(
             yaml,
-            _services.GetRequiredService<KubeUI.Kubernetes.KubernetesModelCatalog>().GetYamlTypeMap()).Cast<IKubernetesObject>())
+            _services.GetRequiredService<KubernetesModelCatalog>().GetYamlTypeMap()).Cast<IKubernetesObject>())
         {
             var createTask = (Task)createMethod
                 .MakeGenericMethod(resource.GetType())

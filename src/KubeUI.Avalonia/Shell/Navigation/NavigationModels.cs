@@ -1,9 +1,9 @@
 using System.Windows.Input;
 using FluentIcons.Common;
+using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Infrastructure.Threading;
 using KubeUI.Kubernetes;
-using KubernetesClient.Informer.Client;
 using Swordfish.NET.Collections;
 
 namespace KubeUI.Avalonia.Shell.Navigation;

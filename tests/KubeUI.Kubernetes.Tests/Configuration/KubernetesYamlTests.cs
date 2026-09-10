@@ -1,6 +1,5 @@
 using System.Collections.Frozen;
 using k8s.Models;
-using KubeUI.Kubernetes;
 using KubeUI.Kubernetes.Serialization;
 using Shouldly;
 using YamlDotNet.Core;
