@@ -13,6 +13,44 @@ namespace KubeUI.Avalonia.Tests.Features.Workloads.Pod;
 public sealed class PodContainerCellTests
 {
     [AvaloniaFact]
+    public async Task pod_container_cell_initialize_replaces_cluster_subscription()
+    {
+        var firstCluster = await Application.Current.CreateClusterAsync();
+        var secondCluster = await Application.Current.CreateClusterAsync();
+        await firstCluster.Runtime.SeedResource<V1Pod>(true);
+        await secondCluster.Runtime.SeedResource<V1Pod>(true);
+
+        var firstPod = CreateContainerPod("replace-subscription-pod", "Running");
+        var secondPod = CreateContainerPod("replace-subscription-pod", "Running");
+        await firstCluster.Runtime.AddOrUpdateResource(firstPod);
+        await secondCluster.Runtime.AddOrUpdateResource(secondPod);
+
+        var cell = new PodContainerCellView();
+        cell.Initialize(firstCluster);
+        cell.DataContext = firstPod;
+        var window = new Window { Content = cell };
+        window.Show();
+        await TestApplicationExtensions.WaitForUiAsync();
+
+        cell.Initialize(secondCluster);
+
+        await firstCluster.Runtime.AddOrUpdateResource(CreateContainerPod(
+            "replace-subscription-pod", "ImagePullBackOff", firstPod.Metadata!.Uid));
+        await TestApplicationExtensions.WaitForUiAsync();
+        cell.ContainerStatuses.Single().Status.ShouldBe("Running");
+
+        await secondCluster.Runtime.AddOrUpdateResource(CreateContainerPod(
+            "replace-subscription-pod", "ImagePullBackOff", secondPod.Metadata!.Uid));
+        await TestWait.UntilAsync(
+            () => cell.ContainerStatuses.Single().Status == "ImagePullBackOff",
+            5000,
+            TestContext.Current.CancellationToken,
+            () => Dispatcher.UIThread.RunJobs());
+
+        window.Close();
+    }
+
+    [AvaloniaFact]
     public async Task pod_container_cell_resubscribes_after_recycling()
     {
         var cluster = await Application.Current.CreateClusterAsync();
@@ -55,8 +93,6 @@ public sealed class PodContainerCellTests
 
         window.Content = null;
         await TestApplicationExtensions.WaitForUiAsync();
-        window.Content = cell;
-        await TestApplicationExtensions.WaitForUiAsync();
 
         var updatedPod = new V1Pod
         {
@@ -82,6 +118,12 @@ public sealed class PodContainerCellTests
                 ],
             },
         };
+        await cluster.Runtime.AddOrUpdateResource(updatedPod);
+        await TestApplicationExtensions.WaitForUiAsync();
+        cell.ContainerStatuses.Single().Status.ShouldBe("Running");
+
+        window.Content = cell;
+        await TestApplicationExtensions.WaitForUiAsync();
         await cluster.Runtime.AddOrUpdateResource(updatedPod);
 
         await TestWait.UntilAsync(
@@ -125,8 +167,6 @@ public sealed class PodContainerCellTests
 
         window.Content = null;
         await TestApplicationExtensions.WaitForUiAsync();
-        window.Content = cell;
-        await TestApplicationExtensions.WaitForUiAsync();
 
         var terminatingPod = new V1Pod
         {
@@ -140,6 +180,12 @@ public sealed class PodContainerCellTests
             Status = pod.Status,
         };
         await cluster.Runtime.AddOrUpdateResource(terminatingPod);
+        await TestApplicationExtensions.WaitForUiAsync();
+        cell.Text.ShouldBe(Assets.Resources.PodStatusCell_Running);
+
+        window.Content = cell;
+        await TestApplicationExtensions.WaitForUiAsync();
+        await cluster.Runtime.AddOrUpdateResource(terminatingPod);
 
         await TestWait.UntilAsync(
             () => cell.Text == Assets.Resources.PodStatusCell_Terminating,
@@ -149,6 +195,36 @@ public sealed class PodContainerCellTests
 
         cell.Text.ShouldBe(Assets.Resources.PodStatusCell_Terminating);
         window.Close();
+    }
+
+    private static V1Pod CreateContainerPod(string name, string status, string? uid = null)
+    {
+        return new V1Pod
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = name,
+                NamespaceProperty = "default",
+                Uid = uid,
+            },
+            Spec = new V1PodSpec
+            {
+                Containers = [new V1Container { Name = "app", Image = "app:latest" }],
+            },
+            Status = new V1PodStatus
+            {
+                ContainerStatuses =
+                [
+                    new V1ContainerStatus
+                    {
+                        Name = "app",
+                        State = status == "Running"
+                            ? new V1ContainerState { Running = new V1ContainerStateRunning() }
+                            : new V1ContainerState { Waiting = new V1ContainerStateWaiting { Reason = status } },
+                    },
+                ],
+            },
+        };
     }
 
     [AvaloniaFact]

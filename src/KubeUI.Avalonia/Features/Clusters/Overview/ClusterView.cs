@@ -167,6 +167,11 @@ public sealed partial class ClusterView : ViewBase<ClusterViewModel>
 
     private void StartRefreshTimer()
     {
+        if (VisualRoot == null)
+        {
+            return;
+        }
+
         if (!_timer.IsEnabled)
         {
             _timer.Interval = TimeSpan.FromSeconds(1);

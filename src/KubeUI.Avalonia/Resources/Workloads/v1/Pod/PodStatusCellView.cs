@@ -68,11 +68,18 @@ public sealed class PodStatusCellView : RefreshingCellTextBlock, IInitializeClus
         }
     }
 
+    /// <summary>
+    /// Initializes this cell with its cluster. Runtime change subscriptions start when the cell is attached.
+    /// Reinitialization replaces the previous cluster subscription when the cell is attached.
+    /// </summary>
     public void Initialize(ClusterWorkspace cluster)
     {
         UnsubscribeFromCluster();
         Cluster = cluster;
-        SubscribeToCluster();
+        if (VisualRoot != null)
+        {
+            SubscribeToCluster();
+        }
     }
 
     private void SubscribeToCluster()

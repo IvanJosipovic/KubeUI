@@ -27,6 +27,11 @@ public sealed class ClusterViewTests
         await TestApplicationExtensions.WaitForUiAsync();
         GetRefreshTimer(view).IsEnabled.ShouldBeFalse();
 
+        view.DataContext = null;
+        view.DataContext = viewModel;
+        await TestApplicationExtensions.WaitForUiAsync();
+        GetRefreshTimer(view).IsEnabled.ShouldBeFalse();
+
         window.Content = view;
         await TestApplicationExtensions.WaitForUiAsync();
 
