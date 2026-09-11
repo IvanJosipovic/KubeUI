@@ -23,17 +23,20 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
     private readonly ConcurrentDictionary<string, bool> _permissions = new(StringComparer.Ordinal);
 
     public FakeKubernetesHttpApi()
-        : this(new BackendState())
+        : this(new BackendState(), initializeDefaults: true)
     {
     }
 
-    private FakeKubernetesHttpApi(BackendState state)
+    private FakeKubernetesHttpApi(BackendState state, bool initializeDefaults = false)
     {
         _state = state;
         _definitions = state.Definitions;
         _resources = state.Resources;
         _watchers = state.Watchers;
         _shutdownCancellation = state.ShutdownCancellation;
+
+        if (!initializeDefaults)
+            return;
 
         Add(new V1Namespace { Metadata = new V1ObjectMeta { Name = "default" } });
         Add(new V1Node { Metadata = new V1ObjectMeta { Name = "node-1" } });

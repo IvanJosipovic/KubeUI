@@ -15,4 +15,6 @@ public static class McpServerConfiguration
         ArgumentNullException.ThrowIfNull(settings);
         return $"http://{Host}:{settings.McpServerPort}{Path}";
     }
+
+    public static string GetEndpoint(int port) => $"http://{Host}:{port}{Path}";
 }

@@ -146,7 +146,24 @@ internal sealed class McpClusterSession(
         if (selected is null)
             throw new InvalidOperationException($"Resource {apiVersion}/{kind} {@namespace}/{name} was not found.");
 
-        var graph = new ResourceRelationshipBuilder().Build(resources, new HashSet<string>(StringComparer.Ordinal), hideNoise: false);
+        var relationshipBuilder = new ResourceRelationshipBuilder();
+        var graph = relationshipBuilder.Build(resources, new HashSet<string>(StringComparer.Ordinal), hideNoise: false);
+        foreach (var prerequisite in graph.RequiredSeedPrerequisites)
+        {
+            var config = workspace.GetResourceConfigs().FirstOrDefault(candidate =>
+                candidate.Kind.Kind == prerequisite.Kind.Kind
+                && (prerequisite.MatchAnyApiGroup || candidate.Kind.Group == prerequisite.Kind.Group)
+                && (prerequisite.AllowServedVersionFallback || candidate.Kind.ApiVersion == prerequisite.Kind.ApiVersion));
+            if (config is not null)
+                await config.SeedResource(waitForReady: true, cancellationToken: cancellationToken).ConfigureAwait(false);
+        }
+
+        resources = cluster.Objects.Values
+            .OfType<IResourceContainer>()
+            .SelectMany(static container => container.Snapshot())
+            .Distinct()
+            .ToArray();
+        graph = relationshipBuilder.Build(resources, new HashSet<string>(StringComparer.Ordinal), hideNoise: false);
         var selectedIdentity = new ResourceIdentity(
             selected.ApiVersion ?? string.Empty, selected.Kind ?? string.Empty,
             selected.Namespace(), selected.Name() ?? string.Empty, selected.Uid());

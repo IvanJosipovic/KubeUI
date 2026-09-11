@@ -35,8 +35,9 @@ internal static class AcpMapper
         if (!IsMcpTool(meta))
             return null;
 
-        var inputObject = JsonConvert.SerializeObject(input);
-        var inputJson = JObject.Parse(inputObject);
+        var inputJson = ParseObject(input);
+        if (inputJson is null)
+            return null;
         return inputJson["server"]?.Value<string>();
     }
 
@@ -45,14 +46,21 @@ internal static class AcpMapper
         if (meta?.TryGetValue("is_mcp_tool_call", out var marker) != true || !IsTrue(marker))
             return null;
 
-        var inputObject = JsonConvert.SerializeObject(input);
-        var inputJson = JObject.Parse(inputObject);
+        var inputJson = ParseObject(input);
+        if (inputJson is null)
+            return "MCP tool";
         var server = inputJson["server"]?.Value<string>();
         var tool = inputJson["tool"]?.Value<string>();
         if (string.IsNullOrWhiteSpace(server) || string.IsNullOrWhiteSpace(tool))
             return "MCP tool";
 
         return $"MCP {server}/{tool}";
+    }
+
+    private static JObject? ParseObject(object? input)
+    {
+        var serialized = JsonConvert.SerializeObject(input);
+        return JToken.Parse(serialized) as JObject;
     }
 
     private static bool IsTrue(object value) => value switch

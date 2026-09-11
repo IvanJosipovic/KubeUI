@@ -300,6 +300,28 @@ public sealed class DotAcpClientTests
         events.Reader.TryRead(out _).ShouldBeFalse();
     }
 
+    [Theory]
+    [InlineData(null)]
+    [InlineData("scalar")]
+    public async Task permission_request_handles_non_object_mcp_input(string? input)
+    {
+        var events = Channel.CreateUnbounded<AgentEvent>();
+        using var client = new DotAcpClient(events.Writer, new AllowAgentPermissionService());
+
+        var response = await client.RequestPermissionAsync(new RequestPermissionRequest
+        {
+            Options = [new PermissionOption { Kind = PermissionOptionKind.AllowOnce, Name = "Allow", OptionId = "allow" }],
+            ToolCall = new ToolCallUpdate
+            {
+                Kind = ToolKind.Execute,
+                RawInput = input,
+                Meta = new Dictionary<string, object> { ["is_mcp_tool_call"] = true }
+            }
+        });
+
+        response.Outcome.ShouldBeOfType<SelectedPermissionOutcome>().OptionId.ToString().ShouldBe("allow");
+    }
+
     [Fact]
     public async Task external_mcp_tool_requires_permission_even_when_it_is_read_only()
     {

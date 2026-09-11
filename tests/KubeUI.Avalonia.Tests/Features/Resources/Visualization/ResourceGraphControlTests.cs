@@ -79,7 +79,7 @@ public sealed class ResourceGraphControlTests
         await WaitForAsync(() => control.Area.LogicCore?.Graph?.VertexCount == 32);
 
         iconService.Calls.ShouldBeGreaterThan(0);
-        iconService.UiThreadCalls.ShouldBe(0);
+        iconService.BackgroundThreadCalls.ShouldBeGreaterThan(0);
     }
 
     [AvaloniaFact]
@@ -2730,12 +2730,18 @@ public sealed class ResourceGraphControlTests
 
         public int UiThreadCalls { get; private set; }
 
+        public int BackgroundThreadCalls { get; private set; }
+
         public IImage GetIcon(GroupApiVersionKind resourceKind)
         {
             Calls++;
             if (Dispatcher.UIThread.CheckAccess())
             {
                 UiThreadCalls++;
+            }
+            else
+            {
+                BackgroundThreadCalls++;
             }
 
             return inner.GetIcon(resourceKind);

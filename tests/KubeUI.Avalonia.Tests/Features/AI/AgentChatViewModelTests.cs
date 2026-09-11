@@ -239,7 +239,7 @@ public sealed class AgentChatViewModelTests
 
         await vm.SendCommand.ExecuteAsync(null);
 
-        agent.Options!.McpEndpoint.ShouldBe("http://127.0.0.1:62888/mcp");
+        agent.Options!.McpEndpoint.ShouldBe("http://127.0.0.1:54321/mcp");
         await vm.DisposeAsync();
     }
 

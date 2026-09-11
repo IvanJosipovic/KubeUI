@@ -17,7 +17,7 @@ internal sealed class AcpTerminalHandler(IAgentPermissionService permissionServi
         activity?.SetTag("agent.protocol", "acp");
         activity?.SetTag("tool.name", request.Command);
         var permission = await permissionService.RequestPermissionAsync(
-            new AgentPermissionRequest("run_process", request.Command, IsDestructive: true), cancellationToken).ConfigureAwait(false);
+            new AgentPermissionRequest("run_process", FormatInvocation(request), IsDestructive: true), cancellationToken).ConfigureAwait(false);
         if (!permission.Allowed)
         {
             activity?.SetTag("permission.result", "denied");
@@ -100,11 +100,9 @@ internal sealed class AcpTerminalHandler(IAgentPermissionService permissionServi
     {
         try
         {
-            var stdout = terminal.Process.StandardOutput.ReadToEndAsync();
-            var stderr = terminal.Process.StandardError.ReadToEndAsync();
-            await Task.WhenAll(stdout, stderr).ConfigureAwait(false);
-            terminal.Append(stdout.Result);
-            terminal.Append(stderr.Result);
+            await Task.WhenAll(
+                CaptureStreamAsync(terminal.Process.StandardOutput, terminal),
+                CaptureStreamAsync(terminal.Process.StandardError, terminal)).ConfigureAwait(false);
             await terminal.Process.WaitForExitAsync().ConfigureAwait(false);
             terminal.ExitCode = terminal.Process.ExitCode >= 0 ? (uint)terminal.Process.ExitCode : null;
         }
@@ -112,6 +110,28 @@ internal sealed class AcpTerminalHandler(IAgentPermissionService permissionServi
         {
             terminal.Exited.TrySetResult();
         }
+    }
+
+    private static async Task CaptureStreamAsync(StreamReader reader, TerminalState terminal)
+    {
+        var buffer = new char[4096];
+        var count = await reader.ReadAsync(buffer).ConfigureAwait(false);
+        while (count > 0)
+        {
+            terminal.Append(buffer.AsSpan(0, count));
+            count = await reader.ReadAsync(buffer).ConfigureAwait(false);
+        }
+    }
+
+    private static string FormatInvocation(CreateTerminalRequest request)
+    {
+        var arguments = request.Args is { Length: > 0 }
+            ? $" {string.Join(' ', request.Args)}"
+            : string.Empty;
+        var workingDirectory = string.IsNullOrWhiteSpace(request.Cwd)
+            ? Environment.CurrentDirectory
+            : request.Cwd;
+        return $"{request.Command}{arguments} (cwd: {workingDirectory})";
     }
 
     private sealed class TerminalState(Process process, ulong? outputByteLimit) : IDisposable
@@ -125,10 +145,10 @@ internal sealed class AcpTerminalHandler(IAgentPermissionService permissionServi
         public uint? ExitCode { get; set; }
         public bool Truncated { get; private set; }
 
-        public void Append(string value)
-        {
-            lock (_gate)
+        public void Append(ReadOnlySpan<char> value)
             {
+                lock (_gate)
+                {
                 var remaining = _outputByteLimit is null
                     ? int.MaxValue
                     : (long)_outputByteLimit.Value - Encoding.UTF8.GetByteCount(_output.ToString());
@@ -139,7 +159,17 @@ internal sealed class AcpTerminalHandler(IAgentPermissionService permissionServi
                 }
                 if (Encoding.UTF8.GetByteCount(value) > remaining)
                 {
-                    value = value[..Math.Min(value.Length, (int)remaining)];
+                    var length = 0;
+                    while (length < value.Length)
+                    {
+                        var nextLength = char.IsHighSurrogate(value[length]) && length + 1 < value.Length
+                            && char.IsLowSurrogate(value[length + 1]) ? 2 : 1;
+                        if (Encoding.UTF8.GetByteCount(value.Slice(length, nextLength)) > remaining)
+                            break;
+                        length += nextLength;
+                        remaining -= Encoding.UTF8.GetByteCount(value.Slice(length - nextLength, nextLength));
+                    }
+                    value = value[..length];
                     Truncated = true;
                 }
                 _output.Append(value);

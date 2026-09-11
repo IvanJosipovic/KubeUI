@@ -176,7 +176,7 @@ public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphContr
             _vertices.Clear();
             foreach (var resource in prepared.Resources)
             {
-                var vertex = CreateVertex(resource, prepared.Cluster, prepared.Icons[GetIdentity(resource)]);
+                var vertex = CreateVertex(resource, prepared.Cluster);
                 _vertices.Add(vertex.Identity, vertex);
             }
 
@@ -213,7 +213,6 @@ public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphContr
         CancellationToken cancellationToken)
     {
         List<IKubernetesObject<V1ObjectMeta>> resources = [];
-        Dictionary<ResourceIdentity, IImage> icons = [];
         List<ResourceRelationship> relationships = [];
         if (graph != null)
         {
@@ -221,7 +220,7 @@ public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphContr
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 resources.Add(resource);
-                icons.Add(GetIdentity(resource), _iconService.GetIcon(GetResourceKind(resource, cluster)));
+                _ = _iconService.GetIcon(GetResourceKind(resource, cluster));
             }
 
             foreach (var relationship in RemoveTransitiveOwnerRelationships(graph.Relationships))
@@ -231,7 +230,7 @@ public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphContr
             }
         }
 
-        return new PreparedGraph(resources, icons, relationships, cluster);
+        return new PreparedGraph(resources, relationships, cluster);
     }
 
     internal static IReadOnlyList<ResourceRelationship> RemoveTransitiveOwnerRelationships(
@@ -296,7 +295,6 @@ public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphContr
 
     private sealed record PreparedGraph(
         IReadOnlyList<IKubernetesObject<V1ObjectMeta>> Resources,
-        IReadOnlyDictionary<ResourceIdentity, IImage> Icons,
         IReadOnlyList<ResourceRelationship> Relationships,
         ClusterWorkspace? Cluster);
 

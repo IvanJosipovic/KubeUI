@@ -16,6 +16,7 @@ internal sealed class AcpProcess(AcpAgentDefinition definition, AgentSessionOpti
 
     public Task StartAsync(CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         var startInfo = new ProcessStartInfo
         {
             FileName = ExecutableLocator.Find(definition.Executable) ?? definition.Executable,
@@ -41,8 +42,26 @@ internal sealed class AcpProcess(AcpAgentDefinition definition, AgentSessionOpti
 
         _process = new Process { StartInfo = startInfo, EnableRaisingEvents = true };
         _process.Exited += ProcessOnExited;
-        if (!_process.Start())
-            throw new InvalidOperationException($"Unable to start ACP agent '{definition.Id}'.");
+        try
+        {
+            if (!_process.Start())
+                throw new InvalidOperationException($"Unable to start ACP agent '{definition.Id}'.");
+            cancellationToken.ThrowIfCancellationRequested();
+        }
+        catch
+        {
+            try
+            {
+                if (_process.HasExited is false)
+                    _process.Kill(entireProcessTree: true);
+            }
+            catch
+            {
+            }
+            _process.Dispose();
+            _process = null;
+            throw;
+        }
         _ = DrainErrorAsync(_process.StandardError);
         return Task.CompletedTask;
     }

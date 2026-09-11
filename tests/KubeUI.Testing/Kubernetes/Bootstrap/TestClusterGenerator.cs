@@ -131,6 +131,9 @@ public sealed class TestClusterGenerator
         {
             await clusters[index].DisposeAsync().ConfigureAwait(false);
         }
+
+        if (_ownsServices && _services is IAsyncDisposable disposable)
+            await disposable.DisposeAsync().ConfigureAwait(false);
     }
 
     [System.Diagnostics.CodeAnalysis.SuppressMessage(
@@ -321,21 +324,8 @@ public sealed class TestClusterGenerator
         cluster.KubernetesClientFactory = clientFactory ?? (_ => client);
 
         var finalCleanup = cleanup;
-        if (_ownsServices)
-        {
-            finalCleanup = async token =>
-            {
-                if (cleanup is not null)
-                {
-                    await cleanup(token).ConfigureAwait(false);
-                }
-
-                if (_services is IAsyncDisposable disposable)
-                {
-                    await disposable.DisposeAsync().ConfigureAwait(false);
-                }
-            };
-        }
+        if (cleanup is not null)
+            finalCleanup = cleanup;
 
         return new TestCluster(client, kubeConfig, clientConfiguration, cluster, _services, finalCleanup, fakeApi);
     }

@@ -38,11 +38,22 @@ internal sealed class DotAcpClient : IAcpClient, IDisposable
         if (!permission.Allowed)
             throw new UnauthorizedAccessException(permission.Reason ?? $"Reading '{request.Path}' was denied.");
 
-        var content = await File.ReadAllTextAsync(request.Path, cancellationToken).ConfigureAwait(false);
-        var lines = content.Split('\n');
         var start = request.Line is null ? 0 : checked((int)request.Line.Value);
-        var limit = request.Limit is null ? lines.Length - start : checked((int)request.Limit.Value);
-        var selected = lines.Skip(start).Take(Math.Max(0, limit));
+        var limit = request.Limit is null ? int.MaxValue : checked((int)request.Limit.Value);
+        if (start < 0 || limit < 0)
+            return new ReadTextFileResponse { Content = string.Empty };
+
+        using var reader = File.OpenText(request.Path);
+        for (var index = 0; index < start; index++)
+        {
+            if (await reader.ReadLineAsync(cancellationToken).ConfigureAwait(false) is null)
+                return new ReadTextFileResponse { Content = string.Empty };
+        }
+
+        var selected = new List<string>(Math.Min(limit, 256));
+        while (selected.Count < limit
+            && await reader.ReadLineAsync(cancellationToken).ConfigureAwait(false) is { } line)
+            selected.Add(line);
         return new ReadTextFileResponse { Content = string.Join('\n', selected) };
     }
 

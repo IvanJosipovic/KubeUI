@@ -84,7 +84,7 @@ public sealed class McpTools(
 
     [McpServerTool(Name = "kubeui_get_pod_logs", Title = "Get pod logs", Destructive = false, ReadOnly = true, Idempotent = true), Description("Gets logs for a Kubernetes Pod through the connected KubeUI cluster.")]
     public async Task<string> GetPodLogs(
-        string? cluster, string @namespace, string pod, string? container = null, int? tailLines = 200, bool previous = false)
+        string? cluster, string @namespace, string pod, string? container = null, int? tailLines = 200, bool previous = false, CancellationToken cancellationToken = default)
     {
         if (tailLines is < 1 or > 10000)
             throw new ArgumentOutOfRangeException(nameof(tailLines), "tailLines must be between 1 and 10000.");
@@ -93,9 +93,9 @@ public sealed class McpTools(
             throw new InvalidOperationException("The Kubernetes client is not connected.");
         await using var stream = await runtime.Client.CoreV1.ReadNamespacedPodLogAsync(
             pod, @namespace, container: container, tailLines: tailLines, previous: previous,
-            cancellationToken: CancellationToken.None).ConfigureAwait(false);
+            cancellationToken: cancellationToken).ConfigureAwait(false);
         using var reader = new StreamReader(stream);
-        return await reader.ReadToEndAsync().ConfigureAwait(false);
+        return await reader.ReadToEndAsync(cancellationToken).ConfigureAwait(false);
     }
 
     [McpServerTool(Name = "kubeui_get_resource_yaml", Title = "Get resource YAML", Destructive = false, ReadOnly = true, Idempotent = true), Description("Gets a Kubernetes resource as YAML.")]
