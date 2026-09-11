@@ -8,6 +8,18 @@ namespace KubeUI.Avalonia.Tests.Infrastructure.Mcp;
 public sealed class McpClusterSessionTests
 {
     [AvaloniaFact]
+    public async Task list_resources_honors_request_cancellation_during_resource_readiness()
+    {
+        var workspace = await Application.Current.CreateClusterAsync();
+        var session = Application.Current.GetTestServices().GetRequiredService<IMcpClusterSession>();
+        using var cancellation = new CancellationTokenSource();
+        cancellation.Cancel();
+
+        await Should.ThrowAsync<OperationCanceledException>(() => session.ListResourcesAsync(
+            workspace.Runtime.Name, "v1", "Pod", "default", 10, cancellation.Token));
+    }
+
+    [AvaloniaFact]
     public async Task list_resources_uses_the_real_kubeui_workspace_cache_and_namespace_filter()
     {
         var pod = new V1Pod

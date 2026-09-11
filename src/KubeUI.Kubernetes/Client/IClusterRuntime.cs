@@ -46,7 +46,11 @@ public interface IClusterRuntime
     Task ImportFolder(string path);
     Task ImportYaml(Stream stream);
     Task SeedResource<T>(bool waitForReady = false) where T : class, IKubernetesObject<V1ObjectMeta>, new();
+    Task SeedResource<T>(bool waitForReady, CancellationToken cancellationToken) where T : class, IKubernetesObject<V1ObjectMeta>, new()
+        => SeedResource<T>(waitForReady);
     Task SeedResource(GroupApiVersionKind kind, bool waitForReady = false);
+    Task SeedResource(GroupApiVersionKind kind, bool waitForReady, CancellationToken cancellationToken)
+        => SeedResource(kind, waitForReady);
     Task<bool> IsResourceReady<T>(CancellationToken? token = null) where T : class, IKubernetesObject<V1ObjectMeta>, new();
     T? GetResource<T>(string? @namespace, string name) where T : class, IKubernetesObject<V1ObjectMeta>, new();
     IReadOnlyList<T> GetResourceList<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new();
