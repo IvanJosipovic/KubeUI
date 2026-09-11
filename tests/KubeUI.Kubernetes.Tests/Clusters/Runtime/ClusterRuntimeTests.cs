@@ -30,9 +30,9 @@ public sealed class ClusterRuntimeTests : ClusterRuntimeAssertions
     {
         await using var clusterScope = await new TestClusterGenerator().CreateAsync(new TestClusterConfig(), TestContext.Current.CancellationToken);
         var cluster = clusterScope.Cluster;
-        await cluster.Connect();
-
         var activeInformerTaskCountBeforeSeeding = cluster.ActiveResourceInformerTaskCount;
+
+        await cluster.Connect();
         await cluster.SeedResource<V1Pod>(waitForReady: true);
 
         cluster.ActiveResourceInformerTaskCount.ShouldBeGreaterThan(activeInformerTaskCountBeforeSeeding);
