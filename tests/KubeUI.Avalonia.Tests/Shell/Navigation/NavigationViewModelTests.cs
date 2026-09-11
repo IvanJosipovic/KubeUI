@@ -303,6 +303,25 @@ public class NavigationViewModelTests
         return new GroupApiVersionKind(crd.Spec.Group, version, crd.Spec.Names.Kind, crd.Spec.Names.Plural);
     }
 
+    private static V1CustomResourceDefinition CreateComplexManagedResourceDefinition()
+    {
+        var crd = NavigationTestCustomResourceDefinitionFactory.Create(
+            "managedresourcedefinitions.crossplane.io",
+            "managedresourcedefinitions",
+            "providerConfigRef",
+            "crossplane.io");
+        crd.Spec.Names.Kind = "ManagedResourceDefinition";
+        crd.Spec.Names.Singular = "managedresourcedefinition";
+        crd.Spec.Versions[0].AdditionalPrinterColumns =
+        [
+            new() { Name = "Provider", JsonPath = ".spec.providerConfigRef.name", Type = "string" },
+            new() { Name = "Ready", JsonPath = ".status.conditions[?(@.type==\"Ready\")].status", Type = "string" },
+            new() { Name = "Synced", JsonPath = ".status.conditions[?(@.type==\"Synced\")].status", Type = "string" },
+            new() { Name = "External Name", JsonPath = ".metadata.annotations['crossplane.io/external-name']", Type = "string" },
+        ];
+        return crd;
+    }
+
     [AvaloniaFact]
     public async Task resource_navigation_items_populate_only_after_connect_completes()
     {
@@ -357,6 +376,84 @@ public class NavigationViewModelTests
         (await WaitForValueAsync(
             () => FindResourceLink(crdRoot.NavigationItems, GetCustomResourceKind(secondCrd)),
             timeoutMs: 10000)).ShouldNotBeNull();
+    }
+
+    [AvaloniaFact]
+    public async Task opening_custom_resource_list_does_not_run_custom_resource_informer_on_ui_thread()
+    {
+        var crd = CreateComplexManagedResourceDefinition();
+        var resources = Enumerable.Range(0, 128)
+            .Select(index => new TestCrossplaneManagedResourceDefinition
+            {
+                Metadata = new V1ObjectMeta
+                {
+                    Name = $"managed-resource-{index}",
+                    NamespaceProperty = "default",
+                },
+            })
+            .Cast<IKubernetesObject<V1ObjectMeta>>()
+            .ToArray();
+        var workspace = await Application.Current.CreateClusterAsync(
+            config => config.InitialResources = [crd, .. resources],
+            connect: false);
+        using var vm = CreateViewModel();
+        vm.ClusterCatalog.Clusters.Add(workspace);
+
+        await workspace.Connect();
+        await workspace.Runtime.SeedResource<V1CustomResourceDefinition>(true);
+
+        var resourceKind = GetCustomResourceKind(crd);
+        await WaitForAsync(() => workspace.Runtime.ModelCatalog.IsCustomResource(resourceKind), timeoutMs: 10000);
+        var resourceLink = await WaitForValueAsync(
+            () => FindResourceLink(vm.Clusters.Single(x => x.Cluster == workspace), resourceKind),
+            timeoutMs: 10000);
+        resourceLink.ShouldNotBeNull();
+
+        var resourceSeededOnUiThread = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        void OnResourceSeeded(IClusterRuntime _, GroupApiVersionKind kind)
+        {
+            if (kind == resourceKind)
+            {
+                resourceSeededOnUiThread.TrySetResult(Dispatcher.UIThread.CheckAccess());
+            }
+        }
+
+        workspace.Runtime.ResourceSeeded += OnResourceSeeded;
+        try
+        {
+            var openCompletion = new TaskCompletionSource<Exception?>(TaskCreationOptions.RunContinuationsAsynchronously);
+            Dispatcher.UIThread.Post(async () =>
+            {
+                try
+                {
+                    await vm.TreeViewSelectionChangedAsync(resourceLink);
+                    openCompletion.TrySetResult(null);
+                }
+                catch (Exception ex)
+                {
+                    openCompletion.TrySetResult(ex);
+                }
+            });
+
+            var cancellationToken = TestContext.Current.CancellationToken;
+            var timeout = TestWait.NextPollAsync(TimeSpan.FromSeconds(5), cancellationToken);
+            if (await Task.WhenAny(openCompletion.Task, timeout).ConfigureAwait(false) != openCompletion.Task)
+            {
+                await workspace.Disconnect().ConfigureAwait(false);
+            }
+
+            var openError = await openCompletion.Task.WaitAsync(TimeSpan.FromSeconds(10), cancellationToken).ConfigureAwait(false);
+            openError.ShouldBeNull();
+
+            var resourceSeededWasOnUiThread = await resourceSeededOnUiThread.Task
+                .WaitAsync(TimeSpan.FromSeconds(10), cancellationToken)
+                .ConfigureAwait(false);
+            resourceSeededWasOnUiThread.ShouldBeFalse();
+        }
+        finally
+        {
+            workspace.Runtime.ResourceSeeded -= OnResourceSeeded;
+        }
     }
 
     [AvaloniaFact]
@@ -2393,6 +2490,14 @@ internal class TestCustomResourceNested : IKubernetesObject<V1ObjectMeta>
 {
     public string ApiVersion { get; set; } = "mygroup.test.kubeui.com/v1";
     public string Kind { get; set; } = "TestCustomResourceNested";
+    public V1ObjectMeta Metadata { get; set; } = new();
+}
+
+[KubernetesEntity(Group = "crossplane.io", ApiVersion = "v1beta1", Kind = "ManagedResourceDefinition")]
+internal sealed class TestCrossplaneManagedResourceDefinition : IKubernetesObject<V1ObjectMeta>
+{
+    public string ApiVersion { get; set; } = "crossplane.io/v1beta1";
+    public string Kind { get; set; } = "ManagedResourceDefinition";
     public V1ObjectMeta Metadata { get; set; } = new();
 }
 

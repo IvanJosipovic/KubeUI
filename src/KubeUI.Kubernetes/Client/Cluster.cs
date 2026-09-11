@@ -355,8 +355,9 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
 
             informer.StartWatching();
 
-            _resourceInformerTasks.Add(informer.RunInfinite(GetResourceInformerCancellationToken()));
-            await informer.ReadyAsync(GetResourceInformerCancellationToken()).ConfigureAwait(false);
+            var informerCancellationToken = GetResourceInformerCancellationToken();
+            _resourceInformerTasks.Add(Task.Run(() => informer.RunInfinite(informerCancellationToken)));
+            await informer.ReadyAsync(informerCancellationToken).ConfigureAwait(false);
 
             if (container.IsSeeded)
             {
