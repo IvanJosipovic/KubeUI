@@ -20,6 +20,7 @@ public partial class PodContainerCellView : ViewBase<V1Pod>, IInitializeCluster
     private V1Pod? _viewModel;
 
     private GroupApiVersionKind _groupApiVersionKind = GroupApiVersionKind.From<V1Pod>();
+    private bool _isSubscribed;
 
     [GeneratedDirectProperty]
     public partial ObservableCollection<ContainerStatusViewModel> ContainerStatuses { get; set; } = [];
@@ -128,7 +129,13 @@ public partial class PodContainerCellView : ViewBase<V1Pod>, IInitializeCluster
     protected override void OnUnloaded(RoutedEventArgs e)
     {
         base.OnUnloaded(e);
-        Cluster?.Runtime.OnChange -= _cluster_OnChange;
+        UnsubscribeFromCluster();
+    }
+
+    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnAttachedToVisualTree(e);
+        SubscribeToCluster();
     }
 
     private void PopulateData()
@@ -245,10 +252,36 @@ public partial class PodContainerCellView : ViewBase<V1Pod>, IInitializeCluster
         }
     }
 
+    /// <summary>
+    /// Initializes this cell with its cluster. Runtime change subscriptions start when the cell is attached.
+    /// Reinitialization replaces the previous cluster subscription when the cell is attached.
+    /// </summary>
     public void Initialize(ClusterWorkspace cluster)
     {
+        UnsubscribeFromCluster();
         Cluster = cluster;
-        Cluster.Runtime.OnChange += _cluster_OnChange;
+        if (VisualRoot != null)
+        {
+            SubscribeToCluster();
+        }
+    }
+
+    private void SubscribeToCluster()
+    {
+        if (!_isSubscribed && Cluster != null)
+        {
+            Cluster.Runtime.OnChange += _cluster_OnChange;
+            _isSubscribed = true;
+        }
+    }
+
+    private void UnsubscribeFromCluster()
+    {
+        if (_isSubscribed && Cluster != null)
+        {
+            Cluster.Runtime.OnChange -= _cluster_OnChange;
+            _isSubscribed = false;
+        }
     }
 
     public sealed partial class ContainerStatusViewModel : ObservableObject

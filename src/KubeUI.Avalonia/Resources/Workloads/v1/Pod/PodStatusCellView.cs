@@ -16,6 +16,7 @@ public sealed class PodStatusCellView : RefreshingCellTextBlock, IInitializeClus
     private V1Pod? _viewModel;
 
     private GroupApiVersionKind _groupApiVersionKind = GroupApiVersionKind.From<V1Pod>();
+    private bool _isSubscribed;
 
     public PodStatusCellView()
         : base(null)
@@ -50,7 +51,13 @@ public sealed class PodStatusCellView : RefreshingCellTextBlock, IInitializeClus
     protected override void OnUnloaded(RoutedEventArgs e)
     {
         base.OnUnloaded(e);
-        Cluster?.Runtime.OnChange -= _cluster_OnChange;
+        UnsubscribeFromCluster();
+    }
+
+    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnAttachedToVisualTree(e);
+        SubscribeToCluster();
     }
 
     private void _cluster_OnChange(WatchEventType eventType, GroupApiVersionKind groupApiVersionKind, IKubernetesObject<V1ObjectMeta> resource)
@@ -61,9 +68,35 @@ public sealed class PodStatusCellView : RefreshingCellTextBlock, IInitializeClus
         }
     }
 
+    /// <summary>
+    /// Initializes this cell with its cluster. Runtime change subscriptions start when the cell is attached.
+    /// Reinitialization replaces the previous cluster subscription when the cell is attached.
+    /// </summary>
     public void Initialize(ClusterWorkspace cluster)
     {
+        UnsubscribeFromCluster();
         Cluster = cluster;
-        Cluster.Runtime.OnChange += _cluster_OnChange;
+        if (VisualRoot != null)
+        {
+            SubscribeToCluster();
+        }
+    }
+
+    private void SubscribeToCluster()
+    {
+        if (!_isSubscribed && Cluster != null)
+        {
+            Cluster.Runtime.OnChange += _cluster_OnChange;
+            _isSubscribed = true;
+        }
+    }
+
+    private void UnsubscribeFromCluster()
+    {
+        if (_isSubscribed && Cluster != null)
+        {
+            Cluster.Runtime.OnChange -= _cluster_OnChange;
+            _isSubscribed = false;
+        }
     }
 }

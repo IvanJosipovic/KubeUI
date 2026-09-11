@@ -25,14 +25,14 @@ public sealed record McpResourceGraphInfo(
 public interface IMcpClusterSession
 {
     Task<IClusterRuntime> GetConnectedClusterAsync(string? clusterName);
-    Task SeedResourceAsync(string? clusterName, GroupApiVersionKind resourceKind);
+    Task SeedResourceAsync(string? clusterName, GroupApiVersionKind resourceKind, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<McpSupportedResourceInfo>> ListSupportedResourcesAsync(string? clusterName);
     Task<IReadOnlyList<IKubernetesObject<V1ObjectMeta>>> ListResourcesAsync(
-        string? clusterName, string apiVersion, string kind, string? @namespace, int limit);
+        string? clusterName, string apiVersion, string kind, string? @namespace, int limit, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<McpRelatedResourceInfo>> ListRelatedResourcesAsync(
-        string? clusterName, string apiVersion, string kind, string name, string? @namespace, int limit);
+        string? clusterName, string apiVersion, string kind, string name, string? @namespace, int limit, CancellationToken cancellationToken = default);
     Task<McpResourceGraphInfo> GetResourceGraphAsync(
-        string? clusterName, string apiVersion, string kind, string name, string? @namespace, int limit);
+        string? clusterName, string apiVersion, string kind, string name, string? @namespace, int limit, CancellationToken cancellationToken = default);
 }
 
 internal sealed class McpClusterSession(
@@ -73,17 +73,17 @@ internal sealed class McpClusterSession(
                 config.IsCustomResource, config.CanListAndWatch, config.PermissionsLoaded))];
     }
 
-    public async Task SeedResourceAsync(string? clusterName, GroupApiVersionKind resourceKind)
+    public async Task SeedResourceAsync(string? clusterName, GroupApiVersionKind resourceKind, CancellationToken cancellationToken = default)
     {
         var cluster = await GetConnectedClusterAsync(clusterName).ConfigureAwait(false);
         var workspace = workspaceCatalog.GetCluster(cluster.Name)
             ?? throw new InvalidOperationException($"Cluster {cluster.Name} is not backed by a KubeUI workspace.");
 
-        await workspace.GetResourceConfig(resourceKind).SeedResource().ConfigureAwait(false);
+        await workspace.GetResourceConfig(resourceKind).SeedResource(waitForReady: true, cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<IReadOnlyList<IKubernetesObject<V1ObjectMeta>>> ListResourcesAsync(
-        string? clusterName, string apiVersion, string kind, string? @namespace, int limit)
+        string? clusterName, string apiVersion, string kind, string? @namespace, int limit, CancellationToken cancellationToken = default)
     {
         if (limit is < 1 or > 500)
             throw new ArgumentOutOfRangeException(nameof(limit), "Limit must be between 1 and 500.");
@@ -94,7 +94,7 @@ internal sealed class McpClusterSession(
         var resourceKind = ResolveResourceKind(cluster, workspace, apiVersion, kind);
         if (!cluster.ModelCatalog.Contains(resourceKind))
             throw new InvalidOperationException($"Unable to resolve Kubernetes resource for {apiVersion}/{kind}.");
-        await workspace.GetResourceConfig(resourceKind).SeedResource().ConfigureAwait(false);
+        await workspace.GetResourceConfig(resourceKind).SeedResource(waitForReady: true, cancellationToken: cancellationToken).ConfigureAwait(false);
         if (!cluster.Objects.TryGetValue(resourceKind, out var value)
             || value is not IResourceContainer container)
             return [];
@@ -107,20 +107,20 @@ internal sealed class McpClusterSession(
     }
 
     public async Task<IReadOnlyList<McpRelatedResourceInfo>> ListRelatedResourcesAsync(
-        string? clusterName, string apiVersion, string kind, string name, string? @namespace, int limit)
+        string? clusterName, string apiVersion, string kind, string name, string? @namespace, int limit, CancellationToken cancellationToken = default)
     {
-        var graph = await BuildResourceGraphAsync(clusterName, apiVersion, kind, name, @namespace, limit).ConfigureAwait(false);
+        var graph = await BuildResourceGraphAsync(clusterName, apiVersion, kind, name, @namespace, limit, cancellationToken).ConfigureAwait(false);
         return graph.Relationships;
     }
 
     public async Task<McpResourceGraphInfo> GetResourceGraphAsync(
-        string? clusterName, string apiVersion, string kind, string name, string? @namespace, int limit)
+        string? clusterName, string apiVersion, string kind, string name, string? @namespace, int limit, CancellationToken cancellationToken = default)
     {
-        return await BuildResourceGraphAsync(clusterName, apiVersion, kind, name, @namespace, limit).ConfigureAwait(false);
+        return await BuildResourceGraphAsync(clusterName, apiVersion, kind, name, @namespace, limit, cancellationToken).ConfigureAwait(false);
     }
 
     private async Task<McpResourceGraphInfo> BuildResourceGraphAsync(
-        string? clusterName, string apiVersion, string kind, string name, string? @namespace, int limit)
+        string? clusterName, string apiVersion, string kind, string name, string? @namespace, int limit, CancellationToken cancellationToken)
     {
         if (limit is < 1 or > 500)
             throw new ArgumentOutOfRangeException(nameof(limit), "Limit must be between 1 and 500.");
@@ -131,7 +131,7 @@ internal sealed class McpClusterSession(
         var resourceKind = ResolveResourceKind(cluster, workspace, apiVersion, kind);
         if (!cluster.ModelCatalog.Contains(resourceKind))
             throw new InvalidOperationException($"Unable to resolve Kubernetes resource for {apiVersion}/{kind}.");
-        await workspace.GetResourceConfig(resourceKind).SeedResource().ConfigureAwait(false);
+        await workspace.GetResourceConfig(resourceKind).SeedResource(waitForReady: true, cancellationToken: cancellationToken).ConfigureAwait(false);
 
         var resources = cluster.Objects.Values
             .OfType<IResourceContainer>()

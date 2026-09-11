@@ -64,10 +64,13 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
     public bool PermissionsLoaded { get; protected set; }
 
     public Task SeedResource(bool waitForReady = false)
+        => SeedResource(waitForReady, CancellationToken.None);
+
+    public Task SeedResource(bool waitForReady, CancellationToken cancellationToken)
     {
         return IsCustomResource
-            ? Cluster.Runtime.SeedResource(Kind, waitForReady)
-            : Cluster.Runtime.SeedResource<T>(waitForReady);
+            ? Cluster.Runtime.SeedResource(Kind, waitForReady, cancellationToken)
+            : Cluster.Runtime.SeedResource<T>(waitForReady, cancellationToken);
     }
 
     public virtual int Order { get; }
@@ -243,7 +246,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
             Cluster.Runtime.ModelCatalog.RegisterResource(
                 Kind,
                 typeof(T),
-                waitForReady => Cluster.Runtime.SeedResource<T>(waitForReady));
+                (waitForReady, cancellationToken) => Cluster.Runtime.SeedResource<T>(waitForReady, cancellationToken));
         }
     }
 

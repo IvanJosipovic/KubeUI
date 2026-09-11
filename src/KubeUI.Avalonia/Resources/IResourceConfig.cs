@@ -35,6 +35,8 @@ namespace KubeUI.Avalonia.Resources
         }
         Task EvaluateListWatchAccessAsync();
         Task SeedResource(bool waitForReady = false);
+        Task SeedResource(bool waitForReady, CancellationToken cancellationToken)
+            => SeedResource(waitForReady);
         IRelayCommand NewResourceCommand { get; }
         IRelayCommand<IList> ViewCommand { get; }
         IAsyncRelayCommand<IList> DeleteCommand { get; }

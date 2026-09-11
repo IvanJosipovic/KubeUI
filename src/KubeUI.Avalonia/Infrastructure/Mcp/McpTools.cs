@@ -48,9 +48,9 @@ public sealed class McpTools(
 
     [McpServerTool(Name = "kubeui_list_resources", Title = "List Kubernetes resources", Destructive = false, ReadOnly = true, Idempotent = true), Description("Lists cached Kubernetes resources known to KubeUI. Call kubeui_list_supported_resources first and pass its FullApiVersion exactly, including the API group for non-core resources.")]
     public async Task<IReadOnlyList<McpResourceInfo>> ListResources(
-        string? cluster, string apiVersion, string kind, string? @namespace = null, int limit = 100)
+        string? cluster, string apiVersion, string kind, string? @namespace = null, int limit = 100, CancellationToken cancellationToken = default)
     {
-        var resources = await clusterSession.ListResourcesAsync(cluster, apiVersion, kind, @namespace, limit).ConfigureAwait(false);
+        var resources = await clusterSession.ListResourcesAsync(cluster, apiVersion, kind, @namespace, limit, cancellationToken).ConfigureAwait(false);
         return [.. resources.Select(resource => new McpResourceInfo(
             apiVersion, kind, resource.Metadata?.Name ?? string.Empty,
             resource.Metadata?.NamespaceProperty,
@@ -58,18 +58,18 @@ public sealed class McpTools(
     }
 
     [McpServerTool(Name = "kubeui_list_events", Title = "List Kubernetes events", Destructive = false, ReadOnly = true, Idempotent = true), Description("Lists Kubernetes Events cached by KubeUI.")]
-    public Task<IReadOnlyList<McpResourceInfo>> ListEvents(string? cluster = null, string? @namespace = null, int limit = 100)
-        => ListResources(cluster, "v1", "Event", @namespace, limit);
+    public Task<IReadOnlyList<McpResourceInfo>> ListEvents(string? cluster = null, string? @namespace = null, int limit = 100, CancellationToken cancellationToken = default)
+        => ListResources(cluster, "v1", "Event", @namespace, limit, cancellationToken);
 
     [McpServerTool(Name = "kubeui_related_resources", Title = "List related Kubernetes resources", Destructive = false, ReadOnly = true, Idempotent = true), Description("Lists resources directly related to a Kubernetes resource through KubeUI's relationship model.")]
     public Task<IReadOnlyList<McpRelatedResourceInfo>> ListRelatedResources(
-        string? cluster, string apiVersion, string kind, string name, string? @namespace = null, int limit = 100)
-        => clusterSession.ListRelatedResourcesAsync(cluster, apiVersion, kind, name, @namespace, limit);
+        string? cluster, string apiVersion, string kind, string name, string? @namespace = null, int limit = 100, CancellationToken cancellationToken = default)
+        => clusterSession.ListRelatedResourcesAsync(cluster, apiVersion, kind, name, @namespace, limit, cancellationToken);
 
     [McpServerTool(Name = "kubeui_resource_graph", Title = "Show Kubernetes resource graph", Destructive = false, ReadOnly = true, Idempotent = true), Description("Returns the selected Kubernetes resource and its directly related resources.")]
     public Task<McpResourceGraphInfo> GetResourceGraph(
-        string? cluster, string apiVersion, string kind, string name, string? @namespace = null, int limit = 100)
-        => clusterSession.GetResourceGraphAsync(cluster, apiVersion, kind, name, @namespace, limit);
+        string? cluster, string apiVersion, string kind, string name, string? @namespace = null, int limit = 100, CancellationToken cancellationToken = default)
+        => clusterSession.GetResourceGraphAsync(cluster, apiVersion, kind, name, @namespace, limit, cancellationToken);
 
     [McpServerTool(Name = "kubeui_diff_resource_yaml", Title = "Compare resource YAML", Destructive = false, ReadOnly = true, Idempotent = true), Description("Compares a live KubeUI resource YAML document with a proposed YAML document.")]
     public async Task<string> DiffResourceYaml(
@@ -99,7 +99,7 @@ public sealed class McpTools(
     }
 
     [McpServerTool(Name = "kubeui_get_resource_yaml", Title = "Get resource YAML", Destructive = false, ReadOnly = true, Idempotent = true), Description("Gets a Kubernetes resource as YAML.")]
-    public async Task<string> GetResourceYaml(string? cluster, string apiVersion, string kind, string name, string? @namespace = null)
+    public async Task<string> GetResourceYaml(string? cluster, string apiVersion, string kind, string name, string? @namespace = null, CancellationToken cancellationToken = default)
     {
         if (string.Equals(kind, "Secret", StringComparison.OrdinalIgnoreCase))
         {
@@ -112,7 +112,7 @@ public sealed class McpTools(
         var runtime = await clusterSession.GetConnectedClusterAsync(cluster).ConfigureAwait(false);
         if (!runtime.ModelCatalog.TryGetResourceKind(apiVersion, kind, out var resourceKind))
             throw new InvalidOperationException($"Unable to resolve Kubernetes resource for {apiVersion}/{kind}.");
-        await clusterSession.SeedResourceAsync(cluster, resourceKind).ConfigureAwait(false);
+        await clusterSession.SeedResourceAsync(cluster, resourceKind, cancellationToken).ConfigureAwait(false);
         var resource = runtime.Objects.TryGetValue(resourceKind, out var container)
             && container is IResourceContainer resourceContainer
             ? resourceContainer.Snapshot().FirstOrDefault(item =>

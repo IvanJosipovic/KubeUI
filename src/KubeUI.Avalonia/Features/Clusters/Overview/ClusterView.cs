@@ -156,6 +156,21 @@ public sealed partial class ClusterView : ViewBase<ClusterViewModel>
     protected override void OnDataContextChanged(EventArgs e)
     {
         base.OnDataContextChanged(e);
+        StartRefreshTimer();
+    }
+
+    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnAttachedToVisualTree(e);
+        StartRefreshTimer();
+    }
+
+    private void StartRefreshTimer()
+    {
+        if (VisualRoot == null)
+        {
+            return;
+        }
 
         if (!_timer.IsEnabled)
         {
