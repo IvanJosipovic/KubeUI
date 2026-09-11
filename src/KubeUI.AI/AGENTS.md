@@ -5,3 +5,7 @@
 - Treat agent runtimes as configurable processes; never hardcode runtime-specific behavior into the transport.
 - Keep prompts, responses, credentials, kubeconfigs, and Kubernetes Secret contents out of telemetry by default.
 - Add adapter and mapping tests for every supported ACP union or update variant.
+- Gate HTTP MCP session entries on the agent's negotiated HTTP MCP capability.
+- Treat ACP file line numbers as 1-based and enforce configured `AgentSessionOptions.FileSystemRoots`.
+- Terminal output limits retain newest output, omit exit status until process exit, and observe capture-task failures during release and disposal.
+- Unsupported ACP extension methods and notifications fail explicitly; fake ACP tests remain external-process free.

@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Threading.Channels;
 using dotacp.client;
 using dotacp.protocol;
@@ -15,7 +16,6 @@ internal sealed class AcpAgentSession : IAgentSession
     private readonly Channel<AgentEvent> _events;
     private readonly IAcpProcess? _diagnosticProcess;
     private readonly IDisposable? _client;
-    private readonly Action? _onDispose;
     private bool _disposed;
 
     public AcpAgentSession(
@@ -25,8 +25,7 @@ internal sealed class AcpAgentSession : IAgentSession
         Channel<AgentEvent> events,
         AgentContext? context = null,
         IAcpProcess? diagnosticProcess = null,
-        IDisposable? client = null,
-        Action? onDispose = null)
+        IDisposable? client = null)
     {
         _id = id;
         _protocolId = protocolId;
@@ -35,7 +34,6 @@ internal sealed class AcpAgentSession : IAgentSession
         _events = events;
         _diagnosticProcess = diagnosticProcess;
         _client = client;
-        _onDispose = onDispose;
         if (_diagnosticProcess is not null)
             _diagnosticProcess.ErrorReceived += DiagnosticProcessOnError;
         if (_diagnosticProcess is not null)
@@ -88,10 +86,18 @@ internal sealed class AcpAgentSession : IAgentSession
             _diagnosticProcess.ErrorReceived -= DiagnosticProcessOnError;
             _diagnosticProcess.Exited -= ProcessOnExited;
         }
-        _onDispose?.Invoke();
         using var activity = AgentActivitySource.Source.StartActivity("ai.agent.stop");
         activity?.SetTag("agent.protocol", "acp");
         _connection.Dispose();
+        try
+        {
+            await _connection.Completion.ConfigureAwait(false);
+        }
+        catch (Exception exception)
+        {
+            activity?.SetStatus(ActivityStatusCode.Error, exception.Message);
+            activity?.AddException(exception);
+        }
         _client?.Dispose();
         if (_diagnosticProcess is not null)
             await _diagnosticProcess.DisposeAsync().ConfigureAwait(false);

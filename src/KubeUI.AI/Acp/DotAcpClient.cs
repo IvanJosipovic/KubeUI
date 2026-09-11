@@ -10,71 +10,43 @@ namespace KubeUI.AI.Acp;
 internal sealed class DotAcpClient : IAcpClient, IDisposable
 {
     private readonly ChannelWriter<AgentEvent> _events;
-    private readonly IAgentPermissionService _permissionService;
     private readonly AcpPermissionHandler _permissionHandler;
+    private readonly AcpFileSystemHandler _fileSystemHandler;
     private readonly AcpTerminalHandler _terminalHandler;
 
     public DotAcpClient(
         ChannelWriter<AgentEvent> events,
         IAgentPermissionService? permissionService = null,
-        IReadOnlySet<string>? trustedMcpServers = null)
+        IReadOnlySet<string>? trustedMcpServers = null,
+        IReadOnlySet<string>? fileSystemRoots = null)
     {
         _events = events;
-        _permissionService = permissionService ?? new DenyByDefaultAgentPermissionService();
-        _permissionHandler = new AcpPermissionHandler(events, _permissionService, trustedMcpServers);
-        _terminalHandler = new AcpTerminalHandler(_permissionService);
+        var effectivePermissionService = permissionService ?? new DenyByDefaultAgentPermissionService();
+        _permissionHandler = new AcpPermissionHandler(events, effectivePermissionService, trustedMcpServers);
+        _fileSystemHandler = new AcpFileSystemHandler(effectivePermissionService, fileSystemRoots);
+        _terminalHandler = new AcpTerminalHandler(effectivePermissionService);
     }
 
     public void OnDisconnected(Connection connection)
     {
+        _permissionHandler.Clear();
         _terminalHandler.Dispose();
         _events.TryComplete(new IOException("ACP agent disconnected."));
     }
 
-    public async Task<ReadTextFileResponse> ReadTextFileAsync(ReadTextFileRequest request, CancellationToken cancellationToken = default)
-    {
-        var permission = await _permissionService.RequestPermissionAsync(
-            new AgentPermissionRequest("read_file", request.Path), cancellationToken).ConfigureAwait(false);
-        if (!permission.Allowed)
-            throw new UnauthorizedAccessException(permission.Reason ?? $"Reading '{request.Path}' was denied.");
+    public Task<ReadTextFileResponse> ReadTextFileAsync(ReadTextFileRequest request, CancellationToken cancellationToken = default)
+        => _fileSystemHandler.ReadTextFileAsync(request, cancellationToken);
 
-        var start = request.Line is null ? 0 : checked((int)request.Line.Value);
-        var limit = request.Limit is null ? int.MaxValue : checked((int)request.Limit.Value);
-        if (start < 0 || limit < 0)
-            return new ReadTextFileResponse { Content = string.Empty };
-
-        using var reader = File.OpenText(request.Path);
-        for (var index = 0; index < start; index++)
-        {
-            if (await reader.ReadLineAsync(cancellationToken).ConfigureAwait(false) is null)
-                return new ReadTextFileResponse { Content = string.Empty };
-        }
-
-        var selected = new List<string>(Math.Min(limit, 256));
-        while (selected.Count < limit
-            && await reader.ReadLineAsync(cancellationToken).ConfigureAwait(false) is { } line)
-            selected.Add(line);
-        return new ReadTextFileResponse { Content = string.Join('\n', selected) };
-    }
-
-    public async Task<WriteTextFileResponse> WriteTextFileAsync(WriteTextFileRequest request, CancellationToken cancellationToken = default)
-    {
-        var permission = await _permissionService.RequestPermissionAsync(
-            new AgentPermissionRequest("write_file", request.Path, IsDestructive: true), cancellationToken).ConfigureAwait(false);
-        if (!permission.Allowed)
-            throw new UnauthorizedAccessException(permission.Reason ?? $"Writing '{request.Path}' was denied.");
-
-        await File.WriteAllTextAsync(request.Path, request.Content, cancellationToken).ConfigureAwait(false);
-        return new WriteTextFileResponse();
-    }
+    public Task<WriteTextFileResponse> WriteTextFileAsync(WriteTextFileRequest request, CancellationToken cancellationToken = default)
+        => _fileSystemHandler.WriteTextFileAsync(request, cancellationToken);
 
     public Task<RequestPermissionResponse> RequestPermissionAsync(RequestPermissionRequest request, CancellationToken cancellationToken = default)
         => _permissionHandler.RequestAsync(request, cancellationToken);
 
     public Task SessionUpdateAsync(SessionNotification notification, CancellationToken cancellationToken = default)
     {
-        _permissionHandler.TrackToolCall(notification.Update);
-        if (AcpMapper.ToAgentEvent(notification.Update) is { } agentEvent)
+        if (_permissionHandler.TrackToolCall(notification.Update)
+            && AcpMapper.ToAgentEvent(notification.Update) is { } agentEvent)
             _events.TryWrite(agentEvent);
         return Task.CompletedTask;
     }
@@ -95,13 +67,14 @@ internal sealed class DotAcpClient : IAcpClient, IDisposable
         => _terminalHandler.WaitAsync(request, cancellationToken);
 
     public Task<object> ExtMethodAsync(string method, object request, CancellationToken cancellationToken = default)
-        => Task.FromResult<object>(new { });
+        => Task.FromException<object>(new NotSupportedException($"ACP extension method '{method}' is not supported."));
 
     public Task ExtNotificationAsync(string method, object notification, CancellationToken cancellationToken = default)
-        => Task.CompletedTask;
+        => Task.FromException(new NotSupportedException($"ACP extension notification '{method}' is not supported."));
 
     public void Dispose()
     {
+        _permissionHandler.Clear();
         _terminalHandler.Dispose();
     }
 }
