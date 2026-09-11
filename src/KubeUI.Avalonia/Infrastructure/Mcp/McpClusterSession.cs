@@ -79,7 +79,7 @@ internal sealed class McpClusterSession(
         var workspace = workspaceCatalog.GetCluster(cluster.Name)
             ?? throw new InvalidOperationException($"Cluster {cluster.Name} is not backed by a KubeUI workspace.");
 
-        await workspace.GetResourceConfig(resourceKind).SeedResource().ConfigureAwait(false);
+        await workspace.GetResourceConfig(resourceKind).SeedResource(waitForReady: true).ConfigureAwait(false);
     }
 
     public async Task<IReadOnlyList<IKubernetesObject<V1ObjectMeta>>> ListResourcesAsync(
@@ -94,7 +94,7 @@ internal sealed class McpClusterSession(
         var resourceKind = ResolveResourceKind(cluster, workspace, apiVersion, kind);
         if (!cluster.ModelCatalog.Contains(resourceKind))
             throw new InvalidOperationException($"Unable to resolve Kubernetes resource for {apiVersion}/{kind}.");
-        await workspace.GetResourceConfig(resourceKind).SeedResource().ConfigureAwait(false);
+        await workspace.GetResourceConfig(resourceKind).SeedResource(waitForReady: true).ConfigureAwait(false);
         if (!cluster.Objects.TryGetValue(resourceKind, out var value)
             || value is not IResourceContainer container)
             return [];
@@ -131,7 +131,7 @@ internal sealed class McpClusterSession(
         var resourceKind = ResolveResourceKind(cluster, workspace, apiVersion, kind);
         if (!cluster.ModelCatalog.Contains(resourceKind))
             throw new InvalidOperationException($"Unable to resolve Kubernetes resource for {apiVersion}/{kind}.");
-        await workspace.GetResourceConfig(resourceKind).SeedResource().ConfigureAwait(false);
+        await workspace.GetResourceConfig(resourceKind).SeedResource(waitForReady: true).ConfigureAwait(false);
 
         var resources = cluster.Objects.Values
             .OfType<IResourceContainer>()
