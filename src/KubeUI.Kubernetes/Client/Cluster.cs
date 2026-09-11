@@ -295,8 +295,9 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
             typeof(T),
             waitForReady => SeedResource<T>(waitForReady));
         var container = (ContainerClass<T>)Objects.GetOrAdd(kind, _ => new ContainerClass<T>());
+        var informerCancellationToken = GetResourceInformerCancellationToken();
         var seedTask = container.GetOrCreateSeedTask(() =>
-            Task.Run(() => SeedResourceCoreAsync<T>()));
+            Task.Run(() => SeedResourceCoreAsync<T>(informerCancellationToken)));
 
         _logger.LogDebug("Seed requested for {kind}.", kind);
 
@@ -314,7 +315,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
         if (waitForReady)
         {
             _logger.LogDebug("Waiting for resource readiness for {type}.", typeof(T));
-            await IsResourceReady<T>().ConfigureAwait(false);
+            await IsResourceReady<T>(informerCancellationToken).ConfigureAwait(false);
             _logger.LogDebug("Resource readiness reached for {type}.", typeof(T));
         }
 
@@ -419,7 +420,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
         });
     }
 
-    private async Task SeedResourceCoreAsync<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    private async Task SeedResourceCoreAsync<T>(CancellationToken informerCancellationToken) where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
         _logger.LogDebug("Starting seed initialization for {type}.", typeof(T));
 
@@ -434,7 +435,6 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
             container.InformerRegistrations.Add(informer.Register(GetResourceInformerCallback<T>()));
             informer.StartWatching();
 
-            var informerCancellationToken = GetResourceInformerCancellationToken();
             _resourceInformerTasks.Add(Task.Run(() => informer.RunInfinite(informerCancellationToken)));
         }
         else
@@ -455,7 +455,6 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
                     container.InformerRegistrations.Add(informer.Register(GetResourceInformerCallback<T>()));
                     informer.StartWatching();
 
-                    var informerCancellationToken = GetResourceInformerCancellationToken();
                     _resourceInformerTasks.Add(Task.Run(() => informer.RunInfinite(informerCancellationToken)));
                 }
             }
