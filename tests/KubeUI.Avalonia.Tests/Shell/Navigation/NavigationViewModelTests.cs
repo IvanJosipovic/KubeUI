@@ -457,6 +457,85 @@ public class NavigationViewModelTests
     }
 
     [AvaloniaFact]
+    public async Task opening_typed_resource_list_does_not_run_typed_resource_informer_on_ui_thread()
+    {
+        var resources = Enumerable.Range(0, 128)
+            .Select(index => new V1Pod
+            {
+                Metadata = new V1ObjectMeta
+                {
+                    Name = $"managed-pod-{index}",
+                    NamespaceProperty = "default",
+                },
+                Spec = new V1PodSpec
+                {
+                    Containers =
+                    [
+                        new V1Container
+                        {
+                            Name = "provider",
+                            Image = "crossplane/provider-aws:v1.0.0",
+                        },
+                    ],
+                },
+            })
+            .Cast<IKubernetesObject<V1ObjectMeta>>()
+            .ToArray();
+        using var workspace = await Application.Current.CreateClusterAsync(
+            config => config.InitialResources = resources,
+            connect: false);
+        using var vm = CreateViewModel();
+        vm.ClusterCatalog.Clusters.Add(workspace);
+
+        await workspace.Connect();
+        var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
+        var resourceLink = await WaitForValueAsync(
+            () => FindResourceLink(clusterNode, GroupApiVersionKind.From<V1Pod>()),
+            timeoutMs: 10000);
+        resourceLink.ShouldNotBeNull();
+
+        var resourceSeededOnUiThread = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        void OnResourceSeeded(IClusterRuntime _, GroupApiVersionKind kind)
+        {
+            if (kind == GroupApiVersionKind.From<V1Pod>())
+            {
+                resourceSeededOnUiThread.TrySetResult(Dispatcher.UIThread.CheckAccess());
+            }
+        }
+
+        workspace.Runtime.ResourceSeeded += OnResourceSeeded;
+        try
+        {
+            var openCompletion = new TaskCompletionSource<Exception?>(TaskCreationOptions.RunContinuationsAsynchronously);
+            Dispatcher.UIThread.Post(async () =>
+            {
+                try
+                {
+                    await vm.TreeViewSelectionChangedAsync(resourceLink);
+                    openCompletion.TrySetResult(null);
+                }
+                catch (Exception ex)
+                {
+                    openCompletion.TrySetResult(ex);
+                }
+            });
+
+            var cancellationToken = TestContext.Current.CancellationToken;
+            var openError = await openCompletion.Task.WaitAsync(TimeSpan.FromSeconds(10), cancellationToken).ConfigureAwait(false);
+            openError.ShouldBeNull();
+
+            var resourceSeededWasOnUiThread = await resourceSeededOnUiThread.Task
+                .WaitAsync(TimeSpan.FromSeconds(10), cancellationToken)
+                .ConfigureAwait(false);
+            resourceSeededWasOnUiThread.ShouldBeFalse();
+        }
+        finally
+        {
+            workspace.Runtime.ResourceSeeded -= OnResourceSeeded;
+        }
+    }
+
+    [AvaloniaFact]
     public async Task selecting_cluster_node_does_not_crash_when_connect_fails()
     {
         var services = Application.Current.GetTestServices();

@@ -433,7 +433,9 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
             container.Informers.Add(informer);
             container.InformerRegistrations.Add(informer.Register(GetResourceInformerCallback<T>()));
             informer.StartWatching();
-            _ = informer.RunInfinite(GetResourceInformerCancellationToken());
+
+            var informerCancellationToken = GetResourceInformerCancellationToken();
+            _resourceInformerTasks.Add(Task.Run(() => informer.RunInfinite(informerCancellationToken)));
         }
         else
         {
@@ -452,7 +454,9 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
                     container.Informers.Add(informer);
                     container.InformerRegistrations.Add(informer.Register(GetResourceInformerCallback<T>()));
                     informer.StartWatching();
-                    _resourceInformerTasks.Add(informer.RunInfinite(GetResourceInformerCancellationToken()));
+
+                    var informerCancellationToken = GetResourceInformerCancellationToken();
+                    _resourceInformerTasks.Add(Task.Run(() => informer.RunInfinite(informerCancellationToken)));
                 }
             }
         }
