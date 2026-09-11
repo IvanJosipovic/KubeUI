@@ -69,6 +69,14 @@ jobs:
         with:
           global-json-file: global.json
 
+      - name: Cache NuGet packages
+        uses: actions/cache@v6
+        with:
+            path: ~/.nuget/packages
+            key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj', '**/*.props', 'global.json') }}
+            restore-keys: |
+              ${{ runner.os }}-nuget-
+
       - name: Install Velopack
         shell: pwsh
         run: |

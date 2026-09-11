@@ -26,6 +26,19 @@ public sealed class ClusterRuntimeTests : ClusterRuntimeAssertions
     }
 
     [Fact]
+    public async Task TypedResourceInformerIsTrackedForShutdown()
+    {
+        await using var clusterScope = await new TestClusterGenerator().CreateAsync(new TestClusterConfig(), TestContext.Current.CancellationToken);
+        var cluster = clusterScope.Cluster;
+        var activeInformerTaskCountBeforeSeeding = cluster.ActiveResourceInformerTaskCount;
+
+        await cluster.Connect();
+        await cluster.SeedResource<V1Pod>(waitForReady: true);
+
+        cluster.ActiveResourceInformerTaskCount.ShouldBeGreaterThan(activeInformerTaskCountBeforeSeeding);
+    }
+
+    [Fact]
     public async Task ScenarioSeedsTypedInitialResources()
     {
         await using var clusterScope = await new TestClusterGenerator().CreateAsync(
