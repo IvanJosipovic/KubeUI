@@ -4,6 +4,7 @@ using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Markup.Declarative;
 using Avalonia.Markup.Xaml.MarkupExtensions;
+using Avalonia.Media;
 using Avalonia.Styling;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
@@ -62,6 +63,23 @@ public sealed class ResourceGraphControlTests
         {
             window.Close();
         }
+    }
+
+    [AvaloniaFact]
+    public async Task initial_graph_materialization_resolves_icons_off_ui_thread()
+    {
+        RecordingIconService iconService = new(Application.Current.GetRequiredTestService<IResourceIconService>());
+        using ResourceGraphControl control = new(iconService)
+        {
+            Graph = new ResourceRelationshipGraph(
+                Enumerable.Range(0, 32).Select(index => CreatePod($"pod-{index}")).ToArray(),
+                []),
+        };
+
+        await WaitForAsync(() => control.Area.LogicCore?.Graph?.VertexCount == 32);
+
+        iconService.Calls.ShouldBeGreaterThan(0);
+        iconService.UiThreadCalls.ShouldBe(0);
     }
 
     [AvaloniaFact]
@@ -2705,6 +2723,24 @@ public sealed class ResourceGraphControlTests
             ],
         },
     };
+
+    private sealed class RecordingIconService(IResourceIconService inner) : IResourceIconService
+    {
+        public int Calls { get; private set; }
+
+        public int UiThreadCalls { get; private set; }
+
+        public IImage GetIcon(GroupApiVersionKind resourceKind)
+        {
+            Calls++;
+            if (Dispatcher.UIThread.CheckAccess())
+            {
+                UiThreadCalls++;
+            }
+
+            return inner.GetIcon(resourceKind);
+        }
+    }
 
     private sealed class TestDynamicResource : IKubernetesObject<V1ObjectMeta>
     {
