@@ -32,9 +32,10 @@ public sealed class ClusterRuntimeTests : ClusterRuntimeAssertions
         var cluster = clusterScope.Cluster;
         await cluster.Connect();
 
+        var activeInformerTaskCountBeforeSeeding = cluster.ActiveResourceInformerTaskCount;
         await cluster.SeedResource<V1Pod>(waitForReady: true);
 
-        cluster.ActiveResourceInformerTaskCount.ShouldBeGreaterThan(0);
+        cluster.ActiveResourceInformerTaskCount.ShouldBeGreaterThan(activeInformerTaskCountBeforeSeeding);
     }
 
     [Fact]
