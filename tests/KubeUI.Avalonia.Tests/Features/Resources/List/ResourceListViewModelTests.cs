@@ -97,7 +97,24 @@ public class ResourceListViewModelTests
 
     private static async Task AddOrUpdateAsync<T>(ClusterWorkspace cluster, T resource) where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
-        await cluster.Runtime.AddOrUpdateResource(resource);
+        ArgumentNullException.ThrowIfNull(cluster.Runtime.Client);
+        using var client = cluster.Runtime.Client.GetGenericClient<T>();
+
+        T updated;
+        if (resource.Metadata?.Uid is not null)
+        {
+            updated = string.IsNullOrEmpty(resource.Namespace())
+                ? await client.ReplaceAsync(resource, resource.Name(), TestContext.Current.CancellationToken)
+                : await client.ReplaceNamespacedAsync(resource, resource.Namespace(), resource.Name(), TestContext.Current.CancellationToken);
+        }
+        else
+        {
+            updated = string.IsNullOrEmpty(resource.Namespace())
+                ? await client.CreateAsync(resource, TestContext.Current.CancellationToken)
+                : await client.CreateNamespacedAsync(resource, resource.Namespace(), TestContext.Current.CancellationToken);
+        }
+
+        resource.Metadata = updated.Metadata;
         await TestApplicationExtensions.WaitForUiAsync();
     }
 
@@ -841,6 +858,382 @@ public class ResourceListViewModelTests
         var after = GetResourceCellText<V1Pod>(grid, "a", nodeColumn);
         after.ShouldNotBeNull();
         after.ShouldContain("node-b");
+    }
+
+    [AvaloniaFact(DisplayName = "Pod resource list cells refresh from an updated pod instance")]
+    public async Task pod_resource_list_cells_refresh_from_updated_pod_instance()
+    {
+        using var window = Application.Current.CreateTestWindow();
+        var cluster = await Application.Current.CreateClusterAsync();
+        var vm = Application.Current.GetRequiredTestService<ResourceListViewModel<V1Pod>>();
+        vm.Initialize(cluster);
+
+        var view = Application.Current.GetRequiredTestService<ResourceListView>();
+        view.DataContext = vm;
+        window.Content = view;
+        window.Show();
+
+        var grid = view.FindControl<DataGrid>("PART_Grid");
+        grid.ShouldNotBeNull();
+
+        const string podName = "resource-list-refresh-pod";
+        var creatingPod = new V1Pod
+        {
+            ApiVersion = V1Pod.KubeApiVersion,
+            Kind = V1Pod.KubeKind,
+            Metadata = new V1ObjectMeta
+            {
+                Name = podName,
+                NamespaceProperty = "default",
+            },
+            Spec = new V1PodSpec
+            {
+                Containers = [new V1Container { Name = "manager", Image = "manager:latest" }],
+            },
+            Status = new V1PodStatus
+            {
+                Conditions = [new V1PodCondition { Type = "Ready", Status = "False", Reason = "ContainersNotReady" }],
+                ContainerStatuses =
+                [
+                    new V1ContainerStatus
+                    {
+                        Name = "manager",
+                        State = new V1ContainerState
+                        {
+                            Waiting = new V1ContainerStateWaiting { Reason = "ContainerCreating" },
+                        },
+                    },
+                ],
+            },
+        };
+
+        await AddOrUpdateAsync(cluster, creatingPod);
+
+        var statusColumn = vm.ColumnDefinitions
+            .Select((column, index) => (column, index))
+            .Single(x => string.Equals(x.column.ColumnKey?.ToString(), "status", StringComparison.Ordinal))
+            .index;
+        var containersColumn = vm.ColumnDefinitions
+            .Select((column, index) => (column, index))
+            .Single(x => string.Equals(x.column.ColumnKey?.ToString(), "containers", StringComparison.Ordinal))
+            .index;
+
+        await WaitForAsync(
+            () => GetResourceCellText<V1Pod>(grid!, podName, statusColumn) == "ContainersNotReady",
+            timeoutMs: 5000);
+        var initialStatus = GetResourceCellText<V1Pod>(grid!, podName, statusColumn);
+        initialStatus.ShouldBe("ContainersNotReady");
+
+        var initialRow = GetAllRows(grid!).Single(item => item.IsVisible && (item.DataContext as V1Pod)?.Name() == podName);
+        var initialContainerContent = grid!.Columns[containersColumn].GetCellContent(initialRow);
+        var initialContainerCell = initialContainerContent as PodContainerCellView
+            ?? initialContainerContent?.GetVisualDescendants().OfType<PodContainerCellView>().FirstOrDefault();
+        initialContainerCell.ShouldNotBeNull();
+        initialContainerCell!.ContainerStatuses.ShouldNotBeEmpty();
+
+        creatingPod.Metadata!.DeletionTimestamp = null;
+        creatingPod.Status!.Conditions![0].Status = "True";
+        creatingPod.Status.Conditions[0].Reason = null;
+        creatingPod.Status.ContainerStatuses![0].Ready = true;
+        creatingPod.Status.ContainerStatuses[0].Started = true;
+        creatingPod.Status.ContainerStatuses[0].State = new V1ContainerState
+        {
+            Running = new V1ContainerStateRunning(),
+        };
+
+        await AddOrUpdateAsync(cluster, creatingPod);
+
+        await WaitForAsync(
+            () => GetResourceCellText<V1Pod>(grid!, podName, statusColumn) == Assets.Resources.PodStatusCell_Running,
+            timeoutMs: 5000);
+
+        var row = GetAllRows(grid!).Single(item => item.IsVisible && (item.DataContext as V1Pod)?.Name() == podName);
+        var containerContent = grid!.Columns[containersColumn].GetCellContent(row);
+        var containerCell = containerContent as PodContainerCellView
+            ?? containerContent?.GetVisualDescendants().OfType<PodContainerCellView>().FirstOrDefault();
+        containerCell.ShouldNotBeNull();
+        containerCell!.ContainerStatuses.Count.ShouldBe(1);
+        containerCell.ContainerStatuses.Single().Status.ShouldBe("Running");
+    }
+
+    [AvaloniaFact(DisplayName = "Recycled pod cells reset when a terminating pod is replaced by a starting pod")]
+    public async Task recycled_pod_cells_reset_when_terminating_pod_is_replaced_by_starting_pod()
+    {
+        using var window = Application.Current.CreateTestWindow();
+
+        var podA = new V1Pod
+        {
+            ApiVersion = V1Pod.KubeApiVersion,
+            Kind = V1Pod.KubeKind,
+            Metadata = new V1ObjectMeta
+            {
+                Name = "pod-a",
+                NamespaceProperty = "default",
+                Uid = "pod-a-uid",
+                DeletionTimestamp = DateTime.UtcNow,
+            },
+            Spec = new V1PodSpec
+            {
+                Containers = [new V1Container { Name = "app-a", Image = "app-a:test" }],
+            },
+            Status = new V1PodStatus
+            {
+                Conditions = [new V1PodCondition { Type = "Ready", Status = "False", Reason = "Terminating" }],
+                ContainerStatuses =
+                [
+                    new V1ContainerStatus
+                    {
+                        Name = "app-a",
+                        State = new V1ContainerState
+                        {
+                            Terminated = new V1ContainerStateTerminated { Reason = "Terminated" },
+                        },
+                    },
+                ],
+            },
+        };
+
+        var cluster = await Application.Current.CreateClusterAsync(config => config.InitialResources = [podA]);
+        var vm = Application.Current.GetRequiredTestService<ResourceListViewModel<V1Pod>>();
+        vm.Initialize(cluster);
+
+        var view = Application.Current.GetRequiredTestService<ResourceListView>();
+        view.DataContext = vm;
+        window.Content = view;
+        window.Show();
+
+        var grid = view.FindControl<DataGrid>("PART_Grid").ShouldNotBeNull();
+        await WaitForAsync(() => grid.Columns.Count > 0, timeoutMs: 5000);
+        await WaitForAsync(() => vm.View.Count == 1, timeoutMs: 5000);
+
+        var statusColumn = grid.Columns.Single(column => string.Equals(column.ColumnKey?.ToString(), "status", StringComparison.Ordinal));
+        var containersColumn = grid.Columns.Single(column => string.Equals(column.ColumnKey?.ToString(), "containers", StringComparison.Ordinal));
+        await WaitForAsync(() => GetResourceCellText<V1Pod>(grid, "pod-a", statusColumn.DisplayIndex) == Assets.Resources.PodStatusCell_Terminating, timeoutMs: 5000);
+
+        using var client = cluster.Runtime.Client!.GetGenericClient<V1Pod>();
+        await client.DeleteNamespacedAsync<V1Pod>("default", "pod-a", TestContext.Current.CancellationToken);
+        await WaitForAsync(() => vm.View.Count == 0, timeoutMs: 5000);
+
+        var podB = new V1Pod
+        {
+            ApiVersion = V1Pod.KubeApiVersion,
+            Kind = V1Pod.KubeKind,
+            Metadata = new V1ObjectMeta
+            {
+                Name = "pod-b",
+                NamespaceProperty = "default",
+                Uid = "pod-b-uid",
+            },
+            Spec = new V1PodSpec
+            {
+                Containers = [new V1Container { Name = "app-b", Image = "app-b:test" }],
+            },
+            Status = new V1PodStatus
+            {
+                Conditions = [new V1PodCondition { Type = "Ready", Status = "False", Reason = "PodInitializing" }],
+                ContainerStatuses =
+                [
+                    new V1ContainerStatus
+                    {
+                        Name = "app-b",
+                        State = new V1ContainerState
+                        {
+                            Waiting = new V1ContainerStateWaiting { Reason = "ContainerCreating" },
+                        },
+                    },
+                ],
+            },
+        };
+
+        await client.CreateNamespacedAsync(podB, "default", TestContext.Current.CancellationToken);
+        await WaitForAsync(() => vm.View.Count == 1, timeoutMs: 5000);
+        await WaitForAsync(() => GetResourceCellText<V1Pod>(grid, "pod-b", statusColumn.DisplayIndex) == "PodInitializing", timeoutMs: 5000);
+
+        var row = GetAllRows(grid).Single(item => item.IsVisible && (item.DataContext as V1Pod)?.Name() == "pod-b");
+        var rowPod = row.DataContext.ShouldBeOfType<V1Pod>();
+        rowPod.Name().ShouldBe("pod-b");
+        rowPod.Metadata!.Uid.ShouldBe("pod-b-uid");
+
+        var statusContent = statusColumn.GetCellContent(row);
+        var statusCell = statusContent as PodStatusCellView
+            ?? statusContent?.GetVisualDescendants().OfType<PodStatusCellView>().FirstOrDefault();
+        statusCell.ShouldNotBeNull();
+        statusCell!.DataContext.ShouldBeSameAs(rowPod);
+        statusCell.Text.ShouldBe("PodInitializing");
+
+        var containerContent = containersColumn.GetCellContent(row);
+        var containerCell = containerContent as PodContainerCellView
+            ?? containerContent?.GetVisualDescendants().OfType<PodContainerCellView>().FirstOrDefault();
+        containerCell.ShouldNotBeNull();
+        containerCell!.DataContext.ShouldBeSameAs(rowPod);
+        containerCell.ContainerStatuses.Count.ShouldBe(1);
+        containerCell.ContainerStatuses.Single().Name.ShouldBe("app-b");
+        containerCell.ContainerStatuses.Single().Status.ShouldBe("ContainerCreating");
+    }
+
+    [AvaloniaFact(DisplayName = "A modified pod refreshes status and containers after recycling a large list")]
+    public async Task modified_pod_refreshes_status_and_containers_after_recycling_a_large_list()
+    {
+        using var window = Application.Current.CreateTestWindow();
+        const string targetName = "pod-000";
+        static V1Pod CreatePod(string name, string condition, string containerStatus, bool ready, bool started)
+            => new()
+            {
+                ApiVersion = V1Pod.KubeApiVersion,
+                Kind = V1Pod.KubeKind,
+                Metadata = new V1ObjectMeta
+                {
+                    Name = name,
+                    NamespaceProperty = "grafana",
+                },
+                Spec = new V1PodSpec
+                {
+                    Containers = [new V1Container { Name = "app", Image = "app:test" }],
+                },
+                Status = new V1PodStatus
+                {
+                    Conditions = [new V1PodCondition { Type = "Ready", Status = ready ? "True" : "False", Reason = condition }],
+                    ContainerStatuses =
+                    [
+                        new V1ContainerStatus
+                        {
+                            Name = "app",
+                            Ready = ready,
+                            Started = started,
+                            State = ready
+                                ? new V1ContainerState { Running = new V1ContainerStateRunning() }
+                                : new V1ContainerState { Waiting = new V1ContainerStateWaiting { Reason = containerStatus } },
+                        },
+                    ],
+                },
+            };
+
+        var initialPods = Enumerable.Range(0, 100)
+            .Select(index => CreatePod($"pod-{index:D3}", "ContainersNotReady", "ContainerCreating", false, false))
+            .ToArray();
+        var cluster = await Application.Current.CreateClusterAsync(config => config.InitialResources = initialPods);
+        var vm = Application.Current.GetRequiredTestService<ResourceListViewModel<V1Pod>>();
+        vm.Initialize(cluster);
+
+        var view = Application.Current.GetRequiredTestService<ResourceListView>();
+        view.DataContext = vm;
+        window.Content = view;
+        window.Show();
+
+        var grid = view.FindControl<DataGrid>("PART_Grid").ShouldNotBeNull();
+        await WaitForAsync(() => grid.Columns.Count > 0, timeoutMs: 5000);
+
+        await WaitForAsync(() => vm.View.Count == 100, timeoutMs: 5000);
+        var statusColumn = grid.Columns.Single(column => string.Equals(column.ColumnKey?.ToString(), "status", StringComparison.Ordinal));
+        var containersColumn = grid.Columns.Single(column => string.Equals(column.ColumnKey?.ToString(), "containers", StringComparison.Ordinal));
+        await WaitForAsync(() => GetResourceCellText<V1Pod>(grid, targetName, statusColumn.DisplayIndex) == "ContainersNotReady", timeoutMs: 5000);
+
+        vm.SearchQuery = "no-pod-can-match-this";
+        await WaitForAsync(() => vm.View.Count == 0, timeoutMs: 5000);
+        vm.SearchQuery = string.Empty;
+        await WaitForAsync(() => vm.View.Count == 100, timeoutMs: 5000);
+
+        var modifiedTarget = CreatePod(targetName, string.Empty, "Running", true, true);
+        await cluster.Runtime.ReplaceAsync(modifiedTarget, TestContext.Current.CancellationToken);
+
+        await WaitForAsync(
+            () => GetResourceCellText<V1Pod>(grid, targetName, statusColumn.DisplayIndex) == Assets.Resources.PodStatusCell_Running,
+            timeoutMs: 5000);
+
+        var row = GetAllRows(grid).Single(item => item.IsVisible && (item.DataContext as V1Pod)?.Name() == targetName);
+        var content = containersColumn.GetCellContent(row);
+        var cell = content as PodContainerCellView
+            ?? content?.GetVisualDescendants().OfType<PodContainerCellView>().FirstOrDefault();
+        cell.ShouldNotBeNull();
+        cell!.ContainerStatuses.Count.ShouldBe(1);
+        cell.ContainerStatuses.Single().Status.ShouldBe("Running");
+    }
+
+    [AvaloniaFact(DisplayName = "Replacing a pod remaps custom cells to the replacement resource")]
+    public async Task replacing_a_pod_remaps_custom_cells_to_the_replacement_resource()
+    {
+        using var window = Application.Current.CreateTestWindow();
+        static V1Pod CreatePod(string name, string uid, string reason, bool ready, string containerReason)
+            => new()
+            {
+                ApiVersion = V1Pod.KubeApiVersion,
+                Kind = V1Pod.KubeKind,
+                Metadata = new V1ObjectMeta
+                {
+                    Name = name,
+                    NamespaceProperty = "grafana",
+                    Uid = uid,
+                },
+                Spec = new V1PodSpec
+                {
+                    Containers = [new V1Container { Name = "app", Image = "app:test" }],
+                },
+                Status = new V1PodStatus
+                {
+                    Conditions = [new V1PodCondition { Type = "Ready", Status = ready ? "True" : "False", Reason = reason }],
+                    ContainerStatuses =
+                    [
+                        new V1ContainerStatus
+                        {
+                            Name = "app",
+                            Ready = ready,
+                            Started = ready,
+                            State = ready
+                                ? new V1ContainerState { Running = new V1ContainerStateRunning() }
+                                : new V1ContainerState { Waiting = new V1ContainerStateWaiting { Reason = containerReason } },
+                        },
+                    ],
+                },
+            };
+
+        var initialPods = Enumerable.Range(0, 100)
+            .Select(index => CreatePod($"pod-{index:D3}", $"uid-{index:D3}", "ContainersNotReady", false, "ContainerCreating"))
+            .ToArray();
+        var cluster = await Application.Current.CreateClusterAsync(config => config.InitialResources = initialPods);
+        var vm = Application.Current.GetRequiredTestService<ResourceListViewModel<V1Pod>>();
+        vm.Initialize(cluster);
+
+        var view = Application.Current.GetRequiredTestService<ResourceListView>();
+        view.DataContext = vm;
+        window.Content = view;
+        window.Show();
+
+        var grid = view.FindControl<DataGrid>("PART_Grid").ShouldNotBeNull();
+        await WaitForAsync(() => grid.Columns.Count > 0, timeoutMs: 5000);
+
+        var initialTarget = initialPods[0];
+
+        await WaitForAsync(() => vm.View.Count == 100, timeoutMs: 5000);
+        var statusColumn = grid.Columns.Single(column => string.Equals(column.ColumnKey?.ToString(), "status", StringComparison.Ordinal));
+        var containersColumn = grid.Columns.Single(column => string.Equals(column.ColumnKey?.ToString(), "containers", StringComparison.Ordinal));
+        await WaitForAsync(() => GetResourceCellText<V1Pod>(grid, initialTarget.Name()!, statusColumn.DisplayIndex) == "ContainersNotReady", timeoutMs: 5000);
+
+        var replacement = CreatePod(initialTarget.Name()!, initialTarget.Metadata!.Uid!, string.Empty, true, "Running");
+        var replacedResource = await cluster.Runtime.ReplaceAsync(replacement, TestContext.Current.CancellationToken);
+
+        await WaitForAsync(
+            () => GetResourceCellText<V1Pod>(grid, replacement.Name()!, statusColumn.DisplayIndex) == Assets.Resources.PodStatusCell_Running,
+            timeoutMs: 5000);
+
+        var row = GetAllRows(grid).Single(item => item.IsVisible && (item.DataContext as V1Pod)?.Name() == replacement.Name());
+        var rowResource = row.DataContext.ShouldBeOfType<V1Pod>();
+        rowResource.Metadata!.Uid.ShouldBe(replacedResource.Metadata!.Uid);
+        rowResource.Status!.Conditions!.Single().Status.ShouldBe("True");
+
+        var statusContent = statusColumn.GetCellContent(row);
+        var statusCell = statusContent as PodStatusCellView
+            ?? statusContent?.GetVisualDescendants().OfType<PodStatusCellView>().FirstOrDefault();
+        statusCell.ShouldNotBeNull();
+        statusCell!.DataContext.ShouldBeSameAs(rowResource);
+        statusCell.Text.ShouldBe(Assets.Resources.PodStatusCell_Running);
+
+        var containerContent = containersColumn.GetCellContent(row);
+        var containerCell = containerContent as PodContainerCellView
+            ?? containerContent?.GetVisualDescendants().OfType<PodContainerCellView>().FirstOrDefault();
+        containerCell.ShouldNotBeNull();
+        containerCell!.DataContext.ShouldBeSameAs(rowResource);
+        containerCell.ContainerStatuses.Count.ShouldBe(1);
+        containerCell.ContainerStatuses.Single().Status.ShouldBe("Running");
     }
 
     [AvaloniaFact(DisplayName = "Default text column updates when a resource is replaced")]
@@ -2617,6 +3010,85 @@ public class ResourceListViewModelTests
         vm.View[0].ShouldBeOfType<V1Pod>().Name().ShouldBe("alpha");
     }
 
+    [AvaloniaFact(DisplayName = "Clearing a resource list search restores recycled pod container cells")]
+    public async Task clearing_resource_list_search_restores_recycled_pod_container_cells()
+    {
+        using var window = Application.Current.CreateTestWindow();
+        var cluster = await Application.Current.CreateClusterAsync();
+        var vm = Application.Current.GetRequiredTestService<ResourceListViewModel<V1Pod>>();
+        vm.Initialize(cluster);
+
+        var view = Application.Current.GetRequiredTestService<ResourceListView>();
+        view.DataContext = vm;
+        window.Content = view;
+        window.Show();
+
+        var grid = view.FindControl<DataGrid>("PART_Grid");
+        grid.ShouldNotBeNull();
+
+        static V1Pod CreatePod(string name, string containerName)
+            => new()
+            {
+                ApiVersion = V1Pod.KubeApiVersion,
+                Kind = V1Pod.KubeKind,
+                Metadata = new V1ObjectMeta
+                {
+                    Name = name,
+                    NamespaceProperty = "grafana",
+                },
+                Spec = new V1PodSpec
+                {
+                    Containers = [new V1Container { Name = containerName, Image = "grafana:test" }],
+                },
+                Status = new V1PodStatus
+                {
+                    ContainerStatuses =
+                    [
+                        new V1ContainerStatus
+                        {
+                            Name = containerName,
+                            Ready = true,
+                            Started = true,
+                            State = new V1ContainerState { Running = new V1ContainerStateRunning() },
+                        },
+                    ],
+                },
+            };
+
+        await AddOrUpdateAsync(cluster, CreatePod("recycle-a", "grafana-a"));
+        await AddOrUpdateAsync(cluster, CreatePod("recycle-b", "grafana-b"));
+        await WaitForAsync(() => vm.View.Count == 2, timeoutMs: 5000);
+
+        var containersColumn = vm.ColumnDefinitions
+            .Select((column, index) => (column, index))
+            .Single(item => string.Equals(item.column.ColumnKey?.ToString(), "containers", StringComparison.Ordinal))
+            .index;
+
+        await WaitForAsync(() => GetAllRows(grid!).Count(row => row.IsVisible) == 2, timeoutMs: 5000);
+
+        vm.SearchQuery = "does-not-match-any-pod";
+        await WaitForAsync(() => vm.View.Count == 0, timeoutMs: 5000);
+
+        vm.SearchQuery = string.Empty;
+        await WaitForAsync(() => vm.View.Count == 2, timeoutMs: 5000);
+        await WaitForAsync(() => GetAllRows(grid!).Count(row => row.IsVisible) == 2, timeoutMs: 5000);
+
+        foreach (var row in GetAllRows(grid!).Where(row => row.IsVisible))
+        {
+            var content = grid!.Columns[containersColumn].GetCellContent(row);
+            var cell = content as PodContainerCellView
+                ?? content?.GetVisualDescendants().OfType<PodContainerCellView>().FirstOrDefault();
+            cell.ShouldNotBeNull();
+            cell!.ContainerStatuses.Count.ShouldBe(1);
+            var containerStatus = cell.ContainerStatuses.Single();
+            containerStatus.Status.ShouldBe("Running");
+            var indicators = cell.GetVisualDescendants().OfType<ItemsControl>().Single();
+            indicators.ItemsView.Count.ShouldBe(1);
+            indicators.Bounds.Width.ShouldBeGreaterThan(0);
+            indicators.Bounds.Height.ShouldBeGreaterThan(0);
+        }
+    }
+
     [AvaloniaFact(DisplayName = "Sorting pods by name orders the resource view")]
     public async Task sorting_pods_by_name_orders_the_resource_view()
     {
@@ -2774,6 +3246,25 @@ public class ResourceListViewModelTests
 
         vm.SortingModel.Descriptors.Count.ShouldBe(1);
         vm.SortingModel.Descriptors[0].Direction.ShouldBe(ListSortDirection.Ascending);
+
+        var statusColumn = grid.Columns.Single(column =>
+            string.Equals(column.ColumnKey?.ToString(), "status", StringComparison.Ordinal));
+        var containersColumn = grid.Columns.Single(column =>
+            string.Equals(column.ColumnKey?.ToString(), "containers", StringComparison.Ordinal));
+
+        foreach (var row in GetAllRows(grid).Where(row => row.IsVisible))
+        {
+            var pod = row.DataContext.ShouldBeOfType<V1Pod>();
+            var statusCell = statusColumn.GetCellContent(row) as PodStatusCellView
+                ?? statusColumn.GetCellContent(row)?.GetVisualDescendants().OfType<PodStatusCellView>().FirstOrDefault();
+            var containerCell = containersColumn.GetCellContent(row) as PodContainerCellView
+                ?? containersColumn.GetCellContent(row)?.GetVisualDescendants().OfType<PodContainerCellView>().FirstOrDefault();
+
+            statusCell.ShouldNotBeNull();
+            containerCell.ShouldNotBeNull();
+            ReferenceEquals(statusCell!.DataContext, pod).ShouldBeTrue();
+            ReferenceEquals(containerCell!.DataContext, pod).ShouldBeTrue();
+        }
 
     }
 
