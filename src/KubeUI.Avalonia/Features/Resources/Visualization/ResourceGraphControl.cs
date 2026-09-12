@@ -176,7 +176,7 @@ public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphContr
             _vertices.Clear();
             foreach (var resource in prepared.Resources)
             {
-                var vertex = CreateVertex(resource, prepared.Cluster);
+                var vertex = CreateVertex(resource.Resource, prepared.Cluster, resource.Icon);
                 _vertices.Add(vertex.Identity, vertex);
             }
 
@@ -212,15 +212,14 @@ public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphContr
         ClusterWorkspace? cluster,
         CancellationToken cancellationToken)
     {
-        List<IKubernetesObject<V1ObjectMeta>> resources = [];
+        List<PreparedResource> resources = [];
         List<ResourceRelationship> relationships = [];
         if (graph != null)
         {
             foreach (var resource in graph.Resources)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                resources.Add(resource);
-                _ = _iconService.GetIcon(GetResourceKind(resource, cluster));
+                resources.Add(new PreparedResource(resource, _iconService.GetIcon(GetResourceKind(resource, cluster))));
             }
 
             foreach (var relationship in RemoveTransitiveOwnerRelationships(graph.Relationships))
@@ -293,8 +292,12 @@ public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphContr
         return result;
     }
 
+    private sealed record PreparedResource(
+        IKubernetesObject<V1ObjectMeta> Resource,
+        IImage Icon);
+
     private sealed record PreparedGraph(
-        IReadOnlyList<IKubernetesObject<V1ObjectMeta>> Resources,
+        IReadOnlyList<PreparedResource> Resources,
         IReadOnlyList<ResourceRelationship> Relationships,
         ClusterWorkspace? Cluster);
 

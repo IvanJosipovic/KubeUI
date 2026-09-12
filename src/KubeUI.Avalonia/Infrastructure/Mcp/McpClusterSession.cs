@@ -38,7 +38,8 @@ public interface IMcpClusterSession
 internal sealed class McpClusterSession(
     IClusterRuntimeCatalog runtimeCatalog,
     ClusterWorkspaceCatalog workspaceCatalog,
-    ILogger<McpClusterSession> logger) : IMcpClusterSession
+    ILogger<McpClusterSession> logger,
+    IResourceRelationshipBuilder relationshipBuilder) : IMcpClusterSession
 {
     public async Task<IClusterRuntime> GetConnectedClusterAsync(string? clusterName)
     {
@@ -146,7 +147,6 @@ internal sealed class McpClusterSession(
         if (selected is null)
             throw new InvalidOperationException($"Resource {apiVersion}/{kind} {@namespace}/{name} was not found.");
 
-        var relationshipBuilder = new ResourceRelationshipBuilder();
         var graph = relationshipBuilder.Build(resources, new HashSet<string>(StringComparer.Ordinal), hideNoise: false);
         foreach (var prerequisite in graph.RequiredSeedPrerequisites)
         {

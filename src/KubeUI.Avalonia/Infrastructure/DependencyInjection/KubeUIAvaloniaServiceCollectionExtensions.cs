@@ -11,6 +11,7 @@ using KubeUI.Avalonia.Infrastructure.Platform;
 using KubeUI.Avalonia.Infrastructure.Threading;
 using KubeUI.Avalonia.Shell.Navigation;
 using KubeUI.Kubernetes;
+using KubeUI.Kubernetes.Resources.Relationships;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace KubeUI.Avalonia.Infrastructure.DependencyInjection;
@@ -24,6 +25,7 @@ public static class KubeUIAvaloniaServiceCollectionExtensions
         services.Replace(ServiceDescriptor.Singleton<IThreadDispatcher>(AvaloniaScheduler.Instance));
         services.AddKubeUIDialogServices();
         services.AddSingleton<IMcpClusterSession, McpClusterSession>();
+        services.AddSingleton<IResourceRelationshipBuilder, ResourceRelationshipBuilder>();
         services.AddSingleton<McpServerState>();
         services.AddSingleton<IMcpServerState>(sp => sp.GetRequiredService<McpServerState>());
         services.AddSingleton<IResourceNavigationService>(sp => new NavigationDocumentService(

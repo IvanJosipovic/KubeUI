@@ -24,9 +24,10 @@ internal sealed class AcpPermissionMapper
             ? GetMcpToolAction(meta, input) ?? request.ToolCall.Kind.ToString()
             : title;
         var destructive = IsDestructive(knownKind ?? request.ToolCall.Kind, meta);
+        var isMcpTool = IsMcpTool(meta);
         var mcpServer = GetMcpServer(meta, input);
         var requiresApproval = destructive
-            || (mcpServer is not null && !trustedMcpServers.Contains(mcpServer));
+            || (isMcpTool && (mcpServer is null || !trustedMcpServers.Contains(mcpServer)));
         return new AgentPermissionRequest(action, Serialize(input), destructive, requiresApproval);
     }
 

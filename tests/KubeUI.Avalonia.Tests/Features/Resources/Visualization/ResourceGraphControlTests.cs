@@ -80,6 +80,7 @@ public sealed class ResourceGraphControlTests
 
         iconService.Calls.ShouldBeGreaterThan(0);
         iconService.BackgroundThreadCalls.ShouldBeGreaterThan(0);
+        iconService.UiThreadCalls.ShouldBe(0);
     }
 
     [AvaloniaFact]

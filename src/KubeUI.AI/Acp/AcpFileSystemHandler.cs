@@ -64,9 +64,40 @@ internal sealed class AcpFileSystemHandler(
         var comparison = OperatingSystem.IsWindows()
             ? StringComparison.OrdinalIgnoreCase
             : StringComparison.Ordinal;
-        if (_fileSystemRoots.Any(root => IsWithinRoot(fullPath, root, comparison)))
+        if (_fileSystemRoots.Any(root => IsWithinRoot(fullPath, root, comparison)
+            && !ContainsReparsePoint(root, fullPath)))
             return;
         throw new UnauthorizedAccessException($"File path '{path}' is outside configured ACP filesystem roots.");
+    }
+
+    private static bool ContainsReparsePoint(string root, string path)
+    {
+        var relative = Path.GetRelativePath(root, path);
+        var current = root;
+        foreach (var component in relative.Split([Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar], StringSplitOptions.RemoveEmptyEntries))
+        {
+            current = Path.Combine(current, component);
+            if (HasReparsePoint(current))
+                return true;
+        }
+
+        return HasReparsePoint(root);
+    }
+
+    private static bool HasReparsePoint(string path)
+    {
+        try
+        {
+            return File.GetAttributes(path).HasFlag(FileAttributes.ReparsePoint);
+        }
+        catch (FileNotFoundException)
+        {
+            return false;
+        }
+        catch (DirectoryNotFoundException)
+        {
+            return false;
+        }
     }
 
     private static bool IsWithinRoot(string path, string root, StringComparison comparison)

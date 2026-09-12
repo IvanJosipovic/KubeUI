@@ -6,6 +6,9 @@ public sealed record AgentSessionOptions
     public IReadOnlyDictionary<string, string?> Environment { get; init; } = new Dictionary<string, string?>();
     public string? McpEndpoint { get; init; }
     public IReadOnlySet<string> TrustedMcpServers { get; init; } = new HashSet<string>(StringComparer.Ordinal);
+    /// <summary>
+    /// Gets the filesystem roots allowed for ACP file operations. The default set is empty and uses case-insensitive string comparison.
+    /// </summary>
     public IReadOnlySet<string> FileSystemRoots { get; init; } = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
     public AgentContext? Context { get; init; }
 }

@@ -384,6 +384,8 @@ public sealed class DotAcpClientTests
             }
         });
 
+        var permission = (await events.Reader.ReadAsync()).ShouldBeOfType<AgentPermissionRequestedEvent>().Request;
+        permission.RequiresApproval.ShouldBeTrue();
         response.Outcome.ShouldBeOfType<SelectedPermissionOutcome>().OptionId.ToString().ShouldBe("allow");
     }
 
@@ -602,6 +604,54 @@ public sealed class DotAcpClientTests
             File.Delete(outside);
             root.Delete(true);
         }
+    }
+
+    [Fact]
+    public async Task file_callbacks_reject_reparse_point_escapes()
+    {
+        var root = Directory.CreateTempSubdirectory("kubeui-acp-root-");
+        var outside = Directory.CreateTempSubdirectory("kubeui-acp-outside-");
+        var link = Path.Combine(root.FullName, "linked");
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(outside.FullName, "secret.txt"), "secret");
+            try
+            {
+                Directory.CreateSymbolicLink(link, outside.FullName);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return;
+            }
+            catch (IOException)
+            {
+                return;
+            }
+
+            using var client = new DotAcpClient(
+                Channel.CreateUnbounded<AgentEvent>().Writer,
+                new AllowAgentPermissionService(),
+                fileSystemRoots: new HashSet<string>(StringComparer.OrdinalIgnoreCase) { root.FullName });
+
+            await Should.ThrowAsync<UnauthorizedAccessException>(() => client.ReadTextFileAsync(
+                new ReadTextFileRequest { Path = Path.Combine(link, "secret.txt") }));
+            await Should.ThrowAsync<UnauthorizedAccessException>(() => client.WriteTextFileAsync(
+                new WriteTextFileRequest { Path = Path.Combine(link, "secret.txt"), Content = "changed" }));
+        }
+        finally
+        {
+            root.Delete(true);
+            outside.Delete(true);
+        }
+    }
+
+    [Fact]
+    public void file_system_roots_default_to_case_insensitive_empty_set()
+    {
+        var options = new AgentSessionOptions();
+
+        options.FileSystemRoots.ShouldBeEmpty();
+        options.FileSystemRoots.ShouldBeOfType<HashSet<string>>().Comparer.ShouldBe(StringComparer.OrdinalIgnoreCase);
     }
 
     private sealed class AllowAgentPermissionService : IAgentPermissionService
