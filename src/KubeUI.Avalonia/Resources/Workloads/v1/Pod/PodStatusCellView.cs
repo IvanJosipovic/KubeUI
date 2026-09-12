@@ -64,7 +64,11 @@ public sealed class PodStatusCellView : RefreshingCellTextBlock, IInitializeClus
     {
         if (_groupApiVersionKind == groupApiVersionKind && _viewModel?.Name() == resource.Name() && _viewModel?.Namespace() == resource.Namespace())
         {
-            Dispatcher.UIThread.Invoke(() => DataContext = resource, DispatcherPriority.Normal);
+            Dispatcher.UIThread.Invoke(() =>
+            {
+                DataContext = resource;
+                RefreshText();
+            }, DispatcherPriority.Normal);
         }
     }
 

@@ -1,11 +1,15 @@
 using System.Globalization;
+using System.Reflection;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Media;
 using Avalonia.Threading;
+using k8s;
 using k8s.Models;
+using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Converters;
 using KubeUI.Avalonia.Resources.Workloads.v1.Pod;
+using KubeUI.Kubernetes;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Features.Workloads.Pod;
@@ -137,64 +141,46 @@ public sealed class PodContainerCellTests
     }
 
     [AvaloniaFact]
-    public async Task pod_status_cell_resubscribes_after_recycling()
+    public async Task pod_container_cell_refreshes_when_cluster_change_reuses_same_pod_instance()
     {
         var cluster = await Application.Current.CreateClusterAsync();
         await cluster.Runtime.SeedResource<V1Pod>(true);
 
-        var pod = new V1Pod
-        {
-            Metadata = new V1ObjectMeta
-            {
-                Name = "status-pod",
-                NamespaceProperty = "default",
-            },
-            Status = new V1PodStatus
-            {
-                Conditions = [new V1PodCondition { Type = "Ready", Status = "True" }],
-            },
-        };
+        var pod = CreateContainerPod("same-instance-container-pod", "Running");
         await cluster.Runtime.AddOrUpdateResource(pod);
 
-        var cell = new PodStatusCellView();
+        var cell = new PodContainerCellView { DataContext = pod };
         cell.Initialize(cluster);
-        cell.DataContext = pod;
         var window = new Window { Content = cell };
-        window.Show();
-        await TestApplicationExtensions.WaitForUiAsync();
 
-        cell.Text.ShouldBe(Assets.Resources.PodStatusCell_Running);
-
-        window.Content = null;
-        await TestApplicationExtensions.WaitForUiAsync();
-
-        var terminatingPod = new V1Pod
+        try
         {
-            Metadata = new V1ObjectMeta
+            window.Show();
+            await TestApplicationExtensions.WaitForUiAsync();
+            cell.ContainerStatuses.Single().Status.ShouldBe("Running");
+
+            pod.Status!.ContainerStatuses![0].State = new V1ContainerState
             {
-                Name = pod.Name(),
-                NamespaceProperty = pod.Namespace(),
-                Uid = pod.Metadata!.Uid,
-                DeletionTimestamp = DateTime.UtcNow,
-            },
-            Status = pod.Status,
-        };
-        await cluster.Runtime.AddOrUpdateResource(terminatingPod);
-        await TestApplicationExtensions.WaitForUiAsync();
-        cell.Text.ShouldBe(Assets.Resources.PodStatusCell_Running);
+                Waiting = new V1ContainerStateWaiting { Reason = "ImagePullBackOff" }
+            };
 
-        window.Content = cell;
-        await TestApplicationExtensions.WaitForUiAsync();
-        await cluster.Runtime.AddOrUpdateResource(terminatingPod);
+            var onChange = typeof(Cluster).GetField("OnChange", BindingFlags.Instance | BindingFlags.NonPublic)
+                ?.GetValue(cluster.Runtime);
+            var handler = onChange.ShouldBeAssignableTo<Action<WatchEventType, GroupApiVersionKind, IKubernetesObject<V1ObjectMeta>>>();
+            handler(WatchEventType.Modified, GroupApiVersionKind.From<V1Pod>(), pod);
 
-        await TestWait.UntilAsync(
-            () => cell.Text == Assets.Resources.PodStatusCell_Terminating,
-            5000,
-            TestContext.Current.CancellationToken,
-            () => Dispatcher.UIThread.RunJobs());
+            await TestWait.UntilAsync(
+                () => cell.ContainerStatuses.Single().Status == "ImagePullBackOff",
+                5000,
+                TestContext.Current.CancellationToken,
+                () => Dispatcher.UIThread.RunJobs());
 
-        cell.Text.ShouldBe(Assets.Resources.PodStatusCell_Terminating);
-        window.Close();
+            cell.ContainerStatuses.Single().Status.ShouldBe("ImagePullBackOff");
+        }
+        finally
+        {
+            window.Close();
+        }
     }
 
     private static V1Pod CreateContainerPod(string name, string status, string? uid = null)
