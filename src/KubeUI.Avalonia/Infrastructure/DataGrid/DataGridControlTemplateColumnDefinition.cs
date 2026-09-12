@@ -84,17 +84,17 @@ namespace Avalonia.Controls
             return false;
         }
 
-    /// <summary>
-    /// Template column that refreshes the data context of reused cell content.
-    /// </summary>
-    sealed class DataGridResourceTemplateColumn : DataGridTemplateColumn
-    {
-        protected override Control GenerateElement(DataGridCell cell, object dataItem)
+        /// <summary>
+        /// Template column that refreshes the data context of reused cell content.
+        /// </summary>
+        private sealed class DataGridResourceTemplateColumn : DataGridTemplateColumn
         {
-            var control = base.GenerateElement(cell, dataItem);
-            control.DataContext = dataItem;
-            return control;
+            protected override Control GenerateElement(DataGridCell cell, object dataItem)
+            {
+                var control = base.GenerateElement(cell, dataItem);
+                control.DataContext = dataItem;
+                return control;
+            }
         }
-    }
     }
 }

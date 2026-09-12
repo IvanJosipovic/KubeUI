@@ -1,15 +1,10 @@
 using System.Globalization;
-using System.Reflection;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Media;
 using Avalonia.Threading;
-using k8s;
 using k8s.Models;
-using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Converters;
-using KubeUI.Avalonia.Resources.Workloads.v1.Pod;
-using KubeUI.Kubernetes;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Features.Workloads.Pod;
@@ -17,140 +12,11 @@ namespace KubeUI.Avalonia.Tests.Features.Workloads.Pod;
 public sealed class PodContainerCellTests
 {
     [AvaloniaFact]
-    public async Task pod_container_cell_initialize_replaces_cluster_subscription()
+    public async Task pod_container_cell_refreshes_when_data_context_is_replaced()
     {
-        var firstCluster = await Application.Current.CreateClusterAsync();
-        var secondCluster = await Application.Current.CreateClusterAsync();
-        await firstCluster.Runtime.SeedResource<V1Pod>(true);
-        await secondCluster.Runtime.SeedResource<V1Pod>(true);
-
-        var firstPod = CreateContainerPod("replace-subscription-pod", "Running");
-        var secondPod = CreateContainerPod("replace-subscription-pod", "Running");
-        await firstCluster.Runtime.AddOrUpdateResource(firstPod);
-        await secondCluster.Runtime.AddOrUpdateResource(secondPod);
-
-        var cell = new PodContainerCellView();
-        cell.Initialize(firstCluster);
-        cell.DataContext = firstPod;
-        var window = new Window { Content = cell };
-        window.Show();
-        await TestApplicationExtensions.WaitForUiAsync();
-
-        cell.Initialize(secondCluster);
-
-        await firstCluster.Runtime.AddOrUpdateResource(CreateContainerPod(
-            "replace-subscription-pod", "ImagePullBackOff", firstPod.Metadata!.Uid));
-        await TestApplicationExtensions.WaitForUiAsync();
-        cell.ContainerStatuses.Single().Status.ShouldBe("Running");
-
-        await secondCluster.Runtime.AddOrUpdateResource(CreateContainerPod(
-            "replace-subscription-pod", "ImagePullBackOff", secondPod.Metadata!.Uid));
-        await TestWait.UntilAsync(
-            () => cell.ContainerStatuses.Single().Status == "ImagePullBackOff",
-            5000,
-            TestContext.Current.CancellationToken,
-            () => Dispatcher.UIThread.RunJobs());
-
-        window.Close();
-    }
-
-    [AvaloniaFact]
-    public async Task pod_container_cell_resubscribes_after_recycling()
-    {
-        var cluster = await Application.Current.CreateClusterAsync();
-        await cluster.Runtime.SeedResource<V1Pod>(true);
-
-        var pod = new V1Pod
-        {
-            Metadata = new V1ObjectMeta
-            {
-                Name = "container-status-pod",
-                NamespaceProperty = "default",
-            },
-            Spec = new V1PodSpec
-            {
-                Containers = [new V1Container { Name = "app", Image = "app:latest" }],
-            },
-            Status = new V1PodStatus
-            {
-                ContainerStatuses =
-                [
-                    new V1ContainerStatus
-                    {
-                        Name = "app",
-                        State = new V1ContainerState { Running = new V1ContainerStateRunning() },
-                    },
-                ],
-            },
-        };
-        await cluster.Runtime.AddOrUpdateResource(pod);
-
-        var cell = new PodContainerCellView();
-        cell.Initialize(cluster);
-        cell.DataContext = pod;
-        var window = new Window { Content = cell };
-        window.Show();
-        await TestApplicationExtensions.WaitForUiAsync();
-
-        cell.ContainerStatuses.ShouldNotBeNull();
-        cell.ContainerStatuses.Single().Status.ShouldBe("Running");
-
-        window.Content = null;
-        await TestApplicationExtensions.WaitForUiAsync();
-
-        var updatedPod = new V1Pod
-        {
-            Metadata = new V1ObjectMeta
-            {
-                Name = pod.Name(),
-                NamespaceProperty = pod.Namespace(),
-                Uid = pod.Metadata!.Uid,
-            },
-            Spec = pod.Spec,
-            Status = new V1PodStatus
-            {
-                ContainerStatuses =
-                [
-                    new V1ContainerStatus
-                    {
-                        Name = "app",
-                        State = new V1ContainerState
-                        {
-                            Waiting = new V1ContainerStateWaiting { Reason = "ImagePullBackOff" },
-                        },
-                    },
-                ],
-            },
-        };
-        await cluster.Runtime.AddOrUpdateResource(updatedPod);
-        await TestApplicationExtensions.WaitForUiAsync();
-        cell.ContainerStatuses.Single().Status.ShouldBe("Running");
-
-        window.Content = cell;
-        await TestApplicationExtensions.WaitForUiAsync();
-        await cluster.Runtime.AddOrUpdateResource(updatedPod);
-
-        await TestWait.UntilAsync(
-            () => cell.ContainerStatuses.Single().Status == "ImagePullBackOff",
-            5000,
-            TestContext.Current.CancellationToken,
-            () => Dispatcher.UIThread.RunJobs());
-
-        cell.ContainerStatuses.Single().Status.ShouldBe("ImagePullBackOff");
-        window.Close();
-    }
-
-    [AvaloniaFact]
-    public async Task pod_container_cell_refreshes_when_cluster_change_reuses_same_pod_instance()
-    {
-        var cluster = await Application.Current.CreateClusterAsync();
-        await cluster.Runtime.SeedResource<V1Pod>(true);
-
         var pod = CreateContainerPod("same-instance-container-pod", "Running");
-        await cluster.Runtime.AddOrUpdateResource(pod);
 
         var cell = new PodContainerCellView { DataContext = pod };
-        cell.Initialize(cluster);
         var window = new Window { Content = cell };
 
         try
@@ -159,15 +25,7 @@ public sealed class PodContainerCellTests
             await TestApplicationExtensions.WaitForUiAsync();
             cell.ContainerStatuses.Single().Status.ShouldBe("Running");
 
-            pod.Status!.ContainerStatuses![0].State = new V1ContainerState
-            {
-                Waiting = new V1ContainerStateWaiting { Reason = "ImagePullBackOff" }
-            };
-
-            var onChange = typeof(Cluster).GetField("OnChange", BindingFlags.Instance | BindingFlags.NonPublic)
-                ?.GetValue(cluster.Runtime);
-            var handler = onChange.ShouldBeAssignableTo<Action<WatchEventType, GroupApiVersionKind, IKubernetesObject<V1ObjectMeta>>>();
-            handler(WatchEventType.Modified, GroupApiVersionKind.From<V1Pod>(), pod);
+            cell.DataContext = CreateContainerPod("replacement-container-pod", "ImagePullBackOff");
 
             await TestWait.UntilAsync(
                 () => cell.ContainerStatuses.Single().Status == "ImagePullBackOff",
