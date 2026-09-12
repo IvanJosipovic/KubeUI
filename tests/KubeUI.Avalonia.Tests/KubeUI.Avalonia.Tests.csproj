@@ -12,7 +12,7 @@
     <PackageReference Include="Microsoft.Testing.Extensions.CrashDump" Version="2.4.0" />
     <PackageReference Include="Microsoft.Testing.Extensions.HangDump" Version="2.4.0" />
     <PackageReference Include="StreamJsonRpc" Version="2.25.29" PrivateAssets="all" />
-    <PackageReference Include="xunit.v3.mtp-v2" Version="3.2.2" />
+    <PackageReference Include="xunit.v3.mtp-v2" Version="4.0.0" />
   </ItemGroup>
 
   <ItemGroup>
