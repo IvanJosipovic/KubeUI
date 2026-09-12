@@ -105,6 +105,7 @@ public sealed class DotAcpClientTests
         {
             Update = new SessionUpdateToolCallUpdate
             {
+                ToolCallId = "get",
                 Title = "kubernetes.get",
                 Status = ToolCallStatus.Completed,
                 RawOutput = new { Name = "pod-a" }
@@ -114,6 +115,7 @@ public sealed class DotAcpClientTests
         {
             Update = new SessionUpdateToolCallUpdate
             {
+                ToolCallId = "logs",
                 Title = "kubernetes.logs",
                 Status = ToolCallStatus.Failed,
                 RawOutput = new { Error = "unavailable" }
@@ -129,6 +131,41 @@ public sealed class DotAcpClientTests
         failed.Result.Name.ShouldBe("kubernetes.logs");
         failed.Result.Succeeded.ShouldBeFalse();
         failed.Result.Output.ShouldContain("unavailable");
+    }
+
+    [Fact]
+    public async Task session_update_maps_tool_deltas_to_one_start_and_one_completion()
+    {
+        var events = Channel.CreateUnbounded<AgentEvent>();
+        using var client = new DotAcpClient(events.Writer);
+
+        await client.SessionUpdateAsync(new SessionNotification
+        {
+            Update = new ToolCall { ToolCallId = "tool", Title = "kubernetes.get", RawInput = new { Kind = "Pod" } }
+        });
+        await client.SessionUpdateAsync(new SessionNotification
+        {
+            Update = new SessionUpdateToolCallUpdate { ToolCallId = "tool", Status = ToolCallStatus.InProgress }
+        });
+        await client.SessionUpdateAsync(new SessionNotification
+        {
+            Update = new SessionUpdateToolCallUpdate { ToolCallId = "tool", Status = ToolCallStatus.InProgress }
+        });
+        await client.SessionUpdateAsync(new SessionNotification
+        {
+            Update = new SessionUpdateToolCallUpdate
+            {
+                ToolCallId = "tool",
+                Status = ToolCallStatus.Completed,
+                RawOutput = new { Name = "pod-a" }
+            }
+        });
+
+        var mapped = new List<AgentEvent>();
+        while (events.Reader.TryRead(out var item))
+            mapped.Add(item);
+        mapped.OfType<AgentToolStartedEvent>().Count().ShouldBe(1);
+        mapped.OfType<AgentToolCompletedEvent>().Count().ShouldBe(1);
     }
 
     [Fact]
@@ -217,6 +254,34 @@ public sealed class DotAcpClientTests
     }
 
     [Fact]
+    public async Task permission_request_returns_cancelled_outcome_when_permission_wait_is_cancelled()
+    {
+        using var cancellation = new CancellationTokenSource();
+        using var client = new DotAcpClient(
+            Channel.CreateUnbounded<AgentEvent>().Writer,
+            new BlockingPermissionService());
+        var request = new RequestPermissionRequest
+        {
+            Options = [new PermissionOption { Kind = PermissionOptionKind.AllowOnce, Name = "Allow", OptionId = "allow" }],
+            ToolCall = new ToolCallUpdate { ToolCallId = "cancelled", Title = "execute", Kind = ToolKind.Execute }
+        };
+
+        var pending = client.RequestPermissionAsync(request, cancellation.Token);
+        cancellation.Cancel();
+        var response = await pending;
+
+        response.Outcome.ShouldBeOfType<RequestPermissionOutcomeCancelled>();
+    }
+
+    [Fact]
+    public async Task extension_method_requests_are_rejected_explicitly()
+    {
+        using var client = new DotAcpClient(Channel.CreateUnbounded<AgentEvent>().Writer);
+
+        await Should.ThrowAsync<NotSupportedException>(() => client.ExtMethodAsync("_unsupported", new { }));
+    }
+
+    [Fact]
     public async Task permission_request_describes_tool_when_title_is_missing()
     {
         var events = Channel.CreateUnbounded<AgentEvent>();
@@ -298,6 +363,30 @@ public sealed class DotAcpClientTests
 
         response.Outcome.ShouldBeOfType<SelectedPermissionOutcome>().OptionId.ToString().ShouldBe("allow");
         events.Reader.TryRead(out _).ShouldBeFalse();
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("scalar")]
+    public async Task permission_request_handles_non_object_mcp_input(string? input)
+    {
+        var events = Channel.CreateUnbounded<AgentEvent>();
+        using var client = new DotAcpClient(events.Writer, new AllowAgentPermissionService());
+
+        var response = await client.RequestPermissionAsync(new RequestPermissionRequest
+        {
+            Options = [new PermissionOption { Kind = PermissionOptionKind.AllowOnce, Name = "Allow", OptionId = "allow" }],
+            ToolCall = new ToolCallUpdate
+            {
+                Kind = ToolKind.Execute,
+                RawInput = input,
+                Meta = new Dictionary<string, object> { ["is_mcp_tool_call"] = true }
+            }
+        });
+
+        var permission = (await events.Reader.ReadAsync()).ShouldBeOfType<AgentPermissionRequestedEvent>().Request;
+        permission.RequiresApproval.ShouldBeTrue();
+        response.Outcome.ShouldBeOfType<SelectedPermissionOutcome>().OptionId.ToString().ShouldBe("allow");
     }
 
     [Fact]
@@ -401,6 +490,51 @@ public sealed class DotAcpClientTests
 
         completed.ExitCode.ShouldBe(0u);
         output.Output.ShouldContain("kubeui-terminal");
+        output.ExitStatus.ShouldNotBeNull();
+        await client.ReleaseTerminalAsync(new ReleaseTerminalRequest { TerminalId = terminal.TerminalId });
+    }
+
+    [Fact]
+    public async Task terminal_output_limit_retains_newest_output()
+    {
+        var (command, arguments) = GetEchoCommand("abcdefghij");
+        using var client = new DotAcpClient(
+            Channel.CreateUnbounded<AgentEvent>().Writer,
+            new AllowAgentPermissionService());
+        var terminal = await client.CreateTerminalAsync(new CreateTerminalRequest
+        {
+            Command = command,
+            Args = arguments,
+            OutputByteLimit = 5
+        });
+
+        await client.WaitForTerminalExitAsync(new WaitForTerminalExitRequest { TerminalId = terminal.TerminalId });
+        var output = await client.TerminalOutputAsync(new TerminalOutputRequest { TerminalId = terminal.TerminalId });
+
+        output.Output.ShouldContain("j");
+        output.Output.ShouldNotContain("a");
+        output.Truncated.ShouldBeTrue();
+        await client.ReleaseTerminalAsync(new ReleaseTerminalRequest { TerminalId = terminal.TerminalId });
+    }
+
+    [Fact]
+    public async Task terminal_output_omits_exit_status_before_process_exit()
+    {
+        var (command, arguments) = GetBlockingCommand();
+        using var client = new DotAcpClient(
+            Channel.CreateUnbounded<AgentEvent>().Writer,
+            new AllowAgentPermissionService());
+        var terminal = await client.CreateTerminalAsync(new CreateTerminalRequest
+        {
+            Command = command,
+            Args = arguments
+        });
+
+        var running = await client.TerminalOutputAsync(new TerminalOutputRequest { TerminalId = terminal.TerminalId });
+        running.ExitStatus.ShouldBeNull();
+
+        await client.KillTerminalAsync(new KillTerminalRequest { TerminalId = terminal.TerminalId });
+        await client.WaitForTerminalExitAsync(new WaitForTerminalExitRequest { TerminalId = terminal.TerminalId });
         await client.ReleaseTerminalAsync(new ReleaseTerminalRequest { TerminalId = terminal.TerminalId });
     }
 
@@ -412,8 +546,13 @@ public sealed class DotAcpClientTests
             : ("/bin/sh", ["-c", commandLine]);
     }
 
+    private static (string Command, string[] Arguments) GetBlockingCommand()
+        => OperatingSystem.IsWindows()
+            ? (Environment.GetEnvironmentVariable("ComSpec") ?? "cmd.exe", ["/c", "set /p line="])
+            : ("/bin/sh", ["-c", "read line"]);
+
     [Fact]
-    public async Task file_callbacks_apply_permission_and_read_line_limits()
+    public async Task file_callbacks_use_one_based_read_lines_and_apply_limits()
     {
         var path = Path.Combine(Path.GetTempPath(), $"kubeui-acp-{Guid.NewGuid():N}.txt");
         try
@@ -424,7 +563,7 @@ public sealed class DotAcpClientTests
                 new AllowAgentPermissionService());
 
             var response = await client.ReadTextFileAsync(new ReadTextFileRequest { Path = path, Line = 1, Limit = 1 });
-            response.Content.ShouldBe("second");
+            response.Content.ShouldBe("first");
 
             await client.WriteTextFileAsync(new WriteTextFileRequest { Path = path, Content = "updated" });
             (await File.ReadAllTextAsync(path)).ShouldBe("updated");
@@ -444,9 +583,92 @@ public sealed class DotAcpClientTests
             new ReadTextFileRequest { Path = Path.Combine(Path.GetTempPath(), "not-read.txt") }));
     }
 
+    [Fact]
+    public async Task file_callbacks_reject_paths_outside_configured_roots()
+    {
+        var root = Directory.CreateTempSubdirectory("kubeui-acp-root-");
+        var outside = Path.Combine(Path.GetTempPath(), $"kubeui-acp-outside-{Guid.NewGuid():N}.txt");
+        try
+        {
+            await File.WriteAllTextAsync(outside, "outside");
+            using var client = new DotAcpClient(
+                Channel.CreateUnbounded<AgentEvent>().Writer,
+                new AllowAgentPermissionService(),
+                fileSystemRoots: new HashSet<string>(StringComparer.OrdinalIgnoreCase) { root.FullName });
+
+            await Should.ThrowAsync<UnauthorizedAccessException>(() => client.ReadTextFileAsync(
+                new ReadTextFileRequest { Path = outside }));
+        }
+        finally
+        {
+            File.Delete(outside);
+            root.Delete(true);
+        }
+    }
+
+    [Fact]
+    public async Task file_callbacks_reject_reparse_point_escapes()
+    {
+        var root = Directory.CreateTempSubdirectory("kubeui-acp-root-");
+        var outside = Directory.CreateTempSubdirectory("kubeui-acp-outside-");
+        var link = Path.Combine(root.FullName, "linked");
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(outside.FullName, "secret.txt"), "secret");
+            try
+            {
+                Directory.CreateSymbolicLink(link, outside.FullName);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return;
+            }
+            catch (IOException)
+            {
+                return;
+            }
+
+            using var client = new DotAcpClient(
+                Channel.CreateUnbounded<AgentEvent>().Writer,
+                new AllowAgentPermissionService(),
+                fileSystemRoots: new HashSet<string>(StringComparer.OrdinalIgnoreCase) { root.FullName });
+
+            await Should.ThrowAsync<UnauthorizedAccessException>(() => client.ReadTextFileAsync(
+                new ReadTextFileRequest { Path = Path.Combine(link, "secret.txt") }));
+            await Should.ThrowAsync<UnauthorizedAccessException>(() => client.WriteTextFileAsync(
+                new WriteTextFileRequest { Path = Path.Combine(link, "secret.txt"), Content = "changed" }));
+        }
+        finally
+        {
+            root.Delete(true);
+            outside.Delete(true);
+        }
+    }
+
+    [Fact]
+    public void file_system_roots_default_to_case_insensitive_empty_set()
+    {
+        var options = new AgentSessionOptions();
+
+        options.FileSystemRoots.ShouldBeEmpty();
+        options.FileSystemRoots.ShouldBeOfType<HashSet<string>>().Comparer.ShouldBe(StringComparer.OrdinalIgnoreCase);
+    }
+
     private sealed class AllowAgentPermissionService : IAgentPermissionService
     {
         public Task<AgentPermissionResult> RequestPermissionAsync(AgentPermissionRequest request, CancellationToken cancellationToken = default)
             => Task.FromResult(new AgentPermissionResult(true));
+    }
+
+    private sealed class BlockingPermissionService : IAgentPermissionService
+    {
+        public Task<AgentPermissionResult> RequestPermissionAsync(
+            AgentPermissionRequest request,
+            CancellationToken cancellationToken = default)
+        {
+            var completion = new TaskCompletionSource<AgentPermissionResult>(TaskCreationOptions.RunContinuationsAsynchronously);
+            cancellationToken.Register(() => completion.TrySetCanceled(cancellationToken));
+            return completion.Task;
+        }
     }
 }

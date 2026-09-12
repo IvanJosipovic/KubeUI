@@ -7,7 +7,7 @@ using KubeUI.AI.Permissions;
 
 namespace KubeUI.AI.Acp;
 
-internal sealed class AcpTerminalHandler(IAgentPermissionService permissionService) : IDisposable
+internal sealed class AcpTerminalHandler(IAgentPermissionService permissionService) : IDisposable, IAsyncDisposable
 {
     private readonly System.Collections.Concurrent.ConcurrentDictionary<string, TerminalState> _terminals = new(StringComparer.Ordinal);
 
@@ -17,7 +17,7 @@ internal sealed class AcpTerminalHandler(IAgentPermissionService permissionServi
         activity?.SetTag("agent.protocol", "acp");
         activity?.SetTag("tool.name", request.Command);
         var permission = await permissionService.RequestPermissionAsync(
-            new AgentPermissionRequest("run_process", request.Command, IsDestructive: true), cancellationToken).ConfigureAwait(false);
+            new AgentPermissionRequest("run_process", FormatInvocation(request), IsDestructive: true), cancellationToken).ConfigureAwait(false);
         if (!permission.Allowed)
         {
             activity?.SetTag("permission.result", "denied");
@@ -56,7 +56,7 @@ internal sealed class AcpTerminalHandler(IAgentPermissionService permissionServi
         var terminalId = Guid.NewGuid().ToString("N");
         var terminal = new TerminalState(process, request.OutputByteLimit);
         _terminals[terminalId] = terminal;
-        _ = CaptureOutputAsync(terminal);
+        terminal.StartCapture();
         return new CreateTerminalResponse { TerminalId = terminalId };
     }
 
@@ -74,11 +74,11 @@ internal sealed class AcpTerminalHandler(IAgentPermissionService permissionServi
         return Task.FromResult(terminal.ToResponse());
     }
 
-    public Task<ReleaseTerminalResponse> ReleaseAsync(ReleaseTerminalRequest request, CancellationToken _ = default)
+    public async Task<ReleaseTerminalResponse> ReleaseAsync(ReleaseTerminalRequest request, CancellationToken _ = default)
     {
         if (_terminals.TryRemove(request.TerminalId, out var terminal))
-            terminal.Dispose();
-        return Task.FromResult(new ReleaseTerminalResponse());
+            await terminal.DisposeAsync().ConfigureAwait(false);
+        return new ReleaseTerminalResponse();
     }
 
     public async Task<WaitForTerminalExitResponse> WaitAsync(WaitForTerminalExitRequest request, CancellationToken cancellationToken = default)
@@ -90,28 +90,53 @@ internal sealed class AcpTerminalHandler(IAgentPermissionService permissionServi
     }
 
     public void Dispose()
+        => DisposeAsync().AsTask().GetAwaiter().GetResult();
+
+    public async ValueTask DisposeAsync()
     {
-        foreach (var item in _terminals)
-            item.Value.Dispose();
+        var terminals = _terminals.ToArray();
         _terminals.Clear();
+        foreach (var item in terminals)
+            await item.Value.DisposeAsync().ConfigureAwait(false);
     }
 
     private static async Task CaptureOutputAsync(TerminalState terminal)
     {
         try
         {
-            var stdout = terminal.Process.StandardOutput.ReadToEndAsync();
-            var stderr = terminal.Process.StandardError.ReadToEndAsync();
-            await Task.WhenAll(stdout, stderr).ConfigureAwait(false);
-            terminal.Append(stdout.Result);
-            terminal.Append(stderr.Result);
+            await Task.WhenAll(
+                CaptureStreamAsync(terminal.Process.StandardOutput, terminal),
+                CaptureStreamAsync(terminal.Process.StandardError, terminal)).ConfigureAwait(false);
             await terminal.Process.WaitForExitAsync().ConfigureAwait(false);
             terminal.ExitCode = terminal.Process.ExitCode >= 0 ? (uint)terminal.Process.ExitCode : null;
-        }
-        finally
-        {
             terminal.Exited.TrySetResult();
         }
+        catch (Exception exception)
+        {
+            terminal.Exited.TrySetException(exception);
+        }
+    }
+
+    private static async Task CaptureStreamAsync(StreamReader reader, TerminalState terminal)
+    {
+        var buffer = new char[4096];
+        var count = await reader.ReadAsync(buffer).ConfigureAwait(false);
+        while (count > 0)
+        {
+            terminal.Append(buffer.AsSpan(0, count));
+            count = await reader.ReadAsync(buffer).ConfigureAwait(false);
+        }
+    }
+
+    private static string FormatInvocation(CreateTerminalRequest request)
+    {
+        var arguments = request.Args is { Length: > 0 }
+            ? $" {string.Join(' ', request.Args)}"
+            : string.Empty;
+        var workingDirectory = string.IsNullOrWhiteSpace(request.Cwd)
+            ? Environment.CurrentDirectory
+            : request.Cwd;
+        return $"{request.Command}{arguments} (cwd: {workingDirectory})";
     }
 
     private sealed class TerminalState(Process process, ulong? outputByteLimit) : IDisposable
@@ -119,31 +144,49 @@ internal sealed class AcpTerminalHandler(IAgentPermissionService permissionServi
         private readonly object _gate = new();
         private readonly StringBuilder _output = new();
         private readonly ulong? _outputByteLimit = outputByteLimit;
+        private Task? _captureTask;
+        private bool _disposeStarted;
+        private long _outputByteCount;
 
         public Process Process { get; } = process;
         public TaskCompletionSource Exited { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
         public uint? ExitCode { get; set; }
         public bool Truncated { get; private set; }
 
-        public void Append(string value)
-        {
-            lock (_gate)
+        public void StartCapture() => _captureTask = CaptureOutputAsync(this);
+
+        public void Append(ReadOnlySpan<char> value)
             {
-                var remaining = _outputByteLimit is null
-                    ? int.MaxValue
-                    : (long)_outputByteLimit.Value - Encoding.UTF8.GetByteCount(_output.ToString());
-                if (remaining <= 0)
+                lock (_gate)
                 {
-                    Truncated = true;
-                    return;
-                }
-                if (Encoding.UTF8.GetByteCount(value) > remaining)
-                {
-                    value = value[..Math.Min(value.Length, (int)remaining)];
-                    Truncated = true;
-                }
                 _output.Append(value);
+                _outputByteCount += Encoding.UTF8.GetByteCount(value);
+                if (_outputByteLimit is not { } limit)
+                    return;
+
+                while ((ulong)_outputByteCount > limit && _output.Length > 0)
+                {
+                    var removeLength = GetFirstCharacterLength(_output);
+                    _outputByteCount -= GetFirstCharacterByteCount(_output, removeLength);
+                    _output.Remove(0, removeLength);
+                    Truncated = true;
+                }
             }
+        }
+
+        private static int GetFirstCharacterLength(StringBuilder value)
+            => value.Length > 1 && char.IsHighSurrogate(value[0]) && char.IsLowSurrogate(value[1]) ? 2 : 1;
+
+        private static int GetFirstCharacterByteCount(StringBuilder value, int length)
+        {
+            var character = value[0];
+            if (length == 2)
+                return 4;
+            if (character <= 0x7F)
+                return 1;
+            if (character <= 0x7FF)
+                return 2;
+            return 3;
         }
 
         public TerminalOutputResponse ToResponse()
@@ -154,17 +197,31 @@ internal sealed class AcpTerminalHandler(IAgentPermissionService permissionServi
                 {
                     Output = _output.ToString(),
                     Truncated = Truncated,
-                    ExitStatus = new TerminalExitStatus { ExitCode = ExitCode }
+                    ExitStatus = ExitCode is { } exitCode ? new TerminalExitStatus { ExitCode = exitCode } : null
                 };
             }
         }
 
-        public void Dispose()
+        public async ValueTask DisposeAsync()
         {
-            try
-            { if (!Process.HasExited) Process.Kill(entireProcessTree: true); }
-            catch { }
+            if (!_disposeStarted)
+            {
+                _disposeStarted = true;
+                try
+                { if (!Process.HasExited) Process.Kill(entireProcessTree: true); }
+                catch { }
+            }
+
+            if (_captureTask is not null)
+            {
+                try
+                { await _captureTask.ConfigureAwait(false); }
+                catch { }
+            }
             Process.Dispose();
         }
+
+        public void Dispose()
+            => DisposeAsync().AsTask().GetAwaiter().GetResult();
     }
 }

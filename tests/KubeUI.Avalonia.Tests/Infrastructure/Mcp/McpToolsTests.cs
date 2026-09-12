@@ -1,4 +1,6 @@
 using System.Reflection;
+using System.Threading;
+using k8s;
 using k8s.Models;
 using KubeUI.AI.Agents;
 using KubeUI.AI.Permissions;
@@ -138,6 +140,31 @@ public sealed class McpToolsTests
 
         permission.VerifyAll();
         session.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task pod_logs_propagates_cancellation_from_log_request()
+    {
+        using var cancellation = new CancellationTokenSource();
+        cancellation.Cancel();
+        var operations = new Mock<ICoreV1Operations>(MockBehavior.Strict);
+        operations.Setup(x => x.ReadNamespacedPodLogWithHttpMessagesAsync(
+                It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<bool?>(), It.IsAny<bool?>(),
+                It.IsAny<int?>(), It.IsAny<bool?>(), It.IsAny<bool?>(), It.IsAny<int?>(), It.IsAny<string?>(), It.IsAny<int?>(),
+                It.IsAny<bool?>(), It.IsAny<IReadOnlyDictionary<string, IReadOnlyList<string>>>(), cancellation.Token))
+            .Returns(Task.FromCanceled<k8s.Autorest.HttpOperationResponse<Stream>>(cancellation.Token));
+        var runtime = new Mock<IClusterRuntime>(MockBehavior.Strict);
+        var client = new Mock<IKubernetes>(MockBehavior.Strict);
+        client.SetupGet(x => x.CoreV1).Returns(operations.Object);
+        runtime.SetupGet(x => x.Client).Returns(client.Object);
+        var session = new Mock<IMcpClusterSession>(MockBehavior.Strict);
+        session.Setup(x => x.GetConnectedClusterAsync(null)).ReturnsAsync(runtime.Object);
+
+        var tools = CreateTools(session);
+
+        await Should.ThrowAsync<OperationCanceledException>(() => tools.GetPodLogs(
+            null, "default", "api", cancellationToken: cancellation.Token));
+        operations.VerifyAll();
     }
 
     [Fact]

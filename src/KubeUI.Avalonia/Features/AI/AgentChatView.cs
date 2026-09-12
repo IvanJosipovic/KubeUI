@@ -29,22 +29,23 @@ public sealed class AgentChatView : ViewBase<AgentChatViewModel>
                         new TextBlock()
                             .Text(Assets.Resources.AgentChatView_AgentLabel),
                         new TextBlock()
-                            .Text(vm, x => x.SelectedAgent.Name)),
-                        new ScrollViewer()
-                            .Ref(out _conversationScrollViewer)
-                            .VerticalScrollBarVisibility(ScrollBarVisibility.Auto)
-                            .HorizontalScrollBarVisibility(ScrollBarVisibility.Disabled)
-                            .Row(1)
-                            .Content(new MarkdownRenderer()
-                            {
-                                MarkdownBuilder = vm.MarkdownBuilder,
-                            }
-                                        .HorizontalAlignment(HorizontalAlignment.Stretch)),
-                        new Grid()
-                            .Row(2)
-                            .Cols("*,Auto,Auto")
-                            .Children(
-                                new TextBox()
+                            .Text(vm, x => x.SelectedAgent.Name))
+                    .Row(0),
+                new ScrollViewer()
+                    .Ref(out _conversationScrollViewer)
+                    .VerticalScrollBarVisibility(ScrollBarVisibility.Auto)
+                    .HorizontalScrollBarVisibility(ScrollBarVisibility.Disabled)
+                    .Row(1)
+                    .Content(new MarkdownRenderer()
+                    {
+                        MarkdownBuilder = vm.MarkdownBuilder,
+                    }
+                        .HorizontalAlignment(HorizontalAlignment.Stretch)),
+                new Grid()
+                    .Row(2)
+                    .Cols("*,Auto,Auto")
+                    .Children(
+                        new TextBox()
                                     .Name("PromptEditor")
                                     .PlaceholderText(Assets.Resources.AgentChatView_PromptPlaceholder)
                                     .Text(vm, x => x.Prompt)
@@ -54,20 +55,19 @@ public sealed class AgentChatView : ViewBase<AgentChatViewModel>
                                         Command = vm.SendCommand,
                                         Gesture = new KeyGesture(Key.Enter)
                                     })
-                                    .Row(0),
-                                new Button()
+                            .Row(0),
+                        new Button()
                                     .Name("SendButton")
                                     .Content(Assets.Resources.AgentChatView_Send)
                                     .Command(vm, x => x.SendCommand)
                                     .IsVisible(vm, x => !x.IsBusy)
-                                    .Col(1),
-                                new Button()
+                            .Col(1),
+                        new Button()
                                     .Name("CancelButton")
                                     .Content(Assets.Resources.AgentChatView_Cancel)
                                     .Command(vm, x => x.CancelCommand)
                                     .IsVisible(vm, x => x.IsBusy)
-                                    .Col(2)))
-                    .Background(Brushes.Transparent);
+                            .Col(2)));
 
         _conversationScrollViewer.PropertyChanged += ConversationScrollViewerOnPropertyChanged;
 

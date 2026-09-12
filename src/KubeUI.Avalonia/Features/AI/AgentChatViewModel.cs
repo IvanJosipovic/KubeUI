@@ -76,13 +76,14 @@ public sealed partial class AgentChatViewModel : ViewModelBase, IAsyncDisposable
         Prompt = string.Empty;
         Messages.Add(new AgentChatMessage(Assets.Resources.AgentChatView_User, text));
         IsBusy = true;
+        Task? promptTask = null;
         try
         {
             await DisposeSessionAsync();
             _turnCancellation = new CancellationTokenSource();
             var mcpEndpoint = _settingsService.Settings.McpServerEnabled
                 && _mcpServerState.BoundPort is not null
-                ? McpServerConfiguration.GetEndpoint(_settingsService.Settings)
+                ? McpServerConfiguration.GetEndpoint(_mcpServerState.BoundPort.Value)
                 : null;
             _session = await SelectedAgent.CreateSessionAsync(new AgentSessionOptions
             {
@@ -90,7 +91,7 @@ public sealed partial class AgentChatViewModel : ViewModelBase, IAsyncDisposable
                 McpEndpoint = mcpEndpoint,
                 TrustedMcpServers = new HashSet<string>(StringComparer.Ordinal) { "kubeui" }
             }, _turnCancellation.Token);
-            var promptTask = _session.PromptAsync(BuildAgentPrompt(text), _turnCancellation.Token);
+            promptTask = _session.PromptAsync(BuildAgentPrompt(text), _turnCancellation.Token);
             await foreach (var item in _session.Events)
             {
                 if (item is AgentMessageEvent message)
@@ -137,6 +138,13 @@ public sealed partial class AgentChatViewModel : ViewModelBase, IAsyncDisposable
         }
         finally
         {
+            try
+            {
+                await promptTask.ConfigureAwait(false);
+            }
+            catch
+            {
+            }
             IsBusy = false;
             _turnCancellation?.Dispose();
             _turnCancellation = null;

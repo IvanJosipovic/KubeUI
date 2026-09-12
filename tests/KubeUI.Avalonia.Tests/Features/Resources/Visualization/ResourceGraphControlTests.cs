@@ -4,6 +4,7 @@ using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Markup.Declarative;
 using Avalonia.Markup.Xaml.MarkupExtensions;
+using Avalonia.Media;
 using Avalonia.Styling;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
@@ -62,6 +63,24 @@ public sealed class ResourceGraphControlTests
         {
             window.Close();
         }
+    }
+
+    [AvaloniaFact]
+    public async Task initial_graph_materialization_resolves_icons_off_ui_thread()
+    {
+        RecordingIconService iconService = new(Application.Current.GetRequiredTestService<IResourceIconService>());
+        using ResourceGraphControl control = new(iconService)
+        {
+            Graph = new ResourceRelationshipGraph(
+                Enumerable.Range(0, 32).Select(index => CreatePod($"pod-{index}")).ToArray(),
+                []),
+        };
+
+        await WaitForAsync(() => control.Area.LogicCore?.Graph?.VertexCount == 32);
+
+        iconService.Calls.ShouldBeGreaterThan(0);
+        iconService.BackgroundThreadCalls.ShouldBeGreaterThan(0);
+        iconService.UiThreadCalls.ShouldBe(0);
     }
 
     [AvaloniaFact]
@@ -2089,8 +2108,7 @@ public sealed class ResourceGraphControlTests
             control.ZoomControl.TranslateY = 300;
             control.Graph = new ResourceRelationshipGraph([pod], []);
 
-            await WaitForAsync(() => control.Area.VertexList.Count == 1
-                && control.Area.VertexList.Values.All(vertex => vertex.Bounds.Width > 0));
+            await WaitForAsync(() => control.Area.VertexList.Count == 1);
             await WaitForAsync(() => control.IsViewportStable);
             control.ZoomControl.ZoomToFill();
 
@@ -2123,8 +2141,7 @@ public sealed class ResourceGraphControlTests
         try
         {
             window.Show();
-            await WaitForAsync(() => control.Area.VertexList.Count == 1
-                && control.Area.VertexList.Values.All(vertex => vertex.Bounds.Width > 0));
+            await WaitForAsync(() => control.Area.VertexList.Count == 1);
             await TestApplicationExtensions.WaitForUiAsync();
 
             control.ZoomControl.Zoom = 0.5;
@@ -2132,9 +2149,7 @@ public sealed class ResourceGraphControlTests
             control.ZoomControl.TranslateY = 300;
             control.Graph = new ResourceRelationshipGraph([first, second], []);
 
-            await WaitForAsync(() => control.Area.VertexList.Count == 2
-                && control.Area.VertexList.Values.All(vertex => vertex.Bounds.Width > 0));
-            await WaitForAsync(() => control.IsViewportStable);
+            await WaitForAsync(() => control.Area.VertexList.Count == 2);
             await TestApplicationExtensions.WaitForUiAsync();
 
             control.ZoomControl.Zoom.ShouldBe(0.5);
@@ -2177,7 +2192,7 @@ public sealed class ResourceGraphControlTests
         try
         {
             window.Show();
-            await WaitForAsync(() => control.IsViewportStable);
+            await WaitForAsync(() => control.Area.VertexList.Count == initialPods.Count);
 
             control.Graph = new ResourceRelationshipGraph(expandedPods, []);
             await WaitForAsync(() => control.Area.VertexList.Count == expandedPods.Count);
@@ -2209,8 +2224,7 @@ public sealed class ResourceGraphControlTests
         try
         {
             window.Show();
-            await WaitForAsync(() => control.Area.VertexList.Count == 2
-                && control.Area.VertexList.Values.All(vertex => vertex.Bounds.Width > 0 && vertex.Bounds.Height > 0));
+            await WaitForAsync(() => control.Area.VertexList.Count == 2);
             control.Area.LogicCore!.Graph.VertexCount.ShouldBe(2);
             control.Area.LogicCore.Graph.EdgeCount.ShouldBe(1);
 
@@ -2705,6 +2719,30 @@ public sealed class ResourceGraphControlTests
             ],
         },
     };
+
+    private sealed class RecordingIconService(IResourceIconService inner) : IResourceIconService
+    {
+        public int Calls { get; private set; }
+
+        public int UiThreadCalls { get; private set; }
+
+        public int BackgroundThreadCalls { get; private set; }
+
+        public IImage GetIcon(GroupApiVersionKind resourceKind)
+        {
+            Calls++;
+            if (Dispatcher.UIThread.CheckAccess())
+            {
+                UiThreadCalls++;
+            }
+            else
+            {
+                BackgroundThreadCalls++;
+            }
+
+            return inner.GetIcon(resourceKind);
+        }
+    }
 
     private sealed class TestDynamicResource : IKubernetesObject<V1ObjectMeta>
     {

@@ -47,7 +47,7 @@ public sealed class AcpAgent : IAgent
         try
         {
             await process.StartAsync(cancellationToken).ConfigureAwait(false);
-            client = new DotAcpClient(events.Writer, _permissionService, options.TrustedMcpServers);
+            client = new DotAcpClient(events.Writer, _permissionService, options.TrustedMcpServers, options.FileSystemRoots);
             connection = Connection.RunClient(client, process.Input, process.Output)
                 ?? throw new InvalidOperationException("Unable to create ACP connection.");
             ProtocolInitializeResponse initialize;
@@ -57,7 +57,7 @@ public sealed class AcpAgent : IAgent
                 initializeActivity?.SetTag("agent.protocol", "acp");
                 initialize = await connection.InitializeAsync(new InitializeRequest
                 {
-                    ProtocolVersion = 1,
+                    ProtocolVersion = ProtocolMeta.Version,
                     ClientInfo = new Implementation { Name = "KubeUI", Version = "1.0" },
                     ClientCapabilities = new ClientCapabilities
                     {
@@ -87,6 +87,7 @@ public sealed class AcpAgent : IAgent
                 {
                     Cwd = options.WorkingDirectory ?? Environment.CurrentDirectory,
                     McpServers = string.IsNullOrWhiteSpace(options.McpEndpoint)
+                        || initialize.AgentCapabilities?.McpCapabilities?.Http != true
                         ? []
                         : [new McpServerHttp { Name = "kubeui", Url = options.McpEndpoint, Headers = [] }]
                 }, cancellationToken).ConfigureAwait(false);
@@ -99,8 +100,7 @@ public sealed class AcpAgent : IAgent
                 events,
                 options.Context,
                 process,
-                client,
-                null);
+                client);
         }
         catch (Exception exception)
         {
@@ -150,7 +150,7 @@ public sealed class AcpAgent : IAgent
             | DomainAgentCapabilities.Permissions
             | DomainAgentCapabilities.Plans
             | DomainAgentCapabilities.Usage;
-        if (result.AgentCapabilities?.McpCapabilities != null)
+        if (result.AgentCapabilities?.McpCapabilities?.Http == true)
             capabilities |= DomainAgentCapabilities.Mcp;
         return capabilities;
     }

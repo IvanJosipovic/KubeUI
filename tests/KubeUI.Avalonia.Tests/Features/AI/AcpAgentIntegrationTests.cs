@@ -53,7 +53,7 @@ public sealed class AcpAgentIntegrationTests
     [Fact]
     public async Task acp_agent_completes_initialize_session_prompt_stream_cancel_and_shutdown()
     {
-        await using var process = new InMemoryAcpProcess();
+        await using var process = new InMemoryAcpProcess(supportsHttpMcp: true);
         var agent = new AcpAgent(
             new AcpAgentDefinition { Id = "fake", Name = "Fake ACP", Executable = "unused" },
             () => process,
@@ -196,7 +196,7 @@ public sealed class AcpAgentIntegrationTests
     [Fact]
     public async Task acp_session_registers_only_the_kubeui_mcp_server()
     {
-        await using var process = new InMemoryAcpProcess();
+        await using var process = new InMemoryAcpProcess(supportsHttpMcp: true);
         var agent = new AcpAgent(
             new AcpAgentDefinition { Id = "fake", Name = "Fake ACP", Executable = "unused" },
             () => process,
@@ -213,6 +213,23 @@ public sealed class AcpAgentIntegrationTests
         var server = (McpServerHttp)mcpServers[0];
         server.Name.ShouldBe("kubeui");
         server.Url.ShouldBe("http://127.0.0.1:62888/mcp");
+    }
+
+    [Fact]
+    public async Task acp_session_omits_http_mcp_when_agent_does_not_advertise_http()
+    {
+        await using var process = new InMemoryAcpProcess();
+        var agent = new AcpAgent(
+            new AcpAgentDefinition { Id = "fake", Name = "Fake ACP", Executable = "unused" },
+            () => process,
+            new AllowPermissionService());
+
+        await using var session = await agent.CreateSessionAsync(new AgentSessionOptions
+        {
+            McpEndpoint = "http://127.0.0.1:62888/mcp"
+        });
+
+        process.NewSessionRequest!.McpServers.ShouldBeEmpty();
     }
 
     [Fact]
@@ -279,7 +296,8 @@ public sealed class AcpAgentIntegrationTests
     private sealed class InMemoryAcpProcess(
         bool requiresAuthentication = false,
         IReadOnlyList<string>? authenticationMethodIds = null,
-        AcpException? sessionCreationException = null) : IAcpProcess
+        AcpException? sessionCreationException = null,
+        bool supportsHttpMcp = false) : IAcpProcess
     {
         private readonly Pipe _clientToServer = new();
         private readonly Pipe _serverToClient = new();
@@ -310,7 +328,7 @@ public sealed class AcpAgentIntegrationTests
                 new JsonMessageFormatter());
             _server = new JsonRpc(handler);
 #pragma warning restore CA2000
-            _fakeServer = new FakeAcpServer(_server, requiresAuthentication, authenticationMethodIds, sessionCreationException);
+            _fakeServer = new FakeAcpServer(_server, requiresAuthentication, authenticationMethodIds, sessionCreationException, supportsHttpMcp);
             _server.AddLocalRpcTarget(_fakeServer);
             _server.StartListening();
             return Task.CompletedTask;
@@ -350,7 +368,8 @@ public sealed class AcpAgentIntegrationTests
         JsonRpc rpc,
         bool requiresAuthentication,
         IReadOnlyList<string>? authenticationMethodIds,
-        AcpException? sessionCreationException)
+        AcpException? sessionCreationException,
+        bool supportsHttpMcp)
     {
         public TaskCompletionSource CancelReceived { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
         public TaskCompletionSource AuthenticationReceived { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -371,7 +390,7 @@ public sealed class AcpAgentIntegrationTests
                     : [],
                 AgentCapabilities = new dotacp.protocol.AgentCapabilities
                 {
-                    McpCapabilities = new McpCapabilities()
+                    McpCapabilities = new McpCapabilities { Http = supportsHttpMcp }
                 }
             });
 

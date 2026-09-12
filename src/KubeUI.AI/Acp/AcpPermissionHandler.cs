@@ -14,23 +14,47 @@ internal sealed class AcpPermissionHandler(
     IReadOnlySet<string>? trustedMcpServers = null)
 {
     private readonly IReadOnlySet<string> _trustedMcpServers = trustedMcpServers ?? new HashSet<string>(StringComparer.Ordinal);
+    private readonly AcpPermissionMapper _permissionMapper = new();
     private readonly ConcurrentDictionary<string, ToolCallContext> _toolCalls = new(StringComparer.Ordinal);
+    private readonly ConcurrentDictionary<string, byte> _startedToolCalls = new(StringComparer.Ordinal);
+    private readonly ConcurrentDictionary<string, byte> _completedToolCalls = new(StringComparer.Ordinal);
 
-    public void TrackToolCall(SessionUpdate update)
+    public bool TrackToolCall(SessionUpdate update)
     {
         switch (update)
         {
             case ToolCall toolCall:
-                _toolCalls[toolCall.ToolCallId.ToString()] = new(toolCall.Title, toolCall.RawInput, toolCall.Kind, toolCall.Meta);
-                break;
-            case SessionUpdateToolCallUpdate toolUpdate when _toolCalls.TryGetValue(toolUpdate.ToolCallId.ToString(), out var previous):
-                _toolCalls[toolUpdate.ToolCallId.ToString()] = new(
-                    toolUpdate.Title ?? previous.Title,
-                    toolUpdate.RawInput ?? previous.Input,
-                    toolUpdate.Kind,
-                    toolUpdate.Meta ?? previous.Meta);
-                break;
+                return TrackToolCall(
+                    toolCall.ToolCallId.ToString(),
+                    toolCall.Status,
+                    new(toolCall.Title, toolCall.RawInput, toolCall.Kind, toolCall.Meta));
+            case SessionUpdateToolCallUpdate toolUpdate:
+                var key = toolUpdate.ToolCallId.ToString();
+                _toolCalls.AddOrUpdate(
+                    key,
+                    _ => new(toolUpdate.Title, toolUpdate.RawInput, toolUpdate.Kind, toolUpdate.Meta),
+                    (_, previous) => new(
+                        toolUpdate.Title ?? previous.Title,
+                        toolUpdate.RawInput ?? previous.Input,
+                        toolUpdate.Kind,
+                        toolUpdate.Meta ?? previous.Meta));
+                return TrackToolCall(key, toolUpdate.Status, _toolCalls[key]);
+            default:
+                return true;
         }
+    }
+
+    private bool TrackToolCall(string key, ToolCallStatus status, ToolCallContext context)
+    {
+        if (status is ToolCallStatus.Completed or ToolCallStatus.Failed)
+        {
+            _toolCalls.TryRemove(key, out _);
+            _startedToolCalls.TryRemove(key, out _);
+            return _completedToolCalls.TryAdd(key, 0);
+        }
+
+        _toolCalls[key] = context;
+        return _startedToolCalls.TryAdd(key, 0);
     }
 
     public async Task<RequestPermissionResponse> RequestAsync(
@@ -41,7 +65,7 @@ internal sealed class AcpPermissionHandler(
         activity?.SetTag("agent.protocol", "acp");
         activity?.SetTag("permission.action", request.ToolCall.Title);
         _toolCalls.TryGetValue(request.ToolCall.ToolCallId.ToString(), out var knownTool);
-        var permissionRequest = AcpMapper.ToPermissionRequest(
+        var permissionRequest = _permissionMapper.Map(
             request,
             knownTool?.Title,
             knownTool?.Input,
@@ -52,8 +76,23 @@ internal sealed class AcpPermissionHandler(
             return SelectResponse(request, allowed: true, activity);
 
         events.TryWrite(new AgentPermissionRequestedEvent(permissionRequest));
-        var permission = await permissionService.RequestPermissionAsync(permissionRequest, cancellationToken).ConfigureAwait(false);
-        return SelectResponse(request, permission.Allowed, activity);
+        try
+        {
+            var permission = await permissionService.RequestPermissionAsync(permissionRequest, cancellationToken).ConfigureAwait(false);
+            return SelectResponse(request, permission.Allowed, activity);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            activity?.SetTag("permission.result", "cancelled");
+            return new RequestPermissionResponse { Outcome = new RequestPermissionOutcomeCancelled() };
+        }
+    }
+
+    public void Clear()
+    {
+        _toolCalls.Clear();
+        _startedToolCalls.Clear();
+        _completedToolCalls.Clear();
     }
 
     private static RequestPermissionResponse SelectResponse(
