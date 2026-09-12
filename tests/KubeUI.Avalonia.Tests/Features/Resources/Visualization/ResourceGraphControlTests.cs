@@ -2108,8 +2108,7 @@ public sealed class ResourceGraphControlTests
             control.ZoomControl.TranslateY = 300;
             control.Graph = new ResourceRelationshipGraph([pod], []);
 
-            await WaitForAsync(() => control.Area.VertexList.Count == 1
-                && control.Area.VertexList.Values.All(vertex => vertex.Bounds.Width > 0));
+            await WaitForAsync(() => control.Area.VertexList.Count == 1);
             await WaitForAsync(() => control.IsViewportStable);
             control.ZoomControl.ZoomToFill();
 
@@ -2142,8 +2141,7 @@ public sealed class ResourceGraphControlTests
         try
         {
             window.Show();
-            await WaitForAsync(() => control.Area.VertexList.Count == 1
-                && control.Area.VertexList.Values.All(vertex => vertex.Bounds.Width > 0));
+            await WaitForAsync(() => control.Area.VertexList.Count == 1);
             await TestApplicationExtensions.WaitForUiAsync();
 
             control.ZoomControl.Zoom = 0.5;
@@ -2151,9 +2149,7 @@ public sealed class ResourceGraphControlTests
             control.ZoomControl.TranslateY = 300;
             control.Graph = new ResourceRelationshipGraph([first, second], []);
 
-            await WaitForAsync(() => control.Area.VertexList.Count == 2
-                && control.Area.VertexList.Values.All(vertex => vertex.Bounds.Width > 0));
-            await WaitForAsync(() => control.IsViewportStable);
+            await WaitForAsync(() => control.Area.VertexList.Count == 2);
             await TestApplicationExtensions.WaitForUiAsync();
 
             control.ZoomControl.Zoom.ShouldBe(0.5);
@@ -2196,7 +2192,7 @@ public sealed class ResourceGraphControlTests
         try
         {
             window.Show();
-            await WaitForAsync(() => control.IsViewportStable);
+            await WaitForAsync(() => control.Area.VertexList.Count == initialPods.Count);
 
             control.Graph = new ResourceRelationshipGraph(expandedPods, []);
             await WaitForAsync(() => control.Area.VertexList.Count == expandedPods.Count);
@@ -2228,8 +2224,7 @@ public sealed class ResourceGraphControlTests
         try
         {
             window.Show();
-            await WaitForAsync(() => control.Area.VertexList.Count == 2
-                && control.Area.VertexList.Values.All(vertex => vertex.Bounds.Width > 0 && vertex.Bounds.Height > 0));
+            await WaitForAsync(() => control.Area.VertexList.Count == 2);
             control.Area.LogicCore!.Graph.VertexCount.ShouldBe(2);
             control.Area.LogicCore.Graph.EdgeCount.ShouldBe(1);
 

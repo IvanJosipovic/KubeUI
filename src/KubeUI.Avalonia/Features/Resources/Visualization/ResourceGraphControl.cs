@@ -538,6 +538,10 @@ public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphContr
             {
                 _layoutCancellation.Dispose();
                 _layoutCancellation = null;
+                if (_layoutPending && VisualRoot != null && !_disposed)
+                {
+                    Dispatcher.UIThread.Post(QueueGraphGeneration, DispatcherPriority.Background);
+                }
             }
         }
     }
@@ -598,8 +602,9 @@ public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphContr
     {
         _isDetached = true;
         _layoutPending = false;
+        _hasGeneratedGraph = false;
         _layoutCancellation?.Cancel();
-        _area.ClearLayout();
+        _area.ClearLayout(clearStates: true, clearLogicCore: true);
         base.OnDetachedFromVisualTree(e);
     }
 
