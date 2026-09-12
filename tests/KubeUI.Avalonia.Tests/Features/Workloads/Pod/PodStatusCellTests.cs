@@ -37,14 +37,21 @@ public sealed class PodStatusCellTests
         var cell = new PodStatusCellView();
         cell.DataContext = runningPod;
         var window = new Window { Content = cell };
-        window.Show();
-        await TestApplicationExtensions.WaitForUiAsync();
 
-        cell.Text.ShouldBe(Assets.Resources.PodStatusCell_Running);
-        cell.DataContext = terminatingPod;
-        await TestApplicationExtensions.WaitForUiAsync();
-        cell.Text.ShouldBe(Assets.Resources.PodStatusCell_Terminating);
-        window.Close();
+        try
+        {
+            window.Show();
+            await TestApplicationExtensions.WaitForUiAsync();
+
+            cell.Text.ShouldBe(Assets.Resources.PodStatusCell_Running);
+            cell.DataContext = terminatingPod;
+            await TestApplicationExtensions.WaitForUiAsync();
+            cell.Text.ShouldBe(Assets.Resources.PodStatusCell_Terminating);
+        }
+        finally
+        {
+            window.Close();
+        }
     }
 
     [AvaloniaFact]
