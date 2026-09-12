@@ -2,15 +2,12 @@ using System.Diagnostics;
 using System.Reflection;
 using Avalonia.Controls.Templates;
 using Dock.Model.Core;
-using KubeUI.Avalonia.Features.Resources.Properties.ViewModels;
-using KubeUI.Avalonia.Features.Resources.Properties.Views;
-using KubeUI.Avalonia.Infrastructure;
-using KubeUI.Kubernetes;
-using Microsoft.Extensions.DependencyInjection;
+using KubeUI.Avalonia.Features.Resources.Properties;
+using KubeUI.Avalonia.Infrastructure.Platform;
 
 namespace KubeUI.Avalonia.Infrastructure.Presentation;
 
-public sealed class ViewLocator : IDataTemplate
+sealed class ViewLocator : IDataTemplate
 {
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<ViewLocator> _logger;
@@ -51,7 +48,7 @@ public sealed class ViewLocator : IDataTemplate
     {
         if (modelType.IsGenericType && modelType.GetGenericTypeDefinition() == typeof(ResourcePropertiesViewModel<>))
         {
-            return typeof(ResourcePropertiesView);
+            return typeof(ResourcePropertiesView<>).MakeGenericType(modelType.GetGenericArguments());
         }
 
         var expectedName = GetUnboundFullName(modelType).Replace("ViewModel", "View", StringComparison.Ordinal);

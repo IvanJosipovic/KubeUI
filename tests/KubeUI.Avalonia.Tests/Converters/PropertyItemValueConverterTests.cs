@@ -1,7 +1,6 @@
 using System.Globalization;
 using KubeUI.Avalonia.Converters;
 using Shouldly;
-using Xunit;
 
 namespace KubeUI.Avalonia.Tests.Converters;
 

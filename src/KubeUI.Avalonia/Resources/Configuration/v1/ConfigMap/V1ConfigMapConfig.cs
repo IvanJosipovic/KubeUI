@@ -1,6 +1,4 @@
-using Avalonia.Controls;
 using k8s.Models;
-using KubeUI.Avalonia.Resources.Configuration.v1.ConfigMap.Views;
 
 namespace KubeUI.Avalonia.Resources.Configuration.v1.ConfigMap;
 

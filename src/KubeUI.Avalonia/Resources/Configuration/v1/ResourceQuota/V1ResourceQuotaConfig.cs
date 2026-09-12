@@ -1,6 +1,4 @@
-using Avalonia.Controls;
 using k8s.Models;
-using KubeUI.Avalonia.Resources.Configuration.v1.ResourceQuota.Views;
 
 namespace KubeUI.Avalonia.Resources.Configuration.v1.ResourceQuota;
 
@@ -24,4 +22,3 @@ public sealed partial class V1ResourceQuotaConfig : ResourceConfigBase<V1Resourc
 
     public override Control[] Properties(V1ResourceQuota resource) => [new PropertiesView()];
 }
-

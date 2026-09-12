@@ -1,11 +1,21 @@
+using System.Diagnostics;
+using System.Net.Sockets;
 using System.Reflection;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Markup.Declarative;
+using Avalonia.Threading;
+#if DEBUG
+using Declarative.Avalonia.AgentTools;
+#endif
 using KubeUI.Avalonia;
-using KubeUI.Avalonia.Assets;
+using KubeUI.AI.Diagnostics;
+using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
+using KubeUI.Avalonia.Infrastructure.Mcp;
+using KubeUI.Avalonia.Infrastructure.Platform;
 using KubeUI.Avalonia.Services.Settings;
-using KubeUI.Kubernetes;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -20,8 +30,7 @@ namespace KubeUI.Desktop;
 
 internal static class Program
 {
-    private static readonly object HostLock = new();
-    private static IHost? _host;
+    public static ActivitySource Source { get; } = new ActivitySource("com.KubeUI.Desktop", "1.0.0");
 
     [STAThread]
     public static void Main(string[] args)
@@ -30,72 +39,186 @@ internal static class Program
 
         EnsureMacOsPath();
 
-        EnsureHostInitialized();
+        using var host = CreateHostBuilder(args).Build();
 
-        BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
+        try
+        {
+            using var lifetime = new ClassicDesktopStyleApplicationLifetime
+            {
+                Args = args
+            };
+            var appBuilder = CreateAppBuilder(host.Services);
 
-        _host.StopAsync().GetAwaiter().GetResult();
-
-        _host.Dispose();
-        _host = null;
+            StartHostAfterAvaloniaSetup(
+                host,
+                () => appBuilder.SetupWithLifetime(lifetime),
+                () => lifetime.Start(args));
+        }
+        catch (Exception exception)
+        {
+            host.Services.GetRequiredService<ILoggerFactory>().CreateLogger("KubeUI.Desktop.Program").LogCritical(
+                exception,
+                "Avalonia startup failed");
+            throw;
+        }
+        finally
+        {
+            host.Services.GetRequiredService<ILoggerFactory>().CreateLogger("KubeUI.Desktop.Program").LogWarning(
+                "Avalonia lifetime ended; stopping host");
+            Task.Run(async () =>
+            {
+                await host.StopAsync().ConfigureAwait(false);
+            }).GetAwaiter().GetResult();
+        }
     }
 
-    public static AppBuilder BuildAvaloniaApp()
-            => AppBuilder.Configure(() => new App(EnsureHostInitialized().Services))
+    internal static AppBuilder CreateAppBuilder(
+        IServiceProvider services,
+        Func<AppBuilder, AppBuilder>? configurePlatform = null,
+        bool enableDevelopmentTools = true)
+    {
+        RegisterAvaloniaShutdown(services);
+
+        var builder = AppBuilder.Configure(() => new App(services));
+        builder = (configurePlatform ?? (static builder => builder.UsePlatformDetect()))(builder);
+
+        builder = builder
             .ConfigureFonts(fontManager => fontManager.AddFontCollection(new CascadiaMonoFontCollection()))
             .WithInterFont()
-            .UsePlatformDetect();
-
-    private static IHost EnsureHostInitialized()
-    {
-        if (_host != null)
+            .UseServiceProvider(services)
+            .UseComponentControlFactory(type => (Control)ActivatorUtilities.CreateInstance(services, type))
+            .UseViewInitializationStrategy(ViewInitializationStrategy.Lazy);
+#if DEBUG
+        if (enableDevelopmentTools)
         {
-            return _host;
+            builder = builder
+                .UseHotReload()
+                .UseAgentInspector(o =>
+                {
+                    o.EnableInteraction = true;
+                    o.Services = services;
+                });
         }
-
-        lock (HostLock)
-        {
-            if (_host == null)
-            {
-                _host = CreateHostBuilder(Environment.GetCommandLineArgs()).Build();
-                _host.Services.ConfigureKubeUIKubernetesJsonLogging();
-                _host.StartAsync().GetAwaiter().GetResult();
-            }
-        }
-
-        return _host;
+#endif
+        return builder;
     }
 
-    private static HostApplicationBuilder CreateHostBuilder(string[] args)
+    internal static void StartHostAfterAvaloniaSetup(
+        IHost host,
+        Action setupAvalonia,
+        Action runAvalonia)
     {
-        var builder = Host.CreateApplicationBuilder(args);
-        var settings = SettingsService.LoadSettingsFromFile();
+        setupAvalonia();
+        host.Start();
+        runAvalonia();
+    }
 
+    internal static void RegisterAvaloniaShutdown(IServiceProvider services, Action? shutdownAvalonia = null)
+    {
+        shutdownAvalonia ??= static () =>
+        {
+            static void ShutdownAvalonia()
+            {
+                if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+                    desktop.TryShutdown();
+            }
+
+            if (Dispatcher.UIThread.CheckAccess())
+                ShutdownAvalonia();
+            else
+                Dispatcher.UIThread.Post(ShutdownAvalonia);
+        };
+
+        services.GetRequiredService<IHostApplicationLifetime>().ApplicationStopping.Register(shutdownAvalonia);
+    }
+
+    internal static HostApplicationBuilder CreateHostBuilder(
+        string[] args,
+        bool includeOptionalServices = true,
+        Action<IServiceCollection>? configureServices = null)
+    {
+        return CreateDesktopHostBuilder(args, includeOptionalServices, configureServices, null, null);
+    }
+
+    private static HostApplicationBuilder CreateDesktopHostBuilder(
+        string[] args,
+        bool includeOptionalServices,
+        Action<IServiceCollection>? configureServices,
+        int? mcpPortOverride,
+        bool? mcpEnabledOverride)
+    {
+        var builder = Host.CreateEmptyApplicationBuilder(new HostApplicationBuilderSettings
+        {
+            ApplicationName = "KubeUI",
+            Args = args
+        });
         builder.Logging.SetMinimumLevel(LogLevel.Debug);
 
+        var settings = SettingsPersistenceLoader.Load();
         builder.Services.AddKubeUIAppServices();
 
-        if (settings.TelemetryEnabled)
+        if (mcpEnabledOverride ?? settings.Settings.McpServerEnabled)
         {
+            builder.Services.AddRouting();
+            builder.Services.AddSingleton(
+                static _ => new DiagnosticListener("KubeUI.Mcp"));
+            builder.Services.AddMcpServer()
+                .WithHttpTransport(options => options.Stateless = true)
+                .WithTools<McpTools>();
+            var port = mcpPortOverride ?? settings.Settings.McpServerPort;
+            builder.Services.AddSingleton<IHostedService>(services =>
+                new McpServerHostedService(services, port));
+        }
+
+        if (includeOptionalServices && settings.Settings.TelemetryEnabled)
             builder.Services.AddTelemetry();
-        }
 
-        if (settings.LoggingEnabled)
-        {
+        if (includeOptionalServices && settings.Settings.LoggingEnabled)
             builder.Services.AddFileLogging();
-        }
 
-        builder.Services.AddSingleton<ServiceDescriptor[]>([.. builder.Services]);
+        configureServices?.Invoke(builder.Services);
         return builder;
+    }
+
+    /// <summary>
+    /// Builds and starts the desktop application host. MCP bind failure does not stop desktop startup.
+    /// </summary>
+    internal static IHost CreateStartedHost(
+        string[] args,
+        bool includeOptionalServices = true,
+        Action<IServiceCollection>? configureServices = null,
+        int? mcpPortOverride = null,
+        bool? mcpEnabledOverride = null)
+    {
+        var host = CreateDesktopHostBuilder(
+            args,
+            includeOptionalServices,
+            configureServices,
+            mcpPortOverride,
+            mcpEnabledOverride).Build();
+        host.Start();
+        return host;
+    }
+
+    internal static bool IsPortBindFailure(Exception exception)
+    {
+        return exception switch
+        {
+            SocketException => true,
+            AggregateException aggregate => aggregate.InnerExceptions.Any(IsPortBindFailure),
+            _ when exception.InnerException is not null => IsPortBindFailure(exception.InnerException),
+            _ => false
+        };
     }
 
     private static IServiceCollection AddFileLogging(this IServiceCollection services)
     {
         services.AddLogging(loggingBuilder =>
         {
-            if (SettingsService.EnsureSettingDirExists())
+            var settingsDirectory = SettingsPersistenceLoader.SettingsDirectory;
+            if (SettingsPersistenceLoader.EnsureDirectoryExists())
             {
-                loggingBuilder.AddFile(Path.Combine(SettingsService.GetSettingsPath(), "app.log"), x =>
+                loggingBuilder.AddFile(Path.Combine(settingsDirectory, "app.log"), x =>
                 {
                     x.Append = false;
                     x.FileSizeLimitBytes = 1024L * 1024 * 1024;
@@ -165,6 +288,10 @@ internal static class Program
             .WithTracing(tracingProvider =>
             {
                 tracingProvider
+                    .AddSource(Source.Name)
+                    .AddSource(AgentActivitySource.SourceName)
+                    .AddSource(Kubernetes.Client.KubeInstrumentation.SourceName)
+                    .AddSource(Instrumentation.SourceName)
                     .AddHttpClientInstrumentation()
                     .AddOtlpExporter(e =>
                     {

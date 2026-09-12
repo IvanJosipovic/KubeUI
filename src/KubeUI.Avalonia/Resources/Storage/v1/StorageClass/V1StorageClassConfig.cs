@@ -1,6 +1,4 @@
-using Avalonia.Controls;
 using k8s.Models;
-using KubeUI.Avalonia.Resources.Storage.v1.StorageClass.Views;
 
 namespace KubeUI.Avalonia.Resources.Storage.v1.StorageClass;
 
@@ -45,4 +43,3 @@ public sealed partial class V1StorageClassConfig : ResourceConfigBase<V1StorageC
 
     public override Control[] Properties(V1StorageClass resource) => [new PropertiesView()];
 }
-

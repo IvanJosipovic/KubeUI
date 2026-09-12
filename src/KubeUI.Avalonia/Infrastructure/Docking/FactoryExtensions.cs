@@ -1,6 +1,5 @@
 using Dock.Model.Controls;
 using Dock.Model.Core;
-using KubeUI.Avalonia.Infrastructure.Docking;
 
 namespace KubeUI.Avalonia.Infrastructure.Docking;
 
@@ -8,7 +7,13 @@ public static class FactoryExtensions
 {
     public static IDockable? FindDockableById(this IFactory factory, string id)
     {
-        return factory.Find(x => string.Equals(x.Id, id, StringComparison.Ordinal)).FirstOrDefault();
+        return factory.Find(x => string.Equals(x.Id, id, StringComparison.Ordinal)).FirstOrDefault()
+            ?? factory.GetDockable<IDocumentDock>("Documents")?.VisibleDockables?
+                .FirstOrDefault(x => string.Equals(x.Id, id, StringComparison.Ordinal))
+            ?? factory.GetDockable<IToolDock>("RightDock")?.VisibleDockables?
+                .FirstOrDefault(x => string.Equals(x.Id, id, StringComparison.Ordinal))
+            ?? factory.GetDockable<IToolDock>("BottomDock")?.VisibleDockables?
+                .FirstOrDefault(x => string.Equals(x.Id, id, StringComparison.Ordinal));
     }
 
     public static bool AddToDocuments(this IFactory factory, IDockable vm)
@@ -93,4 +98,3 @@ public static class FactoryExtensions
         }
     }
 }
-

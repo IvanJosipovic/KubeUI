@@ -23,13 +23,13 @@ internal static class PodEphemeralContainerBuilder
             throw new ArgumentException("Debug container image must be provided.", nameof(image));
         }
 
-        string? resolvedTargetContainerName = string.IsNullOrWhiteSpace(targetContainerName) ? null : targetContainerName;
+        var resolvedTargetContainerName = string.IsNullOrWhiteSpace(targetContainerName) ? null : targetContainerName;
         if (resolvedTargetContainerName != null && !ContainerExists(pod, resolvedTargetContainerName))
         {
             throw new InvalidOperationException($"Container '{resolvedTargetContainerName}' was not found in pod '{pod.Namespace()}/{pod.Name()}'.");
         }
 
-        List<V1EphemeralContainer> ephemeralContainers = pod.Spec.EphemeralContainers?.ToList() ?? new List<V1EphemeralContainer>();
+        var ephemeralContainers = pod.Spec.EphemeralContainers?.ToList() ?? new List<V1EphemeralContainer>();
         ephemeralContainers.Add(CreateDebugContainer(image, resolvedTargetContainerName));
 
         return pod with

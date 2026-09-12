@@ -1,16 +1,11 @@
-using Avalonia.Controls;
 using k8s.Models;
-using KubeUI.Avalonia.Resources.Core.v1.Namespace.Views;
 
 namespace KubeUI.Avalonia.Resources.Core.v1.Namespace;
 
-public sealed partial class V1NamespaceConfig : ResourceConfigBase<V1Namespace>
+public sealed partial class V1NamespaceConfig(IServiceProvider serviceProvider) : ResourceConfigBase<V1Namespace>(serviceProvider)
 {
-    public V1NamespaceConfig(IServiceProvider serviceProvider)
-        : base(serviceProvider)
-    {
-    }
     public override int Order => 6;
+    public override bool SeedOnConnect => true;
 
     public override IList<IResourceListColumn> Columns()
     {
@@ -20,14 +15,14 @@ public sealed partial class V1NamespaceConfig : ResourceConfigBase<V1Namespace>
             {
                 Key = "labels",
                 Name = Assets.Resources.V1NamespaceConfig_Labels!,
-                Field = x => x.Metadata?.Labels is { Count: > 0 } labels ? string.Join(", ", labels.Select(x => x.Key + "=" + x.Value)) : "",
+                Field = x => x?.Metadata?.Labels is { Count: > 0 } labels ? string.Join(", ", labels.Select(x => x.Key + "=" + x.Value)) : "",
                 Width = "2*"
             },
             new ResourceListColumn<V1Namespace, string>()
             {
                 Key = "status",
                 Name = Assets.Resources.V1NamespaceConfig_Status!,
-                Field = x => x.Status?.Phase ?? "",
+                Field = x => x?.Status?.Phase ?? "",
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },
             AgeColumn(),

@@ -1,6 +1,4 @@
-using Avalonia.Controls;
 using k8s.Models;
-using KubeUI.Avalonia.Resources.AccessControl.v1.RoleBinding.Views;
 
 namespace KubeUI.Avalonia.Resources.AccessControl.v1.RoleBinding;
 

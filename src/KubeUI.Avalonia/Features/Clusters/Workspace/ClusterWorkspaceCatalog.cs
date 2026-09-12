@@ -1,17 +1,14 @@
 using System.Collections.Specialized;
-using k8s.KubeConfigModels;
-using KubeUI.Avalonia.Features.Clusters.Workspace;
-using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
 using KubeUI.Kubernetes;
 using Swordfish.NET.Collections;
 
 namespace KubeUI.Avalonia.Features.Clusters.Workspace;
 
-public sealed class ClusterWorkspaceComparer : IComparer<ClusterWorkspaceViewModel>
+public sealed class ClusterWorkspaceComparer : IComparer<ClusterWorkspace>
 {
-    public int Compare(ClusterWorkspaceViewModel? x, ClusterWorkspaceViewModel? y)
+    public int Compare(ClusterWorkspace? x, ClusterWorkspace? y)
     {
-        return string.Compare(x?.Name, y?.Name, StringComparison.Ordinal);
+        return string.Compare(x?.Runtime.Name, y?.Runtime.Name, StringComparison.Ordinal);
     }
 }
 
@@ -19,9 +16,8 @@ public sealed class ClusterWorkspaceCatalog : IDisposable
 {
     private readonly IClusterRuntimeCatalog _runtimeCatalog;
     private readonly IServiceProvider _serviceProvider;
-    private readonly Dictionary<IClusterRuntime, ClusterWorkspaceViewModel> _workspaces = [];
 
-    public ObservableCollection<ClusterWorkspaceViewModel> Clusters { get; } = new ObservableSortedCollection<ClusterWorkspaceViewModel>(new ClusterWorkspaceComparer());
+    public ObservableCollection<ClusterWorkspace> Clusters { get; } = new ObservableSortedCollection<ClusterWorkspace>(new ClusterWorkspaceComparer());
 
     public ClusterWorkspaceCatalog(IClusterRuntimeCatalog runtimeCatalog, IServiceProvider serviceProvider)
     {
@@ -33,40 +29,19 @@ public sealed class ClusterWorkspaceCatalog : IDisposable
             changed.CollectionChanged += RuntimeClustersChanged;
         }
 
-        ReloadWorkspaces();
+        ReconcileWorkspaces();
     }
 
-    public ClusterWorkspaceViewModel? GetCluster(string name)
+    public ClusterWorkspace? GetCluster(string name)
     {
         var runtime = _runtimeCatalog.GetCluster(name);
         return runtime == null ? null : GetOrCreate(runtime);
     }
 
-    public ClusterWorkspaceViewModel? GetDefault()
+    public ClusterWorkspace? GetDefault()
     {
         var runtime = _runtimeCatalog.GetDefault();
         return runtime == null ? null : GetOrCreate(runtime);
-    }
-
-    public void LoadFromConfigFromPath(string path)
-    {
-        _runtimeCatalog.LoadFromConfigFromPath(path);
-    }
-
-    public void LoadFromConfig(K8SConfiguration kubeConfig)
-    {
-        _runtimeCatalog.LoadFromConfig(kubeConfig);
-    }
-
-    public void ImportIntoKubeConfig(K8SConfiguration kubeConfig)
-    {
-        _runtimeCatalog.ImportIntoKubeConfig(kubeConfig);
-    }
-
-    public void RemoveCluster(ClusterWorkspaceViewModel cluster)
-    {
-        _runtimeCatalog.RemoveCluster(cluster.Runtime);
-        RemoveWorkspace(cluster.Runtime);
     }
 
     public void Dispose()
@@ -76,54 +51,102 @@ public sealed class ClusterWorkspaceCatalog : IDisposable
             changed.CollectionChanged -= RuntimeClustersChanged;
         }
 
-        foreach (var workspace in _workspaces.Values)
+        foreach (var workspace in Clusters.ToList())
         {
             workspace.Dispose();
         }
 
-        _workspaces.Clear();
         Clusters.Clear();
     }
 
     private void RuntimeClustersChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
-        Dispatcher.UIThread.Post(ReloadWorkspaces);
+        var action = e.Action;
+        var newRuntimes = e.NewItems?.OfType<IClusterRuntime>().ToArray() ?? [];
+        var oldRuntimes = e.OldItems?.OfType<IClusterRuntime>().ToArray() ?? [];
+
+        Dispatcher.UIThread.Post(() => ApplyRuntimeClustersChanged(action, newRuntimes, oldRuntimes));
     }
 
-    private void ReloadWorkspaces()
+    private void ApplyRuntimeClustersChanged(
+        NotifyCollectionChangedAction action,
+        IReadOnlyList<IClusterRuntime> newRuntimes,
+        IReadOnlyList<IClusterRuntime> oldRuntimes)
+    {
+        switch (action)
+        {
+            case NotifyCollectionChangedAction.Add:
+                foreach (var runtime in newRuntimes)
+                {
+                    GetOrCreate(runtime);
+                }
+
+                break;
+
+            case NotifyCollectionChangedAction.Remove:
+                foreach (var runtime in oldRuntimes)
+                {
+                    RemoveWorkspace(runtime);
+                }
+
+                break;
+
+            case NotifyCollectionChangedAction.Replace:
+                foreach (var runtime in oldRuntimes)
+                {
+                    RemoveWorkspace(runtime);
+                }
+
+                foreach (var runtime in newRuntimes)
+                {
+                    GetOrCreate(runtime);
+                }
+
+                break;
+
+            case NotifyCollectionChangedAction.Reset:
+                ReconcileWorkspaces();
+                break;
+
+            case NotifyCollectionChangedAction.Move:
+                break;
+        }
+    }
+
+    private void ReconcileWorkspaces()
     {
         var runtimes = _runtimeCatalog.Clusters.ToList();
 
-        foreach (var runtime in _workspaces.Keys.Where(runtime => !runtimes.Contains(runtime)).ToList())
+        foreach (var workspace in Clusters
+                     .Where(workspace => !runtimes.Any(runtime => ReferenceEquals(runtime, workspace.Runtime)))
+                     .ToList())
         {
-            RemoveWorkspace(runtime);
+            RemoveWorkspace(workspace.Runtime);
         }
 
         foreach (var runtime in runtimes)
         {
-            var workspace = GetOrCreate(runtime);
-            if (!Clusters.Contains(workspace))
-            {
-                Clusters.Add(workspace);
-            }
+            GetOrCreate(runtime);
         }
     }
 
-    private ClusterWorkspaceViewModel GetOrCreate(IClusterRuntime runtime)
+    private ClusterWorkspace GetOrCreate(IClusterRuntime runtime)
     {
-        if (_workspaces.TryGetValue(runtime, out var workspace))
+        var workspace = Clusters.FirstOrDefault(workspace => ReferenceEquals(workspace.Runtime, runtime));
+        if (workspace != null)
         {
             return workspace;
         }
 
-        workspace = ActivatorUtilities.CreateInstance<ClusterWorkspaceViewModel>(_serviceProvider, runtime);
-        _workspaces[runtime] = workspace;
+        workspace = ActivatorUtilities.CreateInstance<ClusterWorkspace>(_serviceProvider, runtime);
+        Clusters.Add(workspace);
         return workspace;
     }
 
     private void RemoveWorkspace(IClusterRuntime runtime)
     {
-        if (!_workspaces.Remove(runtime, out var workspace))
+        var workspace = Clusters.FirstOrDefault(workspace => ReferenceEquals(workspace.Runtime, runtime));
+        if (workspace == null)
         {
             return;
         }
@@ -132,4 +155,3 @@ public sealed class ClusterWorkspaceCatalog : IDisposable
         workspace.Dispose();
     }
 }
-

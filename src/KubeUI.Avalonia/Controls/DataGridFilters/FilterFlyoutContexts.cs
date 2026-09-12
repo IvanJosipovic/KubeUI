@@ -1,4 +1,3 @@
-using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Windows.Input;
 using Avalonia.Controls.DataGridFiltering;
@@ -273,14 +272,17 @@ internal sealed class DateFilterFlyoutContext : ColumnFilterFlyoutContextBase
     private double? _amount = 1;
     private DateRelativeUnitChoice _selectedUnit = null!;
 
-    public DateFilterFlyoutContext(string title, Action apply, Action clear)
+    public DateFilterFlyoutContext(string title, TimeProvider timeProvider, Action apply, Action clear)
         : base(title, ResourceListFilterFlyoutOptions.DateOperators, apply, clear)
     {
+        TimeProvider = timeProvider;
         Units = new ObservableCollection<DateRelativeUnitChoice>(ResourceListFilterFlyoutOptions.DateRelativeUnits);
         _selectedUnit = Units[0];
     }
 
     public ObservableCollection<DateRelativeUnitChoice> Units { get; }
+
+    private TimeProvider TimeProvider { get; }
 
     public double? Amount
     {
@@ -312,7 +314,7 @@ internal sealed class DateFilterFlyoutContext : ColumnFilterFlyoutContextBase
             return;
         }
 
-        var amountAndUnit = InferRelativeAmount(threshold.Value);
+        var amountAndUnit = InferRelativeAmount(threshold.Value, TimeProvider.GetUtcNow());
         Amount = amountAndUnit.Amount;
         SelectedUnit = amountAndUnit.Unit;
     }
@@ -345,9 +347,9 @@ internal sealed class DateFilterFlyoutContext : ColumnFilterFlyoutContextBase
         };
     }
 
-    private static RelativeAmount InferRelativeAmount(DateTimeOffset threshold)
+    private static RelativeAmount InferRelativeAmount(DateTimeOffset threshold, DateTimeOffset now)
     {
-        TimeSpan difference = DateTimeOffset.UtcNow - threshold;
+        var difference = now - threshold;
         if (difference < TimeSpan.Zero)
         {
             difference = difference.Negate();

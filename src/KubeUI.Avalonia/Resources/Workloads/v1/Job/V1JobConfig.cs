@@ -1,6 +1,7 @@
-using Avalonia.Controls;
 using k8s.Models;
-using KubeUI.Avalonia.Resources.Workloads.v1.Job.Views;
+using KubernetesClient.Informer.Client;
+using KubeUI.Avalonia.Features.Resources.Common;
+using KubeUI.Kubernetes;
 
 namespace KubeUI.Avalonia.Resources.Workloads.v1.Job;
 
@@ -38,6 +39,17 @@ public sealed partial class V1JobConfig : ResourceConfigBase<V1Job>
         ];
     }
 
+    protected override IEnumerable<MenuItemViewModel> CreateCustomMenuItems(IEnumerable<V1Job>? selectedItems)
+    {
+        return [CreatePodLogsMenuItem(selectedItems)];
+    }
+
+    /// <summary>Requests permission to read pod logs for job workloads.</summary>
+    public override IEnumerable<AuthorizationRequest> AuthorizationRequests()
+    {
+        return base.AuthorizationRequests().Append(
+            new AuthorizationRequest(GroupApiVersionKind.From<V1Pod>(), Verb.Get, "log"));
+    }
+
     public override Control[] Properties(V1Job resource) => [new PropertiesView()];
 }
-

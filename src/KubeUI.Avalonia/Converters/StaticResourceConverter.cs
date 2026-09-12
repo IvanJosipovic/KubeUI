@@ -1,5 +1,4 @@
 using System.Globalization;
-using Avalonia;
 using Avalonia.Data.Converters;
 
 namespace KubeUI.Avalonia.Converters;

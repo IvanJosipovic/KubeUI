@@ -1,5 +1,19 @@
 <Project>
   <PropertyGroup>
-    <WarningsAsErrors>$(WarningsAsErrors);CS4014</WarningsAsErrors>
+    <TargetFramework>net11.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>preview</LangVersion>
+
+    <EnableAvaloniaXamlCompilation>false</EnableAvaloniaXamlCompilation>
+
+    <WarningsAsErrors>$(WarningsAsErrors);CA1001</WarningsAsErrors>
+
+    <AnalysisLevel>latest</AnalysisLevel>
+    <AnalysisMode>Recommended</AnalysisMode>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <TestingPlatformShowTestsFailure>true</TestingPlatformShowTestsFailure>
+
+    <TestingPlatformCommandLineArguments>$(TestingPlatformCommandLineArguments) --config-file $(MSBuildThisFileDirectory)testconfig.json</TestingPlatformCommandLineArguments>
   </PropertyGroup>
 </Project>

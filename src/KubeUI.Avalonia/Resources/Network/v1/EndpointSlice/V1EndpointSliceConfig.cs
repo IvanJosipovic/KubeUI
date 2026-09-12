@@ -1,6 +1,4 @@
-using Avalonia.Controls;
 using k8s.Models;
-using KubeUI.Avalonia.Resources.Network.v1.EndpointSlice.Views;
 
 namespace KubeUI.Avalonia.Resources.Network.v1.EndpointSlice;
 
@@ -25,4 +23,3 @@ public sealed partial class V1EndpointSliceConfig : ResourceConfigBase<V1Endpoin
 
     public override Control[] Properties(V1EndpointSlice resource) => [new PropertiesView()];
 }
-

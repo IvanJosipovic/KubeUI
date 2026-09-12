@@ -30,13 +30,13 @@ jobs:
           - rid: win-x64
             fileName: KubeUI.Desktop.exe
             runs-on: windows-latest
-            packParams: ''
+            packParams: '--msi'
             signingParams: --azureTrustedSignFile metadata.json --verbose --signExclude \.dll$
             icon: src/KubeUI.Avalonia/Assets/icon.ico
           - rid: win-arm64
             fileName: KubeUI.Desktop.exe
             runs-on: windows-latest
-            packParams: ''
+            packParams: '--msi'
             signingParams: --azureTrustedSignFile metadata.json --verbose --signExclude \.dll$
             icon: src/KubeUI.Avalonia/Assets/icon.ico
           - rid: linux-x64
@@ -69,6 +69,14 @@ jobs:
         with:
           global-json-file: global.json
 
+      - name: Cache NuGet packages
+        uses: actions/cache@v6
+        with:
+            path: ~/.nuget/packages
+            key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj', '**/*.props', 'global.json') }}
+            restore-keys: |
+              ${{ runner.os }}-nuget-
+
       - name: Install Velopack
         shell: pwsh
         run: |
@@ -84,7 +92,13 @@ jobs:
 
       - name: Publish
         working-directory: src/KubeUI.Desktop
-        run: dotnet publish -c Release -r ${{ matrix.rid }} -o bin/publish -p:Version=${{ inputs.package_version }}
+        run: dotnet publish -c Release -r ${{ matrix.rid }} -o bin/publish -p:Version=${{ inputs.package_version }} --tl:off -clp:ErrorsOnly
+
+      - name: Clean Output
+        shell: pwsh
+        working-directory: src/KubeUI.Desktop/bin/publish
+        run: |
+          Remove-Item -Path *.xml
 
       - name: Replace single file
         if: matrix.runs-on == 'macos-latest'

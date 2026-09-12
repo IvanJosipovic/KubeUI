@@ -1,9 +1,6 @@
-using System.Text.Json;
-using System.Text.Json.Serialization;
-using Avalonia.Styling;
 using KubeUI.Avalonia.Options;
+using KubeUI.Avalonia.Styles;
 using KubeUI.Kubernetes;
-using static KubeUI.Avalonia.Services.Settings.SettingsService;
 using AppAppearanceSettings = KubeUI.Avalonia.Options.AppearanceSettings;
 using AppSettings = KubeUI.Avalonia.Options.Settings;
 
@@ -11,7 +8,7 @@ namespace KubeUI.Avalonia.Services.Settings;
 
 public class SettingsService : ObservableObject, ISettingsService, IClusterSettingsStore
 {
-    private readonly ILogger<SettingsService> _logger;
+    private readonly ISettingsPersistence _persistence;
     private AppSettings? _settings;
     private AppAppearanceSettings? _appearance;
 
@@ -24,7 +21,7 @@ public class SettingsService : ObservableObject, ISettingsService, IClusterSetti
                 return _settings;
             }
 
-            _settings = LoadPersistedSettings().Settings;
+            _settings = _persistence.Load().Settings;
             HookSettings(_settings);
             return _settings;
         }
@@ -51,7 +48,7 @@ public class SettingsService : ObservableObject, ISettingsService, IClusterSetti
                 return _appearance;
             }
 
-            _appearance = LoadPersistedSettings().Appearance;
+            _appearance = _persistence.Load().Appearance;
             HookAppearance(_appearance);
             return _appearance;
         }
@@ -69,24 +66,10 @@ public class SettingsService : ObservableObject, ISettingsService, IClusterSetti
         }
     }
 
-    public SettingsService(ILogger<SettingsService> logger)
+    public SettingsService(ILogger<SettingsService> logger, ISettingsPersistence persistence)
     {
-        _logger = logger;
-    }
-
-    public static string GetSettingsPath()
-    {
-        return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".kubeui");
-    }
-
-    public static string GetSettingsFilePath()
-    {
-        return Path.Combine(GetSettingsPath(), "settings.json");
-    }
-
-    public static AppSettings LoadSettingsFromFile()
-    {
-        return LoadPersistedSettings().Settings;
+        _ = logger;
+        _persistence = persistence;
     }
 
     public IClusterSettingsStore Clusters => this;
@@ -103,44 +86,13 @@ public class SettingsService : ObservableObject, ISettingsService, IClusterSetti
         return Settings.GetClusterSettings(cluster).Namespaces ?? [];
     }
 
-    public static bool EnsureSettingDirExists()
-    {
-        try
-        {
-            if (!Directory.Exists(GetSettingsPath()))
-            {
-                Directory.CreateDirectory(GetSettingsPath());
-            }
-
-            return true;
-        }
-        catch (Exception)
-        {
-            return false;
-        }
-    }
-
     public virtual void SaveSettings()
     {
-        try
+        _persistence.Save(new SettingsPersistenceData
         {
-            if (EnsureSettingDirExists())
-            {
-                File.WriteAllText(GetSettingsFilePath(), JsonSerializer.Serialize(new PersistedSettings
-                {
-                    Settings = Settings,
-                    Appearance = Appearance,
-                }, PersistedSettingsSourceGenerationContext.Default.PersistedSettings));
-            }
-            else
-            {
-                _logger.LogError("Unable to create settings directory");
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Unable to save settings file");
-        }
+            Settings = Settings,
+            Appearance = Appearance,
+        });
 
         if (Dispatcher.UIThread.CheckAccess())
         {
@@ -171,36 +123,11 @@ public class SettingsService : ObservableObject, ISettingsService, IClusterSetti
         {
             Application.Current.Resources["DataGridRowHeight"] = Convert.ToDouble(Appearance.ListRowHeight);
             Application.Current.Resources["DataGridColumnHeaderMinHeight"] = Convert.ToDouble(Appearance.ListRowHeight + 4m);
-            Application.Current.Resources["DataGridFontSize"] = Convert.ToDouble(Appearance.FontSize);
+            Application.Current.Resources[Typography.AppFontSizeResourceKey] = Convert.ToDouble(Appearance.FontSize);
+            Application.Current.Resources[Typography.CodeFontSizeResourceKey] = Convert.ToDouble(Appearance.ConsoleFontSize);
         }
 
         App.TopLevel?.FontSize = Convert.ToDouble(Appearance.FontSize);
-    }
-
-    private static PersistedSettings LoadPersistedSettings()
-    {
-        try
-        {
-            var path = GetSettingsFilePath();
-
-            if (File.Exists(path))
-            {
-                using var json = File.OpenRead(path);
-
-                var settings = JsonSerializer.Deserialize(json, PersistedSettingsSourceGenerationContext.Default.PersistedSettings);
-
-                if (settings != null)
-                {
-                    return settings;
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            System.Diagnostics.Trace.WriteLine($"Failed to load persisted settings: {ex}");
-        }
-
-        return new PersistedSettings();
     }
 
     private void HookSettings(AppSettings settings)
@@ -225,14 +152,4 @@ public class SettingsService : ObservableObject, ISettingsService, IClusterSetti
         SaveSettings();
     }
 
-    internal sealed class PersistedSettings
-    {
-        public AppSettings Settings { get; set; } = new();
-
-        public AppAppearanceSettings Appearance { get; set; } = new();
-    }
 }
-
-[JsonSourceGenerationOptions(WriteIndented = true)]
-[JsonSerializable(typeof(PersistedSettings))]
-internal partial class PersistedSettingsSourceGenerationContext : JsonSerializerContext { }

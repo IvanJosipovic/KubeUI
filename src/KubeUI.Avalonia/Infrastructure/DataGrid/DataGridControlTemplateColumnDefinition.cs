@@ -3,7 +3,6 @@
 
 #nullable disable
 
-using Avalonia;
 using Avalonia.Controls.Templates;
 
 namespace Avalonia.Controls

@@ -9,14 +9,14 @@ internal static class ResourceEventsSelector
     {
         ArgumentNullException.ThrowIfNull(@event);
 
-        var timestamp = EventTimeFormatter.ResolveTimestamp(@event);
+        var timestamp = RelativeTimeFormatter.ResolveTimestamp(@event);
 
         return new ResourceEventItem(
             string.IsNullOrWhiteSpace(@event.Message) ? (@event.Reason ?? string.Empty) : @event.Message.Trim(),
             FormatSource(@event),
             @event.Count ?? 0,
             @event.InvolvedObject?.FieldPath ?? string.Empty,
-            EventTimeFormatter.FormatPrettyLastSeen(timestamp, utcNow),
+            RelativeTimeFormatter.FormatPrettyLastSeen(timestamp, utcNow),
             string.Equals(@event.Type, "Warning", StringComparison.Ordinal));
     }
 
@@ -24,7 +24,7 @@ internal static class ResourceEventsSelector
     {
         ArgumentNullException.ThrowIfNull(@event);
 
-        var timestamp = EventTimeFormatter.ResolveTimestamp(@event);
+        var timestamp = RelativeTimeFormatter.ResolveTimestamp(@event);
         return timestamp.HasValue ? NormalizeUtc(timestamp.Value) : DateTime.MinValue;
     }
 
@@ -39,7 +39,7 @@ internal static class ResourceEventsSelector
 
         List<(Corev1Event Event, DateTime Timestamp)> matches = [];
 
-        foreach (Corev1Event @event in events)
+        foreach (var @event in events)
         {
             if (!MatchesResource(@event, resource))
             {
@@ -111,8 +111,8 @@ internal static class ResourceEventsSelector
 
     private static string FormatSource(Corev1Event @event)
     {
-        string? component = @event.Source?.Component ?? @event.ReportingComponent;
-        string? host = @event.Source?.Host ?? @event.ReportingInstance;
+        var component = @event.Source?.Component ?? @event.ReportingComponent;
+        var host = @event.Source?.Host ?? @event.ReportingInstance;
 
         if (string.IsNullOrWhiteSpace(component))
         {

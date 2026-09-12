@@ -24,7 +24,7 @@ internal sealed class KubernetesPortForwardSessionFactory : IPortForwardSessionF
 
     public async Task<IPortForwardSession> CreateAsync(string podName, string @namespace, int port)
     {
-        WebSocket webSocket = await _cluster.Client!.WebSocketNamespacedPodPortForwardAsync(
+        var webSocket = await _cluster.Client!.WebSocketNamespacedPodPortForwardAsync(
             podName,
             @namespace,
             [port],
@@ -45,7 +45,7 @@ internal sealed class KubernetesPortForwardSession : IPortForwardSession
         _webSocket = webSocket;
         _demux = new StreamDemuxer(_webSocket, StreamType.PortForward);
         _demux.Start();
-        _stream = _demux.GetStream((byte?)0, (byte?)0);
+        _stream = _demux.GetStream(0, (byte?)0);
     }
 
     public Stream Stream => _stream;

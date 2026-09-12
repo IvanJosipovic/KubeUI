@@ -1,0 +1,14 @@
+using KubeUI.Avalonia.Infrastructure.Presentation;
+namespace KubeUI.Avalonia.Features.Clusters.Error;
+
+public sealed partial class ClusterErrorViewModel : ViewModelBase
+{
+    public ClusterErrorViewModel()
+    {
+        Title = Assets.Resources.ClusterErrorView_Title;
+        Id = nameof(ClusterErrorViewModel);
+    }
+
+    [ObservableProperty]
+    public partial string? Error { get; set; }
+}

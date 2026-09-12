@@ -1,11 +1,8 @@
-using Avalonia.Controls;
 using FluentIcons.Common;
-using HanumanInstitute.MvvmDialogs;
-using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
-using k8s;
 using k8s.Models;
+using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Features.Resources.Common;
-using KubeUI.Avalonia.Resources.Workloads.v1.StatefulSet.Views;
+using KubeUI.Kubernetes;
 
 namespace KubeUI.Avalonia.Resources.Workloads.v1.StatefulSet;
 
@@ -39,9 +36,10 @@ public sealed partial class V1StatefulSetConfig : ResourceConfigBase<V1StatefulS
     protected override IEnumerable<MenuItemViewModel> CreateCustomMenuItems(IEnumerable<V1StatefulSet>? selectedItems)
     {
         return [
+            CreatePodLogsMenuItem(selectedItems),
             new()
             {
-                Header = "Restart",
+                Title = Assets.Resources.V1StatefulSetConfig_MenuItem_Restart,
                 FluentIcon = Icon.ArrowSync,
                 Command = RestartCommand,
                 CommandParameter = selectedItems?.ToList()
@@ -49,7 +47,12 @@ public sealed partial class V1StatefulSetConfig : ResourceConfigBase<V1StatefulS
         ];
     }
 
+    /// <summary>Requests permission to read pod logs for stateful set workloads.</summary>
+    public override IEnumerable<AuthorizationRequest> AuthorizationRequests()
+    {
+        return base.AuthorizationRequests().Append(
+            new AuthorizationRequest(GroupApiVersionKind.From<V1Pod>(), Verb.Get, "log"));
+    }
+
     public override Control[] Properties(V1StatefulSet resource) => [new PropertiesView()];
 }
-
-

@@ -1,9 +1,6 @@
-using System;
-using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.VisualTree;
 using Avalonia.Xaml.Interactivity;
-using KubeUI.Avalonia.Features.Resources.List.ViewModels;
 
 namespace KubeUI.Avalonia.Features.Resources.List.Behaviors;
 
@@ -46,7 +43,7 @@ public sealed class ResourceListContextMenuBehavior : Behavior<DataGrid>
             return;
         }
 
-        DataGridRow? row = source.GetSelfAndVisualAncestors().OfType<DataGridRow>().FirstOrDefault();
+        var row = source.GetSelfAndVisualAncestors().OfType<DataGridRow>().FirstOrDefault();
         if (row is null)
         {
             return;
@@ -63,7 +60,7 @@ public sealed class ResourceListContextMenuBehavior : Behavior<DataGrid>
             return;
         }
 
-        IEnumerable? selectedItems = ResolveContextMenuItemsSource(viewModel, row.Index, row.DataContext);
+        var selectedItems = ResolveContextMenuItemsSource(viewModel, row.Index, row.DataContext);
 
         contextMenu.ItemsSource = viewModel.GetContextMenuItems(selectedItems);
     }

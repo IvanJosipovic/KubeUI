@@ -1,11 +1,8 @@
-using Avalonia.Controls;
 using FluentIcons.Common;
-using HanumanInstitute.MvvmDialogs;
-using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
-using k8s;
 using k8s.Models;
+using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Features.Resources.Common;
-using KubeUI.Avalonia.Resources.Workloads.v1.DaemonSet.Views;
+using KubeUI.Kubernetes;
 
 namespace KubeUI.Avalonia.Resources.Workloads.v1.DaemonSet;
 
@@ -46,9 +43,10 @@ public sealed partial class V1DaemonSetConfig : ResourceConfigBase<V1DaemonSet>
     protected override IEnumerable<MenuItemViewModel> CreateCustomMenuItems(IEnumerable<V1DaemonSet>? selectedItems)
     {
         return [
+            CreatePodLogsMenuItem(selectedItems),
             new()
             {
-                Header = "Restart",
+                Title = Assets.Resources.V1DaemonSetConfig_MenuItem_Restart,
                 FluentIcon = Icon.ArrowSync,
                 Command = RestartCommand,
                 CommandParameter = selectedItems?.ToList()
@@ -56,6 +54,12 @@ public sealed partial class V1DaemonSetConfig : ResourceConfigBase<V1DaemonSet>
         ];
     }
 
+    /// <summary>Requests permission to read pod logs for daemon set workloads.</summary>
+    public override IEnumerable<AuthorizationRequest> AuthorizationRequests()
+    {
+        return base.AuthorizationRequests().Append(
+            new AuthorizationRequest(GroupApiVersionKind.From<V1Pod>(), Verb.Get, "log"));
+    }
+
     public override Control[] Properties(V1DaemonSet resource) => [new PropertiesView()];
 }
-

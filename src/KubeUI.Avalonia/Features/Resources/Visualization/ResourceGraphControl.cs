@@ -1,0 +1,679 @@
+using Avalonia.Controls.Templates;
+using k8s;
+using k8s.Models;
+using KubernetesClient.Informer.Client;
+using KubeUI.Avalonia.Features.Clusters.Workspace;
+using KubeUI.Avalonia.Infrastructure.DependencyInjection;
+using KubeUI.Avalonia.Services.Icons;
+using KubeUI.Kubernetes.Resources.Relationships;
+using QuikGraph;
+using Westermo.GraphX.Common.Enums;
+using Westermo.GraphX.Controls.Controls;
+using Westermo.GraphX.Controls.Controls.ZoomControl;
+using Westermo.GraphX.Controls.Controls.ZoomControl.SupportClasses;
+using Westermo.GraphX.Controls.Models.Interfaces;
+using Westermo.GraphX.Logic.Algorithms.LayoutAlgorithms;
+using Westermo.GraphX.Logic.Algorithms.OverlapRemoval;
+using Westermo.GraphX.Logic.Models;
+
+namespace KubeUI.Avalonia.Features.Resources.Visualization;
+
+public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphControlFactory
+{
+    public static readonly DirectProperty<ResourceGraphControl, ResourceRelationshipGraph?> GraphProperty =
+        AvaloniaProperty.RegisterDirect<ResourceGraphControl, ResourceRelationshipGraph?>(nameof(Graph), control => control.Graph, (control, value) => control.Graph = value);
+
+    private ResourceRelationshipGraph? _graph;
+    private readonly GraphArea<ResourceGraphVertex, ResourceGraphEdge, BidirectionalGraph<ResourceGraphVertex, ResourceGraphEdge>> _area;
+    private readonly GXLogicCore<ResourceGraphVertex, ResourceGraphEdge, BidirectionalGraph<ResourceGraphVertex, ResourceGraphEdge>> _logicCore;
+    private readonly ZoomControl _zoomControl;
+    private readonly IResourceIconService _iconService;
+    private readonly Dictionary<ResourceIdentity, ResourceGraphVertex> _vertices = [];
+    private VisualizationViewModel? _viewModel;
+    private Task? _graphGenerationTask;
+    private CancellationTokenSource? _graphPreparationCancellation;
+    private CancellationTokenSource? _layoutCancellation;
+    private int _graphPreparationVersion;
+    private bool _layoutPending;
+    private bool _hasGeneratedGraph;
+    private bool _zoomAfterGeneration;
+    private bool _isDetached;
+    private bool _rebuildFromAttachment;
+    private bool _disposed;
+    private bool _graphXDisposed;
+
+    public ResourceRelationshipGraph? Graph
+    {
+        get => _graph;
+        set
+        {
+            if (ReferenceEquals(_graph, value))
+            {
+                return;
+            }
+
+            _graph = value;
+            RaisePropertyChanged(GraphProperty, null, value);
+
+            if (_isDetached)
+            {
+                return;
+            }
+
+            RebuildGraph();
+        }
+    }
+
+    internal GraphArea<ResourceGraphVertex, ResourceGraphEdge, BidirectionalGraph<ResourceGraphVertex, ResourceGraphEdge>> Area => _area;
+
+    internal ZoomControl ZoomControl => _zoomControl;
+
+    internal bool HasGeneratedGraph => _hasGeneratedGraph && (_graphGenerationTask is null || _graphGenerationTask.IsCompleted);
+
+    internal bool IsViewportStable => HasGeneratedGraph && !_zoomAfterGeneration;
+
+    public GraphAreaBase FactoryRootArea => _area;
+
+    public ResourceGraphControl(IResourceIconService? iconService = null)
+    {
+        _iconService = iconService
+            ?? (Application.Current as IServiceProviderHost)?.Services.GetService<IResourceIconService>()
+            ?? new ResourceIconService();
+        _logicCore = new GXLogicCore<ResourceGraphVertex, ResourceGraphEdge, BidirectionalGraph<ResourceGraphVertex, ResourceGraphEdge>>
+        {
+            DefaultLayoutAlgorithm = LayoutAlgorithmTypeEnum.Tree,
+            DefaultOverlapRemovalAlgorithm = OverlapRemovalAlgorithmTypeEnum.FSA,
+            DefaultEdgeRoutingAlgorithm = EdgeRoutingAlgorithmTypeEnum.None,
+            EnableParallelEdges = true,
+            ParallelEdgeDistance = 20,
+
+            DefaultLayoutAlgorithmParams = new SimpleTreeLayoutParameters
+            {
+                Direction = LayoutDirection.TopToBottom,
+                LayerGap = 240,
+                VertexGap = 120,
+                //ComponentGap = 120,
+                SpanningTreeGeneration = SpanningTreeGeneration.DFS,
+            },
+            DefaultOverlapRemovalAlgorithmParams = new OverlapRemovalParameters
+            {
+                HorizontalGap = 120,
+                VerticalGap = 120,
+            },
+            AsyncAlgorithmCompute = true,
+        };
+
+        _area = new GraphArea<ResourceGraphVertex, ResourceGraphEdge, BidirectionalGraph<ResourceGraphVertex, ResourceGraphEdge>>
+        {
+            LogicCore = _logicCore,
+            SelectedVertices = new HashSet<ResourceGraphVertex>(),
+            SelectionMode = SelectionMode.Multiple,
+            ControlFactory = this,
+            VertexLabelFactory = null
+        };
+
+        ResourceGraphStyles.Apply(_area);
+        _area.GenerateGraphFinished += OnGraphLayoutFinished;
+        _area.RelayoutFinished += OnGraphLayoutFinished;
+        _area.DataTemplates.Add(new FuncDataTemplate<ResourceGraphVertex>((vertex, _) => VisualizationView.CreateResourceNode(vertex!.Node)));
+
+        _zoomControl = new ZoomControl
+        {
+            Background = Brushes.Transparent,
+            AllowZoomingWithoutCtrl = true,
+            Content = _area,
+        };
+
+        Content = _zoomControl;
+    }
+
+    private void RebuildGraph()
+    {
+        if (_disposed)
+        {
+            return;
+        }
+
+        _graphPreparationCancellation?.Cancel();
+        CancellationTokenSource cancellation = new();
+        _graphPreparationCancellation = cancellation;
+        var version = Interlocked.Increment(ref _graphPreparationVersion);
+        var graph = _graph;
+        var cluster = _viewModel?.Cluster;
+        _ = PrepareGraphAsync(graph, cluster, version, cancellation);
+    }
+
+    private async Task PrepareGraphAsync(
+        ResourceRelationshipGraph? graph,
+        ClusterWorkspace? cluster,
+        int version,
+        CancellationTokenSource cancellation)
+    {
+        var prepared = await Task.Run(
+            () => CreatePreparedGraph(graph, cluster, cancellation.Token),
+            cancellation.Token).ConfigureAwait(false);
+
+        await Dispatcher.UIThread.InvokeAsync(() =>
+        {
+            if (_disposed
+                || _isDetached
+                || version != _graphPreparationVersion
+                || cancellation.IsCancellationRequested)
+            {
+                return;
+            }
+
+            var incremental = VisualRoot != null && _logicCore.Graph != null && !_rebuildFromAttachment;
+            _rebuildFromAttachment = false;
+            if (incremental)
+            {
+                ApplyGraphChanges(_graph ?? ResourceRelationshipGraph.Empty);
+                return;
+            }
+
+            _hasGeneratedGraph = false;
+            var wasEmpty = _vertices.Count == 0;
+            _vertices.Clear();
+            foreach (var resource in prepared.Resources)
+            {
+                var vertex = CreateVertex(resource.Resource, prepared.Cluster, resource.Icon);
+                _vertices.Add(vertex.Identity, vertex);
+            }
+
+            if (wasEmpty && _vertices.Count > 0)
+            {
+                _zoomAfterGeneration = true;
+            }
+
+            BidirectionalGraph<ResourceGraphVertex, ResourceGraphEdge> graph = new();
+            foreach (var vertex in _vertices.Values)
+            {
+                graph.AddVertex(vertex);
+            }
+
+            foreach (var relationship in prepared.Relationships)
+            {
+                if (TryCreateEdge(relationship, _vertices, out var edge))
+                {
+                    graph.AddEdge(edge);
+                }
+            }
+
+            _logicCore.Graph = graph;
+            if (VisualRoot != null)
+            {
+                QueueGraphGeneration();
+            }
+        }, DispatcherPriority.Background);
+    }
+
+    private PreparedGraph CreatePreparedGraph(
+        ResourceRelationshipGraph? graph,
+        ClusterWorkspace? cluster,
+        CancellationToken cancellationToken)
+    {
+        List<PreparedResource> resources = [];
+        List<ResourceRelationship> relationships = [];
+        if (graph != null)
+        {
+            foreach (var resource in graph.Resources)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                resources.Add(new PreparedResource(resource, _iconService.GetIcon(GetResourceKind(resource, cluster))));
+            }
+
+            foreach (var relationship in RemoveTransitiveOwnerRelationships(graph.Relationships))
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                relationships.Add(relationship);
+            }
+        }
+
+        return new PreparedGraph(resources, relationships, cluster);
+    }
+
+    internal static IReadOnlyList<ResourceRelationship> RemoveTransitiveOwnerRelationships(
+        IReadOnlyList<ResourceRelationship> relationships)
+    {
+        Dictionary<ResourceIdentity, List<ResourceIdentity>> childrenByOwner = [];
+        foreach (var relationship in relationships)
+        {
+            if (relationship.Kind != ResourceRelationshipKind.Owner)
+            {
+                continue;
+            }
+
+            childrenByOwner.TryAdd(relationship.Source, []);
+            childrenByOwner[relationship.Source].Add(relationship.Target);
+        }
+
+        var result = new List<ResourceRelationship>(relationships.Count);
+        foreach (var relationship in relationships)
+        {
+            if (relationship.Kind != ResourceRelationshipKind.Owner
+                || !childrenByOwner.TryGetValue(relationship.Source, out var children))
+            {
+                result.Add(relationship);
+                continue;
+            }
+
+            var descendants = new Queue<ResourceIdentity>(children.Where(child => child != relationship.Target));
+            var visited = new HashSet<ResourceIdentity>();
+            var isTransitive = false;
+            while (descendants.Count > 0)
+            {
+                var current = descendants.Dequeue();
+                if (!visited.Add(current))
+                {
+                    continue;
+                }
+
+                if (current == relationship.Target)
+                {
+                    isTransitive = true;
+                    break;
+                }
+
+                if (childrenByOwner.TryGetValue(current, out var currentChildren))
+                {
+                    foreach (var child in currentChildren)
+                    {
+                        descendants.Enqueue(child);
+                    }
+                }
+            }
+
+            if (!isTransitive)
+            {
+                result.Add(relationship);
+            }
+        }
+
+        return result;
+    }
+
+    private sealed record PreparedResource(
+        IKubernetesObject<V1ObjectMeta> Resource,
+        IImage Icon);
+
+    private sealed record PreparedGraph(
+        IReadOnlyList<PreparedResource> Resources,
+        IReadOnlyList<ResourceRelationship> Relationships,
+        ClusterWorkspace? Cluster);
+
+    private void ApplyGraphChanges(ResourceRelationshipGraph current)
+    {
+        var graph = _logicCore.Graph;
+        var vertices = _vertices;
+        var wasEmpty = vertices.Count == 0;
+        var relationships = RemoveTransitiveOwnerRelationships(current.Relationships);
+        HashSet<ResourceIdentity> desiredIdentities = new(current.Resources.Count);
+        foreach (var resource in current.Resources)
+        {
+            desiredIdentities.Add(GetIdentity(resource));
+        }
+
+        HashSet<ResourceRelationship> desiredRelationships = new(relationships.Count);
+        desiredRelationships.UnionWith(relationships);
+
+        HashSet<ResourceRelationship> existingRelationships = new(graph.EdgeCount);
+        foreach (var edge in graph.Edges)
+        {
+            existingRelationships.Add(edge.Relationship);
+        }
+
+        var structureChanged = false;
+
+        foreach (var vertex in vertices.Values.Where(vertex => !desiredIdentities.Contains(vertex.Identity)).ToArray())
+        {
+            structureChanged = true;
+            _area.RemoveVertexAndEdges(vertex);
+            if (graph.ContainsVertex(vertex))
+            {
+                graph.RemoveVertex(vertex);
+            }
+
+            vertices.Remove(vertex.Identity);
+        }
+
+        foreach (var edge in graph.Edges.ToArray())
+        {
+            if (!desiredRelationships.Contains(edge.Relationship)
+                || !desiredIdentities.Contains(edge.Source.Identity)
+                || !desiredIdentities.Contains(edge.Target.Identity))
+            {
+                structureChanged = true;
+                _area.RemoveEdge(edge, removeEdgeFromDataGraph: true);
+                if (graph.ContainsEdge(edge))
+                {
+                    graph.RemoveEdge(edge);
+                }
+            }
+        }
+
+        foreach (var resource in current.Resources)
+        {
+            var identity = GetIdentity(resource);
+            if (vertices.TryGetValue(identity, out var existingVertex))
+            {
+                if (existingVertex.Node.HasResourceChanged(resource))
+                {
+                    existingVertex.Node.UpdateResource(resource);
+                }
+
+                continue;
+            }
+
+            var vertex = CreateVertex(resource, _viewModel?.Cluster);
+            structureChanged = true;
+            vertices.Add(identity, vertex);
+            _area.AddVertexAndData(vertex, _area.ControlFactory.CreateVertexControl(vertex), generateLabel: false);
+        }
+
+        foreach (var relationship in relationships)
+        {
+            if (!existingRelationships.Add(relationship)
+                || !vertices.TryGetValue(relationship.Source, out var source)
+                || !vertices.TryGetValue(relationship.Target, out var target))
+            {
+                continue;
+            }
+
+            var edge = new ResourceGraphEdge(source, target, relationship);
+            structureChanged = true;
+            _area.InsertEdgeAndData(
+                edge,
+                _area.ControlFactory.CreateEdgeControl(
+                    _area.VertexList[edge.Source],
+                    _area.VertexList[edge.Target],
+                    edge),
+                generateLabel: true);
+        }
+
+        if (structureChanged)
+        {
+            if (wasEmpty != (vertices.Count == 0))
+            {
+                _zoomAfterGeneration = vertices.Count > 0;
+            }
+
+            QueueGraphGeneration();
+        }
+    }
+
+    private static ResourceIdentity GetIdentity(IKubernetesObject<V1ObjectMeta> resource)
+        => new(resource.ApiVersion ?? string.Empty, resource.Kind ?? string.Empty, resource.Namespace(), resource.Name() ?? string.Empty, resource.Uid());
+
+    private ResourceGraphVertex CreateVertex(
+        IKubernetesObject<V1ObjectMeta> resource,
+        ClusterWorkspace? cluster,
+        IImage? icon = null)
+    {
+        var vertex = new ResourceGraphVertex
+        {
+            Identity = GetIdentity(resource),
+            Node = new()
+            {
+                Cluster = cluster,
+                Resource = resource,
+                Icon = icon ?? _iconService.GetIcon(GetResourceKind(resource, cluster)),
+            },
+        };
+
+        return vertex;
+    }
+
+    private static GroupApiVersionKind GetResourceKind(
+        IKubernetesObject<V1ObjectMeta> resource,
+        ClusterWorkspace? cluster)
+    {
+        if (cluster?.Runtime.ModelCatalog.TryGetResourceKind(resource, out var kind) == true)
+        {
+            return kind;
+        }
+
+        var apiVersion = resource.ApiVersion ?? string.Empty;
+        var separator = apiVersion.IndexOf('/');
+        return new GroupApiVersionKind(
+            separator < 0 ? string.Empty : apiVersion[..separator],
+            separator < 0 ? apiVersion : apiVersion[(separator + 1)..],
+            resource.Kind ?? string.Empty,
+            string.Empty);
+    }
+
+    private static bool TryCreateEdge(
+        ResourceRelationship relationship,
+        Dictionary<ResourceIdentity, ResourceGraphVertex> vertices,
+        out ResourceGraphEdge edge)
+    {
+        if (!vertices.TryGetValue(relationship.Source, out var source)
+            || !vertices.TryGetValue(relationship.Target, out var target))
+        {
+            edge = null!;
+            return false;
+        }
+
+        edge = new ResourceGraphEdge(source, target, relationship);
+        return true;
+    }
+
+    protected override void OnDataContextChanged(EventArgs e)
+    {
+        base.OnDataContextChanged(e);
+        _viewModel = DataContext as VisualizationViewModel;
+
+        if (_viewModel != null && _graph != null && !_isDetached)
+        {
+            RebuildGraph();
+        }
+    }
+
+    private void QueueGraphGeneration()
+    {
+        Dispatcher.UIThread.VerifyAccess();
+        if (_disposed)
+        {
+            return;
+        }
+
+        _layoutPending = true;
+
+        if (_graphGenerationTask is { IsCompleted: false })
+        {
+            return;
+        }
+
+        _layoutCancellation ??= new CancellationTokenSource();
+        _graphGenerationTask = ProcessPendingLayoutAsync(_layoutCancellation.Token);
+    }
+
+    private async Task ProcessPendingLayoutAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            while (_layoutPending && VisualRoot != null)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                _layoutPending = false;
+                var initialGeneration = !_hasGeneratedGraph;
+                var refitAfterGeneration = _zoomAfterGeneration;
+                var zoom = _zoomControl.Zoom;
+                var translateX = _zoomControl.TranslateX;
+                var translateY = _zoomControl.TranslateY;
+                _zoomAfterGeneration |= initialGeneration;
+
+                if (!initialGeneration)
+                {
+                    if (!refitAfterGeneration)
+                    {
+                        _zoomAfterGeneration = false;
+                    }
+
+                    await _area.RelayoutGraph(true, cancellationToken);
+                }
+                else
+                {
+                    await _area.GenerateGraph(true, cancellation: cancellationToken);
+                    _hasGeneratedGraph = true;
+                }
+
+                if (!initialGeneration && !refitAfterGeneration && !_zoomAfterGeneration)
+                {
+                    _zoomControl.Zoom = zoom;
+                    _zoomControl.TranslateX = translateX;
+                    _zoomControl.TranslateY = translateY;
+                }
+            }
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+        }
+        catch (Exception exception)
+        {
+            _viewModel?.ReportGraphError(exception);
+        }
+        finally
+        {
+            if (_layoutCancellation?.Token == cancellationToken)
+            {
+                _layoutCancellation.Dispose();
+                _layoutCancellation = null;
+                if (_layoutPending && VisualRoot != null && !_disposed)
+                {
+                    Dispatcher.UIThread.Post(QueueGraphGeneration, DispatcherPriority.Background);
+                }
+            }
+        }
+    }
+
+    private void OnGraphLayoutFinished(object? sender, EventArgs e)
+    {
+        if (!_zoomAfterGeneration)
+        {
+            return;
+        }
+
+        _zoomAfterGeneration = false;
+        if (_zoomControl.Presenter is { } presenter)
+        {
+            presenter.ContentSizeChanged -= OnZoomContentSizeChanged;
+            presenter.ContentSizeChanged += OnZoomContentSizeChanged;
+        }
+
+        _zoomControl.Mode = ZoomControlModes.Fill;
+        _zoomControl.ZoomToFill();
+        if (_zoomControl.Presenter is null)
+        {
+            _zoomControl.Mode = ZoomControlModes.Custom;
+        }
+    }
+
+    private void OnZoomContentSizeChanged(object sender, Size contentSize)
+    {
+        if (contentSize.Width <= 0 || contentSize.Height <= 0)
+        {
+            return;
+        }
+
+        if (sender is ZoomContentPresenter presenter)
+        {
+            presenter.ContentSizeChanged -= OnZoomContentSizeChanged;
+        }
+
+        if (!_disposed)
+        {
+            _zoomControl.ZoomToFill();
+            _zoomControl.Mode = ZoomControlModes.Custom;
+        }
+    }
+
+    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnAttachedToVisualTree(e);
+        _isDetached = false;
+        if (_graph != null)
+        {
+            _rebuildFromAttachment = true;
+            RebuildGraph();
+        }
+    }
+
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        _isDetached = true;
+        _layoutPending = false;
+        _hasGeneratedGraph = false;
+        _layoutCancellation?.Cancel();
+        _area.ClearLayout(clearStates: true, clearLogicCore: true);
+        base.OnDetachedFromVisualTree(e);
+    }
+
+    public void Dispose()
+    {
+        if (_disposed)
+        {
+            return;
+        }
+
+        _disposed = true;
+        _graphPreparationCancellation?.Cancel();
+        _layoutCancellation?.Cancel();
+        _area.GenerateGraphFinished -= OnGraphLayoutFinished;
+        _area.RelayoutFinished -= OnGraphLayoutFinished;
+
+        if (_graphGenerationTask is { IsCompleted: false } graphGenerationTask)
+        {
+            _ = DisposeGraphXAfterLayoutAsync(graphGenerationTask);
+            return;
+        }
+
+        DisposeGraphX();
+    }
+
+    private async Task DisposeGraphXAfterLayoutAsync(Task graphGenerationTask)
+    {
+        try
+        {
+            await graphGenerationTask.ConfigureAwait(false);
+        }
+        catch (Exception)
+        {
+            // ProcessPendingLayoutAsync observes layout failures before completing.
+        }
+
+        await Dispatcher.UIThread.InvokeAsync(DisposeGraphX);
+    }
+
+    private void DisposeGraphX()
+    {
+        if (_graphXDisposed)
+        {
+            return;
+        }
+
+        _graphXDisposed = true;
+        _area.Dispose();
+        _logicCore.Dispose();
+    }
+
+    public EdgeControl CreateEdgeControl(VertexControl source, VertexControl target, object edge, bool showArrows = true, bool isVisible = true)
+    {
+        var control = new EdgeControl(source, target, edge, showArrows)
+        {
+            RootArea = _area,
+            IsVisible = isVisible,
+        };
+
+        if (edge is ResourceGraphEdge resourceEdge)
+        {
+            control.Classes.Add(resourceEdge.ThemeClass);
+        }
+
+        return control;
+    }
+
+    public VertexControl CreateVertexControl(object vertexData)
+    {
+        return new VertexControl(vertexData);
+    }
+}

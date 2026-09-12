@@ -103,12 +103,12 @@ Download binaries from [Releases](https://github.com/IvanJosipovic/KubeUI/releas
 
 Prerequisites:
 
-- .NET SDK 10.0
+- .NET SDK 11.0
 - Docker
 
 Build steps:
 
-1. Install the .NET SDK from [dotnet.microsoft.com](https://dotnet.microsoft.com/en-us/download/dotnet/10.0)
+1. Install the .NET SDK from [dotnet.microsoft.com](https://dotnet.microsoft.com/en-us/download/dotnet/11.0)
 2. Open the repository in your preferred .NET IDE or editor
 3. Restore, build, and run the solution
 
@@ -128,3 +128,4 @@ Build steps:
 ## Stats
 
 ![Alt](https://repobeats.axiom.co/api/embed/db926eb668f71f8de3314f03022de6bb35797d5d.svg "Repobeats analytics image")
+ 

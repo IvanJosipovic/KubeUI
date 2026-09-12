@@ -1,13 +1,21 @@
 using Avalonia.Controls.Templates;
 using Avalonia.Logging;
+using KubeUI.AI.Agents;
+using KubeUI.AI.Configuration;
+using KubeUI.AI.Permissions;
 using KubeUI.Avalonia.Controls.DataGridFilters;
+using KubeUI.Avalonia.Features.AI;
+using KubeUI.Avalonia.Features.Resources.List.Controls;
 using KubeUI.Avalonia.Features.Resources.Yaml;
 using KubeUI.Avalonia.Infrastructure.Logging;
+using KubeUI.Avalonia.Infrastructure.Platform;
 using KubeUI.Avalonia.Infrastructure.Presentation;
+using KubeUI.Avalonia.Infrastructure.Threading;
+using KubeUI.Avalonia.Resources.Workloads.v1.Pod.Services;
+using KubeUI.Avalonia.Resources.Workloads.v1.Pod.ViewModels;
+using KubeUI.Avalonia.Services.Icons;
 using KubeUI.Avalonia.Services.Settings;
 using KubeUI.Kubernetes;
-using Microsoft.Extensions.DependencyInjection.Extensions;
-using Microsoft.Extensions.Hosting;
 using ServiceScan.SourceGenerator;
 
 namespace KubeUI.Avalonia.Infrastructure.DependencyInjection;
@@ -23,25 +31,36 @@ public static partial class KubeUIShellServiceCollectionExtensions
     public static IServiceCollection AddKubeUIShellServices(this IServiceCollection services)
     {
         services.AddKubeUIShellGeneratedServices();
+        services.AddSingleton<IPlatformServices, AvaloniaPlatformServices>();
+        services.AddSingleton<IUiRefreshClock, AvaloniaUiRefreshClock>();
+        services.AddSingleton(TimeProvider.System);
         services.AddSingleton<Instrumentation>();
         services.AddSingleton<IYamlValidationService, YamlSyntaxValidationService>();
         services.AddSingleton<ILogSink, LogSink>();
         services.AddSingleton<ViewLocator>();
         services.AddSingleton<DataGridColumnFilterService>();
         services.AddSingleton<DataGridColumnFilterFlyoutFactory>();
+        services.AddSingleton<IPodLogExportService, PodLogExportService>();
+        services.AddSingleton<Func<PodLogsViewModel>>(sp =>
+            () => sp.GetRequiredService<PodLogsViewModel>());
+        services.AddSingleton<IPodLogsLauncher, PodLogsLauncher>();
         services.AddSingleton<IDataTemplate>(sp => sp.GetRequiredService<ViewLocator>());
+        services.AddSingleton<ISettingsPersistence, FileSettingsPersistence>();
         services.AddSingleton<ISettingsService, SettingsService>();
+        services.AddSingleton<IResourceIconService, ResourceIconService>();
+        services.AddSingleton<IAgentRegistry>(sp => new AcpAgentRegistry(
+            AcpAgentDefaults.Definitions,
+            sp.GetRequiredService<IAgentPermissionService>()));
+        services.AddSingleton<IAgentPermissionService, AvaloniaAgentPermissionService>();
+        services.AddSingleton<IAgentContextService, AgentContextService>();
         services.AddSingleton<IClusterSettingsStore>(sp => sp.GetRequiredService<ISettingsService>());
-        services.TryAddSingleton<IHostApplicationLifetime, KubeUI.Avalonia.Infrastructure.Hosting.Host>();
         return services;
     }
 
     [GenerateServiceRegistrations(AssignableTo = typeof(Window), Lifetime = ServiceLifetime.Transient, AsSelf = true, AsImplementedInterfaces = false, AssemblyNameFilter = "KubeUI.Avalonia")]
     [GenerateServiceRegistrations(AssignableTo = typeof(UserControl), Lifetime = ServiceLifetime.Transient, AsSelf = true, AsImplementedInterfaces = false, AssemblyNameFilter = "KubeUI.Avalonia")]
     [GenerateServiceRegistrations(AssignableTo = typeof(ViewModelBase), Lifetime = ServiceLifetime.Transient, AsSelf = true, AsImplementedInterfaces = false, AssemblyNameFilter = "KubeUI.Avalonia")]
+    [GenerateServiceRegistrations(AssignableTo = typeof(ViewBase<>), Lifetime = ServiceLifetime.Transient, AsSelf = true, AsImplementedInterfaces = false, AssemblyNameFilter = "KubeUI.Avalonia")]
+    [GenerateServiceRegistrations(AssignableTo = typeof(RefreshingCellTextBlock), Lifetime = ServiceLifetime.Transient, AsSelf = true, AsImplementedInterfaces = false, AssemblyNameFilter = "KubeUI.Avalonia")]
     private static partial IServiceCollection AddKubeUIShellGeneratedServices(this IServiceCollection services);
 }
-
-
-
-
