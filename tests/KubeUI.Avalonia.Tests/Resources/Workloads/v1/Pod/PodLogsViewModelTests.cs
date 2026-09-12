@@ -1018,6 +1018,8 @@ public sealed class PodLogsViewModelTests
                 },
             };
             await workspace.Runtime.AddOrUpdateResource(deployment);
+            await WaitForAsync(() => workspace.Runtime.GetResourceList<V1Deployment>()
+                .Any(item => item.Name() == nextName));
             nextParent = deployment;
         }
         else if (nextName == initialParent.Name())
