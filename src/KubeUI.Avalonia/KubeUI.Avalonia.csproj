@@ -64,9 +64,9 @@
     <PackageReference Include="Avalonia.Skia" Version="12.1.2" />
     <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.2" />
     <PackageReference Include="AvaloniaEdit.TextMate" Version="12.0.0" />
-    <PackageReference Include="Westermo.GraphX.Controls.Avalonia" Version="4.4.4" />
+    <PackageReference Include="Westermo.GraphX.Controls.Avalonia" Version="4.4.6" />
     <PackageReference Include="Westermo.GraphX.Controls.Avalonia.Themes.Fluent" Version="4.2.0" />
-    <PackageReference Include="Westermo.GraphX.Logic" Version="4.4.4" />
+    <PackageReference Include="Westermo.GraphX.Logic" Version="4.4.6" />
     <PackageReference Include="SvcSystems.UI.Terminal" Version="1.1.4" />
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
     <PackageReference Include="Dock.Avalonia" Version="12.1.0.2" />
