@@ -8,6 +8,16 @@ namespace KubeUI.Avalonia.Converters;
 /// </summary>
 public static class Converters
 {
+    /// <summary>
+    /// Inverts a Boolean binding value.
+    /// </summary>
+    public static readonly IValueConverter Not = new FuncValueConverter<bool, bool>(value => !value);
+
+    /// <summary>
+    /// Indicates whether a string contains non-whitespace text.
+    /// </summary>
+    public static readonly IValueConverter HasText = new FuncValueConverter<string?, bool>(value => !string.IsNullOrWhiteSpace(value));
+
     public static readonly IValueConverter NotNull = new FuncValueConverter<object?, bool>((x) => x != null && x != AvaloniaProperty.UnsetValue);
 
     public static readonly IValueConverter IsNull = new FuncValueConverter<object?, bool>((x) => x == null || x == AvaloniaProperty.UnsetValue);

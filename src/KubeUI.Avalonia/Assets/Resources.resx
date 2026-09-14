@@ -2665,6 +2665,50 @@
     <value>Open New Logs View</value>
     <comment/>
   </data>
+  <data name="DataDisplay_Edit" xml:space="preserve">
+    <value>Edit</value>
+    <comment/>
+  </data>
+  <data name="DataDisplay_Add" xml:space="preserve">
+    <value>Add</value>
+    <comment/>
+  </data>
+  <data name="DataDisplay_Remove" xml:space="preserve">
+    <value>Remove</value>
+    <comment/>
+  </data>
+  <data name="DataDisplay_Save" xml:space="preserve">
+    <value>Save</value>
+    <comment/>
+  </data>
+  <data name="DataDisplay_Cancel" xml:space="preserve">
+    <value>Cancel</value>
+    <comment/>
+  </data>
+  <data name="DataDisplay_SaveFailed" xml:space="preserve">
+    <value>Save Failed</value>
+    <comment/>
+  </data>
+  <data name="DataDisplay_SaveSucceeded" xml:space="preserve">
+    <value>Data Saved</value>
+    <comment/>
+  </data>
+  <data name="DataDisplay_SaveSucceededMessage" xml:space="preserve">
+    <value>Data saved successfully.</value>
+    <comment/>
+  </data>
+  <data name="DataDisplay_InvalidKey" xml:space="preserve">
+    <value>Each data key must be non-empty and unique.</value>
+    <comment/>
+  </data>
+  <data name="DataDisplay_PatchUnavailable" xml:space="preserve">
+    <value>Data patch is unavailable for this resource.</value>
+    <comment/>
+  </data>
+  <data name="DataDisplay_PatchPermissionDenied" xml:space="preserve">
+    <value>You do not have permission to patch this resource.</value>
+    <comment/>
+  </data>
   <data name="Shared_AddToCurrentLogsView" xml:space="preserve">
     <value>Add to Current Logs View</value>
     <comment/>

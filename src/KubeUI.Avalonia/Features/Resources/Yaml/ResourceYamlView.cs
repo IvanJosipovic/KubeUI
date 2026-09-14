@@ -1,5 +1,4 @@
 using Avalonia.Controls.Primitives;
-using Avalonia.Data.Converters;
 using Avalonia.Input;
 using Avalonia.Markup.Xaml.MarkupExtensions;
 using Avalonia.Xaml.Interactions.Core;
@@ -8,6 +7,7 @@ using FluentAvalonia.UI.Controls;
 using FluentIcons.Avalonia;
 using FluentIcons.Common;
 using k8s.Models;
+using SharedConverters = KubeUI.Avalonia.Converters.Converters;
 using KubeUI.Avalonia.Features.Resources.Yaml.Behaviors;
 using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
@@ -17,8 +17,6 @@ namespace KubeUI.Avalonia.Features.Resources.Yaml;
 
 public sealed partial class ResourceYamlView : ViewBase<ResourceYamlViewModel>
 {
-    private static readonly FuncValueConverter<bool, bool> NotConverter = new(value => !value);
-
     public ResourceYamlView()
     {
         DesignTimePreview.Run(InitializeDesignTimeDataAsync);
@@ -60,7 +58,7 @@ public sealed partial class ResourceYamlView : ViewBase<ResourceYamlViewModel>
     {
         return new StackPanel()
             .Row(0)
-            .IsVisible(vm, x => x.EditMode, BindingMode.OneWay, NotConverter)
+            .IsVisible(vm, x => x.EditMode, BindingMode.OneWay, SharedConverters.Not)
             .Orientation(Orientation.Horizontal)
             .Children(
                 new Button()
@@ -115,7 +113,7 @@ public sealed partial class ResourceYamlView : ViewBase<ResourceYamlViewModel>
             .FontSize(new DynamicResourceExtension(Typography.CodeFontSizeResourceKey))
             .FontWeight(FontWeight.Normal)
             .HorizontalScrollBarVisibility(ScrollBarVisibility.Auto)
-            .IsReadOnly(vm, x => x.EditMode, BindingMode.OneWay, NotConverter)
+            .IsReadOnly(vm, x => x.EditMode, BindingMode.OneWay, SharedConverters.Not)
             .ShowLineNumbers(true)
             .VerticalScrollBarVisibility(ScrollBarVisibility.Visible)
             .WordWrap(vm, x => x.WordWrap)
