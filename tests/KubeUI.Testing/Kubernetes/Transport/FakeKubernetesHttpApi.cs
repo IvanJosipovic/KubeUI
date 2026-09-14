@@ -831,7 +831,11 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
     {
         foreach (var property in patch)
         {
-            if (property.Value is JsonObject patchObject && target[property.Key] is JsonObject targetObject)
+            if (property.Value is null)
+            {
+                target.Remove(property.Key);
+            }
+            else if (property.Value is JsonObject patchObject && target[property.Key] is JsonObject targetObject)
             {
                 Merge(targetObject, patchObject);
             }
