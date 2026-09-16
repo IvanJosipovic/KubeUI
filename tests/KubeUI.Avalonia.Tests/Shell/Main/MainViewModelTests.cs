@@ -175,4 +175,29 @@ public sealed class MainViewModelTests
             .ShouldBeSameAs(factory);
     }
 
+    [AvaloniaFact]
+    public async Task resetting_layout_keeps_unpinned_tool_dock_backgrounds_opaque()
+    {
+        MainViewModel vm = CreateViewModel();
+        MainView view = new() { DataContext = vm };
+        using TestApplicationExtensions.TestWindow window = Application.Current.CreateTestWindow(content: view);
+
+        window.Show();
+        await TestApplicationExtensions.WaitForUiAsync();
+
+        vm.ResetLayoutCommand.Execute(null);
+        await TestApplicationExtensions.WaitForUiAsync();
+
+        var toolDocks = view.GetVisualDescendants()
+            .OfType<ToolControl>()
+            .Where(x => x.IsVisible)
+            .ToArray();
+
+        toolDocks.ShouldNotBeEmpty();
+        foreach (ToolControl toolDock in toolDocks)
+        {
+            toolDock.Background.ShouldNotBeNull();
+        }
+    }
+
 }
