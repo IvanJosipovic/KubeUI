@@ -1,4 +1,5 @@
 using Avalonia.Headless.XUnit;
+using Avalonia.Media;
 using Avalonia.VisualTree;
 using Dock.Avalonia.Controls;
 using Dock.Model.Controls;
@@ -196,7 +197,8 @@ public sealed class MainViewModelTests
         toolDocks.ShouldNotBeEmpty();
         foreach (ToolControl toolDock in toolDocks)
         {
-            toolDock.Background.ShouldNotBeNull();
+            SolidColorBrush background = toolDock.Background.ShouldBeOfType<SolidColorBrush>();
+            background.Color.A.ShouldBe(byte.MaxValue);
         }
     }
 
