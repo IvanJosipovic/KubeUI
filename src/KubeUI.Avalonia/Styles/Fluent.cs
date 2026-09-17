@@ -44,6 +44,9 @@ public sealed class Fluent : AvaloniaStyles
         Add(CreateStyleInclude("avares://SvcSystems.UI.Terminal/Styles/Colors.axaml"));
         DataGridStyles.AddTo(this);
 
+        Add(new Style<ToolControl>()
+            .Background(new DynamicResourceExtension("DockThemeControlBackgroundBrush")));
+
         Add(new Style<DocumentControl>()
             .Setter(DocumentControl.HeaderTemplateProperty, new FuncDataTemplate<IDockable>((dockable, _) => CreateDocumentHeader(dockable!), false)));
 
