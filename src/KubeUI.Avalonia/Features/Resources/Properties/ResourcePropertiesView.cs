@@ -6,6 +6,7 @@ using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Features.Resources.Common;
 using KubeUI.Avalonia.Features.Resources.Properties.Controls;
 using KubeUI.Avalonia.Infrastructure.Presentation;
+using KubeUI.Avalonia.Resources;
 using AppResources = KubeUI.Avalonia.Assets.Resources;
 
 namespace KubeUI.Avalonia.Features.Resources.Properties;
@@ -28,6 +29,10 @@ public partial class ResourcePropertiesView<T> : ViewBase<ResourcePropertiesView
     private ScrollViewer? _scrollViewer;
     private INotifyPropertyChanged? _viewModel;
     private bool _isDetached;
+    private Control[]? _propertyControls;
+    private ResourceConfigBase<T>? _propertyConfig;
+    private T? _propertyResource;
+    private bool _propertyControlsInitialized;
 
     protected override object Build(ResourcePropertiesViewModel<T> vm)
     {
@@ -191,20 +196,35 @@ public partial class ResourcePropertiesView<T> : ViewBase<ResourcePropertiesView
             return;
         }
 
-        var extras = viewModel.ResourceConfig.Properties(obj);
-        if (extras != null)
+        var extras = GetPropertyControls(viewModel.ResourceConfig, obj, out var reused);
+        foreach (var c in extras)
         {
-            foreach (var c in extras.Where(c => c != null))
+            if (!reused)
             {
                 c.DataContext = obj;
-                c.HorizontalAlignment = HorizontalAlignment.Stretch;
-                _itemsPanel.Children.Add(c);
-
-                if (viewModel.Cluster != null)
-                {
-                    InitializeClusterControls(c, viewModel.Cluster);
-                }
             }
+
+            c.HorizontalAlignment = HorizontalAlignment.Stretch;
+            _itemsPanel.Children.Add(c);
+
+            if (!reused && viewModel.Cluster != null)
+            {
+                InitializeClusterControls(c, viewModel.Cluster);
+            }
+        }
+
+        if (!reused)
+        {
+            _propertyControlsInitialized = viewModel.Cluster != null;
+        }
+        else if (!_propertyControlsInitialized && viewModel.Cluster != null)
+        {
+            foreach (var c in extras)
+            {
+                InitializeClusterControls(c, viewModel.Cluster);
+            }
+
+            _propertyControlsInitialized = true;
         }
 
         if (typeof(T) != typeof(Corev1Event)
@@ -306,6 +326,43 @@ public partial class ResourcePropertiesView<T> : ViewBase<ResourcePropertiesView
         }
     }
 
+    private Control[] GetPropertyControls(ResourceConfigBase<T> resourceConfig, T resource, out bool reused)
+    {
+        if (_propertyControls is { Length: > 0 } controls
+            && ReferenceEquals(_propertyConfig, resourceConfig)
+            && _propertyResource is not null
+            && IsSameResource(_propertyResource, resource)
+            && controls.All(control => control is IResourcePropertiesRefreshable<T>))
+        {
+            foreach (var control in controls.OfType<IResourcePropertiesRefreshable<T>>())
+            {
+                control.Refresh(resource);
+            }
+
+            _propertyResource = resource;
+            reused = true;
+            return controls;
+        }
+
+        var created = resourceConfig.Properties(resource)
+            .Where(static control => control is not null)
+            .ToArray();
+        _propertyControls = created;
+        _propertyConfig = resourceConfig;
+        _propertyResource = resource;
+        _propertyControlsInitialized = false;
+        reused = false;
+        return created;
+    }
+
+    private static bool IsSameResource(T left, T right)
+    {
+        return string.Equals(left.ApiVersion, right.ApiVersion, StringComparison.Ordinal)
+            && string.Equals(left.Kind, right.Kind, StringComparison.Ordinal)
+            && string.Equals(left.Metadata?.Name, right.Metadata?.Name, StringComparison.Ordinal)
+            && string.Equals(left.Metadata?.NamespaceProperty, right.Metadata?.NamespaceProperty, StringComparison.Ordinal);
+    }
+
     private static IEnumerable<Control> EnumerateLogicalControls(Control root)
     {
         var stack = new Stack<Control>();
@@ -350,4 +407,3 @@ public partial class ResourcePropertiesView<T> : ViewBase<ResourcePropertiesView
         }
     }
 }
-

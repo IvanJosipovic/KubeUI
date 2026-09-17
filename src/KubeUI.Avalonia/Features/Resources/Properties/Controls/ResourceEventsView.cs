@@ -1,11 +1,11 @@
 using System.Reactive.Linq;
 using Avalonia.Controls.Templates;
-using Avalonia.Data.Converters;
 using Avalonia.Markup.Xaml.MarkupExtensions;
 using DynamicData;
 using DynamicData.Binding;
 using k8s;
 using k8s.Models;
+using SharedConverters = KubeUI.Avalonia.Converters.Converters;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Infrastructure.Threading;
@@ -17,7 +17,6 @@ public sealed partial class ResourceEventsView : UserControl, IInitializeCluster
 {
     public ClusterWorkspace? Cluster { get; private set; }
 
-    private static readonly FuncValueConverter<bool, bool> NotConverter = new(value => !value);
     private readonly DispatcherTimer _timer = new(DispatcherPriority.Background);
     private static readonly IReadOnlyList<ResourceEventItem> EmptyItems = Array.Empty<ResourceEventItem>();
     private ISourceCache<Corev1Event, ResourceCacheKey>? _eventCache;
@@ -59,7 +58,7 @@ public sealed partial class ResourceEventsView : UserControl, IInitializeCluster
                             .ItemsSource(this, x => x.Items)
                             .ItemTemplate(new FuncDataTemplate<ResourceEventItem>((item, _) => CreateEventCard(item!))),
                         new PropertyItem()
-                            .IsVisible(this, x => x.HasItems, BindingMode.OneWay, NotConverter)
+                            .IsVisible(this, x => x.HasItems, BindingMode.OneWay, SharedConverters.Not)
                             .Value(Assets.Resources.ResourceEventsView_NoEventsFound)));
     }
 
