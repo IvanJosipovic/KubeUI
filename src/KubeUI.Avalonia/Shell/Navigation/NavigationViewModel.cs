@@ -315,6 +315,10 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
                 {
                     ApplyClusterExpansion(node);
                 }
+                else
+                {
+                    node.IsExpanded = false;
+                }
             }
 
             if (runtime.Connected

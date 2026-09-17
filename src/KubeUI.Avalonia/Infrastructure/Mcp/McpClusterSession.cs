@@ -86,6 +86,8 @@ internal sealed class McpClusterSession(
     public async Task<IReadOnlyList<IKubernetesObject<V1ObjectMeta>>> ListResourcesAsync(
         string? clusterName, string apiVersion, string kind, string? @namespace, int limit, CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
+
         if (limit is < 1 or > 500)
             throw new ArgumentOutOfRangeException(nameof(limit), "Limit must be between 1 and 500.");
 
