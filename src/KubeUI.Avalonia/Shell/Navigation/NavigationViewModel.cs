@@ -150,10 +150,6 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
     private async Task ConnectClusterAsync(ClusterNavigationNode clusterNode)
     {
         await clusterNode.Cluster.Connect().ConfigureAwait(false);
-        if (clusterNode.Cluster.Runtime.Connected)
-        {
-            Dispatcher.UIThread.Post(() => ApplyClusterExpansion(clusterNode));
-        }
     }
 
     [RelayCommand]
@@ -314,6 +310,11 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
                     runtime.Connected,
                     node.NavigationItems.Count);
                 node.UpdateConnectionNavigation(runtime.Connected);
+
+                if (runtime.Connected)
+                {
+                    ApplyClusterExpansion(node);
+                }
             }
 
             if (runtime.Connected

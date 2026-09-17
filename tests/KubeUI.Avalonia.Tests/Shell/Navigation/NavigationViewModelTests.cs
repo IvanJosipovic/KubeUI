@@ -1076,7 +1076,7 @@ public class NavigationViewModelTests
     }
 
     [AvaloniaFact]
-    public async Task cluster_navigation_does_not_expand_until_workspace_connection_completes()
+    public async Task cluster_navigation_expands_when_runtime_connection_completes()
     {
         var services = Application.Current.GetTestServices();
         var workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
@@ -1095,10 +1095,11 @@ public class NavigationViewModelTests
 
         await WaitForAsync(() => workspace.Runtime.Connected);
         await TestApplicationExtensions.WaitForUiAsync();
-        clusterNode.IsExpanded.ShouldBeFalse();
+        permissionRefreshRelease.Task.IsCompleted.ShouldBeFalse();
+        clusterNode.IsExpanded.ShouldBeTrue();
 
         permissionRefreshRelease.TrySetResult(null);
-        await WaitForAsync(() => workspace.Runtime.Status == ClusterStatus.Connected && clusterNode.IsExpanded);
+        await WaitForAsync(() => workspace.Runtime.Status == ClusterStatus.Connected);
     }
 
     [AvaloniaFact]
