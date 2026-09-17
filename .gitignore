@@ -405,3 +405,4 @@ packed
 
 .dotnet
 .testagent
+.netcoredbg-mcp.pid

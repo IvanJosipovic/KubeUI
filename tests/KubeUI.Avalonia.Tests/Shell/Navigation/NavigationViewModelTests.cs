@@ -1134,6 +1134,35 @@ public class NavigationViewModelTests
     }
 
     [AvaloniaFact]
+    public async Task selecting_cluster_node_with_slow_http_connection_expands_after_connection_completes()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync(
+            config =>
+            {
+                config.Type = KubernetesBackend.Fake;
+                config.InitialResources = [];
+                config.InitialYaml = null;
+                config.HttpHandlers = [];
+                config.ResponseLatency = TimeSpan.FromMilliseconds(200);
+                config.ThrowOnConnect = false;
+                config.AuthenticatedUser = "system:admin";
+            },
+            connect: false);
+
+        using var vm = CreateViewModel();
+        await TestApplicationExtensions.WaitForUiAsync();
+
+        var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
+        await vm.TreeViewSelectionChangedAsync(clusterNode);
+
+        clusterNode.IsExpanded.ShouldBeFalse();
+
+        await WaitForAsync(() => workspace.Runtime.Connected);
+
+        await WaitForAsync(() => clusterNode.IsExpanded, timeoutMs: 30_000);
+    }
+
+    [AvaloniaFact]
     public async Task connect_path_publishes_ready_resources_without_waiting_for_unrelated_slow_permission_refresh()
     {
         var services = Application.Current.GetTestServices();

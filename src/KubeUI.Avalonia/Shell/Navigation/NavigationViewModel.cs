@@ -125,7 +125,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
             return Task.CompletedTask;
         }
 
-        _ = ConnectAndExpandAsync(clusterNode);
+        _ = ConnectClusterAsync(clusterNode);
         return Task.CompletedTask;
     }
 
@@ -144,16 +144,15 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
             return;
         }
 
-        _ = ConnectAndExpandAsync(clusterNode);
+        _ = ConnectClusterAsync(clusterNode);
     }
 
-    private async Task ConnectAndExpandAsync(ClusterNavigationNode clusterNode)
+    private async Task ConnectClusterAsync(ClusterNavigationNode clusterNode)
     {
         await clusterNode.Cluster.Connect().ConfigureAwait(false);
-
         if (clusterNode.Cluster.Runtime.Connected)
         {
-            Dispatcher.UIThread.Post(() => clusterNode.IsExpanded = true);
+            Dispatcher.UIThread.Post(() => ApplyClusterExpansion(clusterNode));
         }
     }
 
@@ -338,6 +337,14 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
                 ShowClusterError(runtime.LastError);
             }
         });
+    }
+
+    private static void ApplyClusterExpansion(ClusterNavigationNode clusterNode)
+    {
+        if (clusterNode.Cluster.Runtime.Connected)
+        {
+            clusterNode.IsExpanded = true;
+        }
     }
 
     private void OnNamespaceSelectionRequired(IClusterRuntime runtime)
