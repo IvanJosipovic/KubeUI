@@ -17,7 +17,9 @@ internal sealed partial class DataDisplayViewModel<TResource, TValue> : ViewMode
     private readonly Func<TResource, IEnumerable<KeyValuePair<string, TValue>>?> _dataSelector;
     private readonly Func<TValue, string> _displayFormatter;
     private readonly Func<string, string> _wireFormatter;
+    private readonly Func<TValue, string>? _originalValueWireFormatter;
     private readonly Dictionary<string, string> _baseline = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, TValue> _baselineValues = new(StringComparer.Ordinal);
     private TResource _resource;
     private TResource _latestResource;
     private bool _rebuildingRows;
@@ -75,7 +77,8 @@ internal sealed partial class DataDisplayViewModel<TResource, TValue> : ViewMode
         GroupApiVersionKind kind,
         Func<TResource, IEnumerable<KeyValuePair<string, TValue>>?> dataSelector,
         Func<TValue, string> displayFormatter,
-        Func<string, string> wireFormatter)
+        Func<string, string> wireFormatter,
+        Func<TValue, string>? originalValueWireFormatter)
     {
         _resource = resource ?? throw new ArgumentNullException(nameof(resource));
         _latestResource = resource;
@@ -83,6 +86,7 @@ internal sealed partial class DataDisplayViewModel<TResource, TValue> : ViewMode
         _dataSelector = dataSelector ?? throw new ArgumentNullException(nameof(dataSelector));
         _displayFormatter = displayFormatter ?? throw new ArgumentNullException(nameof(displayFormatter));
         _wireFormatter = wireFormatter ?? throw new ArgumentNullException(nameof(wireFormatter));
+        _originalValueWireFormatter = originalValueWireFormatter;
 
         ReplaceRows(ReadData(resource));
     }
@@ -125,9 +129,15 @@ internal sealed partial class DataDisplayViewModel<TResource, TValue> : ViewMode
         _resource = _latestResource;
         var data = ReadData(_resource);
         _baseline.Clear();
+        _baselineValues.Clear();
         foreach (var entry in data)
         {
             _baseline.Add(entry.Key, entry.Value);
+        }
+
+        foreach (var entry in _dataSelector(_resource) ?? [])
+        {
+            _baselineValues[entry.Key] = entry.Value;
         }
 
         ReplaceRows(data);
@@ -199,6 +209,7 @@ internal sealed partial class DataDisplayViewModel<TResource, TValue> : ViewMode
         IsSaving = true;
         try
         {
+            var resourceBeingSaved = _resource;
             using var client = Cluster.Runtime.Client.GetGenericClient<TResource>();
             var patch = new JsonObject
             {
@@ -206,8 +217,13 @@ internal sealed partial class DataDisplayViewModel<TResource, TValue> : ViewMode
             };
             var saved = await client.PatchNamespacedAsync<TResource>(
                 new V1Patch(patch.ToJsonString(), V1Patch.PatchType.MergePatch),
-                _resource.Metadata.NamespaceProperty,
-                _resource.Metadata.Name);
+                resourceBeingSaved.Metadata.NamespaceProperty,
+                resourceBeingSaved.Metadata.Name);
+
+            if (!IsSameResource(_resource, resourceBeingSaved))
+            {
+                return;
+            }
 
             _resource = saved;
             _latestResource = saved;
@@ -286,7 +302,7 @@ internal sealed partial class DataDisplayViewModel<TResource, TValue> : ViewMode
             Rows.Clear();
             foreach (var entry in data)
             {
-                var row = new DataDisplayRowViewModel(entry.Key, entry.Value);
+                var row = new DataDisplayRowViewModel(entry.Key, entry.Value, entry.Key);
                 Rows.Add(row);
                 SubscribeToRow(row);
             }
@@ -375,7 +391,8 @@ internal sealed partial class DataDisplayViewModel<TResource, TValue> : ViewMode
             }
             else if (!string.Equals(original.Value, currentValue, StringComparison.Ordinal))
             {
-                patchData[original.Key] = _wireFormatter(currentValue);
+                var row = Rows.First(item => string.Equals(item.Key, original.Key, StringComparison.Ordinal));
+                patchData[original.Key] = GetWireValue(row, currentValue);
             }
         }
 
@@ -383,11 +400,26 @@ internal sealed partial class DataDisplayViewModel<TResource, TValue> : ViewMode
         {
             if (!_baseline.ContainsKey(currentValue.Key))
             {
-                patchData[currentValue.Key] = _wireFormatter(currentValue.Value);
+                var row = Rows.First(item => string.Equals(item.Key, currentValue.Key, StringComparison.Ordinal));
+                patchData[currentValue.Key] = GetWireValue(row, currentValue.Value);
             }
         }
 
         return patchData;
+    }
+
+    private string GetWireValue(DataDisplayRowViewModel row, string value)
+    {
+        if (row.OriginalKey is not null
+            && _originalValueWireFormatter is not null
+            && _baselineValues.TryGetValue(row.OriginalKey, out TValue? originalValue)
+            && _baseline.TryGetValue(row.OriginalKey, out var originalText)
+            && string.Equals(value, originalText, StringComparison.Ordinal))
+        {
+            return _originalValueWireFormatter(originalValue);
+        }
+
+        return _wireFormatter(value);
     }
 
     private void UpdateCanEdit()

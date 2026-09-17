@@ -1,5 +1,7 @@
 using System.Collections.Concurrent;
 using System.Net;
+using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Text.Json.Nodes;
 using Avalonia;
@@ -67,6 +69,65 @@ public sealed class DataDisplayTests
         view.GetVisualDescendants()
             .OfType<ExpandableSection>()
             .ShouldContain(section => Equals(section.Header, AppResources.SecretPropertiesView_Certificates));
+    }
+
+    [AvaloniaFact]
+    public async Task secret_properties_render_reserved_text_without_prefix()
+    {
+        var resource = new V1Secret
+        {
+            Metadata = new V1ObjectMeta { Name = "secret", NamespaceProperty = "default" },
+            Data = new Dictionary<string, byte[]>
+            {
+                ["config"] = Encoding.UTF8.GetBytes("base64:secret"),
+            },
+        };
+        var view = new SecretPropertiesView
+        {
+            DataContext = resource,
+        };
+        using var window = Application.Current.CreateTestWindow(content: view);
+
+        window.Show();
+        await TestApplicationExtensions.WaitForUiAsync(TestContext.Current.CancellationToken);
+
+        GetDisplayedTexts(view).ShouldContain("base64:secret");
+        GetDisplayedTexts(view).ShouldNotContain("text:base64:secret");
+    }
+
+    [AvaloniaFact]
+    public async Task secret_properties_show_valid_certificate_details()
+    {
+        using var key = RSA.Create(2048);
+        var request = new CertificateRequest(
+            "CN=test",
+            key,
+            HashAlgorithmName.SHA256,
+            RSASignaturePadding.Pkcs1);
+        using var certificate = request.CreateSelfSigned(DateTimeOffset.UtcNow.AddMinutes(-1), DateTimeOffset.UtcNow.AddMinutes(5));
+        var resource = new V1Secret
+        {
+            Metadata = new V1ObjectMeta { Name = "secret", NamespaceProperty = "default" },
+            Data = new Dictionary<string, byte[]>
+            {
+                ["tls.crt"] = certificate.Export(X509ContentType.Cert),
+            },
+        };
+        var view = new SecretPropertiesView
+        {
+            DataContext = resource,
+        };
+        using var window = Application.Current.CreateTestWindow(content: view);
+
+        window.Show();
+        await TestApplicationExtensions.WaitForUiAsync(TestContext.Current.CancellationToken);
+
+        var certificateItem = view.GetVisualDescendants().OfType<CertificateItemView>().Single();
+        certificateItem.Certificates.ShouldHaveSingleItem();
+        certificateItem.GetVisualDescendants()
+            .OfType<ExpandableSection>()
+            .Single()
+            .IsVisible.ShouldBeTrue();
     }
 
     [AvaloniaFact]
@@ -346,6 +407,104 @@ public sealed class DataDisplayTests
     }
 
     [AvaloniaFact]
+    public async Task secret_renaming_invalid_utf8_value_preserves_original_bytes()
+    {
+        byte[] originalBytes = [0xFF];
+        var resource = new V1Secret
+        {
+            Metadata = new V1ObjectMeta { Name = "secret", NamespaceProperty = "default" },
+            Data = new Dictionary<string, byte[]>
+            {
+                ["binary"] = originalBytes,
+            },
+        };
+        var harness = await CreateAdminWorkspaceAsync(resource);
+        using var workspace = harness.Workspace;
+        var view = new SecretPropertiesView
+        {
+            DataContext = resource,
+        };
+        using var window = Application.Current.CreateTestWindow(content: view);
+
+        window.Show();
+        await WaitForUiAsync();
+        var display = FindDisplay<V1Secret, byte[]>(view);
+        display.Initialize(workspace);
+        display.ViewModel.BeginEditCommand.Execute(null);
+        display.ViewModel.Rows.Single(row => row.Key == "binary").Key = "renamed";
+
+        await display.ViewModel.SaveCommand.ExecuteAsync(null).WaitAsync(TestContext.Current.CancellationToken);
+
+        var patchRequest = harness.Recorder.Requests.Single(request => request.Method == HttpMethod.Patch);
+        var patchValue = JsonNode.Parse(patchRequest.Body!)!["data"]!["renamed"]!.GetValue<string>();
+        Convert.FromBase64String(patchValue).ShouldBe(originalBytes);
+
+        using var client = workspace.Runtime.Client!.GetGenericClient<V1Secret>();
+        var saved = await client.ReadNamespacedAsync<V1Secret>("default", "secret", TestContext.Current.CancellationToken);
+        saved.Data!["renamed"].ShouldBe(originalBytes);
+        saved.Data.ShouldNotContainKey("binary");
+    }
+
+    [AvaloniaFact]
+    public async Task save_response_for_previous_resource_does_not_replace_refreshed_resource()
+    {
+        var resource = CreateConfigMap();
+        var refreshedResource = new V1ConfigMap
+        {
+            Metadata = new V1ObjectMeta { Name = "other", NamespaceProperty = "default" },
+            Data = new Dictionary<string, string>
+            {
+                ["current"] = "current-value",
+            },
+        };
+        var patchGate = new BlockingPatchGate();
+        var harness = await CreateAdminWorkspaceAsync(resource, () => new BlockingPatchHandler(patchGate));
+        using var workspace = harness.Workspace;
+        var display = CreateDisplay(resource);
+        display.Initialize(workspace);
+        display.ViewModel.BeginEditCommand.Execute(null);
+        display.ViewModel.Rows.Single(row => row.Key == "config").Value = "saved-value";
+
+        var saveTask = display.ViewModel.SaveCommand.ExecuteAsync(null);
+        await patchGate.RequestReceived.WaitAsync(TestContext.Current.CancellationToken);
+
+        display.Refresh(refreshedResource);
+        display.ViewModel.Resource.ShouldBeSameAs(refreshedResource);
+        display.ViewModel.Rows.Select(row => (row.Key, row.Value)).ShouldBe([
+            ("current", "current-value"),
+        ]);
+
+        patchGate.Release();
+        await saveTask.WaitAsync(TestContext.Current.CancellationToken);
+
+        display.ViewModel.Resource.ShouldBeSameAs(refreshedResource);
+        display.ViewModel.EditMode.ShouldBeFalse();
+        display.ViewModel.Rows.Select(row => (row.Key, row.Value)).ShouldBe([
+            ("current", "current-value"),
+        ]);
+    }
+
+    [AvaloniaFact]
+    public async Task merge_patch_initializes_missing_object_targets_before_removing_nested_values()
+    {
+        var resource = new V1ConfigMap
+        {
+            Metadata = new V1ObjectMeta { Name = "config", NamespaceProperty = "default" },
+        };
+        using var workspace = (await CreateAdminWorkspaceAsync(resource)).Workspace;
+        using var client = workspace.Runtime.Client!.GetGenericClient<V1ConfigMap>();
+
+        var saved = await client.PatchNamespacedAsync<V1ConfigMap>(
+            new V1Patch("{\"data\":{\"obsolete\":null}}", V1Patch.PatchType.MergePatch),
+            "default",
+            "config",
+            TestContext.Current.CancellationToken);
+
+        saved.Data.ShouldNotBeNull();
+        saved.Data.ShouldBeEmpty();
+    }
+
+    [AvaloniaFact]
     public async Task failed_save_keeps_edit_mode_and_draft()
     {
         var resource = CreateConfigMap();
@@ -588,6 +747,47 @@ public sealed class DataDisplayTests
             }
 
             return base.SendAsync(request, cancellationToken);
+        }
+    }
+
+    private sealed class BlockingPatchHandler : DelegatingHandler
+    {
+        private readonly BlockingPatchGate _gate;
+
+        internal BlockingPatchHandler(BlockingPatchGate gate)
+        {
+            _gate = gate;
+        }
+
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            if (request.Method == HttpMethod.Patch)
+            {
+                _gate.RequestReceivedSource.TrySetResult(true);
+                await _gate.ReleaseSource.Task.WaitAsync(cancellationToken).ConfigureAwait(false);
+            }
+
+            return await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            _gate.ReleaseSource.TrySetResult(true);
+            base.Dispose(disposing);
+        }
+    }
+
+    private sealed class BlockingPatchGate
+    {
+        internal TaskCompletionSource<bool> RequestReceivedSource { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        internal TaskCompletionSource<bool> ReleaseSource { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        internal Task RequestReceived => RequestReceivedSource.Task;
+
+        internal void Release()
+        {
+            ReleaseSource.TrySetResult(true);
         }
     }
 }

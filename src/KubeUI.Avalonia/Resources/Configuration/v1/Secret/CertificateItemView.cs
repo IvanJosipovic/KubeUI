@@ -28,7 +28,7 @@ public sealed partial class CertificateItemView : UserControl, IDeclarativeViewB
         _section = new ExpandableSection()
             .Header(this, x => x.Header)
             .IsExpanded(true)
-            .IsVisible(HasCert)
+            .IsVisible(this, x => x.HasCert)
             .Content(
                 new StackPanel()
                     .Children(

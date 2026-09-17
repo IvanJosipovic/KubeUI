@@ -21,14 +21,16 @@ internal sealed class DataDisplay<TResource, TValue> : UserControl, IInitializeC
         GroupApiVersionKind kind,
         Func<TResource, IEnumerable<KeyValuePair<string, TValue>>?> dataSelector,
         Func<TValue, string> displayFormatter,
-        Func<string, string> wireFormatter)
+        Func<string, string> wireFormatter,
+        Func<TValue, string>? originalValueWireFormatter = null)
     {
         ViewModel = new DataDisplayViewModel<TResource, TValue>(
             resource,
             kind,
             dataSelector,
             displayFormatter,
-            wireFormatter);
+            wireFormatter,
+            originalValueWireFormatter);
         DataContext = ViewModel;
         Content = CreateContent(ViewModel);
         HorizontalAlignment = HorizontalAlignment.Stretch;

@@ -10,9 +10,12 @@ internal sealed partial class DataDisplayRowViewModel : ViewModelBase
     [ObservableProperty]
     public partial string Value { get; set; }
 
-    public DataDisplayRowViewModel(string key, string value)
+    internal string? OriginalKey { get; }
+
+    public DataDisplayRowViewModel(string key, string value, string? originalKey = null)
     {
         Key = key;
         Value = value;
+        OriginalKey = originalKey;
     }
 }
