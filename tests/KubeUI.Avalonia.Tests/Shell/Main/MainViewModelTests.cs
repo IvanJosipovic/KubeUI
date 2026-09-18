@@ -1,4 +1,5 @@
 using Avalonia.Headless.XUnit;
+using Avalonia.Controls;
 using Avalonia.Media;
 using Avalonia.VisualTree;
 using Dock.Avalonia.Controls;
@@ -174,6 +175,22 @@ public sealed class MainViewModelTests
             .Single()
             .Factory
             .ShouldBeSameAs(factory);
+    }
+
+    [AvaloniaFact]
+    public async Task help_menu_contains_check_for_updates_command()
+    {
+        MainViewModel vm = CreateViewModel();
+        MainView view = new() { DataContext = vm };
+        using TestApplicationExtensions.TestWindow window = Application.Current.CreateTestWindow(content: view);
+
+        window.Show();
+        await TestApplicationExtensions.WaitForUiAsync();
+
+        view.GetVisualDescendants()
+            .OfType<MenuItem>()
+            .Select(item => item.Header?.ToString())
+            .ShouldContain("_Check for Updates");
     }
 
     [AvaloniaFact]

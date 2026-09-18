@@ -73,7 +73,7 @@ public sealed partial class MainViewModel : ViewModelBase
             Layout = layout;
         }
 
-        _ = Task.Run(CheckForUpdates);
+        _ = Task.Run(() => CheckForUpdatesAsync(showNoUpdatesPrompt: false));
     }
 
     [ObservableProperty]
@@ -248,7 +248,12 @@ public sealed partial class MainViewModel : ViewModelBase
 
         _factory.AddToDocuments(vm);
 
-        _ = Task.Run(CheckForUpdates);
+    }
+
+    [RelayCommand]
+    private void CheckForUpdates()
+    {
+        _ = Task.Run(() => CheckForUpdatesAsync(showNoUpdatesPrompt: true));
     }
 
     [RelayCommand]
@@ -304,7 +309,7 @@ public sealed partial class MainViewModel : ViewModelBase
         }
     }
 
-    private async Task CheckForUpdates()
+    private async Task CheckForUpdatesAsync(bool showNoUpdatesPrompt)
     {
         var source = new GithubSource("https://github.com/IvanJosipovic/KubeUI", null, SettingsService.Settings.PreReleaseChannel);
 
@@ -332,7 +337,7 @@ public sealed partial class MainViewModel : ViewModelBase
         {
             var update = await um.CheckForUpdatesAsync().ConfigureAwait(true);
 
-            if (update != null)
+            if (update is not null)
             {
                 ContentDialogSettings settings = new()
                 {
@@ -361,6 +366,27 @@ public sealed partial class MainViewModel : ViewModelBase
                     um.ApplyUpdatesAndRestart(update);
                 }
             }
+            else if (showNoUpdatesPrompt)
+            {
+                await ShowNoUpdatesAvailableAsync().ConfigureAwait(true);
+            }
         }
+        else if (showNoUpdatesPrompt)
+        {
+            await ShowNoUpdatesAvailableAsync().ConfigureAwait(true);
+        }
+    }
+
+    private async Task ShowNoUpdatesAvailableAsync()
+    {
+        ContentDialogSettings settings = new()
+        {
+            Title = Assets.Resources.MainView_CheckForUpdates_NoUpdates_Title,
+            Content = Assets.Resources.MainView_CheckForUpdates_NoUpdates_Content,
+            PrimaryButtonText = Assets.Resources.MainView_CheckForUpdates_NoUpdates_Primary,
+            DefaultButton = FAContentDialogButton.Primary
+        };
+
+        await _dialogService.ShowContentDialogAsync(this, settings).ConfigureAwait(true);
     }
 }

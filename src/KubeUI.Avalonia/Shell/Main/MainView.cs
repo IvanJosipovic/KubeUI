@@ -86,6 +86,9 @@ public sealed class MainView : ViewBase<MainViewModel>
             .Header(Assets.Resources.MainView_Menu_Help)
             .Items(
                 new MenuItem()
+                    .Header(Assets.Resources.MainView_Menu_Help_CheckForUpdates)
+                    .Command(vm, x => x.CheckForUpdatesCommand),
+                new MenuItem()
                     .Header(Assets.Resources.MainView_Menu_Help_About)
                     .Command(vm, x => x.OpenAboutCommand));
     }

@@ -185,6 +185,18 @@
     <value>Yes</value>
     <comment/>
   </data>
+  <data name="MainView_CheckForUpdates_NoUpdates_Title" xml:space="preserve">
+    <value>No Updates Available</value>
+    <comment/>
+  </data>
+  <data name="MainView_CheckForUpdates_NoUpdates_Content" xml:space="preserve">
+    <value>You are running the latest version of KubeUI.</value>
+    <comment/>
+  </data>
+  <data name="MainView_CheckForUpdates_NoUpdates_Primary" xml:space="preserve">
+    <value>OK</value>
+    <comment/>
+  </data>
   <data name="MainView_Menu_File" xml:space="preserve">
     <value>_File</value>
     <comment/>
@@ -195,6 +207,10 @@
   </data>
   <data name="MainView_Menu_Help" xml:space="preserve">
     <value>_Help</value>
+    <comment/>
+  </data>
+  <data name="MainView_Menu_Help_CheckForUpdates" xml:space="preserve">
+    <value>_Check for Updates</value>
     <comment/>
   </data>
   <data name="MainView_Menu_Help_About" xml:space="preserve">
