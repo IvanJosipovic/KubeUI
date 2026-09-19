@@ -1,10 +1,13 @@
 using Avalonia.Headless.XUnit;
+using Avalonia.Controls;
 using Avalonia.Media;
 using Avalonia.VisualTree;
 using Dock.Avalonia.Controls;
 using Dock.Model.Controls;
 using Dock.Model.Core;
 using Dock.Model.Mvvm.Controls;
+using FluentAvalonia.UI.Controls;
+using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using KubeUI.Avalonia.Shell.Documents.CloudClusters.Aks;
 using KubeUI.Avalonia.Shell.Main;
 using Shouldly;
@@ -174,6 +177,39 @@ public sealed class MainViewModelTests
             .Single()
             .Factory
             .ShouldBeSameAs(factory);
+    }
+
+    [AvaloniaFact]
+    public async Task help_menu_contains_check_for_updates_command()
+    {
+        MainViewModel vm = CreateViewModel();
+        MainView view = new() { DataContext = vm };
+        using TestApplicationExtensions.TestWindow window = Application.Current.CreateTestWindow(content: view);
+
+        window.Show();
+        await TestApplicationExtensions.WaitForUiAsync();
+
+        view.GetVisualDescendants()
+            .OfType<Menu>()
+            .Single()
+            .Items
+            .OfType<MenuItem>()
+            .Single(item => item.Header?.ToString() == Assets.Resources.MainView_Menu_Help)
+            .Items
+            .OfType<MenuItem>()
+            .Select(item => item.Header?.ToString())
+            .ShouldContain("_Check for Updates");
+    }
+
+    [Fact]
+    public void update_check_unavailable_prompt_uses_user_facing_text()
+    {
+        ContentDialogSettings settings = MainViewModel.CreateUpdateCheckUnavailableDialogSettings();
+
+        settings.Title.ShouldBe("Update Check Unavailable");
+        var content = settings.Content.ShouldBeOfType<string>();
+        content.ShouldBe("Automatic updates are unavailable for this copy of KubeUI. Please run KubeUI from an installed or portable package.");
+        content.ShouldNotContain("Velopack");
     }
 
     [AvaloniaFact]
