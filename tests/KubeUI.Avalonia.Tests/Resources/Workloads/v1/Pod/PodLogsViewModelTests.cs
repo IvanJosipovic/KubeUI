@@ -1442,7 +1442,8 @@ public sealed class PodLogsViewModelTests
         await viewModel.Connect();
         SelectOnlyContainers(viewModel, "app", "sidecar");
 
-        await WaitForAsync(() => viewModel.Logs.Text.Contains("newer app line", StringComparison.Ordinal));
+        await WaitForAsync(() => viewModel.Logs.Text.Contains("newer app line", StringComparison.Ordinal)
+            && viewModel.Logs.Text.Contains("older sidecar line", StringComparison.Ordinal));
         viewModel.CanShowResourceNames.ShouldBeTrue();
         viewModel.ShowResourceNames.ShouldBeTrue();
         viewModel.Logs.Text.ShouldContain("[app-7c9dd9f4f4-fghij/app] newer app line");

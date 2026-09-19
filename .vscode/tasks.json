@@ -34,7 +34,6 @@
             "command": "dotnet",
             "args": [
                 "build",
-                "--project",
                 "src/KubeUI.Desktop/KubeUI.Desktop.csproj",
                 "--tl:off",
                 "-clp:ErrorsOnly"
@@ -72,16 +71,10 @@
             "args": [
                 "run",
                 "--project",
-                "src/KubeUI.Desktop/KubeUI.Desktop.csproj",
-                "--tl:off",
-                "-clp:ErrorsOnly"
+                "src/KubeUI.Desktop/KubeUI.Desktop.csproj"
             ],
             "options": {
                 "cwd": "${workspaceFolder}"
-            },
-            "group": {
-                "kind": "build",
-                "isDefault": true
             },
             "problemMatcher": [],
             "inAgents": true

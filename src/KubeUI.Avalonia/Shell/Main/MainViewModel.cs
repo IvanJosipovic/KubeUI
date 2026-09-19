@@ -251,9 +251,9 @@ public sealed partial class MainViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private void CheckForUpdates()
+    private Task CheckForUpdates()
     {
-        _ = Task.Run(() => CheckForUpdatesAsync(showNoUpdatesPrompt: true));
+        return CheckForUpdatesAsync(showNoUpdatesPrompt: true);
     }
 
     [RelayCommand]
@@ -373,7 +373,7 @@ public sealed partial class MainViewModel : ViewModelBase
         }
         else if (showNoUpdatesPrompt)
         {
-            await ShowNoUpdatesAvailableAsync().ConfigureAwait(true);
+            await ShowUpdateCheckUnavailableAsync().ConfigureAwait(true);
         }
     }
 
@@ -388,5 +388,23 @@ public sealed partial class MainViewModel : ViewModelBase
         };
 
         await _dialogService.ShowContentDialogAsync(this, settings).ConfigureAwait(true);
+    }
+
+    private async Task ShowUpdateCheckUnavailableAsync()
+    {
+        ContentDialogSettings settings = CreateUpdateCheckUnavailableDialogSettings();
+
+        await _dialogService.ShowContentDialogAsync(this, settings).ConfigureAwait(true);
+    }
+
+    internal static ContentDialogSettings CreateUpdateCheckUnavailableDialogSettings()
+    {
+        return new ContentDialogSettings
+        {
+            Title = Assets.Resources.MainView_CheckForUpdates_Unavailable_Title,
+            Content = Assets.Resources.MainView_CheckForUpdates_Unavailable_Content,
+            PrimaryButtonText = Assets.Resources.MainView_CheckForUpdates_Unavailable_Primary,
+            DefaultButton = FAContentDialogButton.Primary
+        };
     }
 }
