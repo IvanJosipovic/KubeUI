@@ -105,6 +105,7 @@ public sealed partial class MRDiffDetectionViewModel : ViewModelBase, IInitializ
             .Filter(_searchSubject)
             .SortAndBind(out _view, _sortSubject, new() { ResetOnFirstTimeLoad = true, UseReplaceForUpdates = true, Scheduler = AvaloniaScheduler.Instance })
             .Subscribe();
+        OnPropertyChanged(nameof(View));
         _ = ProcessRecordsAsync(_processingCancellation.Token);
         _ = FlushRowsAsync(_processingCancellation.Token);
         Title = Assets.Resources.MRDiffDetectionView_Title!;
