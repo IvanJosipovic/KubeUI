@@ -108,7 +108,7 @@ public sealed partial class MRDiffDetectionViewModel : ViewModelBase, IInitializ
             .ObserveOn(TaskPoolScheduler.Default)
             .Filter(_filterSubject)
             .Filter(_searchSubject)
-            .SortAndBind(out _view, _sortSubject, new() { ResetOnFirstTimeLoad = true, UseReplaceForUpdates = true, Scheduler = AvaloniaScheduler.Instance })
+            .SortAndBind(out _view, _sortSubject, new() { ResetOnFirstTimeLoad = true, Scheduler = AvaloniaScheduler.Instance })
             .Subscribe();
         _selectionModel.SetIdentitySource(_view!);
         OnPropertyChanged(nameof(View));
