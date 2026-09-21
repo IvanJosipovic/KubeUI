@@ -2761,4 +2761,72 @@
     <value>Next Match</value>
     <comment/>
   </data>
+  <data name="MRDiffDetectionView_Title" xml:space="preserve">
+    <value>MR Diff Detection</value>
+    <comment/>
+  </data>
+  <data name="MRDiffDetectionView_SelectProvider" xml:space="preserve">
+    <value>Select Crossplane provider</value>
+    <comment/>
+  </data>
+  <data name="MRDiffDetectionView_Connecting" xml:space="preserve">
+    <value>Connecting to {0}</value>
+    <comment/>
+  </data>
+  <data name="MRDiffDetectionView_Monitoring" xml:space="preserve">
+    <value>Monitoring {0}</value>
+    <comment/>
+  </data>
+  <data name="MRDiffDetectionView_Name" xml:space="preserve">
+    <value>Name</value>
+    <comment/>
+  </data>
+  <data name="MRDiffDetectionView_Namespace" xml:space="preserve">
+    <value>Namespace</value>
+    <comment/>
+  </data>
+  <data name="MRDiffDetectionView_ApiVersion" xml:space="preserve">
+    <value>API Version</value>
+    <comment/>
+  </data>
+  <data name="MRDiffDetectionView_Kind" xml:space="preserve">
+    <value>Kind</value>
+    <comment/>
+  </data>
+  <data name="MRDiffDetectionView_DiffField" xml:space="preserve">
+    <value>Diff Field</value>
+    <comment/>
+  </data>
+  <data name="MRDiffDetectionView_OldValue" xml:space="preserve">
+    <value>Old Value</value>
+    <comment/>
+  </data>
+  <data name="MRDiffDetectionView_NewValue" xml:space="preserve">
+    <value>New Value</value>
+    <comment/>
+  </data>
+  <data name="MRDiffDetectionView_NewComputed" xml:space="preserve">
+    <value>Computed</value>
+    <comment/>
+  </data>
+  <data name="MRDiffDetectionView_NewRemoved" xml:space="preserve">
+    <value>Removed</value>
+    <comment/>
+  </data>
+  <data name="MRDiffDetectionView_RequiresNew" xml:space="preserve">
+    <value>Requires Recreate</value>
+    <comment/>
+  </data>
+  <data name="MRDiffDetectionView_Sensitive" xml:space="preserve">
+    <value>Sensitive</value>
+    <comment/>
+  </data>
+  <data name="MRDiffDetectionView_Occurrences" xml:space="preserve">
+    <value>Occurrences</value>
+    <comment/>
+  </data>
+  <data name="MRDiffDetectionView_InstanceCount" xml:space="preserve">
+    <value>Instances</value>
+    <comment/>
+  </data>
 </root>
