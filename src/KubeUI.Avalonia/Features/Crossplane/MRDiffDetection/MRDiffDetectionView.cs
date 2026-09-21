@@ -1,6 +1,8 @@
+using System.Collections;
 using Avalonia.Controls.DataGridFiltering;
 using Avalonia.Controls.DataGridSearching;
 using Avalonia.Controls.DataGridSorting;
+using Avalonia.Controls.Selection;
 using Avalonia.Controls;
 using Avalonia.Controls.Templates;
 using FluentIcons.Avalonia;
@@ -45,13 +47,13 @@ public sealed class MRDiffDetectionView : ViewBase<MRDiffDetectionViewModel>
                     .CanUserSortColumns(true)
                     .GridLinesVisibility(DataGridGridLinesVisibility.All)
                     .IsReadOnly(true)
-                    .ColumnDefinitionsSource(vm, x => x.ColumnDefinitions)
-                    .ItemsSource(vm, x => x.View)
-                    .Selection(vm, x => x.SelectionModel)
+                    .ColumnDefinitionsSource(CompiledBinding.Create<MRDiffDetectionViewModel, IList<DataGridColumnDefinition>>(x => x.ColumnDefinitions))
+                    .ItemsSource(CompiledBinding.Create<MRDiffDetectionViewModel, IList>(x => x.View))
+                    .Selection(CompiledBinding.Create<MRDiffDetectionViewModel, ISelectionModel>(x => x.SelectionModel))
                     .SelectionMode(DataGridSelectionMode.Extended)
-                    .FilteringModel(vm, x => x.FilteringModel)
-                    .SearchModel(vm, x => x.SearchModel)
-                    .SortingModel(vm, x => x.SortingModel)
+                    .FilteringModel(CompiledBinding.Create<MRDiffDetectionViewModel, IFilteringModel>(x => x.FilteringModel))
+                    .SearchModel(CompiledBinding.Create<MRDiffDetectionViewModel, ISearchModel>(x => x.SearchModel))
+                    .SortingModel(CompiledBinding.Create<MRDiffDetectionViewModel, ISortingModel>(x => x.SortingModel))
                     .ContextMenu(new ContextMenu())
                     .Behaviors([new MRDiffDetectionContextMenuBehavior()])
                     );
