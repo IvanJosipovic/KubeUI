@@ -40,9 +40,9 @@ public sealed partial class MRDiffDetectionViewModel : ViewModelBase, IInitializ
     private readonly ConcurrentDictionary<string, CrossplaneDiffRow> _pendingRows = new(StringComparer.Ordinal);
     private readonly CancellationTokenSource _processingCancellation = new();
     private readonly SourceCache<CrossplaneDiffRow, string> _rowsSource = new(row => row.Key);
-    private readonly Subject<IComparer<CrossplaneDiffRow>> _sortSubject;
-    private readonly Subject<Func<CrossplaneDiffRow, bool>> _filterSubject;
-    private readonly Subject<Func<CrossplaneDiffRow, bool>> _searchSubject;
+    private readonly BehaviorSubject<IComparer<CrossplaneDiffRow>> _sortSubject;
+    private readonly BehaviorSubject<Func<CrossplaneDiffRow, bool>> _filterSubject;
+    private readonly BehaviorSubject<Func<CrossplaneDiffRow, bool>> _searchSubject;
     private IDisposable? _rowsSubscription;
     private ReadOnlyObservableCollection<CrossplaneDiffRow>? _view;
     private IDisposable? _providerSubscription;
@@ -89,12 +89,9 @@ public sealed partial class MRDiffDetectionViewModel : ViewModelBase, IInitializ
         _sortingAdapterFactory = new DynamicDataSortingAdapterFactory<CrossplaneDiffRow>(columnsByKey);
         _filteringAdapterFactory = new DynamicDataFilteringAdapterFactory<CrossplaneDiffRow>(columnsByKey);
         _searchAdapterFactory = new DynamicDataSearchAdapterFactory<CrossplaneDiffRow>(columnsByKey);
-        _sortSubject = new();
-        _filterSubject = new();
-        _searchSubject = new();
-        _sortSubject.OnNext(_sortingAdapterFactory.SortComparer);
-        _filterSubject.OnNext(_filteringAdapterFactory.FilterPredicate);
-        _searchSubject.OnNext(_searchAdapterFactory.SearchPredicate);
+        _sortSubject = new(_sortingAdapterFactory.SortComparer);
+        _filterSubject = new(_filteringAdapterFactory.FilterPredicate);
+        _searchSubject = new(_searchAdapterFactory.SearchPredicate);
         SortingModel.SortingChanged += SortingModelOnSortingChanged;
         FilteringModel.FilteringChanged += FilteringModelOnFilteringChanged;
         SearchModel.SearchChanged += SearchModelOnSearchChanged;

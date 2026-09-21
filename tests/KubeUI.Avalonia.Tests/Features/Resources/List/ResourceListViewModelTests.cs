@@ -1,3 +1,4 @@
+using KubeUI.Avalonia.Infrastructure.DataGrid;
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
@@ -1531,7 +1532,7 @@ public class ResourceListViewModelTests
     [AvaloniaFact]
     public void text_column_binding_returns_empty_for_missing_metadata()
     {
-        var column = new ResourceListColumn<V1Pod, string>
+        var column = new DataGridValueColumn<V1Pod, string>
         {
             Key = "name",
             Name = "Name",
@@ -3558,3 +3559,4 @@ internal sealed class FakeContextMenuResourceListViewModel : IResourceListViewMo
     public DataGridState? DataGridRuntimeState { get; set; }
     public void InitializeResource(ClusterWorkspace cluster, GroupApiVersionKind kind) => Cluster = cluster;
 }
+

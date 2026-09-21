@@ -1,3 +1,4 @@
+using KubeUI.Avalonia.Infrastructure.DataGrid;
 using Avalonia.Headless.XUnit;
 using k8s;
 using k8s.Models;
@@ -93,7 +94,7 @@ public class V1CustomResourceDefinitionConfigTests
     [AvaloniaFact]
     public void resource_list_column_value_accessor_returns_null_for_missing_nullable_values()
     {
-        var column = new ResourceListColumn<NullableValueResource, int>
+        var column = new DataGridValueColumn<NullableValueResource, int>
         {
             Key = "value",
             Name = "Value",
@@ -290,3 +291,4 @@ internal sealed class TestCustomResourceSpec
 {
     public int? Revision { get; set; }
 }
+
