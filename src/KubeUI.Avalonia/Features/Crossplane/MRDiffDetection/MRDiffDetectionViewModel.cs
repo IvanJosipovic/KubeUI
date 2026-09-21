@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
 using System.Reactive.Linq;
+using System.Threading.Channels;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.Input;
 using DynamicData;
@@ -19,17 +20,20 @@ namespace KubeUI.Avalonia.Features.Crossplane.MRDiffDetection;
 public sealed partial class MRDiffDetectionViewModel : ViewModelBase, IInitializeCluster, IDisposable
 {
     private readonly CrossplaneDiffLogParser _parser;
-    private readonly CrossplaneDiffAggregator _aggregator = new();
     private readonly CrossplaneProviderLogMonitor _monitor;
     private readonly IServiceProvider _serviceProvider;
     private readonly IFactory _factory;
-    private readonly ConcurrentQueue<CrossplaneDiffRecord> _pendingRecords = new();
+    private readonly Channel<PendingRecord> _pendingRecords = Channel.CreateUnbounded<PendingRecord>();
+    private readonly ConcurrentDictionary<string, CrossplaneDiffRow> _pendingRows = new(StringComparer.Ordinal);
+    private readonly CancellationTokenSource _processingCancellation = new();
+    private readonly Dictionary<string, CrossplaneDiffRow> _rowsByKey = new(StringComparer.Ordinal);
     private IDisposable? _providerSubscription;
     private IDisposable? _podSubscription;
     private ISourceCache<GenericKubernetesObject, ResourceCacheKey>? _providerResources;
     private HashSet<string> _activePodKeys = new(StringComparer.Ordinal);
     private DispatcherTimer? _rowsRefreshTimer;
     private bool _disposed;
+    private long _generation;
 
     [ObservableProperty]
     public partial ClusterWorkspace? Cluster { get; set; }
@@ -53,6 +57,7 @@ public sealed partial class MRDiffDetectionViewModel : ViewModelBase, IInitializ
         _monitor = monitor;
         _serviceProvider = serviceProvider;
         _factory = factory;
+        _ = ProcessRecordsAsync(_processingCancellation.Token);
         Title = Assets.Resources.MRDiffDetectionView_Title!;
         _rowsRefreshTimer = new DispatcherTimer
         {
@@ -129,9 +134,10 @@ public sealed partial class MRDiffDetectionViewModel : ViewModelBase, IInitializ
     [RelayCommand]
     private void Clear()
     {
+        Interlocked.Increment(ref _generation);
         DrainPendingRecords();
-        _aggregator.Clear();
-
+        _pendingRows.Clear();
+        _rowsByKey.Clear();
         Rows.Clear();
     }
 
@@ -248,8 +254,10 @@ public sealed partial class MRDiffDetectionViewModel : ViewModelBase, IInitializ
 
         if (resetRows)
         {
+            Interlocked.Increment(ref _generation);
             DrainPendingRecords();
-            _aggregator.Clear();
+            _pendingRows.Clear();
+            _rowsByKey.Clear();
             Rows.Clear();
         }
         if (provider is null)
@@ -277,7 +285,7 @@ public sealed partial class MRDiffDetectionViewModel : ViewModelBase, IInitializ
     {
         foreach (var record in _parser.Parse(line))
         {
-            _pendingRecords.Enqueue(record);
+            _pendingRecords.Writer.TryWrite(new PendingRecord(Volatile.Read(ref _generation), record));
         }
     }
 
@@ -288,34 +296,22 @@ public sealed partial class MRDiffDetectionViewModel : ViewModelBase, IInitializ
             return;
         }
 
-        const int maxRecordsPerRefresh = 100;
-        var processedRecords = 0;
-        while (processedRecords < maxRecordsPerRefresh && _pendingRecords.TryDequeue(out var record))
+        const int maxRowsPerRefresh = 500;
+        var processedRows = 0;
+        foreach (var pair in _pendingRows)
         {
-            _aggregator.Add(record);
-            processedRecords++;
-        }
+            if (processedRows++ >= maxRowsPerRefresh || !_pendingRows.TryRemove(pair.Key, out var snapshot))
+            {
+                break;
+            }
 
-        if (processedRecords == 0)
-        {
-            return;
-        }
-
-        var rows = _aggregator.GetSnapshot()
-            .OrderBy(row => row.ApiVersion)
-            .ThenBy(row => row.Kind)
-            .ThenBy(row => row.DiffField)
-            .ThenBy(row => row.Namespace)
-            .ThenBy(row => row.Name);
-        var existingRows = Rows.ToDictionary(row => row.Key, StringComparer.Ordinal);
-        foreach (var snapshot in rows)
-        {
-            if (existingRows.TryGetValue(snapshot.Key, out var existing))
+            if (_rowsByKey.TryGetValue(snapshot.Key, out var existing))
             {
                 existing.Apply(snapshot);
             }
             else
             {
+                _rowsByKey.Add(snapshot.Key, snapshot);
                 Rows.Add(snapshot);
             }
         }
@@ -323,7 +319,32 @@ public sealed partial class MRDiffDetectionViewModel : ViewModelBase, IInitializ
 
     private void DrainPendingRecords()
     {
-        while (_pendingRecords.TryDequeue(out _))
+        while (_pendingRecords.Reader.TryRead(out _))
+        {
+        }
+    }
+
+    private async Task ProcessRecordsAsync(CancellationToken cancellationToken)
+    {
+        var aggregator = new CrossplaneDiffAggregator();
+        var activeGeneration = Volatile.Read(ref _generation);
+        try
+        {
+            await foreach (var pending in _pendingRecords.Reader.ReadAllAsync(cancellationToken))
+            {
+                if (pending.Generation != activeGeneration)
+                {
+                    aggregator = new CrossplaneDiffAggregator();
+                    activeGeneration = pending.Generation;
+                }
+
+                foreach (var row in aggregator.AddAndGetAffectedRows(pending.Record))
+                {
+                    _pendingRows[row.Key] = row;
+                }
+            }
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
         }
     }
@@ -336,6 +357,8 @@ public sealed partial class MRDiffDetectionViewModel : ViewModelBase, IInitializ
         }
 
         _disposed = true;
+        _processingCancellation.Cancel();
+        _pendingRecords.Writer.TryComplete();
         if (_rowsRefreshTimer is not null)
         {
             _rowsRefreshTimer.Stop();
@@ -350,8 +373,11 @@ public sealed partial class MRDiffDetectionViewModel : ViewModelBase, IInitializ
         _providerResources = null;
 
         _monitor.Dispose();
+        _processingCancellation.Dispose();
         GC.SuppressFinalize(this);
     }
+
+    private readonly record struct PendingRecord(long Generation, CrossplaneDiffRecord Record);
 }
 
 public sealed record CrossplaneProviderOption(string Name, GenericKubernetesObject Resource);

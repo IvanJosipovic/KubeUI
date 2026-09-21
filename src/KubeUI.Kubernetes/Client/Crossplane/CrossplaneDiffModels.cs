@@ -122,16 +122,27 @@ public sealed class CrossplaneDiffAggregator
         ArgumentNullException.ThrowIfNull(record);
 
         var key = string.Join("\u0000", record.Uid, record.Name, record.Namespace, record.ApiVersion, record.Kind, record.DiffField);
-        if (_rows.TryGetValue(key, out var row))
-        {
-            row.Update(record);
-            UpdateInstanceCounts();
-            return false;
-        }
+            if (_rows.TryGetValue(key, out var row))
+            {
+                row.Update(record);
+                UpdateInstanceCounts(record.ApiVersion, record.Kind, record.DiffField);
+                return false;
+            }
 
-        _rows.Add(key, new CrossplaneDiffRow(record));
-        UpdateInstanceCounts();
+            _rows.Add(key, new CrossplaneDiffRow(record));
+            UpdateInstanceCounts(record.ApiVersion, record.Kind, record.DiffField);
         return true;
+    }
+
+    public IReadOnlyList<CrossplaneDiffRow> AddAndGetAffectedRows(CrossplaneDiffRecord record)
+    {
+        Add(record);
+        return _rows.Values
+            .Where(row => string.Equals(row.ApiVersion, record.ApiVersion, StringComparison.Ordinal)
+                && string.Equals(row.Kind, record.Kind, StringComparison.Ordinal)
+                && string.Equals(row.DiffField, record.DiffField, StringComparison.Ordinal))
+            .Select(row => row.Snapshot())
+            .ToArray();
     }
 
     public void Clear() => _rows.Clear();
@@ -141,11 +152,16 @@ public sealed class CrossplaneDiffAggregator
         return _rows.Values.Select(row => row.Snapshot()).ToArray();
     }
 
-    private void UpdateInstanceCounts()
+    private void UpdateInstanceCounts(string apiVersion, string kind, string diffField)
     {
         foreach (var row in _rows.Values)
         {
-            row.SetInstanceCount(GetInstanceCount(row.ApiVersion, row.Kind, row.DiffField));
+            if (string.Equals(row.ApiVersion, apiVersion, StringComparison.Ordinal)
+                && string.Equals(row.Kind, kind, StringComparison.Ordinal)
+                && string.Equals(row.DiffField, diffField, StringComparison.Ordinal))
+            {
+                row.SetInstanceCount(GetInstanceCount(apiVersion, kind, diffField));
+            }
         }
     }
 
