@@ -44,6 +44,10 @@ public sealed class CrossplaneProviderLogMonitor : IDisposable
         var state = _resolver.CreateState(provider, string.Empty, previous: false, timestamps: true, tailLines: int.MaxValue);
         var resolution = _resolver.TryResolve(cluster, state);
         var pods = resolution?.RelatedPods ?? [];
+        if (pods.Count == 0)
+        {
+            pods = FindProviderPods(cluster, provider.Metadata?.Name);
+        }
         var tasks = new List<Task>();
         var seen = new ConcurrentDictionary<string, byte>(StringComparer.Ordinal);
         foreach (var pod in pods)
@@ -133,6 +137,44 @@ public sealed class CrossplaneProviderLogMonitor : IDisposable
     {
         return (pod.Status?.ContainerStatuses ?? []).Any(status =>
             string.Equals(status.Name, containerName, StringComparison.Ordinal) && status.RestartCount > 0);
+    }
+
+    private static List<k8s.Models.V1Pod> FindProviderPods(IClusterRuntime cluster, string? providerName)
+    {
+        if (string.IsNullOrWhiteSpace(providerName))
+        {
+            return [];
+        }
+
+        List<k8s.Models.V1Pod> pods = [];
+        foreach (var pair in cluster.Objects)
+        {
+            if (pair.Value is not IResourceContainer container)
+            {
+                continue;
+            }
+
+            foreach (var pod in container.Snapshot().OfType<k8s.Models.V1Pod>())
+            {
+                var labels = pod.Metadata?.Labels;
+                var hasProviderLabel = labels is not null
+                    && labels.Any(label =>
+                        (string.Equals(label.Key, "pkg.crossplane.io/provider", StringComparison.Ordinal)
+                            || string.Equals(label.Key, "pkg.crossplane.io/provider-name", StringComparison.Ordinal))
+                        && string.Equals(label.Value, providerName, StringComparison.Ordinal));
+                var hasProviderName = pod.Metadata?.Name?.StartsWith(providerName + "-", StringComparison.Ordinal) == true;
+
+                if (hasProviderLabel || hasProviderName)
+                {
+                    pods.Add(pod);
+                }
+            }
+        }
+
+        return pods
+            .GroupBy(pod => $"{pod.Metadata?.NamespaceProperty}\u0000{pod.Metadata?.Name}", StringComparer.Ordinal)
+            .Select(group => group.First())
+            .ToList();
     }
 
     public void Dispose()

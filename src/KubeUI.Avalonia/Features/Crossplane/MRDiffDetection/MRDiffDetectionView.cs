@@ -24,14 +24,14 @@ public sealed class MRDiffDetectionView : ViewBase<MRDiffDetectionViewModel>
                         new ComboBox()
                             .Width(260)
                             .PlaceholderText(Assets.Resources.MRDiffDetectionView_SelectProvider)
-                            .ItemsSource(CompiledBinding.Create<MRDiffDetectionViewModel, IEnumerable<CrossplaneProviderOption>>(x => x.Providers))
-                            .SelectedItem(CompiledBinding.Create<MRDiffDetectionViewModel, CrossplaneProviderOption?>(x => x.SelectedProvider, mode: BindingMode.TwoWay))
+                            .ItemsSource(vm, x => x.Providers)
+                            .SelectedItem(vm, x => x.SelectedProvider, BindingMode.TwoWay)
                             .ItemTemplate(new FuncDataTemplate<CrossplaneProviderOption>((provider, _) => new TextBlock().Text(provider?.Name ?? string.Empty))),
                         new TextBlock()
                             .VerticalAlignment(VerticalAlignment.Center)
-                            .Text(CompiledBinding.Create<MRDiffDetectionViewModel, string>(x => x.Status)),
+                            .Text(vm, x => x.Status),
                         new Button()
-                            .Command(CompiledBinding.Create<MRDiffDetectionViewModel, System.Windows.Input.ICommand>(x => x.ClearCommand))
+                            .Command(vm, x => x.ClearCommand)
                             .Content(new FluentIcon().Icon(Icon.Broom))),
                 new DataGrid()
                     .Row(1)
@@ -40,7 +40,7 @@ public sealed class MRDiffDetectionView : ViewBase<MRDiffDetectionViewModel>
                     .CanUserSortColumns(true)
                     .GridLinesVisibility(DataGridGridLinesVisibility.All)
                     .IsReadOnly(true)
-                    .ItemsSource(CompiledBinding.Create<MRDiffDetectionViewModel, IEnumerable<CrossplaneDiffRow>>(x => x.Rows))
+                    .ItemsSource(vm, x => x.Rows)
                     .Columns([
                         CreateColumn<CrossplaneDiffRow, string>(x => x.Name, Assets.Resources.MRDiffDetectionView_Name),
                         CreateColumn<CrossplaneDiffRow, string>(x => x.Namespace, Assets.Resources.MRDiffDetectionView_Namespace),
