@@ -47,6 +47,8 @@ public sealed class MRDiffDetectionView : ViewBase<MRDiffDetectionViewModel>
                     .IsReadOnly(true)
                     .ColumnDefinitionsSource(vm, x => x.ColumnDefinitions)
                     .ItemsSource(vm, x => x.View)
+                    .Selection(vm, x => x.SelectionModel)
+                    .SelectionMode(DataGridSelectionMode.Extended)
                     .FilteringModel(vm, x => x.FilteringModel)
                     .SearchModel(vm, x => x.SearchModel)
                     .SortingModel(vm, x => x.SortingModel)

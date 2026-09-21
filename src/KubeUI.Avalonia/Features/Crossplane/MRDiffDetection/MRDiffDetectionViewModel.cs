@@ -10,6 +10,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.DataGridFiltering;
 using Avalonia.Controls.DataGridSearching;
 using Avalonia.Controls.DataGridSorting;
+using Avalonia.Controls.Selection;
 using Avalonia.Data;
 using Avalonia.Data.Converters;
 using Avalonia.Threading;
@@ -46,6 +47,10 @@ public sealed partial class MRDiffDetectionViewModel : ViewModelBase, IInitializ
     private readonly BehaviorSubject<Func<CrossplaneDiffRow, bool>> _searchSubject;
     private IDisposable? _rowsSubscription;
     private ReadOnlyObservableCollection<CrossplaneDiffRow>? _view;
+    private readonly IdentityPreservingSelectionModel<CrossplaneDiffRow, string> _selectionModel = new(row => row.Key)
+    {
+        SingleSelect = false
+    };
     private IDisposable? _providerSubscription;
     private IDisposable? _podSubscription;
     private ISourceCache<GenericKubernetesObject, ResourceCacheKey>? _providerResources;
@@ -64,6 +69,7 @@ public sealed partial class MRDiffDetectionViewModel : ViewModelBase, IInitializ
 
     public ObservableCollection<CrossplaneProviderOption> Providers { get; } = [];
     public IList View => _view ?? throw new InvalidOperationException("MR diff view has not been initialized.");
+    public ISelectionModel SelectionModel => _selectionModel;
     public ObservableCollection<DataGridColumnDefinition> ColumnDefinitions { get; } = [];
     public IDataGridSortingAdapterFactory SortingAdapterFactory => _sortingAdapterFactory;
     public IDataGridFilteringAdapterFactory FilteringAdapterFactory => _filteringAdapterFactory;
@@ -104,6 +110,7 @@ public sealed partial class MRDiffDetectionViewModel : ViewModelBase, IInitializ
             .Filter(_searchSubject)
             .SortAndBind(out _view, _sortSubject, new() { ResetOnFirstTimeLoad = true, UseReplaceForUpdates = true, Scheduler = AvaloniaScheduler.Instance })
             .Subscribe();
+        _selectionModel.SetIdentitySource(_view!);
         OnPropertyChanged(nameof(View));
         _ = ProcessRecordsAsync(_processingCancellation.Token);
         Title = Assets.Resources.MRDiffDetectionView_Title!;
@@ -505,6 +512,7 @@ public sealed partial class MRDiffDetectionViewModel : ViewModelBase, IInitializ
         _pendingRecords.Writer.TryComplete();
         _rowsSubscription?.Dispose();
         _rowsSubscription = null;
+        _selectionModel.Dispose();
         _rowsSource.Dispose();
 
         _providerSubscription?.Dispose();
