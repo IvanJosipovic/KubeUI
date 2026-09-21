@@ -65,30 +65,6 @@ public sealed class CrossplaneProviderLogMonitor : IDisposable
         await Task.WhenAll(tasks).ConfigureAwait(false);
     }
 
-    public static IReadOnlyList<CrossplaneProviderOption> GetProviders(IClusterRuntime cluster)
-    {
-        List<CrossplaneProviderOption> providers = [];
-        foreach (var pair in cluster.Objects)
-        {
-            if (!string.Equals(pair.Key.Group, "pkg.crossplane.io", StringComparison.Ordinal)
-                || !string.Equals(pair.Key.Kind, "Provider", StringComparison.Ordinal)
-                || pair.Value is not IResourceContainer container)
-            {
-                continue;
-            }
-
-            foreach (var resource in container.Snapshot().OfType<GenericKubernetesObject>())
-            {
-                if (!string.IsNullOrWhiteSpace(resource.Metadata?.Name))
-                {
-                    providers.Add(new CrossplaneProviderOption(resource.Metadata!.Name!, resource));
-                }
-            }
-        }
-
-        return providers.OrderBy(provider => provider.Name, StringComparer.Ordinal).ToArray();
-    }
-
     private async Task ReadContainerAsync(
         IClusterRuntime cluster,
         k8s.Models.V1Pod pod,

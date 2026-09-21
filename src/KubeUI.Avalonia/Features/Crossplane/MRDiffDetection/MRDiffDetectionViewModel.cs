@@ -1,6 +1,8 @@
 using System.Collections.ObjectModel;
+using System.Reactive.Linq;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.Input;
+using DynamicData;
 using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
@@ -15,6 +17,8 @@ public sealed partial class MRDiffDetectionViewModel : ViewModelBase, IInitializ
     private readonly CrossplaneDiffLogParser _parser;
     private readonly CrossplaneDiffAggregator _aggregator = new();
     private readonly CrossplaneProviderLogMonitor _monitor;
+    private IDisposable? _providerSubscription;
+    private ISourceCache<GenericKubernetesObject, ResourceCacheKey>? _providerResources;
     private bool _disposed;
 
     [ObservableProperty]
@@ -55,15 +59,24 @@ public sealed partial class MRDiffDetectionViewModel : ViewModelBase, IInitializ
             return;
         }
 
-        if (Cluster is not null)
-        {
-            Cluster.Runtime.OnChange -= OnRuntimeChange;
-        }
+        _providerSubscription?.Dispose();
+        _providerSubscription = null;
+        _providerResources = null;
 
         Cluster = cluster;
         Id = $"{nameof(MRDiffDetectionViewModel)}-{cluster.Runtime.Name}";
-        cluster.Runtime.OnChange += OnRuntimeChange;
-        RefreshProviders();
+
+        var providerConfig = cluster.GetResourceConfigs().FirstOrDefault(config =>
+            config.IsCustomResource
+            && string.Equals(config.Kind.Group, "pkg.crossplane.io", StringComparison.Ordinal)
+            && string.Equals(config.Kind.Kind, "Provider", StringComparison.Ordinal));
+        if (providerConfig is null)
+        {
+            Providers.Clear();
+            return;
+        }
+
+        _ = SeedAndBindResourcesAsync(cluster, providerConfig.Kind);
     }
 
     partial void OnSelectedProviderChanged(CrossplaneProviderOption? value)
@@ -78,15 +91,6 @@ public sealed partial class MRDiffDetectionViewModel : ViewModelBase, IInitializ
         Rows.Clear();
     }
 
-    private void OnRuntimeChange(WatchEventType eventType, GroupApiVersionKind kind, IKubernetesObject<V1ObjectMeta> resource)
-    {
-        Dispatcher.UIThread.Post(() =>
-        {
-            RefreshProviders();
-            _ = StartMonitoringAsync(SelectedProvider);
-        });
-    }
-
     private void RefreshProviders()
     {
         if (Cluster is null || _disposed)
@@ -96,13 +100,47 @@ public sealed partial class MRDiffDetectionViewModel : ViewModelBase, IInitializ
 
         var selectedName = SelectedProvider?.Name;
         Providers.Clear();
-        foreach (var provider in CrossplaneProviderLogMonitor.GetProviders(Cluster.Runtime))
+        foreach (var resource in _providerResources?.Items.OrderBy(resource => resource.Metadata?.Name, StringComparer.Ordinal)
+                     ?? Enumerable.Empty<GenericKubernetesObject>())
         {
-            Providers.Add(provider);
+            if (!string.IsNullOrWhiteSpace(resource.Metadata?.Name))
+            {
+                Providers.Add(new CrossplaneProviderOption(resource.Metadata.Name, resource));
+            }
         }
 
-        SelectedProvider = Providers.FirstOrDefault(provider => string.Equals(provider.Name, selectedName, StringComparison.Ordinal))
-            ?? Providers.FirstOrDefault();
+        SelectedProvider = selectedName is null
+            ? null
+            : Providers.FirstOrDefault(provider => string.Equals(provider.Name, selectedName, StringComparison.Ordinal));
+    }
+
+    private async Task SeedAndBindResourcesAsync(ClusterWorkspace cluster, GroupApiVersionKind providerKind)
+    {
+        try
+        {
+            await Task.WhenAll(
+                cluster.Runtime.SeedResource(providerKind, waitForReady: true),
+                cluster.Runtime.SeedResource(GroupApiVersionKind.From<V1Pod>(), waitForReady: true)).ConfigureAwait(false);
+
+            await Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                if (_disposed || !ReferenceEquals(Cluster, cluster))
+                {
+                    return;
+                }
+
+                _providerResources = cluster.Runtime.GetResourceSourceCache<GenericKubernetesObject>(providerKind);
+                _providerSubscription?.Dispose();
+                _providerSubscription = _providerResources
+                    .Connect()
+                    .Subscribe(_ => Dispatcher.UIThread.Post(RefreshProviders));
+                RefreshProviders();
+            });
+        }
+        catch (Exception ex)
+        {
+            Status = ex.Message;
+        }
     }
 
     private async Task StartMonitoringAsync(CrossplaneProviderOption? provider)
@@ -164,10 +202,9 @@ public sealed partial class MRDiffDetectionViewModel : ViewModelBase, IInitializ
         }
 
         _disposed = true;
-        if (Cluster is not null)
-        {
-            Cluster.Runtime.OnChange -= OnRuntimeChange;
-        }
+        _providerSubscription?.Dispose();
+        _providerSubscription = null;
+        _providerResources = null;
 
         _monitor.Dispose();
         GC.SuppressFinalize(this);

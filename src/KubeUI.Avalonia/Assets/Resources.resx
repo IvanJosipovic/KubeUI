@@ -2769,6 +2769,10 @@
     <value>Select Crossplane provider</value>
     <comment/>
   </data>
+  <data name="MRDiffDetectionView_Clear" xml:space="preserve">
+    <value>Clear</value>
+    <comment/>
+  </data>
   <data name="MRDiffDetectionView_Connecting" xml:space="preserve">
     <value>Connecting to {0}</value>
     <comment/>

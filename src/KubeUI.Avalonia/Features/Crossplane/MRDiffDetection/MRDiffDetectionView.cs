@@ -1,8 +1,6 @@
 using System.Linq.Expressions;
 using Avalonia.Controls;
 using Avalonia.Controls.Templates;
-using FluentIcons.Avalonia;
-using FluentIcons.Common;
 using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Kubernetes;
 
@@ -27,12 +25,9 @@ public sealed class MRDiffDetectionView : ViewBase<MRDiffDetectionViewModel>
                             .ItemsSource(vm, x => x.Providers)
                             .SelectedItem(vm, x => x.SelectedProvider, BindingMode.TwoWay)
                             .ItemTemplate(new FuncDataTemplate<CrossplaneProviderOption>((provider, _) => new TextBlock().Text(provider?.Name ?? string.Empty))),
-                        new TextBlock()
-                            .VerticalAlignment(VerticalAlignment.Center)
-                            .Text(vm, x => x.Status),
                         new Button()
                             .Command(vm, x => x.ClearCommand)
-                            .Content(new FluentIcon().Icon(Icon.Broom))),
+                            .Content(Assets.Resources.MRDiffDetectionView_Clear)),
                 new DataGrid()
                     .Row(1)
                     .CanUserReorderColumns(true)
