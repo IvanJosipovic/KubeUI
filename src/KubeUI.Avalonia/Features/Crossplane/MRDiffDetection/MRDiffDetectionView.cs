@@ -1,5 +1,6 @@
-using System.Linq.Expressions;
-using System.ComponentModel;
+using Avalonia.Controls.DataGridFiltering;
+using Avalonia.Controls.DataGridSearching;
+using Avalonia.Controls.DataGridSorting;
 using Avalonia.Controls;
 using Avalonia.Controls.Templates;
 using FluentIcons.Avalonia;
@@ -32,44 +33,25 @@ public sealed class MRDiffDetectionView : ViewBase<MRDiffDetectionViewModel>
                             .Command(vm, x => x.ClearCommand)
                             .ToolTip_Tip(Assets.Resources.MRDiffDetectionView_Clear)
                             .Content(new FluentIcon().Icon(Icon.Broom))),
-                new DataGrid()
+                new DataGrid
+                    {
+                        SortingAdapterFactory = vm.SortingAdapterFactory,
+                        FilteringAdapterFactory = vm.FilteringAdapterFactory,
+                        SearchAdapterFactory = vm.SearchAdapterFactory
+                    }
                     .Row(1)
                     .CanUserReorderColumns(true)
                     .CanUserResizeColumns(true)
                     .CanUserSortColumns(true)
                     .GridLinesVisibility(DataGridGridLinesVisibility.All)
                     .IsReadOnly(true)
-                    .ItemsSource(vm, x => x.Rows)
+                    .ColumnDefinitionsSource(vm, x => x.ColumnDefinitions)
+                    .ItemsSource(vm, x => x.View)
+                    .FilteringModel(vm, x => x.FilteringModel)
+                    .SearchModel(vm, x => x.SearchModel)
+                    .SortingModel(vm, x => x.SortingModel)
                     .ContextMenu(new ContextMenu())
                     .Behaviors([new MRDiffDetectionContextMenuBehavior()])
-                    .Columns([
-                        CreateColumn<CrossplaneDiffRow, string>(x => x.Name, Assets.Resources.MRDiffDetectionView_Name),
-                        CreateColumn<CrossplaneDiffRow, string>(x => x.Namespace, Assets.Resources.MRDiffDetectionView_Namespace),
-                        CreateColumn<CrossplaneDiffRow, string>(x => x.ApiVersion, Assets.Resources.MRDiffDetectionView_ApiVersion),
-                        CreateColumn<CrossplaneDiffRow, string>(x => x.Kind, Assets.Resources.MRDiffDetectionView_Kind, ListSortDirection.Ascending),
-                        CreateColumn<CrossplaneDiffRow, string>(x => x.DiffField, Assets.Resources.MRDiffDetectionView_DiffField),
-                        CreateColumn<CrossplaneDiffRow, string>(x => x.OldValue, Assets.Resources.MRDiffDetectionView_OldValue),
-                        CreateColumn<CrossplaneDiffRow, string>(x => x.NewValue, Assets.Resources.MRDiffDetectionView_NewValue),
-                        CreateColumn<CrossplaneDiffRow, bool>(x => x.NewComputed, Assets.Resources.MRDiffDetectionView_NewComputed),
-                        CreateColumn<CrossplaneDiffRow, bool>(x => x.NewRemoved, Assets.Resources.MRDiffDetectionView_NewRemoved),
-                        CreateColumn<CrossplaneDiffRow, bool>(x => x.RequiresNew, Assets.Resources.MRDiffDetectionView_RequiresNew),
-                        CreateColumn<CrossplaneDiffRow, bool>(x => x.Sensitive, Assets.Resources.MRDiffDetectionView_Sensitive),
-                        CreateColumn<CrossplaneDiffRow, int>(x => x.InstanceCount, Assets.Resources.MRDiffDetectionView_InstanceCount),
-                        CreateColumn<CrossplaneDiffRow, int>(x => x.Occurrences, Assets.Resources.MRDiffDetectionView_Occurrences)
-                    ]));
-    }
-
-    private static DataGridTextColumn CreateColumn<TItem, TValue>(
-        Expression<Func<TItem, TValue>> binding,
-        string? header,
-        ListSortDirection? sortDirection = null)
-    {
-        return new DataGridTextColumn
-        {
-            Binding = CompiledBinding.Create(binding),
-            Header = header,
-            SortDirection = sortDirection,
-            Width = new DataGridLength(1, DataGridLengthUnitType.Star)
-        };
+                    );
     }
 }

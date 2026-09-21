@@ -1,3 +1,4 @@
+using KubeUI.Avalonia.Infrastructure.DataGrid;
 using FluentIcons.Common;
 using k8s.Models;
 using KubeUI.Avalonia.Features.Resources.Common;
@@ -20,7 +21,7 @@ public sealed partial class V1CustomResourceDefinitionConfig : ResourceConfigBas
     public override IList<IResourceListColumn> Columns()
     {
         return [
-            new ResourceListColumn<V1CustomResourceDefinition, string>()
+            new DataGridValueColumn<V1CustomResourceDefinition, string>()
             {
                 Key = "name",
                 Name = Assets.Resources.V1CustomResourceDefinitionConfig_Name!,
@@ -28,21 +29,21 @@ public sealed partial class V1CustomResourceDefinitionConfig : ResourceConfigBas
                 Sort = SortDirection.Ascending,
                 Width = "2*",
             },
-            new ResourceListColumn<V1CustomResourceDefinition, string>()
+            new DataGridValueColumn<V1CustomResourceDefinition, string>()
             {
                 Key = "group",
                 Name = Assets.Resources.V1CustomResourceDefinitionConfig_Group!,
                 Field = x => x.Spec.Group,
                 Width = "*",
             },
-            new ResourceListColumn<V1CustomResourceDefinition, string>()
+            new DataGridValueColumn<V1CustomResourceDefinition, string>()
             {
                 Key = "version",
                 Name = Assets.Resources.V1CustomResourceDefinitionConfig_Version!,
                 Field = x => x.Spec.Versions.First(x => x.Storage).Name,
                 Width = nameof(DataGridLengthUnitType.SizeToCells)
             },
-            new ResourceListColumn<V1CustomResourceDefinition, string>()
+            new DataGridValueColumn<V1CustomResourceDefinition, string>()
             {
                 Key = "scope",
                 Name = Assets.Resources.V1CustomResourceDefinitionConfig_Scope!,
@@ -108,3 +109,6 @@ public sealed partial class V1CustomResourceDefinitionConfig : ResourceConfigBas
         return resourceConfig?.PermissionsLoaded == true && resourceConfig.CanListAndWatch;
     }
 }
+
+
+

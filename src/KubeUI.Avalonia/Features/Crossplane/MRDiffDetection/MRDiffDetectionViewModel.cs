@@ -1,7 +1,17 @@
 using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
+using System.Collections;
+using System.Reactive;
+using System.Reactive.Concurrency;
 using System.Reactive.Linq;
+using System.Reactive.Subjects;
 using System.Threading.Channels;
+using Avalonia.Controls;
+using Avalonia.Controls.DataGridFiltering;
+using Avalonia.Controls.DataGridSearching;
+using Avalonia.Controls.DataGridSorting;
+using Avalonia.Data;
+using Avalonia.Data.Converters;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.Input;
 using DynamicData;
@@ -12,6 +22,9 @@ using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Features.Resources.Yaml;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Infrastructure.Docking;
+using KubeUI.Avalonia.Infrastructure.Threading;
+using KubeUI.Avalonia.Infrastructure.DataGrid;
+using KubeUI.Avalonia.Resources;
 using Dock.Model.Core;
 using KubeUI.Kubernetes;
 
@@ -26,12 +39,16 @@ public sealed partial class MRDiffDetectionViewModel : ViewModelBase, IInitializ
     private readonly Channel<PendingRecord> _pendingRecords = Channel.CreateUnbounded<PendingRecord>();
     private readonly ConcurrentDictionary<string, CrossplaneDiffRow> _pendingRows = new(StringComparer.Ordinal);
     private readonly CancellationTokenSource _processingCancellation = new();
-    private readonly Dictionary<string, CrossplaneDiffRow> _rowsByKey = new(StringComparer.Ordinal);
+    private readonly SourceCache<CrossplaneDiffRow, string> _rowsSource = new(row => row.Key);
+    private readonly Subject<IComparer<CrossplaneDiffRow>> _sortSubject;
+    private readonly Subject<Func<CrossplaneDiffRow, bool>> _filterSubject;
+    private readonly Subject<Func<CrossplaneDiffRow, bool>> _searchSubject;
+    private IDisposable? _rowsSubscription;
+    private ReadOnlyObservableCollection<CrossplaneDiffRow>? _view;
     private IDisposable? _providerSubscription;
     private IDisposable? _podSubscription;
     private ISourceCache<GenericKubernetesObject, ResourceCacheKey>? _providerResources;
     private HashSet<string> _activePodKeys = new(StringComparer.Ordinal);
-    private DispatcherTimer? _rowsRefreshTimer;
     private bool _disposed;
     private long _generation;
 
@@ -45,7 +62,17 @@ public sealed partial class MRDiffDetectionViewModel : ViewModelBase, IInitializ
     public partial string Status { get; private set; } = string.Empty;
 
     public ObservableCollection<CrossplaneProviderOption> Providers { get; } = [];
-    public ObservableCollection<CrossplaneDiffRow> Rows { get; } = [];
+    public IList View => _view ?? throw new InvalidOperationException("MR diff view has not been initialized.");
+    public ObservableCollection<DataGridColumnDefinition> ColumnDefinitions { get; } = [];
+    public IDataGridSortingAdapterFactory SortingAdapterFactory => _sortingAdapterFactory;
+    public IDataGridFilteringAdapterFactory FilteringAdapterFactory => _filteringAdapterFactory;
+    public IDataGridSearchAdapterFactory SearchAdapterFactory => _searchAdapterFactory;
+    public ISortingModel SortingModel { get; } = new SortingModel { MultiSort = true, CycleMode = SortCycleMode.AscendingDescendingNone, OwnsViewSorts = true };
+    public IFilteringModel FilteringModel { get; } = new FilteringModel { OwnsViewFilter = true };
+    public ISearchModel SearchModel { get; } = new SearchModel { HighlightMode = SearchHighlightMode.None, HighlightCurrent = false, WrapNavigation = true, UpdateSelectionOnNavigate = false };
+    private readonly DynamicDataSortingAdapterFactory<CrossplaneDiffRow> _sortingAdapterFactory;
+    private readonly DynamicDataFilteringAdapterFactory<CrossplaneDiffRow> _filteringAdapterFactory;
+    private readonly DynamicDataSearchAdapterFactory<CrossplaneDiffRow> _searchAdapterFactory;
 
     public MRDiffDetectionViewModel(
         CrossplaneDiffLogParser parser,
@@ -57,14 +84,99 @@ public sealed partial class MRDiffDetectionViewModel : ViewModelBase, IInitializ
         _monitor = monitor;
         _serviceProvider = serviceProvider;
         _factory = factory;
+        var columns = CreateColumns();
+        var columnsByKey = columns.ToDictionary(column => column.Key, StringComparer.OrdinalIgnoreCase);
+        _sortingAdapterFactory = new DynamicDataSortingAdapterFactory<CrossplaneDiffRow>(columnsByKey);
+        _filteringAdapterFactory = new DynamicDataFilteringAdapterFactory<CrossplaneDiffRow>(columnsByKey);
+        _searchAdapterFactory = new DynamicDataSearchAdapterFactory<CrossplaneDiffRow>(columnsByKey);
+        _sortSubject = new();
+        _filterSubject = new();
+        _searchSubject = new();
+        _sortSubject.OnNext(_sortingAdapterFactory.SortComparer);
+        _filterSubject.OnNext(_filteringAdapterFactory.FilterPredicate);
+        _searchSubject.OnNext(_searchAdapterFactory.SearchPredicate);
+        SortingModel.SortingChanged += SortingModelOnSortingChanged;
+        FilteringModel.FilteringChanged += FilteringModelOnFilteringChanged;
+        SearchModel.SearchChanged += SearchModelOnSearchChanged;
+        BuildColumnDefinitions(columns);
+        _rowsSubscription = _rowsSource.Connect()
+            .ObserveOn(TaskPoolScheduler.Default)
+            .Filter(_filterSubject)
+            .Filter(_searchSubject)
+            .SortAndBind(out _view, _sortSubject, new() { ResetOnFirstTimeLoad = true, UseReplaceForUpdates = true, Scheduler = AvaloniaScheduler.Instance })
+            .Subscribe();
         _ = ProcessRecordsAsync(_processingCancellation.Token);
+        _ = FlushRowsAsync(_processingCancellation.Token);
         Title = Assets.Resources.MRDiffDetectionView_Title!;
-        _rowsRefreshTimer = new DispatcherTimer
+    }
+
+    private static IReadOnlyList<IResourceListColumn> CreateColumns()
+    {
+        return [
+            new DataGridValueColumn<CrossplaneDiffRow, string> { Key = "name", Name = Assets.Resources.MRDiffDetectionView_Name!, Field = row => row.Name },
+            new DataGridValueColumn<CrossplaneDiffRow, string> { Key = "namespace", Name = Assets.Resources.MRDiffDetectionView_Namespace!, Field = row => row.Namespace },
+            new DataGridValueColumn<CrossplaneDiffRow, string> { Key = "apiVersion", Name = Assets.Resources.MRDiffDetectionView_ApiVersion!, Field = row => row.ApiVersion },
+            new DataGridValueColumn<CrossplaneDiffRow, string> { Key = "kind", Name = Assets.Resources.MRDiffDetectionView_Kind!, Field = row => row.Kind, Sort = SortDirection.Ascending },
+            new DataGridValueColumn<CrossplaneDiffRow, string> { Key = "diffField", Name = Assets.Resources.MRDiffDetectionView_DiffField!, Field = row => row.DiffField },
+            new DataGridValueColumn<CrossplaneDiffRow, string> { Key = "oldValue", Name = Assets.Resources.MRDiffDetectionView_OldValue!, Field = row => row.OldValue },
+            new DataGridValueColumn<CrossplaneDiffRow, string> { Key = "newValue", Name = Assets.Resources.MRDiffDetectionView_NewValue!, Field = row => row.NewValue },
+            new DataGridValueColumn<CrossplaneDiffRow, bool> { Key = "newComputed", Name = Assets.Resources.MRDiffDetectionView_NewComputed!, Field = row => row.NewComputed },
+            new DataGridValueColumn<CrossplaneDiffRow, bool> { Key = "newRemoved", Name = Assets.Resources.MRDiffDetectionView_NewRemoved!, Field = row => row.NewRemoved },
+            new DataGridValueColumn<CrossplaneDiffRow, bool> { Key = "requiresNew", Name = Assets.Resources.MRDiffDetectionView_RequiresNew!, Field = row => row.RequiresNew },
+            new DataGridValueColumn<CrossplaneDiffRow, bool> { Key = "sensitive", Name = Assets.Resources.MRDiffDetectionView_Sensitive!, Field = row => row.Sensitive },
+            new DataGridValueColumn<CrossplaneDiffRow, int> { Key = "instanceCount", Name = Assets.Resources.MRDiffDetectionView_InstanceCount!, Field = row => row.InstanceCount },
+            new DataGridValueColumn<CrossplaneDiffRow, int> { Key = "occurrences", Name = Assets.Resources.MRDiffDetectionView_Occurrences!, Field = row => row.Occurrences }
+        ];
+    }
+
+    private void BuildColumnDefinitions(IReadOnlyList<IResourceListColumn> columns)
+    {
+        var converter = new DataGridLengthConverter();
+        foreach (var column in columns)
         {
-            Interval = TimeSpan.FromMilliseconds(250)
-        };
-        _rowsRefreshTimer.Tick += RowsRefreshTimer_Tick;
-        _rowsRefreshTimer.Start();
+            var binding = DataGridBindingDefinition.Create<CrossplaneDiffRow, CrossplaneDiffRow>(row => row);
+            binding.Mode = BindingMode.OneWay;
+            binding.Converter = new FuncValueConverter<CrossplaneDiffRow, string>(row => column.DisplayValue(row));
+            var definition = new DataGridTextColumnDefinition
+            {
+                Header = column.Name,
+                ColumnKey = column.Key,
+                Tag = column,
+                Binding = binding,
+                CanUserSort = true,
+                ShowFilterButton = true,
+                MinWidth = column.MinWidth,
+                Width = new DataGridLength(1, DataGridLengthUnitType.Star),
+                ValueAccessor = column.ValueAccessor,
+                ValueType = column.ValueType
+            };
+            ColumnDefinitions.Add(definition);
+            if (column.Sort != SortDirection.None)
+            {
+                SortingModel.SetOrUpdate(new(definition,
+                    column.Sort == SortDirection.Ascending ? ListSortDirection.Ascending : ListSortDirection.Descending,
+                    null,
+                    Comparer<object>.Create(static (_, _) => 0)));
+            }
+        }
+    }
+
+    private void SortingModelOnSortingChanged(object? sender, SortingChangedEventArgs e)
+    {
+        _sortingAdapterFactory.UpdateComparer(e.NewDescriptors);
+        _sortSubject.OnNext(_sortingAdapterFactory.SortComparer);
+    }
+
+    private void FilteringModelOnFilteringChanged(object? sender, FilteringChangedEventArgs e)
+    {
+        _filteringAdapterFactory.UpdateFilter(e.NewDescriptors);
+        _filterSubject.OnNext(_filteringAdapterFactory.FilterPredicate);
+    }
+
+    private void SearchModelOnSearchChanged(object? sender, SearchChangedEventArgs e)
+    {
+        _searchAdapterFactory.UpdatePredicate(e.NewDescriptors);
+        _searchSubject.OnNext(_searchAdapterFactory.SearchPredicate);
     }
 
     public static bool IsAvailable(ClusterWorkspace cluster)
@@ -137,8 +249,7 @@ public sealed partial class MRDiffDetectionViewModel : ViewModelBase, IInitializ
         Interlocked.Increment(ref _generation);
         DrainPendingRecords();
         _pendingRows.Clear();
-        _rowsByKey.Clear();
-        Rows.Clear();
+        _rowsSource.Clear();
     }
 
     [RelayCommand(CanExecute = nameof(CanViewYaml))]
@@ -257,8 +368,7 @@ public sealed partial class MRDiffDetectionViewModel : ViewModelBase, IInitializ
             Interlocked.Increment(ref _generation);
             DrainPendingRecords();
             _pendingRows.Clear();
-            _rowsByKey.Clear();
-            Rows.Clear();
+            _rowsSource.Clear();
         }
         if (provider is null)
         {
@@ -286,34 +396,6 @@ public sealed partial class MRDiffDetectionViewModel : ViewModelBase, IInitializ
         foreach (var record in _parser.Parse(line))
         {
             _pendingRecords.Writer.TryWrite(new PendingRecord(Volatile.Read(ref _generation), record));
-        }
-    }
-
-    private void RowsRefreshTimer_Tick(object? sender, EventArgs e)
-    {
-        if (_disposed)
-        {
-            return;
-        }
-
-        const int maxRowsPerRefresh = 500;
-        var processedRows = 0;
-        foreach (var pair in _pendingRows)
-        {
-            if (processedRows++ >= maxRowsPerRefresh || !_pendingRows.TryRemove(pair.Key, out var snapshot))
-            {
-                break;
-            }
-
-            if (_rowsByKey.TryGetValue(snapshot.Key, out var existing))
-            {
-                existing.Apply(snapshot);
-            }
-            else
-            {
-                _rowsByKey.Add(snapshot.Key, snapshot);
-                Rows.Add(snapshot);
-            }
         }
     }
 
@@ -349,6 +431,40 @@ public sealed partial class MRDiffDetectionViewModel : ViewModelBase, IInitializ
         }
     }
 
+    private async Task FlushRowsAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            while (true)
+            {
+                await Task.Delay(TimeSpan.FromMilliseconds(250), cancellationToken).ConfigureAwait(false);
+                if (_pendingRows.IsEmpty)
+                {
+                    continue;
+                }
+
+                var batch = new List<CrossplaneDiffRow>(Math.Min(_pendingRows.Count, 500));
+                foreach (var pair in _pendingRows)
+                {
+                    if (batch.Count >= 500 || !_pendingRows.TryRemove(pair.Key, out var row))
+                    {
+                        break;
+                    }
+
+                    batch.Add(row);
+                }
+
+                if (batch.Count > 0)
+                {
+                    _rowsSource.AddOrUpdate(batch);
+                }
+            }
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+        }
+    }
+
     public void Dispose()
     {
         if (_disposed)
@@ -359,12 +475,9 @@ public sealed partial class MRDiffDetectionViewModel : ViewModelBase, IInitializ
         _disposed = true;
         _processingCancellation.Cancel();
         _pendingRecords.Writer.TryComplete();
-        if (_rowsRefreshTimer is not null)
-        {
-            _rowsRefreshTimer.Stop();
-            _rowsRefreshTimer.Tick -= RowsRefreshTimer_Tick;
-            _rowsRefreshTimer = null;
-        }
+        _rowsSubscription?.Dispose();
+        _rowsSubscription = null;
+        _rowsSource.Dispose();
 
         _providerSubscription?.Dispose();
         _providerSubscription = null;
@@ -381,3 +494,4 @@ public sealed partial class MRDiffDetectionViewModel : ViewModelBase, IInitializ
 }
 
 public sealed record CrossplaneProviderOption(string Name, GenericKubernetesObject Resource);
+

@@ -1,3 +1,4 @@
+using KubeUI.Avalonia.Infrastructure.DataGrid;
 using k8s.Models;
 
 namespace KubeUI.Avalonia.Resources.Storage.v1.PersistentVolumeClaim;
@@ -17,14 +18,14 @@ public sealed partial class V1PersistentVolumeClaimConfig : ResourceConfigBase<V
         return [
             NameColumn(SortDirection.Ascending),
             NamespaceColumn(),
-            new ResourceListColumn<V1PersistentVolumeClaim, string>()
+            new DataGridValueColumn<V1PersistentVolumeClaim, string>()
             {
                 Key = "storage-class",
                 Name = Assets.Resources.V1PersistentVolumeClaimConfig_Storage_Class!,
                 Field = x => x.Spec.StorageClassName,
                 Width = "*",
             },
-            new ResourceListColumn<V1PersistentVolumeClaim, decimal>()
+            new DataGridValueColumn<V1PersistentVolumeClaim, decimal>()
             {
                 Key = "size",
                 Name = Assets.Resources.V1PersistentVolumeClaimConfig_Size!,
@@ -33,7 +34,7 @@ public sealed partial class V1PersistentVolumeClaimConfig : ResourceConfigBase<V
                 Width = nameof(DataGridLengthUnitType.SizeToCells)
             },
             AgeColumn(),
-            new ResourceListColumn<V1PersistentVolumeClaim, string>()
+            new DataGridValueColumn<V1PersistentVolumeClaim, string>()
             {
                 Key = "status",
                 Name = Assets.Resources.V1PersistentVolumeClaimConfig_Status!,
@@ -45,3 +46,6 @@ public sealed partial class V1PersistentVolumeClaimConfig : ResourceConfigBase<V
 
     public override Control[] Properties(V1PersistentVolumeClaim resource) => [new PropertiesView()];
 }
+
+
+

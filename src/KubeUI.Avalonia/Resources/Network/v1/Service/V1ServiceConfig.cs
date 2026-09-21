@@ -1,3 +1,4 @@
+using KubeUI.Avalonia.Infrastructure.DataGrid;
 using Avalonia.Collections;
 using FluentAvalonia.UI.Controls;
 using FluentIcons.Common;
@@ -36,21 +37,21 @@ public sealed partial class V1ServiceConfig : ResourceConfigBase<V1Service>
         return [
             NameColumn(SortDirection.Ascending),
             NamespaceColumn(),
-            new ResourceListColumn<V1Service, string>()
+            new DataGridValueColumn<V1Service, string>()
             {
                 Key = "type",
                 Name = Assets.Resources.V1ServiceConfig_Type!,
                 Field = x => x.Spec.Type,
                 Width = nameof(DataGridLengthUnitType.SizeToCells)
             },
-            new ResourceListColumn<V1Service, string>()
+            new DataGridValueColumn<V1Service, string>()
             {
                 Key = "cluster-ip",
                 Name = Assets.Resources.V1ServiceConfig_Cluster_IP!,
                 Field = x => x.Spec.ClusterIP,
                 Width = nameof(DataGridLengthUnitType.SizeToCells)
             },
-            new ResourceListColumn<V1Service, int>()
+            new DataGridValueColumn<V1Service, int>()
             {
                 Key = "ports",
                 Name = Assets.Resources.V1ServiceConfig_Ports!,
@@ -129,3 +130,6 @@ public sealed partial class V1ServiceConfig : ResourceConfigBase<V1Service>
 
     public override Control[] Properties(V1Service resource) => [new PropertiesView()];
 }
+
+
+

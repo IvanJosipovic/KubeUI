@@ -1,3 +1,4 @@
+using KubeUI.Avalonia.Infrastructure.DataGrid;
 using k8s.Models;
 
 namespace KubeUI.Avalonia.Resources.Configuration.v1.Lease;
@@ -17,7 +18,7 @@ public sealed partial class V1LeaseConfig : ResourceConfigBase<V1Lease>
         return [
             NameColumn(SortDirection.Ascending),
             NamespaceColumn(),
-            new ResourceListColumn<V1Lease, string>()
+            new DataGridValueColumn<V1Lease, string>()
             {
                 Key = "holder",
                 Name = Assets.Resources.V1LeaseConfig_Holder!,
@@ -30,3 +31,6 @@ public sealed partial class V1LeaseConfig : ResourceConfigBase<V1Lease>
 
     public override Control[] Properties(V1Lease resource) => [new PropertiesView()];
 }
+
+
+

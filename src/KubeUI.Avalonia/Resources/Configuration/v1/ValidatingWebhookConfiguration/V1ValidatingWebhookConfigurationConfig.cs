@@ -1,3 +1,4 @@
+using KubeUI.Avalonia.Infrastructure.DataGrid;
 using k8s.Models;
 
 namespace KubeUI.Avalonia.Resources.Configuration.v1.ValidatingWebhookConfiguration;
@@ -16,7 +17,7 @@ public sealed partial class V1ValidatingWebhookConfigurationConfig : ResourceCon
     {
         return [
             NameColumn(SortDirection.Ascending),
-            new ResourceListColumn<V1ValidatingWebhookConfiguration, int>()
+            new DataGridValueColumn<V1ValidatingWebhookConfiguration, int>()
             {
                 Key = "webhooks",
                 Name = Assets.Resources.V1ValidatingWebhookConfigurationConfig_Webhooks!,
@@ -30,3 +31,6 @@ public sealed partial class V1ValidatingWebhookConfigurationConfig : ResourceCon
     public override Control[] Properties(V1ValidatingWebhookConfiguration resource) => [new PropertiesView()];
 
 }
+
+
+

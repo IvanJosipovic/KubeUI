@@ -1,3 +1,4 @@
+using KubeUI.Avalonia.Infrastructure.DataGrid;
 using k8s.Models;
 
 namespace KubeUI.Avalonia.Resources.Configuration.v1.PodDisruptionBudget;
@@ -17,7 +18,7 @@ public sealed partial class V1PodDisruptionBudgetConfig : ResourceConfigBase<V1P
         return [
             NameColumn(SortDirection.Ascending),
             NamespaceColumn(),
-            new ResourceListColumn<V1PodDisruptionBudget, IntOrString>()
+            new DataGridValueColumn<V1PodDisruptionBudget, IntOrString>()
             {
                 Key = "min-available",
                 Name = Assets.Resources.V1PodDisruptionBudgetConfig_Min_Available!,
@@ -25,7 +26,7 @@ public sealed partial class V1PodDisruptionBudgetConfig : ResourceConfigBase<V1P
                 Field = x => x.Spec.MinAvailable,
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },
-            new ResourceListColumn<V1PodDisruptionBudget, IntOrString>()
+            new DataGridValueColumn<V1PodDisruptionBudget, IntOrString>()
             {
                 Key = "max-unavailable",
                 Name = Assets.Resources.V1PodDisruptionBudgetConfig_Max_Unavailable!,
@@ -33,14 +34,14 @@ public sealed partial class V1PodDisruptionBudgetConfig : ResourceConfigBase<V1P
                 Field = x => x.Spec.MaxUnavailable,
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },
-            new ResourceListColumn<V1PodDisruptionBudget, int>()
+            new DataGridValueColumn<V1PodDisruptionBudget, int>()
             {
                 Key = "current-healthy",
                 Name = Assets.Resources.V1PodDisruptionBudgetConfig_Current_Healthy!,
                 Field = x => x.Status.CurrentHealthy,
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },
-            new ResourceListColumn<V1PodDisruptionBudget, int>()
+            new DataGridValueColumn<V1PodDisruptionBudget, int>()
             {
                 Key = "desired-healthy",
                 Name = Assets.Resources.V1PodDisruptionBudgetConfig_Desired_Healthy!,
@@ -53,3 +54,6 @@ public sealed partial class V1PodDisruptionBudgetConfig : ResourceConfigBase<V1P
 
     public override Control[] Properties(V1PodDisruptionBudget resource) => [new PropertiesView()];
 }
+
+
+

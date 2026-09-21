@@ -1,3 +1,4 @@
+using KubeUI.Avalonia.Infrastructure.DataGrid;
 using FluentIcons.Common;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
@@ -22,7 +23,7 @@ public sealed partial class V1DeploymentConfig : ResourceConfigBase<V1Deployment
         return [
             NameColumn(SortDirection.Ascending),
             NamespaceColumn(),
-            new ResourceListColumn<V1Deployment, int>()
+            new DataGridValueColumn<V1Deployment, int>()
             {
                 Key = "pods",
                 Name = Assets.Resources.V1DeploymentConfig_Pods!,
@@ -30,14 +31,14 @@ public sealed partial class V1DeploymentConfig : ResourceConfigBase<V1Deployment
                 Field = x => x.Status?.AvailableReplicas ?? 0,
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },
-            new ResourceListColumn<V1Deployment, int>()
+            new DataGridValueColumn<V1Deployment, int>()
             {
                 Key = "replicas",
                 Name = Assets.Resources.V1DeploymentConfig_Replicas!,
                 Field = x => x.Spec.Replicas ?? 0,
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },
-            new ResourceListColumn<V1Deployment, string>()
+            new DataGridValueColumn<V1Deployment, string>()
             {
                 Key = "available",
                 Name = Assets.Resources.V1DeploymentConfig_Available!,
@@ -71,3 +72,6 @@ public sealed partial class V1DeploymentConfig : ResourceConfigBase<V1Deployment
 
     public override Control[] Properties(V1Deployment resource) => [new PropertiesView()];
 }
+
+
+

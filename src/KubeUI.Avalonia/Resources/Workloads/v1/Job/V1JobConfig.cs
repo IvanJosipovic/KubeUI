@@ -1,3 +1,4 @@
+using KubeUI.Avalonia.Infrastructure.DataGrid;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Features.Resources.Common;
@@ -20,7 +21,7 @@ public sealed partial class V1JobConfig : ResourceConfigBase<V1Job>
         return [
             NameColumn(SortDirection.Ascending),
             NamespaceColumn(),
-            new ResourceListColumn<V1Job, int>()
+            new DataGridValueColumn<V1Job, int>()
             {
                 Key = "completions",
                 Name = Assets.Resources.V1JobConfig_Completions!,
@@ -29,7 +30,7 @@ public sealed partial class V1JobConfig : ResourceConfigBase<V1Job>
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },
             AgeColumn(),
-            new ResourceListColumn<V1Job, string>()
+            new DataGridValueColumn<V1Job, string>()
             {
                 Key = "conditions",
                 Name = Assets.Resources.V1JobConfig_Conditions!,
@@ -53,3 +54,6 @@ public sealed partial class V1JobConfig : ResourceConfigBase<V1Job>
 
     public override Control[] Properties(V1Job resource) => [new PropertiesView()];
 }
+
+
+

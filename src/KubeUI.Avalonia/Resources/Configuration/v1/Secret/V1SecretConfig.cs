@@ -1,3 +1,4 @@
+using KubeUI.Avalonia.Infrastructure.DataGrid;
 namespace KubeUI.Avalonia.Resources.Configuration.v1.Secret;
 
 public sealed partial class V1SecretConfig : ResourceConfigBase<k8s.Models.V1Secret>
@@ -15,21 +16,21 @@ public sealed partial class V1SecretConfig : ResourceConfigBase<k8s.Models.V1Sec
         return [
             NameColumn(SortDirection.Ascending),
             NamespaceColumn(),
-            new ResourceListColumn<k8s.Models.V1Secret, string>()
+            new DataGridValueColumn<k8s.Models.V1Secret, string>()
             {
                 Key = "labels",
                 Name = Assets.Resources.V1SecretConfig_Labels!,
                 Field = x => x.Metadata?.Labels is { Count: > 0 } labels ? string.Join(", ", labels.Keys) : "",
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },
-            new ResourceListColumn<k8s.Models.V1Secret, string>()
+            new DataGridValueColumn<k8s.Models.V1Secret, string>()
             {
                 Key = "keys",
                 Name = Assets.Resources.V1SecretConfig_Keys!,
                 Field = x => x.Data is { Count: > 0 } data ? string.Join(", ", data.Keys) : "",
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },
-            new ResourceListColumn<k8s.Models.V1Secret, string>()
+            new DataGridValueColumn<k8s.Models.V1Secret, string>()
             {
                 Key = "type",
                 Name = Assets.Resources.V1SecretConfig_Type!,
@@ -42,5 +43,8 @@ public sealed partial class V1SecretConfig : ResourceConfigBase<k8s.Models.V1Sec
 
     public override Control[] Properties(k8s.Models.V1Secret resource) => [new PropertiesView()];
 }
+
+
+
 
 
