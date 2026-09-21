@@ -37,9 +37,10 @@ public sealed partial class MRDiffDetectionViewModel : ViewModelBase, IInitializ
     private readonly IServiceProvider _serviceProvider;
     private readonly IFactory _factory;
     private readonly Channel<PendingRecord> _pendingRecords = Channel.CreateUnbounded<PendingRecord>();
-    private readonly ConcurrentDictionary<string, CrossplaneDiffRow> _pendingRows = new(StringComparer.Ordinal);
+    private readonly ConcurrentDictionary<string, byte> _seededGvks = new(StringComparer.Ordinal);
     private readonly CancellationTokenSource _processingCancellation = new();
     private readonly SourceCache<CrossplaneDiffRow, string> _rowsSource = new(row => row.Key);
+    private readonly ConcurrentDictionary<string, CrossplaneDiffRow> _sourceRowsByKey = new(StringComparer.Ordinal);
     private readonly BehaviorSubject<IComparer<CrossplaneDiffRow>> _sortSubject;
     private readonly BehaviorSubject<Func<CrossplaneDiffRow, bool>> _filterSubject;
     private readonly BehaviorSubject<Func<CrossplaneDiffRow, bool>> _searchSubject;
@@ -97,6 +98,7 @@ public sealed partial class MRDiffDetectionViewModel : ViewModelBase, IInitializ
         SearchModel.SearchChanged += SearchModelOnSearchChanged;
         BuildColumnDefinitions(columns);
         _rowsSubscription = _rowsSource.Connect()
+            .Batch(TimeSpan.FromMilliseconds(100), TaskPoolScheduler.Default)
             .ObserveOn(TaskPoolScheduler.Default)
             .Filter(_filterSubject)
             .Filter(_searchSubject)
@@ -104,7 +106,6 @@ public sealed partial class MRDiffDetectionViewModel : ViewModelBase, IInitializ
             .Subscribe();
         OnPropertyChanged(nameof(View));
         _ = ProcessRecordsAsync(_processingCancellation.Token);
-        _ = FlushRowsAsync(_processingCancellation.Token);
         Title = Assets.Resources.MRDiffDetectionView_Title!;
     }
 
@@ -198,6 +199,7 @@ public sealed partial class MRDiffDetectionViewModel : ViewModelBase, IInitializ
         _podSubscription?.Dispose();
         _podSubscription = null;
         _providerResources = null;
+        _seededGvks.Clear();
 
         Cluster = cluster;
         Id = $"{nameof(MRDiffDetectionViewModel)}-{cluster.Runtime.Name}";
@@ -245,7 +247,7 @@ public sealed partial class MRDiffDetectionViewModel : ViewModelBase, IInitializ
     {
         Interlocked.Increment(ref _generation);
         DrainPendingRecords();
-        _pendingRows.Clear();
+        _sourceRowsByKey.Clear();
         _rowsSource.Clear();
     }
 
@@ -364,7 +366,7 @@ public sealed partial class MRDiffDetectionViewModel : ViewModelBase, IInitializ
         {
             Interlocked.Increment(ref _generation);
             DrainPendingRecords();
-            _pendingRows.Clear();
+            _sourceRowsByKey.Clear();
             _rowsSource.Clear();
         }
         if (provider is null)
@@ -392,7 +394,56 @@ public sealed partial class MRDiffDetectionViewModel : ViewModelBase, IInitializ
     {
         foreach (var record in _parser.Parse(line))
         {
+            EnsureGvkSeeded(record);
             _pendingRecords.Writer.TryWrite(new PendingRecord(Volatile.Read(ref _generation), record));
+        }
+    }
+
+    private void EnsureGvkSeeded(CrossplaneDiffRecord record)
+    {
+        var cluster = Cluster;
+        if (cluster is null)
+        {
+            return;
+        }
+
+        var gvkKey = string.Concat(record.ApiVersion, ", Kind=", record.Kind);
+        if (!_seededGvks.TryAdd(gvkKey, 0))
+        {
+            return;
+        }
+
+        var separator = record.ApiVersion.LastIndexOf('/');
+        if (separator <= 0 || separator == record.ApiVersion.Length - 1)
+        {
+            _seededGvks.TryRemove(gvkKey, out _);
+            return;
+        }
+
+        var group = record.ApiVersion[..separator];
+        var version = record.ApiVersion[(separator + 1)..];
+        var config = cluster.GetResourceConfigs().FirstOrDefault(resourceConfig =>
+            string.Equals(resourceConfig.Kind.Group, group, StringComparison.Ordinal)
+            && string.Equals(resourceConfig.Kind.ApiVersion, version, StringComparison.Ordinal)
+            && string.Equals(resourceConfig.Kind.Kind, record.Kind, StringComparison.Ordinal));
+        if (config is null)
+        {
+            _seededGvks.TryRemove(gvkKey, out _);
+            return;
+        }
+
+        _ = SeedGvkAsync(config, gvkKey);
+    }
+
+    private async Task SeedGvkAsync(IResourceConfig config, string gvkKey)
+    {
+        try
+        {
+            await config.SeedResource(waitForReady: true).ConfigureAwait(false);
+        }
+        catch (Exception)
+        {
+            _seededGvks.TryRemove(gvkKey, out _);
         }
     }
 
@@ -419,7 +470,7 @@ public sealed partial class MRDiffDetectionViewModel : ViewModelBase, IInitializ
 
                 foreach (var row in aggregator.AddAndGetAffectedRows(pending.Record))
                 {
-                    _pendingRows[row.Key] = row;
+                    UpsertSourceRow(row);
                 }
             }
         }
@@ -428,37 +479,17 @@ public sealed partial class MRDiffDetectionViewModel : ViewModelBase, IInitializ
         }
     }
 
-    private async Task FlushRowsAsync(CancellationToken cancellationToken)
+    private void UpsertSourceRow(CrossplaneDiffRow snapshot)
     {
-        try
+        if (_sourceRowsByKey.TryGetValue(snapshot.Key, out var existing))
         {
-            while (true)
-            {
-                await Task.Delay(TimeSpan.FromMilliseconds(250), cancellationToken).ConfigureAwait(false);
-                if (_pendingRows.IsEmpty)
-                {
-                    continue;
-                }
-
-                var batch = new List<CrossplaneDiffRow>(Math.Min(_pendingRows.Count, 500));
-                foreach (var pair in _pendingRows)
-                {
-                    if (batch.Count >= 500 || !_pendingRows.TryRemove(pair.Key, out var row))
-                    {
-                        break;
-                    }
-
-                    batch.Add(row);
-                }
-
-                if (batch.Count > 0)
-                {
-                    _rowsSource.AddOrUpdate(batch);
-                }
-            }
+            existing.Apply(snapshot);
+            _rowsSource.Refresh(existing);
         }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        else
         {
+            _sourceRowsByKey[snapshot.Key] = snapshot;
+            _rowsSource.AddOrUpdate(snapshot);
         }
     }
 
