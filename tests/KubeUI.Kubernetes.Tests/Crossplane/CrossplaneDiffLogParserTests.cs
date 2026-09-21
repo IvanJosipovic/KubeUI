@@ -39,7 +39,7 @@ public sealed class CrossplaneDiffLogParserTests
     public void Aggregates_repeated_field_and_counts_distinct_instances()
     {
         var aggregator = new CrossplaneDiffAggregator();
-        var record = new CrossplaneDiffRecord("uid-1", "one", "data", "example/v1", "Widget", "spec.value", "a", "b", false, false, false, false);
+        var record = new CrossplaneDiffRecord("uid-1", "one", "data", "example/v1", "Widget", "spec.value", "a", "b", false, false, false);
 
         aggregator.Add(record).ShouldBeTrue();
         aggregator.Add(record).ShouldBeFalse();

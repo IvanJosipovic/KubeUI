@@ -109,8 +109,7 @@ public sealed class CrossplaneDiffLogParser
                 newValue,
                 ReadGoBoolean(body, "NewComputed"),
                 ReadGoBoolean(body, "NewRemoved"),
-                ReadGoBoolean(body, "RequiresNew"),
-                ReadGoBoolean(body, "Sensitive")));
+                  ReadGoBoolean(body, "RequiresNew")));
 
             index = attrEnd + 1;
         }

@@ -121,7 +121,6 @@ public sealed partial class MRDiffDetectionViewModel : ViewModelBase, IInitializ
             new DataGridValueColumn<CrossplaneDiffRow, bool> { Key = "newComputed", Name = Assets.Resources.MRDiffDetectionView_NewComputed!, Field = row => row.NewComputed },
             new DataGridValueColumn<CrossplaneDiffRow, bool> { Key = "newRemoved", Name = Assets.Resources.MRDiffDetectionView_NewRemoved!, Field = row => row.NewRemoved },
             new DataGridValueColumn<CrossplaneDiffRow, bool> { Key = "requiresNew", Name = Assets.Resources.MRDiffDetectionView_RequiresNew!, Field = row => row.RequiresNew },
-            new DataGridValueColumn<CrossplaneDiffRow, bool> { Key = "sensitive", Name = Assets.Resources.MRDiffDetectionView_Sensitive!, Field = row => row.Sensitive },
             new DataGridValueColumn<CrossplaneDiffRow, int> { Key = "instanceCount", Name = Assets.Resources.MRDiffDetectionView_InstanceCount!, Field = row => row.InstanceCount },
             new DataGridValueColumn<CrossplaneDiffRow, int> { Key = "occurrences", Name = Assets.Resources.MRDiffDetectionView_Occurrences!, Field = row => row.Occurrences }
         ];

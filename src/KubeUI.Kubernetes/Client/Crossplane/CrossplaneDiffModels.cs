@@ -12,8 +12,7 @@ public sealed record CrossplaneDiffRecord(
     string NewValue,
     bool NewComputed,
     bool NewRemoved,
-    bool RequiresNew,
-    bool Sensitive);
+    bool RequiresNew);
 
 /// <summary>Aggregated row shown by the MR Diff Detection view.</summary>
 public sealed class CrossplaneDiffRow : System.ComponentModel.INotifyPropertyChanged
@@ -23,7 +22,6 @@ public sealed class CrossplaneDiffRow : System.ComponentModel.INotifyPropertyCha
     private bool _newComputed;
     private bool _newRemoved;
     private bool _requiresNew;
-    private bool _sensitive;
     private int _occurrences;
     private int _instanceCount;
 
@@ -40,7 +38,6 @@ public sealed class CrossplaneDiffRow : System.ComponentModel.INotifyPropertyCha
         _newComputed = record.NewComputed;
         _newRemoved = record.NewRemoved;
         _requiresNew = record.RequiresNew;
-        _sensitive = record.Sensitive;
         _occurrences = 1;
         _instanceCount = 1;
     }
@@ -57,7 +54,6 @@ public sealed class CrossplaneDiffRow : System.ComponentModel.INotifyPropertyCha
     public bool NewComputed => _newComputed;
     public bool NewRemoved => _newRemoved;
     public bool RequiresNew => _requiresNew;
-    public bool Sensitive => _sensitive;
     public int Occurrences => _occurrences;
     public int InstanceCount => _instanceCount;
 
@@ -70,7 +66,6 @@ public sealed class CrossplaneDiffRow : System.ComponentModel.INotifyPropertyCha
         _newComputed = record.NewComputed;
         _newRemoved = record.NewRemoved;
         _requiresNew = record.RequiresNew;
-        _sensitive = record.Sensitive;
         _occurrences++;
     }
 
@@ -80,7 +75,7 @@ public sealed class CrossplaneDiffRow : System.ComponentModel.INotifyPropertyCha
     {
         CrossplaneDiffRow copy = new(new CrossplaneDiffRecord(
             Uid, Name, Namespace, ApiVersion, Kind, DiffField,
-            OldValue, NewValue, NewComputed, NewRemoved, RequiresNew, Sensitive));
+            OldValue, NewValue, NewComputed, NewRemoved, RequiresNew));
         copy._occurrences = Occurrences;
         copy._instanceCount = InstanceCount;
         return copy;
@@ -93,7 +88,6 @@ public sealed class CrossplaneDiffRow : System.ComponentModel.INotifyPropertyCha
         Set(ref _newComputed, source.NewComputed, nameof(NewComputed));
         Set(ref _newRemoved, source.NewRemoved, nameof(NewRemoved));
         Set(ref _requiresNew, source.RequiresNew, nameof(RequiresNew));
-        Set(ref _sensitive, source.Sensitive, nameof(Sensitive));
         Set(ref _occurrences, source.Occurrences, nameof(Occurrences));
         Set(ref _instanceCount, source.InstanceCount, nameof(InstanceCount));
     }
