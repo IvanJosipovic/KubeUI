@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
 using System.Reactive.Linq;
 using Avalonia.Threading;
@@ -17,8 +18,10 @@ public sealed partial class MRDiffDetectionViewModel : ViewModelBase, IInitializ
     private readonly CrossplaneDiffLogParser _parser;
     private readonly CrossplaneDiffAggregator _aggregator = new();
     private readonly CrossplaneProviderLogMonitor _monitor;
+    private readonly ConcurrentQueue<CrossplaneDiffRecord> _pendingRecords = new();
     private IDisposable? _providerSubscription;
     private ISourceCache<GenericKubernetesObject, ResourceCacheKey>? _providerResources;
+    private DispatcherTimer? _rowsRefreshTimer;
     private bool _disposed;
 
     [ObservableProperty]
@@ -40,6 +43,12 @@ public sealed partial class MRDiffDetectionViewModel : ViewModelBase, IInitializ
         _parser = parser;
         _monitor = monitor;
         Title = Assets.Resources.MRDiffDetectionView_Title!;
+        _rowsRefreshTimer = new DispatcherTimer
+        {
+            Interval = TimeSpan.FromMilliseconds(250)
+        };
+        _rowsRefreshTimer.Tick += RowsRefreshTimer_Tick;
+        _rowsRefreshTimer.Start();
     }
 
     public static bool IsAvailable(ClusterWorkspace cluster)
@@ -87,7 +96,9 @@ public sealed partial class MRDiffDetectionViewModel : ViewModelBase, IInitializ
     [RelayCommand]
     private void Clear()
     {
+        DrainPendingRecords();
         _aggregator.Clear();
+
         Rows.Clear();
     }
 
@@ -150,8 +161,9 @@ public sealed partial class MRDiffDetectionViewModel : ViewModelBase, IInitializ
             return;
         }
 
-        Rows.Clear();
+        DrainPendingRecords();
         _aggregator.Clear();
+        Rows.Clear();
         if (provider is null)
         {
             Status = Assets.Resources.MRDiffDetectionView_SelectProvider!;
@@ -177,20 +189,54 @@ public sealed partial class MRDiffDetectionViewModel : ViewModelBase, IInitializ
     {
         foreach (var record in _parser.Parse(line))
         {
-            Dispatcher.UIThread.Post(() =>
-            {
-                if (_disposed)
-                {
-                    return;
-                }
+            _pendingRecords.Enqueue(record);
+        }
+    }
 
-                _aggregator.Add(record);
-                Rows.Clear();
-                foreach (var row in _aggregator.Rows.OrderBy(row => row.ApiVersion).ThenBy(row => row.Kind).ThenBy(row => row.DiffField).ThenBy(row => row.Namespace).ThenBy(row => row.Name))
-                {
-                    Rows.Add(row);
-                }
-            });
+    private void RowsRefreshTimer_Tick(object? sender, EventArgs e)
+    {
+        if (_disposed)
+        {
+            return;
+        }
+
+        const int maxRecordsPerRefresh = 100;
+        var processedRecords = 0;
+        while (processedRecords < maxRecordsPerRefresh && _pendingRecords.TryDequeue(out var record))
+        {
+            _aggregator.Add(record);
+            processedRecords++;
+        }
+
+        if (processedRecords == 0)
+        {
+            return;
+        }
+
+        var rows = _aggregator.GetSnapshot()
+            .OrderBy(row => row.ApiVersion)
+            .ThenBy(row => row.Kind)
+            .ThenBy(row => row.DiffField)
+            .ThenBy(row => row.Namespace)
+            .ThenBy(row => row.Name);
+        var existingRows = Rows.ToDictionary(row => row.Key, StringComparer.Ordinal);
+        foreach (var snapshot in rows)
+        {
+            if (existingRows.TryGetValue(snapshot.Key, out var existing))
+            {
+                existing.Apply(snapshot);
+            }
+            else
+            {
+                Rows.Add(snapshot);
+            }
+        }
+    }
+
+    private void DrainPendingRecords()
+    {
+        while (_pendingRecords.TryDequeue(out _))
+        {
         }
     }
 
@@ -202,6 +248,13 @@ public sealed partial class MRDiffDetectionViewModel : ViewModelBase, IInitializ
         }
 
         _disposed = true;
+        if (_rowsRefreshTimer is not null)
+        {
+            _rowsRefreshTimer.Stop();
+            _rowsRefreshTimer.Tick -= RowsRefreshTimer_Tick;
+            _rowsRefreshTimer = null;
+        }
+
         _providerSubscription?.Dispose();
         _providerSubscription = null;
         _providerResources = null;

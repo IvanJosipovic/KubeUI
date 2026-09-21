@@ -16,8 +16,17 @@ public sealed record CrossplaneDiffRecord(
     bool Sensitive);
 
 /// <summary>Aggregated row shown by the MR Diff Detection view.</summary>
-public sealed class CrossplaneDiffRow
+public sealed class CrossplaneDiffRow : System.ComponentModel.INotifyPropertyChanged
 {
+    private string _oldValue;
+    private string _newValue;
+    private bool _newComputed;
+    private bool _newRemoved;
+    private bool _requiresNew;
+    private bool _sensitive;
+    private int _occurrences;
+    private int _instanceCount;
+
     public CrossplaneDiffRow(CrossplaneDiffRecord record)
     {
         Uid = record.Uid;
@@ -26,14 +35,14 @@ public sealed class CrossplaneDiffRow
         ApiVersion = record.ApiVersion;
         Kind = record.Kind;
         DiffField = record.DiffField;
-        OldValue = record.OldValue;
-        NewValue = record.NewValue;
-        NewComputed = record.NewComputed;
-        NewRemoved = record.NewRemoved;
-        RequiresNew = record.RequiresNew;
-        Sensitive = record.Sensitive;
-        Occurrences = 1;
-        InstanceCount = 1;
+        _oldValue = record.OldValue;
+        _newValue = record.NewValue;
+        _newComputed = record.NewComputed;
+        _newRemoved = record.NewRemoved;
+        _requiresNew = record.RequiresNew;
+        _sensitive = record.Sensitive;
+        _occurrences = 1;
+        _instanceCount = 1;
     }
 
     public string Uid { get; }
@@ -42,24 +51,62 @@ public sealed class CrossplaneDiffRow
     public string ApiVersion { get; }
     public string Kind { get; }
     public string DiffField { get; }
-    public string OldValue { get; private set; }
-    public string NewValue { get; private set; }
-    public bool NewComputed { get; private set; }
-    public bool NewRemoved { get; private set; }
-    public bool RequiresNew { get; private set; }
-    public bool Sensitive { get; private set; }
-    public int Occurrences { get; private set; }
-    public int InstanceCount { get; internal set; }
+    public string Key => string.Join("\u0000", Uid, Name, Namespace, ApiVersion, Kind, DiffField);
+    public string OldValue => _oldValue;
+    public string NewValue => _newValue;
+    public bool NewComputed => _newComputed;
+    public bool NewRemoved => _newRemoved;
+    public bool RequiresNew => _requiresNew;
+    public bool Sensitive => _sensitive;
+    public int Occurrences => _occurrences;
+    public int InstanceCount => _instanceCount;
+
+    public event System.ComponentModel.PropertyChangedEventHandler? PropertyChanged;
 
     internal void Update(CrossplaneDiffRecord record)
     {
-        OldValue = record.OldValue;
-        NewValue = record.NewValue;
-        NewComputed = record.NewComputed;
-        NewRemoved = record.NewRemoved;
-        RequiresNew = record.RequiresNew;
-        Sensitive = record.Sensitive;
-        Occurrences++;
+        _oldValue = record.OldValue;
+        _newValue = record.NewValue;
+        _newComputed = record.NewComputed;
+        _newRemoved = record.NewRemoved;
+        _requiresNew = record.RequiresNew;
+        _sensitive = record.Sensitive;
+        _occurrences++;
+    }
+
+    internal void SetInstanceCount(int value) => _instanceCount = value;
+
+    internal CrossplaneDiffRow Snapshot()
+    {
+        CrossplaneDiffRow copy = new(new CrossplaneDiffRecord(
+            Uid, Name, Namespace, ApiVersion, Kind, DiffField,
+            OldValue, NewValue, NewComputed, NewRemoved, RequiresNew, Sensitive));
+        copy._occurrences = Occurrences;
+        copy._instanceCount = InstanceCount;
+        return copy;
+    }
+
+    public void Apply(CrossplaneDiffRow source)
+    {
+        Set(ref _oldValue, source.OldValue, nameof(OldValue));
+        Set(ref _newValue, source.NewValue, nameof(NewValue));
+        Set(ref _newComputed, source.NewComputed, nameof(NewComputed));
+        Set(ref _newRemoved, source.NewRemoved, nameof(NewRemoved));
+        Set(ref _requiresNew, source.RequiresNew, nameof(RequiresNew));
+        Set(ref _sensitive, source.Sensitive, nameof(Sensitive));
+        Set(ref _occurrences, source.Occurrences, nameof(Occurrences));
+        Set(ref _instanceCount, source.InstanceCount, nameof(InstanceCount));
+    }
+
+    private void Set<T>(ref T field, T value, string propertyName)
+    {
+        if (EqualityComparer<T>.Default.Equals(field, value))
+        {
+            return;
+        }
+
+        field = value;
+        PropertyChanged?.Invoke(this, new System.ComponentModel.PropertyChangedEventArgs(propertyName));
     }
 }
 
@@ -89,11 +136,16 @@ public sealed class CrossplaneDiffAggregator
 
     public void Clear() => _rows.Clear();
 
+    public IReadOnlyList<CrossplaneDiffRow> GetSnapshot()
+    {
+        return _rows.Values.Select(row => row.Snapshot()).ToArray();
+    }
+
     private void UpdateInstanceCounts()
     {
         foreach (var row in _rows.Values)
         {
-            row.InstanceCount = GetInstanceCount(row.ApiVersion, row.Kind, row.DiffField);
+            row.SetInstanceCount(GetInstanceCount(row.ApiVersion, row.Kind, row.DiffField));
         }
     }
 
