@@ -1,4 +1,5 @@
 using System.Linq.Expressions;
+using System.ComponentModel;
 using Avalonia.Controls;
 using Avalonia.Controls.Templates;
 using FluentIcons.Avalonia;
@@ -39,11 +40,13 @@ public sealed class MRDiffDetectionView : ViewBase<MRDiffDetectionViewModel>
                     .GridLinesVisibility(DataGridGridLinesVisibility.All)
                     .IsReadOnly(true)
                     .ItemsSource(vm, x => x.Rows)
+                    .ContextMenu(new ContextMenu())
+                    .Behaviors([new MRDiffDetectionContextMenuBehavior()])
                     .Columns([
                         CreateColumn<CrossplaneDiffRow, string>(x => x.Name, Assets.Resources.MRDiffDetectionView_Name),
                         CreateColumn<CrossplaneDiffRow, string>(x => x.Namespace, Assets.Resources.MRDiffDetectionView_Namespace),
                         CreateColumn<CrossplaneDiffRow, string>(x => x.ApiVersion, Assets.Resources.MRDiffDetectionView_ApiVersion),
-                        CreateColumn<CrossplaneDiffRow, string>(x => x.Kind, Assets.Resources.MRDiffDetectionView_Kind),
+                        CreateColumn<CrossplaneDiffRow, string>(x => x.Kind, Assets.Resources.MRDiffDetectionView_Kind, ListSortDirection.Ascending),
                         CreateColumn<CrossplaneDiffRow, string>(x => x.DiffField, Assets.Resources.MRDiffDetectionView_DiffField),
                         CreateColumn<CrossplaneDiffRow, string>(x => x.OldValue, Assets.Resources.MRDiffDetectionView_OldValue),
                         CreateColumn<CrossplaneDiffRow, string>(x => x.NewValue, Assets.Resources.MRDiffDetectionView_NewValue),
@@ -56,12 +59,16 @@ public sealed class MRDiffDetectionView : ViewBase<MRDiffDetectionViewModel>
                     ]));
     }
 
-    private static DataGridTextColumn CreateColumn<TItem, TValue>(Expression<Func<TItem, TValue>> binding, string? header)
+    private static DataGridTextColumn CreateColumn<TItem, TValue>(
+        Expression<Func<TItem, TValue>> binding,
+        string? header,
+        ListSortDirection? sortDirection = null)
     {
         return new DataGridTextColumn
         {
             Binding = CompiledBinding.Create(binding),
             Header = header,
+            SortDirection = sortDirection,
             Width = new DataGridLength(1, DataGridLengthUnitType.Star)
         };
     }

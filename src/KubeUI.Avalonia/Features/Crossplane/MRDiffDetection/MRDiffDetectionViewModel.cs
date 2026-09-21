@@ -8,7 +8,10 @@ using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
+using KubeUI.Avalonia.Features.Resources.Yaml;
 using KubeUI.Avalonia.Infrastructure.Presentation;
+using KubeUI.Avalonia.Infrastructure.Docking;
+using Dock.Model.Core;
 using KubeUI.Kubernetes;
 
 namespace KubeUI.Avalonia.Features.Crossplane.MRDiffDetection;
@@ -18,6 +21,8 @@ public sealed partial class MRDiffDetectionViewModel : ViewModelBase, IInitializ
     private readonly CrossplaneDiffLogParser _parser;
     private readonly CrossplaneDiffAggregator _aggregator = new();
     private readonly CrossplaneProviderLogMonitor _monitor;
+    private readonly IServiceProvider _serviceProvider;
+    private readonly IFactory _factory;
     private readonly ConcurrentQueue<CrossplaneDiffRecord> _pendingRecords = new();
     private IDisposable? _providerSubscription;
     private IDisposable? _podSubscription;
@@ -40,10 +45,14 @@ public sealed partial class MRDiffDetectionViewModel : ViewModelBase, IInitializ
 
     public MRDiffDetectionViewModel(
         CrossplaneDiffLogParser parser,
-        CrossplaneProviderLogMonitor monitor)
+        CrossplaneProviderLogMonitor monitor,
+        IServiceProvider serviceProvider,
+        IFactory factory)
     {
         _parser = parser;
         _monitor = monitor;
+        _serviceProvider = serviceProvider;
+        _factory = factory;
         Title = Assets.Resources.MRDiffDetectionView_Title!;
         _rowsRefreshTimer = new DispatcherTimer
         {
@@ -124,6 +133,54 @@ public sealed partial class MRDiffDetectionViewModel : ViewModelBase, IInitializ
         _aggregator.Clear();
 
         Rows.Clear();
+    }
+
+    [RelayCommand(CanExecute = nameof(CanViewYaml))]
+    private void ViewYaml(CrossplaneDiffRow? row)
+    {
+        if (Cluster is null || row is null || FindResource(row) is not { } resource)
+        {
+            return;
+        }
+
+        var yamlViewModel = _serviceProvider.GetRequiredService<ResourceYamlViewModel>();
+        yamlViewModel.Initialize(Cluster, resource);
+        _factory.AddToBottom(yamlViewModel);
+    }
+
+    private bool CanViewYaml(CrossplaneDiffRow? row)
+    {
+        return row is not null && FindResource(row) is not null;
+    }
+
+    private GenericKubernetesObject? FindResource(CrossplaneDiffRow row)
+    {
+        if (Cluster is null)
+        {
+            return null;
+        }
+
+        foreach (var pair in Cluster.Runtime.Objects)
+        {
+            if (pair.Value is not IResourceContainer container)
+            {
+                continue;
+            }
+
+            foreach (var resource in container.Snapshot().OfType<GenericKubernetesObject>())
+            {
+                if (string.Equals(resource.Metadata?.Uid, row.Uid, StringComparison.Ordinal)
+                    && string.Equals(resource.Metadata?.Name, row.Name, StringComparison.Ordinal)
+                    && string.Equals(resource.Metadata?.NamespaceProperty ?? string.Empty, row.Namespace, StringComparison.Ordinal)
+                    && string.Equals(resource.ApiVersion, row.ApiVersion, StringComparison.Ordinal)
+                    && string.Equals(resource.Kind, row.Kind, StringComparison.Ordinal))
+                {
+                    return resource;
+                }
+            }
+        }
+
+        return null;
     }
 
     private void RefreshProviders()
