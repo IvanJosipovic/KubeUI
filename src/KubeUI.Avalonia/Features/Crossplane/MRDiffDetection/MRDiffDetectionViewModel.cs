@@ -20,7 +20,9 @@ public sealed partial class MRDiffDetectionViewModel : ViewModelBase, IInitializ
     private readonly CrossplaneProviderLogMonitor _monitor;
     private readonly ConcurrentQueue<CrossplaneDiffRecord> _pendingRecords = new();
     private IDisposable? _providerSubscription;
+    private IDisposable? _podSubscription;
     private ISourceCache<GenericKubernetesObject, ResourceCacheKey>? _providerResources;
+    private HashSet<string> _activePodKeys = new(StringComparer.Ordinal);
     private DispatcherTimer? _rowsRefreshTimer;
     private bool _disposed;
 
@@ -70,6 +72,8 @@ public sealed partial class MRDiffDetectionViewModel : ViewModelBase, IInitializ
 
         _providerSubscription?.Dispose();
         _providerSubscription = null;
+        _podSubscription?.Dispose();
+        _podSubscription = null;
         _providerResources = null;
 
         Cluster = cluster;
@@ -90,7 +94,27 @@ public sealed partial class MRDiffDetectionViewModel : ViewModelBase, IInitializ
 
     partial void OnSelectedProviderChanged(CrossplaneProviderOption? value)
     {
+        _activePodKeys = value is null || Cluster is null
+            ? new HashSet<string>(StringComparer.Ordinal)
+            : CrossplaneProviderLogMonitor.GetProviderPodKeys(Cluster.Runtime, value.Name);
         _ = StartMonitoringAsync(value);
+    }
+
+    private void ReconcileProviderPods()
+    {
+        if (_disposed || Cluster is null || SelectedProvider is null)
+        {
+            return;
+        }
+
+        var podKeys = CrossplaneProviderLogMonitor.GetProviderPodKeys(Cluster.Runtime, SelectedProvider.Name);
+        if (_activePodKeys.SetEquals(podKeys))
+        {
+            return;
+        }
+
+        _activePodKeys = podKeys;
+        _ = StartMonitoringAsync(SelectedProvider, resetRows: false);
     }
 
     [RelayCommand]
@@ -145,6 +169,10 @@ public sealed partial class MRDiffDetectionViewModel : ViewModelBase, IInitializ
                 _providerSubscription = _providerResources
                     .Connect()
                     .Subscribe(_ => Dispatcher.UIThread.Post(RefreshProviders));
+                _podSubscription = cluster.Runtime.ConnectResources()
+                    .Where(change => change.Kind == GroupApiVersionKind.From<V1Pod>())
+                    .Throttle(TimeSpan.FromMilliseconds(50))
+                    .Subscribe(_ => Dispatcher.UIThread.Post(ReconcileProviderPods));
                 RefreshProviders();
             });
         }
@@ -154,16 +182,19 @@ public sealed partial class MRDiffDetectionViewModel : ViewModelBase, IInitializ
         }
     }
 
-    private async Task StartMonitoringAsync(CrossplaneProviderOption? provider)
+    private async Task StartMonitoringAsync(CrossplaneProviderOption? provider, bool resetRows = true)
     {
         if (Cluster is null || _disposed)
         {
             return;
         }
 
-        DrainPendingRecords();
-        _aggregator.Clear();
-        Rows.Clear();
+        if (resetRows)
+        {
+            DrainPendingRecords();
+            _aggregator.Clear();
+            Rows.Clear();
+        }
         if (provider is null)
         {
             Status = Assets.Resources.MRDiffDetectionView_SelectProvider!;
@@ -257,6 +288,8 @@ public sealed partial class MRDiffDetectionViewModel : ViewModelBase, IInitializ
 
         _providerSubscription?.Dispose();
         _providerSubscription = null;
+        _podSubscription?.Dispose();
+        _podSubscription = null;
         _providerResources = null;
 
         _monitor.Dispose();

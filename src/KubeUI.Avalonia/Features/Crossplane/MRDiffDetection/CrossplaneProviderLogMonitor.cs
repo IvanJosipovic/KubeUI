@@ -11,7 +11,9 @@ public sealed class CrossplaneProviderLogMonitor : IDisposable
     private readonly IPodLogSessionResolver _resolver;
     private readonly ILogger<CrossplaneProviderLogMonitor> _logger;
     private readonly object _gate = new();
+    private readonly ConcurrentDictionary<string, byte> _seen = new(StringComparer.Ordinal);
     private CancellationTokenSource? _cancellation;
+    private string? _providerName;
     private bool _disposed;
 
     public CrossplaneProviderLogMonitor(
@@ -35,6 +37,13 @@ public sealed class CrossplaneProviderLogMonitor : IDisposable
         CancellationTokenSource localCancellation;
         lock (_gate)
         {
+            var providerName = provider.Metadata?.Name;
+            if (!string.Equals(_providerName, providerName, StringComparison.Ordinal))
+            {
+                _seen.Clear();
+                _providerName = providerName;
+            }
+
             _cancellation?.Cancel();
             _cancellation?.Dispose();
             _cancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
@@ -49,15 +58,14 @@ public sealed class CrossplaneProviderLogMonitor : IDisposable
             pods = FindProviderPods(cluster, provider.Metadata?.Name);
         }
         var tasks = new List<Task>();
-        var seen = new ConcurrentDictionary<string, byte>(StringComparer.Ordinal);
         foreach (var pod in pods)
         {
             foreach (var container in pod.Spec?.Containers ?? [])
             {
-                tasks.Add(ReadContainerAsync(cluster, pod, container.Name, previous: false, lineReceived, seen, localCancellation.Token));
+                tasks.Add(ReadContainerAsync(cluster, pod, container.Name, previous: false, lineReceived, _seen, localCancellation.Token));
                 if (HasRestartedContainer(pod, container.Name))
                 {
-                    tasks.Add(ReadContainerAsync(cluster, pod, container.Name, previous: true, lineReceived, seen, localCancellation.Token));
+                    tasks.Add(ReadContainerAsync(cluster, pod, container.Name, previous: true, lineReceived, _seen, localCancellation.Token));
                 }
             }
         }
@@ -113,6 +121,13 @@ public sealed class CrossplaneProviderLogMonitor : IDisposable
     {
         return (pod.Status?.ContainerStatuses ?? []).Any(status =>
             string.Equals(status.Name, containerName, StringComparison.Ordinal) && status.RestartCount > 0);
+    }
+
+    public static HashSet<string> GetProviderPodKeys(IClusterRuntime cluster, string providerName)
+    {
+        return FindProviderPods(cluster, providerName)
+            .Select(pod => $"{pod.Metadata?.NamespaceProperty}\u0000{pod.Metadata?.Name}")
+            .ToHashSet(StringComparer.Ordinal);
     }
 
     private static List<k8s.Models.V1Pod> FindProviderPods(IClusterRuntime cluster, string? providerName)
