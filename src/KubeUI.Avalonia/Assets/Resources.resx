@@ -445,10 +445,18 @@
     <value>Open New Tab</value>
     <comment/>
   </data>
-  <data name="ResourceListView_NewResource" xml:space="preserve">
-    <value>Create a new Resource</value>
-    <comment/>
-  </data>
+    <data name="ResourceListView_NewResource" xml:space="preserve">
+      <value>Create a new Resource</value>
+      <comment/>
+    </data>
+  <data name="ResourceListView_NewResourceYaml" xml:space="preserve">
+      <value>Create YAML</value>
+      <comment/>
+    </data>
+  <data name="ResourceListView_NewResourceUiEditor" xml:space="preserve">
+      <value>Create with UI Editor</value>
+      <comment/>
+    </data>
   <data name="ResourceListView_NamespaceLink" xml:space="preserve">
     <value>Linked namespace selection</value>
     <comment/>
@@ -2421,8 +2429,12 @@
     <value>View</value>
     <comment/>
   </data>
+  <data name="ResourceConfigBase_MenuItem_Edit" xml:space="preserve">
+    <value>Edit</value>
+    <comment>Opens schema-driven resource editor.</comment>
+  </data>
   <data name="ResourceConfigBase_MenuItem_ViewYaml" xml:space="preserve">
-    <value>View Yaml</value>
+    <value>View YAML</value>
     <comment/>
   </data>
   <data name="ResourceConfigBase_MenuItem_Delete" xml:space="preserve">
@@ -2760,5 +2772,38 @@
   <data name="PodLogsView_SearchNext" xml:space="preserve">
     <value>Next Match</value>
     <comment/>
+  </data>
+  <data name="ResourceEditorView_Save" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="ResourceEditorView_Reset" xml:space="preserve">
+    <value>Reset</value>
+  </data>
+  <data name="ResourceEditorView_Validate" xml:space="preserve">
+    <value>Validate</value>
+  </data>
+  <data name="ResourceEditorView_ValidationSucceeded" xml:space="preserve">
+    <value>Validation succeeded</value>
+  </data>
+  <data name="ResourceEditorView_ValidationSucceededMessage" xml:space="preserve">
+    <value>The server accepted the manifest using dry-run.</value>
+  </data>
+  <data name="ResourceEditorView_ValidationFailed" xml:space="preserve">
+    <value>Validation failed</value>
+  </data>
+  <data name="ResourceEditorView_AddItem" xml:space="preserve">
+    <value>Add item</value>
+  </data>
+  <data name="ResourceEditorView_AddEntry" xml:space="preserve">
+    <value>Add entry</value>
+  </data>
+  <data name="ResourceEditorView_MapKey" xml:space="preserve">
+    <value>New key</value>
+  </data>
+  <data name="ResourceEditorView_Remove" xml:space="preserve">
+    <value>Remove</value>
+  </data>
+  <data name="ResourceEditorView_Unset" xml:space="preserve">
+    <value>Unset</value>
   </data>
 </root>

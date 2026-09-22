@@ -218,7 +218,7 @@ public partial class ResourceListView : ViewBase<IResourceListViewModel>
                 new Button()
                     .Col(0)
                     .Margin(2, 0, 0, 0)
-                    .Command(CompiledBinding.Create<IResourceListViewModel, ICommand?>(x => x.ResourceConfig.NewResourceCommand))
+                    .Flyout(CreateNewResourceFlyout())
                     .IsVisible(CompiledBinding.Create<IResourceListViewModel, bool>(x => x.ResourceConfig.ShowNewResource))
                     .ToolTip_Tip(Assets.Resources.ResourceListView_NewResource)
                     .Content(new FluentIcon().Icon(Icon.AddSquare)),
@@ -251,6 +251,20 @@ public partial class ResourceListView : ViewBase<IResourceListViewModel>
                             .IsVisible(CompiledBinding.Create<IResourceListViewModel, bool>(x => x.ResourceConfig.IsNamespaced))
                             .ToolTip_Tip(Assets.Resources.ResourceListView_NamespaceLink)
                             .Content(new FluentIcon().Icon(Icon.Link))));
+    }
+
+    internal static MenuFlyout CreateNewResourceFlyout()
+    {
+        var flyout = new MenuFlyout();
+        flyout.Items.Add(new MenuItem()
+            .Header(Assets.Resources.ResourceListView_NewResourceYaml)
+            .Icon(new FluentIcon().Icon(Icon.DocumentEdit))
+            .Command(CompiledBinding.Create<IResourceListViewModel, ICommand?>(x => x.ResourceConfig.NewResourceCommand)));
+        flyout.Items.Add(new MenuItem()
+            .Header(Assets.Resources.ResourceListView_NewResourceUiEditor)
+            .Icon(new FluentIcon().Icon(Icon.Edit))
+            .Command(CompiledBinding.Create<IResourceListViewModel, ICommand?>(x => x.ResourceConfig.NewResourceUiEditorCommand)));
+        return flyout;
     }
 
     private static MultiComboBox CreateNamespaceSelector()
