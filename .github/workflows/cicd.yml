@@ -30,7 +30,7 @@ jobs:
       new_release_version: ${{ (steps.semantic.outputs.new_release_published && steps.semantic.outputs.new_release_version) || '0.0.1-alpha.1' }}
       new_release_notes: ${{ steps.semantic.outputs.new_release_notes }}
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
 
     - name: Semantic Release
       uses: cycjimmy/semantic-release-action@v6.0.0
@@ -57,7 +57,7 @@ jobs:
     needs: [semantic-release, publish-matrix]
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
 
     - name: Download artifacts
       uses: actions/download-artifact@v8

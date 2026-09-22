@@ -109,6 +109,14 @@
       "matchPackageNames": [
         "hanumaninstitute.mvvmdialogs.*"
       ]
+    },
+    {
+      "groupName": "Westermo.GraphX",
+      "separateMajorMinor": true,
+      "groupSlug": "westermo-graphx",
+      "matchPackageNames": [
+        "westermo.graphx.*"
+      ]
     }
   ],
   "customManagers": [

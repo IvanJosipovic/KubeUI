@@ -82,7 +82,7 @@ internal sealed class YamlIndentationStrategy : IIndentationStrategy
 
     private static bool IsCommentLine(string text)
     {
-        return text.TrimStart().StartsWith("#", StringComparison.Ordinal);
+        return text.TrimStart().StartsWith('#');
     }
 
     private static string StripInlineComment(string text)

@@ -5,6 +5,8 @@ namespace KubeUI.Avalonia.Features.Resources.Yaml;
 
 internal static class YamlFoldingStrategy
 {
+    private const string LastAppliedConfiguration = "kubectl.kubernetes.io/last-applied-configuration";
+
     public static void UpdateFoldings(FoldingManager? manager, TextDocument? document)
     {
         if (manager == null || document == null)
@@ -31,8 +33,6 @@ internal static class YamlFoldingStrategy
             lineInfos[index] = AnalyzeLine(document.GetTextAsMemory(line.Offset, line.Length));
             index++;
         }
-
-        var openFolds = new Stack<OpenFold>(lineCount / 4);
 
         for (var lineIndex = 0; lineIndex < index; lineIndex++)
         {
@@ -107,6 +107,25 @@ internal static class YamlFoldingStrategy
         return foldMarkers;
     }
 
+    public static bool IsNoisyFieldFolding(TextDocument document, NewFolding folding)
+    {
+        return IsNoisyFieldFolding(document, folding.StartOffset, folding.EndOffset);
+    }
+
+    public static bool IsNoisyFieldFolding(TextDocument document, int startOffset, int endOffset)
+    {
+        var line = document.GetLineByOffset(startOffset);
+        var key = GetMappingKey(document.GetText(line));
+        if (key == "managedFields")
+        {
+            return HasParentPath(document, startOffset, "metadata");
+        }
+
+        return key == LastAppliedConfiguration
+            && endOffset > line.EndOffset
+            && HasParentPath(document, startOffset, "metadata", "annotations");
+    }
+
     private static LineInfo AnalyzeLine(ReadOnlyMemory<char> text)
     {
         var span = text.Span;
@@ -157,6 +176,70 @@ internal static class YamlFoldingStrategy
         var isMappingKey = span[end - 1] == ':';
 
         return new LineInfo(indent, isSequenceItem, isMappingKey);
+    }
+
+    private static bool HasParentPath(TextDocument document, int targetOffset, params string[] expectedPath)
+    {
+        var targetLine = document.GetLineByOffset(targetOffset);
+        var childIndent = CountLeadingSpaces(document.GetText(targetLine));
+        var expectedIndex = expectedPath.Length - 1;
+        for (var line = targetLine.PreviousLine; line != null; line = line.PreviousLine)
+        {
+            var key = GetMappingKey(document.GetText(line));
+            if (key == null)
+            {
+                continue;
+            }
+
+            var indent = CountLeadingSpaces(document.GetText(line));
+            if (indent >= childIndent)
+            {
+                continue;
+            }
+
+            if (!string.Equals(key, expectedPath[expectedIndex], StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            expectedIndex--;
+            if (expectedIndex < 0)
+            {
+                return true;
+            }
+
+            childIndent = indent;
+        }
+
+        return false;
+    }
+
+    private static string? GetMappingKey(string lineText)
+    {
+        var trimmed = lineText.TrimStart();
+        if (trimmed.Length == 0 || trimmed[0] == '#' || trimmed[0] == '-')
+        {
+            return null;
+        }
+
+        var colon = trimmed.IndexOf(':');
+        if (colon <= 0)
+        {
+            return null;
+        }
+
+        return trimmed[..colon].Trim().Trim('"', '\'');
+    }
+
+    private static int CountLeadingSpaces(string text)
+    {
+        var count = 0;
+        while (count < text.Length && text[count] == ' ')
+        {
+            count++;
+        }
+
+        return count;
     }
 
     private readonly record struct LineInfo(int Indent, bool IsSequenceItem, bool IsMappingKey)

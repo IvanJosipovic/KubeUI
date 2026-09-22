@@ -5,6 +5,7 @@ namespace KubeUI.Kubernetes;
 public interface IClusterRuntimeCatalog
 {
     IEnumerable<IClusterRuntime> Clusters { get; }
+    void AddCluster(IClusterRuntime cluster);
     IClusterRuntime? GetCluster(string name);
     IClusterRuntime? GetDefault();
     void LoadFromConfig(K8SConfiguration kubeConfig);

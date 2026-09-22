@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Sockets;
+using DynamicData.Kernel;
 using k8s.Models;
 
 #pragma warning disable RCS1075
@@ -165,8 +166,10 @@ public partial class PortForwarder : ObservableObject, IEquatable<PortForwarder>
             var podPort = Port;
             if (Type == "Service")
             {
-                var service = _cluster.GetResource<V1Service>(Namespace, Name);
-                if (service == null)
+                var service = _cluster.GetResourceSourceCache<V1Service>()
+                    .Lookup(new ResourceCacheKey(Namespace, Name))
+                    .ValueOrDefault();
+                if (service is null)
                 {
                     Status = "Service not found";
                     return;
@@ -429,13 +432,26 @@ public partial class PortForwarder : ObservableObject, IEquatable<PortForwarder>
 
     public bool Equals(PortForwarder? other)
     {
-        return other != null && other.Name == Name && other.Namespace == Namespace && other.Port == Port && other.Type == Type;
+        return other != null
+            && other.Name == Name
+            && other.Namespace == Namespace
+            && other.Port == Port
+            && other.Type == Type;
     }
 
     public void Dispose()
     {
         Stop();
     }
+
+    public override bool Equals(object? obj)
+    {
+        return Equals(obj as PortForwarder);
+    }
+
+    public override int GetHashCode()
+    {
+        throw new NotImplementedException();
+    }
 }
 #pragma warning restore RCS1075
-

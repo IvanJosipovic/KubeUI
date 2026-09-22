@@ -156,6 +156,7 @@ space_within_single_line_array_initializer_braces = true
 
 #Net Analyzer
 dotnet_analyzer_diagnostic.category-Performance.severity = none #error - Uncomment when all violations are fixed.
+dotnet_diagnostic.CA2000.severity = error
 
 # CS0649: Field 'field' is never assigned to, and will always have its default value 'value'
 dotnet_diagnostic.CS0649.severity = error
@@ -182,7 +183,7 @@ dotnet_diagnostic.CA1821.severity = warning
 # CA1822: Mark members as static
 dotnet_diagnostic.CA1822.severity = suggestion
 # CA1823: Avoid unused private fields
-dotnet_diagnostic.CA1823.severity = warning
+dotnet_diagnostic.CA1823.severity = error
 dotnet_code_quality.CA1822.api_surface = private, internal
 # CA1825: Avoid zero-length array allocations
 dotnet_diagnostic.CA1825.severity = warning
@@ -239,6 +240,19 @@ dotnet_diagnostic.MA0006.severity = silent
 dotnet_diagnostic.MA0011.severity = silent
 dotnet_diagnostic.MA0004.severity = silent
 dotnet_diagnostic.MVVMTK0034.severity = error
+
+# Code Style
+dotnet_diagnostic.IDE0001.severity = error
+dotnet_diagnostic.IDE0002.severity = error
+dotnet_diagnostic.IDE0004.severity = error
+#dotnet_diagnostic.IDE0005.severity = error
+dotnet_diagnostic.IDE0007.severity = error
+dotnet_diagnostic.IDE0051.severity = error
+dotnet_diagnostic.IDE0052.severity = error
+dotnet_diagnostic.IDE0059.severity = error
+dotnet_diagnostic.IDE0060.severity = error
+
+dotnet_diagnostic.CS4014.severity = error
 
 # Xaml files
 [*.{xaml,axaml}]

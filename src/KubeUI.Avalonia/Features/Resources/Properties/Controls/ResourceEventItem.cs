@@ -1,5 +1,3 @@
-using Avalonia;
-
 namespace KubeUI.Avalonia.Features.Resources.Properties.Controls;
 
 public sealed record ResourceEventItem(

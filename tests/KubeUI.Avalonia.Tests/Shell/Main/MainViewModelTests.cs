@@ -1,22 +1,24 @@
-using System.Linq;
-using System.Threading.Tasks;
 using Avalonia.Headless.XUnit;
-using Avalonia.Threading;
+using Avalonia.Controls;
+using Avalonia.Media;
+using Avalonia.VisualTree;
+using Dock.Avalonia.Controls;
 using Dock.Model.Controls;
 using Dock.Model.Core;
-using Dock.Model.Mvvm;
-using KubeUI.Avalonia.Shell.Documents.CloudClusters.Aks.ViewModels;
-using KubeUI.Avalonia.Shell.Main.ViewModels;
-using KubeUI.Avalonia.Tests.Infra;
+using Dock.Model.Mvvm.Controls;
+using FluentAvalonia.UI.Controls;
+using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
+using KubeUI.Avalonia.Shell.Documents.CloudClusters.Aks;
+using KubeUI.Avalonia.Shell.Main;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Shell.Main;
 
-public sealed class MainViewModelTests : AvaloniaTestBase
+public sealed class MainViewModelTests
 {
     private MainViewModel CreateViewModel()
     {
-        return TestApp.CurrentServices?.GetRequiredService<MainViewModel>()
+        return Application.Current.GetTestServices().GetRequiredService<MainViewModel>()
             ?? throw new InvalidOperationException("Test services are not initialized.");
     }
 
@@ -24,16 +26,216 @@ public sealed class MainViewModelTests : AvaloniaTestBase
     public async Task load_aks_clusters_command_opens_docked_aks_assistant()
     {
         var vm = CreateViewModel();
-        var documents = TestApp.CurrentServices!.GetRequiredService<IFactory>().GetDockable<IDocumentDock>("Documents");
+        var documents = Application.Current.GetRequiredTestService<IFactory>().GetDockable<IDocumentDock>("Documents");
         documents.ShouldNotBeNull();
 
         vm.ImportAksClusterCommand.Execute(null);
-        Dispatcher.UIThread.RunJobs();
+        await TestApplicationExtensions.WaitForUiAsync();
 
         documents.VisibleDockables!
             .OfType<ImportAksClusterViewModel>()
             .Count()
             .ShouldBe(1);
+    }
+
+    [AvaloniaFact]
+    public async Task floating_home_can_be_docked_as_document()
+    {
+        var factory = Application.Current.GetRequiredTestService<IFactory>();
+        var documents = factory.GetDockable<IDocumentDock>("Documents")
+            .ShouldNotBeNull();
+        var home = factory.FindDockableById(nameof(HomeViewModel))
+            .ShouldBeOfType<HomeViewModel>();
+
+        factory.FloatDockable(home);
+        await TestApplicationExtensions.WaitForUiAsync();
+        home.Owner.ShouldBeAssignableTo<IDocumentDock>();
+        factory.GetDockable<IRootDock>("Root")!
+            .Windows!
+            .Single()
+            .Host
+            .ShouldBeOfType<HostWindow>()
+            .Icon
+            .ShouldNotBeNull();
+        factory.GetDockable<IRootDock>("Root")!
+            .Windows!
+            .Single()
+            .Title
+            .ShouldBe("KubeUI 2");
+        factory.DockAsDocument(home);
+
+        home.Owner.ShouldBeSameAs(documents);
+    }
+
+    [AvaloniaFact]
+    public async Task floating_tool_from_tool_dock_uses_document_window()
+    {
+        var factory = Application.Current.GetRequiredTestService<IFactory>();
+        var bottomDock = factory.GetDockable<IToolDock>("BottomDock")
+            .ShouldNotBeNull();
+        Tool tool = new()
+        {
+            Id = "FloatingTool",
+            Title = "Floating tool",
+            CanClose = true,
+            CanDockAsDocument = true,
+            CanFloat = true
+        };
+
+        factory.AddDockable(bottomDock, tool);
+        factory.FloatDockable(tool);
+        await TestApplicationExtensions.WaitForUiAsync();
+
+        var floatingDocuments = tool.Owner.ShouldBeAssignableTo<IDocumentDock>();
+        floatingDocuments.ActiveDockable.ShouldBeSameAs(tool);
+        tool.Owner.ShouldNotBeSameAs(bottomDock);
+        factory.FindRoot(tool)!.Window!.Host!.ShouldBeOfType<HostWindow>().IsToolWindow.ShouldBeFalse();
+
+        factory.DockAsDocument(tool);
+    }
+
+    [AvaloniaFact]
+    public void closing_last_bottom_viewer_keeps_bottom_dock_available_for_next_viewer()
+    {
+        CreateViewModel().Initialize();
+        var factory = Application.Current.GetRequiredTestService<IFactory>();
+        var bottomDock = factory.GetDockable<IToolDock>("BottomDock")
+            .ShouldNotBeNull();
+        var splitter = factory.GetDockable<IProportionalDockSplitter>("BottomDockSplitter")
+            .ShouldNotBeNull();
+        Tool firstViewer = new()
+        {
+            Id = "YamlViewer1",
+            Title = "YAML viewer 1",
+            CanClose = true
+        };
+        Tool secondViewer = new()
+        {
+            Id = "YamlViewer2",
+            Title = "YAML viewer 2",
+            CanClose = true
+        };
+
+        factory.AddToBottom(firstViewer).ShouldBeTrue();
+        factory.CloseDockable(firstViewer);
+        bottomDock.Owner.ShouldNotBeNull();
+        factory.AddToBottom(secondViewer).ShouldBeTrue();
+
+        factory.GetDockable<IToolDock>("BottomDock").ShouldBeSameAs(bottomDock);
+        bottomDock.VisibleDockables.ShouldContain(secondViewer);
+        splitter.CanResize.ShouldBeTrue();
+    }
+
+    [AvaloniaFact]
+    public void reset_publishes_only_initialized_layouts()
+    {
+        var vm = CreateViewModel();
+        var factory = Application.Current.GetRequiredTestService<IFactory>();
+        IRootDock? publishedLayout = null;
+
+        vm.PropertyChanged += (_, args) =>
+        {
+            if (args.PropertyName == nameof(MainViewModel.Layout))
+            {
+                publishedLayout = vm.Layout;
+                publishedLayout?.Factory.ShouldBeSameAs(factory);
+            }
+        };
+
+        vm.ResetLayoutCommand.Execute(null);
+
+        publishedLayout.ShouldNotBeNull();
+    }
+
+    [AvaloniaFact]
+    public void close_layout_clears_published_layout()
+    {
+        var vm = CreateViewModel();
+        var factory = Application.Current.GetRequiredTestService<IFactory>();
+        var layout = factory.CreateLayout();
+        factory.InitLayout(layout);
+        vm.Layout = layout;
+
+        vm.CloseLayoutCommand.Execute(null);
+
+        vm.Layout.ShouldBeNull();
+    }
+
+    [AvaloniaFact]
+    public async Task main_view_attaches_the_injected_factory_to_dock_control()
+    {
+        var vm = CreateViewModel();
+        var factory = Application.Current.GetRequiredTestService<IFactory>();
+        MainView view = new() { DataContext = vm };
+        using var window = Application.Current.CreateTestWindow(content: view);
+
+        window.Show();
+        await TestApplicationExtensions.WaitForUiAsync();
+
+        view.GetVisualDescendants()
+            .OfType<DockControl>()
+            .Single()
+            .Factory
+            .ShouldBeSameAs(factory);
+    }
+
+    [AvaloniaFact]
+    public async Task help_menu_contains_check_for_updates_command()
+    {
+        MainViewModel vm = CreateViewModel();
+        MainView view = new() { DataContext = vm };
+        using TestApplicationExtensions.TestWindow window = Application.Current.CreateTestWindow(content: view);
+
+        window.Show();
+        await TestApplicationExtensions.WaitForUiAsync();
+
+        view.GetVisualDescendants()
+            .OfType<Menu>()
+            .Single()
+            .Items
+            .OfType<MenuItem>()
+            .Single(item => item.Header?.ToString() == Assets.Resources.MainView_Menu_Help)
+            .Items
+            .OfType<MenuItem>()
+            .Select(item => item.Header?.ToString())
+            .ShouldContain("_Check for Updates");
+    }
+
+    [Fact]
+    public void update_check_unavailable_prompt_uses_user_facing_text()
+    {
+        ContentDialogSettings settings = MainViewModel.CreateUpdateCheckUnavailableDialogSettings();
+
+        settings.Title.ShouldBe("Update Check Unavailable");
+        var content = settings.Content.ShouldBeOfType<string>();
+        content.ShouldBe("Automatic updates are unavailable for this copy of KubeUI. Please run KubeUI from an installed or portable package.");
+        content.ShouldNotContain("Velopack");
+    }
+
+    [AvaloniaFact]
+    public async Task resetting_layout_keeps_unpinned_tool_dock_backgrounds_opaque()
+    {
+        MainViewModel vm = CreateViewModel();
+        MainView view = new() { DataContext = vm };
+        using TestApplicationExtensions.TestWindow window = Application.Current.CreateTestWindow(content: view);
+
+        window.Show();
+        await TestApplicationExtensions.WaitForUiAsync();
+
+        vm.ResetLayoutCommand.Execute(null);
+        await TestApplicationExtensions.WaitForUiAsync();
+
+        var toolDocks = view.GetVisualDescendants()
+            .OfType<ToolControl>()
+            .Where(x => x.IsVisible)
+            .ToArray();
+
+        toolDocks.ShouldNotBeEmpty();
+        foreach (ToolControl toolDock in toolDocks)
+        {
+            SolidColorBrush background = toolDock.Background.ShouldBeOfType<SolidColorBrush>();
+            background.Color.A.ShouldBe(byte.MaxValue);
+        }
     }
 
 }

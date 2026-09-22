@@ -1,29 +1,29 @@
 # Navigation Feature
 
 ## Current Behavior
-- The navigation tree reflects the current cluster catalog.
-- Cluster resource nodes populate only after cluster connect and workspace initialization complete.
-- Connection failures open or update a shared cluster error document.
-- Missing Namespace Resource list/watch permission opens cluster settings and shows a prompt.
-- Selecting a resource navigation link should keep the badge count visible, including `0` when the opened runtime list is empty.
-- Cluster navigation uses a long-lived mutable tree:
-  - Initial cluster population may clear and seed a node from scratch when the cluster node itself is created or first initialized.
-  - After that, lifecycle sync should preserve the existing tree and upsert only the required base/manual items instead of doing a full snapshot rebuild.
-  - Per-resource permission updates should add, update, or remove only that single resource entry.
-  - Custom resource definitions may still batch their incoming change notifications, but CRD navigation mutations should use the same incremental add/update/remove primitives as regular resources.
-- Category nodes must be idempotent:
-  - Repeated lifecycle sync and resource updates must reuse the same category node by id.
-  - If duplicate category nodes are encountered, merge their children and collapse them back to a single node.
-- Port-forward navigation is coupled to the Pod resource permission flow:
-  - Only Pod permission completion should trigger a port-forward visibility refresh.
-  - Port-forward should not be re-evaluated on unrelated resource permission updates.
-  - Port-forward should use the same category/item upsert primitives as the rest of navigation so unrelated sync paths do not remove or duplicate it.
-- When deciding whether a resource nav item is visible:
-  - Require permissions to be loaded for the resource config.
-  - Prefer the config's resolved `CanListAndWatch` state.
-  - For namespaced resources, still allow visibility when namespace-scoped list/watch is available in a known workspace namespace even if the aggregate config flag is false.
-  - Known namespaces come from the runtime namespace list after workspace initialization materializes any settings-backed fallback namespaces.
+
+- `NavigationViewModel` mirrors the cluster catalog. Adding, removing, replacing, or resetting catalog entries updates the corresponding cluster navigation nodes.
+- A cluster navigation node is empty while disconnected. Its fixed cluster links are recreated when the runtime connection state changes; resource links are then populated from connected, initialized resource configurations.
+- While a cluster remains connected, resource navigation is incremental:
+  - resource configuration changes add, update, or remove only the affected resource link;
+  - custom-resource-definition changes update the CRD branch and affected custom-resource links without rebuilding unrelated resource links;
+  - cluster-name changes update navigation IDs in place.
+- Resource links require `PermissionsLoaded` and the configuration's resolved `CanListAndWatch` value. Namespace-specific permission fallback is resolved by the workspace/configuration layer; this view model does not independently inspect namespace permissions.
+- Navigation categories are reused by their generated IDs and empty generated categories are removed. Duplicate categories are not generally merged, so new code must not create duplicate category nodes.
+- Port-forward navigation is recalculated only when the Pod resource configuration is processed. It is visible only when Pod list/watch permission and the port-forward create permission are available. The current implementation removes and recreates the port-forward link during that refresh.
+- Resource count observables are attached only when both the matching navigation link and a seeded resource container exist. `ResourceSeeded` notifications are marshalled to the UI dispatcher; there is no retry loop for a missing link. A count stream preserves an initial zero and is retained when an existing resource link is updated.
+- Connection failures update or open the shared cluster-error document. Missing namespace permission opens cluster settings and shows the permission prompt.
+- Selecting a resource link opens its document; selecting a category toggles its expansion. Selecting a disconnected cluster starts connection asynchronously, and selecting an already connected cluster toggles expansion.
+
+## Invariants
+
+- Keep the navigation tree mutable and preserve existing resource-link instances during ordinary configuration updates whenever possible.
+- Perform navigation collection mutations on the Avalonia UI thread, but do not handle resource-config events synchronously there. Resource-config events are batched off-thread, including any required configuration snapshot; the navigation update itself is then applied on the UI thread because it touches UI-owned collections and observable state.
+- Do not add polling, unbounded dispatcher reposts, or full-tree rebuilds to solve ordering issues. Fix the owning lifecycle event or add a bounded, event-driven handoff.
+- Preserve resource count observables and link identity when an ordinary resource configuration is updated. Structural changes such as connection transitions or required category moves may replace the relevant branch.
 
 ## Validation
-- Preserve the behaviors covered by `tests/KubeUI.Avalonia.Tests/Shell/Navigation/`.
-- Add or update navigation tests when changing incremental resource updates, port-forward visibility timing, or resource badge count behavior.
+
+- Preserve and extend the behaviors covered by `tests/KubeUI.Avalonia.Tests/Shell/Navigation/NavigationViewModelTests.cs` and `LimitedAccessNavigationTests.cs`.
+- For navigation changes, add or update a focused Avalonia headless regression covering the exact lifecycle or permission transition, run it before broader validation, and verify both link structure and count behavior where applicable.
+- At minimum, validate connected/disconnected transitions, incremental resource-config updates, CRD updates, Pod port-forward visibility, seeded/unseeded count behavior, and missing-namespace permission handling when those areas change.

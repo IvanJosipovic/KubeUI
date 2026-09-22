@@ -1,15 +1,17 @@
-using Avalonia;
-using Avalonia.Media;
 using AvaloniaEdit.Document;
 using AvaloniaEdit.Rendering;
-using KubeUI.Avalonia.Features.Resources.Yaml.ViewModels;
 
 namespace KubeUI.Avalonia.Features.Resources.Yaml.Behaviors;
 
 internal sealed class YamlDiagnosticRenderer : IBackgroundRenderer, ITextViewConnect
 {
-    private static readonly IPen s_diagnosticPen = new Pen(Brushes.IndianRed, 1);
-    private static readonly IBrush s_diagnosticBackground = new SolidColorBrush(Color.FromArgb(32, 205, 92, 92));
+    private IPen _diagnosticPen;
+    private IBrush _diagnosticBrush;
+
+    public YamlDiagnosticRenderer(IBrush brush)
+    {
+        UpdateBrush(brush);
+    }
 
     private readonly record struct DiagnosticSpan(int Offset, int Length, string Message);
 
@@ -19,6 +21,13 @@ internal sealed class YamlDiagnosticRenderer : IBackgroundRenderer, ITextViewCon
     public KnownLayer Layer => KnownLayer.Caret;
 
     public IReadOnlyList<string> Messages => _spans.Select(x => x.Message).ToArray();
+
+    public void UpdateBrush(IBrush brush)
+    {
+        _diagnosticPen = new Pen(brush, 1);
+        _diagnosticBrush = brush;
+        _textView?.Redraw();
+    }
 
     public void AddToTextView(TextView textView)
     {
@@ -51,15 +60,18 @@ internal sealed class YamlDiagnosticRenderer : IBackgroundRenderer, ITextViewCon
 
             foreach (var rect in BackgroundGeometryBuilder.GetRectsForSegment(textView, segment))
             {
-                drawingContext.FillRectangle(s_diagnosticBackground, rect);
+                using (drawingContext.PushOpacity(0.15))
+                {
+                    drawingContext.FillRectangle(_diagnosticBrush, rect);
+                }
 
                 var y = rect.Bottom - 1;
                 for (var x = rect.Left; x < rect.Right; x += 4)
                 {
                     var peak = Math.Min(x + 2, rect.Right);
                     var nextX = Math.Min(x + 4, rect.Right);
-                    drawingContext.DrawLine(s_diagnosticPen, new Point(x, y), new Point(peak, y - 2));
-                    drawingContext.DrawLine(s_diagnosticPen, new Point(peak, y - 2), new Point(nextX, y));
+                    drawingContext.DrawLine(_diagnosticPen, new Point(x, y), new Point(peak, y - 2));
+                    drawingContext.DrawLine(_diagnosticPen, new Point(peak, y - 2), new Point(nextX, y));
                 }
             }
         }

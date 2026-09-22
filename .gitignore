@@ -404,3 +404,5 @@ packed
 *.lscache
 
 .dotnet
+.testagent
+.netcoredbg-mcp.pid

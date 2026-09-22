@@ -1,8 +1,6 @@
-using System.ComponentModel;
-using Avalonia;
 using Avalonia.Xaml.Interactivity;
 using AvaloniaEdit;
-using KubeUI.Avalonia.Features.Resources.Yaml.ViewModels;
+using KubeUI.Avalonia.Styles;
 
 namespace KubeUI.Avalonia.Features.Resources.Yaml.Behaviors;
 
@@ -11,7 +9,10 @@ public sealed class YamlDiagnosticRenderingBehavior : Behavior<TextEditor>
     private static readonly AttachedProperty<YamlDiagnosticRenderer?> s_rendererProperty =
         AvaloniaProperty.RegisterAttached<YamlDiagnosticRenderingBehavior, TextEditor, YamlDiagnosticRenderer?>("Renderer");
 
-    private readonly YamlDiagnosticRenderer _renderer = new();
+    public static readonly AttachedProperty<IBrush?> DiagnosticBrushProperty =
+        AvaloniaProperty.RegisterAttached<YamlDiagnosticRenderingBehavior, TextEditor, IBrush?>("DiagnosticBrush");
+
+    private YamlDiagnosticRenderer? _renderer;
     private ResourceYamlViewModel? _currentViewModel;
 
     internal static YamlDiagnosticRenderer? GetRenderer(TextEditor editor)
@@ -28,8 +29,13 @@ public sealed class YamlDiagnosticRenderingBehavior : Behavior<TextEditor>
             return;
         }
 
+        _renderer = new YamlDiagnosticRenderer(GetDiagnosticBrush());
         AssociatedObject.SetValue(s_rendererProperty, _renderer);
         AssociatedObject.TextArea.TextView.BackgroundRenderers.Add(_renderer);
+        if (Application.Current != null)
+        {
+            Application.Current.ActualThemeVariantChanged += OnActualThemeVariantChanged;
+        }
         AssociatedObject.DataContextChanged += OnDataContextChanged;
         AssociatedObject.TextChanged += OnTextChanged;
 
@@ -43,14 +49,41 @@ public sealed class YamlDiagnosticRenderingBehavior : Behavior<TextEditor>
         {
             AssociatedObject.DataContextChanged -= OnDataContextChanged;
             AssociatedObject.TextChanged -= OnTextChanged;
-            AssociatedObject.TextArea.TextView.BackgroundRenderers.Remove(_renderer);
+            if (_renderer != null)
+            {
+                AssociatedObject.TextArea.TextView.BackgroundRenderers.Remove(_renderer);
+            }
+
             AssociatedObject.ClearValue(s_rendererProperty);
+        }
+
+        _renderer = null;
+
+        if (Application.Current != null)
+        {
+            Application.Current.ActualThemeVariantChanged -= OnActualThemeVariantChanged;
         }
 
         DetachViewModel(_currentViewModel);
         _currentViewModel = null;
 
         base.OnDetaching();
+    }
+
+    private void OnActualThemeVariantChanged(object? sender, EventArgs e)
+    {
+        if (_renderer != null)
+        {
+            _renderer.UpdateBrush(GetDiagnosticBrush());
+        }
+    }
+
+    private IBrush GetDiagnosticBrush()
+    {
+        var editor = AssociatedObject
+            ?? throw new InvalidOperationException("The YAML diagnostic renderer is not attached to an editor.");
+        return editor.GetValue(DiagnosticBrushProperty)
+            ?? ApplicationBrushResources.GetBrush("SystemControlErrorTextForegroundBrush");
     }
 
     private void OnDataContextChanged(object? sender, EventArgs e)

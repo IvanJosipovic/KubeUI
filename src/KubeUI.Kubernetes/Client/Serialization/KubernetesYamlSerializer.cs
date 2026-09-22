@@ -1,5 +1,3 @@
-using KubeUI.Kubernetes.Serialization;
-
 namespace KubeUI.Kubernetes.Serialization;
 
 internal sealed class KubernetesYamlSerializer : IKubernetesYamlSerializer

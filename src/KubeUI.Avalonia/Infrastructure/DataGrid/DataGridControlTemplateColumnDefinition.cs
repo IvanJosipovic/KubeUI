@@ -3,7 +3,6 @@
 
 #nullable disable
 
-using Avalonia;
 using Avalonia.Controls.Templates;
 
 namespace Avalonia.Controls
@@ -32,7 +31,7 @@ namespace Avalonia.Controls
 
         protected override DataGridColumn CreateColumnCore()
         {
-            return new DataGridTemplateColumn();
+            return new DataGridResourceTemplateColumn();
         }
 
         protected override void ApplyColumnProperties(DataGridColumn column, DataGridColumnDefinitionContext context)
@@ -50,6 +49,7 @@ namespace Avalonia.Controls
 
                 templateColumn.CellTemplate = CellTemplate;
             }
+
         }
 
         protected override bool ApplyColumnPropertyChange(
@@ -82,6 +82,19 @@ namespace Avalonia.Controls
             }
 
             return false;
+        }
+
+        /// <summary>
+        /// Template column that refreshes the data context of reused cell content.
+        /// </summary>
+        private sealed class DataGridResourceTemplateColumn : DataGridTemplateColumn
+        {
+            protected override Control GenerateElement(DataGridCell cell, object dataItem)
+            {
+                var control = base.GenerateElement(cell, dataItem);
+                control.DataContext = dataItem;
+                return control;
+            }
         }
     }
 }

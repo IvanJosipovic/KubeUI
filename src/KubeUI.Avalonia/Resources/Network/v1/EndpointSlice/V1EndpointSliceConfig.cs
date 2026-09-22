@@ -1,6 +1,4 @@
-using Avalonia.Controls;
 using k8s.Models;
-using KubeUI.Avalonia.Resources.Network.v1.EndpointSlice.Views;
 
 namespace KubeUI.Avalonia.Resources.Network.v1.EndpointSlice;
 
@@ -11,7 +9,7 @@ public sealed partial class V1EndpointSliceConfig : ResourceConfigBase<V1Endpoin
     {
     }
     public override bool IsNamespaced => true;
-    public override string Category => CategoryString("ResourceConfig_Category_Network", "Network");
+    public override string Category => Assets.Resources.ResourceConfig_Category_Network!;
     public override int Order => 2;
 
     public override IList<IResourceListColumn> Columns()
@@ -25,4 +23,3 @@ public sealed partial class V1EndpointSliceConfig : ResourceConfigBase<V1Endpoin
 
     public override Control[] Properties(V1EndpointSlice resource) => [new PropertiesView()];
 }
-

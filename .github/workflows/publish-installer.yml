@@ -30,19 +30,19 @@ jobs:
           - rid: win-x64
             fileName: KubeUI.Desktop.exe
             runs-on: windows-latest
-            packParams: ''
+            packParams: '--msi'
             signingParams: --azureTrustedSignFile metadata.json --verbose --signExclude \.dll$
             icon: src/KubeUI.Avalonia/Assets/icon.ico
           - rid: win-arm64
             fileName: KubeUI.Desktop.exe
             runs-on: windows-latest
-            packParams: ''
+            packParams: '--msi'
             signingParams: --azureTrustedSignFile metadata.json --verbose --signExclude \.dll$
             icon: src/KubeUI.Avalonia/Assets/icon.ico
           - rid: linux-x64
             fileName: KubeUI.Desktop
             runs-on: ubuntu-latest
-            packParams: --icon docs/icon-512.png
+            packParams: ''
             icon: docs/icon-512.png
           - rid: linux-arm64
             fileName: KubeUI.Desktop
@@ -62,16 +62,20 @@ jobs:
             signingParams: '--signAppIdentity "Developer ID Application: Ivan Josipovic" --signInstallIdentity "Developer ID Installer: Ivan Josipovic" --notaryProfile "velopack-profile" --keychain $RUNNER_TEMP/app-signing.keychain-db --signEntitlements src/KubeUI.Desktop/entitlements.entitlements'
             icon: src/KubeUI.Avalonia/Assets/icon.icns
     steps:
-      - uses: actions/checkout@v6
-
-      - uses: actions/setup-dotnet@v5
-        with:
-          dotnet-version: '9.x.x'
+      - uses: actions/checkout@v7
 
       - name: Setup .NET Core
-        uses: actions/setup-dotnet@v5
+        uses: actions/setup-dotnet@v6
         with:
           global-json-file: global.json
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v6
+        with:
+            path: ~/.nuget/packages
+            key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj', '**/*.props', 'global.json') }}
+            restore-keys: |
+              ${{ runner.os }}-nuget-
 
       - name: Install Velopack
         shell: pwsh
@@ -88,7 +92,13 @@ jobs:
 
       - name: Publish
         working-directory: src/KubeUI.Desktop
-        run: dotnet publish -c Release -r ${{ matrix.rid }} -o bin/publish -p:Version=${{ inputs.package_version }}
+        run: dotnet publish -c Release -r ${{ matrix.rid }} -o bin/publish -p:Version=${{ inputs.package_version }} --tl:off -clp:ErrorsOnly
+
+      - name: Clean Output
+        shell: pwsh
+        working-directory: src/KubeUI.Desktop/bin/publish
+        run: |
+          Remove-Item -Path *.xml
 
       - name: Replace single file
         if: matrix.runs-on == 'macos-latest'
@@ -166,7 +176,7 @@ jobs:
         run: vpk download github --outputDir "packed" --channel ${{ matrix.rid }} --repoUrl https://github.com/${{ github.repository }} --token ${{ secrets.GITHUB_TOKEN }} --pre
 
       - name: Create Package
-        run: vpk pack --outputDir "packed" --channel ${{ matrix.rid }} --packId "KubeUI" --packVersion "${{ inputs.package_version }}" --packDir "src/KubeUI.Desktop/bin/publish" --packAuthors "Ivan Josipovic" --packTitle "KubeUI" --releaseNotes "CHANGELOG.md" --mainExe "${{ matrix.fileName }}" ${{ matrix.packParams }} ${{ inputs.enable_code_signing && matrix.signingParams || '' }}
+        run: vpk pack --outputDir "packed" --channel ${{ matrix.rid }} --packId "KubeUI" --packVersion "${{ inputs.package_version }}" --packDir "src/KubeUI.Desktop/bin/publish" --packAuthors "Ivan Josipovic" --packTitle "KubeUI" --releaseNotes "CHANGELOG.md" --mainExe "${{ matrix.fileName }}" --icon "${{ matrix.icon }}" ${{ matrix.packParams }} ${{ inputs.enable_code_signing && matrix.signingParams || '' }}
 
       - name: Remove unnecessary assets
         shell: pwsh
