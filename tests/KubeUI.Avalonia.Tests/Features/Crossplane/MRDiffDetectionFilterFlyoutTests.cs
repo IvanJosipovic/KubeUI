@@ -2,7 +2,6 @@ using Avalonia.Controls.DataGridFiltering;
 using Avalonia.Controls;
 using Avalonia.Controls.Templates;
 using KubeUI.Avalonia.Controls.DataGridFilters;
-using KubeUI.Avalonia.Features.Crossplane.MRDiffDetection;
 using KubeUI.Avalonia.Infrastructure.DataGrid;
 using KubeUI.Avalonia.Resources;
 
@@ -32,7 +31,7 @@ public sealed class MRDiffDetectionFilterFlyoutTests
         var filteringModel = new FilteringModel();
         var factory = new DataGridColumnFilterFlyoutFactory(new DataGridColumnFilterService(TimeProvider.System));
 
-        MRDiffDetectionView.AttachFilterFlyouts([column], factory, filteringModel);
+        DataGridFilterFlyoutAttacher.Attach([column], factory, filteringModel);
 
         Assert.NotNull(column.FilterFlyout);
     }

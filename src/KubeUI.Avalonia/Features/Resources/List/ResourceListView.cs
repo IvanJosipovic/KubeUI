@@ -15,6 +15,7 @@ using KubeUI.Avalonia.Controls.DataGridFilters;
 using KubeUI.Avalonia.Features.Resources.Common;
 using KubeUI.Avalonia.Features.Resources.List.Behaviors;
 using KubeUI.Avalonia.Infrastructure;
+using KubeUI.Avalonia.Infrastructure.DataGrid;
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
 using KubeUI.Avalonia.Resources;
 using Ursa.Controls;
@@ -347,24 +348,11 @@ public partial class ResourceListView : ViewBase<IResourceListViewModel>
 
     }
 
-    private static IResourceListColumn? GetResourceListColumn(DataGridColumnDefinition columnDefinition)
-    {
-        return columnDefinition.Tag as IResourceListColumn;
-    }
-
     private void AttachFilterFlyouts(IResourceListViewModel vm)
     {
         _filterFlyoutFactory ??= GetServiceProvider().GetRequiredService<DataGridColumnFilterFlyoutFactory>();
 
-        foreach (var column in vm.ColumnDefinitions)
-        {
-            if (GetResourceListColumn(column) is not IResourceListColumn resourceColumn)
-            {
-                continue;
-            }
-
-            column.FilterFlyout = _filterFlyoutFactory.Create(resourceColumn, column, vm.FilteringModel);
-        }
+        DataGridFilterFlyoutAttacher.Attach(vm.ColumnDefinitions, _filterFlyoutFactory, vm.FilteringModel);
     }
 
     private static IServiceProvider GetServiceProvider()

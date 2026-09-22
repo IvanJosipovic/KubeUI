@@ -10,6 +10,7 @@ using FluentIcons.Common;
 using KubeUI.Avalonia.Controls.DataGridFilters;
 using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
+using KubeUI.Avalonia.Infrastructure.DataGrid;
 using KubeUI.Avalonia.Resources;
 using KubeUI.Kubernetes;
 
@@ -29,21 +30,7 @@ public sealed class MRDiffDetectionView : ViewBase<MRDiffDetectionViewModel>
         }
 
         _filterFlyoutFactory ??= GetServiceProvider().GetRequiredService<DataGridColumnFilterFlyoutFactory>();
-        AttachFilterFlyouts(vm.ColumnDefinitions, _filterFlyoutFactory, vm.FilteringModel);
-    }
-
-    internal static void AttachFilterFlyouts(
-        IEnumerable<DataGridColumnDefinition> columns,
-        DataGridColumnFilterFlyoutFactory factory,
-        IFilteringModel filteringModel)
-    {
-        foreach (var column in columns)
-        {
-            if (column.Tag is IResourceListColumn resourceColumn)
-            {
-                column.FilterFlyout = factory.Create(resourceColumn, column, filteringModel);
-            }
-        }
+        DataGridFilterFlyoutAttacher.Attach(vm.ColumnDefinitions, _filterFlyoutFactory, vm.FilteringModel);
     }
 
     protected override object Build(MRDiffDetectionViewModel vm)
