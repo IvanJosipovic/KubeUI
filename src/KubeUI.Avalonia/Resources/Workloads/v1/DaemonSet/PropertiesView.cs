@@ -1,4 +1,5 @@
 using k8s.Models;
+using KubeUI.Avalonia.Features.Resources.Metrics.Controls;
 using KubeUI.Avalonia.Features.Resources.Properties.Controls;
 
 namespace KubeUI.Avalonia.Resources.Workloads.v1.DaemonSet;
@@ -55,6 +56,7 @@ public sealed class PropertiesView : ViewBase<V1DaemonSet>
                                     .Value(vm.Spec?.RevisionHistoryLimit ?? 0),
                                 new PropertyItem()
                                     .Key(Assets.Resources.Shared_Selector_Labels!)
-                                    .Value(vm.Spec?.Selector?.MatchLabels?.Count ?? 0))));
+                                    .Value(vm.Spec?.Selector?.MatchLabels?.Count ?? 0))),
+                new MetricsControl());
     }
 }

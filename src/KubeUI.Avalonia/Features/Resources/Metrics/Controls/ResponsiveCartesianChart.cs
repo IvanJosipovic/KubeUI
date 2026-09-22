@@ -34,7 +34,7 @@ public sealed class ResponsiveCartesianChart : CartesianChart
             return;
         }
 
-        CoreChart.Update((ChartUpdateParams?)null);
+        CoreChart.Update(null);
         InvalidateMeasure();
         InvalidateArrange();
         InvalidateVisual();

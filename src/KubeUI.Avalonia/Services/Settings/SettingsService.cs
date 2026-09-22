@@ -86,6 +86,16 @@ public class SettingsService : ObservableObject, ISettingsService, IClusterSetti
         return Settings.GetClusterSettings(cluster).Namespaces ?? [];
     }
 
+    public ClusterMetricsSettings GetClusterMetricsSettings(IClusterRuntime cluster)
+    {
+        return Settings.GetClusterSettings(cluster);
+    }
+
+    public void Persist()
+    {
+        SaveSettings();
+    }
+
     public virtual void SaveSettings()
     {
         _persistence.Save(new SettingsPersistenceData

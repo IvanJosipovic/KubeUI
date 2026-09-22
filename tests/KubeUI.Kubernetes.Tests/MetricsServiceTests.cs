@@ -1,13 +1,32 @@
 using k8s;
-using KubernetesCRDModelGen;
+using k8s.Models;
+using System.Net;
+using System.Text;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
+using KubeUI.Testing.Kubernetes.Transport;
 using Shouldly;
 
 namespace KubeUI.Kubernetes.Tests;
 
 public sealed class MetricsServiceTests
 {
+    [Fact]
+    public async Task GetAvailablePrometheusProvidersAsync_returns_registered_providers_in_name_order()
+    {
+        using var service = CreateMetricsService(new TestClusterSettingsStore(new ClusterMetricsSettings()), new FakePrometheusQueryClient());
+
+        var providers = await service.GetAvailablePrometheusProvidersAsync();
+
+        providers.Select(provider => provider.Kind).ShouldBe([
+            PrometheusProviderKind.External,
+            PrometheusProviderKind.Manual,
+            PrometheusProviderKind.OpenShift,
+            PrometheusProviderKind.Operator,
+        ]);
+        providers.ShouldAllBe(provider => !string.IsNullOrWhiteSpace(provider.Name));
+    }
+
     [Fact]
     public async Task InitializeAsync_with_external_prometheus_activates_prometheus_backend()
     {
@@ -19,8 +38,8 @@ public sealed class MetricsServiceTests
             PrometheusDirectUrl = "http://prometheus.example",
         });
 
-        var service = CreateMetricsService(settings, queryClient);
-        var cluster = CreateCluster("prom-cluster", service, settings);
+        using var service = CreateMetricsService(settings, queryClient);
+        await using var cluster = CreateCluster("prom-cluster", service, settings);
 
         await service.InitializeAsync(cluster);
 
@@ -28,6 +47,59 @@ public sealed class MetricsServiceTests
         service.ActiveMetricsBackend.Type.ShouldBe(MetricsServiceType.Prometheus);
         service.ActiveMetricsBackend.PrometheusProviderKind.ShouldBe(PrometheusProviderKind.External);
         queryClient.PrepareCalls.ShouldBe(1);
+    }
+
+    [Fact]
+    public async Task InitializeAsync_with_available_metrics_server_activates_metrics_server_backend()
+    {
+        using var api = CreateMetricsServerApi();
+        var settings = new TestClusterSettingsStore(new ClusterMetricsSettings
+        {
+            MetricsServiceType = MetricsServiceType.KubernetesMetricsServer,
+        });
+        using var service = CreateMetricsService(settings, new FakePrometheusQueryClient());
+        await using var cluster = CreateCluster("metrics-server-cluster", service, settings, CreateFakeClient(api));
+
+        await service.InitializeAsync(cluster);
+
+        service.IsMetricsAvailable.ShouldBeTrue();
+        service.ActiveMetricsBackend.ShouldBe(ActiveMetricsBackend.KubernetesMetricsServer);
+    }
+
+    [Fact]
+    public async Task InitializeAsync_with_unavailable_metrics_server_keeps_metrics_disabled()
+    {
+        using var api = new FakeKubernetesHttpApi();
+        api.SetPermission("pods", "list", false);
+        api.SetPermission("nodes", "list", false);
+        var settings = new TestClusterSettingsStore(new ClusterMetricsSettings
+        {
+            MetricsServiceType = MetricsServiceType.KubernetesMetricsServer,
+        });
+        using var service = CreateMetricsService(settings, new FakePrometheusQueryClient());
+        await using var cluster = CreateCluster("metrics-server-cluster", service, settings, CreateFakeClient(api));
+
+        await service.InitializeAsync(cluster);
+
+        service.IsMetricsAvailable.ShouldBeFalse();
+        service.ActiveMetricsBackend.ShouldBe(ActiveMetricsBackend.None);
+    }
+
+    [Fact]
+    public async Task InitializeAsync_auto_falls_back_to_metrics_server_when_prometheus_is_unavailable()
+    {
+        using var api = CreateMetricsServerApi();
+        var settings = new TestClusterSettingsStore(new ClusterMetricsSettings
+        {
+            MetricsServiceType = MetricsServiceType.Auto,
+        });
+        using var service = CreateMetricsService(settings, new FakePrometheusQueryClient());
+        await using var cluster = CreateCluster("auto-metrics-cluster", service, settings, CreateFakeClient(api));
+
+        await service.InitializeAsync(cluster);
+
+        service.IsMetricsAvailable.ShouldBeTrue();
+        service.ActiveMetricsBackend.ShouldBe(ActiveMetricsBackend.KubernetesMetricsServer);
     }
 
     [Fact]
@@ -43,8 +115,8 @@ public sealed class MetricsServiceTests
             PrometheusDirectUrl = "http://prometheus.example",
         });
 
-        var service = CreateMetricsService(settings, queryClient);
-        var cluster = CreateCluster("prom-cluster", service, settings);
+        using var service = CreateMetricsService(settings, queryClient);
+        await using var cluster = CreateCluster("prom-cluster", service, settings);
         await service.InitializeAsync(cluster);
 
         var result = await service.RequestMetricsAsync(CreateRequest());
@@ -67,8 +139,8 @@ public sealed class MetricsServiceTests
             PrometheusDirectUrl = "http://prometheus.example",
         });
 
-        var service = CreateMetricsService(settings, queryClient);
-        var cluster = CreateCluster("prom-cluster", service, settings);
+        using var service = CreateMetricsService(settings, queryClient);
+        await using var cluster = CreateCluster("prom-cluster", service, settings);
         await service.InitializeAsync(cluster);
         var request = CreateRequest();
 
@@ -93,8 +165,8 @@ public sealed class MetricsServiceTests
             PrometheusDirectUrl = "http://prometheus.example",
         });
 
-        var service = CreateMetricsService(settings, queryClient);
-        var cluster = CreateCluster("prom-cluster", service, settings);
+        using var service = CreateMetricsService(settings, queryClient);
+        await using var cluster = CreateCluster("prom-cluster", service, settings);
         await service.InitializeAsync(cluster);
         var request = CreateRequest();
 
@@ -106,6 +178,56 @@ public sealed class MetricsServiceTests
         second.IsEmpty.ShouldBeTrue();
         callsAfterFirstRequest.ShouldBeGreaterThan(0);
         queryClient.QueryCalls.ShouldBe(callsAfterFirstRequest);
+    }
+
+    [Fact]
+    public async Task RequestMetricsAsync_honors_caller_cancellation()
+    {
+        var queryClient = new FakePrometheusQueryClient { WaitForRelease = true };
+        var settings = new TestClusterSettingsStore(new ClusterMetricsSettings
+        {
+            MetricsServiceType = MetricsServiceType.Prometheus,
+            PrometheusProviderKind = PrometheusProviderKind.External,
+            PrometheusDirectUrl = "http://prometheus.example",
+        });
+
+        using var service = CreateMetricsService(settings, queryClient);
+        await using var cluster = CreateCluster("prom-cluster", service, settings);
+        await service.InitializeAsync(cluster);
+
+        using var cancellation = new CancellationTokenSource();
+        var request = service.RequestMetricsAsync(CreateRequest(), cancellation.Token);
+        await queryClient.QueryStarted.Task.WaitAsync(TestContext.Current.CancellationToken);
+
+        await cancellation.CancelAsync();
+
+        await Should.ThrowAsync<OperationCanceledException>(() => request);
+    }
+
+    [Fact]
+    public async Task StopAsync_cancels_inflight_requests_and_clears_metrics_state()
+    {
+        var queryClient = new FakePrometheusQueryClient { WaitForRelease = true };
+        var settings = new TestClusterSettingsStore(new ClusterMetricsSettings
+        {
+            MetricsServiceType = MetricsServiceType.Prometheus,
+            PrometheusProviderKind = PrometheusProviderKind.External,
+            PrometheusDirectUrl = "http://prometheus.example",
+        });
+
+        using var service = CreateMetricsService(settings, queryClient);
+        await using var cluster = CreateCluster("prom-cluster", service, settings);
+        await service.InitializeAsync(cluster);
+        var request = service.RequestMetricsAsync(CreateRequest());
+        await queryClient.QueryStarted.Task.WaitAsync(TestContext.Current.CancellationToken);
+        var resetCallsBeforeStop = queryClient.ResetCalls;
+
+        await service.StopAsync();
+
+        await Should.ThrowAsync<OperationCanceledException>(() => request);
+        service.IsMetricsAvailable.ShouldBeFalse();
+        service.ActiveMetricsBackend.ShouldBe(ActiveMetricsBackend.None);
+        queryClient.ResetCalls.ShouldBe(resetCallsBeforeStop + 1);
     }
 
     private static MetricsService CreateMetricsService(TestClusterSettingsStore settings, FakePrometheusQueryClient queryClient)
@@ -122,23 +244,35 @@ public sealed class MetricsServiceTests
             queryClient);
     }
 
-    private static Cluster CreateCluster(string name, MetricsService metricsService, IClusterSettingsStore settings)
+    private static Cluster CreateCluster(string name, MetricsService metricsService, IClusterSettingsStore settings, IKubernetes? client = null)
     {
         return new Cluster(
             NullLogger<Cluster>.Instance,
             NullLoggerFactory.Instance,
-            new ModelCache(),
-            new Generator(),
+            new ClusterModelCatalog(new KubernetesModelCatalog()),
             settings,
             new ServiceCollection().BuildServiceProvider(),
+            new ImmediateThreadDispatcher(),
             metricsService)
         {
             Name = name,
-            Client = new k8s.Kubernetes(new KubernetesClientConfiguration
+            Client = client ?? new k8s.Kubernetes(new KubernetesClientConfiguration
             {
                 Host = "http://localhost",
             }),
         };
+    }
+
+    private static k8s.Kubernetes CreateFakeClient(FakeKubernetesHttpApi api)
+    {
+        return new k8s.Kubernetes(
+            new KubernetesClientConfiguration { Host = "http://fake-kubernetes" },
+            new MetricsDiscoveryHandler(api));
+    }
+
+    private static FakeKubernetesHttpApi CreateMetricsServerApi()
+    {
+        return new FakeKubernetesHttpApi();
     }
 
     private static MetricRequest CreateRequest()
@@ -194,10 +328,17 @@ public sealed class MetricsServiceTests
     private sealed class FakePrometheusQueryClient : IPrometheusQueryClient
     {
         private readonly Queue<PrometheusClientQueryRangeResponse> _responses = new();
+        private readonly TaskCompletionSource _release = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
         public int PrepareCalls { get; private set; }
 
         public int QueryCalls { get; private set; }
+
+        public int ResetCalls { get; private set; }
+
+        public TaskCompletionSource QueryStarted { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public bool WaitForRelease { get; init; }
 
         public Exception? ExceptionToThrow { get; set; }
 
@@ -212,7 +353,7 @@ public sealed class MetricsServiceTests
             return Task.CompletedTask;
         }
 
-        public Task<PrometheusClientQueryRangeResponse?> QueryRangeAsync(
+        public async Task<PrometheusClientQueryRangeResponse?> QueryRangeAsync(
             Cluster cluster,
             ResolvedPrometheusEndpoint endpoint,
             string query,
@@ -223,16 +364,24 @@ public sealed class MetricsServiceTests
         {
             QueryCalls++;
 
+            QueryStarted.TrySetResult();
+            if (WaitForRelease)
+            {
+                await _release.Task.WaitAsync(cancellationToken);
+            }
+
             if (ExceptionToThrow != null)
             {
                 throw ExceptionToThrow;
             }
 
-            return Task.FromResult(_responses.Count > 0 ? _responses.Dequeue() : null);
+            return _responses.Count > 0 ? _responses.Dequeue() : null;
         }
 
         public Task ResetAsync()
         {
+            ResetCalls++;
+            _release.TrySetResult();
             return Task.CompletedTask;
         }
     }
@@ -257,6 +406,26 @@ public sealed class MetricsServiceTests
 
         public void Persist()
         {
+        }
+    }
+
+    private sealed class MetricsDiscoveryHandler(HttpMessageHandler innerHandler) : DelegatingHandler(innerHandler)
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            if (request.RequestUri?.AbsolutePath.TrimEnd('/') == "/apis")
+            {
+                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    RequestMessage = request,
+                    Content = new StringContent(
+                        """{"apiVersion":"v1","kind":"APIGroupList","groups":[{"name":"metrics.k8s.io","versions":[{"groupVersion":"metrics.k8s.io/v1beta1","version":"v1beta1"}],"preferredVersion":{"groupVersion":"metrics.k8s.io/v1beta1","version":"v1beta1"}}]}""",
+                        Encoding.UTF8,
+                        "application/json"),
+                });
+            }
+
+            return base.SendAsync(request, cancellationToken);
         }
     }
 }

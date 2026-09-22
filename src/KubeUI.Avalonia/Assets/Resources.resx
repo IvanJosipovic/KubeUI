@@ -2761,4 +2761,74 @@
     <value>Next Match</value>
     <comment/>
   </data>
+  <data name="MetricsControl_Loading" xml:space="preserve">
+    <value>Loading metrics...</value>
+    <comment/>
+  </data>
+  <data name="MetricsControl_NoMetrics" xml:space="preserve">
+    <value>No metrics are available for this resource.</value>
+    <comment/>
+  </data>
+  <data name="MetricsControl_Unavailable" xml:space="preserve">
+    <value>Metrics are not available for this cluster.</value>
+    <comment/>
+  </data>
+  <data name="MetricsControl_LoadFailed" xml:space="preserve">
+    <value>Unable to load metrics.</value>
+    <comment/>
+  </data>
+  <data name="MetricsControl_MetricsServerUnavailable" xml:space="preserve">
+    <value>Current metrics are unavailable while the cluster is using Kubernetes Metrics Server.</value>
+    <comment/>
+  </data>
+  <data name="MetricsControl_ContainerMetricsServerUnavailable" xml:space="preserve">
+    <value>Current container metrics are unavailable while the cluster is using Kubernetes Metrics Server.</value>
+    <comment/>
+  </data>
+  <data name="MetricsControl_ContainerLoadFailed" xml:space="preserve">
+    <value>Unable to load container metrics.</value>
+    <comment/>
+  </data>
+  <data name="Metrics_CPU" xml:space="preserve"><value>CPU</value><comment/></data>
+  <data name="Metrics_Memory" xml:space="preserve"><value>Memory</value><comment/></data>
+  <data name="Metrics_Network" xml:space="preserve"><value>Network</value><comment/></data>
+  <data name="Metrics_Filesystem" xml:space="preserve"><value>Filesystem</value><comment/></data>
+  <data name="Metrics_Usage" xml:space="preserve"><value>Usage</value><comment/></data>
+  <data name="Metrics_Requests" xml:space="preserve"><value>Requests</value><comment/></data>
+  <data name="Metrics_Limits" xml:space="preserve"><value>Limits</value><comment/></data>
+  <data name="Metrics_Receive" xml:space="preserve"><value>Receive</value><comment/></data>
+  <data name="Metrics_Transmit" xml:space="preserve"><value>Transmit</value><comment/></data>
+  <data name="Metrics_Reads" xml:space="preserve"><value>Reads</value><comment/></data>
+  <data name="Metrics_Writes" xml:space="preserve"><value>Writes</value><comment/></data>
+  <data name="Metrics_Capacity" xml:space="preserve"><value>Capacity</value><comment/></data>
+  <data name="Metrics_Allocatable" xml:space="preserve"><value>Allocatable</value><comment/></data>
+  <data name="Metrics_Size" xml:space="preserve"><value>Size</value><comment/></data>
+  <data name="Metrics_Storage" xml:space="preserve"><value>Storage</value><comment/></data>
+  <data name="Metrics_PvcStorage" xml:space="preserve"><value>PVC Storage</value><comment/></data>
+  <data name="Metrics_BytesSent" xml:space="preserve"><value>Bytes Sent</value><comment/></data>
+  <data name="Metrics_Success" xml:space="preserve"><value>Success</value><comment/></data>
+  <data name="Metrics_Failure" xml:space="preserve"><value>Failure</value><comment/></data>
+  <data name="Metrics_Latency" xml:space="preserve"><value>Latency</value><comment/></data>
+  <data name="Metrics_Request" xml:space="preserve"><value>Request</value><comment/></data>
+  <data name="Metrics_Response" xml:space="preserve"><value>Response</value><comment/></data>
+  <data name="Metrics_NoPrometheusPod" xml:space="preserve"><value>No Prometheus metrics are available for this pod.</value><comment/></data>
+  <data name="Metrics_NoPrometheusNode" xml:space="preserve"><value>No Prometheus metrics are available for this node.</value><comment/></data>
+  <data name="Metrics_NoPrometheusNamespace" xml:space="preserve"><value>No Prometheus metrics are available for this namespace.</value><comment/></data>
+  <data name="Metrics_NoPrometheusPvc" xml:space="preserve"><value>No Prometheus metrics are available for this persistent volume claim.</value><comment/></data>
+  <data name="Metrics_NoPrometheusIngress" xml:space="preserve"><value>No Prometheus ingress metrics are available for this ingress.</value><comment/></data>
+  <data name="Metrics_NoPodsForWorkload" xml:space="preserve"><value>No pods were found for this {0}, so no metrics can be shown.</value><comment/></data>
+  <data name="Metrics_NoPrometheusWorkload" xml:space="preserve"><value>No Prometheus metrics are available for this {0}.</value><comment/></data>
+  <data name="Metrics_TimeRange_1Hour" xml:space="preserve"><value>1 hour</value><comment/></data>
+  <data name="Metrics_TimeRange_2Hours" xml:space="preserve"><value>2 hours</value><comment/></data>
+  <data name="Metrics_TimeRange_4Hours" xml:space="preserve"><value>4 hours</value><comment/></data>
+  <data name="Metrics_TimeRange_24Hours" xml:space="preserve"><value>24 hours</value><comment/></data>
+  <data name="Metrics_TimeRange_48Hours" xml:space="preserve"><value>48 hours</value><comment/></data>
+  <data name="Metrics_TimeRange_1Week" xml:space="preserve"><value>1 week</value><comment/></data>
+  <data name="Metrics_TimeRange_1Month" xml:space="preserve"><value>1 month</value><comment/></data>
+  <data name="Metrics_TimeRange_2Months" xml:space="preserve"><value>2 months</value><comment/></data>
+  <data name="Metrics_Deployment" xml:space="preserve"><value>Deployment</value><comment/></data>
+  <data name="Metrics_StatefulSet" xml:space="preserve"><value>StatefulSet</value><comment/></data>
+  <data name="Metrics_DaemonSet" xml:space="preserve"><value>DaemonSet</value><comment/></data>
+  <data name="Metrics_ReplicaSet" xml:space="preserve"><value>ReplicaSet</value><comment/></data>
+  <data name="Metrics_Job" xml:space="preserve"><value>Job</value><comment/></data>
 </root>

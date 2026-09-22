@@ -1,4 +1,5 @@
 using k8s.Models;
+using KubeUI.Avalonia.Features.Resources.Metrics.Controls;
 using KubeUI.Avalonia.Features.Resources.Properties.Controls;
 
 namespace KubeUI.Avalonia.Resources.Workloads.v1.StatefulSet;
@@ -61,6 +62,7 @@ public sealed class PropertiesView : ViewBase<V1StatefulSet>
                                     .Value(vm.Spec?.RevisionHistoryLimit ?? 0),
                                 new PropertyItem()
                                     .Key(Assets.Resources.Shared_Min_Ready_Seconds!)
-                                    .Value(vm.Spec?.MinReadySeconds ?? 0))));
+                                    .Value(vm.Spec?.MinReadySeconds ?? 0))),
+                new MetricsControl());
     }
 }

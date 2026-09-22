@@ -5,8 +5,8 @@ using FluentIcons.Common;
 using Humanizer;
 using k8s;
 using k8s.Models;
-using KubeUI.Avalonia.Features.Clusters.Overview.ViewModels;
-using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
+using KubeUI.Avalonia.Features.Clusters.Workspace;
+using KubeUI.Avalonia.Features.Resources.Metrics;
 using KubeUI.Avalonia.Features.Resources.Properties.Controls;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Kubernetes;
@@ -20,25 +20,26 @@ internal static class MetricsControlPrometheusBackend
     private static readonly TimeSpan s_prometheusPanelTimeout = TimeSpan.FromSeconds(15);
 
     public static async Task<(MetricTabSnapshot? Snapshot, bool HadRequestFailures)> LoadPrometheusTabSnapshotAsync(
-        ClusterWorkspaceViewModel cluster,
+        ClusterWorkspace cluster,
         MetricTabDefinition tabDefinition,
         MetricTimeRangeOption? selectedTimeRange,
-        ILogger logger)
+        ILogger logger,
+        CancellationToken cancellationToken = default)
     {
-        Task<(MetricPanelSnapshot? Snapshot, bool HadFailure)>[] panelTasks = new Task<(MetricPanelSnapshot? Snapshot, bool HadFailure)>[tabDefinition.Panels.Count];
+        var panelTasks = new Task<(MetricPanelSnapshot? Snapshot, bool HadFailure)>[tabDefinition.Panels.Count];
 
-        for (int i = 0; i < tabDefinition.Panels.Count; i++)
+        for (var i = 0; i < tabDefinition.Panels.Count; i++)
         {
-            panelTasks[i] = LoadPrometheusPanelSnapshotAsync(cluster, tabDefinition.Title, tabDefinition.Panels[i], selectedTimeRange, logger);
+            panelTasks[i] = LoadPrometheusPanelSnapshotAsync(cluster, tabDefinition.Title, tabDefinition.Panels[i], selectedTimeRange, logger, cancellationToken);
         }
 
-        (MetricPanelSnapshot? Snapshot, bool HadFailure)[] panelResults = await Task.WhenAll(panelTasks).ConfigureAwait(false);
-        List<MetricPanelSnapshot> panels = new(panelResults.Length);
-        bool hadRequestFailures = false;
+        var panelResults = await Task.WhenAll(panelTasks).ConfigureAwait(false);
+        var panels = new List<MetricPanelSnapshot>(panelResults.Length);
+        var hadRequestFailures = false;
 
-        for (int i = 0; i < panelResults.Length; i++)
+        for (var i = 0; i < panelResults.Length; i++)
         {
-            (MetricPanelSnapshot? Snapshot, bool HadFailure) result = panelResults[i];
+            var result = panelResults[i];
             hadRequestFailures |= result.HadFailure;
 
             if (result.Snapshot != null)
@@ -51,11 +52,12 @@ internal static class MetricsControlPrometheusBackend
     }
 
     public static async Task<(MetricPanelSnapshot? Snapshot, bool HadFailure)> LoadPrometheusPanelSnapshotAsync(
-        ClusterWorkspaceViewModel cluster,
+        ClusterWorkspace cluster,
         string tabTitle,
         MetricPanelDefinition panel,
         MetricTimeRangeOption? selectedTimeRange,
-        ILogger logger)
+        ILogger logger,
+        CancellationToken cancellationToken)
     {
         try
         {
@@ -63,50 +65,57 @@ internal static class MetricsControlPrometheusBackend
             timeoutCts.CancelAfter(s_prometheusPanelTimeout);
 
             MetricRequest request = ApplySelectedTimeRange(panel.Request, selectedTimeRange);
-            MetricResultSet result = await cluster.RequestMetricsAsync(request, timeoutCts.Token).ConfigureAwait(false);
+            using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(timeoutCts.Token, cancellationToken);
+            var result = await cluster.Runtime.RequestMetricsAsync(request, linkedCts.Token).ConfigureAwait(false);
             IReadOnlyList<MetricSeriesSnapshot> series = CreateSeries(panel, result);
             if (series.Count == 0)
             {
-                logger.LogDebug("Prometheus metrics panel {PanelTitle} for tab {TabTitle} returned no series for cluster {ClusterName}.", panel.Title, tabTitle, cluster.Name);
+                logger.LogDebug("Prometheus metrics panel {PanelTitle} for tab {TabTitle} returned no series for cluster {ClusterName}.", panel.Title, tabTitle, cluster.Runtime.Name);
                 return (null, false);
             }
 
             return (new MetricPanelSnapshot(panel.Title, series), false);
         }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
         catch (OperationCanceledException ex)
         {
-            logger.LogWarning(ex, "Prometheus metrics panel {PanelTitle} for tab {TabTitle} timed out after {Timeout} on cluster {ClusterName}.", panel.Title, tabTitle, s_prometheusPanelTimeout, cluster.Name);
+            logger.LogWarning(ex, "Prometheus metrics panel {PanelTitle} for tab {TabTitle} timed out after {Timeout} on cluster {ClusterName}.", panel.Title, tabTitle, s_prometheusPanelTimeout, cluster.Runtime.Name);
             return (null, true);
         }
         catch (Exception ex)
         {
-            logger.LogWarning(ex, "Prometheus metrics panel {PanelTitle} for tab {TabTitle} failed on cluster {ClusterName}.", panel.Title, tabTitle, cluster.Name);
+            logger.LogWarning(ex, "Prometheus metrics panel {PanelTitle} for tab {TabTitle} failed on cluster {ClusterName}.", panel.Title, tabTitle, cluster.Runtime.Name);
             return (null, true);
         }
     }
 
     public static async Task<(MetricTabSnapshot? Snapshot, bool HadRequestFailures)> LoadPodContainerPrometheusTabSnapshotAsync(
-        ClusterWorkspaceViewModel cluster,
+        ClusterWorkspace cluster,
         MetricPanelDefinition tabDefinition,
         V1Pod? pod,
         V1Container? container,
         MetricTimeRangeOption? selectedTimeRange,
-        ILogger logger)
+        ILogger logger,
+        CancellationToken cancellationToken = default)
     {
-        (MetricPanelSnapshot? Snapshot, bool HadFailure) panelResult = await LoadPodContainerPrometheusPanelSnapshotAsync(cluster, tabDefinition.Title, tabDefinition, pod, container, selectedTimeRange, logger).ConfigureAwait(false);
+        (MetricPanelSnapshot? Snapshot, bool HadFailure) panelResult = await LoadPodContainerPrometheusPanelSnapshotAsync(cluster, tabDefinition.Title, tabDefinition, pod, container, selectedTimeRange, logger, cancellationToken).ConfigureAwait(false);
         return (panelResult.Snapshot == null
             ? null
             : new MetricTabSnapshot(tabDefinition.Title, GetPodContainerTabIcon(tabDefinition.Title), [panelResult.Snapshot]), panelResult.HadFailure);
     }
 
     public static async Task<(MetricPanelSnapshot? Snapshot, bool HadFailure)> LoadPodContainerPrometheusPanelSnapshotAsync(
-        ClusterWorkspaceViewModel cluster,
+        ClusterWorkspace cluster,
         string tabTitle,
         MetricPanelDefinition panel,
         V1Pod? pod,
         V1Container? container,
         MetricTimeRangeOption? selectedTimeRange,
-        ILogger logger)
+        ILogger logger,
+        CancellationToken cancellationToken)
     {
         try
         {
@@ -114,24 +123,29 @@ internal static class MetricsControlPrometheusBackend
             timeoutCts.CancelAfter(s_prometheusPanelTimeout);
 
             MetricRequest request = ApplySelectedTimeRange(panel.Request, selectedTimeRange);
-            MetricResultSet result = await cluster.RequestMetricsAsync(request, timeoutCts.Token).ConfigureAwait(false);
+            using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(timeoutCts.Token, cancellationToken);
+            var result = await cluster.Runtime.RequestMetricsAsync(request, linkedCts.Token).ConfigureAwait(false);
             IReadOnlyList<MetricSeriesSnapshot> series = CreateSeries(panel, result);
             if (series.Count == 0)
             {
-                logger.LogDebug("Prometheus metrics panel {PanelTitle} for tab {TabTitle} returned no series for container {ContainerName} in pod {PodName} on cluster {ClusterName}.", panel.Title, tabTitle, container?.Name, pod?.Name(), cluster.Name);
+                logger.LogDebug("Prometheus metrics panel {PanelTitle} for tab {TabTitle} returned no series for container {ContainerName} in pod {PodName} on cluster {ClusterName}.", panel.Title, tabTitle, container?.Name, pod?.Name(), cluster.Runtime.Name);
                 return (null, false);
             }
 
             return (new MetricPanelSnapshot(panel.Title, series), false);
         }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
         catch (OperationCanceledException ex)
         {
-            logger.LogWarning(ex, "Prometheus metrics panel {PanelTitle} for tab {TabTitle} timed out after {Timeout} for container {ContainerName} in pod {PodName} on cluster {ClusterName}.", panel.Title, tabTitle, s_prometheusPanelTimeout, container?.Name, pod?.Name(), cluster.Name);
+            logger.LogWarning(ex, "Prometheus metrics panel {PanelTitle} for tab {TabTitle} timed out after {Timeout} for container {ContainerName} in pod {PodName} on cluster {ClusterName}.", panel.Title, tabTitle, s_prometheusPanelTimeout, container?.Name, pod?.Name(), cluster.Runtime.Name);
             return (null, true);
         }
         catch (Exception ex)
         {
-            logger.LogWarning(ex, "Prometheus metrics panel {PanelTitle} for tab {TabTitle} failed for container {ContainerName} in pod {PodName} on cluster {ClusterName}.", panel.Title, tabTitle, container?.Name, pod?.Name(), cluster.Name);
+            logger.LogWarning(ex, "Prometheus metrics panel {PanelTitle} for tab {TabTitle} failed for container {ContainerName} in pod {PodName} on cluster {ClusterName}.", panel.Title, tabTitle, container?.Name, pod?.Name(), cluster.Runtime.Name);
             return (null, true);
         }
     }
@@ -140,9 +154,9 @@ internal static class MetricsControlPrometheusBackend
     {
         return title switch
         {
-            "CPU" => Icon.TopSpeed,
-            "Memory" => Icon.Ram,
-            "Filesystem" => Icon.HardDrive,
+            var value when value == Assets.Resources.Metrics_CPU => Icon.TopSpeed,
+            var value when value == Assets.Resources.Metrics_Memory => Icon.Ram,
+            var value when value == Assets.Resources.Metrics_Filesystem => Icon.HardDrive,
             _ => Icon.TopSpeed,
         };
     }
@@ -159,9 +173,9 @@ internal static class MetricsControlPrometheusBackend
 
         return
         [
-            CreatePanel("CPU", [("cpuUsage", "Usage"), ("cpuRequests", "Requests"), ("cpuLimits", "Limits")]),
-            CreatePanel("Memory", [("memoryUsage", "Usage"), ("memoryRequests", "Requests"), ("memoryLimits", "Limits")]),
-            CreatePanel("Filesystem", [("fsUsage", "Usage"), ("fsReads", "Reads"), ("fsWrites", "Writes")]),
+            CreatePanel(Assets.Resources.Metrics_CPU!, [("cpuUsage", Assets.Resources.Metrics_Usage!), ("cpuRequests", Assets.Resources.Metrics_Requests!), ("cpuLimits", Assets.Resources.Metrics_Limits!)]),
+            CreatePanel(Assets.Resources.Metrics_Memory!, [("memoryUsage", Assets.Resources.Metrics_Usage!), ("memoryRequests", Assets.Resources.Metrics_Requests!), ("memoryLimits", Assets.Resources.Metrics_Limits!)]),
+            CreatePanel(Assets.Resources.Metrics_Filesystem!, [("fsUsage", Assets.Resources.Metrics_Usage!), ("fsReads", Assets.Resources.Metrics_Reads!), ("fsWrites", Assets.Resources.Metrics_Writes!)]),
         ];
 
         MetricPanelDefinition CreatePanel(string title, IReadOnlyList<(string QueryName, string Label)> queries)
@@ -188,7 +202,7 @@ internal static class MetricsControlPrometheusBackend
 
     public static MetricRequest ApplySelectedTimeRange(MetricRequest request, MetricTimeRangeOption? selectedTimeRange)
     {
-        int selectedRangeSeconds = selectedTimeRange?.RangeSeconds ?? request.RangeSeconds.GetValueOrDefault();
+        var selectedRangeSeconds = selectedTimeRange?.RangeSeconds ?? request.RangeSeconds.GetValueOrDefault();
         if (request.RangeSeconds == selectedRangeSeconds)
         {
             return request;
@@ -213,9 +227,9 @@ internal static class MetricsControlPrometheusBackend
             return [];
         }
 
-        List<MetricSeriesSnapshot> series = [];
+        var series = new List<MetricSeriesSnapshot>();
 
-        foreach (MetricQueryDefinition query in panel.Request.Queries)
+        foreach (var query in panel.Request.Queries)
         {
             if (!result.Metrics.TryGetValue(query.Name, out var metricSeries))
             {
@@ -224,7 +238,7 @@ internal static class MetricsControlPrometheusBackend
 
             foreach (var item in metricSeries.Where(panel.Filter))
             {
-                string legend = panel.LegendLabels.TryGetValue(query.Name, out string? label)
+                var legend = panel.LegendLabels.TryGetValue(query.Name, out var label)
                     ? label
                     : query.Name;
 
@@ -248,18 +262,18 @@ internal static class MetricsControlMetricsServerBackend
     private static readonly TimeSpan s_metricsServerSampleInterval = TimeSpan.FromSeconds(30);
 
     public static (MetricsServerHistoryState? History, IReadOnlyList<MetricTabSnapshot> Tabs) CapturePodContainerMetricsServerCharts(
-        ClusterWorkspaceViewModel cluster,
+        ClusterWorkspace cluster,
         V1Pod pod,
         string containerName,
         MetricsServerHistoryState? history)
     {
-        string resourceKey = GetPodContainerResourceKey(pod, containerName);
+        var resourceKey = GetPodContainerResourceKey(pod, containerName);
         if (history == null || !string.Equals(history.ResourceKey, resourceKey, StringComparison.Ordinal))
         {
             history = new MetricsServerHistoryState(resourceKey);
         }
 
-        var metric = cluster.PodMetrics.FirstOrDefault(x =>
+        var metric = cluster.Runtime.PodMetrics.FirstOrDefault(x =>
             string.Equals(x.Name(), pod.Name(), StringComparison.Ordinal)
             && string.Equals(x.Namespace(), pod.Namespace(), StringComparison.Ordinal));
         var containerMetric = metric?.Containers?.FirstOrDefault(x => string.Equals(x.Name, containerName, StringComparison.Ordinal));
@@ -269,17 +283,17 @@ internal static class MetricsControlMetricsServerBackend
             return (history, CreateMetricsServerTabs(history));
         }
 
-        DateTimeOffset timestamp = NormalizeMetricsServerTimestamp(DateTimeOffset.UtcNow);
-        history.Upsert(timestamp, new MetricsServerSample(containerMetric.Usage["cpu"].ToDecimal(), (double)containerMetric.Usage["memory"].ToInt64()));
+        var timestamp = NormalizeMetricsServerTimestamp(DateTimeOffset.UtcNow);
+        history.Upsert(timestamp, new MetricsServerSample(containerMetric.Usage["cpu"].ToDecimal(), containerMetric.Usage["memory"].ToInt64()));
         return (history, CreateMetricsServerTabs(history));
     }
 
     public static (MetricsServerHistoryState? History, IReadOnlyList<MetricTabSnapshot> Tabs) TryCaptureMetricsServerCharts(
-        ClusterWorkspaceViewModel cluster,
+        ClusterWorkspace cluster,
         IKubernetesObject<V1ObjectMeta> resource,
         MetricsServerHistoryState? history)
     {
-        string? resourceKey = GetMetricsServerResourceKey(resource);
+        var resourceKey = GetMetricsServerResourceKey(resource);
         if (resourceKey == null)
         {
             return (null, []);
@@ -317,9 +331,9 @@ internal static class MetricsControlMetricsServerBackend
         };
     }
 
-    public static MetricsServerSample? TryCreatePodMetricsServerSample(ClusterWorkspaceViewModel cluster, V1Pod pod)
+    public static MetricsServerSample? TryCreatePodMetricsServerSample(ClusterWorkspace cluster, V1Pod pod)
     {
-        var metric = cluster.PodMetrics.FirstOrDefault(x =>
+        var metric = cluster.Runtime.PodMetrics.FirstOrDefault(x =>
             string.Equals(x.Name(), pod.Name(), StringComparison.Ordinal)
             && string.Equals(x.Namespace(), pod.Namespace(), StringComparison.Ordinal));
 
@@ -328,27 +342,27 @@ internal static class MetricsControlMetricsServerBackend
             return null;
         }
 
-        decimal cpu = metric.Containers.Sum(static x => x.Usage["cpu"].ToDecimal());
-        double memory = metric.Containers.Sum(static x => (double)x.Usage["memory"].ToInt64());
+        var cpu = metric.Containers.Sum(static x => x.Usage["cpu"].ToDecimal());
+        var memory = metric.Containers.Sum(static x => x.Usage["memory"].ToInt64());
         return new MetricsServerSample(cpu, memory);
     }
 
-    public static MetricsServerSample? TryCreateNodeMetricsServerSample(ClusterWorkspaceViewModel cluster, V1Node node)
+    public static MetricsServerSample? TryCreateNodeMetricsServerSample(ClusterWorkspace cluster, V1Node node)
     {
-        var metric = cluster.NodeMetrics.FirstOrDefault(x => string.Equals(x.Name(), node.Name(), StringComparison.Ordinal));
+        var metric = cluster.Runtime.NodeMetrics.FirstOrDefault(x => string.Equals(x.Name(), node.Name(), StringComparison.Ordinal));
         if (metric == null)
         {
             return null;
         }
 
-        decimal cpu = metric.Usage["cpu"].ToDecimal();
-        double memory = (double)metric.Usage["memory"].ToInt64();
+        var cpu = metric.Usage["cpu"].ToDecimal();
+        var memory = (double)metric.Usage["memory"].ToInt64();
         return new MetricsServerSample(cpu, memory);
     }
 
     public static DateTimeOffset NormalizeMetricsServerTimestamp(DateTimeOffset timestamp)
     {
-        long seconds = (long)(timestamp.ToUnixTimeSeconds() / s_metricsServerSampleInterval.TotalSeconds * s_metricsServerSampleInterval.TotalSeconds);
+        var seconds = (long)(timestamp.ToUnixTimeSeconds() / s_metricsServerSampleInterval.TotalSeconds * s_metricsServerSampleInterval.TotalSeconds);
         return DateTimeOffset.FromUnixTimeSeconds(seconds);
     }
 
@@ -364,21 +378,21 @@ internal static class MetricsControlMetricsServerBackend
 
         return
         [
-            new MetricTabSnapshot("CPU", Icon.TopSpeed,
+            new MetricTabSnapshot(Assets.Resources.Metrics_CPU!, Icon.TopSpeed,
             [
-                new MetricPanelSnapshot("CPU",
+                new MetricPanelSnapshot(Assets.Resources.Metrics_CPU!,
                 [
                     new MetricSeriesSnapshot(
-                        "Usage",
+                        Assets.Resources.Metrics_Usage!,
                         cpuPoints),
                 ]),
             ]),
-            new MetricTabSnapshot("Memory", Icon.Ram,
+            new MetricTabSnapshot(Assets.Resources.Metrics_Memory!, Icon.Ram,
             [
-                new MetricPanelSnapshot("Memory",
+                new MetricPanelSnapshot(Assets.Resources.Metrics_Memory!,
                 [
                     new MetricSeriesSnapshot(
-                        "Usage",
+                        Assets.Resources.Metrics_Usage!,
                         memoryPoints),
                 ]),
             ]),
@@ -391,8 +405,8 @@ internal static class MetricsControlMetricsServerBackend
     {
         if (samples.Count == 1)
         {
-            MetricsServerSamplePoint sample = samples[0];
-            double value = selector(sample);
+            var sample = samples[0];
+            var value = selector(sample);
             return
             [
                 new DateTimePoint(sample.Timestamp.Subtract(s_metricsServerSampleInterval).LocalDateTime, value),

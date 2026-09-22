@@ -10,6 +10,10 @@ public sealed class PodMetricCPUCellView : PodMetricCellBase
     {
     }
 
+    protected override string PrometheusQueryName => "cpuUsage";
+
     protected override string FormatMetric(PodMetrics metric)
         => $"{metric.Containers.Sum(container => container.Usage["cpu"].ToDecimal()):F3}c";
+
+    protected override string FormatPrometheusMetric(double value) => $"{value:F3}c";
 }

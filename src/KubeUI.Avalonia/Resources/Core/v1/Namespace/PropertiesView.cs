@@ -1,4 +1,5 @@
 using k8s.Models;
+using KubeUI.Avalonia.Features.Resources.Metrics.Controls;
 using KubeUI.Avalonia.Features.Resources.Properties.Controls;
 
 namespace KubeUI.Avalonia.Resources.Core.v1.Namespace;
@@ -19,6 +20,7 @@ public sealed class PropertiesView : ViewBase<V1Namespace>
                     .Value(vm.Spec?.Finalizers?.Count ?? 0),
                 new PropertyItem()
                     .Key(Assets.Resources.Shared_Conditions!)
-                    .Value(vm.Status?.Conditions?.Count ?? 0));
+                    .Value(vm.Status?.Conditions?.Count ?? 0),
+                new MetricsControl());
     }
 }

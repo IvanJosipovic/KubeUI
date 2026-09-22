@@ -11,6 +11,8 @@ public sealed class PodMetricMemoryCellView : PodMetricCellBase
     {
     }
 
+    protected override string PrometheusQueryName => "memoryUsage";
+
     protected override string FormatMetric(PodMetrics metric)
     {
         try
@@ -23,4 +25,6 @@ public sealed class PodMetricMemoryCellView : PodMetricCellBase
             return string.Empty;
         }
     }
+
+    protected override string FormatPrometheusMetric(double value) => ((long)value).Bytes().Humanize();
 }

@@ -1,6 +1,5 @@
 using System.Text.Json;
 using k8s;
-using KubernetesCRDModelGen;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -15,7 +14,9 @@ public sealed class PrometheusQueryClientTests
     {
         var logger = new TestLogger<PrometheusQueryClient>();
         var client = new PrometheusQueryClient(logger);
-        var cluster = CreateCluster("microk8s");
+        var fixture = CreateCluster("microk8s");
+        await using var cluster = fixture.Cluster;
+        using var metricsService = fixture.Service;
         var endpoint = new ResolvedPrometheusEndpoint(
             PrometheusProviderKind.Operator,
             "Prometheus Operator",
@@ -40,7 +41,9 @@ public sealed class PrometheusQueryClientTests
     {
         var logger = new TestLogger<PrometheusQueryClient>();
         var client = new PrometheusQueryClient(logger);
-        var cluster = CreateCluster("microk8s");
+        var fixture = CreateCluster("microk8s");
+        await using var cluster = fixture.Cluster;
+        using var metricsService = fixture.Service;
         var firstEndpoint = new ResolvedPrometheusEndpoint(
             PrometheusProviderKind.Operator,
             "Prometheus Operator",
@@ -90,25 +93,26 @@ public sealed class PrometheusQueryClientTests
         value.Value.ShouldBe(1.5d);
     }
 
-    private static Cluster CreateCluster(string name)
+    private static (Cluster Cluster, MetricsService Service) CreateCluster(string name)
     {
-        return new Cluster(
+        var metricsService = new MetricsService(
+            NullLogger<MetricsService>.Instance,
+            new TestClusterSettingsStore(),
+            [
+                new OperatorPrometheusProvider(),
+                new OpenShiftPrometheusProvider(),
+                new ManualPrometheusProvider(),
+                new ExternalPrometheusProvider(),
+            ],
+            new NoopPrometheusQueryClient());
+        var cluster = new Cluster(
             NullLogger<Cluster>.Instance,
             NullLoggerFactory.Instance,
-            new ModelCache(),
-            new Generator(),
+            new ClusterModelCatalog(new KubernetesModelCatalog()),
             new TestClusterSettingsStore(),
             new ServiceCollection().BuildServiceProvider(),
-            new MetricsService(
-                NullLogger<MetricsService>.Instance,
-                new TestClusterSettingsStore(),
-                [
-                    new OperatorPrometheusProvider(),
-                    new OpenShiftPrometheusProvider(),
-                    new ManualPrometheusProvider(),
-                    new ExternalPrometheusProvider(),
-                ],
-                new NoopPrometheusQueryClient()))
+            new ImmediateThreadDispatcher(),
+            metricsService)
         {
             Name = name,
             Client = new k8s.Kubernetes(new KubernetesClientConfiguration
@@ -116,6 +120,7 @@ public sealed class PrometheusQueryClientTests
                 Host = "http://localhost",
             }),
         };
+        return (cluster, metricsService);
     }
 
     private sealed class TestLogger<T> : ILogger<T>

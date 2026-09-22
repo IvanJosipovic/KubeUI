@@ -1,4 +1,5 @@
 using k8s.Models;
+using KubeUI.Avalonia.Features.Resources.Metrics.Controls;
 using KubeUI.Avalonia.Features.Resources.Properties.Controls;
 
 namespace KubeUI.Avalonia.Resources.Workloads.v1.Deployment;
@@ -43,6 +44,7 @@ public sealed class PropertiesView : ViewBase<V1Deployment>
                                     .Value(vm.Spec?.ProgressDeadlineSeconds ?? 0),
                                 new PropertyItem()
                                     .Key(Assets.Resources.Shared_Revision_History_Limit!)
-                                    .Value(vm.Spec?.RevisionHistoryLimit ?? 0))));
+                                    .Value(vm.Spec?.RevisionHistoryLimit ?? 0))),
+                new MetricsControl());
     }
 }

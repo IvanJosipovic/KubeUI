@@ -5,7 +5,7 @@ using Polly;
 
 namespace KubeUI.Kubernetes;
 
-public sealed partial class MetricsService : ObservableObject, IMetricsService
+public sealed partial class MetricsService : ObservableObject, IMetricsService, IDisposable
 {
     private static readonly TimeSpan s_prometheusRetryBaseDelay = TimeSpan.FromSeconds(1);
     private static readonly TimeSpan s_prometheusRequestTimeout = TimeSpan.FromSeconds(5);
@@ -19,6 +19,7 @@ public sealed partial class MetricsService : ObservableObject, IMetricsService
     private readonly ResiliencePipeline<HttpResponseMessage> _prometheusQueryPipeline;
     private readonly object _metricsRequestSync = new();
     private Cluster? _cluster;
+    private CancellationTokenSource? _lifecycleCancellationTokenSource;
     private PeriodicTimer? _metricsRefreshTimer;
     private CancellationTokenSource? _metricsRefreshCancellationTokenSource;
     private ResolvedPrometheusEndpoint? _resolvedPrometheusEndpoint;
@@ -68,6 +69,7 @@ public sealed partial class MetricsService : ObservableObject, IMetricsService
 
         await StopAsync().ConfigureAwait(false);
         _cluster = cluster;
+        _lifecycleCancellationTokenSource = new CancellationTokenSource();
 
         var kube = cluster.Client as k8s.Kubernetes;
         if (kube == null)
@@ -125,12 +127,16 @@ public sealed partial class MetricsService : ObservableObject, IMetricsService
         return Task.FromResult(providers);
     }
 
-    public Task StopAsync()
+    public async Task StopAsync()
     {
         if (_cluster != null)
         {
             _logger.LogDebug("Stopping metrics service for cluster {Name}.", _cluster.Name);
         }
+
+        _lifecycleCancellationTokenSource?.Cancel();
+        _lifecycleCancellationTokenSource?.Dispose();
+        _lifecycleCancellationTokenSource = null;
 
         _metricsRefreshCancellationTokenSource?.Cancel();
         _metricsRefreshCancellationTokenSource?.Dispose();
@@ -139,7 +145,28 @@ public sealed partial class MetricsService : ObservableObject, IMetricsService
         _metricsRefreshTimer?.Dispose();
         _metricsRefreshTimer = null;
 
-        _prometheusQueryClient.ResetAsync().GetAwaiter().GetResult();
+        Task[] inflightRequests;
+        lock (_metricsRequestSync)
+        {
+            inflightRequests = _inflightMetricRequests.Values.Distinct().ToArray();
+        }
+
+        if (inflightRequests.Length > 0)
+        {
+            try
+            {
+                await Task.WhenAll(inflightRequests).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+            {
+            }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(ex, "Ignoring in-flight Prometheus request failure while stopping metrics.");
+            }
+        }
+
+        await _prometheusQueryClient.ResetAsync().ConfigureAwait(false);
 
         _resolvedPrometheusEndpoint = null;
         _resolvedPrometheusProvider = null;
@@ -157,8 +184,6 @@ public sealed partial class MetricsService : ObservableObject, IMetricsService
             _inflightMetricRequests.Clear();
         }
         _cluster = null;
-
-        return Task.CompletedTask;
     }
 
     public async Task<MetricResultSet> RequestMetricsAsync(MetricRequest request, CancellationToken cancellationToken = default)
@@ -230,7 +255,11 @@ public sealed partial class MetricsService : ObservableObject, IMetricsService
         int stepSeconds,
         CancellationToken cancellationToken)
     {
-        var tasks = request.Queries.Select(query => LoadMetricSeriesAsync(query, request.Category, start, end, stepSeconds, request.Frames, cancellationToken));
+        using var linkedCancellation = CancellationTokenSource.CreateLinkedTokenSource(
+            _lifecycleCancellationTokenSource?.Token ?? CancellationToken.None,
+            cancellationToken);
+        var requestCancellationToken = linkedCancellation.Token;
+        var tasks = request.Queries.Select(query => LoadMetricSeriesAsync(query, request.Category, start, end, stepSeconds, request.Frames, requestCancellationToken));
         var loaded = await Task.WhenAll(tasks).ConfigureAwait(false);
 
         return new MetricResultSet
@@ -267,7 +296,7 @@ public sealed partial class MetricsService : ObservableObject, IMetricsService
                 "Resolving Prometheus endpoint for cluster {Name}. Configured provider: {Provider}.",
                 cluster.Name,
                 settings.PrometheusProviderKind?.ToString() ?? "auto");
-            var resolved = await ResolvePrometheusEndpointAsync(kube, settings, CancellationToken.None).ConfigureAwait(false);
+            var resolved = await ResolvePrometheusEndpointAsync(kube, settings, _lifecycleCancellationTokenSource?.Token ?? CancellationToken.None).ConfigureAwait(false);
             if (resolved.Endpoint == null || resolved.Provider == null)
             {
                 _logger.LogInformation("No Prometheus endpoint could be resolved for cluster {Name}.", cluster.Name);
@@ -276,7 +305,7 @@ public sealed partial class MetricsService : ObservableObject, IMetricsService
 
             _resolvedPrometheusEndpoint = resolved.Endpoint;
             _resolvedPrometheusProvider = resolved.Provider;
-            await _prometheusQueryClient.PrepareAsync(cluster, resolved.Endpoint).ConfigureAwait(false);
+            await _prometheusQueryClient.PrepareAsync(cluster, resolved.Endpoint, _lifecycleCancellationTokenSource?.Token ?? CancellationToken.None).ConfigureAwait(false);
             _logger.LogInformation(
                 "Resolved Prometheus provider {Provider} for cluster {Name}: {Endpoint}.",
                 resolved.Provider.Kind,
@@ -316,6 +345,10 @@ public sealed partial class MetricsService : ObservableObject, IMetricsService
                 resolved.Provider.Kind);
             return true;
         }
+        catch (OperationCanceledException) when (_lifecycleCancellationTokenSource?.IsCancellationRequested == true)
+        {
+            throw;
+        }
         catch (Exception ex)
         {
             _logger.LogDebug(ex, "Unable to initialize Prometheus metrics for cluster {Name}", cluster.Name);
@@ -330,7 +363,7 @@ public sealed partial class MetricsService : ObservableObject, IMetricsService
     private async Task StartKubernetesMetricsAsync(Cluster cluster, k8s.Kubernetes kube)
     {
         _logger.LogDebug("Checking Kubernetes Metrics Server availability for cluster {Name}.", cluster.Name);
-        if (!await CanUseKubernetesMetricsServerAsync(cluster, kube).ConfigureAwait(false))
+        if (!await CanUseKubernetesMetricsServerAsync(cluster, kube, _lifecycleCancellationTokenSource?.Token ?? CancellationToken.None).ConfigureAwait(false))
         {
             ActiveMetricsBackend = ActiveMetricsBackend.None;
             IsMetricsAvailable = false;
@@ -398,6 +431,10 @@ public sealed partial class MetricsService : ObservableObject, IMetricsService
                 }
 
                 _logger.LogDebug("Prometheus provider {Provider} did not match cluster {Name}.", provider.Kind, _cluster?.Name);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
             }
             catch (Exception ex)
             {
@@ -624,7 +661,7 @@ public sealed partial class MetricsService : ObservableObject, IMetricsService
 
             var nodeMetricsList = await cluster.Client!.GetKubernetesNodesMetricsAsync().ConfigureAwait(false);
             NodeMetrics.Clear();
-            foreach (var item in ((IEnumerable)nodeMetricsList.Items).OfType<NodeMetrics>())
+            foreach (var item in nodeMetricsList.Items.OfType<NodeMetrics>())
             {
                 NodeMetrics.Add(item);
             }
@@ -633,7 +670,7 @@ public sealed partial class MetricsService : ObservableObject, IMetricsService
 
             var podMetricsList = await cluster.Client!.GetKubernetesPodsMetricsAsync().ConfigureAwait(false);
             PodMetrics.Clear();
-            foreach (var item in ((IEnumerable)podMetricsList.Items).OfType<PodMetrics>())
+            foreach (var item in podMetricsList.Items.OfType<PodMetrics>())
             {
                 PodMetrics.Add(item);
             }
@@ -647,7 +684,12 @@ public sealed partial class MetricsService : ObservableObject, IMetricsService
         }
     }
 
-    private async Task<bool> CanUseKubernetesMetricsServerAsync(Cluster cluster, k8s.Kubernetes kube)
+    public void Dispose()
+    {
+        StopAsync().GetAwaiter().GetResult();
+    }
+
+    private async Task<bool> CanUseKubernetesMetricsServerAsync(Cluster cluster, k8s.Kubernetes kube, CancellationToken cancellationToken)
     {
         var podReview = new V1SelfSubjectAccessReview
         {
@@ -679,9 +721,9 @@ public sealed partial class MetricsService : ObservableObject, IMetricsService
             }
         };
 
-        var podResponse = await kube.CreateSelfSubjectAccessReviewAsync(podReview).ConfigureAwait(false);
-        var nodeResponse = await kube.CreateSelfSubjectAccessReviewAsync(nodeReview).ConfigureAwait(false);
-        var apiGroups = await cluster.Client!.Apis.GetAPIVersionsAsync().ConfigureAwait(false);
+        var podResponse = await kube.CreateSelfSubjectAccessReviewAsync(podReview, cancellationToken: cancellationToken).ConfigureAwait(false);
+        var nodeResponse = await kube.CreateSelfSubjectAccessReviewAsync(nodeReview, cancellationToken: cancellationToken).ConfigureAwait(false);
+        var apiGroups = await cluster.Client!.Apis.GetAPIVersionsAsync(cancellationToken).ConfigureAwait(false);
         var apiGroupAvailable = apiGroups.Groups.Any(g => g.Name == "metrics.k8s.io");
         var allowed = apiGroupAvailable
             && podResponse.Status.Allowed

@@ -21,6 +21,12 @@ public static class KubeUIKubernetesServiceCollectionExtensions
         services.AddTransient<ClusterModelCatalog>();
         services.AddSingleton<IKubernetesYamlSerializer, KubernetesYamlSerializer>();
         services.AddSingleton<IAksClusterService, AksClusterService>();
+        services.AddTransient<IMetricsService, MetricsService>();
+        services.AddTransient<IPrometheusQueryClient, PrometheusQueryClient>();
+        services.AddSingleton<IPrometheusProvider, OperatorPrometheusProvider>();
+        services.AddSingleton<IPrometheusProvider, OpenShiftPrometheusProvider>();
+        services.AddSingleton<IPrometheusProvider, ManualPrometheusProvider>();
+        services.AddSingleton<IPrometheusProvider, ExternalPrometheusProvider>();
         services.AddTransient<Cluster>();
         services.AddTransient<IClusterRuntime>(sp => sp.GetRequiredService<Cluster>());
         services.AddSingleton<ClusterManager>();

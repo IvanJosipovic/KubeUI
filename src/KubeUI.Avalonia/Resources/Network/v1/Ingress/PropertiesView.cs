@@ -1,4 +1,5 @@
 using k8s.Models;
+using KubeUI.Avalonia.Features.Resources.Metrics.Controls;
 using KubeUI.Avalonia.Features.Resources.Properties.Controls;
 
 namespace KubeUI.Avalonia.Resources.Network.v1.Ingress;
@@ -22,6 +23,7 @@ public sealed class PropertiesView : ViewBase<V1Ingress>
                     .Value(vm.Spec?.Tls?.Count ?? 0),
                 new PropertyItem()
                     .Key(Assets.Resources.IngressPropertiesView_Load_Balancer_Entries!)
-                    .Value(vm.Status?.LoadBalancer?.Ingress?.Count ?? 0));
+                    .Value(vm.Status?.LoadBalancer?.Ingress?.Count ?? 0),
+                new MetricsControl());
     }
 }

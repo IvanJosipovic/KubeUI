@@ -1,4 +1,5 @@
 using k8s.Models;
+using KubeUI.Avalonia.Features.Resources.Metrics.Controls;
 using KubeUI.Avalonia.Features.Resources.Properties.Controls;
 
 namespace KubeUI.Avalonia.Resources.Workloads.v1.Job;
@@ -58,6 +59,7 @@ public sealed class PropertiesView : ViewBase<V1Job>
                                     .Value(vm.Status?.CompletionTime ?? DateTime.MinValue),
                                 new PropertyItem()
                                     .Key(Assets.Resources.Shared_Conditions!)
-                                    .Value(vm.Status?.Conditions?.Count ?? 0))));
+                                    .Value(vm.Status?.Conditions?.Count ?? 0))),
+                new MetricsControl());
     }
 }

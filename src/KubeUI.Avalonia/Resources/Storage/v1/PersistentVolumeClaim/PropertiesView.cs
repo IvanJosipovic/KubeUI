@@ -1,4 +1,5 @@
 using k8s.Models;
+using KubeUI.Avalonia.Features.Resources.Metrics.Controls;
 using KubeUI.Avalonia.Features.Resources.Properties.Controls;
 
 namespace KubeUI.Avalonia.Resources.Storage.v1.PersistentVolumeClaim;
@@ -46,6 +47,7 @@ public sealed class PropertiesView : ViewBase<V1PersistentVolumeClaim>
                                     .Value(vm.Status?.Capacity?.Count ?? 0),
                                 new PropertyItem()
                                     .Key(Assets.Resources.Shared_Conditions!)
-                                    .Value(vm.Status?.Conditions?.Count ?? 0))));
+                                    .Value(vm.Status?.Conditions?.Count ?? 0))),
+                new MetricsControl());
     }
 }
