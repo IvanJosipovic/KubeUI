@@ -7,13 +7,45 @@ using Avalonia.Controls;
 using Avalonia.Controls.Templates;
 using FluentIcons.Avalonia;
 using FluentIcons.Common;
+using KubeUI.Avalonia.Controls.DataGridFilters;
 using KubeUI.Avalonia.Infrastructure;
+using KubeUI.Avalonia.Infrastructure.DependencyInjection;
+using KubeUI.Avalonia.Resources;
 using KubeUI.Kubernetes;
 
 namespace KubeUI.Avalonia.Features.Crossplane.MRDiffDetection;
 
 public sealed class MRDiffDetectionView : ViewBase<MRDiffDetectionViewModel>
 {
+    private DataGridColumnFilterFlyoutFactory? _filterFlyoutFactory;
+
+    protected override void OnDataContextChanged(EventArgs e)
+    {
+        base.OnDataContextChanged(e);
+
+        if (DataContext is not MRDiffDetectionViewModel vm)
+        {
+            return;
+        }
+
+        _filterFlyoutFactory ??= GetServiceProvider().GetRequiredService<DataGridColumnFilterFlyoutFactory>();
+        AttachFilterFlyouts(vm.ColumnDefinitions, _filterFlyoutFactory, vm.FilteringModel);
+    }
+
+    internal static void AttachFilterFlyouts(
+        IEnumerable<DataGridColumnDefinition> columns,
+        DataGridColumnFilterFlyoutFactory factory,
+        IFilteringModel filteringModel)
+    {
+        foreach (var column in columns)
+        {
+            if (column.Tag is IResourceListColumn resourceColumn)
+            {
+                column.FilterFlyout = factory.Create(resourceColumn, column, filteringModel);
+            }
+        }
+    }
+
     protected override object Build(MRDiffDetectionViewModel vm)
     {
         ArgumentNullException.ThrowIfNull(vm);
@@ -57,5 +89,15 @@ public sealed class MRDiffDetectionView : ViewBase<MRDiffDetectionViewModel>
                     .ContextMenu(new ContextMenu())
                     .Behaviors([new MRDiffDetectionContextMenuBehavior()])
                     );
+    }
+
+    private static IServiceProvider GetServiceProvider()
+    {
+        if (Application.Current is IServiceProviderHost host)
+        {
+            return host.Services;
+        }
+
+        throw new InvalidOperationException("Unable to resolve services from the current application host.");
     }
 }
