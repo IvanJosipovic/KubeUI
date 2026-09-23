@@ -151,13 +151,23 @@ public sealed partial class ResourceEditorViewModel : ViewModelBase, IDisposable
                 if (matchingNode is not null)
                     serverErrors = [new(matchingNode.Path, message)];
             }
-            ValidationErrors = serverErrors;
-            EditorRoot?.SetValidationErrors(serverErrors);
-            SetActionResult(false, Assets.Resources.ResourceEditorView_ValidationFailed, message);
+            var allErrors = new List<ResourceEditorValidationError>();
+            EditorRoot?.AppendLocalValidationErrors(allErrors);
+            allErrors.AddRange(serverErrors);
+            ValidationErrors = allErrors;
+            EditorRoot?.SetDocumentValidationErrors(serverErrors);
+            var summary = allErrors.Count == 0 ? message : FormatValidationErrors(allErrors);
+            ErrorMessage = summary;
+            SetActionResult(false, Assets.Resources.ResourceEditorView_ValidationFailed, summary);
             _logger.LogError(ex, "Error validating resource editor document");
         }
         NotifyStateChanged();
     }
+
+    private static string FormatValidationErrors(IEnumerable<ResourceEditorValidationError> errors)
+        => string.Join(
+            Environment.NewLine,
+            errors.Select(error => $"{error.Path}: {error.Message}"));
 
     [RelayCommand(CanExecute = nameof(CanSave))]
     private async Task Save()
@@ -207,9 +217,10 @@ public sealed partial class ResourceEditorViewModel : ViewModelBase, IDisposable
         var errors = new List<ResourceEditorValidationError>();
         if (Document is not null && Schema is not null)
             ValidateNode(Document.Root, Schema, string.Empty, errors);
-        EditorRoot?.AppendValidationErrors(errors);
+        EditorRoot?.AppendLocalValidationErrors(errors);
         ValidationErrors = errors;
-        EditorRoot?.SetValidationErrors(errors);
+        EditorRoot?.SetDocumentValidationErrors(errors);
+        UpdateImmediateValidationResult();
     }
 
     [RelayCommand(CanExecute = nameof(CanDismissActionResult))]
@@ -255,6 +266,7 @@ public sealed partial class ResourceEditorViewModel : ViewModelBase, IDisposable
             UpdateImmediateValidationResult();
             NotifyStateChanged();
         });
+        EditorRoot.SetDocumentValidationErrors(ValidationErrors);
     }
 
     private void UpdateImmediateValidationResult()

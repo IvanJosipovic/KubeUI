@@ -9,8 +9,8 @@ namespace KubeUI.Avalonia.Features.Resources.Editor;
 
 public interface IResourceEditorLauncher
 {
-    void Open(ClusterWorkspace cluster, IKubernetesObject<V1ObjectMeta> resource);
-    void OpenNew(ClusterWorkspace cluster, IKubernetesObject<V1ObjectMeta> resource);
+    Task Open(ClusterWorkspace cluster, IKubernetesObject<V1ObjectMeta> resource);
+    Task OpenNew(ClusterWorkspace cluster, IKubernetesObject<V1ObjectMeta> resource);
 }
 
 internal sealed class ResourceEditorLauncher : IResourceEditorLauncher
@@ -24,14 +24,16 @@ internal sealed class ResourceEditorLauncher : IResourceEditorLauncher
         _factory = factory;
     }
 
-    public void Open(ClusterWorkspace cluster, IKubernetesObject<V1ObjectMeta> resource)
+    public Task Open(ClusterWorkspace cluster, IKubernetesObject<V1ObjectMeta> resource)
         => OpenCore(cluster, resource, false);
 
-    public void OpenNew(ClusterWorkspace cluster, IKubernetesObject<V1ObjectMeta> resource)
+    public Task OpenNew(ClusterWorkspace cluster, IKubernetesObject<V1ObjectMeta> resource)
         => OpenCore(cluster, resource, true);
 
-    private void OpenCore(ClusterWorkspace cluster, IKubernetesObject<V1ObjectMeta> resource, bool isNew)
+    private async Task OpenCore(ClusterWorkspace cluster, IKubernetesObject<V1ObjectMeta> resource, bool isNew)
     {
+        await cluster.Runtime.EnsureOpenApiSchemasAsync();
+
         var vm = _services.GetRequiredService<ResourceEditorViewModel>();
         if (isNew)
             vm.InitializeNew(cluster, resource);

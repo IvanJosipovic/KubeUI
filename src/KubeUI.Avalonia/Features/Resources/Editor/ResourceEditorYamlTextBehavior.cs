@@ -78,14 +78,14 @@ internal sealed class ResourceEditorYamlTextBehavior : Behavior<TextEditor>
             ? ThemeName.Light
             : ThemeName.DarkPlus;
 
+    private static void OnRequestBringIntoView(object? sender, RequestBringIntoViewEventArgs e)
+    {
+        e.Handled = true;
+    }
+
     private void OnTextChanged(object? sender, EventArgs e)
     {
         if (AssociatedObject?.DataContext is ResourceEditorNodeViewModel node)
             node.YamlValue = AssociatedObject.Text;
-    }
-
-    private static void OnRequestBringIntoView(object? sender, RequestBringIntoViewEventArgs e)
-    {
-        e.Handled = true;
     }
 }

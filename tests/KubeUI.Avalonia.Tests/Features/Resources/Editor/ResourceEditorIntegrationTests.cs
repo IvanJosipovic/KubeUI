@@ -1,8 +1,8 @@
 using System.Text.Json.Nodes;
+using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Headless;
-using Avalonia.Media;
 using Avalonia.Input;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
@@ -12,8 +12,10 @@ using FluentIcons.Avalonia;
 using FluentAvalonia.UI.Controls;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
+using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Features.Resources.Editor;
 using KubeUI.Avalonia.Features.Resources.Properties.Controls;
+using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Kubernetes;
 using Microsoft.OpenApi;
 using Shouldly;
@@ -106,7 +108,7 @@ public sealed class ResourceEditorIntegrationTests
         name.StringValue = "pod-2";
         vm.IsDirty.ShouldBeTrue();
 
-        var view = new ResourceEditorView { ViewModel = vm };
+        var view = new ResourceEditorView { DataContext = vm };
         using var window = Application.Current.CreateTestWindow(900, 700, view);
         window.Show();
         Dispatcher.UIThread.RunJobs();
@@ -145,21 +147,38 @@ public sealed class ResourceEditorIntegrationTests
         {
             ApiVersion = "v1",
             Kind = "Pod",
-            Metadata = new V1ObjectMeta { Name = "pod-1", NamespaceProperty = "default" },
+            Metadata = new V1ObjectMeta
+            {
+                Name = "pod-1",
+                NamespaceProperty = "default",
+                CreationTimestamp = DateTime.UtcNow,
+            },
             Spec = new V1PodSpec
             {
                 ActiveDeadlineSeconds = 30,
+                TerminationGracePeriodSeconds = 30,
                 Containers = [new V1Container { Name = "app", Image = "nginx" }],
             },
         });
 
         var spec = vm.EditorRoot!.Children.Single(node => node.Name == "spec");
         var deadline = spec.Children.Single(node => node.Name == "activeDeadlineSeconds");
+        var terminationGracePeriod = spec.Children.Single(node => node.Name == "terminationGracePeriodSeconds");
         deadline.NumberValue = "not-a-number";
+        terminationGracePeriod.NumberValue = "also-not-a-number";
 
         vm.HasActionFailureResult.ShouldBeTrue();
         vm.ActionResultMessage.ShouldContain("activeDeadlineSeconds");
-        deadline.HasValidationError.ShouldBeTrue();
+        vm.ActionResultMessage.ShouldContain("terminationGracePeriodSeconds");
+        var view = new ResourceEditorView { DataContext = vm };
+        using var window = Application.Current.CreateTestWindow(900, 700, view);
+        window.Show();
+        Dispatcher.UIThread.RunJobs();
+        var deadlineControl = view.GetVisualDescendants().OfType<ResourceEditorNodeControl>()
+            .Single(control => ReferenceEquals(control.Node, deadline));
+        var deadlineEditor = deadlineControl.GetVisualDescendants().OfType<TextBox>().Single();
+        DataValidationErrors.GetHasErrors(deadlineEditor).ShouldBeTrue();
+        DataValidationErrors.GetErrors(deadlineEditor).ShouldContain("Enter a valid number.");
     }
 
     [AvaloniaFact]
@@ -182,7 +201,7 @@ public sealed class ResourceEditorIntegrationTests
 
         var metadata = vm.EditorRoot!.Children.Single(node => node.Name == "metadata");
         var creationTimestamp = metadata.Children.Single(node => node.Name == "creationTimestamp");
-        var view = new ResourceEditorView { ViewModel = vm };
+        var view = new ResourceEditorView { DataContext = vm };
         using var window = Application.Current.CreateTestWindow(900, 700, view);
         window.Show();
         Dispatcher.UIThread.RunJobs();
@@ -211,7 +230,7 @@ public sealed class ResourceEditorIntegrationTests
         vm.ValidationErrors.ShouldBeEmpty();
         vm.HasActionFailureResult.ShouldBeFalse();
         vm.ErrorMessage.ShouldBeNull();
-        creationTimestamp.HasValidationError.ShouldBeFalse();
+        DataValidationErrors.GetHasErrors(textBox).ShouldBeFalse();
     }
 
     [AvaloniaFact]
@@ -237,20 +256,43 @@ public sealed class ResourceEditorIntegrationTests
 
         var spec = vm.EditorRoot!.Children.Single(node => node.Name == "spec");
         var containers = spec.Children.Single(node => node.Name == "containers");
-        containers.HasValidationError.ShouldBeTrue();
+        containers.HasErrors.ShouldBeTrue();
 
-        var view = new ResourceEditorView { ViewModel = vm };
+        var view = new ResourceEditorView { DataContext = vm };
         using var window = Application.Current.CreateTestWindow(900, 700, view);
         window.Show();
         Dispatcher.UIThread.RunJobs();
         var containersControl = view.GetVisualDescendants().OfType<ResourceEditorNodeControl>()
             .Single(control => ReferenceEquals(control.Node, containers));
-        containersControl.GetVisualDescendants().OfType<Border>()
-            .Any(border => border.BorderBrush is not null && border.BorderBrush != Brushes.Transparent)
-            .ShouldBeTrue();
-        view.GetVisualDescendants().OfType<TextBlock>()
+        var section = containersControl.GetVisualDescendants().OfType<ExpandableSection>().Single();
+        DataValidationErrors.GetHasErrors(section).ShouldBeTrue();
+        DataValidationErrors.GetErrors(section)
+            .ShouldContain("Pod spec.containers must contain at least one container.");
+
+        var specNode = vm.EditorRoot!.Children.Single(node => node.Name == "spec");
+        var rootControl = view.GetVisualDescendants().OfType<ResourceEditorNodeControl>()
+            .Single(control => ReferenceEquals(control.Node, vm.EditorRoot));
+        var specControl = view.GetVisualDescendants().OfType<ResourceEditorNodeControl>()
+            .Single(control => ReferenceEquals(control.Node, specNode));
+        var rootOutline = rootControl.Content.ShouldBeOfType<Border>();
+        var specOutline = specControl.Content.ShouldBeOfType<Border>();
+        var rootSection = rootOutline.Child.ShouldBeOfType<ExpandableSection>();
+        var specSection = specOutline.Child.ShouldBeOfType<ExpandableSection>();
+        DataValidationErrors.GetHasErrors(rootSection).ShouldBeTrue();
+        DataValidationErrors.GetHasErrors(specSection).ShouldBeTrue();
+        DataValidationErrors.GetErrors(rootSection)
+            .ShouldContain("spec.containers: Pod spec.containers must contain at least one container.");
+        DataValidationErrors.GetErrors(specSection)
+            .ShouldContain("spec.containers: Pod spec.containers must contain at least one container.");
+        rootOutline.BorderThickness.ShouldBe(new Thickness(1));
+        specOutline.BorderThickness.ShouldBe(new Thickness(1));
+        vm.EditorRoot.HasErrors.ShouldBeTrue();
+        specNode.HasErrors.ShouldBeTrue();
+        containersControl.GetVisualDescendants().OfType<TextBlock>()
             .Any(text => text.Text is not null && text.Text.Contains("spec.containers: ", StringComparison.Ordinal))
             .ShouldBeFalse();
+        view.GetVisualDescendants().OfType<FAInfoBar>().Single().Message
+            .ShouldContain("spec.containers");
     }
 
     [AvaloniaFact]
@@ -270,11 +312,11 @@ public sealed class ResourceEditorIntegrationTests
             Spec = new V1PodSpec { Containers = [new V1Container { Name = "app", Image = "nginx" }] },
         };
 
-        launcher.Open(cluster, pod);
+        await launcher.Open(cluster, pod);
         var editor = documents.VisibleDockables!.OfType<ResourceEditorViewModel>().Single();
         try
         {
-            launcher.Open(cluster, pod);
+            await launcher.Open(cluster, pod);
 
             documents.VisibleDockables.OfType<ResourceEditorViewModel>().ShouldBe([editor]);
             documents.ActiveDockable.ShouldBeSameAs(editor);
@@ -302,7 +344,7 @@ public sealed class ResourceEditorIntegrationTests
             Metadata = new V1ObjectMeta { Name = "temp", NamespaceProperty = "default" },
         };
 
-        launcher.OpenNew(cluster, pod);
+        await launcher.OpenNew(cluster, pod);
 
         var editor = documents.VisibleDockables!.OfType<ResourceEditorViewModel>().Single();
         try
@@ -315,6 +357,105 @@ public sealed class ResourceEditorIntegrationTests
         {
             factory.RemoveDockable(editor, collapse: false);
             editor.Dispose();
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task New_pod_editor_renders_fields_while_openapi_schema_loading_is_in_progress()
+    {
+        var services = Application.Current.GetTestServices();
+        var config = services.GetRequiredService<TestClusterConfig>();
+        var previousHandlerFactory = config.HttpHandlerFactory;
+        var schemaGate = new OpenApiSchemaRequestGate();
+        config.HttpHandlerFactory = () => [new OpenApiSchemaRequestGateHandler(schemaGate)];
+
+        ClusterWorkspace? cluster = null;
+        ResourceEditorViewModel? editor = null;
+        Task? openTask = null;
+        var factory = services.GetRequiredService<IFactory>();
+        var layout = factory.CreateLayout();
+        factory.InitLayout(layout);
+        var documents = factory.GetDockable<IDocumentDock>("Documents").ShouldNotBeNull();
+        try
+        {
+            cluster = await Application.Current.CreateClusterAsync();
+            config.HttpHandlerFactory = previousHandlerFactory;
+            await schemaGate.RequestStarted.WaitAsync(TestContext.Current.CancellationToken);
+            cluster.Runtime.ModelCatalog.OpenApiSchemas.Count.ShouldBe(0);
+
+            var launcher = services.GetRequiredService<IResourceEditorLauncher>();
+            openTask = launcher.OpenNew(cluster, new V1Pod
+            {
+                ApiVersion = "v1",
+                Kind = "Pod",
+                Metadata = new V1ObjectMeta { Name = "temp", NamespaceProperty = "default" },
+            });
+            openTask.IsCompleted.ShouldBeFalse();
+            documents.VisibleDockables!.OfType<ResourceEditorViewModel>().ShouldBeEmpty();
+
+            schemaGate.Release();
+            await openTask.WaitAsync(TestContext.Current.CancellationToken);
+            editor = documents.VisibleDockables!.OfType<ResourceEditorViewModel>().Single();
+
+            var viewLocator = services.GetRequiredService<ViewLocator>();
+            var host = new ContentControl
+            {
+                Content = editor,
+                ContentTemplate = viewLocator,
+            };
+            using var window = Application.Current.CreateTestWindow(900, 700, host);
+            window.Show();
+            Dispatcher.UIThread.RunJobs();
+
+            var view = host.GetVisualDescendants().OfType<ResourceEditorView>().Single();
+            view.DataContext.ShouldBeSameAs(editor);
+            view.GetVisualDescendants().OfType<TextBox>().ShouldContain(textBox =>
+                AutomationProperties.GetAutomationId(textBox) == "ResourceEditor_metadata.name");
+            view.GetVisualDescendants().OfType<ResourceEditorNodeControl>().ShouldContain(control =>
+                control.Node.Path == "spec");
+        }
+        finally
+        {
+            config.HttpHandlerFactory = previousHandlerFactory;
+            schemaGate.Release();
+            if (openTask is not null)
+                await openTask;
+            else if (cluster is not null)
+                await cluster.Runtime.EnsureOpenApiSchemasAsync();
+            if (editor is not null)
+            {
+                factory.RemoveDockable(editor, collapse: false);
+                editor.Dispose();
+            }
+            cluster?.Dispose();
+        }
+    }
+
+    private sealed class OpenApiSchemaRequestGate
+    {
+        private readonly TaskCompletionSource _requestStarted = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource _release = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public Task RequestStarted => _requestStarted.Task;
+        public Task WaitForRelease => _release.Task;
+
+        public void MarkRequestStarted() => _requestStarted.TrySetResult();
+        public void Release() => _release.TrySetResult();
+    }
+
+    private sealed class OpenApiSchemaRequestGateHandler(OpenApiSchemaRequestGate gate) : DelegatingHandler
+    {
+        protected override async Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request,
+            CancellationToken cancellationToken)
+        {
+            if (request.RequestUri?.AbsolutePath == "/openapi/v3")
+            {
+                gate.MarkRequestStarted();
+                await gate.WaitForRelease.WaitAsync(cancellationToken);
+            }
+
+            return await base.SendAsync(request, cancellationToken);
         }
     }
 }

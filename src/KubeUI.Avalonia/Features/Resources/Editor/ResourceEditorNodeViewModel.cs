@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -6,18 +7,23 @@ using KubeUI.Kubernetes.Serialization;
 
 namespace KubeUI.Avalonia.Features.Resources.Editor;
 
-public sealed partial class ResourceEditorNodeViewModel : ObservableObject
+public sealed partial class ResourceEditorNodeViewModel : ObservableObject, INotifyDataErrorInfo
 {
+    public const string SectionValidationPropertyName = "Section";
+
     private readonly ResourceEditorSchemaNode _schema;
     private readonly Action<JsonNode?> _replace;
     private readonly Action _changed;
     private readonly Action<ResourceEditorNodeViewModel>? _remove;
+    private ResourceEditorNodeViewModel? _parent;
     private JsonNode? _value;
     private string _stringValue = string.Empty;
     private string _numberValue = string.Empty;
     private bool _booleanValue;
     private string? _selectedEnum;
     private string _yamlValue = string.Empty;
+    private readonly Dictionary<string, IReadOnlyList<string>> _localValidationErrors = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, IReadOnlyList<string>> _documentValidationErrors = new(StringComparer.Ordinal);
 
     private ResourceEditorNodeViewModel(
         ResourceEditorSchemaNode schema,
@@ -27,19 +33,22 @@ public sealed partial class ResourceEditorNodeViewModel : ObservableObject
         bool isRequired,
         Action<JsonNode?> replace,
         Action changed,
-        Action<ResourceEditorNodeViewModel>? remove = null)
+        Action<ResourceEditorNodeViewModel>? remove = null,
+        ResourceEditorNodeViewModel? parent = null)
     {
         _schema = schema;
         _value = value;
         _replace = replace;
         _changed = changed;
         _remove = remove;
+        _parent = parent;
         Name = schema.Name;
         Path = path;
         DisplayName = isRequired ? $"{displayName} *" : displayName;
         Description = schema.Description;
         Kind = schema.ValueKind;
         IsRequired = isRequired;
+        IsExpanded = string.IsNullOrEmpty(path) || !path.Contains('.', StringComparison.Ordinal);
         EnumValues = schema.EnumValues;
         EnumOptions = isRequired
             ? schema.EnumValues.Select(value => new ResourceEditorEnumOption(value, value)).ToArray()
@@ -60,6 +69,7 @@ public sealed partial class ResourceEditorNodeViewModel : ObservableObject
     public bool IsSection => !IsYamlText && (Kind is ResourceEditorValueKind.Object or ResourceEditorValueKind.Array or ResourceEditorValueKind.Map);
     public bool CanAddItem => Kind == ResourceEditorValueKind.Array && !IsReadOnly;
     public bool CanAddMapEntry => Kind == ResourceEditorValueKind.Map && !IsReadOnly;
+    public bool CanClearSection => IsSection && !string.IsNullOrEmpty(Path) && !IsReadOnly;
     public bool CanRemove => _remove is not null && !IsReadOnly;
     public IReadOnlyList<string> EnumValues { get; }
     public IReadOnlyList<ResourceEditorEnumOption> EnumOptions { get; }
@@ -72,6 +82,9 @@ public sealed partial class ResourceEditorNodeViewModel : ObservableObject
         _ => _stringValue,
     };
     public bool IsYamlText { get; private set; }
+
+    [ObservableProperty]
+    public partial bool IsExpanded { get; set; }
     public string YamlValue
     {
         get => _yamlValue;
@@ -84,19 +97,19 @@ public sealed partial class ResourceEditorNodeViewModel : ObservableObject
                 var parsed = KubernetesYaml.Deserialize<JsonNode>(value);
                 if (parsed is null)
                 {
-                    ValidationMessage = "Enter a YAML value.";
+                    SetLocalValidation(nameof(YamlValue), "Enter a YAML value.");
                     _changed();
                     return;
                 }
 
-                ValidationMessage = null;
+                SetLocalValidation(nameof(YamlValue), null);
                 ReplaceValue(_value is JsonValue && TryGetValue<string>(_value) is not null
                     ? JsonValue.Create(parsed.ToJsonString())
                     : parsed);
             }
             catch (Exception ex) when (ex is YamlDotNet.Core.YamlException or JsonException)
             {
-                ValidationMessage = ex.Message;
+                SetLocalValidation(nameof(YamlValue), ex.Message);
                 _changed();
             }
         }
@@ -106,13 +119,30 @@ public sealed partial class ResourceEditorNodeViewModel : ObservableObject
     public partial string DisplayName { get; private set; }
 
     [ObservableProperty]
-    public partial string? ValidationMessage { get; private set; }
-
-    [ObservableProperty]
-    public partial bool HasValidationError { get; private set; }
-
-    [ObservableProperty]
     public partial string NewMapKey { get; set; } = string.Empty;
+
+    partial void OnNewMapKeyChanged(string value)
+    {
+        SetLocalValidation(nameof(NewMapKey), null);
+    }
+
+    public event EventHandler<DataErrorsChangedEventArgs>? ErrorsChanged;
+
+    public bool HasErrors => ValidationErrorsByProperty.Count > 0;
+
+    public IReadOnlyDictionary<string, IReadOnlyList<string>> ValidationErrorsByProperty { get; private set; } =
+        new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal);
+
+    public string ValidationPropertyName => IsYamlText
+        ? nameof(YamlValue)
+        : Kind switch
+        {
+            ResourceEditorValueKind.String or ResourceEditorValueKind.Unknown => nameof(StringValue),
+            ResourceEditorValueKind.Number => nameof(NumberValue),
+            ResourceEditorValueKind.Boolean => nameof(BooleanValue),
+            ResourceEditorValueKind.Enum => nameof(SelectedEnumOption),
+            _ => SectionValidationPropertyName,
+        };
 
     public string StringValue
     {
@@ -123,7 +153,7 @@ public sealed partial class ResourceEditorNodeViewModel : ObservableObject
                 return;
             if (!SetProperty(ref _stringValue, value))
                 return;
-            ValidationMessage = null;
+            SetLocalValidation(nameof(StringValue), null);
             ReplaceValue(JsonValue.Create(value));
             OnPropertyChanged(nameof(DisplayValue));
         }
@@ -140,11 +170,11 @@ public sealed partial class ResourceEditorNodeViewModel : ObservableObject
                 return;
             if (!decimal.TryParse(value, NumberStyles.Number, CultureInfo.InvariantCulture, out var number))
             {
-                ValidationMessage = "Enter a valid number.";
+                SetLocalValidation(nameof(NumberValue), "Enter a valid number.");
                 _changed();
                 return;
             }
-            ValidationMessage = null;
+            SetLocalValidation(nameof(NumberValue), null);
             ReplaceValue(JsonValue.Create(number));
             OnPropertyChanged(nameof(DisplayValue));
         }
@@ -159,7 +189,7 @@ public sealed partial class ResourceEditorNodeViewModel : ObservableObject
                 return;
             if (!SetProperty(ref _booleanValue, value))
                 return;
-            ValidationMessage = null;
+            SetLocalValidation(nameof(BooleanValue), null);
             ReplaceValue(JsonValue.Create(value));
             OnPropertyChanged(nameof(DisplayValue));
         }
@@ -176,11 +206,11 @@ public sealed partial class ResourceEditorNodeViewModel : ObservableObject
                 return;
             if (value is not null && !EnumValues.Contains(value, StringComparer.Ordinal))
             {
-                ValidationMessage = "Select a valid value.";
+                SetLocalValidation(nameof(SelectedEnumOption), "Select a valid value.");
                 _changed();
                 return;
             }
-            ValidationMessage = null;
+            SetLocalValidation(nameof(SelectedEnumOption), null);
             ReplaceValue(value is null ? null : JsonValue.Create(value));
             OnPropertyChanged(nameof(DisplayValue));
         }
@@ -217,6 +247,19 @@ public sealed partial class ResourceEditorNodeViewModel : ObservableObject
         _changed();
     }
 
+    [RelayCommand(CanExecute = nameof(CanClearSection))]
+    private void ClearSection()
+    {
+        if (!CanClearSection)
+            return;
+
+        IsExpanded = false;
+        _value = null;
+        _replace(null);
+        RebuildChildren();
+        _changed();
+    }
+
     public bool TryAddMapEntry(string key)
     {
         if (IsReadOnly)
@@ -225,7 +268,7 @@ public sealed partial class ResourceEditorNodeViewModel : ObservableObject
             throw new InvalidOperationException("Only map nodes can add entries.");
         if (string.IsNullOrWhiteSpace(key))
         {
-            ValidationMessage = "Enter a key.";
+            SetLocalValidation(nameof(NewMapKey), "Enter a key.");
             return false;
         }
 
@@ -233,13 +276,13 @@ public sealed partial class ResourceEditorNodeViewModel : ObservableObject
         key = key.Trim();
         if (map.ContainsKey(key))
         {
-            ValidationMessage = "Key already exists.";
+            SetLocalValidation(nameof(NewMapKey), "Key already exists.");
             return false;
         }
 
         var itemSchema = _schema.Items ?? CreateInferredSchema(key, null);
         map[key] = CreateDefaultValue(itemSchema);
-        ValidationMessage = null;
+        SetLocalValidation(nameof(NewMapKey), null);
         NewMapKey = string.Empty;
         RebuildChildren();
         _changed();
@@ -284,21 +327,139 @@ public sealed partial class ResourceEditorNodeViewModel : ObservableObject
         _changed();
     }
 
-    public void AppendValidationErrors(ICollection<ResourceEditorValidationError> errors)
+    public IEnumerable GetErrors(string? propertyName)
     {
-        ArgumentNullException.ThrowIfNull(errors);
-        if (!string.IsNullOrWhiteSpace(ValidationMessage))
-            errors.Add(new ResourceEditorValidationError(Path, ValidationMessage));
-        foreach (var child in Children)
-            child.AppendValidationErrors(errors);
+        if (propertyName is null)
+            return ValidationErrorsByProperty.Values.SelectMany(static errors => errors);
+
+        return ValidationErrorsByProperty.TryGetValue(propertyName, out var propertyErrors)
+            ? propertyErrors
+            : Array.Empty<string>();
     }
 
-    public void SetValidationErrors(IReadOnlyCollection<ResourceEditorValidationError> errors)
+    public void AppendLocalValidationErrors(ICollection<ResourceEditorValidationError> errors)
     {
         ArgumentNullException.ThrowIfNull(errors);
-        HasValidationError = errors.Any(error => string.Equals(error.Path, Path, StringComparison.Ordinal));
+        foreach (var propertyErrors in _localValidationErrors.Values)
+        foreach (var error in propertyErrors)
+            errors.Add(new ResourceEditorValidationError(Path, error));
+
         foreach (var child in Children)
-            child.SetValidationErrors(errors);
+            child.AppendLocalValidationErrors(errors);
+    }
+
+    public void SetDocumentValidationErrors(IReadOnlyCollection<ResourceEditorValidationError> errors)
+    {
+        ArgumentNullException.ThrowIfNull(errors);
+        var propertyName = ValidationPropertyName;
+        var nextErrors = errors
+            .Where(error => string.Equals(error.Path, Path, StringComparison.Ordinal))
+            .Select(error => error.Message)
+            .Distinct(StringComparer.Ordinal)
+            .ToArray();
+
+        if (nextErrors.Length == 0)
+            _documentValidationErrors.Clear();
+        else
+        {
+            _documentValidationErrors.Clear();
+            _documentValidationErrors[propertyName] = nextErrors;
+        }
+
+        PublishValidationErrors();
+        foreach (var child in Children)
+            child.SetDocumentValidationErrors(errors);
+    }
+
+    private void SetLocalValidation(string propertyName, string? message)
+    {
+        if (string.IsNullOrWhiteSpace(message))
+            _localValidationErrors.Remove(propertyName);
+        else
+            _localValidationErrors[propertyName] = [message];
+
+        PublishValidationErrors();
+    }
+
+    private void PublishValidationErrors()
+    {
+        var oldErrors = ValidationErrorsByProperty;
+        var oldHasErrors = HasErrors;
+        var nextErrors = new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal);
+        foreach (var propertyName in _localValidationErrors.Keys.Concat(_documentValidationErrors.Keys).Distinct(StringComparer.Ordinal))
+        {
+            var messages = new List<string>();
+            if (_localValidationErrors.TryGetValue(propertyName, out var localErrors))
+                messages.AddRange(localErrors);
+            if (_documentValidationErrors.TryGetValue(propertyName, out var documentErrors))
+                messages.AddRange(documentErrors);
+            nextErrors[propertyName] = messages.Distinct(StringComparer.Ordinal).ToArray();
+        }
+
+        if (IsSection)
+        {
+            var sectionErrors = new List<string>();
+            if (nextErrors.TryGetValue(SectionValidationPropertyName, out var ownSectionErrors))
+                sectionErrors.AddRange(ownSectionErrors);
+
+            AppendOwnSectionErrors(_localValidationErrors, sectionErrors);
+            AppendOwnSectionErrors(_documentValidationErrors, sectionErrors);
+            foreach (var child in Children)
+                child.AppendValidationSummaries(sectionErrors);
+
+            if (sectionErrors.Count > 0)
+                nextErrors[SectionValidationPropertyName] = sectionErrors.Distinct(StringComparer.Ordinal).ToArray();
+        }
+
+        ValidationErrorsByProperty = nextErrors;
+        OnPropertyChanged(nameof(ValidationErrorsByProperty));
+        if (oldHasErrors != HasErrors)
+            OnPropertyChanged(nameof(HasErrors));
+
+        foreach (var propertyName in oldErrors.Keys.Concat(nextErrors.Keys).Distinct(StringComparer.Ordinal))
+        {
+            oldErrors.TryGetValue(propertyName, out var oldPropertyErrors);
+            nextErrors.TryGetValue(propertyName, out var nextPropertyErrors);
+            if (!Enumerable.SequenceEqual(oldPropertyErrors ?? [], nextPropertyErrors ?? [], StringComparer.Ordinal))
+                ErrorsChanged?.Invoke(this, new DataErrorsChangedEventArgs(propertyName));
+        }
+
+        _parent?.PublishValidationErrors();
+    }
+
+    private void AppendValidationSummaries(ICollection<string> errors)
+    {
+        AppendValidationSummaries(_localValidationErrors, errors);
+        AppendValidationSummaries(_documentValidationErrors, errors);
+        foreach (var child in Children)
+            child.AppendValidationSummaries(errors);
+    }
+
+    private void AppendOwnSectionErrors(
+        IReadOnlyDictionary<string, IReadOnlyList<string>> errorsByProperty,
+        ICollection<string> errors)
+    {
+        foreach (var (propertyName, messages) in errorsByProperty)
+        {
+            if (string.Equals(propertyName, SectionValidationPropertyName, StringComparison.Ordinal))
+                continue;
+
+            AppendValidationSummaries(messages, errors);
+        }
+    }
+
+    private void AppendValidationSummaries(
+        IReadOnlyDictionary<string, IReadOnlyList<string>> errorsByProperty,
+        ICollection<string> errors)
+    {
+        foreach (var messages in errorsByProperty.Values)
+            AppendValidationSummaries(messages, errors);
+    }
+
+    private void AppendValidationSummaries(IEnumerable<string> messages, ICollection<string> errors)
+    {
+        foreach (var message in messages)
+            errors.Add(string.IsNullOrEmpty(Path) ? message : $"{Path}: {message}");
     }
 
     private void LoadScalarValue(JsonNode? value)
@@ -330,6 +491,8 @@ public sealed partial class ResourceEditorNodeViewModel : ObservableObject
 
     private void RebuildChildren()
     {
+        foreach (var child in Children)
+            child._parent = null;
         Children.Clear();
         if (Kind == ResourceEditorValueKind.Object)
             BuildObjectChildren();
@@ -337,6 +500,7 @@ public sealed partial class ResourceEditorNodeViewModel : ObservableObject
             BuildArrayChildren();
         else if (Kind == ResourceEditorValueKind.Map)
             BuildMapChildren();
+        PublishValidationErrors();
     }
 
     private void BuildObjectChildren()
@@ -359,7 +523,8 @@ public sealed partial class ResourceEditorNodeViewModel : ObservableObject
                     var target = EnsureObject();
                     target[localKey] = replacement;
                 },
-                _changed));
+                _changed,
+                parent: this));
         }
 
         if (obj is null)
@@ -369,7 +534,7 @@ public sealed partial class ResourceEditorNodeViewModel : ObservableObject
             var inferred = CreateInferredSchema(property.Key, property.Value);
             var localKey = property.Key;
             Children.Add(new(inferred, property.Value, JoinPath(Path, property.Key), property.Key, false,
-                replacement => obj[localKey] = replacement, _changed));
+                replacement => obj[localKey] = replacement, _changed, parent: this));
         }
     }
 
@@ -382,7 +547,7 @@ public sealed partial class ResourceEditorNodeViewModel : ObservableObject
             var itemSchema = _schema.Items ?? CreateInferredSchema("item", array[index]);
             var itemIndex = index;
             Children.Add(new(itemSchema, array[index], $"{Path}[{index}]", $"Item {index + 1}", false,
-                replacement => array[itemIndex] = replacement, _changed, RemoveChild));
+                replacement => array[itemIndex] = replacement, _changed, RemoveChild, this));
         }
     }
 
@@ -395,7 +560,7 @@ public sealed partial class ResourceEditorNodeViewModel : ObservableObject
             var itemSchema = _schema.Items ?? CreateInferredSchema(property.Key, property.Value);
             var localKey = property.Key;
             Children.Add(new(itemSchema, property.Value, JoinPath(Path, property.Key), property.Key, false,
-                replacement => map[localKey] = replacement, _changed, RemoveChild));
+                replacement => map[localKey] = replacement, _changed, RemoveChild, this));
         }
     }
 

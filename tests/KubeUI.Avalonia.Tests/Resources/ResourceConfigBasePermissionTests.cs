@@ -1,8 +1,11 @@
 using Avalonia.Headless.XUnit;
+using CommunityToolkit.Mvvm.Input;
 using Dock.Model.Controls;
 using Dock.Model.Core;
 using k8s.Models;
+using KubeUI.Avalonia.Features.Resources.Editor;
 using KubeUI.Avalonia.Features.Resources.Yaml;
+using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Resources;
 using Shouldly;
 
@@ -67,6 +70,42 @@ public sealed class ResourceConfigBasePermissionTests
         {
             factory.RemoveDockable(yamlEditor, collapse: false);
             yamlEditor.Dispose();
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task new_ui_editor_command_opens_resource_editor_not_yaml_view()
+    {
+        using var cluster = await Application.Current.CreateClusterAsync();
+        var factory = Application.Current.GetRequiredTestService<IFactory>();
+        var layout = factory.CreateLayout();
+        factory.InitLayout(layout);
+        var documents = factory.GetDockable<IDocumentDock>("Documents").ShouldNotBeNull();
+        var config = new TrackingResourceConfig(Application.Current.GetTestServices());
+        config.Initialize(cluster);
+        IResourceConfig resourceConfig = config;
+
+        resourceConfig.NewResourceUiEditorCommand
+            .ShouldBeAssignableTo<IAsyncRelayCommand>()
+            .CanExecute(null)
+            .ShouldBeTrue();
+        await resourceConfig.NewResourceUiEditorCommand
+            .ShouldBeAssignableTo<IAsyncRelayCommand>()
+            .ExecuteAsync(null);
+
+        var editor = documents.VisibleDockables!.OfType<ResourceEditorViewModel>().Single();
+        try
+        {
+            documents.VisibleDockables.OfType<ResourceYamlViewModel>().ShouldBeEmpty();
+            editor.IsCreateMode.ShouldBeTrue();
+            Application.Current.GetRequiredTestService<ViewLocator>()
+                .Build(editor)
+                .ShouldBeOfType<ResourceEditorView>();
+        }
+        finally
+        {
+            factory.RemoveDockable(editor, collapse: false);
+            editor.Dispose();
         }
     }
 

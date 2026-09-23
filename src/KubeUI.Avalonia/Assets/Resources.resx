@@ -2803,6 +2803,9 @@
   <data name="ResourceEditorView_Remove" xml:space="preserve">
     <value>Remove</value>
   </data>
+  <data name="ResourceEditorView_DeleteSection" xml:space="preserve">
+    <value>Delete</value>
+  </data>
   <data name="ResourceEditorView_Unset" xml:space="preserve">
     <value>Unset</value>
   </data>

@@ -296,12 +296,12 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
     ];
 
     [RelayCommand(CanExecute = nameof(CanEditResource))]
-    private void EditResource(IList items)
+    private async Task EditResource(IList items)
     {
         if (items.Count != 1 || items[0] is not T resource)
             return;
 
-        ServiceProvider.GetRequiredService<IResourceEditorLauncher>().Open(Cluster, resource);
+        await ServiceProvider.GetRequiredService<IResourceEditorLauncher>().Open(Cluster, resource);
     }
 
     private bool CanEditResource(IList? items)
@@ -386,10 +386,12 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
     }
 
     [RelayCommand(CanExecute = nameof(CanNewResource))]
-    public void NewResourceUiEditor()
+    public async Task NewResourceUiEditor()
     {
-        ServiceProvider.GetRequiredService<IResourceEditorLauncher>().OpenNew(Cluster, CreateNewResource());
+        await ServiceProvider.GetRequiredService<IResourceEditorLauncher>().OpenNew(Cluster, CreateNewResource());
     }
+
+    IRelayCommand IResourceConfig.NewResourceUiEditorCommand => NewResourceUiEditorCommand;
 
     private T CreateNewResource()
     {

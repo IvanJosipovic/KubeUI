@@ -51,12 +51,12 @@ public sealed class ResourceEditorNodeViewModelTests
 
         replicas.NumberValue = "invalid";
 
-        Assert.NotNull(replicas.ValidationMessage);
+        Assert.Contains("Enter a valid number.", replicas.GetErrors(nameof(ResourceEditorNodeViewModel.NumberValue)).Cast<string>());
         Assert.Equal(2, document.Root["spec"]!["replicas"]!.GetValue<int>());
 
         replicas.NumberValue = "4";
 
-        Assert.Null(replicas.ValidationMessage);
+        Assert.Empty(replicas.GetErrors(nameof(ResourceEditorNodeViewModel.NumberValue)));
         Assert.Equal(4m, document.Root["spec"]!["replicas"]!.GetValue<decimal>());
     }
 
