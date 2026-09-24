@@ -1,7 +1,3 @@
-using Avalonia.Controls.DataGridFiltering;
-using Avalonia.Controls.DataGridSearching;
-using Avalonia.Controls.DataGridSorting;
-using Avalonia.Controls.Selection;
 using Avalonia.Controls.Templates;
 using FluentIcons.Avalonia;
 using FluentIcons.Common;
@@ -49,10 +45,7 @@ public sealed class MRDiffDetectionView : ViewBase<MRDiffDetectionViewModel>
                         new Button()
                             .Command(vm, x => x.ClearCommand)
                             .ToolTip_Tip(Assets.Resources.MRDiffDetectionView_Clear)
-                            .Content(new FluentIcon().Icon(Icon.Broom)),
-                        new TextBlock()
-                            .VerticalAlignment(VerticalAlignment.Center)
-                            .Text(vm, x => x.Status)),
+                            .Content(new FluentIcon().Icon(Icon.Broom))),
                 new DataGrid
                     {
                         SortingAdapterFactory = vm.SortingAdapterFactory,

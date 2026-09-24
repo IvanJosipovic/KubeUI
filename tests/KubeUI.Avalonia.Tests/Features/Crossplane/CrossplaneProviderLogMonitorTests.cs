@@ -71,13 +71,19 @@ public sealed class CrossplaneProviderLogMonitorTests
         var streamClient = new ReplayingPodLogStreamClient(failFirstOpen: false);
         using var monitor = new CrossplaneProviderLogMonitor(resolver, streamClient, NullLogger<CrossplaneProviderLogMonitor>.Instance);
         var receivedLines = new ConcurrentQueue<string>();
+        var receivedLine = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var monitoring = monitor.StartAsync(
             Mock.Of<IClusterRuntime>(),
             new GenericKubernetesObject { Metadata = new V1ObjectMeta { Name = "provider" } },
-            receivedLines.Enqueue,
+            line =>
+            {
+                receivedLines.Enqueue(line);
+                receivedLine.TrySetResult();
+            },
             CancellationToken.None);
 
         await streamClient.SecondFollowOpen.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        await receivedLine.Task.WaitAsync(TimeSpan.FromSeconds(5));
         monitor.Stop();
         await monitoring.WaitAsync(TimeSpan.FromSeconds(5));
 
