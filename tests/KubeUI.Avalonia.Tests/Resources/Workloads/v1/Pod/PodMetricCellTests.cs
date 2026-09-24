@@ -51,7 +51,7 @@ public sealed class PodMetricCellTests
     {
         await using var fixture = await MetricCellFixture.CreateAsync(new FakePrometheusQueryClient());
         var pod = CreatePod();
-        var now = DateTime.UtcNow;
+        var now = DateTime.UtcNow.AddMinutes(-2);
         fixture.UseMetricsServerSamples(
             CreatePodMetricSample(pod, now.AddMinutes(-5), "100m"),
             CreatePodMetricSample(pod, now.AddMinutes(-1), "450m"));
@@ -191,7 +191,7 @@ public sealed class PodMetricCellTests
     {
         await using var fixture = await MetricCellFixture.CreateAsync(new FakePrometheusQueryClient());
         var pod = CreatePod();
-        fixture.UseMetricsServerSamples(CreatePodMetricSample(pod, DateTime.UtcNow.AddMinutes(-1), "100m", "512Mi"));
+        fixture.UseMetricsServerSamples(CreatePodMetricSample(pod, DateTime.UtcNow.AddMinutes(-2), "100m", "512Mi"));
         var cell = fixture.CreateMemoryCell(pod);
         using var window = Application.Current.CreateTestWindow(content: cell);
 
@@ -335,7 +335,7 @@ public sealed class PodMetricCellTests
     {
         await using var fixture = await MetricCellFixture.CreateAsync(new FakePrometheusQueryClient());
         var node = CreateNode();
-        fixture.UseNodeMetricsSamples(CreateNodeMetricSample(node, DateTime.UtcNow.AddMinutes(-1), "1600m", "4Gi"));
+        fixture.UseNodeMetricsSamples(CreateNodeMetricSample(node, DateTime.UtcNow.AddMinutes(-2), "1600m", "4Gi"));
         var cpuCell = fixture.CreateNodeCpuCell(node);
         var memoryCell = fixture.CreateNodeMemoryCell(node);
         var content = new StackPanel { Children = { cpuCell, memoryCell } };
