@@ -1043,7 +1043,7 @@ public sealed partial class MetricsControl : UserControl, IInitializeCluster, IN
 public sealed partial class MetricPanelViewModel : ObservableObject, IDisposable
 {
     private static readonly TimeSpan s_defaultTimeWindow = TimeSpan.FromHours(1);
-    private const float s_lineStrokeThickness = 2f;
+    private const float s_lineStrokeThickness = 1f;
     private readonly Axis _yAxis = new()
     {
         LabelsPaint = CreateChartTextPaint(),
