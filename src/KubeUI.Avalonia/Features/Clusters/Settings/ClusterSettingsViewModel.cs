@@ -67,6 +67,12 @@ public sealed partial class ClusterSettingsViewModel : ViewModelBase, IInitializ
             subscription => subscription.SubscriptionId == ClusterSettings.MetricsSettings.AzureMonitorSubscriptionId);
         SelectedAzureMonitorWorkspace = AzureMonitorWorkspaces.FirstOrDefault(
             workspace => workspace.ResourceId == ClusterSettings.MetricsSettings.AzureMonitorWorkspaceId);
+
+        if (ClusterSettings.MetricsSettings.PrometheusProviderKind == PrometheusProviderKind.AzureMonitor
+            && !string.IsNullOrWhiteSpace(ClusterSettings.MetricsSettings.AzureMonitorSubscriptionId))
+        {
+            _ = RefreshAzureMonitorAsync(CancellationToken.None);
+        }
     }
 
     [ObservableProperty]

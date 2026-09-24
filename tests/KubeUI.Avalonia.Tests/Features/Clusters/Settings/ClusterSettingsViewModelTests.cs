@@ -143,6 +143,44 @@ public sealed class ClusterSettingsViewModelTests
     }
 
     [AvaloniaFact]
+    public async Task initializing_saved_azure_settings_restores_subscription_and_workspace()
+    {
+        var services = Application.Current.GetTestServices();
+        var workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        var settingsService = services.GetRequiredService<ISettingsService>();
+        var metricsSettings = settingsService.Settings.GetClusterSettings(workspace.Runtime).MetricsSettings;
+        metricsSettings.MetricsServiceType = MetricsServiceType.Prometheus;
+        metricsSettings.PrometheusProviderKind = PrometheusProviderKind.AzureMonitor;
+        metricsSettings.AzureMonitorSubscriptionId = "subscription-1";
+        metricsSettings.AzureMonitorWorkspaceId = "/subscriptions/subscription-1/resourceGroups/rg/providers/Microsoft.Monitor/accounts/workspace-1";
+        metricsSettings.AzureMonitorQueryEndpoint = "https://workspace-1.eastus.prometheus.monitor.azure.com";
+
+        var viewModel = new ClusterSettingsViewModel(settingsService, new FakeAzureMonitorWorkspaceService());
+        viewModel.Initialize(workspace);
+        var view = new ClusterSettingsView { ViewModel = viewModel };
+        using var window = Application.Current.CreateTestWindow(content: view);
+        window.Show();
+        await TestApplicationExtensions.WaitForUiAsync(TestContext.Current.CancellationToken);
+        await TestWait.UntilAsync(
+            () => viewModel.SelectedAzureMonitorSubscription is not null && viewModel.SelectedAzureMonitorWorkspace is not null,
+            TimeSpan.FromSeconds(5),
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        viewModel.SelectedAzureMonitorSubscription?.SubscriptionId.ShouldBe("subscription-1");
+        viewModel.SelectedAzureMonitorWorkspace?.ResourceId.ShouldBe(metricsSettings.AzureMonitorWorkspaceId);
+        viewModel.AzureMonitorWorkspaces.ShouldHaveSingleItem();
+
+        var azureSelectors = view.GetVisualDescendants()
+            .OfType<ComboBox>()
+            .Where(selector => ReferenceEquals(selector.ItemsSource, viewModel.AzureMonitorSubscriptions)
+                || ReferenceEquals(selector.ItemsSource, viewModel.AzureMonitorWorkspaces))
+            .ToArray();
+        azureSelectors.Length.ShouldBe(2);
+        azureSelectors[0].SelectedItem.ShouldBe(viewModel.SelectedAzureMonitorSubscription);
+        azureSelectors[1].SelectedItem.ShouldBe(viewModel.SelectedAzureMonitorWorkspace);
+    }
+
+    [AvaloniaFact]
     public async Task refreshing_azure_workspaces_shows_cli_login_guidance_when_signed_out()
     {
         var services = Application.Current.GetTestServices();
