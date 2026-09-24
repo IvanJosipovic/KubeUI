@@ -80,6 +80,29 @@ public sealed class DotAcpClientTests
     }
 
     [Fact]
+    public async Task session_update_maps_dictionary_tool_input_to_domain_event()
+    {
+        var events = Channel.CreateUnbounded<AgentEvent>();
+        using var client = new DotAcpClient(events.Writer);
+
+        await client.SessionUpdateAsync(new SessionNotification
+        {
+            Update = new ToolCall
+            {
+                Title = "kubernetes.list",
+                RawInput = new Dictionary<string, object?>
+                {
+                    ["kind"] = "Pod",
+                    ["includeTerminating"] = false,
+                },
+            }
+        });
+
+        var tool = (await events.Reader.ReadAsync()).ShouldBeOfType<AgentToolStartedEvent>().Tool;
+        tool.Input.ShouldBe("{\"kind\":\"Pod\",\"includeTerminating\":false}");
+    }
+
+    [Fact]
     public async Task session_update_maps_assistant_message_and_thought_to_domain_events()
     {
         var events = Channel.CreateUnbounded<AgentEvent>();

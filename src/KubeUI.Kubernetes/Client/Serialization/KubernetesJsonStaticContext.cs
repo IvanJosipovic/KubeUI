@@ -337,6 +337,7 @@ namespace KubeUI.Kubernetes.Serialization;
 [JsonSerializable(typeof(global::k8s.Models.V1DeviceTaint))]
 [JsonSerializable(typeof(global::k8s.Models.V1DeviceToleration))]
 [JsonSerializable(typeof(global::k8s.Models.V1Eviction))]
+[JsonSerializable(typeof(global::System.Collections.Generic.IList<global::k8s.Models.V1EphemeralContainer>))]
 [JsonSerializable(typeof(global::k8s.Models.V1ExactDeviceRequest))]
 [JsonSerializable(typeof(global::k8s.Models.V1ExemptPriorityLevelConfiguration))]
 [JsonSerializable(typeof(global::k8s.Models.V1ExpressionWarning))]

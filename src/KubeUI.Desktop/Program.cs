@@ -16,6 +16,7 @@ using KubeUI.Avalonia.Infrastructure.DependencyInjection;
 using KubeUI.Avalonia.Infrastructure.Mcp;
 using KubeUI.Avalonia.Infrastructure.Platform;
 using KubeUI.Avalonia.Services.Settings;
+using KubeUI.Kubernetes.Serialization;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -152,6 +153,7 @@ internal static class Program
             ApplicationName = "KubeUI",
             Args = args
         });
+        KubernetesYaml.UseStaticContext = true;
         builder.Logging.SetMinimumLevel(LogLevel.Debug);
 
         var settings = SettingsPersistenceLoader.Load();

@@ -66,4 +66,15 @@ public static class KubeUIKubernetesServiceCollectionExtensions
         }
     }
 
+    /// <summary>
+    /// Compatibility shim for the removed reflection-fallback JSON logging configuration.
+    /// JSON serialization now uses generated metadata and emits no reflection-fallback logs.
+    /// </summary>
+    /// <param name="services">Application service provider.</param>
+    [Obsolete("JSON reflection-fallback logging was removed. Generated JSON metadata is configured automatically.")]
+    public static void ConfigureKubeUIKubernetesJsonLogging(this IServiceProvider services)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+    }
+
 }
