@@ -73,16 +73,17 @@ public sealed class ClusterSettingsViewModelTests
         selectors[0].SelectedItem = viewModel.MetricsServiceOptions.Single(option => option.Value == MetricsServiceType.Prometheus);
         await TestApplicationExtensions.WaitForUiAsync(TestContext.Current.CancellationToken);
 
-        viewModel.ClusterSettings.MetricsServiceType.ShouldBe(MetricsServiceType.Prometheus);
+        viewModel.ClusterSettings.MetricsSettings.MetricsServiceType.ShouldBe(MetricsServiceType.Prometheus);
         selectors[1].IsVisible.ShouldBeTrue();
 
         selectors[1].SelectedItem = viewModel.PrometheusProviderOptions.Single(option => option.Value == PrometheusProviderKind.Manual);
         await TestApplicationExtensions.WaitForUiAsync(TestContext.Current.CancellationToken);
 
-        viewModel.ClusterSettings.PrometheusProviderKind.ShouldBe(PrometheusProviderKind.Manual);
+        viewModel.ClusterSettings.MetricsSettings.PrometheusProviderKind.ShouldBe(PrometheusProviderKind.Manual);
         services.GetRequiredService<ISettingsService>()
             .Settings
             .GetClusterSettings(workspace.Runtime)
+            .MetricsSettings
             .PrometheusProviderKind
             .ShouldBe(PrometheusProviderKind.Manual);
 
@@ -99,8 +100,8 @@ public sealed class ClusterSettingsViewModelTests
         var workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         var viewModel = services.GetRequiredService<ClusterSettingsViewModel>();
         viewModel.Initialize(workspace);
-        viewModel.ClusterSettings.MetricsServiceType = MetricsServiceType.Prometheus;
-        viewModel.ClusterSettings.PrometheusProviderKind = PrometheusProviderKind.AzureMonitor;
+        viewModel.ClusterSettings.MetricsSettings.MetricsServiceType = MetricsServiceType.Prometheus;
+        viewModel.ClusterSettings.MetricsSettings.PrometheusProviderKind = PrometheusProviderKind.AzureMonitor;
 
         var view = new ClusterSettingsView { ViewModel = viewModel };
         using var window = Application.Current.CreateTestWindow(content: view);
@@ -125,8 +126,8 @@ public sealed class ClusterSettingsViewModelTests
         var azureService = new FakeAzureMonitorWorkspaceService();
         var viewModel = new ClusterSettingsViewModel(settingsService, azureService);
         viewModel.Initialize(workspace);
-        viewModel.ClusterSettings.MetricsServiceType = MetricsServiceType.Prometheus;
-        viewModel.ClusterSettings.PrometheusProviderKind = PrometheusProviderKind.AzureMonitor;
+        viewModel.ClusterSettings.MetricsSettings.MetricsServiceType = MetricsServiceType.Prometheus;
+        viewModel.ClusterSettings.MetricsSettings.PrometheusProviderKind = PrometheusProviderKind.AzureMonitor;
 
         await viewModel.RefreshAzureMonitorCommand.ExecuteAsync(TestContext.Current.CancellationToken);
         await TestWait.UntilAsync(
@@ -137,7 +138,7 @@ public sealed class ClusterSettingsViewModelTests
         viewModel.AzureMonitorStatusText.ShouldContain("dev@example.com");
         viewModel.SelectedAzureMonitorSubscription?.SubscriptionId.ShouldBe("subscription-1");
         viewModel.SelectedAzureMonitorWorkspace?.ResourceId.ShouldBe("/subscriptions/subscription-1/resourceGroups/rg/providers/Microsoft.Monitor/accounts/workspace-1");
-        settingsService.Settings.GetClusterSettings(workspace.Runtime).AzureMonitorQueryEndpoint
+        settingsService.Settings.GetClusterSettings(workspace.Runtime).MetricsSettings.AzureMonitorQueryEndpoint
             .ShouldBe("https://workspace-1.eastus.prometheus.monitor.azure.com");
     }
 

@@ -304,12 +304,14 @@ public sealed class MetricsServiceTests
     }
 
     [Fact]
-    public async Task RequestMetricsAsync_enters_cooldown_after_transport_failure()
+    public async Task RequestMetricsAsync_allows_new_request_after_transport_failure()
     {
         var queryClient = new FakePrometheusQueryClient
         {
-            ExceptionToThrow = new HttpRequestException("boom"),
+            ExceptionToThrow = new InvalidOperationException("boom"),
+            FailuresRemaining = 1,
         };
+        queryClient.EnqueueResponse(CreateSuccessResponse(1.25, 2.5));
 
         var settings = new TestClusterSettingsStore(new ClusterMetricsSettings
         {
@@ -324,15 +326,13 @@ public sealed class MetricsServiceTests
         var request = CreateRequest();
 
         var first = await service.RequestMetricsAsync(request);
-        var callsAfterFirstRequest = queryClient.QueryCalls;
         var second = await service.RequestMetricsAsync(request);
 
         first.IsEmpty.ShouldBeTrue();
-        second.IsEmpty.ShouldBeTrue();
         first.HadRequestFailures.ShouldBeTrue();
-        second.HadRequestFailures.ShouldBeTrue();
-        callsAfterFirstRequest.ShouldBeGreaterThan(0);
-        queryClient.QueryCalls.ShouldBe(callsAfterFirstRequest);
+        second.IsEmpty.ShouldBeFalse();
+        second.HadRequestFailures.ShouldBeFalse();
+        queryClient.QueryCalls.ShouldBe(2);
     }
 
     [Fact]
@@ -581,6 +581,8 @@ public sealed class MetricsServiceTests
 
         public Exception? ExceptionToThrow { get; set; }
 
+        public int FailuresRemaining { get; set; } = -1;
+
         public void EnqueueResponse(PrometheusClientQueryRangeResponse response)
         {
             _responses.Enqueue(response);
@@ -610,7 +612,7 @@ public sealed class MetricsServiceTests
                 await _release.Task.WaitAsync(cancellationToken);
             }
 
-            if (ExceptionToThrow != null)
+            if (ExceptionToThrow != null && (FailuresRemaining < 0 || FailuresRemaining-- > 0))
             {
                 throw ExceptionToThrow;
             }

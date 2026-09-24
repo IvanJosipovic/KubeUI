@@ -21,9 +21,6 @@ public partial class ClusterMetricsSettings : ObservableObject
     public partial MetricsServiceType MetricsServiceType { get; set; }
 
     [ObservableProperty]
-    public partial string? PrometheusServerUrl { get; set; }
-
-    [ObservableProperty]
     public partial PrometheusProviderKind? PrometheusProviderKind { get; set; }
 
     [ObservableProperty]

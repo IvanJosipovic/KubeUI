@@ -10,14 +10,10 @@ public sealed class ExternalPrometheusProvider : PrometheusProviderBase
 
     public override Task<ResolvedPrometheusEndpoint?> TryResolveServiceAsync(k8s.Kubernetes client, ClusterMetricsSettings settings, CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(settings.PrometheusDirectUrl) && string.IsNullOrWhiteSpace(settings.PrometheusServerUrl))
+        if (string.IsNullOrWhiteSpace(settings.PrometheusDirectUrl))
         {
             return Task.FromResult<ResolvedPrometheusEndpoint?>(null);
         }
-
-        var url = string.IsNullOrWhiteSpace(settings.PrometheusDirectUrl)
-            ? settings.PrometheusServerUrl
-            : settings.PrometheusDirectUrl;
 
         return Task.FromResult<ResolvedPrometheusEndpoint?>(new ResolvedPrometheusEndpoint(
             Kind,
@@ -26,7 +22,7 @@ public sealed class ExternalPrometheusProvider : PrometheusProviderBase
             null,
             null,
             null,
-            url,
+            settings.PrometheusDirectUrl,
             settings.PrometheusUseHttps,
             NormalizePrefix(settings.PrometheusPathPrefix),
             settings.PrometheusBearerToken));

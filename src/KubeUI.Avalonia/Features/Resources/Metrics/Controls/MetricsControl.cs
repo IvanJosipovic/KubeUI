@@ -188,18 +188,16 @@ public sealed partial class MetricsControl : UserControl, IInitializeCluster, IN
                     new NameScope())
             })
             .ItemTemplate(new FuncDataTemplate<MetricTabViewModel>((tab, _) =>
-                new ToggleButton()
+            {
+                var button = new ToggleButton()
                     .Padding(8, 6)
                     .Command(new RelayCommand(() => SelectedTab = tab))
                     .IsChecked(tab, x => x.IsSelected)
                     .ToolTip_Tip(tab, x => x.Title)
-                    .Content(
-                        new StackPanel()
-                            .Orientation(Orientation.Horizontal)
-                            .Spacing(6)
-                            .Children(
-                                new FluentIcon { FontSize = 14, Icon = tab.Icon },
-                                new TextBlock().Text(tab, x => x.Title)))));
+                    .Content(new FluentIcon { Icon = tab.Icon });
+                AutomationProperties.SetName(button, tab.Title);
+                return button;
+            }));
 
         var chart = new ResponsiveCartesianChart
         {

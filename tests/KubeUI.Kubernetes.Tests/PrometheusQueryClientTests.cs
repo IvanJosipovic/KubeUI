@@ -12,11 +12,15 @@ namespace KubeUI.Kubernetes.Tests;
 public sealed class PrometheusQueryClientTests
 {
     [Fact]
-    public async Task QueryRangeAsync_sends_service_proxy_request_through_authenticated_client()
+    public async Task PrepareAsync_lists_service_when_seeded_cache_does_not_contain_target()
     {
-        string? observedUri = null;
-        using var handler = new RecordingHandler(request => observedUri = request.RequestUri?.ToString());
-        var fixture = CreateCluster("microk8s", handler);
+        List<string> observedUris = [];
+        using var kubernetesHandler = new RecordingHandler(
+            request => observedUris.Add(request.RequestUri?.ToString() ?? string.Empty),
+            """
+            {"apiVersion":"v1","kind":"ServiceList","items":[{"apiVersion":"v1","kind":"Service","metadata":{"name":"prometheus-operated","namespace":"monitoring"},"spec":{"ports":[{"port":9090}]}}]}
+            """);
+        var fixture = CreateCluster("microk8s", kubernetesHandler);
         await using var cluster = fixture.Cluster;
         using var metricsService = fixture.Service;
         var client = new PrometheusQueryClient(NullLogger<PrometheusQueryClient>.Instance);
@@ -32,6 +36,48 @@ public sealed class PrometheusQueryClientTests
             string.Empty,
             null);
 
+        await client.PrepareAsync(cluster, endpoint);
+
+        observedUris.Count.ShouldBe(1);
+        new Uri(observedUris[0]).AbsolutePath.ShouldBe("/api/v1/namespaces/monitoring/services");
+        var service = cluster.GetResource<k8s.Models.V1Service>("monitoring", "prometheus-operated");
+        service.ShouldNotBeNull();
+        service.Spec.Ports[0].Port.ShouldBe(9090);
+        await client.ResetAsync();
+    }
+
+    [Fact]
+    public async Task QueryRangeAsync_reuses_existing_cluster_service_port_forward()
+    {
+        List<string> observedUris = [];
+        List<string?> observedTokens = [];
+        int kubernetesApiRequests = 0;
+        using var kubernetesHandler = new RecordingHandler(_ => kubernetesApiRequests++, ServiceListResponseBody);
+        using var queryHandler = new RecordingHandler(request =>
+        {
+            observedUris.Add(request.RequestUri?.ToString() ?? string.Empty);
+            observedTokens.Add(request.Headers.Authorization?.Parameter);
+        });
+        var fixture = CreateCluster("microk8s", kubernetesHandler);
+        await using var cluster = fixture.Cluster;
+        using var metricsService = fixture.Service;
+        var existingPortForwarder = cluster.AddServicePortForward("monitoring", "prometheus-operated", 9090);
+        var client = new PrometheusQueryClient(
+            NullLogger<PrometheusQueryClient>.Instance,
+            null,
+            () => queryHandler);
+        var endpoint = new ResolvedPrometheusEndpoint(
+            PrometheusProviderKind.Operator,
+            "Prometheus Operator",
+            false,
+            "monitoring",
+            "prometheus-operated",
+            9090,
+            null,
+            false,
+            string.Empty,
+            "prometheus-token");
+
         var response = await client.QueryRangeAsync(
             cluster,
             endpoint,
@@ -42,9 +88,16 @@ public sealed class PrometheusQueryClientTests
 
         response.ShouldNotBeNull();
         response.Status.ShouldBe("success");
-        observedUri.ShouldNotBeNull();
-        observedUri.ShouldContain("/api/v1/namespaces/monitoring/services/http:prometheus-operated:9090/proxy/api/v1/query_range");
-        Uri.UnescapeDataString(new Uri(observedUri).Query).ShouldContain("query=up{job=\"kube api\"}");
+        observedUris.Count.ShouldBe(1);
+        var observedUri = new Uri(observedUris[0]);
+        observedUri.Host.ShouldBe("prometheus-operated.monitoring.svc");
+        observedUri.Port.ShouldBe(existingPortForwarder.LocalPort);
+        observedUri.AbsolutePath.ShouldBe("/api/v1/query_range");
+        Uri.UnescapeDataString(observedUri.Query).ShouldContain("query=up{job=\"kube api\"}");
+        observedTokens.ShouldBe(["prometheus-token"]);
+        cluster.PortForwarders.Count.ShouldBe(1);
+        kubernetesApiRequests.ShouldBe(1);
+        kubernetesHandler.RequestUris.Single().ShouldStartWith("/api/v1/namespaces/monitoring/services?");
         await client.ResetAsync();
     }
 
@@ -52,8 +105,9 @@ public sealed class PrometheusQueryClientTests
     public async Task PrepareAsync_with_same_service_proxy_endpoint_logs_transport_once()
     {
         var logger = new TestLogger<PrometheusQueryClient>();
-        var client = new PrometheusQueryClient(logger);
-        var fixture = CreateCluster("microk8s");
+        using var client = new PrometheusQueryClient(logger);
+        using var kubernetesHandler = new RecordingHandler(_ => { }, ServiceListResponseBody);
+        var fixture = CreateCluster("microk8s", kubernetesHandler);
         await using var cluster = fixture.Cluster;
         using var metricsService = fixture.Service;
         var endpoint = new ResolvedPrometheusEndpoint(
@@ -76,11 +130,46 @@ public sealed class PrometheusQueryClientTests
     }
 
     [Fact]
+    public async Task PrepareAsync_concurrent_same_endpoint_creates_one_http_client()
+    {
+        using var kubernetesHandler = new RecordingHandler(_ => { }, ServiceListResponseBody);
+        var fixture = CreateCluster("microk8s", kubernetesHandler);
+        await using var cluster = fixture.Cluster;
+        using var metricsService = fixture.Service;
+        int httpHandlerCreations = 0;
+        using var client = new PrometheusQueryClient(
+            NullLogger<PrometheusQueryClient>.Instance,
+            null,
+            () =>
+            {
+                Interlocked.Increment(ref httpHandlerCreations);
+                return new RecordingHandler(_ => { });
+            });
+        var endpoint = new ResolvedPrometheusEndpoint(
+            PrometheusProviderKind.Operator,
+            "Prometheus Operator",
+            false,
+            "monitoring",
+            "prometheus-operated",
+            9090,
+            null,
+            false,
+            string.Empty,
+            null);
+
+        await Task.WhenAll(Enumerable.Range(0, 16).Select(_ => client.PrepareAsync(cluster, endpoint)));
+
+        httpHandlerCreations.ShouldBe(1);
+        await client.ResetAsync();
+    }
+
+    [Fact]
     public async Task PrepareAsync_with_changed_endpoint_logs_transport_again()
     {
         var logger = new TestLogger<PrometheusQueryClient>();
-        var client = new PrometheusQueryClient(logger);
-        var fixture = CreateCluster("microk8s");
+        using var client = new PrometheusQueryClient(logger);
+        using var kubernetesHandler = new RecordingHandler(_ => { }, ServiceListResponseBody);
+        var fixture = CreateCluster("microk8s", kubernetesHandler);
         await using var cluster = fixture.Cluster;
         using var metricsService = fixture.Service;
         var firstEndpoint = new ResolvedPrometheusEndpoint(
@@ -109,7 +198,7 @@ public sealed class PrometheusQueryClientTests
         string[] observedTokens = [];
         using var handler = new RecordingHandler(request => observedTokens = [.. observedTokens, request.Headers.Authorization?.Parameter ?? string.Empty]);
         var azureService = new FakeAzureMonitorWorkspaceService();
-        var client = new PrometheusQueryClient(
+        using var client = new PrometheusQueryClient(
             NullLogger<PrometheusQueryClient>.Instance,
             azureService,
             () => handler);
@@ -158,7 +247,9 @@ public sealed class PrometheusQueryClientTests
             }
             """;
 
-        var response = JsonSerializer.Deserialize<PrometheusClientQueryRangeResponse>(json);
+        var response = JsonSerializer.Deserialize(
+            json,
+            CustomSourceGenerationContext.Default.PrometheusClientQueryRangeResponse);
 
         response.ShouldNotBeNull();
         var value = response.Data.Result[0].Values[0];
@@ -195,6 +286,11 @@ public sealed class PrometheusQueryClientTests
         };
         return (cluster, metricsService);
     }
+
+    private const string ServiceListResponseBody =
+        "{\"apiVersion\":\"v1\",\"kind\":\"ServiceList\",\"items\":["
+        + "{\"apiVersion\":\"v1\",\"kind\":\"Service\",\"metadata\":{\"name\":\"prometheus-operated\",\"namespace\":\"monitoring\"},\"spec\":{\"ports\":[{\"port\":9090}]}},"
+        + "{\"apiVersion\":\"v1\",\"kind\":\"Service\",\"metadata\":{\"name\":\"prometheus-secondary\",\"namespace\":\"monitoring\"},\"spec\":{\"ports\":[{\"port\":9090}]}}]}";
 
     private sealed class TestLogger<T> : ILogger<T>
     {
@@ -253,19 +349,24 @@ public sealed class PrometheusQueryClientTests
 
     private sealed class RecordingHandler : DelegatingHandler
     {
-        public RecordingHandler(Action<HttpRequestMessage> record)
+        public RecordingHandler(Action<HttpRequestMessage> record, string responseBody = "{\"status\":\"success\",\"data\":{\"resultType\":\"matrix\",\"result\":[]}}")
         {
             _record = record;
+            _responseBody = responseBody;
         }
 
         private readonly Action<HttpRequestMessage> _record;
+        private readonly string _responseBody;
+        public List<string> RequestUris { get; } = [];
 
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
+            RequestUris.Add(request.RequestUri?.PathAndQuery ?? string.Empty);
             _record(request);
             return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
             {
-                Content = new StringContent("{\"status\":\"success\",\"data\":{\"resultType\":\"matrix\",\"result\":[]}}"),
+                Content = new StringContent(_responseBody),
+                RequestMessage = request,
             });
         }
     }

@@ -94,6 +94,114 @@ public sealed class PodMetricCellTests
     }
 
     [AvaloniaFact]
+    public async Task hidden_prometheus_history_cell_does_not_query_until_visible()
+    {
+        var queryClient = new FakePrometheusQueryClient
+        {
+            Result = CreateMetricResult("cpuUsage", 1.234),
+        };
+        await using var fixture = await MetricCellFixture.CreateAsync(queryClient);
+        var cell = fixture.CreateCpuCell(CreatePod());
+        cell.IsVisible = false;
+        using var window = Application.Current.CreateTestWindow(content: cell);
+
+        window.Show();
+        cell.Initialize(fixture.Workspace);
+        Dispatcher.UIThread.RunJobs();
+
+        queryClient.Queries.ShouldBe(0);
+
+        cell.IsVisible = true;
+        fixture.RefreshClock.Tick();
+        await TestWait.UntilAsync(
+            () => queryClient.Queries == 2,
+            timeout: TimeSpan.FromSeconds(5),
+            cancellationToken: TestContext.Current.CancellationToken,
+            beforePoll: () => Dispatcher.UIThread.RunJobs());
+    }
+
+    [AvaloniaFact]
+    public async Task off_viewport_prometheus_history_cell_waits_until_scrolled_into_view()
+    {
+        var queryClient = new FakePrometheusQueryClient
+        {
+            Result = CreateMetricResult("cpuUsage", 1.234),
+        };
+        await using var fixture = await MetricCellFixture.CreateAsync(queryClient);
+        var cell = fixture.CreateCpuCell(CreatePod());
+        var content = new StackPanel
+        {
+            Children =
+            {
+                new Border { Height = 500 },
+                cell,
+            },
+        };
+        var scrollViewer = new ScrollViewer { Content = content };
+        global::Avalonia.Rect? effectiveViewport = null;
+        cell.EffectiveViewportChanged += (_, args) => effectiveViewport = args.EffectiveViewport;
+        using var window = Application.Current.CreateTestWindow(content: scrollViewer);
+        window.Width = 200;
+        window.Height = 120;
+
+        window.Show();
+        cell.Initialize(fixture.Workspace);
+        Dispatcher.UIThread.RunJobs();
+        effectiveViewport.ShouldNotBeNull();
+        effectiveViewport!.Value.Intersects(new global::Avalonia.Rect(cell.Bounds.Size)).ShouldBeFalse();
+        queryClient.Queries.ShouldBe(0);
+
+        scrollViewer.Offset = new global::Avalonia.Vector(0, 500);
+        await TestWait.UntilAsync(
+            () => queryClient.Queries == 2,
+            timeout: TimeSpan.FromSeconds(5),
+            cancellationToken: TestContext.Current.CancellationToken,
+            beforePoll: () => Dispatcher.UIThread.RunJobs());
+    }
+
+    [AvaloniaFact]
+    public async Task prometheus_history_cell_refreshes_every_minute()
+    {
+        var queryClient = new FakePrometheusQueryClient
+        {
+            Result = CreateMetricResult("cpuUsage", 1.234),
+        };
+        await using var fixture = await MetricCellFixture.CreateAsync(queryClient);
+        var initialTime = fixture.TimeProvider.GetUtcNow();
+        fixture.TimeProvider.SetUtcNow(new DateTimeOffset(
+            initialTime.Year,
+            initialTime.Month,
+            initialTime.Day,
+            initialTime.Hour,
+            initialTime.Minute,
+            0,
+            TimeSpan.Zero));
+        var cell = fixture.CreateCpuCell(CreatePod());
+        using var window = Application.Current.CreateTestWindow(content: cell);
+
+        window.Show();
+        cell.Initialize(fixture.Workspace);
+        await TestWait.UntilAsync(
+            () => queryClient.Queries == 2,
+            timeout: TimeSpan.FromSeconds(5),
+            cancellationToken: TestContext.Current.CancellationToken,
+            beforePoll: () => Dispatcher.UIThread.RunJobs());
+
+        fixture.TimeProvider.Advance(TimeSpan.FromSeconds(59));
+        fixture.RefreshClock.Tick();
+        Dispatcher.UIThread.RunJobs();
+        queryClient.Queries.ShouldBe(2);
+
+        fixture.TimeProvider.Advance(TimeSpan.FromSeconds(1));
+        fixture.RefreshClock.Tick();
+        await TestWait.UntilAsync(
+            () => queryClient.Queries == 4,
+            timeout: TimeSpan.FromSeconds(5),
+            cancellationToken: TestContext.Current.CancellationToken,
+            beforePoll: () => Dispatcher.UIThread.RunJobs());
+    }
+
+    [AvaloniaFact]
     public async Task cpu_cell_renders_async_prometheus_value()
     {
         var queryClient = new FakePrometheusQueryClient
@@ -683,37 +791,42 @@ public sealed class PodMetricCellTests
             Cluster cluster,
             ClusterWorkspace workspace,
             MetricsService metricsService,
-            IUiRefreshClock refreshClock,
+            TestUiRefreshClock refreshClock,
+            TestTimeProvider timeProvider,
             FakePrometheusQueryClient queryClient)
         {
             _cluster = cluster;
             Workspace = workspace;
             _metricsService = metricsService;
             RefreshClock = refreshClock;
+            TimeProvider = timeProvider;
             QueryClient = queryClient;
         }
 
         public ClusterWorkspace Workspace { get; }
 
-        public IUiRefreshClock RefreshClock { get; }
+        public TestUiRefreshClock RefreshClock { get; }
+
+        public TestTimeProvider TimeProvider { get; }
 
         public FakePrometheusQueryClient QueryClient { get; }
 
         public PodCpuHistoryCell CreateCpuCell(V1Pod pod)
-            => new(RefreshClock, TimeProvider.System) { DataContext = pod };
+            => new(RefreshClock, TimeProvider) { DataContext = pod };
 
         public PodMemoryHistoryCell CreateMemoryCell(V1Pod pod)
-            => new(RefreshClock, TimeProvider.System) { DataContext = pod };
+            => new(RefreshClock, TimeProvider) { DataContext = pod };
 
         public NodeCpuHistoryCell CreateNodeCpuCell(V1Node node)
-            => new(RefreshClock, TimeProvider.System) { DataContext = node };
+            => new(RefreshClock, TimeProvider) { DataContext = node };
 
         public NodeMemoryHistoryCell CreateNodeMemoryCell(V1Node node)
-            => new(RefreshClock, TimeProvider.System) { DataContext = node };
+            => new(RefreshClock, TimeProvider) { DataContext = node };
 
         public void UseMetricsServerSamples(params PodMetrics[] samples)
         {
             _metricsService.ActiveMetricsBackend = ActiveMetricsBackend.KubernetesMetricsServer;
+            TimeProvider.SetUtcNow(DateTimeOffset.UtcNow.AddSeconds(1));
             foreach (var sample in samples)
             {
                 _metricsService.PodMetrics.Add(sample);
@@ -723,6 +836,7 @@ public sealed class PodMetricCellTests
         public void UseNodeMetricsSamples(params NodeMetrics[] samples)
         {
             _metricsService.ActiveMetricsBackend = ActiveMetricsBackend.KubernetesMetricsServer;
+            TimeProvider.SetUtcNow(DateTimeOffset.UtcNow.AddSeconds(1));
             foreach (var sample in samples)
             {
                 _metricsService.NodeMetrics.Add(sample);
@@ -739,11 +853,14 @@ public sealed class PodMetricCellTests
         {
             var settings = new MetricCellSettingsStore();
             var services = Application.Current.GetTestServices();
+            var refreshClock = new TestUiRefreshClock();
+            var timeProvider = new TestTimeProvider(DateTimeOffset.UtcNow);
             var metricsService = new MetricsService(
                 NullLogger<MetricsService>.Instance,
                 settings,
                 [new ExternalPrometheusProvider()],
-                queryClient);
+                queryClient,
+                timeProvider);
             var cluster = new Cluster(
                 NullLogger<Cluster>.Instance,
                 services.GetRequiredService<ILoggerFactory>(),
@@ -765,7 +882,8 @@ public sealed class PodMetricCellTests
                 cluster,
                 workspace,
                 metricsService,
-                services.GetRequiredService<IUiRefreshClock>(),
+                refreshClock,
+                timeProvider,
                 queryClient);
         }
 
@@ -774,6 +892,64 @@ public sealed class PodMetricCellTests
             Workspace.Dispose();
             await _cluster.DisposeAsync();
             _metricsService.Dispose();
+        }
+    }
+
+    private sealed class TestUiRefreshClock : IUiRefreshClock
+    {
+        private readonly List<Action> _callbacks = [];
+
+        public IDisposable Subscribe(Action callback)
+        {
+            _callbacks.Add(callback);
+            return new RefreshSubscription(_callbacks, callback);
+        }
+
+        public void Tick()
+        {
+            foreach (var callback in _callbacks.ToArray())
+            {
+                callback();
+            }
+        }
+    }
+
+    private sealed class RefreshSubscription : IDisposable
+    {
+        private List<Action>? _callbacks;
+        private readonly Action _callback;
+
+        public RefreshSubscription(List<Action> callbacks, Action callback)
+        {
+            _callbacks = callbacks;
+            _callback = callback;
+        }
+
+        public void Dispose()
+        {
+            Interlocked.Exchange(ref _callbacks, null)?.Remove(_callback);
+        }
+    }
+
+    private sealed class TestTimeProvider : TimeProvider
+    {
+        private DateTimeOffset _utcNow;
+
+        public TestTimeProvider(DateTimeOffset utcNow)
+        {
+            _utcNow = utcNow;
+        }
+
+        public override DateTimeOffset GetUtcNow() => _utcNow;
+
+        public void Advance(TimeSpan duration)
+        {
+            _utcNow += duration;
+        }
+
+        public void SetUtcNow(DateTimeOffset utcNow)
+        {
+            _utcNow = utcNow;
         }
     }
 

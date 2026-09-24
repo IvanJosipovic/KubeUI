@@ -37,7 +37,7 @@ public sealed class PrometheusClientQueryRangeResponse
         public IList<(DateTimeOffset Timestamp, double Value)> Values { get; set; } = [];
     }
 
-    private sealed class TupleConverter : JsonConverter<IList<(DateTimeOffset Timestamp, double Value)>>
+    internal sealed class TupleConverter : JsonConverter<IList<(DateTimeOffset Timestamp, double Value)>>
     {
         public override IList<(DateTimeOffset Timestamp, double Value)> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {

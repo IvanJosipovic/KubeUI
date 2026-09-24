@@ -5,6 +5,8 @@ using Avalonia.Controls.Primitives;
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
+using FluentIcons.Avalonia;
+using FluentIcons.Common;
 using k8s;
 using k8s.Models;
 using KubeUI.Avalonia.Features.Resources.Metrics.Controls;
@@ -268,8 +270,8 @@ public sealed class MetricsControlTests
     public async Task rendered_tab_selection_updates_selected_tab()
     {
         using var control = new MetricsControl();
-        var first = new MetricTabViewModel { Title = "CPU" };
-        var second = new MetricTabViewModel { Title = "Memory" };
+        var first = new MetricTabViewModel { Title = "CPU", Icon = Icon.TopSpeed };
+        var second = new MetricTabViewModel { Title = "Memory", Icon = Icon.Ram };
         control.Tabs.Add(first);
         control.Tabs.Add(second);
 
@@ -279,6 +281,12 @@ public sealed class MetricsControlTests
 
         var buttons = control.GetVisualDescendants().OfType<ToggleButton>().Where(button => button.Command != null).ToArray();
         buttons.Length.ShouldBe(2);
+        buttons[0].Content.ShouldBeOfType<FluentIcon>().Icon.ShouldBe(Icon.TopSpeed);
+        buttons[1].Content.ShouldBeOfType<FluentIcon>().Icon.ShouldBe(Icon.Ram);
+        ToolTip.GetTip(buttons[0]).ShouldBe("CPU");
+        ToolTip.GetTip(buttons[1]).ShouldBe("Memory");
+        AutomationProperties.GetName(buttons[0]).ShouldBe("CPU");
+        AutomationProperties.GetName(buttons[1]).ShouldBe("Memory");
         buttons[1].Command!.Execute(null);
         await TestApplicationExtensions.WaitForUiAsync(TestContext.Current.CancellationToken);
 

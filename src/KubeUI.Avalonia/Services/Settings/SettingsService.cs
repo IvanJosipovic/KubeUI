@@ -26,9 +26,9 @@ public class SettingsService : ObservableObject, ISettingsService, IClusterSetti
             var removedPersistedPrometheusToken = false;
             foreach (var clusterSettings in _settings.ClusterSettings.Values)
             {
-                if (clusterSettings.PrometheusBearerToken is not null)
+                if (clusterSettings.MetricsSettings.PrometheusBearerToken is not null)
                 {
-                    clusterSettings.PrometheusBearerToken = null;
+                    clusterSettings.MetricsSettings.PrometheusBearerToken = null;
                     removedPersistedPrometheusToken = true;
                 }
             }
@@ -104,7 +104,7 @@ public class SettingsService : ObservableObject, ISettingsService, IClusterSetti
 
     public ClusterMetricsSettings GetClusterMetricsSettings(IClusterRuntime cluster)
     {
-        return Settings.GetClusterSettings(cluster);
+        return Settings.GetClusterSettings(cluster).MetricsSettings;
     }
 
     public void Persist()

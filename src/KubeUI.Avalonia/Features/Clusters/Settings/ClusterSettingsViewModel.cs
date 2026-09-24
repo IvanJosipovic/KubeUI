@@ -9,6 +9,7 @@ namespace KubeUI.Avalonia.Features.Clusters.Settings;
 public sealed partial class ClusterSettingsViewModel : ViewModelBase, IInitializeCluster
 {
     private ClusterSettings? _subscribedClusterSettings;
+    private ClusterMetricsSettings? _subscribedMetricsSettings;
     private INotifyPropertyChanged? _subscribedRuntime;
     private readonly IAzureMonitorWorkspaceService _azureMonitorWorkspaceService;
     private int _workspaceLoadVersion;
@@ -63,9 +64,9 @@ public sealed partial class ClusterSettingsViewModel : ViewModelBase, IInitializ
         AzureMonitorSubscriptions = [];
         AzureMonitorWorkspaces = [];
         SelectedAzureMonitorSubscription = AzureMonitorSubscriptions.FirstOrDefault(
-            subscription => subscription.SubscriptionId == ClusterSettings.AzureMonitorSubscriptionId);
+            subscription => subscription.SubscriptionId == ClusterSettings.MetricsSettings.AzureMonitorSubscriptionId);
         SelectedAzureMonitorWorkspace = AzureMonitorWorkspaces.FirstOrDefault(
-            workspace => workspace.ResourceId == ClusterSettings.AzureMonitorWorkspaceId);
+            workspace => workspace.ResourceId == ClusterSettings.MetricsSettings.AzureMonitorWorkspaceId);
     }
 
     [ObservableProperty]
@@ -81,7 +82,7 @@ public sealed partial class ClusterSettingsViewModel : ViewModelBase, IInitializ
     {
         get
         {
-            var current = ClusterSettings?.MetricsServiceType ?? MetricsServiceType.Auto;
+            var current = ClusterSettings?.MetricsSettings.MetricsServiceType ?? MetricsServiceType.Auto;
             foreach (var option in MetricsServiceOptions)
             {
                 if (option.Value == current)
@@ -94,12 +95,12 @@ public sealed partial class ClusterSettingsViewModel : ViewModelBase, IInitializ
         }
         set
         {
-            if (ClusterSettings is null || value is null || ClusterSettings.MetricsServiceType == value.Value)
+            if (ClusterSettings is null || value is null || ClusterSettings.MetricsSettings.MetricsServiceType == value.Value)
             {
                 return;
             }
 
-            ClusterSettings.MetricsServiceType = value.Value;
+            ClusterSettings.MetricsSettings.MetricsServiceType = value.Value;
         }
     }
 
@@ -107,7 +108,7 @@ public sealed partial class ClusterSettingsViewModel : ViewModelBase, IInitializ
     {
         get
         {
-            var current = ClusterSettings?.PrometheusProviderKind;
+            var current = ClusterSettings?.MetricsSettings.PrometheusProviderKind;
             foreach (var option in PrometheusProviderOptions)
             {
                 if (option.Value == current)
@@ -120,16 +121,16 @@ public sealed partial class ClusterSettingsViewModel : ViewModelBase, IInitializ
         }
         set
         {
-            if (ClusterSettings is null || value is null || ClusterSettings.PrometheusProviderKind == value.Value)
+            if (ClusterSettings is null || value is null || ClusterSettings.MetricsSettings.PrometheusProviderKind == value.Value)
             {
                 return;
             }
 
-            ClusterSettings.PrometheusProviderKind = value.Value;
+            ClusterSettings.MetricsSettings.PrometheusProviderKind = value.Value;
         }
     }
 
-    public bool ShowPrometheusSettings => ClusterSettings?.MetricsServiceType == MetricsServiceType.Prometheus;
+    public bool ShowPrometheusSettings => ClusterSettings?.MetricsSettings.MetricsServiceType == MetricsServiceType.Prometheus;
 
     public bool ShowPrometheusServiceSettings => ShowPrometheusSettings
         && SelectedPrometheusProvider?.Value is not (PrometheusProviderKind.External or PrometheusProviderKind.AzureMonitor);
@@ -154,15 +155,15 @@ public sealed partial class ClusterSettingsViewModel : ViewModelBase, IInitializ
 
     public AzureMonitorSubscriptionInfo? SelectedAzureMonitorSubscription
     {
-        get => AzureMonitorSubscriptions.FirstOrDefault(subscription => subscription.SubscriptionId == ClusterSettings?.AzureMonitorSubscriptionId);
+        get => AzureMonitorSubscriptions.FirstOrDefault(subscription => subscription.SubscriptionId == ClusterSettings?.MetricsSettings.AzureMonitorSubscriptionId);
         set
         {
-            if (value is null || ClusterSettings is null || ClusterSettings.AzureMonitorSubscriptionId == value.SubscriptionId)
+            if (value is null || ClusterSettings is null || ClusterSettings.MetricsSettings.AzureMonitorSubscriptionId == value.SubscriptionId)
             {
                 return;
             }
 
-            ClusterSettings.AzureMonitorSubscriptionId = value.SubscriptionId;
+            ClusterSettings.MetricsSettings.AzureMonitorSubscriptionId = value.SubscriptionId;
             OnPropertyChanged();
             _ = LoadAzureMonitorWorkspacesAsync(value);
         }
@@ -170,16 +171,16 @@ public sealed partial class ClusterSettingsViewModel : ViewModelBase, IInitializ
 
     public AzureMonitorWorkspaceInfo? SelectedAzureMonitorWorkspace
     {
-        get => AzureMonitorWorkspaces.FirstOrDefault(workspace => workspace.ResourceId == ClusterSettings?.AzureMonitorWorkspaceId);
+        get => AzureMonitorWorkspaces.FirstOrDefault(workspace => workspace.ResourceId == ClusterSettings?.MetricsSettings.AzureMonitorWorkspaceId);
         set
         {
-            if (value is null || ClusterSettings is null || ClusterSettings.AzureMonitorWorkspaceId == value.ResourceId)
+            if (value is null || ClusterSettings is null || ClusterSettings.MetricsSettings.AzureMonitorWorkspaceId == value.ResourceId)
             {
                 return;
             }
 
-            ClusterSettings.AzureMonitorWorkspaceId = value.ResourceId;
-            ClusterSettings.AzureMonitorQueryEndpoint = value.QueryEndpoint;
+            ClusterSettings.MetricsSettings.AzureMonitorWorkspaceId = value.ResourceId;
+            ClusterSettings.MetricsSettings.AzureMonitorQueryEndpoint = value.QueryEndpoint;
             OnPropertyChanged();
         }
     }
@@ -226,7 +227,7 @@ public sealed partial class ClusterSettingsViewModel : ViewModelBase, IInitializ
                 }
 
                 var selected = AzureMonitorSubscriptions.FirstOrDefault(
-                    subscription => subscription.SubscriptionId == ClusterSettings.AzureMonitorSubscriptionId)
+                    subscription => subscription.SubscriptionId == ClusterSettings.MetricsSettings.AzureMonitorSubscriptionId)
                     ?? AzureMonitorSubscriptions.FirstOrDefault();
                 if (selected is null)
                 {
@@ -234,7 +235,7 @@ public sealed partial class ClusterSettingsViewModel : ViewModelBase, IInitializ
                     return;
                 }
 
-                if (ClusterSettings.AzureMonitorSubscriptionId == selected.SubscriptionId)
+                if (ClusterSettings.MetricsSettings.AzureMonitorSubscriptionId == selected.SubscriptionId)
                 {
                     _ = LoadAzureMonitorWorkspacesAsync(selected);
                 }
@@ -310,7 +311,7 @@ public sealed partial class ClusterSettingsViewModel : ViewModelBase, IInitializ
 
             if (!Cluster.Runtime.IsMetricsAvailable || Cluster.Runtime.ActiveMetricsBackend.Type == MetricsServiceType.None)
             {
-                return ClusterSettings?.MetricsServiceType == MetricsServiceType.None
+                return ClusterSettings?.MetricsSettings.MetricsServiceType == MetricsServiceType.None
                     ? Assets.Resources.ClusterSettingsView_ActiveMetricsServiceDisabled!
                     : Assets.Resources.ClusterSettingsView_ActiveMetricsServiceUnavailable!;
             }
@@ -373,6 +374,7 @@ public sealed partial class ClusterSettingsViewModel : ViewModelBase, IInitializ
 
         _subscribedClusterSettings = value;
         _subscribedClusterSettings.PropertyChanged += OnClusterSettingsPropertyChanged;
+        SubscribeMetricsSettings(value.MetricsSettings);
         RaiseMetricsPropertiesChanged();
     }
 
@@ -380,7 +382,28 @@ public sealed partial class ClusterSettingsViewModel : ViewModelBase, IInitializ
     {
         SettingsService.SaveSettings();
 
-        if (e.PropertyName is nameof(ClusterSettings.MetricsServiceType) or nameof(ClusterSettings.PrometheusProviderKind))
+        if (e.PropertyName == nameof(ClusterSettings.MetricsSettings))
+        {
+            SubscribeMetricsSettings(ClusterSettings.MetricsSettings);
+            RaiseMetricsPropertiesChanged();
+        }
+    }
+
+    private void SubscribeMetricsSettings(ClusterMetricsSettings metricsSettings)
+    {
+        if (_subscribedMetricsSettings is not null)
+        {
+            _subscribedMetricsSettings.PropertyChanged -= OnMetricsSettingsPropertyChanged;
+        }
+
+        _subscribedMetricsSettings = metricsSettings;
+        _subscribedMetricsSettings.PropertyChanged += OnMetricsSettingsPropertyChanged;
+    }
+
+    private void OnMetricsSettingsPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        SettingsService.SaveSettings();
+        if (e.PropertyName is nameof(ClusterMetricsSettings.MetricsServiceType) or nameof(ClusterMetricsSettings.PrometheusProviderKind))
         {
             RaiseMetricsPropertiesChanged();
         }

@@ -4,6 +4,7 @@ using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Infrastructure.Threading;
 using KubeUI.Avalonia.Styles;
 using KubeUI.Kubernetes;
+using Avalonia.VisualTree;
 
 namespace KubeUI.Avalonia.Features.Resources.Metrics.Controls;
 
@@ -12,6 +13,8 @@ namespace KubeUI.Avalonia.Features.Resources.Metrics.Controls;
 public abstract class MetricsHistoryCellBase<TResource> : UserControl, IInitializeCluster
     where TResource : class
 {
+    private static readonly TimeSpan s_prometheusRefreshInterval = TimeSpan.FromMinutes(1);
+
     private readonly IUiRefreshClock _refreshClock;
     private readonly TimeProvider _timeProvider;
     private readonly IBrush _normalBrush;
@@ -26,6 +29,8 @@ public abstract class MetricsHistoryCellBase<TResource> : UserControl, IInitiali
     private MetricHistoryData _history = MetricHistoryData.Empty;
     private DateTimeOffset _nextRefreshUtc;
     private long _requestVersion;
+    private bool _hasEffectiveViewport;
+    private bool _isInEffectiveViewport;
 
     protected MetricsHistoryCellBase(
         IUiRefreshClock refreshClock,
@@ -120,15 +125,29 @@ public abstract class MetricsHistoryCellBase<TResource> : UserControl, IInitiali
         RefreshCell();
     }
 
+    protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
+    {
+        base.OnPropertyChanged(change);
+        if (change.Property == IsVisibleProperty
+            || change.Property.Name == nameof(IsEffectivelyVisible))
+        {
+            RefreshCell();
+        }
+    }
+
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnAttachedToVisualTree(e);
+        EffectiveViewportChanged += OnEffectiveViewportChanged;
         _refreshSubscription = _refreshClock.Subscribe(RefreshCell);
         RefreshCell();
     }
 
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
     {
+        EffectiveViewportChanged -= OnEffectiveViewportChanged;
+        _hasEffectiveViewport = false;
+        _isInEffectiveViewport = false;
         _refreshSubscription?.Dispose();
         _refreshSubscription = null;
         CancelPendingRequest();
@@ -184,13 +203,29 @@ public abstract class MetricsHistoryCellBase<TResource> : UserControl, IInitiali
             return;
         }
 
+        if (!this.IsAttachedToVisualTree()
+            || !IsEffectivelyVisible
+            || !_hasEffectiveViewport
+            || !_isInEffectiveViewport)
+        {
+            CancelPendingRequest();
+            return;
+        }
+
         if (_timeProvider.GetUtcNow() >= _nextRefreshUtc && _prometheusCancellation == null)
         {
-            _nextRefreshUtc = _timeProvider.GetUtcNow().AddSeconds(30);
+            _nextRefreshUtc = _timeProvider.GetUtcNow() + s_prometheusRefreshInterval;
             _ = LoadPrometheusHistory(resource, backend);
         }
 
         RenderHistory(resource, _history);
+    }
+
+    private void OnEffectiveViewportChanged(object? sender, EffectiveViewportChangedEventArgs e)
+    {
+        _hasEffectiveViewport = true;
+        _isInEffectiveViewport = e.EffectiveViewport.Intersects(new Rect(Bounds.Size));
+        RefreshCell();
     }
 
     private async Task LoadPrometheusHistory(TResource resource, ActiveMetricsBackend backend)

@@ -208,7 +208,7 @@ public sealed class ClusterSettingsView : ViewBase<ClusterSettingsViewModel>
             vm,
             Assets.Resources.ClusterSettingsView_PrometheusServiceNameLabel,
             Assets.Resources.ClusterSettingsView_PrometheusServiceNameTooltip,
-            x => x.ClusterSettings.PrometheusServiceName,
+            x => x.ClusterSettings.MetricsSettings.PrometheusServiceName,
             x => x.ShowPrometheusServiceSettings);
     }
 
@@ -218,7 +218,7 @@ public sealed class ClusterSettingsView : ViewBase<ClusterSettingsViewModel>
             vm,
             Assets.Resources.ClusterSettingsView_PrometheusServiceNamespaceLabel,
             Assets.Resources.ClusterSettingsView_PrometheusServiceNamespaceTooltip,
-            x => x.ClusterSettings.PrometheusServiceNamespace,
+            x => x.ClusterSettings.MetricsSettings.PrometheusServiceNamespace,
             x => x.ShowPrometheusServiceSettings);
     }
 
@@ -228,7 +228,7 @@ public sealed class ClusterSettingsView : ViewBase<ClusterSettingsViewModel>
             vm,
             Assets.Resources.ClusterSettingsView_PrometheusServicePortLabel,
             Assets.Resources.ClusterSettingsView_PrometheusServicePortTooltip,
-            x => x.ClusterSettings.PrometheusServicePort,
+            x => x.ClusterSettings.MetricsSettings.PrometheusServicePort,
             x => x.ShowPrometheusServiceSettings);
     }
 
@@ -238,7 +238,7 @@ public sealed class ClusterSettingsView : ViewBase<ClusterSettingsViewModel>
             vm,
             Assets.Resources.ClusterSettingsView_PrometheusDirectUrlLabel,
             Assets.Resources.ClusterSettingsView_PrometheusDirectUrlTooltip,
-            x => x.ClusterSettings.PrometheusDirectUrl,
+            x => x.ClusterSettings.MetricsSettings.PrometheusDirectUrl,
             x => x.ShowPrometheusDirectUrlSettings);
     }
 
@@ -248,7 +248,7 @@ public sealed class ClusterSettingsView : ViewBase<ClusterSettingsViewModel>
             vm,
             Assets.Resources.ClusterSettingsView_PrometheusPathPrefixLabel,
             Assets.Resources.ClusterSettingsView_PrometheusPathPrefixTooltip,
-            x => x.ClusterSettings.PrometheusPathPrefix,
+            x => x.ClusterSettings.MetricsSettings.PrometheusPathPrefix,
             x => x.ShowPrometheusCustomTransportSettings);
     }
 
@@ -258,7 +258,7 @@ public sealed class ClusterSettingsView : ViewBase<ClusterSettingsViewModel>
             vm,
             Assets.Resources.ClusterSettingsView_PrometheusBearerTokenLabel,
             Assets.Resources.ClusterSettingsView_PrometheusBearerTokenTooltip,
-            x => x.ClusterSettings.PrometheusBearerToken,
+            x => x.ClusterSettings.MetricsSettings.PrometheusBearerToken,
             x => x.ShowPrometheusCustomTransportSettings);
     }
 
@@ -294,6 +294,6 @@ public sealed class ClusterSettingsView : ViewBase<ClusterSettingsViewModel>
                     .Col(0),
                 new CheckBox()
                     .Col(1)
-                    .IsChecked(vm, x => x.ClusterSettings.PrometheusUseHttps, BindingMode.TwoWay));
+                    .IsChecked(vm, x => x.ClusterSettings.MetricsSettings.PrometheusUseHttps, BindingMode.TwoWay));
     }
 }
