@@ -33,7 +33,7 @@ public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>
             {
                 Key = "cpu",
                 Name = Assets.Resources.V1NodeConfig_CPU!,
-                CustomControl = Cluster.Runtime.IsMetricsAvailable ? typeof(MetricsHistoryCPUCellView) : null,
+                CustomControl = typeof(MetricsHistoryCPUCellView),
                 Field = x => x?.Status ?.Capacity ?.TryGetValue("cpu", out var value) == true && value != null ? value.ToDecimal() : 0,
                 Display = x => x?.Status?.Capacity?.TryGetValue("cpu", out var value) == true && value != null ? value.ToDecimal().ToString("0.##") + "c" : "0c",
                 Width = "80"
@@ -42,7 +42,7 @@ public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>
             {
                 Key = "memory",
                 Name = Assets.Resources.V1NodeConfig_Memory!,
-                CustomControl = Cluster.Runtime.IsMetricsAvailable ? typeof(MetricsHistoryMemoryCellView) : null,
+                CustomControl = typeof(MetricsHistoryMemoryCellView),
                 Field = x => x?.Status ?.Capacity ?.TryGetValue("memory", out var value) == true && value != null ? value.ToDecimal() : 0,
                 Display = x => x?.Status?.Capacity?.TryGetValue("memory", out var value) == true && value != null ? (value.ToDecimal() / 1048576 / 1024).ToString("0.##") + "Gi" : "0Gi",
                 Width = "80"

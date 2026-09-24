@@ -21,8 +21,24 @@ public class SettingsService : ObservableObject, ISettingsService, IClusterSetti
                 return _settings;
             }
 
-            _settings = _persistence.Load().Settings;
+            var persistenceData = _persistence.Load();
+            _settings = persistenceData.Settings;
+            var removedPersistedPrometheusToken = false;
+            foreach (var clusterSettings in _settings.ClusterSettings.Values)
+            {
+                if (clusterSettings.PrometheusBearerToken is not null)
+                {
+                    clusterSettings.PrometheusBearerToken = null;
+                    removedPersistedPrometheusToken = true;
+                }
+            }
+
             HookSettings(_settings);
+            if (removedPersistedPrometheusToken)
+            {
+                _persistence.Save(persistenceData);
+            }
+
             return _settings;
         }
         set

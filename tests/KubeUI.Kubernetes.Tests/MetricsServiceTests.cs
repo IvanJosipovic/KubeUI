@@ -91,6 +91,24 @@ public sealed class MetricsServiceTests
     }
 
     [Fact]
+    public async Task InitializeAsync_explicit_prometheus_does_not_fall_back_to_metrics_server()
+    {
+        using var api = CreateMetricsServerApi();
+        var settings = new TestClusterSettingsStore(new ClusterMetricsSettings
+        {
+            MetricsServiceType = MetricsServiceType.Prometheus,
+            PrometheusProviderKind = PrometheusProviderKind.External,
+        });
+        using var service = CreateMetricsService(settings, new FakePrometheusQueryClient());
+        await using var cluster = CreateCluster("explicit-prom-cluster", service, settings, CreateFakeClient(api));
+
+        await service.InitializeAsync(cluster);
+
+        service.IsMetricsAvailable.ShouldBeFalse();
+        service.ActiveMetricsBackend.ShouldBe(ActiveMetricsBackend.None);
+    }
+
+    [Fact]
     public async Task InitializeAsync_with_available_metrics_server_refreshes_pod_and_node_metrics()
     {
         using var api = CreateMetricsServerApi();
@@ -180,7 +198,7 @@ public sealed class MetricsServiceTests
     }
 
     [Fact]
-    public async Task InitializeAsync_auto_keeps_metrics_disabled_when_prometheus_is_unavailable()
+    public async Task InitializeAsync_auto_falls_back_to_available_metrics_server_when_prometheus_is_unavailable()
     {
         using var api = CreateMetricsServerApi();
         var settings = new TestClusterSettingsStore(new ClusterMetricsSettings
@@ -192,8 +210,8 @@ public sealed class MetricsServiceTests
 
         await service.InitializeAsync(cluster);
 
-        service.IsMetricsAvailable.ShouldBeFalse();
-        service.ActiveMetricsBackend.ShouldBe(ActiveMetricsBackend.None);
+        service.IsMetricsAvailable.ShouldBeTrue();
+        service.ActiveMetricsBackend.ShouldBe(ActiveMetricsBackend.KubernetesMetricsServer);
     }
 
     [Fact]
@@ -218,6 +236,47 @@ public sealed class MetricsServiceTests
         result.IsEmpty.ShouldBeFalse();
         queryClient.QueryCalls.ShouldBe(1);
         result.Metrics["cpuUsage"].Single().Points.Last().Value.ShouldBe(2.5);
+    }
+
+    [Fact]
+    public async Task RequestMetricsAsync_gap_filling_uses_requested_step_seconds()
+    {
+        var queryClient = new FakePrometheusQueryClient();
+        queryClient.EnqueueResponse(new PrometheusClientQueryRangeResponse
+        {
+            Status = "success",
+            Data = new PrometheusClientQueryRangeResponse.DataObject
+            {
+                ResultType = "matrix",
+                Result =
+                [
+                    new PrometheusClientQueryRangeResponse.ResultObject
+                    {
+                        Metric = new Dictionary<string, string> { ["pod"] = "pod-1" },
+                        Values =
+                        [
+                            (DateTimeOffset.FromUnixTimeSeconds(0), 1d),
+                            (DateTimeOffset.FromUnixTimeSeconds(600), 2d),
+                        ],
+                    },
+                ],
+            },
+        });
+        var settings = new TestClusterSettingsStore(new ClusterMetricsSettings
+        {
+            MetricsServiceType = MetricsServiceType.Prometheus,
+            PrometheusProviderKind = PrometheusProviderKind.External,
+            PrometheusDirectUrl = "http://prometheus.example",
+        });
+        using var service = CreateMetricsService(settings, queryClient);
+        await using var cluster = CreateCluster("prom-cluster", service, settings);
+        await service.InitializeAsync(cluster);
+        var request = CreateRequest(stepSeconds: 300, frames: 3);
+
+        var result = await service.RequestMetricsAsync(request);
+
+        result.Metrics["cpuUsage"].Single().Points.Select(static point => point.Timestamp)
+            .ShouldBe([DateTimeOffset.FromUnixTimeSeconds(0), DateTimeOffset.FromUnixTimeSeconds(300), DateTimeOffset.FromUnixTimeSeconds(600)]);
     }
 
     [Fact]
@@ -453,14 +512,14 @@ public sealed class MetricsServiceTests
         return new FakeKubernetesHttpApi();
     }
 
-    private static MetricRequest CreateRequest()
+    private static MetricRequest CreateRequest(int stepSeconds = 60, int frames = 5)
     {
         return new MetricRequest
         {
             Category = MetricCategory.Pods,
             RangeSeconds = 300,
-            StepSeconds = 60,
-            Frames = 5,
+            StepSeconds = stepSeconds,
+            Frames = frames,
             Queries =
             [
                 new MetricQueryDefinition

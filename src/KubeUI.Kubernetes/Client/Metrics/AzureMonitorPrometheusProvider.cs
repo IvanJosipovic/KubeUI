@@ -22,7 +22,7 @@ public sealed class AzureMonitorPrometheusProvider : PrometheusProviderBase
 
         if (string.IsNullOrWhiteSpace(settings.AzureMonitorWorkspaceId)
             || !Uri.TryCreate(settings.AzureMonitorQueryEndpoint, UriKind.Absolute, out var endpoint)
-            || (endpoint.Scheme != Uri.UriSchemeHttps && endpoint.Scheme != Uri.UriSchemeHttp))
+            || endpoint.Scheme != Uri.UriSchemeHttps)
         {
             return Task.FromResult<ResolvedPrometheusEndpoint?>(null);
         }

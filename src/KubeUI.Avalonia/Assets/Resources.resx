@@ -702,7 +702,7 @@
     <comment/>
   </data>
   <data name="ClusterSettingsView_PrometheusBearerTokenTooltip" xml:space="preserve">
-    <value>Optional bearer token for Prometheus requests</value>
+    <value>Optional bearer token for Prometheus requests. Stored for this session only.</value>
     <comment/>
   </data>
   <data name="PodContainerCell_TypeFormat" xml:space="preserve">

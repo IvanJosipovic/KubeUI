@@ -111,7 +111,10 @@ public sealed partial class MetricsService : ObservableObject, IMetricsService, 
 
             if (configuredType == MetricsServiceType.Auto)
             {
-                _logger.LogInformation("Prometheus was not available for cluster {Name}; automatic fallback to Kubernetes Metrics Server is disabled.", cluster.Name);
+                _logger.LogError(
+                    "Prometheus metrics failed for cluster {Name}; falling back to Kubernetes Metrics Server. Check Prometheus configuration and availability.",
+                    cluster.Name);
+                await StartKubernetesMetricsAsync(cluster, kube).ConfigureAwait(false);
             }
         }
     }
@@ -323,7 +326,7 @@ public sealed partial class MetricsService : ObservableObject, IMetricsService, 
             return (query.Name, [], true);
         }
 
-        var series = NormalizeResultSet(query.Name, result, frames);
+        var series = NormalizeResultSet(query.Name, result, frames, stepSeconds);
         if (series.Count == 0)
         {
             _logger.LogDebug("Prometheus returned no series for metric {Metric} on cluster {Cluster}.", query.Name, _cluster?.Name);
@@ -637,7 +640,7 @@ public sealed partial class MetricsService : ObservableObject, IMetricsService, 
 
     }
 
-    private static IReadOnlyList<MetricSeries> NormalizeResultSet(string metricName, PrometheusClientQueryRangeResponse response, int frames)
+    private static IReadOnlyList<MetricSeries> NormalizeResultSet(string metricName, PrometheusClientQueryRangeResponse response, int frames, int stepSeconds)
     {
         if (response.Data.Result.Length == 0)
         {
@@ -649,12 +652,12 @@ public sealed partial class MetricsService : ObservableObject, IMetricsService, 
             {
                 Name = metricName,
                 Labels = new Dictionary<string, string>(result.Metric, StringComparer.Ordinal),
-                Points = NormalizeSeries(result.Values, frames),
+                Points = NormalizeSeries(result.Values, frames, stepSeconds),
             })
             .ToArray();
     }
 
-    private static IReadOnlyList<MetricPoint> NormalizeSeries(IList<(DateTimeOffset Timestamp, double Value)> values, int frames)
+    private static IReadOnlyList<MetricPoint> NormalizeSeries(IList<(DateTimeOffset Timestamp, double Value)> values, int frames, int stepSeconds)
     {
         if (values.Count == 0)
         {
@@ -677,7 +680,7 @@ public sealed partial class MetricsService : ObservableObject, IMetricsService, 
 
         while (cursor < end)
         {
-            cursor = cursor.AddMinutes(1);
+            cursor = cursor.AddSeconds(stepSeconds);
             if (!normalized.Any(x => x.Timestamp == cursor))
             {
                 normalized.Add(new MetricPoint(cursor, 0));
@@ -688,7 +691,7 @@ public sealed partial class MetricsService : ObservableObject, IMetricsService, 
 
         while (normalized.Count < frames)
         {
-            normalized.Insert(0, new MetricPoint(normalized[0].Timestamp.AddMinutes(-1), 0));
+            normalized.Insert(0, new MetricPoint(normalized[0].Timestamp.AddSeconds(-stepSeconds), 0));
         }
 
         return normalized;
@@ -702,7 +705,7 @@ public sealed partial class MetricsService : ObservableObject, IMetricsService, 
             PruneExpiredMetrics(NodeMetrics, static metric => metric.Timestamp);
             PruneExpiredMetrics(PodMetrics, static metric => metric.Timestamp);
 
-            var nodeMetricsList = await cluster.Client!.GetKubernetesNodesMetricsAsync().ConfigureAwait(false);
+            var nodeMetricsList = await GetMetricsAsync<NodeMetricsList>(cluster, "/apis/metrics.k8s.io/v1beta1/nodes", cancellationToken).ConfigureAwait(false);
             AppendRecentMetrics(
                 NodeMetrics,
                 nodeMetricsList.Items.OfType<NodeMetrics>(),
@@ -711,7 +714,7 @@ public sealed partial class MetricsService : ObservableObject, IMetricsService, 
 
             cancellationToken.ThrowIfCancellationRequested();
 
-            var podMetricsList = await cluster.Client!.GetKubernetesPodsMetricsAsync().ConfigureAwait(false);
+            var podMetricsList = await GetMetricsAsync<PodMetricsList>(cluster, "/apis/metrics.k8s.io/v1beta1/pods", cancellationToken).ConfigureAwait(false);
             AppendRecentMetrics(
                 PodMetrics,
                 podMetricsList.Items.OfType<PodMetrics>(),
@@ -725,6 +728,16 @@ public sealed partial class MetricsService : ObservableObject, IMetricsService, 
         {
             _logger.LogError(ex, "Error updating Kubernetes metrics");
         }
+    }
+
+    private static async Task<TMetricsList> GetMetricsAsync<TMetricsList>(Cluster cluster, string path, CancellationToken cancellationToken)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Get, new Uri(((k8s.Kubernetes)cluster.Client!).BaseUri, path));
+        using var response = await ((k8s.Kubernetes)cluster.Client!).SendAuthenticatedAsync(request, cancellationToken).ConfigureAwait(false);
+        response.EnsureSuccessStatusCode();
+        var json = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+        return KubernetesJson.Deserialize<TMetricsList>(json)
+            ?? throw new InvalidOperationException($"Kubernetes metrics API returned an empty response for '{path}'.");
     }
 
     private static void PruneExpiredMetrics<TMetric>(

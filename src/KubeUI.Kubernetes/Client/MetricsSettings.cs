@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Text.Json.Serialization;
 
 namespace KubeUI.Kubernetes;
 
@@ -44,6 +45,7 @@ public partial class ClusterMetricsSettings : ObservableObject
     public partial string? PrometheusDirectUrl { get; set; }
 
     [ObservableProperty]
+    [property: JsonIgnore]
     public partial string? PrometheusBearerToken { get; set; }
 
     [ObservableProperty]

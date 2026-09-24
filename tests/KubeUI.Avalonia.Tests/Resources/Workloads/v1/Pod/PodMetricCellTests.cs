@@ -169,7 +169,7 @@ public sealed class PodMetricCellTests
             beforePoll: () => Dispatcher.UIThread.RunJobs());
 
         queryClient.QueryTexts.ShouldAllBe(query =>
-            query.Contains("pod=~\"apicurio\\\\.registry\"", StringComparison.Ordinal));
+            query.Contains("pod=~\"apicurio\\\\\\\\.registry\"", StringComparison.Ordinal));
     }
 
     private static MetricResultSet CreateNodeMetricResultsWithInstanceLabel(string instance, double cpu, double memory)
@@ -370,10 +370,10 @@ public sealed class PodMetricCellTests
     }
 
     [AvaloniaFact]
-    public async Task node_resource_columns_use_history_controls_when_metrics_are_available()
+    public async Task node_resource_columns_use_history_controls_before_metrics_initialization()
     {
         await using var fixture = await MetricCellFixture.CreateAsync(new FakePrometheusQueryClient());
-        fixture.UseMetricsServerSamples(CreatePodMetricSample(CreatePod(), DateTime.UtcNow, "100m"));
+        fixture.SetBackend(ActiveMetricsBackend.None);
         var config = Application.Current.GetTestServices().GetRequiredService<NodeResourceConfig>();
         config.Initialize(fixture.Workspace);
 
@@ -389,7 +389,7 @@ public sealed class PodMetricCellTests
     }
 
     [AvaloniaFact]
-    public async Task node_capacity_columns_remain_text_when_metrics_are_unavailable()
+    public async Task node_capacity_columns_keep_history_controls_when_metrics_are_unavailable()
     {
         await using var fixture = await MetricCellFixture.CreateAsync(new FakePrometheusQueryClient());
         fixture.SetBackend(ActiveMetricsBackend.None);
@@ -398,8 +398,8 @@ public sealed class PodMetricCellTests
 
         var columns = config.Columns();
 
-        columns.Single(column => column.Key == "cpu").CustomControl.ShouldBeNull();
-        columns.Single(column => column.Key == "memory").CustomControl.ShouldBeNull();
+        columns.Single(column => column.Key == "cpu").CustomControl.ShouldBe(typeof(NodeCpuHistoryCell));
+        columns.Single(column => column.Key == "memory").CustomControl.ShouldBe(typeof(NodeMemoryHistoryCell));
     }
 
     [AvaloniaFact]

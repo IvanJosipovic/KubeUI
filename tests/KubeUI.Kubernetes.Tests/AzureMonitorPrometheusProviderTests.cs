@@ -1,9 +1,19 @@
 using Shouldly;
+using System.Text.Json;
 
 namespace KubeUI.Kubernetes.Tests;
 
 public sealed class AzureMonitorPrometheusProviderTests
 {
+    [Fact]
+    public void Cluster_metrics_settings_do_not_serialize_bearer_token()
+    {
+        var serialized = JsonSerializer.Serialize(new ClusterMetricsSettings { PrometheusBearerToken = "secret-token" });
+
+        serialized.ShouldNotContain("secret-token");
+        serialized.ShouldNotContain("PrometheusBearerToken");
+    }
+
     [Fact]
     public async Task TryResolveServiceAsync_uses_selected_workspace_endpoint_and_azure_auth()
     {
@@ -26,6 +36,7 @@ public sealed class AzureMonitorPrometheusProviderTests
     [Theory]
     [InlineData(null, "https://amw.eastus.prometheus.monitor.azure.com")]
     [InlineData("/subscriptions/sub/resourceGroups/rg/providers/Microsoft.Monitor/accounts/amw", "not a url")]
+    [InlineData("/subscriptions/sub/resourceGroups/rg/providers/Microsoft.Monitor/accounts/amw", "http://amw.eastus.prometheus.monitor.azure.com")]
     public async Task TryResolveServiceAsync_returns_null_without_valid_workspace_settings(string? workspaceId, string? endpointUrl)
     {
         var provider = new AzureMonitorPrometheusProvider();

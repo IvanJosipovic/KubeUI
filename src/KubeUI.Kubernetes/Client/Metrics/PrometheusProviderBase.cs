@@ -81,26 +81,29 @@ public abstract class PrometheusProviderBase : IPrometheusProvider
         var selector = GetOption(options, "selector", "pod, namespace");
         var rateAccuracy = GetRateAccuracy(options);
         var container = GetOptionalOption(options, "container");
+        var escapedPods = EscapePrometheusString(pods);
+        var escapedNamespace = EscapePrometheusString(ns);
+        var escapedContainer = container is null ? null : EscapePrometheusString(container);
         var containerUsageMatcher = string.IsNullOrWhiteSpace(container)
             ? "container!=\"\""
-            : $"container=\"{container}\"";
+            : $"container=\"{escapedContainer}\"";
         var containerResourceMatcher = string.IsNullOrWhiteSpace(container)
             ? string.Empty
-            : $",container=\"{container}\"";
+            : $",container=\"{escapedContainer}\"";
 
         return queryName switch
         {
-            "cpuUsage" => $$"""sum(rate(container_cpu_usage_seconds_total{image!="",{{containerUsageMatcher}},pod=~"{{pods}}",namespace="{{ns}}"}[{{rateAccuracy}}])) by ({{selector}})""",
-            "cpuRequests" => $$"""sum(kube_pod_container_resource_requests{pod=~"{{pods}}",resource="cpu",namespace="{{ns}}"{{containerResourceMatcher}}} ) by ({{selector}})""",
-            "cpuLimits" => $$"""sum(kube_pod_container_resource_limits{pod=~"{{pods}}",resource="cpu",namespace="{{ns}}"{{containerResourceMatcher}}} ) by ({{selector}})""",
-            "memoryUsage" => $$"""sum(container_memory_working_set_bytes{image!="",{{containerUsageMatcher}},pod=~"{{pods}}",namespace="{{ns}}"}) by ({{selector}})""",
-            "memoryRequests" => $$"""sum(kube_pod_container_resource_requests{pod=~"{{pods}}",resource="memory",namespace="{{ns}}"{{containerResourceMatcher}}} ) by ({{selector}})""",
-            "memoryLimits" => $$"""sum(kube_pod_container_resource_limits{pod=~"{{pods}}",resource="memory",namespace="{{ns}}"{{containerResourceMatcher}}} ) by ({{selector}})""",
-            "fsUsage" => $$"""sum(container_fs_usage_bytes{image!="",{{containerUsageMatcher}},pod=~"{{pods}}",namespace="{{ns}}"}) by ({{selector}})""",
-            "fsWrites" => $$"""sum(rate(container_fs_writes_bytes_total{image!="",{{containerUsageMatcher}},pod=~"{{pods}}",namespace="{{ns}}"}[{{rateAccuracy}}])) by ({{selector}})""",
-            "fsReads" => $$"""sum(rate(container_fs_reads_bytes_total{image!="",{{containerUsageMatcher}},pod=~"{{pods}}",namespace="{{ns}}"}[{{rateAccuracy}}])) by ({{selector}})""",
-            "networkReceive" => $$"""sum(rate(container_network_receive_bytes_total{pod=~"{{pods}}",namespace="{{ns}}"}[{{rateAccuracy}}])) by ({{selector}})""",
-            "networkTransmit" => $$"""sum(rate(container_network_transmit_bytes_total{pod=~"{{pods}}",namespace="{{ns}}"}[{{rateAccuracy}}])) by ({{selector}})""",
+            "cpuUsage" => $$"""sum(rate(container_cpu_usage_seconds_total{image!="",{{containerUsageMatcher}},pod=~"{{escapedPods}}",namespace="{{escapedNamespace}}"}[{{rateAccuracy}}])) by ({{selector}})""",
+            "cpuRequests" => $$"""sum(kube_pod_container_resource_requests{pod=~"{{escapedPods}}",resource="cpu",namespace="{{escapedNamespace}}"{{containerResourceMatcher}}} ) by ({{selector}})""",
+            "cpuLimits" => $$"""sum(kube_pod_container_resource_limits{pod=~"{{escapedPods}}",resource="cpu",namespace="{{escapedNamespace}}"{{containerResourceMatcher}}} ) by ({{selector}})""",
+            "memoryUsage" => $$"""sum(container_memory_working_set_bytes{image!="",{{containerUsageMatcher}},pod=~"{{escapedPods}}",namespace="{{escapedNamespace}}"}) by ({{selector}})""",
+            "memoryRequests" => $$"""sum(kube_pod_container_resource_requests{pod=~"{{escapedPods}}",resource="memory",namespace="{{escapedNamespace}}"{{containerResourceMatcher}}} ) by ({{selector}})""",
+            "memoryLimits" => $$"""sum(kube_pod_container_resource_limits{pod=~"{{escapedPods}}",resource="memory",namespace="{{escapedNamespace}}"{{containerResourceMatcher}}} ) by ({{selector}})""",
+            "fsUsage" => $$"""sum(container_fs_usage_bytes{image!="",{{containerUsageMatcher}},pod=~"{{escapedPods}}",namespace="{{escapedNamespace}}"}) by ({{selector}})""",
+            "fsWrites" => $$"""sum(rate(container_fs_writes_bytes_total{image!="",{{containerUsageMatcher}},pod=~"{{escapedPods}}",namespace="{{escapedNamespace}}"}[{{rateAccuracy}}])) by ({{selector}})""",
+            "fsReads" => $$"""sum(rate(container_fs_reads_bytes_total{image!="",{{containerUsageMatcher}},pod=~"{{escapedPods}}",namespace="{{escapedNamespace}}"}[{{rateAccuracy}}])) by ({{selector}})""",
+            "networkReceive" => $$"""sum(rate(container_network_receive_bytes_total{pod=~"{{escapedPods}}",namespace="{{escapedNamespace}}"}[{{rateAccuracy}}])) by ({{selector}})""",
+            "networkTransmit" => $$"""sum(rate(container_network_transmit_bytes_total{pod=~"{{escapedPods}}",namespace="{{escapedNamespace}}"}[{{rateAccuracy}}])) by ({{selector}})""",
             _ => throw new InvalidOperationException($"Unsupported pod query '{queryName}'."),
         };
     }
@@ -145,6 +148,10 @@ public abstract class PrometheusProviderBase : IPrometheusProvider
         try
         {
             return await client.CoreV1.ReadNamespacedServiceAsync(serviceName, ns, cancellationToken: cancellationToken).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
         }
         catch
         {

@@ -1,13 +1,7 @@
-using System.Reflection;
-
 namespace KubeUI.Kubernetes;
 
 public sealed partial class PrometheusQueryClient
 {
-    private static readonly MethodInfo s_sendRequestMethod = typeof(k8s.Kubernetes)
-        .GetMethod("SendRequest", BindingFlags.NonPublic | BindingFlags.Instance)
-        ?? throw new InvalidOperationException("Unable to locate Kubernetes.SendRequest.");
-
     private async Task<PrometheusClientQueryRangeResponse?> QueryViaKubernetesProxyAsync(
         Cluster cluster,
         ResolvedPrometheusEndpoint endpoint,
@@ -46,10 +40,13 @@ public sealed partial class PrometheusQueryClient
             ["accept"] = ["application/json"],
         };
 
-        var sendRequest = s_sendRequestMethod.MakeGenericMethod(typeof(HttpResponseMessage));
-        using var response = await (Task<HttpResponseMessage>)sendRequest.Invoke(
-            cluster.Client,
-            [relativeUri, HttpMethod.Get, headers, null, cancellationToken])!;
+        using var request = new HttpRequestMessage(HttpMethod.Get, new Uri(((k8s.Kubernetes)cluster.Client!).BaseUri, relativeUri));
+        foreach (var (name, values) in headers)
+        {
+            request.Headers.TryAddWithoutValidation(name, values);
+        }
+
+        using var response = await ((k8s.Kubernetes)cluster.Client!).SendAuthenticatedAsync(request, cancellationToken).ConfigureAwait(false);
 
         if (!response.IsSuccessStatusCode)
         {
