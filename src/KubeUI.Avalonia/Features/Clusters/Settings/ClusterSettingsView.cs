@@ -1,8 +1,8 @@
 using System.Linq.Expressions;
-using Avalonia.Markup.Xaml.MarkupExtensions;
+using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Templates;
+using Avalonia.Markup.Xaml.MarkupExtensions;
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
-using KubeUI.Avalonia.Styles;
 using KubeUI.Kubernetes;
 
 namespace KubeUI.Avalonia.Features.Clusters.Settings;
@@ -21,16 +21,31 @@ public sealed class ClusterSettingsView : ViewBase<ClusterSettingsViewModel>
     {
         ArgumentNullException.ThrowIfNull(vm);
 
-        return new StackPanel()
-            .Margin(10, 0, 0, 0)
-            .Spacing(8)
-            .Children(
+        return new ScrollViewer()
+            .VerticalScrollBarVisibility(ScrollBarVisibility.Auto)
+            .HorizontalScrollBarVisibility(ScrollBarVisibility.Disabled)
+            .Content(
+                new StackPanel()
+                    .Children(
+                        CreateClusterHeading(vm),
+                        CreateNamespacesRow(vm),
+                        CreateDebugContainerImageRow(vm),
+                        CreateMetricsSettings(vm)));
+    }
+
+    private static Border CreateClusterHeading(ClusterSettingsViewModel vm)
+    {
+        return new Border()
+            .MinHeight(28)
+            .Padding(8, 0, 8, 0)
+            .Margin(0, 6, 0, 6)
+            .Background(new DynamicResourceExtension("SystemAltHighColor"))
+            .Child(
                 new TextBlock()
-                    .FontSize(new DynamicResourceExtension(Typography.TitleFontSizeResourceKey))
-                    .Text(vm, x => x.Cluster.Runtime.Name, BindingMode.OneWay, Converters.Converters.StringFormat(Assets.Resources.ClusterSettingsView_TitleFormat)),
-                CreateNamespacesRow(vm),
-                CreateDebugContainerImageRow(vm),
-                CreateMetricsSettings(vm));
+                    .Text(vm, x => x.Cluster.Runtime.Name, BindingMode.OneWay, Converters.Converters.StringFormat(Assets.Resources.ClusterSettingsView_TitleFormat))
+                    .VerticalAlignment(VerticalAlignment.Center)
+                    .Foreground(new DynamicResourceExtension("SystemBaseHighBrush"))
+                    .FontWeight(FontWeight.Bold));
     }
 
     private static Grid CreateNamespacesRow(ClusterSettingsViewModel vm)
@@ -100,11 +115,8 @@ public sealed class ClusterSettingsView : ViewBase<ClusterSettingsViewModel>
     private static StackPanel CreateMetricsSettings(ClusterSettingsViewModel vm)
     {
         return new StackPanel()
-            .Spacing(8)
             .Children(
-                new TextBlock()
-                    .FontWeight(FontWeight.Bold)
-                    .Text(Assets.Resources.ClusterSettingsView_MetricsHeading),
+                CreateHeading(Assets.Resources.ClusterSettingsView_MetricsHeading),
                 CreateMetricsServiceRow(vm),
                 CreateActiveMetricsServiceRow(vm),
                 CreatePrometheusProviderRow(vm),
@@ -116,6 +128,21 @@ public sealed class ClusterSettingsView : ViewBase<ClusterSettingsViewModel>
                 CreatePrometheusPathPrefixRow(vm),
                 CreatePrometheusHttpsRow(vm),
                 CreatePrometheusBearerTokenRow(vm));
+    }
+
+    private static Border CreateHeading(string text)
+    {
+        return new Border()
+            .MinHeight(28)
+            .Padding(8, 0, 8, 0)
+            .Margin(0, 6, 0, 6)
+            .Background(new DynamicResourceExtension("SystemAltHighColor"))
+            .Child(
+                new TextBlock()
+                    .Text(text)
+                    .VerticalAlignment(VerticalAlignment.Center)
+                    .Foreground(new DynamicResourceExtension("SystemBaseHighBrush"))
+                    .FontWeight(FontWeight.Bold));
     }
 
     private static Grid CreateMetricsServiceRow(ClusterSettingsViewModel vm)
@@ -162,6 +189,7 @@ public sealed class ClusterSettingsView : ViewBase<ClusterSettingsViewModel>
                     .Col(0),
                 new TextBlock()
                     .Col(1)
+                    .VerticalAlignment(VerticalAlignment.Center)
                     .Text(vm, x => x.ActiveMetricsServiceText));
     }
 
