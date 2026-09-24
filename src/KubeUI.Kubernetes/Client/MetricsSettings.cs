@@ -45,4 +45,13 @@ public partial class ClusterMetricsSettings : ObservableObject
 
     [ObservableProperty]
     public partial string? PrometheusBearerToken { get; set; }
+
+    [ObservableProperty]
+    public partial string? AzureMonitorWorkspaceId { get; set; }
+
+    [ObservableProperty]
+    public partial string? AzureMonitorSubscriptionId { get; set; }
+
+    [ObservableProperty]
+    public partial string? AzureMonitorQueryEndpoint { get; set; }
 }

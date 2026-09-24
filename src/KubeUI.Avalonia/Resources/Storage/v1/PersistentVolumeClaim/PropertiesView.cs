@@ -24,6 +24,7 @@ public sealed class PropertiesView : ViewBase<V1PersistentVolumeClaim>
                 new PropertyItem()
                     .Key(Assets.Resources.Shared_Access_Modes!)
                     .Value(vm.Spec?.AccessModes?.Count ?? 0),
+                new MetricsControl(),
                 new ExpandableSection()
                     .Header(Assets.Resources.Shared_Configuration!)
                     .IsExpanded(true)
@@ -47,7 +48,6 @@ public sealed class PropertiesView : ViewBase<V1PersistentVolumeClaim>
                                     .Value(vm.Status?.Capacity?.Count ?? 0),
                                 new PropertyItem()
                                     .Key(Assets.Resources.Shared_Conditions!)
-                                    .Value(vm.Status?.Conditions?.Count ?? 0))),
-                new MetricsControl());
+                                    .Value(vm.Status?.Conditions?.Count ?? 0))));
     }
 }

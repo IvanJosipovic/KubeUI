@@ -58,7 +58,7 @@ dotnet_style_qualification_for_event = false:suggestion
 # prefer var
 csharp_style_var_for_built_in_types = true
 csharp_style_var_when_type_is_apparent = true
-csharp_style_var_elsewhere = true:suggestion
+csharp_style_var_elsewhere = true:error
 
 # use language keywords instead of BCL types
 dotnet_style_predefined_type_for_locals_parameters_members = true:suggestion
@@ -227,7 +227,7 @@ dotnet_diagnostic.AVA2001.severity = error
 csharp_using_directive_placement = outside_namespace:silent
 csharp_prefer_simple_using_statement = true:suggestion
 csharp_prefer_braces = true:silent
-csharp_style_namespace_declarations = block_scoped:silent
+csharp_style_namespace_declarations = file_scoped:silent
 csharp_style_prefer_method_group_conversion = true:silent
 csharp_style_prefer_top_level_statements = true:silent
 csharp_style_prefer_primary_constructors = true:suggestion
@@ -235,7 +235,7 @@ csharp_style_expression_bodied_lambdas = true:silent
 csharp_style_expression_bodied_local_functions = false:silent
 csharp_style_prefer_null_check_over_type_check = true:suggestion
 csharp_prefer_simple_default_expression = true:suggestion
-csharp_prefer_system_threading_lock = true:suggestion
+csharp_prefer_system_threading_lock = true:error
 dotnet_diagnostic.MA0006.severity = silent
 dotnet_diagnostic.MA0011.severity = silent
 dotnet_diagnostic.MA0004.severity = silent
@@ -255,6 +255,13 @@ dotnet_diagnostic.IDE0060.severity = error
 dotnet_diagnostic.CS4014.severity = error
 
 # Xaml files
+
+# IDE0005: Using directive is unnecessary.
+dotnet_diagnostic.IDE0005.severity = error
+
+# IDE0330: Use 'System.Threading.Lock'
+dotnet_diagnostic.IDE0330.severity = error
+
 [*.{xaml,axaml}]
 indent_size = 2
 end_of_line = lf

@@ -27,6 +27,7 @@ public sealed class PropertiesView : ViewBase<V1Node>
                 new PropertyItem()
                     .Key(Assets.Resources.NodePropertiesView_Kubelet_Version!)
                     .Value(vm.Status?.NodeInfo?.KubeletVersion ?? ""),
+                new MetricsControl(),
                 new ExpandableSection()
                     .Header(Assets.Resources.Shared_Status!)
                     .Content(
@@ -51,7 +52,6 @@ public sealed class PropertiesView : ViewBase<V1Node>
                                     .Value(vm.Status?.Capacity?.Count ?? 0),
                                 new PropertyItem()
                                     .Key(Assets.Resources.NodePropertiesView_Allocatable_Entries!)
-                                    .Value(vm.Status?.Allocatable?.Count ?? 0))),
-                new MetricsControl());
+                                    .Value(vm.Status?.Allocatable?.Count ?? 0))));
     }
 }

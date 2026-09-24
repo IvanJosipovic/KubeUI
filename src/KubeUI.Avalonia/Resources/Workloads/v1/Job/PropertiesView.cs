@@ -24,6 +24,7 @@ public sealed class PropertiesView : ViewBase<V1Job>
                 new PropertyItem()
                     .Key(Assets.Resources.JobPropertiesView_Failed!)
                     .Value(vm.Status?.Failed ?? 0),
+                new MetricsControl(),
                 new ExpandableSection()
                     .Header(Assets.Resources.Shared_Configuration!)
                     .IsExpanded(true)
@@ -59,7 +60,6 @@ public sealed class PropertiesView : ViewBase<V1Job>
                                     .Value(vm.Status?.CompletionTime ?? DateTime.MinValue),
                                 new PropertyItem()
                                     .Key(Assets.Resources.Shared_Conditions!)
-                                    .Value(vm.Status?.Conditions?.Count ?? 0))),
-                new MetricsControl());
+                                    .Value(vm.Status?.Conditions?.Count ?? 0))));
     }
 }

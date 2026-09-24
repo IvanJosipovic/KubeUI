@@ -24,6 +24,7 @@ public sealed class PropertiesView : ViewBase<V1DaemonSet>
                 new PropertyItem()
                     .Key(Assets.Resources.DaemonSetPropertiesView_Updated!)
                     .Value(vm.Status?.UpdatedNumberScheduled ?? 0),
+                new MetricsControl(),
                 new ExpandableSection()
                     .Header(Assets.Resources.Shared_Status!)
                     .IsExpanded(true)
@@ -56,7 +57,6 @@ public sealed class PropertiesView : ViewBase<V1DaemonSet>
                                     .Value(vm.Spec?.RevisionHistoryLimit ?? 0),
                                 new PropertyItem()
                                     .Key(Assets.Resources.Shared_Selector_Labels!)
-                                    .Value(vm.Spec?.Selector?.MatchLabels?.Count ?? 0))),
-                new MetricsControl());
+                                    .Value(vm.Spec?.Selector?.MatchLabels?.Count ?? 0))));
     }
 }

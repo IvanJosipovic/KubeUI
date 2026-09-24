@@ -1,5 +1,3 @@
-using k8s;
-
 namespace KubeUI.Kubernetes;
 
 public interface IPrometheusProvider

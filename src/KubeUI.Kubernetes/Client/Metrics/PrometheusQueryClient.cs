@@ -2,11 +2,33 @@ using System.Net.Http.Headers;
 
 namespace KubeUI.Kubernetes;
 
-public sealed partial class PrometheusQueryClient(ILogger<PrometheusQueryClient> logger) : IPrometheusQueryClient
+public sealed partial class PrometheusQueryClient : IPrometheusQueryClient
 {
-    private readonly ILogger<PrometheusQueryClient> _logger = logger;
+    private readonly ILogger<PrometheusQueryClient> _logger;
+    private readonly IAzureMonitorWorkspaceService? _azureMonitorWorkspaceService;
+    private readonly Func<HttpMessageHandler>? _directHandlerFactory;
     private HttpClient? _httpClient;
     private string? _endpointKey;
+
+    public PrometheusQueryClient(ILogger<PrometheusQueryClient> logger)
+        : this(logger, null, null)
+    {
+    }
+
+    public PrometheusQueryClient(ILogger<PrometheusQueryClient> logger, IAzureMonitorWorkspaceService azureMonitorWorkspaceService)
+        : this(logger, azureMonitorWorkspaceService, null)
+    {
+    }
+
+    internal PrometheusQueryClient(
+        ILogger<PrometheusQueryClient> logger,
+        IAzureMonitorWorkspaceService? azureMonitorWorkspaceService,
+        Func<HttpMessageHandler>? directHandlerFactory)
+    {
+        _logger = logger;
+        _azureMonitorWorkspaceService = azureMonitorWorkspaceService;
+        _directHandlerFactory = directHandlerFactory;
+    }
 
     public Task PrepareAsync(Cluster cluster, ResolvedPrometheusEndpoint endpoint, CancellationToken cancellationToken = default)
     {
@@ -60,9 +82,9 @@ public sealed partial class PrometheusQueryClient(ILogger<PrometheusQueryClient>
 
         if (!string.IsNullOrWhiteSpace(endpoint.DirectUrl))
         {
-            _httpClient = CreateDirectHttpClient(endpoint);
+            _httpClient = CreateDirectHttpClient(endpoint, _directHandlerFactory?.Invoke());
 
-            if (!string.IsNullOrWhiteSpace(endpoint.BearerToken))
+            if (!endpoint.UseAzureMonitorAuthentication && !string.IsNullOrWhiteSpace(endpoint.BearerToken))
             {
                 _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", endpoint.BearerToken);
             }
@@ -110,6 +132,7 @@ public sealed partial class PrometheusQueryClient(ILogger<PrometheusQueryClient>
             endpoint.DirectUrl ?? string.Empty,
             endpoint.UseHttps,
             endpoint.PathPrefix,
-            endpoint.BearerToken ?? string.Empty);
+            endpoint.BearerToken ?? string.Empty,
+            endpoint.UseAzureMonitorAuthentication);
     }
 }

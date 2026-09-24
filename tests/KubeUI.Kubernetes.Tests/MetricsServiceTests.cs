@@ -2,9 +2,9 @@ using k8s;
 using k8s.Models;
 using System.Net;
 using System.Text;
+using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
-using KubeUI.Testing.Kubernetes.Transport;
 using Shouldly;
 
 namespace KubeUI.Kubernetes.Tests;
@@ -19,6 +19,7 @@ public sealed class MetricsServiceTests
         var providers = await service.GetAvailablePrometheusProvidersAsync();
 
         providers.Select(provider => provider.Kind).ShouldBe([
+            PrometheusProviderKind.AzureMonitor,
             PrometheusProviderKind.External,
             PrometheusProviderKind.Manual,
             PrometheusProviderKind.OpenShift,
@@ -50,6 +51,29 @@ public sealed class MetricsServiceTests
     }
 
     [Fact]
+    public async Task InitializeAsync_with_azure_monitor_workspace_activates_authenticated_prometheus_backend()
+    {
+        var queryClient = new FakePrometheusQueryClient();
+        var settings = new TestClusterSettingsStore(new ClusterMetricsSettings
+        {
+            MetricsServiceType = MetricsServiceType.Prometheus,
+            PrometheusProviderKind = PrometheusProviderKind.AzureMonitor,
+            AzureMonitorWorkspaceId = "/subscriptions/sub/resourceGroups/rg/providers/Microsoft.Monitor/accounts/amw",
+            AzureMonitorQueryEndpoint = "https://amw.eastus.prometheus.monitor.azure.com",
+        });
+
+        using var service = CreateMetricsService(settings, queryClient);
+        await using var cluster = CreateCluster("azure-prom-cluster", service, settings);
+
+        await service.InitializeAsync(cluster);
+
+        service.ActiveMetricsBackend.ShouldBe(ActiveMetricsBackend.Prometheus(PrometheusProviderKind.AzureMonitor));
+        queryClient.PrepareCalls.ShouldBe(1);
+        queryClient.PreparedEndpoint?.DirectUrl.ShouldBe("https://amw.eastus.prometheus.monitor.azure.com");
+        queryClient.PreparedEndpoint?.UseAzureMonitorAuthentication.ShouldBeTrue();
+    }
+
+    [Fact]
     public async Task InitializeAsync_with_available_metrics_server_activates_metrics_server_backend()
     {
         using var api = CreateMetricsServerApi();
@@ -64,6 +88,76 @@ public sealed class MetricsServiceTests
 
         service.IsMetricsAvailable.ShouldBeTrue();
         service.ActiveMetricsBackend.ShouldBe(ActiveMetricsBackend.KubernetesMetricsServer);
+    }
+
+    [Fact]
+    public async Task InitializeAsync_with_available_metrics_server_refreshes_pod_and_node_metrics()
+    {
+        using var api = CreateMetricsServerApi();
+        var settings = new TestClusterSettingsStore(new ClusterMetricsSettings
+        {
+            MetricsServiceType = MetricsServiceType.KubernetesMetricsServer,
+        });
+        using var service = CreateMetricsService(settings, new FakePrometheusQueryClient());
+        await using var cluster = CreateCluster("metrics-server-data-cluster", service, settings, CreateFakeClient(api, includeMetricsData: true));
+
+        await service.InitializeAsync(cluster);
+
+        service.PodMetrics.ShouldHaveSingleItem();
+        var podMetric = service.PodMetrics[0];
+        podMetric.Name().ShouldBe("pod-1");
+        podMetric.Namespace().ShouldBe("default");
+        podMetric.Containers.ShouldHaveSingleItem();
+        podMetric.Containers[0].Usage["cpu"].ToDecimal().ShouldBe(0.1m);
+        podMetric.Containers[0].Usage["memory"].ToInt64().ShouldBe(128L * 1024 * 1024);
+
+        service.NodeMetrics.ShouldHaveSingleItem();
+        var nodeMetric = service.NodeMetrics[0];
+        nodeMetric.Name().ShouldBe("node-1");
+        nodeMetric.Usage["cpu"].ToDecimal().ShouldBe(0.25m);
+        nodeMetric.Usage["memory"].ToInt64().ShouldBe(512L * 1024 * 1024);
+    }
+
+    [Fact]
+    public async Task SyncKubernetesMetricsAsync_appends_recent_samples_and_removes_samples_older_than_one_hour()
+    {
+        using var api = CreateMetricsServerApi();
+        var client = CreateFakeClient(api, out var discoveryHandler);
+        var settings = new TestClusterSettingsStore(new ClusterMetricsSettings
+        {
+            MetricsServiceType = MetricsServiceType.KubernetesMetricsServer,
+        });
+        using var service = CreateMetricsService(settings, new FakePrometheusQueryClient());
+        await using var cluster = CreateCluster("metrics-server-history-cluster", service, settings, client);
+        var now = DateTime.UtcNow;
+        var older = now.AddHours(-2);
+        var retained = now.AddMinutes(-30);
+        var latest = now.AddMinutes(-1);
+
+        await service.InitializeAsync(cluster);
+
+        service.PodMetrics.Add(CreatePodMetrics(older, "10m"));
+        service.PodMetrics.Add(CreatePodMetrics(retained, "50m"));
+        service.PodMetrics.Add(CreatePodMetrics(retained, "55m"));
+        service.NodeMetrics.Add(CreateNodeMetrics(older, "100m"));
+        service.NodeMetrics.Add(CreateNodeMetrics(retained, "200m"));
+        service.NodeMetrics.Add(CreateNodeMetrics(retained, "220m"));
+        discoveryHandler.PodMetricsResponse = CreatePodMetricsListJson(
+            (older, "10m"),
+            (latest, "100m"),
+            (latest, "125m"),
+            (null, "1m"));
+        discoveryHandler.NodeMetricsResponse = CreateNodeMetricsListJson(
+            (older, "100m"),
+            (latest, "250m"),
+            (latest, "275m"),
+            (null, "50m"));
+
+        await service.SyncKubernetesMetricsAsync(cluster, TestContext.Current.CancellationToken);
+        await service.SyncKubernetesMetricsAsync(cluster, TestContext.Current.CancellationToken);
+
+        service.PodMetrics.Select(static metric => metric.Timestamp).ShouldBe([retained, latest]);
+        service.NodeMetrics.Select(static metric => metric.Timestamp).ShouldBe([retained, latest]);
     }
 
     [Fact]
@@ -240,6 +334,7 @@ public sealed class MetricsServiceTests
                 new OpenShiftPrometheusProvider(),
                 new ManualPrometheusProvider(),
                 new ExternalPrometheusProvider(),
+                new AzureMonitorPrometheusProvider(),
             ],
             queryClient);
     }
@@ -263,11 +358,92 @@ public sealed class MetricsServiceTests
         };
     }
 
-    private static k8s.Kubernetes CreateFakeClient(FakeKubernetesHttpApi api)
+    private static k8s.Kubernetes CreateFakeClient(FakeKubernetesHttpApi api, bool includeMetricsData = false)
     {
         return new k8s.Kubernetes(
             new KubernetesClientConfiguration { Host = "http://fake-kubernetes" },
-            new MetricsDiscoveryHandler(api));
+            new MetricsDiscoveryHandler(api, includeMetricsData));
+    }
+
+    private static k8s.Kubernetes CreateFakeClient(FakeKubernetesHttpApi api, out MetricsDiscoveryHandler handler)
+    {
+        handler = new MetricsDiscoveryHandler(api, includeMetricsData: true)
+        {
+            PodMetricsResponse = """{"apiVersion":"metrics.k8s.io/v1beta1","kind":"PodMetricsList","items":[]}""",
+            NodeMetricsResponse = """{"apiVersion":"metrics.k8s.io/v1beta1","kind":"NodeMetricsList","items":[]}""",
+        };
+        return new k8s.Kubernetes(
+            new KubernetesClientConfiguration { Host = "http://fake-kubernetes" },
+            handler);
+    }
+
+    private static PodMetrics CreatePodMetrics(DateTime timestamp, string cpu)
+    {
+        return KubernetesJson.Deserialize<PodMetrics>(CreatePodMetricsJson(timestamp, cpu));
+    }
+
+    private static NodeMetrics CreateNodeMetrics(DateTime timestamp, string cpu)
+    {
+        return KubernetesJson.Deserialize<NodeMetrics>(CreateNodeMetricsJson(timestamp, cpu));
+    }
+
+    private static string CreatePodMetricsJson(DateTime? timestamp, string cpu)
+    {
+        return JsonSerializer.Serialize(new
+        {
+            metadata = new { name = "pod-1", @namespace = "default" },
+            timestamp,
+            window = "30s",
+            containers = new[]
+            {
+                new
+                {
+                    name = "app",
+                    usage = new Dictionary<string, string> { ["cpu"] = cpu, ["memory"] = "128Mi" },
+                },
+            },
+        });
+    }
+
+    private static string CreateNodeMetricsJson(DateTime? timestamp, string cpu)
+    {
+        return JsonSerializer.Serialize(new
+        {
+            metadata = new { name = "node-1" },
+            timestamp,
+            window = "30s",
+            usage = new Dictionary<string, string> { ["cpu"] = cpu, ["memory"] = "512Mi" },
+        });
+    }
+
+    private static string CreatePodMetricsListJson(DateTime? timestamp, string cpu)
+    {
+        return CreatePodMetricsListJson((timestamp, cpu));
+    }
+
+    private static string CreatePodMetricsListJson(params (DateTime? Timestamp, string Cpu)[] samples)
+    {
+        return JsonSerializer.Serialize(new
+        {
+            apiVersion = "metrics.k8s.io/v1beta1",
+            kind = "PodMetricsList",
+            items = samples.Select(static sample => JsonSerializer.Deserialize<JsonElement>(CreatePodMetricsJson(sample.Timestamp, sample.Cpu))).ToArray(),
+        });
+    }
+
+    private static string CreateNodeMetricsListJson(DateTime? timestamp, string cpu)
+    {
+        return CreateNodeMetricsListJson((timestamp, cpu));
+    }
+
+    private static string CreateNodeMetricsListJson(params (DateTime? Timestamp, string Cpu)[] samples)
+    {
+        return JsonSerializer.Serialize(new
+        {
+            apiVersion = "metrics.k8s.io/v1beta1",
+            kind = "NodeMetricsList",
+            items = samples.Select(static sample => JsonSerializer.Deserialize<JsonElement>(CreateNodeMetricsJson(sample.Timestamp, sample.Cpu))).ToArray(),
+        });
     }
 
     private static FakeKubernetesHttpApi CreateMetricsServerApi()
@@ -336,6 +512,8 @@ public sealed class MetricsServiceTests
 
         public int ResetCalls { get; private set; }
 
+        public ResolvedPrometheusEndpoint? PreparedEndpoint { get; private set; }
+
         public TaskCompletionSource QueryStarted { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
         public bool WaitForRelease { get; init; }
@@ -350,6 +528,7 @@ public sealed class MetricsServiceTests
         public Task PrepareAsync(Cluster cluster, ResolvedPrometheusEndpoint endpoint, CancellationToken cancellationToken = default)
         {
             PrepareCalls++;
+            PreparedEndpoint = endpoint;
             return Task.CompletedTask;
         }
 
@@ -409,23 +588,46 @@ public sealed class MetricsServiceTests
         }
     }
 
-    private sealed class MetricsDiscoveryHandler(HttpMessageHandler innerHandler) : DelegatingHandler(innerHandler)
+    private sealed class MetricsDiscoveryHandler(HttpMessageHandler innerHandler, bool includeMetricsData = false) : DelegatingHandler(innerHandler)
     {
+        public string PodMetricsResponse { get; set; } = CreatePodMetricsListJson(DateTime.UtcNow, "100m");
+
+        public string NodeMetricsResponse { get; set; } = CreateNodeMetricsListJson(DateTime.UtcNow, "250m");
+
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            if (request.RequestUri?.AbsolutePath.TrimEnd('/') == "/apis")
+            var path = request.RequestUri?.AbsolutePath.TrimEnd('/');
+            if (path == "/apis")
             {
-                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
-                {
-                    RequestMessage = request,
-                    Content = new StringContent(
-                        """{"apiVersion":"v1","kind":"APIGroupList","groups":[{"name":"metrics.k8s.io","versions":[{"groupVersion":"metrics.k8s.io/v1beta1","version":"v1beta1"}],"preferredVersion":{"groupVersion":"metrics.k8s.io/v1beta1","version":"v1beta1"}}]}""",
-                        Encoding.UTF8,
-                        "application/json"),
-                });
+                return Task.FromResult(JsonResponse(
+                    request,
+                    """{"apiVersion":"v1","kind":"APIGroupList","groups":[{"name":"metrics.k8s.io","versions":[{"groupVersion":"metrics.k8s.io/v1beta1","version":"v1beta1"}],"preferredVersion":{"groupVersion":"metrics.k8s.io/v1beta1","version":"v1beta1"}}]}"""));
+            }
+
+            if (includeMetricsData && path == "/apis/metrics.k8s.io/v1beta1/nodes")
+            {
+                return Task.FromResult(JsonResponse(
+                    request,
+                    NodeMetricsResponse));
+            }
+
+            if (includeMetricsData && path == "/apis/metrics.k8s.io/v1beta1/pods")
+            {
+                return Task.FromResult(JsonResponse(
+                    request,
+                    PodMetricsResponse));
             }
 
             return base.SendAsync(request, cancellationToken);
+        }
+
+        private static HttpResponseMessage JsonResponse(HttpRequestMessage request, string json)
+        {
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                RequestMessage = request,
+                Content = new StringContent(json, Encoding.UTF8, "application/json"),
+            };
         }
     }
 }

@@ -29,6 +29,7 @@ public sealed class PropertiesView : ViewBase<V1Pod>
                 new PropertyItem()
                     .Key(Assets.Resources.PodPropertiesView_Service_Account!)
                     .Value(vm.Spec?.ServiceAccountName ?? ""),
+                new MetricsControl(),
                 new ExpandableSection()
                     .Header(Assets.Resources.Shared_Metadata!)
                     .Content(
@@ -70,7 +71,7 @@ public sealed class PropertiesView : ViewBase<V1Pod>
                     .Header(Assets.Resources.PodPropertiesView_InitContainers!)
                     .IsExpanded(true)
                     .IsVisible(vm, x => x.Spec.InitContainers, BindingMode.OneWay, NotEmptyCollectionConverter.Instance)
-                    .Content(CreateContainers(vm, vm.Spec?.InitContainers ?? [])),
+                    .Content(CreateInitContainers(vm.Spec?.InitContainers ?? [])),
                 new ExpandableSection()
                     .Header(Assets.Resources.PodPropertiesView_EphemeralContainers!)
                     .IsExpanded(true)
@@ -79,8 +80,7 @@ public sealed class PropertiesView : ViewBase<V1Pod>
                 new ExpandableSection()
                     .Header(Assets.Resources.PodPropertiesView_Containers!)
                     .IsExpanded(true)
-                    .Content(CreateContainers(vm, vm.Spec?.Containers ?? [])),
-                new MetricsControl());
+                    .Content(CreateContainers(vm, vm.Spec?.Containers ?? [])));
     }
 
     private static IDataTemplate CreateKeyValueTemplate()
@@ -88,6 +88,13 @@ public sealed class PropertiesView : ViewBase<V1Pod>
         return new FuncDataTemplate<KeyValuePair<string, string>>((entry, _) =>
             new SelectableTextBlock()
                 .Text($"{entry.Key}={entry.Value}"));
+    }
+
+    private static ItemsControl CreateInitContainers(IEnumerable<V1Container> containers)
+    {
+        return new ItemsControl()
+            .ItemsSource(containers)
+            .ItemTemplate(new FuncDataTemplate<V1Container>((container, _) => CreateContainerPropertiesTemplate(container)));
     }
 
     private static ItemsControl CreateContainers(V1Pod pod, IEnumerable<V1Container> containers)
@@ -104,15 +111,29 @@ public sealed class PropertiesView : ViewBase<V1Pod>
             .ItemTemplate(new FuncDataTemplate<V1EphemeralContainer>((container, _) => CreateEphemeralContainerTemplate(container)));
     }
 
-    private static StackPanel CreateContainerTemplate(V1Pod pod, V1Container container)
+    private static Grid CreateContainerTemplate(V1Pod pod, V1Container container)
+    {
+        var metricsControl = new MetricsControl
+        {
+            Pod = pod,
+            Container = container,
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+        };
+        Grid.SetRow(metricsControl, 0);
+
+        var properties = CreateContainerPropertiesTemplate(container);
+        Grid.SetRow(properties, 1);
+
+        return new Grid()
+            .Rows("Auto,*")
+            .HorizontalAlignment(HorizontalAlignment.Stretch)
+            .Children(metricsControl, properties);
+    }
+
+    private static StackPanel CreateContainerPropertiesTemplate(V1Container container)
     {
         return new StackPanel()
             .Children(
-                new MetricsControl
-                {
-                    Pod = pod,
-                    Container = container,
-                },
                 new PropertyItem()
                     .Key(Assets.Resources.Shared_Name!)
                     .Value(container.Name ?? ""),

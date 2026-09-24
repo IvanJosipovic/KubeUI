@@ -529,6 +529,182 @@
     <value>Image used when starting an ephemeral debug container</value>
     <comment/>
   </data>
+  <data name="ClusterSettingsView_MetricsHeading" xml:space="preserve">
+    <value>Metrics</value>
+    <comment/>
+  </data>
+  <data name="ClusterSettingsView_MetricsServiceLabel" xml:space="preserve">
+    <value>Metrics Service</value>
+    <comment/>
+  </data>
+  <data name="ClusterSettingsView_MetricsServiceTooltip" xml:space="preserve">
+    <value>Select the metrics backend used by this cluster</value>
+    <comment/>
+  </data>
+  <data name="ClusterSettingsView_MetricsServiceAuto" xml:space="preserve">
+    <value>Auto</value>
+    <comment/>
+  </data>
+  <data name="ClusterSettingsView_MetricsServiceNone" xml:space="preserve">
+    <value>Disabled</value>
+    <comment/>
+  </data>
+  <data name="ClusterSettingsView_MetricsServiceMetricsServer" xml:space="preserve">
+    <value>Kubernetes Metrics Server</value>
+    <comment/>
+  </data>
+  <data name="ClusterSettingsView_MetricsServicePrometheus" xml:space="preserve">
+    <value>Prometheus</value>
+    <comment/>
+  </data>
+  <data name="ClusterSettingsView_ActiveMetricsServiceLabel" xml:space="preserve">
+    <value>Active Metrics Service</value>
+    <comment/>
+  </data>
+  <data name="ClusterSettingsView_ActiveMetricsServiceTooltip" xml:space="preserve">
+    <value>Metrics backend currently activated for this cluster</value>
+    <comment/>
+  </data>
+  <data name="ClusterSettingsView_ActiveMetricsServiceNotConnected" xml:space="preserve">
+    <value>Not connected</value>
+    <comment/>
+  </data>
+  <data name="ClusterSettingsView_ActiveMetricsServiceDisabled" xml:space="preserve">
+    <value>Disabled</value>
+    <comment/>
+  </data>
+  <data name="ClusterSettingsView_ActiveMetricsServiceUnavailable" xml:space="preserve">
+    <value>Unavailable</value>
+    <comment/>
+  </data>
+  <data name="ClusterSettingsView_ActiveMetricsServiceMetricsServer" xml:space="preserve">
+    <value>Kubernetes Metrics Server</value>
+    <comment/>
+  </data>
+  <data name="ClusterSettingsView_ActiveMetricsServicePrometheusFormat" xml:space="preserve">
+    <value>{0} ({1})</value>
+    <comment/>
+  </data>
+  <data name="ClusterSettingsView_PrometheusProviderLabel" xml:space="preserve">
+    <value>Prometheus Provider</value>
+    <comment/>
+  </data>
+  <data name="ClusterSettingsView_PrometheusProviderTooltip" xml:space="preserve">
+    <value>Select a provider or let KubeUI detect one</value>
+    <comment/>
+  </data>
+  <data name="ClusterSettingsView_PrometheusProviderAuto" xml:space="preserve">
+    <value>Automatic detection</value>
+    <comment/>
+  </data>
+  <data name="ClusterSettingsView_PrometheusProviderOperator" xml:space="preserve">
+    <value>Prometheus Operator</value>
+    <comment/>
+  </data>
+  <data name="ClusterSettingsView_PrometheusProviderOpenShift" xml:space="preserve">
+    <value>OpenShift</value>
+    <comment/>
+  </data>
+  <data name="ClusterSettingsView_PrometheusProviderManual" xml:space="preserve">
+    <value>Manual Service</value>
+    <comment/>
+  </data>
+  <data name="ClusterSettingsView_PrometheusProviderExternal" xml:space="preserve">
+    <value>External URL</value>
+    <comment/>
+  </data>
+  <data name="ClusterSettingsView_PrometheusProviderAzureMonitor" xml:space="preserve">
+    <value>Azure Managed Prometheus</value>
+    <comment/>
+  </data>
+  <data name="ClusterSettingsView_AzureMonitorNotChecked" xml:space="preserve">
+    <value>Azure CLI sign-in has not been checked.</value>
+    <comment/>
+  </data>
+  <data name="ClusterSettingsView_AzureMonitorNotSignedIn" xml:space="preserve">
+    <value>Not signed in. Run az login, then refresh.</value>
+    <comment/>
+  </data>
+  <data name="ClusterSettingsView_AzureMonitorSignedInFormat" xml:space="preserve">
+    <value>Signed in with Azure CLI as {0} (tenant {1}).</value>
+    <comment/>
+  </data>
+  <data name="ClusterSettingsView_AzureMonitorRefresh" xml:space="preserve">
+    <value>Refresh Azure subscriptions</value>
+    <comment/>
+  </data>
+  <data name="ClusterSettingsView_AzureMonitorSubscriptionLabel" xml:space="preserve">
+    <value>Azure Subscription</value>
+    <comment/>
+  </data>
+  <data name="ClusterSettingsView_AzureMonitorWorkspaceLabel" xml:space="preserve">
+    <value>Azure Monitor Workspace</value>
+    <comment/>
+  </data>
+  <data name="ClusterSettingsView_AzureMonitorNoSubscriptions" xml:space="preserve">
+    <value>No Azure subscriptions are available to this Azure CLI account.</value>
+    <comment/>
+  </data>
+  <data name="ClusterSettingsView_AzureMonitorNoWorkspaces" xml:space="preserve">
+    <value>No Azure Monitor workspaces with Prometheus endpoints were found in this subscription.</value>
+    <comment/>
+  </data>
+  <data name="ClusterSettingsView_PrometheusServiceNameLabel" xml:space="preserve">
+    <value>Prometheus Service Name</value>
+    <comment/>
+  </data>
+  <data name="ClusterSettingsView_PrometheusServiceNameTooltip" xml:space="preserve">
+    <value>Optional Kubernetes Service name for Prometheus</value>
+    <comment/>
+  </data>
+  <data name="ClusterSettingsView_PrometheusServiceNamespaceLabel" xml:space="preserve">
+    <value>Prometheus Service Namespace</value>
+    <comment/>
+  </data>
+  <data name="ClusterSettingsView_PrometheusServiceNamespaceTooltip" xml:space="preserve">
+    <value>Optional Kubernetes namespace containing the Prometheus Service</value>
+    <comment/>
+  </data>
+  <data name="ClusterSettingsView_PrometheusServicePortLabel" xml:space="preserve">
+    <value>Prometheus Service Port</value>
+    <comment/>
+  </data>
+  <data name="ClusterSettingsView_PrometheusServicePortTooltip" xml:space="preserve">
+    <value>Optional Prometheus Service port</value>
+    <comment/>
+  </data>
+  <data name="ClusterSettingsView_PrometheusDirectUrlLabel" xml:space="preserve">
+    <value>Prometheus Direct URL</value>
+    <comment/>
+  </data>
+  <data name="ClusterSettingsView_PrometheusDirectUrlTooltip" xml:space="preserve">
+    <value>Optional direct Prometheus URL</value>
+    <comment/>
+  </data>
+  <data name="ClusterSettingsView_PrometheusPathPrefixLabel" xml:space="preserve">
+    <value>Prometheus Path Prefix</value>
+    <comment/>
+  </data>
+  <data name="ClusterSettingsView_PrometheusPathPrefixTooltip" xml:space="preserve">
+    <value>Optional path prefix used by the Prometheus endpoint</value>
+    <comment/>
+  </data>
+  <data name="ClusterSettingsView_PrometheusUseHttpsLabel" xml:space="preserve">
+    <value>Use HTTPS</value>
+    <comment/>
+  </data>
+  <data name="ClusterSettingsView_PrometheusUseHttpsTooltip" xml:space="preserve">
+    <value>Use HTTPS when connecting to Prometheus</value>
+    <comment/>
+  </data>
+  <data name="ClusterSettingsView_PrometheusBearerTokenLabel" xml:space="preserve">
+    <value>Prometheus Bearer Token</value>
+    <comment/>
+  </data>
+  <data name="ClusterSettingsView_PrometheusBearerTokenTooltip" xml:space="preserve">
+    <value>Optional bearer token for Prometheus requests</value>
+    <comment/>
+  </data>
   <data name="PodContainerCell_TypeFormat" xml:space="preserve">
     <value>Type: {0}</value>
     <comment/>
@@ -1479,6 +1655,10 @@
   </data>
   <data name="Shared_Resources" xml:space="preserve">
     <value>Resources</value>
+    <comment/>
+  </data>
+  <data name="Shared_Metrics" xml:space="preserve">
+    <value>Metrics</value>
     <comment/>
   </data>
   <data name="Shared_Capacity_Entries" xml:space="preserve">
@@ -2796,6 +2976,8 @@
   <data name="Metrics_Usage" xml:space="preserve"><value>Usage</value><comment/></data>
   <data name="Metrics_Requests" xml:space="preserve"><value>Requests</value><comment/></data>
   <data name="Metrics_Limits" xml:space="preserve"><value>Limits</value><comment/></data>
+  <data name="MetricsHistoryCell_TooltipWithLimit" xml:space="preserve"><value>{0}&#x0A;{1}: {2}&#x0A;{3}: {4} ({5:P0})</value><comment/></data>
+  <data name="MetricsHistoryCell_TooltipWithoutLimit" xml:space="preserve"><value>{0}&#x0A;{1}: {2}</value><comment/></data>
   <data name="Metrics_Receive" xml:space="preserve"><value>Receive</value><comment/></data>
   <data name="Metrics_Transmit" xml:space="preserve"><value>Transmit</value><comment/></data>
   <data name="Metrics_Reads" xml:space="preserve"><value>Reads</value><comment/></data>
@@ -2819,9 +3001,10 @@
   <data name="Metrics_NoPodsForWorkload" xml:space="preserve"><value>No pods were found for this {0}, so no metrics can be shown.</value><comment/></data>
   <data name="Metrics_NoPrometheusWorkload" xml:space="preserve"><value>No Prometheus metrics are available for this {0}.</value><comment/></data>
   <data name="Metrics_TimeRange_1Hour" xml:space="preserve"><value>1 hour</value><comment/></data>
+  <data name="MetricsControl_TimeRangeLabel" xml:space="preserve"><value>Time range</value><comment/></data>
   <data name="Metrics_TimeRange_2Hours" xml:space="preserve"><value>2 hours</value><comment/></data>
   <data name="Metrics_TimeRange_4Hours" xml:space="preserve"><value>4 hours</value><comment/></data>
-  <data name="Metrics_TimeRange_24Hours" xml:space="preserve"><value>24 hours</value><comment/></data>
+  <data name="Metrics_TimeRange_12Hours" xml:space="preserve"><value>12 hours</value><comment/></data>
   <data name="Metrics_TimeRange_48Hours" xml:space="preserve"><value>48 hours</value><comment/></data>
   <data name="Metrics_TimeRange_1Week" xml:space="preserve"><value>1 week</value><comment/></data>
   <data name="Metrics_TimeRange_1Month" xml:space="preserve"><value>1 month</value><comment/></data>

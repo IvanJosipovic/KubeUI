@@ -1,39 +1,27 @@
 using System.Collections.Specialized;
-using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
-using System.Text.RegularExpressions;
-using System.Threading;
-using Avalonia.Controls;
+using System.Globalization;
+using Avalonia.Automation;
 using Avalonia.Controls.Templates;
-using Avalonia.Data;
 using Avalonia.Controls.Primitives;
 using Avalonia.Markup.Xaml.Templates;
-using Avalonia.Styling;
-using Avalonia.Threading;
 using Avalonia.VisualTree;
-using CommunityToolkit.Mvvm.Input;
 using FluentIcons.Avalonia;
 using FluentIcons.Common;
-using Humanizer;
 using k8s;
 using k8s.Models;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
-using KubeUI.Avalonia.Features.Resources.Metrics;
+using KubeUI.Avalonia.Features.Resources.Properties.Controls;
 using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Kubernetes;
 using LiveChartsCore;
 using LiveChartsCore.Defaults;
-using LiveChartsCore.Drawing;
-using LiveChartsCore.Kernel;
 using LiveChartsCore.Kernel.Sketches;
 using LiveChartsCore.SkiaSharpView;
-using LiveChartsCore.SkiaSharpView.Avalonia;
 using LiveChartsCore.SkiaSharpView.Painting;
-using LiveChartsCore.SkiaSharpView.VisualElements;
 using LiveChartsCore.Themes;
-using Microsoft.Extensions.Logging;
 using SkiaSharp;
 
 namespace KubeUI.Avalonia.Features.Resources.Metrics.Controls;
@@ -49,15 +37,15 @@ public sealed partial class MetricsControl : UserControl, IInitializeCluster, IN
         new MetricTimeRangeOption(Assets.Resources.Metrics_TimeRange_1Hour!, 3600),
         new MetricTimeRangeOption(Assets.Resources.Metrics_TimeRange_2Hours!, 7200),
         new MetricTimeRangeOption(Assets.Resources.Metrics_TimeRange_4Hours!, 14400),
-        new MetricTimeRangeOption(Assets.Resources.Metrics_TimeRange_24Hours!, 86400),
+        new MetricTimeRangeOption(Assets.Resources.Metrics_TimeRange_12Hours!, 43200),
         new MetricTimeRangeOption(Assets.Resources.Metrics_TimeRange_48Hours!, 172800),
         new MetricTimeRangeOption(Assets.Resources.Metrics_TimeRange_1Week!, 604800),
         new MetricTimeRangeOption(Assets.Resources.Metrics_TimeRange_1Month!, 2592000),
         new MetricTimeRangeOption(Assets.Resources.Metrics_TimeRange_2Months!, 5184000),
     ];
     private static readonly MetricTimeRangeOption s_defaultTimeRange = s_timeRangeOptions[0];
+    private const double s_chartMinHeight = 360d;
     private ClusterWorkspace? _cluster;
-    private MetricsServerHistoryState? _metricsServerHistory;
     private string? _prometheusCacheKey;
     private int? _prometheusCacheRangeSeconds;
     private bool _suppressSelectedTabRefresh;
@@ -182,10 +170,20 @@ public sealed partial class MetricsControl : UserControl, IInitializeCluster, IN
     {
         var timeRangeSelector = new ComboBox()
             .Width(132)
+            .VerticalAlignment(VerticalAlignment.Center)
             .IsVisible(this, x => x.ShowTimeRangeSelector)
             .ItemsSource(this, x => x.TimeRangeOptions)
             .SelectedItem(this, x => x.SelectedTimeRange, BindingMode.TwoWay)
             .ItemTemplate(new FuncDataTemplate<MetricTimeRangeOption>((option, _) => new TextBlock().Text(option.Label)));
+
+        var timeRangeLabel = new Label
+        {
+            Content = Assets.Resources.MetricsControl_TimeRangeLabel!,
+            Target = timeRangeSelector,
+        }
+            .VerticalAlignment(VerticalAlignment.Center)
+            .IsVisible(this, x => x.ShowTimeRangeSelector);
+        AutomationProperties.SetLabeledBy(timeRangeSelector, timeRangeLabel);
 
         var tabs = new ItemsControl()
             .ItemsSource(this, x => x.Tabs)
@@ -209,26 +207,34 @@ public sealed partial class MetricsControl : UserControl, IInitializeCluster, IN
                                 new FluentIcon { FontSize = 14, Icon = tab.Icon },
                                 new TextBlock().Text(tab, x => x.Title)))));
 
-        var chart = new ResponsiveCartesianChart()
+        var chart = new ResponsiveCartesianChart
+        {
+            Tooltip = new NearestSeriesTooltip(),
+        }
             .HorizontalAlignment(HorizontalAlignment.Stretch)
             .VerticalAlignment(VerticalAlignment.Stretch)
-            .Title(CompiledBinding.Create<MetricsControl, XamlDrawnLabelVisual?>(x => x.SelectedPanel!.ChartTitle))
-            .Series(CompiledBinding.Create<MetricsControl, IEnumerable<ISeries>>(x => x.SelectedPanel!.Series))
-            .XAxes(CompiledBinding.Create<MetricsControl, ICartesianAxis[]>(x => x.SelectedPanel!.XAxes))
-            .YAxes(CompiledBinding.Create<MetricsControl, ICartesianAxis[]>(x => x.SelectedPanel!.YAxes))
+            .Series(CompiledBinding.Create<MetricsControl, IEnumerable<ISeries>>(x => x.SelectedPanel!.Series, source: this))
+            .XAxes(CompiledBinding.Create<MetricsControl, ICartesianAxis[]>(x => x.SelectedPanel!.XAxes, source: this))
+            .YAxes(CompiledBinding.Create<MetricsControl, ICartesianAxis[]>(x => x.SelectedPanel!.YAxes, source: this))
             .Behaviors(new Features.Resources.Properties.Behaviors.ChartWheelScrollBehavior());
 
-        return new Grid()
+        var metricsGrid = new Grid()
             .Rows("Auto,*")
             .RowSpacing(8)
             .Children(
-                new Grid()
-                    .Cols("Auto,*")
-                    .ColumnSpacing(10)
-                    .Children(timeRangeSelector, tabs),
+                new StackPanel()
+                    .Orientation(Orientation.Horizontal)
+                    .Spacing(10)
+                    .Children(
+                        new StackPanel()
+                            .Orientation(Orientation.Horizontal)
+                            .Spacing(10)
+                            .IsVisible(this, x => x.ShowTimeRangeSelector)
+                            .Children(timeRangeLabel, timeRangeSelector),
+                        tabs),
                 new Border()
                     .Row(1)
-                    .Padding(12)
+                    .MinHeight(s_chartMinHeight)
                     .Classes("overview-card")
                     .IsVisible(this, x => x.ShowTabs)
                     .Child(chart),
@@ -238,6 +244,10 @@ public sealed partial class MetricsControl : UserControl, IInitializeCluster, IN
                     .VerticalAlignment(VerticalAlignment.Center)
                     .Text(this, x => x.StatusText)
                     .IsVisible(this, x => x.ShowStatus));
+
+        return new ExpandableSection()
+            .Header(Assets.Resources.Shared_Metrics!)
+            .Content(metricsGrid);
     }
 
     private void SetProperty<T>(ref T field, T value, string propertyName)
@@ -494,7 +504,6 @@ public sealed partial class MetricsControl : UserControl, IInitializeCluster, IN
             DisposeTabs();
             SelectedTab = null;
             ShowTimeRangeSelector = false;
-            _metricsServerHistory = null;
             return;
         }
 
@@ -508,9 +517,10 @@ public sealed partial class MetricsControl : UserControl, IInitializeCluster, IN
 
         if (_cluster.Runtime.ActiveMetricsBackend.Type == MetricsServiceType.KubernetesMetricsServer)
         {
+            var hadVisibleMetricsServerChart = ShowTabs && SelectedPanel?.Series.Count > 0;
             ShowTimeRangeSelector = false;
-            var historyTabs = TryCaptureMetricsServerCharts(resource);
-            MergeTabs(historyTabs);
+            var metricsServerTabs = await MetricsControlMetricsServerBackend.TryCaptureMetricsServerChartsAsync(_cluster, resource, cancellationToken);
+            MergeTabs(metricsServerTabs);
             ShowTabs = Tabs.Count > 0;
             ShowStatus = !ShowTabs;
             StatusText = ShowTabs
@@ -524,11 +534,12 @@ public sealed partial class MetricsControl : UserControl, IInitializeCluster, IN
                 _suppressSelectedTabRefresh = false;
             }
 
-            QueueChartRelayout();
+            if (!hadVisibleMetricsServerChart && ShowTabs)
+            {
+                QueueChartRelayout();
+            }
             return;
         }
-
-        _metricsServerHistory = null;
 
         if (_cluster.Runtime.ActiveMetricsBackend.Type != MetricsServiceType.Prometheus)
         {
@@ -541,10 +552,14 @@ public sealed partial class MetricsControl : UserControl, IInitializeCluster, IN
             return;
         }
 
-        ShowStatus = true;
-        ShowTabs = false;
-        ShowTimeRangeSelector = false;
-        StatusText = LoadingStatusText;
+        var hadVisibleChart = ShowTabs && SelectedPanel?.Series.Count > 0;
+        if (!hadVisibleChart)
+        {
+            ShowStatus = true;
+            ShowTabs = false;
+            ShowTimeRangeSelector = false;
+            StatusText = LoadingStatusText;
+        }
 
         var descriptor = await ResourceMetricsCatalog.CreateAsync(_cluster, resource).ConfigureAwait(false);
         cancellationToken.ThrowIfCancellationRequested();
@@ -644,6 +659,7 @@ public sealed partial class MetricsControl : UserControl, IInitializeCluster, IN
             var loadedSnapshot = snapshot.Snapshot;
             tab.Icon = tabDefinition.Icon;
             tab.MergePanels(loadedSnapshot?.Panels ?? [], hadExistingContent && snapshot.HadRequestFailures);
+            SyncSelectedPanel();
 
             ShowTabs = Tabs.Count > 0;
             ShowTimeRangeSelector = ShowTabs;
@@ -659,7 +675,10 @@ public sealed partial class MetricsControl : UserControl, IInitializeCluster, IN
                     _suppressSelectedTabRefresh = false;
                 }
 
-                QueueChartRelayout();
+                if (!hadVisibleChart)
+                {
+                    QueueChartRelayout();
+                }
                 return;
             }
 
@@ -672,7 +691,6 @@ public sealed partial class MetricsControl : UserControl, IInitializeCluster, IN
 
             ShowStatus = true;
             StatusText = NoMetricsStatusText;
-            QueueChartRelayout();
         });
     }
 
@@ -693,17 +711,15 @@ public sealed partial class MetricsControl : UserControl, IInitializeCluster, IN
             ShowTimeRangeSelector = false;
             ShowStatus = false;
             StatusText = null;
-            _metricsServerHistory = null;
             return;
         }
 
         IsVisible = true;
         if (_cluster.Runtime.ActiveMetricsBackend.Type == MetricsServiceType.KubernetesMetricsServer)
         {
+            var hadVisibleMetricsServerChart = ShowTabs && SelectedPanel?.Series.Count > 0;
             ShowTimeRangeSelector = false;
-            var capture = MetricsControlMetricsServerBackend.CapturePodContainerMetricsServerCharts(_cluster, Pod, Container.Name, _metricsServerHistory);
-            _metricsServerHistory = capture.History;
-            var tabs = capture.Tabs;
+            var tabs = MetricsControlMetricsServerBackend.CapturePodContainerMetricsServerCharts(_cluster, Pod, Container.Name);
             MergeTabs(tabs);
             ShowTabs = Tabs.Count > 0;
             ShowStatus = !ShowTabs;
@@ -716,11 +732,12 @@ public sealed partial class MetricsControl : UserControl, IInitializeCluster, IN
                 _suppressSelectedTabRefresh = false;
             }
 
-            QueueChartRelayout();
+            if (!hadVisibleMetricsServerChart && ShowTabs)
+            {
+                QueueChartRelayout();
+            }
             return;
         }
-
-        _metricsServerHistory = null;
 
         if (_cluster.Runtime.ActiveMetricsBackend.Type != MetricsServiceType.Prometheus)
         {
@@ -733,10 +750,14 @@ public sealed partial class MetricsControl : UserControl, IInitializeCluster, IN
             return;
         }
 
-        ShowStatus = true;
-        ShowTabs = false;
-        ShowTimeRangeSelector = false;
-        StatusText = LoadingStatusText;
+        var hadVisibleChart = ShowTabs && SelectedPanel?.Series.Count > 0;
+        if (!hadVisibleChart)
+        {
+            ShowStatus = true;
+            ShowTabs = false;
+            ShowTimeRangeSelector = false;
+            StatusText = LoadingStatusText;
+        }
 
         var request = MetricsControlPrometheusBackend.CreatePodContainerPrometheusRequest(Pod, Container.Name);
         var resourceKey = GetPodContainerResourceKey(Pod, Container.Name);
@@ -813,6 +834,7 @@ public sealed partial class MetricsControl : UserControl, IInitializeCluster, IN
             tab.Icon = GetPodContainerTabIcon(tabDefinition.Title);
 
             tab.MergePanels(snapshot.Snapshot?.Panels ?? [], hadExistingContent && snapshot.HadRequestFailures);
+            SyncSelectedPanel();
             ShowTabs = Tabs.Count > 0;
             ShowTimeRangeSelector = ShowTabs;
             ShowStatus = false;
@@ -824,11 +846,14 @@ public sealed partial class MetricsControl : UserControl, IInitializeCluster, IN
                 StatusText = snapshot.HadRequestFailures && !hadExistingContent
                     ? Assets.Resources.MetricsControl_ContainerLoadFailed
                     : NoMetricsStatusText;
-                QueueChartRelayout();
                 return;
             }
 
-            QueueChartRelayout();
+            if (!hadVisibleChart)
+            {
+                QueueChartRelayout();
+            }
+
         });
     }
 
@@ -882,13 +907,6 @@ public sealed partial class MetricsControl : UserControl, IInitializeCluster, IN
                 }
             }
         }
-    }
-
-    private IReadOnlyList<MetricTabSnapshot> TryCaptureMetricsServerCharts(IKubernetesObject<V1ObjectMeta> resource)
-    {
-        var capture = MetricsControlMetricsServerBackend.TryCaptureMetricsServerCharts(_cluster!, resource, _metricsServerHistory);
-        _metricsServerHistory = capture.History;
-        return capture.Tabs;
     }
 
     private static string GetResourceKey(IKubernetesObject<V1ObjectMeta> resource)
@@ -993,6 +1011,7 @@ public sealed partial class MetricsControl : UserControl, IInitializeCluster, IN
         SelectedTab = selectedTitle == null
             ? Tabs.FirstOrDefault()
             : Tabs.FirstOrDefault(x => string.Equals(x.Title, selectedTitle, StringComparison.Ordinal)) ?? Tabs.FirstOrDefault();
+        SyncSelectedPanel();
     }
 
     private void DisposeTabs()
@@ -1013,6 +1032,11 @@ public sealed partial class MetricsControl : UserControl, IInitializeCluster, IN
         }
     }
 
+    private void SyncSelectedPanel()
+    {
+        SelectedPanel = SelectedTab?.Panels.FirstOrDefault();
+    }
+
 }
 
 [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "Metric panels are owned and disposed by their metric tab.")]
@@ -1029,8 +1053,6 @@ public sealed partial class MetricPanelViewModel : ObservableObject, IDisposable
 
     public required string Title { get; init; }
 
-    public XamlDrawnLabelVisual ChartTitle { get; }
-
     public ObservableCollection<ISeries> Series { get; } = [];
 
     public ICartesianAxis[] XAxes { get; }
@@ -1040,15 +1062,7 @@ public sealed partial class MetricPanelViewModel : ObservableObject, IDisposable
 
     public MetricPanelViewModel()
     {
-        ChartTitle = new XamlDrawnLabelVisual
-        {
-            HorizontalAlign = LiveChartsCore.Drawing.Align.Start,
-            VerticalAlign = LiveChartsCore.Drawing.Align.Start,
-            TextSize = 11,
-            Paint = CreateChartTextPaint(),
-        };
-
-        _xAxis = new DateTimeAxis(TimeSpan.FromMinutes(10), value => value.ToString("HH:mm"))
+        _xAxis = new DateTimeAxis(TimeSpan.FromMinutes(10), FormatChartTime)
         {
             LabelsPaint = CreateChartTextPaint(),
             TextSize = 11,
@@ -1059,8 +1073,6 @@ public sealed partial class MetricPanelViewModel : ObservableObject, IDisposable
 
     internal void MergeSeries(IReadOnlyList<MetricSeriesSnapshot> snapshots, bool preserveMissing = false)
     {
-        SyncChartTitle();
-
         if (!preserveMissing)
         {
             for (var i = Series.Count - 1; i >= 0; i--)
@@ -1087,6 +1099,8 @@ public sealed partial class MetricPanelViewModel : ObservableObject, IDisposable
                 {
                     Name = snapshot.Name,
                     GeometrySize = 0,
+                    XToolTipLabelFormatter = static point => FormatChartTime(new DateTime((long)point.Coordinate.SecondaryValue)),
+                    YToolTipLabelFormatter = static point => FormatTooltipValue(point.Coordinate.PrimaryValue),
                     Values = new ObservableCollection<DateTimePoint>(snapshot.Points),
                 };
                 ApplyLineSeriesStyle(existing, index);
@@ -1094,8 +1108,7 @@ public sealed partial class MetricPanelViewModel : ObservableObject, IDisposable
             }
             else
             {
-                existing.Values = new ObservableCollection<DateTimePoint>(snapshot.Points);
-                ApplyLineSeriesStyle(existing, index);
+                UpdateSeriesValues(existing, snapshot.Points);
                 var currentIndex = Series.IndexOf(existing);
                 if (currentIndex != index)
                 {
@@ -1108,9 +1121,74 @@ public sealed partial class MetricPanelViewModel : ObservableObject, IDisposable
         UpdateXAxisLimits(Series);
     }
 
-    private void SyncChartTitle()
+    private static void UpdateSeriesValues(LineSeries<DateTimePoint> series, IReadOnlyList<DateTimePoint> points)
     {
-        ChartTitle.Text = Title;
+        if (series.Values is not ObservableCollection<DateTimePoint> values)
+        {
+            series.Values = new ObservableCollection<DateTimePoint>(points);
+            return;
+        }
+
+        for (var index = 0; index < points.Count; index++)
+        {
+            var point = points[index];
+            if (index < values.Count && values[index].DateTime == point.DateTime)
+            {
+                UpdatePointValue(values[index], point.Value);
+                continue;
+            }
+
+            var existingIndex = -1;
+            for (var searchIndex = index + 1; searchIndex < values.Count; searchIndex++)
+            {
+                if (values[searchIndex].DateTime == point.DateTime)
+                {
+                    existingIndex = searchIndex;
+                    break;
+                }
+            }
+
+            if (existingIndex >= 0)
+            {
+                values.Move(existingIndex, index);
+                UpdatePointValue(values[index], point.Value);
+            }
+            else
+            {
+                values.Insert(index, point);
+            }
+        }
+
+        while (values.Count > points.Count)
+        {
+            values.RemoveAt(values.Count - 1);
+        }
+    }
+
+    private static void UpdatePointValue(DateTimePoint point, double? value)
+    {
+        if (point.Value != value)
+        {
+            point.Value = value;
+        }
+    }
+
+    internal static string FormatTooltipValue(double value)
+    {
+        var suffix = string.Empty;
+        var magnitude = value == 0 ? 0 : (int)Math.Log10(Math.Abs(value));
+        if (magnitude >= 6)
+        {
+            value /= 1_000_000;
+            suffix = " M";
+        }
+        else if (magnitude <= -6)
+        {
+            value *= 1_000_000;
+            suffix = " µ";
+        }
+
+        return value.ToString("F2", CultureInfo.CurrentCulture) + suffix;
     }
 
     private void UpdateYAxisLimits(IEnumerable<ISeries> series)
@@ -1136,13 +1214,13 @@ public sealed partial class MetricPanelViewModel : ObservableObject, IDisposable
         if (Math.Abs(max - min) < double.Epsilon)
         {
             var delta = Math.Max(Math.Abs(max) * 0.1, 0.01);
-            _yAxis.MinLimit = min - delta;
+            _yAxis.MinLimit = min >= 0 ? 0 : min - delta;
             _yAxis.MaxLimit = max + delta;
             return;
         }
 
         var padding = Math.Max((max - min) * 0.15, Math.Abs(max) * 0.02);
-        _yAxis.MinLimit = min - padding;
+        _yAxis.MinLimit = min >= 0 ? 0 : min - padding;
         _yAxis.MaxLimit = max + padding;
     }
 
@@ -1188,6 +1266,11 @@ public sealed partial class MetricPanelViewModel : ObservableObject, IDisposable
         };
     }
 
+    internal static string FormatChartTime(DateTime value)
+    {
+        return value.ToString("h:mm tt", CultureInfo.CurrentCulture);
+    }
+
     private static void ApplyLineSeriesStyle(LineSeries<DateTimePoint> series, int index)
     {
         var palette = Application.Current?.ActualThemeVariant == ThemeVariant.Light
@@ -1228,33 +1311,4 @@ internal sealed record MetricPanelSnapshot(string Title, IReadOnlyList<MetricSer
 
 internal sealed record MetricSeriesSnapshot(string Name, IReadOnlyList<DateTimePoint> Points);
 
-internal sealed class MetricsServerHistoryState(string resourceKey)
-{
-    private static readonly TimeSpan s_historyDuration = TimeSpan.FromHours(1);
-
-    public string ResourceKey { get; } = resourceKey;
-
-    public List<MetricsServerSamplePoint> Samples { get; } = [];
-
-    public void Upsert(DateTimeOffset timestamp, MetricsServerSample sample)
-    {
-        var cutoff = timestamp - s_historyDuration;
-        Samples.RemoveAll(x => x.Timestamp < cutoff);
-
-        var existing = Samples.FindIndex(x => x.Timestamp == timestamp);
-        var point = new MetricsServerSamplePoint(timestamp, sample.Cpu, sample.Memory);
-
-        if (existing >= 0)
-        {
-            Samples[existing] = point;
-            return;
-        }
-
-        Samples.Add(point);
-        Samples.Sort(static (a, b) => a.Timestamp.CompareTo(b.Timestamp));
-    }
-}
-
-internal readonly record struct MetricsServerSample(decimal Cpu, double Memory);
-
-internal readonly record struct MetricsServerSamplePoint(DateTimeOffset Timestamp, decimal Cpu, double Memory);
+internal readonly record struct MetricsServerSamplePoint(DateTime Timestamp, double Cpu, double Memory);

@@ -11,13 +11,14 @@ public sealed partial class MetricsService : ObservableObject, IMetricsService, 
     private static readonly TimeSpan s_prometheusRequestTimeout = TimeSpan.FromSeconds(5);
     private static readonly TimeSpan s_prometheusCacheDuration = TimeSpan.FromSeconds(30);
     private static readonly TimeSpan s_prometheusFailureCooldown = TimeSpan.FromMinutes(1);
+    private static readonly TimeSpan s_kubernetesMetricsRetention = TimeSpan.FromHours(1);
 
     private readonly ILogger<MetricsService> _logger;
     private readonly IClusterSettingsStore _settings;
     private readonly IReadOnlyDictionary<PrometheusProviderKind, IPrometheusProvider> _prometheusProviders;
     private readonly IPrometheusQueryClient _prometheusQueryClient;
     private readonly ResiliencePipeline<HttpResponseMessage> _prometheusQueryPipeline;
-    private readonly object _metricsRequestSync = new();
+    private readonly Lock _metricsRequestSync = new();
     private Cluster? _cluster;
     private CancellationTokenSource? _lifecycleCancellationTokenSource;
     private PeriodicTimer? _metricsRefreshTimer;
@@ -454,6 +455,7 @@ public sealed partial class MetricsService : ObservableObject, IMetricsService, 
             PrometheusProviderKind.OpenShift => 1,
             PrometheusProviderKind.Manual => 2,
             PrometheusProviderKind.External => 3,
+            PrometheusProviderKind.AzureMonitor => 4,
             _ => 99,
         };
 
@@ -510,6 +512,8 @@ public sealed partial class MetricsService : ObservableObject, IMetricsService, 
             PrometheusUseHttps = settings.PrometheusUseHttps,
             PrometheusDirectUrl = settings.PrometheusDirectUrl,
             PrometheusBearerToken = settings.PrometheusBearerToken,
+            AzureMonitorWorkspaceId = settings.AzureMonitorWorkspaceId,
+            AzureMonitorQueryEndpoint = settings.AzureMonitorQueryEndpoint,
         };
 
         if (normalized.PrometheusProviderKind == null && !string.IsNullOrWhiteSpace(normalized.PrometheusDirectUrl))
@@ -653,27 +657,29 @@ public sealed partial class MetricsService : ObservableObject, IMetricsService, 
         return normalized;
     }
 
-    private async Task SyncKubernetesMetricsAsync(Cluster cluster, CancellationToken cancellationToken)
+    internal async Task SyncKubernetesMetricsAsync(Cluster cluster, CancellationToken cancellationToken)
     {
         try
         {
             cancellationToken.ThrowIfCancellationRequested();
+            PruneExpiredMetrics(NodeMetrics, static metric => metric.Timestamp);
+            PruneExpiredMetrics(PodMetrics, static metric => metric.Timestamp);
 
             var nodeMetricsList = await cluster.Client!.GetKubernetesNodesMetricsAsync().ConfigureAwait(false);
-            NodeMetrics.Clear();
-            foreach (var item in nodeMetricsList.Items.OfType<NodeMetrics>())
-            {
-                NodeMetrics.Add(item);
-            }
+            AppendRecentMetrics(
+                NodeMetrics,
+                nodeMetricsList.Items.OfType<NodeMetrics>(),
+                static metric => metric.Name() ?? string.Empty,
+                static metric => metric.Timestamp);
 
             cancellationToken.ThrowIfCancellationRequested();
 
             var podMetricsList = await cluster.Client!.GetKubernetesPodsMetricsAsync().ConfigureAwait(false);
-            PodMetrics.Clear();
-            foreach (var item in podMetricsList.Items.OfType<PodMetrics>())
-            {
-                PodMetrics.Add(item);
-            }
+            AppendRecentMetrics(
+                PodMetrics,
+                podMetricsList.Items.OfType<PodMetrics>(),
+                static metric => string.Concat(metric.Namespace(), "/", metric.Name()),
+                static metric => metric.Timestamp);
         }
         catch (OperationCanceledException)
         {
@@ -681,6 +687,56 @@ public sealed partial class MetricsService : ObservableObject, IMetricsService, 
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error updating Kubernetes metrics");
+        }
+    }
+
+    private static void PruneExpiredMetrics<TMetric>(
+        ObservableCollection<TMetric> storedMetrics,
+        Func<TMetric, DateTime?> getTimestamp)
+    {
+        var cutoffUtc = DateTime.UtcNow - s_kubernetesMetricsRetention;
+        for (var i = storedMetrics.Count - 1; i >= 0; i--)
+        {
+            var timestamp = getTimestamp(storedMetrics[i]);
+            if (!timestamp.HasValue || timestamp.Value.ToUniversalTime() < cutoffUtc)
+            {
+                storedMetrics.RemoveAt(i);
+            }
+        }
+    }
+
+    private static void AppendRecentMetrics<TMetric>(
+        ObservableCollection<TMetric> storedMetrics,
+        IEnumerable<TMetric> receivedMetrics,
+        Func<TMetric, string> getResourceKey,
+        Func<TMetric, DateTime?> getTimestamp)
+    {
+        var cutoffUtc = DateTime.UtcNow - s_kubernetesMetricsRetention;
+        HashSet<(string ResourceKey, DateTime TimestampUtc)> knownSamples = [];
+
+        for (var i = storedMetrics.Count - 1; i >= 0; i--)
+        {
+            var metric = storedMetrics[i];
+            var timestampUtc = getTimestamp(metric)!.Value.ToUniversalTime();
+            if (!knownSamples.Add((getResourceKey(metric), timestampUtc)))
+            {
+                storedMetrics.RemoveAt(i);
+            }
+        }
+
+        foreach (var metric in receivedMetrics)
+        {
+            var timestamp = getTimestamp(metric);
+            if (!timestamp.HasValue)
+            {
+                continue;
+            }
+
+            var timestampUtc = timestamp.Value.ToUniversalTime();
+            if (timestampUtc >= cutoffUtc && knownSamples.Add((getResourceKey(metric), timestampUtc)))
+            {
+                storedMetrics.Add(metric);
+            }
         }
     }
 

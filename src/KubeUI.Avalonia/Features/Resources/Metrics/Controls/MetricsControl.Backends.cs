@@ -1,17 +1,10 @@
-using System.Collections.Generic;
-using System.Linq;
 using System.Text.RegularExpressions;
 using FluentIcons.Common;
-using Humanizer;
 using k8s;
 using k8s.Models;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
-using KubeUI.Avalonia.Features.Resources.Metrics;
-using KubeUI.Avalonia.Features.Resources.Properties.Controls;
-using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Kubernetes;
 using LiveChartsCore.Defaults;
-using Microsoft.Extensions.Logging;
 
 namespace KubeUI.Avalonia.Features.Resources.Metrics.Controls;
 
@@ -64,10 +57,10 @@ internal static class MetricsControlPrometheusBackend
             using CancellationTokenSource timeoutCts = new();
             timeoutCts.CancelAfter(s_prometheusPanelTimeout);
 
-            MetricRequest request = ApplySelectedTimeRange(panel.Request, selectedTimeRange);
+            var request = ApplySelectedTimeRange(panel.Request, selectedTimeRange);
             using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(timeoutCts.Token, cancellationToken);
             var result = await cluster.Runtime.RequestMetricsAsync(request, linkedCts.Token).ConfigureAwait(false);
-            IReadOnlyList<MetricSeriesSnapshot> series = CreateSeries(panel, result);
+            var series = CreateSeries(panel, result);
             if (series.Count == 0)
             {
                 logger.LogDebug("Prometheus metrics panel {PanelTitle} for tab {TabTitle} returned no series for cluster {ClusterName}.", panel.Title, tabTitle, cluster.Runtime.Name);
@@ -101,7 +94,7 @@ internal static class MetricsControlPrometheusBackend
         ILogger logger,
         CancellationToken cancellationToken = default)
     {
-        (MetricPanelSnapshot? Snapshot, bool HadFailure) panelResult = await LoadPodContainerPrometheusPanelSnapshotAsync(cluster, tabDefinition.Title, tabDefinition, pod, container, selectedTimeRange, logger, cancellationToken).ConfigureAwait(false);
+        var panelResult = await LoadPodContainerPrometheusPanelSnapshotAsync(cluster, tabDefinition.Title, tabDefinition, pod, container, selectedTimeRange, logger, cancellationToken).ConfigureAwait(false);
         return (panelResult.Snapshot == null
             ? null
             : new MetricTabSnapshot(tabDefinition.Title, GetPodContainerTabIcon(tabDefinition.Title), [panelResult.Snapshot]), panelResult.HadFailure);
@@ -122,10 +115,10 @@ internal static class MetricsControlPrometheusBackend
             using CancellationTokenSource timeoutCts = new();
             timeoutCts.CancelAfter(s_prometheusPanelTimeout);
 
-            MetricRequest request = ApplySelectedTimeRange(panel.Request, selectedTimeRange);
+            var request = ApplySelectedTimeRange(panel.Request, selectedTimeRange);
             using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(timeoutCts.Token, cancellationToken);
             var result = await cluster.Runtime.RequestMetricsAsync(request, linkedCts.Token).ConfigureAwait(false);
-            IReadOnlyList<MetricSeriesSnapshot> series = CreateSeries(panel, result);
+            var series = CreateSeries(panel, result);
             if (series.Count == 0)
             {
                 logger.LogDebug("Prometheus metrics panel {PanelTitle} for tab {TabTitle} returned no series for container {ContainerName} in pod {PodName} on cluster {ClusterName}.", panel.Title, tabTitle, container?.Name, pod?.Name(), cluster.Runtime.Name);
@@ -253,128 +246,164 @@ internal static class MetricsControlPrometheusBackend
             }
         }
 
-        return series;
+        return series
+            .OrderBy(static snapshot => snapshot.Name, StringComparer.CurrentCultureIgnoreCase)
+            .ToArray();
     }
+
 }
 
 internal static class MetricsControlMetricsServerBackend
 {
-    private static readonly TimeSpan s_metricsServerSampleInterval = TimeSpan.FromSeconds(30);
-
-    public static (MetricsServerHistoryState? History, IReadOnlyList<MetricTabSnapshot> Tabs) CapturePodContainerMetricsServerCharts(
+    public static IReadOnlyList<MetricTabSnapshot> CapturePodContainerMetricsServerCharts(
         ClusterWorkspace cluster,
         V1Pod pod,
-        string containerName,
-        MetricsServerHistoryState? history)
+        string containerName)
     {
-        var resourceKey = GetPodContainerResourceKey(pod, containerName);
-        if (history == null || !string.Equals(history.ResourceKey, resourceKey, StringComparison.Ordinal))
+        var samples = new List<MetricsServerSamplePoint>();
+        foreach (var metric in cluster.Runtime.PodMetrics)
         {
-            history = new MetricsServerHistoryState(resourceKey);
+            if (!string.Equals(metric.Name(), pod.Name(), StringComparison.Ordinal)
+                || !string.Equals(metric.Namespace(), pod.Namespace(), StringComparison.Ordinal)
+                || !metric.Timestamp.HasValue)
+            {
+                continue;
+            }
+
+            var containerMetric = metric.Containers?.FirstOrDefault(x => string.Equals(x.Name, containerName, StringComparison.Ordinal));
+            if (containerMetric == null)
+            {
+                continue;
+            }
+
+            samples.Add(new MetricsServerSamplePoint(
+                metric.Timestamp.Value.ToLocalTime(),
+                (double)containerMetric.Usage["cpu"].ToDecimal(),
+                containerMetric.Usage["memory"].ToInt64()));
         }
 
-        var metric = cluster.Runtime.PodMetrics.FirstOrDefault(x =>
-            string.Equals(x.Name(), pod.Name(), StringComparison.Ordinal)
-            && string.Equals(x.Namespace(), pod.Namespace(), StringComparison.Ordinal));
-        var containerMetric = metric?.Containers?.FirstOrDefault(x => string.Equals(x.Name, containerName, StringComparison.Ordinal));
-
-        if (containerMetric == null)
-        {
-            return (history, CreateMetricsServerTabs(history));
-        }
-
-        var timestamp = NormalizeMetricsServerTimestamp(DateTimeOffset.UtcNow);
-        history.Upsert(timestamp, new MetricsServerSample(containerMetric.Usage["cpu"].ToDecimal(), containerMetric.Usage["memory"].ToInt64()));
-        return (history, CreateMetricsServerTabs(history));
+        SortSamples(samples);
+        return CreateMetricsServerTabs(samples);
     }
 
-    public static (MetricsServerHistoryState? History, IReadOnlyList<MetricTabSnapshot> Tabs) TryCaptureMetricsServerCharts(
+    public static async Task<IReadOnlyList<MetricTabSnapshot>> TryCaptureMetricsServerChartsAsync(
         ClusterWorkspace cluster,
         IKubernetesObject<V1ObjectMeta> resource,
-        MetricsServerHistoryState? history)
+        CancellationToken cancellationToken)
     {
-        var resourceKey = GetMetricsServerResourceKey(resource);
-        if (resourceKey == null)
+        if (resource is V1Pod pod)
         {
-            return (null, []);
+            return CreateMetricsServerTabs(CreatePodMetricsServerSamples(cluster, [pod]));
         }
 
-        if (history == null || !string.Equals(history.ResourceKey, resourceKey, StringComparison.Ordinal))
+        if (resource is V1Node node)
         {
-            history = new MetricsServerHistoryState(resourceKey);
+            return CreateMetricsServerTabs(CreateNodeMetricsServerSamples(cluster, node));
         }
 
-        MetricsServerSample? sample = resource switch
-        {
-            V1Pod pod => TryCreatePodMetricsServerSample(cluster, pod),
-            V1Node node => TryCreateNodeMetricsServerSample(cluster, node),
-            _ => null,
-        };
-
-        if (sample == null)
-        {
-            return (history, CreateMetricsServerTabs(history));
-        }
-
-        DateTimeOffset timestamp = NormalizeMetricsServerTimestamp(DateTimeOffset.UtcNow);
-        history.Upsert(timestamp, sample.Value);
-        return (history, CreateMetricsServerTabs(history));
-    }
-
-    public static string? GetMetricsServerResourceKey(IKubernetesObject<V1ObjectMeta> resource)
-    {
-        return resource switch
-        {
-            V1Pod pod => $"pod:{pod.Namespace()}:{pod.Name()}",
-            V1Node node => $"node::{node.Name()}",
-            _ => null,
-        };
-    }
-
-    public static MetricsServerSample? TryCreatePodMetricsServerSample(ClusterWorkspace cluster, V1Pod pod)
-    {
-        var metric = cluster.Runtime.PodMetrics.FirstOrDefault(x =>
-            string.Equals(x.Name(), pod.Name(), StringComparison.Ordinal)
-            && string.Equals(x.Namespace(), pod.Namespace(), StringComparison.Ordinal));
-
-        if (metric == null || metric.Containers == null || metric.Containers.Count == 0)
-        {
-            return null;
-        }
-
-        var cpu = metric.Containers.Sum(static x => x.Usage["cpu"].ToDecimal());
-        var memory = metric.Containers.Sum(static x => x.Usage["memory"].ToInt64());
-        return new MetricsServerSample(cpu, memory);
-    }
-
-    public static MetricsServerSample? TryCreateNodeMetricsServerSample(ClusterWorkspace cluster, V1Node node)
-    {
-        var metric = cluster.Runtime.NodeMetrics.FirstOrDefault(x => string.Equals(x.Name(), node.Name(), StringComparison.Ordinal));
-        if (metric == null)
-        {
-            return null;
-        }
-
-        var cpu = metric.Usage["cpu"].ToDecimal();
-        var memory = (double)metric.Usage["memory"].ToInt64();
-        return new MetricsServerSample(cpu, memory);
-    }
-
-    public static DateTimeOffset NormalizeMetricsServerTimestamp(DateTimeOffset timestamp)
-    {
-        var seconds = (long)(timestamp.ToUnixTimeSeconds() / s_metricsServerSampleInterval.TotalSeconds * s_metricsServerSampleInterval.TotalSeconds);
-        return DateTimeOffset.FromUnixTimeSeconds(seconds);
-    }
-
-    public static IReadOnlyList<MetricTabSnapshot> CreateMetricsServerTabs(MetricsServerHistoryState history)
-    {
-        if (history.Samples.Count == 0)
+        var workloadScope = GetPodScope(resource);
+        if (workloadScope == null || (!workloadScope.Value.IsNamespace && workloadScope.Value.Selector == null))
         {
             return [];
         }
 
-        IReadOnlyList<DateTimePoint> cpuPoints = CreateMetricsServerChartPoints(history.Samples, static x => (double)x.Cpu);
-        IReadOnlyList<DateTimePoint> memoryPoints = CreateMetricsServerChartPoints(history.Samples, static x => x.Memory);
+        var pods = await ResourceMetricsCatalog.GetMatchingPodsAsync(
+            cluster,
+            workloadScope.Value.Namespace,
+            workloadScope.Value.Selector,
+            cancellationToken);
+        return CreateMetricsServerTabs(CreatePodMetricsServerSamples(cluster, pods));
+    }
+
+    private static (string Namespace, V1LabelSelector? Selector, bool IsNamespace)? GetPodScope(IKubernetesObject<V1ObjectMeta> resource)
+    {
+        return resource switch
+        {
+            V1Deployment deployment => (deployment.Namespace(), deployment.Spec?.Selector, false),
+            V1StatefulSet statefulSet => (statefulSet.Namespace(), statefulSet.Spec?.Selector, false),
+            V1DaemonSet daemonSet => (daemonSet.Namespace(), daemonSet.Spec?.Selector, false),
+            V1ReplicaSet replicaSet => (replicaSet.Namespace(), replicaSet.Spec?.Selector, false),
+            V1Job job => (job.Namespace(), job.Spec?.Selector, false),
+            V1Namespace ns => (ns.Name(), null, true),
+            _ => null,
+        };
+    }
+
+    private static List<MetricsServerSamplePoint> CreatePodMetricsServerSamples(ClusterWorkspace cluster, IReadOnlyList<V1Pod> pods)
+    {
+        HashSet<(string? Namespace, string? Name)> selectedPods = [];
+        foreach (var pod in pods)
+        {
+            selectedPods.Add((pod.Namespace(), pod.Name()));
+        }
+
+        Dictionary<DateTime, (double Cpu, double Memory)> aggregates = [];
+        foreach (var metric in cluster.Runtime.PodMetrics)
+        {
+            if (!metric.Timestamp.HasValue
+                || !selectedPods.Contains((metric.Namespace(), metric.Name())))
+            {
+                continue;
+            }
+
+            var timestamp = metric.Timestamp.Value.ToUniversalTime();
+            aggregates.TryGetValue(timestamp, out var aggregate);
+            if (metric.Containers != null)
+            {
+                foreach (var containerMetric in metric.Containers)
+                {
+                    aggregate.Cpu += (double)containerMetric.Usage["cpu"].ToDecimal();
+                    aggregate.Memory += containerMetric.Usage["memory"].ToInt64();
+                }
+            }
+
+            aggregates[timestamp] = aggregate;
+        }
+
+        var samples = new List<MetricsServerSamplePoint>();
+        foreach (var (timestamp, aggregate) in aggregates)
+        {
+            samples.Add(new MetricsServerSamplePoint(timestamp.ToLocalTime(), aggregate.Cpu, aggregate.Memory));
+        }
+
+        SortSamples(samples);
+        return samples;
+    }
+
+    private static List<MetricsServerSamplePoint> CreateNodeMetricsServerSamples(ClusterWorkspace cluster, V1Node node)
+    {
+        var samples = new List<MetricsServerSamplePoint>();
+        foreach (var metric in cluster.Runtime.NodeMetrics)
+        {
+            if (!string.Equals(metric.Name(), node.Name(), StringComparison.Ordinal)
+                || !metric.Timestamp.HasValue)
+            {
+                continue;
+            }
+
+            samples.Add(new MetricsServerSamplePoint(
+                metric.Timestamp.Value.ToLocalTime(),
+                (double)metric.Usage["cpu"].ToDecimal(),
+                metric.Usage["memory"].ToInt64()));
+        }
+
+        return samples;
+    }
+
+    private static void SortSamples(List<MetricsServerSamplePoint> samples)
+    {
+        samples.Sort(static (left, right) => left.Timestamp.CompareTo(right.Timestamp));
+    }
+
+    private static IReadOnlyList<MetricTabSnapshot> CreateMetricsServerTabs(IReadOnlyList<MetricsServerSamplePoint> samples)
+    {
+        if (samples.Count == 0)
+        {
+            return [];
+        }
+
+        var cpuPoints = CreateMetricsServerChartPoints(samples, static x => x.Cpu);
+        var memoryPoints = CreateMetricsServerChartPoints(samples, static x => x.Memory);
 
         return
         [
@@ -399,28 +428,12 @@ internal static class MetricsControlMetricsServerBackend
         ];
     }
 
-    public static IReadOnlyList<DateTimePoint> CreateMetricsServerChartPoints(
+    private static IReadOnlyList<DateTimePoint> CreateMetricsServerChartPoints(
         IReadOnlyList<MetricsServerSamplePoint> samples,
         Func<MetricsServerSamplePoint, double> selector)
     {
-        if (samples.Count == 1)
-        {
-            var sample = samples[0];
-            var value = selector(sample);
-            return
-            [
-                new DateTimePoint(sample.Timestamp.Subtract(s_metricsServerSampleInterval).LocalDateTime, value),
-                new DateTimePoint(sample.Timestamp.LocalDateTime, value),
-            ];
-        }
-
         return samples
-            .Select(sample => new DateTimePoint(sample.Timestamp.LocalDateTime, selector(sample)))
+            .Select(sample => new DateTimePoint(sample.Timestamp, selector(sample)))
             .ToArray();
-    }
-
-    private static string GetPodContainerResourceKey(V1Pod pod, string containerName)
-    {
-        return $"pod:{pod.Namespace()}:{pod.Name()}:{containerName}";
     }
 }

@@ -24,6 +24,7 @@ public sealed class PropertiesView : ViewBase<V1ReplicaSet>
                 new PropertyItem()
                     .Key(Assets.Resources.Shared_Available_Replicas!)
                     .Value(vm.Status?.AvailableReplicas ?? 0),
+                new MetricsControl(),
                 new ExpandableSection()
                     .Header(Assets.Resources.Shared_Status!)
                     .IsExpanded(true)
@@ -50,7 +51,6 @@ public sealed class PropertiesView : ViewBase<V1ReplicaSet>
                                     .Value(vm.Spec?.MinReadySeconds ?? 0),
                                 new PropertyItem()
                                     .Key(Assets.Resources.Shared_Selector_Labels!)
-                                    .Value(vm.Spec?.Selector?.MatchLabels?.Count ?? 0))),
-                new MetricsControl());
+                                    .Value(vm.Spec?.Selector?.MatchLabels?.Count ?? 0))));
     }
 }

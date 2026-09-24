@@ -76,4 +76,5 @@ public sealed record ResolvedPrometheusEndpoint(
     string? DirectUrl,
     bool UseHttps,
     string PathPrefix,
-    string? BearerToken);
+    string? BearerToken,
+    bool UseAzureMonitorAuthentication = false);

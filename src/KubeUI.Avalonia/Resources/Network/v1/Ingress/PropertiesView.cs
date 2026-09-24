@@ -21,9 +21,9 @@ public sealed class PropertiesView : ViewBase<V1Ingress>
                 new PropertyItem()
                     .Key(Assets.Resources.IngressPropertiesView_TLS_Entries!)
                     .Value(vm.Spec?.Tls?.Count ?? 0),
+                new MetricsControl(),
                 new PropertyItem()
                     .Key(Assets.Resources.IngressPropertiesView_Load_Balancer_Entries!)
-                    .Value(vm.Status?.LoadBalancer?.Ingress?.Count ?? 0),
-                new MetricsControl());
+                    .Value(vm.Status?.LoadBalancer?.Ingress?.Count ?? 0));
     }
 }

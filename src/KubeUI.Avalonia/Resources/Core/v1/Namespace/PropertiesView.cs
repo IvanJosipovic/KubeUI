@@ -15,12 +15,12 @@ public sealed class PropertiesView : ViewBase<V1Namespace>
                 new PropertyItem()
                     .Key(Assets.Resources.Shared_Phase!)
                     .Value(vm.Status?.Phase ?? ""),
+                new MetricsControl(),
                 new PropertyItem()
                     .Key(Assets.Resources.NamespacePropertiesView_Finalizers!)
                     .Value(vm.Spec?.Finalizers?.Count ?? 0),
                 new PropertyItem()
                     .Key(Assets.Resources.Shared_Conditions!)
-                    .Value(vm.Status?.Conditions?.Count ?? 0),
-                new MetricsControl());
+                    .Value(vm.Status?.Conditions?.Count ?? 0));
     }
 }

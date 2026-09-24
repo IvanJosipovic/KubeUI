@@ -6,4 +6,5 @@ public enum PrometheusProviderKind
     OpenShift,
     Manual,
     External,
+    AzureMonitor,
 }

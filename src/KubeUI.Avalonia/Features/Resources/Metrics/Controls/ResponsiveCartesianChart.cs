@@ -1,6 +1,5 @@
-using Avalonia.Layout;
-using LiveChartsCore.Kernel;
-using LiveChartsCore.Measure;
+using Avalonia.Input;
+using LiveChartsCore.Drawing;
 using LiveChartsCore.SkiaSharpView.Avalonia;
 
 namespace KubeUI.Avalonia.Features.Resources.Metrics.Controls;
@@ -9,9 +8,22 @@ public sealed class ResponsiveCartesianChart : CartesianChart
 {
     private Rect _lastEffectiveViewport;
 
+    internal LvcPoint PointerPosition { get; private set; }
+
     public ResponsiveCartesianChart()
     {
         EffectiveViewportChanged += OnEffectiveViewportChanged;
+    }
+
+    protected override void OnPointerMoved(PointerEventArgs e)
+    {
+        var position = e.GetPosition(this);
+        PointerPosition = new LvcPoint((float)position.X, (float)position.Y);
+        base.OnPointerMoved(e);
+        if (Tooltip is NearestSeriesTooltip tooltip)
+        {
+            tooltip.UpdateAnchor(PointerPosition);
+        }
     }
 
     private void OnEffectiveViewportChanged(object? sender, EffectiveViewportChangedEventArgs e)

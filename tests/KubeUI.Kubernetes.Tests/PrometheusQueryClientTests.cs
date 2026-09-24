@@ -1,4 +1,6 @@
 using System.Text.Json;
+using System.Net;
+using Azure.Core;
 using k8s;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -65,6 +67,40 @@ public sealed class PrometheusQueryClientTests
     }
 
     [Fact]
+    public async Task QueryRangeAsync_uses_a_fresh_azure_token_for_each_query()
+    {
+        string[] observedTokens = [];
+        using var handler = new RecordingHandler(request => observedTokens = [.. observedTokens, request.Headers.Authorization?.Parameter ?? string.Empty]);
+        var azureService = new FakeAzureMonitorWorkspaceService();
+        var client = new PrometheusQueryClient(
+            NullLogger<PrometheusQueryClient>.Instance,
+            azureService,
+            () => handler);
+        var fixture = CreateCluster("azure-prometheus");
+        await using var cluster = fixture.Cluster;
+        using var metricsService = fixture.Service;
+        var endpoint = new ResolvedPrometheusEndpoint(
+            PrometheusProviderKind.AzureMonitor,
+            "Azure Managed Prometheus",
+            true,
+            null,
+            null,
+            null,
+            "https://workspace.eastus.prometheus.monitor.azure.com",
+            true,
+            string.Empty,
+            null,
+            UseAzureMonitorAuthentication: true);
+
+        await client.QueryRangeAsync(cluster, endpoint, "up", DateTimeOffset.UnixEpoch, DateTimeOffset.UnixEpoch.AddMinutes(1), 60);
+        await client.QueryRangeAsync(cluster, endpoint, "up", DateTimeOffset.UnixEpoch, DateTimeOffset.UnixEpoch.AddMinutes(1), 60);
+
+        observedTokens.ShouldBe(["azure-token-1", "azure-token-2"]);
+        azureService.TokenRequests.ShouldBe(2);
+        await client.ResetAsync();
+    }
+
+    [Fact]
     public void QueryRangeResponse_deserializes_fractional_prometheus_timestamps()
     {
         const string json =
@@ -85,7 +121,7 @@ public sealed class PrometheusQueryClientTests
             }
             """;
 
-        PrometheusClientQueryRangeResponse? response = JsonSerializer.Deserialize<PrometheusClientQueryRangeResponse>(json);
+        var response = JsonSerializer.Deserialize<PrometheusClientQueryRangeResponse>(json);
 
         response.ShouldNotBeNull();
         var value = response.Data.Result[0].Values[0];
@@ -103,6 +139,7 @@ public sealed class PrometheusQueryClientTests
                 new OpenShiftPrometheusProvider(),
                 new ManualPrometheusProvider(),
                 new ExternalPrometheusProvider(),
+                new AzureMonitorPrometheusProvider(),
             ],
             new NoopPrometheusQueryClient());
         var cluster = new Cluster(
@@ -159,6 +196,35 @@ public sealed class PrometheusQueryClientTests
         }
 
         public Task ResetAsync() => Task.CompletedTask;
+    }
+
+    private sealed class FakeAzureMonitorWorkspaceService : IAzureMonitorWorkspaceService
+    {
+        public int TokenRequests { get; private set; }
+
+        public Task<AzureAuthenticationStatus> GetAuthenticationStatusAsync(CancellationToken cancellationToken = default)
+            => Task.FromResult(new AzureAuthenticationStatus { AzureCliSignedIn = true });
+
+        public Task<IReadOnlyList<AzureMonitorSubscriptionInfo>> GetSubscriptionsAsync(CancellationToken cancellationToken = default)
+            => Task.FromResult<IReadOnlyList<AzureMonitorSubscriptionInfo>>([]);
+
+        public Task<IReadOnlyList<AzureMonitorWorkspaceInfo>> GetWorkspacesAsync(string subscriptionId, CancellationToken cancellationToken = default)
+            => Task.FromResult<IReadOnlyList<AzureMonitorWorkspaceInfo>>([]);
+
+        public ValueTask<AccessToken> GetPrometheusAccessTokenAsync(CancellationToken cancellationToken = default)
+            => ValueTask.FromResult(new AccessToken($"azure-token-{++TokenRequests}", DateTimeOffset.UtcNow.AddMinutes(5)));
+    }
+
+    private sealed class RecordingHandler(Action<HttpRequestMessage> record) : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            record(request);
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent("{\"status\":\"success\",\"data\":{\"resultType\":\"matrix\",\"result\":[]}}"),
+            });
+        }
     }
 
     private sealed class TestClusterSettingsStore : IClusterSettingsStore

@@ -89,16 +89,16 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
             {
                 Key = "cpu",
                 Name = Assets.Resources.V1PodConfig_CPU!,
-                CustomControl = typeof(PodMetricCPUCellView),
-                Field = x => Cluster.Runtime.PodMetrics.FirstOrDefault(y => y.Name() == x.Name() && y.Namespace() == x.Namespace())?.Containers.Sum(z => z.Usage["cpu"]) ?? 0,
+                CustomControl = typeof(MetricsHistoryCPUCellView),
+                Field = x => Cluster.Runtime.PodMetrics.Where(y => y.Name() == x.Name() && y.Namespace() == x.Namespace()).MaxBy(y => y.Timestamp)?.Containers.Sum(z => z.Usage["cpu"]) ?? 0,
                 Width = "80"
             });
             cols.Insert(4, new ResourceListColumn<V1Pod, decimal>()
             {
                 Key = "memory",
                 Name = Assets.Resources.V1PodConfig_Memory!,
-                CustomControl = typeof(PodMetricMemoryCellView),
-                Field = x => Cluster.Runtime.PodMetrics.FirstOrDefault(y => y.Name() == x.Name() && y.Namespace() == x.Namespace())?.Containers.Sum(z => z.Usage["memory"]) ?? 0,
+                CustomControl = typeof(MetricsHistoryMemoryCellView),
+                Field = x => Cluster.Runtime.PodMetrics.Where(y => y.Name() == x.Name() && y.Namespace() == x.Namespace()).MaxBy(y => y.Timestamp)?.Containers.Sum(z => z.Usage["memory"]) ?? 0,
                 Width = "80"
             });
         }

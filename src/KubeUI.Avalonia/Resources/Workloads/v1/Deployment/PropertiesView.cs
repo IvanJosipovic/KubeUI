@@ -24,6 +24,7 @@ public sealed class PropertiesView : ViewBase<V1Deployment>
                 new PropertyItem()
                     .Key(Assets.Resources.Shared_Updated_Replicas!)
                     .Value(vm.Status?.UpdatedReplicas ?? 0),
+                new MetricsControl(),
                 new ExpandableSection()
                     .Header(Assets.Resources.DeploymentPropertiesView_Rollout!)
                     .IsExpanded(true)
@@ -44,7 +45,6 @@ public sealed class PropertiesView : ViewBase<V1Deployment>
                                     .Value(vm.Spec?.ProgressDeadlineSeconds ?? 0),
                                 new PropertyItem()
                                     .Key(Assets.Resources.Shared_Revision_History_Limit!)
-                                    .Value(vm.Spec?.RevisionHistoryLimit ?? 0))),
-                new MetricsControl());
+                                    .Value(vm.Spec?.RevisionHistoryLimit ?? 0))));
     }
 }

@@ -30,6 +30,7 @@ public sealed class PropertiesView : ViewBase<V1StatefulSet>
                 new PropertyItem()
                     .Key(Assets.Resources.StatefulSetPropertiesView_Service_Name!)
                     .Value(vm.Spec?.ServiceName ?? ""),
+                new MetricsControl(),
                 new ExpandableSection()
                     .Header(Assets.Resources.Shared_Status!)
                     .IsExpanded(true)
@@ -62,7 +63,6 @@ public sealed class PropertiesView : ViewBase<V1StatefulSet>
                                     .Value(vm.Spec?.RevisionHistoryLimit ?? 0),
                                 new PropertyItem()
                                     .Key(Assets.Resources.Shared_Min_Ready_Seconds!)
-                                    .Value(vm.Spec?.MinReadySeconds ?? 0))),
-                new MetricsControl());
+                                    .Value(vm.Spec?.MinReadySeconds ?? 0))));
     }
 }

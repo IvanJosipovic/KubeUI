@@ -6,7 +6,7 @@ namespace KubeUI.Kubernetes;
 
 public static class KubeUIKubernetesServiceCollectionExtensions
 {
-    private static readonly object _jsonConfigurationLock = new();
+    private static readonly Lock _jsonConfigurationLock = new();
     private static bool _isJsonConfigured;
     private static ILogger? _jsonLogger;
 
@@ -21,12 +21,14 @@ public static class KubeUIKubernetesServiceCollectionExtensions
         services.AddTransient<ClusterModelCatalog>();
         services.AddSingleton<IKubernetesYamlSerializer, KubernetesYamlSerializer>();
         services.AddSingleton<IAksClusterService, AksClusterService>();
+        services.AddSingleton<IAzureMonitorWorkspaceService, AzureMonitorWorkspaceService>();
         services.AddTransient<IMetricsService, MetricsService>();
         services.AddTransient<IPrometheusQueryClient, PrometheusQueryClient>();
         services.AddSingleton<IPrometheusProvider, OperatorPrometheusProvider>();
         services.AddSingleton<IPrometheusProvider, OpenShiftPrometheusProvider>();
         services.AddSingleton<IPrometheusProvider, ManualPrometheusProvider>();
         services.AddSingleton<IPrometheusProvider, ExternalPrometheusProvider>();
+        services.AddSingleton<IPrometheusProvider, AzureMonitorPrometheusProvider>();
         services.AddTransient<Cluster>();
         services.AddTransient<IClusterRuntime>(sp => sp.GetRequiredService<Cluster>());
         services.AddSingleton<ClusterManager>();

@@ -28,15 +28,15 @@ public sealed class AksClusterService : IAksClusterService
     }
 
     /// <inheritdoc />
-    public async Task<AksAuthenticationStatus> GetAuthenticationStatusAsync(CancellationToken cancellationToken = default)
+    public async Task<AzureAuthenticationStatus> GetAuthenticationStatusAsync(CancellationToken cancellationToken = default)
     {
         var azureCliToken = await TryGetTokenAsync(_azureCliCredential, cancellationToken).ConfigureAwait(false);
 
-        return new AksAuthenticationStatus
+        return new AzureAuthenticationStatus
         {
             AzureCliSignedIn = azureCliToken.HasValue,
-            AzureCliUsername = azureCliToken.HasValue ? TryGetPreferredUsername(azureCliToken.Value.Token) : null,
-            AzureCliTenantId = azureCliToken.HasValue ? TryGetTenantId(azureCliToken.Value.Token) : null
+            Username = azureCliToken.HasValue ? TryGetPreferredUsername(azureCliToken.Value.Token) : null,
+            TenantId = azureCliToken.HasValue ? TryGetTenantId(azureCliToken.Value.Token) : null
         };
     }
 

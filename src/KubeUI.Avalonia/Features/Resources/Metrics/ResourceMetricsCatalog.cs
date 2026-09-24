@@ -2,7 +2,6 @@ using System.Text.RegularExpressions;
 using FluentIcons.Common;
 using k8s.Models;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
-using KubeUI.Avalonia.Features.Resources.Metrics.Controls;
 using KubeUI.Kubernetes;
 
 namespace KubeUI.Avalonia.Features.Resources.Metrics;
@@ -158,9 +157,13 @@ internal static class ResourceMetricsCatalog
             return null;
         }
 
-        await cluster.Runtime.SeedResource<V1Pod>(true).ConfigureAwait(false);
-        var pods = cluster.Runtime.GetResourceList<V1Pod>()
-            .Where(pod => string.Equals(pod.Namespace(), ns, StringComparison.Ordinal) && MatchesSelector(pod, selector))
+        if (selector == null)
+        {
+            return new ResourceMetricsDescriptor([], string.Format(Assets.Resources.Metrics_NoPodsForWorkload!, workloadName));
+        }
+
+        var matchingPods = await GetMatchingPodsAsync(cluster, ns, selector).ConfigureAwait(false);
+        var pods = matchingPods
             .Select(pod => Regex.Escape(pod.Name()))
             .ToArray();
 
@@ -196,6 +199,23 @@ internal static class ResourceMetricsCatalog
                 ]),
             ],
             string.Format(Assets.Resources.Metrics_NoPrometheusWorkload!, workloadName));
+    }
+
+    internal static async Task<IReadOnlyList<V1Pod>> GetMatchingPodsAsync(
+        ClusterWorkspace cluster,
+        string ns,
+        V1LabelSelector? selector,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(ns))
+        {
+            return [];
+        }
+
+        await cluster.Runtime.SeedResource<V1Pod>(true, cancellationToken).ConfigureAwait(false);
+        return cluster.Runtime.GetResourceList<V1Pod>()
+            .Where(pod => string.Equals(pod.Namespace(), ns, StringComparison.Ordinal) && MatchesSelector(pod, selector))
+            .ToArray();
     }
 
     private static MetricPanelDefinition MetricPanel(string title, MetricCategory category, IDictionary<string, string> options, params (string QueryName, string Label)[] queries)

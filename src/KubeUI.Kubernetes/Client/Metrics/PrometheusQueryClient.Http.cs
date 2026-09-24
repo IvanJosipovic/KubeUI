@@ -1,4 +1,4 @@
-using System.Net.Http.Json;
+using System.Net.Http.Headers;
 
 namespace KubeUI.Kubernetes;
 
@@ -13,7 +13,19 @@ public sealed partial class PrometheusQueryClient
         CancellationToken cancellationToken)
     {
         var url = BuildDirectUrl(endpoint, query, start, end, stepSeconds);
-        using var response = await _httpClient!.GetAsync(url, cancellationToken).ConfigureAwait(false);
+        using HttpRequestMessage request = new(HttpMethod.Get, url);
+        if (endpoint.UseAzureMonitorAuthentication)
+        {
+            if (_azureMonitorWorkspaceService is null)
+            {
+                throw new InvalidOperationException("Azure Monitor authentication is not configured.");
+            }
+
+            var token = await _azureMonitorWorkspaceService.GetPrometheusAccessTokenAsync(cancellationToken).ConfigureAwait(false);
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token.Token);
+        }
+
+        using var response = await _httpClient!.SendAsync(request, cancellationToken).ConfigureAwait(false);
         response.EnsureSuccessStatusCode();
         return await response.Content.ReadFromJsonAsync<PrometheusClientQueryRangeResponse>(cancellationToken: cancellationToken).ConfigureAwait(false);
     }
@@ -23,12 +35,11 @@ public sealed partial class PrometheusQueryClient
         return $"{endpoint.DirectUrl!.TrimEnd('/')}{endpoint.PathPrefix}/api/v1/query_range?query={Uri.EscapeDataString(query)}&start={start.ToUnixTimeSeconds()}&end={end.ToUnixTimeSeconds()}&step={stepSeconds}";
     }
 
-    private static HttpClient CreateDirectHttpClient(ResolvedPrometheusEndpoint endpoint)
+    private static HttpClient CreateDirectHttpClient(ResolvedPrometheusEndpoint endpoint, HttpMessageHandler? handler)
     {
-        return new HttpClient
-        {
-            BaseAddress = new Uri(endpoint.DirectUrl!.TrimEnd('/') + endpoint.PathPrefix, UriKind.Absolute),
-            Timeout = Timeout.InfiniteTimeSpan,
-        };
+        var client = handler is null ? new HttpClient() : new HttpClient(handler);
+        client.BaseAddress = new Uri(endpoint.DirectUrl!.TrimEnd('/') + endpoint.PathPrefix, UriKind.Absolute);
+        client.Timeout = Timeout.InfiniteTimeSpan;
+        return client;
     }
 }
