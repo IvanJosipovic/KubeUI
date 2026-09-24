@@ -270,6 +270,8 @@ public sealed class MetricsServiceTests
 
         first.IsEmpty.ShouldBeTrue();
         second.IsEmpty.ShouldBeTrue();
+        first.HadRequestFailures.ShouldBeTrue();
+        second.HadRequestFailures.ShouldBeTrue();
         callsAfterFirstRequest.ShouldBeGreaterThan(0);
         queryClient.QueryCalls.ShouldBe(callsAfterFirstRequest);
     }

@@ -222,7 +222,7 @@ public sealed partial class MetricsService : ObservableObject, IMetricsService, 
                 "Suppressing Prometheus metrics request for cluster {Name} until {UnavailableUntil:u} because Prometheus is in cooldown.",
                 _cluster.Name,
                 unavailableUntil);
-            return MetricResultSet.Empty;
+            return new MetricResultSet { HadRequestFailures = true };
         }
 
         var cacheKey = CreateMetricRequestCacheKey(request, start, end, stepSeconds);
@@ -284,10 +284,11 @@ public sealed partial class MetricsService : ObservableObject, IMetricsService, 
         return new MetricResultSet
         {
             Metrics = loaded.ToDictionary(static x => x.Name, static x => x.Series, StringComparer.Ordinal),
+            HadRequestFailures = loaded.Any(static x => x.HadRequestFailure),
         };
     }
 
-    private async Task<(string Name, IReadOnlyList<MetricSeries> Series)> LoadMetricSeriesAsync(
+    private async Task<(string Name, IReadOnlyList<MetricSeries> Series, bool HadRequestFailure)> LoadMetricSeriesAsync(
         MetricQueryDefinition query,
         MetricCategory category,
         DateTimeOffset start,
@@ -319,7 +320,7 @@ public sealed partial class MetricsService : ObservableObject, IMetricsService, 
                     result.Error);
             }
 
-            return (query.Name, []);
+            return (query.Name, [], true);
         }
 
         var series = NormalizeResultSet(query.Name, result, frames);
@@ -328,7 +329,7 @@ public sealed partial class MetricsService : ObservableObject, IMetricsService, 
             _logger.LogDebug("Prometheus returned no series for metric {Metric} on cluster {Cluster}.", query.Name, _cluster?.Name);
         }
 
-        return (query.Name, series);
+        return (query.Name, series, false);
     }
 
     private async Task<bool> TryStartPrometheusAsync(Cluster cluster, k8s.Kubernetes kube, ClusterMetricsSettings settings)

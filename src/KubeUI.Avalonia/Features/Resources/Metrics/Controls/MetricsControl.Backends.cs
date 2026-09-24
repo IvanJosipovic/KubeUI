@@ -64,10 +64,10 @@ internal static class MetricsControlPrometheusBackend
             if (series.Count == 0)
             {
                 logger.LogDebug("Prometheus metrics panel {PanelTitle} for tab {TabTitle} returned no series for cluster {ClusterName}.", panel.Title, tabTitle, cluster.Runtime.Name);
-                return (null, false);
+                return (null, result.HadRequestFailures);
             }
 
-            return (new MetricPanelSnapshot(panel.Title, series), false);
+            return (new MetricPanelSnapshot(panel.Title, series), result.HadRequestFailures);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -122,10 +122,10 @@ internal static class MetricsControlPrometheusBackend
             if (series.Count == 0)
             {
                 logger.LogDebug("Prometheus metrics panel {PanelTitle} for tab {TabTitle} returned no series for container {ContainerName} in pod {PodName} on cluster {ClusterName}.", panel.Title, tabTitle, container?.Name, pod?.Name(), cluster.Runtime.Name);
-                return (null, false);
+                return (null, result.HadRequestFailures);
             }
 
-            return (new MetricPanelSnapshot(panel.Title, series), false);
+            return (new MetricPanelSnapshot(panel.Title, series), result.HadRequestFailures);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {

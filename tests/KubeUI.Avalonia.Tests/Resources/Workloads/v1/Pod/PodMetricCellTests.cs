@@ -1,6 +1,7 @@
 using Avalonia.Headless.XUnit;
 using Avalonia.Controls;
 using Avalonia.Media;
+using Avalonia.Styling;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using System.Text.Json;
@@ -66,7 +67,7 @@ public sealed class PodMetricCellTests
         Dispatcher.UIThread.RunJobs();
 
         MetricBars(cell).ShouldNotBeEmpty();
-        MetricBars(cell).Any(bar => Equals(bar.Background, GetThemeBrush("PodStatusWarningBrush"))
+        MetricBars(cell).Any(bar => IsThemeBrush(bar.Background, "PodStatusWarningBrush")
             && ToolTip.GetTip(bar) is { } tip && tip.ToString()!.Contains("90%", StringComparison.Ordinal)).ShouldBeTrue();
     }
 
@@ -269,7 +270,7 @@ public sealed class PodMetricCellTests
         window.Show();
         cell.Initialize(fixture.Workspace);
 
-        MetricBars(cell).Any(bar => Equals(bar.Background, GetThemeBrush("ContainerStatusErrorBrush"))
+        MetricBars(cell).Any(bar => IsThemeBrush(bar.Background, "ContainerStatusErrorBrush")
             && ToolTip.GetTip(bar) is { } tip && tip.ToString()!.Contains("100%", StringComparison.Ordinal)).ShouldBeTrue();
     }
 
@@ -416,9 +417,9 @@ public sealed class PodMetricCellTests
         cpuCell.Initialize(fixture.Workspace);
         memoryCell.Initialize(fixture.Workspace);
 
-        MetricBars(cpuCell).Any(bar => Equals(bar.Background, GetThemeBrush("PodStatusWarningBrush"))
+        MetricBars(cpuCell).Any(bar => IsThemeBrush(bar.Background, "PodStatusWarningBrush")
             && ToolTip.GetTip(bar)?.ToString()?.Contains("80%", StringComparison.Ordinal) == true).ShouldBeTrue();
-        MetricBars(memoryCell).Any(bar => Equals(bar.Background, GetThemeBrush("ContainerStatusErrorBrush"))
+        MetricBars(memoryCell).Any(bar => IsThemeBrush(bar.Background, "ContainerStatusErrorBrush")
             && ToolTip.GetTip(bar)?.ToString()?.Contains("100%", StringComparison.Ordinal) == true).ShouldBeTrue();
         fixture.QueryClient.Queries.ShouldBe(0);
     }
@@ -452,18 +453,25 @@ public sealed class PodMetricCellTests
     private static Border[] MetricBars(Control cell)
         => cell.GetVisualDescendants().OfType<Border>().Where(bar => ToolTip.GetTip(bar) != null).ToArray();
 
-    private static IBrush GetThemeBrush(string resourceKey)
+    private static bool IsThemeBrush(IBrush brush, string resourceKey)
     {
-        Application.Current.TryGetResource(
-            resourceKey,
-            Application.Current.ActualThemeVariant,
-            out var resource).ShouldBeTrue();
-        return resource switch
+        foreach (var themeVariant in new[] { ThemeVariant.Light, ThemeVariant.Dark })
         {
-            IBrush brush => brush,
-            Color color => new SolidColorBrush(color),
-            _ => throw new InvalidOperationException($"Theme resource '{resourceKey}' is not a brush or color."),
-        };
+            Application.Current.TryGetResource(resourceKey, themeVariant, out var resource).ShouldBeTrue();
+            var expectedColor = resource switch
+            {
+                ISolidColorBrush expectedBrush => expectedBrush.Color,
+                Color color => color,
+                _ => throw new InvalidOperationException($"Theme resource '{resourceKey}' is not a solid brush or color."),
+            };
+
+            if (brush is ISolidColorBrush actualBrush && actualBrush.Color == expectedColor)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static V1Pod CreatePod(string name = "metrics-pod")

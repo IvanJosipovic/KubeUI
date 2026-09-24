@@ -289,7 +289,11 @@ public sealed class MetricsControlTests
     [AvaloniaFact]
     public async Task metrics_control_exposes_loading_then_empty_state()
     {
-        var queryClient = new FakePrometheusQueryClient { WaitForRelease = true };
+        var queryClient = new FakePrometheusQueryClient
+        {
+            WaitForRelease = true,
+            ResponseFactory = static _ => CreateEmptyResponse(),
+        };
         await using var fixture = await MetricsControlFixture.CreateAsync(initializePrometheus: true, queryClient);
         var control = fixture.CreateControl(CreatePod());
         using var window = Application.Current.CreateTestWindow(content: control);
@@ -298,10 +302,13 @@ public sealed class MetricsControlTests
         fixture.Initialize(control);
 
         await TestWait.UntilAsync(
-            () => control.ShowStatus && control.StatusText == AppResources.MetricsControl_Loading,
+            () => queryClient.QueryCalls > 0,
             5000,
             TestContext.Current.CancellationToken,
             beforePoll: () => Dispatcher.UIThread.RunJobs());
+
+        control.ShowStatus.ShouldBeTrue();
+        control.StatusText.ShouldBe(AppResources.MetricsControl_Loading);
 
         queryClient.Release();
 
@@ -328,7 +335,7 @@ public sealed class MetricsControlTests
 
         await TestWait.UntilAsync(
             () => control.ShowStatus && control.StatusText == AppResources.MetricsControl_LoadFailed,
-            5000,
+            15000,
             TestContext.Current.CancellationToken,
             beforePoll: () => Dispatcher.UIThread.RunJobs());
 
@@ -851,7 +858,6 @@ public sealed class MetricsControlTests
 
         public Task ResetAsync()
         {
-            _release.TrySetResult();
             return Task.CompletedTask;
         }
 

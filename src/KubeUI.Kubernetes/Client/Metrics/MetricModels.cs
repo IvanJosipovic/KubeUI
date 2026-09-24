@@ -37,6 +37,9 @@ public sealed class MetricResultSet
 {
     public IDictionary<string, IReadOnlyList<MetricSeries>> Metrics { get; init; } = new Dictionary<string, IReadOnlyList<MetricSeries>>(StringComparer.Ordinal);
 
+    /// <summary>Gets whether one or more metric queries failed while producing this result.</summary>
+    public bool HadRequestFailures { get; init; }
+
     public bool IsEmpty => Metrics.Values.All(static series => series.Count == 0 || series.All(static item => item.Points.Count == 0));
 
     public static MetricResultSet Empty { get; } = new();
