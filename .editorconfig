@@ -246,7 +246,7 @@ dotnet_diagnostic.IDE0001.severity = error
 dotnet_diagnostic.IDE0002.severity = error
 dotnet_diagnostic.IDE0004.severity = error
 #dotnet_diagnostic.IDE0005.severity = error
-dotnet_diagnostic.IDE0007.severity = error
+dotnet_diagnostic.IDE0007.severity = suggestion
 dotnet_diagnostic.IDE0051.severity = error
 dotnet_diagnostic.IDE0052.severity = error
 dotnet_diagnostic.IDE0059.severity = error
@@ -260,7 +260,7 @@ dotnet_diagnostic.CS4014.severity = error
 dotnet_diagnostic.IDE0005.severity = error
 
 # IDE0330: Use 'System.Threading.Lock'
-dotnet_diagnostic.IDE0330.severity = error
+dotnet_diagnostic.IDE0330.severity = suggestion
 
 [*.{xaml,axaml}]
 indent_size = 2
