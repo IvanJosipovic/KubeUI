@@ -67,8 +67,8 @@ public sealed class PodMetricCellTests
         Dispatcher.UIThread.RunJobs();
 
         MetricBars(cell).ShouldNotBeEmpty();
-        MetricBars(cell).Any(bar => IsThemeBrush(bar.Background, "PodStatusWarningBrush")
-            && ToolTip.GetTip(bar) is { } tip && tip.ToString()!.Contains("90%", StringComparison.Ordinal)).ShouldBeTrue();
+        MetricBars(cell).Any(bar => IsThemeBrush(bar.Background, "PodStatusWarningBrush")).ShouldBeTrue();
+        MetricBars(cell).Any(bar => TooltipShowsPercentage(bar, 0.9)).ShouldBeTrue();
     }
 
     [AvaloniaFact]
@@ -270,8 +270,8 @@ public sealed class PodMetricCellTests
         window.Show();
         cell.Initialize(fixture.Workspace);
 
-        MetricBars(cell).Any(bar => IsThemeBrush(bar.Background, "ContainerStatusErrorBrush")
-            && ToolTip.GetTip(bar) is { } tip && tip.ToString()!.Contains("100%", StringComparison.Ordinal)).ShouldBeTrue();
+        MetricBars(cell).Any(bar => IsThemeBrush(bar.Background, "ContainerStatusErrorBrush")).ShouldBeTrue();
+        MetricBars(cell).Any(bar => TooltipShowsPercentage(bar, 1)).ShouldBeTrue();
     }
 
     [AvaloniaFact]
@@ -417,10 +417,10 @@ public sealed class PodMetricCellTests
         cpuCell.Initialize(fixture.Workspace);
         memoryCell.Initialize(fixture.Workspace);
 
-        MetricBars(cpuCell).Any(bar => IsThemeBrush(bar.Background, "PodStatusWarningBrush")
-            && ToolTip.GetTip(bar)?.ToString()?.Contains("80%", StringComparison.Ordinal) == true).ShouldBeTrue();
-        MetricBars(memoryCell).Any(bar => IsThemeBrush(bar.Background, "ContainerStatusErrorBrush")
-            && ToolTip.GetTip(bar)?.ToString()?.Contains("100%", StringComparison.Ordinal) == true).ShouldBeTrue();
+        MetricBars(cpuCell).Any(bar => IsThemeBrush(bar.Background, "PodStatusWarningBrush")).ShouldBeTrue();
+        MetricBars(cpuCell).Any(bar => TooltipShowsPercentage(bar, 0.8)).ShouldBeTrue();
+        MetricBars(memoryCell).Any(bar => IsThemeBrush(bar.Background, "ContainerStatusErrorBrush")).ShouldBeTrue();
+        MetricBars(memoryCell).Any(bar => TooltipShowsPercentage(bar, 1)).ShouldBeTrue();
         fixture.QueryClient.Queries.ShouldBe(0);
     }
 
@@ -473,6 +473,11 @@ public sealed class PodMetricCellTests
 
         return false;
     }
+
+    private static bool TooltipShowsPercentage(Control bar, double fraction)
+        => ToolTip.GetTip(bar)?.ToString()?.Contains(
+            fraction.ToString("P0", System.Globalization.CultureInfo.CurrentCulture),
+            StringComparison.Ordinal) == true;
 
     private static V1Pod CreatePod(string name = "metrics-pod")
     {
