@@ -98,6 +98,7 @@ public sealed class CrossplaneDiffLogParser
             var body = instanceDiff.AsSpan(attrStart + 1, attrEnd - attrStart - 1);
             var oldValue = ReadGoProperty(body, "Old") ?? string.Empty;
             var newValue = ReadGoProperty(body, "New") ?? string.Empty;
+            var sensitive = ReadGoBoolean(body, "Sensitive");
             records.Add(new CrossplaneDiffRecord(
                 uid,
                 name,
@@ -105,11 +106,12 @@ public sealed class CrossplaneDiffLogParser
                 apiVersion,
                 kind,
                 field,
-                oldValue,
-                newValue,
+                sensitive ? string.Empty : oldValue,
+                sensitive ? string.Empty : newValue,
                 ReadGoBoolean(body, "NewComputed"),
                 ReadGoBoolean(body, "NewRemoved"),
-                  ReadGoBoolean(body, "RequiresNew")));
+                ReadGoBoolean(body, "RequiresNew"),
+                sensitive));
 
             index = attrEnd + 1;
         }

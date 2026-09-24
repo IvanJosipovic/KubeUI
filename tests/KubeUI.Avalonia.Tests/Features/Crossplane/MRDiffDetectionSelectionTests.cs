@@ -6,18 +6,18 @@ namespace KubeUI.Avalonia.Tests.Features.Crossplane;
 public sealed class MRDiffDetectionSelectionTests
 {
     [Fact]
-    public void Updating_a_diff_row_preserves_the_selected_object_identity()
+    public void Updating_a_diff_row_replaces_the_cached_snapshot_by_key()
     {
         using var source = new SourceCache<CrossplaneDiffRow, string>(row => row.Key);
-        var selected = CreateRow("old");
-        source.AddOrUpdate(selected);
+        var original = CreateRow("old");
+        source.AddOrUpdate(original);
 
         var replacement = CreateRow("new");
-        selected.Apply(replacement);
-        source.Refresh(selected);
+        source.AddOrUpdate(replacement);
 
         var current = source.Items.Single();
-        Assert.Same(selected, current);
+        Assert.Same(replacement, current);
+        Assert.Equal("old", original.OldValue);
     }
 
     [Fact]

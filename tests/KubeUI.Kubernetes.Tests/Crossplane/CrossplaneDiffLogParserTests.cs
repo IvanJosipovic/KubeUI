@@ -36,17 +36,30 @@ public sealed class CrossplaneDiffLogParserTests
     }
 
     [Fact]
+    public void Redacts_sensitive_attribute_values_during_parsing()
+    {
+        var line = "DEBUG provider Diff detected {\"uid\":\"uid-1\",\"name\":\"db\",\"namespace\":\"default\",\"gvk\":\"example.com/v1, Kind=Database\",\"instanceDiff\":\"*terraform.InstanceDiff{Attributes:map[string]*terraform.ResourceAttrDiff{\\\"spec.password\\\":*terraform.ResourceAttrDiff{Old:\\\"old-secret\\\", New:\\\"new-secret\\\", Sensitive:true}}}\"}";
+
+        var record = new CrossplaneDiffLogParser().Parse(line).ShouldHaveSingleItem();
+
+        record.Sensitive.ShouldBeTrue();
+        record.OldValue.ShouldBeEmpty();
+        record.NewValue.ShouldBeEmpty();
+    }
+
+    [Fact]
     public void Aggregates_repeated_field_and_counts_distinct_instances()
     {
         var aggregator = new CrossplaneDiffAggregator();
         var record = new CrossplaneDiffRecord("uid-1", "one", "data", "example/v1", "Widget", "spec.value", "a", "b", false, false, false);
 
         aggregator.Add(record).ShouldBeTrue();
-        aggregator.Add(record).ShouldBeFalse();
-        aggregator.Add(record with { Uid = "uid-2", Name = "two" }).ShouldBeTrue();
+        aggregator.AddAndGetAffectedRows(record).Count.ShouldBe(1);
+        aggregator.AddAndGetAffectedRows(record with { Uid = "uid-2", Name = "two" }).Count.ShouldBe(2);
+        aggregator.AddAndGetAffectedRows(record).Count.ShouldBe(1);
 
         aggregator.Rows.Count.ShouldBe(2);
-        aggregator.Rows.Single(row => row.Uid == "uid-1").Occurrences.ShouldBe(2);
+        aggregator.Rows.Single(row => row.Uid == "uid-1").Occurrences.ShouldBe(3);
         aggregator.Rows.Single(row => row.Uid == "uid-1").InstanceCount.ShouldBe(2);
         aggregator.GetInstanceCount("example/v1", "Widget", "spec.value").ShouldBe(2);
     }

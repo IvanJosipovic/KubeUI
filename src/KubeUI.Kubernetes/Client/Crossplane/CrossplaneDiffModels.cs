@@ -12,10 +12,11 @@ public sealed record CrossplaneDiffRecord(
     string NewValue,
     bool NewComputed,
     bool NewRemoved,
-    bool RequiresNew);
+    bool RequiresNew,
+    bool Sensitive = false);
 
 /// <summary>Aggregated row shown by the MR Diff Detection view.</summary>
-public sealed class CrossplaneDiffRow : System.ComponentModel.INotifyPropertyChanged
+public sealed class CrossplaneDiffRow
 {
     private string _oldValue;
     private string _newValue;
@@ -38,6 +39,7 @@ public sealed class CrossplaneDiffRow : System.ComponentModel.INotifyPropertyCha
         _newComputed = record.NewComputed;
         _newRemoved = record.NewRemoved;
         _requiresNew = record.RequiresNew;
+        Sensitive = record.Sensitive;
         _occurrences = 1;
         _instanceCount = 1;
     }
@@ -54,10 +56,9 @@ public sealed class CrossplaneDiffRow : System.ComponentModel.INotifyPropertyCha
     public bool NewComputed => _newComputed;
     public bool NewRemoved => _newRemoved;
     public bool RequiresNew => _requiresNew;
+    public bool Sensitive { get; private set; }
     public int Occurrences => _occurrences;
     public int InstanceCount => _instanceCount;
-
-    public event System.ComponentModel.PropertyChangedEventHandler? PropertyChanged;
 
     internal void Update(CrossplaneDiffRecord record)
     {
@@ -66,6 +67,7 @@ public sealed class CrossplaneDiffRow : System.ComponentModel.INotifyPropertyCha
         _newComputed = record.NewComputed;
         _newRemoved = record.NewRemoved;
         _requiresNew = record.RequiresNew;
+        Sensitive = record.Sensitive;
         _occurrences++;
     }
 
@@ -75,39 +77,19 @@ public sealed class CrossplaneDiffRow : System.ComponentModel.INotifyPropertyCha
     {
         CrossplaneDiffRow copy = new(new CrossplaneDiffRecord(
             Uid, Name, Namespace, ApiVersion, Kind, DiffField,
-            OldValue, NewValue, NewComputed, NewRemoved, RequiresNew));
+            OldValue, NewValue, NewComputed, NewRemoved, RequiresNew, Sensitive));
         copy._occurrences = Occurrences;
         copy._instanceCount = InstanceCount;
         return copy;
     }
 
-    public void Apply(CrossplaneDiffRow source)
-    {
-        Set(ref _oldValue, source.OldValue, nameof(OldValue));
-        Set(ref _newValue, source.NewValue, nameof(NewValue));
-        Set(ref _newComputed, source.NewComputed, nameof(NewComputed));
-        Set(ref _newRemoved, source.NewRemoved, nameof(NewRemoved));
-        Set(ref _requiresNew, source.RequiresNew, nameof(RequiresNew));
-        Set(ref _occurrences, source.Occurrences, nameof(Occurrences));
-        Set(ref _instanceCount, source.InstanceCount, nameof(InstanceCount));
-    }
-
-    private void Set<T>(ref T field, T value, string propertyName)
-    {
-        if (EqualityComparer<T>.Default.Equals(field, value))
-        {
-            return;
-        }
-
-        field = value;
-        PropertyChanged?.Invoke(this, new System.ComponentModel.PropertyChangedEventArgs(propertyName));
-    }
 }
 
 /// <summary>Aggregates repeated diff events without retaining raw log text.</summary>
 public sealed class CrossplaneDiffAggregator
 {
     private readonly Dictionary<string, CrossplaneDiffRow> _rows = new(StringComparer.Ordinal);
+    private readonly Dictionary<(string ApiVersion, string Kind, string DiffField), List<CrossplaneDiffRow>> _rowsByGroup = [];
 
     public IReadOnlyCollection<CrossplaneDiffRow> Rows => _rows.Values;
 
@@ -115,55 +97,62 @@ public sealed class CrossplaneDiffAggregator
     {
         ArgumentNullException.ThrowIfNull(record);
 
-        var key = string.Join("\u0000", record.Uid, record.Name, record.Namespace, record.ApiVersion, record.Kind, record.DiffField);
-            if (_rows.TryGetValue(key, out var row))
-            {
-                row.Update(record);
-                UpdateInstanceCounts(record.ApiVersion, record.Kind, record.DiffField);
-                return false;
-            }
+        var key = CreateRowKey(record);
+        if (_rows.TryGetValue(key, out var existing))
+        {
+            existing.Update(record);
+            return false;
+        }
 
-            _rows.Add(key, new CrossplaneDiffRow(record));
-            UpdateInstanceCounts(record.ApiVersion, record.Kind, record.DiffField);
+        var row = new CrossplaneDiffRow(record);
+        _rows.Add(key, row);
+        var groupKey = CreateGroupKey(record);
+        if (!_rowsByGroup.TryGetValue(groupKey, out var group))
+        {
+            group = [];
+            _rowsByGroup.Add(groupKey, group);
+        }
+
+        group.Add(row);
+        foreach (var groupRow in group)
+        {
+            groupRow.SetInstanceCount(group.Count);
+        }
+
         return true;
     }
 
     public IReadOnlyList<CrossplaneDiffRow> AddAndGetAffectedRows(CrossplaneDiffRecord record)
     {
-        Add(record);
-        return _rows.Values
-            .Where(row => string.Equals(row.ApiVersion, record.ApiVersion, StringComparison.Ordinal)
-                && string.Equals(row.Kind, record.Kind, StringComparison.Ordinal)
-                && string.Equals(row.DiffField, record.DiffField, StringComparison.Ordinal))
-            .Select(row => row.Snapshot())
-            .ToArray();
+        var added = Add(record);
+        var group = _rowsByGroup[CreateGroupKey(record)];
+        if (!added)
+        {
+            return [_rows[CreateRowKey(record)].Snapshot()];
+        }
+
+        return group.Select(row => row.Snapshot()).ToArray();
     }
 
-    public void Clear() => _rows.Clear();
+    public void Clear()
+    {
+        _rows.Clear();
+        _rowsByGroup.Clear();
+    }
 
     public IReadOnlyList<CrossplaneDiffRow> GetSnapshot()
     {
         return _rows.Values.Select(row => row.Snapshot()).ToArray();
     }
 
-    private void UpdateInstanceCounts(string apiVersion, string kind, string diffField)
-    {
-        foreach (var row in _rows.Values)
-        {
-            if (string.Equals(row.ApiVersion, apiVersion, StringComparison.Ordinal)
-                && string.Equals(row.Kind, kind, StringComparison.Ordinal)
-                && string.Equals(row.DiffField, diffField, StringComparison.Ordinal))
-            {
-                row.SetInstanceCount(GetInstanceCount(apiVersion, kind, diffField));
-            }
-        }
-    }
-
     public int GetInstanceCount(string apiVersion, string kind, string diffField)
     {
-        return _rows.Values.Count(row =>
-            string.Equals(row.ApiVersion, apiVersion, StringComparison.Ordinal)
-            && string.Equals(row.Kind, kind, StringComparison.Ordinal)
-            && string.Equals(row.DiffField, diffField, StringComparison.Ordinal));
+        return _rowsByGroup.TryGetValue((apiVersion, kind, diffField), out var rows) ? rows.Count : 0;
     }
+
+    private static string CreateRowKey(CrossplaneDiffRecord record)
+        => string.Join("\u0000", record.Uid, record.Name, record.Namespace, record.ApiVersion, record.Kind, record.DiffField);
+
+    private static (string ApiVersion, string Kind, string DiffField) CreateGroupKey(CrossplaneDiffRecord record)
+        => (record.ApiVersion, record.Kind, record.DiffField);
 }

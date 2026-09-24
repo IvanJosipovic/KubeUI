@@ -1,4 +1,3 @@
-using KubeUI.Avalonia.Infrastructure.DataGrid;
 using KubeUI.Avalonia.Resources;
 
 namespace KubeUI.Avalonia.Infrastructure.DataGrid;
@@ -20,7 +19,7 @@ public class DataGridValueColumn<T, TValue> : IResourceListColumn where T : clas
     public double MinWidth { get; set; } = 90;
     public Type ItemType => typeof(T);
     public Type ValueType => typeof(TValue);
-    public IDataGridColumnValueAccessor ValueAccessor => _valueAccessor ??= new LambdaColumnValueAccessor(GetFieldAccessor());
+    public IDataGridColumnValueAccessor ValueAccessor => _valueAccessor ??= new LambdaColumnValueAccessor(GetFieldValue);
     public Func<object, IComparable?> SortKey => o => GetFieldValue((T)o) switch
     {
         IComparable comparable => comparable,
@@ -64,7 +63,7 @@ public class DataGridValueColumn<T, TValue> : IResourceListColumn where T : clas
         || (ex is InvalidOperationException invalidOperationException
             && invalidOperationException.Message == NullableValueMissingMessage);
 
-    private sealed class LambdaColumnValueAccessor(Func<T, TValue> getter) : IDataGridColumnValueAccessor
+    private sealed class LambdaColumnValueAccessor(Func<T, object?> getter) : IDataGridColumnValueAccessor
     {
         public Type ItemType => typeof(T);
         public Type ValueType => typeof(TValue);

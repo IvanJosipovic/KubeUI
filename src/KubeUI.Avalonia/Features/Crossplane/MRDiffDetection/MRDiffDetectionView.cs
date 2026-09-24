@@ -1,9 +1,7 @@
-using System.Collections;
 using Avalonia.Controls.DataGridFiltering;
 using Avalonia.Controls.DataGridSearching;
 using Avalonia.Controls.DataGridSorting;
 using Avalonia.Controls.Selection;
-using Avalonia.Controls;
 using Avalonia.Controls.Templates;
 using FluentIcons.Avalonia;
 using FluentIcons.Common;
@@ -11,8 +9,6 @@ using KubeUI.Avalonia.Controls.DataGridFilters;
 using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
 using KubeUI.Avalonia.Infrastructure.DataGrid;
-using KubeUI.Avalonia.Resources;
-using KubeUI.Kubernetes;
 
 namespace KubeUI.Avalonia.Features.Crossplane.MRDiffDetection;
 
@@ -53,7 +49,10 @@ public sealed class MRDiffDetectionView : ViewBase<MRDiffDetectionViewModel>
                         new Button()
                             .Command(vm, x => x.ClearCommand)
                             .ToolTip_Tip(Assets.Resources.MRDiffDetectionView_Clear)
-                            .Content(new FluentIcon().Icon(Icon.Broom))),
+                            .Content(new FluentIcon().Icon(Icon.Broom)),
+                        new TextBlock()
+                            .VerticalAlignment(VerticalAlignment.Center)
+                            .Text(vm, x => x.Status)),
                 new DataGrid
                     {
                         SortingAdapterFactory = vm.SortingAdapterFactory,
@@ -66,13 +65,13 @@ public sealed class MRDiffDetectionView : ViewBase<MRDiffDetectionViewModel>
                     .CanUserSortColumns(true)
                     .GridLinesVisibility(DataGridGridLinesVisibility.All)
                     .IsReadOnly(true)
-                    .ColumnDefinitionsSource(CompiledBinding.Create<MRDiffDetectionViewModel, IList<DataGridColumnDefinition>>(x => x.ColumnDefinitions))
-                    .ItemsSource(CompiledBinding.Create<MRDiffDetectionViewModel, IList>(x => x.View))
-                    .Selection(CompiledBinding.Create<MRDiffDetectionViewModel, ISelectionModel>(x => x.SelectionModel))
+                    .ColumnDefinitionsSource(vm, x => x.ColumnDefinitions)
+                    .ItemsSource(vm, x => x.View)
+                    .Selection(vm, x => x.SelectionModel)
                     .SelectionMode(DataGridSelectionMode.Extended)
-                    .FilteringModel(CompiledBinding.Create<MRDiffDetectionViewModel, IFilteringModel>(x => x.FilteringModel))
-                    .SearchModel(CompiledBinding.Create<MRDiffDetectionViewModel, ISearchModel>(x => x.SearchModel))
-                    .SortingModel(CompiledBinding.Create<MRDiffDetectionViewModel, ISortingModel>(x => x.SortingModel))
+                    .FilteringModel(vm, x => x.FilteringModel)
+                    .SearchModel(vm, x => x.SearchModel)
+                    .SortingModel(vm, x => x.SortingModel)
                     .ContextMenu(new ContextMenu())
                     .Behaviors([new MRDiffDetectionContextMenuBehavior()])
                     );
