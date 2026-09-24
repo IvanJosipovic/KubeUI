@@ -1,7 +1,6 @@
 using System.Collections.Frozen;
 using System.Text;
 using System.Text.Json;
-using KubeUI.Kubernetes;
 using k8s.Models;
 using KubeUI.Kubernetes.Serialization;
 using Shouldly;
@@ -9,6 +8,13 @@ using YamlDotNet.Core;
 
 namespace KubeUI.Kubernetes.Tests.Configuration;
 
+[CollectionDefinition(KubernetesYamlCollection.Name, DisableParallelization = true)]
+public sealed class KubernetesYamlCollection
+{
+    public const string Name = "Kubernetes YAML";
+}
+
+[Collection(KubernetesYamlCollection.Name)]
 public class KubernetesYamlTests
 {
     [Fact]
@@ -77,6 +83,8 @@ public class KubernetesYamlTests
             .ShouldNotBeNull(nameof(GenericKubernetesObject));
         KubernetesJsonStaticContext.Default.GetTypeInfo(typeof(k8s.KubernetesObject))
             .ShouldNotBeNull(nameof(k8s.KubernetesObject));
+        KubernetesJsonStaticContext.Default.GetTypeInfo(typeof(IList<V1EphemeralContainer>))
+            .ShouldNotBeNull(nameof(IList<V1EphemeralContainer>));
     }
 
     private static bool IsYamlApiModel(Type type)
@@ -115,9 +123,12 @@ public class KubernetesYamlTests
         restored.Properties["spec"].GetProperty("settings").GetProperty("values")[2].ValueKind.ShouldBe(JsonValueKind.Null);
     }
 
-    [Fact]
-    public void KubeConfigNamedExtension_RoundTripsDynamicExtensionValues()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void KubeConfigNamedExtension_RoundTripsDynamicExtensionValues(bool useStaticContext)
     {
+        using var contextScope = new StaticContextScope(useStaticContext);
         using var jsonDocument = JsonDocument.Parse("""{"items":["first",2]}""");
         var extension = new k8s.KubeConfigModels.NamedExtension
         {
@@ -128,6 +139,11 @@ public class KubernetesYamlTests
                 ["disabled"] = false,
                 ["attempts"] = 3,
                 ["fraction"] = 1.25d,
+                ["stringBoolean"] = "true",
+                ["stringInteger"] = "3",
+                ["stringFraction"] = "1.5",
+                ["stringNull"] = "null",
+                ["stringEmpty"] = "",
                 ["optional"] = null!,
                 ["options"] = new Dictionary<string, object> { ["mode"] = "strict" },
                 ["servers"] = new object[] { "one", "two" },
@@ -145,6 +161,11 @@ public class KubernetesYamlTests
         restoredExtension["disabled"].ShouldBe(false);
         restoredExtension["attempts"].ShouldBe(3L);
         restoredExtension["fraction"].ShouldBe(1.25d);
+        restoredExtension["stringBoolean"].ShouldBeOfType<string>().ShouldBe("true");
+        restoredExtension["stringInteger"].ShouldBeOfType<string>().ShouldBe("3");
+        restoredExtension["stringFraction"].ShouldBeOfType<string>().ShouldBe("1.5");
+        restoredExtension["stringNull"].ShouldBeOfType<string>().ShouldBe("null");
+        restoredExtension["stringEmpty"].ShouldBeOfType<string>().ShouldBeEmpty();
         restoredExtension["optional"].ShouldBeNull();
         ((Dictionary<object, object>)restoredExtension["options"])["mode"].ShouldBe("strict");
         ((List<object>)restoredExtension["servers"]).ShouldBe(new object[] { "one", "two" });
@@ -366,9 +387,9 @@ public class KubernetesYamlTests
     {
         private readonly bool _previousValue = KubernetesYaml.UseStaticContext;
 
-        public StaticContextScope()
+        public StaticContextScope(bool useStaticContext = true)
         {
-            KubernetesYaml.UseStaticContext = true;
+            KubernetesYaml.UseStaticContext = useStaticContext;
         }
 
         public void Dispose()

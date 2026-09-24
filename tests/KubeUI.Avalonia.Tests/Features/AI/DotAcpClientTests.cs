@@ -74,7 +74,9 @@ public sealed class DotAcpClientTests
         });
 
         var result = await events.Reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(1));
-        result.ShouldBeOfType<AgentToolStartedEvent>().Tool.Name.ShouldBe("kubernetes.list");
+        var tool = result.ShouldBeOfType<AgentToolStartedEvent>().Tool;
+        tool.Name.ShouldBe("kubernetes.list");
+        tool.Input.ShouldBe("{\"Kind\":\"Pod\"}");
     }
 
     [Fact]

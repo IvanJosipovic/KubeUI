@@ -395,7 +395,7 @@ public static class KubernetesYaml
                     serializer(jsonElement, typeof(System.Text.Json.JsonElement));
                     break;
                 case string text:
-                    emitter.Emit(new Scalar(text));
+                    emitter.Emit(new Scalar(null, null, text, ScalarStyle.DoubleQuoted, false, true));
                     break;
                 case bool boolean:
                     emitter.Emit(new Scalar(boolean ? "true" : "false"));

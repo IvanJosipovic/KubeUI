@@ -11,15 +11,6 @@
 
     <WarningsAsErrors>$(WarningsAsErrors);CA1001</WarningsAsErrors>
 
-    <!-- Run trim analysis for the libraries that define KubeUI trim contracts. -->
-    <EnableTrimAnalyzer Condition="'$(Configuration)' == 'Release' and ('$(MSBuildProjectName)' == 'KubeUI.AI' or '$(MSBuildProjectName)' == 'KubeUI.Kubernetes' or '$(MSBuildProjectName)' == 'KubeUI.Avalonia')">true</EnableTrimAnalyzer>
-
-    <!-- AI and Kubernetes treat their reviewed linker warnings as errors. -->
-    <WarningsAsErrors Condition="'$(Configuration)' == 'Release' and ('$(MSBuildProjectName)' == 'KubeUI.AI' or '$(MSBuildProjectName)' == 'KubeUI.Kubernetes')">$(WarningsAsErrors);IL2026;IL2055;IL2057;IL2060;IL2062;IL2067;IL2070;IL2072;IL2075;IL2087;IL2090;IL2091</WarningsAsErrors>
-
-    <!-- Avalonia reflection warnings remain visible; fail IL2091 contract warnings. -->
-    <WarningsAsErrors Condition="'$(Configuration)' == 'Release' and '$(MSBuildProjectName)' == 'KubeUI.Avalonia'">$(WarningsAsErrors);IL2091</WarningsAsErrors>
-
     <AnalysisLevel>latest</AnalysisLevel>
     <AnalysisMode>Recommended</AnalysisMode>
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>

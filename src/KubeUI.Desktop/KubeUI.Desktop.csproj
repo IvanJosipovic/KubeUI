@@ -34,6 +34,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(Configuration)' == 'Release'">
+    <TrimmerRootAssembly Include="KubernetesClient" /> <!-- Reflection-based YAML serialization inspects Kubernetes API models. -->
     <!-- Whole-assembly roots increase bundle size; each item retains the named reflection-based runtime feature. -->
     <TrimmerRootAssembly Include="Avalonia.Controls.DataGrid" /> <!-- Resource and cluster DataGrid reflection over row properties. -->
     <TrimmerRootAssembly Include="AvaloniaEdit" /> <!-- AvaloniaEdit Fluent theme is loaded through a runtime StyleInclude. -->
