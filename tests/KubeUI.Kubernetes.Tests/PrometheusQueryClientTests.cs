@@ -12,6 +12,43 @@ namespace KubeUI.Kubernetes.Tests;
 public sealed class PrometheusQueryClientTests
 {
     [Fact]
+    public async Task QueryRangeAsync_sends_service_proxy_request_through_authenticated_client()
+    {
+        string? observedUri = null;
+        using var handler = new RecordingHandler(request => observedUri = request.RequestUri?.ToString());
+        var fixture = CreateCluster("microk8s", handler);
+        await using var cluster = fixture.Cluster;
+        using var metricsService = fixture.Service;
+        var client = new PrometheusQueryClient(NullLogger<PrometheusQueryClient>.Instance);
+        var endpoint = new ResolvedPrometheusEndpoint(
+            PrometheusProviderKind.Operator,
+            "Prometheus Operator",
+            false,
+            "monitoring",
+            "prometheus-operated",
+            9090,
+            null,
+            false,
+            string.Empty,
+            null);
+
+        var response = await client.QueryRangeAsync(
+            cluster,
+            endpoint,
+            "up{job=\"kube api\"}",
+            DateTimeOffset.UnixEpoch,
+            DateTimeOffset.UnixEpoch.AddMinutes(1),
+            60);
+
+        response.ShouldNotBeNull();
+        response.Status.ShouldBe("success");
+        observedUri.ShouldNotBeNull();
+        observedUri.ShouldContain("/api/v1/namespaces/monitoring/services/http:prometheus-operated:9090/proxy/api/v1/query_range");
+        Uri.UnescapeDataString(new Uri(observedUri).Query).ShouldContain("query=up{job=\"kube api\"}");
+        await client.ResetAsync();
+    }
+
+    [Fact]
     public async Task PrepareAsync_with_same_service_proxy_endpoint_logs_transport_once()
     {
         var logger = new TestLogger<PrometheusQueryClient>();
@@ -129,7 +166,7 @@ public sealed class PrometheusQueryClientTests
         value.Value.ShouldBe(1.5d);
     }
 
-    private static (Cluster Cluster, MetricsService Service) CreateCluster(string name)
+    private static (Cluster Cluster, MetricsService Service) CreateCluster(string name, DelegatingHandler? handler = null)
     {
         var metricsService = new MetricsService(
             NullLogger<MetricsService>.Instance,
@@ -152,10 +189,9 @@ public sealed class PrometheusQueryClientTests
             metricsService)
         {
             Name = name,
-            Client = new k8s.Kubernetes(new KubernetesClientConfiguration
-            {
-                Host = "http://localhost",
-            }),
+            Client = handler is null
+                ? new k8s.Kubernetes(new KubernetesClientConfiguration { Host = "http://localhost" })
+                : new k8s.Kubernetes(new KubernetesClientConfiguration { Host = "http://localhost" }, handler),
         };
         return (cluster, metricsService);
     }
@@ -215,11 +251,18 @@ public sealed class PrometheusQueryClientTests
             => ValueTask.FromResult(new AccessToken($"azure-token-{++TokenRequests}", DateTimeOffset.UtcNow.AddMinutes(5)));
     }
 
-    private sealed class RecordingHandler(Action<HttpRequestMessage> record) : HttpMessageHandler
+    private sealed class RecordingHandler : DelegatingHandler
     {
+        public RecordingHandler(Action<HttpRequestMessage> record)
+        {
+            _record = record;
+        }
+
+        private readonly Action<HttpRequestMessage> _record;
+
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            record(request);
+            _record(request);
             return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
             {
                 Content = new StringContent("{\"status\":\"success\",\"data\":{\"resultType\":\"matrix\",\"result\":[]}}"),
