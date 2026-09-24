@@ -67,7 +67,8 @@ public abstract class PodMetricsHistoryCellBase : MetricsHistoryCellBase<V1Pod>
         Dictionary<string, string> options = new(StringComparer.Ordinal)
         {
             ["namespace"] = pod.Namespace() ?? string.Empty,
-            ["pods"] = System.Text.RegularExpressions.Regex.Escape(pod.Name() ?? string.Empty),
+            ["pods"] = System.Text.RegularExpressions.Regex.Escape(pod.Name() ?? string.Empty)
+                .Replace("\\", "\\\\", StringComparison.Ordinal),
             ["selector"] = "pod, namespace",
         };
         return CreateMetricRequest(MetricCategory.Pods, options, end);

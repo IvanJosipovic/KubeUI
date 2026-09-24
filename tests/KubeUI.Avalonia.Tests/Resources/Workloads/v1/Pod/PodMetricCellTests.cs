@@ -1,6 +1,5 @@
 using Avalonia.Headless.XUnit;
 using Avalonia.Controls;
-using Avalonia.Controls.Primitives;
 using Avalonia.Media;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
@@ -14,6 +13,10 @@ using NodeResourceConfig = KubeUI.Avalonia.Resources.Core.v1.Node.V1NodeConfig;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Shouldly;
+using PodCpuHistoryCell = KubeUI.Avalonia.Resources.Workloads.v1.Pod.MetricsHistoryCPUCellView;
+using PodMemoryHistoryCell = KubeUI.Avalonia.Resources.Workloads.v1.Pod.MetricsHistoryMemoryCellView;
+using NodeCpuHistoryCell = KubeUI.Avalonia.Resources.Core.v1.Node.MetricsHistoryCPUCellView;
+using NodeMemoryHistoryCell = KubeUI.Avalonia.Resources.Core.v1.Node.MetricsHistoryMemoryCellView;
 
 namespace KubeUI.Avalonia.Tests.Resources.Workloads.v1.Pod;
 
@@ -112,6 +115,77 @@ public sealed class PodMetricCellTests
 
         MetricBars(cell).Any(bar => ToolTip.GetTip(bar) is { } tip && tip.ToString()!.Contains("1.23c", StringComparison.Ordinal)).ShouldBeTrue();
         queryClient.Queries.ShouldBe(2);
+    }
+
+    [AvaloniaFact]
+    public async Task node_prometheus_history_matches_instance_label_when_node_label_is_missing()
+    {
+        var queryClient = new FakePrometheusQueryClient
+        {
+            Result = CreateNodeMetricResultsWithInstanceLabel("10.0.0.1:9100", 0.5, 512d * 1024 * 1024),
+        };
+        await using var fixture = await MetricCellFixture.CreateAsync(queryClient);
+        var node = CreateNode("node-a");
+        var cpuCell = fixture.CreateNodeCpuCell(node);
+        var memoryCell = fixture.CreateNodeMemoryCell(node);
+        using var window = Application.Current.CreateTestWindow(content: new StackPanel { Children = { cpuCell, memoryCell } });
+
+        window.Show();
+        cpuCell.Initialize(fixture.Workspace);
+        memoryCell.Initialize(fixture.Workspace);
+
+        await TestWait.UntilAsync(
+            () => queryClient.Queries == 2,
+            timeout: TimeSpan.FromSeconds(5),
+            cancellationToken: TestContext.Current.CancellationToken,
+            beforePoll: () => Dispatcher.UIThread.RunJobs());
+
+        MetricBars(cpuCell).Any(bar => ToolTip.GetTip(bar)?.ToString()?.Contains("0.5c", StringComparison.Ordinal) == true).ShouldBeTrue();
+        MetricBars(memoryCell).Any(bar => ToolTip.GetTip(bar)?.ToString()?.Contains("512", StringComparison.Ordinal) == true).ShouldBeTrue();
+        queryClient.QueryTexts.ShouldContain(query =>
+            query.Contains("instance=~\"node-a(:[0-9]+)?\"", StringComparison.Ordinal)
+            && query.Contains("by (instance)", StringComparison.Ordinal));
+        queryClient.QueryTexts.ShouldContain(query =>
+            query.Contains("node_cpu_seconds_total", StringComparison.Ordinal)
+            && query.Contains("instance=~\"node-a(:[0-9]+)?\"", StringComparison.Ordinal));
+    }
+
+    [AvaloniaFact]
+    public async Task prometheus_pod_name_regex_is_escaped_for_promql_string()
+    {
+        var queryClient = new FakePrometheusQueryClient
+        {
+            Result = CreateMetricResult("cpuUsage", 1.234),
+        };
+        await using var fixture = await MetricCellFixture.CreateAsync(queryClient);
+        var cell = fixture.CreateCpuCell(CreatePod("apicurio.registry"));
+        using var window = Application.Current.CreateTestWindow(content: cell);
+
+        window.Show();
+        cell.Initialize(fixture.Workspace);
+
+        await TestWait.UntilAsync(
+            () => queryClient.QueryTexts.Count == 2,
+            timeout: TimeSpan.FromSeconds(5),
+            cancellationToken: TestContext.Current.CancellationToken,
+            beforePoll: () => Dispatcher.UIThread.RunJobs());
+
+        queryClient.QueryTexts.ShouldAllBe(query =>
+            query.Contains("pod=~\"apicurio\\\\.registry\"", StringComparison.Ordinal));
+    }
+
+    private static MetricResultSet CreateNodeMetricResultsWithInstanceLabel(string instance, double cpu, double memory)
+    {
+        var labels = new Dictionary<string, string>(StringComparer.Ordinal) { ["instance"] = instance };
+        var timestamp = DateTimeOffset.UtcNow.AddMinutes(-2);
+        return new MetricResultSet
+        {
+            Metrics = new Dictionary<string, IReadOnlyList<MetricSeries>>(StringComparer.Ordinal)
+            {
+                ["cpuUsage"] = [new MetricSeries { Name = "cpuUsage", Labels = labels, Points = [new MetricPoint(timestamp, cpu)] }],
+                ["memoryUsage"] = [new MetricSeries { Name = "memoryUsage", Labels = labels, Points = [new MetricPoint(timestamp, memory)] }],
+            },
+        };
     }
 
     [AvaloniaFact]
@@ -292,9 +366,9 @@ public sealed class PodMetricCellTests
         var columns = config.Columns();
 
         columns.Single(column => column.Key == "cpu").CustomControl.ShouldBe(
-            typeof(KubeUI.Avalonia.Resources.Workloads.v1.Pod.MetricsHistoryCPUCellView));
+            typeof(PodCpuHistoryCell));
         columns.Single(column => column.Key == "memory").CustomControl.ShouldBe(
-            typeof(KubeUI.Avalonia.Resources.Workloads.v1.Pod.MetricsHistoryMemoryCellView));
+            typeof(PodMemoryHistoryCell));
     }
 
     [AvaloniaFact]
@@ -308,9 +382,9 @@ public sealed class PodMetricCellTests
         var columns = config.Columns();
 
         columns.Single(column => column.Key == "cpu").CustomControl.ShouldBe(
-            typeof(KubeUI.Avalonia.Resources.Core.v1.Node.MetricsHistoryCPUCellView));
+            typeof(NodeCpuHistoryCell));
         columns.Single(column => column.Key == "memory").CustomControl.ShouldBe(
-            typeof(KubeUI.Avalonia.Resources.Core.v1.Node.MetricsHistoryMemoryCellView));
+            typeof(NodeMemoryHistoryCell));
         var cpuColumn = (ResourceListColumn<V1Node, decimal>)columns.Single(column => column.Key == "cpu");
         cpuColumn.Field(CreateNode()).ShouldBe(4m);
         cpuColumn.DisplayValue(CreateNode()).ShouldBe("4c");
@@ -424,6 +498,7 @@ public sealed class PodMetricCellTests
             metadata = new { name },
             status = new
             {
+                addresses = new[] { new { type = "InternalIP", address = "10.0.0.1" } },
                 capacity = new Dictionary<string, string> { ["cpu"] = "4", ["memory"] = "8Gi" },
                 allocatable = new Dictionary<string, string> { ["cpu"] = "2", ["memory"] = "4Gi" },
             },
@@ -536,6 +611,8 @@ public sealed class PodMetricCellTests
 
         public int Queries { get; private set; }
 
+        public System.Collections.Concurrent.ConcurrentQueue<string> QueryTexts { get; } = new();
+
         public Task PrepareAsync(Cluster cluster, ResolvedPrometheusEndpoint endpoint, CancellationToken cancellationToken = default)
             => Task.CompletedTask;
 
@@ -549,6 +626,7 @@ public sealed class PodMetricCellTests
             CancellationToken cancellationToken = default)
         {
             Queries++;
+            QueryTexts.Enqueue(query);
             if (QueryGate is not null)
             {
                 await QueryGate.Task.WaitAsync(cancellationToken);
@@ -611,16 +689,16 @@ public sealed class PodMetricCellTests
 
         public FakePrometheusQueryClient QueryClient { get; }
 
-        public KubeUI.Avalonia.Resources.Workloads.v1.Pod.MetricsHistoryCPUCellView CreateCpuCell(V1Pod pod)
+        public PodCpuHistoryCell CreateCpuCell(V1Pod pod)
             => new(RefreshClock, TimeProvider.System) { DataContext = pod };
 
-        public KubeUI.Avalonia.Resources.Workloads.v1.Pod.MetricsHistoryMemoryCellView CreateMemoryCell(V1Pod pod)
+        public PodMemoryHistoryCell CreateMemoryCell(V1Pod pod)
             => new(RefreshClock, TimeProvider.System) { DataContext = pod };
 
-        public KubeUI.Avalonia.Resources.Core.v1.Node.MetricsHistoryCPUCellView CreateNodeCpuCell(V1Node node)
+        public NodeCpuHistoryCell CreateNodeCpuCell(V1Node node)
             => new(RefreshClock, TimeProvider.System) { DataContext = node };
 
-        public KubeUI.Avalonia.Resources.Core.v1.Node.MetricsHistoryMemoryCellView CreateNodeMemoryCell(V1Node node)
+        public NodeMemoryHistoryCell CreateNodeMemoryCell(V1Node node)
             => new(RefreshClock, TimeProvider.System) { DataContext = node };
 
         public void UseMetricsServerSamples(params PodMetrics[] samples)

@@ -63,11 +63,14 @@ internal static class ResourceMetricsCatalog
     {
         var options = new Dictionary<string, string>(StringComparer.Ordinal)
         {
-            ["nodes"] = Regex.Escape(node.Name()),
+            ["instance"] = Regex.Escape(node.Name()),
             ["mountpoints"] = ".*",
         };
 
-        Func<MetricSeries, bool> filter = series => series.Labels.TryGetValue("node", out var value) ? value == node.Name() : true;
+        Func<MetricSeries, bool> filter = series =>
+            series.Labels.TryGetValue("node", out var nodeName) && nodeName == node.Name()
+            || series.Labels.TryGetValue("instance", out var instance) &&
+                (instance == node.Name() || instance.StartsWith(node.Name() + ":", StringComparison.Ordinal));
 
         return new ResourceMetricsDescriptor(
             [

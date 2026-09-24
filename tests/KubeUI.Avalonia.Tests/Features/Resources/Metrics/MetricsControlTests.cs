@@ -332,6 +332,65 @@ public sealed class MetricsControlTests
     }
 
     [AvaloniaFact]
+    public async Task node_properties_metrics_request_is_scoped_to_selected_node()
+    {
+        var queryClient = new FakePrometheusQueryClient();
+        var timestamp = DateTimeOffset.Parse("2026-01-02T03:04:05+00:00");
+        queryClient.ResponseFactory = query => query switch
+        {
+            var value when value.Contains("node_cpu_seconds_total", StringComparison.Ordinal) => CreateNodeSuccessResponse(timestamp, "instance", "node-a"),
+            var value when value.Contains("kube_node_status_capacity", StringComparison.Ordinal) => CreateNodeSuccessResponse(timestamp, "node", "node-a"),
+            var value when value.Contains("kube_node_status_allocatable", StringComparison.Ordinal) => CreateNodeSuccessResponse(timestamp, "node", "node-a"),
+            _ => CreateEmptyResponse(),
+        };
+        var node = new V1Node { Metadata = Metadata("node-a") };
+        var view = new NodePropertiesView { DataContext = node };
+        await using var fixture = await MetricsControlFixture.CreateAsync(initializePrometheus: true, queryClient);
+        using var window = Application.Current.CreateTestWindow(content: view);
+
+        window.Show();
+        var control = view.GetVisualDescendants().OfType<MetricsControl>().ShouldHaveSingleItem();
+        fixture.Initialize(control);
+
+        await TestWait.UntilAsync(
+            () => queryClient.QueryCalls >= 3 && control.SelectedPanel?.Series.Count == 3,
+            5000,
+            TestContext.Current.CancellationToken,
+            beforePoll: () => Dispatcher.UIThread.RunJobs());
+
+        queryClient.Queries.ShouldNotBeEmpty();
+        queryClient.Queries.ShouldContain(query => query.Contains("instance=~\"node-a", StringComparison.Ordinal));
+        queryClient.Queries.Where(query => query.Contains("kube_node_status_", StringComparison.Ordinal))
+            .ShouldAllBe(query => query.Contains("node=~\"node-a\"", StringComparison.Ordinal));
+        control.SelectedPanel!.Series.Count.ShouldBe(3);
+    }
+
+    private static PrometheusClientQueryRangeResponse CreateNodeSuccessResponse(DateTimeOffset timestamp, string labelName, string labelValue)
+    {
+        return new PrometheusClientQueryRangeResponse
+        {
+            Status = "success",
+            Data = new PrometheusClientQueryRangeResponse.DataObject
+            {
+                ResultType = "matrix",
+                Result =
+                [
+                    new PrometheusClientQueryRangeResponse.ResultObject
+                    {
+                        Metric = new Dictionary<string, string>(StringComparer.Ordinal) { [labelName] = labelValue },
+                        Values = [(timestamp, 1d)],
+                    },
+                    new PrometheusClientQueryRangeResponse.ResultObject
+                    {
+                        Metric = new Dictionary<string, string>(StringComparer.Ordinal) { [labelName] = "node-b" },
+                        Values = [(timestamp, 2d)],
+                    },
+                ],
+            },
+        };
+    }
+
+    [AvaloniaFact]
     public async Task metrics_control_orders_series_by_name_and_draws_usage_above_requests()
     {
         var queryClient = new FakePrometheusQueryClient();
@@ -674,6 +733,8 @@ public sealed class MetricsControlTests
 
         public int QueryCalls { get; private set; }
 
+        public System.Collections.Concurrent.ConcurrentQueue<string> Queries { get; } = new();
+
         public Exception? ExceptionToThrow { get; init; }
 
         public Func<string, PrometheusClientQueryRangeResponse?>? ResponseFactory { get; set; }
@@ -691,6 +752,7 @@ public sealed class MetricsControlTests
             CancellationToken cancellationToken = default)
         {
             QueryCalls++;
+            Queries.Enqueue(query);
             if (WaitForRelease)
             {
                 await _release.Task.WaitAsync(cancellationToken);

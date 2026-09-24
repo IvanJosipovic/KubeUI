@@ -77,7 +77,7 @@ public abstract class NodeMetricsHistoryCellBase : MetricsHistoryCellBase<V1Node
     {
         Dictionary<string, string> options = new(StringComparer.Ordinal)
         {
-            ["nodes"] = System.Text.RegularExpressions.Regex.Escape(node.Name() ?? string.Empty),
+            ["instance"] = System.Text.RegularExpressions.Regex.Escape(node.Name() ?? string.Empty),
         };
         return CreateMetricRequest(MetricCategory.Nodes, options, end);
     }
@@ -106,7 +106,22 @@ public abstract class NodeMetricsHistoryCellBase : MetricsHistoryCellBase<V1Node
 
     protected override bool MatchesSeries(V1Node node, MetricSeries series)
     {
-        return series.Labels.TryGetValue("node", out var name)
-            && string.Equals(name, node.Name(), StringComparison.Ordinal);
+        if (series.Labels.TryGetValue("node", out var nodeName))
+        {
+            return string.Equals(nodeName, node.Name(), StringComparison.Ordinal);
+        }
+
+        if (!series.Labels.TryGetValue("instance", out var instance)
+            || string.IsNullOrWhiteSpace(instance))
+        {
+            return false;
+        }
+
+        var instanceHost = Uri.TryCreate($"http://{instance}", UriKind.Absolute, out var instanceUri)
+            ? instanceUri.Host.Trim('[', ']')
+            : instance;
+        return string.Equals(instanceHost, node.Name(), StringComparison.OrdinalIgnoreCase)
+            || node.Status?.Addresses?.Any(address =>
+                string.Equals(instanceHost, address.Address, StringComparison.OrdinalIgnoreCase)) == true;
     }
 }

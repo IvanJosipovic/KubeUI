@@ -279,14 +279,38 @@ public sealed partial class MetricsService : ObservableObject, IMetricsService, 
         CancellationToken cancellationToken)
     {
         var promQuery = _resolvedPrometheusProvider!.BuildQuery(category, query.Name, query.Options);
+        _logger.LogDebug(
+            "Requesting Prometheus metric {Metric} for cluster {Cluster} over {Start:u} to {End:u} at {StepSeconds}s step.",
+            query.Name,
+            _cluster?.Name,
+            start,
+            end,
+            stepSeconds);
         var result = await ExecuteQueryRangeAsync(promQuery, start, end, stepSeconds, cancellationToken).ConfigureAwait(false);
 
         if (result == null || !string.Equals(result.Status, "success", StringComparison.Ordinal))
         {
+            if (result != null)
+            {
+                _logger.LogWarning(
+                    "Prometheus returned status {Status} for metric {Metric} on cluster {Cluster}. Error type: {ErrorType}. Error: {Error}",
+                    result.Status,
+                    query.Name,
+                    _cluster?.Name,
+                    result.ErrorType,
+                    result.Error);
+            }
+
             return (query.Name, []);
         }
 
-        return (query.Name, NormalizeResultSet(query.Name, result, frames));
+        var series = NormalizeResultSet(query.Name, result, frames);
+        if (series.Count == 0)
+        {
+            _logger.LogDebug("Prometheus returned no series for metric {Metric} on cluster {Cluster}.", query.Name, _cluster?.Name);
+        }
+
+        return (query.Name, series);
     }
 
     private async Task<bool> TryStartPrometheusAsync(Cluster cluster, k8s.Kubernetes kube, ClusterMetricsSettings settings)
@@ -492,6 +516,11 @@ public sealed partial class MetricsService : ObservableObject, IMetricsService, 
         catch (HttpRequestException ex)
         {
             lastException = ex;
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            lastException = ex;
+            _logger.LogError(ex, "Unexpected error querying Prometheus for cluster {Cluster} using provider {Provider}.", _cluster?.Name, _resolvedPrometheusProvider?.Kind);
         }
 
         await HandlePrometheusQueryFailureAsync(lastException).ConfigureAwait(false);

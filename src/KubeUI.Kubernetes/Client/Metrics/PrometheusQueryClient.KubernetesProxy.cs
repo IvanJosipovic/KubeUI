@@ -18,7 +18,7 @@ public sealed partial class PrometheusQueryClient
         CancellationToken cancellationToken)
     {
         var proxyUrl = BuildServiceProxyUrl(endpoint, query, start, end, stepSeconds);
-        return await SendServiceProxyRequestAsync(cluster, proxyUrl, cancellationToken).ConfigureAwait(false);
+        return await SendServiceProxyRequestAsync(cluster, endpoint, proxyUrl, cancellationToken).ConfigureAwait(false);
     }
 
     private static string BuildServiceProxyUrl(ResolvedPrometheusEndpoint endpoint, string query, DateTimeOffset start, DateTimeOffset end, int stepSeconds)
@@ -35,7 +35,11 @@ public sealed partial class PrometheusQueryClient
         return $"/api/v1/namespaces/{endpoint.Namespace}/services/{scheme}:{endpoint.ServiceName}:{endpoint.ServicePort}/proxy{endpoint.PathPrefix}/api/v1/query_range?{queryString}";
     }
 
-    private static async Task<PrometheusClientQueryRangeResponse?> SendServiceProxyRequestAsync(Cluster cluster, string relativeUri, CancellationToken cancellationToken)
+    private async Task<PrometheusClientQueryRangeResponse?> SendServiceProxyRequestAsync(
+        Cluster cluster,
+        ResolvedPrometheusEndpoint endpoint,
+        string relativeUri,
+        CancellationToken cancellationToken)
     {
         var headers = new Dictionary<string, IReadOnlyList<string>>(StringComparer.OrdinalIgnoreCase)
         {
@@ -47,7 +51,24 @@ public sealed partial class PrometheusQueryClient
             cluster.Client,
             [relativeUri, HttpMethod.Get, headers, null, cancellationToken])!;
 
-        response.EnsureSuccessStatusCode();
+        if (!response.IsSuccessStatusCode)
+        {
+            var error = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+            const int maxLength = 1024;
+            if (error.Length > maxLength)
+            {
+                error = error[..maxLength] + "…";
+            }
+
+            _logger.LogWarning(
+                "Prometheus Kubernetes-proxy query failed for provider {Provider} with HTTP {StatusCode} ({ReasonPhrase}). Response: {ResponseError}",
+                endpoint.ProviderKind,
+                (int)response.StatusCode,
+                response.ReasonPhrase,
+                error);
+            response.EnsureSuccessStatusCode();
+        }
+
         return await response.Content.ReadFromJsonAsync<PrometheusClientQueryRangeResponse>(cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 }

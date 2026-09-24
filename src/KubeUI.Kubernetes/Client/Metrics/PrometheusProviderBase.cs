@@ -11,61 +11,56 @@ public abstract class PrometheusProviderBase : IPrometheusProvider
 
     public abstract bool IsConfigurable { get; }
 
-    public virtual string BuildQuery(MetricCategory category, string queryName, IReadOnlyDictionary<string, string> options)
-    {
-        if (category is MetricCategory.Pods or MetricCategory.WorkloadPods or MetricCategory.Namespace)
+    public virtual string BuildQuery(MetricCategory category, string queryName, IReadOnlyDictionary<string, string> options) =>
+        category switch
         {
-            return BuildPodQuery(queryName, options);
-        }
-
-        return category switch
-        {
+            MetricCategory.Pods or MetricCategory.WorkloadPods or MetricCategory.Namespace => BuildPodQuery(queryName, options),
             MetricCategory.Nodes => BuildNodeQuery(queryName, options),
             MetricCategory.Pvc => BuildPvcQuery(queryName, options),
             MetricCategory.Ingress => BuildIngressQuery(queryName, options),
             MetricCategory.Cluster => BuildClusterQuery(queryName, options),
             _ => throw new InvalidOperationException($"Unsupported metrics category '{category}'."),
         };
-    }
 
     public abstract Task<ResolvedPrometheusEndpoint?> TryResolveServiceAsync(k8s.Kubernetes client, ClusterMetricsSettings settings, CancellationToken cancellationToken = default);
 
     protected virtual string BuildClusterQuery(string queryName, IReadOnlyDictionary<string, string> options)
     {
-        var nodes = GetOption(options, "nodes", ".*");
+        var instance = GetOption(options, "instance", ".*");
         var mountpoints = GetOption(options, "mountpoints", "^/$");
 
         return queryName switch
         {
-            "cpuUsage" => $$"""sum(rate(node_cpu_seconds_total{node=~"{{nodes}}",mode=~"user|system"}[{{GetRateAccuracy(options)}}]))""",
-            "cpuCapacity" => $$"""sum(kube_node_status_capacity{node=~"{{nodes}}", resource="cpu"})""",
-            "cpuAllocatableCapacity" => $$"""sum(kube_node_status_allocatable{node=~"{{nodes}}", resource="cpu"})""",
-            "memoryUsage" => $$"""sum(node_memory_MemTotal_bytes{node=~"{{nodes}}"} - (node_memory_MemFree_bytes{node=~"{{nodes}}"} + node_memory_Buffers_bytes{node=~"{{nodes}}"} + node_memory_Cached_bytes{node=~"{{nodes}}"}) )""",
-            "workloadMemoryUsage" => $$"""sum(container_memory_working_set_bytes{image!="",pod!="" ,node=~"{{nodes}}"})""",
-            "memoryCapacity" => $$"""sum(kube_node_status_capacity{node=~"{{nodes}}", resource="memory"})""",
-            "memoryAllocatableCapacity" => $$"""sum(kube_node_status_allocatable{node=~"{{nodes}}", resource="memory"})""",
-            "podUsage" => $$"""sum(kube_pod_info{node=~"{{nodes}}"})""",
-            "podCapacity" => $$"""sum(kube_node_status_capacity{node=~"{{nodes}}", resource="pods"})""",
-            "podAllocatableCapacity" => $$"""sum(kube_node_status_allocatable{node=~"{{nodes}}", resource="pods"})""",
-            "fsSize" => $$"""sum(node_filesystem_size_bytes{mountpoint=~"{{mountpoints}}"} * on (pod,namespace) group_left(node) kube_pod_info{node=~"{{nodes}}"})""",
-            "fsUsage" => $$"""sum((node_filesystem_size_bytes{mountpoint=~"{{mountpoints}}"} - node_filesystem_avail_bytes{mountpoint=~"{{mountpoints}}"}) * on (pod,namespace) group_left(node) kube_pod_info{node=~"{{nodes}}"})""",
+            "cpuUsage" => $$"""sum(rate(node_cpu_seconds_total{node=~"{{instance}}",mode=~"user|system"}[{{GetRateAccuracy(options)}}]))""",
+            "cpuCapacity" => $$"""sum(kube_node_status_capacity{node=~"{{instance}}", resource="cpu"})""",
+            "cpuAllocatableCapacity" => $$"""sum(kube_node_status_allocatable{node=~"{{instance}}", resource="cpu"})""",
+            "memoryUsage" => $$"""sum(node_memory_MemTotal_bytes{node=~"{{instance}}"} - (node_memory_MemFree_bytes{node=~"{{instance}}"} + node_memory_Buffers_bytes{node=~"{{instance}}"} + node_memory_Cached_bytes{node=~"{{instance}}"}) )""",
+            "workloadMemoryUsage" => $$"""sum(container_memory_working_set_bytes{image!="",pod!="" ,node=~"{{instance}}"})""",
+            "memoryCapacity" => $$"""sum(kube_node_status_capacity{node=~"{{instance}}", resource="memory"})""",
+            "memoryAllocatableCapacity" => $$"""sum(kube_node_status_allocatable{node=~"{{instance}}", resource="memory"})""",
+            "podUsage" => $$"""sum(kube_pod_info{node=~"{{instance}}"})""",
+            "podCapacity" => $$"""sum(kube_node_status_capacity{node=~"{{instance}}", resource="pods"})""",
+            "podAllocatableCapacity" => $$"""sum(kube_node_status_allocatable{node=~"{{instance}}", resource="pods"})""",
+            "fsSize" => $$"""sum(node_filesystem_size_bytes{mountpoint=~"{{mountpoints}}"} * on (pod,namespace) group_left(node) kube_pod_info{node=~"{{instance}}"})""",
+            "fsUsage" => $$"""sum((node_filesystem_size_bytes{mountpoint=~"{{mountpoints}}"} - node_filesystem_avail_bytes{mountpoint=~"{{mountpoints}}"}) * on (pod,namespace) group_left(node) kube_pod_info{node=~"{{instance}}"})""",
             _ => throw new InvalidOperationException($"Unsupported cluster query '{queryName}'."),
         };
     }
 
     protected virtual string BuildNodeQuery(string queryName, IReadOnlyDictionary<string, string> options)
     {
+        var instance = GetOption(options, "instance", ".*");
         var mountpoints = GetOption(options, "mountpoints", "^/$");
 
         return queryName switch
         {
-            "cpuUsage" => $$"""sum(rate(node_cpu_seconds_total{mode=~"user|system"}[{{GetRateAccuracy(options)}}])) by (node)""",
-            "cpuCapacity" => """sum(kube_node_status_capacity{resource="cpu"}) by (node)""",
-            "cpuAllocatableCapacity" => """sum(kube_node_status_allocatable{resource="cpu"}) by (node)""",
-            "memoryUsage" => """sum(node_memory_MemTotal_bytes - (node_memory_MemFree_bytes + node_memory_Buffers_bytes + node_memory_Cached_bytes)) by (node)""",
+            "cpuUsage" => $$"""sum(rate(node_cpu_seconds_total{instance=~"{{instance}}(:[0-9]+)?",mode=~"user|system"}[{{GetRateAccuracy(options)}}])) by (node)""",
+            "cpuCapacity" => $$"""sum(kube_node_status_capacity{node=~"{{instance}}",resource="cpu"}) by (node)""",
+            "cpuAllocatableCapacity" => $$"""sum(kube_node_status_allocatable{node=~"{{instance}}",resource="cpu"}) by (node)""",
+            "memoryUsage" => $$"""sum((node_memory_MemTotal_bytes{instance=~"{{instance}}"} - (node_memory_MemFree_bytes{instance=~"{{instance}}"} + node_memory_Buffers_bytes{instance=~"{{instance}}"} + node_memory_Cached_bytes{instance=~"{{instance}}"}))) by (instance)""",
             "workloadMemoryUsage" => """sum(container_memory_working_set_bytes{image!="",pod!=""}) by (node)""",
-            "memoryCapacity" => """sum(kube_node_status_capacity{resource="memory"}) by (node)""",
-            "memoryAllocatableCapacity" => """sum(kube_node_status_allocatable{resource="memory"}) by (node)""",
+            "memoryCapacity" => $$"""sum(kube_node_status_capacity{node=~"{{instance}}",resource="memory"}) by (node)""",
+            "memoryAllocatableCapacity" => $$"""sum(kube_node_status_allocatable{node=~"{{instance}}",resource="memory"}) by (node)""",
             "podUsage" => """sum(kube_pod_info) by (node)""",
             "podCapacity" => """sum(kube_node_status_capacity{resource="pods"}) by (node)""",
             "podAllocatableCapacity" => """sum(kube_node_status_allocatable{resource="pods"}) by (node)""",

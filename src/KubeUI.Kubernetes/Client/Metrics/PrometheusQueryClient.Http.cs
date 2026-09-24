@@ -26,8 +26,26 @@ public sealed partial class PrometheusQueryClient
         }
 
         using var response = await _httpClient!.SendAsync(request, cancellationToken).ConfigureAwait(false);
-        response.EnsureSuccessStatusCode();
+        if (!response.IsSuccessStatusCode)
+        {
+            var error = await ReadErrorSummaryAsync(response, cancellationToken).ConfigureAwait(false);
+            _logger.LogWarning(
+                "Prometheus direct query failed for provider {Provider} with HTTP {StatusCode} ({ReasonPhrase}). Response: {ResponseError}",
+                endpoint.ProviderKind,
+                (int)response.StatusCode,
+                response.ReasonPhrase,
+                error);
+            response.EnsureSuccessStatusCode();
+        }
+
         return await response.Content.ReadFromJsonAsync<PrometheusClientQueryRangeResponse>(cancellationToken: cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async Task<string> ReadErrorSummaryAsync(HttpResponseMessage response, CancellationToken cancellationToken)
+    {
+        var body = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+        const int maxLength = 1024;
+        return body.Length <= maxLength ? body : body[..maxLength] + "…";
     }
 
     private static string BuildDirectUrl(ResolvedPrometheusEndpoint endpoint, string query, DateTimeOffset start, DateTimeOffset end, int stepSeconds)
@@ -39,7 +57,7 @@ public sealed partial class PrometheusQueryClient
     {
         var client = handler is null ? new HttpClient() : new HttpClient(handler);
         client.BaseAddress = new Uri(endpoint.DirectUrl!.TrimEnd('/') + endpoint.PathPrefix, UriKind.Absolute);
-        client.Timeout = Timeout.InfiniteTimeSpan;
+        client.Timeout = TimeSpan.FromSeconds(30);
         return client;
     }
 }
