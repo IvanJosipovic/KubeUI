@@ -4,15 +4,19 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Text.Json.Serialization.Metadata;
 using System.Threading.Channels;
 using k8s;
 using k8s.Models;
+using KubeUI.Kubernetes.Serialization;
 using KubernetesClient.Informer.Client;
 
 namespace KubeUI.Testing.Kubernetes.Transport;
 
 public sealed class FakeKubernetesHttpApi : DelegatingHandler
 {
+    private static readonly JsonSerializerOptions s_jsonSerializerOptions = CreateJsonSerializerOptions();
+
     private readonly BackendState _state;
     private readonly ConcurrentDictionary<string, ResourceDefinition> _definitions;
     private readonly ConcurrentDictionary<string, JsonObject> _resources;
@@ -185,7 +189,7 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
     {
         Register<T>();
         var api = GroupApiVersionKind.From<T>();
-        var json = ParseObject(KubernetesJson.Serialize(resource));
+        var json = ParseObject(JsonSerializer.Serialize(resource, resource.GetType(), s_jsonSerializerOptions));
         NormalizeSecret(json);
         EnsureMetadata(json, resource.Metadata);
         RegisterPolicyResources(json);
@@ -449,7 +453,7 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
                 return Error(HttpStatusCode.UnprocessableEntity, "Pod spec.containers must contain at least one container.");
             }
 
-            EnsureMetadata(resource, resource["metadata"]?.Deserialize<V1ObjectMeta>());
+            EnsureMetadata(resource, resource["metadata"]?.Deserialize<V1ObjectMeta>(s_jsonSerializerOptions));
             NormalizeSecret(resource);
             _resources[ResourceKey(collectionKey + "/" + name)] = resource;
             if (route.PluralName == "customresourcedefinitions")
@@ -484,7 +488,7 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
                 resource = existingResource;
             }
 
-            EnsureMetadata(resource, resource["metadata"]?.Deserialize<V1ObjectMeta>());
+            EnsureMetadata(resource, resource["metadata"]?.Deserialize<V1ObjectMeta>(s_jsonSerializerOptions));
             NormalizeSecret(resource);
             _resources[key] = resource;
             PublishWatch(collectionKey, existed ? "MODIFIED" : "ADDED", resource);
@@ -726,7 +730,7 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
         {
             if (string.Equals(binding["kind"]?.GetValue<string>(), "ClusterRoleBinding", StringComparison.Ordinal))
             {
-                var clusterRoleBinding = binding.Deserialize<V1ClusterRoleBinding>();
+                var clusterRoleBinding = binding.Deserialize<V1ClusterRoleBinding>(s_jsonSerializerOptions);
                 if (clusterRoleBinding is not null && IsSubjectMatch(clusterRoleBinding.Subjects, subject.Value))
                 {
                     var role = GetClusterRole(clusterRoleBinding.RoleRef?.Name);
@@ -738,7 +742,7 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
             }
             else if (string.Equals(binding["kind"]?.GetValue<string>(), "RoleBinding", StringComparison.Ordinal))
             {
-                var roleBinding = binding.Deserialize<V1RoleBinding>();
+                var roleBinding = binding.Deserialize<V1RoleBinding>(s_jsonSerializerOptions);
                 if (roleBinding is null
                     || !string.Equals(roleBinding.Metadata?.NamespaceProperty, @namespace, StringComparison.Ordinal)
                     || !IsSubjectMatch(roleBinding.Subjects, subject.Value))
@@ -762,13 +766,13 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
     private V1ClusterRole? GetClusterRole(string? name)
         => _resources.Values
             .Where(resource => string.Equals(resource["kind"]?.GetValue<string>(), "ClusterRole", StringComparison.Ordinal))
-            .Select(resource => resource.Deserialize<V1ClusterRole>())
+            .Select(resource => resource.Deserialize<V1ClusterRole>(s_jsonSerializerOptions))
             .FirstOrDefault(role => string.Equals(role?.Name(), name, StringComparison.Ordinal));
 
     private V1Role? GetRole(string? name, string? @namespace)
         => _resources.Values
             .Where(resource => string.Equals(resource["kind"]?.GetValue<string>(), "Role", StringComparison.Ordinal))
-            .Select(resource => resource.Deserialize<V1Role>())
+            .Select(resource => resource.Deserialize<V1Role>(s_jsonSerializerOptions))
             .FirstOrDefault(role => string.Equals(role?.Name(), name, StringComparison.Ordinal)
                 && string.Equals(role.Namespace(), @namespace, StringComparison.Ordinal));
 
@@ -884,7 +888,7 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
         {
             ["type"] = type,
             ["object"] = resource.DeepClone(),
-        });
+        }, s_jsonSerializerOptions);
         var line = new byte[payload.Length + 1];
         payload.CopyTo(line, 0);
         line[^1] = (byte)'\n';
@@ -992,8 +996,19 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
 
     private static HttpResponseMessage Json(object value, HttpStatusCode status = HttpStatusCode.OK) => new(status)
     {
-        Content = JsonContent.Create(value),
+        Content = JsonContent.Create(value, value.GetType(), options: s_jsonSerializerOptions),
     };
+
+    private static JsonSerializerOptions CreateJsonSerializerOptions()
+    {
+        var options = new JsonSerializerOptions(KubernetesJsonStaticContext.Default.Options)
+        {
+            TypeInfoResolver = JsonTypeInfoResolver.Combine(
+                KubernetesJsonStaticContext.Default,
+                new DefaultJsonTypeInfoResolver()),
+        };
+        return options;
+    }
 
     private static HttpResponseMessage Error(HttpStatusCode status, string message) => Json(new { kind = "Status", status = "Failure", message, code = (int)status }, status);
 

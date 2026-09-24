@@ -1,7 +1,9 @@
 using System.Text.Json;
+using System.Text.Json.Serialization.Metadata;
 using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
+using KubeUI.Kubernetes.Serialization;
 using KubeUI.Kubernetes.Resources.Relationships;
 using KubeUI.Kubernetes.Resources.Relationships.Providers;
 using Shouldly;
@@ -2058,6 +2060,8 @@ public sealed class ResourceRelationshipBuilderTests
 
     private class TestDynamicResource : GenericKubernetesObject
     {
+        private static readonly JsonSerializerOptions s_jsonSerializerOptions = CreateJsonSerializerOptions();
+
         protected void SetProperty<T>(string name, T? value)
         {
             if (value is null)
@@ -2066,8 +2070,18 @@ public sealed class ResourceRelationshipBuilderTests
                 return;
             }
 
-            using var document = JsonDocument.Parse(KubernetesJson.Serialize(value));
+            using var document = JsonDocument.Parse(JsonSerializer.Serialize(value, value!.GetType(), s_jsonSerializerOptions));
             Properties[name] = document.RootElement.Clone();
+        }
+
+        private static JsonSerializerOptions CreateJsonSerializerOptions()
+        {
+            return new JsonSerializerOptions(KubernetesJsonStaticContext.Default.Options)
+            {
+                TypeInfoResolver = JsonTypeInfoResolver.Combine(
+                    KubernetesJsonStaticContext.Default,
+                    new DefaultJsonTypeInfoResolver()),
+            };
         }
     }
 

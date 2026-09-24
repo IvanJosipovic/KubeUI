@@ -3092,30 +3092,38 @@ public class ResourceYamlViewModelTests
     }
 
     [AvaloniaFact]
+    public void YamlSyntaxValidationService_AcceptsCalicoContainerIdAnnotation()
+    {
+        var service = Application.Current.GetRequiredTestService<IYamlValidationService>();
+
+        var diagnostics = service.Validate("""
+            apiVersion: v1
+            kind: Pod
+            metadata:
+              annotations:
+                cni.projectcalico.org/containerID: 1f38475382e1f66aff44a9cf15ab057b7303637def73b0b20423aaedd97f3886
+            """.ReplaceLineEndings("\n"));
+
+        diagnostics.ShouldBeEmpty();
+    }
+
+    [AvaloniaFact]
     public void YamlSyntaxValidationService_AnchorsDuplicateKeyDiagnostic_ToDuplicateKey()
     {
         var service = Application.Current.GetRequiredTestService<IYamlValidationService>();
 
         var diagnostics = service.Validate("""
-            apiVersion: azure.upbound.io/v1beta1
-            kind: ResourceGroup
+            apiVersion: v1
+            kind: Pod
             metadata:
               name: temp
-              namespace: default
-            spec:
-              forProvider:
-                location: test
-                managedBy: tes
-                tags:
-                  test: val
-                  test: 2
-                  test: 4
+              name: other
             """.ReplaceLineEndings("\n"));
 
         diagnostics.Count.ShouldBe(1);
-        diagnostics[0].Message.ShouldContain("duplicate key test");
-        diagnostics[0].StartLine.ShouldBe(12);
-        diagnostics[0].StartColumn.ShouldBe(7);
+        diagnostics[0].Message.ShouldContain("duplicate key name");
+        diagnostics[0].StartLine.ShouldBe(5);
+        diagnostics[0].StartColumn.ShouldBe(3);
     }
 
     [AvaloniaFact]

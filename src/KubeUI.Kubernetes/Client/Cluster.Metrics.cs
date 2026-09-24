@@ -23,7 +23,7 @@ public partial class Cluster
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            var nodeMetricslist = await Client.GetKubernetesNodesMetricsAsync();
+            var nodeMetricslist = await KubernetesMetricsClient.GetKubernetesNodesMetricsAsync(Client, cancellationToken);
             NodeMetrics.Clear();
             foreach (var item in nodeMetricslist.Items.OfType<NodeMetrics>())
             {
@@ -32,7 +32,7 @@ public partial class Cluster
 
             cancellationToken.ThrowIfCancellationRequested();
 
-            var podMetricsList = await Client.GetKubernetesPodsMetricsAsync();
+            var podMetricsList = await KubernetesMetricsClient.GetKubernetesPodsMetricsAsync(Client, cancellationToken);
             PodMetrics.Clear();
             foreach (var item in podMetricsList.Items.OfType<PodMetrics>())
             {

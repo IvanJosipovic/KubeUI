@@ -736,13 +736,10 @@ public sealed class DataDisplayTests
             {
                 return Task.FromResult(new HttpResponseMessage(HttpStatusCode.Forbidden)
                 {
-                    Content = JsonContent.Create(new
-                    {
-                        kind = "Status",
-                        status = "Failure",
-                        message = "patch denied",
-                        code = 403,
-                    }),
+                    Content = new StringContent(
+                        """{"kind":"Status","status":"Failure","message":"patch denied","code":403}""",
+                        Encoding.UTF8,
+                        "application/json"),
                 });
             }
 

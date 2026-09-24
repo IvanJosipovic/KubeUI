@@ -1,6 +1,7 @@
 using System.Diagnostics.Metrics;
 using Avalonia.Headless.XUnit;
 using k8s.Models;
+using KubeUI.Avalonia.Features.Resources.Properties;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Kubernetes.Client;
 using Shouldly;
@@ -53,5 +54,17 @@ public sealed class ViewLocatorTests
 
         view.ShouldBeOfType<ResourceListView>();
         measurements.ShouldContain("ResourceListView<V1Pod>");
+    }
+
+    [AvaloniaFact]
+    public void Build_ResolvesGenericResourcePropertiesViewWithoutRuntimeTypeDiscovery()
+    {
+        var services = Application.Current.GetTestServices();
+        var locator = services.GetRequiredService<ViewLocator>();
+        using var viewModel = new ResourcePropertiesViewModel<V1Pod>();
+
+        var view = locator.Build(viewModel);
+
+        view.ShouldBeOfType<ResourcePropertiesView<V1Pod>>();
     }
 }

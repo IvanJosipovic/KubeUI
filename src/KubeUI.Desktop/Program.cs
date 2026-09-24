@@ -164,7 +164,7 @@ internal static class Program
                 static _ => new DiagnosticListener("KubeUI.Mcp"));
             builder.Services.AddMcpServer()
                 .WithHttpTransport(options => options.Stateless = true)
-                .WithTools<McpTools>();
+                .WithTools<McpTools>(McpToolJsonSerializationContext.Default.Options);
             var port = mcpPortOverride ?? settings.Settings.McpServerPort;
             builder.Services.AddSingleton<IHostedService>(services =>
                 new McpServerHostedService(services, port));

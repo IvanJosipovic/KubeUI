@@ -1,5 +1,6 @@
 using System.Net.Http.Headers;
 using System.Net.Sockets;
+using System.Text;
 using KubeUI.AI.Permissions;
 using KubeUI.Avalonia.Infrastructure.Mcp;
 using KubeUI.Avalonia.Shell.Navigation;
@@ -41,18 +42,10 @@ public sealed class McpServerHostTests
             request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
             request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("text/event-stream"));
             request.Headers.Add("MCP-Protocol-Version", "2025-06-18");
-            request.Content = JsonContent.Create(new
-            {
-                jsonrpc = "2.0",
-                id = 1,
-                method = "initialize",
-                @params = new
-                {
-                    protocolVersion = "2025-06-18",
-                    capabilities = new { },
-                    clientInfo = new { name = "KubeUI.Tests", version = "1.0" }
-                }
-            });
+            request.Content = new StringContent(
+                """{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"KubeUI.Tests","version":"1.0"}}}""",
+                Encoding.UTF8,
+                "application/json");
 
             using var response = await client.SendAsync(request);
             response.IsSuccessStatusCode.ShouldBeTrue(await response.Content.ReadAsStringAsync());
@@ -99,17 +92,10 @@ public sealed class McpServerHostTests
             request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
             request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("text/event-stream"));
             request.Headers.Add("MCP-Protocol-Version", "2025-06-18");
-            request.Content = JsonContent.Create(new
-            {
-                jsonrpc = "2.0",
-                id = 2,
-                method = "tools/call",
-                @params = new
-                {
-                    name = "kubeui_open_resource_list",
-                    arguments = new { cluster = "dev", apiVersion = "apps/v1", kind = "Deployment" }
-                }
-            });
+            request.Content = new StringContent(
+                """{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"kubeui_open_resource_list","arguments":{"cluster":"dev","apiVersion":"apps/v1","kind":"Deployment"}}}""",
+                Encoding.UTF8,
+                "application/json");
 
             using var response = await client.SendAsync(request);
             var body = await response.Content.ReadAsStringAsync();
@@ -193,18 +179,10 @@ public sealed class McpServerHostTests
         request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("text/event-stream"));
         request.Headers.Add("MCP-Protocol-Version", "2025-06-18");
-        request.Content = JsonContent.Create(new
-        {
-            jsonrpc = "2.0",
-            id = 1,
-            method = "initialize",
-            @params = new
-            {
-                protocolVersion = "2025-06-18",
-                capabilities = new { },
-                clientInfo = new { name = "KubeUI.Tests", version = "1.0" }
-            }
-        });
+        request.Content = new StringContent(
+            """{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"KubeUI.Tests","version":"1.0"}}}""",
+            Encoding.UTF8,
+            "application/json");
 
         try
         {
