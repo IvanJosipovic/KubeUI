@@ -77,12 +77,17 @@ internal sealed class NavigationFeatureSynchronizer
         }
 
         var parts = definition.Path;
-        var prefix = $"{cluster.Runtime.Name}-crd-group-";
+        var prefix = definition.Placement == NavigationFeaturePlacement.CustomResourceDefinitions
+            ? $"{cluster.Runtime.Name}-crd-group-"
+            : $"{cluster.Runtime.Name}-feature-group-";
+        var groupOrder = definition.Placement == NavigationFeaturePlacement.CustomResourceDefinitions
+            ? 0
+            : ResourceCategories.CustomResourceDefinitionsNavigationOrder + 1;
         var path = string.Empty;
         foreach (var part in parts)
         {
             path = string.IsNullOrEmpty(path) ? part : $"{path}/{part}";
-            target = EnsureNode(target, prefix + path, part, 0).NavigationItems;
+            target = EnsureNode(target, prefix + path, part, groupOrder).NavigationItems;
         }
 
         return target;
@@ -165,7 +170,8 @@ internal sealed class NavigationFeatureSynchronizer
             var item = items[index];
             RemoveEmptyFeatureGroups(item.NavigationItems, cluster);
             if (item.NavigationItems.Count == 0
-                && item.Id.StartsWith($"{cluster.Runtime.Name}-crd-group-", StringComparison.Ordinal))
+                && (item.Id.StartsWith($"{cluster.Runtime.Name}-crd-group-", StringComparison.Ordinal)
+                    || item.Id.StartsWith($"{cluster.Runtime.Name}-feature-group-", StringComparison.Ordinal)))
             {
                 items.RemoveAt(index);
             }

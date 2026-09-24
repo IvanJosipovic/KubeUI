@@ -8,6 +8,7 @@ namespace KubeUI.Avalonia.Shell.Navigation;
 
 public enum NavigationFeaturePlacement
 {
+    Root,
     CustomResourceDefinitions
 }
 
