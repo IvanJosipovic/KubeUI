@@ -15,6 +15,7 @@ using KubeUI.Avalonia.Features.Resources.Properties.Controls;
 using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
 using KubeUI.Avalonia.Infrastructure.Presentation;
+using KubeUI.Avalonia.Styles;
 using KubeUI.Kubernetes;
 using LiveChartsCore;
 using LiveChartsCore.Defaults;
@@ -174,16 +175,9 @@ public sealed partial class MetricsControl : UserControl, IInitializeCluster, IN
             .IsVisible(this, x => x.ShowTimeRangeSelector)
             .ItemsSource(this, x => x.TimeRangeOptions)
             .SelectedItem(this, x => x.SelectedTimeRange, BindingMode.TwoWay)
+            .ToolTip_Tip(Assets.Resources.MetricsControl_TimeRangeLabel)
             .ItemTemplate(new FuncDataTemplate<MetricTimeRangeOption>((option, _) => new TextBlock().Text(option.Label)));
-
-        var timeRangeLabel = new Label
-        {
-            Content = Assets.Resources.MetricsControl_TimeRangeLabel!,
-            Target = timeRangeSelector,
-        }
-            .VerticalAlignment(VerticalAlignment.Center)
-            .IsVisible(this, x => x.ShowTimeRangeSelector);
-        AutomationProperties.SetLabeledBy(timeRangeSelector, timeRangeLabel);
+        AutomationProperties.SetName(timeRangeSelector, Assets.Resources.MetricsControl_TimeRangeLabel);
 
         var tabs = new ItemsControl()
             .ItemsSource(this, x => x.Tabs)
@@ -230,7 +224,7 @@ public sealed partial class MetricsControl : UserControl, IInitializeCluster, IN
                             .Orientation(Orientation.Horizontal)
                             .Spacing(10)
                             .IsVisible(this, x => x.ShowTimeRangeSelector)
-                            .Children(timeRangeLabel, timeRangeSelector),
+                            .Children(timeRangeSelector),
                         tabs),
                 new Border()
                     .Row(1)
@@ -1044,10 +1038,11 @@ public sealed partial class MetricPanelViewModel : ObservableObject, IDisposable
 {
     private static readonly TimeSpan s_defaultTimeWindow = TimeSpan.FromHours(1);
     private const float s_lineStrokeThickness = 1f;
+    private readonly Application? _application;
     private readonly Axis _yAxis = new()
     {
         LabelsPaint = CreateChartTextPaint(),
-        TextSize = 11,
+        TextSize = GetApplicationTextSize(),
     };
     private readonly Axis _xAxis;
 
@@ -1062,13 +1057,18 @@ public sealed partial class MetricPanelViewModel : ObservableObject, IDisposable
 
     public MetricPanelViewModel()
     {
+        _application = Application.Current;
         _xAxis = new DateTimeAxis(TimeSpan.FromMinutes(10), FormatChartTime)
         {
             LabelsPaint = CreateChartTextPaint(),
-            TextSize = 11,
+            TextSize = GetApplicationTextSize(),
         };
         XAxes = [_xAxis];
         YAxes = [_yAxis];
+        if (_application is not null)
+        {
+            _application.ResourcesChanged += Application_ResourcesChanged;
+        }
     }
 
     internal void MergeSeries(IReadOnlyList<MetricSeriesSnapshot> snapshots, bool preserveMissing = false)
@@ -1266,6 +1266,24 @@ public sealed partial class MetricPanelViewModel : ObservableObject, IDisposable
         };
     }
 
+    private static double GetApplicationTextSize()
+    {
+        var application = Application.Current;
+        return application?.TryGetResource(
+            Typography.AppFontSizeResourceKey,
+            application.ActualThemeVariant,
+            out var resource) == true && resource is double textSize
+            ? textSize
+            : Typography.DefaultAppFontSize;
+    }
+
+    private void Application_ResourcesChanged(object? sender, ResourcesChangedEventArgs e)
+    {
+        var textSize = GetApplicationTextSize();
+        _xAxis.TextSize = textSize;
+        _yAxis.TextSize = textSize;
+    }
+
     internal static string FormatChartTime(DateTime value)
     {
         return value.ToString("h:mm tt", CultureInfo.CurrentCulture);
@@ -1284,6 +1302,11 @@ public sealed partial class MetricPanelViewModel : ObservableObject, IDisposable
 
     public void Dispose()
     {
+        if (_application is not null)
+        {
+            _application.ResourcesChanged -= Application_ResourcesChanged;
+        }
+
         DisposePaint(_xAxis.LabelsPaint);
         DisposePaint(_yAxis.LabelsPaint);
 

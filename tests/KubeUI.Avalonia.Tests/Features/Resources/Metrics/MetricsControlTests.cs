@@ -225,22 +225,43 @@ public sealed class MetricsControlTests
     }
 
     [AvaloniaFact]
-    public void metrics_time_range_selector_has_a_visible_and_associated_label()
+    public void metrics_time_range_selector_uses_the_label_as_its_tooltip()
     {
         using var control = new MetricsControl();
 
         var content = control.Content.ShouldBeOfType<ExpandableSection>().Content.ShouldBeOfType<Grid>();
         var header = content.Children.OfType<StackPanel>().ShouldHaveSingleItem();
         var selectors = header.Children.OfType<StackPanel>().ShouldHaveSingleItem();
-        var label = selectors.Children.OfType<Label>().ShouldHaveSingleItem();
+        selectors.Children.OfType<Label>().ShouldBeEmpty();
         var selector = selectors.Children.OfType<ComboBox>().ShouldHaveSingleItem();
         var tabs = header.Children.OfType<ItemsControl>().ShouldHaveSingleItem();
 
-        label.Content.ShouldBe(AppResources.MetricsControl_TimeRangeLabel);
-        label.Target.ShouldBeSameAs(selector);
-        AutomationProperties.GetLabeledBy(selector).ShouldBeSameAs(label);
+        ToolTip.GetTip(selector).ShouldBe(AppResources.MetricsControl_TimeRangeLabel);
+        AutomationProperties.GetName(selector).ShouldBe(AppResources.MetricsControl_TimeRangeLabel);
         selectors.IsVisible.ShouldBeFalse();
         header.Children.IndexOf(tabs).ShouldBe(1);
+    }
+
+    [AvaloniaFact]
+    public void metric_panel_axis_text_size_tracks_application_font_size()
+    {
+        var application = Application.Current!;
+        var originalTextSize = application.Resources["KubeUIAppFontSize"];
+        using var panel = new MetricPanelViewModel { Title = "CPU" };
+
+        try
+        {
+            application.Resources["KubeUIAppFontSize"] = 19d;
+            Dispatcher.UIThread.RunJobs();
+
+            panel.XAxes.Single().TextSize.ShouldBe(19d);
+            panel.YAxes.Single().TextSize.ShouldBe(19d);
+        }
+        finally
+        {
+            application.Resources["KubeUIAppFontSize"] = originalTextSize;
+            Dispatcher.UIThread.RunJobs();
+        }
     }
 
     [AvaloniaFact]
