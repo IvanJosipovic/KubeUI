@@ -41,6 +41,7 @@
     <TrimmerRootAssembly Include="Xaml.Behaviors.Interactivity" /> <!-- Pod log editor EventTriggerBehavior and CallMethodAction. -->
     <TrimmerRootAssembly Include="dotacp.client" /> <!-- ACP client protocol dispatch. -->
     <TrimmerRootAssembly Include="dotacp.protocol" /> <!-- ACP message and data contracts. -->
+    <TrimmerRootAssembly Include="Newtonsoft.Json" /> <!-- ACP accepts host-provided CLR payload objects through its compatibility serializer. -->
     <TrimmerRootAssembly Include="JsonPathLINQ" /> <!-- Kubernetes JSONPath resource queries. -->
     <TrimmerRootAssembly Include="HanumanInstitute.MvvmDialogs.Avalonia" /> <!-- Runtime Avalonia dialog/view resolution. -->
     <TrimmerRootAssembly Include="Dock.Avalonia" /> <!-- Docking default templates and runtime view creation. -->

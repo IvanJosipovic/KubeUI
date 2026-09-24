@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -56,6 +57,10 @@ internal static class AcpJsonValue
         }
     }
 
+    [UnconditionalSuppressMessage(
+        "Trimming",
+        "IL2026",
+        Justification = "ACP compatibility payloads may be host-provided CLR objects; Desktop roots Newtonsoft.Json for this feature and the anonymous-object mapping has focused coverage.")]
     private static void WriteValue(Utf8JsonWriter writer, object value)
     {
         switch (value)
@@ -143,7 +148,8 @@ internal static class AcpJsonValue
                 writer.WriteEndArray();
                 return;
             default:
-                throw new NotSupportedException($"ACP JSON value type '{value.GetType().FullName}' is not supported.");
+                writer.WriteRawValue(JsonConvert.SerializeObject(value, Formatting.None));
+                return;
         }
     }
 
