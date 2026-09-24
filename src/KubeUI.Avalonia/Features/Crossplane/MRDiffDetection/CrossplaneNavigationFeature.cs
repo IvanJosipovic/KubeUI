@@ -11,7 +11,7 @@ internal static class CrossplaneNavigationFeature
         new NavigationFeatureDefinition<MRDiffDetectionViewModel>(
             FeatureId,
             Assets.Resources.MRDiffDetectionView_Title!,
-            [Assets.Resources.CrossplaneNavigationFeature_Root!],
+            [Assets.Resources.MRDiffDetectionView_NavigationGroup!],
             NavigationFeaturePlacement.Root,
             100,
             Icon.DataUsage,

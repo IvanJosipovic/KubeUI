@@ -2765,7 +2765,7 @@
     <value>MR Diff Detection</value>
     <comment/>
   </data>
-  <data name="CrossplaneNavigationFeature_Root" xml:space="preserve">
+  <data name="MRDiffDetectionView_NavigationGroup" xml:space="preserve">
     <value>Crossplane</value>
     <comment/>
   </data>
