@@ -8,6 +8,7 @@ namespace KubeUI.Avalonia.Features.Crossplane.MRDiffDetection;
 
 public sealed class CrossplaneProviderLogMonitor : IDisposable
 {
+    private const int InitialLogTailLines = 500;
     private readonly IPodLogSessionResolver _resolver;
     private readonly IPodLogStreamClient _streamClient;
     private readonly ILogger<CrossplaneProviderLogMonitor> _logger;
@@ -57,7 +58,7 @@ public sealed class CrossplaneProviderLogMonitor : IDisposable
         previousCancellation?.Cancel();
         try
         {
-            var state = _resolver.CreateState(provider, string.Empty, previous: false, timestamps: true, tailLines: int.MaxValue);
+            var state = _resolver.CreateState(provider, string.Empty, previous: false, timestamps: true, tailLines: InitialLogTailLines);
             var resolution = _resolver.TryResolve(cluster, state);
             var pods = resolution?.RelatedPods ?? [];
             if (pods.Count == 0)
@@ -113,7 +114,7 @@ public sealed class CrossplaneProviderLogMonitor : IDisposable
                     previous,
                     Timestamps: true,
                     Follow: !previous,
-                    TailLines: int.MaxValue);
+                    TailLines: InitialLogTailLines);
                 await using var stream = await _streamClient.OpenAsync(cluster, options, cancellationToken).ConfigureAwait(false);
                 using var reader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, leaveOpen: false);
                 while (await reader.ReadLineAsync(cancellationToken).ConfigureAwait(false) is { } line)

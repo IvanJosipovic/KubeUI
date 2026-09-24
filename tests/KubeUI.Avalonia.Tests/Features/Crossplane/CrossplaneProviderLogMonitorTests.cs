@@ -61,6 +61,7 @@ public sealed class CrossplaneProviderLogMonitorTests
         Assert.True(streamClient.OpenCount >= 3);
         Assert.Single(receivedLines);
         Assert.Contains("Diff detected", receivedLines.Single(), StringComparison.Ordinal);
+        Assert.All(streamClient.Options, options => Assert.Equal(500, options.TailLines));
     }
 
     [Fact]
@@ -89,6 +90,7 @@ public sealed class CrossplaneProviderLogMonitorTests
 
         Assert.Contains(streamClient.Options, options => options.Previous && !options.Follow);
         Assert.Contains(streamClient.Options, options => !options.Previous && options.Follow);
+        Assert.All(streamClient.Options, options => Assert.Equal(500, options.TailLines));
         Assert.Single(receivedLines);
     }
 
