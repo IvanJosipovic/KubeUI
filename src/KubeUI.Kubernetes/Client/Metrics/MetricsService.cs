@@ -23,9 +23,9 @@ public sealed partial class MetricsService : ObservableObject, IMetricsService, 
     private CancellationTokenSource? _lifecycleCancellationTokenSource;
     private PeriodicTimer? _metricsRefreshTimer;
     private CancellationTokenSource? _metricsRefreshCancellationTokenSource;
+    private Task? _metricsRefreshTask;
     private ResolvedPrometheusEndpoint? _resolvedPrometheusEndpoint;
     private IPrometheusProvider? _resolvedPrometheusProvider;
-    private MetricsServiceType _configuredMetricsServiceType = MetricsServiceType.None;
     private DateTimeOffset? _prometheusUnavailableUntilUtc;
     private bool _prometheusFailureLogged;
     private Dictionary<string, CachedMetricResult> _metricResultCache = new(StringComparer.Ordinal);
@@ -81,7 +81,6 @@ public sealed partial class MetricsService : ObservableObject, IMetricsService, 
 
         var settings = NormalizeLegacySettings(_settings.GetClusterMetricsSettings(cluster));
         var configuredType = settings.MetricsServiceType;
-        _configuredMetricsServiceType = configuredType;
         _logger.LogInformation(
             "Initializing metrics for cluster {Name}. Configured backend: {MetricsBackend}, configured Prometheus provider: {PrometheusProvider}.",
             cluster.Name,
@@ -112,8 +111,7 @@ public sealed partial class MetricsService : ObservableObject, IMetricsService, 
 
             if (configuredType == MetricsServiceType.Auto)
             {
-                _logger.LogInformation("Prometheus was not available for cluster {Name}. Falling back to Kubernetes Metrics Server because backend is set to Auto.", cluster.Name);
-                await StartKubernetesMetricsAsync(cluster, kube).ConfigureAwait(false);
+                _logger.LogInformation("Prometheus was not available for cluster {Name}; automatic fallback to Kubernetes Metrics Server is disabled.", cluster.Name);
             }
         }
     }
@@ -139,12 +137,33 @@ public sealed partial class MetricsService : ObservableObject, IMetricsService, 
         _lifecycleCancellationTokenSource?.Dispose();
         _lifecycleCancellationTokenSource = null;
 
-        _metricsRefreshCancellationTokenSource?.Cancel();
-        _metricsRefreshCancellationTokenSource?.Dispose();
+        var refreshCancellation = _metricsRefreshCancellationTokenSource;
+        refreshCancellation?.Cancel();
         _metricsRefreshCancellationTokenSource = null;
 
-        _metricsRefreshTimer?.Dispose();
+        var refreshTimer = _metricsRefreshTimer;
         _metricsRefreshTimer = null;
+        refreshTimer?.Dispose();
+
+        if (_metricsRefreshTask is { } refreshTask)
+        {
+            try
+            {
+                await refreshTask.ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) when (refreshCancellation?.IsCancellationRequested == true)
+            {
+            }
+            finally
+            {
+                _metricsRefreshTask = null;
+                refreshCancellation?.Dispose();
+            }
+        }
+        else
+        {
+            refreshCancellation?.Dispose();
+        }
 
         Task[] inflightRequests;
         lock (_metricsRequestSync)
@@ -176,7 +195,6 @@ public sealed partial class MetricsService : ObservableObject, IMetricsService, 
         NodeMetrics.Clear();
         IsMetricsAvailable = false;
         ActiveMetricsBackend = ActiveMetricsBackend.None;
-        _configuredMetricsServiceType = MetricsServiceType.None;
         _prometheusUnavailableUntilUtc = null;
         _prometheusFailureLogged = false;
         lock (_metricsRequestSync)
@@ -399,25 +417,30 @@ public sealed partial class MetricsService : ObservableObject, IMetricsService, 
         ActiveMetricsBackend = ActiveMetricsBackend.KubernetesMetricsServer;
         IsMetricsAvailable = true;
         _logger.LogInformation("Kubernetes Metrics Server metrics activated for cluster {Name}.", cluster.Name);
-        _metricsRefreshCancellationTokenSource = new CancellationTokenSource();
-        _metricsRefreshTimer = new PeriodicTimer(TimeSpan.FromSeconds(30));
+        var refreshCancellation = new CancellationTokenSource();
+        var refreshTimer = new PeriodicTimer(TimeSpan.FromSeconds(30));
+        _metricsRefreshCancellationTokenSource = refreshCancellation;
+        _metricsRefreshTimer = refreshTimer;
 
-        await SyncKubernetesMetricsAsync(cluster, _metricsRefreshCancellationTokenSource.Token).ConfigureAwait(false);
+        await SyncKubernetesMetricsAsync(cluster, refreshCancellation.Token).ConfigureAwait(false);
 
-        _ = Task.Run(async () =>
+        _metricsRefreshTask = Task.Run(async () =>
         {
             try
             {
-                while (_metricsRefreshTimer != null
-                    && await _metricsRefreshTimer.WaitForNextTickAsync(_metricsRefreshCancellationTokenSource.Token).ConfigureAwait(false))
+                while (await refreshTimer.WaitForNextTickAsync(refreshCancellation.Token).ConfigureAwait(false))
                 {
-                    await SyncKubernetesMetricsAsync(cluster, _metricsRefreshCancellationTokenSource.Token).ConfigureAwait(false);
+                    await SyncKubernetesMetricsAsync(cluster, refreshCancellation.Token).ConfigureAwait(false);
                 }
             }
-            catch (OperationCanceledException)
+            catch (OperationCanceledException) when (refreshCancellation.IsCancellationRequested)
             {
             }
-        }, _metricsRefreshCancellationTokenSource.Token);
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Kubernetes Metrics Server refresh loop failed for cluster {Name}.", cluster.Name);
+            }
+        }, refreshCancellation.Token);
     }
 
     private async Task<(ResolvedPrometheusEndpoint? Endpoint, IPrometheusProvider? Provider)> ResolvePrometheusEndpointAsync(
@@ -611,22 +634,6 @@ public sealed partial class MetricsService : ObservableObject, IMetricsService, 
             _logger.LogWarning(exception, "Prometheus metrics are temporarily unavailable for cluster {Name}. Suppressing Prometheus requests for {CooldownSeconds} seconds.", _cluster?.Name, (int)s_prometheusFailureCooldown.TotalSeconds);
         }
 
-        if (_configuredMetricsServiceType != MetricsServiceType.Auto
-            || _cluster?.Client is not k8s.Kubernetes kube
-            || ActiveMetricsBackend.Type != MetricsServiceType.Prometheus)
-        {
-            return;
-        }
-
-        try
-        {
-            _logger.LogInformation("Falling back to Kubernetes Metrics Server for cluster {Name} after Prometheus query failure.", _cluster.Name);
-            await StartKubernetesMetricsAsync(_cluster, kube).ConfigureAwait(false);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogDebug(ex, "Unable to fall back to Kubernetes Metrics Server for cluster {Name}", _cluster?.Name);
-        }
     }
 
     private static IReadOnlyList<MetricSeries> NormalizeResultSet(string metricName, PrometheusClientQueryRangeResponse response, int frames)

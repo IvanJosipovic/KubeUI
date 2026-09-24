@@ -63,14 +63,17 @@ internal static class ResourceMetricsCatalog
     {
         var options = new Dictionary<string, string>(StringComparer.Ordinal)
         {
-            ["instance"] = Regex.Escape(node.Name()),
+            ["instance"] = GetNodeInstancePattern(node),
+            ["node"] = Regex.Escape(node.Name()),
             ["mountpoints"] = ".*",
         };
 
+        var nodeNames = GetNodeInstanceNames(node);
         Func<MetricSeries, bool> filter = series =>
-            series.Labels.TryGetValue("node", out var nodeName) && nodeName == node.Name()
-            || series.Labels.TryGetValue("instance", out var instance) &&
-                (instance == node.Name() || instance.StartsWith(node.Name() + ":", StringComparison.Ordinal));
+            series.Labels.TryGetValue("node", out var nodeName) && string.Equals(nodeName, node.Name(), StringComparison.Ordinal)
+            || series.Labels.TryGetValue("instance", out var instance) && nodeNames.Any(name =>
+                string.Equals(instance, name, StringComparison.OrdinalIgnoreCase)
+                || instance.StartsWith(name + ":", StringComparison.OrdinalIgnoreCase));
 
         return new ResourceMetricsDescriptor(
             [
@@ -88,6 +91,34 @@ internal static class ResourceMetricsCatalog
                 ]),
             ],
             Assets.Resources.Metrics_NoPrometheusNode);
+    }
+
+    internal static string GetNodeInstancePattern(V1Node node)
+    {
+        return string.Join("|", GetNodeInstanceNames(node).Select(Regex.Escape));
+    }
+
+    private static string[] GetNodeInstanceNames(V1Node node)
+    {
+        List<string> names = [];
+        var nodeName = node.Name();
+        if (!string.IsNullOrWhiteSpace(nodeName))
+        {
+            names.Add(nodeName);
+        }
+
+        if (node.Status?.Addresses != null)
+        {
+            foreach (var address in node.Status.Addresses)
+            {
+                if (!string.IsNullOrWhiteSpace(address.Address) && !names.Contains(address.Address, StringComparer.OrdinalIgnoreCase))
+                {
+                    names.Add(address.Address);
+                }
+            }
+        }
+
+        return names.ToArray();
     }
 
     private static ResourceMetricsDescriptor CreateNamespaceDescriptor(V1Namespace ns)

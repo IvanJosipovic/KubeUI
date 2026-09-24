@@ -180,7 +180,7 @@ public sealed class MetricsServiceTests
     }
 
     [Fact]
-    public async Task InitializeAsync_auto_falls_back_to_metrics_server_when_prometheus_is_unavailable()
+    public async Task InitializeAsync_auto_keeps_metrics_disabled_when_prometheus_is_unavailable()
     {
         using var api = CreateMetricsServerApi();
         var settings = new TestClusterSettingsStore(new ClusterMetricsSettings
@@ -192,8 +192,8 @@ public sealed class MetricsServiceTests
 
         await service.InitializeAsync(cluster);
 
-        service.IsMetricsAvailable.ShouldBeTrue();
-        service.ActiveMetricsBackend.ShouldBe(ActiveMetricsBackend.KubernetesMetricsServer);
+        service.IsMetricsAvailable.ShouldBeFalse();
+        service.ActiveMetricsBackend.ShouldBe(ActiveMetricsBackend.None);
     }
 
     [Fact]

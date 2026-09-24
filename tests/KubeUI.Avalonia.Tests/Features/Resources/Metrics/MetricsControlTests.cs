@@ -8,6 +8,7 @@ using Avalonia.VisualTree;
 using k8s;
 using k8s.Models;
 using KubeUI.Avalonia.Features.Resources.Metrics.Controls;
+using KubeUI.Avalonia.Features.Resources.Metrics;
 using KubeUI.Avalonia.Features.Resources.Properties.Controls;
 using KubeUI.Avalonia.Infrastructure.Threading;
 using Microsoft.Extensions.Logging;
@@ -30,11 +31,27 @@ using JobPropertiesView = KubeUI.Avalonia.Resources.Workloads.v1.Job.PropertiesV
 using PodPropertiesView = KubeUI.Avalonia.Resources.Workloads.v1.Pod.PropertiesView;
 using ReplicaSetPropertiesView = KubeUI.Avalonia.Resources.Workloads.v1.ReplicaSet.PropertiesView;
 using StatefulSetPropertiesView = KubeUI.Avalonia.Resources.Workloads.v1.StatefulSet.PropertiesView;
+using NodeMetricsHistoryCPUCellView = KubeUI.Avalonia.Resources.Core.v1.Node.MetricsHistoryCPUCellView;
 
 namespace KubeUI.Avalonia.Tests.Features.Resources.Metrics;
 
 public sealed class MetricsControlTests
 {
+    [Fact]
+    public void node_metrics_include_status_addresses_in_instance_selector()
+    {
+        var node = new V1Node
+        {
+            Metadata = new V1ObjectMeta { Name = "node-a" },
+            Status = new V1NodeStatus
+            {
+                Addresses = [new V1NodeAddress { Type = "InternalIP", Address = "10.0.0.1" }],
+            },
+        };
+
+        ResourceMetricsCatalog.GetNodeInstancePattern(node).ShouldBe("node-a|10\\.0\\.0\\.1");
+    }
+
     [AvaloniaFact]
     public void csharp_view_builds_without_axaml()
     {
@@ -85,7 +102,7 @@ public sealed class MetricsControlTests
             new MetricSeriesSnapshot("Usage", [new DateTimePoint(timestamp, 0.1)]),
         ]);
 
-        var series = panel.Series.ShouldHaveSingleItem().ShouldBeOfType<LineSeries<DateTimePoint>>();
+        var series = panel.Series.ShouldHaveSingleItem().ShouldBeOfType<StepLineSeries<DateTimePoint>>();
         series.XToolTipLabelFormatter.ShouldNotBeNull();
         series.YToolTipLabelFormatter.ShouldNotBeNull();
     }
@@ -111,7 +128,7 @@ public sealed class MetricsControlTests
             new MetricSeriesSnapshot("Usage", [new DateTimePoint(firstTime, 1), new DateTimePoint(secondTime, 2)]),
         ]);
 
-        var series = panel.Series.ShouldHaveSingleItem().ShouldBeOfType<LineSeries<DateTimePoint>>();
+        var series = panel.Series.ShouldHaveSingleItem().ShouldBeOfType<StepLineSeries<DateTimePoint>>();
         var values = series.Values.ShouldBeOfType<ObservableCollection<DateTimePoint>>();
         var firstPoint = values[0];
         var stroke = series.Stroke;
@@ -129,6 +146,33 @@ public sealed class MetricsControlTests
         values.Count.ShouldBe(3);
         series.Stroke.ShouldBeSameAs(stroke);
         series.Fill.ShouldBeSameAs(fill);
+    }
+
+    [AvaloniaFact]
+    public void metric_refresh_removes_stale_points_without_replacing_retained_points()
+    {
+        using var panel = new MetricPanelViewModel { Title = "CPU" };
+        var firstTime = new DateTime(2026, 1, 2, 15, 0, 0, DateTimeKind.Local);
+        var staleTime = firstTime.AddMinutes(1);
+        var latestTime = firstTime.AddMinutes(2);
+
+        panel.MergeSeries(
+        [
+            new MetricSeriesSnapshot("Usage", [new DateTimePoint(firstTime, 1), new DateTimePoint(staleTime, 2)]),
+        ]);
+        var values = panel.Series.ShouldHaveSingleItem().ShouldBeOfType<StepLineSeries<DateTimePoint>>()
+            .Values.ShouldBeOfType<ObservableCollection<DateTimePoint>>();
+        var retainedPoint = values[0];
+
+        panel.MergeSeries(
+        [
+            new MetricSeriesSnapshot("Usage", [new DateTimePoint(firstTime, 1.5), new DateTimePoint(latestTime, 3)]),
+        ]);
+
+        values.Count.ShouldBe(2);
+        values[0].ShouldBeSameAs(retainedPoint);
+        values[0].Value.ShouldBe(1.5);
+        values[1].DateTime.ShouldBe(latestTime);
     }
 
     [AvaloniaFact]
@@ -171,7 +215,7 @@ public sealed class MetricsControlTests
             new MetricSeriesSnapshot("Limits", [new DateTimePoint(DateTime.UtcNow, 0.3)]),
         ]);
 
-        var series = panel.Series.OfType<LineSeries<DateTimePoint>>().ToArray();
+        var series = panel.Series.OfType<StepLineSeries<DateTimePoint>>().ToArray();
         var usage = series.Single(item => item.Name == AppResources.Metrics_Usage);
         var requests = series.Single(item => item.Name == AppResources.Metrics_Requests);
         var limits = series.Single(item => item.Name == AppResources.Metrics_Limits);
@@ -322,7 +366,7 @@ public sealed class MetricsControlTests
             TestContext.Current.CancellationToken,
             beforePoll: () => Dispatcher.UIThread.RunJobs());
 
-        var series = control.SelectedPanel!.Series.ShouldHaveSingleItem().ShouldBeOfType<LineSeries<DateTimePoint>>();
+        var series = control.SelectedPanel!.Series.ShouldHaveSingleItem().ShouldBeOfType<StepLineSeries<DateTimePoint>>();
         var points = series.Values!.OfType<DateTimePoint>().ToArray();
         points.ShouldContain(point => point.DateTime == firstTimestamp.LocalDateTime && point.Value == 1.25);
         points.ShouldContain(point => point.DateTime == firstTimestamp.AddMinutes(1).LocalDateTime && point.Value == 2.5);
@@ -359,10 +403,49 @@ public sealed class MetricsControlTests
             beforePoll: () => Dispatcher.UIThread.RunJobs());
 
         queryClient.Queries.ShouldNotBeEmpty();
-        queryClient.Queries.ShouldContain(query => query.Contains("instance=~\"node-a", StringComparison.Ordinal));
+        queryClient.Queries.ShouldContain(query => query.Contains("instance=~\"(node-a)", StringComparison.Ordinal));
+        queryClient.Queries.ShouldContain(query => query.Contains("node_cpu_seconds_total", StringComparison.Ordinal)
+            && query.Contains("by (instance)", StringComparison.Ordinal));
         queryClient.Queries.Where(query => query.Contains("kube_node_status_", StringComparison.Ordinal))
             .ShouldAllBe(query => query.Contains("node=~\"node-a\"", StringComparison.Ordinal));
         control.SelectedPanel!.Series.Count.ShouldBe(3);
+    }
+
+    [AvaloniaFact]
+    public async Task node_cpu_history_cell_renders_prometheus_instance_series()
+    {
+        var timestamp = DateTimeOffset.UtcNow.AddMinutes(-1);
+        var queryClient = new FakePrometheusQueryClient
+        {
+            ResponseFactory = query => query.Contains("node_cpu_seconds_total", StringComparison.Ordinal)
+                ? CreateNodeSuccessResponse(timestamp, "instance", "10.0.0.1:9100")
+                : CreateEmptyResponse(),
+        };
+        var node = new V1Node
+        {
+            Metadata = Metadata("node-a"),
+            Status = new V1NodeStatus
+            {
+                Addresses = [new V1NodeAddress { Type = "InternalIP", Address = "10.0.0.1" }],
+                Allocatable = new Dictionary<string, ResourceQuantity>(StringComparer.Ordinal) { ["cpu"] = new("2") },
+            },
+        };
+        await using var fixture = await MetricsControlFixture.CreateAsync(initializePrometheus: true, queryClient);
+        var cell = fixture.CreateNodeCpuHistoryCell(node);
+        using var window = Application.Current.CreateTestWindow(content: cell);
+
+        window.Show();
+        cell.Initialize(fixture.Workspace);
+
+        await TestWait.UntilAsync(
+            () => queryClient.QueryCalls >= 2
+                && cell.GetVisualDescendants().OfType<Border>().Any(border => border.Height > 0),
+            5000,
+            TestContext.Current.CancellationToken,
+            beforePoll: () => Dispatcher.UIThread.RunJobs());
+
+        queryClient.Queries.ShouldContain(query => query.Contains("node_cpu_seconds_total", StringComparison.Ordinal)
+            && query.Contains("by (instance)", StringComparison.Ordinal));
     }
 
     private static PrometheusClientQueryRangeResponse CreateNodeSuccessResponse(DateTimeOffset timestamp, string labelName, string labelValue)
@@ -421,16 +504,16 @@ public sealed class MetricsControlTests
             beforePoll: () => Dispatcher.UIThread.RunJobs());
 
         var seriesNames = control.SelectedPanel!.Series
-            .OfType<LineSeries<DateTimePoint>>()
+            .OfType<StepLineSeries<DateTimePoint>>()
             .Select(static series => series.Name)
             .ToArray();
         seriesNames.ShouldBe([AppResources.Metrics_Requests, AppResources.Metrics_Usage]);
 
         var requestSeries = control.SelectedPanel.Series
-            .OfType<LineSeries<DateTimePoint>>()
+            .OfType<StepLineSeries<DateTimePoint>>()
             .Single(series => series.Name == AppResources.Metrics_Requests);
         var usageSeries = control.SelectedPanel.Series
-            .OfType<LineSeries<DateTimePoint>>()
+            .OfType<StepLineSeries<DateTimePoint>>()
             .Single(series => series.Name == AppResources.Metrics_Usage);
         usageSeries.ZIndex.ShouldBe(requestSeries.ZIndex);
         usageSeries.Fill.ShouldNotBeNull();
@@ -472,7 +555,7 @@ public sealed class MetricsControlTests
             .OfType<ItemsControl>()
             .Single(items => ReferenceEquals(items.ItemsSource, control.Tabs));
         tabItems.Bounds.Left.ShouldBe(0d);
-        var series = control.SelectedPanel!.Series.ShouldHaveSingleItem().ShouldBeOfType<LineSeries<DateTimePoint>>();
+        var series = control.SelectedPanel!.Series.ShouldHaveSingleItem().ShouldBeOfType<StepLineSeries<DateTimePoint>>();
         var points = series.Values!.OfType<DateTimePoint>().ToArray();
         points.Length.ShouldBe(2);
         points.Select(static point => point.Value).ShouldBe([0.1d, 0.25d]);
@@ -501,7 +584,7 @@ public sealed class MetricsControlTests
             TestContext.Current.CancellationToken,
             beforePoll: () => Dispatcher.UIThread.RunJobs());
 
-        var series = control.SelectedPanel!.Series.ShouldHaveSingleItem().ShouldBeOfType<LineSeries<DateTimePoint>>();
+        var series = control.SelectedPanel!.Series.ShouldHaveSingleItem().ShouldBeOfType<StepLineSeries<DateTimePoint>>();
         var points = series.Values!.OfType<DateTimePoint>().ToArray();
         points.Length.ShouldBe(2);
         points.Select(static point => point.Value).ShouldBe([0.2d, 0.4d]);
@@ -529,7 +612,7 @@ public sealed class MetricsControlTests
             TestContext.Current.CancellationToken,
             beforePoll: () => Dispatcher.UIThread.RunJobs());
 
-        var series = control.SelectedPanel!.Series.ShouldHaveSingleItem().ShouldBeOfType<LineSeries<DateTimePoint>>();
+        var series = control.SelectedPanel!.Series.ShouldHaveSingleItem().ShouldBeOfType<StepLineSeries<DateTimePoint>>();
         var points = series.Values!.OfType<DateTimePoint>().ToArray();
         points.Length.ShouldBe(2);
         points.Select(static point => point.Value).ShouldBe([0.1d, 0.25d]);
@@ -562,7 +645,7 @@ public sealed class MetricsControlTests
 
         var points = control.SelectedPanel!.Series
             .ShouldHaveSingleItem()
-            .ShouldBeOfType<LineSeries<DateTimePoint>>()
+            .ShouldBeOfType<StepLineSeries<DateTimePoint>>()
             .Values!
             .OfType<DateTimePoint>()
             .ToArray();
@@ -574,7 +657,7 @@ public sealed class MetricsControlTests
             .Single(tab => tab.Title == AppResources.Metrics_Memory)
             .Panels.ShouldHaveSingleItem()
             .Series.ShouldHaveSingleItem()
-            .ShouldBeOfType<LineSeries<DateTimePoint>>()
+            .ShouldBeOfType<StepLineSeries<DateTimePoint>>()
             .Values!
             .OfType<DateTimePoint>()
             .ToArray();
@@ -908,6 +991,14 @@ public sealed class MetricsControlTests
             return new MetricsControl
             {
                 DataContext = pod,
+            };
+        }
+
+        public NodeMetricsHistoryCPUCellView CreateNodeCpuHistoryCell(V1Node node)
+        {
+            return new NodeMetricsHistoryCPUCellView(_refreshClock, TimeProvider.System)
+            {
+                DataContext = node,
             };
         }
 

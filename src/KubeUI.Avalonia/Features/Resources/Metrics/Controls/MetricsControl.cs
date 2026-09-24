@@ -1077,7 +1077,7 @@ public sealed partial class MetricPanelViewModel : ObservableObject, IDisposable
         {
             for (var i = Series.Count - 1; i >= 0; i--)
             {
-                if (Series[i] is not LineSeries<DateTimePoint> line
+                if (Series[i] is not StepLineSeries<DateTimePoint> line
                     || !snapshots.Any(x => string.Equals(x.Name, line.Name, StringComparison.Ordinal)))
                 {
                     (Series[i] as IDisposable)?.Dispose();
@@ -1090,12 +1090,12 @@ public sealed partial class MetricPanelViewModel : ObservableObject, IDisposable
         {
             var snapshot = snapshots[index];
             var existing = Series
-                .OfType<LineSeries<DateTimePoint>>()
+                .OfType<StepLineSeries<DateTimePoint>>()
                 .FirstOrDefault(x => string.Equals(x.Name, snapshot.Name, StringComparison.Ordinal));
 
             if (existing == null)
             {
-                existing = new LineSeries<DateTimePoint>
+                existing = new StepLineSeries<DateTimePoint>
                 {
                     Name = snapshot.Name,
                     GeometrySize = 0,
@@ -1103,7 +1103,7 @@ public sealed partial class MetricPanelViewModel : ObservableObject, IDisposable
                     YToolTipLabelFormatter = static point => FormatTooltipValue(point.Coordinate.PrimaryValue),
                     Values = new ObservableCollection<DateTimePoint>(snapshot.Points),
                 };
-                ApplyLineSeriesStyle(existing, index);
+                ApplyStepLineSeriesStyle(existing, index);
                 Series.Insert(index, existing);
             }
             else
@@ -1121,7 +1121,7 @@ public sealed partial class MetricPanelViewModel : ObservableObject, IDisposable
         UpdateXAxisLimits(Series);
     }
 
-    private static void UpdateSeriesValues(LineSeries<DateTimePoint> series, IReadOnlyList<DateTimePoint> points)
+    private static void UpdateSeriesValues(StepLineSeries<DateTimePoint> series, IReadOnlyList<DateTimePoint> points)
     {
         if (series.Values is not ObservableCollection<DateTimePoint> values)
         {
@@ -1194,7 +1194,7 @@ public sealed partial class MetricPanelViewModel : ObservableObject, IDisposable
     private void UpdateYAxisLimits(IEnumerable<ISeries> series)
     {
         var values = series
-            .OfType<LineSeries<DateTimePoint>>()
+            .OfType<StepLineSeries<DateTimePoint>>()
             .SelectMany(x => x.Values?.OfType<DateTimePoint>() ?? [])
             .Where(x => x.Value.HasValue)
             .Select(x => x.Value!.Value)
@@ -1227,7 +1227,7 @@ public sealed partial class MetricPanelViewModel : ObservableObject, IDisposable
     private void UpdateXAxisLimits(IEnumerable<ISeries> series)
     {
         var timestamps = series
-            .OfType<LineSeries<DateTimePoint>>()
+            .OfType<StepLineSeries<DateTimePoint>>()
             .SelectMany(x => x.Values?.OfType<DateTimePoint>() ?? [])
             .Select(x => x.DateTime)
             .Where(x => x != default)
@@ -1271,7 +1271,7 @@ public sealed partial class MetricPanelViewModel : ObservableObject, IDisposable
         return value.ToString("h:mm tt", CultureInfo.CurrentCulture);
     }
 
-    private static void ApplyLineSeriesStyle(LineSeries<DateTimePoint> series, int index)
+    private static void ApplyStepLineSeriesStyle(StepLineSeries<DateTimePoint> series, int index)
     {
         var palette = Application.Current?.ActualThemeVariant == ThemeVariant.Light
             ? ColorPalletes.MaterialDesign500
@@ -1279,7 +1279,7 @@ public sealed partial class MetricPanelViewModel : ObservableObject, IDisposable
         var color = palette[index % palette.Length].AsSKColor();
 
         series.Stroke = new SolidColorPaint(color, s_lineStrokeThickness);
-        series.Fill = new SolidColorPaint(color.WithAlpha(50));
+        series.Fill = new SolidColorPaint(color.WithAlpha(5));
     }
 
     public void Dispose()

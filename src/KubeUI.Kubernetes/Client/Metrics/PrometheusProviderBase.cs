@@ -50,22 +50,26 @@ public abstract class PrometheusProviderBase : IPrometheusProvider
     protected virtual string BuildNodeQuery(string queryName, IReadOnlyDictionary<string, string> options)
     {
         var instance = GetOption(options, "instance", ".*");
+        var node = GetOption(options, "node", instance);
         var mountpoints = GetOption(options, "mountpoints", "^/$");
+        var instanceSelector = EscapePrometheusString(instance);
+        var nodeSelector = EscapePrometheusString(node);
+        var mountpointSelector = EscapePrometheusString(mountpoints);
 
         return queryName switch
         {
-            "cpuUsage" => $$"""sum(rate(node_cpu_seconds_total{instance=~"{{instance}}(:[0-9]+)?",mode=~"user|system"}[{{GetRateAccuracy(options)}}])) by (node)""",
-            "cpuCapacity" => $$"""sum(kube_node_status_capacity{node=~"{{instance}}",resource="cpu"}) by (node)""",
-            "cpuAllocatableCapacity" => $$"""sum(kube_node_status_allocatable{node=~"{{instance}}",resource="cpu"}) by (node)""",
-            "memoryUsage" => $$"""sum((node_memory_MemTotal_bytes{instance=~"{{instance}}"} - (node_memory_MemFree_bytes{instance=~"{{instance}}"} + node_memory_Buffers_bytes{instance=~"{{instance}}"} + node_memory_Cached_bytes{instance=~"{{instance}}"}))) by (instance)""",
+            "cpuUsage" => $$"""sum(rate(node_cpu_seconds_total{instance=~"({{instanceSelector}})(:[0-9]+)?",mode=~"user|system"}[{{GetRateAccuracy(options)}}])) by (instance)""",
+            "cpuCapacity" => $$"""sum(kube_node_status_capacity{node=~"{{nodeSelector}}",resource="cpu"}) by (node)""",
+            "cpuAllocatableCapacity" => $$"""sum(kube_node_status_allocatable{node=~"{{nodeSelector}}",resource="cpu"}) by (node)""",
+            "memoryUsage" => $$"""sum((node_memory_MemTotal_bytes{instance=~"{{instanceSelector}}"} - (node_memory_MemFree_bytes{instance=~"{{instanceSelector}}"} + node_memory_Buffers_bytes{instance=~"{{instanceSelector}}"} + node_memory_Cached_bytes{instance=~"{{instanceSelector}}"}))) by (instance)""",
             "workloadMemoryUsage" => """sum(container_memory_working_set_bytes{image!="",pod!=""}) by (node)""",
-            "memoryCapacity" => $$"""sum(kube_node_status_capacity{node=~"{{instance}}",resource="memory"}) by (node)""",
-            "memoryAllocatableCapacity" => $$"""sum(kube_node_status_allocatable{node=~"{{instance}}",resource="memory"}) by (node)""",
+            "memoryCapacity" => $$"""sum(kube_node_status_capacity{node=~"{{nodeSelector}}",resource="memory"}) by (node)""",
+            "memoryAllocatableCapacity" => $$"""sum(kube_node_status_allocatable{node=~"{{nodeSelector}}",resource="memory"}) by (node)""",
             "podUsage" => """sum(kube_pod_info) by (node)""",
             "podCapacity" => """sum(kube_node_status_capacity{resource="pods"}) by (node)""",
             "podAllocatableCapacity" => """sum(kube_node_status_allocatable{resource="pods"}) by (node)""",
-            "fsSize" => $$"""sum(node_filesystem_size_bytes{mountpoint=~"{{mountpoints}}"} * on (pod,namespace) group_left(node) kube_pod_info) by (node)""",
-            "fsUsage" => $$"""sum((node_filesystem_size_bytes{mountpoint=~"{{mountpoints}}"} - node_filesystem_avail_bytes{mountpoint=~"{{mountpoints}}"}) * on (pod, namespace) group_left(node) kube_pod_info) by (node)""",
+            "fsSize" => $$"""sum(node_filesystem_size_bytes{mountpoint=~"{{mountpointSelector}}"} * on (pod,namespace) group_left(node) kube_pod_info) by (node)""",
+            "fsUsage" => $$"""sum((node_filesystem_size_bytes{mountpoint=~"{{mountpointSelector}}"} - node_filesystem_avail_bytes{mountpoint=~"{{mountpointSelector}}"}) * on (pod, namespace) group_left(node) kube_pod_info) by (node)""",
             _ => throw new InvalidOperationException($"Unsupported node query '{queryName}'."),
         };
     }
@@ -122,8 +126,8 @@ public abstract class PrometheusProviderBase : IPrometheusProvider
 
         return queryName switch
         {
-            "bytesSentSuccess" => BytesSent(rateAccuracy, ingress, ns, "^2\\\\d*"),
-            "bytesSentFailure" => BytesSent(rateAccuracy, ingress, ns, "^5\\\\d*"),
+            "bytesSentSuccess" => BytesSent(rateAccuracy, ingress, ns, "^2[0-9]*"),
+            "bytesSentFailure" => BytesSent(rateAccuracy, ingress, ns, "^5[0-9]*"),
             "requestDurationSeconds" => $$"""sum(rate(nginx_ingress_controller_request_duration_seconds_sum{ingress="{{ingress}}", namespace="{{ns}}"}[{{rateAccuracy}}])) by (ingress, namespace)""",
             "responseDurationSeconds" => $$"""sum(rate(nginx_ingress_controller_response_duration_seconds_sum{ingress="{{ingress}}", namespace="{{ns}}"}[{{rateAccuracy}}])) by (ingress, namespace)""",
             _ => throw new InvalidOperationException($"Unsupported ingress query '{queryName}'."),
@@ -202,6 +206,12 @@ public abstract class PrometheusProviderBase : IPrometheusProvider
 
         return prefix.StartsWith('/') ? prefix.TrimEnd('/') : "/" + prefix.TrimEnd('/');
     }
+
+    private static string EscapePrometheusString(string value) => value
+        .Replace("\\", "\\\\", StringComparison.Ordinal)
+        .Replace("\"", "\\\"", StringComparison.Ordinal)
+        .Replace("\n", "\\n", StringComparison.Ordinal)
+        .Replace("\r", "\\r", StringComparison.Ordinal);
 
     private static string BytesSent(string rateAccuracy, string ingress, string ns, string statuses)
     {

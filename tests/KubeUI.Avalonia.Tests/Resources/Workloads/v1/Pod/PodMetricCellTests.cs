@@ -143,11 +143,8 @@ public sealed class PodMetricCellTests
         MetricBars(cpuCell).Any(bar => ToolTip.GetTip(bar)?.ToString()?.Contains("0.5c", StringComparison.Ordinal) == true).ShouldBeTrue();
         MetricBars(memoryCell).Any(bar => ToolTip.GetTip(bar)?.ToString()?.Contains("512", StringComparison.Ordinal) == true).ShouldBeTrue();
         queryClient.QueryTexts.ShouldContain(query =>
-            query.Contains("instance=~\"node-a(:[0-9]+)?\"", StringComparison.Ordinal)
-            && query.Contains("by (instance)", StringComparison.Ordinal));
-        queryClient.QueryTexts.ShouldContain(query =>
             query.Contains("node_cpu_seconds_total", StringComparison.Ordinal)
-            && query.Contains("instance=~\"node-a(:[0-9]+)?\"", StringComparison.Ordinal));
+            && query.Contains("instance=~\"(node-a|10\\\\.0\\\\.0\\\\.1)(:[0-9]+)?\"", StringComparison.Ordinal));
     }
 
     [AvaloniaFact]

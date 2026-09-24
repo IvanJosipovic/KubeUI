@@ -77,9 +77,33 @@ public abstract class NodeMetricsHistoryCellBase : MetricsHistoryCellBase<V1Node
     {
         Dictionary<string, string> options = new(StringComparer.Ordinal)
         {
-            ["instance"] = System.Text.RegularExpressions.Regex.Escape(node.Name() ?? string.Empty),
+            ["instance"] = GetNodeInstancePattern(node),
+            ["node"] = System.Text.RegularExpressions.Regex.Escape(node.Name() ?? string.Empty),
         };
         return CreateMetricRequest(MetricCategory.Nodes, options, end);
+    }
+
+    private static string GetNodeInstancePattern(V1Node node)
+    {
+        List<string> names = [];
+        if (!string.IsNullOrWhiteSpace(node.Name()))
+        {
+            names.Add(node.Name());
+        }
+
+        if (node.Status?.Addresses != null)
+        {
+            foreach (var address in node.Status.Addresses)
+            {
+                if (!string.IsNullOrWhiteSpace(address.Address)
+                    && !names.Contains(address.Address, StringComparer.OrdinalIgnoreCase))
+                {
+                    names.Add(address.Address);
+                }
+            }
+        }
+
+        return string.Join("|", names.Select(System.Text.RegularExpressions.Regex.Escape));
     }
 
     protected override double? GetMetricLimit(V1Node node)
