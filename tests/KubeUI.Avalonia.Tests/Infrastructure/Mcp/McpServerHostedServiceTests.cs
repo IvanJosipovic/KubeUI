@@ -79,7 +79,7 @@ public sealed class McpServerHostTests
             McpServerEnabled = true,
             McpServerPort = port
         };
-        using var host = Program.CreateStartedHost([], includeOptionalServices: true,
+        using var host = Program.CreateStartedHost([], includeOptionalServices: false,
             mcpPortOverride: port, mcpEnabledOverride: true);
 
         try
