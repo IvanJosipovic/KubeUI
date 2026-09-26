@@ -1,3 +1,4 @@
+using KubeUI.Avalonia.Infrastructure.DataGrid;
 using Avalonia.Data.Converters;
 using k8s.Models;
 using KubeUI.Avalonia.Features.Resources.Properties.Controls;
@@ -16,14 +17,14 @@ public sealed class V1EventConfig(IServiceProvider serviceProvider) : ResourceCo
     public override IList<IResourceListColumn> Columns()
     {
         return [
-            new ResourceListColumn<Corev1Event, string>()
+            new DataGridValueColumn<Corev1Event, string>()
             {
                 Key = "type",
                 Name = Assets.Resources.V1EventConfig_Type,
                 Field = x => x?.Type ?? "",
                 Width = nameof(DataGridLengthUnitType.SizeToCells)
             },
-            new ResourceListColumn<Corev1Event, string>()
+            new DataGridValueColumn<Corev1Event, string>()
             {
                 Key = "message",
                 Name = Assets.Resources.V1EventConfig_Message,
@@ -31,28 +32,28 @@ public sealed class V1EventConfig(IServiceProvider serviceProvider) : ResourceCo
                 Width = "4*"
             },
             NamespaceColumn(),
-            new ResourceListColumn<Corev1Event, string>()
+            new DataGridValueColumn<Corev1Event, string>()
             {
                 Key = "involved-object",
                 Name = Assets.Resources.V1EventConfig_Involved_Object,
                 Field = x => x?.InvolvedObject?.Name ?? "",
                 Width = "*"
             },
-            new ResourceListColumn<Corev1Event, string>()
+            new DataGridValueColumn<Corev1Event, string>()
             {
                 Key = "source",
                 Name = Assets.Resources.V1EventConfig_Source,
                 Field = x => x?.Source?.Component ?? (x?.ReportingComponent) ?? "",
                 Width = "*"
             },
-            new ResourceListColumn<Corev1Event, int>()
+            new DataGridValueColumn<Corev1Event, int>()
             {
                 Key = "count",
                 Name = Assets.Resources.V1EventConfig_Count,
                 Field = x => x?.Count ?? 0,
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },
-            new ResourceListColumn<Corev1Event, DateTime?>()
+            new DataGridValueColumn<Corev1Event, DateTime?>()
             {
                 Key = "last-seen",
                 Name = Assets.Resources.V1EventConfig_Last_Seen,
@@ -82,3 +83,6 @@ public sealed class V1EventConfig(IServiceProvider serviceProvider) : ResourceCo
                 })))
     ];
 }
+
+
+

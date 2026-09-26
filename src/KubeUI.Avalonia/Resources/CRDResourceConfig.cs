@@ -3,6 +3,7 @@ using Humanizer;
 using JsonPathLINQ;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
+using KubeUI.Avalonia.Infrastructure.DataGrid;
 using KubeUI.Kubernetes;
 
 namespace KubeUI.Avalonia.Resources;
@@ -94,13 +95,13 @@ public sealed class CRDResourceConfig : ResourceConfigBase<GenericKubernetesObje
         _columns.Add(AgeColumn());
     }
 
-    private static ResourceListColumn<GenericKubernetesObject, TValue?> CreateColumn<TValue>(
+    private static DataGridValueColumn<GenericKubernetesObject, TValue?> CreateColumn<TValue>(
         string name,
         string jsonPath)
         where TValue : struct
     {
         var getter = JsonPath.GetExpression<GenericKubernetesObject, TValue?>(jsonPath, addNullChecks: true).Compile();
-        return new ResourceListColumn<GenericKubernetesObject, TValue?>
+        return new DataGridValueColumn<GenericKubernetesObject, TValue?>
         {
             Key = CreateColumnKey(name),
             Name = name,
@@ -108,12 +109,12 @@ public sealed class CRDResourceConfig : ResourceConfigBase<GenericKubernetesObje
         };
     }
 
-    private static ResourceListColumn<GenericKubernetesObject, string> CreateStringColumn(
+    private static DataGridValueColumn<GenericKubernetesObject, string> CreateStringColumn(
         string name,
         string jsonPath)
     {
         var getter = JsonPath.GetExpression<GenericKubernetesObject, object?>(jsonPath, addNullChecks: true).Compile();
-        return new ResourceListColumn<GenericKubernetesObject, string>
+        return new DataGridValueColumn<GenericKubernetesObject, string>
         {
             Key = CreateColumnKey(name),
             Name = name,
@@ -131,10 +132,10 @@ public sealed class CRDResourceConfig : ResourceConfigBase<GenericKubernetesObje
         };
     }
 
-    private static ResourceListColumn<GenericKubernetesObject, DateTime?> CreateDateColumn(string name, string jsonPath)
+    private static DataGridValueColumn<GenericKubernetesObject, DateTime?> CreateDateColumn(string name, string jsonPath)
     {
         var getter = JsonPath.GetExpression<GenericKubernetesObject, string?>(jsonPath, addNullChecks: true).Compile();
-        return new ResourceListColumn<GenericKubernetesObject, DateTime?>
+        return new DataGridValueColumn<GenericKubernetesObject, DateTime?>
         {
             Key = CreateColumnKey(name),
             Name = name,
@@ -168,3 +169,4 @@ public sealed class CRDResourceConfig : ResourceConfigBase<GenericKubernetesObje
         return Regex.Replace(name.Trim().ToLowerInvariant(), @"\W+", "-").Trim('-');
     }
 }
+

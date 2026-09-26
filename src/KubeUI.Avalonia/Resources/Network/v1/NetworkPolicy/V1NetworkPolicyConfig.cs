@@ -1,3 +1,4 @@
+using KubeUI.Avalonia.Infrastructure.DataGrid;
 using k8s.Models;
 
 namespace KubeUI.Avalonia.Resources.Network.v1.NetworkPolicy;
@@ -17,7 +18,7 @@ public sealed partial class V1NetworkPolicyConfig : ResourceConfigBase<V1Network
         return [
             NameColumn(SortDirection.Ascending),
             NamespaceColumn(),
-            new ResourceListColumn<V1NetworkPolicy, string>()
+            new DataGridValueColumn<V1NetworkPolicy, string>()
             {
                 Key = "policy-types",
                 Name = Assets.Resources.V1NetworkPolicyConfig_Policy_Types!,
@@ -30,3 +31,6 @@ public sealed partial class V1NetworkPolicyConfig : ResourceConfigBase<V1Network
 
     public override Control[] Properties(V1NetworkPolicy resource) => [new PropertiesView()];
 }
+
+
+

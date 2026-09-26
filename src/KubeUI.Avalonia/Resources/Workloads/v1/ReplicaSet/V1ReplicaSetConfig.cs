@@ -1,3 +1,4 @@
+using KubeUI.Avalonia.Infrastructure.DataGrid;
 using FluentIcons.Common;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
@@ -22,21 +23,21 @@ public sealed partial class V1ReplicaSetConfig : ResourceConfigBase<V1ReplicaSet
         return [
             NameColumn(SortDirection.Ascending),
             NamespaceColumn(),
-            new ResourceListColumn<V1ReplicaSet, int>()
+            new DataGridValueColumn<V1ReplicaSet, int>()
             {
                 Key = "desired",
                 Name = Assets.Resources.V1ReplicaSetConfig_Desired!,
                 Field = x => x.Spec.Replicas ?? 0,
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },
-            new ResourceListColumn<V1ReplicaSet, int>()
+            new DataGridValueColumn<V1ReplicaSet, int>()
             {
                 Key = "current",
                 Name = Assets.Resources.V1ReplicaSetConfig_Current!,
                 Field = x => x.Status.AvailableReplicas ?? 0,
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },
-            new ResourceListColumn<V1ReplicaSet, int>()
+            new DataGridValueColumn<V1ReplicaSet, int>()
             {
                 Key = "ready",
                 Name = Assets.Resources.V1ReplicaSetConfig_Ready!,
@@ -70,3 +71,6 @@ public sealed partial class V1ReplicaSetConfig : ResourceConfigBase<V1ReplicaSet
 
     public override Control[] Properties(V1ReplicaSet resource) => [new PropertiesView()];
 }
+
+
+

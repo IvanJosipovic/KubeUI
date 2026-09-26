@@ -1,3 +1,4 @@
+using KubeUI.Avalonia.Infrastructure.DataGrid;
 using k8s.Models;
 
 namespace KubeUI.Avalonia.Resources.AccessControl.v1.RoleBinding;
@@ -18,7 +19,7 @@ public sealed partial class V1RoleBindingConfig : ResourceConfigBase<V1RoleBindi
         return [
             NameColumn(SortDirection.Ascending),
             NamespaceColumn(),
-            new ResourceListColumn<V1RoleBinding, string>()
+            new DataGridValueColumn<V1RoleBinding, string>()
             {
                 Key = "bindings",
                 Name = Assets.Resources.V1RoleBindingConfig_Bindings!,
@@ -31,3 +32,6 @@ public sealed partial class V1RoleBindingConfig : ResourceConfigBase<V1RoleBindi
 
     public override Control[] Properties(V1RoleBinding resource) => [new PropertiesView()];
 }
+
+
+

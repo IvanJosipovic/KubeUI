@@ -1,3 +1,4 @@
+using KubeUI.Avalonia.Infrastructure.DataGrid;
 using k8s.Models;
 
 namespace KubeUI.Avalonia.Resources.Storage.v1.PersistentVolume;
@@ -15,14 +16,14 @@ public sealed partial class V1PersistentVolumeConfig : ResourceConfigBase<V1Pers
     {
         return [
             NameColumn(SortDirection.Ascending),
-            new ResourceListColumn<V1PersistentVolume, string>()
+            new DataGridValueColumn<V1PersistentVolume, string>()
             {
                 Key = "storage-class",
                 Name = Assets.Resources.V1PersistentVolumeConfig_Storage_Class!,
                 Field = x => x.Spec.StorageClassName,
                 Width = "*",
             },
-            new ResourceListColumn<V1PersistentVolume, decimal>()
+            new DataGridValueColumn<V1PersistentVolume, decimal>()
             {
                 Key = "size",
                 Name = Assets.Resources.V1PersistentVolumeConfig_Size!,
@@ -30,7 +31,7 @@ public sealed partial class V1PersistentVolumeConfig : ResourceConfigBase<V1Pers
                 Field = x => x.Spec.Capacity["storage"]?.ToDecimal() ?? 0,
                 Width = nameof(DataGridLengthUnitType.SizeToCells)
             },
-            new ResourceListColumn<V1PersistentVolume, string>()
+            new DataGridValueColumn<V1PersistentVolume, string>()
             {
                 Key = "claim",
                 Name = Assets.Resources.V1PersistentVolumeConfig_Claim!,
@@ -38,7 +39,7 @@ public sealed partial class V1PersistentVolumeConfig : ResourceConfigBase<V1Pers
                 Width = "*",
             },
             AgeColumn(),
-            new ResourceListColumn<V1PersistentVolume, string>()
+            new DataGridValueColumn<V1PersistentVolume, string>()
             {
                 Key = "status",
                 Name = Assets.Resources.V1PersistentVolumeConfig_Status!,
@@ -50,3 +51,6 @@ public sealed partial class V1PersistentVolumeConfig : ResourceConfigBase<V1Pers
 
     public override Control[] Properties(V1PersistentVolume resource) => [new PropertiesView()];
 }
+
+
+

@@ -1,3 +1,4 @@
+using KubeUI.Avalonia.Infrastructure.DataGrid;
 using FluentIcons.Common;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
@@ -22,7 +23,7 @@ public sealed partial class V1StatefulSetConfig : ResourceConfigBase<V1StatefulS
         return [
             NameColumn(SortDirection.Ascending),
             NamespaceColumn(),
-            new ResourceListColumn<V1StatefulSet, int>()
+            new DataGridValueColumn<V1StatefulSet, int>()
             {
                 Key = "replicas",
                 Name = Assets.Resources.V1StatefulSetConfig_Replicas!,
@@ -56,3 +57,6 @@ public sealed partial class V1StatefulSetConfig : ResourceConfigBase<V1StatefulS
 
     public override Control[] Properties(V1StatefulSet resource) => [new PropertiesView()];
 }
+
+
+

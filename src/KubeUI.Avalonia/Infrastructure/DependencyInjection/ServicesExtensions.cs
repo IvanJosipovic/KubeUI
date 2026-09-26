@@ -7,6 +7,8 @@ using KubeUI.Avalonia.Controls.DataGridFilters;
 using KubeUI.Avalonia.Features.AI;
 using KubeUI.Avalonia.Features.Resources.List.Controls;
 using KubeUI.Avalonia.Features.Resources.Yaml;
+using KubeUI.Avalonia.Features.Crossplane.MRDiffDetection;
+using KubeUI.Avalonia.Shell.Navigation;
 using KubeUI.Avalonia.Infrastructure.Logging;
 using KubeUI.Avalonia.Infrastructure.Platform;
 using KubeUI.Avalonia.Infrastructure.Presentation;
@@ -48,6 +50,10 @@ public static partial class KubeUIShellServiceCollectionExtensions
         services.AddSingleton<ISettingsPersistence, FileSettingsPersistence>();
         services.AddSingleton<ISettingsService, SettingsService>();
         services.AddSingleton<IResourceIconService, ResourceIconService>();
+        services.AddSingleton<NavigationFeatureCatalog>();
+        services.AddSingleton<INavigationFeatureDefinition>(_ => CrossplaneNavigationFeature.CreateDefinition());
+        services.AddSingleton<CrossplaneDiffLogParser>();
+        services.AddTransient<CrossplaneProviderLogMonitor>();
         services.AddSingleton<IAgentRegistry>(sp => new AcpAgentRegistry(
             AcpAgentDefaults.Definitions,
             sp.GetRequiredService<IAgentPermissionService>()));

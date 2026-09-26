@@ -17,6 +17,7 @@ using KubeUI.Avalonia.Features.Resources.Properties;
 using KubeUI.Avalonia.Features.Resources.Visualization;
 using KubeUI.Avalonia.Features.Resources.Yaml;
 using KubeUI.Avalonia.Infrastructure;
+using KubeUI.Avalonia.Infrastructure.DataGrid;
 using KubeUI.Avalonia.Infrastructure.Docking;
 using KubeUI.Avalonia.Resources.Workloads.v1.Pod.Services;
 using KubeUI.Avalonia.Resources.Workloads.v1.Pod.ViewModels;
@@ -202,9 +203,9 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
 
     public virtual Control[] Properties(T resource) => [];
 
-    protected ResourceListColumn<T, string> NameColumn(SortDirection sort = SortDirection.None)
+    protected DataGridValueColumn<T, string> NameColumn(SortDirection sort = SortDirection.None)
     {
-        return new ResourceListColumn<T, string>()
+        return new DataGridValueColumn<T, string>()
         {
             Key = "name",
             Name = Assets.Resources.ResourceListView_Name!,
@@ -214,9 +215,9 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
         };
     }
 
-    protected ResourceListColumn<T, string> NamespaceColumn()
+    protected DataGridValueColumn<T, string> NamespaceColumn()
     {
-        return new ResourceListColumn<T, string>()
+        return new DataGridValueColumn<T, string>()
         {
             Key = "namespace",
             Name = Assets.Resources.ResourceListView_Namespace!,
@@ -225,9 +226,9 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
         };
     }
 
-    protected ResourceListColumn<T, DateTime?> AgeColumn()
+    protected DataGridValueColumn<T, DateTime?> AgeColumn()
     {
-        return new ResourceListColumn<T, DateTime?>()
+        return new DataGridValueColumn<T, DateTime?>()
         {
             Key = "age",
             Name = Assets.Resources.ResourceListView_Age!,
@@ -558,3 +559,4 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
 
     #endregion
 }
+

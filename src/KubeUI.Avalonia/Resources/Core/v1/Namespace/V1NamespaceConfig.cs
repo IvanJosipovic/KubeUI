@@ -1,3 +1,4 @@
+using KubeUI.Avalonia.Infrastructure.DataGrid;
 using k8s.Models;
 
 namespace KubeUI.Avalonia.Resources.Core.v1.Namespace;
@@ -11,14 +12,14 @@ public sealed partial class V1NamespaceConfig(IServiceProvider serviceProvider) 
     {
         return [
             NameColumn(SortDirection.Ascending),
-            new ResourceListColumn<V1Namespace, string>()
+            new DataGridValueColumn<V1Namespace, string>()
             {
                 Key = "labels",
                 Name = Assets.Resources.V1NamespaceConfig_Labels!,
                 Field = x => x?.Metadata?.Labels is { Count: > 0 } labels ? string.Join(", ", labels.Select(x => x.Key + "=" + x.Value)) : "",
                 Width = "2*"
             },
-            new ResourceListColumn<V1Namespace, string>()
+            new DataGridValueColumn<V1Namespace, string>()
             {
                 Key = "status",
                 Name = Assets.Resources.V1NamespaceConfig_Status!,
@@ -31,3 +32,6 @@ public sealed partial class V1NamespaceConfig(IServiceProvider serviceProvider) 
 
     public override Control[] Properties(V1Namespace resource) => [new PropertiesView()];
 }
+
+
+

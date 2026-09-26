@@ -1,3 +1,4 @@
+using KubeUI.Avalonia.Infrastructure.DataGrid;
 using k8s.Models;
 
 namespace KubeUI.Avalonia.Resources.Configuration.v2.HorizontalPodAutoscaler;
@@ -17,21 +18,21 @@ public sealed partial class V2HorizontalPodAutoscalerConfig : ResourceConfigBase
         return [
             NameColumn(SortDirection.Ascending),
             NamespaceColumn(),
-            new ResourceListColumn<V2HorizontalPodAutoscaler, int>()
+            new DataGridValueColumn<V2HorizontalPodAutoscaler, int>()
             {
                 Key = "min-pods",
                 Name = Assets.Resources.V2HorizontalPodAutoscalerConfig_Min_Pods!,
                 Field = x => x.Spec.MinReplicas ?? 0,
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },
-            new ResourceListColumn<V2HorizontalPodAutoscaler, int>()
+            new DataGridValueColumn<V2HorizontalPodAutoscaler, int>()
             {
                 Key = "max-pods",
                 Name = Assets.Resources.V2HorizontalPodAutoscalerConfig_Max_Pods!,
                 Field = x => x.Spec.MaxReplicas,
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },
-            new ResourceListColumn<V2HorizontalPodAutoscaler, int>()
+            new DataGridValueColumn<V2HorizontalPodAutoscaler, int>()
             {
                 Key = "replica",
                 Name = Assets.Resources.V2HorizontalPodAutoscalerConfig_Replica!,
@@ -39,7 +40,7 @@ public sealed partial class V2HorizontalPodAutoscalerConfig : ResourceConfigBase
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },
             AgeColumn(),
-            new ResourceListColumn<V2HorizontalPodAutoscaler, string>()
+            new DataGridValueColumn<V2HorizontalPodAutoscaler, string>()
             {
                 Key = "conditions",
                 Name = Assets.Resources.V2HorizontalPodAutoscalerConfig_Conditions!,
@@ -51,3 +52,6 @@ public sealed partial class V2HorizontalPodAutoscalerConfig : ResourceConfigBase
 
     public override Control[] Properties(V2HorizontalPodAutoscaler resource) => [new PropertiesView()];
 }
+
+
+
