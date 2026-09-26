@@ -1,5 +1,6 @@
 ---
 sidebar_position: 6
+description: Use KubeUI workload tools to inspect logs, open consoles, forward ports, and manage Kubernetes workloads.
 ---
 
 # Workload tools

@@ -2,6 +2,7 @@
 slug: /
 sidebar_position: 0
 title: KubeUI documentation
+description: Guides for installing KubeUI, connecting to Kubernetes, browsing resources, editing YAML, and operating workloads.
 ---
 
 # KubeUI documentation
