@@ -1,5 +1,6 @@
 ---
 sidebar_position: 5
+description: Visualize relationships and references between Kubernetes resources with KubeUI.
 ---
 
 # Visualize resource relationships

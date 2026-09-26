@@ -1,5 +1,6 @@
 ---
 sidebar_position: 3
+description: Browse, search, filter, and inspect Kubernetes resources and custom resources in KubeUI.
 ---
 
 # Browse and inspect resources
