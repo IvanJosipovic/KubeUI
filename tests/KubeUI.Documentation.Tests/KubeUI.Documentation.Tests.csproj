@@ -20,4 +20,10 @@
     <Using Include="KubeUI.Avalonia" />
   </ItemGroup>
 
+  <Target Name="DisableDeclarativeAnalyzer" BeforeTargets="CoreCompile">
+    <ItemGroup>
+      <Analyzer Remove="@(Analyzer)" Condition="'%(Filename)' == 'Avalonia.Markup.Declarative.SourceGenerator'" />
+    </ItemGroup>
+  </Target>
+
 </Project>

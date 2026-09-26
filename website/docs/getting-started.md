@@ -25,12 +25,12 @@ KubeUI reads the same kubeconfig files used by Kubernetes command-line tools. Yo
 4. Find the cluster in the navigation pane and select it to start the connection.
 5. When connected, expand the cluster to browse available resource groups. Select a resource type, such as **Pods**, to open its list.
 
-<video className="theme-video theme-video--light" controls preload="none" width="100%" poster="/img/KubeUI-Screenshot.png">
+<video className="theme-video theme-video--light" controls preload="none" width="100%">
   <source src="/video/connect-to-cluster-light.mp4" type='video/mp4; codecs="avc1.640028, mp4a.40.2"' />
   Your browser does not support embedded video.
 </video>
 
-<video className="theme-video theme-video--dark" controls preload="none" width="100%" poster="/img/KubeUI-Screenshot.png">
+<video className="theme-video theme-video--dark" controls preload="none" width="100%">
   <source src="/video/connect-to-cluster-dark.mp4" type='video/mp4; codecs="avc1.640028, mp4a.40.2"' />
   Your browser does not support embedded video.
 </video>

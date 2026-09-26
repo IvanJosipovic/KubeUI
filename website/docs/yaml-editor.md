@@ -16,12 +16,12 @@ KubeUI's YAML view is for inspecting and changing Kubernetes objects in place. O
 
 The editor also provides line numbers, word wrap controls, and YAML-oriented indentation and list editing behavior. The dry run is server-side, so it checks the manifest against the connected cluster's API and admission rules.
 
-<video className="theme-video theme-video--light" controls preload="none" width="100%" poster="/img/KubeUI-Screenshot.png">
+<video className="theme-video theme-video--light" controls preload="none" width="100%">
   <source src="/video/inspect-pod-yaml-light.mp4" type='video/mp4; codecs="avc1.640028, mp4a.40.2"' />
   Your browser does not support embedded video.
 </video>
 
-<video className="theme-video theme-video--dark" controls preload="none" width="100%" poster="/img/KubeUI-Screenshot.png">
+<video className="theme-video theme-video--dark" controls preload="none" width="100%">
   <source src="/video/inspect-pod-yaml-dark.mp4" type='video/mp4; codecs="avc1.640028, mp4a.40.2"' />
   Your browser does not support embedded video.
 </video>

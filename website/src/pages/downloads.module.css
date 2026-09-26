@@ -1,0 +1,13 @@
+.header {
+  padding: 3rem 0 2rem;
+  text-align: center;
+}
+
+.header h1 {
+  margin-bottom: 0.75rem;
+}
+
+.header p {
+  margin: 0 auto 1.25rem;
+  color: var(--ifm-color-emphasis-700);
+}

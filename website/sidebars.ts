@@ -25,12 +25,12 @@ const sidebars: SidebarsConfig = {
         'yaml-editor',
         'resource-visualization',
         'workload-tools',
+        'pod-logs',
       ],
     },
     'features',
     'permissions',
     'troubleshooting',
-    'documentation-videos',
   ],
 };
 

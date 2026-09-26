@@ -6,9 +6,9 @@ sidebar_position: 6
 
 KubeUI includes focused tools for common workload operations. Which actions are available depends on the selected object, cluster capabilities, and Kubernetes permissions.
 
-## Pod logs and console
+## Pod console
 
-Open a pod's logs to inspect container output. Where the cluster and permissions allow it, open the pod console to execute an interactive command in a container.
+Where the cluster and permissions allow it, open a pod console to execute an interactive command in a container. For live log streams and controller-wide Pod logs, see [Pod logs](./pod-logs).
 
 ## Port forwarding
 

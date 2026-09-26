@@ -1,6 +1,7 @@
 using Avalonia.Controls;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Infrastructure.Presentation;
+using KubeUI.Testing.Kubernetes.Bootstrap;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace KubeUI.Documentation.Tests.Infra;
@@ -8,6 +9,8 @@ namespace KubeUI.Documentation.Tests.Infra;
 internal sealed record WalkthroughStart(
     Func<ClusterWorkspace, WalkthroughDemoResources, IServiceProvider, Control> CreateView,
     bool ConnectToCluster);
+
+internal sealed record WalkthroughIntro(string Title, string Narration);
 
 internal sealed record WalkthroughViewModelContext<TViewModel>(
     ClusterWorkspace Workspace,
@@ -18,6 +21,7 @@ internal sealed record WalkthroughViewModelContext<TViewModel>(
 internal enum WalkthroughActionKind
 {
     Click,
+    RightClick,
     Hover,
     MovePointer,
     SetText,
@@ -31,21 +35,26 @@ internal sealed record WalkthroughAction(
     WalkthroughActionKind Kind,
     string Target,
     string? Value = null,
-    TimeSpan DelayBefore = default);
+    TimeSpan DelayBefore = default,
+    Func<Control, bool>? ReadyWhen = null);
 
 internal sealed record WalkthroughStep(
     string Narration,
     IReadOnlyList<WalkthroughAction> Actions,
-    Func<Control, bool>? ReadyWhen);
+    Func<Control, bool>? ReadyWhen,
+    Func<Control, string>? ReadyDescription);
 
 internal sealed class KubeUIWalkthrough
 {
     private readonly List<WalkthroughStep> _steps = [];
     private readonly List<WalkthroughAction> _actions = [];
     private WalkthroughStart? _start;
+    private WalkthroughIntro? _intro;
     private string _clusterName = "docs-demo";
+    private Action<TestClusterConfig>? _configureFakeCluster;
     private string? _narration;
     private Func<Control, bool>? _readyWhen;
+    private Func<Control, string>? _readyDescription;
     private TimeSpan _delayBeforeNextAction;
 
     private KubeUIWalkthrough(string theme, string clipName)
@@ -60,20 +69,39 @@ internal sealed class KubeUIWalkthrough
 
     public static KubeUIWalkthrough Create(string theme, string clipName) => new(theme, clipName);
 
-    public KubeUIWalkthrough FakeCluster(string name)
+    public KubeUIWalkthrough FakeCluster(string name, Action<TestClusterConfig>? configure = null)
     {
         _clusterName = name;
+        _configureFakeCluster = configure;
+        return this;
+    }
+
+    public KubeUIWalkthrough Intro(string title, string narration)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(title);
+        ArgumentException.ThrowIfNullOrWhiteSpace(narration);
+        if (_intro is not null)
+        {
+            throw new InvalidOperationException("A walkthrough can have only one intro.");
+        }
+
+        if (_steps.Count > 0 || _narration is not null)
+        {
+            throw new InvalidOperationException("Add the walkthrough intro before narrated steps.");
+        }
+
+        _intro = new WalkthroughIntro(title, narration);
         return this;
     }
 
     public KubeUIWalkthrough StartAt<TView, TViewModel>(bool connectToCluster = true)
         where TView : Control
         where TViewModel : class, IInitializeCluster =>
-        StartAt<TView, TViewModel>(
+        LoadView<TView, TViewModel>(
             x => x.ViewModel.Initialize(x.Workspace),
             connectToCluster);
 
-    public KubeUIWalkthrough StartAt<TView, TViewModel>(
+    public KubeUIWalkthrough LoadView<TView, TViewModel>(
         Action<WalkthroughViewModelContext<TViewModel>> configureViewModel,
         bool connectToCluster = true)
         where TView : Control
@@ -94,11 +122,15 @@ internal sealed class KubeUIWalkthrough
         return this;
     }
 
-    public KubeUIWalkthrough Speak(string narration, Func<Control, bool>? readyWhen = null)
+    public KubeUIWalkthrough Speak(
+        string narration,
+        Func<Control, bool>? readyWhen = null,
+        Func<Control, string>? readyDescription = null)
     {
         AddCurrentStep();
         _narration = narration;
         _readyWhen = readyWhen;
+        _readyDescription = readyDescription;
         return this;
     }
 
@@ -133,6 +165,41 @@ internal sealed class KubeUIWalkthrough
     public KubeUIWalkthrough SelectPod(string name)
     {
         AddAction(new(WalkthroughActionKind.Click, "pod", name));
+        return this;
+    }
+
+    public KubeUIWalkthrough SelectPodLogs(string name, Func<Control, bool> logsReadyWhen)
+    {
+        ArgumentNullException.ThrowIfNull(logsReadyWhen);
+        AddAction(new(WalkthroughActionKind.RightClick, "pod", name));
+        AddAction(new(
+            WalkthroughActionKind.Click,
+            "context-menu-item",
+            "View Logs",
+            ReadyWhen: root => KubeUIWalkthroughRecorder.HasContextMenuItem(root, "Open New Logs View")));
+        AddAction(new(
+            WalkthroughActionKind.Click,
+            "context-menu-item",
+            "Open New Logs View",
+            ReadyWhen: logsReadyWhen));
+        return this;
+    }
+
+    public KubeUIWalkthrough RightClickPod(string name)
+    {
+        AddAction(new(WalkthroughActionKind.RightClick, "pod", name));
+        return this;
+    }
+
+    public KubeUIWalkthrough SelectContextMenuItem(string name, Func<Control, bool>? readyWhen = null)
+    {
+        AddAction(new(WalkthroughActionKind.Click, "context-menu-item", name, ReadyWhen: readyWhen));
+        return this;
+    }
+
+    public KubeUIWalkthrough JumpToLogController(string resourceKind)
+    {
+        AddAction(new(WalkthroughActionKind.Click, "logs-controller", resourceKind));
         return this;
     }
 
@@ -217,7 +284,9 @@ internal sealed class KubeUIWalkthrough
             Theme,
             ClipName,
             _clusterName,
+            _configureFakeCluster,
             start,
+            _intro,
             _steps);
     }
 
@@ -239,15 +308,11 @@ internal sealed class KubeUIWalkthrough
             return;
         }
 
-        if (_actions.Count == 0)
-        {
-            throw new InvalidOperationException("Walkthrough narration has no actions.");
-        }
-
-        _steps.Add(new WalkthroughStep(_narration, [.. _actions], _readyWhen));
+        _steps.Add(new WalkthroughStep(_narration, [.. _actions], _readyWhen, _readyDescription));
         _actions.Clear();
         _narration = null;
         _readyWhen = null;
+        _readyDescription = null;
         _delayBeforeNextAction = TimeSpan.Zero;
     }
 }

@@ -14,4 +14,7 @@ internal static class KubeUIWalkthroughServices
 
 internal sealed record WalkthroughDemoResources(
     IReadOnlyCollection<IKubernetesObject<V1ObjectMeta>> Resources,
-    V1Namespace DefaultNamespace);
+    V1Namespace DefaultNamespace)
+{
+    public const string FeaturedPodName = "web-7c9f8d6f54-2k4m8";
+}

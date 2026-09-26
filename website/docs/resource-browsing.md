@@ -12,12 +12,12 @@ Resource tables support sorting, filtering, and search. Use the namespace select
 
 KubeUI includes views for built-in Kubernetes resources and can discover custom resources from installed CRDs. A resource that your identity cannot list may be absent even while other resource types remain available.
 
-<video className="theme-video theme-video--light" controls preload="none" width="100%" poster="/img/KubeUI-Screenshot.png">
+<video className="theme-video theme-video--light" controls preload="none" width="100%">
   <source src="/video/browse-pods-light.mp4" type='video/mp4; codecs="avc1.640028, mp4a.40.2"' />
   Your browser does not support embedded video.
 </video>
 
-<video className="theme-video theme-video--dark" controls preload="none" width="100%" poster="/img/KubeUI-Screenshot.png">
+<video className="theme-video theme-video--dark" controls preload="none" width="100%">
   <source src="/video/browse-pods-dark.mp4" type='video/mp4; codecs="avc1.640028, mp4a.40.2"' />
   Your browser does not support embedded video.
 </video>

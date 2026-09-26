@@ -3086,23 +3086,39 @@ public sealed class PodLogsViewModelTests
             ["app"]);
         pod.Metadata!.OwnerReferences![0].ApiVersion = "apps/v1";
         ConfigureRunningContainer(pod, "app", "echo line");
+        var siblingPod = CreatePod(
+            "api-pod-sibling",
+            "default",
+            "sibling-pod-uid",
+            replicaSet.Uid(),
+            replicaSet.Name(),
+            V1ReplicaSet.KubeKind,
+            ["app"]);
+        siblingPod.Metadata!.OwnerReferences![0].ApiVersion = "apps/v1";
+        ConfigureRunningContainer(siblingPod, "app", "echo sibling line");
         await workspace.Runtime.AddOrUpdateResource(deployment);
         await workspace.Runtime.AddOrUpdateResource(replicaSet);
         await workspace.Runtime.AddOrUpdateResource(pod);
+        await workspace.Runtime.AddOrUpdateResource(siblingPod);
 
+        var streamClient = new RecordingPodLogStreamClient();
         using var viewModel = CreateViewModel(
             workspace.Runtime,
-            new RecordingPodLogStreamClient());
+            streamClient);
         viewModel.Object = pod;
         viewModel.ContainerName = string.Empty;
 
         await viewModel.Connect();
         viewModel.Title.ShouldBe("Pod Logs");
         viewModel.CanJumpToController.ShouldBeTrue();
+        streamClient.Requests.Select(static request => request.PodName).ShouldBe(["api-pod"]);
+        GetPodNodes(viewModel).Select(static node => ((V1Pod)node.Value).Name()).ShouldBe(["api-pod"]);
 
         await viewModel.JumpToControlledByLogs();
         viewModel.Object.ShouldBeOfType<V1ReplicaSet>().Name().ShouldBe("api-rs");
         viewModel.Title.ShouldBe("ReplicaSet Logs");
+        await WaitForAsync(() => streamClient.Requests.Count >= 2);
+        streamClient.Requests.Select(static request => request.PodName).ShouldContain("api-pod-sibling");
         GetPodNodes(viewModel).ShouldAllBe(static node => node.IsChecked == true);
         GetContainerNodes(viewModel).ShouldAllBe(static node => node.IsChecked == true);
         viewModel.CanJumpToController.ShouldBeTrue();

@@ -10,12 +10,12 @@ Use the visualization filters to focus on resource types and namespaces. The gra
 
 Visualization is a companion to the resource tables: use it to understand connections, then return to a resource list or object details to inspect or edit a specific object.
 
-<video className="theme-video theme-video--light" controls preload="none" width="100%" poster="/img/KubeUI-Screenshot.png">
+<video className="theme-video theme-video--light" controls preload="none" width="100%">
   <source src="/video/resource-relationships-light.mp4" type='video/mp4; codecs="avc1.640028, mp4a.40.2"' />
   Your browser does not support embedded video.
 </video>
 
-<video className="theme-video theme-video--dark" controls preload="none" width="100%" poster="/img/KubeUI-Screenshot.png">
+<video className="theme-video theme-video--dark" controls preload="none" width="100%">
   <source src="/video/resource-relationships-dark.mp4" type='video/mp4; codecs="avc1.640028, mp4a.40.2"' />
   Your browser does not support embedded video.
 </video>

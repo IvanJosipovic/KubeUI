@@ -81,6 +81,11 @@ const config: Config = {
           label: 'Documentation',
         },
         {
+          to: '/downloads',
+          label: 'Download',
+          position: 'right',
+        },
+        {
           href: 'https://github.com/IvanJosipovic/KubeUI',
           label: 'GitHub',
           position: 'right',

@@ -11,7 +11,10 @@ public sealed class RecordingTests
     public Task Explore_resource_relationships_video(string theme)
     {
         return KubeUIWalkthrough.Create(theme, "resource-relationships")
-            .StartAt<VisualizationView, VisualizationViewModel>(
+            .Intro(
+                "Visualize resource relationships",
+                "In this walkthrough, I'll select a namespace and explore how Kubernetes resources relate to one another.")
+            .LoadView<VisualizationView, VisualizationViewModel>(
                 x => x.ViewModel.Initialize(x.Workspace, x.DemoResources.DefaultNamespace))
             .Speak(
                 "With the default namespace selected, the graph shows its resources. Select a resource to trace the pod back to its owning workload and related Kubernetes objects.",
@@ -20,7 +23,7 @@ public sealed class RecordingTests
                         namespaceResource => namespaceResource.Metadata?.Name == "default")
                     && view.ViewModel.Graph is { } graph
                     && graph.Resources.Count(resource =>
-                        resource is V1Pod pod && pod.Metadata?.NamespaceProperty == "default") == 10
+                        resource is V1Pod pod && pod.Metadata?.NamespaceProperty == "default") >= 10
                     && view.GetVisualDescendants().OfType<ResourceGraphControl>().Any(
                         graphControl => graphControl.IsViewportStable
                             && graphControl.Area.VertexList.Count == graph.Resources.Count))

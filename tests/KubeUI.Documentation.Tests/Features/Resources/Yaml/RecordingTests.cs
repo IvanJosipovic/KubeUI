@@ -10,7 +10,10 @@ public sealed class RecordingTests
     public Task Inspect_pod_yaml_video(string theme)
     {
         return KubeUIWalkthrough.Create(theme, "inspect-pod-yaml")
-            .StartAt<ResourceYamlView, ResourceYamlViewModel>(x =>
+            .Intro(
+                "Edit and validate YAML",
+                "In this walkthrough, I'll edit a Pod manifest, use schema completion, and validate it with the cluster.")
+            .LoadView<ResourceYamlView, ResourceYamlViewModel>(x =>
             {
                 x.ViewModel.Initialize(x.Workspace, new V1Pod
                 {

@@ -19,10 +19,10 @@ Use these guides to install KubeUI, connect to Kubernetes, and work with resourc
 - [Edit YAML and validate changes](./yaml-editor)
 - [Visualize resource relationships](./resource-visualization)
 - [Use workload tools](./workload-tools)
+- [Follow Pod logs](./pod-logs)
 
 ## Reference
 
 - [Feature overview](./features)
 - [Permissions and access](./permissions)
 - [Troubleshooting](./troubleshooting)
-- [Record feature videos](./documentation-videos)

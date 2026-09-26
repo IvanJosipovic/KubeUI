@@ -36,4 +36,4 @@ KubeUI is a desktop workspace for everyday Kubernetes exploration and operations
 
 KubeUI adapts resource navigation to the permissions available to the connected identity, including reduced-access and namespace-scoped environments.
 
-Follow the task guides for [clusters](./clusters-and-workspaces), [resource browsing](./resource-browsing), [YAML editing](./yaml-editor), [visualization](./resource-visualization), and [workload tools](./workload-tools).
+Follow the task guides for [clusters](./clusters-and-workspaces), [resource browsing](./resource-browsing), [YAML editing](./yaml-editor), [visualization](./resource-visualization), [workload tools](./workload-tools), and [Pod logs](./pod-logs).

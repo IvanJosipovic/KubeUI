@@ -7,6 +7,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Headless;
 using Avalonia.Input;
+using Avalonia.LogicalTree;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Styling;
@@ -19,8 +20,12 @@ using AvaloniaEdit.Rendering;
 using KokoroSharp;
 using k8s;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
+using KubeUI.Avalonia.Infrastructure;
+using KubeUI.Avalonia.Features.Resources.Common;
 using KubeUI.Avalonia.Features.Resources.Yaml;
 using KubeUI.Avalonia.Features.Resources.Yaml.Behaviors;
+using KubeUI.Avalonia.Resources.Workloads.v1.Pod.ViewModels;
+using KubeUI.Avalonia.Resources.Workloads.v1.Pod.Views;
 using KubeUI.Avalonia.Shell.Navigation;
 using KubeUI.Kubernetes;
 using KubeUI.Testing.Kubernetes.Bootstrap;
@@ -32,9 +37,9 @@ namespace KubeUI.Documentation.Tests.Infra;
 
 internal static class KubeUIWalkthroughRecorder
 {
-    private const string PodName = "web-7c9f8d6f54-2k4m8";
-    private const int Width = 1440;
-    private const int Height = 900;
+    private const string PodName = WalkthroughDemoResources.FeaturedPodName;
+    private const int Width = KubeUIWalkthroughIntroView.VideoWidth;
+    private const int Height = KubeUIWalkthroughIntroView.VideoHeight;
     private const int FramesPerSecond = 30;
     private const int CursorFrames = 23;
     private const double FrameDuration = 1.0 / FramesPerSecond;
@@ -47,7 +52,9 @@ internal static class KubeUIWalkthroughRecorder
         string theme,
         string clipName,
         string clusterName,
+        Action<TestClusterConfig>? configureFakeCluster,
         WalkthroughStart start,
+        WalkthroughIntro? intro,
         IReadOnlyList<WalkthroughStep> steps)
     {
         SetRecordingTheme(theme);
@@ -59,7 +66,10 @@ internal static class KubeUIWalkthroughRecorder
         }
 
         using var window = new RecordingWindow { Width = Width, Height = Height, CanResize = false };
-        var cluster = await CreateWorkspaceAsync(clusterName, connect: start.ConnectToCluster);
+        var cluster = await CreateWorkspaceAsync(
+            clusterName,
+            connect: start.ConnectToCluster,
+            configureFakeCluster);
         using var serviceScope = KubeUIWalkthroughServices.GetRequiredServices().CreateScope();
         try
         {
@@ -71,7 +81,16 @@ internal static class KubeUIWalkthroughRecorder
             window.Content = new Grid { Children = { root, cursor } };
             window.Show();
             await WaitForUiAsync();
-            await RecordClipAsync(clipName, theme, root, cluster.Workspace, window, cursor, steps, videoDirectory);
+            await RecordClipAsync(
+                clipName,
+                theme,
+                intro,
+                root,
+                cluster.Workspace,
+                window,
+                cursor,
+                steps,
+                videoDirectory);
         }
         finally
         {
@@ -84,7 +103,8 @@ internal static class KubeUIWalkthroughRecorder
         ClusterWorkspace Workspace,
         WalkthroughDemoResources DemoResources)> CreateWorkspaceAsync(
         string name,
-        bool connect)
+        bool connect,
+        Action<TestClusterConfig>? configure)
     {
         var services = KubeUIWalkthroughServices.GetRequiredServices();
         var config = services.GetRequiredService<TestClusterConfig>();
@@ -92,6 +112,7 @@ internal static class KubeUIWalkthroughRecorder
         config.Name = name;
         var demoResources = CreateDemoResources();
         config.InitialResources = demoResources.Resources;
+        configure?.Invoke(config);
 
         var testCluster = await services.GetRequiredService<TestClusterGenerator>()
             .CreateAsync(config, TestContext.Current.CancellationToken);
@@ -102,12 +123,13 @@ internal static class KubeUIWalkthroughRecorder
                 ?? throw new InvalidOperationException("Test cluster workspace was not created.");
             if (connect)
             {
+                var expectedPodMetrics = demoResources.Resources.OfType<V1Pod>().Count();
                 await workspace.Connect();
                 await workspace.Runtime.EnsureOpenApiSchemasAsync();
                 await WaitForConditionAsync(() =>
                     workspace.Runtime.IsMetricsAvailable
                     && workspace.Runtime.NodeMetrics.Count == 3
-                    && workspace.Runtime.PodMetrics.Count == 10
+                    && workspace.Runtime.PodMetrics.Count == expectedPodMetrics
                     && workspace.Runtime.NodeMetrics.All(metric =>
                         metric.Usage.ContainsKey("cpu") && metric.Usage.ContainsKey("memory"))
                     && workspace.Runtime.PodMetrics.All(metric =>
@@ -125,7 +147,7 @@ internal static class KubeUIWalkthroughRecorder
         }
     }
 
-    private static WalkthroughDemoResources CreateDemoResources()
+    internal static WalkthroughDemoResources CreateDemoResources()
     {
         V1Namespace defaultNamespace = new()
         {
@@ -143,6 +165,12 @@ internal static class KubeUIWalkthroughRecorder
             resources.Add(CreateNodeMetrics(index));
         }
 
+        var replicaCountRandom = new Random(0x4B554955);
+        var replicaSetHashRandom = new Random(0x5253504C);
+        var podSuffixRandom = new Random(0x504F4453);
+        var podNames = new HashSet<string>(StringComparer.Ordinal);
+        var nodePodCounts = new int[3];
+        var podIndex = 0;
         for (var index = 1; index <= 10; index++)
         {
             var appName = index == 1 ? "web" : $"web-{index:D2}";
@@ -152,125 +180,157 @@ internal static class KubeUIWalkthroughRecorder
                 ["app.kubernetes.io/name"] = appName,
                 ["app.kubernetes.io/part-of"] = "kubeui-demo",
             };
-            var statefulSetOwnsPod = index > 5;
-            var claimName = statefulSetOwnsPod ? $"data-{appName}-0" : $"data-{appName}";
-            var podName = index == 1 ? PodName : statefulSetOwnsPod ? $"{appName}-0" : $"{appName}-7c9f8d6f54-{index:D4}";
-            var nodeName = $"node-{((index - 1) % 3) + 1}";
-            var qosClass = GetPodQosClass(index);
-            var podIP = $"10.244.{(index - 1) / 5}.{index + 10}";
-
-            resources.Add(new V1Pod
+            var replicaCount = replicaCountRandom.Next(2, 6);
+            var claimName = $"data-{appName}";
+            var replicaSetHash = index == 1
+                ? "7c9f8d6f54"
+                : replicaSetHashRandom.NextInt64(1L << 40).ToString("x10", CultureInfo.InvariantCulture);
+            var replicaSetName = $"{appName}-{replicaSetHash}";
+            var deploymentUid = $"walkthrough-deployment-{index:D2}";
+            var replicaSetUid = $"walkthrough-replicaset-{index:D2}";
+            var nodeIndex = ((index - 1) % 3) + 1;
+            var nodeName = $"node-{nodeIndex}";
+            var podLabels = new Dictionary<string, string>(labels)
             {
-                ApiVersion = "v1",
-                Kind = V1Pod.KubeKind,
-                Metadata = new V1ObjectMeta
+                ["pod-template-hash"] = replicaSetHash,
+            };
+            var failedPodCount = index == 10 ? 1 : 0;
+            var readyReplicas = replicaCount - failedPodCount;
+
+            V1PodTemplateSpec CreatePodTemplate(IDictionary<string, string> templateLabels) => new()
+            {
+                Metadata = new V1ObjectMeta { Labels = new Dictionary<string, string>(templateLabels) },
+                Spec = new V1PodSpec
                 {
-                    Name = podName,
-                    NamespaceProperty = "default",
-                    Labels = labels,
-                    OwnerReferences =
+                    Containers = [CreateContainer(appName, index)],
+                    NodeSelector = new Dictionary<string, string>
+                    {
+                        ["kubernetes.io/hostname"] = nodeName,
+                    },
+                    Volumes =
                     [
-                        new V1OwnerReference
+                        new V1Volume
                         {
-                            ApiVersion = "apps/v1",
-                            Kind = statefulSetOwnsPod ? V1StatefulSet.KubeKind : V1Deployment.KubeKind,
-                            Name = appName,
-                            Controller = true,
-                            BlockOwnerDeletion = true,
+                            Name = "data",
+                            PersistentVolumeClaim = new V1PersistentVolumeClaimVolumeSource { ClaimName = claimName },
                         },
                     ],
                 },
-                Spec = new V1PodSpec
-                {
-                    NodeName = nodeName,
-                    Containers = [CreateContainer(appName, index)],
-                    Volumes = [new V1Volume
-                    {
-                        Name = "data",
-                        PersistentVolumeClaim = new V1PersistentVolumeClaimVolumeSource { ClaimName = claimName },
-                    }],
-                },
-                Status = CreatePodStatus(index, nodeName, podIP, qosClass, podName),
-            });
-            resources.Add(CreatePodMetrics(podName, appName, index));
-
-            var template = new V1PodTemplateSpec
-            {
-                Metadata = new V1ObjectMeta { Labels = labels },
-                Spec = new V1PodSpec { Containers = [CreateContainer(appName, index)] },
             };
-            if (!statefulSetOwnsPod)
-            {
-                template.Spec.Volumes =
-                [
-                    new V1Volume
-                    {
-                        Name = "data",
-                        PersistentVolumeClaim = new V1PersistentVolumeClaimVolumeSource { ClaimName = claimName },
-                    },
-                ];
-            }
 
-            var selector = new V1LabelSelector { MatchLabels = new Dictionary<string, string>(labels) };
+            var deploymentMetadata = CreateMetadata(appName, labels);
+            deploymentMetadata.Uid = deploymentUid;
+            var replicaSetMetadata = CreateMetadata(replicaSetName, podLabels);
+            replicaSetMetadata.Uid = replicaSetUid;
+            replicaSetMetadata.OwnerReferences =
+            [
+                CreateOwnerReference(V1Deployment.KubeKind, appName, deploymentUid),
+            ];
+
             resources.Add(new V1Deployment
             {
                 ApiVersion = "apps/v1",
                 Kind = V1Deployment.KubeKind,
-                Metadata = CreateMetadata(appName, labels),
-                Spec = new V1DeploymentSpec { Replicas = statefulSetOwnsPod ? 0 : 1, Selector = selector, Template = template },
+                Metadata = deploymentMetadata,
+                Spec = new V1DeploymentSpec
+                {
+                    Replicas = replicaCount,
+                    Selector = new V1LabelSelector { MatchLabels = new Dictionary<string, string>(labels) },
+                    Template = CreatePodTemplate(labels),
+                    RevisionHistoryLimit = 5,
+                    ProgressDeadlineSeconds = 600,
+                },
                 Status = new V1DeploymentStatus
                 {
                     ObservedGeneration = 1,
-                    Replicas = statefulSetOwnsPod ? 0 : 1,
-                    UpdatedReplicas = statefulSetOwnsPod ? 0 : 1,
-                    ReadyReplicas = statefulSetOwnsPod ? 0 : 1,
-                    AvailableReplicas = statefulSetOwnsPod ? 0 : 1,
-                    Conditions = statefulSetOwnsPod ? [] :
+                    Replicas = replicaCount,
+                    UpdatedReplicas = replicaCount,
+                    ReadyReplicas = readyReplicas,
+                    AvailableReplicas = readyReplicas,
+                    UnavailableReplicas = failedPodCount,
+                    Conditions = readyReplicas > 0 ?
                     [
                         new V1DeploymentCondition { Type = "Available", Status = "True", Reason = "MinimumReplicasAvailable", Message = "Deployment has minimum availability." },
                         new V1DeploymentCondition { Type = "Progressing", Status = "True", Reason = "NewReplicaSetAvailable", Message = "ReplicaSet has successfully progressed." },
+                    ] :
+                    [
+                        new V1DeploymentCondition { Type = "Available", Status = "False", Reason = "MinimumReplicasUnavailable", Message = "Deployment has no available replicas." },
+                        new V1DeploymentCondition { Type = "Progressing", Status = "False", Reason = "ProgressDeadlineExceeded", Message = "Deployment has not made progress." },
                     ],
                 },
             });
 
-            resources.Add(new V1StatefulSet
+            resources.Add(new V1ReplicaSet
             {
                 ApiVersion = "apps/v1",
-                Kind = V1StatefulSet.KubeKind,
-                Metadata = CreateMetadata(appName, labels),
-                Spec = new V1StatefulSetSpec
+                Kind = V1ReplicaSet.KubeKind,
+                Metadata = replicaSetMetadata,
+                Spec = new V1ReplicaSetSpec
                 {
-                    Replicas = statefulSetOwnsPod ? 1 : 0,
-                    Selector = selector,
-                    ServiceName = $"svc-{appName}",
-                    Template = template,
-                    VolumeClaimTemplates =
-                    [
-                        new V1PersistentVolumeClaim
-                        {
-                            ApiVersion = "v1",
-                            Kind = V1PersistentVolumeClaim.KubeKind,
-                            Metadata = new V1ObjectMeta { Name = "data", Labels = labels },
-                            Spec = CreateClaimSpec($"pv-{appName}"),
-                        },
-                    ],
+                    Replicas = replicaCount,
+                    Selector = new V1LabelSelector { MatchLabels = new Dictionary<string, string>(podLabels) },
+                    Template = CreatePodTemplate(podLabels),
                 },
-                Status = new V1StatefulSetStatus
+                Status = new V1ReplicaSetStatus
                 {
                     ObservedGeneration = 1,
-                    Replicas = statefulSetOwnsPod ? 1 : 0,
-                    ReadyReplicas = statefulSetOwnsPod && index != 10 ? 1 : 0,
-                    CurrentReplicas = statefulSetOwnsPod ? 1 : 0,
-                    UpdatedReplicas = statefulSetOwnsPod ? 1 : 0,
-                    Conditions = statefulSetOwnsPod && index != 10 ?
-                    [
-                        new V1StatefulSetCondition { Type = "Ready", Status = "True", Reason = "ReplicasReady", Message = "All replicas are ready." },
-                    ] : statefulSetOwnsPod ?
-                    [
-                        new V1StatefulSetCondition { Type = "Ready", Status = "False", Reason = "ReplicasNotReady", Message = "One replica is restarting." },
-                    ] : [],
+                    Replicas = replicaCount,
+                    FullyLabeledReplicas = replicaCount,
+                    ReadyReplicas = readyReplicas,
+                    AvailableReplicas = readyReplicas,
                 },
             });
+
+            for (var replicaIndex = 0; replicaIndex < replicaCount; replicaIndex++)
+            {
+                podIndex++;
+                var nodePodIndex = ++nodePodCounts[nodeIndex - 1];
+                var podName = CreateDemoPodName(
+                    index,
+                    appName,
+                    replicaSetHash,
+                    replicaIndex,
+                    podSuffixRandom,
+                    podNames);
+                var qosClass = GetPodQosClass(index);
+                var podIP = $"10.244.{nodeIndex}.{nodePodIndex + 10}";
+                resources.Add(new V1Pod
+                {
+                    ApiVersion = "v1",
+                    Kind = V1Pod.KubeKind,
+                    Metadata = new V1ObjectMeta
+                    {
+                        Name = podName,
+                        NamespaceProperty = "default",
+                        Uid = $"walkthrough-pod-{podIndex:D3}",
+                        Labels = new Dictionary<string, string>(podLabels),
+                        OwnerReferences = [CreateOwnerReference(V1ReplicaSet.KubeKind, replicaSetName, replicaSetUid)],
+                    },
+                    Spec = new V1PodSpec
+                    {
+                        NodeName = nodeName,
+                        Containers = [CreateContainer(appName, index)],
+                        Volumes =
+                        [
+                            new V1Volume
+                            {
+                                Name = "data",
+                                PersistentVolumeClaim = new V1PersistentVolumeClaimVolumeSource { ClaimName = claimName },
+                            },
+                        ],
+                    },
+                    Status = CreatePodStatus(
+                        index,
+                        replicaIndex,
+                        podIndex,
+                        nodeIndex,
+                        nodeName,
+                        podIP,
+                        qosClass,
+                        podName),
+                });
+                resources.Add(CreatePodMetrics(podName, appName, podIndex));
+            }
 
             resources.Add(new V1Service
             {
@@ -491,14 +551,22 @@ internal static class KubeUIWalkthroughRecorder
         _ => "Burstable",
     };
 
-    private static V1PodStatus CreatePodStatus(int index, string nodeName, string podIP, string qosClass, string podName)
+    private static V1PodStatus CreatePodStatus(
+        int deploymentIndex,
+        int replicaIndex,
+        int podIndex,
+        int nodeIndex,
+        string nodeName,
+        string podIP,
+        string qosClass,
+        string podName)
     {
-        var crashLooping = index == 10;
-        var appName = index == 1 ? "web" : $"web-{index:D2}";
+        var crashLooping = deploymentIndex == 10 && replicaIndex == 0;
+        var appName = deploymentIndex == 1 ? "web" : $"web-{deploymentIndex:D2}";
         return new V1PodStatus
         {
             Phase = "Running",
-            HostIP = $"192.168.65.{10 + ((index - 1) % 3) + 1}",
+            HostIP = $"192.168.65.{10 + nodeIndex}",
             PodIP = podIP,
             QosClass = qosClass,
             ContainerStatuses =
@@ -508,7 +576,7 @@ internal static class KubeUIWalkthroughRecorder
                     Name = appName,
                     Image = "nginx:1.27",
                     ImageID = "docker-pullable://nginx@sha256:4a2b2a2e2f8d",
-                    ContainerID = $"containerd://kubeui-demo-{index:D2}",
+                    ContainerID = $"containerd://kubeui-demo-{podIndex:D3}",
                     Ready = !crashLooping,
                     Started = !crashLooping,
                     RestartCount = crashLooping ? 4 : 0,
@@ -537,17 +605,81 @@ internal static class KubeUIWalkthroughRecorder
         Labels = new Dictionary<string, string>(labels),
     };
 
+    private static V1OwnerReference CreateOwnerReference(string kind, string name, string uid) => new()
+    {
+        ApiVersion = "apps/v1",
+        Kind = kind,
+        Name = name,
+        Uid = uid,
+        Controller = true,
+        BlockOwnerDeletion = true,
+    };
+
+    private static string CreateDemoPodName(
+        int deploymentIndex,
+        string appName,
+        string replicaSetHash,
+        int replicaIndex,
+        Random suffixRandom,
+        HashSet<string> existingPodNames)
+    {
+        if (deploymentIndex == 1 && replicaIndex == 0)
+        {
+            existingPodNames.Add(PodName);
+            return PodName;
+        }
+
+        var suffix = deploymentIndex == 1
+            ? replicaIndex switch
+            {
+                1 => "2k4m7",
+                2 => "2k4m9",
+                _ => CreateRandomPodSuffix(suffixRandom),
+            }
+            : CreateRandomPodSuffix(suffixRandom);
+        var name = $"{appName}-{replicaSetHash}-{suffix}";
+        while (!existingPodNames.Add(name))
+        {
+            suffix = CreateRandomPodSuffix(suffixRandom);
+            name = $"{appName}-{replicaSetHash}-{suffix}";
+        }
+
+        return name;
+    }
+
+    private static string CreateRandomPodSuffix(Random random)
+    {
+        const string characters = "abcdefghijklmnopqrstuvwxyz0123456789";
+        Span<char> suffix = stackalloc char[5];
+        for (var index = 0; index < suffix.Length; index++)
+        {
+            suffix[index] = characters[random.Next(characters.Length)];
+        }
+
+        return new string(suffix);
+    }
+
     private static V1Container CreateContainer(string name, int index) => new()
     {
         Name = name,
         Image = "nginx:1.27",
+        ImagePullPolicy = index % 2 == 0 ? "IfNotPresent" : "Always",
         Ports = [new V1ContainerPort { Name = "http", ContainerPort = 80 }],
+        VolumeMounts = [new V1VolumeMount { Name = "data", MountPath = "/var/lib/kubeui" }],
         ReadinessProbe = new V1Probe
         {
             HttpGet = new V1HTTPGetAction { Path = "/", Port = 80 },
             InitialDelaySeconds = 3,
             PeriodSeconds = 10,
         },
+        LivenessProbe = index % 3 == 0
+            ? new V1Probe
+            {
+                HttpGet = new V1HTTPGetAction { Path = "/", Port = 80 },
+                InitialDelaySeconds = 10,
+                PeriodSeconds = 20,
+            }
+            : null,
         Resources = CreateResourceRequirements(index),
     };
 
@@ -583,6 +715,7 @@ internal static class KubeUIWalkthroughRecorder
     private static async Task RecordClipAsync(
         string clipName,
         string theme,
+        WalkthroughIntro? intro,
         Control root,
         ClusterWorkspace workspace,
         Window window,
@@ -596,20 +729,55 @@ internal static class KubeUIWalkthroughRecorder
         Directory.CreateDirectory(temporaryDirectory);
         try
         {
-            var recordings = new List<StepRecording>(steps.Count);
+            var recordings = new List<StepRecording>(steps.Count + (intro is null ? 0 : 1));
             var origin = new Point(Width * 0.12, Height * 0.78);
             var synthesizer = KokoroWavSynthesizer.LoadModel();
+            if (intro is not null)
+            {
+                var icon = ApplicationIcons.CreateControlPlaneImage();
+                using (var introWindow = new RecordingWindow
+                {
+                    Width = Width,
+                    Height = Height,
+                    CanResize = false,
+                    Content = new KubeUIWalkthroughIntroView(intro.Title, icon),
+                })
+                {
+                    introWindow.Show();
+                    await WaitForUiAsync();
+                    var introFrame = CaptureFrame(introWindow, temporaryDirectory, -1, -1);
+                    var introAudio = synthesizer.Synthesize(
+                        intro.Narration,
+                        KokoroVoiceManager.GetVoice("af_heart"));
+                    var introAudioPath = Path.Combine(temporaryDirectory, "narration-intro.wav");
+                    KokoroWavSynthesizer.SaveAudioToFile(introAudio, introAudioPath);
+                    var introAudioInfo = ReadWaveInfo(introAudioPath);
+                    recordings.Add(new StepRecording(
+                        introFrame,
+                        [],
+                        introFrame,
+                        introAudioPath,
+                        introAudioInfo.Duration,
+                        introAudioInfo));
+                }
+            }
+
             for (var stepIndex = 0; stepIndex < steps.Count; stepIndex++)
             {
                 var step = steps[stepIndex];
-                if (step.Actions.Count == 0)
-                {
-                    throw new InvalidOperationException("Walkthrough narration has no actions.");
-                }
-
                 if (step.ReadyWhen is { } readyWhen)
                 {
-                    await WaitForConditionAsync(() => readyWhen(root));
+                    try
+                    {
+                        await WaitForConditionAsync(() => readyWhen(root));
+                    }
+                    catch (TimeoutException error)
+                    {
+                        var description = step.ReadyDescription?.Invoke(root);
+                        throw new TimeoutException(
+                            $"Walkthrough step {stepIndex + 1} was not ready before narration: '{step.Narration}'. {description}",
+                            error);
+                    }
                 }
 
                 var openingFrame = CaptureFrame(window, temporaryDirectory, stepIndex, -1);
@@ -736,14 +904,32 @@ internal static class KubeUIWalkthroughRecorder
                     }
 
                     await MoveCursorAsync(window, cursor, origin, destination, temporaryDirectory, stepIndex, movementFrames);
-                    if (action.Kind is WalkthroughActionKind.Click or WalkthroughActionKind.SetText)
+                    if (action.Kind is WalkthroughActionKind.Click or WalkthroughActionKind.RightClick or WalkthroughActionKind.SetText)
                     {
-                        await ClickAsync(window, cursor, destination, temporaryDirectory, stepIndex, movementFrames);
+                        await ClickAsync(
+                            window,
+                            cursor,
+                            destination,
+                            temporaryDirectory,
+                            stepIndex,
+                            movementFrames,
+                            action.Kind == WalkthroughActionKind.RightClick
+                                ? MouseButton.Right
+                                : MouseButton.Left);
                     }
 
                     if (afterClick is not null)
                     {
-                        await afterClick();
+                        try
+                        {
+                            await afterClick();
+                        }
+                        catch (TimeoutException error)
+                        {
+                            throw new TimeoutException(
+                                $"Walkthrough action '{action.Target}' ('{action.Value}') did not complete.",
+                                error);
+                        }
                     }
 
                     movementFrames.Add(CaptureFrame(window, temporaryDirectory, stepIndex, movementFrames.Count));
@@ -966,7 +1152,7 @@ internal static class KubeUIWalkthroughRecorder
             };
         }
 
-        if (action.Kind != WalkthroughActionKind.Click)
+        if (action.Kind is not (WalkthroughActionKind.Click or WalkthroughActionKind.RightClick))
         {
             throw new InvalidOperationException($"Action '{action.Kind}' requires a supported walkthrough target.");
         }
@@ -983,7 +1169,41 @@ internal static class KubeUIWalkthroughRecorder
                 var podRow = await WaitForControlAsync<DataGridRow>(
                     root,
                     row => row.IsVisible && (row.DataContext as V1Pod)?.Metadata?.Name == action.Value);
+                if (action.Kind == WalkthroughActionKind.RightClick)
+                {
+                    var contextMenu = GetResourceListContextMenu(root);
+                    return (podRow, () => WaitForConditionAsync(
+                        () => contextMenu.IsOpen
+                            && contextMenu.ItemsSource is IEnumerable<MenuItemViewModel> menuItems
+                            && menuItems.Any()));
+                }
+
                 return (podRow, () => WaitForConditionAsync(() => podRow.IsSelected));
+            case "context-menu-item":
+                var menu = GetResourceListContextMenu(root);
+                MenuItem menuItem;
+                try
+                {
+                    menuItem = await WaitForMenuItemAsync(menu, action.Value!);
+                }
+                catch (TimeoutException error)
+                {
+                    throw new InvalidOperationException(
+                        $"Context menu item '{action.Value}' did not appear.",
+                        error);
+                }
+
+                return (menuItem, action.ReadyWhen is { } contextMenuReady
+                    ? () => WaitForConditionAsync(() => contextMenuReady(root))
+                    : null);
+            case "logs-controller":
+                var logsView = await WaitForControlAsync<PodLogsView>(
+                    root,
+                    view => view.IsVisible && view.ViewModel.CanJumpToController);
+                var logsViewModel = logsView.ViewModel;
+                return (
+                    FindCommandButton(root, logsViewModel.JumpToControlledByLogsCommand),
+                    () => WaitForConditionAsync(() => logsViewModel.Object?.Kind == action.Value));
             case "relationship-surface":
                 var graph = root.GetVisualDescendants().OfType<Control>()
                     .FirstOrDefault(control => control.Bounds.Width > 300 && control.Bounds.Height > 300)
@@ -1019,6 +1239,45 @@ internal static class KubeUIWalkthroughRecorder
     private static ResourceYamlView GetYamlView(Control root) => root as ResourceYamlView
         ?? throw new InvalidOperationException("The YAML view was not available.");
 
+    private static ContextMenu GetResourceListContextMenu(Control root)
+    {
+        var grid = root.GetVisualDescendants().OfType<DataGrid>()
+            .FirstOrDefault(candidate => candidate.Name == "PART_Grid")
+            ?? throw new InvalidOperationException("The resource list grid was not found.");
+        return grid.ContextMenu
+            ?? throw new InvalidOperationException("The resource list context menu was not found.");
+    }
+
+    internal static bool HasContextMenuItem(Control root, string title)
+    {
+        return GetMenuItemDescendants(GetResourceListContextMenu(root))
+            .Any(item => item.IsVisible && item.Header?.ToString() == title);
+    }
+
+    private static async Task<MenuItem> WaitForMenuItemAsync(ContextMenu menu, string title)
+    {
+        var deadline = DateTime.UtcNow.AddSeconds(10);
+        while (DateTime.UtcNow < deadline)
+        {
+            await WaitForUiAsync();
+            var match = GetMenuItemDescendants(menu)
+                .FirstOrDefault(item => item.IsVisible && item.Header?.ToString() == title);
+            if (match is not null)
+            {
+                return match;
+            }
+        }
+
+        throw new TimeoutException($"Context menu item '{title}' did not appear.");
+    }
+
+    private static IEnumerable<MenuItem> GetMenuItemDescendants(Control root)
+    {
+        return root.GetVisualDescendants().OfType<MenuItem>()
+            .Concat(root.GetLogicalDescendants().OfType<MenuItem>())
+            .Distinct();
+    }
+
     private static TextEditor GetYamlEditor(Control root) => root.FindControl<TextEditor>("Editor")
         ?? throw new InvalidOperationException("The YAML editor was not found.");
 
@@ -1029,10 +1288,10 @@ internal static class KubeUIWalkthroughRecorder
         return field?.GetValue(behavior) as CompletionWindow;
     }
 
-    private static Button FindCommandButton(ResourceYamlView view, System.Windows.Input.ICommand command)
+    private static Button FindCommandButton(Control root, System.Windows.Input.ICommand command)
     {
-        return view.GetVisualDescendants().OfType<Button>().FirstOrDefault(button => button.Command == command)
-            ?? throw new InvalidOperationException("The requested YAML toolbar button was not found.");
+        return root.GetVisualDescendants().OfType<Button>().FirstOrDefault(button => button.Command == command)
+            ?? throw new InvalidOperationException("The requested command button was not found.");
     }
 
     private static Point GetYamlHeaderPoint(TextEditor editor, string header, Window window)
@@ -1124,6 +1383,17 @@ internal static class KubeUIWalkthroughRecorder
         return false;
     }
 
+    internal static bool HasNavigationItem(Control root, string name)
+    {
+        var viewModel = root.GetVisualDescendants()
+            .OfType<NavigationView>()
+            .Select(static view => view.DataContext)
+            .OfType<NavigationViewModel>()
+            .FirstOrDefault();
+        return viewModel is not null
+            && FindNavigationParents(viewModel.Clusters, name, []);
+    }
+
     private static async Task MoveCursorAsync(
         Window window,
         CursorOverlay cursor,
@@ -1172,13 +1442,14 @@ internal static class KubeUIWalkthroughRecorder
         Point destination,
         string temporaryDirectory,
         int stepIndex,
-        List<string> movementFrames)
+        List<string> movementFrames,
+        MouseButton button = MouseButton.Left)
     {
         cursor.IsClicking = true;
-        window.MouseDown(destination, MouseButton.Left);
+        window.MouseDown(destination, button);
         await WaitForUiAsync();
         movementFrames.Add(CaptureFrame(window, temporaryDirectory, stepIndex, movementFrames.Count));
-        window.MouseUp(destination, MouseButton.Left);
+        window.MouseUp(destination, button);
         await WaitForUiAsync();
         movementFrames.Add(CaptureFrame(window, temporaryDirectory, stepIndex, movementFrames.Count));
         cursor.IsClicking = false;
@@ -1187,7 +1458,9 @@ internal static class KubeUIWalkthroughRecorder
     private static string CaptureFrame(Window window, string directory, int stepIndex, int frameIndex)
     {
         Dispatcher.UIThread.RunJobs();
-        var pixelSize = new PixelSize(Width, Height);
+        var pixelSize = new PixelSize(
+            KubeUIWalkthroughIntroView.VideoWidth,
+            KubeUIWalkthroughIntroView.VideoHeight);
         using var bitmap = new RenderTargetBitmap(pixelSize, new Vector(96, 96));
         bitmap.Render(window);
         var path = Path.Combine(directory, $"step-{stepIndex:D3}-frame-{frameIndex:D4}.png");

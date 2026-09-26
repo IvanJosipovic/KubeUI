@@ -9,9 +9,12 @@ public sealed class ConnectToClusterRecordingTests
     public Task Connect_to_cluster_video(string theme)
     {
         return KubeUIWalkthrough.Create(theme, "connect-to-cluster")
+            .Intro(
+                "Connect to a cluster",
+                "In this walkthrough, I'll connect KubeUI to a Kubernetes cluster and open its Pods.")
             .FakeCluster("demo-cluster")
-            .StartAt<MainView, MainViewModel>(
-                x => x.ViewModel.ResetLayoutCommand.Execute(null),
+            .LoadView<MainView, MainViewModel>(
+                x => x.ViewModel.Initialize(),
                 connectToCluster: false)
             .Speak("Select the cluster in the navigation pane. KubeUI checks access, then loads the resources your account can view.")
             .OpenCluster("demo-cluster")
