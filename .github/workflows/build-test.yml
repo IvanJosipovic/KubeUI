@@ -69,7 +69,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version: current
           cache: npm
