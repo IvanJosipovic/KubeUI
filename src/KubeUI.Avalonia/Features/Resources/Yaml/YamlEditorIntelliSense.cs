@@ -10,10 +10,13 @@ internal sealed class YamlCompletionData(YamlCompletionItemInfo item) : IComplet
 {
     public string Text => item.Text;
 
-    public object Content => item.Text;
+    internal bool InsertsStructuredValue => item.Schema.IsObject || item.Schema.IsSequence;
+
+    public object Content { get; } = YamlDocumentationViewFactory.CreateCodeText(
+        item.Text + (item.Schema.IsRequired ? " *" : string.Empty));
 
     public object Description => item.Documentation == null
-        ? item.Schema.TypeName
+        ? YamlDocumentationViewFactory.CreateCodeText(item.Schema.TypeName)
         : YamlDocumentationViewFactory.Create(item.Documentation);
 
     public double Priority => 0;
@@ -57,23 +60,15 @@ internal static class YamlDocumentationViewFactory
             MaxWidth = 520,
         };
 
-        panel.Children.Add(new TextBlock
-        {
-            Text = documentation.Label,
-            FontWeight = FontWeight.SemiBold,
-            TextWrapping = TextWrapping.Wrap,
-        });
+        var title = CreateCodeText(documentation.Label);
+        title.FontWeight = FontWeight.SemiBold;
+        title.TextWrapping = TextWrapping.Wrap;
+        panel.Children.Add(title);
 
-        var typeText = new TextBlock
-        {
-            Text = documentation.TypeName,
-            Opacity = 0.78,
-            TextWrapping = TextWrapping.Wrap,
-            TextAlignment = TextAlignment.Left,
-        };
-        typeText
-            .FontFamily(new DynamicResourceExtension(Typography.CodeFontFamilyResourceKey))
-            .FontSize(new DynamicResourceExtension(Typography.CodeFontSizeResourceKey));
+        var typeText = CreateCodeText(documentation.TypeName);
+        typeText.Opacity = 0.78;
+        typeText.TextWrapping = TextWrapping.Wrap;
+        typeText.TextAlignment = TextAlignment.Left;
         panel.Children.Add(typeText);
 
         if (!string.IsNullOrWhiteSpace(documentation.PropertySummary))
@@ -83,14 +78,19 @@ internal static class YamlDocumentationViewFactory
         return panel;
     }
 
+    internal static TextBlock CreateCodeText(string text)
+    {
+        return new TextBlock { Text = text }
+            .FontFamily(new DynamicResourceExtension(Typography.CodeFontFamilyResourceKey))
+            .FontSize(new DynamicResourceExtension(Typography.CodeFontSizeResourceKey));
+    }
+
     private static Control CreateSummaryBlock(string content)
     {
-        return new TextBlock
-        {
-            Text = content,
-            TextWrapping = TextWrapping.Wrap,
-            TextAlignment = TextAlignment.Left,
-        };
+        var summary = CreateCodeText(content);
+        summary.TextWrapping = TextWrapping.Wrap;
+        summary.TextAlignment = TextAlignment.Left;
+        return summary;
     }
 
 }

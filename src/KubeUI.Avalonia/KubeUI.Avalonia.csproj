@@ -30,6 +30,7 @@
     <InternalsVisibleTo Include="KubeUI.Benchmarks" />
     <InternalsVisibleTo Include="KubeUI.Avalonia.Tests" />
     <InternalsVisibleTo Include="KubeUI.Testing" />
+    <InternalsVisibleTo Include="KubeUI.Documentation.Tests" />
     <ProjectCapability Include="Avalonia" />
   </ItemGroup>
 

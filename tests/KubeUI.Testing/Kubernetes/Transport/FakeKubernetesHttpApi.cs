@@ -183,6 +183,13 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
 
     public void Add<T>(T resource) where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
+        if (resource is KubeUI.Kubernetes.GenericKubernetesObject metricsResource
+            && TryGetMetricsResourceDefinition(metricsResource, out var metricsDefinition))
+        {
+            AddMetricsResource(metricsResource, metricsDefinition);
+            return;
+        }
+
         Register<T>();
         var api = GroupApiVersionKind.From<T>();
         var json = ParseObject(KubernetesJson.Serialize(resource));
@@ -200,6 +207,43 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
             .GetMethods()
             .Single(method => method.Name == nameof(Add) && method.IsGenericMethodDefinition);
         add.MakeGenericMethod(resource.GetType()).Invoke(this, new object[] { resource });
+    }
+
+    private void AddMetricsResource(
+        KubeUI.Kubernetes.GenericKubernetesObject resource,
+        ResourceDefinition definition)
+    {
+        var key = DefinitionKey(definition.Api.Group, definition.Api.ApiVersion, definition.Api.PluralName);
+        lock (_state.DiscoveryGate)
+        {
+            _definitions[key] = definition;
+            InvalidateGroupedDiscoveryETag();
+        }
+
+        var json = ParseObject(KubernetesJson.Serialize(resource));
+        EnsureMetadata(json, resource.Metadata);
+        _resources[ResourceKey(ResourcePath(
+            definition.Api,
+            resource.Metadata.NamespaceProperty,
+            resource.Metadata.Name))] = json;
+    }
+
+    private static bool TryGetMetricsResourceDefinition(
+        KubeUI.Kubernetes.GenericKubernetesObject resource,
+        out ResourceDefinition definition)
+    {
+        if (resource.ApiVersion == "metrics.k8s.io/v1beta1"
+            && resource.Kind is "NodeMetrics" or "PodMetrics")
+        {
+            var pluralName = resource.Kind == "NodeMetrics" ? "nodes" : "pods";
+            definition = new ResourceDefinition(
+                new GroupApiVersionKind("metrics.k8s.io", "v1beta1", resource.Kind, pluralName),
+                Namespaced: resource.Kind == "PodMetrics");
+            return true;
+        }
+
+        definition = default;
+        return false;
     }
 
     public void AddYaml(string yaml, IDictionary<string, Type> typeMap)
@@ -286,7 +330,7 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
 
             if (!AcceptsApiDiscovery(request))
             {
-                return SetRequest(request, Json(new { apiVersion = "v1", kind = "APIGroupList", groups = Array.Empty<object>() }));
+                return SetRequest(request, Json(ApiGroupList()));
             }
 
             return SetRequest(request, DiscoveryResponse(request, false));
@@ -442,11 +486,33 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
                 return Error(HttpStatusCode.BadRequest, "Resource metadata.name is required.");
             }
 
-            if (request.RequestUri?.Query.Contains("dryRun=All", StringComparison.OrdinalIgnoreCase) == true
-                && string.Equals(resource["kind"]?.GetValue<string>(), "Pod", StringComparison.Ordinal)
-                && resource["spec"]?["containers"] is not JsonArray { Count: > 0 })
+            var isDryRun = request.RequestUri?.Query.Contains("dryRun=All", StringComparison.OrdinalIgnoreCase) == true;
+            if (isDryRun && string.Equals(resource["kind"]?.GetValue<string>(), "Pod", StringComparison.Ordinal))
             {
-                return Error(HttpStatusCode.UnprocessableEntity, "Pod spec.containers must contain at least one container.");
+                if (resource["spec"]?["containers"] is not JsonArray { Count: > 0 } containers)
+                {
+                    return Error(HttpStatusCode.UnprocessableEntity, "Pod spec.containers must contain at least one container.");
+                }
+
+                for (var index = 0; index < containers.Count; index++)
+                {
+                    var pullPolicy = containers[index]?["imagePullPolicy"]?.GetValue<string>();
+                    if (pullPolicy is not null
+                        && pullPolicy is not ("Always" or "IfNotPresent" or "Never"))
+                    {
+                        var field = $"spec.containers[{index}].imagePullPolicy";
+                        var cause = $"Unsupported value: {pullPolicy}. Supported values are Always, IfNotPresent, and Never.";
+                        return Json(new
+                        {
+                            kind = "Status",
+                            status = "Failure",
+                            message = $"Pod {field}: {cause}",
+                            reason = "Invalid",
+                            code = (int)HttpStatusCode.UnprocessableEntity,
+                            details = new { causes = new[] { new { field, message = cause, reason = "FieldValueNotSupported" } } },
+                        }, HttpStatusCode.UnprocessableEntity);
+                    }
+                }
             }
 
             EnsureMetadata(resource, resource["metadata"]?.Deserialize<V1ObjectMeta>());
@@ -560,6 +626,39 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
             ["kind"] = "APIResourceList",
             ["groupVersion"] = string.IsNullOrEmpty(group) ? version : $"{group}/{version}",
             ["resources"] = new JsonArray(definitions),
+        };
+    }
+
+    private JsonObject ApiGroupList()
+    {
+        var groups = _definitions.Values
+            .Where(definition => !string.IsNullOrEmpty(definition.Api.Group))
+            .GroupBy(definition => definition.Api.Group, StringComparer.Ordinal)
+            .Select(group =>
+            {
+                var versions = group
+                    .GroupBy(definition => definition.Api.ApiVersion, StringComparer.Ordinal)
+                    .Select(version => new JsonObject
+                    {
+                        ["groupVersion"] = $"{group.Key}/{version.Key}",
+                        ["version"] = version.Key,
+                    })
+                    .ToArray();
+
+                return new JsonObject
+                {
+                    ["name"] = group.Key,
+                    ["versions"] = new JsonArray(versions.Select(version => (JsonNode?)version).ToArray()),
+                    ["preferredVersion"] = versions[0].DeepClone(),
+                };
+            })
+            .ToArray();
+
+        return new JsonObject
+        {
+            ["apiVersion"] = "v1",
+            ["kind"] = "APIGroupList",
+            ["groups"] = new JsonArray(groups),
         };
     }
 
@@ -852,9 +951,9 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
     {
         var objectMetadata = resource["metadata"] as JsonObject ?? new JsonObject();
         objectMetadata["uid"] ??= Guid.NewGuid().ToString("N");
+        objectMetadata["creationTimestamp"] ??= metadata?.CreationTimestamp ?? DateTime.UtcNow;
         objectMetadata["resourceVersion"] = CurrentResourceVersion();
         resource["metadata"] = objectMetadata;
-        _ = metadata;
     }
 
     private string CurrentResourceVersion() => Interlocked.Increment(ref _state.ResourceVersion).ToString(System.Globalization.CultureInfo.InvariantCulture);
@@ -1010,109 +1109,49 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
         },
     };
 
-    private static JsonObject OpenApiV3Document() => new()
+    private static JsonObject OpenApiV3Document()
     {
-        ["openapi"] = "3.0.0",
-        ["info"] = new JsonObject
+        var schemas = LoadPodOpenApiSchemas();
+        schemas["io.example.com.v1.Widget"] = new JsonObject
         {
-            ["title"] = "Fake Kubernetes API",
-            ["version"] = "v1",
-        },
-        ["paths"] = new JsonObject(),
-        ["components"] = new JsonObject
-        {
-            ["schemas"] = new JsonObject
+            ["type"] = "object",
+            ["properties"] = new JsonObject
             {
-                ["io.k8s.api.core.v1.Pod"] = new JsonObject
+                ["apiVersion"] = new JsonObject { ["type"] = "string" },
+                ["kind"] = new JsonObject { ["type"] = "string" },
+                ["metadata"] = new JsonObject { ["$ref"] = "#/components/schemas/io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta" },
+                ["spec"] = new JsonObject
                 {
                     ["type"] = "object",
-                    ["properties"] = new JsonObject
-                    {
-                        ["apiVersion"] = new JsonObject { ["type"] = "string" },
-                        ["kind"] = new JsonObject { ["type"] = "string" },
-                        ["metadata"] = new JsonObject { ["$ref"] = "#/components/schemas/io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta" },
-                        ["spec"] = new JsonObject { ["$ref"] = "#/components/schemas/io.k8s.api.core.v1.PodSpec" },
-                    },
-                },
-                ["io.example.com.v1.Widget"] = new JsonObject
-                {
-                    ["type"] = "object",
-                    ["properties"] = new JsonObject
-                    {
-                        ["apiVersion"] = new JsonObject { ["type"] = "string" },
-                        ["kind"] = new JsonObject { ["type"] = "string" },
-                        ["metadata"] = new JsonObject { ["$ref"] = "#/components/schemas/io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta" },
-                        ["spec"] = new JsonObject
-                        {
-                            ["type"] = "object",
-                            ["description"] = "Custom resource schema",
-                        },
-                    },
-                },
-                ["io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta"] = new JsonObject
-                {
-                    ["type"] = "object",
-                    ["properties"] = new JsonObject
-                    {
-                        ["name"] = new JsonObject { ["type"] = "string" },
-                        ["namespace"] = new JsonObject { ["type"] = "string" },
-                        ["ownerReferences"] = new JsonObject
-                        {
-                            ["type"] = "array",
-                            ["items"] = new JsonObject { ["$ref"] = "#/components/schemas/io.k8s.apimachinery.pkg.apis.meta.v1.OwnerReference" },
-                        },
-                    },
-                },
-                ["io.k8s.apimachinery.pkg.apis.meta.v1.OwnerReference"] = new JsonObject
-                {
-                    ["type"] = "object",
-                    ["properties"] = new JsonObject
-                    {
-                        ["apiVersion"] = new JsonObject { ["type"] = "string" },
-                        ["kind"] = new JsonObject { ["type"] = "string" },
-                        ["name"] = new JsonObject { ["type"] = "string" },
-                        ["uid"] = new JsonObject { ["type"] = "string" },
-                    },
-                },
-                ["io.k8s.api.core.v1.PodSpec"] = new JsonObject
-                {
-                    ["type"] = "object",
-                    ["description"] = "Pod specification",
-                    ["properties"] = new JsonObject
-                    {
-                        ["containers"] = new JsonObject
-                        {
-                            ["type"] = "array",
-                            ["items"] = new JsonObject { ["$ref"] = "#/components/schemas/io.k8s.api.core.v1.Container" },
-                        },
-                    },
-                },
-                ["io.k8s.api.core.v1.Container"] = new JsonObject
-                {
-                    ["type"] = "object",
-                    ["properties"] = new JsonObject
-                    {
-                        ["command"] = new JsonObject
-                        {
-                            ["type"] = "array",
-                            ["items"] = new JsonObject { ["type"] = "string" },
-                        },
-                        ["image"] = new JsonObject { ["type"] = "string" },
-                        ["imagePullPolicy"] = new JsonObject
-                        {
-                            ["type"] = "string",
-                            ["description"] = "Image pull policy",
-                            ["enum"] = new JsonArray(
-                                JsonValue.Create("Always"),
-                                JsonValue.Create("IfNotPresent"),
-                                JsonValue.Create("Never")),
-                        },
-                        ["name"] = new JsonObject { ["type"] = "string", ["description"] = "Name of the container" },
-                    },
+                    ["description"] = "Custom resource schema",
                 },
             },
-        },
-    };
+        };
+
+        return new JsonObject
+        {
+            ["openapi"] = "3.0.0",
+            ["info"] = new JsonObject
+            {
+                ["title"] = "Fake Kubernetes API",
+                ["version"] = "v1",
+            },
+            ["paths"] = new JsonObject(),
+            ["components"] = new JsonObject
+            {
+                ["schemas"] = schemas,
+            },
+        };
+    }
+
+    private static JsonObject LoadPodOpenApiSchemas()
+    {
+        const string resourceName = "KubeUI.Testing.Kubernetes.Transport.Assets.pod-openapi-v1-schemas.json";
+        using var stream = typeof(FakeKubernetesHttpApi).Assembly.GetManifestResourceStream(resourceName)
+            ?? throw new InvalidOperationException($"Embedded OpenAPI schema resource '{resourceName}' was not found.");
+        return JsonNode.Parse(stream)?.AsObject()
+            ?? throw new InvalidOperationException("Embedded Pod OpenAPI schemas could not be parsed.");
+    }
 
     private static string PermissionKey(string resource, string verb, string? @namespace, string? subresource) => $"{resource}|{verb}|{@namespace}|{subresource}";
 

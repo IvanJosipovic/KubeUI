@@ -182,9 +182,9 @@ public sealed class MainViewModelTests
     [AvaloniaFact]
     public async Task help_menu_contains_check_for_updates_command()
     {
-        MainViewModel vm = CreateViewModel();
+        var vm = CreateViewModel();
         MainView view = new() { DataContext = vm };
-        using TestApplicationExtensions.TestWindow window = Application.Current.CreateTestWindow(content: view);
+        using var window = Application.Current.CreateTestWindow(content: view);
 
         window.Show();
         await TestApplicationExtensions.WaitForUiAsync();
@@ -204,7 +204,7 @@ public sealed class MainViewModelTests
     [Fact]
     public void update_check_unavailable_prompt_uses_user_facing_text()
     {
-        ContentDialogSettings settings = MainViewModel.CreateUpdateCheckUnavailableDialogSettings();
+        var settings = MainViewModel.CreateUpdateCheckUnavailableDialogSettings();
 
         settings.Title.ShouldBe("Update Check Unavailable");
         var content = settings.Content.ShouldBeOfType<string>();
@@ -215,9 +215,9 @@ public sealed class MainViewModelTests
     [AvaloniaFact]
     public async Task resetting_layout_keeps_unpinned_tool_dock_backgrounds_opaque()
     {
-        MainViewModel vm = CreateViewModel();
+        var vm = CreateViewModel();
         MainView view = new() { DataContext = vm };
-        using TestApplicationExtensions.TestWindow window = Application.Current.CreateTestWindow(content: view);
+        using var window = Application.Current.CreateTestWindow(content: view);
 
         window.Show();
         await TestApplicationExtensions.WaitForUiAsync();
@@ -231,9 +231,9 @@ public sealed class MainViewModelTests
             .ToArray();
 
         toolDocks.ShouldNotBeEmpty();
-        foreach (ToolControl toolDock in toolDocks)
+        foreach (var toolDock in toolDocks)
         {
-            SolidColorBrush background = toolDock.Background.ShouldBeOfType<SolidColorBrush>();
+            var background = toolDock.Background.ShouldBeOfType<SolidColorBrush>();
             background.Color.A.ShouldBe(byte.MaxValue);
         }
     }

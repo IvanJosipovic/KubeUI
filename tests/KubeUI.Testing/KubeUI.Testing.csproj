@@ -21,6 +21,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="Kubernetes\Transport\Assets\pod-openapi-v1-schemas.json">
+      <LogicalName>KubeUI.Testing.Kubernetes.Transport.Assets.pod-openapi-v1-schemas.json</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+
+  <ItemGroup>
     <Using Include="KubeUI.Kubernetes" />
   </ItemGroup>
 
