@@ -1,0 +1,24 @@
+# Documentation video tests
+
+- Keep each recording test focused on a fluent `KubeUIWalkthrough` script with narration and semantic UI actions.
+- Start clips with `.Intro(title, narration)` to show the KubeUI logo/title card and speak a dedicated intro before the UI walkthrough.
+- Render intro cards at the same 1440×900 resolution as all video frames.
+- Use app theme resources `SystemAltHighColor` and `SystemBaseHighBrush` for intro background and text; do not hardcode palette colors.
+- Place recording tests under `Features/` or `Shell/` to mirror the corresponding Avalonia feature.
+- Start views with `StartAt<TView, TViewModel>()`; it resolves both from the test scope, sets `DataContext`, and initializes `IInitializeCluster` view models. Pass a setup action when a view model needs custom initialization instead.
+- Use step readiness predicates for scenario-specific UI state; wait for rendered controls and stable layout, not only ViewModel data.
+- Keep the recorder's readiness mechanism generic.
+- Record YAML exploration through the editor's real hover popup, keyboard text input, and IntelliSense arrow/Enter navigation.
+- Select every manifest key from completion; type only scalar values, and invoke completion with the editor's key gesture.
+- Keep the video pointer on the toolbar during YAML typing and completion; an explicit narrated move may place it on the blank line below metadata. Only scripted header hovers should point at YAML text.
+- Put UI lookup, cursor movement, local narration generation, synchronization, and FFmpeg encoding in `KubeUIWalkthroughRecorder`.
+- Hold each step's opening UI state briefly, then show its scripted actions while narration continues.
+- Use `DelayBeforeNextAction` to place deliberate action gaps on the narration timeline.
+- Record video at 30 fps; keep narration and action footage synchronized, adding silence only if actions outlast speech.
+- Use `DocumentationVideoTheory` for light and dark recordings; it also skips unless video recording is enabled. Create and dispose a fresh fake cluster for every theory case.
+- Serialize this test assembly because recording cases share process-wide theme and cluster-configuration state.
+- Build walkthrough resources with ten Deployments, one active ReplicaSet per Deployment, and deterministic varied Pod replica counts. Keep at least two Pods in every Deployment so controller log scopes demonstrate stream aggregation. Verify the featured `web` Pod scope and its parent scopes.
+- Narration-only closing steps may omit actions to hold the current view while speech finishes.
+- Pod-log walkthroughs use the real context menu and parent-controller navigation with a deterministic fake log stream.
+- Encode one high quality H.264 MP4 per theme using lossless PNG source frames captured at the video resolution.
+- Regenerate clips with `record-feature-videos.ps1`; it clears old MP4 outputs after a successful build and before recording.

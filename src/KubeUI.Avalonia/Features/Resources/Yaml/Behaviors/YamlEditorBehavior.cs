@@ -1,5 +1,8 @@
+using Avalonia.Controls.Primitives;
 using Avalonia.Input;
+using Avalonia.LogicalTree;
 using Avalonia.Markup.Xaml.MarkupExtensions;
+using Avalonia.VisualTree;
 using Avalonia.Xaml.Interactivity;
 using AvaloniaEdit;
 using AvaloniaEdit.CodeCompletion;
@@ -70,6 +73,10 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
     private ClusterModelCatalog? _schemaCatalog;
     private GroupApiVersionKind _schemaKind;
     private long _schemaVersion = -1;
+
+    internal event EventHandler? CompletionOpened;
+
+    internal bool IsCompletionOpen => _completionWindow?.IsOpen == true;
 
     protected override void OnAttached()
     {
@@ -416,7 +423,16 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
 
         if (_completionWindow != null && !string.IsNullOrEmpty(e.Text) && !char.IsLetterOrDigit(e.Text[0]) && e.Text[0] != '_')
         {
-            _completionWindow.CompletionList.RequestInsertion(e);
+            var completionWindow = _completionWindow;
+            var consumesColon = e.Text == ":"
+                && completionWindow.CompletionList.ListBox.SelectedItem is YamlCompletionData { InsertsStructuredValue: true };
+
+            completionWindow.CompletionList.RequestInsertion(e);
+
+            if (consumesColon)
+            {
+                e.Handled = true;
+            }
         }
 
     }
@@ -780,6 +796,7 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
             _completionWindow.CompletionList
                 .FontFamily(new DynamicResourceExtension(Typography.CodeFontFamilyResourceKey))
                 .FontSize(new DynamicResourceExtension(Typography.CodeFontSizeResourceKey));
+            _completionWindow.CompletionList.SelectionChanged += CompletionList_SelectionChanged;
             _completionWindow.Closed += CompletionWindow_Closed;
         }
         else
@@ -803,6 +820,29 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
         }
 
         _completionWindow.Show();
+        CompletionOpened?.Invoke(this, EventArgs.Empty);
+    }
+
+    private void CompletionList_SelectionChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (_completionWindow is not { } completionWindow)
+        {
+            return;
+        }
+
+        var documentationPopup = completionWindow.GetLogicalDescendants().OfType<Popup>().FirstOrDefault();
+        if (documentationPopup?.IsOpen != true)
+        {
+            return;
+        }
+
+        var completionList = completionWindow.CompletionList;
+        var selectedIndex = completionList.ListBox.SelectedIndex;
+        var selectedRow = completionList.ListBox.ContainerFromIndex(selectedIndex);
+        documentationPopup.PlacementTarget = completionList;
+        documentationPopup.Placement = PlacementMode.RightEdgeAlignedTop;
+        documentationPopup.HorizontalOffset = 2;
+        documentationPopup.VerticalOffset = selectedRow?.TranslatePoint(new Point(0, 0), completionList)?.Y ?? 0;
     }
 
     private void CompletionWindow_Closed(object? sender, EventArgs e)
@@ -841,6 +881,7 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
         }
 
         _completionWindow.Closed -= CompletionWindow_Closed;
+        _completionWindow.CompletionList.SelectionChanged -= CompletionList_SelectionChanged;
         if (_completionWindow.IsOpen)
         {
             _completionWindow.Hide();

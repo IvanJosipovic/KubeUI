@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using Avalonia.Controls.Templates;
 using k8s;
 using k8s.Models;
@@ -37,6 +38,8 @@ public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphContr
     private bool _layoutPending;
     private bool _hasGeneratedGraph;
     private bool _zoomAfterGeneration;
+    private bool _hasUserAdjustedViewport;
+    private bool _isApplyingViewportFit;
     private bool _isDetached;
     private bool _rebuildFromAttachment;
     private bool _disposed;
@@ -123,6 +126,7 @@ public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphContr
             AllowZoomingWithoutCtrl = true,
             Content = _area,
         };
+        _zoomControl.PropertyChanged += ZoomControl_PropertyChanged;
 
         Content = _zoomControl;
     }
@@ -392,12 +396,29 @@ public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphContr
 
         if (structureChanged)
         {
-            if (wasEmpty != (vertices.Count == 0))
+            if (wasEmpty || vertices.Count == 0)
             {
-                _zoomAfterGeneration = vertices.Count > 0;
+                _hasUserAdjustedViewport = false;
+            }
+
+            if (vertices.Count > 0 && !_hasUserAdjustedViewport)
+            {
+                _zoomAfterGeneration = true;
             }
 
             QueueGraphGeneration();
+        }
+    }
+
+    private void ZoomControl_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (!_isApplyingViewportFit
+            && _zoomControl.Mode == ZoomControlModes.Custom
+            && e.PropertyName is nameof(ZoomControl.Zoom)
+                or nameof(ZoomControl.TranslateX)
+                or nameof(ZoomControl.TranslateY))
+        {
+            _hasUserAdjustedViewport = true;
         }
     }
 
@@ -496,7 +517,7 @@ public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphContr
                 cancellationToken.ThrowIfCancellationRequested();
                 _layoutPending = false;
                 var initialGeneration = !_hasGeneratedGraph;
-                var refitAfterGeneration = _zoomAfterGeneration;
+                var refitAfterGeneration = _zoomAfterGeneration || initialGeneration;
                 var zoom = _zoomControl.Zoom;
                 var translateX = _zoomControl.TranslateX;
                 var translateY = _zoomControl.TranslateY;
@@ -515,6 +536,14 @@ public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphContr
                 {
                     await _area.GenerateGraph(true, cancellation: cancellationToken);
                     _hasGeneratedGraph = true;
+                }
+
+                if (refitAfterGeneration)
+                {
+                    await Dispatcher.UIThread.InvokeAsync(
+                        RefitAfterViewportLayout,
+                        DispatcherPriority.Background);
+                    _zoomAfterGeneration = _layoutPending;
                 }
 
                 if (!initialGeneration && !refitAfterGeneration && !_zoomAfterGeneration)
@@ -553,18 +582,34 @@ public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphContr
             return;
         }
 
-        _zoomAfterGeneration = false;
         if (_zoomControl.Presenter is { } presenter)
         {
             presenter.ContentSizeChanged -= OnZoomContentSizeChanged;
             presenter.ContentSizeChanged += OnZoomContentSizeChanged;
         }
+    }
 
-        _zoomControl.Mode = ZoomControlModes.Fill;
-        _zoomControl.ZoomToFill();
-        if (_zoomControl.Presenter is null)
+    private void RefitAfterViewportLayout()
+    {
+        if (_disposed || _hasUserAdjustedViewport)
         {
-            _zoomControl.Mode = ZoomControlModes.Custom;
+            return;
+        }
+
+        var wasApplyingViewportFit = _isApplyingViewportFit;
+        _isApplyingViewportFit = true;
+        try
+        {
+            _zoomControl.Mode = ZoomControlModes.Fill;
+            _zoomControl.ZoomToFill();
+            if (_zoomControl.Presenter is null)
+            {
+                _zoomControl.Mode = ZoomControlModes.Custom;
+            }
+        }
+        finally
+        {
+            _isApplyingViewportFit = wasApplyingViewportFit;
         }
     }
 
@@ -580,10 +625,19 @@ public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphContr
             presenter.ContentSizeChanged -= OnZoomContentSizeChanged;
         }
 
-        if (!_disposed)
+        var wasApplyingViewportFit = _isApplyingViewportFit;
+        _isApplyingViewportFit = true;
+        try
         {
-            _zoomControl.ZoomToFill();
-            _zoomControl.Mode = ZoomControlModes.Custom;
+            if (!_disposed && !_hasUserAdjustedViewport)
+            {
+                _zoomControl.ZoomToFill();
+                _zoomControl.Mode = ZoomControlModes.Custom;
+            }
+        }
+        finally
+        {
+            _isApplyingViewportFit = wasApplyingViewportFit;
         }
     }
 
@@ -620,6 +674,7 @@ public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphContr
         _layoutCancellation?.Cancel();
         _area.GenerateGraphFinished -= OnGraphLayoutFinished;
         _area.RelayoutFinished -= OnGraphLayoutFinished;
+        _zoomControl.PropertyChanged -= ZoomControl_PropertyChanged;
 
         if (_graphGenerationTask is { IsCompleted: false } graphGenerationTask)
         {

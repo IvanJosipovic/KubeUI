@@ -18,4 +18,4 @@
 - `ResourceGraphDisplayFilter` owns display-only type/readiness filtering and must not mutate the complete graph.
 - `VisualizationSeedPlanner` owns unresolved-reference and seed-prerequisite resolution; seed planning must remain pure and separate from informer/resource mutation.
 - `VisualizationPipelineState` is the immutable boundary published from background preparation to the UI thread; stale versions must not publish it.
-- `ResourceGraphControl` consumes immutable display graphs and owns GraphX conversion, diffing, attachment, and layout scheduling.
+- `ResourceGraphControl` consumes immutable display graphs and owns GraphX conversion, diffing, attachment, and layout scheduling. Refit viewport as resources load until user adjusts zoom or pan; preserve adjusted viewport for subsequent updates.
