@@ -1,4 +1,5 @@
 using k8s.Models;
+using KubeUI.Avalonia.Features.Resources.Metrics.Controls;
 using KubeUI.Avalonia.Features.Resources.Properties.Controls;
 
 namespace KubeUI.Avalonia.Resources.Storage.v1.PersistentVolumeClaim;
@@ -23,6 +24,7 @@ public sealed class PropertiesView : ViewBase<V1PersistentVolumeClaim>
                 new PropertyItem()
                     .Key(Assets.Resources.Shared_Access_Modes!)
                     .Value(vm.Spec?.AccessModes?.Count ?? 0),
+                new MetricsControl(),
                 new ExpandableSection()
                     .Header(Assets.Resources.Shared_Configuration!)
                     .IsExpanded(true)

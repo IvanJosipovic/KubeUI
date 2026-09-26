@@ -109,6 +109,9 @@ namespace KubeUI.Kubernetes;
 [JsonSerializable(typeof(Watcher<V1ReplicaSet>.WatchEvent))]
 [JsonSerializable(typeof(KubernetesList<V1StatefulSet>))]
 [JsonSerializable(typeof(Watcher<V1StatefulSet>.WatchEvent))]
+[JsonSerializable(typeof(NodeMetricsList))]
+[JsonSerializable(typeof(PodMetricsList))]
+[JsonSerializable(typeof(PrometheusClientQueryRangeResponse))]
 
 [JsonSerializable(typeof(ExecCredentialResponse))]
 [JsonSerializable(typeof(ExecCredentialResponse.ExecStatus))]

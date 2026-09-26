@@ -1,6 +1,7 @@
 using Avalonia.Controls.Templates;
 using k8s.Models;
 using KubeUI.Avalonia.Converters;
+using KubeUI.Avalonia.Features.Resources.Metrics.Controls;
 using KubeUI.Avalonia.Features.Resources.Properties.Controls;
 
 namespace KubeUI.Avalonia.Resources.Workloads.v1.Pod;
@@ -28,6 +29,7 @@ public sealed class PropertiesView : ViewBase<V1Pod>
                 new PropertyItem()
                     .Key(Assets.Resources.PodPropertiesView_Service_Account!)
                     .Value(vm.Spec?.ServiceAccountName ?? ""),
+                new MetricsControl(),
                 new ExpandableSection()
                     .Header(Assets.Resources.Shared_Metadata!)
                     .Content(
@@ -69,7 +71,7 @@ public sealed class PropertiesView : ViewBase<V1Pod>
                     .Header(Assets.Resources.PodPropertiesView_InitContainers!)
                     .IsExpanded(true)
                     .IsVisible(vm, x => x.Spec.InitContainers, BindingMode.OneWay, NotEmptyCollectionConverter.Instance)
-                    .Content(CreateContainers(vm.Spec?.InitContainers ?? [])),
+                    .Content(CreateInitContainers(vm.Spec?.InitContainers ?? [])),
                 new ExpandableSection()
                     .Header(Assets.Resources.PodPropertiesView_EphemeralContainers!)
                     .IsExpanded(true)
@@ -78,7 +80,7 @@ public sealed class PropertiesView : ViewBase<V1Pod>
                 new ExpandableSection()
                     .Header(Assets.Resources.PodPropertiesView_Containers!)
                     .IsExpanded(true)
-                    .Content(CreateContainers(vm.Spec?.Containers ?? [])));
+                    .Content(CreateContainers(vm, vm.Spec?.Containers ?? [])));
     }
 
     private static IDataTemplate CreateKeyValueTemplate()
@@ -88,11 +90,18 @@ public sealed class PropertiesView : ViewBase<V1Pod>
                 .Text($"{entry.Key}={entry.Value}"));
     }
 
-    private static ItemsControl CreateContainers(IEnumerable<V1Container> containers)
+    private static ItemsControl CreateInitContainers(IEnumerable<V1Container> containers)
     {
         return new ItemsControl()
             .ItemsSource(containers)
-            .ItemTemplate(new FuncDataTemplate<V1Container>((container, _) => CreateContainerTemplate(container)));
+            .ItemTemplate(new FuncDataTemplate<V1Container>((container, _) => CreateContainerPropertiesTemplate(container)));
+    }
+
+    private static ItemsControl CreateContainers(V1Pod pod, IEnumerable<V1Container> containers)
+    {
+        return new ItemsControl()
+            .ItemsSource(containers)
+            .ItemTemplate(new FuncDataTemplate<V1Container>((container, _) => CreateContainerTemplate(pod, container)));
     }
 
     private static ItemsControl CreateEphemeralContainers(IEnumerable<V1EphemeralContainer> containers)
@@ -102,7 +111,26 @@ public sealed class PropertiesView : ViewBase<V1Pod>
             .ItemTemplate(new FuncDataTemplate<V1EphemeralContainer>((container, _) => CreateEphemeralContainerTemplate(container)));
     }
 
-    private static StackPanel CreateContainerTemplate(V1Container container)
+    private static Grid CreateContainerTemplate(V1Pod pod, V1Container container)
+    {
+        var metricsControl = new MetricsControl
+        {
+            Pod = pod,
+            Container = container,
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+        };
+        Grid.SetRow(metricsControl, 0);
+
+        var properties = CreateContainerPropertiesTemplate(container);
+        Grid.SetRow(properties, 1);
+
+        return new Grid()
+            .Rows("Auto,*")
+            .HorizontalAlignment(HorizontalAlignment.Stretch)
+            .Children(metricsControl, properties);
+    }
+
+    private static StackPanel CreateContainerPropertiesTemplate(V1Container container)
     {
         return new StackPanel()
             .Children(

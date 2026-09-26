@@ -1,4 +1,5 @@
 using k8s.Models;
+using KubeUI.Avalonia.Features.Resources.Metrics.Controls;
 using KubeUI.Avalonia.Features.Resources.Properties.Controls;
 
 namespace KubeUI.Avalonia.Resources.Workloads.v1.Deployment;
@@ -23,6 +24,7 @@ public sealed class PropertiesView : ViewBase<V1Deployment>
                 new PropertyItem()
                     .Key(Assets.Resources.Shared_Updated_Replicas!)
                     .Value(vm.Status?.UpdatedReplicas ?? 0),
+                new MetricsControl(),
                 new ExpandableSection()
                     .Header(Assets.Resources.DeploymentPropertiesView_Rollout!)
                     .IsExpanded(true)

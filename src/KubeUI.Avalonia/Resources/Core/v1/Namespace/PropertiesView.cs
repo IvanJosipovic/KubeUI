@@ -1,4 +1,5 @@
 using k8s.Models;
+using KubeUI.Avalonia.Features.Resources.Metrics.Controls;
 using KubeUI.Avalonia.Features.Resources.Properties.Controls;
 
 namespace KubeUI.Avalonia.Resources.Core.v1.Namespace;
@@ -14,6 +15,7 @@ public sealed class PropertiesView : ViewBase<V1Namespace>
                 new PropertyItem()
                     .Key(Assets.Resources.Shared_Phase!)
                     .Value(vm.Status?.Phase ?? ""),
+                new MetricsControl(),
                 new PropertyItem()
                     .Key(Assets.Resources.NamespacePropertiesView_Finalizers!)
                     .Value(vm.Spec?.Finalizers?.Count ?? 0),

@@ -15,6 +15,7 @@ References:
 
 ### Views and styling
 - Use C# for layout and visuals;
+- When constructing Avalonia controls in C#, prefer fluent property/collection methods over object initializers. Use initializers only for properties without a fluent API.
 - Prefer `StaticResource` for immutable resources and `DynamicResource` when runtime updates are required.
 
 ### Data binding

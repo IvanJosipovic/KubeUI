@@ -3,10 +3,8 @@ using Avalonia.Controls.Shapes;
 using Avalonia.Controls.Templates;
 using Avalonia.Markup.Xaml.MarkupExtensions;
 using Avalonia.Markup.Xaml.Templates;
-using k8s;
 using k8s.Models;
 using KubeUI.Avalonia.Converters;
-using KubeUI.Avalonia.Infrastructure.Presentation;
 using AppResources = KubeUI.Avalonia.Assets.Resources;
 
 namespace KubeUI.Avalonia.Resources.Workloads.v1.Pod;
