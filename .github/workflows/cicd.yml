@@ -17,10 +17,6 @@ permissions:
   pull-requests: write
 
 jobs:
-  build-test:
-    name: Build & Test
-    uses: ./.github/workflows/build-test.yml
-
   publish-docs:
     if: github.ref == 'refs/heads/main'
     name: Publish Documentation
@@ -62,6 +58,11 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+  build-test:
+    name: Build & Test
+    needs: []
+    uses: ./.github/workflows/build-test.yml
 
   semantic-release:
     name: Bump Version

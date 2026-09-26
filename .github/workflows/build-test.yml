@@ -33,21 +33,6 @@ jobs:
             --configuration Release \
             --no-build
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: 22
-          cache: npm
-          cache-dependency-path: website/package-lock.json
-
-      - name: Install website dependencies
-        working-directory: website
-        run: npm ci
-
-      - name: Build documentation website
-        working-directory: website
-        run: npm run build
-
       - name: Upload test dump
         if: failure()
         uses: actions/upload-artifact@v7
@@ -77,3 +62,29 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: TestResults/*.cobertura.xml
           fail_ci_if_error: false
+
+  build-website:
+    name: Build Website
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: current
+          cache: npm
+          cache-dependency-path: website/package-lock.json
+
+      - name: Install website dependencies
+        working-directory: website
+        run: npm ci
+
+      - name: Build documentation website
+        working-directory: website
+        run: npm run build
+
+      - name: Upload Website
+        uses: actions/upload-artifact@v7
+        with:
+          name: website
+          path: website/build/
