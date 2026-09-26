@@ -52,7 +52,7 @@ public sealed class ProgramStartupTests
         Mock<IHost> host = new(MockBehavior.Strict);
         using var loggerProvider = new CapturingLoggerProvider();
         using var loggerFactory = LoggerFactory.Create(builder => builder.AddProvider(loggerProvider));
-        InvalidOperationException exception = CreateException("startup crash");
+        var exception = CreateException("startup crash");
 
         Should.Throw<InvalidOperationException>(() => Program.StartHostAfterAvaloniaSetup(
             host.Object,
