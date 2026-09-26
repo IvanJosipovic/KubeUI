@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>net10.0;net11.0</TargetFrameworks>
+    <EnableAvaloniaXamlCompilation>true</EnableAvaloniaXamlCompilation>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <IsTrimmable>true</IsTrimmable>
+    <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
+    <IsAotCompatible>true</IsAotCompatible>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Using Include="Avalonia" />
+    <Using Include="Avalonia.Controls" />
+    <Using Include="Avalonia.Controls.Primitives" />
+    <Using Include="Avalonia.Controls.Selection" />
+    <Using Include="Avalonia.Controls.Templates" />
+    <Using Include="Avalonia.Data" />
+    <Using Include="Avalonia.Layout" />
+    <Using Include="Avalonia.Media" />
+    <Using Include="Avalonia.Threading" />
+    <Using Include="System" />
+    <Using Include="System.Collections" />
+    <Using Include="System.Collections.ObjectModel" />
+    <Using Include="System.ComponentModel" />
+    <Using Include="System.Globalization" />
+    <Using Include="System.Reactive.Linq" />
+    <Using Include="PropertyGenerator.Avalonia" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" Version="12.1.3" />
+    <PackageReference Include="DynamicData" Version="9.4.33" />
+    <PackageReference Include="PropertyGenerator.Avalonia" Version="1.3.1" PrivateAssets="all" />
+  </ItemGroup>
+
+</Project>

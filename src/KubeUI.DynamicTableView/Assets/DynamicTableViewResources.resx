@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="FilterValue" xml:space="preserve"><value>Value</value></data>
+  <data name="FilterSecondValue" xml:space="preserve"><value>Second value</value></data>
+  <data name="FilterApply" xml:space="preserve"><value>Apply</value></data>
+  <data name="FilterClear" xml:space="preserve"><value>Clear</value></data>
+  <data name="FilterAccessibleName" xml:space="preserve"><value>Filter options</value></data>
+  <data name="SortAccessibleName" xml:space="preserve"><value>Sort column</value></data>
+  <data name="FilterFalse" xml:space="preserve"><value>False</value></data>
+  <data name="FilterTrue" xml:space="preserve"><value>True</value></data>
+  <data name="FilterOperator_Contains" xml:space="preserve"><value>Contains</value></data>
+  <data name="FilterOperator_DoesNotContain" xml:space="preserve"><value>Does not contain</value></data>
+  <data name="FilterOperator_Equals" xml:space="preserve"><value>Equals</value></data>
+  <data name="FilterOperator_NotEquals" xml:space="preserve"><value>Does not equal</value></data>
+  <data name="FilterOperator_StartsWith" xml:space="preserve"><value>Starts with</value></data>
+  <data name="FilterOperator_DoesNotStartWith" xml:space="preserve"><value>Does not start with</value></data>
+  <data name="FilterOperator_EndsWith" xml:space="preserve"><value>Ends with</value></data>
+  <data name="FilterOperator_DoesNotEndWith" xml:space="preserve"><value>Does not end with</value></data>
+  <data name="FilterOperator_GreaterThan" xml:space="preserve"><value>Greater than</value></data>
+  <data name="FilterOperator_GreaterThanOrEqual" xml:space="preserve"><value>Greater than or equal to</value></data>
+  <data name="FilterOperator_LessThan" xml:space="preserve"><value>Less than</value></data>
+  <data name="FilterOperator_LessThanOrEqual" xml:space="preserve"><value>Less than or equal to</value></data>
+  <data name="FilterOperator_Between" xml:space="preserve"><value>Between</value></data>
+  <data name="FilterOperator_NotBetween" xml:space="preserve"><value>Not between</value></data>
+  <data name="FilterOperator_In" xml:space="preserve"><value>Is one of</value></data>
+  <data name="FilterOperator_IsTrue" xml:space="preserve"><value>Is true</value></data>
+  <data name="FilterOperator_IsFalse" xml:space="preserve"><value>Is false</value></data>
+  <data name="FilterOperator_IsNull" xml:space="preserve"><value>Is empty</value></data>
+  <data name="FilterOperator_IsNotNull" xml:space="preserve"><value>Is not empty</value></data>
+</root>

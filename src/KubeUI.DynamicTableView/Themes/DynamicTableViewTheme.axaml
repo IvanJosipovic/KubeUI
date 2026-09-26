@@ -1,0 +1,101 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="using:KubeUI.DynamicTableView">
+  <Styles.Resources>
+    <x:Double x:Key="DynamicTableView.FlyoutSpacing">8</x:Double>
+    <Thickness x:Key="DynamicTableView.FlyoutMargin">8</Thickness>
+    <Thickness x:Key="DynamicTableView.HeaderButtonPadding">4,0</Thickness>
+
+  <ControlTheme x:Key="{x:Type local:DynamicTableViewHeader}" TargetType="local:DynamicTableViewHeader">
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Grid ColumnDefinitions="*,Auto,Auto">
+          <Button Name="PART_SortButton"
+                  Classes="dynamic-table-view-sort-button"
+                  Padding="{DynamicResource DynamicTableView.HeaderButtonPadding}"
+                  HorizontalContentAlignment="Left"
+                  AutomationProperties.Name="{x:Static local:DynamicTableViewResources.SortAccessibleName}"
+                  IsEnabled="{TemplateBinding IsSortEnabled}">
+            <TextBlock Text="{TemplateBinding HeaderText}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+          </Button>
+          <TextBlock Grid.Column="1"
+                     Text="{TemplateBinding SortText}"
+                     IsVisible="{TemplateBinding HasSort}"
+                     VerticalAlignment="Center"
+                     Margin="{DynamicResource DynamicTableView.HeaderButtonPadding}" />
+          <Button Name="PART_FilterButton"
+                  Grid.Column="2"
+                  Classes="dynamic-table-view-filter-button"
+                  Padding="{DynamicResource DynamicTableView.HeaderButtonPadding}"
+                  Content="{TemplateBinding FilterText}"
+                  AutomationProperties.Name="{x:Static local:DynamicTableViewResources.FilterAccessibleName}"
+                  IsVisible="{TemplateBinding IsFilterEnabled}" />
+        </Grid>
+      </ControlTemplate>
+    </Setter>
+  </ControlTheme>
+
+  <ControlTheme x:Key="{x:Type local:DynamicTableViewCell}" TargetType="local:DynamicTableViewCell">
+    <Setter Property="Template">
+      <ControlTemplate>
+        <TextBlock Name="PART_CellText"
+                   Text="{TemplateBinding Text}"
+                   VerticalAlignment="Center"
+                   TextTrimming="CharacterEllipsis" />
+      </ControlTemplate>
+    </Setter>
+  </ControlTheme>
+
+  <ControlTheme x:Key="{x:Type local:DynamicTableViewFilterFlyout}" TargetType="local:DynamicTableViewFilterFlyout">
+    <Setter Property="Template">
+      <ControlTemplate>
+        <StackPanel Spacing="{DynamicResource DynamicTableView.FlyoutSpacing}"
+                    Margin="{DynamicResource DynamicTableView.FlyoutMargin}">
+          <TextBlock Text="{TemplateBinding ColumnHeader}" FontWeight="SemiBold" />
+          <ComboBox Name="PART_OperatorBox"
+                    ItemsSource="{TemplateBinding OperatorChoices}"
+                    SelectedItem="{Binding SelectedOperatorChoice, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}">
+            <ComboBox.ItemTemplate>
+              <DataTemplate x:DataType="local:DynamicTableViewFilterChoice">
+                <TextBlock Text="{Binding Label}" />
+              </DataTemplate>
+            </ComboBox.ItemTemplate>
+          </ComboBox>
+          <TextBox Name="PART_ValueBox"
+                   Watermark="{x:Static local:DynamicTableViewResources.FilterValue}"
+                   Text="{Binding FirstValueText, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}"
+                   IsVisible="{TemplateBinding IsValueInputVisible}" />
+          <TextBox Name="PART_SecondValueBox"
+                   Watermark="{x:Static local:DynamicTableViewResources.FilterSecondValue}"
+                   Text="{Binding SecondValueText, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}"
+                   IsVisible="{TemplateBinding IsSecondValueInputVisible}" />
+          <ComboBox Name="PART_ChoiceBox"
+                    ItemsSource="{TemplateBinding FilterChoices}"
+                    SelectedItem="{Binding SelectedChoice, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}"
+                    IsVisible="{TemplateBinding IsSingleChoiceInputVisible}">
+            <ComboBox.ItemTemplate>
+              <DataTemplate x:DataType="local:DynamicTableViewFilterChoice">
+                <TextBlock Text="{Binding Label}" />
+              </DataTemplate>
+            </ComboBox.ItemTemplate>
+          </ComboBox>
+          <ListBox Name="PART_MultipleChoiceBox"
+                   ItemsSource="{TemplateBinding FilterChoices}"
+                   SelectionMode="Multiple"
+                   IsVisible="{TemplateBinding IsMultiChoiceInputVisible}">
+            <ListBox.ItemTemplate>
+              <DataTemplate x:DataType="local:DynamicTableViewFilterChoice">
+                <TextBlock Text="{Binding Label}" />
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+          <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="{DynamicResource DynamicTableView.FlyoutSpacing}">
+            <Button Name="PART_ClearButton" Content="{x:Static local:DynamicTableViewResources.FilterClear}" />
+            <Button Name="PART_ApplyButton" Content="{x:Static local:DynamicTableViewResources.FilterApply}" />
+          </StackPanel>
+        </StackPanel>
+      </ControlTemplate>
+    </Setter>
+  </ControlTheme>
+  </Styles.Resources>
+</Styles>

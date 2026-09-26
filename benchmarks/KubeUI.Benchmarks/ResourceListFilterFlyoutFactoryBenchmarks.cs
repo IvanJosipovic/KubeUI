@@ -7,12 +7,11 @@ using BenchmarkDotNet.Engines;
 using k8s.Models;
 using KubeUI.Avalonia.Features.Resources.List;
 using KubeUI.Avalonia.Resources;
-using Microsoft.VSDiagnostics;
 
 namespace KubeUI.Benchmarks;
 
 [SimpleJob(RunStrategy.ColdStart, launchCount: 1, warmupCount: 0, iterationCount: 1)]
-[CPUUsageDiagnoser]
+[MemoryDiagnoser]
 public class ResourceListFilterFlyoutFactoryBenchmarks
 {
     private object _factory = null!;
