@@ -3,7 +3,7 @@ using Avalonia.Headless;
 using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Tests.Infra;
 
-[assembly: CollectionBehavior(DisableTestParallelization = false)]
+[assembly: CollectionBehavior(DisableTestParallelization = true)]
 [assembly: AvaloniaTestApplication(typeof(KubeUI.Documentation.Tests.Infra.DocumentationTestAppBuilder))]
 
 namespace KubeUI.Documentation.Tests.Infra;

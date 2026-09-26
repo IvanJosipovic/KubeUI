@@ -197,7 +197,7 @@ public sealed class PodLogSessionResolverTests
     }
 
     [Fact]
-    public async Task Direct_pod_resolution_keeps_the_current_pod_and_sorts_matching_siblings()
+    public async Task Direct_pod_resolution_keeps_only_the_current_pod()
     {
         await using var harness = await new TestClusterGenerator().CreateAsync(
             new TestClusterConfig { Type = KubernetesBackend.Fake },
@@ -238,7 +238,7 @@ public sealed class PodLogSessionResolverTests
         resolution.ShouldNotBeNull();
         resolution!.Pod.ShouldBeSameAs(current);
         resolution.PodChanged.ShouldBeFalse();
-        resolution.RelatedPods.Select(pod => pod.Name()).ShouldBe(["newest", "alpha", "beta", "current"]);
+        resolution.RelatedPods.Select(pod => pod.Name()).ShouldBe(["current"]);
     }
 
     [Fact]

@@ -336,7 +336,7 @@ public sealed class PodLogsViewModelTests
         using var viewModel = CreateViewModel(
             workspace.Runtime,
             services.GetRequiredService<IPodLogStreamClient>());
-        viewModel.Object = olderPod;
+        viewModel.Object = deployment;
         viewModel.ContainerName = "app";
 
         await viewModel.Connect();
@@ -520,7 +520,7 @@ public sealed class PodLogsViewModelTests
         using var viewModel = CreateViewModel(
             workspace.Runtime,
             services.GetRequiredService<IPodLogStreamClient>());
-        viewModel.Object = olderPod;
+        viewModel.Object = deployment;
         viewModel.ContainerName = "app";
         viewModel.ShowResourceNames = true;
         await viewModel.Connect();
@@ -1436,10 +1436,11 @@ public sealed class PodLogsViewModelTests
         using var viewModel = CreateViewModel(
             workspace.Runtime,
             services.GetRequiredService<IPodLogStreamClient>());
-        viewModel.Object = olderPod;
+        viewModel.Object = deployment;
         viewModel.ContainerName = "app";
 
         await viewModel.Connect();
+        SelectOnlyPods(viewModel, olderPod.Name(), newerPod.Name());
         SelectOnlyContainers(viewModel, "app", "sidecar");
 
         await WaitForAsync(() => viewModel.Logs.Text.Contains("newer app line", StringComparison.Ordinal)
@@ -1645,7 +1646,7 @@ public sealed class PodLogsViewModelTests
         using var viewModel = CreateViewModel(
             workspace.Runtime,
             services.GetRequiredService<IPodLogStreamClient>());
-        viewModel.Object = originalPod;
+        viewModel.Object = deployment;
         viewModel.ContainerName = string.Empty;
 
         await viewModel.Connect();
@@ -1663,7 +1664,7 @@ public sealed class PodLogsViewModelTests
         await WaitForAsync(() => viewModel.AvailablePods.Count == 2
             && viewModel.AvailablePods.Any(item => item.Name() == addedPod.Name()), 60000);
 
-        viewModel.Object.Name().ShouldBe(originalPod.Name());
+        viewModel.Object.Name().ShouldBe(deployment.Name());
         viewModel.AvailablePods.Select(pod => pod.Name()).ShouldBe([addedPod.Name(), originalPod.Name()]);
         var addedPodNode = GetPodNodes(viewModel)
             .Single(node => ((V1Pod)node.Value).Name() == addedPod.Name());
@@ -2205,14 +2206,20 @@ public sealed class PodLogsViewModelTests
     public async Task Multiple_log_streams_should_open_in_parallel()
     {
         using var workspace = await Application.Current.CreateClusterAsync();
+        var deployment = CreateKindDeployment("parallel-streams", "parallel-streams", "unused");
+        deployment.Spec!.Replicas = 0;
+        deployment.Metadata!.Uid = "deployment-uid";
+        await workspace.Runtime.SeedResource<V1Deployment>(true);
+        await workspace.Runtime.SeedResource<V1Pod>(true);
+        await workspace.Runtime.AddOrUpdateResource(deployment);
 
         var olderPod = CreatePod(
             name: "app-7c9dd9f4f4-abcde",
             namespaceName: "default",
             uid: "old-pod-uid",
-            ownerUid: "replicaset-uid",
-            ownerName: "app-7c9dd9f4f4",
-            ownerKind: "ReplicaSet",
+            ownerUid: deployment.Uid(),
+            ownerName: deployment.Name(),
+            ownerKind: V1Deployment.KubeKind,
             containers: ["app"],
             creationTimestamp: new DateTime(2026, 4, 1, 12, 0, 0, DateTimeKind.Utc));
 
@@ -2220,19 +2227,24 @@ public sealed class PodLogsViewModelTests
             name: "app-7c9dd9f4f4-fghij",
             namespaceName: "default",
             uid: "new-pod-uid",
-            ownerUid: "replicaset-uid",
-            ownerName: "app-7c9dd9f4f4",
-            ownerKind: "ReplicaSet",
+            ownerUid: deployment.Uid(),
+            ownerName: deployment.Name(),
+            ownerKind: V1Deployment.KubeKind,
             containers: ["app"],
             creationTimestamp: new DateTime(2026, 4, 1, 12, 5, 0, DateTimeKind.Utc));
 
+        foreach (var pod in new[] { olderPod, newerPod })
+        {
+            pod.Metadata!.Labels = new Dictionary<string, string> { ["app"] = "parallel-streams" };
+            pod.Metadata.OwnerReferences![0].ApiVersion = "apps/v1";
+        }
+
         await workspace.Runtime.AddOrUpdateResource(olderPod);
         await workspace.Runtime.AddOrUpdateResource(newerPod);
-        await workspace.Runtime.SeedResource<V1Pod>(true);
 
         BlockingPodLogStreamClient streamClient = new("initial line\n");
         using var viewModel = CreateViewModel(workspace.Runtime, streamClient);
-        viewModel.Object = olderPod;
+        viewModel.Object = deployment;
         viewModel.ContainerName = "app";
 
         var connectTask = viewModel.Connect();
@@ -2240,7 +2252,8 @@ public sealed class PodLogsViewModelTests
 
         try
         {
-            await WaitForAsync(() => streamClient.Requests.Count >= 2);
+            await WaitForAsync(() => streamClient.Requests.Any(
+                request => request.PodName == newerPod.Name()));
         }
         finally
         {
@@ -2609,7 +2622,7 @@ public sealed class PodLogsViewModelTests
         using var viewModel = CreateViewModel(
             workspace.Runtime,
             Application.Current.GetTestServices().GetRequiredService<IPodLogStreamClient>());
-        viewModel.Object = olderPod;
+        viewModel.Object = deployment;
         viewModel.ContainerName = "app";
 
         await viewModel.Connect();
@@ -2686,7 +2699,7 @@ public sealed class PodLogsViewModelTests
         using var viewModel = CreateViewModel(
             workspace.Runtime,
             Application.Current.GetTestServices().GetRequiredService<IPodLogStreamClient>());
-        viewModel.Object = olderPod;
+        viewModel.Object = deployment;
         viewModel.ContainerName = "app";
 
         await viewModel.Connect();

@@ -39,6 +39,18 @@
   justify-content: center;
 }
 
+.downloadButton {
+  color: #ffffff;
+  border-color: #ffffff;
+}
+
+.downloadButton:hover,
+.downloadButton:focus-visible {
+  color: #0c1b2a;
+  background-color: #ffffff;
+  border-color: #ffffff;
+}
+
 .downloadSection {
   padding: 3.5rem 0 5rem;
 }

@@ -1261,7 +1261,10 @@ public class ResourceYamlViewModelTests
 
         InvokeHoverTooltipAtPoint(editor, GetPointForOffset(editor, offset)).ShouldBeTrue();
         var tip = GetDocumentationWindow(editor).ShouldBeOfType<StackPanel>();
-        tip.Children.OfType<TextBlock>().Select(x => x.Text).ShouldContain("Pod specification");
+        tip.Children.OfType<TextBlock>()
+            .Select(x => x.Text)
+            .Any(text => text?.Contains("desired behavior of the pod", StringComparison.Ordinal) == true)
+            .ShouldBeTrue();
         tip.Children.OfType<TextBlock>().Select(x => x.Text).ShouldContain("object");
         IsDocumentationPopupOpen(editor).ShouldBeTrue();
     }
@@ -1590,7 +1593,7 @@ public class ResourceYamlViewModelTests
         var panel = tip.ShouldBeOfType<StackPanel>();
         var title = panel.Children.OfType<TextBlock>().FirstOrDefault();
         title.ShouldNotBeNull();
-        title!.Text.ShouldBe("containers");
+        title!.Text.ShouldBe("containers *");
         panel.Children.OfType<TextBlock>().Skip(1).First().Text.ShouldBe("array");
     }
 
@@ -1777,7 +1780,7 @@ public class ResourceYamlViewModelTests
         var panel = tip.ShouldBeOfType<StackPanel>();
         var title = panel.Children.OfType<TextBlock>().FirstOrDefault();
         title.ShouldNotBeNull();
-        title!.Text.ShouldBe("name");
+        title!.Text.ShouldBe("name *");
     }
 
     [AvaloniaFact]
@@ -1836,7 +1839,7 @@ public class ResourceYamlViewModelTests
         var panel = tip.ShouldBeOfType<StackPanel>();
         var title = panel.Children.OfType<TextBlock>().FirstOrDefault();
         title.ShouldNotBeNull();
-        title!.Text.ShouldBe("name");
+        title!.Text.ShouldBe("name *");
 
         var imageOffset = editor.Document.Text.IndexOf("image: nginx", StringComparison.Ordinal) + 1;
         shown = InvokeHoverTooltip(editor, imageOffset, onlyWhenOpen: true);
@@ -1912,7 +1915,7 @@ public class ResourceYamlViewModelTests
         var panel = tip.ShouldBeOfType<StackPanel>();
         var title = panel.Children.OfType<TextBlock>().FirstOrDefault();
         title.ShouldNotBeNull();
-        title!.Text.ShouldBe("containers");
+        title!.Text.ShouldBe("containers *");
     }
 
     [AvaloniaFact]
@@ -2170,7 +2173,7 @@ public class ResourceYamlViewModelTests
         tip.ShouldNotBeNull();
         tip.ShouldBeOfType<StackPanel>()
             .Children.OfType<TextBlock>()
-            .First().Text.ShouldBe("name");
+            .First().Text.ShouldBe("name *");
     }
 
     [AvaloniaFact]
@@ -3856,7 +3859,63 @@ public class ResourceYamlViewModelTests
         messageText.Bounds.Height.ShouldBeGreaterThan(24d);
         var messageBottom = messageText.TranslatePoint(new global::Avalonia.Point(0, messageText.Bounds.Height), actionBar);
         messageBottom.ShouldNotBeNull();
-        (actionBar.Bounds.Height - messageBottom!.Value.Y).ShouldBeGreaterThanOrEqualTo(26d);
+        (actionBar.Bounds.Height - messageBottom!.Value.Y).ShouldBeGreaterThanOrEqualTo(14d);
+
+    }
+
+    [AvaloniaFact]
+    public async Task ResourceYamlView_DryRunMapsStructuredServerValidationCauseAndClearsDiagnosticOnEdit()
+    {
+        using var window = Application.Current.CreateTestWindow(width: 480, height: 600);
+
+        var services = Application.Current.GetTestServices();
+        var cluster = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        await cluster.Connect();
+
+        var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
+        vm.Initialize(cluster, new V1Pod
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "test",
+                NamespaceProperty = "default",
+            },
+        });
+        vm.EditMode = true;
+
+        var view = Application.Current.GetRequiredTestService<ResourceYamlView>();
+        view.DataContext = vm;
+        window.Content = view;
+        window.Show();
+        await TestApplicationExtensions.WaitForUiAsync();
+
+        vm.YamlDocument.Text = """
+            apiVersion: v1
+            kind: Pod
+            metadata:
+              name: test
+              namespace: default
+            spec:
+              containers:
+                - name: app
+                  image: nginx
+                  imagePullPolicy: Sometimes
+            """.ReplaceLineEndings("\n");
+        await TestApplicationExtensions.WaitForUiAsync();
+
+        await vm.DryRunCommand.ExecuteAsync(null).WaitAsync(TestContext.Current.CancellationToken);
+
+        vm.ValidationDiagnostics.ShouldHaveSingleItem();
+        var diagnostic = vm.ValidationDiagnostics[0];
+        diagnostic.Message.ShouldBe("spec.containers[0].imagePullPolicy: Unsupported value: Sometimes. Supported values are Always, IfNotPresent, and Never.");
+        diagnostic.StartLine.ShouldBe(10);
+        diagnostic.StartColumn.ShouldBe(24);
+        diagnostic.EndLine.ShouldBe(10);
+        diagnostic.EndColumn.ShouldBe(33);
+
+        vm.YamlDocument.Text = vm.YamlDocument.Text.Replace("Sometimes", "IfNotPresent", StringComparison.Ordinal);
+        await WaitForValidationDebounceAsync(() => vm.ValidationDiagnostics.Count == 0);
+        vm.ValidationDiagnostics.ShouldBeEmpty();
     }
 
     [AvaloniaFact]

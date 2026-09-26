@@ -16,6 +16,7 @@
 - Use `DelayBeforeNextAction` to place deliberate action gaps on the narration timeline.
 - Record video at 30 fps; keep narration and action footage synchronized, adding silence only if actions outlast speech.
 - Use `DocumentationVideoTheory` for light and dark recordings; it also skips unless video recording is enabled. Create and dispose a fresh fake cluster for every theory case.
+- Serialize this test assembly because recording cases share process-wide theme and cluster-configuration state.
 - Build walkthrough resources with ten Deployments, one active ReplicaSet per Deployment, and deterministic varied Pod replica counts. Keep at least two Pods in every Deployment so controller log scopes demonstrate stream aggregation. Verify the featured `web` Pod scope and its parent scopes.
 - Narration-only closing steps may omit actions to hold the current view while speech finishes.
 - Pod-log walkthroughs use the real context menu and parent-controller navigation with a deterministic fake log stream.

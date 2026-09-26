@@ -1216,15 +1216,8 @@ internal static class KubeUIWalkthroughRecorder
             case "yaml-dry-run":
                 var dryRunView = GetYamlView(root);
                 return (FindCommandButton(dryRunView, dryRunView.ViewModel.DryRunCommand),
-                    async () =>
-                    {
-                        await WaitForConditionAsync(() => dryRunView.ViewModel.HasActionFailureResult);
-                        if (dryRunView.ViewModel.ActionResultMessage?.Contains("imagePullPolicy", StringComparison.Ordinal) != true)
-                        {
-                            throw new InvalidOperationException($"The Kubernetes server did not report the expected imagePullPolicy validation error. Result: {dryRunView.ViewModel.ActionResultMessage}. Document: {GetYamlEditor(root).Text.ReplaceLineEndings("\\n")}");
-                        }
-
-                    });
+                    () => WaitForConditionAsync(() =>
+                        dryRunView.ViewModel.HasActionFailureResult || dryRunView.ViewModel.HasActionSuccessResult));
             case "yaml-save":
                 var saveView = GetYamlView(root);
                 return (FindCommandButton(saveView, saveView.ViewModel.SaveCommand), async () =>

@@ -22,7 +22,7 @@ public sealed class RecordingTests
             .OpenCluster("demo-cluster")
             .Speak("The Pods list is ready. I'll browse the workloads by name.")
             .SelectNavigation("Pods")
-            .Speak("The Pods are sorted by name. I'll select the last row.")
+            .Speak("The Pods are sorted by name. I'll select the featured web Pod.")
             .SelectPod("web-7c9f8d6f54-2k4m8")
             .Speak("I'll right-click the selected Pod and choose View YAML to inspect its manifest.")
             .RightClickPod("web-7c9f8d6f54-2k4m8")

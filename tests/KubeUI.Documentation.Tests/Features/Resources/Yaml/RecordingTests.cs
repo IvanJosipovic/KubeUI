@@ -62,7 +62,13 @@ public sealed class RecordingTests
             .TypeYamlText("OnFailure")
             .Speak("A server dry-run checks the finished Pod without saving it. The cluster flags the invalid value, and the editor underlines the exact spot.")
             .DryRunYaml()
-            .Speak("Hovering over imagePullPolicy gives me context for the field. To see the values I can use, I'll open completion after clearing the mistake.")
+            .Speak(
+                "Hovering over imagePullPolicy gives me context for the field. To see the values I can use, I'll open completion after clearing the mistake.",
+                readyWhen: control => control is ResourceYamlView yamlView
+                    && yamlView.ViewModel.HasActionFailureResult
+                    && yamlView.ViewModel.ActionResultMessage?.Contains(
+                        "imagePullPolicy",
+                        StringComparison.Ordinal) == true)
             .HoverYamlHeader("imagePullPolicy")
             .Speak("I remove OnFailure, open completion, and choose Always. With the value corrected, I can save the Pod.")
             .BackspaceYamlText("OnFailure")

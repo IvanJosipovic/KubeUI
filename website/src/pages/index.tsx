@@ -23,7 +23,9 @@ function HomepageHeader() {
             to="/docs/getting-started">
             Read the documentation
           </Link>
-          <Link className="button button--outline button--primary button--lg" to="/downloads">
+          <Link
+            className={clsx('button button--outline button--primary button--lg', styles.downloadButton)}
+            to="/downloads">
             Download KubeUI
           </Link>
         </div>

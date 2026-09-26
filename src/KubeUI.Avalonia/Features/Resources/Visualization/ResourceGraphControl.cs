@@ -629,7 +629,7 @@ public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphContr
         _isApplyingViewportFit = true;
         try
         {
-            if (!_disposed)
+            if (!_disposed && !_hasUserAdjustedViewport)
             {
                 _zoomControl.ZoomToFill();
                 _zoomControl.Mode = ZoomControlModes.Custom;

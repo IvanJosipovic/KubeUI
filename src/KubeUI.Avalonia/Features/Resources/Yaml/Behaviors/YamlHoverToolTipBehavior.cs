@@ -426,13 +426,19 @@ public sealed class YamlHoverToolTipBehavior : Behavior<TextEditor>
         }
 
         var lineNumber = position.Value.Location.Line;
-        var line = AssociatedObject.Document.GetLineByNumber(lineNumber);
-        var lineStart = new TextViewPosition(lineNumber, 1);
-        var lineEnd = new TextViewPosition(lineNumber, line.Length + 1);
-        var top = textView.GetVisualPosition(lineStart, VisualYPosition.LineTop).Y;
-        var bottom = textView.GetVisualPosition(lineStart, VisualYPosition.LineBottom).Y;
-        var left = textView.GetVisualPosition(lineStart, VisualYPosition.TextTop).X;
-        var right = textView.GetVisualPosition(lineEnd, VisualYPosition.TextTop).X;
+        var visualLine = textView.GetVisualLine(lineNumber);
+        if (visualLine is null)
+        {
+            return false;
+        }
+
+        var textLine = visualLine.GetTextLineByVisualYPosition(visualPoint.Y);
+        var top = visualLine.GetTextLineVisualYPosition(textLine, VisualYPosition.LineTop);
+        var bottom = visualLine.GetTextLineVisualYPosition(textLine, VisualYPosition.LineBottom);
+        var left = visualLine.GetTextLineVisualXPosition(
+            textLine,
+            visualLine.GetTextLineVisualStartColumn(textLine));
+        var right = left + textLine.WidthIncludingTrailingWhitespace;
         if (visualPoint.Y < top || visualPoint.Y >= bottom
             || visualPoint.X < left || visualPoint.X >= right)
         {

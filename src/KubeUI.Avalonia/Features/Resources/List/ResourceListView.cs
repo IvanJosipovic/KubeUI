@@ -121,11 +121,11 @@ public partial class ResourceListView : ViewBase<IResourceListViewModel>
     private static DataGridState PrepareStateForRestore(DataGrid grid, DataGridState state)
     {
         var sanitizedState = RemoveNamespaceScopeFilter(state);
-        IReadOnlyList<FilteringDescriptor> currentNamespaceDescriptors = grid.FilteringModel.Descriptors
+        var currentNamespaceDescriptors = grid.FilteringModel.Descriptors
             .Where(IsNamespaceScopeFilter)
             .ToArray();
 
-        if (currentNamespaceDescriptors.Count == 0 || sanitizedState.Filtering is not { } filteringState)
+        if (currentNamespaceDescriptors.Length == 0 || sanitizedState.Filtering is not { } filteringState)
         {
             return sanitizedState;
         }
