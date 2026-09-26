@@ -16,7 +16,6 @@ public class AppStartupBenchmarks
 
         try
         {
-            host.Services.ConfigureKubeUIKubernetesJsonLogging();
             await host.StartAsync();
             Desktop.Program.CreateAppBuilder(host.Services).SetupWithoutStarting();
         }

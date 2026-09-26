@@ -1,4 +1,5 @@
 using System.Collections.Specialized;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reactive;
 using System.Reactive.Concurrency;
@@ -33,7 +34,7 @@ using SortDirection = KubeUI.Avalonia.Resources.SortDirection;
 
 namespace KubeUI.Avalonia.Features.Resources.List;
 
-public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluster, IDisposable, IResourceListViewModel where T : class, IKubernetesObject<V1ObjectMeta>, new()
+public partial class ResourceListViewModel<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T> : ViewModelBase, IInitializeCluster, IDisposable, IResourceListViewModel where T : class, IKubernetesObject<V1ObjectMeta>, new()
 {
     private static readonly TimeSpan SearchDebounceDelay = TimeSpan.FromMilliseconds(250);
     internal const string NamespaceScopeFilterId = "__namespace_scope__";

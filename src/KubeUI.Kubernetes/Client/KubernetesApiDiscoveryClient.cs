@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Net;
 using KubeUI.Kubernetes.Client;
+using KubeUI.Kubernetes.Serialization;
 namespace KubeUI.Kubernetes;
 
 /// <summary>
@@ -103,7 +104,7 @@ public sealed class KubernetesApiDiscoveryClient
             }
 
             var result = await response.Content.ReadFromJsonAsync(
-                    CustomSourceGenerationContext.Default.V2beta1APIGroupDiscoveryList,
+                    KubernetesJsonStaticContext.Default.V2beta1APIGroupDiscoveryList,
                     cancellationToken).ConfigureAwait(false)
                 ?? throw new InvalidOperationException("API group discovery response was empty.");
             activity?.SetStatus(ActivityStatusCode.Ok);

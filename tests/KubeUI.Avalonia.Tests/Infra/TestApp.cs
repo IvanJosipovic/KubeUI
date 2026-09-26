@@ -144,7 +144,6 @@ public class TestApp : App, IDisposable
         });
 
         var host = builder.Build();
-        host.Services.ConfigureKubeUIKubernetesJsonLogging();
         return host;
     }
 

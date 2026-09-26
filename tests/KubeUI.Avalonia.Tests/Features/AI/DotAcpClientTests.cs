@@ -1,4 +1,5 @@
 using System.Threading.Channels;
+using System.Text.Json;
 using dotacp.protocol;
 using KubeUI.AI.Acp;
 using KubeUI.AI.Agents;
@@ -10,6 +11,12 @@ namespace KubeUI.Avalonia.Tests.Features.AI;
 
 public sealed class DotAcpClientTests
 {
+    private static JsonElement ToJsonElement(string json)
+    {
+        using var document = JsonDocument.Parse(json);
+        return document.RootElement.Clone();
+    }
+
     [Fact]
     public async Task registry_refresh_keeps_available_agents_and_removes_missing_executables()
     {
@@ -62,12 +69,56 @@ public sealed class DotAcpClientTests
             Update = new ToolCall
             {
                 Title = "kubernetes.list",
-                RawInput = new { Kind = "Pod" }
+                RawInput = ToJsonElement("""{"Kind":"Pod"}""")
             }
         });
 
         var result = await events.Reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(1));
-        result.ShouldBeOfType<AgentToolStartedEvent>().Tool.Name.ShouldBe("kubernetes.list");
+        var tool = result.ShouldBeOfType<AgentToolStartedEvent>().Tool;
+        tool.Name.ShouldBe("kubernetes.list");
+        tool.Input.ShouldBe("{\"Kind\":\"Pod\"}");
+    }
+
+    [Fact]
+    public async Task session_update_maps_dictionary_tool_input_to_domain_event()
+    {
+        var events = Channel.CreateUnbounded<AgentEvent>();
+        using var client = new DotAcpClient(events.Writer);
+
+        await client.SessionUpdateAsync(new SessionNotification
+        {
+            Update = new ToolCall
+            {
+                Title = "kubernetes.list",
+                RawInput = new Dictionary<string, object?>
+                {
+                    ["kind"] = "Pod",
+                    ["includeTerminating"] = false,
+                },
+            }
+        });
+
+        var tool = (await events.Reader.ReadAsync()).ShouldBeOfType<AgentToolStartedEvent>().Tool;
+        tool.Input.ShouldBe("{\"kind\":\"Pod\",\"includeTerminating\":false}");
+    }
+
+    [Fact]
+    public async Task session_update_maps_anonymous_tool_input_to_domain_event()
+    {
+        var events = Channel.CreateUnbounded<AgentEvent>();
+        using var client = new DotAcpClient(events.Writer);
+
+        await client.SessionUpdateAsync(new SessionNotification
+        {
+            Update = new ToolCall
+            {
+                Title = "kubernetes.list",
+                RawInput = new { Kind = "Pod", IncludeTerminating = false },
+            }
+        });
+
+        var tool = (await events.Reader.ReadAsync()).ShouldBeOfType<AgentToolStartedEvent>().Tool;
+        tool.Input.ShouldBe("{\"Kind\":\"Pod\",\"IncludeTerminating\":false}");
     }
 
     [Fact]
@@ -108,7 +159,7 @@ public sealed class DotAcpClientTests
                 ToolCallId = "get",
                 Title = "kubernetes.get",
                 Status = ToolCallStatus.Completed,
-                RawOutput = new { Name = "pod-a" }
+                RawOutput = ToJsonElement("""{"Name":"pod-a"}""")
             }
         });
         await client.SessionUpdateAsync(new SessionNotification
@@ -118,7 +169,7 @@ public sealed class DotAcpClientTests
                 ToolCallId = "logs",
                 Title = "kubernetes.logs",
                 Status = ToolCallStatus.Failed,
-                RawOutput = new { Error = "unavailable" }
+                RawOutput = ToJsonElement("""{"Error":"unavailable"}""")
             }
         });
 
@@ -141,7 +192,7 @@ public sealed class DotAcpClientTests
 
         await client.SessionUpdateAsync(new SessionNotification
         {
-            Update = new ToolCall { ToolCallId = "tool", Title = "kubernetes.get", RawInput = new { Kind = "Pod" } }
+            Update = new ToolCall { ToolCallId = "tool", Title = "kubernetes.get", RawInput = ToJsonElement("""{"Kind":"Pod"}""") }
         });
         await client.SessionUpdateAsync(new SessionNotification
         {
@@ -157,7 +208,7 @@ public sealed class DotAcpClientTests
             {
                 ToolCallId = "tool",
                 Status = ToolCallStatus.Completed,
-                RawOutput = new { Name = "pod-a" }
+                RawOutput = ToJsonElement("""{"Name":"pod-a"}""")
             }
         });
 
@@ -180,7 +231,7 @@ public sealed class DotAcpClientTests
             {
                 Title = "kubernetes.get",
                 Status = ToolCallStatus.Completed,
-                RawOutput = new { Name = "pod-a" }
+                RawOutput = ToJsonElement("""{"Name":"pod-a"}""")
             }
         });
 
@@ -296,7 +347,7 @@ public sealed class DotAcpClientTests
             ToolCall = new ToolCallUpdate
             {
                 Kind = ToolKind.Execute,
-                RawInput = new { Command = "kubectl get pods" }
+                RawInput = ToJsonElement("""{"Command":"kubectl get pods"}""")
             }
         });
 
@@ -341,7 +392,7 @@ public sealed class DotAcpClientTests
             {
                 ToolCallId = "connect",
                 Kind = ToolKind.Execute,
-                RawInput = new { server = "kubeui", tool = "kubeui_connect_cluster" },
+                RawInput = ToJsonElement("""{"server":"kubeui","tool":"kubeui_connect_cluster"}"""),
                 Meta = new Dictionary<string, object> { ["is_mcp_tool_call"] = true }
             }
         });
@@ -401,7 +452,7 @@ public sealed class DotAcpClientTests
             {
                 ToolCallId = "external",
                 Kind = ToolKind.Execute,
-                RawInput = new { server = "filesystem", tool = "list_directory", arguments = new { path = "." } },
+                RawInput = ToJsonElement("""{"server":"filesystem","tool":"list_directory","arguments":{"path":"."}}"""),
                 Meta = new Dictionary<string, object> { ["is_mcp_tool_call"] = true }
             }
         });

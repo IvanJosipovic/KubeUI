@@ -1,6 +1,7 @@
 using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Avalonia.Input.Platform;
 using k8s;
 using k8s.Models;
@@ -11,7 +12,7 @@ using SvcSystems.UI.Terminal;
 
 namespace KubeUI.Avalonia.Resources.Workloads.v1.Pod;
 
-public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
+public sealed partial class PodConsoleViewModel : ViewModelBase, IClusterWorkspaceContext, IDisposable
 {
     private readonly ILogger<PodConsoleViewModel> _logger;
 
@@ -160,7 +161,10 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
     {
         var size = new TerminalSize((ushort)cols, (ushort)rows);
 
-        TryWrite(_refreshStream, JsonSerializer.SerializeToUtf8Bytes(size), "sending terminal resize");
+        TryWrite(
+            _refreshStream,
+            JsonSerializer.SerializeToUtf8Bytes(size, TerminalSizeJsonContext.Default.TerminalSize),
+            "sending terminal resize");
     }
 
     [RelayCommand]
@@ -267,3 +271,6 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
 }
 
 public readonly record struct TerminalSize(ushort Width, ushort Height);
+
+[JsonSerializable(typeof(TerminalSize))]
+internal partial class TerminalSizeJsonContext : JsonSerializerContext;

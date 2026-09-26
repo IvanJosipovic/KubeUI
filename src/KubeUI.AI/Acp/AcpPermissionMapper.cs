@@ -1,8 +1,6 @@
 using System.Text.Json;
 using dotacp.protocol;
 using KubeUI.AI.Agents;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
 namespace KubeUI.AI.Acp;
 
@@ -35,7 +33,7 @@ internal sealed class AcpPermissionMapper
     {
         if (!IsMcpTool(meta))
             return null;
-        return ParseObject(input)?["server"]?.Value<string>();
+        return GetStringProperty(ParseObject(input), "server");
     }
 
     private static string? GetMcpToolAction(Dictionary<string, object>? meta, object? input)
@@ -45,30 +43,24 @@ internal sealed class AcpPermissionMapper
         var inputJson = ParseObject(input);
         if (inputJson is null)
             return "MCP tool";
-        var server = inputJson["server"]?.Value<string>();
-        var tool = inputJson["tool"]?.Value<string>();
+        var server = GetStringProperty(inputJson, "server");
+        var tool = GetStringProperty(inputJson, "tool");
         return string.IsNullOrWhiteSpace(server) || string.IsNullOrWhiteSpace(tool)
             ? "MCP tool"
             : $"MCP {server}/{tool}";
     }
 
-    private static JObject? ParseObject(object? input)
-    {
-        try
-        {
-            return JToken.Parse(JsonConvert.SerializeObject(input)) as JObject;
-        }
-        catch (Newtonsoft.Json.JsonException)
-        {
-            return null;
-        }
-    }
+    private static JsonElement? ParseObject(object? input) => AcpJsonValue.ParseObject(input);
+
+    private static string? GetStringProperty(JsonElement? element, string propertyName) =>
+        element is { } json && json.TryGetProperty(propertyName, out var property) && property.ValueKind == JsonValueKind.String
+            ? property.GetString()
+            : null;
 
     private static bool IsTrue(object value) => value switch
     {
         bool boolean => boolean,
         JsonElement element when element.ValueKind == JsonValueKind.True => true,
-        JValue token when token.Type == JTokenType.Boolean => token.Value<bool>(),
         _ => bool.TryParse(value.ToString(), out var parsed) && parsed
     };
 
@@ -79,5 +71,5 @@ internal sealed class AcpPermissionMapper
     private static bool IsMcpTool(Dictionary<string, object>? meta)
         => meta?.TryGetValue("is_mcp_tool_call", out var marker) == true && IsTrue(marker);
 
-    private static string? Serialize(object? value) => value is null ? null : JsonConvert.SerializeObject(value);
+    private static string? Serialize(object? value) => AcpJsonValue.Serialize(value);
 }

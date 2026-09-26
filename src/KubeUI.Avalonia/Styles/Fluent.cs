@@ -11,6 +11,7 @@ using Dock.Avalonia.Themes.Fluent;
 using Dock.Model.Core;
 using FluentAvalonia.Styling;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
+using KubeUI.Avalonia.Infrastructure.Presentation;
 using Semi.Avalonia;
 using Ursa.Controls;
 using Ursa.Themes.Semi;
@@ -41,7 +42,7 @@ public sealed class Fluent : AvaloniaStyles
         Add(CreateStyleInclude("avares://AvaloniaEdit/Themes/Fluent/AvaloniaEdit.xaml"));
         Add(CreateStyleInclude("avares://LiveMarkdown.Avalonia/Styles.axaml"));
         Add(new DockFluentTheme());
-        Add(CreateStyleInclude("avares://SvcSystems.UI.Terminal/Styles/Colors.axaml"));
+        Add(new AvaloniaStyles { Resources = TerminalPalette.CreateResources() });
         DataGridStyles.AddTo(this);
 
         Add(new Style<ToolControl>()
@@ -326,6 +327,6 @@ public sealed class Fluent : AvaloniaStyles
 
     private static ClusterWorkspace? GetCluster(IDockable dockable)
     {
-        return dockable.GetType().GetProperty("Cluster")?.GetValue(dockable) as ClusterWorkspace;
+        return (dockable as IClusterWorkspaceContext)?.Cluster;
     }
 }

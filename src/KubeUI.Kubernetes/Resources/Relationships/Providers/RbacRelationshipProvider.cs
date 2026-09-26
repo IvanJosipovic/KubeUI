@@ -24,7 +24,7 @@ public sealed class RbacRelationshipProvider : IResourceRelationshipProvider
             return;
         }
 
-        IEnumerable<dynamic> subjects = roleBinding?.Subjects ?? clusterRoleBinding?.Subjects ?? [];
+        IEnumerable<Rbacv1Subject> subjects = roleBinding?.Subjects ?? clusterRoleBinding?.Subjects ?? [];
         foreach (var subject in subjects)
         {
             if (subject.Kind == V1ServiceAccount.KubeKind)

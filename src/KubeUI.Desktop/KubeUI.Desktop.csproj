@@ -6,6 +6,8 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <PublishSingleFile>true</PublishSingleFile>
     <PublishSelfContained>true</PublishSelfContained>
+    <PublishTrimmed Condition="'$(Configuration)' == 'Release'">true</PublishTrimmed>
+    <TrimMode Condition="'$(Configuration)' == 'Release'">full</TrimMode>
     <PublishReadyToRun>true</PublishReadyToRun>
     <PublishReadyToRunComposite>false</PublishReadyToRunComposite>
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
@@ -29,6 +31,25 @@
 
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(Configuration)' == 'Release'">
+    <TrimmerRootAssembly Include="KubernetesClient" /> <!-- Reflection-based YAML serialization inspects Kubernetes API models. -->
+    <!-- Whole-assembly roots increase bundle size; each item retains the named reflection-based runtime feature. -->
+    <TrimmerRootAssembly Include="Avalonia.Controls.DataGrid" /> <!-- Resource and cluster DataGrid reflection over row properties. -->
+    <TrimmerRootAssembly Include="AvaloniaEdit" /> <!-- AvaloniaEdit Fluent theme is loaded through a runtime StyleInclude. -->
+    <TrimmerRootAssembly Include="Xaml.Behaviors.Interactivity" /> <!-- Pod log editor EventTriggerBehavior and CallMethodAction. -->
+    <TrimmerRootAssembly Include="dotacp.client" /> <!-- ACP client protocol dispatch. -->
+    <TrimmerRootAssembly Include="dotacp.protocol" /> <!-- ACP message and data contracts. -->
+    <TrimmerRootAssembly Include="Newtonsoft.Json" /> <!-- ACP accepts host-provided CLR payload objects through its compatibility serializer. -->
+    <TrimmerRootAssembly Include="JsonPathLINQ" /> <!-- Kubernetes JSONPath resource queries. -->
+    <TrimmerRootAssembly Include="HanumanInstitute.MvvmDialogs.Avalonia" /> <!-- Runtime Avalonia dialog/view resolution. -->
+    <TrimmerRootAssembly Include="Dock.Avalonia" /> <!-- Docking default templates and runtime view creation. -->
+    <TrimmerRootAssembly Include="LiveMarkdown.Avalonia" /> <!-- Markdown resource and style includes. -->
+    <TrimmerRootAssembly Include="Semi.Avalonia" /> <!-- Semi theme resources loaded by KubeUI themes. -->
+    <TrimmerRootAssembly Include="Ursa.Themes.Semi" /> <!-- Ursa/Semi theme resources. -->
+    <TrimmerRootAssembly Include="Dock.Avalonia.Themes.Fluent" /> <!-- Dock Fluent theme resources. -->
+    <TrimmerRootAssembly Include="Westermo.GraphX.Controls.Avalonia.Themes.Fluent" /> <!-- GraphX Fluent theme resources. -->
   </ItemGroup>
 
   <ItemGroup Condition="'$(Configuration)' == 'Debug'">
