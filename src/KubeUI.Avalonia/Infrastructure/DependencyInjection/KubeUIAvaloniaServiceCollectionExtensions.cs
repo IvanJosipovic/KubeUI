@@ -4,6 +4,7 @@ using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
+using KubeUI.Avalonia.Features.Resources.Editor;
 using KubeUI.Avalonia.Infrastructure.Dialogs;
 using KubeUI.Avalonia.Infrastructure.Docking;
 using KubeUI.Avalonia.Infrastructure.Mcp;
@@ -26,6 +27,10 @@ public static class KubeUIAvaloniaServiceCollectionExtensions
         services.AddKubeUIDialogServices();
         services.AddSingleton<IMcpClusterSession, McpClusterSession>();
         services.AddSingleton<IResourceRelationshipBuilder, ResourceRelationshipBuilder>();
+        services.AddTransient<ResourceEditorViewModel>();
+        services.AddSingleton<IResourceEditorLauncher>(sp => new ResourceEditorLauncher(
+            sp,
+            () => sp.GetRequiredService<IFactory>()));
         services.AddSingleton<McpServerState>();
         services.AddSingleton<IMcpServerState>(sp => sp.GetRequiredService<McpServerState>());
         services.AddSingleton<IResourceNavigationService>(sp => new NavigationDocumentService(

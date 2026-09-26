@@ -31,6 +31,7 @@ using KubeUI.Avalonia.Controls.DataGridFilters;
 using KubeUI.Avalonia.Features.AI;
 using KubeUI.Avalonia.Features.Resources.List.Behaviors;
 using KubeUI.Avalonia.Features.Resources.List.Controls;
+using KubeUI.Avalonia.Features.Resources.List;
 using KubeUI.Avalonia.Resources;
 using KubeUI.Avalonia.Shell.Documents.About;
 using KubeUI.Avalonia.Shell.Main;
@@ -41,6 +42,18 @@ namespace KubeUI.Avalonia.Tests.Features.Resources.List;
 
 public class ResourceListViewModelTests
 {
+    [AvaloniaFact]
+    public void New_resource_button_flyout_contains_yaml_and_ui_editor_choices()
+    {
+        var flyout = ResourceListView.CreateNewResourceFlyout();
+
+        flyout.Items.Count.ShouldBe(2);
+        var items = flyout.Items.OfType<MenuItem>().ToArray();
+        items.Select(item => item.Header).ShouldBe(["Create YAML", "Create with UI Editor"]);
+        foreach (var item in items)
+            item.Icon.ShouldNotBeNull();
+    }
+
     private static V1Pod Pod(string ns, string name)
         => new()
         {
@@ -2496,7 +2509,6 @@ public class ResourceListViewModelTests
 
     }
 
-    [Obsolete]
     private static void SaveGridScreenshot(DataGrid grid, string name)
     {
         var directory = Path.Combine(AppContext.BaseDirectory, "TestArtifacts");
@@ -2513,7 +2525,6 @@ public class ResourceListViewModelTests
         Console.WriteLine($"DataGrid screenshot: {path}");
     }
 
-    [Obsolete]
     private static void AssertHorizontalGridLines(DataGrid grid)
     {
         var pixelSize = new PixelSize(
