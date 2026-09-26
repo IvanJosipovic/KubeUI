@@ -37,12 +37,11 @@ public sealed class Fluent : AvaloniaStyles
         Add(CreateTypographyResources());
         Add(CreateThemeResourceStyles(CreateSemanticLightResources(), CreateSemanticDarkResources()));
         Add(CreateThemeResourceStyles(CreateVisualizationLightResources(), CreateVisualizationDarkResources()));
-        Add(CreateStyleInclude("avares://Avalonia.Controls.DataGrid/Themes/Fluent.v2.xaml"));
+        Add(CreateStyleInclude("avares://KubeUI.DynamicTableView/Themes/DynamicTableViewTheme.axaml"));
         Add(CreateStyleInclude("avares://AvaloniaEdit/Themes/Fluent/AvaloniaEdit.xaml"));
         Add(CreateStyleInclude("avares://LiveMarkdown.Avalonia/Styles.axaml"));
         Add(new DockFluentTheme());
         Add(CreateStyleInclude("avares://SvcSystems.UI.Terminal/Styles/Colors.axaml"));
-        DataGridStyles.AddTo(this);
 
         Add(new Style<ToolControl>()
             .Background(new DynamicResourceExtension("DockThemeControlBackgroundBrush")));
@@ -64,6 +63,14 @@ public sealed class Fluent : AvaloniaStyles
                         [new ToggleMultiComboBoxBehavior()],
                         new NameScope())
                 }));
+
+        Add(new Style<KubeUI.DynamicTableView.DynamicTableView>()
+            .FontSize(new DynamicResourceExtension(Typography.AppFontSizeResourceKey)));
+        Add(new Style<TableViewRow>()
+            .Height(new DynamicResourceExtension("DynamicTableViewRowHeight")));
+        Add(new Style<TableViewColumnHeader>()
+            .FontSize(new DynamicResourceExtension(Typography.AppFontSizeResourceKey))
+            .MinHeight(new DynamicResourceExtension("DynamicTableViewHeaderMinHeight")));
 
         Add(new Style<HostWindow>()
             .Background(new DynamicResourceExtension("SystemRegionBrush"))

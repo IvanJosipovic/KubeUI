@@ -30,6 +30,32 @@ public sealed class DynamicTableViewUiTests
     }
 
     [AvaloniaFact]
+    public void Caller_added_key_binding_executes_for_a_custom_gesture()
+    {
+        DynamicTableView table = new() { Focusable = true };
+        CallbackCommand command = new();
+        table.KeyBindings.Add(new KeyBinding
+        {
+            Gesture = new KeyGesture(Key.K, KeyModifiers.Control),
+            Command = command
+        });
+        Window window = new() { Width = 300, Height = 160, Content = table };
+
+        try
+        {
+            window.Show();
+            table.Focus();
+            window.KeyPress(Key.K, RawInputModifiers.Control, PhysicalKey.K, null);
+
+            Assert.Equal(1, command.ExecutionCount);
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    [AvaloniaFact]
     public void Default_ui_scheduler_publishes_bound_rows_on_the_avalonia_dispatcher()
     {
         using SourceCache<DynamicTableViewTestRow, string> cache = new(static row => row.Id);
@@ -167,6 +193,123 @@ public sealed class DynamicTableViewUiTests
         Assert.Equal(155, table.Columns[0].Width.Value);
         Assert.Equal(GridUnitType.Star, table.Columns[1].Width.GridUnitType);
         Assert.Equal(2, table.Columns[1].Width.Value);
+    }
+
+    [AvaloniaFact]
+    public void Auto_width_grows_from_realized_cells_and_honors_header_and_pixel_modes()
+    {
+        using SourceCache<DynamicTableViewTestRow, string> cache = new(static row => row.Id);
+        var automatic = DynamicTableViewColumn<DynamicTableViewTestRow>.Create(
+            "name", "Name", static row => row.Name);
+        automatic.WidthMode = DynamicTableViewWidthMode.Auto;
+        automatic.MinWidth = 30;
+        var headerOnly = DynamicTableViewColumn<DynamicTableViewTestRow>.Create(
+            "id", "Id", static row => row.Id);
+        headerOnly.WidthMode = DynamicTableViewWidthMode.Header;
+        headerOnly.MinWidth = 30;
+        var fixedWidth = DynamicTableViewColumn<DynamicTableViewTestRow>.Create(
+            "age", "Age", static row => row.Age);
+        fixedWidth.WidthMode = DynamicTableViewWidthMode.Pixel;
+        fixedWidth.Width = 123;
+        fixedWidth.MinWidth = 30;
+        using var source = DynamicTableViewTestData.CreateSource(cache, [automatic, headerOnly, fixedWidth]);
+        var item = DynamicTableViewTestData.CreateRows()[0] with { Id = new string('I', 80), Name = "Short" };
+        cache.AddOrUpdate(item);
+        DynamicTableView table = new() { Source = source };
+        Window window = new() { Width = 700, Height = 260, Content = table };
+
+        try
+        {
+            window.Show();
+            Dispatcher.UIThread.RunJobs();
+            var initialAutoWidth = table.Columns[0].ActualWidth;
+
+            cache.AddOrUpdate(item with { Name = new string('W', 80) });
+            Dispatcher.UIThread.RunJobs();
+            Dispatcher.UIThread.RunJobs();
+
+            Assert.True(table.Columns[0].ActualWidth > initialAutoWidth);
+            Assert.True(table.Columns[0].ActualWidth > table.Columns[1].ActualWidth);
+            Assert.Equal(123, table.Columns[2].ActualWidth);
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    [AvaloniaFact]
+    public void Dragging_a_header_reorders_the_source_and_native_columns()
+    {
+        using SourceCache<DynamicTableViewTestRow, string> cache = new(static row => row.Id);
+        using var source = DynamicTableViewTestData.CreateSource(cache);
+        source.Columns[0].WidthMode = DynamicTableViewWidthMode.Pixel;
+        source.Columns[0].Width = 150;
+        source.Columns[1].WidthMode = DynamicTableViewWidthMode.Pixel;
+        source.Columns[1].Width = 230;
+        DynamicTableView table = new() { Source = source };
+        Window window = new() { Width = 800, Height = 260, Content = table };
+
+        try
+        {
+            window.Show();
+            Dispatcher.UIThread.RunJobs();
+            var firstHeader = Assert.IsAssignableFrom<Control>(table.Columns[0].Header);
+            var secondHeader = Assert.IsAssignableFrom<Control>(table.Columns[1].Header);
+            var start = firstHeader.TranslatePoint(new Point(firstHeader.Bounds.Width / 2, firstHeader.Bounds.Height / 2), window);
+            var target = secondHeader.TranslatePoint(new Point(secondHeader.Bounds.Width / 2, secondHeader.Bounds.Height / 2), window);
+            Assert.NotNull(start);
+            Assert.NotNull(target);
+
+            window.MouseDown(start!.Value, MouseButton.Left);
+            window.MouseMove(target!.Value);
+            window.MouseUp(target.Value, MouseButton.Left);
+            Dispatcher.UIThread.RunJobs();
+
+            Assert.Equal("age", source.Columns[1].Key);
+            Assert.Equal(230, table.Columns[1].Width.Value);
+            Assert.Equal(source.Columns.Count, table.Columns.Count);
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    [AvaloniaFact]
+    public void Virtualized_cells_rebind_to_current_rows_after_scrolling()
+    {
+        using SourceCache<DynamicTableViewTestRow, string> cache = new(static row => row.Id);
+        var name = DynamicTableViewColumn<DynamicTableViewTestRow>.Create("name", "Name", static row => row.Name);
+        using var source = DynamicTableViewTestData.CreateSource(cache, [name]);
+        cache.AddOrUpdate(Enumerable.Range(0, 1_000).Select(index =>
+            new DynamicTableViewTestRow($"row-{index:D4}", $"Item {index:D4}", index, DateTimeOffset.UnixEpoch, true, DynamicTableViewTestState.Ready)));
+        DynamicTableView table = new() { Source = source };
+        Window window = new() { Width = 420, Height = 240, Content = table };
+
+        try
+        {
+            window.Show();
+            Dispatcher.UIThread.RunJobs();
+            var scrollViewer = Assert.Single(table.GetVisualDescendants().OfType<ScrollViewer>());
+            var firstRows = table.GetVisualDescendants().OfType<TableViewRow>().ToArray();
+            Assert.InRange(firstRows.Length, 1, 99);
+            scrollViewer.Offset = new Vector(0, 8_000);
+            Dispatcher.UIThread.RunJobs();
+
+            var visibleRows = table.GetVisualDescendants().OfType<TableViewRow>().ToArray();
+            Assert.InRange(visibleRows.Length, 1, 99);
+            Assert.All(visibleRows, row =>
+            {
+                var item = Assert.IsType<DynamicTableViewTestRow>(row.DataContext);
+                Assert.Contains(row.GetVisualDescendants().OfType<TextBlock>(), textBlock => textBlock.Text == item.Name);
+            });
+            Assert.Contains(visibleRows, row => ((DynamicTableViewTestRow)row.DataContext!).Id.CompareTo("row-0100") > 0);
+        }
+        finally
+        {
+            window.Close();
+        }
     }
 
     [AvaloniaFact]

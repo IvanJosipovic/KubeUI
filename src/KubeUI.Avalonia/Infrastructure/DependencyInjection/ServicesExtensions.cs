@@ -3,7 +3,6 @@ using Avalonia.Logging;
 using KubeUI.AI.Agents;
 using KubeUI.AI.Configuration;
 using KubeUI.AI.Permissions;
-using KubeUI.Avalonia.Controls.DataGridFilters;
 using KubeUI.Avalonia.Features.AI;
 using KubeUI.Avalonia.Features.Resources.List.Controls;
 using KubeUI.Avalonia.Features.Resources.Yaml;
@@ -38,8 +37,6 @@ public static partial class KubeUIShellServiceCollectionExtensions
         services.AddSingleton<IYamlValidationService, YamlSyntaxValidationService>();
         services.AddSingleton<ILogSink, LogSink>();
         services.AddSingleton<ViewLocator>();
-        services.AddSingleton<DataGridColumnFilterService>();
-        services.AddSingleton<DataGridColumnFilterFlyoutFactory>();
         services.AddSingleton<IPodLogExportService, PodLogExportService>();
         services.AddSingleton<Func<PodLogsViewModel>>(sp =>
             () => sp.GetRequiredService<PodLogsViewModel>());

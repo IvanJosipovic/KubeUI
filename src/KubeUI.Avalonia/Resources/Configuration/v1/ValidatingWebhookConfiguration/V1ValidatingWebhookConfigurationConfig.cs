@@ -21,7 +21,7 @@ public sealed partial class V1ValidatingWebhookConfigurationConfig : ResourceCon
                 Key = "webhooks",
                 Name = Assets.Resources.V1ValidatingWebhookConfigurationConfig_Webhooks!,
                 Field = x => x.Webhooks.Count,
-                Width = nameof(DataGridLengthUnitType.SizeToHeader)
+                WidthMode = DynamicTableViewWidthMode.Header
             },
             AgeColumn(),
         ];

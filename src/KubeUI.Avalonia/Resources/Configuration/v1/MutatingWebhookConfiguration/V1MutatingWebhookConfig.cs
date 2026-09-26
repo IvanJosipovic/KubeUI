@@ -20,7 +20,7 @@ public sealed partial class V1MutatingWebhookConfig : ResourceConfigBase<V1Mutat
                 Key = "webhooks",
                 Name = Assets.Resources.V1MutatingWebhookConfig_Webhooks!,
                 Field = x => x.Webhooks?.Count ?? 0,
-                Width = nameof(DataGridLengthUnitType.SizeToHeader)
+                WidthMode = DynamicTableViewWidthMode.Header
             },
             AgeColumn(),
         ];

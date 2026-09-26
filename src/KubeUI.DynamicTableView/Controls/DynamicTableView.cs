@@ -1,5 +1,4 @@
 using System.Collections.Specialized;
-using System.Windows.Input;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.VisualTree;
@@ -27,17 +26,12 @@ public sealed partial class DynamicTableView : TableView
     {
         Classes.Add("dynamic-table-view");
         SelectionMode = SelectionMode.Multiple;
+        CanUserResizeColumns = true;
         AddHandler(InputElement.PointerPressedEvent, OnGridPointerPressed, RoutingStrategies.Tunnel);
         AddHandler(InputElement.PointerMovedEvent, OnGridPointerMoved, RoutingStrategies.Tunnel);
         AddHandler(InputElement.PointerReleasedEvent, OnGridPointerReleased, RoutingStrategies.Tunnel);
         AddHandler(ScrollViewer.ScrollChangedEvent, OnScrollChanged, RoutingStrategies.Bubble);
     }
-
-    /// <summary>Gets or sets the command invoked when user double-clicks row or cell.</summary>
-    public ICommand? ActivateCommand { get; set; }
-
-    /// <summary>Gets or sets the command invoked by Delete key.</summary>
-    public ICommand? DeleteCommand { get; set; }
 
     /// <summary>Gets or sets a provider for context menu items.</summary>
     public Func<IReadOnlyList<object>, IEnumerable?>? ContextMenuItemsFactory { get; set; }
@@ -122,18 +116,6 @@ public sealed partial class DynamicTableView : TableView
     {
         LayoutUpdated -= OnLayoutUpdated;
         base.OnDetachedFromVisualTree(e);
-    }
-
-    protected override void OnDoubleTapped(TappedEventArgs e)
-    {
-        base.OnDoubleTapped(e);
-        if (ActivateCommand is null || !IsRowOrCellSource(e.Source))
-            return;
-        var parameter = Selection?.SelectedItems is { Count: > 0 } selected
-            ? selected
-            : FindRow(e.Source)?.DataContext;
-        if (ActivateCommand.CanExecute(parameter))
-            ActivateCommand.Execute(parameter);
     }
 
     private void AttachSource(IDynamicTableViewSource? source)
@@ -319,7 +301,7 @@ public sealed partial class DynamicTableView : TableView
     {
         if (e.GetCurrentPoint(this).Properties.PointerUpdateKind == PointerUpdateKind.RightButtonPressed)
         {
-            DataGridRightClick(e);
+            HandleRightClick(e);
             return;
         }
 
@@ -365,7 +347,7 @@ public sealed partial class DynamicTableView : TableView
         _headerDragStarted = false;
     }
 
-    private void DataGridRightClick(PointerPressedEventArgs e)
+    private void HandleRightClick(PointerPressedEventArgs e)
     {
         if (FindRow(e.Source) is not { DataContext: { } clicked } row)
             return;
@@ -423,6 +405,4 @@ public sealed partial class DynamicTableView : TableView
     private static TableViewRow? FindRow(object? source)
         => source is Visual visual ? visual.GetSelfAndVisualAncestors().OfType<TableViewRow>().FirstOrDefault() : null;
 
-    private static bool IsRowOrCellSource(object? source)
-        => source is Visual visual && visual.GetSelfAndVisualAncestors().Any(static item => item is TableViewRow or TableViewCell);
 }

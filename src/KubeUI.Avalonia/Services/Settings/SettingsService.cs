@@ -121,8 +121,8 @@ public class SettingsService : ObservableObject, ISettingsService, IClusterSetti
 
         if (Application.Current is not null)
         {
-            Application.Current.Resources["DataGridRowHeight"] = Convert.ToDouble(Appearance.ListRowHeight);
-            Application.Current.Resources["DataGridColumnHeaderMinHeight"] = Convert.ToDouble(Appearance.ListRowHeight + 4m);
+            Application.Current.Resources["DynamicTableViewRowHeight"] = Convert.ToDouble(Appearance.ListRowHeight);
+            Application.Current.Resources["DynamicTableViewHeaderMinHeight"] = Convert.ToDouble(Appearance.ListRowHeight + 4m);
             Application.Current.Resources[Typography.AppFontSizeResourceKey] = Convert.ToDouble(Appearance.FontSize);
             Application.Current.Resources[Typography.CodeFontSizeResourceKey] = Convert.ToDouble(Appearance.ConsoleFontSize);
         }

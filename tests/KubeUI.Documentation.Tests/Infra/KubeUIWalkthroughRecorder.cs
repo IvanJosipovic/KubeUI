@@ -1166,7 +1166,7 @@ internal static class KubeUIWalkthroughRecorder
                 var navigationView = await WaitForControlAsync<NavigationView>(root, _ => true);
                 return (await WaitForControlAsync<TextBlock>(navigationView, text => text.Text == action.Value), null);
             case "pod":
-                var podRow = await WaitForControlAsync<DataGridRow>(
+                var podRow = await WaitForControlAsync<TableViewRow>(
                     root,
                     row => row.IsVisible && (row.DataContext as V1Pod)?.Metadata?.Name == action.Value);
                 if (action.Kind == WalkthroughActionKind.RightClick)
@@ -1234,7 +1234,7 @@ internal static class KubeUIWalkthroughRecorder
 
     private static ContextMenu GetResourceListContextMenu(Control root)
     {
-        var grid = root.GetVisualDescendants().OfType<DataGrid>()
+        var grid = root.GetVisualDescendants().OfType<KubeUI.DynamicTableView.DynamicTableView>()
             .FirstOrDefault(candidate => candidate.Name == "PART_Grid")
             ?? throw new InvalidOperationException("The resource list grid was not found.");
         return grid.ContextMenu

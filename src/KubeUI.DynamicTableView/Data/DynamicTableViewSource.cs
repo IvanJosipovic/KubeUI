@@ -1,4 +1,5 @@
 using System.Collections.Specialized;
+using System.Collections.ObjectModel;
 using System.Reactive;
 using System.Reactive.Concurrency;
 using System.Reactive.Subjects;
@@ -28,6 +29,9 @@ public sealed class DynamicTableViewSource<T, TKey> : IDynamicTableViewSource
     private readonly IdentityPreservingSelectionModel<T, object> _selectionModel;
     private readonly IDisposable _searchSubscription;
     private readonly IDisposable _pipelineSubscription;
+    private ObservableCollection<T>? _observedCollection;
+    private SourceCache<T, TKey>? _ownedCache;
+    private Dictionary<TKey, T>? _observedItemsByKey;
     private IReadOnlyList<DynamicTableViewSortDescriptor> _sortDescriptors = [];
     private ReadOnlyObservableCollection<T> _items;
     private string _searchText = string.Empty;
@@ -106,6 +110,33 @@ public sealed class DynamicTableViewSource<T, TKey> : IDynamicTableViewSource
 #pragma warning restore IL2091
 
         _selectionModel.SetIdentitySource(_items);
+    }
+
+    /// <summary>Creates a DynamicData source that follows an observable collection.</summary>
+    public static DynamicTableViewSource<T, TKey> FromObservableCollection(
+        ObservableCollection<T> items,
+        Func<T, TKey> keySelector,
+        IEnumerable<DynamicTableViewColumn<T>>? columns = null,
+        IScheduler? workerScheduler = null,
+        IScheduler? uiScheduler = null,
+        DynamicTableViewSourceOptions? options = null)
+    {
+        ArgumentNullException.ThrowIfNull(items);
+        ArgumentNullException.ThrowIfNull(keySelector);
+        SourceCache<T, TKey> cache = new(keySelector);
+        cache.AddOrUpdate(items);
+        DynamicTableViewSource<T, TKey> source = new(
+            cache.Connect(),
+            keySelector,
+            columns,
+            workerScheduler,
+            uiScheduler,
+            options: options);
+        source._observedCollection = items;
+        source._ownedCache = cache;
+        source._observedItemsByKey = CreateKeyMap(items, keySelector);
+        items.CollectionChanged += source.OnObservableCollectionChanged;
+        return source;
     }
 
     /// <inheritdoc />
@@ -219,6 +250,11 @@ public sealed class DynamicTableViewSource<T, TKey> : IDynamicTableViewSource
         if (_disposed)
             return;
         _disposed = true;
+        if (_observedCollection is not null)
+        {
+            _observedCollection.CollectionChanged -= OnObservableCollectionChanged;
+            _observedCollection = null;
+        }
         Columns.CollectionChanged -= ColumnsOnCollectionChanged;
         _searchSubscription.Dispose();
         _pipelineSubscription.Dispose();
@@ -226,7 +262,33 @@ public sealed class DynamicTableViewSource<T, TKey> : IDynamicTableViewSource
         _filterSubject.Dispose();
         _sortSubject.Dispose();
         _selectionModel.Dispose();
+        _ownedCache?.Dispose();
+        _ownedCache = null;
         GC.SuppressFinalize(this);
+    }
+
+    private void OnObservableCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        if (_ownedCache is null || _observedCollection is null || _observedItemsByKey is null)
+            return;
+        var updatedItems = CreateKeyMap(_observedCollection, _keySelector);
+        _ownedCache.Edit(updater =>
+        {
+            foreach (var key in _observedItemsByKey.Keys)
+                if (!updatedItems.ContainsKey(key))
+                    updater.RemoveKey(key);
+            foreach (var item in updatedItems.Values)
+                updater.AddOrUpdate(item);
+        });
+        _observedItemsByKey = updatedItems;
+    }
+
+    private static Dictionary<TKey, T> CreateKeyMap(IEnumerable<T> items, Func<T, TKey> keySelector)
+    {
+        var result = new Dictionary<TKey, T>();
+        foreach (var item in items)
+            result[keySelector(item)] = item;
+        return result;
     }
 
     private void ColumnsOnCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)

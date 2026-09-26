@@ -9,5 +9,6 @@
 - Keep the library trim-safe: typed delegates, compiled Avalonia templates, no reflection-based row or enum discovery.
 - Saved table state includes column order and widths, sorts, filters, and horizontal and vertical scroll offsets.
 - Source options choose stable-key or reference-based selection identity and Replace versus Remove/Add update notifications; defaults retain key identity and Replace notifications.
+- Keep keyboard shortcuts and tap actions caller-owned. Consumers use Avalonia `KeyBindings`, `Tapped`, and `DoubleTapped` directly; do not bake application actions or key meanings into the control.
 - Every public API and retained feature must have focused tests in `tests/KubeUI.DynamicTableView.Tests`.
 - Keep benchmarks isolated in `benchmarks/KubeUI.DynamicTableView.Benchmarks` and reference this library only.

@@ -1,16 +1,19 @@
+using Avalonia.Controls.Selection;
 using FluentAvalonia.UI.Controls;
 using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Infrastructure.Presentation;
+using KubeUI.DynamicTableView;
 using KubeUI.Kubernetes;
 
 namespace KubeUI.Avalonia.Features.Clusters.Catalog;
 
-public sealed partial class ClusterListViewModel : ViewModelBase
+public sealed partial class ClusterListViewModel : ViewModelBase, IDisposable
 {
     private readonly IDialogService _dialogService;
     private readonly IClusterRuntimeCatalog _runtimeCatalog;
+    private DynamicTableViewSource<ClusterWorkspace, string>? _tableSource;
 
     [ObservableProperty]
     public partial ClusterWorkspaceCatalog ClusterCatalog { get; set; }
@@ -26,10 +29,46 @@ public sealed partial class ClusterListViewModel : ViewModelBase
 
         Title = Assets.Resources.ClusterListView_Title!;
         Id = nameof(ClusterListViewModel);
+        _tableSource = DynamicTableViewSource<ClusterWorkspace, string>.FromObservableCollection(
+            ClusterCatalog.Clusters,
+            static cluster => cluster.Runtime.Name,
+            [
+                DynamicTableViewColumn<ClusterWorkspace>.Create("name", Assets.Resources.ClusterListView_Name,
+                    static cluster => cluster.Runtime.Name),
+                DynamicTableViewColumn<ClusterWorkspace>.Create("kubeconfig", Assets.Resources.ClusterListView_KubeConfig,
+                    static cluster => cluster.Runtime.KubeConfigPath)
+            ],
+            options: new DynamicTableViewSourceOptions
+            {
+                SelectionIdentityMode = DynamicTableViewSelectionIdentityMode.Reference
+            });
+        _tableSource.SelectionModel.SingleSelect = true;
+        _tableSource.SelectionModel.SelectionChanged += SelectionModelOnSelectionChanged;
     }
+
+    public IDynamicTableViewSource TableSource => _tableSource ?? throw new ObjectDisposedException(nameof(ClusterListViewModel));
 
     [ObservableProperty]
     public partial ClusterWorkspace? SelectedItem { get; set; }
+
+    partial void OnSelectedItemChanged(ClusterWorkspace? value)
+    {
+        if (!ReferenceEquals(_tableSource?.SelectionModel.SelectedItem, value))
+            if (_tableSource is not null)
+                _tableSource.SelectionModel.SelectedItem = value;
+    }
+
+    public void Dispose()
+    {
+        if (_tableSource is null)
+            return;
+        _tableSource.SelectionModel.SelectionChanged -= SelectionModelOnSelectionChanged;
+        _tableSource.Dispose();
+        _tableSource = null;
+    }
+
+    private void SelectionModelOnSelectionChanged(object? sender, SelectionModelSelectionChangedEventArgs e)
+        => SelectedItem = _tableSource?.SelectionModel.SelectedItem as ClusterWorkspace;
 
     [RelayCommand(CanExecute = nameof(CanDelete))]
     private async Task Delete(ClusterWorkspace cluster)

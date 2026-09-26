@@ -1,4 +1,6 @@
 using System.ComponentModel;
+using System.Collections.ObjectModel;
+using System.Reactive.Concurrency;
 using DynamicData;
 using KubeUI.DynamicTableView.Tests.Fixtures;
 using Microsoft.Reactive.Testing;
@@ -7,6 +9,32 @@ namespace KubeUI.DynamicTableView.Tests.Unit;
 
 public sealed class DynamicTableViewSourceChangeTests
 {
+    [Fact]
+    public void Observable_collection_factory_tracks_add_replace_remove_and_move()
+    {
+        var items = new ObservableCollection<DynamicTableViewTestRow>(DynamicTableViewTestData.CreateRows());
+        using var source =
+            DynamicTableViewSource<DynamicTableViewTestRow, string>.FromObservableCollection(
+                items,
+                static row => row.Id,
+                DynamicTableViewTestData.CreateColumns(),
+                workerScheduler: ImmediateScheduler.Instance,
+                uiScheduler: ImmediateScheduler.Instance,
+                options: new DynamicTableViewSourceOptions { UseReplaceForUpdates = true });
+
+        Assert.Equal(["a", "b", "c"], source.Items.Cast<DynamicTableViewTestRow>().Select(static row => row.Id));
+        items.Add(new("d", "Delta", 40, DateTimeOffset.UnixEpoch, false, DynamicTableViewTestState.Pending));
+        Assert.Equal(["a", "b", "c", "d"], source.Items.Cast<DynamicTableViewTestRow>().Select(static row => row.Id));
+
+        items[1] = items[1] with { Name = "Beta 2" };
+        Assert.Equal("Beta 2", source.Items.Cast<DynamicTableViewTestRow>().Single(static row => row.Id == "b").Name);
+
+        items.RemoveAt(0);
+        Assert.Equal(["b", "c", "d"], source.Items.Cast<DynamicTableViewTestRow>().Select(static row => row.Id));
+        items.Move(2, 0);
+        Assert.Equal(["b", "c", "d"], source.Items.Cast<DynamicTableViewTestRow>().Select(static row => row.Id));
+    }
+
     [Fact]
     public void Connect_updates_bound_rows_on_add_update_and_remove()
     {

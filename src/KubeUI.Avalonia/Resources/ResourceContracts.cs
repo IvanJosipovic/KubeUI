@@ -1,10 +1,14 @@
+using Avalonia.Controls.Templates;
+using KubeUI.DynamicTableView;
+
 namespace KubeUI.Avalonia.Resources;
 
 public interface IResourceListColumn
 {
     string Key { get; }
     string Name { get; }
-    string? Width { get; }
+    DynamicTableViewWidthMode WidthMode { get; }
+    double Width { get; }
     double MinWidth { get; }
     SortDirection Sort { get; set; }
     /// <summary>
@@ -13,8 +17,7 @@ public interface IResourceListColumn
     Type? CustomControl { get; }
     Type ItemType { get; }
     Type ValueType { get; }
-    IDataGridColumnValueAccessor ValueAccessor { get; }
-    Func<object, IComparable?> SortKey { get; }
+    DynamicTableViewColumn CreateDynamicTableViewColumn(IDataTemplate? cellTemplate = null);
     Func<object, string> DisplayValue { get; }
 }
 

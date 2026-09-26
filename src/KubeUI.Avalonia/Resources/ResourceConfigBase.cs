@@ -209,7 +209,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
             Key = "name",
             Name = Assets.Resources.ResourceListView_Name!,
             Field = x => x?.Metadata?.Name ?? string.Empty,
-            Width = "2*",
+            Width = 2, WidthMode = DynamicTableViewWidthMode.Star,
             Sort = sort,
         };
     }
@@ -221,7 +221,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
             Key = "namespace",
             Name = Assets.Resources.ResourceListView_Namespace!,
             Field = x => x?.Metadata?.NamespaceProperty ?? string.Empty,
-            Width = "*",
+            Width = 1, WidthMode = DynamicTableViewWidthMode.Star,
         };
     }
 
@@ -233,7 +233,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
             Name = Assets.Resources.ResourceListView_Age!,
             CustomControl = typeof(AgeCell),
             Field = x => x.Metadata.CreationTimestamp,
-            Width = "80"
+            Width = 80, WidthMode = DynamicTableViewWidthMode.Pixel
         };
     }
 

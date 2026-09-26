@@ -14,7 +14,7 @@ public sealed class AppearanceSettingsTests
         var settings = application.GetRequiredTestService<ISettingsService>();
 
         settings.Appearance.ListRowHeight.ShouldBe(22);
-        application.Resources.ContainsKey("DataGridRowHeight").ShouldBeTrue();
-        application.Resources["DataGridRowHeight"].ShouldBe(22d);
+        application.Resources.ContainsKey("DynamicTableViewRowHeight").ShouldBeTrue();
+        application.Resources["DynamicTableViewRowHeight"].ShouldBe(22d);
     }
 }

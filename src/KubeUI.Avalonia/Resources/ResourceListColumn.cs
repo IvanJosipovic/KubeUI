@@ -1,5 +1,7 @@
+using Avalonia.Controls.Templates;
 using k8s;
 using k8s.Models;
+using KubeUI.DynamicTableView;
 
 namespace KubeUI.Avalonia.Resources;
 
@@ -7,7 +9,6 @@ public class ResourceListColumn<T, TValue> : IResourceListColumn where T : class
 {
     private const string NullableValueMissingMessage = "Nullable object must have a value.";
     private Func<T, TValue>? _fieldAccessor;
-    private IDataGridColumnValueAccessor? _valueAccessor;
 
     public required string Key { get; set; }
 
@@ -24,7 +25,9 @@ public class ResourceListColumn<T, TValue> : IResourceListColumn where T : class
     /// </summary>
     public Type? CustomControl { get; set; }
 
-    public string? Width { get; set; }
+    public DynamicTableViewWidthMode WidthMode { get; set; } = DynamicTableViewWidthMode.Auto;
+
+    public double Width { get; set; } = 1;
 
     public double MinWidth { get; set; } = 90;
 
@@ -32,14 +35,25 @@ public class ResourceListColumn<T, TValue> : IResourceListColumn where T : class
 
     public Type ValueType => typeof(TValue);
 
-    public IDataGridColumnValueAccessor ValueAccessor => _valueAccessor ??= new LambdaColumnValueAccessor(GetFieldAccessor());
+    public IReadOnlyList<DynamicTableViewFilterChoice> FilterChoices { get; set; } = [];
 
-    public Func<object, IComparable?> SortKey =>
-        o => GetFieldValue((T)o) switch
+    public DynamicTableViewColumn CreateDynamicTableViewColumn(IDataTemplate? cellTemplate = null)
+    {
+        DynamicTableViewColumn<T> column = new(
+            Key,
+            Name,
+            ValueType,
+            GetFieldValue,
+            item => DisplayValue(item),
+            cellTemplate)
         {
-            IComparable comparable => comparable,
-            _ => null
+            WidthMode = WidthMode,
+            Width = Width,
+            MinWidth = MinWidth,
+            FilterChoices = FilterChoices
         };
+        return column;
+    }
 
     public Func<object, string> DisplayValue =>
         o =>
@@ -83,36 +97,4 @@ public class ResourceListColumn<T, TValue> : IResourceListColumn where T : class
                 && invalidOperationException.Message == NullableValueMissingMessage);
     }
 
-    private sealed class LambdaColumnValueAccessor : IDataGridColumnValueAccessor
-    {
-        private readonly Func<T, TValue> _getter;
-
-        public LambdaColumnValueAccessor(Func<T, TValue> getter)
-        {
-            _getter = getter;
-        }
-
-        public Type ItemType => typeof(T);
-
-        public Type ValueType => typeof(TValue);
-
-        public bool CanWrite => false;
-
-        public object GetValue(object item)
-        {
-            try
-            {
-                return _getter((T)item)!;
-            }
-            catch (Exception ex) when (IsMissingOptionalValue(ex))
-            {
-                return null!;
-            }
-        }
-
-        public void SetValue(object item, object value)
-        {
-            throw new NotSupportedException();
-        }
-    }
 }
