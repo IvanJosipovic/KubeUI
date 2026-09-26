@@ -20,7 +20,6 @@ jobs:
   publish-docs:
     if: github.ref == 'refs/heads/main'
     name: Publish Documentation
-    needs: [release]
     runs-on: ubuntu-latest
     permissions:
       contents: read
