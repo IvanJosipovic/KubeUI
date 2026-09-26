@@ -21,6 +21,7 @@ public partial class ResourceYamlViewModel : ViewModelBase, IClusterWorkspaceCon
     private readonly IYamlValidationService _yamlValidationService;
     private TextDocument? _validationDocument;
     private bool _actionResultFromValidation;
+    private bool _serverValidationDiagnostics;
     private CancellationTokenSource? _validationDebounceCts;
     private GroupApiVersionKind? _resourceKind;
 
@@ -246,6 +247,7 @@ public partial class ResourceYamlViewModel : ViewModelBase, IClusterWorkspaceCon
         }
         catch (Exception ex)
         {
+            SetServerValidationDiagnostics(ex);
             SetActionResult(false, Assets.Resources.ResourceYamlView_SaveFailed, Utilities.GetUserFacingErrorMessage(ex));
             _logger.LogError(ex, "Error Saving Yaml");
         }
@@ -278,6 +280,7 @@ public partial class ResourceYamlViewModel : ViewModelBase, IClusterWorkspaceCon
         }
         catch (Exception ex)
         {
+            SetServerValidationDiagnostics(ex);
             SetActionResult(false, Assets.Resources.ResourceYamlView_DryRunFailed, Utilities.GetUserFacingErrorMessage(ex));
             _logger.LogError(ex, "Error Dry Running Yaml");
         }
@@ -378,6 +381,12 @@ public partial class ResourceYamlViewModel : ViewModelBase, IClusterWorkspaceCon
 
     private void YamlDocument_OnChanged(object? sender, DocumentChangeEventArgs e)
     {
+        if (_serverValidationDiagnostics)
+        {
+            _serverValidationDiagnostics = false;
+            ValidationDiagnostics = [];
+        }
+
         _ = DebounceValidationAsync();
     }
 
@@ -434,6 +443,7 @@ public partial class ResourceYamlViewModel : ViewModelBase, IClusterWorkspaceCon
 
     private void ValidateYamlDocument()
     {
+        _serverValidationDiagnostics = false;
         ValidationDiagnostics = _yamlValidationService.Validate(YamlDocument.Text, Cluster?.Runtime.ModelCatalog);
 
         if (ValidationDiagnostics.Count > 0)
@@ -450,6 +460,16 @@ public partial class ResourceYamlViewModel : ViewModelBase, IClusterWorkspaceCon
         if (_actionResultFromValidation)
         {
             ClearActionResult();
+        }
+    }
+
+    private void SetServerValidationDiagnostics(Exception exception)
+    {
+        var diagnostics = YamlServerValidationDiagnosticFactory.Create(YamlDocument.Text, exception);
+        if (diagnostics.Count > 0)
+        {
+            _serverValidationDiagnostics = true;
+            ValidationDiagnostics = diagnostics;
         }
     }
 

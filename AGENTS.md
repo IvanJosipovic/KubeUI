@@ -75,3 +75,10 @@ Docker
 - Release trim analysis is enabled for KubeUI libraries; analyzer warnings fail Release builds for KubeUI.AI and KubeUI.Kubernetes, and IL2091 fails KubeUI.Avalonia builds.
 - Avalonia reflection warnings remain visible for features whose assemblies are rooted by Desktop; review new diagnostics and record the specific fix or assembly keep.
 - Do not suppress trim warnings project-wide.
+
+## 9) Documentation website
+- The Docusaurus site lives in `website/`; keep app screenshots and source assets in `docs/` and copy only site assets into `website/static/`.
+- Pin Docusaurus packages to one version and commit `website/package-lock.json`.
+- Production URL is `https://KubeUI.com` with root `baseUrl: '/'`; `website/static/CNAME` must contain `KubeUI.com`.
+- `.github/workflows/cicd.yml` publishes the site to GitHub Pages only after a successful semantic release.
+- Validate site changes with `npm ci` and `npm run build` from `website/`.

@@ -2110,9 +2110,67 @@ public sealed class ResourceGraphControlTests
 
             await WaitForAsync(() => control.Area.VertexList.Count == 1);
             await WaitForAsync(() => control.IsViewportStable);
-            control.ZoomControl.ZoomToFill();
 
             control.ZoomControl.Zoom.ShouldNotBe(0.5);
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task graph_refits_as_resources_continue_loading_before_user_navigation()
+    {
+        V1Pod CreatePod(int index) => new()
+        {
+            ApiVersion = "v1",
+            Kind = V1Pod.KubeKind,
+            Metadata = new()
+            {
+                Name = $"pod-{index}",
+                NamespaceProperty = "demo",
+                Uid = $"pod-{index}",
+            },
+        };
+
+        var pods = Enumerable.Range(0, 40).Select(CreatePod).ToArray();
+        using ResourceGraphControl control = new()
+        {
+            Graph = ResourceRelationshipGraph.Empty,
+        };
+        Window window = new() { Width = 800, Height = 600, Content = control };
+        try
+        {
+            window.Show();
+            await WaitForAsync(() => control.Area.LogicCore?.Graph is not null);
+
+            control.Graph = new ResourceRelationshipGraph([pods[0]], []);
+            await WaitForAsync(() => control.Area.VertexList.Count == 1);
+            await WaitForAsync(() => control.IsViewportStable);
+            var initialZoom = control.ZoomControl.Zoom;
+
+            List<IKubernetesObject<V1ObjectMeta>> loadedResources = [.. pods];
+            List<ResourceRelationship> relationships = [];
+            for (var index = 1; index < pods.Length; index++)
+            {
+                relationships.Add(new(
+                    GetIdentity(pods[index - 1]),
+                    GetIdentity(pods[index]),
+                    ResourceRelationshipKind.Owner));
+            }
+
+            control.Graph = new ResourceRelationshipGraph(loadedResources, relationships);
+
+            await WaitForAsync(() => control.Area.VertexList.Count == pods.Length);
+            await WaitForAsync(() => control.IsViewportStable);
+
+            var vertices = control.Area.VertexList.Values.ToArray();
+            var graphHeight = vertices.Max(vertex => vertex.GetPosition(final: true).Y + vertex.Bounds.Height)
+                - vertices.Min(vertex => vertex.GetPosition(final: true).Y);
+            graphHeight.ShouldBeGreaterThan(control.ZoomControl.Bounds.Height);
+            await WaitForAsync(() => control.ZoomControl.Zoom < initialZoom);
+            control.ZoomControl.Zoom.ShouldBeLessThan(initialZoom);
         }
         finally
         {

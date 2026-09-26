@@ -2422,7 +2422,7 @@
     <comment/>
   </data>
   <data name="ResourceConfigBase_MenuItem_ViewYaml" xml:space="preserve">
-    <value>View Yaml</value>
+    <value>View YAML</value>
     <comment/>
   </data>
   <data name="ResourceConfigBase_MenuItem_Delete" xml:space="preserve">

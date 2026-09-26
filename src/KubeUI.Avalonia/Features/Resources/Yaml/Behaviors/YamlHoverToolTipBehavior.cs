@@ -17,6 +17,7 @@ public sealed class YamlHoverToolTipBehavior : Behavior<TextEditor>
     private const double HoverPopupVerticalOffset = 0;
 
     private ResourceYamlViewModel? _currentViewModel;
+    private YamlEditorBehavior? _editorBehavior;
     private Popup? _hoverPopup;
     private int _hoverRequest;
     private ScrollViewer? _scrollViewer;
@@ -26,6 +27,16 @@ public sealed class YamlHoverToolTipBehavior : Behavior<TextEditor>
     private ClusterModelCatalog? _schemaCatalog;
     private GroupApiVersionKind _schemaKind;
     private long _schemaVersion = -1;
+
+    /// <summary>Creates a YAML editor hover documentation behavior.</summary>
+    public YamlHoverToolTipBehavior()
+    {
+    }
+
+    internal YamlHoverToolTipBehavior(Popup hoverPopup)
+    {
+        _hoverPopup = hoverPopup;
+    }
 
     protected override void OnAttached()
     {
@@ -44,6 +55,12 @@ public sealed class YamlHoverToolTipBehavior : Behavior<TextEditor>
         AssociatedObject.TextArea.TextView.PointerHover += TextViewOnPointerHover;
         AssociatedObject.TextArea.TextView.PointerHoverStopped += TextViewOnPointerHoverStopped;
         Application.Current?.ActualThemeVariantChanged += OnActualThemeVariantChanged;
+
+        _editorBehavior = Interaction.GetBehaviors(AssociatedObject).OfType<YamlEditorBehavior>().SingleOrDefault();
+        if (_editorBehavior != null)
+        {
+            _editorBehavior.CompletionOpened += EditorBehaviorOnCompletionOpened;
+        }
 
         UpdateCurrentViewModel(AssociatedObject.DataContext as ResourceYamlViewModel);
         AttachScrollViewer();
@@ -65,6 +82,12 @@ public sealed class YamlHoverToolTipBehavior : Behavior<TextEditor>
         }
 
         DetachScrollViewer();
+        if (_editorBehavior != null)
+        {
+            _editorBehavior.CompletionOpened -= EditorBehaviorOnCompletionOpened;
+            _editorBehavior = null;
+        }
+
         DetachViewModel(_currentViewModel);
         _currentViewModel = null;
         _schemaLoadTask = null;
@@ -194,6 +217,11 @@ public sealed class YamlHoverToolTipBehavior : Behavior<TextEditor>
         CloseHoverToolTip();
     }
 
+    private void EditorBehaviorOnCompletionOpened(object? sender, EventArgs e)
+    {
+        InvalidateHover();
+    }
+
     private void AttachScrollViewer()
     {
         if (AssociatedObject == null)
@@ -235,6 +263,12 @@ public sealed class YamlHoverToolTipBehavior : Behavior<TextEditor>
 
     private bool TryShowHoverTooltipAtOffset(int offset, bool onlyWhenOpen = false)
     {
+        if (_editorBehavior?.IsCompletionOpen == true)
+        {
+            InvalidateHover();
+            return false;
+        }
+
         if (onlyWhenOpen && _hoverPopup?.IsOpen != true)
         {
             return false;
@@ -258,12 +292,10 @@ public sealed class YamlHoverToolTipBehavior : Behavior<TextEditor>
             return false;
         }
 
-        ShowHoverToolTip(new TextBlock
-        {
-            Text = diagnosticMessage,
-            TextWrapping = TextWrapping.Wrap,
-            MaxWidth = 520,
-        }, offset);
+        var diagnosticTip = YamlDocumentationViewFactory.CreateCodeText(diagnosticMessage);
+        diagnosticTip.TextWrapping = TextWrapping.Wrap;
+        diagnosticTip.MaxWidth = 520;
+        ShowHoverToolTip(diagnosticTip, offset);
         return true;
     }
 
@@ -309,26 +341,24 @@ public sealed class YamlHoverToolTipBehavior : Behavior<TextEditor>
         }
 
         var textView = AssociatedObject.TextArea.TextView;
-        _hoverPopup ??= new Popup
+        _hoverPopup ??= new Popup();
+        _hoverPopup.PlacementTarget = textView;
+        _hoverPopup.Placement = PlacementMode.AnchorAndGravity;
+        _hoverPopup.PlacementAnchor = PopupAnchor.TopLeft;
+        _hoverPopup.PlacementGravity = PopupGravity.BottomRight;
+        _hoverPopup.PlacementConstraintAdjustment = PopupPositionerConstraintAdjustment.SlideX
+            | PopupPositionerConstraintAdjustment.SlideY;
+        _hoverPopup.IsLightDismissEnabled = false;
+        _hoverPopup.Child ??= new ContentControl
         {
-            PlacementTarget = textView,
-            Placement = PlacementMode.AnchorAndGravity,
-            PlacementAnchor = PopupAnchor.TopLeft,
-            PlacementGravity = PopupGravity.BottomRight,
-            PlacementConstraintAdjustment = PopupPositionerConstraintAdjustment.SlideX
-                | PopupPositionerConstraintAdjustment.SlideY,
-            IsLightDismissEnabled = false,
-        };
-
-        _hoverPopup.Child = new ContentControl
-        {
-            Content = tip,
             Foreground = ApplicationBrushResources.GetBrush("SystemBaseHighColor"),
             Padding = new Thickness(10, 8),
             CornerRadius = new CornerRadius(4),
             IsHitTestVisible = false,
             Background = ApplicationBrushResources.GetBrush("SystemRegionBrush"),
         };
+
+        ((ContentControl)_hoverPopup.Child!).Content = tip;
         var location = AssociatedObject.Document!.GetLocation(offset);
         var position = new TextViewPosition(location.Line, location.Column);
         var lineTop = textView.GetVisualPosition(position, VisualYPosition.LineTop) - textView.ScrollOffset;
@@ -381,15 +411,36 @@ public sealed class YamlHoverToolTipBehavior : Behavior<TextEditor>
             return false;
         }
 
-        AssociatedObject.TextArea.TextView.EnsureVisualLines();
-        var visualPoint = point + AssociatedObject.TextArea.TextView.ScrollOffset;
-        var position = AssociatedObject.TextArea.TextView.GetPosition(visualPoint);
+        var textView = AssociatedObject.TextArea.TextView;
+        textView.EnsureVisualLines();
+        var visualPoint = point + textView.ScrollOffset;
+        var position = textView.GetPosition(visualPoint);
         if (!position.HasValue)
         {
-            position = AssociatedObject.TextArea.TextView.GetPositionFloor(visualPoint);
+            position = textView.GetPositionFloor(visualPoint);
         }
 
         if (!position.HasValue)
+        {
+            return false;
+        }
+
+        var lineNumber = position.Value.Location.Line;
+        var visualLine = textView.GetVisualLine(lineNumber);
+        if (visualLine is null)
+        {
+            return false;
+        }
+
+        var textLine = visualLine.GetTextLineByVisualYPosition(visualPoint.Y);
+        var top = visualLine.GetTextLineVisualYPosition(textLine, VisualYPosition.LineTop);
+        var bottom = visualLine.GetTextLineVisualYPosition(textLine, VisualYPosition.LineBottom);
+        var left = visualLine.GetTextLineVisualXPosition(
+            textLine,
+            visualLine.GetTextLineVisualStartColumn(textLine));
+        var right = left + textLine.WidthIncludingTrailingWhitespace;
+        if (visualPoint.Y < top || visualPoint.Y >= bottom
+            || visualPoint.X < left || visualPoint.X >= right)
         {
             return false;
         }

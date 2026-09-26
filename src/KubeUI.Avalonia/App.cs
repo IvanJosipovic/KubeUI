@@ -105,10 +105,10 @@ public partial class App : Application, IServiceProviderHost
             mainWindow.DataContext = mainViewModel;
             TopLevel = desktop.MainWindow;
             mainWindow.Opened += (_, _) => _logger.LogInformation("Main window opened");
-            mainWindow.Closed += (_, _) => _logger.LogWarning("Main window closed");
+            mainWindow.Closed += (_, _) => _logger.LogInformation("Main window closed");
             desktop.ShutdownRequested += (_, _) =>
             {
-                _logger.LogWarning("Avalonia shutdown requested");
+                _logger.LogInformation("Avalonia shutdown requested");
                 mainViewModel.CloseLayoutCommand.Execute(null);
                 GracefulShutdown();
             };
@@ -126,12 +126,12 @@ public partial class App : Application, IServiceProviderHost
         base.OnFrameworkInitializationCompleted();
     }
 
-    private void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
+    internal void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
     {
         RecordUnhandledException(e.ExceptionObject as Exception ?? new Exception(e.ExceptionObject?.ToString()), e.IsTerminating);
     }
 
-    private void TaskScheduler_UnobservedTaskException(object? sender, UnobservedTaskExceptionEventArgs e)
+    internal void TaskScheduler_UnobservedTaskException(object? sender, UnobservedTaskExceptionEventArgs e)
     {
         RecordUnhandledException(e.Exception, isTerminating: false);
         e.SetObserved();

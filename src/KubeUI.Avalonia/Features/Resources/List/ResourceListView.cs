@@ -121,11 +121,11 @@ public partial class ResourceListView : ViewBase<IResourceListViewModel>
     private static DataGridState PrepareStateForRestore(DataGrid grid, DataGridState state)
     {
         var sanitizedState = RemoveNamespaceScopeFilter(state);
-        IReadOnlyList<FilteringDescriptor> currentNamespaceDescriptors = grid.FilteringModel.Descriptors
+        var currentNamespaceDescriptors = grid.FilteringModel.Descriptors
             .Where(IsNamespaceScopeFilter)
             .ToArray();
 
-        if (currentNamespaceDescriptors.Count == 0 || sanitizedState.Filtering is not { } filteringState)
+        if (currentNamespaceDescriptors.Length == 0 || sanitizedState.Filtering is not { } filteringState)
         {
             return sanitizedState;
         }
@@ -164,7 +164,7 @@ public partial class ResourceListView : ViewBase<IResourceListViewModel>
                     FilteringAdapterFactory = vm.FilteringAdapterFactory,
                     SearchAdapterFactory = vm.SearchAdapterFactory,
                 }
-                    .Name("PART_Grid")
+                    .Name("PART_Grid", Scope)
                     .Ref(out _grid)
                     .Row(1)
                     .CanUserReorderColumns(true)
@@ -200,10 +200,6 @@ public partial class ResourceListView : ViewBase<IResourceListViewModel>
                             Gesture = new KeyGesture(Key.Delete)
                         }))
                     .Styles(vm.ResourceConfig.ListStyle());
-
-
-        Scope.Register("PART_Grid", _grid); //todo why is this needed
-
         return grid;
     }
 

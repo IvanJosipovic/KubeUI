@@ -1,5 +1,5 @@
 using Avalonia.Markup.Xaml.MarkupExtensions;
-using Avalonia.Svg.Skia;
+using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Styles;
 
 namespace KubeUI.Avalonia.Shell.Main;
@@ -14,10 +14,7 @@ public sealed class HomeView() : ViewBase<HomeViewModel>
                     .Height(128)
                     .Margin(0, 15, 0, 0)
                     .HorizontalAlignment(HorizontalAlignment.Center)
-                    .Source(new SvgImage
-                    {
-                        Source = SvgSource.Load("avares://KubeUI.Avalonia/Assets/kube/infrastructure_components/unlabeled/control-plane.svg")
-                    }),
+                    .Source(ApplicationIcons.CreateControlPlaneImage()),
                 new TextBlock()
                     .Margin(0, 5, 0, 0)
                     .HorizontalAlignment(HorizontalAlignment.Center)
