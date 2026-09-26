@@ -76,7 +76,12 @@ public sealed class ResourceEditorSchemaNode
             if (cache.Roots.TryGetValue(key, out var root))
                 return root;
 
-            root = Create(kind.Kind, catalog.GetSchema(kind), catalog, new HashSet<IOpenApiSchema>(ReferenceEqualityComparer.Instance));
+            var source = catalog.GetSchema(kind);
+            if (source is null)
+                throw new InvalidOperationException(
+                    $"OpenAPI schema for {kind.ApiVersion}/{kind.Kind} is unavailable. Reload cluster schemas before opening the resource editor.");
+
+            root = Create(kind.Kind, source, catalog, new HashSet<IOpenApiSchema>(ReferenceEqualityComparer.Instance));
             cache.Roots[key] = root;
             return root;
         }

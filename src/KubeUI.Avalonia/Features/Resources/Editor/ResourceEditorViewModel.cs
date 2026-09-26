@@ -50,7 +50,7 @@ public sealed partial class ResourceEditorViewModel : ViewModelBase, IDisposable
     }
 
     public bool IsDirty => Document?.IsDirty == true;
-    public bool CanSave => !IsSaving && IsDirty && ValidationErrors.Count == 0 && (IsCreateMode ? CanCreate : CanUpdate);
+    public bool CanSave => !IsSaving && (IsCreateMode || IsDirty) && ValidationErrors.Count == 0 && (IsCreateMode ? CanCreate : CanUpdate);
     public bool CanUpdate => Cluster is not null && Object is not null
         && Cluster.Runtime.Permissions.CanI(_kind, Verb.Update, Object.Metadata?.NamespaceProperty);
 
@@ -189,6 +189,11 @@ public sealed partial class ResourceEditorViewModel : ViewModelBase, IDisposable
             await using var stream = new MemoryStream(Encoding.UTF8.GetBytes(json));
             await Cluster.Runtime.ImportYaml(stream).ConfigureAwait(false);
             Document = ResourceEditorDocument.Parse(json);
+            if (IsCreateMode)
+            {
+                IsCreateMode = false;
+                OnPropertyChanged(nameof(IsCreateMode));
+            }
             NotifyStateChanged();
         }
         catch (Exception ex)

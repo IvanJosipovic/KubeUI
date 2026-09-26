@@ -62,8 +62,8 @@ public sealed partial class ResourceEditorNodeViewModel : ObservableObject, INot
     public string Description { get; }
     public ResourceEditorValueKind Kind { get; }
     public bool IsRequired { get; }
-    public bool IsReadOnly => string.Equals(Name, "apiVersion", StringComparison.Ordinal)
-        || string.Equals(Name, "kind", StringComparison.Ordinal)
+    public bool IsReadOnly => string.Equals(Path, "apiVersion", StringComparison.Ordinal)
+        || string.Equals(Path, "kind", StringComparison.Ordinal)
         || string.Equals(Path, "status", StringComparison.Ordinal)
         || Path.StartsWith("status.", StringComparison.Ordinal);
     public bool IsSection => !IsYamlText && (Kind is ResourceEditorValueKind.Object or ResourceEditorValueKind.Array or ResourceEditorValueKind.Map);

@@ -2509,7 +2509,6 @@ public class ResourceListViewModelTests
 
     }
 
-    [Obsolete]
     private static void SaveGridScreenshot(DataGrid grid, string name)
     {
         var directory = Path.Combine(AppContext.BaseDirectory, "TestArtifacts");
@@ -2526,7 +2525,6 @@ public class ResourceListViewModelTests
         Console.WriteLine($"DataGrid screenshot: {path}");
     }
 
-    [Obsolete]
     private static void AssertHorizontalGridLines(DataGrid grid)
     {
         var pixelSize = new PixelSize(
