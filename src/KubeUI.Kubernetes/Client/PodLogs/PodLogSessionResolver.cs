@@ -203,6 +203,11 @@ public sealed class PodLogSessionResolver : IPodLogSessionResolver
             relatedPods.Add(currentPod);
         }
 
+        if (state.ResourceKind == V1Pod.KubeKind)
+        {
+            relatedPods = [currentPod];
+        }
+
         SortPodsByNewestFirst(relatedPods);
 
         var resolvedContainerName = ResolveContainerName(currentPod, state.ContainerName);

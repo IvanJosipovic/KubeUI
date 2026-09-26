@@ -4,6 +4,7 @@ using Avalonia.Markup.Xaml.MarkupExtensions;
 using Avalonia.Xaml.Interactions.Core;
 using AvaloniaEdit;
 using FluentAvalonia.UI.Controls;
+using FluentAvalonia.UI.Controls.Primitives;
 using FluentIcons.Avalonia;
 using FluentIcons.Common;
 using k8s.Models;
@@ -25,6 +26,7 @@ public sealed partial class ResourceYamlView : ViewBase<ResourceYamlViewModel>
     protected override object Build(ResourceYamlViewModel vm)
     {
         ArgumentNullException.ThrowIfNull(vm);
+        var hoverPopup = new Popup();
 
         return new Grid()
             .HorizontalAlignment(HorizontalAlignment.Stretch)
@@ -33,7 +35,17 @@ public sealed partial class ResourceYamlView : ViewBase<ResourceYamlViewModel>
             .Children(
                 CreateReadOnlyToolbar(vm),
                 CreateEditToolbar(vm),
-                RegisterName("ActionResultBar", new FAInfoBar()
+                new FAInfoBar()
+                    .Name("ActionResultBar", Scope)
+                    .Classes("YamlActionResultBar")
+                    .Styles(
+                        new Style<FAInfoBarPanel>(selector =>
+                                selector.OfType<FAInfoBar>()
+                                    .Class("YamlActionResultBar")
+                                    .Template()
+                                    .Descendant()
+                                    .OfType<FAInfoBarPanel>())
+                            .Setter(FAInfoBarPanel.VerticalOrientationPaddingProperty, new Thickness(0, 14, 0, 14)))
                     .Row(1)
                     .Title(vm, x => x.ActionResultTitle)
                     .Margin(4)
@@ -42,16 +54,9 @@ public sealed partial class ResourceYamlView : ViewBase<ResourceYamlViewModel>
                     .IsOpen(vm, x => x.HasActionResult)
                     .IsVisible(vm, x => x.HasActionResult)
                     .Message(vm, x => x.ActionResultMessage)
-                    .Severity(vm, x => x.ActionResultSeverity)),
-                RegisterName("Editor", CreateEditor(vm)));
-    }
-
-    private TControl RegisterName<TControl>(string name, TControl control)
-        where TControl : Control
-    {
-        control.Name = name;
-        Scope.Register(name, control);
-        return control;
+                    .Severity(vm, x => x.ActionResultSeverity),
+                CreateEditor(vm, hoverPopup).Name("Editor", Scope),
+                hoverPopup);
     }
 
     private StackPanel CreateReadOnlyToolbar(ResourceYamlViewModel vm)
@@ -63,12 +68,13 @@ public sealed partial class ResourceYamlView : ViewBase<ResourceYamlViewModel>
             .Children(
                 new Button()
                     .Command(vm, x => x.SetEditModeCommand)
-                    .ToolTip_Tip(Assets.Resources.ResourceYamlView_Edit)
+                    .ToolTip_Tip(YamlDocumentationViewFactory.CreateCodeText(Assets.Resources.ResourceYamlView_Edit))
                     .Content(new FluentIcon().Icon(Icon.DocumentEdit)),
-                RegisterName("HideNoisyFieldsToggle", new ToggleButton()
+                new ToggleButton()
+                    .Name("HideNoisyFieldsToggle", Scope)
                     .IsChecked(vm, x => x.HideNoisyFields, BindingMode.TwoWay)
-                    .ToolTip_Tip(Assets.Resources.ResourceYamlView_HideNoisyFields)
-                    .Content(new FluentIcon().Icon(Icon.EyeOff))),
+                    .ToolTip_Tip(YamlDocumentationViewFactory.CreateCodeText(Assets.Resources.ResourceYamlView_HideNoisyFields))
+                    .Content(new FluentIcon().Icon(Icon.EyeOff)),
                 CreateWordWrapToggle(vm));
     }
 
@@ -82,16 +88,16 @@ public sealed partial class ResourceYamlView : ViewBase<ResourceYamlViewModel>
                 new Button()
                     .Command(vm, x => x.SaveCommand)
                     .IsEnabled(vm, x => x.CanSaveAction)
-                    .ToolTip_Tip(Assets.Resources.ResourceYamlView_Save)
+                    .ToolTip_Tip(YamlDocumentationViewFactory.CreateCodeText(Assets.Resources.ResourceYamlView_Save))
                     .Content(new FluentIcon().Icon(Icon.Save)),
                 new Button()
                     .Command(vm, x => x.DryRunCommand)
                     .IsEnabled(vm, x => x.CanDryRunAction)
-                    .ToolTip_Tip(Assets.Resources.ResourceYamlView_DryRun)
+                    .ToolTip_Tip(YamlDocumentationViewFactory.CreateCodeText(Assets.Resources.ResourceYamlView_DryRun))
                     .Content(new FluentIcon().Icon(Icon.CheckmarkCircle)),
                 new Button()
                     .Command(vm, x => x.SetEditModeCommand)
-                    .ToolTip_Tip(Assets.Resources.ResourceYamlView_Cancel)
+                    .ToolTip_Tip(YamlDocumentationViewFactory.CreateCodeText(Assets.Resources.ResourceYamlView_Cancel))
                     .Content(new FluentIcon().Icon(Icon.Dismiss)),
                 CreateWordWrapToggle(vm));
     }
@@ -100,11 +106,11 @@ public sealed partial class ResourceYamlView : ViewBase<ResourceYamlViewModel>
     {
         return new ToggleButton()
             .IsChecked(vm, x => x.WordWrap, BindingMode.TwoWay)
-            .ToolTip_Tip(Assets.Resources.ResourceYamlView_WordWrap)
+            .ToolTip_Tip(YamlDocumentationViewFactory.CreateCodeText(Assets.Resources.ResourceYamlView_WordWrap))
             .Content(new FluentIcon().Icon(Icon.TextWrap));
     }
 
-    private static TextEditor CreateEditor(ResourceYamlViewModel vm)
+    private static TextEditor CreateEditor(ResourceYamlViewModel vm, Popup hoverPopup)
     {
         var editor = new TextEditor()
             .Row(2)
@@ -129,7 +135,7 @@ public sealed partial class ResourceYamlView : ViewBase<ResourceYamlViewModel>
             .Behaviors(
                 new YamlEditorBehavior(),
                 new YamlDiagnosticRenderingBehavior(),
-                new YamlHoverToolTipBehavior(),
+                new YamlHoverToolTipBehavior(hoverPopup),
                 new YamlEditorScrollBehavior())
             .KeyBindings(
                 new KeyBinding { Command = vm.RequestCompletionCommand, Gesture = new KeyGesture(Key.Space, KeyModifiers.Control) },

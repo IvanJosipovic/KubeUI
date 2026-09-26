@@ -392,7 +392,7 @@ public sealed partial class MainViewModel : ViewModelBase
 
     private async Task ShowUpdateCheckUnavailableAsync()
     {
-        ContentDialogSettings settings = CreateUpdateCheckUnavailableDialogSettings();
+        var settings = CreateUpdateCheckUnavailableDialogSettings();
 
         await _dialogService.ShowContentDialogAsync(this, settings).ConfigureAwait(true);
     }

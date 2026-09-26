@@ -412,7 +412,7 @@ internal sealed partial class DataDisplayViewModel<TResource, TValue> : ViewMode
     {
         if (row.OriginalKey is not null
             && _originalValueWireFormatter is not null
-            && _baselineValues.TryGetValue(row.OriginalKey, out TValue? originalValue)
+            && _baselineValues.TryGetValue(row.OriginalKey, out var originalValue)
             && _baseline.TryGetValue(row.OriginalKey, out var originalText)
             && string.Equals(value, originalText, StringComparison.Ordinal))
         {

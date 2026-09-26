@@ -30,6 +30,7 @@
     <InternalsVisibleTo Include="KubeUI.Benchmarks" />
     <InternalsVisibleTo Include="KubeUI.Avalonia.Tests" />
     <InternalsVisibleTo Include="KubeUI.Testing" />
+    <InternalsVisibleTo Include="KubeUI.Documentation.Tests" />
     <ProjectCapability Include="Avalonia" />
   </ItemGroup>
 
@@ -53,21 +54,21 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Avalonia" Version="12.1.2" />
+    <PackageReference Include="Avalonia" Version="12.1.3" />
     <PackageReference Include="Avalonia.AvaloniaEdit" Version="12.0.0" />
     <PackageReference Include="Avalonia.Controls.DataGrid" Version="12.1.2">
       <IncludeAssets>none</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="Avalonia.Markup.Declarative" Version="12.1.1" />
-    <PackageReference Include="Avalonia.Fonts.Inter" Version="12.1.2" />
-    <PackageReference Include="Avalonia.Skia" Version="12.1.2" />
-    <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.2" />
+    <PackageReference Include="Avalonia.Fonts.Inter" Version="12.1.3" />
+    <PackageReference Include="Avalonia.Skia" Version="12.1.3" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.3" />
     <PackageReference Include="AvaloniaEdit.TextMate" Version="12.0.0" />
-    <PackageReference Include="Westermo.GraphX.Controls.Avalonia" Version="4.4.6" />
+    <PackageReference Include="Westermo.GraphX.Controls.Avalonia" Version="4.4.8" />
     <PackageReference Include="Westermo.GraphX.Controls.Avalonia.Themes.Fluent" Version="4.2.0" />
-    <PackageReference Include="Westermo.GraphX.Logic" Version="4.4.6" />
-    <PackageReference Include="SvcSystems.UI.Terminal" Version="1.1.4" />
+    <PackageReference Include="Westermo.GraphX.Logic" Version="4.4.8" />
+    <PackageReference Include="SvcSystems.UI.Terminal" Version="2.0.0" />
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
     <PackageReference Include="Dock.Avalonia" Version="12.1.0.2" />
     <PackageReference Include="Dock.Avalonia.Themes.Fluent" Version="12.1.0.2" />
@@ -97,7 +98,7 @@
     <PackageReference Include="Svg.Controls.Skia.Avalonia" Version="12.0.0.17" />
     <PackageReference Include="TextMateSharp" Version="2.0.4" />
     <PackageReference Include="TextMateSharp.Grammars" Version="2.0.4" />
-    <PackageReference Include="Velopack" Version="1.2.0" />
+    <PackageReference Include="Velopack" Version="1.2.158" />
     <PackageReference Include="Xaml.Behaviors.Avalonia" Version="12.0.7" />
   </ItemGroup>
 

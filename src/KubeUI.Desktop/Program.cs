@@ -19,6 +19,7 @@ using KubeUI.Avalonia.Services.Settings;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using ModelContextProtocol.Protocol;
 using NReco.Logging.File;
 using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
@@ -47,23 +48,16 @@ internal static class Program
             {
                 Args = args
             };
-            var appBuilder = CreateAppBuilder(host.Services);
 
             StartHostAfterAvaloniaSetup(
                 host,
-                () => appBuilder.SetupWithLifetime(lifetime),
-                () => lifetime.Start(args));
-        }
-        catch (Exception exception)
-        {
-            host.Services.GetRequiredService<ILoggerFactory>().CreateLogger("KubeUI.Desktop.Program").LogCritical(
-                exception,
-                "Avalonia startup failed");
-            throw;
+                () => CreateAppBuilder(host.Services).SetupWithLifetime(lifetime),
+                () => lifetime.Start(args),
+                host.Services.GetRequiredService<ILoggerFactory>().CreateLogger("KubeUI.Desktop.Program"));
         }
         finally
         {
-            host.Services.GetRequiredService<ILoggerFactory>().CreateLogger("KubeUI.Desktop.Program").LogWarning(
+            host.Services.GetRequiredService<ILoggerFactory>().CreateLogger("KubeUI.Desktop.Program").LogInformation(
                 "Avalonia lifetime ended; stopping host");
             Task.Run(async () =>
             {
@@ -106,11 +100,20 @@ internal static class Program
     internal static void StartHostAfterAvaloniaSetup(
         IHost host,
         Action setupAvalonia,
-        Action runAvalonia)
+        Action runAvalonia,
+        ILogger logger)
     {
-        setupAvalonia();
-        host.Start();
-        runAvalonia();
+        try
+        {
+            setupAvalonia();
+            host.Start();
+            runAvalonia();
+        }
+        catch (Exception exception)
+        {
+            logger.LogCritical(exception, "Avalonia startup failed");
+            throw;
+        }
     }
 
     internal static void RegisterAvaloniaShutdown(IServiceProvider services, Action? shutdownAvalonia = null)
@@ -164,6 +167,10 @@ internal static class Program
                 static _ => new DiagnosticListener("KubeUI.Mcp"));
             builder.Services.AddMcpServer()
                 .WithHttpTransport(options => options.Stateless = true)
+                .WithListResourcesHandler(static (_, _) =>
+                    ValueTask.FromResult(new ListResourcesResult { Resources = [] }))
+                .WithListResourceTemplatesHandler(static (_, _) =>
+                    ValueTask.FromResult(new ListResourceTemplatesResult { ResourceTemplates = [] }))
                 .WithTools<McpTools>();
             var port = mcpPortOverride ?? settings.Settings.McpServerPort;
             builder.Services.AddSingleton<IHostedService>(services =>

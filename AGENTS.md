@@ -67,3 +67,10 @@ Docker
 - Resource keys in `Resources.resx` must use `{ViewOrControlName}_{Name}` for view/control-owned UI text, `{ResourceConfigName}_{Name}` for resource-list column headers and resource-config actions, or `Shared_{Name}` for labels shared across multiple views, controls, or configs.
 - No hacks or weird workarounds; if you think you need one, ask for guidance.
 - When a new feature is added, update the closest Agents.md with the feature requirements
+
+## 8) Documentation website
+- The Docusaurus site lives in `website/`; keep app screenshots and source assets in `docs/` and copy only site assets into `website/static/`.
+- Pin Docusaurus packages to one version and commit `website/package-lock.json`.
+- Production URL is `https://KubeUI.com` with root `baseUrl: '/'`; `website/static/CNAME` must contain `KubeUI.com`.
+- `.github/workflows/cicd.yml` publishes the site to GitHub Pages only after a successful semantic release.
+- Validate site changes with `npm ci` and `npm run build` from `website/`.
