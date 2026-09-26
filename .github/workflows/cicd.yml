@@ -105,6 +105,11 @@ jobs:
       with:
         path: dist/
 
+    - name: Clean Dist
+      shell: pwsh
+      run: |
+        Remove-Item -Path dist/website -Recurse -Force
+
     - name: Semantic Release
       uses: cycjimmy/semantic-release-action@v6.0.0
       env:

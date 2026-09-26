@@ -1,5 +1,6 @@
 ---
 sidebar_position: 8
+description: Troubleshoot common KubeUI issues with cluster connections, resource access, and Kubernetes workflows.
 ---
 
 # Troubleshooting

@@ -1,5 +1,6 @@
 ---
 sidebar_position: 1
+description: Explore KubeUI features for browsing Kubernetes resources, editing YAML, visualizing relationships, and managing workloads.
 ---
 
 # Feature overview

@@ -1,5 +1,6 @@
 ---
 sidebar_position: 2
+description: Connect Kubernetes clusters, switch contexts, and manage cluster workspaces in KubeUI.
 ---
 
 # Clusters and workspaces
