@@ -4,19 +4,13 @@ title: Pod logs
 description: Stream logs from Kubernetes Pods and workloads with KubeUI, including handling Pod restarts and replacements.
 ---
 
+import ThemeVideo from '@site/src/components/ThemeVideo';
+
 # Follow Pod logs
 
 Open logs directly from Pods, Deployments, ReplicaSets, StatefulSets, DaemonSets, Jobs, and CronJobs. A Pod view follows that Pod; a controller view streams logs from its matching Pods. Start with one Pod, then move up its owner chain. If a Pod restarts or is replaced, KubeUI reconnects to its current log stream.
 
-<video className="theme-video theme-video--light" controls preload="auto" width="100%">
-  <source src="/video/pod-logs-light.mp4" type='video/mp4; codecs="avc1.640028, mp4a.40.2"' />
-  Your browser does not support embedded video.
-</video>
-
-<video className="theme-video theme-video--dark" controls preload="auto" width="100%">
-  <source src="/video/pod-logs-dark.mp4" type='video/mp4; codecs="avc1.640028, mp4a.40.2"' />
-  Your browser does not support embedded video.
-</video>
+<ThemeVideo name="pod-logs" />
 
 ## Open a Pod log stream
 
