@@ -71,13 +71,17 @@ public partial class ResourceListView : ViewBase<IResourceListViewModel>
     private void SaveState()
     {
         if (_table.Source is not null && DataContext is IResourceListViewModel vm)
+        {
             vm.TableViewRuntimeState = _table.CaptureState();
+            vm.CaptureSelectionState();
+        }
     }
 
     private KubeUI.DynamicTableView.DynamicTableView CreateTable(IResourceListViewModel viewModel)
     {
         KubeUI.DynamicTableView.DynamicTableView table = new()
         {
+            GridLinesVisibility = DynamicTableViewGridLinesVisibility.All,
             ContextMenuItemsFactory = viewModel.GetContextMenuItems,
             Source = viewModel.TableSource,
             ContextMenu = CreateContextMenu()
@@ -144,17 +148,35 @@ public partial class ResourceListView : ViewBase<IResourceListViewModel>
 
     private void TryRestoreState()
     {
-        if (DataContext is not IResourceListViewModel vm || vm.TableViewRuntimeState is not { } state ||
-            ReferenceEquals(_restoredTable, _table) && ReferenceEquals(_restoredViewModel, vm))
+        if (DataContext is not IResourceListViewModel vm)
             return;
 
-        _restoredTable = _table;
-        _restoredViewModel = vm;
+        var restoreTableState = !ReferenceEquals(_restoredTable, _table) || !ReferenceEquals(_restoredViewModel, vm);
+        var state = restoreTableState ? vm.TableViewRuntimeState : null;
+        if (restoreTableState)
+        {
+            _restoredTable = _table;
+            _restoredViewModel = vm;
+        }
+
+        if (state is null)
+        {
+            Dispatcher.UIThread.Post(() =>
+            {
+                if (ReferenceEquals(DataContext, vm) && VisualRoot is not null && ReferenceEquals(_table.Source, vm.TableSource))
+                    vm.RestoreSelectionState();
+            }, DispatcherPriority.Background);
+            return;
+        }
+
         Dispatcher.UIThread.Post(() =>
         {
             if (ReferenceEquals(DataContext, vm) && VisualRoot is not null && ReferenceEquals(_table.Source, vm.TableSource))
+            {
                 _table.RestoreState(state);
-        }, DispatcherPriority.Loaded);
+                vm.RestoreSelectionState();
+            }
+        }, DispatcherPriority.Background);
     }
 
     private static Grid CreateTopBar()

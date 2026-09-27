@@ -16,6 +16,7 @@ public partial class PortForwarderListView : ViewBase<PortForwarderListViewModel
         ArgumentNullException.ThrowIfNull(vm);
         KubeUI.DynamicTableView.DynamicTableView table = new()
         {
+            GridLinesVisibility = DynamicTableViewGridLinesVisibility.All,
             Source = vm.TableSource,
             ContextMenu = new ContextMenu(),
             ContextMenuItemsFactory = targets => CreateContextMenuItems(vm, targets)

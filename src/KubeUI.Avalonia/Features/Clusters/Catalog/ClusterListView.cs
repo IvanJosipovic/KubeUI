@@ -19,6 +19,7 @@ public sealed partial class ClusterListView : ViewBase<ClusterListViewModel>
         ArgumentNullException.ThrowIfNull(vm);
         return new KubeUI.DynamicTableView.DynamicTableView
         {
+            GridLinesVisibility = DynamicTableViewGridLinesVisibility.All,
             Source = vm.TableSource,
             ContextMenu = new ContextMenu(),
             ContextMenuItemsFactory = targets => CreateContextMenuItems(vm, targets)

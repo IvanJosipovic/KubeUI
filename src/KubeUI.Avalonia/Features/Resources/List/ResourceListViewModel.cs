@@ -56,12 +56,44 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
 
     private DynamicTableViewSource<T, ResourceCacheKey>? _tableSource;
     private INotifyCollectionChanged? _itemsNotifications;
+    private ResourceCacheKey[]? _selectionRuntimeState;
 
     public IDynamicTableViewSource TableSource => _tableSource ?? throw new InvalidOperationException("Resource list source has not been initialized.");
 
     public ISelectionModel SelectionModel => TableSource.SelectionModel;
 
     public DynamicTableViewState? TableViewRuntimeState { get; set; }
+
+    /// <summary>Stores selected resource keys so a recreated list view can restore visible selections.</summary>
+    public void CaptureSelectionState()
+    {
+        var selectedItems = SelectionModel.SelectedItems;
+        var selectedKeys = new ResourceCacheKey[selectedItems.Count];
+        for (var index = 0; index < selectedItems.Count; index++)
+            selectedKeys[index] = ResourceCacheKey.From((T)selectedItems[index]!);
+        _selectionRuntimeState = selectedKeys;
+    }
+
+    /// <summary>Restores captured selections for resources that remain visible in the table source.</summary>
+    public void RestoreSelectionState()
+    {
+        if (_tableSource is null || _selectionRuntimeState is not { } savedKeys)
+            return;
+
+        var selectedKeys = new HashSet<ResourceCacheKey>(savedKeys);
+        var selection = _tableSource.SelectionModel;
+        using (selection.BatchUpdate())
+        {
+            selection.Clear();
+            var index = 0;
+            foreach (var item in _tableSource.Items)
+            {
+                if (item is T resource && selectedKeys.Contains(ResourceCacheKey.From(resource)))
+                    selection.Select(index);
+                index++;
+            }
+        }
+    }
 
     [ObservableProperty]
     public partial int ItemCount { get; set; }
@@ -150,8 +182,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
             columns,
             options: new DynamicTableViewSourceOptions
             {
-                SelectionIdentityMode = DynamicTableViewSelectionIdentityMode.Key,
-                UseReplaceForUpdates = true
+                SelectionIdentityMode = DynamicTableViewSelectionIdentityMode.Key
             });
         _tableSource.SourceError += TableSourceOnError;
         _tableSource.SelectionModel.SelectionChanged += SelectionModelOnSelectionChanged;

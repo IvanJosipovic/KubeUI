@@ -7,15 +7,12 @@ namespace KubeUI.DynamicTableView.Tests.Unit;
 
 public sealed class DynamicTableViewSourceOptionsTests
 {
-    [Theory]
-    [InlineData(true, NotifyCollectionChangedAction.Replace)]
-    [InlineData(false, NotifyCollectionChangedAction.Remove)]
-    public void Update_notification_mode_is_configurable(bool useReplaceForUpdates, NotifyCollectionChangedAction firstExpectedAction)
+    [Fact]
+    public void Updates_use_the_default_replace_notification()
     {
         using SourceCache<DynamicTableViewTestRow, string> cache = new(static row => row.Id);
         using var source = DynamicTableViewTestData.CreateSource(
-            cache,
-            options: new() { UseReplaceForUpdates = useReplaceForUpdates });
+            cache);
         var original = DynamicTableViewTestData.CreateRows()[0];
         cache.AddOrUpdate(original);
         List<NotifyCollectionChangedAction> actions = [];
@@ -24,9 +21,7 @@ public sealed class DynamicTableViewSourceOptionsTests
         cache.AddOrUpdate(original with { Name = "Updated" });
 
         Assert.NotEmpty(actions);
-        Assert.Equal(firstExpectedAction, actions[0]);
-        if (!useReplaceForUpdates)
-            Assert.Contains(NotifyCollectionChangedAction.Add, actions);
+        Assert.Equal(NotifyCollectionChangedAction.Replace, actions[0]);
     }
 
     [Fact]
@@ -99,29 +94,5 @@ public sealed class DynamicTableViewSourceOptionsTests
         Assert.True(keySource.AreSameRows(first, equalButDistinct));
         Assert.False(referenceSource.AreSameRows(first, equalButDistinct));
         Assert.False(referenceSource.AreSameRows(first, null));
-    }
-
-    [Fact]
-    public void Key_identity_keeps_selection_when_update_notifications_use_remove_and_add()
-    {
-        using SourceCache<DynamicTableViewTestRow, string> cache = new(static row => row.Id);
-        TestScheduler uiScheduler = new();
-        using var source = DynamicTableViewTestData.CreateSource(
-            cache,
-            uiScheduler: uiScheduler,
-            options: new()
-            {
-                UseReplaceForUpdates = false,
-                SelectionIdentityMode = DynamicTableViewSelectionIdentityMode.Key
-            });
-        cache.AddOrUpdate(DynamicTableViewTestData.CreateRows());
-        uiScheduler.AdvanceBy(100);
-        source.SelectionModel.Select(1);
-
-        cache.AddOrUpdate(DynamicTableViewTestData.CreateRows()[1] with { Name = "Updated" });
-        uiScheduler.AdvanceBy(100);
-
-        Assert.Equal("b", Assert.IsType<DynamicTableViewTestRow>(source.SelectionModel.SelectedItem).Id);
-        Assert.Equal("Updated", Assert.IsType<DynamicTableViewTestRow>(source.SelectionModel.SelectedItem).Name);
     }
 }

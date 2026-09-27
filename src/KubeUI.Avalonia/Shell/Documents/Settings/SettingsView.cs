@@ -55,7 +55,6 @@ public sealed class SettingsView() : ViewBase<SettingsViewModel>
                             Assets.Resources.SettingsView_ListRowHeight_ToolTip,
                             Assets.Resources.SettingsView_ListRowHeight_Label!,
                             x => x.SettingsService.Appearance.ListRowHeight),
-
                         CreateHeading(Assets.Resources.SettingsView_AIHeading),
                         CreateToggleRow(
                             vm,

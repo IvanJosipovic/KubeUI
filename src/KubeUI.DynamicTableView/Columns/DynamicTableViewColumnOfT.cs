@@ -7,6 +7,12 @@ public sealed class DynamicTableViewColumn<T> : DynamicTableViewColumn
     private readonly Func<T, string?> _displaySelector;
 
     /// <summary>Creates a text or templated column.</summary>
+    /// <param name="key">Stable column key.</param>
+    /// <param name="header">Header content.</param>
+    /// <param name="valueType">Type of the value returned by <paramref name="valueSelector"/>.</param>
+    /// <param name="valueSelector">Gets the row value used by table operations.</param>
+    /// <param name="displaySelector">Optionally formats the value for the fallback text cell.</param>
+    /// <param name="cellTemplate">Optionally supplies custom cell content.</param>
     public DynamicTableViewColumn(
         string key,
         object header,
@@ -21,6 +27,12 @@ public sealed class DynamicTableViewColumn<T> : DynamicTableViewColumn
     }
 
     /// <summary>Creates a column using a typed value selector.</summary>
+    /// <param name="key">Stable column key.</param>
+    /// <param name="header">Header content.</param>
+    /// <param name="valueSelector">Gets the row value used by table operations.</param>
+    /// <param name="displaySelector">Optionally formats the value for the fallback text cell.</param>
+    /// <param name="cellTemplate">Optionally supplies custom cell content.</param>
+    /// <typeparam name="TValue">Selected value type.</typeparam>
     public static DynamicTableViewColumn<T> Create<TValue>(
         string key,
         object header,

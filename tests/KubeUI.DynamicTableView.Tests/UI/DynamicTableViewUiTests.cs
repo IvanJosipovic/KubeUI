@@ -2,10 +2,12 @@ using System.ComponentModel;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
+using Avalonia.Controls.Presenters;
 using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Media;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using System.Reactive.Concurrency;
@@ -27,6 +29,206 @@ public sealed class DynamicTableViewUiTests
         Assert.Same(source.SelectionModel, table.Selection);
         source.Columns.Add(DynamicTableViewColumn<DynamicTableViewTestRow>.Create("new", "New", static row => row.Id));
         Assert.Equal(source.Columns.Count, table.Columns.Count);
+    }
+
+    [AvaloniaFact]
+    public void Clicking_blank_header_area_sorts_and_keeps_indicator_next_to_text()
+    {
+        using SourceCache<DynamicTableViewTestRow, string> cache = new(static row => row.Id);
+        var nameColumn = DynamicTableViewColumn<DynamicTableViewTestRow>.Create("name", "Name", static row => row.Name);
+        nameColumn.WidthMode = DynamicTableViewWidthMode.Pixel;
+        nameColumn.Width = 220;
+        using var source = DynamicTableViewTestData.CreateSource(cache, [nameColumn]);
+        cache.AddOrUpdate([
+            DynamicTableViewTestData.CreateRows()[0] with { Name = "Gamma" },
+            DynamicTableViewTestData.CreateRows()[1] with { Name = "Alpha" },
+            DynamicTableViewTestData.CreateRows()[2] with { Name = "Beta" }]);
+        DynamicTableView table = new() { Source = source };
+        Window window = new() { Width = 640, Height = 320, Content = table };
+
+        try
+        {
+            window.Show();
+            Dispatcher.UIThread.RunJobs();
+
+            var header = GetHeaderControl(table, 0);
+            var filterButton = Assert.Single(header.GetVisualDescendants().OfType<Button>()
+                .Where(static button => button.Classes.Contains("dynamic-table-view-filter-button")));
+            var filterOrigin = filterButton.TranslatePoint(default, header)
+                ?? throw new InvalidOperationException("Filter button has no header position.");
+            var blankHeaderPoint = header.TranslatePoint(
+                new Point(filterOrigin.X - 8, header.Bounds.Height / 2), window)
+                ?? throw new InvalidOperationException("Header has no window position.");
+
+            window.MouseDown(blankHeaderPoint, MouseButton.Left);
+            window.MouseUp(blankHeaderPoint, MouseButton.Left);
+            Dispatcher.UIThread.RunJobs();
+
+            Assert.Single(source.SortDescriptors);
+            Assert.Equal(["b", "c", "a"], source.Items.Cast<DynamicTableViewTestRow>().Select(static row => row.Id));
+            Assert.Single(header.GetVisualDescendants().OfType<Button>());
+            var label = Assert.Single(header.GetVisualDescendants().OfType<TextBlock>()
+                .Where(static textBlock => textBlock.Text == "Name"));
+            var sortIcon = Assert.Single(header.GetVisualDescendants().OfType<PathIcon>()
+                .Where(icon => icon.IsVisible && !icon.GetSelfAndVisualAncestors().OfType<Button>().Contains(filterButton)));
+            var labelOrigin = label.TranslatePoint(default, header)!.Value;
+            var sortIconOrigin = sortIcon.TranslatePoint(default, header)!.Value;
+            Assert.True(sortIconOrigin.X >= labelOrigin.X + label.DesiredSize.Width);
+            Assert.True(sortIconOrigin.X < filterOrigin.X);
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    [AvaloniaFact]
+    public void Column_header_strip_is_taller_than_data_rows()
+    {
+        using SourceCache<DynamicTableViewTestRow, string> cache = new(static row => row.Id);
+        using var source = DynamicTableViewTestData.CreateSource(cache);
+        cache.AddOrUpdate(DynamicTableViewTestData.CreateRows());
+        DynamicTableView table = new() { Source = source };
+        Window window = new() { Width = 420, Height = 240, Content = table };
+
+        try
+        {
+            window.Show();
+            Dispatcher.UIThread.RunJobs();
+
+            var headerPresenter = Assert.IsType<TableViewColumnHeadersPresenter>(table.GetVisualDescendants().OfType<TableViewColumnHeadersPresenter>().First());
+            var headerStrip = Assert.IsType<Border>(headerPresenter.GetSelfAndVisualAncestors().OfType<Border>().First());
+            var row = Assert.IsType<TableViewRow>(table.GetVisualDescendants().OfType<TableViewRow>().First());
+
+            Assert.True(headerStrip.Bounds.Height >= row.Bounds.Height + 6,
+                $"Expected header strip ({headerStrip.Bounds.Height}) to be at least 6 pixels taller than row ({row.Bounds.Height}).");
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    [AvaloniaFact]
+    public void All_column_headers_are_templated_with_many_columns()
+    {
+        using SourceCache<DynamicTableViewTestRow, string> cache = new(static row => row.Id);
+        using var source = DynamicTableViewTestData.CreateSource(cache);
+        for (var index = source.Columns.Count; index < 11; index++)
+            source.Columns.Add(DynamicTableViewColumn<DynamicTableViewTestRow>.Create($"extra-{index}", $"Extra {index}", static row => row.Id));
+        DynamicTableView table = new() { Source = source };
+        Window window = new() { Width = 1200, Height = 320, Content = table };
+
+        try
+        {
+            window.Show();
+            Dispatcher.UIThread.RunJobs();
+
+            AssertVisibleHeaders(table, source.Columns.Select(static column => column.Header.ToString() ?? string.Empty));
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    [AvaloniaFact]
+    public void Restoring_reordered_state_keeps_all_column_headers_visible()
+    {
+        using SourceCache<DynamicTableViewTestRow, string> cache = new(static row => row.Id);
+        using var source = DynamicTableViewTestData.CreateSource(cache);
+        for (var index = source.Columns.Count; index < 11; index++)
+            source.Columns.Add(DynamicTableViewColumn<DynamicTableViewTestRow>.Create($"extra-{index}", $"Extra {index}", static row => row.Id));
+        DynamicTableView table = new() { Source = source };
+        Window window = new() { Width = 1200, Height = 320, Content = table };
+        var expectedHeaders = source.Columns.Select(static column => column.Header.ToString() ?? string.Empty).ToArray();
+        var savedColumns = source.Columns
+            .Select((column, index) => new DynamicTableViewColumnState(column.Key, index, 140))
+            .ToArray();
+        savedColumns[0] = savedColumns[0] with { Order = 1 };
+        savedColumns[1] = savedColumns[1] with { Order = 0 };
+        (expectedHeaders[0], expectedHeaders[1]) = (expectedHeaders[1], expectedHeaders[0]);
+
+        try
+        {
+            window.Show();
+            Dispatcher.UIThread.RunJobs();
+            AssertVisibleHeaders(table, source.Columns.Select(static column => column.Header.ToString() ?? string.Empty));
+
+            table.RestoreState(new(savedColumns, [], [], default));
+            Dispatcher.UIThread.RunJobs();
+
+            AssertVisibleHeaders(table, expectedHeaders);
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    [AvaloniaFact]
+    public void Grid_line_visibility_styles_rows_cells_and_headers()
+    {
+        using SourceCache<DynamicTableViewTestRow, string> cache = new(static row => row.Id);
+        using var source = DynamicTableViewTestData.CreateSource(cache);
+        cache.AddOrUpdate(DynamicTableViewTestData.CreateRows());
+        DynamicTableView table = new() { Source = source };
+        var lineBrush = new SolidColorBrush(Colors.Orange);
+        table.Resources["TableViewColumnHeaderSeparatorBackground"] = lineBrush;
+        Window window = new() { Width = 420, Height = 240, Content = table };
+
+        try
+        {
+            window.Show();
+            Dispatcher.UIThread.RunJobs();
+
+            var cells = table.GetVisualDescendants().OfType<TableViewCell>().ToArray();
+            var rows = table.GetVisualDescendants().OfType<TableViewRow>().ToArray();
+            var headers = table.GetVisualDescendants().OfType<TableViewColumnHeader>().ToArray();
+
+            Assert.NotEmpty(cells);
+            Assert.NotEmpty(rows);
+            Assert.NotEmpty(headers);
+            Assert.Equal(DynamicTableViewGridLinesVisibility.None, table.GridLinesVisibility);
+
+            (DynamicTableViewGridLinesVisibility Visibility, Thickness RowThickness, Thickness CellThickness, Thickness HeaderThickness)[] modes =
+            [
+                (DynamicTableViewGridLinesVisibility.None, new Thickness(0), new Thickness(0), new Thickness(0)),
+                (DynamicTableViewGridLinesVisibility.Horizontal, new Thickness(0, 0, 0, 1), new Thickness(0), new Thickness(0, 0, 0, 1)),
+                (DynamicTableViewGridLinesVisibility.Vertical, new Thickness(0), new Thickness(0, 0, 1, 0), new Thickness(0, 0, 1, 0)),
+                (DynamicTableViewGridLinesVisibility.All, new Thickness(0, 0, 0, 1), new Thickness(0, 0, 1, 0), new Thickness(0, 0, 1, 1))
+            ];
+
+            foreach (var mode in modes)
+            {
+                table.GridLinesVisibility = mode.Visibility;
+                Dispatcher.UIThread.RunJobs();
+
+                Assert.All(rows, row => Assert.Equal(mode.RowThickness, row.BorderThickness));
+                Assert.All(cells, cell => Assert.Equal(mode.CellThickness, cell.BorderThickness));
+                Assert.All(headers, header => Assert.Equal(mode.HeaderThickness, header.BorderThickness));
+                if (mode.Visibility != DynamicTableViewGridLinesVisibility.None)
+                {
+                    if (mode.RowThickness.Bottom > 0)
+                    {
+                        Assert.All(rows, row =>
+                        {
+                            Assert.Same(lineBrush, row.BorderBrush);
+                            var rowBorder = Assert.Single(row.GetVisualDescendants().OfType<Border>());
+                            Assert.Equal(row.Bounds.Height, rowBorder.Bounds.Height);
+                        });
+                    }
+                    if (mode.CellThickness.Right > 0)
+                        Assert.All(cells, cell => Assert.Same(lineBrush, cell.BorderBrush));
+                    if (mode.HeaderThickness.Right > 0 || mode.HeaderThickness.Bottom > 0)
+                        Assert.All(headers, header => Assert.Same(lineBrush, header.BorderBrush));
+                }
+            }
+        }
+        finally
+        {
+            window.Close();
+        }
     }
 
     [AvaloniaFact]
@@ -96,6 +298,60 @@ public sealed class DynamicTableViewUiTests
         Assert.Equal(123, table.Columns[0].Width.Value);
         Assert.Equal(ListSortDirection.Descending, Assert.Single(captured.Sorts).Direction);
         Assert.Equal(DynamicTableViewFilterOperator.GreaterThan, Assert.Single(captured.Filters).Operator);
+    }
+
+    [AvaloniaFact]
+    public void Restored_table_headers_remain_visible_after_switching_tabs()
+    {
+        using SourceCache<DynamicTableViewTestRow, string> cache = new(static row => row.Id);
+        using var source = DynamicTableViewTestData.CreateSource(cache);
+        cache.AddOrUpdate(DynamicTableViewTestData.CreateRows());
+        DynamicTableView table = new() { Source = source };
+        TabControl tabs = new()
+        {
+            Items =
+            {
+                new TabItem { Header = "Resources", Content = table },
+                new TabItem { Header = "Other", Content = new Border() }
+            }
+        };
+        Window window = new() { Width = 640, Height = 360, Content = tabs };
+        string[] initialHeaders = ["Name", "Age", "Created", "Enabled", "State"];
+        string[] restoredHeaders = ["Age", "Name", "Created", "Enabled", "State"];
+        var attachCount = 0;
+        var detachCount = 0;
+        table.AttachedToVisualTree += (_, _) => attachCount++;
+        table.DetachedFromVisualTree += (_, _) => detachCount++;
+
+        try
+        {
+            window.Show();
+            Dispatcher.UIThread.RunJobs();
+            AssertVisibleHeaders(table, initialHeaders);
+
+            table.RestoreState(new(
+                [new("age", 0, 120), new("name", 1, 180)],
+                [],
+                [],
+                default));
+            Dispatcher.UIThread.RunJobs();
+
+            tabs.SelectedIndex = 1;
+            Dispatcher.UIThread.RunJobs();
+            Assert.Equal(1, detachCount);
+            tabs.SelectedIndex = 0;
+            Dispatcher.UIThread.RunJobs();
+
+            Assert.Equal(2, attachCount);
+            AssertVisibleHeaders(table, restoredHeaders);
+            Assert.Equal(["age", "name"], source.Columns.Take(2).Select(static column => column.Key));
+            Assert.Equal(120, table.Columns[0].Width.Value);
+            Assert.Equal(180, table.Columns[1].Width.Value);
+        }
+        finally
+        {
+            window.Close();
+        }
     }
 
     [AvaloniaFact]
@@ -254,8 +510,8 @@ public sealed class DynamicTableViewUiTests
         {
             window.Show();
             Dispatcher.UIThread.RunJobs();
-            var firstHeader = Assert.IsAssignableFrom<Control>(table.Columns[0].Header);
-            var secondHeader = Assert.IsAssignableFrom<Control>(table.Columns[1].Header);
+            var firstHeader = GetHeaderControl(table, 0);
+            var secondHeader = GetHeaderControl(table, 1);
             var start = firstHeader.TranslatePoint(new Point(firstHeader.Bounds.Width / 2, firstHeader.Bounds.Height / 2), window);
             var target = secondHeader.TranslatePoint(new Point(secondHeader.Bounds.Width / 2, secondHeader.Bounds.Height / 2), window);
             Assert.NotNull(start);
@@ -313,6 +569,58 @@ public sealed class DynamicTableViewUiTests
     }
 
     [AvaloniaFact]
+    public void Updating_rows_and_changing_selection_do_not_scroll_offscreen_items_into_view()
+    {
+        using SourceCache<DynamicTableViewTestRow, string> cache = new(static row => row.Id);
+        using var source = new DynamicTableViewSource<DynamicTableViewTestRow, string>(
+            cache.Connect(),
+            static row => row.Id,
+            DynamicTableViewTestData.CreateColumns(),
+            workerScheduler: ImmediateScheduler.Instance,
+            searchDebounce: TimeSpan.Zero,
+            searchScheduler: ImmediateScheduler.Instance);
+        var rows = Enumerable.Range(0, 1_000)
+            .Select(index => new DynamicTableViewTestRow(
+                $"row-{index:D4}", $"Item {index:D4}", index, DateTimeOffset.UnixEpoch, true, DynamicTableViewTestState.Ready))
+            .ToArray();
+        cache.AddOrUpdate(rows);
+        source.SetSort([new("name", ListSortDirection.Ascending)]);
+        DynamicTableView table = new() { Source = source };
+        Window window = new() { Width = 420, Height = 240, Content = table };
+
+        try
+        {
+            window.Show();
+            Dispatcher.UIThread.RunJobs();
+            var scrollViewer = Assert.Single(table.GetVisualDescendants().OfType<ScrollViewer>());
+            Assert.Equal(1_000, source.Items.Cast<DynamicTableViewTestRow>().Count());
+            Assert.True(scrollViewer.ScrollBarMaximum.Y > 0);
+            Assert.False(table.AutoScrollToSelectedItem);
+            source.SelectionModel.Select(500);
+            Dispatcher.UIThread.RunJobs();
+            var scrolledOffset = scrollViewer.Offset.Y;
+
+            Assert.Equal(0, scrolledOffset);
+
+            cache.AddOrUpdate(rows[0] with { Name = "Zzz updated first row" });
+            Dispatcher.UIThread.RunJobs();
+
+            Assert.Equal(scrolledOffset, scrollViewer.Offset.Y);
+            Assert.Equal("row-0500", Assert.IsType<DynamicTableViewTestRow>(source.SelectionModel.SelectedItem).Id);
+
+            source.SelectionModel.SelectedIndex = 900;
+            Dispatcher.UIThread.RunJobs();
+
+            Assert.Equal(scrolledOffset, scrollViewer.Offset.Y);
+            Assert.Equal("row-0901", Assert.IsType<DynamicTableViewTestRow>(source.SelectionModel.SelectedItem).Id);
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    [AvaloniaFact]
     public void Single_and_multiple_selection_follow_the_selection_model()
     {
         using SourceCache<DynamicTableViewTestRow, string> cache = new(static row => row.Id);
@@ -333,7 +641,61 @@ public sealed class DynamicTableViewUiTests
     }
 
     [AvaloniaFact]
-    public void Header_sort_button_cycles_ascending_descending_and_unsorted()
+    public void Dragging_across_rows_selects_and_deselects_range_while_left_button_is_held()
+    {
+        using SourceCache<DynamicTableViewTestRow, string> cache = new(static row => row.Id);
+        using var source = DynamicTableViewTestData.CreateSource(cache);
+        cache.AddOrUpdate(Enumerable.Range(0, 12).Select(index =>
+            new DynamicTableViewTestRow($"row-{index:D2}", $"Item {index:D2}", index, DateTimeOffset.UnixEpoch, true, DynamicTableViewTestState.Ready)));
+        DynamicTableView table = new() { Source = source };
+        Window window = new() { Width = 700, Height = 420, Content = table };
+        try
+        {
+            window.Show();
+            Dispatcher.UIThread.RunJobs();
+
+            var first = GetRowCenter(window, table, "row-00");
+            var tenth = GetRowCenter(window, table, "row-09");
+            var hit = table.GetVisualAt(window.TranslatePoint(tenth, table) ?? tenth);
+            var hitRow = hit!.GetSelfAndVisualAncestors().OfType<TableViewRow>().Single(row =>
+                row.DataContext is DynamicTableViewTestRow data && data.Id == "row-09");
+            Assert.Equal(9, table.IndexFromContainer(hitRow));
+            window.MouseDown(first, MouseButton.Left);
+            window.MouseMove(tenth, RawInputModifiers.LeftMouseButton);
+            Dispatcher.UIThread.RunJobs();
+
+            Assert.Equal(10, source.SelectionModel.SelectedItems.Count);
+            Assert.Equal(Enumerable.Range(0, 10), source.SelectionModel.SelectedIndexes.Order());
+
+            var fifth = GetRowCenter(window, table, "row-04");
+            window.MouseMove(fifth, RawInputModifiers.LeftMouseButton);
+            Dispatcher.UIThread.RunJobs();
+            Assert.Equal(Enumerable.Range(0, 5), source.SelectionModel.SelectedIndexes.Order());
+
+            window.MouseMove(tenth, RawInputModifiers.LeftMouseButton);
+            Dispatcher.UIThread.RunJobs();
+            Assert.Equal(Enumerable.Range(0, 10), source.SelectionModel.SelectedIndexes.Order());
+
+            window.MouseUp(tenth, MouseButton.Left);
+            Dispatcher.UIThread.RunJobs();
+
+            var selectedStart = GetRowCenter(window, table, "row-00");
+            var selectedEnd = GetRowCenter(window, table, "row-09");
+            window.MouseDown(selectedStart, MouseButton.Left);
+            window.MouseMove(selectedEnd, RawInputModifiers.LeftMouseButton);
+            Dispatcher.UIThread.RunJobs();
+
+            Assert.Empty(source.SelectionModel.SelectedItems);
+            window.MouseUp(selectedEnd, MouseButton.Left);
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    [AvaloniaFact]
+    public void Header_click_cycles_ascending_descending_and_unsorted()
     {
         using SourceCache<DynamicTableViewTestRow, string> cache = new(static row => row.Id);
         using var source = DynamicTableViewTestData.CreateSource(cache);
@@ -348,18 +710,75 @@ public sealed class DynamicTableViewUiTests
         {
             window.Show();
             Dispatcher.UIThread.RunJobs();
-            var nameHeader = Assert.IsAssignableFrom<Control>(table.Columns[0].Header);
-            var sortButton = Assert.Single(nameHeader.GetVisualDescendants().OfType<Button>()
-                .Where(static button => button.Classes.Contains("dynamic-table-view-sort-button")));
-
-            sortButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            var nameHeader = GetHeaderControl(table, 0);
+            ClickHeader(window, nameHeader, 12);
             Assert.Equal(["b", "c", "a"], source.Items.Cast<DynamicTableViewTestRow>().Select(static row => row.Id));
 
-            sortButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            ClickHeader(window, nameHeader, 12);
             Assert.Equal(["a", "c", "b"], source.Items.Cast<DynamicTableViewTestRow>().Select(static row => row.Id));
 
-            sortButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            ClickHeader(window, nameHeader, 12);
             Assert.Equal(["a", "b", "c"], source.Items.Cast<DynamicTableViewTestRow>().Select(static row => row.Id));
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    [AvaloniaFact]
+    public void Multiple_sorts_are_disabled_by_default_and_the_clicked_column_replaces_the_previous_sort()
+    {
+        using SourceCache<DynamicTableViewTestRow, string> cache = new(static row => row.Id);
+        using var source = DynamicTableViewTestData.CreateSource(cache);
+        cache.AddOrUpdate([
+            new DynamicTableViewTestRow("a", "Zeta", 30, DateTimeOffset.UnixEpoch, true, DynamicTableViewTestState.Ready),
+            new DynamicTableViewTestRow("b", "Alpha", 10, DateTimeOffset.UnixEpoch, true, DynamicTableViewTestState.Ready),
+            new DynamicTableViewTestRow("c", "Beta", 20, DateTimeOffset.UnixEpoch, true, DynamicTableViewTestState.Ready)]);
+        DynamicTableView table = new() { Source = source };
+        Window window = new() { Width = 640, Height = 320, Content = table };
+
+        try
+        {
+            window.Show();
+            Dispatcher.UIThread.RunJobs();
+            Assert.False(table.AllowMultipleSorts);
+            ClickHeader(window, GetHeaderControl(table, 0), 12);
+            ClickHeader(window, GetHeaderControl(table, 1), 12);
+
+            var activeSort = Assert.Single(source.SortDescriptors);
+            Assert.Equal("age", activeSort.ColumnKey);
+            Assert.Equal(ListSortDirection.Ascending, activeSort.Direction);
+
+            ClickHeader(window, GetHeaderControl(table, 1), 12);
+            activeSort = Assert.Single(source.SortDescriptors);
+            Assert.Equal(ListSortDirection.Descending, activeSort.Direction);
+
+            ClickHeader(window, GetHeaderControl(table, 1), 12);
+            Assert.Empty(source.SortDescriptors);
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    [AvaloniaFact]
+    public void Enabling_multiple_sorts_allows_two_sort_descriptors()
+    {
+        using SourceCache<DynamicTableViewTestRow, string> cache = new(static row => row.Id);
+        using var source = DynamicTableViewTestData.CreateSource(cache);
+        DynamicTableView table = new() { Source = source, AllowMultipleSorts = true };
+        Window window = new() { Width = 640, Height = 320, Content = table };
+
+        try
+        {
+            window.Show();
+            Dispatcher.UIThread.RunJobs();
+            ClickHeader(window, GetHeaderControl(table, 0), 12);
+            ClickHeader(window, GetHeaderControl(table, 1), 12);
+
+            Assert.Equal(["name", "age"], source.SortDescriptors.Select(static descriptor => descriptor.ColumnKey));
         }
         finally
         {
@@ -381,7 +800,7 @@ public sealed class DynamicTableViewUiTests
         {
             window.Show();
             Dispatcher.UIThread.RunJobs();
-            var header = Assert.IsAssignableFrom<Control>(table.Columns[0].Header);
+            var header = GetHeaderControl(table, 0);
             var filterButton = Assert.Single(header.GetVisualDescendants().OfType<Button>()
                 .Where(static button => button.Classes.Contains("dynamic-table-view-filter-button")));
             var attachedFlyout = Assert.IsType<Flyout>(FlyoutBase.GetAttachedFlyout(filterButton));
@@ -391,6 +810,48 @@ public sealed class DynamicTableViewUiTests
 
             Assert.True(attachedFlyout.IsOpen);
             Assert.IsType<Border>(attachedFlyout.Content);
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    [AvaloniaFact]
+    public void Standard_filter_flyout_uses_default_width_and_allows_host_override()
+    {
+        using SourceCache<DynamicTableViewTestRow, string> cache = new(static row => row.Id);
+        using var source = DynamicTableViewTestData.CreateSource(cache);
+        DynamicTableView table = new() { Source = source };
+        table.Resources["DynamicTableView.FilterFlyoutWidth"] = 360d;
+        Window window = new() { Width = 520, Height = 260, Content = table };
+
+        try
+        {
+            window.Show();
+            Dispatcher.UIThread.RunJobs();
+
+            var header = GetHeaderControl(table, 0);
+            var filterButton = Assert.Single(header.GetVisualDescendants().OfType<Button>()
+                .Where(static button => button.Classes.Contains("dynamic-table-view-filter-button")));
+            var flyout = Assert.IsType<Flyout>(FlyoutBase.GetAttachedFlyout(filterButton));
+            FlyoutBase.ShowAttachedFlyout(filterButton);
+            Dispatcher.UIThread.RunJobs();
+
+            var flyoutContent = Assert.IsAssignableFrom<Control>(flyout.Content);
+            var panel = Assert.Single(flyoutContent.GetVisualDescendants().OfType<StackPanel>()
+                .Where(static panel => panel.Width == 360));
+            Assert.Equal(360, panel.Width);
+            Assert.Equal(360, panel.Bounds.Width);
+
+            flyout.Hide();
+            table.Resources.Remove("DynamicTableView.FilterFlyoutWidth");
+            FlyoutBase.ShowAttachedFlyout(filterButton);
+            Dispatcher.UIThread.RunJobs();
+
+            Assert.Equal(280, panel.Width);
+            Assert.Equal(280, panel.Bounds.Width);
+            flyout.Hide();
         }
         finally
         {
@@ -419,6 +880,45 @@ public sealed class DynamicTableViewUiTests
             source.ClearFilters();
             ApplyStandardFilter(table, 1, 3, "20");
             Assert.Equal(["b", "c"], source.Items.Cast<DynamicTableViewTestRow>().Select(static row => row.Id));
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    [AvaloniaFact]
+    public void Filter_icon_uses_accent_foreground_while_column_filter_is_active()
+    {
+        using SourceCache<DynamicTableViewTestRow, string> cache = new(static row => row.Id);
+        using var source = DynamicTableViewTestData.CreateSource(cache);
+        cache.AddOrUpdate(DynamicTableViewTestData.CreateRows());
+        DynamicTableView table = new() { Source = source };
+        SolidColorBrush accentBrush = new(Colors.Orange);
+        table.Resources["SystemControlForegroundAccentBrush"] = accentBrush;
+        Window window = new() { Width = 520, Height = 260, Content = table };
+
+        try
+        {
+            window.Show();
+            Dispatcher.UIThread.RunJobs();
+
+            var header = GetHeaderControl(table, 0);
+            var filterButton = Assert.Single(header.GetVisualDescendants().OfType<Button>()
+                .Where(static button => button.Classes.Contains("dynamic-table-view-filter-button")));
+            var filterIcon = Assert.Single(filterButton.GetVisualDescendants().OfType<PathIcon>());
+            Assert.NotSame(accentBrush, filterIcon.Foreground);
+
+            ApplyStandardFilter(table, 0, 0, "ph");
+
+            Assert.Contains("filtered", header.Classes);
+            Assert.Same(accentBrush, filterIcon.Foreground);
+
+            source.ClearFilters();
+            Dispatcher.UIThread.RunJobs();
+
+            Assert.DoesNotContain("filtered", header.Classes);
+            Assert.NotSame(accentBrush, filterIcon.Foreground);
         }
         finally
         {
@@ -469,9 +969,43 @@ public sealed class DynamicTableViewUiTests
         Dispatcher.UIThread.RunJobs();
     }
 
+    private static Point GetRowCenter(Window window, DynamicTableView table, string id)
+    {
+        var row = table.GetVisualDescendants().OfType<TableViewRow>()
+            .Single(item => item.DataContext is DynamicTableViewTestRow rowData && rowData.Id == id);
+        return row.TranslatePoint(new Point(row.Bounds.Width / 2, row.Bounds.Height / 2), window)
+            ?? throw new InvalidOperationException("Row has no window position.");
+    }
+
+    private static void ClickHeader(Window window, Control header, double x)
+    {
+        var position = header.TranslatePoint(new Point(x, header.Bounds.Height / 2), window)
+            ?? throw new InvalidOperationException("Header has no window position.");
+        window.MouseDown(position, MouseButton.Left);
+        window.MouseUp(position, MouseButton.Left);
+        Dispatcher.UIThread.RunJobs();
+    }
+
+    private static void AssertVisibleHeaders(DynamicTableView table, IEnumerable<string> expectedHeaders)
+    {
+        var visibleLabels = table.GetVisualDescendants().OfType<TextBlock>()
+            .Where(static textBlock => textBlock.IsVisible)
+            .Select(static textBlock => textBlock.Text)
+            .ToHashSet(StringComparer.Ordinal);
+        var headerDetails = table.GetVisualDescendants().OfType<TableViewColumnHeader>()
+            .Select(header => $"{header.Column?.Header} visible={header.IsVisible} bounds={header.Bounds} text=[{string.Join(",", header.GetVisualDescendants().OfType<TextBlock>().Select(static textBlock => textBlock.Text))}]");
+        foreach (var header in expectedHeaders)
+            Assert.True(visibleLabels.Contains(header), $"Missing visible header '{header}'. Visible labels: {string.Join(",", visibleLabels)}. Headers: {string.Join("; ", headerDetails)}");
+    }
+
+    private static Control GetHeaderControl(DynamicTableView table, int columnIndex)
+        => table.GetVisualDescendants().OfType<TableViewColumnHeader>()
+            .Single(header => ReferenceEquals(header.Column, table.Columns[columnIndex]))
+            .GetVisualDescendants().OfType<TemplatedControl>().First();
+
     private static void ApplyStandardFilter(DynamicTableView table, int columnIndex, int operatorIndex, string firstValue)
     {
-        var header = Assert.IsAssignableFrom<Control>(table.Columns[columnIndex].Header);
+        var header = GetHeaderControl(table, columnIndex);
         var filterButton = Assert.Single(header.GetVisualDescendants().OfType<Button>()
             .Where(static button => button.Classes.Contains("dynamic-table-view-filter-button")));
         var flyout = Assert.IsType<Flyout>(FlyoutBase.GetAttachedFlyout(filterButton));

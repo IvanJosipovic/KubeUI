@@ -20,4 +20,5 @@ public sealed partial class AppearanceSettings : ObservableObject
 
     [ObservableProperty]
     public partial decimal ListRowHeight { get; set; } = 22;
+
 }

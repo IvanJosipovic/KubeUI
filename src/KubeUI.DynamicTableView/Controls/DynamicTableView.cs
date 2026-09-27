@@ -11,25 +11,41 @@ public sealed partial class DynamicTableView : TableView
     [GeneratedDirectProperty]
     public partial IDynamicTableViewSource? Source { get; set; }
 
+    /// <summary>Gets or sets which row and column separators are drawn. Defaults to no separators.</summary>
+    [GeneratedStyledProperty(DynamicTableViewGridLinesVisibility.None)]
+    public partial DynamicTableViewGridLinesVisibility GridLinesVisibility { get; set; }
+
+    /// <summary>Gets or sets whether clicking headers can add secondary sort columns. Defaults to false.</summary>
+    [GeneratedDirectProperty]
+    public partial bool AllowMultipleSorts { get; set; }
+
     private readonly Dictionary<string, TableViewColumn> _nativeColumns = new(StringComparer.Ordinal);
     private readonly HashSet<string> _manuallySizedColumns = new(StringComparer.Ordinal);
     private IDynamicTableViewSource? _attachedSource;
     private bool _autoWidthPassQueued;
+    private bool _headerRefreshQueued;
+    private bool _restoringState;
     private Vector? _pendingScrollOffset;
     private bool _applyingScrollRestore;
     private int _pointerDownColumn = -1;
     private Point _pointerDownPosition;
     private bool _headerDragStarted;
+    private int _selectionDragAnchor = -1;
+    private int _selectionDragLast = -1;
+    private bool _selectionDragSelect;
+    private HashSet<int>? _selectionDragInitialSelection;
 
     /// <summary>Creates an empty dynamic table.</summary>
     public DynamicTableView()
     {
         Classes.Add("dynamic-table-view");
+        UpdateGridLinesClass();
+        AutoScrollToSelectedItem = false;
         SelectionMode = SelectionMode.Multiple;
         CanUserResizeColumns = true;
-        AddHandler(InputElement.PointerPressedEvent, OnGridPointerPressed, RoutingStrategies.Tunnel);
-        AddHandler(InputElement.PointerMovedEvent, OnGridPointerMoved, RoutingStrategies.Tunnel);
-        AddHandler(InputElement.PointerReleasedEvent, OnGridPointerReleased, RoutingStrategies.Tunnel);
+        AddHandler(InputElement.PointerPressedEvent, OnGridPointerPressed, RoutingStrategies.Tunnel, handledEventsToo: true);
+        AddHandler(InputElement.PointerMovedEvent, OnGridPointerMoved, RoutingStrategies.Tunnel, handledEventsToo: true);
+        AddHandler(InputElement.PointerReleasedEvent, OnGridPointerReleased, RoutingStrategies.Tunnel, handledEventsToo: true);
         AddHandler(ScrollViewer.ScrollChangedEvent, OnScrollChanged, RoutingStrategies.Bubble);
     }
 
@@ -68,14 +84,22 @@ public sealed partial class DynamicTableView : TableView
             .OrderBy(static saved => saved.Order)
             .ToArray();
 
-        for (var targetIndex = 0; targetIndex < ordered.Length; targetIndex++)
+        _restoringState = true;
+        try
         {
-            var currentIndex = IndexOfColumn(source.Columns, ordered[targetIndex].Key);
-            if (currentIndex < 0 || currentIndex == targetIndex)
-                continue;
-            var column = source.Columns[currentIndex];
-            source.Columns.RemoveAt(currentIndex);
-            source.Columns.Insert(targetIndex, column);
+            for (var targetIndex = 0; targetIndex < ordered.Length; targetIndex++)
+            {
+                var currentIndex = IndexOfColumn(source.Columns, ordered[targetIndex].Key);
+                if (currentIndex < 0 || currentIndex == targetIndex)
+                    continue;
+                var column = source.Columns[currentIndex];
+                source.Columns.RemoveAt(currentIndex);
+                source.Columns.Insert(targetIndex, column);
+            }
+        }
+        finally
+        {
+            _restoringState = false;
         }
 
         foreach (var saved in state.Columns)
@@ -88,10 +112,15 @@ public sealed partial class DynamicTableView : TableView
             _manuallySizedColumns.Add(saved.Key);
         }
 
-        source.SetSort(state.Sorts);
-        source.ClearFilters();
-        foreach (var filter in state.Filters)
-            source.SetFilter(filter);
+        if (!source.SortDescriptors.SequenceEqual(state.Sorts))
+            source.SetSort(state.Sorts);
+
+        if (!source.FilterDescriptors.SequenceEqual(state.Filters))
+        {
+            source.ClearFilters();
+            foreach (var filter in state.Filters)
+                source.SetFilter(filter);
+        }
         _pendingScrollOffset = state.ScrollOffset;
         RebuildNativeColumns();
         QueueAutoWidthPass();
@@ -102,12 +131,17 @@ public sealed partial class DynamicTableView : TableView
     {
         if (change.Property == SourceProperty)
             AttachSource(change.GetNewValue<IDynamicTableViewSource?>());
+        else if (change.Property == GridLinesVisibilityProperty)
+            UpdateGridLinesClass();
+        else if (change.Property == IsVisibleProperty && change.GetNewValue<bool>())
+            QueueHeaderRefresh();
     }
 
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnAttachedToVisualTree(e);
         LayoutUpdated += OnLayoutUpdated;
+        QueueHeaderRefresh();
         QueueAutoWidthPass();
         QueueScrollRestore();
     }
@@ -143,6 +177,24 @@ public sealed partial class DynamicTableView : TableView
         RebuildNativeColumns();
     }
 
+    private void UpdateGridLinesClass()
+    {
+        Classes.Remove("grid-lines-horizontal");
+        Classes.Remove("grid-lines-vertical");
+        Classes.Remove("grid-lines-all");
+
+        var className = GridLinesVisibility switch
+        {
+            DynamicTableViewGridLinesVisibility.Horizontal => "grid-lines-horizontal",
+            DynamicTableViewGridLinesVisibility.Vertical => "grid-lines-vertical",
+            DynamicTableViewGridLinesVisibility.All => "grid-lines-all",
+            _ => null
+        };
+
+        if (className is not null)
+            Classes.Add(className);
+    }
+
     private void SourceOnChanged(object? sender, EventArgs e)
     {
         UpdateHeaderStates();
@@ -151,6 +203,9 @@ public sealed partial class DynamicTableView : TableView
 
     private void ColumnsOnCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
+        if (_restoringState)
+            return;
+
         RebuildNativeColumns();
         QueueAutoWidthPass();
     }
@@ -164,19 +219,42 @@ public sealed partial class DynamicTableView : TableView
 
         foreach (var definition in Source.Columns)
         {
-            var header = new DynamicTableViewHeader(this, definition);
             var native = new TableViewColumn
             {
-                Header = header,
+                Header = definition,
+                HeaderTemplate = CreateHeaderTemplate(),
+                HorizontalContentAlignment = HorizontalAlignment.Stretch,
                 Width = GetInitialWidth(definition),
-                CellTemplate = definition.CellTemplate ?? new FuncDataTemplate<object>((_, _) =>
-                    new DynamicTableViewCell(definition), supportsRecycling: true)
+                CellTemplate = definition.CellTemplate ?? new FuncDataTemplate<object>((_, _) => new DynamicTableViewCell(definition), supportsRecycling: true)
             };
-            header.NativeColumn = native;
             _nativeColumns.Add(definition.Key, native);
             Columns.Add(native);
         }
+
         UpdateHeaderStates();
+    }
+
+    private IDataTemplate CreateHeaderTemplate()
+        => new FuncDataTemplate<DynamicTableViewColumn>(
+            (definition, _) => definition is null ? null : new DynamicTableViewHeader(this, definition));
+
+    private void QueueHeaderRefresh()
+    {
+        if (_headerRefreshQueued || Source is null)
+            return;
+        _headerRefreshQueued = true;
+        Dispatcher.UIThread.Post(() =>
+        {
+            _headerRefreshQueued = false;
+            if (VisualRoot is null || Source is null || !IsVisible)
+                return;
+            foreach (var definition in Source.Columns)
+            {
+                if (_nativeColumns.TryGetValue(definition.Key, out var native))
+                    native.HeaderTemplate = CreateHeaderTemplate();
+            }
+            UpdateHeaderStates();
+        }, DispatcherPriority.Loaded);
     }
 
     private static GridLength GetInitialWidth(DynamicTableViewColumn definition)
@@ -191,12 +269,18 @@ public sealed partial class DynamicTableView : TableView
     {
         if (Source is null)
             return;
-        foreach (var definition in Source.Columns)
-        {
-            if (_nativeColumns.TryGetValue(definition.Key, out var native) && native.Header is DynamicTableViewHeader header)
-                header.UpdateState(Source.SortDescriptors, Source.FilterDescriptors);
-        }
+        foreach (var header in this.GetVisualDescendants().OfType<DynamicTableViewHeader>())
+            header.UpdateState(Source.SortDescriptors, Source.FilterDescriptors);
     }
+
+    internal void UpdateHeaderState(DynamicTableViewHeader header)
+    {
+        if (Source is not null)
+            header.UpdateState(Source.SortDescriptors, Source.FilterDescriptors);
+    }
+
+    internal TableViewColumn? GetNativeColumn(string key)
+        => _nativeColumns.TryGetValue(key, out var column) ? column : null;
 
     private void OnLayoutUpdated(object? sender, EventArgs e)
     {
@@ -264,8 +348,7 @@ public sealed partial class DynamicTableView : TableView
         var cellSamples = new Dictionary<string, double>(StringComparer.Ordinal);
         foreach (var cell in this.GetVisualDescendants().OfType<TableViewCell>())
         {
-            if (cell.Column?.Header is not DynamicTableViewHeader header || cell.DataContext is not { } row ||
-                FindDefinition(header.Column.Key) is not { } definition)
+            if (cell.Column?.Header is not DynamicTableViewColumn definition || cell.DataContext is not { } row)
                 continue;
             if (definition.WidthMode == DynamicTableViewWidthMode.Header || _manuallySizedColumns.Contains(definition.Key))
                 continue;
@@ -305,8 +388,29 @@ public sealed partial class DynamicTableView : TableView
             return;
         }
 
+        if (e.GetCurrentPoint(this).Properties.PointerUpdateKind != PointerUpdateKind.LeftButtonPressed)
+            return;
+
+        var pressedVisual = this.GetVisualAt(e.GetPosition(this));
+        if (FindRow(pressedVisual ?? e.Source) is { DataContext: not null } rowContainer)
+        {
+            _selectionDragAnchor = GetRowIndex(rowContainer);
+            if (_selectionDragAnchor >= 0 && Selection is { } selection)
+            {
+                _selectionDragLast = _selectionDragAnchor;
+                _selectionDragInitialSelection = [.. selection.SelectedIndexes];
+                _selectionDragSelect = !selection.IsSelected(_selectionDragAnchor);
+            }
+        }
+
         if (FindHeader(e.Source) is not { } header || FindDefinition(header.Column.Key) is not { } definition)
             return;
+        if (IsWithinNamedControl(e.Source, "PART_FilterButton"))
+        {
+            _pointerDownColumn = -1;
+            return;
+        }
+
         var native = header.NativeColumn;
         if (native is null)
             return;
@@ -323,7 +427,21 @@ public sealed partial class DynamicTableView : TableView
 
     private void OnGridPointerMoved(object? sender, PointerEventArgs e)
     {
-        if (_pointerDownColumn < 0 || e.GetCurrentPoint(this).Properties.IsLeftButtonPressed is false)
+        if (e.GetCurrentPoint(this).Properties.IsLeftButtonPressed is false)
+            return;
+
+        var pointerVisual = this.GetVisualAt(e.GetPosition(this));
+        if (_selectionDragAnchor >= 0 && FindRow(pointerVisual ?? e.Source) is { } rowContainer)
+        {
+            var targetRowIndex = GetRowIndex(rowContainer);
+            if (targetRowIndex >= 0 && targetRowIndex != _selectionDragLast)
+            {
+                UpdateRowSelectionDrag(targetRowIndex);
+                e.Handled = true;
+            }
+        }
+
+        if (_pointerDownColumn < 0)
             return;
         var current = e.GetPosition(this);
         if (!_headerDragStarted && Math.Abs(current.X - _pointerDownPosition.X) < 5)
@@ -345,6 +463,57 @@ public sealed partial class DynamicTableView : TableView
     {
         _pointerDownColumn = -1;
         _headerDragStarted = false;
+        _selectionDragAnchor = -1;
+        _selectionDragLast = -1;
+        _selectionDragInitialSelection = null;
+    }
+
+    private int GetRowIndex(TableViewRow row) => IndexFromContainer(row);
+
+    private void UpdateRowSelectionDrag(int targetIndex)
+    {
+        if (Selection is not { } selection || _selectionDragInitialSelection is not { } initialSelection)
+            return;
+
+        var anchor = _selectionDragAnchor;
+        var previousStart = Math.Min(anchor, _selectionDragLast);
+        var previousEnd = Math.Max(anchor, _selectionDragLast);
+        var targetStart = Math.Min(anchor, targetIndex);
+        var targetEnd = Math.Max(anchor, targetIndex);
+
+        selection.BeginBatchUpdate();
+        try
+        {
+            SetSelectionRange(selection, previousStart, Math.Min(previousEnd, targetStart - 1), initialSelection, applyDragState: false);
+            SetSelectionRange(selection, Math.Max(previousStart, targetEnd + 1), previousEnd, initialSelection, applyDragState: false);
+            SetSelectionRange(selection, targetStart, targetEnd, initialSelection, applyDragState: true);
+            _selectionDragLast = targetIndex;
+        }
+        finally
+        {
+            selection.EndBatchUpdate();
+        }
+    }
+
+    private void SetSelectionRange(
+        ISelectionModel selection,
+        int start,
+        int end,
+        HashSet<int> initialSelection,
+        bool applyDragState)
+    {
+        for (var index = start; index <= end; index++)
+        {
+            var shouldBeSelected = applyDragState
+                ? _selectionDragSelect
+                : initialSelection.Contains(index);
+            if (selection.IsSelected(index) == shouldBeSelected)
+                continue;
+            if (shouldBeSelected)
+                selection.Select(index);
+            else
+                selection.Deselect(index);
+        }
     }
 
     private void HandleRightClick(PointerPressedEventArgs e)
@@ -368,6 +537,17 @@ public sealed partial class DynamicTableView : TableView
         if (Source is null)
             return;
         var current = Source.SortDescriptors.FirstOrDefault(sort => string.Equals(sort.ColumnKey, key, StringComparison.Ordinal));
+        if (!AllowMultipleSorts)
+        {
+            if (current is null)
+                Source.SetSort([new(key, ListSortDirection.Ascending)]);
+            else if (current.Direction == ListSortDirection.Ascending)
+                Source.SetSort([current with { Direction = ListSortDirection.Descending }]);
+            else
+                Source.SetSort([]);
+            return;
+        }
+
         var sorts = Source.SortDescriptors.ToList();
         if (current is null)
             sorts.Add(new(key, ListSortDirection.Ascending));
@@ -400,7 +580,21 @@ public sealed partial class DynamicTableView : TableView
     }
 
     private static DynamicTableViewHeader? FindHeader(object? source)
-        => source is Visual visual ? visual.GetSelfAndVisualAncestors().OfType<DynamicTableViewHeader>().FirstOrDefault() : null;
+    {
+        if (source is not Visual visual)
+            return null;
+
+        foreach (var ancestor in visual.GetSelfAndVisualAncestors())
+        {
+            if (ancestor is DynamicTableViewHeader header)
+                return header;
+        }
+
+        return null;
+    }
+
+    private static bool IsWithinNamedControl(object? source, string name)
+        => source is Visual visual && visual.GetSelfAndVisualAncestors().OfType<Control>().Any(control => control.Name == name);
 
     private static TableViewRow? FindRow(object? source)
         => source is Visual visual ? visual.GetSelfAndVisualAncestors().OfType<TableViewRow>().FirstOrDefault() : null;

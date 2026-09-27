@@ -2,11 +2,8 @@ namespace KubeUI.DynamicTableView;
 
 using System.ComponentModel;
 
-internal sealed partial class DynamicTableViewCell : TemplatedControl
+internal sealed partial class DynamicTableViewCell : ContentControl
 {
-    [GeneratedDirectProperty]
-    public partial string Text { get; set; } = string.Empty;
-
     private readonly DynamicTableViewColumn _column;
     private INotifyPropertyChanged? _observedItem;
 
@@ -17,10 +14,10 @@ internal sealed partial class DynamicTableViewCell : TemplatedControl
         DataContextChanged += OnDataContextChanged;
     }
 
-    protected override Type StyleKeyOverride => typeof(DynamicTableViewCell);
+    protected override Type StyleKeyOverride => typeof(ContentControl);
 
     private void UpdateText()
-        => Text = DataContext is { } item ? _column.GetDisplayValue(item) : string.Empty;
+        => Content = DataContext is { } item ? _column.GetDisplayValue(item) : string.Empty;
 
     private void OnDataContextChanged(object? sender, EventArgs e)
     {

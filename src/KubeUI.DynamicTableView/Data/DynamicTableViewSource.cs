@@ -15,7 +15,6 @@ public sealed class DynamicTableViewSource<T, TKey> : IDynamicTableViewSource
     private readonly Func<T, TKey> _keySelector;
     private readonly Func<T, object> _selectionIdentitySelector;
     private readonly IEqualityComparer<object> _selectionIdentityComparer;
-    private readonly bool _useReplaceForUpdates;
     private readonly IScheduler _workerScheduler;
     private readonly IScheduler _uiScheduler;
     private readonly IScheduler _searchScheduler;
@@ -51,7 +50,6 @@ public sealed class DynamicTableViewSource<T, TKey> : IDynamicTableViewSource
         ArgumentNullException.ThrowIfNull(changes);
         _keySelector = keySelector ?? throw new ArgumentNullException(nameof(keySelector));
         options ??= new DynamicTableViewSourceOptions();
-        _useReplaceForUpdates = options.UseReplaceForUpdates;
         _selectionIdentitySelector = options.SelectionIdentityMode switch
         {
             DynamicTableViewSelectionIdentityMode.Key => item => _keySelector(item)!,
@@ -101,7 +99,6 @@ public sealed class DynamicTableViewSource<T, TKey> : IDynamicTableViewSource
             .SortAndBind(out _items, _sortSubject, new()
             {
                 ResetOnFirstTimeLoad = true,
-                UseReplaceForUpdates = _useReplaceForUpdates,
                 Scheduler = _uiScheduler
             })
             .Subscribe(

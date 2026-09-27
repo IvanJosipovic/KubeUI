@@ -34,6 +34,16 @@ public sealed class Fluent : AvaloniaStyles
         Add(new GraphXFluentTheme());
         Add(new FluentAvaloniaTheme());
         Add(CreateFluentTheme());
+        Add(new Style<TableViewCell>()
+            .Setter(ContentControl.VerticalContentAlignmentProperty, VerticalAlignment.Center)
+            .Setter(global::Avalonia.Controls.Primitives.TemplatedControl.PaddingProperty, new Thickness(6, 0, 6, 0)));
+        Add(new Style<TableViewRow>()
+            .Background(new DynamicResourceExtension("SystemRegionBrush"))
+            .Setter(Layoutable.HeightProperty, new DynamicResourceExtension("DataGridRowHeight"))
+            .Setter(global::Avalonia.Controls.Primitives.TemplatedControl.PaddingProperty, new Thickness(2, 0, 2, 0)));
+        Add(new Style<TableViewColumnHeader>()
+            .Setter(Layoutable.MinHeightProperty, new DynamicResourceExtension("DataGridColumnHeaderMinHeight"))
+            .Background(new DynamicResourceExtension("SystemAltHighColor")));
         Add(CreateTypographyResources());
         Add(CreateThemeResourceStyles(CreateSemanticLightResources(), CreateSemanticDarkResources()));
         Add(CreateThemeResourceStyles(CreateVisualizationLightResources(), CreateVisualizationDarkResources()));
@@ -63,14 +73,6 @@ public sealed class Fluent : AvaloniaStyles
                         [new ToggleMultiComboBoxBehavior()],
                         new NameScope())
                 }));
-
-        Add(new Style<KubeUI.DynamicTableView.DynamicTableView>()
-            .FontSize(new DynamicResourceExtension(Typography.AppFontSizeResourceKey)));
-        Add(new Style<TableViewRow>()
-            .Height(new DynamicResourceExtension("DynamicTableViewRowHeight")));
-        Add(new Style<TableViewColumnHeader>()
-            .FontSize(new DynamicResourceExtension(Typography.AppFontSizeResourceKey))
-            .MinHeight(new DynamicResourceExtension("DynamicTableViewHeaderMinHeight")));
 
         Add(new Style<HostWindow>()
             .Background(new DynamicResourceExtension("SystemRegionBrush"))

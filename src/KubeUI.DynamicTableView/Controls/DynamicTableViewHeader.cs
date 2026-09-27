@@ -1,4 +1,6 @@
 using Avalonia.Interactivity;
+using Avalonia.Input;
+using Avalonia.VisualTree;
 
 namespace KubeUI.DynamicTableView;
 
@@ -6,20 +8,27 @@ internal sealed partial class DynamicTableViewHeader : TemplatedControl
 {
     private readonly DynamicTableView _owner;
     private Button? _filterButton;
+    private Point _sortPointerDownPosition;
+    private bool _sortPointerDown;
 
     public DynamicTableViewHeader(DynamicTableView owner, DynamicTableViewColumn column)
     {
         _owner = owner ?? throw new ArgumentNullException(nameof(owner));
         Column = column ?? throw new ArgumentNullException(nameof(column));
+        NativeColumn = _owner.GetNativeColumn(column.Key);
         HeaderText = column.Header.ToString() ?? string.Empty;
         IsFilterEnabled = column.CanUserFilter;
         IsSortEnabled = column.CanUserSort;
         Classes.Add("dynamic-table-view-header");
+        _owner.UpdateHeaderState(this);
+        AddHandler(InputElement.PointerPressedEvent, HeaderPointerPressed, RoutingStrategies.Bubble, handledEventsToo: true);
+        AddHandler(InputElement.PointerMovedEvent, HeaderPointerMoved, RoutingStrategies.Bubble, handledEventsToo: true);
+        AddHandler(InputElement.PointerReleasedEvent, HeaderPointerReleased, RoutingStrategies.Bubble, handledEventsToo: true);
     }
 
     public DynamicTableViewColumn Column { get; }
 
-    public TableViewColumn NativeColumn { get; set; } = null!;
+    public TableViewColumn? NativeColumn { get; }
 
     [GeneratedDirectProperty]
     public partial string HeaderText { get; set; } = string.Empty;
@@ -37,10 +46,13 @@ internal sealed partial class DynamicTableViewHeader : TemplatedControl
     public partial bool HasSort { get; set; }
 
     [GeneratedDirectProperty]
-    public partial bool IsFiltered { get; set; }
+    public partial bool IsSortAscending { get; set; }
 
     [GeneratedDirectProperty]
-    public partial string FilterText { get; set; } = string.Empty;
+    public partial bool IsSortDescending { get; set; }
+
+    [GeneratedDirectProperty]
+    public partial bool IsFiltered { get; set; }
 
     protected override Type StyleKeyOverride => typeof(DynamicTableViewHeader);
 
@@ -48,10 +60,7 @@ internal sealed partial class DynamicTableViewHeader : TemplatedControl
     {
         if (_filterButton is not null)
             _filterButton.Click -= FilterButtonOnClick;
-
         base.OnApplyTemplate(e);
-        var sortButton = e.NameScope.Find<Button>("PART_SortButton");
-        sortButton?.AddHandler(Button.ClickEvent, SortButtonOnClick);
         _filterButton = e.NameScope.Find<Button>("PART_FilterButton");
         if (_filterButton is not null && IsFilterEnabled)
         {
@@ -74,17 +83,49 @@ internal sealed partial class DynamicTableViewHeader : TemplatedControl
         }
 
         HasSort = descriptor is not null;
-        SortText = descriptor is null
+        SortText = descriptor is null || sorts.Count <= 1
             ? string.Empty
-            : (descriptor.Direction == ListSortDirection.Ascending ? "▲" : "▼") + (sorts.Count > 1 ? (sortIndex + 1).ToString(CultureInfo.InvariantCulture) : string.Empty);
+            : (sortIndex + 1).ToString(CultureInfo.InvariantCulture);
+        IsSortAscending = descriptor?.Direction == ListSortDirection.Ascending;
+        IsSortDescending = descriptor?.Direction == ListSortDirection.Descending;
         IsFiltered = filters.Any(filter => string.Equals(filter.ColumnKey, Column.Key, StringComparison.Ordinal));
-        FilterText = IsFiltered ? "▾" : "▽";
         Classes.Set("filtered", IsFiltered);
     }
 
-    private void SortButtonOnClick(object? sender, RoutedEventArgs e)
-        => _owner.SortColumn(Column.Key);
-
     private void FilterButtonOnClick(object? sender, RoutedEventArgs e)
         => FlyoutBase.ShowAttachedFlyout(_filterButton!);
+
+    private void HeaderPointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        _sortPointerDown = IsSortEnabled &&
+            e.GetCurrentPoint(this).Properties.PointerUpdateKind == PointerUpdateKind.LeftButtonPressed &&
+            !IsWithinNamedControl(e.Source, "PART_FilterButton");
+        if (_sortPointerDown)
+            _sortPointerDownPosition = e.GetPosition(this);
+    }
+
+    private void HeaderPointerMoved(object? sender, PointerEventArgs e)
+    {
+        if (!_sortPointerDown || !e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
+            return;
+
+        var position = e.GetPosition(this);
+        var deltaX = position.X - _sortPointerDownPosition.X;
+        var deltaY = position.Y - _sortPointerDownPosition.Y;
+        if (deltaX * deltaX + deltaY * deltaY >= 25)
+            _sortPointerDown = false;
+    }
+
+    private void HeaderPointerReleased(object? sender, PointerReleasedEventArgs e)
+    {
+        var position = e.GetPosition(this);
+        var shouldSort = _sortPointerDown && position.X >= 0 && position.X <= Bounds.Width &&
+            position.Y >= 0 && position.Y <= Bounds.Height;
+        _sortPointerDown = false;
+        if (shouldSort)
+            _owner.SortColumn(Column.Key);
+    }
+
+    private static bool IsWithinNamedControl(object? source, string name)
+        => source is Visual visual && visual.GetSelfAndVisualAncestors().OfType<Control>().Any(control => control.Name == name);
 }

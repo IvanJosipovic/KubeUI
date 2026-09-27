@@ -1,4 +1,7 @@
 <Solution>
+  <Folder Name="/Samples/">
+    <Project Path="samples/KubeUI.DynamicTableView.Sample/KubeUI.DynamicTableView.Sample.csproj" />
+  </Folder>
   <Folder Name="/Benchmarks/">
     <Project Path="benchmarks/KubeUI.Benchmarks/KubeUI.Benchmarks.csproj" />
     <Project Path="benchmarks/KubeUI.DynamicTableView.Benchmarks/KubeUI.DynamicTableView.Benchmarks.csproj" />

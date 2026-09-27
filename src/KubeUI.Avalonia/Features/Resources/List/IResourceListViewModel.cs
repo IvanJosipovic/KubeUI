@@ -21,6 +21,10 @@ namespace KubeUI.Avalonia.Features.Resources.List
         ISelectionModel SelectionModel { get; }
         IEnumerable<MenuItemViewModel> GetContextMenuItems(IEnumerable? selectedItems);
         DynamicTableViewState? TableViewRuntimeState { get; set; }
+        /// <summary>Stores selected resource keys so a recreated list view can restore visible selections.</summary>
+        void CaptureSelectionState();
+        /// <summary>Restores captured selections for resources that remain visible in the table source.</summary>
+        void RestoreSelectionState();
         void InitializeResource(ClusterWorkspace cluster, GroupApiVersionKind kind);
     }
 }
