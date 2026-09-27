@@ -47,7 +47,7 @@ public sealed class Fluent : AvaloniaStyles
         Add(CreateTypographyResources());
         Add(CreateThemeResourceStyles(CreateSemanticLightResources(), CreateSemanticDarkResources()));
         Add(CreateThemeResourceStyles(CreateVisualizationLightResources(), CreateVisualizationDarkResources()));
-        Add(CreateStyleInclude("avares://KubeUI.DynamicTableView/Themes/DynamicTableViewTheme.axaml"));
+        Add(CreateStyleInclude("avares://SvcSystems.Avalonia.DynamicTableView/Themes/DynamicTableViewTheme.axaml"));
         Add(CreateStyleInclude("avares://AvaloniaEdit/Themes/Fluent/AvaloniaEdit.xaml"));
         Add(CreateStyleInclude("avares://LiveMarkdown.Avalonia/Styles.axaml"));
         Add(new DockFluentTheme());

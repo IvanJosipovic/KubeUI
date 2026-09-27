@@ -19,7 +19,7 @@
     <Using Include="CommunityToolkit.Mvvm.Input" />
     <Using Include="Microsoft.Extensions.DependencyInjection" />
     <Using Include="Microsoft.Extensions.Logging" />
-    <Using Include="KubeUI.DynamicTableView" />
+    <Using Include="SvcSystems.Avalonia.DynamicTableView" />
     <Using Include="PropertyGenerator.Avalonia" />
     <Using Include="System" />
     <Using Include="System.Collections" />
@@ -38,7 +38,6 @@
   <ItemGroup>
     <ProjectReference Include="..\KubeUI.Kubernetes\KubeUI.Kubernetes.csproj" PrivateAssets="all" />
     <ProjectReference Include="..\KubeUI.AI\KubeUI.AI.csproj" />
-    <ProjectReference Include="..\KubeUI.DynamicTableView\KubeUI.DynamicTableView.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -67,6 +66,7 @@
     <PackageReference Include="Westermo.GraphX.Controls.Avalonia.Themes.Fluent" Version="4.2.0" />
     <PackageReference Include="Westermo.GraphX.Logic" Version="4.4.8" />
     <PackageReference Include="SvcSystems.UI.Terminal" Version="2.0.0" />
+    <PackageReference Include="SvcSystems.Avalonia.DynamicTableView" Version="1.0.0-alpha.1" />
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
     <PackageReference Include="Dock.Avalonia" Version="12.1.0.2" />
     <PackageReference Include="Dock.Avalonia.Themes.Fluent" Version="12.1.0.2" />

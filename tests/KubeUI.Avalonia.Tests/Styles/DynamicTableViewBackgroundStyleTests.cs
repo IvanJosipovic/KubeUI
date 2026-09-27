@@ -9,7 +9,7 @@ using System.Reactive.Concurrency;
 using Avalonia.Styling;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
-using KubeUI.DynamicTableView;
+using SvcSystems.Avalonia.DynamicTableView;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Styles;
@@ -19,7 +19,7 @@ public sealed class DynamicTableViewBackgroundStyleTests
     [AvaloniaFact]
     public void table_rows_have_no_bottom_padding()
     {
-        var table = new KubeUI.DynamicTableView.DynamicTableView
+        var table = new DynamicTableView
         {
             ItemsSource = new[] { "row" }
         };
@@ -46,7 +46,7 @@ public sealed class DynamicTableViewBackgroundStyleTests
     [AvaloniaFact]
     public void table_cell_content_is_vertically_centered()
     {
-        var table = new KubeUI.DynamicTableView.DynamicTableView
+        var table = new DynamicTableView
         {
             ItemsSource = new[] { "row" }
         };
@@ -76,7 +76,7 @@ public sealed class DynamicTableViewBackgroundStyleTests
     {
         var application = Application.Current!;
         var originalVariant = application.RequestedThemeVariant;
-        var table = new KubeUI.DynamicTableView.DynamicTableView
+        var table = new DynamicTableView
         {
             ItemsSource = new[] { "row" }
         };
@@ -132,7 +132,7 @@ public sealed class DynamicTableViewBackgroundStyleTests
             [DynamicTableViewColumn<FilterTestRow>.Create("name", "Name", static row => row.Name)],
             ImmediateScheduler.Instance,
             ImmediateScheduler.Instance);
-        var table = new KubeUI.DynamicTableView.DynamicTableView { Source = source };
+        var table = new DynamicTableView { Source = source };
         Window window = new() { Width = 320, Height = 160, Content = table };
 
         try

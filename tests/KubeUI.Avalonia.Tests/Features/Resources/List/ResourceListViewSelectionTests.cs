@@ -1,5 +1,4 @@
 using Avalonia.Controls;
-using Avalonia.Controls.Primitives;
 using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
 using Avalonia.Input;
@@ -10,12 +9,8 @@ using Dock.Model.Controls;
 using Dock.Model.Core;
 using DynamicData;
 using k8s.Models;
-using KubeUI.Avalonia.Features.AI;
-using KubeUI.Avalonia.Features.Resources.List;
 using KubeUI.Avalonia.Shell.Documents.About;
-using KubeUI.DynamicTableView;
-using KubeUI.Testing.Utilities;
-using DynamicTable = KubeUI.DynamicTableView.DynamicTableView;
+using SvcSystems.Avalonia.DynamicTableView;
 
 namespace KubeUI.Avalonia.Tests.Features.Resources.List;
 
@@ -52,7 +47,7 @@ public sealed class ResourceListViewSelectionTests
         using var window = Application.Current.CreateTestWindow(content: tabs);
         window.Show();
         var table = await TestWait.UntilValueAsync(
-            () => view.FindControl<DynamicTable>("PART_Grid"),
+            () => view.FindControl<DynamicTableView>("PART_Grid"),
             TimeSpan.FromSeconds(5),
             cancellationToken: TestContext.Current.CancellationToken,
             beforePoll: () => Dispatcher.UIThread.RunJobs())
@@ -114,7 +109,7 @@ public sealed class ResourceListViewSelectionTests
         await WaitForAsync(() => ReferenceEquals(documents.ActiveDockable, viewModel));
 
         var table = await TestWait.UntilValueAsync(
-            () => window.GetVisualDescendants().OfType<DynamicTable>().FirstOrDefault(),
+            () => window.GetVisualDescendants().OfType<DynamicTableView>().FirstOrDefault(),
             TimeSpan.FromSeconds(5),
             cancellationToken: TestContext.Current.CancellationToken,
             beforePoll: () => Dispatcher.UIThread.RunJobs())
@@ -162,9 +157,9 @@ public sealed class ResourceListViewSelectionTests
         viewModel.TableSource.Changed -= sourceChanged;
     }
 
-    private static async Task<DynamicTable> WaitForDockTableAsync(Window window, DynamicTable previousTable)
+    private static async Task<DynamicTableView> WaitForDockTableAsync(Window window, DynamicTableView previousTable)
         => await TestWait.UntilValueAsync(
-            () => window.GetVisualDescendants().OfType<DynamicTable>()
+            () => window.GetVisualDescendants().OfType<DynamicTableView>()
                 .FirstOrDefault(table => !ReferenceEquals(table, previousTable) &&
                     table.GetVisualDescendants().OfType<TableViewRow>().Count() == 10),
             TimeSpan.FromSeconds(5),
@@ -172,7 +167,7 @@ public sealed class ResourceListViewSelectionTests
             beforePoll: () => Dispatcher.UIThread.RunJobs())
             ?? throw new TimeoutException("A new docked resource list table did not attach.");
 
-    private static void SelectTenRows(Window window, DynamicTable table)
+    private static void SelectTenRows(Window window, DynamicTableView table)
     {
         var rows = table.GetVisualDescendants().OfType<TableViewRow>()
             .OrderBy(static row => ((V1Pod)row.DataContext!).Metadata.Name)
@@ -186,7 +181,7 @@ public sealed class ResourceListViewSelectionTests
         Dispatcher.UIThread.RunJobs();
     }
 
-    private static void SelectOneRow(Window window, DynamicTable table, string podName)
+    private static void SelectOneRow(Window window, DynamicTableView table, string podName)
     {
         var position = RowCenter(window, FindRow(table, podName));
         window.MouseDown(position, MouseButton.Left);
@@ -194,7 +189,7 @@ public sealed class ResourceListViewSelectionTests
         Dispatcher.UIThread.RunJobs();
     }
 
-    private static void SelectRowsByName(Window window, DynamicTable table, string firstName, string lastName)
+    private static void SelectRowsByName(Window window, DynamicTableView table, string firstName, string lastName)
     {
         window.MouseDown(RowCenter(window, FindRow(table, firstName)), MouseButton.Left);
         window.MouseMove(RowCenter(window, FindRow(table, lastName)), RawInputModifiers.LeftMouseButton);
@@ -203,7 +198,7 @@ public sealed class ResourceListViewSelectionTests
         Dispatcher.UIThread.RunJobs();
     }
 
-    private static TableViewRow FindRow(DynamicTable table, string name)
+    private static TableViewRow FindRow(DynamicTableView table, string name)
         => table.GetVisualDescendants().OfType<TableViewRow>()
             .Single(row => ((V1Pod)row.DataContext!).Metadata.Name == name);
 

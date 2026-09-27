@@ -4,7 +4,7 @@
 - Pods expose custom list cells for containers, CPU, memory, and status.
 - Pod actions include logs, console, and port forwarding flows.
 - Pod-specific supporting views and view models stay local to this folder.
-- Port-forwarders use `KubeUI.DynamicTableView` with a single selection model; the library owns row rendering, live updates, sorting, sizing, and context-menu targeting. This view configures its own key bindings and double-tap action.
+- Port-forwarders use `SvcSystems.Avalonia.DynamicTableView` with a single selection model; the library owns row rendering, live updates, sorting, sizing, and context-menu targeting. This view configures its own key bindings and double-tap action.
 
 ## Pod Logs
 - A pod-scoped log view uses the title `Pod Logs` and selects all containers when launched from the pod's View Logs action.

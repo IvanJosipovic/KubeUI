@@ -32,6 +32,7 @@ using KubeUI.Testing.Kubernetes.Bootstrap;
 using KubeUI.Testing.Kubernetes.Scenarios;
 using k8s.Models;
 using Microsoft.Extensions.DependencyInjection;
+using SvcSystems.Avalonia.DynamicTableView;
 
 namespace KubeUI.Documentation.Tests.Infra;
 
@@ -1234,7 +1235,7 @@ internal static class KubeUIWalkthroughRecorder
 
     private static ContextMenu GetResourceListContextMenu(Control root)
     {
-        var grid = root.GetVisualDescendants().OfType<KubeUI.DynamicTableView.DynamicTableView>()
+        var grid = root.GetVisualDescendants().OfType<DynamicTableView>()
             .FirstOrDefault(candidate => candidate.Name == "PART_Grid")
             ?? throw new InvalidOperationException("The resource list grid was not found.");
         return grid.ContextMenu

@@ -1,14 +1,10 @@
 using Avalonia.Controls;
-using Avalonia.Controls.Primitives;
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using DynamicData;
 using k8s.Models;
-using KubeUI.Avalonia.Features.Resources.List;
-using KubeUI.DynamicTableView;
-using KubeUI.Testing.Utilities;
-using DynamicTable = KubeUI.DynamicTableView.DynamicTableView;
+using SvcSystems.Avalonia.DynamicTableView;
 
 namespace KubeUI.Avalonia.Tests.Features.Resources.List;
 
@@ -59,18 +55,18 @@ public sealed class ResourceListViewRestoreTests
         Assert.Equal(expectedHeaders, ReadHeaderLabels(table));
     }
 
-    private static async Task<DynamicTable> WaitForTableAsync(ResourceListView view)
+    private static async Task<DynamicTableView> WaitForTableAsync(ResourceListView view)
         => await TestWait.UntilValueAsync(
-            () => view.FindControl<DynamicTable>("PART_Grid"),
+            () => view.FindControl<DynamicTableView>("PART_Grid"),
             TimeSpan.FromSeconds(5),
             cancellationToken: TestContext.Current.CancellationToken,
             beforePoll: () => Dispatcher.UIThread.RunJobs())
             ?? throw new TimeoutException("Resource list table did not attach.");
 
-    private static Task WaitForHeadersAsync(DynamicTable table, string[] expectedHeaders)
+    private static Task WaitForHeadersAsync(DynamicTableView table, string[] expectedHeaders)
         => WaitForAsync(() => ReadHeaderLabels(table).SequenceEqual(expectedHeaders));
 
-    private static string[] ReadHeaderLabels(DynamicTable table)
+    private static string[] ReadHeaderLabels(DynamicTableView table)
         => table.GetVisualDescendants().OfType<TableViewColumnHeader>()
             .SelectMany(static header => header.GetVisualDescendants().OfType<TextBlock>())
             .Where(static label => label.IsVisible && label.Bounds.Width > 0 && label.Bounds.Height > 0)

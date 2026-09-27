@@ -5,10 +5,7 @@ using DynamicData;
 using System.ComponentModel;
 using k8s.Models;
 using KubeUI.Avalonia.Features.AI;
-using KubeUI.Avalonia.Features.Resources.List;
-using KubeUI.Avalonia.Features.Clusters.Workspace;
-using KubeUI.DynamicTableView;
-using KubeUI.Testing.Utilities;
+using SvcSystems.Avalonia.DynamicTableView;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Features.Resources.List;
@@ -119,7 +116,7 @@ public sealed class ResourceListViewModelTests
         window.Content = view;
         window.Show();
         var table = await TestWait.UntilValueAsync(
-            () => view.FindControl<KubeUI.DynamicTableView.DynamicTableView>("PART_Grid"),
+            () => view.FindControl<DynamicTableView>("PART_Grid"),
             TimeSpan.FromSeconds(5),
             cancellationToken: TestContext.Current.CancellationToken,
             beforePoll: () => Dispatcher.UIThread.RunJobs()) ?? throw new TimeoutException("Dynamic table did not attach.");

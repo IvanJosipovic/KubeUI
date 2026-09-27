@@ -1,9 +1,7 @@
 using Avalonia.Input;
 using Avalonia.VisualTree;
-using CommunityToolkit.Mvvm.Input;
 using FluentIcons.Avalonia;
 using FluentIcons.Common;
-using KubeUI.DynamicTableView;
 using KubeUI.Kubernetes;
 using System.Windows.Input;
 
@@ -14,7 +12,7 @@ public partial class PortForwarderListView : ViewBase<PortForwarderListViewModel
     protected override object Build(PortForwarderListViewModel vm)
     {
         ArgumentNullException.ThrowIfNull(vm);
-        KubeUI.DynamicTableView.DynamicTableView table = new()
+        DynamicTableView table = new()
         {
             GridLinesVisibility = DynamicTableViewGridLinesVisibility.All,
             Source = vm.TableSource,

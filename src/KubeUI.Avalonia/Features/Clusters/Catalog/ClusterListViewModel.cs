@@ -4,7 +4,7 @@ using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Infrastructure.Presentation;
-using KubeUI.DynamicTableView;
+using SvcSystems.Avalonia.DynamicTableView;
 using KubeUI.Kubernetes;
 
 namespace KubeUI.Avalonia.Features.Clusters.Catalog;

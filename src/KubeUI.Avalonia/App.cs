@@ -23,7 +23,7 @@ using OpenTelemetry.Trace;
 [assembly: GenerateMarkupExtensionsForAssembly(typeof(Avalonia.Xaml.Interactions.Events.PointerPressedEventTrigger))]
 [assembly: GenerateMarkupExtensionsForAssembly(typeof(Avalonia.Xaml.Interactivity.EventTriggerBase))]
 [assembly: GenerateMarkupExtensionsForAssembly(typeof(AvaloniaEdit.TextEditor))]
-[assembly: GenerateMarkupExtensionsForAssembly(typeof(KubeUI.DynamicTableView.DynamicTableView))]
+[assembly: GenerateMarkupExtensionsForAssembly(typeof(DynamicTableView))]
 [assembly: GenerateMarkupExtensionsForAssembly(typeof(Dock.Avalonia.Controls.DockableControl))]
 [assembly: GenerateMarkupExtensionsForAssembly(typeof(Dock.Controls.DeferredContentControl.DeferredContentControl))]
 [assembly: GenerateMarkupExtensionsForAssembly(typeof(FluentAvalonia.UI.Controls.FABitmapIcon))]

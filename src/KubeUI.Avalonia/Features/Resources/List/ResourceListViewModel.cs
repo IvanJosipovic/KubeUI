@@ -11,9 +11,7 @@ using KubeUI.Avalonia.Features.AI;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Features.Resources.Common;
 using KubeUI.Avalonia.Infrastructure.Presentation;
-using KubeUI.Avalonia.Infrastructure.Threading;
 using KubeUI.Avalonia.Resources;
-using KubeUI.DynamicTableView;
 using KubeUI.Kubernetes;
 using SortDirection = KubeUI.Avalonia.Resources.SortDirection;
 

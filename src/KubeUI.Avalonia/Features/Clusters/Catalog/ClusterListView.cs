@@ -2,7 +2,6 @@ using FluentIcons.Avalonia;
 using FluentIcons.Common;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
-using KubeUI.DynamicTableView;
 
 namespace KubeUI.Avalonia.Features.Clusters.Catalog;
 
@@ -17,7 +16,7 @@ public sealed partial class ClusterListView : ViewBase<ClusterListViewModel>
     protected override object Build(ClusterListViewModel vm)
     {
         ArgumentNullException.ThrowIfNull(vm);
-        return new KubeUI.DynamicTableView.DynamicTableView
+        return new DynamicTableView
         {
             GridLinesVisibility = DynamicTableViewGridLinesVisibility.All,
             Source = vm.TableSource,

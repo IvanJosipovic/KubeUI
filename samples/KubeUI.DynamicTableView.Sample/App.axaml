@@ -1,9 +1,0 @@
-<Application xmlns="https://github.com/avaloniaui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:fluent="using:Avalonia.Themes.Fluent"
-             x:Class="KubeUI.DynamicTableView.Sample.App">
-  <Application.Styles>
-    <fluent:FluentTheme />
-    <StyleInclude Source="avares://KubeUI.DynamicTableView/Themes/DynamicTableViewTheme.axaml" />
-  </Application.Styles>
-</Application>

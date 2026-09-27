@@ -1,7 +1,6 @@
 using Avalonia.Controls.Templates;
 using k8s;
 using k8s.Models;
-using KubeUI.DynamicTableView;
 
 namespace KubeUI.Avalonia.Resources;
 

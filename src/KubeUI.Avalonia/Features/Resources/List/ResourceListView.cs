@@ -7,18 +7,15 @@ using FluentIcons.Avalonia;
 using FluentIcons.Common;
 using k8s.Models;
 using KubeUI.Avalonia.Features.Resources.Common;
-using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
-using KubeUI.Avalonia.Resources;
-using KubeUI.DynamicTableView;
 using Ursa.Controls;
 
 namespace KubeUI.Avalonia.Features.Resources.List;
 
 public partial class ResourceListView : ViewBase<IResourceListViewModel>
 {
-    private KubeUI.DynamicTableView.DynamicTableView _table = null!;
-    private KubeUI.DynamicTableView.DynamicTableView? _restoredTable;
+    private DynamicTableView _table = null!;
+    private DynamicTableView? _restoredTable;
     private IResourceListViewModel? _restoredViewModel;
     private readonly List<KeyBinding> _actionKeyBindings = [];
 
@@ -77,9 +74,9 @@ public partial class ResourceListView : ViewBase<IResourceListViewModel>
         }
     }
 
-    private KubeUI.DynamicTableView.DynamicTableView CreateTable(IResourceListViewModel viewModel)
+    private DynamicTableView CreateTable(IResourceListViewModel viewModel)
     {
-        KubeUI.DynamicTableView.DynamicTableView table = new()
+        DynamicTableView table = new()
         {
             GridLinesVisibility = DynamicTableViewGridLinesVisibility.All,
             ContextMenuItemsFactory = viewModel.GetContextMenuItems,
@@ -92,7 +89,7 @@ public partial class ResourceListView : ViewBase<IResourceListViewModel>
     }
 
     private void ConfigureActionBindings(
-        KubeUI.DynamicTableView.DynamicTableView table,
+        SvcSystems.Avalonia.DynamicTableView.DynamicTableView table,
         IResourceListViewModel viewModel)
     {
         foreach (var binding in _actionKeyBindings)

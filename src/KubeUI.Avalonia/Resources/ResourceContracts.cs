@@ -1,5 +1,4 @@
 using Avalonia.Controls.Templates;
-using KubeUI.DynamicTableView;
 
 namespace KubeUI.Avalonia.Resources;
 

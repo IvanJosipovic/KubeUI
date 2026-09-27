@@ -62,10 +62,9 @@ Reference: https://github.com/AvaloniaUI/AvaloniaEdit
 
 Reference: https://docs.avaloniaui.net/controls/data-display/structured-data/tableview
 
-- Use `KubeUI.DynamicTableView.DynamicTableView` for tabular data and list displays.
-- Keep reusable source processing, filtering, search, sort, selection, column sizing, state, and context-menu targeting in `KubeUI.DynamicTableView`.
+- Use `SvcSystems.Avalonia.DynamicTableView.DynamicTableView` for tabular data and list displays.
+- Keep reusable source processing, filtering, search, sort, selection, column sizing, state, and context-menu targeting in `SvcSystems.Avalonia.DynamicTableView`.
 - Keep resource-specific columns, namespace scope, row styles, and actions in KubeUI.Avalonia.
-- Add library behavior and performance tests in `tests/KubeUI.DynamicTableView.Tests` and `benchmarks/KubeUI.DynamicTableView.Benchmarks`.
 
 ## 8) Testing and validation
 
