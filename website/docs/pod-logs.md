@@ -1,6 +1,7 @@
 ---
 sidebar_position: 7
 title: Pod logs
+description: Stream logs from Kubernetes Pods and workloads with KubeUI, including handling Pod restarts and replacements.
 ---
 
 # Follow Pod logs

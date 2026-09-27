@@ -15,7 +15,7 @@ const config: Config = {
   },
 
   // Set the production url of your site here
-  url: 'https://KubeUI.com',
+  url: 'https://kubeui.com',
   // Set the /<baseUrl>/ pathname under which your site is served
   // For GitHub pages deployment, it is often '/<projectName>/'
   baseUrl: '/',
@@ -43,6 +43,9 @@ const config: Config = {
                 sidebarPath: './sidebars.ts',
                 editUrl: 'https://github.com/IvanJosipovic/KubeUI/tree/main/website/',
             },
+            sitemap: {
+                lastmod: 'date',
+            },
             blog: {
                 routeBasePath: 'blog',
                 showReadingTime: true,
@@ -64,6 +67,10 @@ const config: Config = {
   themeConfig: {
     // Replace with your project's social card
     image: 'img/KubeUI-Screenshot.png',
+    metadata: [
+      {property: 'og:site_name', content: 'KubeUI'},
+      {name: 'twitter:card', content: 'summary_large_image'},
+    ],
     colorMode: {
       respectPrefersColorScheme: true,
     },

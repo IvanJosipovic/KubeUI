@@ -1,5 +1,6 @@
 ---
 sidebar_position: 4
+description: Inspect and edit Kubernetes YAML in KubeUI with completion, validation, and server-side dry runs.
 ---
 
 # Edit YAML

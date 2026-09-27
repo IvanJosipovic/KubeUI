@@ -1,5 +1,6 @@
 ---
 sidebar_position: 7
+description: Learn how KubeUI uses Kubernetes identity and access permissions to show available resources and actions.
 ---
 
 # Permissions and access
