@@ -67,6 +67,9 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     /// <summary>Stores selected resource keys so a recreated list view can restore visible selections.</summary>
     public void CaptureSelectionState()
     {
+        if (_tableSource is null)
+            return;
+
         var selectedItems = SelectionModel.SelectedItems;
         var selectedKeys = new ResourceCacheKey[selectedItems.Count];
         for (var index = 0; index < selectedItems.Count; index++)
@@ -82,16 +85,24 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
 
         var selectedKeys = new HashSet<ResourceCacheKey>(savedKeys);
         var selection = _tableSource.SelectionModel;
+        var desiredIndexes = new List<int>();
+        var index = 0;
+        foreach (var item in _tableSource.Items)
+        {
+            if (item is T resource && selectedKeys.Contains(ResourceCacheKey.From(resource)))
+                desiredIndexes.Add(index);
+            index++;
+        }
+
+        if (selection.SelectedIndexes.Count == desiredIndexes.Count &&
+            selection.SelectedIndexes.SequenceEqual(desiredIndexes))
+            return;
+
         using (selection.BatchUpdate())
         {
             selection.Clear();
-            var index = 0;
-            foreach (var item in _tableSource.Items)
-            {
-                if (item is T resource && selectedKeys.Contains(ResourceCacheKey.From(resource)))
-                    selection.Select(index);
-                index++;
-            }
+            foreach (var selectedIndex in desiredIndexes)
+                selection.Select(selectedIndex);
         }
     }
 

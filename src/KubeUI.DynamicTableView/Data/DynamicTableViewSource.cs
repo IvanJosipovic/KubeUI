@@ -396,8 +396,8 @@ public sealed class DynamicTableViewSource<T, TKey> : IDynamicTableViewSource
             case DynamicTableViewFilterOperator.DoesNotStartWith: return candidate is not string notStarts || value is not string notStart || !notStarts.StartsWith(notStart, descriptor.StringComparison);
             case DynamicTableViewFilterOperator.EndsWith: return candidate is string ends && value is string end && ends.EndsWith(end, descriptor.StringComparison);
             case DynamicTableViewFilterOperator.DoesNotEndWith: return candidate is not string notEnds || value is not string notEnd || !notEnds.EndsWith(notEnd, descriptor.StringComparison);
-            case DynamicTableViewFilterOperator.Equals: return CompareValues(candidate, value) == 0;
-            case DynamicTableViewFilterOperator.NotEquals: return CompareValues(candidate, value) != 0;
+            case DynamicTableViewFilterOperator.Equals: return AreEqual(candidate, value, descriptor.StringComparison);
+            case DynamicTableViewFilterOperator.NotEquals: return !AreEqual(candidate, value, descriptor.StringComparison);
             case DynamicTableViewFilterOperator.GreaterThan: return CompareValues(candidate, value) > 0;
             case DynamicTableViewFilterOperator.GreaterThanOrEqual: return CompareValues(candidate, value) >= 0;
             case DynamicTableViewFilterOperator.LessThan: return CompareValues(candidate, value) < 0;
@@ -412,6 +412,11 @@ public sealed class DynamicTableViewSource<T, TKey> : IDynamicTableViewSource
             default: return true;
         }
     }
+
+    private static bool AreEqual(object? left, object? right, StringComparison stringComparison)
+        => left is string leftString && right is string rightString
+            ? string.Equals(leftString, rightString, stringComparison)
+            : CompareValues(left, right) == 0;
 
     private static int CompareValues(object? left, object? right)
     {

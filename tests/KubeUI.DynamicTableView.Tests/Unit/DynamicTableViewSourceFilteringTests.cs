@@ -25,6 +25,32 @@ public sealed class DynamicTableViewSourceFilteringTests
         Assert.Equal(expectedId.Split(','), source.Items.Cast<DynamicTableViewTestRow>().Select(static row => row.Id));
     }
 
+    [Fact]
+    public void String_equality_uses_descriptor_comparison()
+    {
+        using SourceCache<DynamicTableViewTestRow, string> cache = new(static row => row.Id);
+        using var source = DynamicTableViewTestData.CreateSource(cache);
+        cache.AddOrUpdate(DynamicTableViewTestData.CreateRows());
+
+        source.SetFilter(new("name", DynamicTableViewFilterOperator.Equals, "alpha", StringComparison: StringComparison.Ordinal));
+        Assert.Empty(source.Items);
+
+        source.SetFilter(new("name", DynamicTableViewFilterOperator.Equals, "alpha", StringComparison: StringComparison.OrdinalIgnoreCase));
+        Assert.Equal(["a"], source.Items.Cast<DynamicTableViewTestRow>().Select(static row => row.Id));
+    }
+
+    [Fact]
+    public void Ordinal_string_inequality_keeps_case_distinct_values()
+    {
+        using SourceCache<DynamicTableViewTestRow, string> cache = new(static row => row.Id);
+        using var source = DynamicTableViewTestData.CreateSource(cache);
+        cache.AddOrUpdate(DynamicTableViewTestData.CreateRows());
+
+        source.SetFilter(new("name", DynamicTableViewFilterOperator.NotEquals, "alpha", StringComparison: StringComparison.Ordinal));
+
+        Assert.Equal(["a", "b", "c"], source.Items.Cast<DynamicTableViewTestRow>().Select(static row => row.Id));
+    }
+
     [Theory]
     [InlineData(DynamicTableViewFilterOperator.Equals, 20, "b")]
     [InlineData(DynamicTableViewFilterOperator.NotEquals, 20, "a,c")]

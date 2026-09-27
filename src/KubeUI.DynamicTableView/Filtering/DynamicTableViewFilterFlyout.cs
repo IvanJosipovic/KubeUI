@@ -12,6 +12,8 @@ internal sealed partial class DynamicTableViewFilterFlyout : TemplatedControl
     private Button? _applyButton;
     private Button? _clearButton;
     private ListBox? _multipleChoiceBox;
+    private object?[] _selectedMultipleChoiceValues = [];
+    private StringComparison _stringComparison = StringComparison.OrdinalIgnoreCase;
 
     public DynamicTableViewFilterFlyout(DynamicTableViewColumn column, IDynamicTableViewSource source)
     {
@@ -28,6 +30,7 @@ internal sealed partial class DynamicTableViewFilterFlyout : TemplatedControl
             .ToArray();
         SelectedOperatorChoice = OperatorChoices.FirstOrDefault();
         Classes.Add("dynamic-table-view-filter-flyout");
+        RestoreFilterState();
         UpdateInputVisibility();
     }
 
@@ -87,6 +90,7 @@ internal sealed partial class DynamicTableViewFilterFlyout : TemplatedControl
             _clearButton.Click += ClearButtonOnClick;
         if (_multipleChoiceBox is not null)
             _multipleChoiceBox.SelectionChanged += MultipleChoiceBoxOnSelectionChanged;
+        RestoreMultipleChoiceSelection();
     }
 
     partial void OnSelectedOperatorChoicePropertyChanged(DynamicTableViewFilterChoice? newValue)
@@ -166,7 +170,7 @@ internal sealed partial class DynamicTableViewFilterFlyout : TemplatedControl
             }
         }
 
-        _source.SetFilter(new(_column.Key, filterOperator, value, secondValue, values));
+        _source.SetFilter(new(_column.Key, filterOperator, value, secondValue, values, _stringComparison));
     }
 
     private void ClearButtonOnClick(object? sender, RoutedEventArgs e)
@@ -177,6 +181,65 @@ internal sealed partial class DynamicTableViewFilterFlyout : TemplatedControl
         if (SelectedOperatorChoice?.Value is DynamicTableViewFilterOperator selectedOperator && selectedOperator == DynamicTableViewFilterOperator.In)
             UpdateInputVisibility();
     }
+
+    private void RestoreFilterState()
+    {
+        DynamicTableViewFilterDescriptor? descriptor = null;
+        foreach (var filter in _source.FilterDescriptors)
+        {
+            if (string.Equals(filter.ColumnKey, _column.Key, StringComparison.Ordinal))
+            {
+                descriptor = filter;
+                break;
+            }
+        }
+
+        if (descriptor is null)
+            return;
+
+        _stringComparison = descriptor.StringComparison;
+        SelectedOperatorChoice = OperatorChoices.FirstOrDefault(choice =>
+            choice.Value is DynamicTableViewFilterOperator filterOperator && filterOperator == descriptor.Operator);
+
+        if (FilterChoices.Count > 0)
+        {
+            if (descriptor.Operator == DynamicTableViewFilterOperator.In)
+            {
+                _selectedMultipleChoiceValues = descriptor.Values?.ToArray() ?? [];
+            }
+            else
+            {
+                SelectedChoice = FilterChoices.FirstOrDefault(choice => Equals(choice.Value, descriptor.Value));
+            }
+            return;
+        }
+
+        FirstValueText = FormatFilterValue(descriptor.Value);
+        SecondValueText = FormatFilterValue(descriptor.SecondValue);
+    }
+
+    private void RestoreMultipleChoiceSelection()
+    {
+        if (_multipleChoiceBox is null || _selectedMultipleChoiceValues.Length == 0)
+            return;
+
+        foreach (var value in _selectedMultipleChoiceValues)
+        {
+            var choice = FilterChoices.FirstOrDefault(candidate => Equals(candidate.Value, value));
+            if (choice is not null && !_multipleChoiceBox.SelectedItems.Contains(choice))
+                _multipleChoiceBox.SelectedItems.Add(choice);
+        }
+    }
+
+    private static string? FormatFilterValue(object? value)
+        => value switch
+        {
+            null => null,
+            DateTime date => date.ToString("O", CultureInfo.InvariantCulture),
+            DateTimeOffset date => date.ToString("O", CultureInfo.InvariantCulture),
+            IFormattable formattable => formattable.ToString(null, CultureInfo.InvariantCulture),
+            _ => value.ToString()
+        };
 
     private bool TryParseValue(string text, out object? value)
     {

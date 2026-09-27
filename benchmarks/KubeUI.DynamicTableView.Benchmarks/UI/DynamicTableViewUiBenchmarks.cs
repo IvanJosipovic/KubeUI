@@ -49,7 +49,9 @@ public class DynamicTableViewUiBenchmarks : IDisposable
         _window.Show();
         Dispatcher.UIThread.RunJobs();
         _scrollViewer = _table.GetVisualDescendants().OfType<ScrollViewer>().First();
-        var header = (Control)_table.Columns[1].Header!;
+        var header = _table.GetVisualDescendants().OfType<Control>()
+            .Single(static control => control.Classes.Contains("dynamic-table-view-header") &&
+                control.DataContext is DynamicTableViewColumn column && column.Key == "name");
         _filterButton = header.GetVisualDescendants().OfType<Button>()
             .Single(static button => button.Classes.Contains("dynamic-table-view-filter-button"));
     }

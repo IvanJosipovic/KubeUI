@@ -876,6 +876,7 @@ public sealed class DynamicTableViewUiTests
             ApplyStandardFilter(table, 0, 0, "ph");
             Assert.Equal("ph", Assert.Single(source.FilterDescriptors).Value);
             Assert.Equal(["a"], source.Items.Cast<DynamicTableViewTestRow>().Select(static row => row.Id));
+            AssertStandardFilterState(table, 0, 0, "ph");
 
             source.ClearFilters();
             ApplyStandardFilter(table, 1, 3, "20");
@@ -1022,6 +1023,22 @@ public sealed class DynamicTableViewUiTests
             .Single(static button => button.Name == "PART_ApplyButton")
             .RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         Dispatcher.UIThread.RunJobs();
+        flyout.Hide();
+    }
+
+    private static void AssertStandardFilterState(DynamicTableView table, int columnIndex, int operatorIndex, string firstValue)
+    {
+        var header = GetHeaderControl(table, columnIndex);
+        var filterButton = Assert.Single(header.GetVisualDescendants().OfType<Button>()
+            .Where(static button => button.Classes.Contains("dynamic-table-view-filter-button")));
+        var flyout = Assert.IsType<Flyout>(FlyoutBase.GetAttachedFlyout(filterButton));
+        FlyoutBase.ShowAttachedFlyout(filterButton);
+        Dispatcher.UIThread.RunJobs();
+
+        var content = Assert.IsAssignableFrom<Control>(flyout.Content);
+        Assert.Equal(operatorIndex, content.GetVisualDescendants().OfType<ComboBox>().First().SelectedIndex);
+        Assert.Equal(firstValue, content.GetVisualDescendants().OfType<TextBox>()
+            .Single(static textBox => textBox.Name == "PART_ValueBox").Text);
         flyout.Hide();
     }
 }
