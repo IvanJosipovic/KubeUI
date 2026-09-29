@@ -54,4 +54,16 @@ public sealed class ViewLocatorTests
         view.ShouldBeOfType<ResourceListView>();
         measurements.ShouldContain("ResourceListView<V1Pod>");
     }
+
+    [AvaloniaFact]
+    public void Build_ResolvesGenericResourcePropertiesViewWithoutRuntimeTypeDiscovery()
+    {
+        var services = Application.Current.GetTestServices();
+        var locator = services.GetRequiredService<ViewLocator>();
+        using var viewModel = new ResourcePropertiesViewModel<V1Pod>();
+
+        var view = locator.Build(viewModel);
+
+        view.ShouldBeOfType<ResourcePropertiesView<V1Pod>>();
+    }
 }

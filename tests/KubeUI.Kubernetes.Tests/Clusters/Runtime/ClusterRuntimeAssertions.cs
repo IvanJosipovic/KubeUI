@@ -512,6 +512,7 @@ public abstract class ClusterRuntimeAssertions
                 cancellationToken: TestContext.Current.CancellationToken);
 
             var item = items.Items.Single();
+            using var specDocument = JsonDocument.Parse("""{"someString":"updatedValue"}""");
             var updated = new GenericKubernetesObject
             {
                 ApiVersion = item.ApiVersion,
@@ -519,7 +520,7 @@ public abstract class ClusterRuntimeAssertions
                 Metadata = item.Metadata,
                 Properties = new Dictionary<string, JsonElement>
                 {
-                    ["spec"] = JsonSerializer.SerializeToElement(new { someString = "updatedValue" }),
+                    ["spec"] = specDocument.RootElement.Clone(),
                 },
             };
 

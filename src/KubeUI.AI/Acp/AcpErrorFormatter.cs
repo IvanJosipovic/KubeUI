@@ -1,5 +1,4 @@
 using dotacp.protocol;
-using Newtonsoft.Json;
 using StreamJsonRpc;
 
 namespace KubeUI.AI.Acp;
@@ -38,7 +37,7 @@ internal static class AcpErrorFormatter
 
         var details = data is null
             ? string.Empty
-            : $" Details: {JsonConvert.SerializeObject(data)}";
+            : $" Details: {AcpJsonValue.Serialize(data)}";
         return $"ACP error {code}: {message}.{details}";
     }
 

@@ -52,6 +52,7 @@ internal static class KubeUIWalkthroughRecorder
     public static bool IsRecordingEnabled =>
         !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("KUBEUI_DOCS_VIDEO_DIR"));
 
+    [Obsolete]
     public static async Task RecordAsync(
         string theme,
         string clipName,
@@ -1499,6 +1500,7 @@ internal static class KubeUIWalkthroughRecorder
             ?? throw new InvalidOperationException("Could not locate the YAML editor caret in the window.");
     }
 
+    [Obsolete]
     private static async Task<Point> OpenNavigationSectionsAsync(
         string name,
         Control root,
@@ -1595,6 +1597,7 @@ internal static class KubeUIWalkthroughRecorder
         }
     }
 
+    [Obsolete]
     private static async Task<Point> ParkYamlPointerAsync(
         Window window,
         CursorOverlay cursor,

@@ -12,7 +12,7 @@ using KubeUI.Kubernetes.Serialization;
 
 namespace KubeUI.Avalonia.Features.Resources.Yaml;
 
-public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
+public partial class ResourceYamlViewModel : ViewModelBase, IClusterWorkspaceContext, IDisposable
 {
     public event EventHandler? CompletionRequested;
 

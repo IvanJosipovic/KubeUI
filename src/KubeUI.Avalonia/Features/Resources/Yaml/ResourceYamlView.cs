@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Markup.Xaml.MarkupExtensions;
@@ -163,6 +164,7 @@ public sealed partial class ResourceYamlView : ViewBase<ResourceYamlViewModel>
                 CreateEditorMenuItem(vm, editor, Assets.Resources.ResourceYamlView_Action_Redo, new KeyGesture(Key.Y, KeyModifiers.Control), Icon.ArrowRedo, "Redo", requiresEditMode: true));
     }
 
+    [RequiresUnreferencedCode("Calls Avalonia.Xaml.Interactions.Core.EventTriggerBehavior.EventTriggerBehavior()")]
     private static MenuItem CreateEditorMenuItem(ResourceYamlViewModel vm, TextEditor editor, string header, KeyGesture? hotKey, Icon icon, string methodName, bool requiresEditMode)
     {
         var item = new MenuItem()

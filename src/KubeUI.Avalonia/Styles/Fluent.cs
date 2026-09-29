@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using Avalonia.Controls.Documents;
 using Avalonia.Controls.Shapes;
@@ -11,6 +12,7 @@ using Dock.Avalonia.Themes.Fluent;
 using Dock.Model.Core;
 using FluentAvalonia.Styling;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
+using KubeUI.Avalonia.Infrastructure.Presentation;
 using Semi.Avalonia;
 using Ursa.Controls;
 using Ursa.Themes.Semi;
@@ -41,7 +43,7 @@ public sealed class Fluent : AvaloniaStyles
         Add(CreateStyleInclude("avares://AvaloniaEdit/Themes/Fluent/AvaloniaEdit.xaml"));
         Add(CreateStyleInclude("avares://LiveMarkdown.Avalonia/Styles.axaml"));
         Add(new DockFluentTheme());
-        Add(CreateStyleInclude("avares://SvcSystems.UI.Terminal/Styles/Colors.axaml"));
+        Add(new AvaloniaStyles { Resources = TerminalPalette.CreateResources() });
 
         Add(new Style<ToolControl>()
             .Background(new DynamicResourceExtension("SystemRegionBrush")));
@@ -291,6 +293,7 @@ public sealed class Fluent : AvaloniaStyles
         RegionColor = Color("#1E1E1E")
     };
 
+    [RequiresUnreferencedCode("Calls Avalonia.Markup.Xaml.Styling.StyleInclude.StyleInclude(Uri)")]
     private static StyleInclude CreateStyleInclude(string source) => new(s_baseUri) { Source = new Uri(source) };
 
     private static Color Color(string value) => global::Avalonia.Media.Color.Parse(value);
@@ -331,6 +334,6 @@ public sealed class Fluent : AvaloniaStyles
 
     private static ClusterWorkspace? GetCluster(IDockable dockable)
     {
-        return dockable.GetType().GetProperty("Cluster")?.GetValue(dockable) as ClusterWorkspace;
+        return (dockable as IClusterWorkspaceContext)?.Cluster;
     }
 }

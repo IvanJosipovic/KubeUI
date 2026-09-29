@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO.Pipelines;
 using System.Text;
+using System.Text.Json;
 using dotacp.protocol;
 using KubeUI.AI.Acp;
 using KubeUI.AI.Agents;
@@ -21,7 +22,7 @@ public sealed class AcpAgentIntegrationTests
         var exception = new AcpException(
             -32602,
             "Invalid params",
-            new { type = new { errors = new[] { "Expected http" } } });
+            ParseJson("""{"type":{"errors":["Expected http"]}}"""));
 
         AcpErrorFormatter.Format(exception).ShouldBe(
             "ACP error -32602: Invalid params. Details: {\"type\":{\"errors\":[\"Expected http\"]}}");
@@ -29,7 +30,7 @@ public sealed class AcpAgentIntegrationTests
         var remoteException = new RemoteInvocationException(
             "Invalid params",
             -32602,
-            new { headers = new { errors = new[] { "Expected object" } } });
+            ParseJson("""{"headers":{"errors":["Expected object"]}}"""));
 
         AcpErrorFormatter.Format(remoteException).ShouldBe(
             "ACP error -32602: Invalid params. Details: {\"headers\":{\"errors\":[\"Expected object\"]}}");
@@ -39,7 +40,7 @@ public sealed class AcpAgentIntegrationTests
     public async Task acp_session_creation_exposes_structured_error_details()
     {
         await using var process = new InMemoryAcpProcess(
-            sessionCreationException: new AcpException(-32602, "Invalid params", new { type = "http" }));
+            sessionCreationException: new AcpException(-32602, "Invalid params", ParseJson("""{"type":"http"}""")));
         var agent = new AcpAgent(
             new AcpAgentDefinition { Id = "copilot", Name = "GitHub Copilot", Executable = "copilot" },
             () => process);
@@ -48,6 +49,12 @@ public sealed class AcpAgentIntegrationTests
 
         exception.Message.ShouldContain("ACP error -32000: Invalid params.");
         exception.Message.ShouldContain("AcpException");
+    }
+
+    private static JsonElement ParseJson(string json)
+    {
+        using var document = JsonDocument.Parse(json);
+        return document.RootElement.Clone();
     }
 
     [Fact]
