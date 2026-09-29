@@ -58,7 +58,7 @@ dotnet_style_qualification_for_event = false:suggestion
 # prefer var
 csharp_style_var_for_built_in_types = true
 csharp_style_var_when_type_is_apparent = true
-csharp_style_var_elsewhere = true:suggestion
+csharp_style_var_elsewhere = true:error
 
 # use language keywords instead of BCL types
 dotnet_style_predefined_type_for_locals_parameters_members = true:suggestion

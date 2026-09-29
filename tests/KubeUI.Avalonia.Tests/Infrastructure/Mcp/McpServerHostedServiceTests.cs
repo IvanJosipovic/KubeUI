@@ -1,5 +1,6 @@
 using System.Net.Http.Headers;
 using System.Net.Sockets;
+using System.Text.Json;
 using KubeUI.AI.Permissions;
 using KubeUI.Avalonia.Infrastructure.Mcp;
 using KubeUI.Avalonia.Shell.Navigation;
@@ -58,6 +59,53 @@ public sealed class McpServerHostTests
             response.IsSuccessStatusCode.ShouldBeTrue(await response.Content.ReadAsStringAsync());
             var body = await response.Content.ReadAsStringAsync();
             body.ShouldContain("serverInfo");
+        }
+        finally
+        {
+            await host.StopAsync(CancellationToken.None);
+        }
+    }
+
+    [Theory]
+    [InlineData("resources/list", "resources")]
+    [InlineData("resources/templates/list", "resourceTemplates")]
+    public async Task enabled_mcp_host_returns_empty_resource_catalog_for_discovery(
+        string method,
+        string resultProperty)
+    {
+        var port = GetAvailablePort();
+        var settings = new Settings
+        {
+            McpServerEnabled = true,
+            McpServerPort = port
+        };
+        using var host = Program.CreateStartedHost([], includeOptionalServices: false,
+            mcpPortOverride: port, mcpEnabledOverride: true);
+
+        try
+        {
+            using var client = new HttpClient();
+            using var request = new HttpRequestMessage(HttpMethod.Post, McpServerConfiguration.GetEndpoint(settings));
+            request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("text/event-stream"));
+            request.Headers.Add("MCP-Protocol-Version", "2025-06-18");
+            request.Content = JsonContent.Create(new
+            {
+                jsonrpc = "2.0",
+                id = 3,
+                method,
+                @params = new { }
+            });
+
+            using var response = await client.SendAsync(request);
+            var body = await response.Content.ReadAsStringAsync();
+            response.IsSuccessStatusCode.ShouldBeTrue(body);
+
+            var json = body.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries)
+                .Single(line => line.StartsWith("data: ", StringComparison.Ordinal))[6..];
+            using var document = JsonDocument.Parse(json);
+            document.RootElement.GetProperty("result").GetProperty(resultProperty)
+                .GetArrayLength().ShouldBe(0);
         }
         finally
         {

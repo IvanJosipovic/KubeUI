@@ -22,7 +22,7 @@ public sealed partial class V1NetworkPolicyConfig : ResourceConfigBase<V1Network
                 Key = "policy-types",
                 Name = Assets.Resources.V1NetworkPolicyConfig_Policy_Types!,
                 Field = x => x.Spec?.PolicyTypes is { Count: > 0 } policyTypes ? string.Join(", ", policyTypes) : "",
-                Width = "*",
+                Width = 1, WidthMode = DynamicTableViewWidthMode.Star,
             },
             AgeColumn(),
         ];

@@ -1,23 +1,23 @@
-using Avalonia.Headless.XUnit;
+using System.Text.Json;
 using Avalonia.Controls;
+using Avalonia.Headless.XUnit;
 using Avalonia.Media;
 using Avalonia.Styling;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
-using System.Text.Json;
 using k8s;
 using k8s.Models;
 using KubeUI.Avalonia.Features.Resources.Metrics.Controls;
 using KubeUI.Avalonia.Infrastructure.Threading;
 using KubeUI.Avalonia.Resources;
-using NodeResourceConfig = KubeUI.Avalonia.Resources.Core.v1.Node.V1NodeConfig;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Shouldly;
-using PodCpuHistoryCell = KubeUI.Avalonia.Resources.Workloads.v1.Pod.MetricsHistoryCPUCellView;
-using PodMemoryHistoryCell = KubeUI.Avalonia.Resources.Workloads.v1.Pod.MetricsHistoryMemoryCellView;
 using NodeCpuHistoryCell = KubeUI.Avalonia.Resources.Core.v1.Node.MetricsHistoryCPUCellView;
 using NodeMemoryHistoryCell = KubeUI.Avalonia.Resources.Core.v1.Node.MetricsHistoryMemoryCellView;
+using NodeResourceConfig = KubeUI.Avalonia.Resources.Core.v1.Node.V1NodeConfig;
+using PodCpuHistoryCell = KubeUI.Avalonia.Resources.Workloads.v1.Pod.MetricsHistoryCPUCellView;
+using PodMemoryHistoryCell = KubeUI.Avalonia.Resources.Workloads.v1.Pod.MetricsHistoryMemoryCellView;
 
 namespace KubeUI.Avalonia.Tests.Resources.Workloads.v1.Pod;
 
@@ -138,7 +138,7 @@ public sealed class PodMetricCellTests
             },
         };
         var scrollViewer = new ScrollViewer { Content = content };
-        global::Avalonia.Rect? effectiveViewport = null;
+        Rect? effectiveViewport = null;
         cell.EffectiveViewportChanged += (_, args) => effectiveViewport = args.EffectiveViewport;
         using var window = Application.Current.CreateTestWindow(content: scrollViewer);
         window.Width = 200;
@@ -148,10 +148,10 @@ public sealed class PodMetricCellTests
         cell.Initialize(fixture.Workspace);
         Dispatcher.UIThread.RunJobs();
         effectiveViewport.ShouldNotBeNull();
-        effectiveViewport!.Value.Intersects(new global::Avalonia.Rect(cell.Bounds.Size)).ShouldBeFalse();
+        effectiveViewport!.Value.Intersects(new Rect(cell.Bounds.Size)).ShouldBeFalse();
         queryClient.Queries.ShouldBe(0);
 
-        scrollViewer.Offset = new global::Avalonia.Vector(0, 500);
+        scrollViewer.Offset = new Vector(0, 500);
         await TestWait.UntilAsync(
             () => queryClient.Queries == 2,
             timeout: TimeSpan.FromSeconds(5),

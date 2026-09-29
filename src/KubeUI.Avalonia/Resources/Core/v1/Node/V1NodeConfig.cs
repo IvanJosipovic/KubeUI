@@ -27,7 +27,7 @@ public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>
                 Key = "instance-type",
                 Name = Assets.Resources.V1NodeConfig_Instance_Type!,
                 Field = x => x?.Metadata?.Labels?.TryGetValue("node.kubernetes.io/instance-type", out var value) == true ? value : string.Empty,
-                Width = nameof(DataGridLengthUnitType.SizeToCells)
+                WidthMode = DynamicTableViewWidthMode.Cells
             },
             new ResourceListColumn<V1Node, decimal>()
             {
@@ -36,7 +36,8 @@ public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>
                 CustomControl = typeof(MetricsHistoryCPUCellView),
                 Field = x => x?.Status ?.Capacity ?.TryGetValue("cpu", out var value) == true && value != null ? value.ToDecimal() : 0,
                 Display = x => x?.Status?.Capacity?.TryGetValue("cpu", out var value) == true && value != null ? value.ToDecimal().ToString("0.##") + "c" : "0c",
-                Width = "80"
+                Width = 80,
+                WidthMode = DynamicTableViewWidthMode.Pixel
             },
             new ResourceListColumn<V1Node, decimal>()
             {
@@ -45,7 +46,8 @@ public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>
                 CustomControl = typeof(MetricsHistoryMemoryCellView),
                 Field = x => x?.Status ?.Capacity ?.TryGetValue("memory", out var value) == true && value != null ? value.ToDecimal() : 0,
                 Display = x => x?.Status?.Capacity?.TryGetValue("memory", out var value) == true && value != null ? (value.ToDecimal() / 1048576 / 1024).ToString("0.##") + "Gi" : "0Gi",
-                Width = "80"
+                Width = 80,
+                WidthMode = DynamicTableViewWidthMode.Pixel
             },
             new ResourceListColumn<V1Node, decimal>()
             {
@@ -53,28 +55,28 @@ public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>
                 Name = Assets.Resources.V1NodeConfig_Disk!,
                 Field = x => x?.Status ?.Capacity ?.TryGetValue("ephemeral-storage", out var value) == true && value != null ? value.ToDecimal() : 0,
                 Display = x => x?.Status?.Capacity?.TryGetValue("ephemeral-storage", out var value) == true && value != null ? (value.ToDecimal() / 1048576 / 1024).ToString("0.##") + "Gi" : "0Gi",
-                Width = nameof(DataGridLengthUnitType.SizeToCells)
+                WidthMode = DynamicTableViewWidthMode.Cells
             },
             new ResourceListColumn<V1Node, string>()
             {
                 Key = "taints",
                 Name = Assets.Resources.V1NodeConfig_Taints!,
                 Field = x => x?.Spec?.Taints is { Count: > 0 } taints ? string.Join(", ", taints.Select(x => $"{x.Key}={x.Effect}")) : "",
-                Width = nameof(DataGridLengthUnitType.SizeToHeader)
+                WidthMode = DynamicTableViewWidthMode.Header
             },
             new ResourceListColumn<V1Node, string>()
             {
                 Key = "version",
                 Name = Assets.Resources.V1NodeConfig_Version!,
                 Field = x => x?.Status?.NodeInfo?.KubeletVersion ?? string.Empty,
-                Width = nameof(DataGridLengthUnitType.SizeToHeader)
+                WidthMode = DynamicTableViewWidthMode.Header
             },
             new ResourceListColumn<V1Node, string>()
             {
                 Key = "status",
                 Name = Assets.Resources.V1NodeConfig_Status!,
                 Field = x => x?.Status?.Conditions?.FirstOrDefault(x => x.Type == "Ready")?.Reason ?? string.Empty,
-                Width = nameof(DataGridLengthUnitType.SizeToCells)
+                WidthMode = DynamicTableViewWidthMode.Cells
             },
             AgeColumn(),
         ];

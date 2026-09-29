@@ -6,7 +6,7 @@
   <ItemGroup>
     <PackageReference Include="CliWrap" Version="3.10.5" />
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
-    <PackageReference Include="Moq" Version="4.20.72" />
+    <PackageReference Include="Moq" Version="4.21.0" />
     <PackageReference Include="Shouldly" Version="4.3.0" />
     <PackageReference Include="xunit.v3.extensibility.core" Version="3.2.2" />
   </ItemGroup>
@@ -18,6 +18,12 @@
   <ItemGroup>
     <InternalsVisibleTo Include="KubeUI.Kubernetes.Tests" />
     <InternalsVisibleTo Include="KubeUI.Benchmarks" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Kubernetes\Transport\Assets\pod-openapi-v1-schemas.json">
+      <LogicalName>KubeUI.Testing.Kubernetes.Transport.Assets.pod-openapi-v1-schemas.json</LogicalName>
+    </EmbeddedResource>
   </ItemGroup>
 
   <ItemGroup>

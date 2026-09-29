@@ -29,7 +29,7 @@ public abstract class ClusterScenarioAssertions
     protected async Task DisconnectAndReconnectRestoresClusterCore(KubernetesBackend backend)
     {
         await using var harness = await CreateHarnessAsync(backend);
-        IClusterRuntime cluster = harness.Cluster;
+        var cluster = harness.Cluster;
 
         await cluster.Disconnect();
 

@@ -10,10 +10,6 @@ public sealed class TestSettingsService : SettingsService
     {
     }
 
-    public override void ApplySettings()
-    {
-    }
-
     public override void SaveSettings()
     {
     }

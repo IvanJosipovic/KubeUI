@@ -1,5 +1,5 @@
-using System.Text.Json;
 using System.Net;
+using System.Text.Json;
 using Azure.Core;
 using k8s;
 using Microsoft.Extensions.DependencyInjection;

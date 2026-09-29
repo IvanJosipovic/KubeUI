@@ -156,9 +156,9 @@ internal sealed class AcpTerminalHandler(IAgentPermissionService permissionServi
         public void StartCapture() => _captureTask = CaptureOutputAsync(this);
 
         public void Append(ReadOnlySpan<char> value)
+        {
+            lock (_gate)
             {
-                lock (_gate)
-                {
                 _output.Append(value);
                 _outputByteCount += Encoding.UTF8.GetByteCount(value);
                 if (_outputByteLimit is not { } limit)

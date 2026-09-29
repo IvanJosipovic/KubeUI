@@ -1,0 +1,107 @@
+/**
+ * CSS files with the .module.css suffix will be treated as CSS modules
+ * and scoped locally.
+ */
+
+.heroBanner {
+  padding: 7rem 0;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(140deg, #0c1b2a, #15334a 62%, #246b79);
+  color: #ffffff;
+}
+
+.heroBanner :global(.hero__title) {
+  font-size: clamp(3rem, 8vw, 5.5rem);
+  letter-spacing: -0.055em;
+}
+
+.heroBanner :global(.hero__subtitle) {
+  max-width: 42rem;
+  margin: 1rem auto 2rem;
+  color: #b4b4b4;
+  font-size: 1.25rem;
+}
+
+@media screen and (max-width: 996px) {
+  .heroBanner {
+    padding: 2rem;
+  }
+
+}
+
+.buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  justify-content: center;
+}
+
+.downloadButton {
+  color: #ffffff;
+  border-color: #ffffff;
+}
+
+.downloadButton:hover,
+.downloadButton:focus-visible {
+  color: #0c1b2a;
+  background-color: #ffffff;
+  border-color: #ffffff;
+}
+
+.downloadSection {
+  padding: 3.5rem 0 5rem;
+}
+
+.sectionHeading {
+  margin-bottom: 1.25rem;
+}
+
+.featureSection {
+  padding-bottom: 1rem;
+}
+
+.featureGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.featureCard {
+  padding: 1.25rem;
+  border: 1px solid var(--ifm-color-emphasis-300);
+  border-radius: 0.75rem;
+  background: var(--ifm-background-surface-color);
+}
+
+.featureCard h3 {
+  margin-bottom: 0.65rem;
+  font-size: 1.15rem;
+}
+
+.featureCard p {
+  margin-bottom: 0.75rem;
+  color: var(--ifm-color-emphasis-700);
+}
+
+.featureLink {
+  font-weight: 600;
+}
+
+.screenshot {
+  display: block;
+  width: min(100%, 1100px);
+  height: auto;
+  margin: 3rem auto;
+  border: 1px solid var(--ifm-color-emphasis-300);
+  border-radius: 0.75rem;
+  box-shadow: 0 1.5rem 4rem rgb(9 24 37 / 18%);
+}
+
+@media screen and (max-width: 600px) {
+  .featureGrid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -41,14 +41,14 @@ public sealed partial class V1ServiceConfig : ResourceConfigBase<V1Service>
                 Key = "type",
                 Name = Assets.Resources.V1ServiceConfig_Type!,
                 Field = x => x.Spec.Type,
-                Width = nameof(DataGridLengthUnitType.SizeToCells)
+                WidthMode = DynamicTableViewWidthMode.Cells
             },
             new ResourceListColumn<V1Service, string>()
             {
                 Key = "cluster-ip",
                 Name = Assets.Resources.V1ServiceConfig_Cluster_IP!,
                 Field = x => x.Spec.ClusterIP,
-                Width = nameof(DataGridLengthUnitType.SizeToCells)
+                WidthMode = DynamicTableViewWidthMode.Cells
             },
             new ResourceListColumn<V1Service, int>()
             {
@@ -56,7 +56,7 @@ public sealed partial class V1ServiceConfig : ResourceConfigBase<V1Service>
                 Name = Assets.Resources.V1ServiceConfig_Ports!,
                 Display = x => x.Spec?.Ports is { Count: > 0 } ports ? string.Join(", ", ports.Select(x => $"{x.Port}{(string.IsNullOrEmpty(x.Name) ? "" : ":" + x.Name)}/{x.Protocol}")) : "",
                 Field = x => x.Spec?.Ports?.FirstOrDefault()?.Port ?? 0,
-                Width = nameof(DataGridLengthUnitType.SizeToCells)
+                WidthMode = DynamicTableViewWidthMode.Cells
             },
             AgeColumn(),
         ];

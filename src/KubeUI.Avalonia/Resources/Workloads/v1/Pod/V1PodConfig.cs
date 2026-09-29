@@ -41,7 +41,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
                     Name = Assets.Resources.V1PodConfig_Containers!,
                     CustomControl = typeof(PodContainerCellView),
                     Field = x => (x.Spec?.Containers?.Count ?? 0) + (x.Spec?.InitContainers?.Count ?? 0),
-                    Width = nameof(DataGridLengthUnitType.SizeToCells)
+                    WidthMode = DynamicTableViewWidthMode.Cells
                 },
                 NamespaceColumn(),
                 new ResourceListColumn<V1Pod, int>()
@@ -49,28 +49,28 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
                     Key = "restarts",
                     Name = Assets.Resources.V1PodConfig_Restarts!,
                     Field = x => x?.Status?.ContainerStatuses?.Sum(x => x.RestartCount) ?? 0,
-                    Width = nameof(DataGridLengthUnitType.SizeToHeader)
+                    WidthMode = DynamicTableViewWidthMode.Header
                 },
                 new ResourceListColumn<V1Pod, string>()
                 {
                     Key = "controlled-by",
                     Name = Assets.Resources.V1PodConfig_Controlled_By!,
                     Field = x => x?.Metadata?.OwnerReferences?.FirstOrDefault()?.Name ?? "",
-                    Width = nameof(DataGridLengthUnitType.SizeToHeader)
+                    WidthMode = DynamicTableViewWidthMode.Header
                 },
                 new ResourceListColumn<V1Pod, string>()
                 {
                     Key = "node",
                     Name = Assets.Resources.V1PodConfig_Node!,
                     Field = x => x?.Spec?.NodeName ?? "",
-                    Width = nameof(DataGridLengthUnitType.SizeToHeader)
+                    WidthMode = DynamicTableViewWidthMode.Header
                 },
                 new ResourceListColumn<V1Pod, string>()
                 {
                     Key = "qos",
                     Name = Assets.Resources.V1PodConfig_QoS!,
                     Field = x => x?.Status?.QosClass ?? "",
-                    Width = nameof(DataGridLengthUnitType.SizeToCells)
+                    WidthMode = DynamicTableViewWidthMode.Cells
                 },
                 AgeColumn(),
                 new ResourceListColumn<V1Pod, string>()
@@ -79,7 +79,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
                     Name = Assets.Resources.V1PodConfig_Status!,
                     Field = x => x.Status?.Conditions?.FirstOrDefault(x => x.Type == "Ready")?.Status == "True" ? "Running" : x.Status?.Conditions?.FirstOrDefault(x => x.Type == "Ready")?.Reason ?? "Unknown",
                     CustomControl = typeof(PodStatusCellView),
-                    Width = nameof(DataGridLengthUnitType.SizeToHeader)
+                    WidthMode = DynamicTableViewWidthMode.Header
                 },
             ];
 
@@ -91,7 +91,8 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
                 Name = Assets.Resources.V1PodConfig_CPU!,
                 CustomControl = typeof(MetricsHistoryCPUCellView),
                 Field = x => Cluster.Runtime.PodMetrics.Where(y => y.Name() == x.Name() && y.Namespace() == x.Namespace()).MaxBy(y => y.Timestamp)?.Containers.Sum(z => z.Usage["cpu"]) ?? 0,
-                Width = "80"
+                Width = 80,
+                WidthMode = DynamicTableViewWidthMode.Pixel
             });
             cols.Insert(4, new ResourceListColumn<V1Pod, decimal>()
             {
@@ -99,7 +100,8 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
                 Name = Assets.Resources.V1PodConfig_Memory!,
                 CustomControl = typeof(MetricsHistoryMemoryCellView),
                 Field = x => Cluster.Runtime.PodMetrics.Where(y => y.Name() == x.Name() && y.Namespace() == x.Namespace()).MaxBy(y => y.Timestamp)?.Containers.Sum(z => z.Usage["memory"]) ?? 0,
-                Width = "80"
+                Width = 80,
+                WidthMode = DynamicTableViewWidthMode.Pixel
             });
         }
 

@@ -1,6 +1,4 @@
 using System.Text.Json;
-using KubeUI.Avalonia.Options;
-using KubeUI.Avalonia.Services.Settings;
 using Microsoft.Extensions.Logging.Abstractions;
 using Shouldly;
 

@@ -13,18 +13,8 @@ namespace KubeUI.Avalonia.Features.Resources.Properties;
 
 public partial class ResourcePropertiesView<T> : ViewBase<ResourcePropertiesViewModel<T>> where T : class, IKubernetesObject<V1ObjectMeta>, new()
 {
-    private readonly StackPanel _itemsPanel = new()
-    {
-        HorizontalAlignment = HorizontalAlignment.Stretch
-    };
-
-    private readonly StackPanel _actionsPanel = new()
-    {
-        Orientation = Orientation.Horizontal,
-        Spacing = 2,
-        Margin = new Thickness(2),
-        HorizontalAlignment = HorizontalAlignment.Left,
-    };
+    private StackPanel _itemsPanel = null!;
+    private StackPanel _actionsPanel = null!;
 
     private ScrollViewer? _scrollViewer;
     private INotifyPropertyChanged? _viewModel;
@@ -38,19 +28,21 @@ public partial class ResourcePropertiesView<T> : ViewBase<ResourcePropertiesView
     {
         ArgumentNullException.ThrowIfNull(vm);
 
+        _itemsPanel = new StackPanel()
+            .HorizontalAlignment(HorizontalAlignment.Stretch)
+            .Name("PART_Items", Scope);
+
+        _actionsPanel = new StackPanel()
+            .Orientation(Orientation.Horizontal)
+            .Spacing(2)
+            .Margin(2)
+            .HorizontalAlignment(HorizontalAlignment.Left)
+            .Name("PART_Actions", Scope);
+
         _scrollViewer = new ScrollViewer()
+            .Name("PART_ScrollViewer", Scope)
             .VerticalScrollBarVisibility(ScrollBarVisibility.Auto)
             .Content(_itemsPanel);
-
-        _itemsPanel.Name = "PART_Items";
-        _scrollViewer.Name = "PART_ScrollViewer";
-        var nameScope = new NameScope();
-        NameScope.SetNameScope(this, nameScope);
-        nameScope.Register(_itemsPanel.Name, _itemsPanel);
-        nameScope.Register(_scrollViewer.Name, _scrollViewer);
-
-        _actionsPanel.Name = "PART_Actions";
-        nameScope.Register(_actionsPanel.Name, _actionsPanel);
 
         return new Grid()
             .Rows("Auto,*")

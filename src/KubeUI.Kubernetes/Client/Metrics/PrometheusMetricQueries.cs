@@ -53,30 +53,35 @@ internal sealed class PrometheusMetricQueries(
             }
         }
 
-        if (!ownsRequest) return await task!.ConfigureAwait(false);
+        if (!ownsRequest)
+            return await task!.ConfigureAwait(false);
 
         try
         {
             var result = await task.ConfigureAwait(false);
             if (!result.HadRequestFailures)
             {
-                lock (_sync) _cache[key] = new CachedResult(timeProvider.GetUtcNow(), result);
+                lock (_sync)
+                    _cache[key] = new CachedResult(timeProvider.GetUtcNow(), result);
             }
             return result;
         }
         finally
         {
-            lock (_sync) _inflight.Remove(key);
+            lock (_sync)
+                _inflight.Remove(key);
         }
     }
 
     public async Task StopAsync()
     {
         Task[] requests;
-        lock (_sync) requests = _inflight.Values.Distinct().ToArray();
+        lock (_sync)
+            requests = _inflight.Values.Distinct().ToArray();
         if (requests.Length > 0)
         {
-            try { await Task.WhenAll(requests).ConfigureAwait(false); }
+            try
+            { await Task.WhenAll(requests).ConfigureAwait(false); }
             catch (OperationCanceledException) { }
             catch (Exception ex) { logger.LogDebug(ex, "Ignoring in-flight Prometheus request failure while stopping metrics."); }
         }
@@ -106,11 +111,13 @@ internal sealed class PrometheusMetricQueries(
         var response = await ExecuteAsync(cluster, endpoint, provider, query, start, end, stepSeconds, cancellationToken).ConfigureAwait(false);
         if (response == null || !string.Equals(response.Status, "success", StringComparison.Ordinal))
         {
-            if (response != null) logger.LogWarning("Prometheus returned status {Status} for metric {Metric} on cluster {Cluster}. Error type: {ErrorType}. Error: {Error}", response.Status, definition.Name, cluster.Name, response.ErrorType, response.Error);
+            if (response != null)
+                logger.LogWarning("Prometheus returned status {Status} for metric {Metric} on cluster {Cluster}. Error type: {ErrorType}. Error: {Error}", response.Status, definition.Name, cluster.Name, response.ErrorType, response.Error);
             return (definition.Name, [], true);
         }
         var series = NormalizeResultSet(definition.Name, response, frames, stepSeconds);
-        if (series.Count == 0) logger.LogDebug("Prometheus returned no series for metric {Metric} on cluster {Cluster}.", definition.Name, cluster.Name);
+        if (series.Count == 0)
+            logger.LogDebug("Prometheus returned no series for metric {Metric} on cluster {Cluster}.", definition.Name, cluster.Name);
         return (definition.Name, series, false);
     }
 
@@ -157,7 +164,8 @@ internal sealed class PrometheusMetricQueries(
 
     private static IReadOnlyList<MetricSeries> NormalizeResultSet(string name, PrometheusClientQueryRangeResponse response, int frames, int step)
     {
-        if (response.Data.Result.Length == 0) return [];
+        if (response.Data.Result.Length == 0)
+            return [];
         return response.Data.Result.Select(result => new MetricSeries
         {
             Name = name,
@@ -168,19 +176,23 @@ internal sealed class PrometheusMetricQueries(
 
     private static IReadOnlyList<MetricPoint> NormalizeSeries(IList<(DateTimeOffset Timestamp, double Value)> values, int frames, int step)
     {
-        if (values.Count == 0) return [];
+        if (values.Count == 0)
+            return [];
         var points = values.OrderBy(static item => item.Timestamp).Select(static item => new MetricPoint(item.Timestamp, item.Value)).ToList();
-        if (frames <= 0) return points;
+        if (frames <= 0)
+            return points;
         var normalized = new List<MetricPoint>(points);
         var cursor = points[0].Timestamp;
         var end = points[^1].Timestamp;
         while (cursor < end)
         {
             cursor = cursor.AddSeconds(step);
-            if (!normalized.Any(point => point.Timestamp == cursor)) normalized.Add(new MetricPoint(cursor, 0));
+            if (!normalized.Any(point => point.Timestamp == cursor))
+                normalized.Add(new MetricPoint(cursor, 0));
         }
         normalized.Sort(static (left, right) => left.Timestamp.CompareTo(right.Timestamp));
-        while (normalized.Count < frames) normalized.Insert(0, new MetricPoint(normalized[0].Timestamp.AddSeconds(-step), 0));
+        while (normalized.Count < frames)
+            normalized.Insert(0, new MetricPoint(normalized[0].Timestamp.AddSeconds(-step), 0));
         return normalized;
     }
 

@@ -1,5 +1,5 @@
-using Shouldly;
 using System.Text.Json;
+using Shouldly;
 
 namespace KubeUI.Kubernetes.Tests;
 

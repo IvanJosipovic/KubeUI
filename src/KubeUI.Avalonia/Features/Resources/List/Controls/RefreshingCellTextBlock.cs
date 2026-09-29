@@ -11,7 +11,6 @@ public abstract class RefreshingCellTextBlock : TextBlock
     {
         _refreshClock = refreshClock;
         Name = "CellTextBlock";
-        Margin = new Thickness(12, 0, 12, 0);
         VerticalAlignment = VerticalAlignment.Center;
         MaxLines = 1;
     }

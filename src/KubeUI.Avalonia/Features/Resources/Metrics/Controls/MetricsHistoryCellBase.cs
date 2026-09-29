@@ -1,10 +1,10 @@
+using Avalonia.VisualTree;
 using Humanizer;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Infrastructure.Threading;
 using KubeUI.Avalonia.Styles;
 using KubeUI.Kubernetes;
-using Avalonia.VisualTree;
 
 namespace KubeUI.Avalonia.Features.Resources.Metrics.Controls;
 

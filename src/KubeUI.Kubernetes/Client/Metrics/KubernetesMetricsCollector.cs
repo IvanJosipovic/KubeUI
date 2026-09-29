@@ -54,7 +54,8 @@ internal sealed class KubernetesMetricsCollector(
         _timer = null;
         if (_refreshTask is { } task)
         {
-            try { await task.ConfigureAwait(false); }
+            try
+            { await task.ConfigureAwait(false); }
             catch (OperationCanceledException) when (cancellation?.IsCancellationRequested == true) { }
             finally { _refreshTask = null; cancellation?.Dispose(); }
         }
@@ -116,7 +117,8 @@ internal sealed class KubernetesMetricsCollector(
         for (var i = metrics.Count - 1; i >= 0; i--)
         {
             var timestamp = getTimestamp(metrics[i]);
-            if (!timestamp.HasValue || timestamp.Value.ToUniversalTime() < cutoff) metrics.RemoveAt(i);
+            if (!timestamp.HasValue || timestamp.Value.ToUniversalTime() < cutoff)
+                metrics.RemoveAt(i);
         }
     }
 
@@ -127,12 +129,14 @@ internal sealed class KubernetesMetricsCollector(
         for (var i = stored.Count - 1; i >= 0; i--)
         {
             var metric = stored[i];
-            if (!known.Add((getKey(metric), getTimestamp(metric)!.Value.ToUniversalTime()))) stored.RemoveAt(i);
+            if (!known.Add((getKey(metric), getTimestamp(metric)!.Value.ToUniversalTime())))
+                stored.RemoveAt(i);
         }
         foreach (var metric in received)
         {
             var timestamp = getTimestamp(metric);
-            if (timestamp.HasValue && timestamp.Value.ToUniversalTime() >= cutoff && known.Add((getKey(metric), timestamp.Value.ToUniversalTime()))) stored.Add(metric);
+            if (timestamp.HasValue && timestamp.Value.ToUniversalTime() >= cutoff && known.Add((getKey(metric), timestamp.Value.ToUniversalTime())))
+                stored.Add(metric);
         }
     }
 }

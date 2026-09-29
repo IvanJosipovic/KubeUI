@@ -99,6 +99,8 @@ Releases are available for AMD64 and ARM64 on:
 
 Download binaries from [Releases](https://github.com/IvanJosipovic/KubeUI/releases/latest).
 
+Read the [KubeUI documentation](https://KubeUI.com) for setup and feature guides.
+
 ## Build
 
 Prerequisites:

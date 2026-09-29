@@ -24,7 +24,7 @@ public sealed partial class MetricTabViewModel : ObservableObject, IDisposable
 
     public MetricTabViewModel()
     {
-        SelectCommand = new CommunityToolkit.Mvvm.Input.RelayCommand(() => IsSelected = true);
+        SelectCommand = new RelayCommand(() => IsSelected = true);
     }
 
     internal void MergePanels(IReadOnlyList<MetricPanelSnapshot> snapshots, bool preserveMissing = false)

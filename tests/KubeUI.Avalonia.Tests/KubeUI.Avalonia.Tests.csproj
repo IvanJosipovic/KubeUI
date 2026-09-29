@@ -5,7 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Avalonia.Headless.XUnit" Version="12.1.2" />
+    <PackageReference Include="Avalonia.Headless.XUnit" Version="12.1.3" />
     <PackageReference Include="dotacp.client" Version="2026.7.19" PrivateAssets="all" />
     <PackageReference Include="dotacp.protocol" Version="2026.7.19" PrivateAssets="all" />
     <PackageReference Include="Microsoft.Testing.Extensions.CodeCoverage" Version="18.11.2" />

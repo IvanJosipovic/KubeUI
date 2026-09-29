@@ -76,7 +76,6 @@ public partial class PodContainerCellView : ViewBase<V1Pod>
         ArgumentNullException.ThrowIfNull(vm);
 
         return new ItemsControl()
-            .Margin(10, 0, 0, 0)
             .ItemsSource(this, x => x.ContainerStatuses)
             .ItemsPanel(new ItemsPanelTemplate()
             {

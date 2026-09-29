@@ -1,0 +1,42 @@
+/**
+ * Any CSS included here will be global. The classic template
+ * bundles Infima by default. Infima is a CSS framework designed to
+ * work well for content-centric websites.
+ */
+
+/* Match Fluent Accent from src/KubeUI.Avalonia/Styles/Fluent.cs. */
+:root {
+  --ifm-color-primary: #0073cf;
+  --ifm-color-primary-dark: #0065b8;
+  --ifm-color-primary-darker: #005ba6;
+  --ifm-color-primary-darkest: #00447c;
+  --ifm-color-primary-light: #1a82d5;
+  --ifm-color-primary-lighter: #338fda;
+  --ifm-color-primary-lightest: #66aae3;
+  --ifm-code-font-size: 95%;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
+}
+
+/* Use app's lighter Fluent blue in dark mode for readable links and accents. */
+[data-theme='dark'] {
+  --ifm-color-primary: #4fa3ff;
+  --ifm-color-primary-dark: #2788f2;
+  --ifm-color-primary-darker: #1478e8;
+  --ifm-color-primary-darkest: #0066cc;
+  --ifm-color-primary-light: #66afff;
+  --ifm-color-primary-lighter: #7bbaff;
+  --ifm-color-primary-lightest: #9ccaff;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
+}
+
+.theme-video--dark {
+  display: none;
+}
+
+html[data-theme='dark'] .theme-video--light {
+  display: none;
+}
+
+html[data-theme='dark'] .theme-video--dark {
+  display: block;
+}

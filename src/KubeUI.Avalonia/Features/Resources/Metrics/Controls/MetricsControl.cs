@@ -2,8 +2,8 @@ using System.Collections.Specialized;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using Avalonia.Automation;
-using Avalonia.Controls.Templates;
 using Avalonia.Controls.Primitives;
+using Avalonia.Controls.Templates;
 using Avalonia.Markup.Xaml.Templates;
 using Avalonia.VisualTree;
 using FluentIcons.Avalonia;
@@ -208,7 +208,7 @@ public sealed partial class MetricsControl : UserControl, IInitializeCluster, IN
             .Series(CompiledBinding.Create<MetricsControl, IEnumerable<ISeries>>(x => x.SelectedPanel!.Series, source: this))
             .XAxes(CompiledBinding.Create<MetricsControl, ICartesianAxis[]>(x => x.SelectedPanel!.XAxes, source: this))
             .YAxes(CompiledBinding.Create<MetricsControl, ICartesianAxis[]>(x => x.SelectedPanel!.YAxes, source: this))
-            .Behaviors(new Features.Resources.Properties.Behaviors.ChartWheelScrollBehavior());
+            .Behaviors(new Properties.Behaviors.ChartWheelScrollBehavior());
 
         var metricsGrid = new Grid()
             .Rows("Auto,*")
@@ -618,7 +618,7 @@ public sealed partial class MetricsControl : UserControl, IInitializeCluster, IN
                 ShowTabs = false;
                 ShowTimeRangeSelector = false;
                 ShowStatus = true;
-            StatusText = descriptor.EmptyState ?? NoMetricsStatusText;
+                StatusText = descriptor.EmptyState ?? NoMetricsStatusText;
             });
             return;
         }

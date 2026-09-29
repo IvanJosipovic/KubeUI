@@ -1,8 +1,10 @@
 using System.Globalization;
 using Avalonia.Controls;
+using Avalonia.Controls.Shapes;
 using Avalonia.Headless.XUnit;
 using Avalonia.Media;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using k8s.Models;
 using KubeUI.Avalonia.Converters;
 using Shouldly;
@@ -11,6 +13,26 @@ namespace KubeUI.Avalonia.Tests.Features.Workloads.Pod;
 
 public sealed class PodContainerCellTests
 {
+    [AvaloniaFact]
+    public async Task container_status_items_have_no_outer_margin_and_keep_dot_spacing()
+    {
+        var view = new PodContainerCellView { DataContext = CreateContainerPod("pod", "Running") };
+        var window = new Window { Content = view };
+
+        try
+        {
+            window.Show();
+            await TestApplicationExtensions.WaitForUiAsync();
+
+            view.GetVisualDescendants().OfType<ItemsControl>().Single().Margin.ShouldBe(default(Thickness));
+            view.GetVisualDescendants().OfType<Ellipse>().Single().Margin.ShouldBe(new Thickness(0, 0, 4, 0));
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
     [AvaloniaFact]
     public async Task pod_container_cell_refreshes_when_data_context_is_replaced()
     {
