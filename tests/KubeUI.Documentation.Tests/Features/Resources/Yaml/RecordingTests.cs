@@ -1,6 +1,6 @@
+using k8s.Models;
 using KubeUI.Avalonia.Features.Resources.Yaml;
 using KubeUI.Documentation.Tests.Infra;
-using k8s.Models;
 
 namespace KubeUI.Documentation.Tests.Features.Resources.Yaml;
 

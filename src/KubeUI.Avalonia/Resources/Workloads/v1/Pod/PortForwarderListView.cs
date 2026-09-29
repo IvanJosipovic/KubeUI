@@ -1,9 +1,9 @@
+using System.Windows.Input;
 using Avalonia.Input;
 using Avalonia.VisualTree;
 using FluentIcons.Avalonia;
 using FluentIcons.Common;
 using KubeUI.Kubernetes;
-using System.Windows.Input;
 
 namespace KubeUI.Avalonia.Resources.Workloads.v1.Pod;
 

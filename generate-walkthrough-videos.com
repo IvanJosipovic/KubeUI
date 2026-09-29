@@ -8,6 +8,10 @@ else {
 }
 $videoDirectory = Join-Path $repoRoot 'website\static\video'
 $recordingProject = Join-Path $repoRoot 'tests\KubeUI.Documentation.Tests\KubeUI.Documentation.Tests.csproj'
+if (-not (Test-Path -LiteralPath $recordingProject -PathType Leaf)) {
+    throw "Documentation recording project not found: $recordingProject. Run this script from the repository root."
+}
+
 $ffmpegPath = $env:KUBEUI_FFMPEG_PATH
 if ($ffmpegPath) {
     if (-not (Test-Path -LiteralPath $ffmpegPath -PathType Leaf)) { throw "FFmpeg executable not found: $ffmpegPath" }

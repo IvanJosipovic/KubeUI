@@ -1,12 +1,12 @@
+using System.ComponentModel;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
 using DynamicData;
-using System.ComponentModel;
 using k8s.Models;
 using KubeUI.Avalonia.Features.AI;
-using SvcSystems.Avalonia.DynamicTableView;
 using Shouldly;
+using SvcSystems.Avalonia.DynamicTableView;
 
 namespace KubeUI.Avalonia.Tests.Features.Resources.List;
 

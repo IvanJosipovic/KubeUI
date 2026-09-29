@@ -8,12 +8,12 @@ using FluentAvalonia.UI.Controls.Primitives;
 using FluentIcons.Avalonia;
 using FluentIcons.Common;
 using k8s.Models;
-using SharedConverters = KubeUI.Avalonia.Converters.Converters;
 using KubeUI.Avalonia.Features.Resources.Yaml.Behaviors;
 using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
 using KubeUI.Avalonia.Services.Settings;
 using KubeUI.Avalonia.Styles;
+using SharedConverters = KubeUI.Avalonia.Converters.Converters;
 
 namespace KubeUI.Avalonia.Features.Resources.Yaml;
 

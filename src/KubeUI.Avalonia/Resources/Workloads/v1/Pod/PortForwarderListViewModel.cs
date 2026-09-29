@@ -120,10 +120,10 @@ public sealed partial class PortForwarderListViewModel : ViewModelBase, IInitial
         string header,
         DynamicTableViewWidthMode widthMode,
         double width)
-        {
-            var column = DynamicTableViewColumn<PortForwarder>.Create(key, header, selector);
-            column.WidthMode = widthMode;
-            column.Width = width;
-            return column;
-        }
+    {
+        var column = DynamicTableViewColumn<PortForwarder>.Create(key, header, selector);
+        column.WidthMode = widthMode;
+        column.Width = width;
+        return column;
+    }
 }

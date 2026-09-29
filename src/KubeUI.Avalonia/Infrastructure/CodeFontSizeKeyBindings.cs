@@ -1,6 +1,5 @@
 using System.Windows.Input;
 using Avalonia.Input;
-using CommunityToolkit.Mvvm.Input;
 using KubeUI.Avalonia.Options;
 using KubeUI.Avalonia.Services.Settings;
 

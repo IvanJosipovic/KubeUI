@@ -91,7 +91,8 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
                 Name = Assets.Resources.V1PodConfig_CPU!,
                 CustomControl = typeof(PodMetricCPUCellView),
                 Field = x => Cluster.Runtime.PodMetrics.FirstOrDefault(y => y.Name() == x.Name() && y.Namespace() == x.Namespace())?.Containers.Sum(z => z.Usage["cpu"]) ?? 0,
-                Width = 80, WidthMode = DynamicTableViewWidthMode.Pixel
+                Width = 80,
+                WidthMode = DynamicTableViewWidthMode.Pixel
             });
             cols.Insert(4, new ResourceListColumn<V1Pod, decimal>()
             {
@@ -99,7 +100,8 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
                 Name = Assets.Resources.V1PodConfig_Memory!,
                 CustomControl = typeof(PodMetricMemoryCellView),
                 Field = x => Cluster.Runtime.PodMetrics.FirstOrDefault(y => y.Name() == x.Name() && y.Namespace() == x.Namespace())?.Containers.Sum(z => z.Usage["memory"]) ?? 0,
-                Width = 80, WidthMode = DynamicTableViewWidthMode.Pixel
+                Width = 80,
+                WidthMode = DynamicTableViewWidthMode.Pixel
             });
         }
 

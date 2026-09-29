@@ -1,8 +1,8 @@
+using System.Windows.Input;
 using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Templates;
 using Avalonia.Input;
 using Avalonia.VisualTree;
-using System.Windows.Input;
 using FluentIcons.Avalonia;
 using FluentIcons.Common;
 using k8s.Models;

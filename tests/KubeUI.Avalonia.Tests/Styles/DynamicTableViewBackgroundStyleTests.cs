@@ -1,16 +1,16 @@
 using System.Collections.ObjectModel;
+using System.Reactive.Concurrency;
 using Avalonia.Controls;
 using Avalonia.Controls.Presenters;
 using Avalonia.Controls.Templates;
 using Avalonia.Headless.XUnit;
 using Avalonia.Layout;
 using Avalonia.Media;
-using System.Reactive.Concurrency;
 using Avalonia.Styling;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
-using SvcSystems.Avalonia.DynamicTableView;
 using Shouldly;
+using SvcSystems.Avalonia.DynamicTableView;
 
 namespace KubeUI.Avalonia.Tests.Styles;
 

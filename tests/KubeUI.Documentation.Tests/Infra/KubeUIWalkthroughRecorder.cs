@@ -4,7 +4,6 @@ using System.Reflection;
 using System.Text.Json;
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Controls.Primitives;
 using Avalonia.Headless;
 using Avalonia.Input;
 using Avalonia.LogicalTree;
@@ -17,22 +16,21 @@ using Avalonia.Xaml.Interactivity;
 using AvaloniaEdit;
 using AvaloniaEdit.CodeCompletion;
 using AvaloniaEdit.Rendering;
-using KokoroSharp;
 using k8s;
+using k8s.Models;
+using KokoroSharp;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
-using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Features.Resources.Common;
 using KubeUI.Avalonia.Features.Resources.List;
 using KubeUI.Avalonia.Features.Resources.Visualization;
 using KubeUI.Avalonia.Features.Resources.Yaml;
 using KubeUI.Avalonia.Features.Resources.Yaml.Behaviors;
-using KubeUI.Avalonia.Resources.Workloads.v1.Pod.ViewModels;
+using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Resources.Workloads.v1.Pod.Views;
 using KubeUI.Avalonia.Shell.Navigation;
 using KubeUI.Kubernetes;
 using KubeUI.Testing.Kubernetes.Bootstrap;
 using KubeUI.Testing.Kubernetes.Scenarios;
-using k8s.Models;
 using Microsoft.Extensions.DependencyInjection;
 using SvcSystems.Avalonia.DynamicTableView;
 using Westermo.GraphX.Controls.Controls;
@@ -718,6 +716,7 @@ internal static class KubeUIWalkthroughRecorder
         VolumeName = volumeName,
     };
 
+    [Obsolete]
     private static async Task RecordClipAsync(
         string clipName,
         string theme,
@@ -976,6 +975,7 @@ internal static class KubeUIWalkthroughRecorder
         }
     }
 
+    [Obsolete]
     private static async Task<Point> ExploreYamlCompletionAsync(
         string field,
         Control root,
@@ -1051,6 +1051,7 @@ internal static class KubeUIWalkthroughRecorder
         return origin;
     }
 
+    [Obsolete]
     private static async Task<Point> NavigateRelationshipGraphAsync(
         WalkthroughAction action,
         Control root,
@@ -1162,6 +1163,7 @@ internal static class KubeUIWalkthroughRecorder
         => vertex.TranslatePoint(new Point(vertex.Bounds.Width / 2, vertex.Bounds.Height / 2), window)
             ?? throw new InvalidOperationException($"Could not locate graph node '{vertex.Vertex}'.");
 
+    [Obsolete]
     private static async Task<Point> DragRelationshipViewportAsync(
         Window window,
         CursorOverlay cursor,
@@ -1195,6 +1197,7 @@ internal static class KubeUIWalkthroughRecorder
         return dragEnd;
     }
 
+    [Obsolete]
     private static async Task<Point> TypeYamlTextAsync(
         WalkthroughAction action,
         Control root,
@@ -1306,13 +1309,15 @@ internal static class KubeUIWalkthroughRecorder
                     editor.CaretOffset = editor.Document!.TextLength;
                     editor.TextArea.Focus();
                     await WaitForUiAsync();
-                }),
+                }
+                ),
 
                 WalkthroughActionKind.InsertText => (editor, async () =>
                 {
                     editor.Document!.Insert(editor.CaretOffset, action.Value!);
                     await WaitForUiAsync();
-                }),
+                }
+                ),
                 _ => throw new InvalidOperationException($"Action '{action.Kind}' is not supported for the YAML editor."),
             };
         }
@@ -1329,7 +1334,8 @@ internal static class KubeUIWalkthroughRecorder
                 await WaitForConditionAsync(() => root.GetVisualDescendants().OfType<TableViewRow>()
                     .Any(row => row.IsVisible
                         && (row.DataContext as V1Pod)?.Metadata?.Name == action.Value));
-            });
+            }
+            );
         }
 
         if (action.Kind is not (WalkthroughActionKind.Click or WalkthroughActionKind.RightClick))
@@ -1398,7 +1404,8 @@ internal static class KubeUIWalkthroughRecorder
                 return (FindCommandButton(saveView, saveView.ViewModel.SaveCommand), async () =>
                 {
                     await WaitForConditionAsync(() => saveView.ViewModel.HasActionSuccessResult);
-                });
+                }
+                );
             default:
                 throw new InvalidOperationException($"Unknown walkthrough click target '{action.Target}'.");
         }
@@ -1562,6 +1569,7 @@ internal static class KubeUIWalkthroughRecorder
             && FindNavigationParents(viewModel.Clusters, name, []);
     }
 
+    [Obsolete]
     private static async Task MoveCursorAsync(
         Window window,
         CursorOverlay cursor,
@@ -1604,6 +1612,7 @@ internal static class KubeUIWalkthroughRecorder
         return destination;
     }
 
+    [Obsolete]
     private static async Task ClickAsync(
         Window window,
         CursorOverlay cursor,
@@ -1623,6 +1632,7 @@ internal static class KubeUIWalkthroughRecorder
         cursor.IsClicking = false;
     }
 
+    [Obsolete]
     private static string CaptureFrame(Window window, string directory, int stepIndex, int frameIndex)
     {
         Dispatcher.UIThread.RunJobs();
@@ -1636,6 +1646,7 @@ internal static class KubeUIWalkthroughRecorder
         return path;
     }
 
+    [Obsolete]
     private static void AddHeldFrame(
         Window window,
         string directory,

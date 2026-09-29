@@ -4,7 +4,6 @@ using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Features.Resources.Common;
 using KubeUI.Avalonia.Resources;
-using SvcSystems.Avalonia.DynamicTableView;
 
 namespace KubeUI.Avalonia.Features.Resources.List
 {
