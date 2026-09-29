@@ -89,7 +89,7 @@ public partial class ResourceListView : ViewBase<IResourceListViewModel>
     }
 
     private void ConfigureActionBindings(
-        SvcSystems.Avalonia.DynamicTableView.DynamicTableView table,
+        DynamicTableView table,
         IResourceListViewModel viewModel)
     {
         foreach (var binding in _actionKeyBindings)

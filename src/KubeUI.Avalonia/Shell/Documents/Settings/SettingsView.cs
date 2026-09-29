@@ -44,17 +44,14 @@ public sealed class SettingsView() : ViewBase<SettingsViewModel>
                             vm,
                             Assets.Resources.SettingsView_FontSize_ToolTip,
                             Assets.Resources.SettingsView_FontSize_Label!,
-                            x => x.SettingsService.Appearance.FontSize),
+                            x => x.SettingsService.Appearance.FontSize,
+                            AppearanceSettings.MinimumFontSize,
+                            AppearanceSettings.MaximumFontSize),
                         CreateNumericRow(
                             vm,
                             Assets.Resources.SettingsView_ConsoleFontSize_ToolTip,
                             Assets.Resources.SettingsView_ConsoleFontSize_Label!,
                             x => x.SettingsService.Appearance.ConsoleFontSize),
-                        CreateNumericRow(
-                            vm,
-                            Assets.Resources.SettingsView_ListRowHeight_ToolTip,
-                            Assets.Resources.SettingsView_ListRowHeight_Label!,
-                            x => x.SettingsService.Appearance.ListRowHeight),
                         CreateHeading(Assets.Resources.SettingsView_AIHeading),
                         CreateToggleRow(
                             vm,

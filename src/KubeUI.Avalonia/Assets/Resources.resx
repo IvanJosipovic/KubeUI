@@ -877,14 +877,6 @@
     <value>Console/Logs/Yaml Font Size</value>
     <comment/>
   </data>
-  <data name="SettingsView_ListRowHeight_Label" xml:space="preserve">
-    <value>List Row Height</value>
-    <comment/>
-  </data>
-  <data name="SettingsView_ListRowHeight_ToolTip" xml:space="preserve">
-    <value>List Row Height</value>
-    <comment/>
-  </data>
   <data name="VisualizationView_Title" xml:space="preserve">
     <value>Visualization</value>
     <comment/>
