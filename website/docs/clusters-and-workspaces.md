@@ -19,6 +19,10 @@ Select a cluster node in the navigation pane to connect. The cluster starts with
 
 You can load more than one cluster and keep their documents in the same dockable workspace. Use **Window → Reset Layout** if you want to restore the default arrangement.
 
+## Cluster metrics settings
+
+Open **Cluster Settings** in the cluster navigation tree to select a metrics backend and, if needed, configure a Prometheus provider. These settings are per cluster. See [Monitoring](./monitoring) for supported backends, provider options, and access requirements.
+
 ## Azure Kubernetes Service
 
 KubeUI includes an AKS import flow under **File → Import AKS Cluster**. It uses the available Azure sign-in/subscription flow to import cluster credentials into the kubeconfig catalog. The regular kubeconfig loading flow remains available for other clusters.

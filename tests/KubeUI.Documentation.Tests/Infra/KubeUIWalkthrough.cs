@@ -54,6 +54,7 @@ internal sealed class KubeUIWalkthrough
     private WalkthroughIntro? _intro;
     private string _clusterName = "docs-demo";
     private Action<TestClusterConfig>? _configureFakeCluster;
+    private Action<ClusterWorkspace>? _configureWorkspace;
     private string? _narration;
     private Func<Control, bool>? _readyWhen;
     private Func<Control, string>? _readyDescription;
@@ -75,6 +76,13 @@ internal sealed class KubeUIWalkthrough
     {
         _clusterName = name;
         _configureFakeCluster = configure;
+        return this;
+    }
+
+    public KubeUIWalkthrough ConfigureWorkspace(Action<ClusterWorkspace> configure)
+    {
+        ArgumentNullException.ThrowIfNull(configure);
+        _configureWorkspace = configure;
         return this;
     }
 
@@ -173,6 +181,18 @@ internal sealed class KubeUIWalkthrough
     public KubeUIWalkthrough SearchPods(string query)
     {
         AddAction(new(WalkthroughActionKind.SetText, "pod-search", query));
+        return this;
+    }
+
+    public KubeUIWalkthrough ExpandPodMetrics()
+    {
+        AddAction(new(WalkthroughActionKind.Click, "pod-metrics"));
+        return this;
+    }
+
+    public KubeUIWalkthrough SelectPodMetric(string name)
+    {
+        AddAction(new(WalkthroughActionKind.Click, "pod-metric-tab", name));
         return this;
     }
 
@@ -300,6 +320,7 @@ internal sealed class KubeUIWalkthrough
             ClipName,
             _clusterName,
             _configureFakeCluster,
+            _configureWorkspace,
             start,
             _intro,
             _steps);

@@ -8,6 +8,7 @@ namespace KubeUI.Documentation.Tests.Features.Resources.Visualization;
 public sealed class RecordingTests
 {
     [DocumentationVideoTheory]
+    [Obsolete]
     public Task Explore_resource_relationships_video(string theme)
     {
         return KubeUIWalkthrough.Create(theme, "resource-relationships")

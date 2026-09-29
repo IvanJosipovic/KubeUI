@@ -20,6 +20,7 @@
 - Build walkthrough resources with ten Deployments, one active ReplicaSet per Deployment, and deterministic varied Pod replica counts. Keep at least two Pods in every Deployment so controller log scopes demonstrate stream aggregation. Verify the featured `web` Pod scope and its parent scopes.
 - Narration-only closing steps may omit actions to hold the current view while speech finishes.
 - Pod-log walkthroughs use the real context menu and parent-controller navigation with a deterministic fake log stream.
+- Monitoring walkthroughs use deterministic fake Prometheus samples for Pod CPU/memory usage, requests, limits, network receive/transmit, and filesystem usage/reads/writes. Assert at least one hour of timestamped, populated samples for every series, including those plotted in all four Pod Metrics tabs. Verify populated Pod CPU and memory list cells, then open the featured Pod's real properties and show all four charts with values checked against the fixture.
 - Filter virtualized resource lists before targeting rows that may be outside the visible table area.
 - Resource-relationship walkthroughs zoom into the featured Deployment, then pan down through its ReplicaSet to a Pod.
 - Encode one high quality H.264 MP4 per theme using lossless PNG source frames captured at the video resolution.
