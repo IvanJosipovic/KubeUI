@@ -24,6 +24,8 @@ internal enum WalkthroughActionKind
     RightClick,
     Hover,
     MovePointer,
+    ZoomRelationshipResource,
+    PanRelationshipResource,
     SetText,
     InsertText,
     TypeText,
@@ -168,6 +170,12 @@ internal sealed class KubeUIWalkthrough
         return this;
     }
 
+    public KubeUIWalkthrough SearchPods(string query)
+    {
+        AddAction(new(WalkthroughActionKind.SetText, "pod-search", query));
+        return this;
+    }
+
     public KubeUIWalkthrough SelectPodLogs(string name, Func<Control, bool> logsReadyWhen)
     {
         ArgumentNullException.ThrowIfNull(logsReadyWhen);
@@ -209,9 +217,15 @@ internal sealed class KubeUIWalkthrough
         return this;
     }
 
-    public KubeUIWalkthrough ClickRelationshipSurface()
+    public KubeUIWalkthrough ZoomRelationshipTo(string kind, string name)
     {
-        AddAction(new(WalkthroughActionKind.Click, "relationship-surface"));
+        AddAction(new(WalkthroughActionKind.ZoomRelationshipResource, "relationship-resource", $"{kind}/{name}"));
+        return this;
+    }
+
+    public KubeUIWalkthrough PanRelationshipTo(string kind, string name)
+    {
+        AddAction(new(WalkthroughActionKind.PanRelationshipResource, "relationship-resource", $"{kind}/{name}"));
         return this;
     }
 

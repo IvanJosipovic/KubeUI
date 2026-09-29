@@ -288,6 +288,22 @@ public sealed partial class MainViewModel : ViewModelBase
     }
 
     [RelayCommand]
+    private void IncreaseFontSize()
+    {
+        SettingsService.Appearance.FontSize = decimal.Min(
+            SettingsService.Appearance.FontSize + 1m,
+            AppearanceSettings.MaximumFontSize);
+    }
+
+    [RelayCommand]
+    private void DecreaseFontSize()
+    {
+        SettingsService.Appearance.FontSize = decimal.Max(
+            SettingsService.Appearance.FontSize - 1m,
+            AppearanceSettings.MinimumFontSize);
+    }
+
+    [RelayCommand]
     private async Task LoadKubeConfig()
     {
         var files = await _platformServices.OpenFilePickerAsync(new()

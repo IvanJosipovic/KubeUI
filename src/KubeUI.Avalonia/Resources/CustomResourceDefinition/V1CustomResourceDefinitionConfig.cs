@@ -26,28 +26,28 @@ public sealed partial class V1CustomResourceDefinitionConfig : ResourceConfigBas
                 Name = Assets.Resources.V1CustomResourceDefinitionConfig_Name!,
                 Field = x => x.Spec.Names.Kind,
                 Sort = SortDirection.Ascending,
-                Width = "2*",
+                Width = 2, WidthMode = DynamicTableViewWidthMode.Star,
             },
             new ResourceListColumn<V1CustomResourceDefinition, string>()
             {
                 Key = "group",
                 Name = Assets.Resources.V1CustomResourceDefinitionConfig_Group!,
                 Field = x => x.Spec.Group,
-                Width = "*",
+                Width = 1, WidthMode = DynamicTableViewWidthMode.Star,
             },
             new ResourceListColumn<V1CustomResourceDefinition, string>()
             {
                 Key = "version",
                 Name = Assets.Resources.V1CustomResourceDefinitionConfig_Version!,
                 Field = x => x.Spec.Versions.First(x => x.Storage).Name,
-                Width = nameof(DataGridLengthUnitType.SizeToCells)
+                WidthMode = DynamicTableViewWidthMode.Cells
             },
             new ResourceListColumn<V1CustomResourceDefinition, string>()
             {
                 Key = "scope",
                 Name = Assets.Resources.V1CustomResourceDefinitionConfig_Scope!,
                 Field = x => x.Spec.Scope,
-                Width = nameof(DataGridLengthUnitType.SizeToCells)
+                WidthMode = DynamicTableViewWidthMode.Cells
             },
             AgeColumn(),
         ];

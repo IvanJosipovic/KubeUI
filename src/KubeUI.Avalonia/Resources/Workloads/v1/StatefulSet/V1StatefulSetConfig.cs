@@ -27,7 +27,7 @@ public sealed partial class V1StatefulSetConfig : ResourceConfigBase<V1StatefulS
                 Key = "replicas",
                 Name = Assets.Resources.V1StatefulSetConfig_Replicas!,
                 Field = x => x.Status.Replicas,
-                Width = nameof(DataGridLengthUnitType.SizeToHeader)
+                WidthMode = DynamicTableViewWidthMode.Header
             },
             AgeColumn(),
         ];

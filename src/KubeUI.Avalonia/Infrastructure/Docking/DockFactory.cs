@@ -1,4 +1,3 @@
-using Avalonia.Media;
 using Avalonia.Platform;
 using Dock.Avalonia.Controls;
 using Dock.Model.Controls;
@@ -166,30 +165,10 @@ public class DockFactory : Factory
 
     private static HostWindow CreateHostWindow()
     {
-        HostWindow window = new()
+        return new()
         {
             Icon = new WindowIcon(AssetLoader.Open(new Uri("avares://KubeUI.Avalonia/Assets/icon.ico")))
         };
-        var application = Application.Current
-            ?? throw new InvalidOperationException("Cannot create a floating window without an application.");
-        window.RequestedThemeVariant = application.RequestedThemeVariant;
-
-        void UpdateBackground(object? sender, EventArgs e)
-        {
-            if (!application.TryFindResource("SystemRegionBrush", out var resource)
-                || resource is not IBrush brush)
-            {
-                throw new InvalidOperationException("SystemRegionBrush resource is unavailable.");
-            }
-
-            window.Background = brush;
-        }
-
-        EventHandler themeChanged = UpdateBackground;
-        application.ActualThemeVariantChanged += themeChanged;
-        window.Closed += (_, _) => application.ActualThemeVariantChanged -= themeChanged;
-        UpdateBackground(application, EventArgs.Empty);
-        return window;
     }
 
     /// <summary>

@@ -183,7 +183,7 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
 
     public void Add<T>(T resource) where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
-        if (resource is KubeUI.Kubernetes.GenericKubernetesObject metricsResource
+        if (resource is GenericKubernetesObject metricsResource
             && TryGetMetricsResourceDefinition(metricsResource, out var metricsDefinition))
         {
             AddMetricsResource(metricsResource, metricsDefinition);
@@ -210,7 +210,7 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
     }
 
     private void AddMetricsResource(
-        KubeUI.Kubernetes.GenericKubernetesObject resource,
+        GenericKubernetesObject resource,
         ResourceDefinition definition)
     {
         var key = DefinitionKey(definition.Api.Group, definition.Api.ApiVersion, definition.Api.PluralName);
@@ -229,7 +229,7 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
     }
 
     private static bool TryGetMetricsResourceDefinition(
-        KubeUI.Kubernetes.GenericKubernetesObject resource,
+        GenericKubernetesObject resource,
         out ResourceDefinition definition)
     {
         if (resource.ApiVersion == "metrics.k8s.io/v1beta1"

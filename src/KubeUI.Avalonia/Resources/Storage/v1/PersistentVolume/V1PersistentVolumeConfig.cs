@@ -20,7 +20,7 @@ public sealed partial class V1PersistentVolumeConfig : ResourceConfigBase<V1Pers
                 Key = "storage-class",
                 Name = Assets.Resources.V1PersistentVolumeConfig_Storage_Class!,
                 Field = x => x.Spec.StorageClassName,
-                Width = "*",
+                Width = 1, WidthMode = DynamicTableViewWidthMode.Star,
             },
             new ResourceListColumn<V1PersistentVolume, decimal>()
             {
@@ -28,14 +28,14 @@ public sealed partial class V1PersistentVolumeConfig : ResourceConfigBase<V1Pers
                 Name = Assets.Resources.V1PersistentVolumeConfig_Size!,
                 Display = x => x.Spec.Capacity["storage"]?.CanonicalizeString(ResourceQuantity.SuffixFormat.BinarySI) ?? "",
                 Field = x => x.Spec.Capacity["storage"]?.ToDecimal() ?? 0,
-                Width = nameof(DataGridLengthUnitType.SizeToCells)
+                WidthMode = DynamicTableViewWidthMode.Cells
             },
             new ResourceListColumn<V1PersistentVolume, string>()
             {
                 Key = "claim",
                 Name = Assets.Resources.V1PersistentVolumeConfig_Claim!,
                 Field = x => x.Spec.ClaimRef.Name,
-                Width = "*",
+                Width = 1, WidthMode = DynamicTableViewWidthMode.Star,
             },
             AgeColumn(),
             new ResourceListColumn<V1PersistentVolume, string>()
@@ -43,7 +43,7 @@ public sealed partial class V1PersistentVolumeConfig : ResourceConfigBase<V1Pers
                 Key = "status",
                 Name = Assets.Resources.V1PersistentVolumeConfig_Status!,
                 Field = x => x.Status.Phase,
-                Width = nameof(DataGridLengthUnitType.SizeToCells)
+                WidthMode = DynamicTableViewWidthMode.Cells
             },
         ];
     }

@@ -20,5 +20,7 @@
 - Build walkthrough resources with ten Deployments, one active ReplicaSet per Deployment, and deterministic varied Pod replica counts. Keep at least two Pods in every Deployment so controller log scopes demonstrate stream aggregation. Verify the featured `web` Pod scope and its parent scopes.
 - Narration-only closing steps may omit actions to hold the current view while speech finishes.
 - Pod-log walkthroughs use the real context menu and parent-controller navigation with a deterministic fake log stream.
+- Filter virtualized resource lists before targeting rows that may be outside the visible table area.
+- Resource-relationship walkthroughs zoom into the featured Deployment, then pan down through its ReplicaSet to a Pod.
 - Encode one high quality H.264 MP4 per theme using lossless PNG source frames captured at the video resolution.
-- Regenerate clips with `record-feature-videos.ps1`; it clears old MP4 outputs after a successful build and before recording.
+- Regenerate clips from the repository root with `Get-Content -Raw .\generate-walkthrough-videos.com | pwsh -NoProfile -Command -`; it clears old MP4 outputs after a successful build and before recording.

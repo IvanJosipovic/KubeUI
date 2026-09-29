@@ -58,13 +58,13 @@ Reference: https://github.com/AvaloniaUI/AvaloniaEdit
 - Enable syntax highlighting using TextMate grammars/themes.
 - Keep editor configuration in ViewModels and bind to the view.
 
-## 7) Data presentation with ProDataGrid
+## 7) Data presentation with DynamicTableView
 
-Reference: https://github.com/wieslawsoltes/ProDataGrid
+Reference: https://docs.avaloniaui.net/controls/data-display/structured-data/tableview
 
-- Use ProDataGrid `DataGrid` for all tabular data, tree views, and list displays.
-- Always use the ProDataGrid model approach with code-based column bindings and fast paths.
-- Always enable full filtering, searching, and sorting support.
+- Use `SvcSystems.Avalonia.DynamicTableView.DynamicTableView` for tabular data and list displays.
+- Keep reusable source processing, filtering, search, sort, selection, column sizing, state, and context-menu targeting in `SvcSystems.Avalonia.DynamicTableView`.
+- Keep resource-specific columns, namespace scope, row styles, and actions in KubeUI.Avalonia.
 
 ## 8) Testing and validation
 

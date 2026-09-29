@@ -21,14 +21,14 @@ public sealed class V1EventConfig(IServiceProvider serviceProvider) : ResourceCo
                 Key = "type",
                 Name = Assets.Resources.V1EventConfig_Type,
                 Field = x => x?.Type ?? "",
-                Width = nameof(DataGridLengthUnitType.SizeToCells)
+                WidthMode = DynamicTableViewWidthMode.Cells
             },
             new ResourceListColumn<Corev1Event, string>()
             {
                 Key = "message",
                 Name = Assets.Resources.V1EventConfig_Message,
                 Field = x => x?.Message ?? "",
-                Width = "4*"
+                Width = 4, WidthMode = DynamicTableViewWidthMode.Star
             },
             NamespaceColumn(),
             new ResourceListColumn<Corev1Event, string>()
@@ -36,21 +36,21 @@ public sealed class V1EventConfig(IServiceProvider serviceProvider) : ResourceCo
                 Key = "involved-object",
                 Name = Assets.Resources.V1EventConfig_Involved_Object,
                 Field = x => x?.InvolvedObject?.Name ?? "",
-                Width = "*"
+                Width = 1, WidthMode = DynamicTableViewWidthMode.Star
             },
             new ResourceListColumn<Corev1Event, string>()
             {
                 Key = "source",
                 Name = Assets.Resources.V1EventConfig_Source,
                 Field = x => x?.Source?.Component ?? (x?.ReportingComponent) ?? "",
-                Width = "*"
+                Width = 1, WidthMode = DynamicTableViewWidthMode.Star
             },
             new ResourceListColumn<Corev1Event, int>()
             {
                 Key = "count",
                 Name = Assets.Resources.V1EventConfig_Count,
                 Field = x => x?.Count ?? 0,
-                Width = nameof(DataGridLengthUnitType.SizeToHeader)
+                WidthMode = DynamicTableViewWidthMode.Header
             },
             new ResourceListColumn<Corev1Event, DateTime?>()
             {
@@ -59,7 +59,7 @@ public sealed class V1EventConfig(IServiceProvider serviceProvider) : ResourceCo
                 CustomControl = typeof(EventLastSeenCell),
                 Field = x => RelativeTimeFormatter.ResolveTimestamp(x),
                 Sort = SortDirection.Descending,
-                Width = "80"
+                Width = 80, WidthMode = DynamicTableViewWidthMode.Pixel
             },
             AgeColumn(),
         ];
@@ -69,7 +69,7 @@ public sealed class V1EventConfig(IServiceProvider serviceProvider) : ResourceCo
 
     public override Style[] ListStyle() =>
     [
-        new Style<DataGridRow>(x => x.OfType<DataGridRow>())
+        new Style<TableViewRow>(x => x.OfType<TableViewRow>())
             .Foreground(CompiledBinding.Create<Corev1Event, object>(x => x.Type,
                 converter: new FuncValueConverter<string, IBrush>(y =>
                 {

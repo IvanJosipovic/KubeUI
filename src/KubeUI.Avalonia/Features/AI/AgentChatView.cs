@@ -10,7 +10,7 @@ namespace KubeUI.Avalonia.Features.AI;
 /// </summary>
 public sealed class AgentChatView : ViewBase<AgentChatViewModel>
 {
-    private ScrollViewer _conversationScrollViewer = null!;
+    private ScrollViewer? _conversationScrollViewer = null!;
     private bool _conversationIsAtEnd = true;
 
     protected override object Build(AgentChatViewModel vm)

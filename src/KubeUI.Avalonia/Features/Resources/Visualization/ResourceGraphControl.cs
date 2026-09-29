@@ -1,4 +1,3 @@
-using System.ComponentModel;
 using Avalonia.Controls.Templates;
 using k8s;
 using k8s.Models;
