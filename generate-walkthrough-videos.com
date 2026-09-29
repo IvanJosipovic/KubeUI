@@ -1,8 +1,13 @@
 $ErrorActionPreference = 'Stop'
 
-$repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
+$repoRoot = if ([string]::IsNullOrWhiteSpace($PSScriptRoot)) {
+    (Get-Location).Path
+}
+else {
+    $PSScriptRoot
+}
 $videoDirectory = Join-Path $repoRoot 'website\static\video'
-$recordingProject = Join-Path $PSScriptRoot 'KubeUI.Documentation.Tests.csproj'
+$recordingProject = Join-Path $repoRoot 'tests\KubeUI.Documentation.Tests\KubeUI.Documentation.Tests.csproj'
 $ffmpegPath = $env:KUBEUI_FFMPEG_PATH
 if ($ffmpegPath) {
     if (-not (Test-Path -LiteralPath $ffmpegPath -PathType Leaf)) { throw "FFmpeg executable not found: $ffmpegPath" }

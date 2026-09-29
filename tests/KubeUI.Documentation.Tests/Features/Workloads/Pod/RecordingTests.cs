@@ -28,12 +28,14 @@ public sealed class RecordingTests
             .LoadView<MainView, MainViewModel>(
                 x => x.ViewModel.Initialize(),
                 connectToCluster: false)
-            .Speak("I'll open Pods to find the application workload.")
+            .Speak("First, I'll connect to the cluster so KubeUI can load its resources.")
             .OpenCluster("demo-cluster")
             .Speak(
-                "The cluster is ready. I'll open its Pods.",
+                "The cluster is connected. Now I'll open its Pods.",
                 root => KubeUIWalkthroughRecorder.HasNavigationItem(root, "Pods"))
             .SelectNavigation("Pods")
+            .Speak("I'll filter the Pods for the web workload.")
+            .SearchPods(WalkthroughDemoResources.FeaturedPodName)
             .Speak("I'll right-click the web Pod and open a new logs view.")
             .SelectPodLogs(
                 WalkthroughDemoResources.FeaturedPodName,

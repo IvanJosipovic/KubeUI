@@ -22,6 +22,8 @@ using k8s;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Features.Resources.Common;
+using KubeUI.Avalonia.Features.Resources.List;
+using KubeUI.Avalonia.Features.Resources.Visualization;
 using KubeUI.Avalonia.Features.Resources.Yaml;
 using KubeUI.Avalonia.Features.Resources.Yaml.Behaviors;
 using KubeUI.Avalonia.Resources.Workloads.v1.Pod.ViewModels;
@@ -33,6 +35,7 @@ using KubeUI.Testing.Kubernetes.Scenarios;
 using k8s.Models;
 using Microsoft.Extensions.DependencyInjection;
 using SvcSystems.Avalonia.DynamicTableView;
+using Westermo.GraphX.Controls.Controls;
 
 namespace KubeUI.Documentation.Tests.Infra;
 
@@ -45,6 +48,8 @@ internal static class KubeUIWalkthroughRecorder
     private const int CursorFrames = 23;
     private const double FrameDuration = 1.0 / FramesPerSecond;
     private const double OpeningFrameDuration = 0.4;
+    private const int RelationshipZoomFrameCount = 24;
+    private const int RelationshipPanFrameCount = 20;
 
     public static bool IsRecordingEnabled =>
         !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("KUBEUI_DOCS_VIDEO_DIR"));
@@ -817,6 +822,21 @@ internal static class KubeUIWalkthroughRecorder
                         continue;
                     }
 
+                    if (action.Target == "relationship-resource"
+                        && action.Kind is WalkthroughActionKind.ZoomRelationshipResource or WalkthroughActionKind.PanRelationshipResource)
+                    {
+                        origin = await NavigateRelationshipGraphAsync(
+                            action,
+                            root,
+                            window,
+                            cursor,
+                            origin,
+                            temporaryDirectory,
+                            stepIndex,
+                            movementFrames);
+                        continue;
+                    }
+
                     if (action.Kind == WalkthroughActionKind.ExploreCompletion)
                     {
                         origin = await ParkYamlPointerAsync(window, cursor, origin, temporaryDirectory, stepIndex, movementFrames);
@@ -1031,6 +1051,150 @@ internal static class KubeUIWalkthroughRecorder
         return origin;
     }
 
+    private static async Task<Point> NavigateRelationshipGraphAsync(
+        WalkthroughAction action,
+        Control root,
+        Window window,
+        CursorOverlay cursor,
+        Point origin,
+        string temporaryDirectory,
+        int stepIndex,
+        List<string> movementFrames)
+    {
+        var graph = await WaitForControlAsync<ResourceGraphControl>(root, control => control.IsViewportStable);
+        var zoomControl = graph.ZoomControl;
+        var targetVertex = FindRelationshipVertex(graph, action.Value!);
+        var targetCenter = GetVertexCenter(targetVertex, window);
+
+        if (action.Kind == WalkthroughActionKind.ZoomRelationshipResource)
+        {
+            await MoveCursorAsync(window, cursor, origin, targetCenter, temporaryDirectory, stepIndex, movementFrames);
+            var wasAnimationEnabled = zoomControl.IsAnimationEnabled;
+            var startingZoom = zoomControl.Zoom;
+            var targetZoom = Math.Min(zoomControl.MaxZoom, startingZoom * 8);
+            var targetAnchor = targetVertex.TranslatePoint(
+                new Point(targetVertex.Bounds.Width / 2, targetVertex.Bounds.Height / 2),
+                zoomControl)
+                ?? throw new InvalidOperationException("Could not anchor the resource graph zoom on its Deployment.");
+            zoomControl.IsAnimationEnabled = false;
+            try
+            {
+                for (var frame = 0; frame < RelationshipZoomFrameCount; frame++)
+                {
+                    var progress = (frame + 1) / (double)RelationshipZoomFrameCount;
+                    zoomControl.Zoom = startingZoom + (targetZoom - startingZoom) * progress;
+                    await WaitForUiAsync();
+                    var currentAnchor = targetVertex.TranslatePoint(
+                        new Point(targetVertex.Bounds.Width / 2, targetVertex.Bounds.Height / 2),
+                        zoomControl)
+                        ?? throw new InvalidOperationException("Could not track the Deployment while zooming.");
+                    zoomControl.TranslateX += targetAnchor.X - currentAnchor.X;
+                    zoomControl.TranslateY += targetAnchor.Y - currentAnchor.Y;
+                    await WaitForUiAsync();
+                    movementFrames.Add(CaptureFrame(window, temporaryDirectory, stepIndex, movementFrames.Count));
+                }
+            }
+            finally
+            {
+                zoomControl.IsAnimationEnabled = wasAnimationEnabled;
+            }
+
+            return GetVertexCenter(targetVertex, window);
+        }
+
+        var viewportCenter = zoomControl.TranslatePoint(
+            new Point(zoomControl.Bounds.Width / 2, zoomControl.Bounds.Height / 2),
+            window)
+            ?? throw new InvalidOperationException("Could not locate the resource graph viewport.");
+
+        for (var attempt = 0; attempt < 8; attempt++)
+        {
+            targetCenter = GetVertexCenter(targetVertex, window);
+            var delta = viewportCenter - targetCenter;
+            if (Math.Abs(delta.X) < 12 && Math.Abs(delta.Y) < 12)
+            {
+                return targetCenter;
+            }
+
+            var panDelta = new Vector(
+                Math.Clamp(delta.X, -220, 220),
+                Math.Clamp(delta.Y, -220, 220));
+            origin = await DragRelationshipViewportAsync(
+                window,
+                cursor,
+                origin,
+                viewportCenter,
+                panDelta,
+                temporaryDirectory,
+                stepIndex,
+                movementFrames);
+        }
+
+        targetCenter = GetVertexCenter(targetVertex, window);
+        var remainingDelta = viewportCenter - targetCenter;
+        if (Math.Abs(remainingDelta.X) >= 32 || Math.Abs(remainingDelta.Y) >= 32)
+        {
+            throw new TimeoutException($"Could not pan the resource graph to '{action.Value}'.");
+        }
+
+        return targetCenter;
+    }
+
+    private static VertexControl FindRelationshipVertex(ResourceGraphControl graph, string resourcePath)
+    {
+        var separator = resourcePath.IndexOf('/');
+        if (separator <= 0 || separator == resourcePath.Length - 1)
+        {
+            throw new ArgumentException($"Invalid resource graph target '{resourcePath}'.", nameof(resourcePath));
+        }
+
+        var kind = resourcePath[..separator];
+        var name = resourcePath[(separator + 1)..];
+        return graph.Area.VertexList.Values
+            .OfType<VertexControl>()
+            .FirstOrDefault(control => control.Vertex is ResourceGraphVertex vertex
+                && string.Equals(vertex.Node.Resource.Kind, kind, StringComparison.Ordinal)
+                && string.Equals(vertex.Node.Resource.Metadata?.Name, name, StringComparison.Ordinal))
+            ?? throw new InvalidOperationException($"Resource graph node '{resourcePath}' was not found.");
+    }
+
+    private static Point GetVertexCenter(VertexControl vertex, Window window)
+        => vertex.TranslatePoint(new Point(vertex.Bounds.Width / 2, vertex.Bounds.Height / 2), window)
+            ?? throw new InvalidOperationException($"Could not locate graph node '{vertex.Vertex}'.");
+
+    private static async Task<Point> DragRelationshipViewportAsync(
+        Window window,
+        CursorOverlay cursor,
+        Point origin,
+        Point dragStart,
+        Vector delta,
+        string temporaryDirectory,
+        int stepIndex,
+        List<string> movementFrames)
+    {
+        await MoveCursorAsync(window, cursor, origin, dragStart, temporaryDirectory, stepIndex, movementFrames);
+        var dragEnd = dragStart + delta;
+        cursor.IsClicking = true;
+        window.MouseDown(dragStart, MouseButton.Middle);
+        await WaitForUiAsync();
+        for (var frame = 0; frame < RelationshipPanFrameCount; frame++)
+        {
+            var progress = (frame + 1) / (double)RelationshipPanFrameCount;
+            cursor.Position = new Point(
+                dragStart.X + delta.X * progress,
+                dragStart.Y + delta.Y * progress);
+            window.MouseMove(cursor.Position, RawInputModifiers.MiddleMouseButton);
+            await WaitForUiAsync();
+            movementFrames.Add(CaptureFrame(window, temporaryDirectory, stepIndex, movementFrames.Count));
+        }
+
+        window.MouseUp(dragEnd, MouseButton.Middle);
+        await WaitForUiAsync();
+        movementFrames.Add(CaptureFrame(window, temporaryDirectory, stepIndex, movementFrames.Count));
+        cursor.IsClicking = false;
+        return dragEnd;
+    }
+
     private static async Task<Point> TypeYamlTextAsync(
         WalkthroughAction action,
         Control root,
@@ -1153,6 +1317,21 @@ internal static class KubeUIWalkthroughRecorder
             };
         }
 
+        if (action.Target == "pod-search" && action.Kind == WalkthroughActionKind.SetText)
+        {
+            var searchBox = await WaitForControlAsync<TextBox>(
+                root,
+                textBox => textBox.DataContext is IResourceListViewModel);
+            var listViewModel = (IResourceListViewModel)searchBox.DataContext!;
+            return (searchBox, async () =>
+            {
+                listViewModel.SearchQuery = action.Value!;
+                await WaitForConditionAsync(() => root.GetVisualDescendants().OfType<TableViewRow>()
+                    .Any(row => row.IsVisible
+                        && (row.DataContext as V1Pod)?.Metadata?.Name == action.Value));
+            });
+        }
+
         if (action.Kind is not (WalkthroughActionKind.Click or WalkthroughActionKind.RightClick))
         {
             throw new InvalidOperationException($"Action '{action.Kind}' requires a supported walkthrough target.");
@@ -1205,11 +1384,6 @@ internal static class KubeUIWalkthroughRecorder
                 return (
                     FindCommandButton(root, logsViewModel.JumpToControlledByLogsCommand),
                     () => WaitForConditionAsync(() => logsViewModel.Object?.Kind == action.Value));
-            case "relationship-surface":
-                var graph = root.GetVisualDescendants().OfType<Control>()
-                    .FirstOrDefault(control => control.Bounds.Width > 300 && control.Bounds.Height > 300)
-                    ?? root;
-                return (graph, null);
             case "yaml-edit-mode":
                 var editView = GetYamlView(root);
                 return (FindCommandButton(editView, editView.ViewModel.SetEditModeCommand),
