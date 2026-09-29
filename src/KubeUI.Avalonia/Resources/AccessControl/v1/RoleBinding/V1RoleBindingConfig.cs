@@ -23,7 +23,7 @@ public sealed partial class V1RoleBindingConfig : ResourceConfigBase<V1RoleBindi
                 Key = "bindings",
                 Name = Assets.Resources.V1RoleBindingConfig_Bindings!,
                 Field = x => x.Subjects is { Count: > 0 } subjects ? string.Join(", ", subjects.Select(y => y.Name)) : "",
-                Width = "*",
+                Width = 1, WidthMode = DynamicTableViewWidthMode.Star,
             },
             AgeColumn(),
         ];

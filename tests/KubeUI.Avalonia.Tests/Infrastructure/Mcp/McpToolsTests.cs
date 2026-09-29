@@ -1,5 +1,4 @@
 using System.Reflection;
-using System.Threading;
 using k8s;
 using k8s.Models;
 using KubeUI.AI.Agents;

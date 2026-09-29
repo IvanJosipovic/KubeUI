@@ -1,4 +1,3 @@
-using KubeUI.Kubernetes;
 using YamlDotNet.Serialization;
 
 namespace KubeUI.Kubernetes.Serialization;

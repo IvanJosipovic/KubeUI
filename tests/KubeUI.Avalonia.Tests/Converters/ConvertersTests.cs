@@ -1,6 +1,6 @@
 using System.Globalization;
-using SharedConverters = KubeUI.Avalonia.Converters.Converters;
 using Shouldly;
+using SharedConverters = KubeUI.Avalonia.Converters.Converters;
 
 namespace KubeUI.Avalonia.Tests.Converters;
 

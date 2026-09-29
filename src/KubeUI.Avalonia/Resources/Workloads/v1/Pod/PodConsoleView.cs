@@ -1,6 +1,8 @@
 using Avalonia.Markup.Xaml.MarkupExtensions;
 using KubeUI.Avalonia.Infrastructure;
+using KubeUI.Avalonia.Infrastructure.DependencyInjection;
 using KubeUI.Avalonia.Resources.Workloads.v1.Pod.Behaviors;
+using KubeUI.Avalonia.Services.Settings;
 using KubeUI.Avalonia.Styles;
 using SvcSystems.UI.Terminal;
 
@@ -15,6 +17,8 @@ public sealed class PodConsoleView : ViewBase<PodConsoleViewModel>
         this.Behaviors(new PodConsoleConnectionBehavior());
 
         return new Grid()
+            .KeyBindings(CodeFontSizeKeyBindings.Create(
+                ((IServiceProviderHost)Application.Current!).Services.GetRequiredService<ISettingsService>()))
             .Rows("Auto,*")
             .Children(
                 new StackPanel()

@@ -3,9 +3,9 @@ using System.Text.Json.Serialization.Metadata;
 using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
-using KubeUI.Kubernetes.Serialization;
 using KubeUI.Kubernetes.Resources.Relationships;
 using KubeUI.Kubernetes.Resources.Relationships.Providers;
+using KubeUI.Kubernetes.Serialization;
 using Shouldly;
 
 namespace KubeUI.Kubernetes.Tests.Resources.Relationships;

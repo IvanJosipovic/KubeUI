@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Markup.Xaml.MarkupExtensions;
@@ -8,11 +9,12 @@ using FluentAvalonia.UI.Controls.Primitives;
 using FluentIcons.Avalonia;
 using FluentIcons.Common;
 using k8s.Models;
-using SharedConverters = KubeUI.Avalonia.Converters.Converters;
 using KubeUI.Avalonia.Features.Resources.Yaml.Behaviors;
 using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
+using KubeUI.Avalonia.Services.Settings;
 using KubeUI.Avalonia.Styles;
+using SharedConverters = KubeUI.Avalonia.Converters.Converters;
 
 namespace KubeUI.Avalonia.Features.Resources.Yaml;
 
@@ -138,8 +140,12 @@ public sealed partial class ResourceYamlView : ViewBase<ResourceYamlViewModel>
                 new YamlHoverToolTipBehavior(hoverPopup),
                 new YamlEditorScrollBehavior())
             .KeyBindings(
-                new KeyBinding { Command = vm.RequestCompletionCommand, Gesture = new KeyGesture(Key.Space, KeyModifiers.Control) },
-                new KeyBinding { Command = vm.UndoCommand, Gesture = new KeyGesture(Key.Z, KeyModifiers.Control) });
+                [
+                    .. CodeFontSizeKeyBindings.Create(
+                        ((IServiceProviderHost)Application.Current!).Services.GetRequiredService<ISettingsService>()),
+                    new KeyBinding { Command = vm.RequestCompletionCommand, Gesture = new KeyGesture(Key.Space, KeyModifiers.Control) },
+                    new KeyBinding { Command = vm.UndoCommand, Gesture = new KeyGesture(Key.Z, KeyModifiers.Control) }
+                ]);
 
         editor.ContextMenu = CreateEditorContextMenu(vm, editor);
         return editor;
@@ -158,6 +164,7 @@ public sealed partial class ResourceYamlView : ViewBase<ResourceYamlViewModel>
                 CreateEditorMenuItem(vm, editor, Assets.Resources.ResourceYamlView_Action_Redo, new KeyGesture(Key.Y, KeyModifiers.Control), Icon.ArrowRedo, "Redo", requiresEditMode: true));
     }
 
+    [RequiresUnreferencedCode("Calls Avalonia.Xaml.Interactions.Core.EventTriggerBehavior.EventTriggerBehavior()")]
     private static MenuItem CreateEditorMenuItem(ResourceYamlViewModel vm, TextEditor editor, string header, KeyGesture? hotKey, Icon icon, string methodName, bool requiresEditMode)
     {
         var item = new MenuItem()

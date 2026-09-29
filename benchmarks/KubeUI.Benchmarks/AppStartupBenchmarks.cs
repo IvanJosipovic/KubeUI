@@ -1,6 +1,5 @@
 using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Engines;
-using KubeUI.Kubernetes;
 
 namespace KubeUI.Benchmarks;
 

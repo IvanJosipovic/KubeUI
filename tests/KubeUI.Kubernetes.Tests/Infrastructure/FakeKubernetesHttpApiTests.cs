@@ -5,7 +5,6 @@ using System.Text;
 using System.Text.Json;
 using k8s;
 using k8s.Models;
-using KubeUI.Kubernetes;
 using KubeUI.Kubernetes.Serialization;
 using Shouldly;
 

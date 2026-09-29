@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Templates;
 using Avalonia.Input;
@@ -28,6 +29,7 @@ public sealed partial class PodLogsView : ViewBase<PodLogsViewModel>
         return new Grid()
             .HorizontalAlignment(HorizontalAlignment.Stretch)
             .VerticalAlignment(VerticalAlignment.Stretch)
+            .KeyBindings(CodeFontSizeKeyBindings.Create(vm.SettingsService))
             .Rows("Auto,*")
             .Children(
                 CreateTopBar(vm),
@@ -209,6 +211,7 @@ public sealed partial class PodLogsView : ViewBase<PodLogsViewModel>
         return editor;
     }
 
+    [RequiresUnreferencedCode("Calls Avalonia.Xaml.Interactions.Core.EventTriggerBehavior.EventTriggerBehavior()")]
     private static ContextMenu CreateContextMenu(TextEditor editor)
     {
         return new ContextMenu()

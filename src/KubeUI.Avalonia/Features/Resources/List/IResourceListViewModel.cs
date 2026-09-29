@@ -1,6 +1,3 @@
-using Avalonia.Controls.DataGridFiltering;
-using Avalonia.Controls.DataGridSearching;
-using Avalonia.Controls.DataGridSorting;
 using Avalonia.Controls.Selection;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
@@ -19,19 +16,14 @@ namespace KubeUI.Avalonia.Features.Resources.List
         int ItemCount { get; }
         string SearchQuery { get; set; }
         IResourceConfig ResourceConfig { get; }
-        ObservableCollection<DataGridColumnDefinition> ColumnDefinitions { get; }
-        IDataGridSortingAdapterFactory SortingAdapterFactory { get; }
-        ISortingModel SortingModel { get; set; }
-        IDataGridFilteringAdapterFactory FilteringAdapterFactory { get; }
-        IFilteringModel FilteringModel { get; set; }
+        IDynamicTableViewSource TableSource { get; }
         ISelectionModel SelectionModel { get; }
-        Func<IList, object, int> ReferenceIndexResolver { get; }
-        IList View { get; }
         IEnumerable<MenuItemViewModel> GetContextMenuItems(IEnumerable? selectedItems);
-        ISearchModel SearchModel { get; set; }
-        IDataGridSearchAdapterFactory SearchAdapterFactory { get; }
-        // Runtime DataGrid state captured from ProDataGrid (in-memory snapshot)
-        DataGridState? DataGridRuntimeState { get; set; }
+        DynamicTableViewState? TableViewRuntimeState { get; set; }
+        /// <summary>Stores selected resource keys so a recreated list view can restore visible selections.</summary>
+        void CaptureSelectionState();
+        /// <summary>Restores captured selections for resources that remain visible in the table source.</summary>
+        void RestoreSelectionState();
         void InitializeResource(ClusterWorkspace cluster, GroupApiVersionKind kind);
     }
 }

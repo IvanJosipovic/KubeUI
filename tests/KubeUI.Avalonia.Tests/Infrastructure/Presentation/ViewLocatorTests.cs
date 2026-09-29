@@ -1,7 +1,6 @@
 using System.Diagnostics.Metrics;
 using Avalonia.Headless.XUnit;
 using k8s.Models;
-using KubeUI.Avalonia.Features.Resources.Properties;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Kubernetes.Client;
 using Shouldly;

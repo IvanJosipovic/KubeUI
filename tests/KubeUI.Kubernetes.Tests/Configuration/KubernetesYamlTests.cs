@@ -8,7 +8,7 @@ using YamlDotNet.Core;
 
 namespace KubeUI.Kubernetes.Tests.Configuration;
 
-[CollectionDefinition(KubernetesYamlCollection.Name, DisableParallelization = true)]
+[CollectionDefinition(Name, DisableParallelization = true)]
 public sealed class KubernetesYamlCollection
 {
     public const string Name = "Kubernetes YAML";
@@ -302,7 +302,7 @@ public class KubernetesYamlTests
     public void KubernetesYaml_HandlesNullBinaryScalarAsEmptyBytes()
     {
         using var writer = new StringWriter();
-        var emitter = new YamlDotNet.Core.Emitter(writer);
+        var emitter = new Emitter(writer);
         emitter.Emit(new YamlDotNet.Core.Events.StreamStart());
         emitter.Emit(new YamlDotNet.Core.Events.DocumentStart());
 
@@ -664,7 +664,7 @@ public class KubernetesYamlTests
     public void CustomResourceDefinitionYaml_PreservesJsonExtensionData()
     {
         var resource = KubernetesYaml.Deserialize<GenericKubernetesObject>(
-            KubeUI.Testing.Kubernetes.Fixtures.KubernetesTestData.CustomResourceDefinitionYaml);
+            KubernetesTestData.CustomResourceDefinitionYaml);
 
         resource.Properties.Keys.ShouldContain("spec", string.Join(",", resource.Properties.Keys));
         resource.Properties["spec"].GetProperty("group").GetString().ShouldBe("kubeui.com");
@@ -723,10 +723,10 @@ public class KubernetesYamlTests
             ["rbac.authorization.k8s.io/v1/RoleBinding"] = typeof(V1RoleBinding),
         };
         var resources = KubernetesYaml.LoadAllFromString(
-            KubeUI.Testing.Kubernetes.Fixtures.KubernetesTestData.LimitedAccessWithNamespaceFallback,
+            KubernetesTestData.LimitedAccessWithNamespaceFallback,
             typeMap);
 
-        var developer = resources.OfType<k8s.Models.V1ClusterRole>().Single(role => role.Name() == "developer");
+        var developer = resources.OfType<V1ClusterRole>().Single(role => role.Name() == "developer");
         developer.Rules.ShouldNotBeEmpty();
         developer.Rules.ShouldContain(rule => rule.Verbs.Contains("delete"));
         var binding = resources.OfType<V1RoleBinding>().Single(item => item.Name() == "my-serviceaccount-developer");

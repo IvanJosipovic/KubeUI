@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using Avalonia.Markup.Xaml.Styling;
 using Dock.Model.Controls;
 using Dock.Model.Core;
@@ -23,7 +24,7 @@ using OpenTelemetry.Trace;
 [assembly: GenerateMarkupExtensionsForAssembly(typeof(Avalonia.Xaml.Interactions.Events.PointerPressedEventTrigger))]
 [assembly: GenerateMarkupExtensionsForAssembly(typeof(Avalonia.Xaml.Interactivity.EventTriggerBase))]
 [assembly: GenerateMarkupExtensionsForAssembly(typeof(AvaloniaEdit.TextEditor))]
-[assembly: GenerateMarkupExtensionsForAssembly(typeof(DataGrid))]
+[assembly: GenerateMarkupExtensionsForAssembly(typeof(DynamicTableView))]
 [assembly: GenerateMarkupExtensionsForAssembly(typeof(Dock.Avalonia.Controls.DockableControl))]
 [assembly: GenerateMarkupExtensionsForAssembly(typeof(Dock.Controls.DeferredContentControl.DeferredContentControl))]
 [assembly: GenerateMarkupExtensionsForAssembly(typeof(FluentAvalonia.UI.Controls.FABitmapIcon))]
@@ -77,6 +78,7 @@ public partial class App : Application, IServiceProviderHost
         KubernetesClientConfiguration.ExecStdError -= KubernetesClientConfiguration_ExecStdError;
     }
 
+    [RequiresUnreferencedCode()]
     public override void Initialize()
     {
         DockSettings.MinimumHorizontalDragDistance = 8;

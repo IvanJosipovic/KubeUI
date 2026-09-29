@@ -56,22 +56,38 @@ public static class KubernetesYaml
 
     private static object? CreateStaticStringDictionary(Type type)
     {
-        if (type == typeof(IDictionary<string, ResourceQuantity>) || type == typeof(Dictionary<string, ResourceQuantity>)) return new Dictionary<string, ResourceQuantity>();
-        if (type == typeof(IDictionary<string, V1beta1Counter>) || type == typeof(Dictionary<string, V1beta1Counter>)) return new Dictionary<string, V1beta1Counter>();
-        if (type == typeof(IDictionary<string, V1beta1DeviceAttribute>) || type == typeof(Dictionary<string, V1beta1DeviceAttribute>)) return new Dictionary<string, V1beta1DeviceAttribute>();
-        if (type == typeof(IDictionary<string, V1beta1DeviceCapacity>) || type == typeof(Dictionary<string, V1beta1DeviceCapacity>)) return new Dictionary<string, V1beta1DeviceCapacity>();
-        if (type == typeof(IDictionary<string, V1beta2Counter>) || type == typeof(Dictionary<string, V1beta2Counter>)) return new Dictionary<string, V1beta2Counter>();
-        if (type == typeof(IDictionary<string, V1beta2DeviceAttribute>) || type == typeof(Dictionary<string, V1beta2DeviceAttribute>)) return new Dictionary<string, V1beta2DeviceAttribute>();
-        if (type == typeof(IDictionary<string, V1beta2DeviceCapacity>) || type == typeof(Dictionary<string, V1beta2DeviceCapacity>)) return new Dictionary<string, V1beta2DeviceCapacity>();
-        if (type == typeof(IDictionary<string, V1Counter>) || type == typeof(Dictionary<string, V1Counter>)) return new Dictionary<string, V1Counter>();
-        if (type == typeof(IDictionary<string, V1DeviceAttribute>) || type == typeof(Dictionary<string, V1DeviceAttribute>)) return new Dictionary<string, V1DeviceAttribute>();
-        if (type == typeof(IDictionary<string, V1DeviceCapacity>) || type == typeof(Dictionary<string, V1DeviceCapacity>)) return new Dictionary<string, V1DeviceCapacity>();
-        if (type == typeof(IDictionary<string, V1JSONSchemaProps>) || type == typeof(Dictionary<string, V1JSONSchemaProps>)) return new Dictionary<string, V1JSONSchemaProps>();
-        if (type == typeof(IDictionary<string, byte[]>) || type == typeof(Dictionary<string, byte[]>)) return new Dictionary<string, byte[]>();
-        if (type == typeof(IDictionary<string, IList<string>>) || type == typeof(Dictionary<string, IList<string>>)) return new Dictionary<string, IList<string>>();
-        if (type == typeof(IDictionary<string, DateTime?>) || type == typeof(Dictionary<string, DateTime?>)) return new Dictionary<string, DateTime?>();
-        if (type == typeof(IDictionary<string, object>) || type == typeof(Dictionary<string, object>)) return new Dictionary<string, object>();
-        if (type == typeof(IDictionary<string, string>) || type == typeof(Dictionary<string, string>)) return new Dictionary<string, string>();
+        if (type == typeof(IDictionary<string, ResourceQuantity>) || type == typeof(Dictionary<string, ResourceQuantity>))
+            return new Dictionary<string, ResourceQuantity>();
+        if (type == typeof(IDictionary<string, V1beta1Counter>) || type == typeof(Dictionary<string, V1beta1Counter>))
+            return new Dictionary<string, V1beta1Counter>();
+        if (type == typeof(IDictionary<string, V1beta1DeviceAttribute>) || type == typeof(Dictionary<string, V1beta1DeviceAttribute>))
+            return new Dictionary<string, V1beta1DeviceAttribute>();
+        if (type == typeof(IDictionary<string, V1beta1DeviceCapacity>) || type == typeof(Dictionary<string, V1beta1DeviceCapacity>))
+            return new Dictionary<string, V1beta1DeviceCapacity>();
+        if (type == typeof(IDictionary<string, V1beta2Counter>) || type == typeof(Dictionary<string, V1beta2Counter>))
+            return new Dictionary<string, V1beta2Counter>();
+        if (type == typeof(IDictionary<string, V1beta2DeviceAttribute>) || type == typeof(Dictionary<string, V1beta2DeviceAttribute>))
+            return new Dictionary<string, V1beta2DeviceAttribute>();
+        if (type == typeof(IDictionary<string, V1beta2DeviceCapacity>) || type == typeof(Dictionary<string, V1beta2DeviceCapacity>))
+            return new Dictionary<string, V1beta2DeviceCapacity>();
+        if (type == typeof(IDictionary<string, V1Counter>) || type == typeof(Dictionary<string, V1Counter>))
+            return new Dictionary<string, V1Counter>();
+        if (type == typeof(IDictionary<string, V1DeviceAttribute>) || type == typeof(Dictionary<string, V1DeviceAttribute>))
+            return new Dictionary<string, V1DeviceAttribute>();
+        if (type == typeof(IDictionary<string, V1DeviceCapacity>) || type == typeof(Dictionary<string, V1DeviceCapacity>))
+            return new Dictionary<string, V1DeviceCapacity>();
+        if (type == typeof(IDictionary<string, V1JSONSchemaProps>) || type == typeof(Dictionary<string, V1JSONSchemaProps>))
+            return new Dictionary<string, V1JSONSchemaProps>();
+        if (type == typeof(IDictionary<string, byte[]>) || type == typeof(Dictionary<string, byte[]>))
+            return new Dictionary<string, byte[]>();
+        if (type == typeof(IDictionary<string, IList<string>>) || type == typeof(Dictionary<string, IList<string>>))
+            return new Dictionary<string, IList<string>>();
+        if (type == typeof(IDictionary<string, DateTime?>) || type == typeof(Dictionary<string, DateTime?>))
+            return new Dictionary<string, DateTime?>();
+        if (type == typeof(IDictionary<string, object>) || type == typeof(Dictionary<string, object>))
+            return new Dictionary<string, object>();
+        if (type == typeof(IDictionary<string, string>) || type == typeof(Dictionary<string, string>))
+            return new Dictionary<string, string>();
         return null;
     }
 
@@ -391,8 +407,8 @@ public static class KubernetesYaml
                 case null:
                     emitter.Emit(new Scalar("null"));
                     break;
-                case System.Text.Json.JsonElement jsonElement:
-                    serializer(jsonElement, typeof(System.Text.Json.JsonElement));
+                case JsonElement jsonElement:
+                    serializer(jsonElement, typeof(JsonElement));
                     break;
                 case string text:
                     emitter.Emit(new Scalar(null, null, text, ScalarStyle.DoubleQuoted, false, true));
@@ -611,7 +627,7 @@ public static class KubernetesYaml
                         resource.Metadata = (V1ObjectMeta?)rootDeserializer(typeof(V1ObjectMeta))!;
                         break;
                     default:
-                        resource.Properties[key] = (System.Text.Json.JsonElement)rootDeserializer(typeof(System.Text.Json.JsonElement))!;
+                        resource.Properties[key] = (JsonElement)rootDeserializer(typeof(JsonElement))!;
                         break;
                 }
             }
@@ -637,7 +653,7 @@ public static class KubernetesYaml
             foreach (var property in resource.Properties)
             {
                 emitter.Emit(new Scalar(property.Key));
-                serializer(property.Value, typeof(System.Text.Json.JsonElement));
+                serializer(property.Value, typeof(JsonElement));
             }
 
             emitter.Emit(new MappingEnd());

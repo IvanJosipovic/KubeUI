@@ -3865,7 +3865,7 @@ public class ResourceYamlViewModelTests
             .FirstOrDefault(textBlock => textBlock.Text == vm.ActionResultMessage);
         messageText.ShouldNotBeNull();
         messageText.Bounds.Height.ShouldBeGreaterThan(24d);
-        var messageBottom = messageText.TranslatePoint(new global::Avalonia.Point(0, messageText.Bounds.Height), actionBar);
+        var messageBottom = messageText.TranslatePoint(new Point(0, messageText.Bounds.Height), actionBar);
         messageBottom.ShouldNotBeNull();
         (actionBar.Bounds.Height - messageBottom!.Value.Y).ShouldBeGreaterThanOrEqualTo(14d);
 

@@ -28,21 +28,21 @@ public sealed partial class V1DeploymentConfig : ResourceConfigBase<V1Deployment
                 Name = Assets.Resources.V1DeploymentConfig_Pods!,
                 Display = x => $"{x.Status?.AvailableReplicas ?? 0}/{x.Spec?.Replicas ?? 0}",
                 Field = x => x.Status?.AvailableReplicas ?? 0,
-                Width = nameof(DataGridLengthUnitType.SizeToHeader)
+                WidthMode = DynamicTableViewWidthMode.Header
             },
             new ResourceListColumn<V1Deployment, int>()
             {
                 Key = "replicas",
                 Name = Assets.Resources.V1DeploymentConfig_Replicas!,
                 Field = x => x.Spec.Replicas ?? 0,
-                Width = nameof(DataGridLengthUnitType.SizeToHeader)
+                WidthMode = DynamicTableViewWidthMode.Header
             },
             new ResourceListColumn<V1Deployment, string>()
             {
                 Key = "available",
                 Name = Assets.Resources.V1DeploymentConfig_Available!,
                 Field = x => x.Status?.Conditions?.FirstOrDefault(x => x.Type == "Available")?.Status ?? "",
-                Width = nameof(DataGridLengthUnitType.SizeToHeader)
+                WidthMode = DynamicTableViewWidthMode.Header
             },
             AgeColumn(),
         ];

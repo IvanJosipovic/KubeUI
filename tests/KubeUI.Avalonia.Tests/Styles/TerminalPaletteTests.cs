@@ -1,8 +1,8 @@
-using Avalonia.Headless.XUnit;
 using Avalonia.Controls;
+using Avalonia.Headless.XUnit;
 using Avalonia.Media;
-using KubeUI.Avalonia.Styles;
 using Avalonia.Styling;
+using KubeUI.Avalonia.Styles;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Styles;

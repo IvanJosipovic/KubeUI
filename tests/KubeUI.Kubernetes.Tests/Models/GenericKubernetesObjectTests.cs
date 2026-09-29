@@ -1,7 +1,7 @@
 using System.Text.Json;
 using k8s;
-using KubeUI.Kubernetes.Serialization;
 using KubernetesClient.Informer.Client;
+using KubeUI.Kubernetes.Serialization;
 using Shouldly;
 
 namespace KubeUI.Kubernetes.Tests.Models;
