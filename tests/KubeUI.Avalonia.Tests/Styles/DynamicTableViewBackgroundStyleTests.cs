@@ -122,7 +122,7 @@ public sealed class DynamicTableViewBackgroundStyleTests
     }
 
     [AvaloniaFact]
-    public void filter_button_background_matches_header_in_light_and_dark_themes()
+    public void filter_button_remains_transparent_over_themed_header()
     {
         var application = Application.Current!;
         var originalVariant = application.RequestedThemeVariant;
@@ -149,8 +149,8 @@ public sealed class DynamicTableViewBackgroundStyleTests
                 application.RequestedThemeVariant = variant;
                 Dispatcher.UIThread.RunJobs();
 
-                filterButton.Background.ShouldBeAssignableTo<ISolidColorBrush>().Color
-                    .ShouldBe(header.Background.ShouldBeAssignableTo<ISolidColorBrush>().Color);
+                filterButton.Background.ShouldBe(Brushes.Transparent);
+                header.Background.ShouldBeAssignableTo<ISolidColorBrush>();
             }
         }
         finally
