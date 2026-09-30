@@ -19,8 +19,9 @@ References:
 
 ### Data binding
 - Use compiled bindings only on all binding scopes.
-- Never use `new Binding()` when compiled binding can express the required source and path.
-- Use `new Binding()` only when compiled binding cannot represent the required binding scenario, such as a source mode or binding feature unavailable through the compiled-binding API; document that limitation at the call site.
+- Prefer `CompiledBinding` or typed binding helpers; they avoid reflection when accessing ViewModel members.
+- Never use `new Binding()` (runtime/reflection binding) when compiled binding can express the required source and path.
+- Use `new Binding()` only when compiled binding cannot represent the required dynamic path, source mode, or binding feature; document that limitation at the call site.
 - Keep bindings one-way unless user input must update the ViewModel.
 
 ### Custom controls
@@ -90,5 +91,6 @@ References:
 - No hacks or weird workarounds; if you think you need one, ask for guidance.
 - UI text should be added to resources.
 - Prefer fluent declarative collection options in C# Avalonia views, such as dataGrid.Columns([...]) instead of dataGrid.Columns.Add(...).
+- When creating Avalonia controls in code, prefer fluent extensions over object initializers, for example new TextEditor().Name("Editor") instead of new TextEditor { Name = "Editor" }.
 - Keep view code in the Build methods, only create methods for large sections or repeated view code.
 - If a class inherits from ObservableObject, always use [ObservableProperty] etc for properties
