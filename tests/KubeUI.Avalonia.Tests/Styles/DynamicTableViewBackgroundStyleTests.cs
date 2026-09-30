@@ -1,4 +1,3 @@
-using System.Collections.ObjectModel;
 using System.Reactive.Concurrency;
 using Avalonia.Controls;
 using Avalonia.Controls.Presenters;
@@ -9,6 +8,7 @@ using Avalonia.Media;
 using Avalonia.Styling;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
+using DynamicData;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Styles;
@@ -125,8 +125,10 @@ public sealed class DynamicTableViewBackgroundStyleTests
     {
         var application = Application.Current!;
         var originalVariant = application.RequestedThemeVariant;
-        using var source = DynamicTableViewSource<FilterTestRow, string>.FromObservableCollection(
-            new ObservableCollection<FilterTestRow> { new("row", "Name") },
+        using var cache = new SourceCache<FilterTestRow, string>(static row => row.Id);
+        cache.AddOrUpdate(new FilterTestRow("row", "Name"));
+        using var source = new DynamicTableViewSource<FilterTestRow, string>(
+            cache,
             static row => row.Id,
             [DynamicTableViewColumn<FilterTestRow>.Create("name", "Name", static row => row.Name)],
             ImmediateScheduler.Instance,

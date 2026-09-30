@@ -186,7 +186,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
 
         Objects = Cluster.Runtime.GetResourceSourceCache<T>(ResourceConfig.Kind);
         _tableSource = new DynamicTableViewSource<T, ResourceCacheKey>(
-            Objects.Connect(),
+            Objects,
             ResourceCacheKey.From,
             columns,
             options: new DynamicTableViewSourceOptions
@@ -195,7 +195,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
             });
         _tableSource.SourceError += TableSourceOnError;
         _tableSource.SelectionModel.SelectionChanged += SelectionModelOnSelectionChanged;
-        _tableSource.SetSort(sorts);
+        _tableSource.SetSort(sorts.ToArray());
         _tableSource.SearchText = SearchQuery;
         SetNamespaceFilter();
         SubscribeToItems();

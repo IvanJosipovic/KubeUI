@@ -12,6 +12,7 @@ using Dock.Model.Core;
 using FluentAvalonia.Styling;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
 using Semi.Avalonia;
+using SvcSystems.UI.Terminal;
 using Ursa.Controls;
 using Ursa.Themes.Semi;
 using Westermo.GraphX.Controls.Avalonia.Themes.Fluent;
@@ -41,7 +42,7 @@ public sealed class Fluent : AvaloniaStyles
         Add(CreateStyleInclude("avares://AvaloniaEdit/Themes/Fluent/AvaloniaEdit.xaml"));
         Add(CreateStyleInclude("avares://LiveMarkdown.Avalonia/Styles.axaml"));
         Add(new DockFluentTheme());
-        Add(CreateStyleInclude("avares://SvcSystems.UI.Terminal/Styles/Colors.axaml"));
+        Add(new TerminalTheme());
 
         Add(new Style<ToolControl>()
             .Background(new DynamicResourceExtension("SystemRegionBrush")));
