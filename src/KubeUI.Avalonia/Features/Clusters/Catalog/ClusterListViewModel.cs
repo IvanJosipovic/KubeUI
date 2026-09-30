@@ -1,4 +1,6 @@
 using Avalonia.Controls.Selection;
+using DynamicData;
+using DynamicData.Binding;
 using FluentAvalonia.UI.Controls;
 using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
@@ -12,6 +14,7 @@ public sealed partial class ClusterListViewModel : ViewModelBase, IDisposable
 {
     private readonly IDialogService _dialogService;
     private readonly IClusterRuntimeCatalog _runtimeCatalog;
+    private readonly IObservableCache<ClusterWorkspace, string> _clusterCache;
     private DynamicTableViewSource<ClusterWorkspace, string>? _tableSource;
 
     [ObservableProperty]
@@ -28,8 +31,11 @@ public sealed partial class ClusterListViewModel : ViewModelBase, IDisposable
 
         Title = Assets.Resources.ClusterListView_Title!;
         Id = nameof(ClusterListViewModel);
-        _tableSource = DynamicTableViewSource<ClusterWorkspace, string>.FromObservableCollection(
-            ClusterCatalog.Clusters,
+        _clusterCache = ClusterCatalog.Clusters
+            .ToObservableChangeSet(static cluster => cluster.Runtime.Name)
+            .AsObservableCache();
+        _tableSource = new DynamicTableViewSource<ClusterWorkspace, string>(
+            _clusterCache,
             static cluster => cluster.Runtime.Name,
             [
                 DynamicTableViewColumn<ClusterWorkspace>.Create("name", Assets.Resources.ClusterListView_Name,
@@ -63,6 +69,7 @@ public sealed partial class ClusterListViewModel : ViewModelBase, IDisposable
             return;
         _tableSource.SelectionModel.SelectionChanged -= SelectionModelOnSelectionChanged;
         _tableSource.Dispose();
+        _clusterCache.Dispose();
         _tableSource = null;
     }
 
