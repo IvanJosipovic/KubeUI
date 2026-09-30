@@ -1,7 +1,6 @@
 using System.Text.Json.Nodes;
 using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Features.Resources.Editor;
-using KubeUI.Kubernetes;
 using Microsoft.OpenApi;
 
 namespace KubeUI.Avalonia.Tests.Features.Resources.Editor;

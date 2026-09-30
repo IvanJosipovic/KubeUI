@@ -7,9 +7,9 @@ using FluentIcons.Common;
 using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
-using SharedConverters = KubeUI.Avalonia.Converters.Converters;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Infrastructure.Presentation;
+using SharedConverters = KubeUI.Avalonia.Converters.Converters;
 
 namespace KubeUI.Avalonia.Features.Resources.Properties.Controls;
 

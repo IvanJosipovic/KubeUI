@@ -1,5 +1,3 @@
-using System.Collections.ObjectModel;
-using System.ComponentModel;
 using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -341,8 +339,8 @@ public sealed partial class ResourceEditorNodeViewModel : ObservableObject, INot
     {
         ArgumentNullException.ThrowIfNull(errors);
         foreach (var propertyErrors in _localValidationErrors.Values)
-        foreach (var error in propertyErrors)
-            errors.Add(new ResourceEditorValidationError(Path, error));
+            foreach (var error in propertyErrors)
+                errors.Add(new ResourceEditorValidationError(Path, error));
 
         foreach (var child in Children)
             child.AppendLocalValidationErrors(errors);

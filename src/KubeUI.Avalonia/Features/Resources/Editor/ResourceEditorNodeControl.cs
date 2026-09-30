@@ -1,17 +1,12 @@
 using System.Globalization;
 using System.Windows.Input;
 using Avalonia.Automation;
-using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Templates;
-using Avalonia.Data;
 using Avalonia.Data.Converters;
-using Avalonia.Layout;
 using Avalonia.Markup.Xaml.MarkupExtensions;
-using Avalonia.Media;
-using AvaloniaEdit;
 using Avalonia.Xaml.Interactivity;
-using FluentAvalonia.UI.Controls;
+using AvaloniaEdit;
 using FluentIcons.Avalonia;
 using FluentIcons.Common;
 using KubeUI.Avalonia.Features.Resources.Properties.Controls;
@@ -182,7 +177,7 @@ public sealed class ResourceEditorNodeControl : UserControl
                 .TextWrapping(TextWrapping.NoWrap);
             BindValidation(editor, node.ValidationPropertyName);
             editor.Bind(
-                SelectableTextBlock.TextProperty,
+                TextBlock.TextProperty,
                 CompiledBinding.Create<ResourceEditorNodeViewModel, string>(x => x.DisplayValue));
             return editor;
         }

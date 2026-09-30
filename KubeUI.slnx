@@ -1,4 +1,7 @@
 <Solution>
+  <Folder Name="/Benchmarks/">
+    <Project Path="benchmarks/KubeUI.Benchmarks/KubeUI.Benchmarks.csproj" />
+  </Folder>
   <Folder Name="/Solution Items/">
     <File Path=".editorconfig" />
     <File Path=".releaserc.json" />
@@ -15,7 +18,6 @@
     <Project Path="tests/KubeUI.Kubernetes.Tests/KubeUI.Kubernetes.Tests.csproj" />
     <Project Path="tests/KubeUI.Testing/KubeUI.Testing.csproj" />
   </Folder>
-  <Project Path="benchmarks/KubeUI.Benchmarks/KubeUI.Benchmarks.csproj" />
   <Project Path="src/KubeUI.AI/KubeUI.AI.csproj" />
   <Project Path="src/KubeUI.Avalonia/KubeUI.Avalonia.csproj" />
   <Project Path="src/KubeUI.Desktop/KubeUI.Desktop.csproj" />

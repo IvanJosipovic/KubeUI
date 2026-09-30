@@ -1,6 +1,5 @@
 using System.Reflection;
 using Avalonia.Headless.XUnit;
-using Xunit;
 using Xunit.Sdk;
 using Xunit.v3;
 

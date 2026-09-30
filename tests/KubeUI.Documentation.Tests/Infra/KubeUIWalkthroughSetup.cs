@@ -1,7 +1,7 @@
 using Avalonia;
-using KubeUI.Avalonia.Infrastructure.DependencyInjection;
 using k8s;
 using k8s.Models;
+using KubeUI.Avalonia.Infrastructure.DependencyInjection;
 
 namespace KubeUI.Documentation.Tests.Infra;
 

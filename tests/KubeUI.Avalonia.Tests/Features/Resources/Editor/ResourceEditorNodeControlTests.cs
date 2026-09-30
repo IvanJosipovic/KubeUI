@@ -1,20 +1,17 @@
 using System.Text.Json.Nodes;
 using Avalonia.Automation;
 using Avalonia.Controls;
-using Avalonia.Controls.Primitives;
 using Avalonia.Headless;
-using Avalonia.Input;
 using Avalonia.Headless.XUnit;
+using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using AvaloniaEdit;
 using FluentIcons.Avalonia;
 using FluentIcons.Common;
-using FluentAvalonia.UI.Controls;
 using KubeUI.Avalonia.Features.Resources.Editor;
 using KubeUI.Avalonia.Features.Resources.Properties.Controls;
-using KubeUI.Avalonia.Features.Resources.Yaml;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Features.Resources.Editor;

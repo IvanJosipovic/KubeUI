@@ -22,21 +22,21 @@ public sealed partial class V2HorizontalPodAutoscalerConfig : ResourceConfigBase
                 Key = "min-pods",
                 Name = Assets.Resources.V2HorizontalPodAutoscalerConfig_Min_Pods!,
                 Field = x => x.Spec.MinReplicas ?? 0,
-                Width = nameof(DataGridLengthUnitType.SizeToHeader)
+                WidthMode = DynamicTableViewWidthMode.Header
             },
             new ResourceListColumn<V2HorizontalPodAutoscaler, int>()
             {
                 Key = "max-pods",
                 Name = Assets.Resources.V2HorizontalPodAutoscalerConfig_Max_Pods!,
                 Field = x => x.Spec.MaxReplicas,
-                Width = nameof(DataGridLengthUnitType.SizeToHeader)
+                WidthMode = DynamicTableViewWidthMode.Header
             },
             new ResourceListColumn<V2HorizontalPodAutoscaler, int>()
             {
                 Key = "replica",
                 Name = Assets.Resources.V2HorizontalPodAutoscalerConfig_Replica!,
                 Field = x => x.Status.CurrentReplicas ?? 0,
-                Width = nameof(DataGridLengthUnitType.SizeToHeader)
+                WidthMode = DynamicTableViewWidthMode.Header
             },
             AgeColumn(),
             new ResourceListColumn<V2HorizontalPodAutoscaler, string>()
@@ -44,7 +44,7 @@ public sealed partial class V2HorizontalPodAutoscalerConfig : ResourceConfigBase
                 Key = "conditions",
                 Name = Assets.Resources.V2HorizontalPodAutoscalerConfig_Conditions!,
                 Field = x => x.Status.Conditions?.FirstOrDefault(y => y.Status == "True")?.Type ?? "",
-                Width = nameof(DataGridLengthUnitType.SizeToHeader)
+                WidthMode = DynamicTableViewWidthMode.Header
             },
         ];
     }

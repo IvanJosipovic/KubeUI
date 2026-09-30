@@ -245,7 +245,7 @@ public sealed partial class ResourceEditorViewModel : ViewModelBase, IDisposable
         ActionResultMessage = message;
     }
 
-    protected override void OnPropertyChanged(System.ComponentModel.PropertyChangedEventArgs e)
+    protected override void OnPropertyChanged(PropertyChangedEventArgs e)
     {
         base.OnPropertyChanged(e);
         if (e.PropertyName is nameof(ActionResultTitle) or nameof(ActionResultMessage) or nameof(ActionResultSuccess))
@@ -330,8 +330,8 @@ public sealed partial class ResourceEditorViewModel : ViewModelBase, IDisposable
     {
         yield return node;
         foreach (var child in node.Children)
-        foreach (var descendant in EnumerateNodes(child))
-            yield return descendant;
+            foreach (var descendant in EnumerateNodes(child))
+                yield return descendant;
     }
 
     private static void SetPath(JsonObject root, string path, JsonNode? value)

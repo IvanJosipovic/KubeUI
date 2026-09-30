@@ -16,14 +16,14 @@ public sealed partial class V1NamespaceConfig(IServiceProvider serviceProvider) 
                 Key = "labels",
                 Name = Assets.Resources.V1NamespaceConfig_Labels!,
                 Field = x => x?.Metadata?.Labels is { Count: > 0 } labels ? string.Join(", ", labels.Select(x => x.Key + "=" + x.Value)) : "",
-                Width = "2*"
+                Width = 2, WidthMode = DynamicTableViewWidthMode.Star
             },
             new ResourceListColumn<V1Namespace, string>()
             {
                 Key = "status",
                 Name = Assets.Resources.V1NamespaceConfig_Status!,
                 Field = x => x?.Status?.Phase ?? "",
-                Width = nameof(DataGridLengthUnitType.SizeToHeader)
+                WidthMode = DynamicTableViewWidthMode.Header
             },
             AgeColumn(),
         ];

@@ -28,6 +28,7 @@ public sealed partial class PodLogsView : ViewBase<PodLogsViewModel>
         return new Grid()
             .HorizontalAlignment(HorizontalAlignment.Stretch)
             .VerticalAlignment(VerticalAlignment.Stretch)
+            .KeyBindings(CodeFontSizeKeyBindings.Create(vm.SettingsService))
             .Rows("Auto,*")
             .Children(
                 CreateTopBar(vm),

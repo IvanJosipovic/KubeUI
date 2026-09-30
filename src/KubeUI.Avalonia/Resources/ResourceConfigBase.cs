@@ -12,11 +12,11 @@ using k8s.Models;
 using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Features.Resources.Common;
+using KubeUI.Avalonia.Features.Resources.Editor;
 using KubeUI.Avalonia.Features.Resources.List.Controls;
 using KubeUI.Avalonia.Features.Resources.Properties;
 using KubeUI.Avalonia.Features.Resources.Visualization;
 using KubeUI.Avalonia.Features.Resources.Yaml;
-using KubeUI.Avalonia.Features.Resources.Editor;
 using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Infrastructure.Docking;
 using KubeUI.Avalonia.Resources.Workloads.v1.Pod.Services;
@@ -210,7 +210,8 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
             Key = "name",
             Name = Assets.Resources.ResourceListView_Name!,
             Field = x => x?.Metadata?.Name ?? string.Empty,
-            Width = "2*",
+            Width = 2,
+            WidthMode = DynamicTableViewWidthMode.Star,
             Sort = sort,
         };
     }
@@ -222,7 +223,8 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
             Key = "namespace",
             Name = Assets.Resources.ResourceListView_Namespace!,
             Field = x => x?.Metadata?.NamespaceProperty ?? string.Empty,
-            Width = "*",
+            Width = 1,
+            WidthMode = DynamicTableViewWidthMode.Star,
         };
     }
 
@@ -234,7 +236,8 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
             Name = Assets.Resources.ResourceListView_Age!,
             CustomControl = typeof(AgeCell),
             Field = x => x.Metadata.CreationTimestamp,
-            Width = "80"
+            Width = 80,
+            WidthMode = DynamicTableViewWidthMode.Pixel
         };
     }
 

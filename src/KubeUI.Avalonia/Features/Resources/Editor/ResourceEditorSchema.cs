@@ -1,6 +1,6 @@
+using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using System.Runtime.CompilerServices;
 using KubernetesClient.Informer.Client;
 using KubeUI.Kubernetes;
 using Microsoft.OpenApi;
@@ -128,7 +128,7 @@ public sealed class ResourceEditorSchemaNode
                 .Where(static x => x.AdditionalPropertiesAllowed)
                 .Select(static x => x.AdditionalProperties)
                 .FirstOrDefault(static x => x is not null);
-            var enumValues = variants.SelectMany(static x => x.Enum ?? new List<System.Text.Json.Nodes.JsonNode>())
+            var enumValues = variants.SelectMany(static x => x.Enum ?? new List<JsonNode>())
                 .Select(static value => value?.ToString() ?? string.Empty)
                 .Where(static value => value.Length > 0)
                 .Distinct(StringComparer.Ordinal)

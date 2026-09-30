@@ -4,7 +4,6 @@ using Dock.Model.Controls;
 using Dock.Model.Core;
 using k8s.Models;
 using KubeUI.Avalonia.Features.Resources.Editor;
-using KubeUI.Avalonia.Features.Resources.Yaml;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Resources;
 using Shouldly;
@@ -42,7 +41,7 @@ public sealed class ResourceConfigBasePermissionTests
             .ShouldContain(item => item.Title == "View YAML");
 
         var edit = config.GetDefaultMenuItems(new[] { pod })
-            .Single(item => item.Title == KubeUI.Avalonia.Assets.Resources.ResourceConfigBase_MenuItem_Edit);
+            .Single(item => item.Title == Assets.Resources.ResourceConfigBase_MenuItem_Edit);
 
         edit.Command.ShouldNotBeNull();
         edit.CommandParameter.ShouldBeAssignableTo<IList<V1Pod>>().ShouldBe([pod]);

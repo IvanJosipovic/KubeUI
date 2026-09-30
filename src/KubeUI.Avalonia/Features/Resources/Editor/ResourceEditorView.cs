@@ -1,12 +1,8 @@
-using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Templates;
-using Avalonia.Data;
-using Avalonia.Layout;
 using FluentAvalonia.UI.Controls;
 using FluentIcons.Avalonia;
 using FluentIcons.Common;
-using KubeUI.Avalonia.Infrastructure.Presentation;
 
 namespace KubeUI.Avalonia.Features.Resources.Editor;
 

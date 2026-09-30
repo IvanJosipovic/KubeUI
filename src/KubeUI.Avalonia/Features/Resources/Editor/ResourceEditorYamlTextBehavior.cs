@@ -1,13 +1,8 @@
-using Avalonia;
-using Avalonia.Controls;
-using Avalonia.Interactivity;
-using Avalonia.Styling;
 using Avalonia.Xaml.Interactivity;
 using AvaloniaEdit;
 using AvaloniaEdit.Indentation;
 using AvaloniaEdit.TextMate;
 using KubeUI.Avalonia.Features.Resources.Yaml;
-using KubeUI.Avalonia.Styles;
 using TextMateSharp.Grammars;
 using static AvaloniaEdit.TextMate.TextMate;
 

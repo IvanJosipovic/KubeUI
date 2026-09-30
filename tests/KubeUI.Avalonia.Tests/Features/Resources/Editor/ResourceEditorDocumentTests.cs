@@ -1,5 +1,5 @@
-using System.Text.Json.Nodes;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using KubeUI.Avalonia.Features.Resources.Editor;
 
 namespace KubeUI.Avalonia.Tests.Features.Resources.Editor;

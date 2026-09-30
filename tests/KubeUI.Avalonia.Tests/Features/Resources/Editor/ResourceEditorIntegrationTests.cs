@@ -1,22 +1,20 @@
 using System.Text.Json.Nodes;
 using Avalonia.Automation;
 using Avalonia.Controls;
-using Avalonia.Headless.XUnit;
 using Avalonia.Headless;
+using Avalonia.Headless.XUnit;
 using Avalonia.Input;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Dock.Model.Controls;
 using Dock.Model.Core;
-using FluentIcons.Avalonia;
 using FluentAvalonia.UI.Controls;
+using FluentIcons.Avalonia;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
-using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Features.Resources.Editor;
 using KubeUI.Avalonia.Features.Resources.Properties.Controls;
 using KubeUI.Avalonia.Infrastructure.Presentation;
-using KubeUI.Kubernetes;
 using Microsoft.OpenApi;
 using Shouldly;
 
@@ -120,9 +118,9 @@ public sealed class ResourceEditorIntegrationTests
         foreach (var button in toolbar.Children.OfType<Button>())
             button.Content.ShouldBeOfType<FluentIcon>();
         view.GetVisualDescendants().OfType<Button>().ShouldContain(button =>
-            Equals(ToolTip.GetTip(button), KubeUI.Avalonia.Assets.Resources.ResourceEditorView_Save));
+            Equals(ToolTip.GetTip(button), Assets.Resources.ResourceEditorView_Save));
         view.GetVisualDescendants().OfType<Button>().ShouldContain(button =>
-            Equals(ToolTip.GetTip(button), KubeUI.Avalonia.Assets.Resources.ResourceEditorView_Validate));
+            Equals(ToolTip.GetTip(button), Assets.Resources.ResourceEditorView_Validate));
 
         vm.ResetCommand.Execute(null);
 
@@ -130,12 +128,12 @@ public sealed class ResourceEditorIntegrationTests
         vm.Document!.Root["metadata"]!["name"]!.GetValue<string>().ShouldBe("pod-1");
 
         await vm.ValidateNowCommand.ExecuteAsync(null).WaitAsync(TestContext.Current.CancellationToken);
-        vm.ValidationMessage.ShouldBe(KubeUI.Avalonia.Assets.Resources.ResourceEditorView_ValidationSucceeded);
+        vm.ValidationMessage.ShouldBe(Assets.Resources.ResourceEditorView_ValidationSucceeded);
         vm.HasActionSuccessResult.ShouldBeTrue();
-        vm.ActionResultTitle.ShouldBe(KubeUI.Avalonia.Assets.Resources.ResourceEditorView_ValidationSucceeded);
+        vm.ActionResultTitle.ShouldBe(Assets.Resources.ResourceEditorView_ValidationSucceeded);
         var actionBar = view.GetVisualDescendants().OfType<FAInfoBar>().Single();
         actionBar.IsOpen.ShouldBeTrue();
-        actionBar.Title.ShouldBe(KubeUI.Avalonia.Assets.Resources.ResourceEditorView_ValidationSucceeded);
+        actionBar.Title.ShouldBe(Assets.Resources.ResourceEditorView_ValidationSucceeded);
     }
 
     [AvaloniaFact]
@@ -250,7 +248,7 @@ public sealed class ResourceEditorIntegrationTests
         vm.ValidationMessage.ShouldBeNull();
         vm.ErrorMessage.ShouldContain("containers");
         vm.HasActionFailureResult.ShouldBeTrue();
-        vm.ActionResultTitle.ShouldBe(KubeUI.Avalonia.Assets.Resources.ResourceEditorView_ValidationFailed);
+        vm.ActionResultTitle.ShouldBe(Assets.Resources.ResourceEditorView_ValidationFailed);
         vm.ActionResultMessage.ShouldContain("Pod spec.containers must contain at least one container.");
         vm.ActionResultMessage.ShouldNotContain("Operation returned an invalid status code");
 
