@@ -57,13 +57,13 @@ public abstract class MetricsHistoryCellBase<TResource> : UserControl, IInitiali
         _barPanel = new Grid()
             .Cols("*,*,*,*,*,*,*,*,*,*,*,*")
             .ColumnSpacing(1)
-            .VerticalAlignment(VerticalAlignment.Bottom)
+            .VerticalAlignment(VerticalAlignment.Stretch)
             .Children(_bars);
 
         this.Content(_barPanel)
             .Margin(4, 0)
             .HorizontalAlignment(HorizontalAlignment.Stretch)
-            .VerticalAlignment(VerticalAlignment.Center)
+            .VerticalAlignment(VerticalAlignment.Stretch)
             .MinHeight(24);
     }
 
@@ -132,6 +132,10 @@ public abstract class MetricsHistoryCellBase<TResource> : UserControl, IInitiali
             || change.Property.Name == nameof(IsEffectivelyVisible))
         {
             RefreshCell();
+        }
+        else if (change.Property == BoundsProperty && _resource is not null)
+        {
+            RenderHistory(_resource, _history);
         }
     }
 
@@ -328,7 +332,7 @@ public abstract class MetricsHistoryCellBase<TResource> : UserControl, IInitiali
     {
         var points = IsMemoryMetric ? history.Memory : history.Cpu;
         var limit = GetMetricLimit(resource);
-        var bars = MetricsHistoryBuckets.CreateBars(points, _timeProvider.GetUtcNow(), limit);
+        var bars = MetricsHistoryBuckets.CreateBars(points, _timeProvider.GetUtcNow(), limit, Bounds.Height);
         for (var index = 0; index < _bars.Length; index++)
         {
             var data = bars[index];

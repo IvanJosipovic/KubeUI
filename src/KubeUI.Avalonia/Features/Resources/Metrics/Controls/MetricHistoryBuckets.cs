@@ -27,12 +27,12 @@ internal static class MetricsHistoryBuckets
     public const int BucketCount = 12;
     public static readonly TimeSpan BucketSize = TimeSpan.FromMinutes(5);
     public static readonly TimeSpan History = TimeSpan.FromHours(1);
-    public const double ChartHeight = 20;
 
     public static IReadOnlyList<MetricsBarData> CreateBars(
         IReadOnlyList<MetricPoint> points,
         DateTimeOffset end,
-        double? limit)
+        double? limit,
+        double chartHeight)
     {
         var start = end - History;
         var values = new double[BucketCount];
@@ -76,7 +76,9 @@ internal static class MetricsHistoryBuckets
                     : utilization >= 0.8
                         ? MetricsLimitState.Warning
                         : MetricsLimitState.Normal;
-            var height = hasValues[index] ? Math.Max(1, value / maximum * ChartHeight) : 0;
+            var height = hasValues[index] && chartHeight > 0
+                ? Math.Min(chartHeight, Math.Max(1, value / maximum * chartHeight))
+                : 0;
             var bucketStart = start + TimeSpan.FromTicks(BucketSize.Ticks * index);
             bars[index] = new MetricsBarData(
                 bucketStart,

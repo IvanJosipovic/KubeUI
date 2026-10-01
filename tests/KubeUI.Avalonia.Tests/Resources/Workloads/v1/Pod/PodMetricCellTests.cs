@@ -36,7 +36,7 @@ public sealed class PodMetricCellTests
             new(end, 5.0),
         ];
 
-        var bars = MetricsHistoryBuckets.CreateBars(points, end, 1.0);
+        var bars = MetricsHistoryBuckets.CreateBars(points, end, 1.0, 20);
 
         bars.Count.ShouldBe(MetricsHistoryBuckets.BucketCount);
         bars[0].Value.ShouldBe(0.8);
@@ -46,7 +46,7 @@ public sealed class PodMetricCellTests
         bars[^1].Value.ShouldBe(0);
         bars[^1].Height.ShouldBe(0);
 
-        MetricsHistoryBuckets.CreateBars(points, end, null)
+        MetricsHistoryBuckets.CreateBars(points, end, null, 20)
             .ShouldAllBe(static bar => bar.LimitState == MetricsLimitState.Normal);
     }
 
@@ -91,6 +91,24 @@ public sealed class PodMetricCellTests
         bars.ShouldNotBeEmpty();
         cell.Margin.ShouldBe(new Thickness(4, 0));
         (bars[^1].Bounds.Right / panel.Bounds.Width).ShouldBeGreaterThan(0.95);
+    }
+
+    [AvaloniaFact]
+    public async Task history_bars_use_the_available_cell_height()
+    {
+        await using var fixture = await MetricCellFixture.CreateAsync(new FakePrometheusQueryClient());
+        var pod = CreatePod();
+        fixture.UseMetricsServerSamples(CreatePodMetricSample(pod, DateTime.UtcNow.AddMinutes(-1), "450m"));
+        var cell = fixture.CreateCpuCell(pod);
+        cell.Height = 64;
+        using var window = Application.Current.CreateTestWindow(content: cell);
+
+        window.Show();
+        cell.Initialize(fixture.Workspace);
+        Dispatcher.UIThread.RunJobs();
+
+        MetricBars(cell).Max(static bar => bar.Bounds.Height)
+            .ShouldBeGreaterThan(cell.Bounds.Height * 0.85);
     }
 
     [AvaloniaFact]
