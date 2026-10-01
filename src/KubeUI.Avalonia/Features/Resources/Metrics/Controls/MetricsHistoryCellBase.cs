@@ -20,8 +20,11 @@ public abstract class MetricsHistoryCellBase<TResource> : UserControl, IInitiali
     private readonly IBrush _normalBrush;
     private readonly IBrush _warningBrush;
     private readonly IBrush _exceededBrush;
-    private readonly Grid _barPanel;
+    private readonly Canvas _barPanel;
     private readonly Border[] _bars;
+    private TableViewCell? _tableCell;
+    private VerticalAlignment _originalCellContentAlignment;
+    private double _originalCellMinimumHeight;
     private IDisposable? _refreshSubscription;
     private CancellationTokenSource? _prometheusCancellation;
     private TResource? _resource;
@@ -47,18 +50,16 @@ public abstract class MetricsHistoryCellBase<TResource> : UserControl, IInitiali
         {
             bars[index] = new Border()
                 .Height(0)
-                .VerticalAlignment(VerticalAlignment.Bottom)
-                .HorizontalAlignment(HorizontalAlignment.Stretch)
                 .Background(_normalBrush)
-                .Col(index);
+                .Width(0);
         }
 
         _bars = bars;
-        _barPanel = new Grid()
-            .Cols("*,*,*,*,*,*,*,*,*,*,*,*")
-            .ColumnSpacing(1)
+        _barPanel = new Canvas()
             .VerticalAlignment(VerticalAlignment.Stretch)
+            .HorizontalAlignment(HorizontalAlignment.Stretch)
             .Children(_bars);
+        _barPanel.PropertyChanged += OnBarPanelPropertyChanged;
 
         this.Content(_barPanel)
             .Margin(4, 0)
@@ -142,6 +143,15 @@ public abstract class MetricsHistoryCellBase<TResource> : UserControl, IInitiali
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnAttachedToVisualTree(e);
+        _tableCell = this.GetVisualAncestors().OfType<TableViewCell>().FirstOrDefault();
+        if (_tableCell is not null)
+        {
+            _originalCellContentAlignment = _tableCell.VerticalContentAlignment;
+            _tableCell.VerticalContentAlignment = VerticalAlignment.Stretch;
+            _originalCellMinimumHeight = MinHeight;
+            MinHeight = 0;
+        }
+
         EffectiveViewportChanged += OnEffectiveViewportChanged;
         _refreshSubscription = _refreshClock.Subscribe(RefreshCell);
         RefreshCell();
@@ -154,6 +164,13 @@ public abstract class MetricsHistoryCellBase<TResource> : UserControl, IInitiali
         _isInEffectiveViewport = false;
         _refreshSubscription?.Dispose();
         _refreshSubscription = null;
+        if (_tableCell is not null)
+        {
+            _tableCell.VerticalContentAlignment = _originalCellContentAlignment;
+            _tableCell = null;
+            MinHeight = _originalCellMinimumHeight;
+        }
+
         CancelPendingRequest();
         base.OnDetachedFromVisualTree(e);
     }
@@ -230,6 +247,14 @@ public abstract class MetricsHistoryCellBase<TResource> : UserControl, IInitiali
         _hasEffectiveViewport = true;
         _isInEffectiveViewport = e.EffectiveViewport.Intersects(new Rect(Bounds.Size));
         RefreshCell();
+    }
+
+    private void OnBarPanelPropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
+    {
+        if (e.Property == BoundsProperty && _resource is { } resource)
+        {
+            RenderHistory(resource, _history);
+        }
     }
 
     private async Task LoadPrometheusHistory(TResource resource, ActiveMetricsBackend backend)
@@ -332,12 +357,18 @@ public abstract class MetricsHistoryCellBase<TResource> : UserControl, IInitiali
     {
         var points = IsMemoryMetric ? history.Memory : history.Cpu;
         var limit = GetMetricLimit(resource);
-        var bars = MetricsHistoryBuckets.CreateBars(points, _timeProvider.GetUtcNow(), limit, Bounds.Height);
+        var chartWidth = _barPanel.Bounds.Width;
+        var chartHeight = _barPanel.Bounds.Height;
+        var bars = MetricsHistoryBuckets.CreateBars(points, _timeProvider.GetUtcNow(), limit, chartHeight);
+        var barWidth = Math.Max(0, (chartWidth - (_bars.Length - 1)) / _bars.Length);
         for (var index = 0; index < _bars.Length; index++)
         {
             var data = bars[index];
             var border = _bars[index];
+            border.Width = barWidth;
             border.Height = data.Height;
+            Canvas.SetLeft(border, index * (barWidth + 1));
+            Canvas.SetTop(border, chartHeight - data.Height);
             border.Background = data.LimitState switch
             {
                 MetricsLimitState.Warning => _warningBrush,

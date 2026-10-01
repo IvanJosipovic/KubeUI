@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Avalonia.Controls;
+using Avalonia.Controls.Templates;
 using Avalonia.Headless.XUnit;
 using Avalonia.Media;
 using Avalonia.Styling;
@@ -85,7 +86,7 @@ public sealed class PodMetricCellTests
         cell.Initialize(fixture.Workspace);
         Dispatcher.UIThread.RunJobs();
 
-        var panel = cell.GetVisualDescendants().OfType<Grid>().Single();
+        var panel = cell.GetVisualDescendants().OfType<Canvas>().Single();
         var bars = MetricBars(cell);
         double.IsNaN(panel.Height).ShouldBeTrue();
         bars.ShouldNotBeEmpty();
@@ -109,6 +110,59 @@ public sealed class PodMetricCellTests
 
         MetricBars(cell).Max(static bar => bar.Bounds.Height)
             .ShouldBeGreaterThan(cell.Bounds.Height * 0.85);
+    }
+
+    [AvaloniaFact]
+    public async Task metrics_cell_does_not_increase_resource_table_row_height()
+    {
+        await using var fixture = await MetricCellFixture.CreateAsync(new FakePrometheusQueryClient());
+        var pod = CreatePod();
+        fixture.UseMetricsServerSamples(CreatePodMetricSample(pod, DateTime.UtcNow.AddMinutes(-1), "450m"));
+        PodCpuHistoryCell? metricCell = null;
+        var metricTable = new DynamicTableView { ItemsSource = new[] { pod } };
+        metricTable.Columns.Add(new TableViewColumn
+        {
+            Header = "CPU",
+            CellTemplate = new FuncDataTemplate<V1Pod>((item, _) =>
+            {
+                metricCell = fixture.CreateCpuCell(item!);
+                metricCell.Initialize(fixture.Workspace);
+                return metricCell;
+            })
+        });
+        metricTable.Columns.Add(new TableViewColumn
+        {
+            Header = "Name",
+            CellTemplate = new FuncDataTemplate<V1Pod>((item, _) => new TextBlock { Text = item!.Name() })
+        });
+        var textTable = new DynamicTableView { ItemsSource = new[] { pod } };
+        textTable.Columns.Add(new TableViewColumn
+        {
+            Header = "CPU",
+            CellTemplate = new FuncDataTemplate<V1Pod>((_, _) => new TextBlock { Text = "450m" })
+        });
+        textTable.Columns.Add(new TableViewColumn
+        {
+            Header = "Name",
+            CellTemplate = new FuncDataTemplate<V1Pod>((item, _) => new TextBlock { Text = item!.Name() })
+        });
+        var content = new Grid
+        {
+            ColumnDefinitions = new ColumnDefinitions("*,*"),
+            Children = { metricTable, textTable }
+        };
+        Grid.SetColumn(textTable, 1);
+        using var window = Application.Current.CreateTestWindow(content: content);
+
+        window.Show();
+        Dispatcher.UIThread.RunJobs();
+
+        metricCell.ShouldNotBeNull();
+        metricCell!.Bounds.Height.ShouldBeGreaterThan(0);
+        MetricBars(metricCell!).ShouldNotBeEmpty();
+        var metricRowHeight = metricTable.GetVisualDescendants().OfType<TableViewRow>().Single().Bounds.Height;
+        var textRowHeight = textTable.GetVisualDescendants().OfType<TableViewRow>().Single().Bounds.Height;
+        Math.Abs(metricRowHeight - textRowHeight).ShouldBeLessThan(1);
     }
 
     [AvaloniaFact]
