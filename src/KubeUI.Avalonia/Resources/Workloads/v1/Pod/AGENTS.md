@@ -1,5 +1,11 @@
 # Pod Resource
 
+## Pod List Metrics
+- CPU and memory list cells use the shared generic metrics-history visuals and the active Prometheus or Kubernetes Metrics Server backend; keep PodMetrics sampling and summed container limits in the Pod adapter.
+- Display one hour as twelve five-minute peak-usage bars; use the existing MetricsService query cache for Prometheus and retained PodMetrics for Metrics Server.
+- Compare usage with summed container limits: warning at 80%, exceeded at 100%; missing limits do not trigger threshold colors.
+- Keep cell rendering lightweight and recycled-item safe; test both backends, thresholds, tooltip values, and stale-result cancellation.
+
 ## Current Behavior
 - Pods expose custom list cells for containers, CPU, memory, and status.
 - Pod actions include logs, console, and port forwarding flows.

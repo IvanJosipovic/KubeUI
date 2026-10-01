@@ -6,7 +6,6 @@ using DynamicData;
 using k8s.Models;
 using KubeUI.Avalonia.Features.AI;
 using Shouldly;
-using SvcSystems.Avalonia.DynamicTableView;
 
 namespace KubeUI.Avalonia.Tests.Features.Resources.List;
 

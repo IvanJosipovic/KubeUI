@@ -141,7 +141,7 @@ internal sealed class AcpTerminalHandler(IAgentPermissionService permissionServi
 
     private sealed class TerminalState(Process process, ulong? outputByteLimit) : IDisposable
     {
-        private readonly object _gate = new();
+        private readonly Lock _gate = new();
         private readonly StringBuilder _output = new();
         private readonly ulong? _outputByteLimit = outputByteLimit;
         private Task? _captureTask;

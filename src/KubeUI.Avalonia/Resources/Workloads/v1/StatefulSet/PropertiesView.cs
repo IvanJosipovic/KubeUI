@@ -1,4 +1,5 @@
 using k8s.Models;
+using KubeUI.Avalonia.Features.Resources.Metrics.Controls;
 using KubeUI.Avalonia.Features.Resources.Properties.Controls;
 
 namespace KubeUI.Avalonia.Resources.Workloads.v1.StatefulSet;
@@ -29,6 +30,7 @@ public sealed class PropertiesView : ViewBase<V1StatefulSet>
                 new PropertyItem()
                     .Key(Assets.Resources.StatefulSetPropertiesView_Service_Name!)
                     .Value(vm.Spec?.ServiceName ?? ""),
+                new MetricsControl(),
                 new ExpandableSection()
                     .Header(Assets.Resources.Shared_Status!)
                     .IsExpanded(true)

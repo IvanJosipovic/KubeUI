@@ -1,4 +1,5 @@
 using k8s.Models;
+using KubeUI.Avalonia.Features.Resources.Metrics.Controls;
 using KubeUI.Avalonia.Features.Resources.Properties.Controls;
 
 namespace KubeUI.Avalonia.Resources.Core.v1.Node;
@@ -26,6 +27,7 @@ public sealed class PropertiesView : ViewBase<V1Node>
                 new PropertyItem()
                     .Key(Assets.Resources.NodePropertiesView_Kubelet_Version!)
                     .Value(vm.Status?.NodeInfo?.KubeletVersion ?? ""),
+                new MetricsControl(),
                 new ExpandableSection()
                     .Header(Assets.Resources.Shared_Status!)
                     .Content(

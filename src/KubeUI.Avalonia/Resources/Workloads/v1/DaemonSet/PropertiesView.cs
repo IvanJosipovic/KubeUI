@@ -1,4 +1,5 @@
 using k8s.Models;
+using KubeUI.Avalonia.Features.Resources.Metrics.Controls;
 using KubeUI.Avalonia.Features.Resources.Properties.Controls;
 
 namespace KubeUI.Avalonia.Resources.Workloads.v1.DaemonSet;
@@ -23,6 +24,7 @@ public sealed class PropertiesView : ViewBase<V1DaemonSet>
                 new PropertyItem()
                     .Key(Assets.Resources.DaemonSetPropertiesView_Updated!)
                     .Value(vm.Status?.UpdatedNumberScheduled ?? 0),
+                new MetricsControl(),
                 new ExpandableSection()
                     .Header(Assets.Resources.Shared_Status!)
                     .IsExpanded(true)
