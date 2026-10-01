@@ -360,14 +360,15 @@ public abstract class MetricsHistoryCellBase<TResource> : UserControl, IInitiali
         var chartWidth = _barPanel.Bounds.Width;
         var chartHeight = _barPanel.Bounds.Height;
         var bars = MetricsHistoryBuckets.CreateBars(points, _timeProvider.GetUtcNow(), limit, chartHeight);
-        var barWidth = Math.Max(0, (chartWidth - (_bars.Length - 1)) / _bars.Length);
+        const double barGap = 2;
+        var barWidth = Math.Max(0, (chartWidth - ((_bars.Length - 1) * barGap)) / _bars.Length);
         for (var index = 0; index < _bars.Length; index++)
         {
             var data = bars[index];
             var border = _bars[index];
             border.Width = barWidth;
             border.Height = data.Height;
-            Canvas.SetLeft(border, index * (barWidth + 1));
+            Canvas.SetLeft(border, index * (barWidth + barGap));
             Canvas.SetTop(border, chartHeight - data.Height);
             border.Background = data.LimitState switch
             {

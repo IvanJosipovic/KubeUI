@@ -88,9 +88,11 @@ public sealed class PodMetricCellTests
 
         var panel = cell.GetVisualDescendants().OfType<Canvas>().Single();
         var bars = MetricBars(cell);
+        var layoutBars = panel.Children.OfType<Border>().ToArray();
         double.IsNaN(panel.Height).ShouldBeTrue();
         bars.ShouldNotBeEmpty();
         cell.Margin.ShouldBe(new Thickness(4, 0));
+        (Canvas.GetLeft(layoutBars[1]) - layoutBars[0].Width).ShouldBe(2);
         (bars[^1].Bounds.Right / panel.Bounds.Width).ShouldBeGreaterThan(0.95);
     }
 
