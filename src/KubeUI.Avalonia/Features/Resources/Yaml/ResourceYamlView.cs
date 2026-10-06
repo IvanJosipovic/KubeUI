@@ -151,6 +151,7 @@ public sealed partial class ResourceYamlView : ViewBase<ResourceYamlViewModel>
         return editor;
     }
 
+    [RequiresUnreferencedCode("Calls KubeUI.Avalonia.Features.Resources.Yaml.ResourceYamlView.CreateEditorMenuItem(ResourceYamlViewModel, TextEditor, String, KeyGesture, Icon, String, Boolean)")]
     private static ContextMenu CreateEditorContextMenu(ResourceYamlViewModel vm, TextEditor editor)
     {
         return new ContextMenu()

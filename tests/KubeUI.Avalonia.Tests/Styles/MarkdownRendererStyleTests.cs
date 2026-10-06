@@ -4,6 +4,7 @@ using Avalonia.Styling;
 using Avalonia.Threading;
 using KubeUI.Avalonia.Styles;
 using Shouldly;
+using SvcSystems.UI.Terminal;
 
 namespace KubeUI.Avalonia.Tests.Styles;
 
@@ -17,6 +18,14 @@ public sealed class MarkdownRendererStyleTests
 
         application.Styles.Add(styles);
         application.Styles.Remove(styles);
+    }
+
+    [AvaloniaFact]
+    public void fluent_loads_terminal_theme_class()
+    {
+        var styles = new Fluent();
+
+        styles.OfType<TerminalTheme>().ShouldHaveSingleItem();
     }
 
     [AvaloniaFact]

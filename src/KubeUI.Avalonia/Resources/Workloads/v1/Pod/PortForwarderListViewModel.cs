@@ -1,4 +1,6 @@
 using Avalonia.Controls.Selection;
+using DynamicData;
+using DynamicData.Binding;
 using FluentAvalonia.UI.Controls;
 using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
@@ -13,6 +15,7 @@ public sealed partial class PortForwarderListViewModel : ViewModelBase, IInitial
 {
     private readonly IDialogService _dialogService;
     private readonly IPlatformServices _platformServices;
+    private IObservableCache<PortForwarder, string>? _portForwarderCache;
     private DynamicTableViewSource<PortForwarder, string>? _tableSource;
 
     [ObservableProperty]
@@ -74,9 +77,13 @@ public sealed partial class PortForwarderListViewModel : ViewModelBase, IInitial
         {
             _tableSource.SelectionModel.SelectionChanged -= SelectionModelOnSelectionChanged;
             _tableSource.Dispose();
+            _portForwarderCache?.Dispose();
         }
-        _tableSource = DynamicTableViewSource<PortForwarder, string>.FromObservableCollection(
-            cluster.Runtime.PortForwarders,
+        _portForwarderCache = cluster.Runtime.PortForwarders
+            .ToObservableChangeSet(static item => $"{item.Namespace}\u001f{item.Type}\u001f{item.Name}\u001f{item.Port}")
+            .AsObservableCache();
+        _tableSource = new DynamicTableViewSource<PortForwarder, string>(
+            _portForwarderCache,
             static item => $"{item.Namespace}\u001f{item.Type}\u001f{item.Name}\u001f{item.Port}",
             [
                 CreateColumn("type", static item => item.Type, Assets.Resources.PortForwarderListView_Type!, DynamicTableViewWidthMode.Pixel, 80),
@@ -102,6 +109,8 @@ public sealed partial class PortForwarderListViewModel : ViewModelBase, IInitial
             return;
         _tableSource.SelectionModel.SelectionChanged -= SelectionModelOnSelectionChanged;
         _tableSource.Dispose();
+        _portForwarderCache?.Dispose();
+        _portForwarderCache = null;
         _tableSource = null;
     }
 

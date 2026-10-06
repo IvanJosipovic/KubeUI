@@ -179,6 +179,7 @@ public sealed partial class PodLogsView : ViewBase<PodLogsViewModel>
                     .Content(new FluentIcon().Icon(Icon.TextWrap)));
     }
 
+    [RequiresUnreferencedCode("Calls KubeUI.Avalonia.Resources.Workloads.v1.Pod.Views.PodLogsView.CreateContextMenu(TextEditor)")]
     private TextEditor CreateEditor(PodLogsViewModel vm)
     {
         PodLogsEditorBehavior behavior = new();

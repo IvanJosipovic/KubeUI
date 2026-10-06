@@ -8,6 +8,7 @@ namespace KubeUI.Documentation.Tests.Features.Resources.List;
 public sealed class RecordingTests
 {
     [DocumentationVideoTheory]
+    [Obsolete]
     public Task Browse_pods_video(string theme)
     {
         return KubeUIWalkthrough.Create(theme, "browse-pods")

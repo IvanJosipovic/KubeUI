@@ -14,6 +14,7 @@ using FluentAvalonia.Styling;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using Semi.Avalonia;
+using SvcSystems.UI.Terminal;
 using Ursa.Controls;
 using Ursa.Themes.Semi;
 using Westermo.GraphX.Controls.Avalonia.Themes.Fluent;
@@ -29,6 +30,7 @@ public sealed class Fluent : AvaloniaStyles
     private readonly ColorPaletteResources _lightPalette = CreateLightPalette();
     private readonly ColorPaletteResources _darkPalette = CreateDarkPalette();
 
+    [RequiresUnreferencedCode()]
     public Fluent()
     {
         Add(new SemiTheme { Locale = s_locale });
@@ -43,6 +45,7 @@ public sealed class Fluent : AvaloniaStyles
         Add(CreateStyleInclude("avares://AvaloniaEdit/Themes/Fluent/AvaloniaEdit.xaml"));
         Add(CreateStyleInclude("avares://LiveMarkdown.Avalonia/Styles.axaml"));
         Add(new DockFluentTheme());
+        Add(new TerminalTheme());
         Add(new AvaloniaStyles { Resources = TerminalPalette.CreateResources() });
 
         Add(new Style<ToolControl>()
