@@ -68,9 +68,9 @@
     <PackageReference Include="SvcSystems.UI.Terminal" Version="2.1.0" />
     <PackageReference Include="SvcSystems.Avalonia.DynamicTableView" Version="1.0.0-alpha.10" />
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
-    <PackageReference Include="Dock.Avalonia" Version="12.1.0.2" />
-    <PackageReference Include="Dock.Avalonia.Themes.Fluent" Version="12.1.0.2" />
-    <PackageReference Include="Dock.Model.Mvvm" Version="12.1.0.2" />
+    <PackageReference Include="Dock.Avalonia" Version="12.1.0.7" />
+    <PackageReference Include="Dock.Avalonia.Themes.Fluent" Version="12.1.0.7" />
+    <PackageReference Include="Dock.Model.Mvvm" Version="12.1.0.7" />
     <PackageReference Include="FluentAvaloniaUI" Version="3.1.0" />
     <PackageReference Include="FluentIcons.Avalonia" Version="2.1.343" />
     <PackageReference Include="HanumanInstitute.MvvmDialogs.Avalonia" Version="2.4.0" />
