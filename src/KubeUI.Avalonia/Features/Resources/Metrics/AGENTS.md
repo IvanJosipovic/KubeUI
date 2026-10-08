@@ -7,6 +7,7 @@
 - Metrics Server and Prometheus are both supported backends; provider fallback and unavailable/error states must remain visible and testable.
 - Kubernetes Metrics Server charts aggregate cached PodMetrics for namespaces and selector-based workloads (Deployment, StatefulSet, DaemonSet, ReplicaSet, and Job); PVC and Ingress metrics remain unsupported by this backend.
 - Resource-list history cells share the generic `MetricsHistoryCellBase<TResource>` visuals, bucketing, cancellation, refresh, and tooltip behavior; keep resource-specific sample selection, Prometheus filters, and limits in resource adapters.
+- Subscribe history cells to the shared refresh clock only while attached, effectively visible, and inside the effective viewport; stop scheduling new refreshes offscreen and resume immediately when visible again.
 - Preserve metric history and its refresh cadence across snapshots of the same resource and metrics target; re-render existing samples with updated limits, invalidating only when resource identity, backend, or query target changes.
 - Align history buckets to fixed five-minute boundaries and update only changed bar properties so 30-second samples do not redraw the whole cell.
 - Azure Managed Prometheus uses Azure CLI authentication and a selected Azure Monitor workspace. Never persist access tokens; obtain fresh credentials for query requests.

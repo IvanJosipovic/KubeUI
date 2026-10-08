@@ -204,8 +204,14 @@ public sealed class PodMetricCellTests
         Dispatcher.UIThread.RunJobs();
 
         queryClient.Queries.ShouldBe(0);
+        fixture.RefreshClock.SubscriberCount.ShouldBe(0);
 
         cell.IsVisible = true;
+        await TestWait.UntilAsync(
+            () => fixture.RefreshClock.SubscriberCount == 1,
+            timeout: TimeSpan.FromSeconds(5),
+            cancellationToken: TestContext.Current.CancellationToken,
+            beforePoll: () => Dispatcher.UIThread.RunJobs());
         fixture.RefreshClock.Tick();
         await TestWait.UntilAsync(
             () => queryClient.Queries == 2,
@@ -244,10 +250,43 @@ public sealed class PodMetricCellTests
         effectiveViewport.ShouldNotBeNull();
         effectiveViewport!.Value.Intersects(new Rect(cell.Bounds.Size)).ShouldBeFalse();
         queryClient.Queries.ShouldBe(0);
+        fixture.RefreshClock.SubscriberCount.ShouldBe(0);
 
         scrollViewer.Offset = new Vector(0, 500);
         await TestWait.UntilAsync(
-            () => queryClient.Queries == 2,
+            () => queryClient.Queries == 2 && fixture.RefreshClock.SubscriberCount == 1,
+            timeout: TimeSpan.FromSeconds(5),
+            cancellationToken: TestContext.Current.CancellationToken,
+            beforePoll: () => Dispatcher.UIThread.RunJobs());
+    }
+
+    [AvaloniaFact]
+    public async Task hidden_metrics_server_history_pauses_refresh_until_visible()
+    {
+        await using var fixture = await MetricCellFixture.CreateAsync(new FakePrometheusQueryClient());
+        var pod = CreatePod();
+        fixture.UseMetricsServerSamples(CreatePodMetricSample(pod, DateTime.UtcNow, "100m"));
+        var cell = fixture.CreateCpuCell(pod);
+        using var window = Application.Current.CreateTestWindow(content: cell);
+
+        window.Show();
+        cell.Initialize(fixture.Workspace);
+        MetricBars(cell).Any(bar => ToolTip.GetTip(bar)?.ToString()?.Contains("0.1c", StringComparison.Ordinal) == true).ShouldBeTrue();
+        fixture.RefreshClock.SubscriberCount.ShouldBe(1);
+
+        cell.IsVisible = false;
+        fixture.RefreshClock.SubscriberCount.ShouldBe(0);
+        fixture.TimeProvider.Advance(TimeSpan.FromSeconds(30));
+        fixture.AddMetricsServerSample(CreatePodMetricSample(pod, fixture.TimeProvider.GetUtcNow().AddSeconds(-1).UtcDateTime, "450m"));
+        fixture.RefreshClock.Tick();
+
+        MetricBars(cell).Any(bar => ToolTip.GetTip(bar)?.ToString()?.Contains("0.1c", StringComparison.Ordinal) == true).ShouldBeTrue();
+        MetricBars(cell).Any(bar => ToolTip.GetTip(bar)?.ToString()?.Contains("0.45c", StringComparison.Ordinal) == true).ShouldBeFalse();
+
+        cell.IsVisible = true;
+        await TestWait.UntilAsync(
+            () => fixture.RefreshClock.SubscriberCount == 1
+                && MetricBars(cell).Any(bar => ToolTip.GetTip(bar)?.ToString()?.Contains("0.45c", StringComparison.Ordinal) == true),
             timeout: TimeSpan.FromSeconds(5),
             cancellationToken: TestContext.Current.CancellationToken,
             beforePoll: () => Dispatcher.UIThread.RunJobs());
@@ -290,6 +329,39 @@ public sealed class PodMetricCellTests
         fixture.RefreshClock.Tick();
         await TestWait.UntilAsync(
             () => queryClient.Queries == 4,
+            timeout: TimeSpan.FromSeconds(5),
+            cancellationToken: TestContext.Current.CancellationToken,
+            beforePoll: () => Dispatcher.UIThread.RunJobs());
+    }
+
+    [AvaloniaFact]
+    public async Task hidden_prometheus_history_cell_pauses_query_schedule_until_visible()
+    {
+        var queryClient = new FakePrometheusQueryClient
+        {
+            Result = CreateMetricResult("cpuUsage", 1.234),
+        };
+        await using var fixture = await MetricCellFixture.CreateAsync(queryClient);
+        var cell = fixture.CreateCpuCell(CreatePod());
+        using var window = Application.Current.CreateTestWindow(content: cell);
+
+        window.Show();
+        cell.Initialize(fixture.Workspace);
+        await TestWait.UntilAsync(
+            () => queryClient.Queries == 2,
+            timeout: TimeSpan.FromSeconds(5),
+            cancellationToken: TestContext.Current.CancellationToken,
+            beforePoll: () => Dispatcher.UIThread.RunJobs());
+
+        cell.IsVisible = false;
+        fixture.RefreshClock.SubscriberCount.ShouldBe(0);
+        fixture.TimeProvider.Advance(TimeSpan.FromMinutes(1));
+        fixture.RefreshClock.Tick();
+        queryClient.Queries.ShouldBe(2);
+
+        cell.IsVisible = true;
+        await TestWait.UntilAsync(
+            () => queryClient.Queries == 4 && fixture.RefreshClock.SubscriberCount == 1,
             timeout: TimeSpan.FromSeconds(5),
             cancellationToken: TestContext.Current.CancellationToken,
             beforePoll: () => Dispatcher.UIThread.RunJobs());
@@ -1137,6 +1209,8 @@ public sealed class PodMetricCellTests
     private sealed class TestUiRefreshClock : IUiRefreshClock
     {
         private readonly List<Action> _callbacks = [];
+
+        public int SubscriberCount => _callbacks.Count;
 
         public IDisposable Subscribe(Action callback)
         {

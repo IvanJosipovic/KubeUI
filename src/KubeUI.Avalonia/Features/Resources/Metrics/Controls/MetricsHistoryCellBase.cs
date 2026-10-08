@@ -137,6 +137,7 @@ public abstract class MetricsHistoryCellBase<TResource> : UserControl, IInitiali
         if (change.Property == IsVisibleProperty
             || change.Property.Name == nameof(IsEffectivelyVisible))
         {
+            UpdateRefreshSubscription();
             RefreshCell();
         }
         else if (change.Property == BoundsProperty && _resource is not null)
@@ -158,7 +159,6 @@ public abstract class MetricsHistoryCellBase<TResource> : UserControl, IInitiali
         }
 
         EffectiveViewportChanged += OnEffectiveViewportChanged;
-        _refreshSubscription = _refreshClock.Subscribe(RefreshCell);
         RefreshCell();
     }
 
@@ -176,7 +176,7 @@ public abstract class MetricsHistoryCellBase<TResource> : UserControl, IInitiali
             MinHeight = _originalCellMinimumHeight;
         }
 
-        CancelPendingRequest();
+        PausePendingPrometheusRequest();
         base.OnDetachedFromVisualTree(e);
     }
 
@@ -207,9 +207,10 @@ public abstract class MetricsHistoryCellBase<TResource> : UserControl, IInitiali
             && sameResource
             && _resource is { } previousResource
             && !IsSameMetricsTarget(previousResource, resource);
-        if (!sameResource
+        var historyInvalidated = !sameResource
             || !Equals(_backend, backend)
-            || metricsTargetChanged)
+            || metricsTargetChanged;
+        if (historyInvalidated)
         {
             CancelPendingRequest();
             _history = MetricHistoryData.Empty;
@@ -218,6 +219,17 @@ public abstract class MetricsHistoryCellBase<TResource> : UserControl, IInitiali
 
         _resource = resource;
         _backend = backend;
+
+        if (!IsCellVisibleInViewport())
+        {
+            PausePendingPrometheusRequest();
+            if (historyInvalidated)
+            {
+                ClearBars();
+            }
+
+            return;
+        }
 
         if (backend.Type == MetricsServiceType.KubernetesMetricsServer)
         {
@@ -237,15 +249,6 @@ public abstract class MetricsHistoryCellBase<TResource> : UserControl, IInitiali
             return;
         }
 
-        if (!this.IsAttachedToVisualTree()
-            || !IsEffectivelyVisible
-            || !_hasEffectiveViewport
-            || !_isInEffectiveViewport)
-        {
-            CancelPendingRequest();
-            return;
-        }
-
         if (_timeProvider.GetUtcNow() >= _nextRefreshUtc && _prometheusCancellation == null)
         {
             _nextRefreshUtc = _timeProvider.GetUtcNow() + s_prometheusRefreshInterval;
@@ -259,7 +262,40 @@ public abstract class MetricsHistoryCellBase<TResource> : UserControl, IInitiali
     {
         _hasEffectiveViewport = true;
         _isInEffectiveViewport = e.EffectiveViewport.Intersects(new Rect(Bounds.Size));
+        UpdateRefreshSubscription();
         RefreshCell();
+    }
+
+    private bool IsCellVisibleInViewport()
+    {
+        return this.IsAttachedToVisualTree()
+            && IsEffectivelyVisible
+            && _hasEffectiveViewport
+            && _isInEffectiveViewport;
+    }
+
+    private void UpdateRefreshSubscription()
+    {
+        if (IsCellVisibleInViewport())
+        {
+            _refreshSubscription ??= _refreshClock.Subscribe(RefreshCell);
+            return;
+        }
+
+        _refreshSubscription?.Dispose();
+        _refreshSubscription = null;
+        PausePendingPrometheusRequest();
+    }
+
+    private void PausePendingPrometheusRequest()
+    {
+        if (_prometheusCancellation is null)
+        {
+            return;
+        }
+
+        CancelPendingRequest();
+        _nextRefreshUtc = DateTimeOffset.MinValue;
     }
 
     private void OnBarPanelPropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
