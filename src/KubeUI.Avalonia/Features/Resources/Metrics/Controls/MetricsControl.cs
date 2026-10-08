@@ -156,6 +156,31 @@ public sealed partial class MetricsControl : UserControl, IInitializeCluster, IN
         }
     }
 
+    internal void UpdateResourceSnapshot(
+        IKubernetesObject<V1ObjectMeta> resource,
+        V1Pod? pod = null,
+        V1Container? container = null)
+    {
+        ArgumentNullException.ThrowIfNull(resource);
+
+        var wasSuppressingRefreshQueue = _suppressRefreshQueue;
+        _suppressRefreshQueue = true;
+        try
+        {
+            if (container is not null)
+            {
+                Pod = pod;
+                Container = container;
+            }
+
+            DataContext = resource;
+        }
+        finally
+        {
+            _suppressRefreshQueue = wasSuppressingRefreshQueue;
+        }
+    }
+
     public MetricsControl()
     {
         Content = Build();

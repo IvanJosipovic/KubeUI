@@ -424,7 +424,7 @@ public sealed class MetricsControlTests
             _ => CreateEmptyResponse(),
         };
         var node = new V1Node { Metadata = Metadata("node-a") };
-        var view = new NodePropertiesView { DataContext = node };
+        var view = new NodePropertiesView { DataContext = CreatePropertiesViewModel(node) };
         await using var fixture = await MetricsControlFixture.CreateAsync(initializePrometheus: true, queryClient);
         using var window = Application.Current.CreateTestWindow(content: view);
 
@@ -445,6 +445,44 @@ public sealed class MetricsControlTests
         queryClient.Queries.Where(query => query.Contains("kube_node_status_", StringComparison.Ordinal))
             .ShouldAllBe(query => query.Contains("node=~\"node-a\"", StringComparison.Ordinal));
         control.SelectedPanel!.Series.Count.ShouldBe(3);
+    }
+
+    [AvaloniaFact]
+    public async Task resource_snapshot_update_does_not_queue_an_immediate_metrics_refresh()
+    {
+        var queryClient = new FakePrometheusQueryClient();
+        var timestamp = DateTimeOffset.Parse("2026-01-02T03:04:05+00:00");
+        queryClient.ResponseFactory = query => query switch
+        {
+            var value when value.Contains("node_cpu_seconds_total", StringComparison.Ordinal) => CreateNodeSuccessResponse(timestamp, "instance", "node-a"),
+            var value when value.Contains("kube_node_status_capacity", StringComparison.Ordinal) => CreateNodeSuccessResponse(timestamp, "node", "node-a"),
+            var value when value.Contains("kube_node_status_allocatable", StringComparison.Ordinal) => CreateNodeSuccessResponse(timestamp, "node", "node-a"),
+            _ => CreateEmptyResponse(),
+        };
+        var control = new MetricsControl
+        {
+            DataContext = new V1Node { Metadata = Metadata("node-a") },
+        };
+        await using var fixture = await MetricsControlFixture.CreateAsync(initializePrometheus: true, queryClient);
+        using var window = Application.Current.CreateTestWindow(content: control);
+
+        window.Show();
+        fixture.Initialize(control);
+
+        await TestWait.UntilAsync(
+            () => queryClient.QueryCalls >= 3,
+            5000,
+            TestContext.Current.CancellationToken,
+            beforePoll: () => Dispatcher.UIThread.RunJobs());
+
+        await TestApplicationExtensions.WaitForUiAsync(TestContext.Current.CancellationToken);
+        var queryCalls = queryClient.QueryCalls;
+
+        await Dispatcher.UIThread.InvokeAsync(
+            () => control.UpdateResourceSnapshot(new V1Node { Metadata = Metadata("node-a") }));
+        await TestApplicationExtensions.WaitForUiAsync(TestContext.Current.CancellationToken);
+
+        queryClient.QueryCalls.ShouldBe(queryCalls);
     }
 
     [AvaloniaFact]
@@ -708,15 +746,15 @@ public sealed class MetricsControlTests
     {
         var views = new Control[]
         {
-            new NamespacePropertiesView { DataContext = new V1Namespace { Metadata = Metadata("namespace") } },
-            new NodePropertiesView { DataContext = new V1Node { Metadata = Metadata("node") } },
-            new DeploymentPropertiesView { DataContext = new V1Deployment { Metadata = Metadata("deployment", "default") } },
-            new StatefulSetPropertiesView { DataContext = new V1StatefulSet { Metadata = Metadata("statefulset", "default") } },
-            new DaemonSetPropertiesView { DataContext = new V1DaemonSet { Metadata = Metadata("daemonset", "default") } },
-            new ReplicaSetPropertiesView { DataContext = new V1ReplicaSet { Metadata = Metadata("replicaset", "default") } },
-            new JobPropertiesView { DataContext = new V1Job { Metadata = Metadata("job", "default") } },
-            new PersistentVolumeClaimPropertiesView { DataContext = new V1PersistentVolumeClaim { Metadata = Metadata("pvc", "default") } },
-            new IngressPropertiesView { DataContext = new V1Ingress { Metadata = Metadata("ingress", "default") } },
+            new NamespacePropertiesView { DataContext = CreatePropertiesViewModel(new V1Namespace { Metadata = Metadata("namespace") }) },
+            new NodePropertiesView { DataContext = CreatePropertiesViewModel(new V1Node { Metadata = Metadata("node") }) },
+            new DeploymentPropertiesView { DataContext = CreatePropertiesViewModel(new V1Deployment { Metadata = Metadata("deployment", "default") }) },
+            new StatefulSetPropertiesView { DataContext = CreatePropertiesViewModel(new V1StatefulSet { Metadata = Metadata("statefulset", "default") }) },
+            new DaemonSetPropertiesView { DataContext = CreatePropertiesViewModel(new V1DaemonSet { Metadata = Metadata("daemonset", "default") }) },
+            new ReplicaSetPropertiesView { DataContext = CreatePropertiesViewModel(new V1ReplicaSet { Metadata = Metadata("replicaset", "default") }) },
+            new JobPropertiesView { DataContext = CreatePropertiesViewModel(new V1Job { Metadata = Metadata("job", "default") }) },
+            new PersistentVolumeClaimPropertiesView { DataContext = CreatePropertiesViewModel(new V1PersistentVolumeClaim { Metadata = Metadata("pvc", "default") }) },
+            new IngressPropertiesView { DataContext = CreatePropertiesViewModel(new V1Ingress { Metadata = Metadata("ingress", "default") }) },
         };
 
         foreach (var view in views)
@@ -737,7 +775,7 @@ public sealed class MetricsControlTests
         var container = new V1Container { Name = "app", Image = "example/app:1" };
         var pod = CreatePod();
         pod.Spec = new V1PodSpec { Containers = [container] };
-        var view = new PodPropertiesView { DataContext = pod };
+        var view = new PodPropertiesView { DataContext = CreatePropertiesViewModel(pod) };
         using var window = Application.Current.CreateTestWindow(content: view);
 
         window.Show();
@@ -760,7 +798,7 @@ public sealed class MetricsControlTests
             InitContainers = [initContainer],
             Containers = [container],
         };
-        var view = new PodPropertiesView { DataContext = pod };
+        var view = new PodPropertiesView { DataContext = CreatePropertiesViewModel(pod) };
         using var window = Application.Current.CreateTestWindow(content: view);
 
         window.Show();
@@ -780,6 +818,12 @@ public sealed class MetricsControlTests
     {
         Metadata = Metadata("metrics-pod", "default"),
     };
+
+    private static ResourcePropertiesViewModel<TResource> CreatePropertiesViewModel<TResource>(TResource resource)
+        where TResource : class, IKubernetesObject<V1ObjectMeta>, new() => new()
+        {
+            Object = resource,
+        };
 
     private static object CreateWorkloadResource(string resourceKind)
     {
