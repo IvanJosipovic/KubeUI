@@ -1,6 +1,5 @@
 using System.Text;
 using Avalonia.Controls.Templates;
-using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Features.Resources.Properties;

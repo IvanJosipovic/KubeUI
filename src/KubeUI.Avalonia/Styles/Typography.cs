@@ -4,6 +4,7 @@ internal static class Typography
 {
     internal const string AppFontFamilyResourceKey = "KubeUIAppFontFamily";
     internal const string AppFontSizeResourceKey = "KubeUIAppFontSize";
+    internal const string DockFontSizeResourceKey = "DockFontSizeNormal";
     internal const string CodeFontFamilyResourceKey = "KubeUICodeFontFamily";
     internal const string CodeFontSizeResourceKey = "KubeUICodeFontSize";
     internal const string TitleFontSizeResourceKey = "KubeUITitleFontSize";

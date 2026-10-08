@@ -1,4 +1,3 @@
-using KubeUI.Avalonia.Infrastructure.DataGrid;
 using Avalonia.Headless.XUnit;
 using k8s;
 using k8s.Models;
@@ -92,19 +91,16 @@ public class V1CustomResourceDefinitionConfigTests
     }
 
     [AvaloniaFact]
-    public void resource_list_column_value_accessor_returns_null_for_missing_nullable_values()
+    public void resource_list_column_displays_empty_for_missing_nullable_values()
     {
-        var column = new DataGridValueColumn<NullableValueResource, int>
+        var column = new ResourceListColumn<NullableValueResource, int>
         {
             Key = "value",
             Name = "Value",
             Field = resource => resource.Value!.Value,
         };
 
-        var accessor = column.ValueAccessor;
-
-        Should.NotThrow(() => accessor.GetValue(new NullableValueResource()));
-        accessor.GetValue(new NullableValueResource()).ShouldBeNull();
+        Should.NotThrow(() => column.DisplayValue(new NullableValueResource()));
         column.DisplayValue(new NullableValueResource()).ShouldBeEmpty();
     }
 
@@ -153,10 +149,8 @@ public class V1CustomResourceDefinitionConfigTests
         var column = config.Columns().Single(x => x.Name == "External Name");
         var resource = KubernetesJson.Deserialize<GenericKubernetesObject>("""{"apiVersion":"example.com/v1","kind":"IngressClass","metadata":{"annotations":{}}}""");
 
-        Should.NotThrow(() => column.ValueAccessor.GetValue(resource));
-        column.ValueAccessor.GetValue(resource).ShouldBe("");
+        Should.NotThrow(() => column.DisplayValue(resource));
         column.DisplayValue(resource).ShouldBeEmpty();
-        column.SortKey(resource).ShouldBe("");
     }
 
     [AvaloniaFact]
@@ -204,9 +198,8 @@ public class V1CustomResourceDefinitionConfigTests
 
         var column = config.Columns().Single(x => x.Name == "Revision");
         column.ValueType.ShouldBe(typeof(int?));
-        column.ValueAccessor.GetValue(KubernetesJson.Deserialize<GenericKubernetesObject>("""{"spec":{"revision":42}}""")).ShouldBe(42);
-        column.ValueAccessor.GetValue(KubernetesJson.Deserialize<GenericKubernetesObject>("""{"spec":{}}""")).ShouldBeNull();
-        column.DisplayValue(KubernetesJson.Deserialize<GenericKubernetesObject>("""{"spec":{}}""")).ShouldBe("");
+        column.DisplayValue(KubernetesJson.Deserialize<GenericKubernetesObject>("""{"spec":{"revision":42}}""")).ShouldBe("42");
+        column.DisplayValue(KubernetesJson.Deserialize<GenericKubernetesObject>("""{"spec":{}}""")).ShouldBeEmpty();
     }
 
     [AvaloniaFact]
@@ -261,34 +254,3 @@ public class V1CustomResourceDefinitionConfigTests
         config.Columns().ShouldContain(column => column.Name == "Revision");
     }
 }
-
-[KubernetesEntity(Group = "example.com", ApiVersion = "v1", Kind = "IngressClass")]
-internal sealed class TestCustomResource : IKubernetesObject<V1ObjectMeta>
-{
-    public string ApiVersion { get; set; } = "example.com/v1";
-    public string Kind { get; set; } = "IngressClass";
-    public V1ObjectMeta Metadata { get; set; } = new();
-}
-
-internal sealed class NullableValueResource : IKubernetesObject<V1ObjectMeta>
-{
-    public string ApiVersion { get; set; } = "v1";
-    public string Kind { get; set; } = "Test";
-    public V1ObjectMeta Metadata { get; set; } = new();
-    public int? Value { get; set; }
-}
-
-[KubernetesEntity(Group = "example.com", ApiVersion = "v1", Kind = "Example")]
-internal sealed class TestCustomResourceWithSpec : IKubernetesObject<V1ObjectMeta>
-{
-    public string ApiVersion { get; set; } = "example.com/v1";
-    public string Kind { get; set; } = "Example";
-    public V1ObjectMeta Metadata { get; set; } = new();
-    public TestCustomResourceSpec Spec { get; set; } = new();
-}
-
-internal sealed class TestCustomResourceSpec
-{
-    public int? Revision { get; set; }
-}
-

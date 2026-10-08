@@ -1,4 +1,3 @@
-using KubeUI.Avalonia.Infrastructure.DataGrid;
 using k8s.Models;
 
 namespace KubeUI.Avalonia.Resources.Configuration.v1.RuntimeClass;
@@ -16,12 +15,12 @@ public sealed partial class V1RuntimeClassConfig : ResourceConfigBase<V1RuntimeC
     {
         return [
             NameColumn(SortDirection.Ascending),
-            new DataGridValueColumn<V1RuntimeClass, string>()
+            new ResourceListColumn<V1RuntimeClass, string>()
             {
                 Key = "handler",
                 Name = Assets.Resources.V1RuntimeClassConfig_Handler!,
                 Field = x => x.Handler,
-                Width = nameof(DataGridLengthUnitType.SizeToCells)
+                WidthMode = DynamicTableViewWidthMode.Cells
             },
             AgeColumn(),
         ];
@@ -29,6 +28,3 @@ public sealed partial class V1RuntimeClassConfig : ResourceConfigBase<V1RuntimeC
 
     public override Control[] Properties(V1RuntimeClass resource) => [new PropertiesView()];
 }
-
-
-

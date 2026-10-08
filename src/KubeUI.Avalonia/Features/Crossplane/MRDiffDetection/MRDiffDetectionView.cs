@@ -1,33 +1,23 @@
 using Avalonia.Controls.Templates;
 using FluentIcons.Avalonia;
 using FluentIcons.Common;
-using KubeUI.Avalonia.Controls.DataGridFilters;
-using KubeUI.Avalonia.Infrastructure;
-using KubeUI.Avalonia.Infrastructure.DependencyInjection;
-using KubeUI.Avalonia.Infrastructure.DataGrid;
+using KubeUI.Kubernetes;
 
 namespace KubeUI.Avalonia.Features.Crossplane.MRDiffDetection;
 
 public sealed class MRDiffDetectionView : ViewBase<MRDiffDetectionViewModel>
 {
-    private DataGridColumnFilterFlyoutFactory? _filterFlyoutFactory;
-
-    protected override void OnDataContextChanged(EventArgs e)
-    {
-        base.OnDataContextChanged(e);
-
-        if (DataContext is not MRDiffDetectionViewModel vm)
-        {
-            return;
-        }
-
-        _filterFlyoutFactory ??= GetServiceProvider().GetRequiredService<DataGridColumnFilterFlyoutFactory>();
-        DataGridFilterFlyoutAttacher.Attach(vm.ColumnDefinitions, _filterFlyoutFactory, vm.FilteringModel);
-    }
-
     protected override object Build(MRDiffDetectionViewModel vm)
     {
         ArgumentNullException.ThrowIfNull(vm);
+
+        DynamicTableView table = new()
+        {
+            GridLinesVisibility = DynamicTableViewGridLinesVisibility.All,
+            Source = vm.TableSource,
+            ContextMenu = new ContextMenu(),
+            ContextMenuItemsFactory = targets => CreateContextMenuItems(vm, targets)
+        };
 
         return new Grid()
             .Rows("Auto,*")
@@ -41,42 +31,32 @@ public sealed class MRDiffDetectionView : ViewBase<MRDiffDetectionViewModel>
                             .PlaceholderText(Assets.Resources.MRDiffDetectionView_SelectProvider)
                             .ItemsSource(vm, x => x.Providers)
                             .SelectedItem(vm, x => x.SelectedProvider, BindingMode.TwoWay)
-                            .ItemTemplate(new FuncDataTemplate<CrossplaneProviderOption>((provider, _) => new TextBlock().Text(provider?.Name ?? string.Empty))),
+                            .ItemTemplate(new FuncDataTemplate<CrossplaneProviderOption>(
+                                (provider, _) => new TextBlock().Text(provider?.Name ?? string.Empty))),
+                        new TextBox()
+                            .Width(240)
+                            .PlaceholderText(Assets.Resources.MRDiffDetectionView_Search)
+                            .Text(vm, x => x.SearchQuery, BindingMode.TwoWay),
+                        new TextBlock()
+                            .VerticalAlignment(VerticalAlignment.Center)
+                            .Text(vm, x => x.Status),
                         new Button()
                             .Command(vm, x => x.ClearCommand)
                             .ToolTip_Tip(Assets.Resources.MRDiffDetectionView_Clear)
                             .Content(new FluentIcon().Icon(Icon.Broom))),
-                new DataGrid
-                    {
-                        SortingAdapterFactory = vm.SortingAdapterFactory,
-                        FilteringAdapterFactory = vm.FilteringAdapterFactory,
-                        SearchAdapterFactory = vm.SearchAdapterFactory
-                    }
-                    .Row(1)
-                    .CanUserReorderColumns(true)
-                    .CanUserResizeColumns(true)
-                    .CanUserSortColumns(true)
-                    .GridLinesVisibility(DataGridGridLinesVisibility.All)
-                    .IsReadOnly(true)
-                    .ColumnDefinitionsSource(vm, x => x.ColumnDefinitions)
-                    .ItemsSource(vm, x => x.View)
-                    .Selection(vm, x => x.SelectionModel)
-                    .SelectionMode(DataGridSelectionMode.Extended)
-                    .FilteringModel(vm, x => x.FilteringModel)
-                    .SearchModel(vm, x => x.SearchModel)
-                    .SortingModel(vm, x => x.SortingModel)
-                    .ContextMenu(new ContextMenu())
-                    .Behaviors([new MRDiffDetectionContextMenuBehavior()])
-                    );
+                table.Row(1));
     }
 
-    private static IServiceProvider GetServiceProvider()
+    private static IEnumerable<MenuItem> CreateContextMenuItems(
+        MRDiffDetectionViewModel viewModel,
+        IReadOnlyList<object> targets)
     {
-        if (Application.Current is IServiceProviderHost host)
+        foreach (var row in targets.OfType<CrossplaneDiffRow>())
         {
-            return host.Services;
+            yield return new MenuItem()
+                .Header(Assets.Resources.ResourceConfigBase_MenuItem_ViewYaml)
+                .Command(viewModel, x => x.ViewYamlCommand)
+                .CommandParameter(row);
         }
-
-        throw new InvalidOperationException("Unable to resolve services from the current application host.");
     }
 }

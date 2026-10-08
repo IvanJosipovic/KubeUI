@@ -1,4 +1,3 @@
-using KubeUI.Avalonia.Infrastructure.DataGrid;
 using FluentIcons.Common;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
@@ -23,19 +22,19 @@ public sealed partial class V1DaemonSetConfig : ResourceConfigBase<V1DaemonSet>
         return [
             NameColumn(SortDirection.Ascending),
             NamespaceColumn(),
-            new DataGridValueColumn<V1DaemonSet, int>()
+            new ResourceListColumn<V1DaemonSet, int>()
             {
                 Key = "pods",
                 Name = Assets.Resources.V1DaemonSetConfig_Pods!,
                 Field = x => x.Status.NumberReady,
-                Width = nameof(DataGridLengthUnitType.SizeToHeader)
+                WidthMode = DynamicTableViewWidthMode.Header
             },
-            new DataGridValueColumn<V1DaemonSet, string>()
+            new ResourceListColumn<V1DaemonSet, string>()
             {
                 Key = "node-selector",
                 Name = Assets.Resources.V1DaemonSetConfig_Node_Selector!,
                 Field = x => x.Spec?.Selector?.MatchLabels is { Count: > 0 } matchLabels ? string.Join(", ", matchLabels.Select(x => x.Key + "=" + x.Value)) : "",
-                Width = nameof(DataGridLengthUnitType.SizeToHeader)
+                WidthMode = DynamicTableViewWidthMode.Header
             },
             AgeColumn(),
             ];
@@ -64,6 +63,3 @@ public sealed partial class V1DaemonSetConfig : ResourceConfigBase<V1DaemonSet>
 
     public override Control[] Properties(V1DaemonSet resource) => [new PropertiesView()];
 }
-
-
-

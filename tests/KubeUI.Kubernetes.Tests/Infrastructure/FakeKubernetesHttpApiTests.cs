@@ -122,6 +122,29 @@ public sealed class FakeKubernetesHttpApiTests
     }
 
     [Fact]
+    public async Task FakeObjectsReceiveCreationTimestamps()
+    {
+        using var api = new FakeKubernetesHttpApi();
+        using var client = KubernetesClientMaterializer.Create(
+            new KubernetesClientConfiguration { Host = "http://fake-kubernetes" },
+            api);
+
+        var listed = await client.ListNamespaceAsync(cancellationToken: TestContext.Current.CancellationToken);
+
+        var fakeNamespace = listed.Items.Single(@namespace => @namespace.Metadata.Name == "default");
+        fakeNamespace.Metadata.CreationTimestamp.ShouldNotBeNull();
+
+        var createdNamespace = await client.CreateNamespaceAsync(new V1Namespace
+        {
+            ApiVersion = V1Namespace.KubeApiVersion,
+            Kind = V1Namespace.KubeKind,
+            Metadata = new V1ObjectMeta { Name = "created" },
+        }, cancellationToken: TestContext.Current.CancellationToken);
+
+        createdNamespace.Metadata.CreationTimestamp.ShouldNotBeNull();
+    }
+
+    [Fact]
     public async Task GenericClientUsesFakeHttpTransportForCrud()
     {
         using var api = new FakeKubernetesHttpApi();
@@ -138,6 +161,55 @@ public sealed class FakeKubernetesHttpApiTests
 #pragma warning restore xUnit1051
 
         created.Name().ShouldBe("test");
+    }
+
+    [Fact]
+    public async Task FakeTransportServesNodeAndPodMetricsResources()
+    {
+        using var api = new FakeKubernetesHttpApi();
+        api.Add(KubernetesJson.Deserialize<GenericKubernetesObject>("""
+            {
+              "apiVersion": "metrics.k8s.io/v1beta1",
+              "kind": "NodeMetrics",
+              "metadata": { "name": "node-1" },
+              "timestamp": "2026-09-24T12:00:00Z",
+              "window": "30s",
+              "usage": { "cpu": "250m", "memory": "2Gi" }
+            }
+            """)!);
+        api.Add(KubernetesJson.Deserialize<GenericKubernetesObject>("""
+            {
+              "apiVersion": "metrics.k8s.io/v1beta1",
+              "kind": "PodMetrics",
+              "metadata": { "name": "web", "namespace": "default" },
+              "timestamp": "2026-09-24T12:00:00Z",
+              "window": "30s",
+              "containers": [
+                { "name": "web", "usage": { "cpu": "50m", "memory": "64Mi" } }
+              ]
+            }
+            """)!);
+
+        using var client = KubernetesClientMaterializer.Create(
+            new KubernetesClientConfiguration { Host = "http://fake-kubernetes" },
+            api);
+
+        var nodes = await client.GetKubernetesNodesMetricsAsync();
+        var pods = await client.GetKubernetesPodsMetricsAsync();
+        var apiGroups = await client.Apis.GetAPIVersionsAsync();
+
+        var nodeMetric = nodes.Items.ShouldHaveSingleItem();
+        nodeMetric.Metadata.Name.ShouldBe("node-1");
+        nodeMetric.Usage["cpu"].ToString().ShouldBe("250m");
+        nodeMetric.Usage["memory"].ToString().ShouldBe("2Gi");
+        var podMetric = pods.Items.ShouldHaveSingleItem();
+        podMetric.Metadata.Name.ShouldBe("web");
+        var containerMetric = podMetric.Containers.ShouldHaveSingleItem();
+        containerMetric.Usage["cpu"].ToString().ShouldBe("50m");
+        containerMetric.Usage["memory"].ToString().ShouldBe("64Mi");
+        apiGroups.Groups.ShouldContain(group => group.Name == "metrics.k8s.io");
+        api.RequestUris.Select(uri => uri?.AbsolutePath.TrimEnd('/')).ShouldContain("/apis/metrics.k8s.io/v1beta1/nodes");
+        api.RequestUris.Select(uri => uri?.AbsolutePath.TrimEnd('/')).ShouldContain("/apis/metrics.k8s.io/v1beta1/pods");
     }
 
     [Fact]

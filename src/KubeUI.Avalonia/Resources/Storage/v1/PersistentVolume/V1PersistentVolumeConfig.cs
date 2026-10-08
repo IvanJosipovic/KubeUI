@@ -1,4 +1,3 @@
-using KubeUI.Avalonia.Infrastructure.DataGrid;
 using k8s.Models;
 
 namespace KubeUI.Avalonia.Resources.Storage.v1.PersistentVolume;
@@ -16,41 +15,38 @@ public sealed partial class V1PersistentVolumeConfig : ResourceConfigBase<V1Pers
     {
         return [
             NameColumn(SortDirection.Ascending),
-            new DataGridValueColumn<V1PersistentVolume, string>()
+            new ResourceListColumn<V1PersistentVolume, string>()
             {
                 Key = "storage-class",
                 Name = Assets.Resources.V1PersistentVolumeConfig_Storage_Class!,
                 Field = x => x.Spec.StorageClassName,
-                Width = "*",
+                Width = 1, WidthMode = DynamicTableViewWidthMode.Star,
             },
-            new DataGridValueColumn<V1PersistentVolume, decimal>()
+            new ResourceListColumn<V1PersistentVolume, decimal>()
             {
                 Key = "size",
                 Name = Assets.Resources.V1PersistentVolumeConfig_Size!,
                 Display = x => x.Spec.Capacity["storage"]?.CanonicalizeString(ResourceQuantity.SuffixFormat.BinarySI) ?? "",
                 Field = x => x.Spec.Capacity["storage"]?.ToDecimal() ?? 0,
-                Width = nameof(DataGridLengthUnitType.SizeToCells)
+                WidthMode = DynamicTableViewWidthMode.Cells
             },
-            new DataGridValueColumn<V1PersistentVolume, string>()
+            new ResourceListColumn<V1PersistentVolume, string>()
             {
                 Key = "claim",
                 Name = Assets.Resources.V1PersistentVolumeConfig_Claim!,
                 Field = x => x.Spec.ClaimRef.Name,
-                Width = "*",
+                Width = 1, WidthMode = DynamicTableViewWidthMode.Star,
             },
             AgeColumn(),
-            new DataGridValueColumn<V1PersistentVolume, string>()
+            new ResourceListColumn<V1PersistentVolume, string>()
             {
                 Key = "status",
                 Name = Assets.Resources.V1PersistentVolumeConfig_Status!,
                 Field = x => x.Status.Phase,
-                Width = nameof(DataGridLengthUnitType.SizeToCells)
+                WidthMode = DynamicTableViewWidthMode.Cells
             },
         ];
     }
 
     public override Control[] Properties(V1PersistentVolume resource) => [new PropertiesView()];
 }
-
-
-

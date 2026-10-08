@@ -1,64 +1,123 @@
-using System.Collections.ObjectModel;
 using System.Collections.Specialized;
-using System.Reactive.Concurrency;
-using System.Reactive.Linq;
-using System.Reactive.Subjects;
+using System.ComponentModel;
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
 using DynamicData;
-using DynamicData.Binding;
-using KubeUI.Avalonia.Infrastructure.Threading;
+using Shouldly;
+using SvcSystems.Avalonia.DynamicTableView;
 
 namespace KubeUI.Avalonia.Tests.Features.Crossplane;
 
 public sealed class MRDiffDetectionDynamicDataTests
 {
-    [Fact]
-    public void Initial_filter_predicate_is_replayed_to_a_late_dynamic_data_subscription()
+    [AvaloniaFact]
+    public async Task Dynamic_table_applies_search_filter_and_sort_to_diff_rows()
     {
-        using var source = new SourceCache<TestRow, string>(row => row.Key);
-        using var predicate = new BehaviorSubject<Func<TestRow, bool>>(_ => true);
-        var seen = 0;
+        using var rows = new SourceCache<CrossplaneDiffRow, string>(row => row.Key);
+        using var table = CreateTable(rows);
+        table.SetSort([new("name", ListSortDirection.Descending)]);
+        rows.AddOrUpdate([
+            CreateRow("uid-a", "api-a"),
+            CreateRow("uid-b", "api-b"),
+            CreateRow("uid-c", "worker")]);
 
-        using var subscription = source.Connect()
-            .Filter(predicate)
-            .Subscribe(_ => seen++);
+        await WaitForAsync(() => Rows(table).Length == 3);
+        table.SearchText = "api";
+        await WaitForAsync(() => Rows(table).Length == 2);
+        Rows(table).ShouldBe(["api-b", "api-a"]);
 
-        source.AddOrUpdate(new TestRow("row-1"));
+        table.SetFilter(new("name", DynamicTableViewFilterOperator.Contains, "api-a"));
+        await WaitForAsync(() => Rows(table).Length == 1);
+        Rows(table).ShouldBe(["api-a"]);
 
-        Assert.True(seen > 0);
+        table.ClearFilters();
+        await WaitForAsync(() => Rows(table).Length == 2);
+        table.SearchText = string.Empty;
+        await WaitForAsync(() => Rows(table).Length == 3);
+        Rows(table).ShouldBe(["worker", "api-b", "api-a"]);
     }
 
     [AvaloniaFact]
-    public async Task Source_cache_changes_off_ui_thread_and_bound_list_changes_on_ui_thread()
+    public async Task Source_cache_updates_off_ui_thread_and_table_items_change_on_ui_thread()
     {
-        using var source = new SourceCache<TestRow, string>(row => row.Key);
-        using var comparer = new BehaviorSubject<IComparer<TestRow>>(Comparer<TestRow>.Create(
-            static (left, right) => string.Compare(left.Key, right.Key, StringComparison.Ordinal)));
-        ReadOnlyObservableCollection<TestRow>? view = null;
-        using var subscription = source.Connect()
-            .ObserveOn(TaskPoolScheduler.Default)
-            .SortAndBind(out view, comparer, new()
-            {
-                ResetOnFirstTimeLoad = true,
-                UseReplaceForUpdates = true,
-                Scheduler = AvaloniaScheduler.Instance
-            })
-            .Subscribe();
+        using var rows = new SourceCache<CrossplaneDiffRow, string>(row => row.Key);
+        using var table = CreateTable(rows);
         var collectionUpdate = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-        ((INotifyCollectionChanged)view!).CollectionChanged += (_, _) => collectionUpdate.TrySetResult(Dispatcher.UIThread.CheckAccess());
+        ((INotifyCollectionChanged)table.Items).CollectionChanged += (_, _) =>
+            collectionUpdate.TrySetResult(Dispatcher.UIThread.CheckAccess());
 
         var cacheUpdateWasOnUiThread = await Task.Run(() =>
         {
             var isOnUiThread = Dispatcher.UIThread.CheckAccess();
-            source.AddOrUpdate(new TestRow("row-1"));
+            rows.AddOrUpdate(CreateRow("uid-a", "api-a"));
             return isOnUiThread;
         });
-        var boundCollectionUpdateWasOnUiThread = await collectionUpdate.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        var tableCollectionUpdateWasOnUiThread = await collectionUpdate.Task.WaitAsync(TimeSpan.FromSeconds(5));
 
         Assert.False(cacheUpdateWasOnUiThread);
-        Assert.True(boundCollectionUpdateWasOnUiThread);
+        Assert.True(tableCollectionUpdateWasOnUiThread);
     }
 
-    private sealed record TestRow(string Key);
+    [AvaloniaFact]
+    public async Task Selection_follows_a_diff_row_replaced_with_the_same_key()
+    {
+        using var rows = new SourceCache<CrossplaneDiffRow, string>(row => row.Key);
+        using var table = CreateTable(rows);
+        var original = CreateRow("uid-a", "api-a");
+        rows.AddOrUpdate(original);
+        await WaitForAsync(() => Rows(table).Length == 1);
+        table.SelectionModel.Select(0);
+
+        var replacement = CreateRow("uid-a", "api-a");
+        rows.AddOrUpdate(replacement);
+        await WaitForAsync(() => ReferenceEquals(table.SelectionModel.SelectedItem, replacement));
+
+        Assert.Same(replacement, table.SelectionModel.SelectedItem);
+    }
+
+    private static DynamicTableViewSource<CrossplaneDiffRow, string> CreateTable(
+        ISourceCache<CrossplaneDiffRow, string> rows)
+    {
+        return new DynamicTableViewSource<CrossplaneDiffRow, string>(
+            rows,
+            static row => row.Key,
+            [
+                CreateColumn("name", "Name", static row => row.Name),
+                CreateColumn("kind", "Kind", static row => row.Kind)
+            ],
+            options: new DynamicTableViewSourceOptions
+            {
+                SelectionIdentityMode = DynamicTableViewSelectionIdentityMode.Key
+            });
+    }
+
+    private static DynamicTableViewColumn<CrossplaneDiffRow> CreateColumn(
+        string key,
+        string header,
+        Func<CrossplaneDiffRow, string> selector)
+        => new(key, header, typeof(string), row => selector(row), selector, cellTemplate: null);
+
+    private static CrossplaneDiffRow CreateRow(string uid, string name)
+        => new(new CrossplaneDiffRecord(
+            uid,
+            name,
+            "default",
+            "example/v1",
+            "Widget",
+            "spec.value",
+            "old",
+            "new",
+            false,
+            false,
+            false));
+
+    private static string[] Rows(DynamicTableViewSource<CrossplaneDiffRow, string> table)
+        => table.Items.Cast<CrossplaneDiffRow>().Select(static row => row.Name).ToArray();
+
+    private static Task WaitForAsync(Func<bool> condition)
+        => TestWait.UntilAsync(
+            condition,
+            5000,
+            TestContext.Current.CancellationToken,
+            () => Dispatcher.UIThread.RunJobs());
 }

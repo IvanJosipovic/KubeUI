@@ -99,6 +99,8 @@ Releases are available for AMD64 and ARM64 on:
 
 Download binaries from [Releases](https://github.com/IvanJosipovic/KubeUI/releases/latest).
 
+Read the [KubeUI documentation](https://KubeUI.com) for setup and feature guides.
+
 ## Build
 
 Prerequisites:
@@ -124,8 +126,3 @@ Build steps:
 ## License
 
 [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FIvanJosipovic%2FKubeUI.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2FIvanJosipovic%2FKubeUI?ref=badge_large)
-
-## Stats
-
-![Alt](https://repobeats.axiom.co/api/embed/db926eb668f71f8de3314f03022de6bb35797d5d.svg "Repobeats analytics image")
- 

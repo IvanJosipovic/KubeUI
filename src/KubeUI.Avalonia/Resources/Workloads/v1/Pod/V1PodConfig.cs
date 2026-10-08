@@ -1,4 +1,3 @@
-using KubeUI.Avalonia.Infrastructure.DataGrid;
 using Avalonia.Collections;
 using FluentAvalonia.UI.Controls;
 using FluentIcons.Common;
@@ -36,71 +35,73 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
         List<IResourceListColumn> cols =
             [
                 NameColumn(SortDirection.Ascending),
-                new DataGridValueColumn<V1Pod, int>()
+                new ResourceListColumn<V1Pod, int>()
                 {
                     Key = "containers",
                     Name = Assets.Resources.V1PodConfig_Containers!,
                     CustomControl = typeof(PodContainerCellView),
                     Field = x => (x.Spec?.Containers?.Count ?? 0) + (x.Spec?.InitContainers?.Count ?? 0),
-                    Width = nameof(DataGridLengthUnitType.SizeToCells)
+                    WidthMode = DynamicTableViewWidthMode.Cells
                 },
                 NamespaceColumn(),
-                new DataGridValueColumn<V1Pod, int>()
+                new ResourceListColumn<V1Pod, int>()
                 {
                     Key = "restarts",
                     Name = Assets.Resources.V1PodConfig_Restarts!,
                     Field = x => x?.Status?.ContainerStatuses?.Sum(x => x.RestartCount) ?? 0,
-                    Width = nameof(DataGridLengthUnitType.SizeToHeader)
+                    WidthMode = DynamicTableViewWidthMode.Header
                 },
-                new DataGridValueColumn<V1Pod, string>()
+                new ResourceListColumn<V1Pod, string>()
                 {
                     Key = "controlled-by",
                     Name = Assets.Resources.V1PodConfig_Controlled_By!,
                     Field = x => x?.Metadata?.OwnerReferences?.FirstOrDefault()?.Name ?? "",
-                    Width = nameof(DataGridLengthUnitType.SizeToHeader)
+                    WidthMode = DynamicTableViewWidthMode.Header
                 },
-                new DataGridValueColumn<V1Pod, string>()
+                new ResourceListColumn<V1Pod, string>()
                 {
                     Key = "node",
                     Name = Assets.Resources.V1PodConfig_Node!,
                     Field = x => x?.Spec?.NodeName ?? "",
-                    Width = nameof(DataGridLengthUnitType.SizeToHeader)
+                    WidthMode = DynamicTableViewWidthMode.Header
                 },
-                new DataGridValueColumn<V1Pod, string>()
+                new ResourceListColumn<V1Pod, string>()
                 {
                     Key = "qos",
                     Name = Assets.Resources.V1PodConfig_QoS!,
                     Field = x => x?.Status?.QosClass ?? "",
-                    Width = nameof(DataGridLengthUnitType.SizeToCells)
+                    WidthMode = DynamicTableViewWidthMode.Cells
                 },
                 AgeColumn(),
-                new DataGridValueColumn<V1Pod, string>()
+                new ResourceListColumn<V1Pod, string>()
                 {
                     Key = "status",
                     Name = Assets.Resources.V1PodConfig_Status!,
                     Field = x => x.Status?.Conditions?.FirstOrDefault(x => x.Type == "Ready")?.Status == "True" ? "Running" : x.Status?.Conditions?.FirstOrDefault(x => x.Type == "Ready")?.Reason ?? "Unknown",
                     CustomControl = typeof(PodStatusCellView),
-                    Width = nameof(DataGridLengthUnitType.SizeToHeader)
+                    WidthMode = DynamicTableViewWidthMode.Header
                 },
             ];
 
         if (Cluster.Runtime.IsMetricsAvailable)
         {
-            cols.Insert(3, new DataGridValueColumn<V1Pod, decimal>()
+            cols.Insert(3, new ResourceListColumn<V1Pod, decimal>()
             {
                 Key = "cpu",
                 Name = Assets.Resources.V1PodConfig_CPU!,
                 CustomControl = typeof(PodMetricCPUCellView),
                 Field = x => Cluster.Runtime.PodMetrics.FirstOrDefault(y => y.Name() == x.Name() && y.Namespace() == x.Namespace())?.Containers.Sum(z => z.Usage["cpu"]) ?? 0,
-                Width = "80"
+                Width = 80,
+                WidthMode = DynamicTableViewWidthMode.Pixel
             });
-            cols.Insert(4, new DataGridValueColumn<V1Pod, decimal>()
+            cols.Insert(4, new ResourceListColumn<V1Pod, decimal>()
             {
                 Key = "memory",
                 Name = Assets.Resources.V1PodConfig_Memory!,
                 CustomControl = typeof(PodMetricMemoryCellView),
                 Field = x => Cluster.Runtime.PodMetrics.FirstOrDefault(y => y.Name() == x.Name() && y.Namespace() == x.Namespace())?.Containers.Sum(z => z.Usage["memory"]) ?? 0,
-                Width = "80"
+                Width = 80,
+                WidthMode = DynamicTableViewWidthMode.Pixel
             });
         }
 
@@ -504,6 +505,3 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
 
     public override Control[] Properties(V1Pod resource) => [new PropertiesView()];
 }
-
-
-

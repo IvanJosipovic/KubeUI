@@ -3,12 +3,10 @@ using Avalonia.Logging;
 using KubeUI.AI.Agents;
 using KubeUI.AI.Configuration;
 using KubeUI.AI.Permissions;
-using KubeUI.Avalonia.Controls.DataGridFilters;
 using KubeUI.Avalonia.Features.AI;
+using KubeUI.Avalonia.Features.Crossplane.MRDiffDetection;
 using KubeUI.Avalonia.Features.Resources.List.Controls;
 using KubeUI.Avalonia.Features.Resources.Yaml;
-using KubeUI.Avalonia.Features.Crossplane.MRDiffDetection;
-using KubeUI.Avalonia.Shell.Navigation;
 using KubeUI.Avalonia.Infrastructure.Logging;
 using KubeUI.Avalonia.Infrastructure.Platform;
 using KubeUI.Avalonia.Infrastructure.Presentation;
@@ -17,6 +15,7 @@ using KubeUI.Avalonia.Resources.Workloads.v1.Pod.Services;
 using KubeUI.Avalonia.Resources.Workloads.v1.Pod.ViewModels;
 using KubeUI.Avalonia.Services.Icons;
 using KubeUI.Avalonia.Services.Settings;
+using KubeUI.Avalonia.Shell.Navigation;
 using KubeUI.Kubernetes;
 using ServiceScan.SourceGenerator;
 
@@ -40,8 +39,6 @@ public static partial class KubeUIShellServiceCollectionExtensions
         services.AddSingleton<IYamlValidationService, YamlSyntaxValidationService>();
         services.AddSingleton<ILogSink, LogSink>();
         services.AddSingleton<ViewLocator>();
-        services.AddSingleton<DataGridColumnFilterService>();
-        services.AddSingleton<DataGridColumnFilterFlyoutFactory>();
         services.AddSingleton<IPodLogExportService, PodLogExportService>();
         services.AddSingleton<Func<PodLogsViewModel>>(sp =>
             () => sp.GetRequiredService<PodLogsViewModel>());
@@ -51,7 +48,7 @@ public static partial class KubeUIShellServiceCollectionExtensions
         services.AddSingleton<ISettingsService, SettingsService>();
         services.AddSingleton<IResourceIconService, ResourceIconService>();
         services.AddSingleton<NavigationFeatureCatalog>();
-        services.AddSingleton<INavigationFeatureDefinition>(_ => CrossplaneNavigationFeature.CreateDefinition());
+        services.AddSingleton(_ => CrossplaneNavigationFeature.CreateDefinition());
         services.AddSingleton<CrossplaneDiffLogParser>();
         services.AddTransient<CrossplaneProviderLogMonitor>();
         services.AddSingleton<IAgentRegistry>(sp => new AcpAgentRegistry(

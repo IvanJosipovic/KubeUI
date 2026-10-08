@@ -2,7 +2,6 @@ using Dock.Model.Core;
 using FluentIcons.Common;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Infrastructure.Presentation;
-using KubeUI.Avalonia.Resources;
 
 namespace KubeUI.Avalonia.Shell.Navigation;
 

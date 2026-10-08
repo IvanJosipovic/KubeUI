@@ -12,6 +12,7 @@ using Dock.Model.Core;
 using FluentAvalonia.Styling;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
 using Semi.Avalonia;
+using SvcSystems.UI.Terminal;
 using Ursa.Controls;
 using Ursa.Themes.Semi;
 using Westermo.GraphX.Controls.Avalonia.Themes.Fluent;
@@ -37,15 +38,14 @@ public sealed class Fluent : AvaloniaStyles
         Add(CreateTypographyResources());
         Add(CreateThemeResourceStyles(CreateSemanticLightResources(), CreateSemanticDarkResources()));
         Add(CreateThemeResourceStyles(CreateVisualizationLightResources(), CreateVisualizationDarkResources()));
-        Add(CreateStyleInclude("avares://Avalonia.Controls.DataGrid/Themes/Fluent.v2.xaml"));
+        Add(new DynamicTableViewTheme());
         Add(CreateStyleInclude("avares://AvaloniaEdit/Themes/Fluent/AvaloniaEdit.xaml"));
         Add(CreateStyleInclude("avares://LiveMarkdown.Avalonia/Styles.axaml"));
         Add(new DockFluentTheme());
-        Add(CreateStyleInclude("avares://SvcSystems.UI.Terminal/Styles/Colors.axaml"));
-        DataGridStyles.AddTo(this);
+        Add(new TerminalTheme());
 
         Add(new Style<ToolControl>()
-            .Background(new DynamicResourceExtension("DockThemeControlBackgroundBrush")));
+            .Background(new DynamicResourceExtension("SystemRegionBrush")));
 
         Add(new Style<DocumentControl>()
             .Setter(DocumentControl.HeaderTemplateProperty, new FuncDataTemplate<IDockable>((dockable, _) => CreateDocumentHeader(dockable!), false)));
@@ -65,17 +65,16 @@ public sealed class Fluent : AvaloniaStyles
                         new NameScope())
                 }));
 
-        Add(new Style<HostWindow>(x => x.OfType<HostWindow>().Class(":toolwindow"))
+        Add(new Style<HostWindow>()
             .Background(new DynamicResourceExtension("SystemRegionBrush"))
             .Opacity(1d)
             .RequestedThemeVariant(CompiledBinding.Create<Application, ThemeVariant?>(x => x.RequestedThemeVariant, source: Application.Current))
             .TransparencyLevelHint([WindowTransparencyLevel.None]));
 
-        Add(new Style<HostWindow>(x => x.OfType<HostWindow>().Not(x => x.Class(":toolwindow")))
-            .Background(new DynamicResourceExtension("SystemRegionBrush"))
-            .Opacity(1d)
-            .RequestedThemeVariant(CompiledBinding.Create<Application, ThemeVariant?>(x => x.RequestedThemeVariant, source: Application.Current))
-            .TransparencyLevelHint([WindowTransparencyLevel.None]));
+        Add(new Style<TableViewRow>()
+            .Background(new DynamicResourceExtension("SystemRegionBrush")));
+        Add(new Style<TableViewColumnHeader>()
+            .Background(new DynamicResourceExtension("SystemAltHighColor")));
     }
 
     private FluentTheme CreateFluentTheme()
@@ -310,6 +309,7 @@ public sealed class Fluent : AvaloniaStyles
                 CreateClusterIndicator(cluster),
                 new TextBlock()
                     .VerticalAlignment(VerticalAlignment.Center)
+                    .FontSize(new DynamicResourceExtension(Typography.AppFontSizeResourceKey))
                     .BindValue(TextBlock.TextProperty, CompiledBinding.Create<IDockable, string?>(x => x.Title, source: dockable)));
     }
 

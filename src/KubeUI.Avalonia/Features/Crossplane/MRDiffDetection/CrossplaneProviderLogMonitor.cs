@@ -1,7 +1,5 @@
 using System.Security.Cryptography;
 using System.Text;
-using k8s;
-using KubernetesClient.Informer.Client;
 using KubeUI.Kubernetes;
 
 namespace KubeUI.Avalonia.Features.Crossplane.MRDiffDetection;
@@ -16,6 +14,7 @@ public sealed class CrossplaneProviderLogMonitor : IDisposable
     private readonly RecentLogLineSet _seen = new(4096);
     private CancellationTokenSource? _cancellation;
     private string? _providerName;
+    private IClusterRuntime? _runtime;
     private bool _disposed;
 
     public CrossplaneProviderLogMonitor(
@@ -31,8 +30,9 @@ public sealed class CrossplaneProviderLogMonitor : IDisposable
     public async Task StartAsync(
         IClusterRuntime cluster,
         GenericKubernetesObject provider,
-        Action<string> lineReceived,
-        CancellationToken cancellationToken)
+        Func<string, CancellationToken, ValueTask> lineReceived,
+        CancellationToken cancellationToken,
+        bool resetSeen = false)
     {
         ArgumentNullException.ThrowIfNull(cluster);
         ArgumentNullException.ThrowIfNull(provider);
@@ -40,14 +40,19 @@ public sealed class CrossplaneProviderLogMonitor : IDisposable
 
         CancellationTokenSource localCancellation;
         CancellationTokenSource? previousCancellation;
+        long seenSession;
         lock (_gate)
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
             var providerName = provider.Metadata?.Name;
-            if (!string.Equals(_providerName, providerName, StringComparison.Ordinal))
+            var startNewSeenSession = resetSeen
+                || !ReferenceEquals(_runtime, cluster)
+                || !string.Equals(_providerName, providerName, StringComparison.Ordinal);
+            seenSession = _seen.BeginSession(startNewSeenSession);
+            if (startNewSeenSession)
             {
-                _seen.Clear();
                 _providerName = providerName;
+                _runtime = cluster;
             }
 
             previousCancellation = _cancellation;
@@ -70,10 +75,26 @@ public sealed class CrossplaneProviderLogMonitor : IDisposable
             {
                 foreach (var container in pod.Spec?.Containers ?? [])
                 {
-                    tasks.Add(ReadContainerAsync(cluster, pod, container.Name, previous: false, lineReceived, _seen, localCancellation.Token));
+                    tasks.Add(ReadContainerAsync(
+                        cluster,
+                        pod,
+                        container.Name,
+                        previous: false,
+                        lineReceived,
+                        _seen,
+                        seenSession,
+                        localCancellation));
                     if (HasRestartedContainer(pod, container.Name))
                     {
-                        tasks.Add(ReadContainerAsync(cluster, pod, container.Name, previous: true, lineReceived, _seen, localCancellation.Token));
+                        tasks.Add(ReadContainerAsync(
+                            cluster,
+                            pod,
+                            container.Name,
+                            previous: true,
+                            lineReceived,
+                            _seen,
+                            seenSession,
+                            localCancellation));
                     }
                 }
             }
@@ -99,12 +120,15 @@ public sealed class CrossplaneProviderLogMonitor : IDisposable
         k8s.Models.V1Pod pod,
         string containerName,
         bool previous,
-        Action<string> lineReceived,
+        Func<string, CancellationToken, ValueTask> lineReceived,
         RecentLogLineSet seen,
-        CancellationToken cancellationToken)
+        long seenSession,
+        CancellationTokenSource cancellation)
     {
+        var cancellationToken = cancellation.Token;
         do
         {
+            var callbackFailed = false;
             try
             {
                 PodLogReadOptions options = new(
@@ -116,7 +140,7 @@ public sealed class CrossplaneProviderLogMonitor : IDisposable
                     Follow: !previous,
                     TailLines: InitialLogTailLines);
                 await using var stream = await _streamClient.OpenAsync(cluster, options, cancellationToken).ConfigureAwait(false);
-                using var reader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, leaveOpen: false);
+                using var reader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, leaveOpen: true);
                 while (await reader.ReadLineAsync(cancellationToken).ConfigureAwait(false) is { } line)
                 {
                     if (!line.Contains("Diff detected", StringComparison.Ordinal))
@@ -126,17 +150,27 @@ public sealed class CrossplaneProviderLogMonitor : IDisposable
 
                     var lineHash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(line)));
                     var key = $"{pod.Metadata?.NamespaceProperty}\u0000{pod.Metadata?.Name}\u0000{containerName}\u0000{lineHash}";
-                    if (seen.TryAdd(key))
+                    if (seen.TryAdd(key, seenSession))
                     {
-                        lineReceived(line);
+                        try
+                        {
+                            await lineReceived(line, cancellationToken).ConfigureAwait(false);
+                        }
+                        catch
+                        {
+                            seen.Remove(key, seenSession);
+                            callbackFailed = true;
+                            cancellation.Cancel();
+                            throw;
+                        }
                     }
                 }
             }
-            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested && !callbackFailed)
             {
                 break;
             }
-            catch (Exception ex)
+            catch (Exception ex) when (!callbackFailed)
             {
                 _logger.LogDebug(ex, "Crossplane provider log stream ended for {Pod}/{Container}", pod.Metadata?.Name, containerName);
             }
@@ -168,6 +202,21 @@ public sealed class CrossplaneProviderLogMonitor : IDisposable
         return FindProviderPods(cluster, providerName)
             .Select(pod => $"{pod.Metadata?.NamespaceProperty}\u0000{pod.Metadata?.Name}")
             .ToHashSet(StringComparer.Ordinal);
+    }
+
+    public static Dictionary<string, int> GetProviderContainerRestartCounts(IClusterRuntime cluster, string providerName)
+    {
+        Dictionary<string, int> restartCounts = new(StringComparer.Ordinal);
+        foreach (var pod in FindProviderPods(cluster, providerName))
+        {
+            var podKey = $"{pod.Metadata?.NamespaceProperty}\u0000{pod.Metadata?.Name}";
+            foreach (var status in pod.Status?.ContainerStatuses ?? [])
+            {
+                restartCounts[$"{podKey}\u0000{status.Name}"] = status.RestartCount;
+            }
+        }
+
+        return restartCounts;
     }
 
     private static List<k8s.Models.V1Pod> FindProviderPods(IClusterRuntime cluster, string? providerName)
@@ -245,34 +294,65 @@ public sealed class CrossplaneProviderLogMonitor : IDisposable
     private sealed class RecentLogLineSet(int capacity)
     {
         private readonly object _gate = new();
-        private readonly HashSet<string> _keys = new(StringComparer.Ordinal);
-        private readonly Queue<string> _orderedKeys = new();
+        private readonly Dictionary<string, long> _keys = new(StringComparer.Ordinal);
+        private readonly Queue<(string Key, long Generation)> _orderedKeys = new();
+        private long _entryGeneration;
+        private long _sessionGeneration;
 
-        public bool TryAdd(string key)
+        public long BeginSession(bool reset)
         {
             lock (_gate)
             {
-                if (!_keys.Add(key))
+                if (reset)
+                {
+                    _keys.Clear();
+                    _orderedKeys.Clear();
+                    _sessionGeneration++;
+                }
+
+                return _sessionGeneration;
+            }
+        }
+
+        public bool TryAdd(string key, long sessionGeneration)
+        {
+            lock (_gate)
+            {
+                if (sessionGeneration != _sessionGeneration)
                 {
                     return false;
                 }
 
-                _orderedKeys.Enqueue(key);
+                if (_keys.ContainsKey(key))
+                {
+                    return false;
+                }
+
+                var entryGeneration = ++_entryGeneration;
+                _keys.Add(key, entryGeneration);
+                _orderedKeys.Enqueue((key, entryGeneration));
                 if (_orderedKeys.Count > capacity)
                 {
-                    _keys.Remove(_orderedKeys.Dequeue());
+                    var expired = _orderedKeys.Dequeue();
+                    if (_keys.TryGetValue(expired.Key, out var currentGeneration)
+                        && currentGeneration == expired.Generation)
+                    {
+                        _keys.Remove(expired.Key);
+                    }
                 }
 
                 return true;
             }
         }
 
-        public void Clear()
+        public void Remove(string key, long sessionGeneration)
         {
             lock (_gate)
             {
-                _keys.Clear();
-                _orderedKeys.Clear();
+                if (sessionGeneration == _sessionGeneration)
+                {
+                    _keys.Remove(key);
+                }
             }
         }
     }

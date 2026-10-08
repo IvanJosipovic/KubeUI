@@ -1,4 +1,3 @@
-using KubeUI.Avalonia.Infrastructure.DataGrid;
 using k8s.Models;
 
 namespace KubeUI.Avalonia.Resources.Configuration.v1.ConfigMap;
@@ -18,12 +17,12 @@ public sealed partial class V1ConfigMapConfig : ResourceConfigBase<V1ConfigMap>
         return [
             NameColumn(SortDirection.Ascending),
             NamespaceColumn(),
-            new DataGridValueColumn<V1ConfigMap, string>()
+            new ResourceListColumn<V1ConfigMap, string>()
             {
                 Key = "keys",
                 Name = Assets.Resources.V1ConfigMapConfig_Keys!,
                 Field = x => x.Data is { Count: > 0 } data ? string.Join(", ", data.Keys) : "",
-                Width = nameof(DataGridLengthUnitType.SizeToHeader)
+                WidthMode = DynamicTableViewWidthMode.Header
             },
             AgeColumn(),
         ];
@@ -31,6 +30,3 @@ public sealed partial class V1ConfigMapConfig : ResourceConfigBase<V1ConfigMap>
 
     public override Control[] Properties(V1ConfigMap resource) => [new PropertiesView()];
 }
-
-
-

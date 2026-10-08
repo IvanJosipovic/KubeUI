@@ -1,4 +1,3 @@
-using KubeUI.Avalonia.Infrastructure.DataGrid;
 using FluentAvalonia.UI.Controls;
 using FluentIcons.Common;
 using HanumanInstitute.MvvmDialogs;
@@ -23,57 +22,57 @@ public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>
     {
         return [
             NameColumn(SortDirection.Ascending),
-            new DataGridValueColumn<V1Node, string>()
+            new ResourceListColumn<V1Node, string>()
             {
                 Key = "instance-type",
                 Name = Assets.Resources.V1NodeConfig_Instance_Type!,
                 Field = x => x?.Metadata?.Labels?.TryGetValue("node.kubernetes.io/instance-type", out var value) == true ? value : string.Empty,
-                Width = nameof(DataGridLengthUnitType.SizeToCells)
+                WidthMode = DynamicTableViewWidthMode.Cells
             },
-            new DataGridValueColumn<V1Node, decimal>()
+            new ResourceListColumn<V1Node, decimal>()
             {
                 Key = "cpu",
                 Name = Assets.Resources.V1NodeConfig_CPU!,
                 Field = x => x?.Status ?.Capacity ?.TryGetValue("cpu", out var value) == true && value != null ? value.ToDecimal() : 0,
                 Display = x => x?.Status?.Capacity?.TryGetValue("cpu", out var value) == true && value != null ? value.ToDecimal().ToString("0.##") + "c" : "0c",
-                Width = nameof(DataGridLengthUnitType.SizeToHeader)
+                WidthMode = DynamicTableViewWidthMode.Header
             },
-            new DataGridValueColumn<V1Node, decimal>()
+            new ResourceListColumn<V1Node, decimal>()
             {
                 Key = "memory",
                 Name = Assets.Resources.V1NodeConfig_Memory!,
                 Field = x => x?.Status ?.Capacity ?.TryGetValue("memory", out var value) == true && value != null ? value.ToDecimal() : 0,
                 Display = x => x?.Status?.Capacity?.TryGetValue("memory", out var value) == true && value != null ? (value.ToDecimal() / 1048576 / 1024).ToString("0.##") + "Gi" : "0Gi",
-                Width = nameof(DataGridLengthUnitType.SizeToHeader)
+                WidthMode = DynamicTableViewWidthMode.Header
             },
-            new DataGridValueColumn<V1Node, decimal>()
+            new ResourceListColumn<V1Node, decimal>()
             {
                 Key = "disk",
                 Name = Assets.Resources.V1NodeConfig_Disk!,
                 Field = x => x?.Status ?.Capacity ?.TryGetValue("ephemeral-storage", out var value) == true && value != null ? value.ToDecimal() : 0,
                 Display = x => x?.Status?.Capacity?.TryGetValue("ephemeral-storage", out var value) == true && value != null ? (value.ToDecimal() / 1048576 / 1024).ToString("0.##") + "Gi" : "0Gi",
-                Width = nameof(DataGridLengthUnitType.SizeToCells)
+                WidthMode = DynamicTableViewWidthMode.Cells
             },
-            new DataGridValueColumn<V1Node, string>()
+            new ResourceListColumn<V1Node, string>()
             {
                 Key = "taints",
                 Name = Assets.Resources.V1NodeConfig_Taints!,
                 Field = x => x?.Spec?.Taints is { Count: > 0 } taints ? string.Join(", ", taints.Select(x => $"{x.Key}={x.Effect}")) : "",
-                Width = nameof(DataGridLengthUnitType.SizeToHeader)
+                WidthMode = DynamicTableViewWidthMode.Header
             },
-            new DataGridValueColumn<V1Node, string>()
+            new ResourceListColumn<V1Node, string>()
             {
                 Key = "version",
                 Name = Assets.Resources.V1NodeConfig_Version!,
                 Field = x => x?.Status?.NodeInfo?.KubeletVersion ?? string.Empty,
-                Width = nameof(DataGridLengthUnitType.SizeToHeader)
+                WidthMode = DynamicTableViewWidthMode.Header
             },
-            new DataGridValueColumn<V1Node, string>()
+            new ResourceListColumn<V1Node, string>()
             {
                 Key = "status",
                 Name = Assets.Resources.V1NodeConfig_Status!,
                 Field = x => x?.Status?.Conditions?.FirstOrDefault(x => x.Type == "Ready")?.Reason ?? string.Empty,
-                Width = nameof(DataGridLengthUnitType.SizeToCells)
+                WidthMode = DynamicTableViewWidthMode.Cells
             },
             AgeColumn(),
         ];
@@ -274,6 +273,3 @@ public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>
 
     public override Control[] Properties(V1Node resource) => [new PropertiesView()];
 }
-
-
-

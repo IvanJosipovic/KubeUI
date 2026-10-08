@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 using System.Text.Json;
 
@@ -6,8 +7,22 @@ namespace KubeUI.Kubernetes;
 /// <summary>Parses Crossplane provider log lines containing Terraform instance diffs.</summary>
 public sealed class CrossplaneDiffLogParser
 {
+    private const string ResourceAttrDiffTypeMarker = "ResourceAttrDiff{";
+
+    /// <summary>Parses a provider log line, returning only complete attributes from truncated payloads.</summary>
+    /// <remarks>Use the overload with a truncation output flag when that distinction matters.</remarks>
     public IReadOnlyList<CrossplaneDiffRecord> Parse(string line)
+        => Parse(line, out _);
+
+    /// <summary>Parses a provider log line and reports when only its complete prefix could be recovered.</summary>
+    /// <param name="line">The provider log line.</param>
+    /// <param name="wasTruncated">
+    /// Set to <see langword="true"/> when the structured diff payload was clipped and only complete attributes
+    /// were returned.
+    /// </param>
+    public IReadOnlyList<CrossplaneDiffRecord> Parse(string line, out bool wasTruncated)
     {
+        wasTruncated = false;
         if (string.IsNullOrWhiteSpace(line))
         {
             return [];
@@ -38,13 +53,67 @@ public sealed class CrossplaneDiffLogParser
                 return [];
             }
 
-            ParseGvk(gvk, out var apiVersion, out var kind);
-            return ParseAttributes(uid, name, @namespace, apiVersion, kind, instanceDiff);
+            if (!TryParseGvk(gvk, out var apiVersion, out var kind))
+            {
+                return [];
+            }
+
+            var records = ParseAttributes(uid, name, @namespace, apiVersion, kind, instanceDiff);
+            if (!IsIncompleteInstanceDiff(instanceDiff)
+                || !instanceDiff.Contains("InstanceDiff{", StringComparison.Ordinal)
+                || !instanceDiff.Contains("Attributes:map[", StringComparison.Ordinal))
+            {
+                return records;
+            }
+
+            wasTruncated = true;
+            return ParseAttributes(uid, name, @namespace, apiVersion, kind, instanceDiff, allowIncomplete: true);
+        }
+        catch (JsonException)
+        {
+            return ParseTruncatedPayload(line[jsonStart..], out wasTruncated);
+        }
+    }
+
+    private static IReadOnlyList<CrossplaneDiffRecord> ParseTruncatedPayload(string json, out bool wasTruncated)
+    {
+        wasTruncated = false;
+        JsonDocument document;
+        try
+        {
+            document = JsonDocument.Parse(string.Concat(json, "\"}"));
         }
         catch (JsonException)
         {
             return [];
         }
+
+        using (document)
+        {
+            var root = document.RootElement;
+            if (!TryGetString(root, "uid", out var uid)
+                || !TryGetString(root, "name", out var name)
+                || !TryGetString(root, "namespace", out var @namespace)
+                || !TryGetString(root, "gvk", out var gvk)
+                || !TryGetString(root, "instanceDiff", out var instanceDiff)
+                || !instanceDiff.Contains("InstanceDiff{", StringComparison.Ordinal)
+                || !instanceDiff.Contains("Attributes:map[", StringComparison.Ordinal)
+                || !TryParseGvk(gvk, out var apiVersion, out var kind))
+            {
+                return [];
+            }
+
+            var records = ParseAttributes(uid, name, @namespace, apiVersion, kind, instanceDiff, allowIncomplete: true);
+            wasTruncated = true;
+            return records;
+        }
+    }
+
+    private static bool IsIncompleteInstanceDiff(string instanceDiff)
+    {
+        var instanceStart = instanceDiff.IndexOf('{');
+        return instanceStart >= 0
+            && !TryFindMatching(instanceDiff, instanceStart, '{', '}', out _);
     }
 
     private static IReadOnlyList<CrossplaneDiffRecord> ParseAttributes(
@@ -53,8 +122,22 @@ public sealed class CrossplaneDiffLogParser
         string @namespace,
         string apiVersion,
         string kind,
-        string instanceDiff)
+        string instanceDiff,
+        bool allowIncomplete = false)
     {
+        var instanceStart = instanceDiff.IndexOf('{');
+        if (instanceStart < 0)
+        {
+            return [];
+        }
+
+        var instanceComplete = TryFindMatching(instanceDiff, instanceStart, '{', '}', out var instanceEnd);
+        if ((!instanceComplete && !allowIncomplete)
+            || (instanceComplete && !instanceDiff.AsSpan(instanceEnd + 1).Trim().IsEmpty))
+        {
+            return [];
+        }
+
         var attributesIndex = instanceDiff.IndexOf("Attributes:map[", StringComparison.Ordinal);
         if (attributesIndex < 0)
         {
@@ -62,9 +145,19 @@ public sealed class CrossplaneDiffLogParser
         }
 
         var bodyStart = instanceDiff.IndexOf('{', attributesIndex);
-        if (bodyStart < 0 || !TryFindMatching(instanceDiff, bodyStart, '{', '}', out var bodyEnd))
+        if (bodyStart < 0)
         {
             return [];
+        }
+
+        if (!TryFindMatching(instanceDiff, bodyStart, '{', '}', out var bodyEnd))
+        {
+            if (!allowIncomplete)
+            {
+                return [];
+            }
+
+            bodyEnd = instanceDiff.Length;
         }
 
         var records = new List<CrossplaneDiffRecord>();
@@ -83,8 +176,34 @@ public sealed class CrossplaneDiffLogParser
                 break;
             }
 
-            var valueStart = instanceDiff.IndexOf("ResourceAttrDiff{", index, bodyEnd - index, StringComparison.Ordinal);
+            SkipWhitespace(instanceDiff, ref index, bodyEnd);
+            if (index >= bodyEnd || instanceDiff[index] != ':')
+            {
+                break;
+            }
+
+            index++;
+            SkipWhitespace(instanceDiff, ref index, bodyEnd);
+            if (instanceDiff.AsSpan(index).StartsWith("nil", StringComparison.Ordinal)
+                && (index + 3 >= bodyEnd || char.IsWhiteSpace(instanceDiff[index + 3]) || instanceDiff[index + 3] == ','))
+            {
+                index += 3;
+                var nextEntry = instanceDiff.IndexOf(',', index, bodyEnd - index);
+                index = nextEntry < 0 ? bodyEnd : nextEntry + 1;
+                continue;
+            }
+
+            var valueStart = instanceDiff.IndexOf(ResourceAttrDiffTypeMarker, index, bodyEnd - index, StringComparison.Ordinal);
             if (valueStart < 0)
+            {
+                break;
+            }
+
+            var typePrefix = instanceDiff.AsSpan(index, valueStart - index).Trim();
+            if (!typePrefix.IsEmpty
+                && !typePrefix.SequenceEqual("*".AsSpan())
+                && !typePrefix.SequenceEqual("*terraform.".AsSpan())
+                && !typePrefix.SequenceEqual("terraform.".AsSpan()))
             {
                 break;
             }
@@ -130,25 +249,21 @@ public sealed class CrossplaneDiffLogParser
 
         start += marker.Length;
         var builder = new StringBuilder();
-        for (var i = start; i < body.Length; i++)
+        var index = start;
+        while (index < body.Length)
         {
-            var character = body[i];
+            var character = body[index++];
             if (character == '"')
             {
                 return builder.ToString();
             }
 
-            if (character == '\\' && i + 1 < body.Length)
+            if (character == '\\')
             {
-                builder.Append(body[++i] switch
+                if (!TryAppendGoEscape(body, ref index, builder))
                 {
-                    'n' => '\n',
-                    'r' => '\r',
-                    't' => '\t',
-                    '\\' => '\\',
-                    '"' => '"',
-                    _ => body[i]
-                });
+                    return null;
+                }
             }
             else
             {
@@ -177,18 +292,19 @@ public sealed class CrossplaneDiffLogParser
         return false;
     }
 
-    private static void ParseGvk(string gvk, out string apiVersion, out string kind)
+    private static bool TryParseGvk(string gvk, out string apiVersion, out string kind)
     {
         var separator = gvk.IndexOf(", Kind=", StringComparison.Ordinal);
-        if (separator < 0)
+        if (separator <= 0 || separator + ", Kind=".Length >= gvk.Length)
         {
-            apiVersion = gvk;
+            apiVersion = string.Empty;
             kind = string.Empty;
-            return;
+            return false;
         }
 
         apiVersion = gvk[..separator];
         kind = gvk[(separator + ", Kind=".Length)..];
+        return !string.IsNullOrWhiteSpace(apiVersion) && !string.IsNullOrWhiteSpace(kind);
     }
 
     private static bool TryReadQuoted(string value, ref int index, int end, out string result)
@@ -210,9 +326,12 @@ public sealed class CrossplaneDiffLogParser
                 return true;
             }
 
-            if (character == '\\' && index < end)
+            if (character == '\\')
             {
-                builder.Append(value[index++]);
+                if (!TryAppendGoEscape(value.AsSpan(0, end), ref index, builder))
+                {
+                    return false;
+                }
             }
             else
             {
@@ -221,6 +340,89 @@ public sealed class CrossplaneDiffLogParser
         }
 
         return false;
+    }
+
+    private static bool TryAppendGoEscape(ReadOnlySpan<char> value, ref int index, StringBuilder builder)
+    {
+        if (index >= value.Length)
+        {
+            return false;
+        }
+
+        var escape = value[index++];
+        switch (escape)
+        {
+            case 'a':
+                builder.Append('\a');
+                return true;
+            case 'b':
+                builder.Append('\b');
+                return true;
+            case 'f':
+                builder.Append('\f');
+                return true;
+            case 'n':
+                builder.Append('\n');
+                return true;
+            case 'r':
+                builder.Append('\r');
+                return true;
+            case 't':
+                builder.Append('\t');
+                return true;
+            case 'v':
+                builder.Append('\v');
+                return true;
+            case '\\':
+            case '"':
+                builder.Append(escape);
+                return true;
+            case 'x':
+                return TryAppendHexEscape(value, ref index, 2, builder);
+            case 'u':
+                return TryAppendHexEscape(value, ref index, 4, builder);
+            case 'U':
+                return TryAppendHexEscape(value, ref index, 8, builder);
+            default:
+                if (escape is < '0' or > '7' || index + 2 > value.Length)
+                {
+                    return false;
+                }
+
+                var octal = escape - '0';
+                for (var digit = 0; digit < 2; digit++)
+                {
+                    var character = value[index++];
+                    if (character is < '0' or > '7')
+                    {
+                        return false;
+                    }
+
+                    octal = (octal * 8) + character - '0';
+                }
+
+                if (octal > byte.MaxValue)
+                {
+                    return false;
+                }
+
+                builder.Append((char)octal);
+                return true;
+        }
+    }
+
+    private static bool TryAppendHexEscape(ReadOnlySpan<char> value, ref int index, int digitCount, StringBuilder builder)
+    {
+        if (index + digitCount > value.Length
+            || !int.TryParse(value.Slice(index, digitCount), NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture, out var codePoint)
+            || !Rune.TryCreate(codePoint, out var rune))
+        {
+            return false;
+        }
+
+        index += digitCount;
+        builder.Append(rune.ToString());
+        return true;
     }
 
     private static bool TryFindMatching(string value, int start, char opening, char closing, out int end)

@@ -1,4 +1,3 @@
-using KubeUI.Avalonia.Infrastructure.DataGrid;
 using k8s.Models;
 
 namespace KubeUI.Avalonia.Resources.Configuration.v1.MutatingWebhookConfiguration;
@@ -16,12 +15,12 @@ public sealed partial class V1MutatingWebhookConfig : ResourceConfigBase<V1Mutat
     {
         return [
             NameColumn(SortDirection.Ascending),
-            new DataGridValueColumn<V1MutatingWebhookConfiguration, int>()
+            new ResourceListColumn<V1MutatingWebhookConfiguration, int>()
             {
                 Key = "webhooks",
                 Name = Assets.Resources.V1MutatingWebhookConfig_Webhooks!,
                 Field = x => x.Webhooks?.Count ?? 0,
-                Width = nameof(DataGridLengthUnitType.SizeToHeader)
+                WidthMode = DynamicTableViewWidthMode.Header
             },
             AgeColumn(),
         ];
@@ -29,6 +28,3 @@ public sealed partial class V1MutatingWebhookConfig : ResourceConfigBase<V1Mutat
 
     public override Control[] Properties(V1MutatingWebhookConfiguration resource) => [new PropertiesView()];
 }
-
-
-

@@ -17,7 +17,6 @@ using KubeUI.Avalonia.Features.Resources.Properties;
 using KubeUI.Avalonia.Features.Resources.Visualization;
 using KubeUI.Avalonia.Features.Resources.Yaml;
 using KubeUI.Avalonia.Infrastructure;
-using KubeUI.Avalonia.Infrastructure.DataGrid;
 using KubeUI.Avalonia.Infrastructure.Docking;
 using KubeUI.Avalonia.Resources.Workloads.v1.Pod.Services;
 using KubeUI.Avalonia.Resources.Workloads.v1.Pod.ViewModels;
@@ -203,38 +202,41 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
 
     public virtual Control[] Properties(T resource) => [];
 
-    protected DataGridValueColumn<T, string> NameColumn(SortDirection sort = SortDirection.None)
+    protected ResourceListColumn<T, string> NameColumn(SortDirection sort = SortDirection.None)
     {
-        return new DataGridValueColumn<T, string>()
+        return new ResourceListColumn<T, string>()
         {
             Key = "name",
             Name = Assets.Resources.ResourceListView_Name!,
             Field = x => x?.Metadata?.Name ?? string.Empty,
-            Width = "2*",
+            Width = 2,
+            WidthMode = DynamicTableViewWidthMode.Star,
             Sort = sort,
         };
     }
 
-    protected DataGridValueColumn<T, string> NamespaceColumn()
+    protected ResourceListColumn<T, string> NamespaceColumn()
     {
-        return new DataGridValueColumn<T, string>()
+        return new ResourceListColumn<T, string>()
         {
             Key = "namespace",
             Name = Assets.Resources.ResourceListView_Namespace!,
             Field = x => x?.Metadata?.NamespaceProperty ?? string.Empty,
-            Width = "*",
+            Width = 1,
+            WidthMode = DynamicTableViewWidthMode.Star,
         };
     }
 
-    protected DataGridValueColumn<T, DateTime?> AgeColumn()
+    protected ResourceListColumn<T, DateTime?> AgeColumn()
     {
-        return new DataGridValueColumn<T, DateTime?>()
+        return new ResourceListColumn<T, DateTime?>()
         {
             Key = "age",
             Name = Assets.Resources.ResourceListView_Age!,
             CustomControl = typeof(AgeCell),
             Field = x => x.Metadata.CreationTimestamp,
-            Width = "80"
+            Width = 80,
+            WidthMode = DynamicTableViewWidthMode.Pixel
         };
     }
 
@@ -559,4 +561,3 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
 
     #endregion
 }
-

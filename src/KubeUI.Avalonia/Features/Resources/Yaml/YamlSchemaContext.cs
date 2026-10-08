@@ -277,7 +277,8 @@ internal static class YamlSchemaContext
             return null;
 
         var summary = NormalizeDocumentationText(schema.Description);
-        return new YamlDocumentationInfo(schema.Name, schema.TypeName, summary);
+        var label = schema.IsRequired ? $"{schema.Name} *" : schema.Name;
+        return new YamlDocumentationInfo(label, schema.TypeName, summary);
     }
 
     private static HashSet<string> GetUsedKeysForScope(TextDocument document, int lineNumber, int keyColumn, IReadOnlySet<string> above)
@@ -409,7 +410,8 @@ internal sealed record YamlSchemaNode(
     string? Description,
     IReadOnlyDictionary<string, YamlSchemaNode> Properties,
     YamlSchemaNode? Items,
-    IReadOnlyList<string> EnumValues)
+    IReadOnlyList<string> EnumValues,
+    bool IsRequired = false)
 {
     private static readonly Dictionary<string, IOpenApiSchema> EmptyProperties = new(StringComparer.Ordinal);
 
@@ -419,33 +421,48 @@ internal sealed record YamlSchemaNode(
     public bool IsSequence => SchemaType == JsonSchemaType.Array || Items is not null;
 
     public static YamlSchemaNode Create(string name, IOpenApiSchema? schema, ClusterModelCatalog catalog)
-        => Create(name, schema, catalog, new HashSet<IOpenApiSchema>(ReferenceEqualityComparer.Instance));
+        => Create(name, schema, catalog, new HashSet<IOpenApiSchema>(ReferenceEqualityComparer.Instance), isRequired: false);
 
     private static YamlSchemaNode Create(
         string name,
         IOpenApiSchema? schema,
         ClusterModelCatalog catalog,
-        HashSet<IOpenApiSchema> activeSchemas)
+        HashSet<IOpenApiSchema> activeSchemas,
+        bool isRequired)
     {
         var description = schema?.Description;
         schema = catalog.OpenApiSchemas.ExpandReferences(schema);
         if (schema is null)
-            return new(name, JsonSchemaType.Object, null, new Dictionary<string, YamlSchemaNode>(StringComparer.Ordinal), null, []);
+            return new(name, JsonSchemaType.Object, null, new Dictionary<string, YamlSchemaNode>(StringComparer.Ordinal), null, [], isRequired);
 
         if (!activeSchemas.Add(schema))
-            return new(name, schema.Type ?? JsonSchemaType.Object, description, new Dictionary<string, YamlSchemaNode>(StringComparer.Ordinal), null, []);
+            return new(name, schema.Type ?? JsonSchemaType.Object, description, new Dictionary<string, YamlSchemaNode>(StringComparer.Ordinal), null, [], isRequired);
 
         try
         {
             var variants = GetSchemaVariants(schema, catalog).ToArray();
             var properties = new Dictionary<string, YamlSchemaNode>(StringComparer.Ordinal);
+            var requiredProperties = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var variant in variants)
+            {
+                if (variant.Required is { } required)
+                {
+                    requiredProperties.UnionWith(required);
+                }
+            }
+
             foreach (var property in variants.SelectMany(variant => variant.Properties ?? EmptyProperties))
             {
-                properties[property.Key] = Create(property.Key, property.Value, catalog, activeSchemas);
+                properties[property.Key] = Create(
+                    property.Key,
+                    property.Value,
+                    catalog,
+                    activeSchemas,
+                    requiredProperties.Contains(property.Key));
             }
 
             var itemsSchema = variants.Select(variant => variant.Items).FirstOrDefault(items => items is not null);
-            var items = itemsSchema is null ? null : Create(name, itemsSchema, catalog, activeSchemas);
+            var items = itemsSchema is null ? null : Create(name, itemsSchema, catalog, activeSchemas, isRequired: false);
             var schemaType = variants.Select(variant => variant.Type).FirstOrDefault(type => type is not null);
             var variantDescription = variants.Select(variant => variant.Description).FirstOrDefault(value => !string.IsNullOrWhiteSpace(value));
             var enumValues = variants
@@ -464,7 +481,8 @@ internal sealed record YamlSchemaNode(
                 description ?? variantDescription,
                 properties,
                 items,
-                enumValues);
+                enumValues,
+                isRequired);
         }
         finally
         {

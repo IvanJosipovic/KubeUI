@@ -1,4 +1,3 @@
-using KubeUI.Avalonia.Infrastructure.DataGrid;
 using k8s.Models;
 
 namespace KubeUI.Avalonia.Resources.Configuration.v1.PodDisruptionBudget;
@@ -18,35 +17,35 @@ public sealed partial class V1PodDisruptionBudgetConfig : ResourceConfigBase<V1P
         return [
             NameColumn(SortDirection.Ascending),
             NamespaceColumn(),
-            new DataGridValueColumn<V1PodDisruptionBudget, IntOrString>()
+            new ResourceListColumn<V1PodDisruptionBudget, IntOrString>()
             {
                 Key = "min-available",
                 Name = Assets.Resources.V1PodDisruptionBudgetConfig_Min_Available!,
                 Display = x => x.Spec.MinAvailable != null ? x.Spec.MinAvailable.Value : "",
                 Field = x => x.Spec.MinAvailable,
-                Width = nameof(DataGridLengthUnitType.SizeToHeader)
+                WidthMode = DynamicTableViewWidthMode.Header
             },
-            new DataGridValueColumn<V1PodDisruptionBudget, IntOrString>()
+            new ResourceListColumn<V1PodDisruptionBudget, IntOrString>()
             {
                 Key = "max-unavailable",
                 Name = Assets.Resources.V1PodDisruptionBudgetConfig_Max_Unavailable!,
                 Display = x => x.Spec.MaxUnavailable != null ? x.Spec.MaxUnavailable.Value : "",
                 Field = x => x.Spec.MaxUnavailable,
-                Width = nameof(DataGridLengthUnitType.SizeToHeader)
+                WidthMode = DynamicTableViewWidthMode.Header
             },
-            new DataGridValueColumn<V1PodDisruptionBudget, int>()
+            new ResourceListColumn<V1PodDisruptionBudget, int>()
             {
                 Key = "current-healthy",
                 Name = Assets.Resources.V1PodDisruptionBudgetConfig_Current_Healthy!,
                 Field = x => x.Status.CurrentHealthy,
-                Width = nameof(DataGridLengthUnitType.SizeToHeader)
+                WidthMode = DynamicTableViewWidthMode.Header
             },
-            new DataGridValueColumn<V1PodDisruptionBudget, int>()
+            new ResourceListColumn<V1PodDisruptionBudget, int>()
             {
                 Key = "desired-healthy",
                 Name = Assets.Resources.V1PodDisruptionBudgetConfig_Desired_Healthy!,
                 Field = x => x.Status.DesiredHealthy,
-                Width = nameof(DataGridLengthUnitType.SizeToHeader)
+                WidthMode = DynamicTableViewWidthMode.Header
             },
             AgeColumn(),
         ];
@@ -54,6 +53,3 @@ public sealed partial class V1PodDisruptionBudgetConfig : ResourceConfigBase<V1P
 
     public override Control[] Properties(V1PodDisruptionBudget resource) => [new PropertiesView()];
 }
-
-
-

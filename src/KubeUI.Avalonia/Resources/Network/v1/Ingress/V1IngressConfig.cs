@@ -1,4 +1,3 @@
-using KubeUI.Avalonia.Infrastructure.DataGrid;
 using k8s.Models;
 
 namespace KubeUI.Avalonia.Resources.Network.v1.Ingress;
@@ -18,19 +17,19 @@ public sealed partial class V1IngressConfig : ResourceConfigBase<V1Ingress>
         return [
             NameColumn(SortDirection.Ascending),
             NamespaceColumn(),
-            new DataGridValueColumn<V1Ingress, string>()
+            new ResourceListColumn<V1Ingress, string>()
             {
                 Key = "load-balancers",
                 Name = Assets.Resources.V1IngressConfig_Load_Balancers!,
                 Field = x => x.Status?.LoadBalancer?.Ingress is { Count: > 0 } ingress ? string.Join(", ", ingress.Select(x => x.Ip ?? x.Hostname).Where(x => !string.IsNullOrEmpty(x))) : "",
-                Width = "*",
+                Width = 1, WidthMode = DynamicTableViewWidthMode.Star,
             },
-            new DataGridValueColumn<V1Ingress, string>()
+            new ResourceListColumn<V1Ingress, string>()
             {
                 Key = "rules",
                 Name = Assets.Resources.V1IngressConfig_Rules!,
                 Field = x => x.Spec?.Rules is { Count: > 0 } rules ? string.Join(", ", rules.Select(x => x.Http?.Paths is { Count: > 0 } paths ? $"http://{x.Host}{paths[0].Path}" : $"http://{x.Host}")) : "",
-                Width = nameof(DataGridLengthUnitType.SizeToCells)
+                WidthMode = DynamicTableViewWidthMode.Cells
             },
             AgeColumn(),
         ];
@@ -38,6 +37,3 @@ public sealed partial class V1IngressConfig : ResourceConfigBase<V1Ingress>
 
     public override Control[] Properties(V1Ingress resource) => [new PropertiesView()];
 }
-
-
-

@@ -1,4 +1,3 @@
-using KubeUI.Avalonia.Infrastructure.DataGrid;
 using k8s.Models;
 
 namespace KubeUI.Avalonia.Resources.Configuration.v1.PriorityClass;
@@ -16,19 +15,19 @@ public sealed partial class V1PriorityClassConfig : ResourceConfigBase<V1Priorit
     {
         return [
             NameColumn(SortDirection.Ascending),
-            new DataGridValueColumn<V1PriorityClass, int>()
+            new ResourceListColumn<V1PriorityClass, int>()
             {
                 Key = "value",
                 Name = Assets.Resources.V1PriorityClassConfig_Value!,
                 Field = x => x.Value,
-                Width = nameof(DataGridLengthUnitType.SizeToCells)
+                WidthMode = DynamicTableViewWidthMode.Cells
             },
-            new DataGridValueColumn<V1PriorityClass, bool?>()
+            new ResourceListColumn<V1PriorityClass, bool?>()
             {
                 Key = "global-default",
                 Name = Assets.Resources.V1PriorityClassConfig_Global_Default!,
                 Field = x => x.GlobalDefault ?? false,
-                Width = nameof(DataGridLengthUnitType.SizeToHeader)
+                WidthMode = DynamicTableViewWidthMode.Header
             },
             AgeColumn(),
         ];
@@ -36,6 +35,3 @@ public sealed partial class V1PriorityClassConfig : ResourceConfigBase<V1Priorit
 
     public override Control[] Properties(V1PriorityClass resource) => [new PropertiesView()];
 }
-
-
-

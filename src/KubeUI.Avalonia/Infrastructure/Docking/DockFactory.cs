@@ -157,13 +157,18 @@ public class DockFactory : Factory
 
         HostWindowLocator = new Dictionary<string, Func<IHostWindow?>>
         {
-            [nameof(IDockWindow)] = () => new HostWindow
-            {
-                Icon = new WindowIcon(AssetLoader.Open(new Uri("avares://KubeUI.Avalonia/Assets/icon.ico")))
-            }
+            [nameof(IDockWindow)] = CreateHostWindow
         };
 
         base.InitLayout(layout);
+    }
+
+    private static HostWindow CreateHostWindow()
+    {
+        return new()
+        {
+            Icon = new WindowIcon(AssetLoader.Open(new Uri("avares://KubeUI.Avalonia/Assets/icon.ico")))
+        };
     }
 
     /// <summary>

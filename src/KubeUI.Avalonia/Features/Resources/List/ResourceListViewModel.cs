@@ -1,21 +1,7 @@
 using System.Collections.Specialized;
-using System.Globalization;
-using System.Reactive;
-using System.Reactive.Concurrency;
-using System.Reactive.Linq;
-using System.Reactive.Subjects;
-using System.Text;
-using System.Text.RegularExpressions;
-using Avalonia.Controls.DataGridFiltering;
-using Avalonia.Controls.DataGridSearching;
-using Avalonia.Controls.DataGridSorting;
 using Avalonia.Controls.Selection;
 using Avalonia.Controls.Templates;
-using Avalonia.Data.Converters;
-using AvaloniaEdit.Utils;
 using DynamicData;
-using DynamicData.Aggregation;
-using DynamicData.Binding;
 using Humanizer;
 using k8s;
 using k8s.Models;
@@ -24,9 +10,7 @@ using KubeUI.AI.Agents;
 using KubeUI.Avalonia.Features.AI;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Features.Resources.Common;
-using KubeUI.Avalonia.Infrastructure.DataGrid;
 using KubeUI.Avalonia.Infrastructure.Presentation;
-using KubeUI.Avalonia.Infrastructure.Threading;
 using KubeUI.Avalonia.Resources;
 using KubeUI.Kubernetes;
 using SortDirection = KubeUI.Avalonia.Resources.SortDirection;
@@ -35,15 +19,12 @@ namespace KubeUI.Avalonia.Features.Resources.List;
 
 public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluster, IDisposable, IResourceListViewModel where T : class, IKubernetesObject<V1ObjectMeta>, new()
 {
-    private static readonly TimeSpan SearchDebounceDelay = TimeSpan.FromMilliseconds(250);
     internal const string NamespaceScopeFilterId = "__namespace_scope__";
-    internal const string NamespaceScopePropertyPath = "namespace_scope";
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<ResourceListViewModel<T>> _logger;
     private readonly IAgentContextService _agentContextService;
     private GroupApiVersionKind _kind;
 
-    private static readonly IComparer s_noopSortComparer = Comparer<object>.Create(static (_, _) => 0);
 
     [ObservableProperty]
     public partial ClusterWorkspace Cluster { get; set; }
@@ -53,12 +34,12 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     [ObservableProperty]
     public partial ISourceCache<T, ResourceCacheKey> Objects { get; set; }
 
-    public T? SelectedItem => _selectionModel.SelectedItem as T;
+    public T? SelectedItem => _tableSource?.SelectionModel.SelectedItem as T;
 
-    public IReadOnlyList<T>? SelectedItems => SelectionModel.SelectedItems?.Cast<T>().ToList();
+    public IReadOnlyList<T>? SelectedItems => _tableSource?.SelectionModel.SelectedItems.Cast<T>().ToArray();
 
     [ObservableProperty]
-    public partial string SearchQuery { get; set; }
+    public partial string SearchQuery { get; set; } = string.Empty;
 
     [ObservableProperty]
     public partial ResourceConfigBase<T> ResourceConfig { get; set; }
@@ -71,60 +52,57 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     [ObservableProperty]
     public partial Exception? LoadError { get; set; }
 
-    private IDisposable? _subscription;
-    private IDisposable? _countSubscription;
-    private readonly Subject<string> _searchQueryChanges = new();
-    private readonly IDisposable _searchQuerySubscription;
+    private DynamicTableViewSource<T, ResourceCacheKey>? _tableSource;
+    private INotifyCollectionChanged? _itemsNotifications;
+    private ResourceCacheKey[]? _selectionRuntimeState;
 
-    private readonly IdentityPreservingSelectionModel<T, ResourceCacheKey> _selectionModel = new(ResourceCacheKey.From)
+    public IDynamicTableViewSource TableSource => _tableSource ?? throw new InvalidOperationException("Resource list source has not been initialized.");
+
+    public ISelectionModel SelectionModel => TableSource.SelectionModel;
+
+    public DynamicTableViewState? TableViewRuntimeState { get; set; }
+
+    /// <summary>Stores selected resource keys so a recreated list view can restore visible selections.</summary>
+    public void CaptureSelectionState()
     {
-        SingleSelect = false
-    };
+        if (_tableSource is null)
+            return;
 
-    public IList View => _view ?? throw new InvalidOperationException("Resource list view has not been initialized.");
+        var selectedItems = SelectionModel.SelectedItems;
+        var selectedKeys = new ResourceCacheKey[selectedItems.Count];
+        for (var index = 0; index < selectedItems.Count; index++)
+            selectedKeys[index] = ResourceCacheKey.From((T)selectedItems[index]!);
+        _selectionRuntimeState = selectedKeys;
+    }
 
-    private ReadOnlyObservableCollection<T>? _view;
-
-    private BehaviorSubject<IComparer<T>>? _sortSubject;
-
-    public IDataGridSortingAdapterFactory SortingAdapterFactory => _sortingAdapterFactory;
-
-    private DynamicDataSortingAdapterFactory<T> _sortingAdapterFactory = null!;
-
-    [ObservableProperty]
-    public partial ISortingModel SortingModel { get; set; } = new SortingModel
+    /// <summary>Restores captured selections for resources that remain visible in the table source.</summary>
+    public void RestoreSelectionState()
     {
-        MultiSort = true,
-        CycleMode = SortCycleMode.AscendingDescendingNone,
-        OwnsViewSorts = true
-    };
+        if (_tableSource is null || _selectionRuntimeState is not { } savedKeys)
+            return;
 
-    private BehaviorSubject<Func<T, bool>>? _filterSubject;
+        var selectedKeys = new HashSet<ResourceCacheKey>(savedKeys);
+        var selection = _tableSource.SelectionModel;
+        var desiredIndexes = new List<int>();
+        var index = 0;
+        foreach (var item in _tableSource.Items)
+        {
+            if (item is T resource && selectedKeys.Contains(ResourceCacheKey.From(resource)))
+                desiredIndexes.Add(index);
+            index++;
+        }
 
-    public IDataGridFilteringAdapterFactory FilteringAdapterFactory => _filteringAdapterFactory;
+        if (selection.SelectedIndexes.Count == desiredIndexes.Count &&
+            selection.SelectedIndexes.SequenceEqual(desiredIndexes))
+            return;
 
-    private DynamicDataFilteringAdapterFactory<T> _filteringAdapterFactory = null!;
-
-    [ObservableProperty]
-    public partial IFilteringModel FilteringModel { get; set; } = new FilteringModel
-    {
-        OwnsViewFilter = true
-    };
-
-    private BehaviorSubject<Func<T, bool>>? _searchSubject;
-
-    public IDataGridSearchAdapterFactory SearchAdapterFactory => _searchAdapterFactory;
-
-    private DynamicDataSearchAdapterFactory<T> _searchAdapterFactory = null!;
-
-    [ObservableProperty]
-    public partial ISearchModel SearchModel { get; set; } = new SearchModel()
-    {
-        HighlightMode = SearchHighlightMode.None,
-        HighlightCurrent = false,
-        WrapNavigation = true,
-        UpdateSelectionOnNavigate = false
-    };
+        using (selection.BatchUpdate())
+        {
+            selection.Clear();
+            foreach (var selectedIndex in desiredIndexes)
+                selection.Select(selectedIndex);
+        }
+    }
 
     [ObservableProperty]
     public partial int ItemCount { get; set; }
@@ -132,15 +110,6 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     [ObservableProperty]
     public partial bool IsNamespaceSelectionLinked { get; set; } = true;
 
-    public ISelectionModel SelectionModel => _selectionModel;
-
-    public Func<IList, object, int> ReferenceIndexResolver => ResolveReferenceIndex;
-
-    [ObservableProperty]
-    public partial ObservableCollection<DataGridColumnDefinition> ColumnDefinitions { get; private set; } = [];
-
-    private readonly Dictionary<string, IResourceListColumn> _resourceColumnsByKey = new(StringComparer.OrdinalIgnoreCase);
-    private readonly Dictionary<string, DataGridColumnDefinition> _columnDefinitionsByKey = new(StringComparer.OrdinalIgnoreCase);
     private IList<IResourceListColumn> _resourceColumns = [];
     private readonly ObservableCollection<V1Namespace> _localSelectedNamespaces = [];
 
@@ -156,18 +125,6 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         _logger = logger;
         _agentContextService = agentContextService;
 
-        _searchQuerySubscription = _searchQueryChanges
-            .Select(query => string.IsNullOrWhiteSpace(query)
-                ? Observable.Return(query)
-                : Observable.Timer(SearchDebounceDelay).Select(_ => query))
-            .Switch()
-            .ObserveOn(AvaloniaScheduler.Instance)
-            .Subscribe(Observer.Create<string>(_ => ApplySearch()));
-
-        SortingModel.SortingChanged += SortingModelOnSortingChanged;
-        FilteringModel.FilteringChanged += FilteringModelOnFilteringChanged;
-        SearchModel.SearchChanged += SearchModelOnSearchChanged;
-        _selectionModel.SelectionChanged += SelectionModelOnSelectionChanged;
     }
 
     public void Initialize(ClusterWorkspace cluster)
@@ -182,34 +139,68 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
 
     public void InitializeResource(ClusterWorkspace cluster, GroupApiVersionKind kind)
     {
+        UnsubscribeFromSelectedNamespaces();
+        if (_itemsNotifications is not null)
+        {
+            _itemsNotifications.CollectionChanged -= ItemsOnCollectionChanged;
+            _itemsNotifications = null;
+        }
+        if (_tableSource is not null)
+        {
+            _tableSource.SourceError -= TableSourceOnError;
+            _tableSource.SelectionModel.SelectionChanged -= SelectionModelOnSelectionChanged;
+            _tableSource.Dispose();
+            _tableSource = null;
+        }
+
         Cluster = cluster;
         _kind = kind;
         ResourceConfig = Cluster.GetResourceConfig<T>(kind);
         Title = kind.Kind.Humanize(LetterCasing.Title).Pluralize();
         Id = Cluster.Runtime.Name + "-" + kind;
+        var seedTask = ResourceConfig.SeedResource();
         _resourceColumns = ResourceConfig.Columns();
-        _resourceColumnsByKey.Clear();
+        var columns = new List<DynamicTableViewColumn<T>>(_resourceColumns.Count);
+        var sorts = new List<DynamicTableViewSortDescriptor>();
         foreach (var column in _resourceColumns)
         {
-            if (!string.IsNullOrWhiteSpace(column.Key))
+            try
             {
-                _resourceColumnsByKey[column.Key] = column;
+                var cellTemplate = column.CustomControl is null ? null : CreateCellTemplate(column);
+                var dynamicColumn = column.CreateDynamicTableViewColumn(cellTemplate);
+                if (dynamicColumn is not DynamicTableViewColumn<T> typedColumn)
+                    throw new InvalidOperationException($"Column '{column.Key}' has an incompatible row type.");
+                columns.Add(typedColumn);
+                if (column.Sort != SortDirection.None)
+                {
+                    sorts.Add(new(column.Key, column.Sort == SortDirection.Ascending
+                        ? ListSortDirection.Ascending
+                        : ListSortDirection.Descending));
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Unable to generate resource column {ColumnKey}", column.Key);
             }
         }
 
-        _sortingAdapterFactory = new DynamicDataSortingAdapterFactory<T>(_resourceColumnsByKey);
-        _sortSubject = new(_sortingAdapterFactory.SortComparer);
-
-        _filteringAdapterFactory = new DynamicDataFilteringAdapterFactory<T>(_resourceColumnsByKey);
-        _filterSubject = new(_filteringAdapterFactory.FilterPredicate);
-
-        _searchAdapterFactory = new DynamicDataSearchAdapterFactory<T>(_resourceColumnsByKey);
-        _searchSubject = new(_searchAdapterFactory.SearchPredicate);
-
-        GenerateColumnDefinitions();
+        Objects = Cluster.Runtime.GetResourceSourceCache<T>(ResourceConfig.Kind);
+        _tableSource = new DynamicTableViewSource<T, ResourceCacheKey>(
+            Objects,
+            ResourceCacheKey.From,
+            columns,
+            options: new DynamicTableViewSourceOptions
+            {
+                SelectionIdentityMode = DynamicTableViewSelectionIdentityMode.Key
+            });
+        _tableSource.SourceError += TableSourceOnError;
+        _tableSource.SelectionModel.SelectionChanged += SelectionModelOnSelectionChanged;
+        _tableSource.SetSort(sorts.ToArray());
+        _tableSource.SearchText = SearchQuery;
         SetNamespaceFilter();
-
-        var seedTask = ResourceConfig.SeedResource();
+        SubscribeToItems();
+        OnPropertyChanged(nameof(TableSource));
+        OnPropertyChanged(nameof(SelectionModel));
 
         if (seedTask.IsCompletedSuccessfully)
         {
@@ -226,10 +217,8 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     {
         base.OnPropertyChanged(e);
 
-        if (e.PropertyName == nameof(SearchQuery))
-        {
-            _searchQueryChanges.OnNext(SearchQuery);
-        }
+        if (e.PropertyName == nameof(SearchQuery) && _tableSource is not null)
+            _tableSource.SearchText = SearchQuery;
     }
 
     public IEnumerable<MenuItemViewModel> GetContextMenuItems(IEnumerable? selectedItems)
@@ -273,69 +262,41 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
             return;
         }
 
-        if (!ResourceConfig.IsNamespaced)
+        if (_tableSource is null)
+            return;
+        if (!ResourceConfig.IsNamespaced || SelectedNamespaces.Count == 0)
         {
+            _tableSource.SetScopeFilter(NamespaceScopeFilterId, null);
             return;
         }
 
-        var selectedNamespaces = SelectedNamespaces;
-
-        if (selectedNamespaces.Count > 0)
+        var namespaces = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var selectedNamespace in SelectedNamespaces)
         {
-            var values = new List<object>(selectedNamespaces.Count);
-            foreach (var selectedNamespace in selectedNamespaces)
-            {
-                values.Add(selectedNamespace.Name()!);
-            }
-
-            var descriptor = new FilteringDescriptor(
-                NamespaceScopeFilterId,
-                FilteringOperator.In,
-                propertyPath: NamespaceScopePropertyPath,
-                value: null,
-                values: values);
-
-            FilteringModel.SetOrUpdate(descriptor);
-        }
-        else
-        {
-            FilteringModel.Remove(NamespaceScopeFilterId);
-        }
-    }
-
-    private void ApplySearch()
-    {
-        if (string.IsNullOrWhiteSpace(SearchQuery))
-        {
-            SearchModel.Clear();
-            return;
+            if (selectedNamespace.Name() is { Length: > 0 } name)
+                namespaces.Add(name);
         }
 
-        SearchModel.SetOrUpdate(new(
-            SearchQuery.Trim(),
-            matchMode: SearchMatchMode.Contains,
-            termMode: SearchTermCombineMode.All,
-            scope: SearchScope.AllColumns,
-            comparison: StringComparison.OrdinalIgnoreCase,
-            wholeWord: false,
-            normalizeWhitespace: true,
-            ignoreDiacritics: true));
+        _tableSource.SetScopeFilter(NamespaceScopeFilterId,
+            item => item is T resource && namespaces.Contains(resource.Namespace() ?? string.Empty));
     }
 
     public void Dispose()
     {
         _agentContextService.ClearContext(this);
-        _subscription?.Dispose();
-        _countSubscription?.Dispose();
-        _searchQuerySubscription.Dispose();
-        _searchQueryChanges.Dispose();
+        if (_tableSource is not null)
+        {
+            _tableSource.SourceError -= TableSourceOnError;
+            _tableSource.SelectionModel.SelectionChanged -= SelectionModelOnSelectionChanged;
+            _tableSource.Dispose();
+            _tableSource = null;
+        }
+        if (_itemsNotifications is not null)
+        {
+            _itemsNotifications.CollectionChanged -= ItemsOnCollectionChanged;
+            _itemsNotifications = null;
+        }
         UnsubscribeFromSelectedNamespaces();
-
-        SortingModel.SortingChanged -= SortingModelOnSortingChanged;
-        FilteringModel.FilteringChanged -= FilteringModelOnFilteringChanged;
-        SearchModel.SearchChanged -= SearchModelOnSearchChanged;
-        _selectionModel.SelectionChanged -= SelectionModelOnSelectionChanged;
-        _selectionModel.Dispose();
     }
 
     private async Task LoadAsync(Task seedTask)
@@ -367,47 +328,9 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     private void BindObjects()
     {
         Objects = Cluster.Runtime.GetResourceSourceCache<T>(ResourceConfig.Kind);
-
         SubscribeToSelectedNamespaces();
-
-        _subscription?.Dispose();
-
         SetNamespaceFilter();
-
-        var filterSubject = _filterSubject ?? throw new InvalidOperationException("Filter subject has not been initialized.");
-        var searchSubject = _searchSubject ?? throw new InvalidOperationException("Search subject has not been initialized.");
-        var sortSubject = _sortSubject ?? throw new InvalidOperationException("Sort subject has not been initialized.");
-
-        _sortingAdapterFactory.UpdateComparer(SortingModel.Descriptors);
-        sortSubject.OnNext(_sortingAdapterFactory.SortComparer);
-
-        var filteredObservable = Objects.Connect()
-            .ObserveOn(TaskPoolScheduler.Default)
-            .Filter(filterSubject.ObserveOn(TaskPoolScheduler.Default))
-            .Filter(searchSubject.ObserveOn(TaskPoolScheduler.Default));
-
-        var countObservable = filteredObservable
-            .Count()
-            .ObserveOn(AvaloniaScheduler.Instance);
-
-        _countSubscription?.Dispose();
-        _countSubscription = countObservable.Subscribe(Observer.Create<int>(count => ItemCount = count));
-
-        _subscription = filteredObservable
-            .SortAndBind(out var view, sortSubject, new()
-            {
-                ResetOnFirstTimeLoad = true,
-                UseReplaceForUpdates = true,
-                Scheduler = AvaloniaScheduler.Instance
-            })
-            .Subscribe(
-                _ => { },
-                ex => _logger.LogError(ex, "Error setting resource list filter for {Kind}", Kind)
-            );
-
-        _view = view;
-        _selectionModel.SetIdentitySource(view);
-        OnPropertyChanged(nameof(View));
+        SubscribeToItems();
     }
 
     private void SubscribeToSelectedNamespaces()
@@ -433,178 +356,47 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         }
     }
 
-    private void GenerateColumnDefinitions()
-    {
-        if (!Dispatcher.UIThread.CheckAccess())
-        {
-            Dispatcher.UIThread.InvokeAsync(GenerateColumnDefinitions).GetAwaiter().GetResult();
-            return;
-        }
-
-        ColumnDefinitions.Clear();
-        _columnDefinitionsByKey.Clear();
-
-        var converter = new DataGridLengthConverter();
-
-        foreach (var columnDefinition in _resourceColumns)
-        {
-            try
-            {
-                var column = CreateColumnDefinition(columnDefinition, converter);
-
-                ColumnDefinitions.Add(column);
-                if (!string.IsNullOrWhiteSpace(columnDefinition.Key))
-                {
-                    _columnDefinitionsByKey[columnDefinition.Key] = column;
-                }
-
-                if (columnDefinition.Sort != SortDirection.None)
-                {
-                    SortingModel.SetOrUpdate(new(column, columnDefinition.Sort == SortDirection.Ascending ? ListSortDirection.Ascending : ListSortDirection.Descending, null, column.CustomSortComparer));
-                }
-
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Unable to generate column for: ");
-            }
-        }
-    }
-
-    private DataGridColumnDefinition CreateColumnDefinition(IResourceListColumn columnDefinition, DataGridLengthConverter converter)
-    {
-        return columnDefinition.CustomControl == null
-            ? CreateTextColumnDefinition(columnDefinition, converter)
-            : CreateTemplateColumnDefinition(columnDefinition, converter);
-    }
-
-    private static DataGridTextColumnDefinition CreateTextColumnDefinition(IResourceListColumn columnDefinition, DataGridLengthConverter converter)
-    {
-        var binding = DataGridBindingDefinition.Create<T, T>(item => item);
-        binding.Mode = BindingMode.OneWay;
-        binding.Converter = new FuncValueConverter<T, string>(item =>
-        {
-            try
-            {
-                return columnDefinition.DisplayValue(item);
-            }
-            catch (Exception)
-            {
-                return string.Empty;
-            }
-        });
-
-        return new DataGridTextColumnDefinition
-        {
-            Header = columnDefinition.Name,
-            ColumnKey = columnDefinition.Key,
-            Tag = columnDefinition,
-            Binding = binding,
-            CanUserSort = true,
-            ShowFilterButton = true,
-            CustomSortComparer = s_noopSortComparer,
-            MinWidth = columnDefinition.MinWidth,
-            Width = ParseWidth(columnDefinition.Width, converter),
-            ValueAccessor = columnDefinition.ValueAccessor,
-            ValueType = columnDefinition.ValueType,
-            Options = BuildColumnOptions(columnDefinition)
-        };
-    }
-
-    private DataGridColumnDefinition CreateTemplateColumnDefinition(IResourceListColumn columnDefinition, DataGridLengthConverter converter)
-    {
-        var column = new DataGridControlTemplateColumnDefinition
-        {
-            Header = columnDefinition.Name,
-            ColumnKey = columnDefinition.Key,
-            Tag = columnDefinition,
-            CellTemplate = CreateCellTemplate(columnDefinition),
-            CanUserSort = true,
-            ShowFilterButton = true,
-            CustomSortComparer = s_noopSortComparer,
-            MinWidth = columnDefinition.MinWidth,
-            Width = ParseWidth(columnDefinition.Width, converter),
-            ValueAccessor = columnDefinition.ValueAccessor,
-            ValueType = columnDefinition.ValueType,
-            Options = BuildColumnOptions(columnDefinition)
-        };
-
-        return column;
-    }
-
     private FuncDataTemplate<T> CreateCellTemplate(IResourceListColumn columnDefinition)
     {
-        return new FuncDataTemplate<T>((item, _) =>
+        return new FuncDataTemplate<T>((_, _) =>
         {
             try
             {
-                var control = _serviceProvider.GetRequiredService(columnDefinition.CustomControl!) as Control;
-
-                if (control == null)
-                {
-                    throw new InvalidOperationException($"Unable to resolve control type {columnDefinition.CustomControl!.FullName}");
-                }
-
+                var control = _serviceProvider.GetRequiredService(columnDefinition.CustomControl!) as Control
+                    ?? throw new InvalidOperationException($"Unable to resolve control type {columnDefinition.CustomControl!.FullName}");
                 if (control is IInitializeCluster initializeCluster)
-                {
                     initializeCluster.Initialize(Cluster);
-                }
-
                 return control;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error creating Control");
+                _logger.LogError(ex, "Error creating resource cell control for {ColumnKey}", columnDefinition.Key);
                 return new TextBlock { Text = ex.Message };
             }
         }, supportsRecycling: true);
     }
 
-    private static DataGridColumnDefinitionOptions BuildColumnOptions(IResourceListColumn columnDefinition)
+    private void SubscribeToItems()
     {
-        return new()
-        {
-            IsSearchable = true,
-            FilterValueAccessor = columnDefinition.ValueAccessor,
-            SortValueAccessor = columnDefinition.ValueAccessor
-        };
+        if (_itemsNotifications is not null)
+            _itemsNotifications.CollectionChanged -= ItemsOnCollectionChanged;
+        _itemsNotifications = _tableSource?.Items as INotifyCollectionChanged;
+        if (_itemsNotifications is not null)
+            _itemsNotifications.CollectionChanged += ItemsOnCollectionChanged;
+        UpdateItemCount();
     }
 
-    private static DataGridLength? ParseWidth(string? width, DataGridLengthConverter converter)
-    {
-        if (width == null)
-        {
-            return null;
-        }
+    private void ItemsOnCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+        => UpdateItemCount();
 
-        return converter.ConvertFromString(width) as DataGridLength?;
+    private void UpdateItemCount()
+    {
+        if (_tableSource?.Items is ICollection items)
+            ItemCount = items.Count;
     }
 
-    private void SortingModelOnSortingChanged(object? sender, SortingChangedEventArgs e)
-    {
-        _sortingAdapterFactory.UpdateComparer(e.NewDescriptors);
-        var sortSubject = _sortSubject ?? throw new InvalidOperationException("Sort subject has not been initialized.");
-        sortSubject.OnNext(_sortingAdapterFactory.SortComparer);
-    }
-
-    private void FilteringModelOnFilteringChanged(object? sender, FilteringChangedEventArgs e)
-    {
-        var descriptors = e.NewDescriptors;
-        if (ResourceConfig?.IsNamespaced == true
-            && SelectedNamespaces.Count > 0
-            && !descriptors.Any(descriptor => string.Equals(
-                descriptor.ColumnId?.ToString(),
-                NamespaceScopeFilterId,
-                StringComparison.Ordinal)))
-        {
-            SetNamespaceFilter();
-            descriptors = FilteringModel.Descriptors;
-        }
-
-        _filteringAdapterFactory.UpdateFilter(descriptors);
-        var filterSubject = _filterSubject ?? throw new InvalidOperationException("Filter subject has not been initialized.");
-        filterSubject.OnNext(_filteringAdapterFactory.FilterPredicate);
-    }
+    private void TableSourceOnError(object? sender, Exception exception)
+        => _logger.LogError(exception, "Error updating resource list for {Kind}", Kind);
 
     private void SelectionModelOnSelectionChanged(object? sender, SelectionModelSelectionChangedEventArgs e)
     {
@@ -626,39 +418,5 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
             });
     }
 
-    // Runtime DataGrid state captured from ProDataGrid (in-memory snapshot)
-    public DataGridState? DataGridRuntimeState { get; set; }
-
-    private void SearchModelOnSearchChanged(object? sender, SearchChangedEventArgs e)
-    {
-        _searchAdapterFactory.UpdatePredicate(e.NewDescriptors);
-        var searchSubject = _searchSubject ?? throw new InvalidOperationException("Search subject has not been initialized.");
-        searchSubject.OnNext(_searchAdapterFactory.SearchPredicate);
-    }
-
-    private int ResolveReferenceIndex(IList list, object item)
-    {
-        if (list == null || item is not T resource)
-        {
-            return -1;
-        }
-
-        var identity = ResourceCacheKey.From(resource);
-
-        for (var i = 0; i < list.Count; i++)
-        {
-            if (ReferenceEquals(list[i], resource))
-            {
-                return i;
-            }
-
-            if (list[i] is T candidate && ResourceCacheKey.From(candidate).Equals(identity))
-            {
-                return i;
-            }
-        }
-
-        return -1;
-    }
 
 }

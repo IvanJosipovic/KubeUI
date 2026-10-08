@@ -1,4 +1,3 @@
-using KubeUI.Avalonia.Infrastructure.DataGrid;
 using k8s.Models;
 
 namespace KubeUI.Avalonia.Resources.Storage.v1.PersistentVolumeClaim;
@@ -18,34 +17,31 @@ public sealed partial class V1PersistentVolumeClaimConfig : ResourceConfigBase<V
         return [
             NameColumn(SortDirection.Ascending),
             NamespaceColumn(),
-            new DataGridValueColumn<V1PersistentVolumeClaim, string>()
+            new ResourceListColumn<V1PersistentVolumeClaim, string>()
             {
                 Key = "storage-class",
                 Name = Assets.Resources.V1PersistentVolumeClaimConfig_Storage_Class!,
                 Field = x => x.Spec.StorageClassName,
-                Width = "*",
+                Width = 1, WidthMode = DynamicTableViewWidthMode.Star,
             },
-            new DataGridValueColumn<V1PersistentVolumeClaim, decimal>()
+            new ResourceListColumn<V1PersistentVolumeClaim, decimal>()
             {
                 Key = "size",
                 Name = Assets.Resources.V1PersistentVolumeClaimConfig_Size!,
                 Display = x => x.Spec.Resources?.Requests["storage"]?.CanonicalizeString(ResourceQuantity.SuffixFormat.BinarySI) ?? "",
                 Field = x => x.Spec.Resources?.Requests["storage"]?.ToDecimal() ?? 0,
-                Width = nameof(DataGridLengthUnitType.SizeToCells)
+                WidthMode = DynamicTableViewWidthMode.Cells
             },
             AgeColumn(),
-            new DataGridValueColumn<V1PersistentVolumeClaim, string>()
+            new ResourceListColumn<V1PersistentVolumeClaim, string>()
             {
                 Key = "status",
                 Name = Assets.Resources.V1PersistentVolumeClaimConfig_Status!,
                 Field = x => x.Status.Phase,
-                Width = nameof(DataGridLengthUnitType.SizeToCells)
+                WidthMode = DynamicTableViewWidthMode.Cells
             },
         ];
     }
 
     public override Control[] Properties(V1PersistentVolumeClaim resource) => [new PropertiesView()];
 }
-
-
-

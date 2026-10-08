@@ -1,9 +1,8 @@
 using BenchmarkDotNet.Attributes;
-using Microsoft.VSDiagnostics;
 
 namespace KubeUI.Benchmarks;
 
-[CPUUsageDiagnoser]
+[MemoryDiagnoser]
 public class SampleBenchmarks
 {
     [GlobalSetup]
