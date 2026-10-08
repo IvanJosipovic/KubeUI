@@ -93,6 +93,118 @@ public sealed class PodMetricCellTests
     }
 
     [AvaloniaFact]
+    public async Task idle_refresh_tick_does_not_rebuild_metrics_server_bars()
+    {
+        await using var fixture = await MetricCellFixture.CreateAsync(new FakePrometheusQueryClient());
+        var pod = CreatePod();
+        fixture.UseMetricsServerSamples(CreatePodMetricSample(pod, DateTime.UtcNow, "100m"));
+        var cell = fixture.CreateCpuCell(pod);
+        using var window = Application.Current.CreateTestWindow(content: cell);
+
+        window.Show();
+        cell.Initialize(fixture.Workspace);
+        Dispatcher.UIThread.RunJobs();
+        fixture.TimeProvider.ResetGetUtcNowCount();
+
+        fixture.RefreshClock.Tick();
+
+        fixture.TimeProvider.GetUtcNowCount.ShouldBe(1);
+    }
+
+    [AvaloniaFact]
+    public async Task prometheus_history_aggregation_runs_off_ui_thread()
+    {
+        var result = new MetricResultSet
+        {
+            Metrics = new Dictionary<string, IReadOnlyList<MetricSeries>>(StringComparer.Ordinal)
+            {
+                ["cpuUsage"] =
+                [
+                    new MetricSeries
+                    {
+                        Name = "cpuUsage",
+                        Points = [new MetricPoint(DateTimeOffset.UtcNow, 1)],
+                    },
+                ],
+            },
+        };
+        var aggregationRanOnUiThread = false;
+
+        var history = await MetricsHistoryAggregator.AggregateAsync(
+            result,
+            new object(),
+            (_, _) =>
+            {
+                aggregationRanOnUiThread = Dispatcher.UIThread.CheckAccess();
+                return true;
+            },
+            TestContext.Current.CancellationToken);
+
+        aggregationRanOnUiThread.ShouldBeFalse();
+        history.Cpu.Count.ShouldBe(1);
+    }
+
+    [AvaloniaFact]
+    public async Task metrics_server_history_aggregation_runs_off_ui_thread()
+    {
+        await using var fixture = await MetricCellFixture.CreateAsync(new FakePrometheusQueryClient());
+        var pod = CreatePod();
+        fixture.UseMetricsServerSamples(CreatePodMetricSample(pod, DateTime.UtcNow, "100m"));
+        var cell = new ThreadCheckingPodHistoryCell(fixture.RefreshClock, fixture.TimeProvider)
+        {
+            DataContext = pod,
+        };
+        using var window = Application.Current.CreateTestWindow(content: cell);
+
+        window.Show();
+        cell.Initialize(fixture.Workspace);
+        var aggregationRanOnUiThread = await cell.AggregationStarted.Task.WaitAsync(TestContext.Current.CancellationToken);
+
+        aggregationRanOnUiThread.ShouldBeFalse();
+    }
+
+    [AvaloniaFact]
+    public async Task metrics_server_history_ignores_work_completed_after_cell_is_hidden()
+    {
+        await using var fixture = await MetricCellFixture.CreateAsync(new FakePrometheusQueryClient());
+        var pod = CreatePod();
+        fixture.UseMetricsServerSamples(CreatePodMetricSample(pod, DateTime.UtcNow, "100m"));
+        var cell = new ThreadCheckingPodHistoryCell(fixture.RefreshClock, fixture.TimeProvider, blockFirstAggregation: true)
+        {
+            DataContext = pod,
+        };
+        using var window = Application.Current.CreateTestWindow(content: cell);
+
+        window.Show();
+        cell.Initialize(fixture.Workspace);
+        await cell.AggregationStarted.Task.WaitAsync(TestContext.Current.CancellationToken);
+
+        try
+        {
+            cell.IsVisible = false;
+            fixture.TimeProvider.Advance(TimeSpan.FromSeconds(30));
+            fixture.ReplaceMetricsServerSamples(CreatePodMetricSample(
+                pod,
+                fixture.TimeProvider.GetUtcNow().AddSeconds(-1).UtcDateTime,
+                "450m"));
+            cell.IsVisible = true;
+            await cell.SecondAggregationStarted.Task.WaitAsync(TestContext.Current.CancellationToken);
+            cell.ReleaseFirstAggregation.TrySetResult();
+
+            await TestWait.UntilAsync(
+                () => MetricBars(cell).Any(bar => ToolTip.GetTip(bar)?.ToString()?.Contains("0.45c", StringComparison.Ordinal) == true),
+                timeout: TimeSpan.FromSeconds(5),
+                cancellationToken: TestContext.Current.CancellationToken,
+                beforePoll: () => Dispatcher.UIThread.RunJobs());
+            MetricBars(cell).Any(bar => ToolTip.GetTip(bar)?.ToString()?.Contains("0.1c", StringComparison.Ordinal) == true).ShouldBeFalse();
+        }
+        finally
+        {
+            cell.ReleaseFirstAggregation.TrySetResult();
+        }
+    }
+
+    [AvaloniaFact]
     public async Task history_bars_fill_the_cell_width_without_a_trailing_gap()
     {
         await using var fixture = await MetricCellFixture.CreateAsync(new FakePrometheusQueryClient());
@@ -271,7 +383,7 @@ public sealed class PodMetricCellTests
 
         window.Show();
         cell.Initialize(fixture.Workspace);
-        MetricBars(cell).Any(bar => ToolTip.GetTip(bar)?.ToString()?.Contains("0.1c", StringComparison.Ordinal) == true).ShouldBeTrue();
+        await WaitForMetricTooltipAsync(cell, "0.1c");
         fixture.RefreshClock.SubscriberCount.ShouldBe(1);
 
         cell.IsVisible = false;
@@ -614,7 +726,7 @@ public sealed class PodMetricCellTests
         window.Show();
         cell.Initialize(fixture.Workspace);
 
-        MetricBars(cell).ShouldNotBeEmpty();
+        await WaitForMetricBarsAsync(cell);
         fixture.QueryClient.Queries.ShouldBe(0);
     }
 
@@ -631,7 +743,7 @@ public sealed class PodMetricCellTests
 
         window.Show();
         cell.Initialize(fixture.Workspace);
-        MetricBars(cell).Any(bar => ToolTip.GetTip(bar)?.ToString()?.Contains("0.1c", StringComparison.Ordinal) == true).ShouldBeTrue();
+        await WaitForMetricTooltipAsync(cell, "0.1c");
 
         var updatedPod = CreatePod(cpuLimit: "100m");
         updatedPod.Metadata!.ResourceVersion = "2";
@@ -653,6 +765,7 @@ public sealed class PodMetricCellTests
             Canvas.GetTop(bar))).ToArray();
         fixture.TimeProvider.Advance(TimeSpan.FromSeconds(30));
         fixture.RefreshClock.Tick();
+        await WaitForMetricTooltipAsync(cell, "0.45c");
         var refreshedBars = cell.GetVisualDescendants().OfType<Border>().ToArray();
         MetricBars(cell).Any(bar => ToolTip.GetTip(bar)?.ToString()?.Contains("0.45c", StringComparison.Ordinal) == true).ShouldBeTrue();
         refreshedBars.Length.ShouldBe(previousBarStates.Length);
@@ -687,6 +800,7 @@ public sealed class PodMetricCellTests
         window.Show();
         cell.Initialize(fixture.Workspace);
 
+        await WaitForMetricBarsAsync(cell);
         MetricBars(cell).Any(bar => IsThemeBrush(bar.Background, "ContainerStatusErrorBrush")).ShouldBeTrue();
         MetricBars(cell).Any(bar => TooltipShowsPercentage(bar, 1)).ShouldBeTrue();
     }
@@ -705,11 +819,11 @@ public sealed class PodMetricCellTests
 
         window.Show();
         cell.Initialize(fixture.Workspace);
-        MetricBars(cell).Any(bar => ToolTip.GetTip(bar)?.ToString()?.Contains("0.1c", StringComparison.Ordinal) == true).ShouldBeTrue();
+        await WaitForMetricTooltipAsync(cell, "0.1c");
 
         cell.DataContext = secondPod;
 
-        MetricBars(cell).Any(bar => ToolTip.GetTip(bar)?.ToString()?.Contains("0.3c", StringComparison.Ordinal) == true).ShouldBeTrue();
+        await WaitForMetricTooltipAsync(cell, "0.3c");
         MetricBars(cell).Any(bar => ToolTip.GetTip(bar)?.ToString()?.Contains("0.1c", StringComparison.Ordinal) == true).ShouldBeFalse();
     }
 
@@ -724,7 +838,7 @@ public sealed class PodMetricCellTests
 
         window.Show();
         cell.Initialize(fixture.Workspace);
-        MetricBars(cell).ShouldNotBeEmpty();
+        await WaitForMetricBarsAsync(cell);
 
         fixture.SetBackend(ActiveMetricsBackend.None);
         cell.Initialize(fixture.Workspace);
@@ -834,6 +948,11 @@ public sealed class PodMetricCellTests
         cpuCell.Initialize(fixture.Workspace);
         memoryCell.Initialize(fixture.Workspace);
 
+        await TestWait.UntilAsync(
+            () => MetricBars(cpuCell).Length > 0 && MetricBars(memoryCell).Length > 0,
+            timeout: TimeSpan.FromSeconds(5),
+            cancellationToken: TestContext.Current.CancellationToken,
+            beforePoll: () => Dispatcher.UIThread.RunJobs());
         MetricBars(cpuCell).Any(bar => IsThemeBrush(bar.Background, "PodStatusWarningBrush")).ShouldBeTrue();
         MetricBars(cpuCell).Any(bar => TooltipShowsPercentage(bar, 0.8)).ShouldBeTrue();
         MetricBars(memoryCell).Any(bar => IsThemeBrush(bar.Background, "ContainerStatusErrorBrush")).ShouldBeTrue();
@@ -869,6 +988,24 @@ public sealed class PodMetricCellTests
 
     private static Border[] MetricBars(Control cell)
         => cell.GetVisualDescendants().OfType<Border>().Where(bar => ToolTip.GetTip(bar) != null).ToArray();
+
+    private static Task WaitForMetricBarsAsync(Control cell)
+    {
+        return TestWait.UntilAsync(
+            () => MetricBars(cell).Length > 0,
+            timeout: TimeSpan.FromSeconds(5),
+            cancellationToken: TestContext.Current.CancellationToken,
+            beforePoll: () => Dispatcher.UIThread.RunJobs());
+    }
+
+    private static Task WaitForMetricTooltipAsync(Control cell, string value)
+    {
+        return TestWait.UntilAsync(
+            () => MetricBars(cell).Any(bar => ToolTip.GetTip(bar)?.ToString()?.Contains(value, StringComparison.Ordinal) == true),
+            timeout: TimeSpan.FromSeconds(5),
+            cancellationToken: TestContext.Current.CancellationToken,
+            beforePoll: () => Dispatcher.UIThread.RunJobs());
+    }
 
     private static bool IsThemeBrush(IBrush brush, string resourceKey)
     {
@@ -1091,6 +1228,58 @@ public sealed class PodMetricCellTests
         public Task ResetAsync() => Task.CompletedTask;
     }
 
+    private sealed class ThreadCheckingPodHistoryCell : PodMetricsHistoryCellBase
+    {
+        private readonly bool _blockFirstAggregation;
+        private int _seriesMatchCount;
+
+        public ThreadCheckingPodHistoryCell(IUiRefreshClock refreshClock, TimeProvider timeProvider)
+            : this(refreshClock, timeProvider, blockFirstAggregation: false)
+        {
+        }
+
+        public ThreadCheckingPodHistoryCell(IUiRefreshClock refreshClock, TimeProvider timeProvider, bool blockFirstAggregation)
+            : base(refreshClock, timeProvider)
+        {
+            _blockFirstAggregation = blockFirstAggregation;
+        }
+
+        public TaskCompletionSource<bool> AggregationStarted { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public TaskCompletionSource<bool> SecondAggregationStarted { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public TaskCompletionSource ReleaseFirstAggregation { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        protected override bool IsMemoryMetric => false;
+
+        protected override MetricRequest CreatePrometheusRequest(V1Pod pod, DateTimeOffset end) => new()
+        {
+            Category = MetricCategory.Pods,
+            Queries = [],
+        };
+
+        protected override double? GetMetricLimit(V1Pod pod) => null;
+
+        protected override bool MatchesSeries(V1Pod pod, MetricSeries series)
+        {
+            var matchCount = Interlocked.Increment(ref _seriesMatchCount);
+            if (matchCount == 1)
+            {
+                AggregationStarted.TrySetResult(Dispatcher.UIThread.CheckAccess());
+                if (_blockFirstAggregation)
+                {
+                    ReleaseFirstAggregation.Task.GetAwaiter().GetResult();
+                }
+            }
+            else if (matchCount == 2)
+            {
+                SecondAggregationStarted.TrySetResult(Dispatcher.UIThread.CheckAccess());
+            }
+
+            return true;
+        }
+    }
+
     private sealed class MetricCellFixture : IAsyncDisposable
     {
         private readonly MetricsService _metricsService;
@@ -1140,9 +1329,26 @@ public sealed class PodMetricCellTests
             {
                 _metricsService.PodMetrics.Add(sample);
             }
+
+            _metricsService.RebuildMetricSnapshots();
         }
 
-        public void AddMetricsServerSample(PodMetrics sample) => _metricsService.PodMetrics.Add(sample);
+        public void AddMetricsServerSample(PodMetrics sample)
+        {
+            _metricsService.PodMetrics.Add(sample);
+            _metricsService.RebuildMetricSnapshots();
+        }
+
+        public void ReplaceMetricsServerSamples(params PodMetrics[] samples)
+        {
+            _metricsService.PodMetrics.Clear();
+            foreach (var sample in samples)
+            {
+                _metricsService.PodMetrics.Add(sample);
+            }
+
+            _metricsService.RebuildMetricSnapshots();
+        }
 
         public void UseNodeMetricsSamples(params NodeMetrics[] samples)
         {
@@ -1152,6 +1358,8 @@ public sealed class PodMetricCellTests
             {
                 _metricsService.NodeMetrics.Add(sample);
             }
+
+            _metricsService.RebuildMetricSnapshots();
         }
 
         public void SetBackend(ActiveMetricsBackend backend)
@@ -1247,13 +1455,25 @@ public sealed class PodMetricCellTests
     private sealed class TestTimeProvider : TimeProvider
     {
         private DateTimeOffset _utcNow;
+        private int _getUtcNowCount;
 
         public TestTimeProvider(DateTimeOffset utcNow)
         {
             _utcNow = utcNow;
         }
 
-        public override DateTimeOffset GetUtcNow() => _utcNow;
+        public int GetUtcNowCount => _getUtcNowCount;
+
+        public override DateTimeOffset GetUtcNow()
+        {
+            _getUtcNowCount++;
+            return _utcNow;
+        }
+
+        public void ResetGetUtcNowCount()
+        {
+            _getUtcNowCount = 0;
+        }
 
         public void Advance(TimeSpan duration)
         {

@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using k8s.Models;
 
 namespace KubeUI.Kubernetes;
@@ -41,6 +42,16 @@ public sealed partial class MetricsService : ObservableObject, IMetricsService, 
 
     [ObservableProperty]
     public partial ObservableCollection<NodeMetrics> NodeMetrics { get; set; } = [];
+
+    /// <inheritdoc />
+    public ImmutableArray<PodMetrics> GetPodMetricsSnapshot(string? namespaceName, string podName)
+        => _kubernetesMetricsCollector.GetPodMetricsSnapshot(namespaceName, podName);
+
+    /// <inheritdoc />
+    public ImmutableArray<NodeMetrics> GetNodeMetricsSnapshot(string nodeName)
+        => _kubernetesMetricsCollector.GetNodeMetricsSnapshot(nodeName);
+
+    internal void RebuildMetricSnapshots() => _kubernetesMetricsCollector.RebuildSnapshotIndexes();
 
     [ObservableProperty]
     public partial bool IsMetricsAvailable { get; set; }
@@ -131,8 +142,7 @@ public sealed partial class MetricsService : ObservableObject, IMetricsService, 
         _resolvedPrometheusEndpoint = null;
         _resolvedPrometheusProvider = null;
 
-        PodMetrics.Clear();
-        NodeMetrics.Clear();
+        await _kubernetesMetricsCollector.ClearMetricsAsync().ConfigureAwait(false);
         IsMetricsAvailable = false;
         ActiveMetricsBackend = ActiveMetricsBackend.None;
         _cluster = null;

@@ -29,6 +29,7 @@ public abstract class MetricsHistoryCellBase<TResource> : UserControl, IInitiali
     private double _originalCellMinimumHeight;
     private IDisposable? _refreshSubscription;
     private CancellationTokenSource? _prometheusCancellation;
+    private CancellationTokenSource? _metricsServerCancellation;
     private TResource? _resource;
     private ActiveMetricsBackend? _backend;
     private MetricHistoryData _history = MetricHistoryData.Empty;
@@ -122,13 +123,13 @@ public abstract class MetricsHistoryCellBase<TResource> : UserControl, IInitiali
         }
 
         Cluster = cluster;
-        RefreshCell();
+        RefreshCell(forceRender: true);
     }
 
     protected override void OnDataContextChanged(EventArgs e)
     {
         base.OnDataContextChanged(e);
-        RefreshCell();
+        RefreshCell(forceRender: true);
     }
 
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
@@ -138,7 +139,7 @@ public abstract class MetricsHistoryCellBase<TResource> : UserControl, IInitiali
             || change.Property.Name == nameof(IsEffectivelyVisible))
         {
             UpdateRefreshSubscription();
-            RefreshCell();
+            RefreshCell(forceRender: IsCellVisibleInViewport());
         }
         else if (change.Property == BoundsProperty && _resource is not null)
         {
@@ -159,7 +160,7 @@ public abstract class MetricsHistoryCellBase<TResource> : UserControl, IInitiali
         }
 
         EffectiveViewportChanged += OnEffectiveViewportChanged;
-        RefreshCell();
+        RefreshCell(forceRender: true);
     }
 
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
@@ -176,11 +177,11 @@ public abstract class MetricsHistoryCellBase<TResource> : UserControl, IInitiali
             MinHeight = _originalCellMinimumHeight;
         }
 
-        PausePendingPrometheusRequest();
+        PausePendingHistoryRequest();
         base.OnDetachedFromVisualTree(e);
     }
 
-    private void RefreshCell()
+    private void RefreshCell(bool forceRender = false)
     {
         if (Cluster == null || DataContext is not TResource resource)
         {
@@ -222,7 +223,7 @@ public abstract class MetricsHistoryCellBase<TResource> : UserControl, IInitiali
 
         if (!IsCellVisibleInViewport())
         {
-            PausePendingPrometheusRequest();
+            PausePendingHistoryRequest();
             if (historyInvalidated)
             {
                 ClearBars();
@@ -234,36 +235,41 @@ public abstract class MetricsHistoryCellBase<TResource> : UserControl, IInitiali
         if (backend.Type == MetricsServiceType.KubernetesMetricsServer)
         {
             var now = _timeProvider.GetUtcNow();
-            if (now >= _nextRefreshUtc)
+            if (now >= _nextRefreshUtc && _metricsServerCancellation == null)
             {
                 _nextRefreshUtc = now.AddSeconds(30);
-                var result = CaptureMetricsServerHistory(
-                    Cluster,
-                    resource,
-                    now - MetricsHistoryBuckets.History,
-                    now);
-                _history = CreateHistory(result, resource);
+                _ = LoadMetricsServerHistory(resource, backend, now);
+                return;
             }
 
-            RenderHistory(resource, _history);
+            if (forceRender)
+            {
+                RenderHistory(resource, _history);
+            }
+
             return;
         }
 
-        if (_timeProvider.GetUtcNow() >= _nextRefreshUtc && _prometheusCancellation == null)
+        var refreshPrometheus = _timeProvider.GetUtcNow() >= _nextRefreshUtc && _prometheusCancellation == null;
+        if (refreshPrometheus)
         {
             _nextRefreshUtc = _timeProvider.GetUtcNow() + s_prometheusRefreshInterval;
             _ = LoadPrometheusHistory(resource, backend);
         }
 
-        RenderHistory(resource, _history);
+        if (forceRender || refreshPrometheus)
+        {
+            RenderHistory(resource, _history);
+        }
     }
 
     private void OnEffectiveViewportChanged(object? sender, EffectiveViewportChangedEventArgs e)
     {
+        var wasVisible = IsCellVisibleInViewport();
         _hasEffectiveViewport = true;
         _isInEffectiveViewport = e.EffectiveViewport.Intersects(new Rect(Bounds.Size));
         UpdateRefreshSubscription();
-        RefreshCell();
+        RefreshCell(forceRender: !wasVisible && IsCellVisibleInViewport());
     }
 
     private bool IsCellVisibleInViewport()
@@ -278,24 +284,97 @@ public abstract class MetricsHistoryCellBase<TResource> : UserControl, IInitiali
     {
         if (IsCellVisibleInViewport())
         {
-            _refreshSubscription ??= _refreshClock.Subscribe(RefreshCell);
+            _refreshSubscription ??= _refreshClock.Subscribe(() => RefreshCell());
             return;
         }
 
         _refreshSubscription?.Dispose();
         _refreshSubscription = null;
-        PausePendingPrometheusRequest();
+        PausePendingHistoryRequest();
     }
 
-    private void PausePendingPrometheusRequest()
+    private void PausePendingHistoryRequest()
     {
-        if (_prometheusCancellation is null)
+        if (_prometheusCancellation is null && _metricsServerCancellation is null)
         {
             return;
         }
 
         CancelPendingRequest();
         _nextRefreshUtc = DateTimeOffset.MinValue;
+    }
+
+    private async Task LoadMetricsServerHistory(TResource resource, ActiveMetricsBackend backend, DateTimeOffset end)
+    {
+        var cluster = Cluster;
+        if (cluster == null)
+        {
+            return;
+        }
+
+        var cancellation = new CancellationTokenSource();
+        _metricsServerCancellation = cancellation;
+        var requestVersion = ++_requestVersion;
+
+        try
+        {
+            var history = await Task.Run(
+                () =>
+                {
+                    var result = CaptureMetricsServerHistory(
+                        cluster,
+                        resource,
+                        end - MetricsHistoryBuckets.History,
+                        end);
+                    return MetricsHistoryAggregator.Aggregate(
+                        result,
+                        resource,
+                        MatchesSeries,
+                        cancellation.Token);
+                },
+                cancellation.Token).ConfigureAwait(false);
+
+            await Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                if (_resource is not { } currentResource
+                    || requestVersion != _requestVersion
+                    || cancellation.IsCancellationRequested
+                    || !ReferenceEquals(Cluster, cluster)
+                    || !IsSameResource(currentResource, resource)
+                    || !Equals(_backend, backend))
+                {
+                    return;
+                }
+
+                _history = history;
+                RenderHistory(currentResource, _history);
+            });
+        }
+        catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
+        {
+        }
+        catch
+        {
+            await Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                if (requestVersion == _requestVersion && !cancellation.IsCancellationRequested)
+                {
+                    _history = MetricHistoryData.Empty;
+                    ClearBars();
+                }
+            });
+        }
+        finally
+        {
+            await Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                if (requestVersion == _requestVersion && ReferenceEquals(_metricsServerCancellation, cancellation))
+                {
+                    _metricsServerCancellation.Dispose();
+                    _metricsServerCancellation = null;
+                }
+            });
+        }
     }
 
     private void OnBarPanelPropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
@@ -324,6 +403,11 @@ public abstract class MetricsHistoryCellBase<TResource> : UserControl, IInitiali
             var result = await cluster.Runtime.RequestMetricsAsync(
                 CreatePrometheusRequest(resource, requestEnd),
                 CancellationToken.None).WaitAsync(cancellation.Token).ConfigureAwait(false);
+            var history = await MetricsHistoryAggregator.AggregateAsync(
+                result,
+                resource,
+                MatchesSeries,
+                cancellation.Token).ConfigureAwait(false);
             await Dispatcher.UIThread.InvokeAsync(() =>
             {
                 if (_resource is not { } currentResource
@@ -336,7 +420,7 @@ public abstract class MetricsHistoryCellBase<TResource> : UserControl, IInitiali
                     return;
                 }
 
-                _history = CreateHistory(result, currentResource);
+                _history = history;
                 RenderHistory(currentResource, _history);
             });
         }
@@ -365,41 +449,6 @@ public abstract class MetricsHistoryCellBase<TResource> : UserControl, IInitiali
                 }
             });
         }
-    }
-
-    private MetricHistoryData CreateHistory(MetricResultSet result, TResource resource)
-    {
-        return new MetricHistoryData(
-            AggregatePrometheusSeries(result, "cpuUsage", resource),
-            AggregatePrometheusSeries(result, "memoryUsage", resource));
-    }
-
-    private IReadOnlyList<MetricPoint> AggregatePrometheusSeries(MetricResultSet result, string name, TResource resource)
-    {
-        if (!result.Metrics.TryGetValue(name, out var series))
-        {
-            return [];
-        }
-
-        Dictionary<DateTimeOffset, double> values = [];
-        foreach (var metricSeries in series)
-        {
-            if (!MatchesSeries(resource, metricSeries))
-            {
-                continue;
-            }
-
-            foreach (var point in metricSeries.Points)
-            {
-                values.TryGetValue(point.Timestamp, out var total);
-                values[point.Timestamp] = total + point.Value;
-            }
-        }
-
-        return values
-            .OrderBy(static pair => pair.Key)
-            .Select(static pair => new MetricPoint(pair.Key, pair.Value))
-            .ToArray();
     }
 
     private void RenderHistory(TResource resource, MetricHistoryData history)
@@ -501,6 +550,9 @@ public abstract class MetricsHistoryCellBase<TResource> : UserControl, IInitiali
         _prometheusCancellation?.Cancel();
         _prometheusCancellation?.Dispose();
         _prometheusCancellation = null;
+        _metricsServerCancellation?.Cancel();
+        _metricsServerCancellation?.Dispose();
+        _metricsServerCancellation = null;
     }
 
     private static bool IsSameResource(TResource? previousResource, TResource currentResource)
@@ -523,5 +575,70 @@ public abstract class MetricsHistoryCellBase<TResource> : UserControl, IInitiali
             && string.Equals(previousKubernetesResource.ApiVersion, currentKubernetesResource.ApiVersion, StringComparison.Ordinal)
             && string.Equals(previousKubernetesResource.Kind, currentKubernetesResource.Kind, StringComparison.Ordinal)
             && string.Equals(previousMetadata.NamespaceProperty, currentMetadata?.NamespaceProperty, StringComparison.Ordinal);
+    }
+}
+
+internal static class MetricsHistoryAggregator
+{
+    internal static Task<MetricHistoryData> AggregateAsync<TResource>(
+        MetricResultSet result,
+        TResource resource,
+        Func<TResource, MetricSeries, bool> matchesSeries,
+        CancellationToken cancellationToken)
+    {
+        return Task.Run(
+            () => Aggregate(result, resource, matchesSeries, cancellationToken),
+            cancellationToken);
+    }
+
+    internal static MetricHistoryData Aggregate<TResource>(
+        MetricResultSet result,
+        TResource resource,
+        Func<TResource, MetricSeries, bool> matchesSeries,
+        CancellationToken cancellationToken)
+    {
+        return new MetricHistoryData(
+            AggregateSeries(result, "cpuUsage", resource, matchesSeries, cancellationToken),
+            AggregateSeries(result, "memoryUsage", resource, matchesSeries, cancellationToken));
+    }
+
+    private static IReadOnlyList<MetricPoint> AggregateSeries<TResource>(
+        MetricResultSet result,
+        string name,
+        TResource resource,
+        Func<TResource, MetricSeries, bool> matchesSeries,
+        CancellationToken cancellationToken)
+    {
+        if (!result.Metrics.TryGetValue(name, out var series))
+        {
+            return [];
+        }
+
+        Dictionary<DateTimeOffset, double> values = [];
+        foreach (var metricSeries in series)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (!matchesSeries(resource, metricSeries))
+            {
+                continue;
+            }
+
+            var pointIndex = 0;
+            foreach (var point in metricSeries.Points)
+            {
+                if ((pointIndex++ & 127) == 0)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                }
+
+                values.TryGetValue(point.Timestamp, out var total);
+                values[point.Timestamp] = total + point.Value;
+            }
+        }
+
+        return values
+            .OrderBy(static pair => pair.Key)
+            .Select(static pair => new MetricPoint(pair.Key, pair.Value))
+            .ToArray();
     }
 }

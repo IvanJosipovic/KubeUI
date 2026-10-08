@@ -21,11 +21,9 @@ public abstract class PodMetricsHistoryCellBase : MetricsHistoryCellBase<V1Pod>
         DateTimeOffset end)
     {
         Dictionary<DateTimeOffset, (double Cpu, double Memory)> samples = [];
-        foreach (var metric in cluster.Runtime.PodMetrics)
+        foreach (var metric in cluster.Runtime.GetPodMetricsSnapshot(pod.Namespace(), pod.Name() ?? string.Empty))
         {
-            if (!string.Equals(metric.Name(), pod.Name(), StringComparison.Ordinal)
-                || !string.Equals(metric.Namespace(), pod.Namespace(), StringComparison.Ordinal)
-                || !metric.Timestamp.HasValue)
+            if (!metric.Timestamp.HasValue)
             {
                 continue;
             }

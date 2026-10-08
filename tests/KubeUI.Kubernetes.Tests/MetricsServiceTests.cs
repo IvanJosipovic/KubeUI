@@ -157,6 +157,7 @@ public sealed class MetricsServiceTests
         service.PodMetrics.Add(CreatePodMetrics(older, "10m"));
         service.PodMetrics.Add(CreatePodMetrics(retained, "50m"));
         service.PodMetrics.Add(CreatePodMetrics(retained, "55m"));
+        service.PodMetrics.Add(CreatePodMetrics("pod-2", "other", retained, "75m"));
         service.NodeMetrics.Add(CreateNodeMetrics(older, "100m"));
         service.NodeMetrics.Add(CreateNodeMetrics(retained, "200m"));
         service.NodeMetrics.Add(CreateNodeMetrics(retained, "220m"));
@@ -174,8 +175,25 @@ public sealed class MetricsServiceTests
         await service.SyncKubernetesMetricsAsync(cluster, TestContext.Current.CancellationToken);
         await service.SyncKubernetesMetricsAsync(cluster, TestContext.Current.CancellationToken);
 
-        service.PodMetrics.Select(static metric => metric.Timestamp).ShouldBe([retained, latest]);
+        service.PodMetrics
+            .Where(static metric => metric.Name() == "pod-1")
+            .Select(static metric => metric.Timestamp)
+            .ShouldBe([retained, latest]);
         service.NodeMetrics.Select(static metric => metric.Timestamp).ShouldBe([retained, latest]);
+
+        var podSnapshot = service.GetPodMetricsSnapshot("default", "pod-1");
+        podSnapshot.Select(static metric => metric.Timestamp).ShouldBe([retained, latest]);
+        podSnapshot.ShouldAllBe(static metric => metric.Namespace() == "default" && metric.Name() == "pod-1");
+        service.GetPodMetricsSnapshot("other", "pod-2").ShouldHaveSingleItem()
+            .ShouldSatisfyAllConditions(metric => metric.Namespace().ShouldBe("other"), metric => metric.Name().ShouldBe("pod-2"));
+        service.GetPodMetricsSnapshot("default", "missing-pod").ShouldBeEmpty();
+        service.GetNodeMetricsSnapshot("node-1").Select(static metric => metric.Timestamp).ShouldBe([retained, latest]);
+        service.GetNodeMetricsSnapshot("missing-node").ShouldBeEmpty();
+
+        await service.StopAsync();
+
+        service.GetPodMetricsSnapshot("default", "pod-1").ShouldBeEmpty();
+        service.GetNodeMetricsSnapshot("node-1").ShouldBeEmpty();
     }
 
     [Fact]
@@ -443,16 +461,24 @@ public sealed class MetricsServiceTests
         return KubernetesJson.Deserialize<PodMetrics>(CreatePodMetricsJson(timestamp, cpu));
     }
 
+    private static PodMetrics CreatePodMetrics(string name, string namespaceName, DateTime timestamp, string cpu)
+    {
+        return KubernetesJson.Deserialize<PodMetrics>(CreatePodMetricsJson(name, namespaceName, timestamp, cpu));
+    }
+
     private static NodeMetrics CreateNodeMetrics(DateTime timestamp, string cpu)
     {
         return KubernetesJson.Deserialize<NodeMetrics>(CreateNodeMetricsJson(timestamp, cpu));
     }
 
     private static string CreatePodMetricsJson(DateTime? timestamp, string cpu)
+        => CreatePodMetricsJson("pod-1", "default", timestamp, cpu);
+
+    private static string CreatePodMetricsJson(string name, string namespaceName, DateTime? timestamp, string cpu)
     {
         return JsonSerializer.Serialize(new
         {
-            metadata = new { name = "pod-1", @namespace = "default" },
+            metadata = new { name, @namespace = namespaceName },
             timestamp,
             window = "30s",
             containers = new[]

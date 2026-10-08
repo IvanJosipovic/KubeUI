@@ -22,10 +22,9 @@ public abstract class NodeMetricsHistoryCellBase : MetricsHistoryCellBase<V1Node
     {
         List<MetricPoint> cpu = [];
         List<MetricPoint> memory = [];
-        foreach (var metric in cluster.Runtime.NodeMetrics)
+        foreach (var metric in cluster.Runtime.GetNodeMetricsSnapshot(node.Name() ?? string.Empty))
         {
-            if (!string.Equals(metric.Name(), node.Name(), StringComparison.Ordinal)
-                || !metric.Timestamp.HasValue)
+            if (!metric.Timestamp.HasValue)
             {
                 continue;
             }

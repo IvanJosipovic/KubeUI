@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Collections.Immutable;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Reactive.Linq;
@@ -79,6 +80,14 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
     public ObservableCollection<PodMetrics> PodMetrics => _metricsService.PodMetrics;
 
     public ObservableCollection<NodeMetrics> NodeMetrics => _metricsService.NodeMetrics;
+
+    /// <inheritdoc />
+    public ImmutableArray<PodMetrics> GetPodMetricsSnapshot(string? namespaceName, string podName)
+        => _metricsService.GetPodMetricsSnapshot(namespaceName, podName);
+
+    /// <inheritdoc />
+    public ImmutableArray<NodeMetrics> GetNodeMetricsSnapshot(string nodeName)
+        => _metricsService.GetNodeMetricsSnapshot(nodeName);
 
     public bool IsMetricsAvailable => _metricsService.IsMetricsAvailable;
 
