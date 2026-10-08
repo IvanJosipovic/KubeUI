@@ -276,6 +276,57 @@ public sealed class PodMetricCellTests
     }
 
     [AvaloniaFact]
+    public async Task prometheus_history_keeps_refresh_schedule_for_same_resource_update()
+    {
+        var queryClient = new FakePrometheusQueryClient
+        {
+            Result = CreateMetricResult("cpuUsage", 1.234),
+        };
+        await using var fixture = await MetricCellFixture.CreateAsync(queryClient);
+        var initialTime = fixture.TimeProvider.GetUtcNow();
+        fixture.TimeProvider.SetUtcNow(new DateTimeOffset(
+            initialTime.Year,
+            initialTime.Month,
+            initialTime.Day,
+            initialTime.Hour,
+            initialTime.Minute,
+            0,
+            TimeSpan.Zero));
+        var pod = CreatePod();
+        var cell = fixture.CreateCpuCell(pod);
+        using var window = Application.Current.CreateTestWindow(content: cell);
+
+        window.Show();
+        cell.Initialize(fixture.Workspace);
+        await TestWait.UntilAsync(
+            () => queryClient.Queries == 2 && MetricBars(cell).Length > 0,
+            timeout: TimeSpan.FromSeconds(5),
+            cancellationToken: TestContext.Current.CancellationToken,
+            beforePoll: () => Dispatcher.UIThread.RunJobs());
+
+        fixture.TimeProvider.Advance(TimeSpan.FromSeconds(30));
+        var updatedPod = CreatePod();
+        updatedPod.Metadata!.ResourceVersion = "2";
+        cell.DataContext = updatedPod;
+        Dispatcher.UIThread.RunJobs();
+        MetricBars(cell).ShouldNotBeEmpty();
+        queryClient.Queries.ShouldBe(2);
+
+        fixture.TimeProvider.Advance(TimeSpan.FromSeconds(29));
+        fixture.RefreshClock.Tick();
+        Dispatcher.UIThread.RunJobs();
+        queryClient.Queries.ShouldBe(2);
+
+        fixture.TimeProvider.Advance(TimeSpan.FromSeconds(1));
+        fixture.RefreshClock.Tick();
+        await TestWait.UntilAsync(
+            () => queryClient.Queries == 4,
+            timeout: TimeSpan.FromSeconds(5),
+            cancellationToken: TestContext.Current.CancellationToken,
+            beforePoll: () => Dispatcher.UIThread.RunJobs());
+    }
+
+    [AvaloniaFact]
     public async Task cpu_cell_renders_async_prometheus_value()
     {
         var queryClient = new FakePrometheusQueryClient
@@ -328,6 +379,41 @@ public sealed class PodMetricCellTests
         queryClient.QueryTexts.ShouldContain(query =>
             query.Contains("node_cpu_seconds_total", StringComparison.Ordinal)
             && query.Contains("instance=~\"(node-a|10\\\\.0\\\\.0\\\\.1)(:[0-9]+)?\"", StringComparison.Ordinal));
+
+        cpuCell.DataContext = CreateNode("node-a");
+        Dispatcher.UIThread.RunJobs();
+        queryClient.Queries.ShouldBe(2);
+    }
+
+    [AvaloniaFact]
+    public async Task node_prometheus_history_refreshes_when_instance_target_changes()
+    {
+        var queryClient = new FakePrometheusQueryClient
+        {
+            Result = CreateNodeMetricResultsWithInstanceLabel("10.0.0.1:9100", 0.5, 512d * 1024 * 1024),
+        };
+        await using var fixture = await MetricCellFixture.CreateAsync(queryClient);
+        var cell = fixture.CreateNodeCpuCell(CreateNode("node-a"));
+        using var window = Application.Current.CreateTestWindow(content: cell);
+
+        window.Show();
+        cell.Initialize(fixture.Workspace);
+        await TestWait.UntilAsync(
+            () => queryClient.Queries == 2,
+            timeout: TimeSpan.FromSeconds(5),
+            cancellationToken: TestContext.Current.CancellationToken,
+            beforePoll: () => Dispatcher.UIThread.RunJobs());
+
+        cell.DataContext = CreateNode("node-a", "10.0.0.2");
+        await TestWait.UntilAsync(
+            () => queryClient.Queries == 4,
+            timeout: TimeSpan.FromSeconds(5),
+            cancellationToken: TestContext.Current.CancellationToken,
+            beforePoll: () => Dispatcher.UIThread.RunJobs());
+
+        queryClient.QueryTexts.ShouldContain(query =>
+            query.Contains("node_cpu_seconds_total", StringComparison.Ordinal)
+            && query.Contains("instance=~\"(node-a|10\\\\.0\\\\.0\\\\.2)(:[0-9]+)?\"", StringComparison.Ordinal));
     }
 
     [AvaloniaFact]
@@ -438,6 +524,37 @@ public sealed class PodMetricCellTests
 
         MetricBars(cell).ShouldNotBeEmpty();
         fixture.QueryClient.Queries.ShouldBe(0);
+    }
+
+    [AvaloniaFact]
+    public async Task metrics_server_history_keeps_samples_until_refresh_after_same_resource_update()
+    {
+        await using var fixture = await MetricCellFixture.CreateAsync(new FakePrometheusQueryClient());
+        var pod = CreatePod(cpuLimit: "1");
+        var now = DateTime.UtcNow;
+        fixture.UseMetricsServerSamples(CreatePodMetricSample(pod, now.AddMinutes(-2), "100m"));
+        var cell = fixture.CreateCpuCell(pod);
+        using var window = Application.Current.CreateTestWindow(content: cell);
+
+        window.Show();
+        cell.Initialize(fixture.Workspace);
+        MetricBars(cell).Any(bar => ToolTip.GetTip(bar)?.ToString()?.Contains("0.1c", StringComparison.Ordinal) == true).ShouldBeTrue();
+
+        var updatedPod = CreatePod(cpuLimit: "100m");
+        updatedPod.Metadata!.ResourceVersion = "2";
+        fixture.AddMetricsServerSample(CreatePodMetricSample(updatedPod, now, "450m"));
+        cell.DataContext = updatedPod;
+        Dispatcher.UIThread.RunJobs();
+
+        var bars = MetricBars(cell);
+        bars.Any(bar => ToolTip.GetTip(bar)?.ToString()?.Contains("0.1c", StringComparison.Ordinal) == true).ShouldBeTrue();
+        bars.Any(bar => ToolTip.GetTip(bar)?.ToString()?.Contains("0.45c", StringComparison.Ordinal) == true).ShouldBeFalse();
+        bars.Any(bar => IsThemeBrush(bar.Background, "ContainerStatusErrorBrush")).ShouldBeTrue();
+        bars.Any(bar => TooltipShowsPercentage(bar, 1)).ShouldBeTrue();
+
+        fixture.TimeProvider.Advance(TimeSpan.FromSeconds(30));
+        fixture.RefreshClock.Tick();
+        MetricBars(cell).Any(bar => ToolTip.GetTip(bar)?.ToString()?.Contains("0.45c", StringComparison.Ordinal) == true).ShouldBeTrue();
     }
 
     [AvaloniaFact]
@@ -661,7 +778,7 @@ public sealed class PodMetricCellTests
             fraction.ToString("P0", System.Globalization.CultureInfo.CurrentCulture),
             StringComparison.Ordinal) == true;
 
-    private static V1Pod CreatePod(string name = "metrics-pod")
+    private static V1Pod CreatePod(string name = "metrics-pod", string cpuLimit = "500m")
     {
         return KubernetesJson.Deserialize<V1Pod>(JsonSerializer.Serialize(new
         {
@@ -675,7 +792,7 @@ public sealed class PodMetricCellTests
                         name = "app",
                         resources = new
                         {
-                            limits = new Dictionary<string, string> { ["cpu"] = "500m", ["memory"] = "512Mi" },
+                            limits = new Dictionary<string, string> { ["cpu"] = cpuLimit, ["memory"] = "512Mi" },
                         },
                     },
                 },
@@ -683,14 +800,14 @@ public sealed class PodMetricCellTests
         }));
     }
 
-    private static V1Node CreateNode(string name = "metrics-node")
+    private static V1Node CreateNode(string name = "metrics-node", string address = "10.0.0.1")
     {
         return KubernetesJson.Deserialize<V1Node>(JsonSerializer.Serialize(new
         {
             metadata = new { name },
             status = new
             {
-                addresses = new[] { new { type = "InternalIP", address = "10.0.0.1" } },
+                addresses = new[] { new { type = "InternalIP", address } },
                 capacity = new Dictionary<string, string> { ["cpu"] = "4", ["memory"] = "8Gi" },
                 allocatable = new Dictionary<string, string> { ["cpu"] = "2", ["memory"] = "4Gi" },
             },
@@ -906,6 +1023,8 @@ public sealed class PodMetricCellTests
                 _metricsService.PodMetrics.Add(sample);
             }
         }
+
+        public void AddMetricsServerSample(PodMetrics sample) => _metricsService.PodMetrics.Add(sample);
 
         public void UseNodeMetricsSamples(params NodeMetrics[] samples)
         {

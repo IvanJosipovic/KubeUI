@@ -1,5 +1,7 @@
 using Avalonia.VisualTree;
 using Humanizer;
+using k8s;
+using k8s.Models;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Infrastructure.Threading;
@@ -83,6 +85,9 @@ public abstract class MetricsHistoryCellBase<TResource> : UserControl, IInitiali
     protected abstract double? GetMetricLimit(TResource resource);
 
     protected virtual bool MatchesSeries(TResource resource, MetricSeries series) => true;
+
+    /// <summary>Determines whether two snapshots for one resource use the same metrics query target.</summary>
+    protected virtual bool IsSameMetricsTarget(TResource previousResource, TResource currentResource) => true;
 
     protected static MetricRequest CreateMetricRequest(
         MetricCategory category,
@@ -197,14 +202,22 @@ public abstract class MetricsHistoryCellBase<TResource> : UserControl, IInitiali
             return;
         }
 
-        if (!ReferenceEquals(_resource, resource) || !Equals(_backend, backend))
+        var sameResource = IsSameResource(_resource, resource);
+        var metricsTargetChanged = backend.Type == MetricsServiceType.Prometheus
+            && sameResource
+            && _resource is { } previousResource
+            && !IsSameMetricsTarget(previousResource, resource);
+        if (!sameResource
+            || !Equals(_backend, backend)
+            || metricsTargetChanged)
         {
             CancelPendingRequest();
-            _resource = resource;
-            _backend = backend;
             _history = MetricHistoryData.Empty;
             _nextRefreshUtc = DateTimeOffset.MinValue;
         }
+
+        _resource = resource;
+        _backend = backend;
 
         if (backend.Type == MetricsServiceType.KubernetesMetricsServer)
         {
@@ -218,9 +231,9 @@ public abstract class MetricsHistoryCellBase<TResource> : UserControl, IInitiali
                     now - MetricsHistoryBuckets.History,
                     now);
                 _history = CreateHistory(result, resource);
-                RenderHistory(resource, _history);
             }
 
+            RenderHistory(resource, _history);
             return;
         }
 
@@ -275,20 +288,20 @@ public abstract class MetricsHistoryCellBase<TResource> : UserControl, IInitiali
             var result = await cluster.Runtime.RequestMetricsAsync(
                 CreatePrometheusRequest(resource, requestEnd),
                 CancellationToken.None).WaitAsync(cancellation.Token).ConfigureAwait(false);
-            var history = CreateHistory(result, resource);
             await Dispatcher.UIThread.InvokeAsync(() =>
             {
-                if (requestVersion != _requestVersion
+                if (_resource is not { } currentResource
+                    || requestVersion != _requestVersion
                     || cancellation.IsCancellationRequested
                     || !ReferenceEquals(Cluster, cluster)
-                    || !ReferenceEquals(_resource, resource)
+                    || !IsSameResource(currentResource, resource)
                     || !Equals(_backend, backend))
                 {
                     return;
                 }
 
-                _history = history;
-                RenderHistory(resource, history);
+                _history = CreateHistory(result, currentResource);
+                RenderHistory(currentResource, _history);
             });
         }
         catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
@@ -424,5 +437,27 @@ public abstract class MetricsHistoryCellBase<TResource> : UserControl, IInitiali
         _prometheusCancellation?.Cancel();
         _prometheusCancellation?.Dispose();
         _prometheusCancellation = null;
+    }
+
+    private static bool IsSameResource(TResource? previousResource, TResource currentResource)
+    {
+        if (ReferenceEquals(previousResource, currentResource))
+        {
+            return true;
+        }
+
+        if (previousResource is not IKubernetesObject<V1ObjectMeta> previousKubernetesResource
+            || currentResource is not IKubernetesObject<V1ObjectMeta> currentKubernetesResource)
+        {
+            return false;
+        }
+
+        var previousMetadata = previousKubernetesResource.Metadata;
+        var currentMetadata = currentKubernetesResource.Metadata;
+        return previousMetadata?.Name is { Length: > 0 } name
+            && string.Equals(name, currentMetadata?.Name, StringComparison.Ordinal)
+            && string.Equals(previousKubernetesResource.ApiVersion, currentKubernetesResource.ApiVersion, StringComparison.Ordinal)
+            && string.Equals(previousKubernetesResource.Kind, currentKubernetesResource.Kind, StringComparison.Ordinal)
+            && string.Equals(previousMetadata.NamespaceProperty, currentMetadata?.NamespaceProperty, StringComparison.Ordinal);
     }
 }

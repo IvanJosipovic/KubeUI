@@ -83,6 +83,12 @@ public abstract class NodeMetricsHistoryCellBase : MetricsHistoryCellBase<V1Node
         return CreateMetricRequest(MetricCategory.Nodes, options, end);
     }
 
+    protected override bool IsSameMetricsTarget(V1Node previousResource, V1Node currentResource)
+        => string.Equals(
+            GetNodeInstancePattern(previousResource),
+            GetNodeInstancePattern(currentResource),
+            StringComparison.Ordinal);
+
     private static string GetNodeInstancePattern(V1Node node)
     {
         List<string> names = [];
