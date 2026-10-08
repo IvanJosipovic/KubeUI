@@ -51,6 +51,26 @@ public sealed class PodMetricCellTests
             .ShouldAllBe(static bar => bar.LimitState == MetricsLimitState.Normal);
     }
 
+    [Fact]
+    public void history_bucket_edges_stay_fixed_between_refreshes()
+    {
+        var end = DateTimeOffset.Parse("2026-09-23T12:02:00Z");
+        MetricPoint[] initialPoints = [new(end.AddSeconds(-15), 0.1)];
+        MetricPoint[] updatedPoints = [.. initialPoints, new MetricPoint(end.AddSeconds(15), 0.2)];
+
+        var initialBars = MetricsHistoryBuckets.CreateBars(initialPoints, end, 1, 20);
+        var updatedBars = MetricsHistoryBuckets.CreateBars(updatedPoints, end.AddSeconds(30), 1, 20);
+
+        for (var index = 0; index < MetricsHistoryBuckets.BucketCount - 1; index++)
+        {
+            updatedBars[index].ShouldBe(initialBars[index]);
+        }
+
+        updatedBars[^1].Start.ShouldBe(initialBars[^1].Start);
+        updatedBars[^1].End.ShouldBe(initialBars[^1].End);
+        updatedBars[^1].Value.ShouldBe(0.2);
+    }
+
     [AvaloniaFact]
     public async Task cpu_cell_renders_metric_history_as_bars_instead_of_a_text_value()
     {
@@ -531,8 +551,9 @@ public sealed class PodMetricCellTests
     {
         await using var fixture = await MetricCellFixture.CreateAsync(new FakePrometheusQueryClient());
         var pod = CreatePod(cpuLimit: "1");
-        var now = DateTime.UtcNow;
-        fixture.UseMetricsServerSamples(CreatePodMetricSample(pod, now.AddMinutes(-2), "100m"));
+        var now = DateTimeOffset.Parse("2026-09-23T12:02:00Z");
+        fixture.UseMetricsServerSamples(CreatePodMetricSample(pod, now.AddMinutes(-2).UtcDateTime, "100m"));
+        fixture.TimeProvider.SetUtcNow(now);
         var cell = fixture.CreateCpuCell(pod);
         using var window = Application.Current.CreateTestWindow(content: cell);
 
@@ -542,7 +563,7 @@ public sealed class PodMetricCellTests
 
         var updatedPod = CreatePod(cpuLimit: "100m");
         updatedPod.Metadata!.ResourceVersion = "2";
-        fixture.AddMetricsServerSample(CreatePodMetricSample(updatedPod, now, "450m"));
+        fixture.AddMetricsServerSample(CreatePodMetricSample(updatedPod, now.AddSeconds(29).UtcDateTime, "450m"));
         cell.DataContext = updatedPod;
         Dispatcher.UIThread.RunJobs();
 
@@ -552,9 +573,34 @@ public sealed class PodMetricCellTests
         bars.Any(bar => IsThemeBrush(bar.Background, "ContainerStatusErrorBrush")).ShouldBeTrue();
         bars.Any(bar => TooltipShowsPercentage(bar, 1)).ShouldBeTrue();
 
+        var previousBarStates = cell.GetVisualDescendants().OfType<Border>().Select(bar => (
+            bar.Height,
+            bar.Background,
+            ToolTip.GetTip(bar),
+            Canvas.GetLeft(bar),
+            Canvas.GetTop(bar))).ToArray();
         fixture.TimeProvider.Advance(TimeSpan.FromSeconds(30));
         fixture.RefreshClock.Tick();
+        var refreshedBars = cell.GetVisualDescendants().OfType<Border>().ToArray();
         MetricBars(cell).Any(bar => ToolTip.GetTip(bar)?.ToString()?.Contains("0.45c", StringComparison.Ordinal) == true).ShouldBeTrue();
+        refreshedBars.Length.ShouldBe(previousBarStates.Length);
+
+        List<int> changedBars = [];
+        for (var index = 0; index < refreshedBars.Length; index++)
+        {
+            var refreshedBar = refreshedBars[index];
+            var previousState = previousBarStates[index];
+            if (refreshedBar.Height != previousState.Height
+                || !Equals(refreshedBar.Background, previousState.Background)
+                || !Equals(ToolTip.GetTip(refreshedBar), previousState.Item3)
+                || Canvas.GetLeft(refreshedBar) != previousState.Item4
+                || Canvas.GetTop(refreshedBar) != previousState.Item5)
+            {
+                changedBars.Add(index);
+            }
+        }
+
+        changedBars.ShouldHaveSingleItem().ShouldBe(MetricsHistoryBuckets.BucketCount - 1);
     }
 
     [AvaloniaFact]

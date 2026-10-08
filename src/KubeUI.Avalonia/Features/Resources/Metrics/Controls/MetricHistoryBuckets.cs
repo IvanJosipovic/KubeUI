@@ -34,7 +34,9 @@ internal static class MetricsHistoryBuckets
         double? limit,
         double chartHeight)
     {
-        var start = end - History;
+        var utcEndTicks = end.ToUniversalTime().Ticks;
+        var alignedEndTicks = ((utcEndTicks + BucketSize.Ticks - 1) / BucketSize.Ticks) * BucketSize.Ticks;
+        var start = new DateTimeOffset(alignedEndTicks, TimeSpan.Zero) - History;
         var values = new double[BucketCount];
         var hasValues = new bool[BucketCount];
 

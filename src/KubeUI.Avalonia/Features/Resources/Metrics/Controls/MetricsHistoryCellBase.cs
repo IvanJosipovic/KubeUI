@@ -379,17 +379,45 @@ public abstract class MetricsHistoryCellBase<TResource> : UserControl, IInitiali
         {
             var data = bars[index];
             var border = _bars[index];
-            border.Width = barWidth;
-            border.Height = data.Height;
-            Canvas.SetLeft(border, index * (barWidth + barGap));
-            Canvas.SetTop(border, chartHeight - data.Height);
-            border.Background = data.LimitState switch
+            var left = index * (barWidth + barGap);
+            var top = chartHeight - data.Height;
+            var background = data.LimitState switch
             {
                 MetricsLimitState.Warning => _warningBrush,
                 MetricsLimitState.Exceeded => _exceededBrush,
                 _ => _normalBrush,
             };
-            ToolTip.SetTip(border, data.Height > 0 ? CreateTooltip(data, limit) : null);
+            var tooltip = data.Height > 0 ? CreateTooltip(data, limit) : null;
+
+            if (border.Width != barWidth)
+            {
+                border.Width = barWidth;
+            }
+
+            if (border.Height != data.Height)
+            {
+                border.Height = data.Height;
+            }
+
+            if (!Canvas.GetLeft(border).Equals(left))
+            {
+                Canvas.SetLeft(border, left);
+            }
+
+            if (!Canvas.GetTop(border).Equals(top))
+            {
+                Canvas.SetTop(border, top);
+            }
+
+            if (!Equals(border.Background, background))
+            {
+                border.Background = background;
+            }
+
+            if (!Equals(ToolTip.GetTip(border), tooltip))
+            {
+                ToolTip.SetTip(border, tooltip);
+            }
         }
     }
 
