@@ -65,11 +65,23 @@ public abstract class PodMetricsHistoryCellBase : MetricsHistoryCellBase<V1Pod>
         Dictionary<string, string> options = new(StringComparer.Ordinal)
         {
             ["namespace"] = pod.Namespace() ?? string.Empty,
-            ["pods"] = System.Text.RegularExpressions.Regex.Escape(pod.Name() ?? string.Empty)
-                .Replace("\\", "\\\\", StringComparison.Ordinal),
+            ["pods"] = ".*",
             ["selector"] = "pod, namespace",
         };
         return CreateMetricRequest(MetricCategory.Pods, options, end);
+    }
+
+    protected override bool MatchesSeries(V1Pod pod, MetricSeries series)
+    {
+        if (!series.Labels.ContainsKey("pod") && !series.Labels.ContainsKey("namespace"))
+        {
+            return true;
+        }
+
+        return series.Labels.TryGetValue("pod", out var podName)
+            && string.Equals(podName, pod.Name(), StringComparison.Ordinal)
+            && series.Labels.TryGetValue("namespace", out var namespaceName)
+            && string.Equals(namespaceName, pod.Namespace(), StringComparison.Ordinal);
     }
 
     protected override double? GetMetricLimit(V1Pod pod)

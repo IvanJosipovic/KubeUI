@@ -556,6 +556,53 @@ public sealed class PodMetricCellTests
     }
 
     [AvaloniaFact]
+    public async Task visible_pod_cells_in_same_namespace_share_prometheus_history_request()
+    {
+        var timestamp = DateTimeOffset.UtcNow.AddMinutes(-2);
+        var queryClient = new FakePrometheusQueryClient
+        {
+            Result = CreatePodMetricResults(
+                ("pod-a", 0.1, 128 * 1024 * 1024d),
+                ("pod-b", 0.4, 256 * 1024 * 1024d),
+                timestamp),
+        };
+        await using var fixture = await MetricCellFixture.CreateAsync(queryClient);
+        var podA = CreatePod("pod-a");
+        var podB = CreatePod("pod-b");
+        var cpuCellA = fixture.CreateCpuCell(podA);
+        var memoryCellA = fixture.CreateMemoryCell(podA);
+        var cpuCellB = fixture.CreateCpuCell(podB);
+        var memoryCellB = fixture.CreateMemoryCell(podB);
+        var content = new StackPanel
+        {
+            Children = { cpuCellA, memoryCellA, cpuCellB, memoryCellB },
+        };
+        using var window = Application.Current.CreateTestWindow(content: content);
+
+        window.Show();
+        cpuCellA.Initialize(fixture.Workspace);
+        memoryCellA.Initialize(fixture.Workspace);
+        cpuCellB.Initialize(fixture.Workspace);
+        memoryCellB.Initialize(fixture.Workspace);
+
+        await TestWait.UntilAsync(
+            () => MetricBars(cpuCellA).Any(bar => ToolTip.GetTip(bar) is not null)
+                && MetricBars(memoryCellA).Any(bar => ToolTip.GetTip(bar) is not null)
+                && MetricBars(cpuCellB).Any(bar => ToolTip.GetTip(bar) is not null)
+                && MetricBars(memoryCellB).Any(bar => ToolTip.GetTip(bar) is not null),
+            timeout: TimeSpan.FromSeconds(5),
+            cancellationToken: TestContext.Current.CancellationToken,
+            beforePoll: () => Dispatcher.UIThread.RunJobs());
+
+        MetricBars(cpuCellA).Any(bar => TooltipShowsPercentage(bar, 0.2)).ShouldBeTrue();
+        MetricBars(memoryCellA).Any(bar => TooltipShowsPercentage(bar, 0.25)).ShouldBeTrue();
+        MetricBars(cpuCellB).Any(bar => TooltipShowsPercentage(bar, 0.8)).ShouldBeTrue();
+        MetricBars(memoryCellB).Any(bar => TooltipShowsPercentage(bar, 0.5)).ShouldBeTrue();
+        queryClient.Queries.ShouldBe(2);
+        queryClient.QueryTexts.ShouldAllBe(query => query.Contains("pod=~\".*\"", StringComparison.Ordinal));
+    }
+
+    [AvaloniaFact]
     public async Task node_prometheus_history_matches_instance_label_when_node_label_is_missing()
     {
         var queryClient = new FakePrometheusQueryClient
@@ -621,11 +668,11 @@ public sealed class PodMetricCellTests
     }
 
     [AvaloniaFact]
-    public async Task prometheus_pod_name_regex_is_escaped_for_promql_string()
+    public async Task prometheus_pod_history_uses_namespace_query_for_cache_reuse()
     {
         var queryClient = new FakePrometheusQueryClient
         {
-            Result = CreateMetricResult("cpuUsage", 1.234),
+            Result = CreateMetricResult("cpuUsage", 1.234, "apicurio.registry"),
         };
         await using var fixture = await MetricCellFixture.CreateAsync(queryClient);
         var cell = fixture.CreateCpuCell(CreatePod("apicurio.registry"));
@@ -641,7 +688,7 @@ public sealed class PodMetricCellTests
             beforePoll: () => Dispatcher.UIThread.RunJobs());
 
         queryClient.QueryTexts.ShouldAllBe(query =>
-            query.Contains("pod=~\"apicurio\\\\\\\\.registry\"", StringComparison.Ordinal));
+            query.Contains("pod=~\".*\"", StringComparison.Ordinal));
     }
 
     private static MetricResultSet CreateNodeMetricResultsWithInstanceLabel(string instance, double cpu, double memory)
@@ -1098,7 +1145,7 @@ public sealed class PodMetricCellTests
         }));
     }
 
-    private static MetricResultSet CreateMetricResult(string queryName, double value) => new()
+    private static MetricResultSet CreateMetricResult(string queryName, double value, string podName = "metrics-pod") => new()
     {
         Metrics = new Dictionary<string, IReadOnlyList<MetricSeries>>(StringComparer.Ordinal)
         {
@@ -1107,6 +1154,11 @@ public sealed class PodMetricCellTests
                 new MetricSeries
                 {
                     Name = queryName,
+                    Labels = new Dictionary<string, string>(StringComparer.Ordinal)
+                    {
+                        ["pod"] = podName,
+                        ["namespace"] = "default",
+                    },
                     Points = [new MetricPoint(DateTimeOffset.UtcNow.AddMinutes(-2), value)],
                 },
             ],
@@ -1124,10 +1176,52 @@ public sealed class PodMetricCellTests
                     new MetricSeries
                     {
                         Name = item.Name,
+                        Labels = new Dictionary<string, string>(StringComparer.Ordinal)
+                        {
+                            ["pod"] = "metrics-pod",
+                            ["namespace"] = "default",
+                        },
                         Points = [new MetricPoint(DateTimeOffset.UtcNow.AddMinutes(-2), item.Value)],
                     },
                 ],
                 StringComparer.Ordinal),
+        };
+    }
+
+    private static MetricResultSet CreatePodMetricResults(
+        (string PodName, double Cpu, double Memory) first,
+        (string PodName, double Cpu, double Memory) second,
+        DateTimeOffset timestamp)
+    {
+        static MetricSeries CreateSeries(string name, string podName, double value, DateTimeOffset timestamp)
+        {
+            return new MetricSeries
+            {
+                Name = name,
+                Labels = new Dictionary<string, string>(StringComparer.Ordinal)
+                {
+                    ["pod"] = podName,
+                    ["namespace"] = "default",
+                },
+                Points = [new MetricPoint(timestamp, value)],
+            };
+        }
+
+        return new MetricResultSet
+        {
+            Metrics = new Dictionary<string, IReadOnlyList<MetricSeries>>(StringComparer.Ordinal)
+            {
+                ["cpuUsage"] =
+                [
+                    CreateSeries("cpuUsage", first.PodName, first.Cpu, timestamp),
+                    CreateSeries("cpuUsage", second.PodName, second.Cpu, timestamp),
+                ],
+                ["memoryUsage"] =
+                [
+                    CreateSeries("memoryUsage", first.PodName, first.Memory, timestamp),
+                    CreateSeries("memoryUsage", second.PodName, second.Memory, timestamp),
+                ],
+            },
         };
     }
 
