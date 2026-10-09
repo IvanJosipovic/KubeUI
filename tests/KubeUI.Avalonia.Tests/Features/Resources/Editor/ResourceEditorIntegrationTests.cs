@@ -220,9 +220,14 @@ public sealed class ResourceEditorIntegrationTests
         textBox.Text.ShouldBe("abcd");
         await vm.ValidateNowCommand.ExecuteAsync(null).WaitAsync(TestContext.Current.CancellationToken);
         vm.HasActionFailureResult.ShouldBeTrue();
+        textBox.IsFocused.ShouldBeTrue();
+        textBox.CaretIndex = textBox.Text.Length;
 
         for (var index = 0; index < 4; index++)
+        {
             window.KeyPress(Key.Back, RawInputModifiers.None, PhysicalKey.Backspace, null);
+            await TestApplicationExtensions.WaitForUiAsync(TestContext.Current.CancellationToken);
+        }
 
         creationTimestamp.StringValue.ShouldBe(string.Empty);
         vm.ValidationErrors.ShouldBeEmpty();
