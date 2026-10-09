@@ -142,7 +142,7 @@ public partial class PortForwarder : ObservableObject, IEquatable<PortForwarder>
             {
                 _activeSockets.Add(socket);
             }
-            _ = Task.Run(() => HandleConnection(socket));
+            _ = HandleConnection(socket);
 
             if (!_isDisposing)
             {

@@ -74,7 +74,7 @@ jobs:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
     - name: Semantic Release
-      uses: cycjimmy/semantic-release-action@v6.0.0
+      uses: cycjimmy/semantic-release-action@v7.1.0
       id: semantic
       with:
         dry_run: true
@@ -111,6 +111,6 @@ jobs:
         Remove-Item -Path dist/website -Recurse -Force
 
     - name: Semantic Release
-      uses: cycjimmy/semantic-release-action@v6.0.0
+      uses: cycjimmy/semantic-release-action@v7.1.0
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
