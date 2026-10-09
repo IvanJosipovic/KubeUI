@@ -477,9 +477,11 @@ public sealed class PodMetricCellTests
     [AvaloniaFact]
     public async Task prometheus_history_cell_refreshes_every_minute()
     {
+        var queryGate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var queryClient = new FakePrometheusQueryClient
         {
             Result = CreateMetricResult("cpuUsage", 1.234),
+            QueryGate = queryGate,
         };
         await using var fixture = await MetricCellFixture.CreateAsync(queryClient);
         var initialTime = fixture.TimeProvider.GetUtcNow();
@@ -509,11 +511,19 @@ public sealed class PodMetricCellTests
 
         fixture.TimeProvider.Advance(TimeSpan.FromSeconds(1));
         fixture.RefreshClock.Tick();
+        queryClient.Queries.ShouldBe(2);
+
+        queryGate.SetResult();
+        await WaitForMetricTooltipAsync(cell, "1.23c");
         await TestWait.UntilAsync(
             () => queryClient.Queries == 4,
             timeout: TimeSpan.FromSeconds(5),
             cancellationToken: TestContext.Current.CancellationToken,
-            beforePoll: () => Dispatcher.UIThread.RunJobs());
+            beforePoll: () =>
+            {
+                Dispatcher.UIThread.RunJobs();
+                fixture.RefreshClock.Tick();
+            });
     }
 
     [AvaloniaFact]
@@ -597,7 +607,11 @@ public sealed class PodMetricCellTests
             () => queryClient.Queries == 4,
             timeout: TimeSpan.FromSeconds(5),
             cancellationToken: TestContext.Current.CancellationToken,
-            beforePoll: () => Dispatcher.UIThread.RunJobs());
+            beforePoll: () =>
+            {
+                Dispatcher.UIThread.RunJobs();
+                fixture.RefreshClock.Tick();
+            });
     }
 
     [AvaloniaFact]
