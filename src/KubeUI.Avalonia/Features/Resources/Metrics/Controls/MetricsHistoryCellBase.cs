@@ -87,6 +87,18 @@ public abstract class MetricsHistoryCellBase<TResource> : UserControl, IInitiali
 
     protected virtual bool MatchesSeries(TResource resource, MetricSeries series) => true;
 
+    private protected virtual Task<MetricHistoryData> AggregatePrometheusHistoryAsync(
+        MetricResultSet result,
+        TResource resource,
+        CancellationToken cancellationToken)
+    {
+        return MetricsHistoryAggregator.AggregateAsync(
+            result,
+            resource,
+            MatchesSeries,
+            cancellationToken);
+    }
+
     /// <summary>Determines whether two snapshots for one resource use the same metrics query target.</summary>
     protected virtual bool IsSameMetricsTarget(TResource previousResource, TResource currentResource) => true;
 
@@ -403,10 +415,9 @@ public abstract class MetricsHistoryCellBase<TResource> : UserControl, IInitiali
             var result = await cluster.Runtime.RequestMetricsAsync(
                 CreatePrometheusRequest(resource, requestEnd),
                 CancellationToken.None).WaitAsync(cancellation.Token).ConfigureAwait(false);
-            var history = await MetricsHistoryAggregator.AggregateAsync(
+            var history = await AggregatePrometheusHistoryAsync(
                 result,
                 resource,
-                MatchesSeries,
                 cancellation.Token).ConfigureAwait(false);
             await Dispatcher.UIThread.InvokeAsync(() =>
             {

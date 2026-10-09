@@ -25,6 +25,76 @@ namespace KubeUI.Avalonia.Tests.Resources.Workloads.v1.Pod;
 public sealed class PodMetricCellTests
 {
     [Fact]
+    public async Task prometheus_history_index_sums_container_series_by_pod_and_keeps_unlabeled_series()
+    {
+        var timestamp = DateTimeOffset.Parse("2026-10-08T12:00:00Z");
+        var result = new MetricResultSet
+        {
+            Metrics = new Dictionary<string, IReadOnlyList<MetricSeries>>(StringComparer.Ordinal)
+            {
+                ["cpuUsage"] =
+                [
+                    CreateLabeledSeries("cpuUsage", "pod-a", "default", timestamp, 0.2),
+                    CreateLabeledSeries("cpuUsage", "pod-a", "default", timestamp, 0.3),
+                    CreateLabeledSeries("cpuUsage", "pod-b", "default", timestamp, 0.8),
+                    new MetricSeries
+                    {
+                        Name = "cpuUsage",
+                        Points = [new MetricPoint(timestamp, 0.1)],
+                    },
+                    new MetricSeries
+                    {
+                        Name = "cpuUsage",
+                        Labels = new Dictionary<string, string>(StringComparer.Ordinal) { ["pod"] = "pod-a" },
+                        Points = [new MetricPoint(timestamp, 100)],
+                    },
+                ],
+                ["memoryUsage"] =
+                [
+                    CreateLabeledSeries("memoryUsage", "pod-a", "default", timestamp, 100),
+                    new MetricSeries
+                    {
+                        Name = "memoryUsage",
+                        Points = [new MetricPoint(timestamp, 5)],
+                    },
+                ],
+            },
+        };
+        var index = new PodPrometheusHistoryIndex();
+
+        var podA = await index.GetHistoryAsync(result, "default", "pod-a", TestContext.Current.CancellationToken);
+        var podB = await index.GetHistoryAsync(result, "default", "pod-b", TestContext.Current.CancellationToken);
+
+        podA.Cpu.ShouldHaveSingleItem().Value.ShouldBe(0.6);
+        podA.Memory.ShouldHaveSingleItem().Value.ShouldBe(105);
+        podB.Cpu.ShouldHaveSingleItem().Value.ShouldBe(0.9);
+        podB.Memory.ShouldHaveSingleItem().Value.ShouldBe(5);
+        index.IndexBuildCount.ShouldBe(1);
+    }
+
+    [Fact]
+    public async Task prometheus_history_index_bounds_retained_result_sets()
+    {
+        var index = new PodPrometheusHistoryIndex();
+        MetricResultSet[] results =
+        [
+            .. Enumerable.Range(0, 5).Select(podIndex => CreatePodMetricResults(
+                ($"pod-{podIndex}", 0.2, 100),
+                ($"pod-{podIndex}", 0.4, 200),
+                DateTimeOffset.UtcNow)),
+        ];
+
+        foreach (var (result, podIndex) in results.Select((result, podIndex) => (result, podIndex)))
+        {
+            await index.GetHistoryAsync(result, "default", $"pod-{podIndex}", TestContext.Current.CancellationToken);
+        }
+
+        await index.GetHistoryAsync(results[0], "default", "pod-0", TestContext.Current.CancellationToken);
+
+        index.IndexBuildCount.ShouldBe(6);
+    }
+
+    [Fact]
     public void history_buckets_keep_peak_values_and_classify_warning_and_limit_samples()
     {
         var end = DateTimeOffset.Parse("2026-09-23T12:00:00Z");
@@ -599,7 +669,59 @@ public sealed class PodMetricCellTests
         MetricBars(cpuCellB).Any(bar => TooltipShowsPercentage(bar, 0.8)).ShouldBeTrue();
         MetricBars(memoryCellB).Any(bar => TooltipShowsPercentage(bar, 0.5)).ShouldBeTrue();
         queryClient.Queries.ShouldBe(2);
+        fixture.PrometheusHistoryIndex.IndexBuildCount.ShouldBe(1);
         queryClient.QueryTexts.ShouldAllBe(query => query.Contains("pod=~\".*\"", StringComparison.Ordinal));
+    }
+
+    [AvaloniaFact]
+    public async Task recycled_prometheus_cell_reuses_indexed_namespace_history()
+    {
+        var timestamp = DateTimeOffset.UtcNow.AddMinutes(-2);
+        var queryClient = new FakePrometheusQueryClient
+        {
+            Result = CreatePodMetricResults(
+                ("pod-a", 0.1, 128 * 1024 * 1024d),
+                ("pod-b", 0.4, 256 * 1024 * 1024d),
+                timestamp),
+        };
+        await using var fixture = await MetricCellFixture.CreateAsync(queryClient);
+        var cell = fixture.CreateCpuCell(CreatePod("pod-a"));
+        using var window = Application.Current.CreateTestWindow(content: cell);
+
+        window.Show();
+        cell.Initialize(fixture.Workspace);
+        await WaitForMetricTooltipAsync(cell, "0.1c");
+
+        cell.DataContext = CreatePod("pod-b");
+        await WaitForMetricTooltipAsync(cell, "0.4c");
+
+        queryClient.Queries.ShouldBe(2);
+        fixture.PrometheusHistoryIndex.IndexBuildCount.ShouldBe(1);
+        MetricBars(cell).Any(bar => ToolTip.GetTip(bar)?.ToString()?.Contains("0.1c", StringComparison.Ordinal) == true).ShouldBeFalse();
+    }
+
+    [AvaloniaFact]
+    public async Task recycled_metrics_server_cell_reads_the_new_pods_retained_snapshot()
+    {
+        var podA = CreatePod("pod-a");
+        var podB = CreatePod("pod-b");
+        var sampleTime = DateTime.UtcNow.AddMinutes(-2);
+        await using var fixture = await MetricCellFixture.CreateAsync(new FakePrometheusQueryClient());
+        fixture.UseMetricsServerSamples(
+            CreatePodMetricSample(podA, sampleTime, "100m"),
+            CreatePodMetricSample(podB, sampleTime, "450m"));
+        var cell = fixture.CreateCpuCell(podA);
+        using var window = Application.Current.CreateTestWindow(content: cell);
+
+        window.Show();
+        cell.Initialize(fixture.Workspace);
+        await WaitForMetricTooltipAsync(cell, "0.1c");
+
+        cell.DataContext = podB;
+        await WaitForMetricTooltipAsync(cell, "0.45c");
+
+        fixture.QueryClient.Queries.ShouldBe(0);
+        MetricBars(cell).Any(bar => ToolTip.GetTip(bar)?.ToString()?.Contains("0.1c", StringComparison.Ordinal) == true).ShouldBeFalse();
     }
 
     [AvaloniaFact]
@@ -1165,6 +1287,25 @@ public sealed class PodMetricCellTests
         },
     };
 
+    private static MetricSeries CreateLabeledSeries(
+        string name,
+        string podName,
+        string namespaceName,
+        DateTimeOffset timestamp,
+        double value)
+    {
+        return new MetricSeries
+        {
+            Name = name,
+            Labels = new Dictionary<string, string>(StringComparer.Ordinal)
+            {
+                ["pod"] = podName,
+                ["namespace"] = namespaceName,
+            },
+            Points = [new MetricPoint(timestamp, value)],
+        };
+    }
+
     private static MetricResultSet CreateMetricResults(params (string Name, double Value)[] values)
     {
         return new MetricResultSet
@@ -1333,7 +1474,7 @@ public sealed class PodMetricCellTests
         }
 
         public ThreadCheckingPodHistoryCell(IUiRefreshClock refreshClock, TimeProvider timeProvider, bool blockFirstAggregation)
-            : base(refreshClock, timeProvider)
+            : base(refreshClock, timeProvider, new PodPrometheusHistoryIndex())
         {
             _blockFirstAggregation = blockFirstAggregation;
         }
@@ -1393,6 +1534,7 @@ public sealed class PodMetricCellTests
             RefreshClock = refreshClock;
             TimeProvider = timeProvider;
             QueryClient = queryClient;
+            PrometheusHistoryIndex = new PodPrometheusHistoryIndex();
         }
 
         public ClusterWorkspace Workspace { get; }
@@ -1403,11 +1545,13 @@ public sealed class PodMetricCellTests
 
         public FakePrometheusQueryClient QueryClient { get; }
 
+        public PodPrometheusHistoryIndex PrometheusHistoryIndex { get; }
+
         public PodCpuHistoryCell CreateCpuCell(V1Pod pod)
-            => new(RefreshClock, TimeProvider) { DataContext = pod };
+            => new(RefreshClock, TimeProvider, PrometheusHistoryIndex) { DataContext = pod };
 
         public PodMemoryHistoryCell CreateMemoryCell(V1Pod pod)
-            => new(RefreshClock, TimeProvider) { DataContext = pod };
+            => new(RefreshClock, TimeProvider, PrometheusHistoryIndex) { DataContext = pod };
 
         public NodeCpuHistoryCell CreateNodeCpuCell(V1Node node)
             => new(RefreshClock, TimeProvider) { DataContext = node };

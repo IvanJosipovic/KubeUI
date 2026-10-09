@@ -6,8 +6,9 @@ public sealed class MetricsHistoryMemoryCellView : PodMetricsHistoryCellBase
 {
     public MetricsHistoryMemoryCellView(
         IUiRefreshClock refreshClock,
-        TimeProvider timeProvider)
-        : base(refreshClock, timeProvider)
+        TimeProvider timeProvider,
+        PodPrometheusHistoryIndex prometheusHistoryIndex)
+        : base(refreshClock, timeProvider, prometheusHistoryIndex)
     {
     }
 

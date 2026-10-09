@@ -9,9 +9,15 @@ namespace KubeUI.Avalonia.Resources.Workloads.v1.Pod;
 /// <summary>Provides Pod metric history and summed container limits to the shared history cell.</summary>
 public abstract class PodMetricsHistoryCellBase : MetricsHistoryCellBase<V1Pod>
 {
-    protected PodMetricsHistoryCellBase(IUiRefreshClock refreshClock, TimeProvider timeProvider)
+    private readonly PodPrometheusHistoryIndex _prometheusHistoryIndex;
+
+    protected PodMetricsHistoryCellBase(
+        IUiRefreshClock refreshClock,
+        TimeProvider timeProvider,
+        PodPrometheusHistoryIndex prometheusHistoryIndex)
         : base(refreshClock, timeProvider)
     {
+        _prometheusHistoryIndex = prometheusHistoryIndex;
     }
 
     protected override MetricResultSet CaptureMetricsServerHistory(
@@ -82,6 +88,18 @@ public abstract class PodMetricsHistoryCellBase : MetricsHistoryCellBase<V1Pod>
             && string.Equals(podName, pod.Name(), StringComparison.Ordinal)
             && series.Labels.TryGetValue("namespace", out var namespaceName)
             && string.Equals(namespaceName, pod.Namespace(), StringComparison.Ordinal);
+    }
+
+    private protected override Task<MetricHistoryData> AggregatePrometheusHistoryAsync(
+        MetricResultSet result,
+        V1Pod pod,
+        CancellationToken cancellationToken)
+    {
+        return _prometheusHistoryIndex.GetHistoryAsync(
+            result,
+            pod.Namespace(),
+            pod.Name(),
+            cancellationToken);
     }
 
     protected override double? GetMetricLimit(V1Pod pod)

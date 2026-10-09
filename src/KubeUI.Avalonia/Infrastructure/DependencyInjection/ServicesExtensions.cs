@@ -10,6 +10,7 @@ using KubeUI.Avalonia.Infrastructure.Logging;
 using KubeUI.Avalonia.Infrastructure.Platform;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Infrastructure.Threading;
+using KubeUI.Avalonia.Resources.Workloads.v1.Pod;
 using KubeUI.Avalonia.Resources.Workloads.v1.Pod.Services;
 using KubeUI.Avalonia.Resources.Workloads.v1.Pod.ViewModels;
 using KubeUI.Avalonia.Services.Icons;
@@ -33,6 +34,7 @@ public static partial class KubeUIShellServiceCollectionExtensions
         services.AddSingleton<IPlatformServices, AvaloniaPlatformServices>();
         services.AddSingleton<IUiRefreshClock, AvaloniaUiRefreshClock>();
         services.AddSingleton(TimeProvider.System);
+        services.AddSingleton<PodPrometheusHistoryIndex>();
         services.AddSingleton<Instrumentation>();
         services.AddSingleton<IYamlValidationService, YamlSyntaxValidationService>();
         services.AddSingleton<ILogSink, LogSink>();
