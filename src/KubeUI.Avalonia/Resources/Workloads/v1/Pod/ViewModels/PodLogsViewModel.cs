@@ -34,8 +34,7 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
     private bool _disposed;
     private readonly object _outputEntriesGate = new();
     private readonly List<PodLogOutputEntry> _outputEntries = [];
-    private readonly object _streamsGate = new();
-    private readonly List<Stream> _streams = [];
+    private readonly object _streamReadersGate = new();
     private readonly List<StreamReader> _streamReaders = [];
     private readonly ConcurrentDictionary<CancellationTokenSource, int> _readerCounts = new();
     private bool _hasLoadedSession;
@@ -579,13 +578,12 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
             reader = new StreamReader(stream);
             stream = null;
             var registered = false;
-            lock (_streamsGate)
+            lock (_streamReadersGate)
             {
                 if (!_disposed
                     && !connectionCts.IsCancellationRequested
                     && ReferenceEquals(_connectionCts, connectionCts))
                 {
-                    _streams.Add(reader.BaseStream);
                     _streamReaders.Add(reader);
                     registered = true;
                 }
@@ -1360,23 +1358,15 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
         }
 
         StreamReader[] streamReaders;
-        Stream[] streams;
-        lock (_streamsGate)
+        lock (_streamReadersGate)
         {
             streamReaders = _streamReaders.ToArray();
-            streams = _streams.ToArray();
             _streamReaders.Clear();
-            _streams.Clear();
         }
 
         for (var i = 0; i < streamReaders.Length; i++)
         {
             streamReaders[i].Dispose();
-        }
-
-        for (var i = 0; i < streams.Length; i++)
-        {
-            streams[i].Dispose();
         }
 
         _connectionCts = null;
@@ -1389,6 +1379,20 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
         if (updateConnectionState)
         {
             IsConnected = false;
+        }
+    }
+
+    private void ReleaseStreamReader(StreamReader reader)
+    {
+        bool ownsReader;
+        lock (_streamReadersGate)
+        {
+            ownsReader = _streamReaders.Remove(reader);
+        }
+
+        if (ownsReader)
+        {
+            reader.Dispose();
         }
     }
 
