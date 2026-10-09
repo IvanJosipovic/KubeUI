@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using DynamicData;
 using k8s;
 using k8s.KubeConfigModels;
@@ -13,6 +14,7 @@ public interface IClusterRuntime
     ClusterStatus Status { get; set; }
     string? LastError { get; set; }
     bool IsMetricsAvailable { get; }
+    ActiveMetricsBackend ActiveMetricsBackend { get; }
     bool ListNamespaces { get; set; }
     event Action<WatchEventType, GroupApiVersionKind, IKubernetesObject<V1ObjectMeta>>? OnChange;
     event Action<IClusterRuntime>? NamespaceSelectionRequired;
@@ -29,6 +31,12 @@ public interface IClusterRuntime
     ReadOnlyObservableCollection<V1Namespace> Namespaces { get; }
     ObservableCollection<NodeMetrics> NodeMetrics { get; }
     ObservableCollection<PodMetrics> PodMetrics { get; }
+    /// <summary>Gets an immutable snapshot of retained metrics for one namespaced Pod.</summary>
+    ImmutableArray<PodMetrics> GetPodMetricsSnapshot(string? namespaceName, string podName);
+    /// <summary>Gets an immutable snapshot of retained metrics for one Node.</summary>
+    ImmutableArray<NodeMetrics> GetNodeMetricsSnapshot(string nodeName);
+    Task<MetricResultSet> RequestMetricsAsync(MetricRequest request, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<MetricProviderInfo>> GetAvailablePrometheusProvidersAsync();
     ObservableCollection<PortForwarder> PortForwarders { get; }
     IClusterAuthorization Permissions { get; }
     bool IsResourceNamespaced(GroupApiVersionKind kind);

@@ -21,4 +21,4 @@ KubeUI exposes resource-specific actions such as cordon, uncordon, and drain for
 
 ## Metrics
 
-Pod CPU and memory values and the cluster overview metrics require metrics data to be available from the Kubernetes cluster. KubeUI does not generate those values when the cluster has no metrics provider.
+Pod CPU and memory values and the cluster overview metrics require metrics data to be available from the Kubernetes cluster. KubeUI does not generate those values when the cluster has no metrics provider. See [Monitoring](./monitoring) to choose Kubernetes Metrics Server or a Prometheus provider and inspect Pod metrics.

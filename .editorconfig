@@ -227,7 +227,7 @@ dotnet_diagnostic.AVA2001.severity = error
 csharp_using_directive_placement = outside_namespace:silent
 csharp_prefer_simple_using_statement = true:suggestion
 csharp_prefer_braces = true:silent
-csharp_style_namespace_declarations = block_scoped:silent
+csharp_style_namespace_declarations = file_scoped:silent
 csharp_style_prefer_method_group_conversion = true:silent
 csharp_style_prefer_top_level_statements = true:silent
 csharp_style_prefer_primary_constructors = true:suggestion
@@ -246,7 +246,7 @@ dotnet_diagnostic.IDE0001.severity = error
 dotnet_diagnostic.IDE0002.severity = error
 dotnet_diagnostic.IDE0004.severity = error
 #dotnet_diagnostic.IDE0005.severity = error
-dotnet_diagnostic.IDE0007.severity = error
+dotnet_diagnostic.IDE0007.severity = suggestion
 dotnet_diagnostic.IDE0051.severity = error
 dotnet_diagnostic.IDE0052.severity = error
 dotnet_diagnostic.IDE0059.severity = error
@@ -255,6 +255,13 @@ dotnet_diagnostic.IDE0060.severity = error
 dotnet_diagnostic.CS4014.severity = error
 
 # Xaml files
+
+# IDE0005: Using directive is unnecessary.
+dotnet_diagnostic.IDE0005.severity = error
+
+# IDE0330: Use 'System.Threading.Lock'
+dotnet_diagnostic.IDE0330.severity = suggestion
+
 [*.{xaml,axaml}]
 indent_size = 2
 end_of_line = lf

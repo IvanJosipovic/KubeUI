@@ -88,7 +88,8 @@ internal static class PodLogTopologyComparer
 
         var currentUid = current.Metadata?.Uid;
         var nextUid = next.Metadata?.Uid;
-        if (!string.IsNullOrWhiteSpace(currentUid) || !string.IsNullOrWhiteSpace(nextUid))
+        if (!string.IsNullOrWhiteSpace(currentUid)
+            && !string.IsNullOrWhiteSpace(nextUid))
         {
             return string.Equals(currentUid, nextUid, StringComparison.Ordinal);
         }

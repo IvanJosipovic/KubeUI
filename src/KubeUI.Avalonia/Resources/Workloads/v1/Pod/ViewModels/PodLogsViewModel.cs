@@ -32,7 +32,7 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
     private readonly SemaphoreSlim _connectionGate = new(1, 1);
     private CancellationTokenSource? _connectionCts;
     private bool _disposed;
-    private readonly object _outputEntriesGate = new();
+    private readonly Lock _outputEntriesGate = new();
     private readonly List<PodLogOutputEntry> _outputEntries = [];
     private readonly object _streamReadersGate = new();
     private readonly List<StreamReader> _streamReaders = [];

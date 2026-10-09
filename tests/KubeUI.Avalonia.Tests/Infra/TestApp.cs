@@ -104,7 +104,7 @@ public class TestApp : App, IDisposable
             services.Replace(ServiceDescriptor.Singleton<ISettingsService, TestSettingsService>());
             services.Replace(ServiceDescriptor.Singleton<ISettingsPersistence, TestSettingsPersistence>());
             services.Replace(ServiceDescriptor.Singleton<IPlatformServices, TestPlatformServices>());
-            services.Replace(ServiceDescriptor.Singleton<TimeProvider>(new TestTimeProvider(DateTimeOffset.UnixEpoch)));
+            services.Replace(ServiceDescriptor.Singleton(CreateTimeProvider()));
             services.RemoveAll<IClusterSettingsStore>();
             services.AddSingleton(sp => sp.GetRequiredService<ISettingsService>().Clusters);
             services.RemoveAll<ClusterWorkspaceCatalog>();
@@ -137,6 +137,7 @@ public class TestApp : App, IDisposable
             }));
             services.Replace(ServiceDescriptor.Singleton<IKubeConfigPathProvider>(
                 new KubernetesTestKubeConfigPathProvider(kubeConfigPath)));
+            ConfigureTestServices(services);
         });
 
         var host = builder.Build();
@@ -172,6 +173,12 @@ public class TestApp : App, IDisposable
         public Task<IStorageFile?> SaveFilePickerAsync(FilePickerSaveOptions options)
             => Task.FromResult<IStorageFile?>(null);
     }
+
+    protected virtual void ConfigureTestServices(IServiceCollection services)
+    {
+    }
+
+    protected virtual TimeProvider CreateTimeProvider() => new TestTimeProvider(DateTimeOffset.UnixEpoch);
 
     private sealed class TestTimeProvider : TimeProvider
     {

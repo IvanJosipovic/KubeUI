@@ -1,31 +1,35 @@
 using k8s.Models;
+using KubeUI.Avalonia.Features.Resources.Metrics.Controls;
+using KubeUI.Avalonia.Features.Resources.Properties;
 using KubeUI.Avalonia.Features.Resources.Properties.Controls;
 
 namespace KubeUI.Avalonia.Resources.Core.v1.Node;
 
-public sealed class PropertiesView : ViewBase<V1Node>
+public sealed class PropertiesView : ViewBase<ResourcePropertiesViewModel<V1Node>>
 {
-    protected override object Build(V1Node vm)
+    protected override object Build(ResourcePropertiesViewModel<V1Node> vm)
     {
         ArgumentNullException.ThrowIfNull(vm);
+        var resource = vm.Object ?? throw new InvalidOperationException("Node properties require a resource.");
 
         return new StackPanel()
             .Children(
                 new PropertyItem()
                     .Key(Assets.Resources.NodePropertiesView_Operating_System!)
-                    .Value(vm.Status?.NodeInfo?.OperatingSystem ?? ""),
+                    .BindValue(vm, static resource => resource?.Status?.NodeInfo?.OperatingSystem ?? ""),
                 new PropertyItem()
                     .Key(Assets.Resources.NodePropertiesView_Architecture!)
-                    .Value(vm.Status?.NodeInfo?.Architecture ?? ""),
+                    .BindValue(vm, static resource => resource?.Status?.NodeInfo?.Architecture ?? ""),
                 new PropertyItem()
                     .Key(Assets.Resources.NodePropertiesView_Kernel_Version!)
-                    .Value(vm.Status?.NodeInfo?.KernelVersion ?? ""),
+                    .BindValue(vm, static resource => resource?.Status?.NodeInfo?.KernelVersion ?? ""),
                 new PropertyItem()
                     .Key(Assets.Resources.NodePropertiesView_Container_Runtime!)
-                    .Value(vm.Status?.NodeInfo?.ContainerRuntimeVersion ?? ""),
+                    .BindValue(vm, static resource => resource?.Status?.NodeInfo?.ContainerRuntimeVersion ?? ""),
                 new PropertyItem()
                     .Key(Assets.Resources.NodePropertiesView_Kubelet_Version!)
-                    .Value(vm.Status?.NodeInfo?.KubeletVersion ?? ""),
+                    .BindValue(vm, static resource => resource?.Status?.NodeInfo?.KubeletVersion ?? ""),
+                new MetricsControl { DataContext = resource },
                 new ExpandableSection()
                     .Header(Assets.Resources.Shared_Status!)
                     .Content(
@@ -33,13 +37,13 @@ public sealed class PropertiesView : ViewBase<V1Node>
                             .Children(
                                 new PropertyItem()
                                     .Key(Assets.Resources.NodePropertiesView_Addresses!)
-                                    .Value(vm.Status?.Addresses?.Count ?? 0),
+                                    .BindValue(vm, static resource => resource?.Status?.Addresses?.Count ?? 0),
                                 new PropertyItem()
                                     .Key(Assets.Resources.NodePropertiesView_Taints!)
-                                    .Value(vm.Spec?.Taints?.Count ?? 0),
+                                    .BindValue(vm, static resource => resource?.Spec?.Taints?.Count ?? 0),
                                 new PropertyItem()
                                     .Key(Assets.Resources.Shared_Conditions!)
-                                    .Value(vm.Status?.Conditions?.Count ?? 0))),
+                                    .BindValue(vm, static resource => resource?.Status?.Conditions?.Count ?? 0))),
                 new ExpandableSection()
                     .Header(Assets.Resources.Shared_Resources!)
                     .Content(
@@ -47,9 +51,9 @@ public sealed class PropertiesView : ViewBase<V1Node>
                             .Children(
                                 new PropertyItem()
                                     .Key(Assets.Resources.Shared_Capacity_Entries!)
-                                    .Value(vm.Status?.Capacity?.Count ?? 0),
+                                    .BindValue(vm, static resource => resource?.Status?.Capacity?.Count ?? 0),
                                 new PropertyItem()
                                     .Key(Assets.Resources.NodePropertiesView_Allocatable_Entries!)
-                                    .Value(vm.Status?.Allocatable?.Count ?? 0))));
+                                    .BindValue(vm, static resource => resource?.Status?.Allocatable?.Count ?? 0))));
     }
 }

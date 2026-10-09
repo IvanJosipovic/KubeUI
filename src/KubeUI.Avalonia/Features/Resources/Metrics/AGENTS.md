@@ -1,0 +1,17 @@
+# Metrics feature guidance
+
+- Keep metrics views in C# Avalonia code using compiled bindings and fluent declarative composition.
+- Keep metrics lifecycle, cancellation, cache invalidation, chart disposal, and selected-tab state scoped to the owning control or workspace.
+- Do not add XAML event handlers, reflection, mutable static timers, or direct view-to-runtime calls from event handlers.
+- User-facing labels and status text belong in `Assets/Resources.resx` and must be accessed through generated resources.
+- Metrics Server and Prometheus are both supported backends; provider fallback and unavailable/error states must remain visible and testable.
+- Pod history cells use namespace-scoped Prometheus requests shared through the metrics service cache, then select samples by exact pod and namespace labels; preserve request sharing to avoid per-row query bursts while scrolling.
+- Recycled Pod cells share a bounded index per Prometheus result set so CPU and memory cells do not repeatedly scan the full namespace response; keep the index build off the UI thread and validate with the Pod history benchmark.
+- Kubernetes Metrics Server charts aggregate cached PodMetrics for namespaces and selector-based workloads (Deployment, StatefulSet, DaemonSet, ReplicaSet, and Job); PVC and Ingress metrics remain unsupported by this backend.
+- Resource-list history cells share the generic `MetricsHistoryCellBase<TResource>` visuals, bucketing, cancellation, refresh, and tooltip behavior; keep resource-specific sample selection, Prometheus filters, and limits in resource adapters.
+- Subscribe history cells to the shared refresh clock only while attached, effectively visible, and inside the effective viewport; stop scheduling new refreshes offscreen and resume immediately when visible again.
+- Preserve metric history and its refresh cadence across snapshots of the same resource and metrics target; re-render existing samples with updated limits, invalidating only when resource identity, backend, or query target changes.
+- Align history buckets to fixed five-minute boundaries and update only changed bar properties so 30-second samples do not redraw the whole cell.
+- Read immutable per-resource Metrics Server snapshots and aggregate both backends off the UI thread; keep Avalonia control and bar updates on the UI thread.
+- Azure Managed Prometheus uses Azure CLI authentication and a selected Azure Monitor workspace. Never persist access tokens; obtain fresh credentials for query requests.
+- UI tests must use rendered controls, `TestClusterGenerator`, observable predicates, task gates, or `TestWait`; do not use `Task.Delay` or `Thread.Sleep`.

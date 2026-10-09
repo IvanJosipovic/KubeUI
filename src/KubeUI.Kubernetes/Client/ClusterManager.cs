@@ -21,7 +21,7 @@ public sealed partial class ClusterManager : ObservableObject, IClusterRuntimeCa
     private readonly IThreadDispatcher _dispatcher;
     private readonly IKubeConfigPathProvider _kubeConfigPathProvider;
     private readonly IDictionary<string, FileSystemWatcher> _fileWatchers = new Dictionary<string, FileSystemWatcher>(StringComparer.Ordinal);
-    private readonly object _syncRoot = new();
+    private readonly Lock _syncRoot = new();
 
     public ObservableCollection<IClusterRuntime> Clusters { get; } = new ObservableSortedCollection<IClusterRuntime>(new ClusterComparer());
 

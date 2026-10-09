@@ -12,7 +12,7 @@ public partial class PortForwarder : ObservableObject, IEquatable<PortForwarder>
     private readonly TcpListener _listener;
     private readonly IPortForwardSessionFactory _sessionFactory;
     private readonly HashSet<Socket> _activeSockets = [];
-    private readonly object _activeSocketsGate = new();
+    private readonly Lock _activeSocketsGate = new();
 
     public string Name { get; private set; }
 

@@ -30,19 +30,41 @@ public partial class Cluster
         var pf = new PortForwarder(this, @namespace, localPort: 0, _portForwardSessionFactory);
         pf.SetService(serviceName, servicePort);
 
-        var existing = FindPortForwarder(pf);
+        return AddOrReusePortForwarderOnDispatcher(pf);
+    }
+
+    private PortForwarder AddOrReusePortForwarderOnDispatcher(PortForwarder candidate)
+    {
+        PortForwarder? result = null;
+        _dispatcher.Invoke(() => result = AddOrReusePortForwarder(candidate));
+        return result!;
+    }
+
+    private PortForwarder AddOrReusePortForwarder(PortForwarder candidate)
+    {
+        var existing = FindPortForwarder(candidate);
         if (existing != null)
         {
-            pf.Dispose();
-            return existing;
+            if (string.Equals(existing.Status, "Active", StringComparison.Ordinal))
+            {
+                candidate.Dispose();
+                return existing;
+            }
+
+            RemovePortForwardCore(existing);
         }
 
-        PortForwarders.Add(pf);
-        pf.Start();
-        return pf;
+        PortForwarders.Add(candidate);
+        candidate.Start();
+        return candidate;
     }
 
     public void RemovePortForward(PortForwarder pf)
+    {
+        _dispatcher.Invoke(() => RemovePortForwardCore(pf));
+    }
+
+    private void RemovePortForwardCore(PortForwarder pf)
     {
         pf.Stop();
         PortForwarders.Remove(pf);

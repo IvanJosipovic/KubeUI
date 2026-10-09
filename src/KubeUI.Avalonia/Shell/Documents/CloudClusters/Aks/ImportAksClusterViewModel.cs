@@ -72,15 +72,15 @@ public sealed partial class ImportAksClusterViewModel : ViewModelBase
 
             if (authenticationStatus.AzureCliSignedIn)
             {
-                if (!string.IsNullOrWhiteSpace(authenticationStatus.AzureCliUsername) || !string.IsNullOrWhiteSpace(authenticationStatus.AzureCliTenantId))
+                if (!string.IsNullOrWhiteSpace(authenticationStatus.Username) || !string.IsNullOrWhiteSpace(authenticationStatus.TenantId))
                 {
                     statusText = string.Concat(
                         statusText,
                         Environment.NewLine,
                         string.Format(
                             Assets.Resources.ImportAksClusterView_AccountFormat,
-                            authenticationStatus.AzureCliUsername ?? "(unknown)",
-                            authenticationStatus.AzureCliTenantId ?? "(unknown)"));
+                            authenticationStatus.Username ?? "(unknown)",
+                            authenticationStatus.TenantId ?? "(unknown)"));
                 }
             }
 
