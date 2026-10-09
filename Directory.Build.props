@@ -7,7 +7,7 @@
 
     <EnableAvaloniaXamlCompilation>false</EnableAvaloniaXamlCompilation>
 
-    <WarningsAsErrors>$(WarningsAsErrors);CA1001</WarningsAsErrors>
+    <WarningsAsErrors>$(WarningsAsErrors);CA1001;CS0618</WarningsAsErrors>
 
     <AnalysisLevel>latest</AnalysisLevel>
     <AnalysisMode>Recommended</AnalysisMode>
