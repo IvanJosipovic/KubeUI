@@ -2649,10 +2649,6 @@
     <value>Connecting to {0}</value>
     <comment/>
   </data>
-  <data name="MRDiffDetectionView_Monitoring" xml:space="preserve">
-    <value>Monitoring {0}</value>
-    <comment/>
-  </data>
   <data name="MRDiffDetectionView_RowLimitReached" xml:space="preserve">
     <value>Reached the {0:N0}-row limit. Existing rows continue updating; clear results to collect new rows.</value>
     <comment/>

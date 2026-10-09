@@ -31,9 +31,23 @@ public sealed class MRDiffDetectionViewTests
         };
 
         var root = view.Child.ShouldBeOfType<Grid>();
-        var toolbar = root.Children.OfType<StackPanel>().ShouldHaveSingleItem();
-        toolbar.Children.OfType<ComboBox>().ShouldHaveSingleItem();
-        toolbar.Children.OfType<TextBox>().ShouldHaveSingleItem();
+        var toolbar = root.Children.OfType<Grid>().ShouldHaveSingleItem();
+        toolbar.MinHeight.ShouldBe(32d);
+        toolbar.Margin.Top.ShouldBe(2d);
+        toolbar.Margin.Bottom.ShouldBe(2d);
+
+        var providerSelector = toolbar.Children.OfType<ComboBox>().ShouldHaveSingleItem();
+        providerSelector.VerticalAlignment.ShouldBe(global::Avalonia.Layout.VerticalAlignment.Stretch);
+
+        var searchBox = toolbar.Children.OfType<TextBox>().ShouldHaveSingleItem();
+        searchBox.VerticalAlignment.ShouldBe(global::Avalonia.Layout.VerticalAlignment.Stretch);
+        searchBox.VerticalContentAlignment.ShouldBe(global::Avalonia.Layout.VerticalAlignment.Center);
+        searchBox.Background.ShouldBe(global::Avalonia.Media.Brushes.Transparent);
+
+        toolbar.Measure(new Size(1000, 40));
+        toolbar.Arrange(new Rect(0, 0, 1000, 40));
+        providerSelector.Bounds.Height.ShouldBe(searchBox.Bounds.Height);
+
         toolbar.Children.OfType<TextBlock>().ShouldHaveSingleItem();
         toolbar.Children.OfType<Button>()
             .ShouldHaveSingleItem()

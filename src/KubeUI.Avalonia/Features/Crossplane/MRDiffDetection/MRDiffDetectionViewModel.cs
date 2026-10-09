@@ -408,7 +408,7 @@ public sealed partial class MRDiffDetectionViewModel : ViewModelBase, IInitializ
         SetStatus(string.Format(Assets.Resources.MRDiffDetectionView_Connecting!, provider.Name), generation);
         try
         {
-            SetMonitoringStatus(provider.Name, generation);
+            SetMonitoringStatus(generation);
             await _monitor.StartAsync(
                 cluster.Runtime,
                 provider.Resource,
@@ -651,7 +651,7 @@ public sealed partial class MRDiffDetectionViewModel : ViewModelBase, IInitializ
         }
     }
 
-    private void SetMonitoringStatus(string providerName, long generation)
+    private void SetMonitoringStatus(long generation)
     {
         if (Volatile.Read(ref _rowLimitGeneration) == generation)
         {
@@ -663,7 +663,7 @@ public sealed partial class MRDiffDetectionViewModel : ViewModelBase, IInitializ
         }
         else
         {
-            SetStatus(string.Format(Assets.Resources.MRDiffDetectionView_Monitoring!, providerName), generation);
+            SetStatus(string.Empty, generation);
         }
     }
 
