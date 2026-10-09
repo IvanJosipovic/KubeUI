@@ -20,7 +20,8 @@ References:
 ### Data binding
 - Use compiled bindings only on all binding scopes.
 - Prefer `CompiledBinding` or typed binding helpers; they avoid reflection when accessing ViewModel members.
-- Never use `new Binding()` (runtime/reflection binding) when compiled binding can express the required source and path.
+- Use fluent short-form compiled-binding extensions when the target property supports them, for example `.Selection(vm, x => x.SelectionModel)`. Keep `CompiledBinding.Create(...)` for APIs that require a binding object, such as style setters, `MultiBinding`, or binding-valued properties without a short-form extension.
+- Never use `new Binding()` when compiled binding can express the required source and path.
 - Use `new Binding()` only when compiled binding cannot represent the required dynamic path, source mode, or binding feature; document that limitation at the call site.
 - Keep bindings one-way unless user input must update the ViewModel.
 
