@@ -2709,4 +2709,10 @@
     <value>Instances</value>
     <comment/>
   </data>
+  <data name="ResourceConfig_Category_GatewayApi" xml:space="preserve">
+    <value>Gateway API</value>
+  </data>
+  <data name="NavigationView_GatewayApiExperimental" xml:space="preserve">
+    <value>Experimental</value>
+  </data>
 </root>
