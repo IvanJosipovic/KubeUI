@@ -82,6 +82,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
             (cluster, config) => ApplyResourceConfigNavigation(cluster, config),
             ToggleClusterConnectionCommand,
             OpenClusterSettingsCommand,
+            ToggleClusterExpansionCommand,
             _serviceProvider.GetRequiredService<ILogger<NavigationClusterCatalogSynchronizer>>());
         _clusterNavigation.Reload();
     }
@@ -149,6 +150,26 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
         }
 
         _ = ConnectClusterAsync(clusterNode);
+    }
+
+    /// <summary>
+    /// Expands or collapses a connected cluster node. A disconnected cluster is connected and expands once connected.
+    /// </summary>
+    [RelayCommand]
+    private Task ToggleClusterExpansionAsync(ClusterNavigationNode? clusterNode)
+    {
+        if (clusterNode == null)
+        {
+            return Task.CompletedTask;
+        }
+
+        if (clusterNode.Cluster.Runtime.Connected)
+        {
+            clusterNode.IsExpanded = !clusterNode.IsExpanded;
+            return Task.CompletedTask;
+        }
+
+        return ConnectClusterAsync(clusterNode);
     }
 
     private async Task ConnectClusterAsync(ClusterNavigationNode clusterNode)

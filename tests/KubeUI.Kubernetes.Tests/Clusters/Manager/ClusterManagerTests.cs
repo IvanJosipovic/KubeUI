@@ -25,7 +25,8 @@ public class ClusterManagerTests
             services,
             services.GetRequiredService<IClusterSettingsStore>(),
             dispatcher,
-            services.GetRequiredService<IKubeConfigPathProvider>());
+            services.GetRequiredService<IKubeConfigPathProvider>(),
+            services.GetRequiredService<IKubeConfigDiscovery>());
 
         await manager.LoadClustersAsync(TestContext.Current.CancellationToken);
 
@@ -49,7 +50,8 @@ public class ClusterManagerTests
             services,
             services.GetRequiredService<IClusterSettingsStore>(),
             dispatcher,
-            services.GetRequiredService<IKubeConfigPathProvider>());
+            services.GetRequiredService<IKubeConfigPathProvider>(),
+            services.GetRequiredService<IKubeConfigDiscovery>());
 
         var config = new K8SConfiguration
         {
@@ -94,7 +96,8 @@ public class ClusterManagerTests
             services,
             services.GetRequiredService<IClusterSettingsStore>(),
             dispatcher,
-            services.GetRequiredService<IKubeConfigPathProvider>());
+            services.GetRequiredService<IKubeConfigPathProvider>(),
+            services.GetRequiredService<IKubeConfigDiscovery>());
 
         await manager.LoadClustersAsync(TestContext.Current.CancellationToken);
         dispatcher.Drain();
@@ -144,7 +147,8 @@ public class ClusterManagerTests
             services,
             services.GetRequiredService<IClusterSettingsStore>(),
             dispatcher,
-            services.GetRequiredService<IKubeConfigPathProvider>());
+            services.GetRequiredService<IKubeConfigPathProvider>(),
+            services.GetRequiredService<IKubeConfigDiscovery>());
 
         await manager.LoadClustersAsync(TestContext.Current.CancellationToken);
         dispatcher.Drain();
@@ -159,6 +163,157 @@ public class ClusterManagerTests
         manager.GetCluster("clusterUser_test-aks_test-aks").ShouldBeNull();
         var updated = KubernetesClientConfiguration.LoadKubeConfig(kubeConfigPath);
         updated.Contexts.Select(x => x.Name).ShouldNotContain("clusterUser_test-aks_test-aks");
+    }
+
+    [Fact]
+    public async Task LoadClustersAsync_discovers_kubeconfigs_in_discovery_directory_without_persisting_them()
+    {
+        using var directory = new TemporaryDirectory();
+        var defaultPath = WriteKubeConfig(directory.Path, "config", "default-context");
+        var discoveredPath = WriteKubeConfig(directory.Path, "dev.yaml", "dev-context");
+        File.WriteAllText(Path.Combine(directory.Path, "notes.txt"), "not a kubeconfig");
+        var settings = new KubernetesTestSettingsStore();
+        await using var scope = CreateManager(settings, defaultPath, directory.Path);
+
+        await scope.Manager.LoadClustersAsync(TestContext.Current.CancellationToken);
+        scope.Dispatcher.Drain();
+
+        scope.Manager.GetCluster("default-context").ShouldNotBeNull();
+        scope.Manager.GetCluster("dev-context")!.KubeConfigPath.ShouldBe(discoveredPath);
+        scope.Manager.Clusters.Count.ShouldBe(2);
+        settings.KubeConfigPaths.ShouldBe([defaultPath]);
+    }
+
+    [Fact]
+    public async Task LoadClustersAsync_skips_discovery_when_disabled()
+    {
+        using var directory = new TemporaryDirectory();
+        var defaultPath = WriteKubeConfig(directory.Path, "config", "default-context");
+        WriteKubeConfig(directory.Path, "dev.yaml", "dev-context");
+        var settings = new KubernetesTestSettingsStore { KubeConfigAutoDiscoveryEnabled = false };
+        await using var scope = CreateManager(settings, defaultPath, directory.Path);
+
+        await scope.Manager.LoadClustersAsync(TestContext.Current.CancellationToken);
+        scope.Dispatcher.Drain();
+
+        scope.Manager.GetCluster("default-context").ShouldNotBeNull();
+        scope.Manager.GetCluster("dev-context").ShouldBeNull();
+    }
+
+    [Fact]
+    public async Task SetKubeConfigAutoDiscovery_unloads_and_reloads_discovered_clusters()
+    {
+        using var directory = new TemporaryDirectory();
+        var defaultPath = WriteKubeConfig(directory.Path, "config", "default-context");
+        WriteKubeConfig(directory.Path, "dev.yaml", "dev-context");
+        var settings = new KubernetesTestSettingsStore();
+        await using var scope = CreateManager(settings, defaultPath, directory.Path);
+        await scope.Manager.LoadClustersAsync(TestContext.Current.CancellationToken);
+        scope.Dispatcher.Drain();
+
+        scope.Manager.SetKubeConfigAutoDiscovery(false);
+        scope.Dispatcher.Drain();
+
+        settings.KubeConfigAutoDiscoveryEnabled.ShouldBeFalse();
+        scope.Manager.KubeConfigAutoDiscoveryEnabled.ShouldBeFalse();
+        scope.Manager.GetCluster("dev-context").ShouldBeNull();
+        scope.Manager.GetCluster("default-context").ShouldNotBeNull();
+
+        scope.Manager.SetKubeConfigAutoDiscovery(true);
+        scope.Dispatcher.Drain();
+
+        settings.KubeConfigAutoDiscoveryEnabled.ShouldBeTrue();
+        scope.Manager.GetCluster("dev-context").ShouldNotBeNull();
+    }
+
+    [Fact]
+    public async Task RemoveKubeConfig_removes_clusters_and_persisted_path_without_touching_file()
+    {
+        using var directory = new TemporaryDirectory();
+        using var otherDirectory = new TemporaryDirectory();
+        var defaultPath = WriteKubeConfig(directory.Path, "config", "default-context");
+        var customPath = WriteKubeConfig(otherDirectory.Path, "custom.yaml", "custom-context");
+        var settings = new KubernetesTestSettingsStore();
+        await using var scope = CreateManager(settings, defaultPath, directory.Path);
+        await scope.Manager.LoadClustersAsync(TestContext.Current.CancellationToken);
+        scope.Manager.LoadFromConfigFromPath(customPath);
+        scope.Dispatcher.Drain();
+        scope.Manager.GetCluster("custom-context").ShouldNotBeNull();
+        settings.KubeConfigPaths.ShouldContain(customPath);
+
+        scope.Manager.RemoveKubeConfig(customPath);
+        scope.Dispatcher.Drain();
+
+        scope.Manager.GetCluster("custom-context").ShouldBeNull();
+        settings.KubeConfigPaths.ShouldNotContain(customPath);
+        File.Exists(customPath).ShouldBeTrue();
+    }
+
+    [Fact]
+    public async Task RemoveKubeConfig_keeps_clusters_from_discoverable_file_and_ignores_default_path()
+    {
+        using var directory = new TemporaryDirectory();
+        var defaultPath = WriteKubeConfig(directory.Path, "config", "default-context");
+        var discoverablePath = WriteKubeConfig(directory.Path, "dev.yaml", "dev-context");
+        var settings = new KubernetesTestSettingsStore();
+        await using var scope = CreateManager(settings, defaultPath, directory.Path);
+        await scope.Manager.LoadClustersAsync(TestContext.Current.CancellationToken);
+        scope.Manager.LoadFromConfigFromPath(discoverablePath);
+        scope.Dispatcher.Drain();
+
+        scope.Manager.RemoveKubeConfig(discoverablePath);
+        scope.Manager.RemoveKubeConfig(defaultPath);
+        scope.Dispatcher.Drain();
+
+        settings.KubeConfigPaths.ShouldNotContain(discoverablePath);
+        settings.KubeConfigPaths.ShouldContain(defaultPath);
+        scope.Manager.GetCluster("dev-context").ShouldNotBeNull();
+        scope.Manager.GetCluster("default-context").ShouldNotBeNull();
+    }
+
+    private static ManagerScope CreateManager(KubernetesTestSettingsStore settings, string defaultPath, string? discoveryDirectory)
+        => new(settings, defaultPath, discoveryDirectory);
+
+    private static string WriteKubeConfig(string directory, string fileName, string contextName)
+    {
+        var path = Path.Combine(directory, fileName);
+        var config = CreateKubeConfig(contextName, contextName + "-cluster", contextName + "-user", "https://" + contextName + ".example.com");
+        File.WriteAllText(path, Serialization.KubernetesYaml.Serialize(config));
+        return path;
+    }
+
+    private sealed class ManagerScope : IAsyncDisposable
+    {
+        private readonly ServiceProvider _services;
+
+        public ManagerScope(KubernetesTestSettingsStore settings, string defaultPath, string? discoveryDirectory)
+        {
+            Dispatcher = new RecordingThreadDispatcher();
+            var dispatcher = Dispatcher;
+            _services = KubernetesTestServiceProvider.Build(settings, collection =>
+            {
+                collection.AddSingleton<IThreadDispatcher>(dispatcher);
+                collection.AddSingleton<IKubeConfigPathProvider>(new TestKubeConfigPathProvider(defaultPath, discoveryDirectory));
+            });
+
+            Manager = new ClusterManager(
+                NullLogger<ClusterManager>.Instance,
+                _services,
+                settings,
+                dispatcher,
+                _services.GetRequiredService<IKubeConfigPathProvider>(),
+                _services.GetRequiredService<IKubeConfigDiscovery>());
+        }
+
+        public ClusterManager Manager { get; }
+
+        public RecordingThreadDispatcher Dispatcher { get; }
+
+        public async ValueTask DisposeAsync()
+        {
+            Manager.Dispose();
+            await _services.DisposeAsync();
+        }
     }
 
     private sealed class RecordingThreadDispatcher : IThreadDispatcher
@@ -201,17 +356,26 @@ public class ClusterManagerTests
 
     private sealed class TestKubeConfigPathProvider : IKubeConfigPathProvider
     {
-        public TestKubeConfigPathProvider(string defaultPath)
+        public TestKubeConfigPathProvider(string defaultPath, string? discoveryDirectory = null)
         {
             DefaultPath = defaultPath;
+            DiscoveryDirectory = discoveryDirectory;
         }
 
         public string DefaultPath { get; }
+
+        public string? DiscoveryDirectory { get; }
     }
 
     private sealed class NullKubeConfigSettingsStore : IClusterSettingsStore
     {
         public IReadOnlyCollection<string> KubeConfigPaths => null!;
+
+        public bool KubeConfigAutoDiscoveryEnabled { get; set; }
+
+        public void RemoveKubeConfigPath(string path)
+        {
+        }
 
         public void AddKubeConfigPath(string path)
         {
