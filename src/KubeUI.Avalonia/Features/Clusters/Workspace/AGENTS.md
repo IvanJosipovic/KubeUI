@@ -10,6 +10,7 @@
 - Informer creation for namespaced resources remains in the runtime and uses the namespaces currently known to the workspace/runtime.
 - Workspace connect/init should refresh resource permissions before any UI command or navigation logic depends on cached `CanI(...)` results.
 - Events exist so downstream UI can update incrementally.
+- `Alias`/`DisplayName`/`IsEnabled` are user preferences applied and persisted by `ClusterWorkspacePreferences`, attached by `ClusterWorkspaceCatalog` before the workspace is added to the catalog.
 - The workspace remains responsible for materializing settings-backed namespaces before permission-dependent UI relies on namespace-scoped access checks.
 
 ## Constraints
