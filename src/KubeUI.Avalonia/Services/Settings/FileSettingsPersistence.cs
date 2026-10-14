@@ -1,3 +1,4 @@
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -30,24 +31,45 @@ internal sealed class FileSettingsPersistence : ISettingsPersistence
         return true;
     }
 
-    public void Save(SettingsPersistenceData data)
+    public bool Save(SettingsPersistenceData data)
     {
         try
         {
             var directory = SettingsDirectory;
             if (!EnsureDirectoryExists())
             {
-                return;
+                return false;
             }
 
-            File.WriteAllText(
-                SettingsPersistenceLoader.SettingsFilePath,
-                JsonSerializer.Serialize(data, SettingsPersistenceSourceGenerationContext.Default.SettingsPersistenceData));
+            var serialized = JsonSerializer.Serialize(
+                data,
+                SettingsPersistenceSourceGenerationContext.Default.SettingsPersistenceData);
+            if (OperatingSystem.IsWindows())
+            {
+                File.WriteAllText(SettingsPersistenceLoader.SettingsFilePath, serialized);
+            }
+            else
+            {
+                using var stream = new FileStream(SettingsPersistenceLoader.SettingsFilePath, new FileStreamOptions
+                {
+                    Mode = FileMode.Create,
+                    Access = FileAccess.Write,
+                    Share = FileShare.None,
+                    UnixCreateMode = UnixFileMode.UserRead | UnixFileMode.UserWrite
+                });
+                using (var writer = new StreamWriter(stream, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false), leaveOpen: true))
+                    writer.Write(serialized);
+                stream.Flush(flushToDisk: true);
+                File.SetUnixFileMode(SettingsPersistenceLoader.SettingsFilePath,
+                    UnixFileMode.UserRead | UnixFileMode.UserWrite);
+            }
             _data = data;
+            return true;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Unable to save settings file");
+            return false;
         }
     }
 

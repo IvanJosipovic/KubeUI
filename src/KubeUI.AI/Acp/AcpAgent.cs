@@ -43,6 +43,7 @@ public sealed class AcpAgent : IAgent
         var process = _processFactory?.Invoke() ?? CreateProcess(options);
         Connection? connection = null;
         DotAcpClient? client = null;
+        var sensitiveValues = GetSensitiveValues(options.McpHeaders);
         var events = Channel.CreateUnbounded<AgentEvent>();
         try
         {
@@ -67,6 +68,10 @@ public sealed class AcpAgent : IAgent
                 }, cancellationToken).ConfigureAwait(false);
             }
             Capabilities = MapCapabilities(initialize);
+            var useHttpMcp = !string.IsNullOrWhiteSpace(options.McpEndpoint)
+                && initialize.AgentCapabilities?.McpCapabilities?.Http == true;
+            if (!useHttpMcp)
+                options.McpCredentialLease?.Dispose();
             var authenticationMethods = initialize.AuthMethods?.OfType<ProtocolAuthMethodAgent>().ToArray() ?? [];
             var agentAuthentication = authenticationMethods.FirstOrDefault(method =>
                     string.Equals(method.Id.ToString(), _definition.AuthenticationMethodId, StringComparison.Ordinal))
@@ -86,10 +91,14 @@ public sealed class AcpAgent : IAgent
                 session = await connection.NewSessionAsync(new NewSessionRequest
                 {
                     Cwd = options.WorkingDirectory ?? Environment.CurrentDirectory,
-                    McpServers = string.IsNullOrWhiteSpace(options.McpEndpoint)
-                        || initialize.AgentCapabilities?.McpCapabilities?.Http != true
+                    McpServers = !useHttpMcp
                         ? []
-                        : [new McpServerHttp { Name = "kubeui", Url = options.McpEndpoint, Headers = [] }]
+                        : [new McpServerHttp
+                        {
+                            Name = "kubeui",
+                            Url = options.McpEndpoint,
+                            Headers = [.. options.McpHeaders.Select(header => new HttpHeader { Name = header.Key, Value = header.Value })]
+                        }]
                 }, cancellationToken).ConfigureAwait(false);
                 sessionActivity?.SetTag("agent.session.id", session.SessionId.ToString());
             }
@@ -100,14 +109,19 @@ public sealed class AcpAgent : IAgent
                 events,
                 options.Context,
                 process,
-                client);
+                client,
+                useHttpMcp ? options.McpCredentialLease : null,
+                sensitiveValues);
         }
         catch (Exception exception)
         {
-            RecordException(activity, exception);
+            options.McpCredentialLease?.Dispose();
+            RecordException(activity, exception, sensitiveValues);
             var formattedException = AcpErrorFormatter.IsAcpError(exception)
                 ? AcpErrorFormatter.Format(exception)
                 : null;
+            if (formattedException is not null)
+                formattedException = RedactSensitiveValues(formattedException, sensitiveValues);
             if (connection is not null)
             {
                 var completion = connection.Completion;
@@ -118,27 +132,58 @@ public sealed class AcpAgent : IAgent
                 }
                 catch (Exception completionException)
                 {
-                    RecordException(activity, completionException);
+                    RecordException(activity, completionException, sensitiveValues);
                     // Preserve original ACP failure while observing connection shutdown failure.
                 }
             }
             await process.DisposeAsync().ConfigureAwait(false);
             client?.Dispose();
             if (formattedException is not null)
-                throw new InvalidOperationException(formattedException, exception);
+                throw new InvalidOperationException(formattedException, sensitiveValues.Length == 0 ? exception : null);
+            if (sensitiveValues.Length > 0)
+                throw new InvalidOperationException("ACP session creation failed; sensitive MCP connection data was omitted.");
             throw;
         }
     }
 
     private IAcpProcess CreateProcess(AgentSessionOptions options) => new AcpProcess(_definition, options);
 
-    private static void RecordException(Activity? activity, Exception exception)
+    private static void RecordException(Activity? activity, Exception exception, IReadOnlyList<string> sensitiveValues)
     {
         if (activity is null)
             return;
 
-        activity.SetStatus(ActivityStatusCode.Error, exception.Message);
-        activity.AddException(exception);
+        var message = RedactSensitiveValues(exception.Message, sensitiveValues);
+        activity.SetStatus(ActivityStatusCode.Error, message);
+        var tags = new ActivityTagsCollection
+        {
+            ["exception.type"] = exception.GetType().FullName,
+            ["exception.message"] = message
+        };
+        activity.AddEvent(new ActivityEvent("exception", tags: tags));
+    }
+
+    private static string RedactSensitiveValues(string value, IReadOnlyList<string> sensitiveValues)
+    {
+        foreach (var sensitiveValue in sensitiveValues)
+            value = value.Replace(sensitiveValue, "[redacted]", StringComparison.Ordinal);
+        return value;
+    }
+
+    private static string[] GetSensitiveValues(IReadOnlyDictionary<string, string> headers)
+    {
+        var values = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var header in headers.Values)
+        {
+            if (string.IsNullOrEmpty(header))
+                continue;
+            values.Add(header);
+            const string bearerPrefix = "Bearer ";
+            if (header.StartsWith(bearerPrefix, StringComparison.OrdinalIgnoreCase)
+                && header.Length > bearerPrefix.Length)
+                values.Add(header[bearerPrefix.Length..]);
+        }
+        return [.. values];
     }
 
     private static DomainAgentCapabilities MapCapabilities(ProtocolInitializeResponse result)
