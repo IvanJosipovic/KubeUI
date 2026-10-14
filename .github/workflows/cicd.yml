@@ -76,10 +76,14 @@ jobs:
     - name: Semantic Release
       uses: cycjimmy/semantic-release-action@v8.1.0
       id: semantic
-      with:
-        dry_run: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        dry_run: true
+        extra_plugins: |
+          @semantic-release/github@12.0.10
+          conventional-changelog-conventionalcommits@9
+        skip_npm_plugin: true
 
   publish-matrix:
     name: Publish Installers
@@ -114,3 +118,9 @@ jobs:
       uses: cycjimmy/semantic-release-action@v8.1.0
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        dry_run: true
+        extra_plugins: |
+          @semantic-release/github@12.0.10
+          conventional-changelog-conventionalcommits@9
+        skip_npm_plugin: true
