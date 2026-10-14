@@ -15,9 +15,11 @@ internal sealed class NavigationClusterCatalogSynchronizer : IDisposable
     private readonly Action<ClusterWorkspace, IResourceConfig> _applyResourceConfig;
     private readonly ICommand _toggleConnectionCommand;
     private readonly ICommand _openSettingsCommand;
+    private readonly ICommand _toggleExpansionCommand;
     private readonly ILogger<NavigationClusterCatalogSynchronizer> _logger;
     private readonly Dictionary<ClusterWorkspace, ClusterNavigationNode> _nodesByWorkspace = [];
     private readonly Dictionary<IClusterRuntime, ClusterWorkspace> _workspacesByRuntime = [];
+    private readonly HashSet<ClusterWorkspace> _trackedWorkspaces = [];
 
     public NavigationClusterCatalogSynchronizer(
         ClusterWorkspaceCatalog catalog,
@@ -27,6 +29,7 @@ internal sealed class NavigationClusterCatalogSynchronizer : IDisposable
         Action<ClusterWorkspace, IResourceConfig> applyResourceConfig,
         ICommand toggleConnectionCommand,
         ICommand openSettingsCommand,
+        ICommand toggleExpansionCommand,
         ILogger<NavigationClusterCatalogSynchronizer> logger)
     {
         _catalog = catalog;
@@ -36,6 +39,7 @@ internal sealed class NavigationClusterCatalogSynchronizer : IDisposable
         _applyResourceConfig = applyResourceConfig;
         _toggleConnectionCommand = toggleConnectionCommand;
         _openSettingsCommand = openSettingsCommand;
+        _toggleExpansionCommand = toggleExpansionCommand;
         _logger = logger;
 
         if (_catalog.Clusters is INotifyCollectionChanged collection)
@@ -60,9 +64,9 @@ internal sealed class NavigationClusterCatalogSynchronizer : IDisposable
             collection.CollectionChanged -= OnCollectionChanged;
         }
 
-        foreach (var workspace in _nodesByWorkspace.Keys.ToArray())
+        foreach (var workspace in _trackedWorkspaces.ToArray())
         {
-            Remove(workspace);
+            Untrack(workspace);
         }
 
         _nodes.Clear();
@@ -81,24 +85,24 @@ internal sealed class NavigationClusterCatalogSynchronizer : IDisposable
             case NotifyCollectionChangedAction.Add:
                 foreach (ClusterWorkspace workspace in e.NewItems!)
                 {
-                    Add(workspace);
+                    Track(workspace);
                 }
                 break;
             case NotifyCollectionChangedAction.Remove:
                 foreach (ClusterWorkspace workspace in e.OldItems!)
                 {
-                    Remove(workspace);
+                    Untrack(workspace);
                 }
                 break;
             case NotifyCollectionChangedAction.Replace:
                 foreach (ClusterWorkspace workspace in e.OldItems!)
                 {
-                    Remove(workspace);
+                    Untrack(workspace);
                 }
 
                 foreach (ClusterWorkspace workspace in e.NewItems!)
                 {
-                    Add(workspace);
+                    Track(workspace);
                 }
                 break;
             case NotifyCollectionChangedAction.Reset:
@@ -111,19 +115,81 @@ internal sealed class NavigationClusterCatalogSynchronizer : IDisposable
     {
         _logger.LogDebug("Navigation cluster catalog reload started; ExistingNodes={Nodes}", _nodesByWorkspace.Count);
 
-        foreach (var workspace in _nodesByWorkspace.Keys.ToArray())
+        foreach (var workspace in _trackedWorkspaces.ToArray())
         {
-            Remove(workspace);
+            Untrack(workspace);
         }
 
         _nodes.Clear();
 
         foreach (var workspace in _catalog.Clusters)
         {
-            Add(workspace);
+            Track(workspace);
         }
 
         _logger.LogDebug("Navigation cluster catalog reload completed; Nodes={Nodes}", _nodesByWorkspace.Count);
+    }
+
+    private void Track(ClusterWorkspace workspace)
+    {
+        if (!_trackedWorkspaces.Add(workspace))
+        {
+            return;
+        }
+
+        workspace.PropertyChanged += OnWorkspacePropertyChanged;
+
+        if (workspace.IsEnabled)
+        {
+            Add(workspace);
+        }
+    }
+
+    private void Untrack(ClusterWorkspace workspace)
+    {
+        if (!_trackedWorkspaces.Remove(workspace))
+        {
+            return;
+        }
+
+        workspace.PropertyChanged -= OnWorkspacePropertyChanged;
+        Remove(workspace);
+    }
+
+    private void OnWorkspacePropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName != nameof(ClusterWorkspace.IsEnabled) || sender is not ClusterWorkspace workspace)
+        {
+            return;
+        }
+
+        if (workspace.IsEnabled)
+        {
+            Add(workspace);
+        }
+        else
+        {
+            Remove(workspace);
+        }
+    }
+
+    private int GetInsertIndex(ClusterWorkspace workspace)
+    {
+        var index = 0;
+        foreach (var candidate in _catalog.Clusters)
+        {
+            if (ReferenceEquals(candidate, workspace))
+            {
+                break;
+            }
+
+            if (_nodesByWorkspace.ContainsKey(candidate))
+            {
+                index++;
+            }
+        }
+
+        return Math.Min(index, _nodes.Count);
     }
 
     private void Add(ClusterWorkspace workspace)
@@ -143,10 +209,11 @@ internal sealed class NavigationClusterCatalogSynchronizer : IDisposable
         {
             ToggleConnectionCommand = _toggleConnectionCommand,
             OpenSettingsCommand = _openSettingsCommand,
+            ToggleExpansionCommand = _toggleExpansionCommand,
         };
 
+        _nodes.Insert(GetInsertIndex(workspace), node);
         _nodesByWorkspace.Add(workspace, node);
-        _nodes.Add(node);
 
         foreach (var resourceConfig in workspace.GetResourceConfigs())
         {

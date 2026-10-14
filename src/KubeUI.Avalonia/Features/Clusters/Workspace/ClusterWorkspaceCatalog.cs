@@ -16,13 +16,18 @@ public sealed class ClusterWorkspaceCatalog : IDisposable
 {
     private readonly IClusterRuntimeCatalog _runtimeCatalog;
     private readonly IServiceProvider _serviceProvider;
+    private readonly ClusterWorkspacePreferences _preferences;
 
     public ObservableCollection<ClusterWorkspace> Clusters { get; } = new ObservableSortedCollection<ClusterWorkspace>(new ClusterWorkspaceComparer());
 
-    public ClusterWorkspaceCatalog(IClusterRuntimeCatalog runtimeCatalog, IServiceProvider serviceProvider)
+    public ClusterWorkspaceCatalog(
+        IClusterRuntimeCatalog runtimeCatalog,
+        IServiceProvider serviceProvider,
+        ClusterWorkspacePreferences preferences)
     {
         _runtimeCatalog = runtimeCatalog;
         _serviceProvider = serviceProvider;
+        _preferences = preferences;
 
         if (_runtimeCatalog.Clusters is INotifyCollectionChanged changed)
         {
@@ -53,6 +58,7 @@ public sealed class ClusterWorkspaceCatalog : IDisposable
 
         foreach (var workspace in Clusters.ToList())
         {
+            _preferences.Detach(workspace);
             workspace.Dispose();
         }
 
@@ -139,6 +145,7 @@ public sealed class ClusterWorkspaceCatalog : IDisposable
         }
 
         workspace = ActivatorUtilities.CreateInstance<ClusterWorkspace>(_serviceProvider, runtime);
+        _preferences.Attach(workspace);
         Clusters.Add(workspace);
         return workspace;
     }
@@ -152,6 +159,7 @@ public sealed class ClusterWorkspaceCatalog : IDisposable
         }
 
         Clusters.Remove(workspace);
+        _preferences.Detach(workspace);
         workspace.Dispose();
     }
 }

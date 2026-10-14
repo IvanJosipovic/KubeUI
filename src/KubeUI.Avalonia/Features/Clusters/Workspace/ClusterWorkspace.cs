@@ -42,7 +42,46 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
     [ObservableProperty]
     public partial IClusterRuntime Runtime { get; set; }
 
-    public string Title => Runtime.Name;
+    public string Title => DisplayName;
+
+    /// <summary>
+    /// Gets or sets the KubeUI-only display name. The context name is used when empty.
+    /// </summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(DisplayName))]
+    [NotifyPropertyChangedFor(nameof(Title))]
+    public partial string? Alias { get; set; }
+
+    /// <summary>
+    /// Gets or sets whether the cluster is shown in navigation. Disabling a connected cluster disconnects it.
+    /// </summary>
+    [ObservableProperty]
+    public partial bool IsEnabled { get; set; } = true;
+
+    /// <summary>
+    /// Gets the name shown to the user: the alias when set, otherwise the context name.
+    /// </summary>
+    public string DisplayName => string.IsNullOrWhiteSpace(Alias) ? Runtime.Name : Alias;
+
+    partial void OnIsEnabledChanged(bool value)
+    {
+        if (!value && Runtime.Connected)
+        {
+            _ = DisconnectDisabledAsync();
+        }
+    }
+
+    private async Task DisconnectDisabledAsync()
+    {
+        try
+        {
+            await Disconnect().ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error disconnecting disabled cluster {ClusterName}", Runtime.Name);
+        }
+    }
 
     [ObservableProperty]
     public partial IBrush ClusterColor { get; set; } = Brushes.Red;
@@ -305,6 +344,11 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
         if (e.PropertyName == nameof(IClusterRuntime.Status))
         {
             Dispatcher.UIThread.Post(UpdateClusterColor);
+        }
+        else if (e.PropertyName == nameof(IClusterRuntime.Name))
+        {
+            OnPropertyChanged(nameof(DisplayName));
+            OnPropertyChanged(nameof(Title));
         }
     }
 

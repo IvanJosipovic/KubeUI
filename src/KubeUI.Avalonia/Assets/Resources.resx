@@ -2709,4 +2709,31 @@
     <value>Instances</value>
     <comment/>
   </data>
+  <data name="ClusterListView_Enabled" xml:space="preserve">
+    <value>Enabled</value>
+  </data>
+  <data name="ClusterListView_Alias" xml:space="preserve">
+    <value>Display Name</value>
+  </data>
+  <data name="ClusterListView_AddKubeConfig" xml:space="preserve">
+    <value>Add Kubeconfig</value>
+  </data>
+  <data name="ClusterListView_RemoveKubeConfig" xml:space="preserve">
+    <value>Remove Kubeconfig</value>
+  </data>
+  <data name="ClusterListView_RemoveKubeConfig_Content" xml:space="preserve">
+    <value>Stop loading clusters from "{0}"? The file itself is not changed or deleted.</value>
+  </data>
+  <data name="ClusterListView_InvalidKubeConfig" xml:space="preserve">
+    <value>"{0}" is not a kubeconfig file with at least one context.</value>
+  </data>
+  <data name="ClusterListView_AutoDiscovery" xml:space="preserve">
+    <value>Auto-discover kubeconfigs in ~/.kube</value>
+  </data>
+  <data name="NavigationView_ContextMenu_Expand" xml:space="preserve">
+    <value>Expand</value>
+  </data>
+  <data name="NavigationView_ContextMenu_Collapse" xml:space="preserve">
+    <value>Collapse</value>
+  </data>
 </root>

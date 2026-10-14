@@ -15,6 +15,7 @@ public static class KubeUIKubernetesServiceCollectionExtensions
         ConfigureKubeUIKubernetesJson();
         services.AddSingleton<IThreadDispatcher, ImmediateThreadDispatcher>();
         services.AddSingleton<IKubeConfigPathProvider, DefaultKubeConfigPathProvider>();
+        services.AddSingleton<IKubeConfigDiscovery, KubeConfigDiscovery>();
         services.AddSingleton<IPodLogSessionResolver, PodLogSessionResolver>();
         services.AddSingleton<IPodLogStreamClient, PodLogStreamClient>();
         services.AddSingleton<KubernetesModelCatalog>();
