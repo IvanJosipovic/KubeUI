@@ -1,5 +1,6 @@
 using System.Reflection;
 using System.Text;
+using System.Text.Json;
 using Avalonia.Headless.XUnit;
 using k8s;
 using k8s.Models;
@@ -8,10 +9,7 @@ using KubeUI.AI.Mcp;
 using KubeUI.AI.Permissions;
 using KubeUI.Avalonia.Infrastructure.Mcp;
 using KubeUI.Avalonia.Shell.Navigation;
-using KubeUI.Avalonia.Tests.Infra;
-using KubeUI.Kubernetes;
 using KubeUI.Kubernetes.Serialization;
-using Microsoft.Extensions.DependencyInjection;
 using ModelContextProtocol.Server;
 using Moq;
 using Shouldly;
@@ -209,9 +207,9 @@ public sealed class McpToolsTests
             new McpSupportedResourceInfo("Pods", "Workloads", string.Empty, "v1", "v1", "Pod", true, false, true, true)
         };
         session.Setup(x => x.ListSupportedResourcesAsync("dev")).ReturnsAsync(supportedResources);
-        session.Setup(x => x.ListResourcesAsync(
-                "dev", "v1", "Event", "default", 100, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new McpResourcePage([], null));
+        session.Setup(x => x.ListEventsAsync(
+                "dev", "default", 100, It.IsAny<CancellationToken>(), null))
+            .ReturnsAsync(new McpEventPage([], null));
         var tools = new McpTools(
             new Mock<IClusterRuntimeCatalog>(MockBehavior.Strict).Object,
             session.Object,
@@ -223,8 +221,95 @@ public sealed class McpToolsTests
         var events = await tools.ListEvents("dev", "default");
 
         discovered.ShouldBe(supportedResources);
-        events.Resources.ShouldBeEmpty();
+        events.Events.ShouldBeEmpty();
         events.NextCursor.ShouldBeNull();
+        session.VerifyAll();
+    }
+
+    [Fact]
+    public async Task list_events_returns_full_event_objects_with_metadata()
+    {
+        var session = new Mock<IMcpClusterSession>(MockBehavior.Strict);
+        var kubernetesEvent = new Corev1Event
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "pod.123",
+                NamespaceProperty = "default",
+                Annotations = new Dictionary<string, string>
+                {
+                    ["example.com/context"] = "preserve-full-event",
+                },
+            },
+            Type = "Warning",
+            Reason = "FailedScheduling",
+            Message = "0/3 nodes are available",
+            InvolvedObject = new V1ObjectReference
+            {
+                ApiVersion = "v1",
+                Kind = "Pod",
+                Name = "pod",
+                NamespaceProperty = "default",
+            },
+            Source = new V1EventSource { Component = "default-scheduler" },
+            Count = 1,
+        };
+        session.Setup(x => x.ListEventsAsync(
+                "dev", "default", 100, It.IsAny<CancellationToken>(), null))
+            .ReturnsAsync(new McpEventPage([kubernetesEvent], null));
+        var tools = CreateTools(session);
+
+        var result = await tools.ListEvents("dev", "default");
+        var json = JsonSerializer.Serialize(result, new JsonSerializerOptions(JsonSerializerDefaults.Web));
+
+        json.ShouldContain("\"reason\":\"FailedScheduling\"");
+        json.ShouldContain("\"message\":\"0/3 nodes are available\"");
+        json.ShouldContain("\"involvedObject\":");
+        json.ShouldContain("\"kind\":\"Pod\"");
+        json.ShouldContain("\"name\":\"pod\"");
+        json.ShouldContain("\"annotations\":{\"example.com/context\":\"preserve-full-event\"}");
+        session.VerifyAll();
+    }
+
+    [Fact]
+    public async Task list_events_validates_limits_and_event_cursors()
+    {
+        var session = new Mock<IMcpClusterSession>(MockBehavior.Strict);
+        var tools = CreateTools(session);
+        var podCursor = McpResourceCursorCodec.Encode(
+            "dev", "v1", "Pod", "default", "default", "pod", "uid-pod");
+        var mismatchedEventCursor = McpResourceCursorCodec.Encode(
+            "dev", "v1", "Event", "other", "other", "event", "uid-event");
+
+        await Should.ThrowAsync<ArgumentOutOfRangeException>(() => tools.ListEvents("dev", "default", 0));
+        await Should.ThrowAsync<ArgumentOutOfRangeException>(() => tools.ListEvents("dev", "default", 501));
+        await Should.ThrowAsync<ArgumentException>(() => tools.ListEvents("dev", "not a namespace"));
+        await Should.ThrowAsync<ArgumentException>(() => tools.ListEvents("dev\0", "default"));
+        await Should.ThrowAsync<ArgumentException>(() => tools.ListEvents("dev", "default", cursor: podCursor));
+        await Should.ThrowAsync<ArgumentException>(() => tools.ListEvents(
+            "dev", "default", cursor: mismatchedEventCursor));
+
+        using var cancellation = new CancellationTokenSource();
+        cancellation.Cancel();
+        await Should.ThrowAsync<OperationCanceledException>(() => tools.ListEvents(
+            "dev", "default", cancellationToken: cancellation.Token));
+    }
+
+    [Fact]
+    public async Task list_events_passes_a_matching_event_cursor_to_the_cluster_session()
+    {
+        var cursor = McpResourceCursorCodec.Encode(
+            "dev", "v1", "Event", "default", "default", "event", "uid-event");
+        var expected = new McpEventPage([], null);
+        var session = new Mock<IMcpClusterSession>(MockBehavior.Strict);
+        session.Setup(x => x.ListEventsAsync(
+                "dev", "default", 10, It.IsAny<CancellationToken>(), cursor))
+            .ReturnsAsync(expected);
+        var tools = CreateTools(session);
+
+        var result = await tools.ListEvents("dev", "default", 10, cursor);
+
+        result.ShouldBe(expected);
         session.VerifyAll();
     }
 

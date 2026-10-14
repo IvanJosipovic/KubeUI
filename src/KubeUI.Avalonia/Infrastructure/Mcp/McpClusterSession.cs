@@ -14,6 +14,13 @@ public sealed record McpSupportedResourceInfo(
 public sealed record McpResourceInfo(
     string ApiVersion, string Kind, string Name, string? Namespace, bool Ready);
 
+/// <summary>One page of complete Kubernetes Event resources.</summary>
+/// <param name="Events">Full Event objects in stable namespace, name, and UID order.</param>
+/// <param name="NextCursor">Opaque cursor for the next page, or <see langword="null"/> when complete.</param>
+public sealed record McpEventPage(
+    IReadOnlyList<Corev1Event> Events,
+    string? NextCursor);
+
 public sealed record McpRelatedResourceInfo(
     string ApiVersion, string Kind, string Name, string? Namespace,
     string Relationship, string? RelationshipLabel);
@@ -29,6 +36,9 @@ public interface IMcpClusterSession
     Task<IReadOnlyList<McpSupportedResourceInfo>> ListSupportedResourcesAsync(string? clusterName);
     Task<McpResourcePage> ListResourcesAsync(
         string? clusterName, string apiVersion, string kind, string? @namespace, int limit,
+        CancellationToken cancellationToken = default, string? cursor = null);
+    Task<McpEventPage> ListEventsAsync(
+        string? clusterName, string? @namespace, int limit,
         CancellationToken cancellationToken = default, string? cursor = null);
     Task<IReadOnlyList<McpRelatedResourceInfo>> ListRelatedResourcesAsync(
         string? clusterName, string apiVersion, string kind, string name, string? @namespace, int limit, CancellationToken cancellationToken = default);
@@ -154,6 +164,74 @@ internal sealed class McpClusterSession(
         }
 
         return new McpResourcePage(resources, nextCursor);
+    }
+
+    public async Task<McpEventPage> ListEventsAsync(
+        string? clusterName,
+        string? @namespace,
+        int limit,
+        CancellationToken cancellationToken = default,
+        string? cursor = null)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        if (limit is < 1 or > 500)
+            throw new ArgumentOutOfRangeException(nameof(limit), "Limit must be between 1 and 500.");
+
+        var decodedCursor = cursor is null ? null : McpResourceCursorCodec.Decode(cursor);
+        if (decodedCursor is not null
+            && (!string.Equals(decodedCursor.ApiVersion, "v1", StringComparison.Ordinal)
+                || !string.Equals(decodedCursor.Kind, "Event", StringComparison.Ordinal)
+                || !string.Equals(decodedCursor.Namespace, @namespace, StringComparison.Ordinal)))
+        {
+            throw new ArgumentException("The cursor does not match this Event query.", nameof(cursor));
+        }
+
+        var cluster = await GetConnectedClusterAsync(clusterName).ConfigureAwait(false);
+        if (decodedCursor is not null)
+            McpResourceCursorCodec.EnsureMatches(decodedCursor, cluster.Name, "v1", "Event", @namespace);
+
+        var workspace = workspaceCatalog.GetCluster(cluster.Name)
+            ?? throw new InvalidOperationException($"Cluster {cluster.Name} is not backed by a KubeUI workspace.");
+        var resourceKind = GroupApiVersionKind.From<Corev1Event>();
+        await workspace.GetResourceConfig(resourceKind)
+            .SeedResource(waitForReady: true, cancellationToken: cancellationToken).ConfigureAwait(false);
+        if (!cluster.Objects.TryGetValue(resourceKind, out var value)
+            || value is not IResourceContainer container)
+        {
+            return new McpEventPage([], null);
+        }
+
+        var after = decodedCursor is null
+            ? (ResourceSortKey?)null
+            : new ResourceSortKey(
+                decodedCursor.LastNamespace ?? string.Empty,
+                decodedCursor.LastName,
+                decodedCursor.LastUid ?? string.Empty);
+        var candidates = container.QueryTop(
+            resource => (@namespace is null
+                    || string.Equals(resource.Metadata?.NamespaceProperty, @namespace, StringComparison.Ordinal))
+                && (after is null || CompareResourceToKey(resource, after.Value) > 0),
+            ResourceOrder,
+            limit + 1,
+            cancellationToken);
+
+        var eventCount = Math.Min(limit, candidates.Count);
+        var events = new Corev1Event[eventCount];
+        for (var index = 0; index < eventCount; index++)
+        {
+            events[index] = (Corev1Event)candidates[index];
+        }
+
+        string? nextCursor = null;
+        if (candidates.Count > limit)
+        {
+            var metadata = candidates[eventCount - 1].Metadata;
+            nextCursor = McpResourceCursorCodec.Encode(
+                cluster.Name, "v1", "Event", @namespace,
+                metadata?.NamespaceProperty, metadata?.Name ?? string.Empty, metadata?.Uid);
+        }
+
+        return new McpEventPage(events, nextCursor);
     }
 
     public async Task<IReadOnlyList<McpRelatedResourceInfo>> ListRelatedResourcesAsync(
@@ -289,7 +367,6 @@ internal sealed class McpClusterSession(
     }
 
     private readonly record struct ResourceSortKey(string Namespace, string Name, string Uid);
-
     private static int CompareResources(
         IKubernetesObject<V1ObjectMeta> left,
         IKubernetesObject<V1ObjectMeta> right)

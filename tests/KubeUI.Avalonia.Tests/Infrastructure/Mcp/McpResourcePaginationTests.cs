@@ -35,6 +35,21 @@ public sealed class McpResourcePaginationTests
     }
 
     [Fact]
+    public void event_cursor_uses_the_shared_resource_key_format()
+    {
+        var encoded = McpResourceCursorCodec.Encode(
+            "dev", "v1", "Event", "default", "default", "event", "uid-event");
+
+        var decoded = McpResourceCursorCodec.Decode(encoded);
+
+        decoded.Cluster.ShouldBe("dev");
+        decoded.Kind.ShouldBe("Event");
+        decoded.LastName.ShouldBe("event");
+        Should.NotThrow(() => McpResourceCursorCodec.EnsureMatches(
+            decoded, "dev", "v1", "Event", "default"));
+    }
+
+    [Fact]
     public void cursor_decoder_rejects_malformed_and_unsupported_cursors()
     {
         var unsupportedVersion = EncodeJson(new
