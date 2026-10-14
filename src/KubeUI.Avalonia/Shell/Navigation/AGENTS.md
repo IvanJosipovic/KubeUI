@@ -14,6 +14,7 @@
 - Resource count observables are attached only when both the matching navigation link and a seeded resource container exist. `ResourceSeeded` notifications are marshalled to the UI dispatcher; there is no retry loop for a missing link. A count stream preserves an initial zero and is retained when an existing resource link is updated.
 - Connection failures update or open the shared cluster-error document. Missing namespace permission opens cluster settings and shows the permission prompt.
 - Selecting a resource link opens its document; selecting a category toggles its expansion. Selecting a disconnected cluster starts connection asynchronously, and selecting an already connected cluster toggles expansion.
+- Gateway API kinds (`gateway.networking.k8s.io`, `gateway.networking.x-k8s.io`) are shown in their own `Gateway API` category (after Network) instead of under Custom Resource Definitions. Experimental kinds are nested in an `Experimental` group. Placement uses `IGatewayApiResourceConfig.GatewayApiChannel`; links are removed when list/watch access is missing, and empty groups are removed.
 
 ## Invariants
 

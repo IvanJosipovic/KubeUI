@@ -7,9 +7,10 @@ internal static class ResourceCategories
         [Assets.Resources.ResourceConfig_Category_Workloads!] = 8,
         [Assets.Resources.ResourceConfig_Category_Configuration!] = 9,
         [Assets.Resources.ResourceConfig_Category_Network!] = 10,
-        [Assets.Resources.ResourceConfig_Category_Storage!] = 11,
-        [Assets.Resources.ResourceConfig_Category_AccessControl!] = 12,
-        [Assets.Resources.ResourceConfig_Category_CustomResourceDefinitions!] = 13,
+        [Assets.Resources.ResourceConfig_Category_GatewayApi!] = 11,
+        [Assets.Resources.ResourceConfig_Category_Storage!] = 12,
+        [Assets.Resources.ResourceConfig_Category_AccessControl!] = 13,
+        [Assets.Resources.ResourceConfig_Category_CustomResourceDefinitions!] = 14,
     };
 
     public static int GetOrder(string? category, int fallbackOrder)
@@ -21,7 +22,11 @@ internal static class ResourceCategories
 
     public static string Network => Assets.Resources.ResourceConfig_Category_Network!;
 
+    public static string GatewayApi => Assets.Resources.ResourceConfig_Category_GatewayApi!;
+
+    public static int GatewayApiNavigationOrder => GetOrder(GatewayApi, 11);
+
     public static string CustomResourceDefinitions => Assets.Resources.ResourceConfig_Category_CustomResourceDefinitions!;
 
-    public static int CustomResourceDefinitionsNavigationOrder => GetOrder(CustomResourceDefinitions, 13);
+    public static int CustomResourceDefinitionsNavigationOrder => GetOrder(CustomResourceDefinitions, 14);
 }

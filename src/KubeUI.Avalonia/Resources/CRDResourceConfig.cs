@@ -4,10 +4,11 @@ using JsonPathLINQ;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
 using KubeUI.Kubernetes;
+using KubeUI.Kubernetes.Resources.GatewayApi;
 
 namespace KubeUI.Avalonia.Resources;
 
-public sealed class CRDResourceConfig : ResourceConfigBase<GenericKubernetesObject>
+public sealed class CRDResourceConfig : ResourceConfigBase<GenericKubernetesObject>, IGatewayApiResourceConfig
 {
     private bool _isNamespaced = true;
     private string? _resourceName;
@@ -26,6 +27,25 @@ public sealed class CRDResourceConfig : ResourceConfigBase<GenericKubernetesObje
 
     public override string Name => _resourceName ?? base.Name;
 
+    /// <inheritdoc />
+    public GatewayApiChannel? GatewayApiChannel { get; private set; }
+
+    /// <summary>
+    /// Gets the navigation category: Gateway API kinds get their own category, other custom resources have none.
+    /// </summary>
+    public override string? Category => GatewayApiChannel is null ? null : ResourceCategories.GatewayApi;
+
+    internal override GenericKubernetesObject CreateNewResource()
+    {
+        var resource = base.CreateNewResource();
+        if (GatewayApiChannel is not null && GatewayApiResources.TryGetSpecTemplate(Kind.Kind, out var spec))
+        {
+            resource.Properties["spec"] = spec;
+        }
+
+        return resource;
+    }
+
     private readonly List<IResourceListColumn> _columns = [];
 
     public void Configure(V1CustomResourceDefinition crd)
@@ -38,6 +58,7 @@ public sealed class CRDResourceConfig : ResourceConfigBase<GenericKubernetesObje
 
         var version = spec.Versions.First(candidate => candidate.Served && candidate.Storage);
         _resourceName = spec.Names!.Kind.Humanize(LetterCasing.Title).Pluralize();
+        GatewayApiChannel = GatewayApiResources.GetChannel(crd);
 
         _columns.Add(NameColumn(SortDirection.Ascending));
 

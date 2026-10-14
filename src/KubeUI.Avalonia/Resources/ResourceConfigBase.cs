@@ -354,6 +354,20 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
     [RelayCommand(CanExecute = nameof(CanNewResource))]
     public void NewResource()
     {
+        var resource = CreateNewResource();
+
+        var vm = ServiceProvider.GetRequiredService<ResourceYamlViewModel>();
+        vm.Initialize(Cluster, resource);
+        vm.EditMode = true;
+
+        _factory.AddToBottom(vm);
+    }
+
+    /// <summary>
+    /// Creates the resource shown in the YAML editor when the user starts a new resource of this kind.
+    /// </summary>
+    internal virtual T CreateNewResource()
+    {
         var resource = new T
         {
             Kind = Kind.Kind,
@@ -369,11 +383,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
             resource.Metadata.NamespaceProperty = "default";
         }
 
-        var vm = ServiceProvider.GetRequiredService<ResourceYamlViewModel>();
-        vm.Initialize(Cluster, resource);
-        vm.EditMode = true;
-
-        _factory.AddToBottom(vm);
+        return resource;
     }
 
     public bool CanNewResource()
