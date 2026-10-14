@@ -16,6 +16,7 @@ RUN apt-get update \
         curl \
         git \
         python3 \
+        libicu72 \
         libfontconfig1 \
         libfreetype6 \
         libice6 \
