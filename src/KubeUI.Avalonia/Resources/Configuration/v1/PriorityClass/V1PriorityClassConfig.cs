@@ -15,7 +15,7 @@ public sealed partial class V1PriorityClassConfig : ResourceConfigBase<V1Priorit
     {
         return [
             NameColumn(SortDirection.Ascending),
-            new ResourceListColumn<V1PriorityClass, int>()
+            new ResourceListColumn<V1PriorityClass, int?>()
             {
                 Key = "value",
                 Name = Assets.Resources.V1PriorityClassConfig_Value!,

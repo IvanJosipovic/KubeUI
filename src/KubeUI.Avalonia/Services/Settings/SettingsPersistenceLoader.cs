@@ -15,6 +15,11 @@ public static class SettingsPersistenceLoader
         try
         {
             Directory.CreateDirectory(SettingsDirectory);
+            if (!OperatingSystem.IsWindows())
+            {
+                File.SetUnixFileMode(SettingsDirectory,
+                    UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+            }
             return true;
         }
         catch (Exception exception)
@@ -25,7 +30,9 @@ public static class SettingsPersistenceLoader
     }
 
     public static SettingsPersistenceData Load(ILogger? logger = null)
-        => Load(SettingsFilePath, logger);
+        => EnsureDirectoryExists(logger)
+            ? Load(SettingsFilePath, logger)
+            : new SettingsPersistenceData();
 
     internal static SettingsPersistenceData Load(string settingsFilePath, ILogger? logger = null)
     {
@@ -33,6 +40,11 @@ public static class SettingsPersistenceLoader
         {
             if (File.Exists(settingsFilePath))
             {
+                if (!OperatingSystem.IsWindows())
+                {
+                    File.SetUnixFileMode(settingsFilePath,
+                        UnixFileMode.UserRead | UnixFileMode.UserWrite);
+                }
                 using var json = File.OpenRead(settingsFilePath);
                 var settings = JsonSerializer.Deserialize(
                     json,

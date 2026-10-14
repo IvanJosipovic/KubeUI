@@ -1,10 +1,12 @@
 using System.Globalization;
 using System.Linq.Expressions;
+using Avalonia.Automation;
 using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Templates;
 using Avalonia.Data.Converters;
 using Avalonia.Markup.Xaml.MarkupExtensions;
 using KubeUI.AI.Agents;
+using KubeUI.Avalonia.Features.Resources.Properties.Controls;
 using KubeUI.Avalonia.Options;
 
 namespace KubeUI.Avalonia.Shell.Documents.Settings;
@@ -66,7 +68,8 @@ public sealed class SettingsView() : ViewBase<SettingsViewModel>
                             1024,
                             65535)
                             .IsEnabled(vm, x => x.SettingsService.Settings.McpServerEnabled),
-                        CreateAgentRow(vm)));
+                        CreateAgentRow(vm),
+                        CreateMcpClientGrants(vm)));
     }
 
     private static Border CreateHeading(string text)
@@ -99,6 +102,144 @@ public sealed class SettingsView() : ViewBase<SettingsViewModel>
                     .SelectedItem(vm, x => x.SelectedAgent, BindingMode.TwoWay)
                     .ItemTemplate(new FuncDataTemplate<IAgent>((agent, _) => new TextBlock().Text(agent!.Name)))
                     .Col(1));
+    }
+
+    private static ExpandableSection CreateMcpClientGrants(SettingsViewModel vm)
+    {
+        var tokenTextBox = new TextBox
+        {
+            IsReadOnly = true,
+            TextWrapping = TextWrapping.NoWrap
+        };
+        AutomationProperties.SetName(tokenTextBox, Assets.Resources.SettingsView_McpToken_AccessibleName!);
+
+        return new ExpandableSection()
+            .Margin(8, 6, 0, 0)
+            .IsEnabled(vm, x => x.SettingsService.Settings.McpServerEnabled)
+            .Header(CreateHeading(Assets.Resources.SettingsView_McpClients_Heading!).Margin(0).Padding(0))
+            .IsExpanded(true)
+            .Content(
+                new StackPanel()
+                    .Spacing(8)
+                    .Children(
+                        new TextBlock()
+                            .Text(Assets.Resources.SettingsView_McpServerUnavailable!)
+                            .TextWrapping(TextWrapping.Wrap)
+                            .IsVisible(vm, x => x.IsMcpServerUnavailable),
+                        new StackPanel()
+                            .Spacing(8)
+                            .IsEnabled(vm, x => x.CanCreateExternalMcpCredential)
+                            .Children(
+                                CreateMcpSubheading(Assets.Resources.SettingsView_McpClients_CreateHeading!),
+                                new TextBlock()
+                                    .Text(Assets.Resources.SettingsView_McpClients_Description!)
+                                    .TextWrapping(TextWrapping.Wrap),
+                                CreateTextEntryRow(
+                                    Assets.Resources.SettingsView_McpClientName_Label!,
+                                    vm,
+                                    x => x.ExternalMcpClientName,
+                                    controlName: nameof(SettingsViewModel.ExternalMcpClientName),
+                                    maximumLength: 80,
+                                    watermark: Assets.Resources.SettingsView_McpClientName_Watermark),
+                                CreateMcpClusterScopeEditor(vm),
+                                new Button()
+                                    .Content(Assets.Resources.SettingsView_McpClientCreate!)
+                                    .Command(vm, x => x.CreateExternalMcpCredentialCommand)
+                                    .HorizontalAlignment(HorizontalAlignment.Right),
+                                new TextBlock()
+                                    .Text(vm, x => x.McpGrantMessage)
+                                    .TextWrapping(TextWrapping.Wrap)
+                                    .IsVisible(vm, x => x.HasMcpGrantMessage),
+                                tokenTextBox
+                                    .Text(vm, x => x.NewlyCreatedMcpToken, BindingMode.OneWay)
+                                    .IsVisible(vm, x => x.HasNewlyCreatedMcpToken)),
+                        CreateMcpSubheading(Assets.Resources.SettingsView_McpClients_ExistingHeading!)
+                            .Margin(0, 8, 0, 0),
+                        new TextBlock()
+                            .Text(Assets.Resources.SettingsView_McpClients_Empty!)
+                            .IsVisible(vm, x => x.HasNoExternalMcpGrants),
+                        CreateMcpGrantList(vm)));
+    }
+
+    private static TextBlock CreateMcpSubheading(string text)
+    {
+        return new TextBlock()
+            .Text(text)
+            .FontSize(15)
+            .FontWeight(FontWeight.Medium);
+    }
+
+    private static StackPanel CreateMcpClusterScopeEditor(SettingsViewModel vm)
+    {
+        return new StackPanel()
+            .Spacing(3)
+            .Children(
+                new TextBlock()
+                    .Text(Assets.Resources.SettingsView_McpClientClusters_Label!),
+                new TextBlock()
+                    .Text(Assets.Resources.SettingsView_McpClientClusters_Description!)
+                    .TextWrapping(TextWrapping.Wrap),
+                new ItemsControl()
+                    .ItemsSource(vm, x => x.ExternalMcpClusterOptions)
+                    .ItemTemplate(new FuncDataTemplate<McpExternalClusterOption>((option, _) =>
+                    {
+                        if (option is null)
+                            return new CheckBox();
+
+                        return new CheckBox()
+                            .Content(option.Name)
+                            .IsChecked(option, x => x.IsSelected, BindingMode.TwoWay);
+                    })));
+    }
+
+    private static ListBox CreateMcpGrantList(SettingsViewModel vm)
+    {
+        return new ListBox()
+            .ItemsSource(vm, x => x.ExternalMcpGrants)
+            .ItemTemplate(new FuncDataTemplate<McpExternalClientGrant>((grant, _) =>
+            {
+                if (grant is null)
+                    return new TextBlock();
+
+                var clusterScope = grant.AllowedClusters.Count == 0
+                    ? Assets.Resources.SettingsView_McpGrant_AllClusters
+                    : string.Join(", ", grant.AllowedClusters);
+                return new Grid()
+                    .Cols("*,Auto")
+                    .Children(
+                        new TextBlock()
+                            .Col(0)
+                            .VerticalAlignment(VerticalAlignment.Center)
+                            .Text($"{grant.Name} — {clusterScope}"),
+                        new Button()
+                            .Col(1)
+                            .Content(Assets.Resources.SettingsView_McpClientRevoke!)
+                            .Command(vm, x => x.RevokeExternalMcpCredentialCommand)
+                            .CommandParameter(grant));
+            }));
+    }
+
+    [Obsolete]
+    private static Grid CreateTextEntryRow(
+        string label,
+        SettingsViewModel vm,
+        Expression<Func<SettingsViewModel, string>> getter,
+        string? controlName = null,
+        int? maximumLength = null,
+        string? watermark = null)
+    {
+        var textBox = new TextBox().Text(vm, getter, BindingMode.TwoWay);
+        if (controlName is not null)
+            textBox.Name = controlName;
+        if (maximumLength is { } length)
+            textBox.MaxLength = length;
+        textBox.Watermark = watermark;
+
+        return new Grid()
+            .Cols("*,3*")
+            .Children(
+                new Label { Content = label, Target = textBox }.Col(0),
+                textBox.Col(1));
     }
 
     private static Grid CreateThemeRow(SettingsViewModel vm)

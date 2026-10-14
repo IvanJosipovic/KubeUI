@@ -33,14 +33,14 @@ public sealed partial class V1PodDisruptionBudgetConfig : ResourceConfigBase<V1P
                 Field = x => x.Spec.MaxUnavailable,
                 WidthMode = DynamicTableViewWidthMode.Header
             },
-            new ResourceListColumn<V1PodDisruptionBudget, int>()
+            new ResourceListColumn<V1PodDisruptionBudget, int?>()
             {
                 Key = "current-healthy",
                 Name = Assets.Resources.V1PodDisruptionBudgetConfig_Current_Healthy!,
                 Field = x => x.Status.CurrentHealthy,
                 WidthMode = DynamicTableViewWidthMode.Header
             },
-            new ResourceListColumn<V1PodDisruptionBudget, int>()
+            new ResourceListColumn<V1PodDisruptionBudget, int?>()
             {
                 Key = "desired-healthy",
                 Name = Assets.Resources.V1PodDisruptionBudgetConfig_Desired_Healthy!,

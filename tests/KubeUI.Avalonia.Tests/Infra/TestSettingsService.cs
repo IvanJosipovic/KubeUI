@@ -13,4 +13,6 @@ public sealed class TestSettingsService : SettingsService
     public override void SaveSettings()
     {
     }
+
+    public override bool TrySaveSettings() => true;
 }

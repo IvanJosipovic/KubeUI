@@ -6,6 +6,7 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="KubeUI.Avalonia.Tests" />
+    <InternalsVisibleTo Include="KubeUI.Desktop" />
   </ItemGroup>
 
   <ItemGroup>
@@ -13,6 +14,7 @@
     <PackageReference Include="dotacp.client" Version="2026.7.19" PrivateAssets="compile;contentfiles;build;buildTransitive;analyzers" />
     <PackageReference Include="dotacp.protocol" Version="2026.7.19" PrivateAssets="compile;contentfiles;build;buildTransitive;analyzers" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" PrivateAssets="compile;contentfiles;build;buildTransitive;analyzers" />
+    <PackageReference Include="ModelContextProtocol" Version="2.2.0" />
     <!-- Override dotacp.client's vulnerable transitive StreamJsonRpc version without exposing its compile-time API. -->
     <PackageReference Include="StreamJsonRpc" Version="2.25.29" PrivateAssets="compile;contentfiles;build;buildTransitive;analyzers" />
   </ItemGroup>

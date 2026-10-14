@@ -62,5 +62,10 @@ public sealed class SettingsServiceTests
             SaveCalls++;
             Saved = persistenceData;
         }
+
+        bool ISettingsPersistence.Save(SettingsPersistenceData data)
+        {
+            throw new NotImplementedException();
+        }
     }
 }
