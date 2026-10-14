@@ -22,9 +22,18 @@ public class SortedTypeInspector : TypeInspectorSkeleton
         return _innerTypeInspector.GetEnumValue(enumValue);
     }
 
+    public override bool HasParseMethod(Type type)
+    {
+        return _innerTypeInspector.HasParseMethod(type);
+    }
+
+    public override object? Parse(string value, Type expectedType)
+    {
+        return _innerTypeInspector.Parse(value, expectedType);
+    }
+
     public override IEnumerable<IPropertyDescriptor> GetProperties(Type type, object? container)
     {
         return _innerTypeInspector.GetProperties(type, container).OrderBy(x => x.Name);
     }
 }
-
