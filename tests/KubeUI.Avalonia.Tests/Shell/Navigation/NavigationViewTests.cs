@@ -1,11 +1,18 @@
 using System.Globalization;
 using System.Reactive.Linq;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Data;
+using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
+using Avalonia.Input;
+using Avalonia.Threading;
 using Avalonia.VisualTree;
+using Dock.Model.Controls;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
+using KubeUI.Avalonia.Features.Resources.List;
+using KubeUI.Avalonia.Shell.Documents.About;
 using KubeUI.Avalonia.Shell.Navigation;
 using Shouldly;
 
@@ -109,5 +116,136 @@ public sealed class NavigationViewTests
 
         window.Content = null;
         window.Close();
+    }
+
+    [AvaloniaFact]
+    public async Task clicking_selected_navigation_section_collapses_it()
+    {
+        var services = Application.Current.GetTestServices();
+        var workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        using var navigation = services.GetRequiredService<NavigationViewModel>();
+        var clusterNode = navigation.Clusters.Single(node => node.Cluster == workspace);
+        var section = new NavigationItem { Id = "network", Name = "Network" };
+        section.NavigationItems.Add(new NavigationItem { Id = "services", Name = "Services" });
+        clusterNode.NavigationItems.Add(section);
+        clusterNode.IsExpanded = true;
+
+        var view = new NavigationView { DataContext = navigation };
+        using var window = Application.Current.CreateTestWindow(content: view);
+        window.Show();
+
+        var treeItem = await FindTreeItemAsync(view, section);
+        var tree = view.GetVisualDescendants().OfType<TreeView>().Single();
+        var sectionSelections = 0;
+        tree.SelectionChanged += (_, args) =>
+        {
+            if (args.AddedItems.Contains(section))
+            {
+                sectionSelections++;
+            }
+        };
+
+        ClickNavigationItem(window, treeItem, section.Name);
+        sectionSelections.ShouldBe(1);
+        section.IsExpanded.ShouldBeTrue();
+        treeItem.IsExpanded.ShouldBeTrue();
+
+        ClickNavigationItem(window, treeItem, section.Name);
+        sectionSelections.ShouldBe(2);
+        section.IsExpanded.ShouldBeFalse();
+        treeItem.IsExpanded.ShouldBeFalse();
+
+        var expander = treeItem.GetVisualDescendants().OfType<ToggleButton>()
+            .First(toggle => ReferenceEquals(toggle.DataContext, section));
+        ClickControl(window, expander);
+        section.IsExpanded.ShouldBeTrue();
+        treeItem.IsExpanded.ShouldBeTrue();
+
+        ClickControl(window, expander);
+        section.IsExpanded.ShouldBeFalse();
+        treeItem.IsExpanded.ShouldBeFalse();
+    }
+
+    [AvaloniaFact]
+    public async Task clicking_selected_resource_navigation_link_reactivates_its_document()
+    {
+        var services = Application.Current.GetTestServices();
+        using var workspace = await Application.Current.CreateClusterAsync();
+        using var navigation = services.GetRequiredService<NavigationViewModel>();
+        await TestWait.UntilAsync(
+            () => navigation.Clusters.Any(node => ReferenceEquals(node.Cluster, workspace)),
+            5000,
+            TestContext.Current.CancellationToken,
+            () => Dispatcher.UIThread.RunJobs());
+
+        var clusterNode = navigation.Clusters.Single(node => ReferenceEquals(node.Cluster, workspace));
+        clusterNode.IsExpanded = true;
+        var podsLink = new ResourceNavigationLink
+        {
+            Id = "test-pods",
+            Name = "Pods",
+            Cluster = workspace,
+            ResourceKind = GroupApiVersionKind.From<V1Pod>(),
+            OpenCommand = navigation.OpenResourceNavigationCommand,
+            OpenInNewTabCommand = navigation.OpenResourceNavigationInNewTabCommand,
+        };
+        clusterNode.NavigationItems.Add(podsLink);
+
+        var view = new NavigationView { DataContext = navigation };
+        using var window = Application.Current.CreateTestWindow(content: view);
+        window.Show();
+
+        var treeItem = await FindTreeItemAsync(view, podsLink);
+        ClickNavigationItem(window, treeItem, podsLink.Name);
+
+        var documents = navigation.Factory.GetDockable<IDocumentDock>("Documents");
+        documents.ShouldNotBeNull();
+        await TestWait.UntilAsync(
+            () => documents.VisibleDockables?.OfType<IResourceListViewModel>().Any(document =>
+                ReferenceEquals(document.Cluster, workspace) && document.Kind == GroupApiVersionKind.From<V1Pod>()) == true,
+            5000,
+            TestContext.Current.CancellationToken,
+            () => Dispatcher.UIThread.RunJobs());
+        var podsDocument = documents.VisibleDockables!.OfType<IResourceListViewModel>()
+            .Single(document => ReferenceEquals(document.Cluster, workspace)
+                && document.Kind == GroupApiVersionKind.From<V1Pod>());
+
+        var otherDocument = services.GetRequiredService<AboutViewModel>();
+        otherDocument.Id = $"navigation-test-{Guid.NewGuid():N}";
+        navigation.Factory.AddToDocuments(otherDocument);
+        navigation.Factory.SetActiveDockable(otherDocument);
+        navigation.Factory.SetFocusedDockable(documents, otherDocument);
+        ReferenceEquals(documents.ActiveDockable, otherDocument).ShouldBeTrue();
+
+        ClickNavigationItem(window, treeItem, podsLink.Name);
+
+        ReferenceEquals(documents.ActiveDockable, podsDocument).ShouldBeTrue();
+    }
+
+    private static async Task<TreeViewItem> FindTreeItemAsync(NavigationView view, NavigationItem item)
+    {
+        return await TestWait.UntilValueAsync(
+            () => view.GetVisualDescendants().OfType<TreeViewItem>()
+                .FirstOrDefault(treeItem => ReferenceEquals(treeItem.DataContext, item)),
+            5000,
+            cancellationToken: TestContext.Current.CancellationToken,
+            beforePoll: () => Dispatcher.UIThread.RunJobs())
+            ?? throw new TimeoutException($"Navigation item '{item.Name}' did not attach.");
+    }
+
+    private static void ClickNavigationItem(Window window, TreeViewItem treeItem, string name)
+    {
+        var label = treeItem.GetVisualDescendants().OfType<TextBlock>()
+            .First(textBlock => textBlock.Text == name);
+        ClickControl(window, label);
+    }
+
+    private static void ClickControl(Window window, Control control)
+    {
+        var position = control.TranslatePoint(new Point(control.Bounds.Width / 2, control.Bounds.Height / 2), window)
+            ?? throw new InvalidOperationException("Navigation control has no window position.");
+        window.MouseDown(position, MouseButton.Left);
+        window.MouseUp(position, MouseButton.Left);
+        Dispatcher.UIThread.RunJobs();
     }
 }

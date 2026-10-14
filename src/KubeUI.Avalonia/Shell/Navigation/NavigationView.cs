@@ -33,7 +33,7 @@ public sealed class NavigationView : ViewBase<NavigationViewModel>
             .ItemsSource(vm, x => x.Clusters)
             .Styles(
                 new Style<TreeViewItem>()
-                    .Setter(TreeViewItem.IsExpandedProperty, CompiledBinding.Create<IExpandableNavigationNode, bool>(x => x.IsExpanded)),
+                    .Setter(TreeViewItem.IsExpandedProperty, CompiledBinding.Create<IExpandableNavigationNode, bool>(x => x.IsExpanded, mode: BindingMode.TwoWay)),
                 new Style<Image>()
                     .Setter(HeightProperty, 16.0)
                     .Setter(WidthProperty, 16.0)
@@ -48,8 +48,8 @@ public sealed class NavigationView : ViewBase<NavigationViewModel>
                 CreateResourceTemplate(),
                 CreateNavigationItemTemplate()
             )
-            .OnSelectionChanged((args) => vm.HandleSelectionChangedCommand.Execute(args))
             .Behaviors(
+                new NavigationTreeSelectionBehavior(vm.HandleSelectionChangedCommand),
                 new TreeViewItemContextMenuBehavior()
             );
     }
