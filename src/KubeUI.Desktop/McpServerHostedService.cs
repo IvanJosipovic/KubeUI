@@ -49,7 +49,7 @@ internal sealed class McpServerHostedService(
 
         var applicationBuilder = new ApplicationBuilder(_desktopServices);
         applicationBuilder.UseHostFiltering();
-        // Bound requests before credential verification; no routed endpoint is available yet.
+        // Bound invalid credentials before routing; the limiter validates credentials before selecting partitions.
         applicationBuilder.UseRateLimiter();
         applicationBuilder.UseMiddleware<McpSecurityMiddleware>(_port);
         applicationBuilder.UseRouting();

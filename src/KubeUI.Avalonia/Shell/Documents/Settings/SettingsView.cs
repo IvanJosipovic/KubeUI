@@ -105,7 +105,6 @@ public sealed class SettingsView() : ViewBase<SettingsViewModel>
                     .Col(1));
     }
 
-    [Obsolete]
     private static ExpandableSection CreateMcpClientGrants(SettingsViewModel vm)
     {
         var tokenTextBox = new TextBox

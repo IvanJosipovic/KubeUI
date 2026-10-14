@@ -44,6 +44,8 @@ For clients whose configuration uses JSON, the connection details commonly look 
 
 The external client must support Streamable HTTP and per-server custom headers. Clients that only support OAuth sign-in or cannot set an Authorization header cannot use this local token setup. Keep the raw token in the client's secret store or an environment variable; do not commit it to a shared config file.
 
+KubeUI applies request limits per authenticated client. Requests with missing or invalid credentials share global concurrency and source-address limits.
+
 ### Codex CLI
 
 Set `KUBEUI_MCP_TOKEN` in the environment used to launch Codex, then add this to `~/.codex/config.toml`:

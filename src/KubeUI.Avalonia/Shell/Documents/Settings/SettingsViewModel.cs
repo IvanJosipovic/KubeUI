@@ -104,13 +104,13 @@ public sealed partial class SettingsViewModel : ViewModelBase, IDisposable, INot
     /// <summary>Creates the settings document view model.</summary>
     /// <param name="settingsService">Application settings service.</param>
     /// <param name="agentRegistry">Optional AI agent registry.</param>
-    /// <param name="mcpCredentialService">Optional MCP credential service.</param>
+    /// <param name="mcpCredentialService">Shared MCP credential service.</param>
     /// <param name="clusterCatalog">Optional catalog used to populate cluster scope choices.</param>
     /// <param name="mcpServerState">Optional runtime state of the embedded MCP listener.</param>
     public SettingsViewModel(
         ISettingsService settingsService,
+        IMcpCredentialService mcpCredentialService,
         IAgentRegistry? agentRegistry = null,
-        IMcpCredentialService? mcpCredentialService = null,
         IClusterRuntimeCatalog? clusterCatalog = null,
         IMcpServerState? mcpServerState = null)
     {
@@ -120,7 +120,7 @@ public sealed partial class SettingsViewModel : ViewModelBase, IDisposable, INot
         SettingsService = settingsService;
         _agentRegistry = agentRegistry;
         _mcpServerState = mcpServerState;
-        _mcpCredentialService = mcpCredentialService ?? new McpCredentialService(settingsService);
+        _mcpCredentialService = mcpCredentialService;
 
         if (clusterCatalog is not null)
         {

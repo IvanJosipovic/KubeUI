@@ -50,7 +50,11 @@ internal sealed class FileSettingsPersistence : ISettingsPersistence
             }
             else
             {
-                using var stream = new FileStream(SettingsPersistenceLoader.SettingsFilePath, new FileStreamOptions
+                var settingsPath = SettingsPersistenceLoader.SettingsFilePath;
+                if (File.Exists(settingsPath))
+                    File.SetUnixFileMode(settingsPath, UnixFileMode.UserRead | UnixFileMode.UserWrite);
+
+                using var stream = new FileStream(settingsPath, new FileStreamOptions
                 {
                     Mode = FileMode.Create,
                     Access = FileAccess.Write,
@@ -60,7 +64,7 @@ internal sealed class FileSettingsPersistence : ISettingsPersistence
                 using (var writer = new StreamWriter(stream, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false), leaveOpen: true))
                     writer.Write(serialized);
                 stream.Flush(flushToDisk: true);
-                File.SetUnixFileMode(SettingsPersistenceLoader.SettingsFilePath,
+                File.SetUnixFileMode(settingsPath,
                     UnixFileMode.UserRead | UnixFileMode.UserWrite);
             }
             _data = data;

@@ -26,12 +26,16 @@ internal static class McpServerServiceCollectionExtensions
         services.AddRateLimiter(options =>
         {
             options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
-            // The global policy runs in both middleware passes. Apply its limits before auth,
-            // then return no-op partitions once the request identity has been established.
+            // Authenticated clients skip these pre-authentication partitions. Invalid or missing
+            // credentials share global and address limits; the endpoint pass applies client limits.
             var concurrencyLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
             {
                 var identity = context.RequestServices
                     .GetRequiredService<McpRequestIdentityAccessor>().Current;
+                identity ??= McpSecurityMiddleware.GetRequestIdentity(
+                    context,
+                    context.RequestServices.GetRequiredService<IMcpCredentialService>(),
+                    port);
                 return identity is null
                     ? RateLimitPartition.GetConcurrencyLimiter(
                         "KubeUI.Mcp.Global",
@@ -47,6 +51,10 @@ internal static class McpServerServiceCollectionExtensions
             {
                 var identity = context.RequestServices
                     .GetRequiredService<McpRequestIdentityAccessor>().Current;
+                identity ??= McpSecurityMiddleware.GetRequestIdentity(
+                    context,
+                    context.RequestServices.GetRequiredService<IMcpCredentialService>(),
+                    port);
                 return identity is null
                     ? RateLimitPartition.GetSlidingWindowLimiter(
                         context.Connection.RemoteIpAddress?.ToString() ?? "unknown",

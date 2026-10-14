@@ -61,6 +61,10 @@ internal static class McpToolAuditFilter
                 outcome = McpToolOutcome.Denied;
                 throw new UnauthorizedAccessException("MCP client is not authorized for this tool.");
             }
+            catch (ArgumentException)
+            {
+                throw;
+            }
             catch
             {
                 throw new InvalidOperationException("MCP tool request could not be completed.");

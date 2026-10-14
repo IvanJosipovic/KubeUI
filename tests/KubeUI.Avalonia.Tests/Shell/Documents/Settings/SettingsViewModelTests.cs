@@ -30,7 +30,7 @@ public sealed class SettingsViewModelTests
         var registry = new Mock<IAgentRegistry>();
         registry.SetupGet(value => value.Agents).Returns([first.Object, second.Object]);
 
-        using var viewModel = new SettingsViewModel(settingsService.Object, registry.Object);
+        using var viewModel = CreateViewModel(settingsService.Object, registry.Object);
 
         viewModel.SelectedAgent.ShouldBeSameAs(first.Object);
         viewModel.SelectedAgent = second.Object;
@@ -46,7 +46,7 @@ public sealed class SettingsViewModelTests
         var settings = new AppSettings { McpServerPort = 62888 };
         var settingsService = new Mock<ISettingsService>();
         settingsService.SetupGet(service => service.Settings).Returns(settings);
-        using var viewModel = new SettingsViewModel(settingsService.Object);
+        using var viewModel = CreateViewModel(settingsService.Object);
 
         viewModel.McpServerPort = 70000;
         settings.McpServerPort.ShouldBe(65535);
@@ -71,7 +71,7 @@ public sealed class SettingsViewModelTests
         second.SetupGet(agent => agent.Name).Returns("Second");
         var registry = new Mock<IAgentRegistry>();
         registry.SetupGet(value => value.Agents).Returns([first.Object, second.Object]);
-        using var viewModel = new SettingsViewModel(settingsService.Object, registry.Object);
+        using var viewModel = CreateViewModel(settingsService.Object, registry.Object);
         var view = new SettingsView { DataContext = viewModel };
         using var window = Application.Current.CreateTestWindow(500, 500, view);
 
@@ -95,7 +95,7 @@ public sealed class SettingsViewModelTests
         agent.SetupGet(value => value.Name).Returns("Test agent");
         var registry = new Mock<IAgentRegistry>();
         registry.SetupGet(value => value.Agents).Returns([agent.Object]);
-        using var viewModel = new SettingsViewModel(settingsService.Object, registry.Object);
+        using var viewModel = CreateViewModel(settingsService.Object, registry.Object);
         var view = new SettingsView { DataContext = viewModel };
         using var window = Application.Current.CreateTestWindow(500, 700, view);
 
@@ -124,7 +124,7 @@ public sealed class SettingsViewModelTests
         agent.SetupGet(value => value.Name).Returns("Test agent");
         var registry = new Mock<IAgentRegistry>();
         registry.SetupGet(value => value.Agents).Returns([agent.Object]);
-        using var viewModel = new SettingsViewModel(settingsService.Object, registry.Object);
+        using var viewModel = CreateViewModel(settingsService.Object, registry.Object);
         var view = new SettingsView { DataContext = viewModel };
         using var window = Application.Current.CreateTestWindow(500, 700, view);
 
@@ -156,7 +156,7 @@ public sealed class SettingsViewModelTests
         agent.SetupGet(value => value.Name).Returns("Test agent");
         var registry = new Mock<IAgentRegistry>();
         registry.SetupGet(value => value.Agents).Returns([agent.Object]);
-        using var viewModel = new SettingsViewModel(
+        using var viewModel = CreateViewModel(
             settingsService.Object,
             registry.Object,
             clusterCatalog: clusterCatalog.Object,
@@ -190,10 +190,11 @@ public sealed class SettingsViewModelTests
         prod.SetupGet(cluster => cluster.Name).Returns("prod");
         var clusterCatalog = new Mock<IClusterRuntimeCatalog>();
         clusterCatalog.SetupGet(catalog => catalog.Clusters).Returns([dev.Object, prod.Object]);
-        using var viewModel = new SettingsViewModel(
+        using var viewModel = CreateViewModel(
             settingsService.Object,
             clusterCatalog: clusterCatalog.Object,
-            mcpServerState: CreateBoundMcpServerState());
+            mcpServerState: CreateBoundMcpServerState(),
+            mcpCredentialService: new McpCredentialService(settingsService.Object));
         viewModel.ExternalMcpClientName = "Codex";
         viewModel.ExternalMcpClusterOptions.Single(option => option.Name == "dev").IsSelected = true;
         viewModel.ExternalMcpClusterOptions.Single(option => option.Name == "prod").IsSelected = true;
@@ -220,7 +221,7 @@ public sealed class SettingsViewModelTests
         var settingsService = new Mock<ISettingsService>();
         settingsService.SetupGet(service => service.Settings).Returns(new AppSettings());
         settingsService.Setup(service => service.TrySaveSettings()).Returns(true);
-        using var viewModel = new SettingsViewModel(settingsService.Object);
+        using var viewModel = CreateViewModel(settingsService.Object);
 
         viewModel.RevokeExternalMcpCredentialCommand.Execute(null);
         viewModel.CreateExternalMcpCredentialCommand.Execute(null);
@@ -241,10 +242,8 @@ public sealed class SettingsViewModelTests
     {
         var settingsService = new Mock<ISettingsService>();
         settingsService.SetupGet(service => service.Settings).Returns(new AppSettings());
-        using var viewModel = new SettingsViewModel(settingsService.Object)
-        {
-            ExternalMcpClientName = new string('x', 81)
-        };
+        using var viewModel = CreateViewModel(settingsService.Object);
+        viewModel.ExternalMcpClientName = new string('x', 81);
 
         viewModel.CreateExternalMcpCredentialCommand.Execute(null);
 
@@ -272,13 +271,12 @@ public sealed class SettingsViewModelTests
             .ToArray();
         var clusterCatalog = new Mock<IClusterRuntimeCatalog>();
         clusterCatalog.SetupGet(catalog => catalog.Clusters).Returns(runtimes);
-        using var viewModel = new SettingsViewModel(
+        using var viewModel = CreateViewModel(
             settingsService.Object,
             clusterCatalog: clusterCatalog.Object,
-            mcpServerState: CreateBoundMcpServerState())
-        {
-            ExternalMcpClientName = "large-scope"
-        };
+            mcpServerState: CreateBoundMcpServerState(),
+            mcpCredentialService: new McpCredentialService(settingsService.Object));
+        viewModel.ExternalMcpClientName = "large-scope";
         foreach (var option in viewModel.ExternalMcpClusterOptions)
             option.IsSelected = true;
 
@@ -299,7 +297,7 @@ public sealed class SettingsViewModelTests
         agent.SetupGet(value => value.Name).Returns("Test agent");
         var registry = new Mock<IAgentRegistry>();
         registry.SetupGet(value => value.Agents).Returns([agent.Object]);
-        using var viewModel = new SettingsViewModel(
+        using var viewModel = CreateViewModel(
             settingsService.Object,
             registry.Object,
             mcpServerState: CreateBoundMcpServerState());
@@ -323,12 +321,11 @@ public sealed class SettingsViewModelTests
         var settingsService = new Mock<ISettingsService>();
         settingsService.SetupGet(service => service.Settings).Returns(settings);
         settingsService.Setup(service => service.TrySaveSettings()).Returns(false);
-        using var viewModel = new SettingsViewModel(
+        using var viewModel = CreateViewModel(
             settingsService.Object,
-            mcpServerState: CreateBoundMcpServerState())
-        {
-            ExternalMcpClientName = "Codex"
-        };
+            mcpServerState: CreateBoundMcpServerState(),
+            mcpCredentialService: new McpCredentialService(settingsService.Object));
+        viewModel.ExternalMcpClientName = "Codex";
 
         viewModel.CreateExternalMcpCredentialCommand.Execute(null);
 
@@ -344,12 +341,11 @@ public sealed class SettingsViewModelTests
         var settingsService = new Mock<ISettingsService>();
         settingsService.SetupGet(service => service.Settings).Returns(settings);
         settingsService.SetupSequence(service => service.TrySaveSettings()).Returns(true).Returns(false);
-        using var viewModel = new SettingsViewModel(
+        using var viewModel = CreateViewModel(
             settingsService.Object,
-            mcpServerState: CreateBoundMcpServerState())
-        {
-            ExternalMcpClientName = "Copilot"
-        };
+            mcpServerState: CreateBoundMcpServerState(),
+            mcpCredentialService: new McpCredentialService(settingsService.Object));
+        viewModel.ExternalMcpClientName = "Copilot";
         viewModel.CreateExternalMcpCredentialCommand.Execute(null);
         var token = viewModel.NewlyCreatedMcpToken;
 
@@ -365,5 +361,20 @@ public sealed class SettingsViewModelTests
         var state = new McpServerState();
         state.SetBoundPort(62888);
         return state;
+    }
+
+    private static SettingsViewModel CreateViewModel(
+        ISettingsService settingsService,
+        IAgentRegistry? agentRegistry = null,
+        IClusterRuntimeCatalog? clusterCatalog = null,
+        IMcpServerState? mcpServerState = null,
+        IMcpCredentialService? mcpCredentialService = null)
+    {
+        return new SettingsViewModel(
+            settingsService,
+            mcpCredentialService ?? Mock.Of<IMcpCredentialService>(),
+            agentRegistry,
+            clusterCatalog,
+            mcpServerState);
     }
 }
