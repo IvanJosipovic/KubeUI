@@ -145,6 +145,9 @@
     <value>KubeUI</value>
     <comment/>
   </data>
+  <data name="MainWindow_Options" xml:space="preserve">
+    <value>Options</value>
+  </data>
   <data name="AboutView_ContactEmailContent" xml:space="preserve">
     <value>admin@KubeUI.com</value>
     <comment/>

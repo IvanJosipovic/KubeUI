@@ -4,9 +4,12 @@ using System.Reflection;
 using System.Text.Json;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Chrome;
+using Avalonia.Controls.Templates;
 using Avalonia.Headless;
 using Avalonia.Input;
 using Avalonia.LogicalTree;
+using Avalonia.Markup.Declarative;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Styling;
@@ -27,6 +30,7 @@ using KubeUI.Avalonia.Features.Resources.Yaml;
 using KubeUI.Avalonia.Features.Resources.Yaml.Behaviors;
 using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Resources.Workloads.v1.Pod.Views;
+using KubeUI.Avalonia.Shell.Main;
 using KubeUI.Avalonia.Shell.Navigation;
 using KubeUI.Kubernetes;
 using KubeUI.Testing.Kubernetes.Bootstrap;
@@ -69,20 +73,37 @@ internal static class KubeUIWalkthroughRecorder
             throw new ArgumentException("A walkthrough needs at least one narration step.", nameof(steps));
         }
 
-        using var window = new RecordingWindow { Width = Width, Height = Height, CanResize = false };
         var cluster = await CreateWorkspaceAsync(
             clusterName,
             connect: start.ConnectToCluster,
             configureFakeCluster);
         using var serviceScope = KubeUIWalkthroughServices.GetRequiredServices().CreateScope();
+        var window = new MainWindow(useNativeChrome: false)
+        {
+            Width = Width,
+            Height = Height,
+            CanResize = false,
+        };
         try
         {
             var root = start.CreateView(
                 cluster.Workspace,
                 cluster.DemoResources,
                 serviceScope.ServiceProvider);
+            var viewModel = root.DataContext is MainViewModel mainViewModel
+                ? mainViewModel
+                : serviceScope.ServiceProvider.GetRequiredService<MainViewModel>();
+            window.DataContext = viewModel;
             var cursor = new CursorOverlay { IsHitTestVisible = false };
-            window.Content = new Grid { Children = { root, cursor } };
+            var content = new Grid { RowDefinitions = new RowDefinitions("36,*") };
+            var titleBar = CreateRecordingDecorations(window);
+            Grid.SetRow(root, 1);
+            Grid.SetRow(cursor, 0);
+            Grid.SetRowSpan(cursor, 2);
+            content.Children.Add(titleBar);
+            content.Children.Add(root);
+            content.Children.Add(cursor);
+            window.Content = content;
             window.Show();
             await WaitForUiAsync();
             await RecordClipAsync(
@@ -98,8 +119,23 @@ internal static class KubeUIWalkthroughRecorder
         }
         finally
         {
+            window.Close();
             await cluster.TestCluster.DisposeAsync();
         }
+    }
+
+    private static Control CreateRecordingDecorations(MainWindow window)
+    {
+        var theme = window.WindowDecorationsTheme
+            ?? throw new InvalidOperationException("The recording window has no drawn decorations theme.");
+        var template = theme.Setters
+            .OfType<Setter>()
+            .SingleOrDefault(setter => setter.Property == WindowDrawnDecorations.TemplateProperty)
+            ?.Value as ITemplate
+            ?? throw new InvalidOperationException("The recording window decorations template was not found.");
+        var result = (TemplateResult<WindowDrawnDecorationsContent>)template.Build();
+        return result.Result.Overlay
+            ?? throw new InvalidOperationException("The recording window decorations template has no overlay.");
     }
 
     private static async Task<(

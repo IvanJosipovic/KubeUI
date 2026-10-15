@@ -178,25 +178,20 @@ public sealed class MainViewModelTests
     }
 
     [AvaloniaFact]
-    public async Task help_menu_contains_check_for_updates_command()
+    public void options_menu_contains_check_for_updates_command()
     {
-        var vm = CreateViewModel();
-        MainView view = new() { DataContext = vm };
-        using var window = Application.Current.CreateTestWindow(content: view);
+        using var scope = Application.Current.GetTestServices().CreateScope();
+        var vm = scope.ServiceProvider.GetRequiredService<MainViewModel>();
+        var menu = MainMenu.CreateOptionsMenu(vm);
 
-        window.Show();
-        await TestApplicationExtensions.WaitForUiAsync();
-
-        view.GetVisualDescendants()
-            .OfType<Menu>()
-            .Single()
-            .Items
+        menu.Items
             .OfType<MenuItem>()
             .Single(item => item.Header?.ToString() == Assets.Resources.MainView_Menu_Help)
             .Items
             .OfType<MenuItem>()
-            .Select(item => item.Header?.ToString())
-            .ShouldContain("_Check for Updates");
+            .Single(item => item.Header?.ToString() == "_Check for Updates")
+            .Command
+            .ShouldBeSameAs(vm.CheckForUpdatesCommand);
     }
 
     [Fact]
