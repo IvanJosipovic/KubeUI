@@ -421,7 +421,8 @@ public sealed partial class MainViewModel : ViewModelBase
         return (
             currentVersion ?? Assets.Resources.UpdateAvailableView_CurrentVersion_Unknown,
             latestVersion,
-            UpdateAvailableViewModel.CreateReleaseNotesMarkdown(releases));
+            UpdateAvailableViewModel.CreateReleaseNotesMarkdown(
+                releases.OrderByDescending(release => SemanticVersion.Parse(release.Version))));
     }
 
     internal static async Task<IReadOnlyList<(string Version, string? Markdown)>> GetReleaseNotesAsync(
