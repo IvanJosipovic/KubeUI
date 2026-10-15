@@ -7,3 +7,4 @@
 ## Constraints
 - Shell views stay thin.
 - Shared shell helpers should stay in `Shell/` or shared infrastructure, not in cluster or resource features.
+- Update discovery opens one docked Updates document, reusing it when already open. Render release notes with the shared Markdown control and require confirmation before starting an update.

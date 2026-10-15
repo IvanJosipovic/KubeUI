@@ -1,4 +1,6 @@
+using System.Net.Http.Json;
 using System.Runtime.InteropServices;
+using System.Text.Json.Serialization;
 using Dock.Model.Controls;
 using Dock.Model.Core;
 using FluentAvalonia.UI.Controls;
@@ -14,19 +16,24 @@ using KubeUI.Avalonia.Services.Settings;
 using KubeUI.Avalonia.Shell.Documents.About;
 using KubeUI.Avalonia.Shell.Documents.CloudClusters.Aks;
 using KubeUI.Avalonia.Shell.Documents.Settings;
+using KubeUI.Avalonia.Shell.Documents.Updates;
 using KubeUI.Kubernetes;
 using Velopack;
+using Velopack.Locators;
 using Velopack.Sources;
 
 namespace KubeUI.Avalonia.Shell.Main;
 
 public sealed partial class MainViewModel : ViewModelBase
 {
+    internal const string GitHubReleasesHttpClientName = "GitHubReleases";
+
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<MainViewModel> _logger;
     private readonly IFactory _factory;
     private readonly IClusterRuntimeCatalog _runtimeCatalog;
     private readonly IPlatformServices _platformServices;
+    private readonly IHttpClientFactory _httpClientFactory;
 
     [ObservableProperty]
     private partial ISettingsService SettingsService { get; set; }
@@ -45,7 +52,8 @@ public sealed partial class MainViewModel : ViewModelBase
         ClusterWorkspaceCatalog clusterCatalog,
         IClusterRuntimeCatalog runtimeCatalog,
         IDialogService dialogService,
-        IPlatformServices platformServices)
+        IPlatformServices platformServices,
+        IHttpClientFactory httpClientFactory)
     {
         _serviceProvider = serviceProvider;
         _logger = logger;
@@ -55,6 +63,7 @@ public sealed partial class MainViewModel : ViewModelBase
         _runtimeCatalog = runtimeCatalog;
         _dialogService = dialogService;
         _platformServices = platformServices;
+        _httpClientFactory = httpClientFactory;
     }
 
     internal void Initialize()
@@ -347,7 +356,8 @@ public sealed partial class MainViewModel : ViewModelBase
             channel = $"win-{arch}";
         }
 
-        var um = new UpdateManager(source, new UpdateOptions() { ExplicitChannel = channel });
+        var options = new UpdateOptions() { ExplicitChannel = channel };
+        var um = new UpdateManager(source, options);
 
         if (um.IsInstalled)
         {
@@ -355,32 +365,29 @@ public sealed partial class MainViewModel : ViewModelBase
 
             if (update is not null)
             {
-                ContentDialogSettings settings = new()
-                {
-                    Title = Assets.Resources.MainView_CheckForUpdates_Title,
-                    Content = Assets.Resources.MainView_CheckForUpdates_Content + "\n\n" + Markdig.Markdown.ToPlainText(update.TargetFullRelease.NotesMarkdown),
-                    PrimaryButtonText = Assets.Resources.MainView_CheckForUpdates_Primary,
-                    SecondaryButtonText = Assets.Resources.MainView_CheckForUpdates_Secondary,
-                    DefaultButton = FAContentDialogButton.Secondary
-                };
+                using var httpClient = _httpClientFactory.CreateClient(GitHubReleasesHttpClientName);
+                var releaseNotes = await GetReleaseNotesAsync(
+                    httpClient,
+                    um.CurrentVersion!,
+                    update.TargetFullRelease.Version,
+                    SettingsService.Settings.PreReleaseChannel).ConfigureAwait(true);
 
-                var result = await _dialogService.ShowContentDialogAsync(this, settings).ConfigureAwait(true);
+                var updatePresentation = CreateUpdatePresentation(
+                    um.CurrentVersion?.ToString(),
+                    update.TargetFullRelease.Version.ToString(),
+                    releaseNotes
+                        .Append((update.TargetFullRelease.Version.ToString(), update.TargetFullRelease.NotesMarkdown)));
 
-                if (result == FAContentDialogResult.Primary)
-                {
-                    ContentDialogSettings updatePrompt = new()
-                    {
-                        Title = Assets.Resources.MainView_CheckForUpdates_Updating_Title,
-                        Content = Assets.Resources.MainView_CheckForUpdates_Updating_Content,
-                        IsPrimaryButtonEnabled = false,
-                        IsSecondaryButtonEnabled = false
-                    };
-
-                    _ = _dialogService.ShowContentDialogAsync(this, updatePrompt);
-
-                    await um.DownloadUpdatesAsync(update).ConfigureAwait(false);
-                    um.ApplyUpdatesAndRestart(update);
-                }
+                await Dispatcher.UIThread.InvokeAsync(() =>
+                    ShowUpdateAvailableView(
+                        updatePresentation.CurrentVersion,
+                        updatePresentation.LatestVersion,
+                        updatePresentation.ReleaseNotesMarkdown,
+                        async reportProgress =>
+                        {
+                            await um.DownloadUpdatesAsync(update, reportProgress).ConfigureAwait(false);
+                            um.ApplyUpdatesAndRestart(update);
+                        }));
             }
             else if (showNoUpdatesPrompt)
             {
@@ -391,6 +398,108 @@ public sealed partial class MainViewModel : ViewModelBase
         {
             await ShowUpdateCheckUnavailableAsync().ConfigureAwait(true);
         }
+    }
+
+    internal void ShowUpdateAvailableView(
+        string currentVersion,
+        string latestVersion,
+        string releaseNotesMarkdown,
+        Func<Action<int>, Task> updateAsync)
+    {
+        var vm = _factory.FindDockableById(nameof(UpdateAvailableViewModel)) as UpdateAvailableViewModel
+            ?? _serviceProvider.GetRequiredService<UpdateAvailableViewModel>();
+
+        vm.SetUpdate(currentVersion, latestVersion, releaseNotesMarkdown, updateAsync);
+        _factory.AddToDocuments(vm);
+    }
+
+    internal static (string CurrentVersion, string LatestVersion, string ReleaseNotesMarkdown) CreateUpdatePresentation(
+        string? currentVersion,
+        string latestVersion,
+        IEnumerable<(string Version, string? Markdown)> releases)
+    {
+        return (
+            currentVersion ?? Assets.Resources.UpdateAvailableView_CurrentVersion_Unknown,
+            latestVersion,
+            UpdateAvailableViewModel.CreateReleaseNotesMarkdown(releases));
+    }
+
+    internal static async Task<IReadOnlyList<(string Version, string? Markdown)>> GetReleaseNotesAsync(
+        HttpClient httpClient,
+        SemanticVersion currentVersion,
+        SemanticVersion latestVersion,
+        bool includePrereleases,
+        CancellationToken cancellationToken = default)
+    {
+        List<(SemanticVersion Version, string Tag, string? Markdown)> releases = [];
+        HashSet<string> seenTags = new(StringComparer.OrdinalIgnoreCase);
+        const int releasesPerPage = 10;
+
+        for (var page = 1; ; page++)
+        {
+            var uri = $"https://api.github.com/repos/IvanJosipovic/KubeUI/releases?per_page={releasesPerPage}&page={page}";
+            var githubReleases = await httpClient.GetFromJsonAsync<GitHubReleaseResponse[]>(
+                uri,
+                cancellationToken).ConfigureAwait(false) ?? [];
+
+            if (githubReleases.Length == 0)
+            {
+                break;
+            }
+
+            var reachedCurrentVersion = false;
+            foreach (var release in githubReleases)
+            {
+                if (string.IsNullOrWhiteSpace(release.TagName)
+                    || !seenTags.Add(release.TagName))
+                {
+                    continue;
+                }
+
+                var version = SemanticVersion.Parse(release.TagName.TrimStart('v', 'V'));
+                if (version.CompareTo(currentVersion) == 0)
+                {
+                    reachedCurrentVersion = true;
+                    continue;
+                }
+
+                if (release.Draft
+                    || (release.Prerelease && !includePrereleases))
+                {
+                    continue;
+                }
+
+                if (version > currentVersion && !(version > latestVersion))
+                {
+                    releases.Add((version, release.TagName, release.Body));
+                }
+            }
+
+            if (reachedCurrentVersion)
+            {
+                break;
+            }
+        }
+
+        releases.Sort(static (left, right) => left.Version.CompareTo(right.Version));
+        return releases
+            .Select(release => (release.Version.ToString(), release.Markdown))
+            .ToArray();
+    }
+
+    private sealed class GitHubReleaseResponse
+    {
+        [JsonPropertyName("tag_name")]
+        public string? TagName { get; init; }
+
+        [JsonPropertyName("body")]
+        public string? Body { get; init; }
+
+        [JsonPropertyName("draft")]
+        public bool Draft { get; init; }
+
+        [JsonPropertyName("prerelease")]
+        public bool Prerelease { get; init; }
     }
 
     private async Task ShowNoUpdatesAvailableAsync()
