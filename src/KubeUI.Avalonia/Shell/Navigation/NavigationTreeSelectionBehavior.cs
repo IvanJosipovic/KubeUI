@@ -1,4 +1,5 @@
 using System.Windows.Input;
+using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.VisualTree;
 using Avalonia.Xaml.Interactivity;
@@ -55,8 +56,23 @@ internal sealed class NavigationTreeSelectionBehavior : Behavior<TreeView>
             return;
         }
 
-        var item = source.GetSelfAndVisualAncestors().OfType<TreeViewItem>().FirstOrDefault();
-        if (item is null)
+        TreeViewItem? item = null;
+        var isExpanderPress = false;
+        foreach (var ancestor in source.GetSelfAndVisualAncestors())
+        {
+            if (ancestor is ToggleButton)
+            {
+                isExpanderPress = true;
+            }
+
+            if (ancestor is TreeViewItem treeViewItem)
+            {
+                item = treeViewItem;
+                break;
+            }
+        }
+
+        if (item is null || isExpanderPress)
         {
             return;
         }
