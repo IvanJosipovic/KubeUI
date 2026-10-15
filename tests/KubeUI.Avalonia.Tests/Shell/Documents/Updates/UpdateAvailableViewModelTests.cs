@@ -237,8 +237,8 @@ public sealed class UpdateAvailableViewModelTests
             "## 2.2.0\n\nNew feature.",
             _ => Task.CompletedTask);
 
-        viewModel.Title.ShouldBe("Update Available 2.1.0 -> 2.2.0");
-        viewModel.VersionSummary.ShouldBe(viewModel.Title);
+        viewModel.Title.ShouldBe(Assets.Resources.UpdateAvailableView_Title);
+        viewModel.VersionSummary.ShouldBe("Update Available 2.1.0 -> 2.2.0");
         viewModel.LatestVersion.ShouldBe("2.2.0");
         viewModel.MarkdownBuilder.ToString().ShouldContain("New feature.");
     }
