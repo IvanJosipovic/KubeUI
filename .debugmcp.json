@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "adapters": {
+    "csharp": {
+      "command": "C:\\Tools\\netcoredbg\\netcoredbg.exe",
+      "args": [
+        "--interpreter=vscode"
+      ],
+      "type": "coreclr",
+      "extensions": [
+        ".cs",
+        ".csproj"
+      ],
+      "transport": "stdio",
+      "launch": {
+        "program": "src/KubeUI.Desktop/bin/Debug/net11.0/KubeUI.Desktop.dll",
+        "cwd": ".",
+        "args": [],
+        "stopAtEntry": true
+      }
+    }
+  }
+}
