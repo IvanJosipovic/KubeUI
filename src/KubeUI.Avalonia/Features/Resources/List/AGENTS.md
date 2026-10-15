@@ -8,6 +8,7 @@
 - Namespaced resources default to a linked namespace filter that derives selections from the workspace's selected namespaces.
 - The resource list can switch to a local namespace selection mode that preserves its own filter choices without mutating the cluster workspace selection.
 - The library owns the 250 ms search debounce and worker-side filtering, search, and sorting; only bound collection publication and count updates run on the UI thread.
+- Selecting a row only selects it. The Properties view opens explicitly (double-tap, Enter, or the "View" action). When the Properties view is pinned to the right auto-hide strip, a single-item selection change shows that item in it (`ResourceConfigBase.ShowInPinnedProperties`) without expanding the strip; selecting a different resource kind replaces it with a pinned Properties view for that kind. Multi-selection leaves it unchanged. Restoring selection on tab activation follows the same rule.
 
 ## Validation
 - Keep app tests focused on namespace scope, Kubernetes actions, and resource-specific cells.

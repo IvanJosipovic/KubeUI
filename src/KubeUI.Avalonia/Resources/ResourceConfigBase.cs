@@ -457,6 +457,42 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
         return items?.Count == 1;
     }
 
+    /// <summary>
+    /// Shows a single selected resource in the Properties view when that view is pinned; otherwise does nothing.
+    /// Pinning the Properties view opts into following the list selection; it is never opened or expanded here.
+    /// </summary>
+    /// <param name="items">The current selection.</param>
+    public void ShowInPinnedProperties(IList? items)
+    {
+        if (items is not { Count: 1 } || items[0] is not T resource)
+        {
+            return;
+        }
+
+        var pinned = _factory.FindRightPinnedDockable(nameof(ResourcePropertiesViewModel<>));
+        if (pinned is null)
+        {
+            return;
+        }
+
+        if (pinned is ResourcePropertiesViewModel<T> properties)
+        {
+            if (!ReferenceEquals(properties.Object, resource))
+            {
+                properties.ShowResource(Cluster, resource);
+            }
+
+            return;
+        }
+
+        var instance = ServiceProvider.GetRequiredService<ResourcePropertiesViewModel<T>>();
+        instance.Initialize(Cluster, resource);
+        instance.CanFloat = false;
+        instance.CanDockAsDocument = false;
+
+        _factory.AddToRight(instance, previewPinned: false);
+    }
+
     [RelayCommand(CanExecute = nameof(CanViewYaml))]
     public void ViewYaml(IList items)
     {
