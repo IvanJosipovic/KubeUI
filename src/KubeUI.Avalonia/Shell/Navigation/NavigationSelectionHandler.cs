@@ -16,6 +16,7 @@ internal sealed class NavigationSelectionHandler
     private readonly ILogger _logger;
     private readonly INotificationManager _notificationManager;
     private readonly IServiceProvider _serviceProvider;
+    private readonly NavigationFeatureCatalog _featureCatalog;
     private readonly IPlatformServices _platformServices;
     private readonly Action<IDockable> _addToDocuments;
 
@@ -23,18 +24,26 @@ internal sealed class NavigationSelectionHandler
         ILogger logger,
         INotificationManager notificationManager,
         IServiceProvider serviceProvider,
+        NavigationFeatureCatalog featureCatalog,
         IPlatformServices platformServices,
         Action<IDockable> addToDocuments)
     {
         _logger = logger;
         _notificationManager = notificationManager;
         _serviceProvider = serviceProvider;
+        _featureCatalog = featureCatalog;
         _platformServices = platformServices;
         _addToDocuments = addToDocuments;
     }
 
     public async Task SelectAsync(NavigationLink link)
     {
+        if (link.ViewModelKey is { } featureId && _featureCatalog.TryGet(featureId, out var feature))
+        {
+            _addToDocuments(feature.CreateDockable(_serviceProvider, link.Cluster));
+            return;
+        }
+
         if (link.ViewModelKey == NavigationTargets.LoadYaml)
         {
             await ImportYamlAsync(link).ConfigureAwait(false);

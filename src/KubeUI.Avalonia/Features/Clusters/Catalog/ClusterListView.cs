@@ -9,7 +9,7 @@ public sealed partial class ClusterListView : ViewBase<ClusterListViewModel>
 {
     public ClusterListView()
     {
-        if (Design.IsDesignMode)
+        if (DesignTimePreview.IsDesignMode)
             DataContext = DesignTimePreview.Get<ClusterListViewModel>();
     }
 

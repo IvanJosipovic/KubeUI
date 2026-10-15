@@ -7,6 +7,7 @@ namespace KubeUI.Avalonia.Resources;
 public class ResourceListColumn<T, TValue> : IResourceListColumn where T : class, IKubernetesObject<V1ObjectMeta>, new()
 {
     private const string NullableValueMissingMessage = "Nullable object must have a value.";
+    private const string NullableValuePropertyMissingMessage = "Cannot read the Value property of a Nullable object that has no value.";
     private Func<T, TValue>? _fieldAccessor;
 
     public required string Key { get; set; }
@@ -93,7 +94,8 @@ public class ResourceListColumn<T, TValue> : IResourceListColumn where T : class
     {
         return ex is KeyNotFoundException
             || (ex is InvalidOperationException invalidOperationException
-                && invalidOperationException.Message == NullableValueMissingMessage);
+                && (invalidOperationException.Message == NullableValueMissingMessage
+                    || invalidOperationException.Message.StartsWith(NullableValuePropertyMissingMessage, StringComparison.Ordinal)));
     }
 
 }

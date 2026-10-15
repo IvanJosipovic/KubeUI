@@ -39,16 +39,97 @@ public sealed class AcpAgentIntegrationTests
     [Fact]
     public async Task acp_session_creation_exposes_structured_error_details()
     {
+        using var lease = new RecordingLease();
         await using var process = new InMemoryAcpProcess(
             sessionCreationException: new AcpException(-32602, "Invalid params", ParseJson("""{"type":"http"}""")));
         var agent = new AcpAgent(
             new AcpAgentDefinition { Id = "copilot", Name = "GitHub Copilot", Executable = "copilot" },
             () => process);
         var exception = await Should.ThrowAsync<InvalidOperationException>(
-            () => agent.CreateSessionAsync(new AgentSessionOptions()));
+            () => agent.CreateSessionAsync(new AgentSessionOptions { McpCredentialLease = lease }));
 
         exception.Message.ShouldContain("ACP error -32000: Invalid params.");
         exception.Message.ShouldContain("AcpException");
+        lease.IsDisposed.ShouldBeTrue();
+    }
+
+    [Fact]
+    public async Task acp_session_errors_and_activity_data_redact_mcp_credentials()
+    {
+        const string token = "mcp-canary-token";
+        using var lease = new RecordingLease();
+        var activityData = new ConcurrentBag<string>();
+        using var listener = new ActivityListener
+        {
+            ShouldListenTo = source => source.Name == AgentActivitySource.SourceName,
+            Sample = static (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllData,
+            ActivityStopped = activity =>
+            {
+                if (activity.StatusDescription is not null)
+                    activityData.Add(activity.StatusDescription);
+                foreach (var activityEvent in activity.Events)
+                    foreach (var tag in activityEvent.Tags)
+                        if (tag.Value is string value)
+                            activityData.Add(value);
+            }
+        };
+        ActivitySource.AddActivityListener(listener);
+        await using var process = new InMemoryAcpProcess(
+            supportsHttpMcp: true,
+            sessionCreationException: new AcpException(-32602, $"bad request {token}", new { token }));
+        var agent = new AcpAgent(
+            new AcpAgentDefinition { Id = "redaction", Name = "Redaction ACP", Executable = "unused" },
+            () => process);
+
+        var exception = await Should.ThrowAsync<InvalidOperationException>(() => agent.CreateSessionAsync(new AgentSessionOptions
+        {
+            McpEndpoint = "http://127.0.0.1:62888/mcp",
+            McpHeaders = new Dictionary<string, string> { ["Authorization"] = $"Bearer {token}" },
+            McpCredentialLease = lease
+        }));
+
+        exception.Message.ShouldNotContain(token);
+        exception.ToString().ShouldNotContain(token);
+        lease.IsDisposed.ShouldBeTrue();
+        activityData.ShouldNotContain(value => value.Contains(token, StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task acp_prompt_and_cancel_errors_redact_mcp_credentials()
+    {
+        const string token = "prompt-cancel-canary-token";
+        using var lease = new RecordingLease();
+        await using var process = new InMemoryAcpProcess(
+            supportsHttpMcp: true,
+            promptException: new AcpException(-32000, $"prompt failed with {token}", new { token }));
+        var agent = new AcpAgent(
+            new AcpAgentDefinition { Id = "redaction", Name = "Redaction ACP", Executable = "unused" },
+            () => process);
+        var session = await agent.CreateSessionAsync(new AgentSessionOptions
+        {
+            McpEndpoint = "http://127.0.0.1:62888/mcp",
+            McpHeaders = new Dictionary<string, string> { ["Authorization"] = $"Bearer {token}" },
+            McpCredentialLease = lease
+        });
+        session.Id.ShouldBe("fake-session");
+        await using var events = session.Events.GetAsyncEnumerator(TestContext.Current.CancellationToken);
+        process.EmitDiagnostic($"diagnostic contains {token}");
+        (await events.MoveNextAsync().AsTask().WaitAsync(TestContext.Current.CancellationToken)).ShouldBeTrue();
+        var diagnostic = events.Current.ShouldBeOfType<AgentDiagnosticEvent>();
+        diagnostic.Text.ShouldNotContain(token);
+
+        var promptError = await Should.ThrowAsync<InvalidOperationException>(() => session.PromptAsync("hello"));
+        promptError.Message.ShouldNotContain(token);
+        promptError.ToString().ShouldNotContain(token);
+        using var cancellation = new CancellationTokenSource();
+        cancellation.Cancel();
+        var cancelError = await Should.ThrowAsync<InvalidOperationException>(() => session.CancelAsync(cancellation.Token));
+        cancelError.Message.ShouldNotContain(token);
+        cancelError.ToString().ShouldNotContain(token);
+
+        process.Disconnect();
+        await session.DisposeAsync();
+        lease.IsDisposed.ShouldBeTrue();
     }
 
     private static JsonElement ParseJson(string json)
@@ -204,6 +285,8 @@ public sealed class AcpAgentIntegrationTests
     public async Task acp_session_registers_only_the_kubeui_mcp_server()
     {
         await using var process = new InMemoryAcpProcess(supportsHttpMcp: true);
+        using var lease = new RecordingLease();
+        const string token = "canary-acp-mcp-token";
         var agent = new AcpAgent(
             new AcpAgentDefinition { Id = "fake", Name = "Fake ACP", Executable = "unused" },
             () => process,
@@ -211,7 +294,12 @@ public sealed class AcpAgentIntegrationTests
 
         await using var session = await agent.CreateSessionAsync(new AgentSessionOptions
         {
-            McpEndpoint = "http://127.0.0.1:62888/mcp"
+            McpEndpoint = "http://127.0.0.1:62888/mcp",
+            McpHeaders = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["Authorization"] = $"Bearer {token}"
+            },
+            McpCredentialLease = lease
         });
 
         var mcpServers = process.NewSessionRequest!.McpServers!.ToArray();
@@ -220,12 +308,19 @@ public sealed class AcpAgentIntegrationTests
         var server = (McpServerHttp)mcpServers[0];
         server.Name.ShouldBe("kubeui");
         server.Url.ShouldBe("http://127.0.0.1:62888/mcp");
+        server.Headers.ShouldContain(header => header.Name == "Authorization" && header.Value == $"Bearer {token}");
+        new AgentSessionOptions { McpHeaders = new Dictionary<string, string> { ["Authorization"] = token } }
+            .ToString().ShouldNotContain(token);
+
+        await session.DisposeAsync();
+        lease.IsDisposed.ShouldBeTrue();
     }
 
     [Fact]
     public async Task acp_session_omits_http_mcp_when_agent_does_not_advertise_http()
     {
         await using var process = new InMemoryAcpProcess();
+        using var lease = new RecordingLease();
         var agent = new AcpAgent(
             new AcpAgentDefinition { Id = "fake", Name = "Fake ACP", Executable = "unused" },
             () => process,
@@ -233,10 +328,12 @@ public sealed class AcpAgentIntegrationTests
 
         await using var session = await agent.CreateSessionAsync(new AgentSessionOptions
         {
-            McpEndpoint = "http://127.0.0.1:62888/mcp"
+            McpEndpoint = "http://127.0.0.1:62888/mcp",
+            McpCredentialLease = lease
         });
 
         process.NewSessionRequest!.McpServers.ShouldBeEmpty();
+        lease.IsDisposed.ShouldBeTrue();
     }
 
     [Fact]
@@ -304,7 +401,8 @@ public sealed class AcpAgentIntegrationTests
         bool requiresAuthentication = false,
         IReadOnlyList<string>? authenticationMethodIds = null,
         AcpException? sessionCreationException = null,
-        bool supportsHttpMcp = false) : IAcpProcess
+        bool supportsHttpMcp = false,
+        AcpException? promptException = null) : IAcpProcess
     {
         private readonly Pipe _clientToServer = new();
         private readonly Pipe _serverToClient = new();
@@ -335,7 +433,9 @@ public sealed class AcpAgentIntegrationTests
                 new JsonMessageFormatter());
             _server = new JsonRpc(handler);
 #pragma warning restore CA2000
-            _fakeServer = new FakeAcpServer(_server, requiresAuthentication, authenticationMethodIds, sessionCreationException, supportsHttpMcp);
+            _fakeServer = new FakeAcpServer(
+                _server, requiresAuthentication, authenticationMethodIds, sessionCreationException,
+                supportsHttpMcp, promptException);
             _server.AddLocalRpcTarget(_fakeServer);
             _server.StartListening();
             return Task.CompletedTask;
@@ -376,7 +476,8 @@ public sealed class AcpAgentIntegrationTests
         bool requiresAuthentication,
         IReadOnlyList<string>? authenticationMethodIds,
         AcpException? sessionCreationException,
-        bool supportsHttpMcp)
+        bool supportsHttpMcp,
+        AcpException? promptException)
     {
         public TaskCompletionSource CancelReceived { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
         public TaskCompletionSource AuthenticationReceived { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -421,6 +522,8 @@ public sealed class AcpAgentIntegrationTests
         [JsonRpcMethod("session/prompt", UseSingleObjectParameterDeserialization = true)]
         public async Task<PromptResponse> PromptAsync(PromptRequest request)
         {
+            if (promptException is not null)
+                throw promptException;
             await rpc.NotifyWithParameterObjectAsync("session/update", new SessionNotification
             {
                 SessionId = request.SessionId,
@@ -438,5 +541,12 @@ public sealed class AcpAgentIntegrationTests
             CancelReceived.TrySetResult();
             return Task.CompletedTask;
         }
+    }
+
+    private sealed class RecordingLease : IDisposable
+    {
+        public bool IsDisposed { get; private set; }
+
+        public void Dispose() => IsDisposed = true;
     }
 }

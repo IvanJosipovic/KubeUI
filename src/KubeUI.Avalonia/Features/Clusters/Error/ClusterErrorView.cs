@@ -1,10 +1,12 @@
+using KubeUI.Avalonia.Infrastructure.DependencyInjection;
+
 namespace KubeUI.Avalonia.Features.Clusters.Error;
 
 public sealed partial class ClusterErrorView : ViewBase<ClusterErrorViewModel>
 {
     public ClusterErrorView()
     {
-        if (Design.IsDesignMode)
+        if (DesignTimePreview.IsDesignMode)
         {
             DataContext = new ClusterErrorViewModel
             {

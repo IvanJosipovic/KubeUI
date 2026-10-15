@@ -289,7 +289,6 @@ internal sealed class KubeUIWalkthrough
         return this;
     }
 
-    [Obsolete]
     public async Task RecordAsync()
     {
         AddCurrentStep();

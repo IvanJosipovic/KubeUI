@@ -30,7 +30,7 @@ public sealed class Fluent : AvaloniaStyles
     private readonly ColorPaletteResources _lightPalette = CreateLightPalette();
     private readonly ColorPaletteResources _darkPalette = CreateDarkPalette();
 
-    [RequiresUnreferencedCode()]
+    [RequiresUnreferencedCode("Fluent styles load Avalonia styles from runtime XAML resources.")]
     public Fluent()
     {
         Add(new SemiTheme { Locale = s_locale });

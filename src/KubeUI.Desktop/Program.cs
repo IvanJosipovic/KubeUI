@@ -13,14 +13,12 @@ using KubeUI.Avalonia;
 using KubeUI.AI.Diagnostics;
 using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
-using KubeUI.Avalonia.Infrastructure.Mcp;
 using KubeUI.Avalonia.Infrastructure.Platform;
 using KubeUI.Avalonia.Services.Settings;
 using KubeUI.Kubernetes.Serialization;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using ModelContextProtocol.Protocol;
 using NReco.Logging.File;
 using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
@@ -163,21 +161,7 @@ internal static class Program
         builder.Services.AddKubeUIAppServices();
 
         if (mcpEnabledOverride ?? settings.Settings.McpServerEnabled)
-        {
-            builder.Services.AddRouting();
-            builder.Services.AddSingleton(
-                static _ => new DiagnosticListener("KubeUI.Mcp"));
-            builder.Services.AddMcpServer()
-                .WithHttpTransport(options => options.Stateless = true)
-                .WithListResourcesHandler(static (_, _) =>
-                    ValueTask.FromResult(new ListResourcesResult { Resources = [] }))
-                .WithListResourceTemplatesHandler(static (_, _) =>
-                    ValueTask.FromResult(new ListResourceTemplatesResult { ResourceTemplates = [] }))
-                .WithTools<McpTools>(McpToolJsonSerializationContext.Default.Options);
-            var port = mcpPortOverride ?? settings.Settings.McpServerPort;
-            builder.Services.AddSingleton<IHostedService>(services =>
-                new McpServerHostedService(services, port));
-        }
+            builder.Services.AddKubeUIMcpServer(mcpPortOverride ?? settings.Settings.McpServerPort);
 
         if (includeOptionalServices && settings.Settings.TelemetryEnabled)
             builder.Services.AddTelemetry();
@@ -199,12 +183,15 @@ internal static class Program
         int? mcpPortOverride = null,
         bool? mcpEnabledOverride = null)
     {
-        var host = CreateDesktopHostBuilder(
+        var hostBuilder = CreateDesktopHostBuilder(
             args,
             includeOptionalServices,
             configureServices,
             mcpPortOverride,
-            mcpEnabledOverride).Build();
+            mcpEnabledOverride);
+        // Tests use this helper only; keep streamed MCP responses from stretching each host teardown to the full shutdown grace period.
+        hostBuilder.Services.Configure<HostOptions>(options => options.ShutdownTimeout = TimeSpan.FromSeconds(1));
+        var host = hostBuilder.Build();
         host.Start();
         return host;
     }

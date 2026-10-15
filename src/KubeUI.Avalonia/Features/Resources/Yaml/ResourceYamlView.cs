@@ -112,6 +112,7 @@ public sealed partial class ResourceYamlView : ViewBase<ResourceYamlViewModel>
             .Content(new FluentIcon().Icon(Icon.TextWrap));
     }
 
+    [RequiresUnreferencedCode("Calls KubeUI.Avalonia.Features.Resources.Yaml.ResourceYamlView.CreateEditorContextMenu(ResourceYamlViewModel, TextEditor)")]
     private static TextEditor CreateEditor(ResourceYamlViewModel vm, Popup hoverPopup)
     {
         var editor = new TextEditor()

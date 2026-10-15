@@ -1,0 +1,7 @@
+<linker>
+  <assembly fullname="KubeUI.Avalonia">
+    <type fullname="KubeUI.Avalonia.Infrastructure.DependencyInjection.DesignTimePreview">
+      <method signature="System.Boolean get_IsDesignMode()" body="stub" value="false" />
+    </type>
+  </assembly>
+</linker>

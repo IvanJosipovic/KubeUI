@@ -17,7 +17,7 @@ public sealed class NavigationView : ViewBase<NavigationViewModel>
 {
     public NavigationView()
     {
-        if (Design.IsDesignMode)
+        if (DesignTimePreview.IsDesignMode)
         {
             DataContext = DesignTimePreview.Get<NavigationViewModel>();
         }
@@ -27,13 +27,13 @@ public sealed class NavigationView : ViewBase<NavigationViewModel>
     {
         ArgumentNullException.ThrowIfNull(vm);
 
-        return new TreeView()
+        return new NavigationTreeView()
             .Margin(new Thickness(-5, 0, 0, 0))
             .AutoScrollToSelectedItem(false)
             .ItemsSource(vm, x => x.Clusters)
             .Styles(
                 new Style<TreeViewItem>()
-                    .Setter(TreeViewItem.IsExpandedProperty, CompiledBinding.Create<IExpandableNavigationNode, bool>(x => x.IsExpanded)),
+                    .Setter(TreeViewItem.IsExpandedProperty, CompiledBinding.Create<IExpandableNavigationNode, bool>(x => x.IsExpanded, mode: BindingMode.TwoWay)),
                 new Style<Image>()
                     .Setter(HeightProperty, 16.0)
                     .Setter(WidthProperty, 16.0)
@@ -48,8 +48,8 @@ public sealed class NavigationView : ViewBase<NavigationViewModel>
                 CreateResourceTemplate(),
                 CreateNavigationItemTemplate()
             )
-            .OnSelectionChanged((args) => vm.HandleSelectionChangedCommand.Execute(args))
             .Behaviors(
+                new NavigationTreeSelectionBehavior(vm.HandleSelectionChangedCommand),
                 new TreeViewItemContextMenuBehavior()
             );
     }

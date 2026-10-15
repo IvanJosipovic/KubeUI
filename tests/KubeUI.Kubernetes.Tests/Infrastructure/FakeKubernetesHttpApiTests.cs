@@ -272,8 +272,8 @@ public sealed class FakeKubernetesHttpApiTests
             new KubernetesClientConfiguration { Host = "http://fake-kubernetes" },
             api);
 
-        var nodes = await client.GetKubernetesNodesMetricsAsync();
-        var pods = await client.GetKubernetesPodsMetricsAsync();
+        var nodes = await KubernetesMetricsClient.GetKubernetesNodesMetricsAsync(client, TestContext.Current.CancellationToken);
+        var pods = await KubernetesMetricsClient.GetKubernetesPodsMetricsAsync(client, TestContext.Current.CancellationToken);
         var apiGroups = await client.Apis.GetAPIVersionsAsync();
 
         var nodeMetric = nodes.Items.ShouldHaveSingleItem();

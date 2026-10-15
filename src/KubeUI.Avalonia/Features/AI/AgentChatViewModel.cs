@@ -18,7 +18,6 @@ public sealed partial class AgentChatViewModel : ViewModelBase, IAsyncDisposable
         Ask for approval before using external tools, skills, or any operation that can change resources.
         Do not use another MCP server unless the user has explicitly approved that server in this chat.
         Never invent cluster state or claim an operation succeeded without tool confirmation.
-        If KubeUI MCP is unavailable, try communicating with it using standard http requests.
         Finally, If KubeUI MCP is unavailable, say so clearly and explain what access is missing and how to enable it.
         Keep responses concise and focused on the user's request.
         """;
@@ -27,7 +26,9 @@ public sealed partial class AgentChatViewModel : ViewModelBase, IAsyncDisposable
     private readonly ISettingsService _settingsService;
     private readonly IAgentContextService _contextService;
     private readonly IMcpServerState _mcpServerState;
+    private readonly IMcpCredentialService? _mcpCredentialService;
     private IAgentSession? _session;
+    private IDisposable? _mcpCredentialLease;
     private CancellationTokenSource? _turnCancellation;
 
     public ObservableCollection<AgentChatMessage> Messages { get; } = [];
@@ -50,12 +51,14 @@ public sealed partial class AgentChatViewModel : ViewModelBase, IAsyncDisposable
         IAgentRegistry registry,
         ISettingsService settingsService,
         IAgentContextService contextService,
-        IMcpServerState mcpServerState)
+        IMcpServerState mcpServerState,
+        IMcpCredentialService? mcpCredentialService = null)
     {
         _registry = registry;
         _settingsService = settingsService;
         _contextService = contextService;
         _mcpServerState = mcpServerState;
+        _mcpCredentialService = mcpCredentialService;
         Messages.CollectionChanged += MessagesOnCollectionChanged;
         _settingsService.Settings.PropertyChanged += SettingsOnPropertyChanged;
         Context = _contextService.Context;
@@ -85,12 +88,32 @@ public sealed partial class AgentChatViewModel : ViewModelBase, IAsyncDisposable
                 && _mcpServerState.BoundPort is not null
                 ? McpServerConfiguration.GetEndpoint(_mcpServerState.BoundPort.Value)
                 : null;
-            _session = await SelectedAgent.CreateSessionAsync(new AgentSessionOptions
+            var mcpCredential = mcpEndpoint is null || _mcpCredentialService is null
+                ? null
+                : _mcpCredentialService.CreateSessionCredential();
+            _mcpCredentialLease = mcpCredential;
+            try
             {
-                Context = Context,
-                McpEndpoint = mcpEndpoint,
-                TrustedMcpServers = new HashSet<string>(StringComparer.Ordinal) { "kubeui" }
-            }, _turnCancellation.Token);
+                _session = await SelectedAgent.CreateSessionAsync(new AgentSessionOptions
+                {
+                    Context = Context,
+                    McpEndpoint = mcpEndpoint,
+                    McpHeaders = mcpCredential is null
+                        ? new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+                        : new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+                        {
+                            ["Authorization"] = $"Bearer {mcpCredential.Token}"
+                        },
+                    McpCredentialLease = mcpCredential,
+                    TrustedMcpServers = new HashSet<string>(StringComparer.Ordinal) { "kubeui" }
+                }, _turnCancellation.Token);
+            }
+            catch
+            {
+                mcpCredential?.Dispose();
+                _mcpCredentialLease = null;
+                throw;
+            }
             promptTask = _session.PromptAsync(BuildAgentPrompt(text), _turnCancellation.Token);
             await foreach (var item in _session.Events)
             {
@@ -191,12 +214,22 @@ public sealed partial class AgentChatViewModel : ViewModelBase, IAsyncDisposable
 
     private async Task DisposeSessionAsync()
     {
-        if (_session is not null)
+        var session = _session;
+        _session = null;
+        var credentialLease = _mcpCredentialLease;
+        _mcpCredentialLease = null;
+        try
         {
-            await _session.DisposeAsync().ConfigureAwait(false);
-            _session = null;
+            if (session is not null)
+                await session.DisposeAsync().ConfigureAwait(false);
         }
-        _turnCancellation?.Cancel();
+        finally
+        {
+            credentialLease?.Dispose();
+            _turnCancellation?.Cancel();
+            _turnCancellation?.Dispose();
+            _turnCancellation = null;
+        }
     }
 
     private static string FormatInput(string? input)

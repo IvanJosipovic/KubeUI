@@ -209,29 +209,36 @@ public sealed partial class PodLogsViewModel
         }
         finally
         {
-            if (reconnectBuffer is not null
-                && TryFlushReconnectBuffer(reconnectBuffer, option, atEnd: true, out var lines))
+            try
             {
-                for (var i = 0; i < lines.Count; i++)
+                if (reconnectBuffer is not null
+                    && TryFlushReconnectBuffer(reconnectBuffer, option, atEnd: true, out var lines))
                 {
-                    QueueOutputEntry(pendingOutput, option, lines[i]);
-                    if (pendingOutput.Count >= MaxOutputBatchSize)
+                    for (var i = 0; i < lines.Count; i++)
                     {
-                        await FlushOutputEntriesAsync(pendingOutput, connectionCts, outputGeneration);
-                        pendingOutput.Clear();
+                        QueueOutputEntry(pendingOutput, option, lines[i]);
+                        if (pendingOutput.Count >= MaxOutputBatchSize)
+                        {
+                            await FlushOutputEntriesAsync(pendingOutput, connectionCts, outputGeneration);
+                            pendingOutput.Clear();
+                        }
                     }
+
+                    appendedOutput |= lines.Count > 0;
                 }
 
-                appendedOutput |= lines.Count > 0;
+                await FlushOutputEntriesAsync(pendingOutput, connectionCts, outputGeneration);
+
+                var isLastActiveReader = DecrementActiveReaders(connectionCts);
+                if (((streamEnded && appendedOutput) || transientReadFailure)
+                    && ShouldReconnectAfterStreamEnd(reader, option, connectionResolution.Pod, cancellationToken, isLastActiveReader))
+                {
+                    ScheduleReconnectAfterStreamEnd(connectionCts);
+                }
             }
-
-            await FlushOutputEntriesAsync(pendingOutput, connectionCts, outputGeneration);
-
-            var isLastActiveReader = DecrementActiveReaders(connectionCts);
-            if (((streamEnded && appendedOutput) || transientReadFailure)
-                && ShouldReconnectAfterStreamEnd(reader, option, connectionResolution.Pod, cancellationToken, isLastActiveReader))
+            finally
             {
-                ScheduleReconnectAfterStreamEnd(connectionCts);
+                ReleaseStreamReader(reader);
             }
         }
     }

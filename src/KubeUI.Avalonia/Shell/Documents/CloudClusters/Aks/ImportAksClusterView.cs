@@ -9,7 +9,7 @@ public sealed class ImportAksClusterView : ViewBase<ImportAksClusterViewModel>
 {
     public ImportAksClusterView()
     {
-        if (Design.IsDesignMode)
+        if (DesignTimePreview.IsDesignMode)
         {
             DataContext = DesignTimePreview.Get<ImportAksClusterViewModel>();
         }

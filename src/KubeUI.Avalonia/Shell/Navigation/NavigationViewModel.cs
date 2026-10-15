@@ -29,6 +29,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
     private readonly IResourceIconService _iconService;
     private readonly IPlatformServices _platformServices;
     private readonly NavigationResourceSynchronizer _resourceNavigation;
+    private readonly NavigationFeatureSynchronizer _featureNavigation;
     private readonly NavigationClusterCatalogSynchronizer _clusterNavigation;
     private readonly NavigationSelectionHandler _selection;
 
@@ -46,6 +47,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
         IServiceProvider serviceProvider,
         IResourceNavigationService documentService,
         IResourceIconService iconService,
+        NavigationFeatureCatalog featureCatalog,
         IPlatformServices platformServices)
     {
         _logger = logger;
@@ -61,10 +63,12 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
             OpenResourceNavigationCommand,
             OpenResourceNavigationInNewTabCommand,
             _logger);
+        _featureNavigation = new NavigationFeatureSynchronizer(featureCatalog);
         _selection = new NavigationSelectionHandler(
             _logger,
             _notificationManager,
             _serviceProvider,
+            featureCatalog,
             _platformServices,
             dockable => Factory.AddToDocuments(dockable));
         Title = Assets.Resources.NavigationView_Title!;
@@ -388,6 +392,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
         _resourceNavigation.Apply(cluster, resourceConfig, resourceConfigs, _clusterNavigation.Nodes);
         if (_clusterNavigation.TryGetNode(cluster, out var node))
         {
+            _featureNavigation.Update(cluster, node);
             _logger.LogDebug(
                 "Navigation resource config applied for {ClusterName}: {ResourceKind}; Items={Items}",
                 cluster.Runtime.Name,
@@ -411,6 +416,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
             }
 
             _resourceNavigation.RemoveCustomResourceDefinition(node, removedKind);
+            _featureNavigation.Update(cluster, node);
             foreach (var resourceConfig in cluster.GetResourceConfigs())
             {
                 ApplyResourceConfigNavigation(cluster, resourceConfig);

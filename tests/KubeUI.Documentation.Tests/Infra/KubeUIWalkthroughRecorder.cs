@@ -1,7 +1,7 @@
 using System.Diagnostics;
 using System.Globalization;
 using System.Reflection;
-using System.Text.Json;
+using System.Text.Json.Nodes;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless;
@@ -52,7 +52,6 @@ internal static class KubeUIWalkthroughRecorder
     public static bool IsRecordingEnabled =>
         !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("KUBEUI_DOCS_VIDEO_DIR"));
 
-    [Obsolete]
     public static async Task RecordAsync(
         string theme,
         string clipName,
@@ -510,43 +509,43 @@ internal static class KubeUIWalkthroughRecorder
     private static GenericKubernetesObject CreateNodeMetrics(int index)
     {
         var nodeName = $"node-{index}";
-        return KubernetesJson.Deserialize<GenericKubernetesObject>(JsonSerializer.Serialize(new
+        return KubernetesJson.Deserialize<GenericKubernetesObject>(new JsonObject
         {
-            apiVersion = "metrics.k8s.io/v1beta1",
-            kind = "NodeMetrics",
-            metadata = new { name = nodeName },
-            timestamp = DateTime.UtcNow,
-            window = "30s",
-            usage = new Dictionary<string, string>
+            ["apiVersion"] = "metrics.k8s.io/v1beta1",
+            ["kind"] = "NodeMetrics",
+            ["metadata"] = new JsonObject { ["name"] = nodeName },
+            ["timestamp"] = DateTime.UtcNow,
+            ["window"] = "30s",
+            ["usage"] = new JsonObject
             {
                 ["cpu"] = $"{420 + index * 135}m",
                 ["memory"] = $"{1800 + index * 375}Mi",
             },
-        }))!;
+        }.ToJsonString())!;
     }
 
     private static GenericKubernetesObject CreatePodMetrics(string podName, string containerName, int index)
     {
-        return KubernetesJson.Deserialize<GenericKubernetesObject>(JsonSerializer.Serialize(new
+        return KubernetesJson.Deserialize<GenericKubernetesObject>(new JsonObject
         {
-            apiVersion = "metrics.k8s.io/v1beta1",
-            kind = "PodMetrics",
-            metadata = new { name = podName, @namespace = "default" },
-            timestamp = DateTime.UtcNow,
-            window = "30s",
-            containers = new[]
+            ["apiVersion"] = "metrics.k8s.io/v1beta1",
+            ["kind"] = "PodMetrics",
+            ["metadata"] = new JsonObject { ["name"] = podName, ["namespace"] = "default" },
+            ["timestamp"] = DateTime.UtcNow,
+            ["window"] = "30s",
+            ["containers"] = new JsonArray
             {
-                new
+                new JsonObject
                 {
-                    name = containerName,
-                    usage = new Dictionary<string, string>
+                    ["name"] = containerName,
+                    ["usage"] = new JsonObject
                     {
                         ["cpu"] = $"{25 + index * 17}m",
                         ["memory"] = $"{42 + index * 19}Mi",
                     },
                 },
             },
-        }))!;
+        }.ToJsonString())!;
     }
 
     private static string GetPodQosClass(int index) => (index % 5) switch
@@ -717,7 +716,6 @@ internal static class KubeUIWalkthroughRecorder
         VolumeName = volumeName,
     };
 
-    [Obsolete]
     private static async Task RecordClipAsync(
         string clipName,
         string theme,
@@ -976,7 +974,6 @@ internal static class KubeUIWalkthroughRecorder
         }
     }
 
-    [Obsolete]
     private static async Task<Point> ExploreYamlCompletionAsync(
         string field,
         Control root,
@@ -1052,7 +1049,6 @@ internal static class KubeUIWalkthroughRecorder
         return origin;
     }
 
-    [Obsolete]
     private static async Task<Point> NavigateRelationshipGraphAsync(
         WalkthroughAction action,
         Control root,
@@ -1164,7 +1160,6 @@ internal static class KubeUIWalkthroughRecorder
         => vertex.TranslatePoint(new Point(vertex.Bounds.Width / 2, vertex.Bounds.Height / 2), window)
             ?? throw new InvalidOperationException($"Could not locate graph node '{vertex.Vertex}'.");
 
-    [Obsolete]
     private static async Task<Point> DragRelationshipViewportAsync(
         Window window,
         CursorOverlay cursor,
@@ -1198,7 +1193,6 @@ internal static class KubeUIWalkthroughRecorder
         return dragEnd;
     }
 
-    [Obsolete]
     private static async Task<Point> TypeYamlTextAsync(
         WalkthroughAction action,
         Control root,
@@ -1500,7 +1494,6 @@ internal static class KubeUIWalkthroughRecorder
             ?? throw new InvalidOperationException("Could not locate the YAML editor caret in the window.");
     }
 
-    [Obsolete]
     private static async Task<Point> OpenNavigationSectionsAsync(
         string name,
         Control root,
@@ -1571,7 +1564,6 @@ internal static class KubeUIWalkthroughRecorder
             && FindNavigationParents(viewModel.Clusters, name, []);
     }
 
-    [Obsolete]
     private static async Task MoveCursorAsync(
         Window window,
         CursorOverlay cursor,
@@ -1597,7 +1589,6 @@ internal static class KubeUIWalkthroughRecorder
         }
     }
 
-    [Obsolete]
     private static async Task<Point> ParkYamlPointerAsync(
         Window window,
         CursorOverlay cursor,
@@ -1615,7 +1606,6 @@ internal static class KubeUIWalkthroughRecorder
         return destination;
     }
 
-    [Obsolete]
     private static async Task ClickAsync(
         Window window,
         CursorOverlay cursor,
@@ -1635,7 +1625,6 @@ internal static class KubeUIWalkthroughRecorder
         cursor.IsClicking = false;
     }
 
-    [Obsolete]
     private static string CaptureFrame(Window window, string directory, int stepIndex, int frameIndex)
     {
         Dispatcher.UIThread.RunJobs();
@@ -1645,11 +1634,10 @@ internal static class KubeUIWalkthroughRecorder
         using var bitmap = new RenderTargetBitmap(pixelSize, new Vector(96, 96));
         bitmap.Render(window);
         var path = Path.Combine(directory, $"step-{stepIndex:D3}-frame-{frameIndex:D4}.png");
-        bitmap.Save(path);
+        bitmap.Save(path, PngBitmapEncoderOptions.Default);
         return path;
     }
 
-    [Obsolete]
     private static void AddHeldFrame(
         Window window,
         string directory,

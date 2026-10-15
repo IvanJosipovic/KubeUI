@@ -7,11 +7,13 @@ namespace KubeUI.Avalonia.Infrastructure.DependencyInjection;
 
 internal static class DesignTimePreview
 {
+    public static bool IsDesignMode => Design.IsDesignMode;
+
     private static IServiceProvider Services
     {
         get
         {
-            if (!Design.IsDesignMode)
+            if (!IsDesignMode)
             {
                 throw new InvalidOperationException($"{nameof(DesignTimePreview)} can only be used in design mode.");
             }
@@ -33,7 +35,7 @@ internal static class DesignTimePreview
 
     public static void Run(Action action)
     {
-        if (!Design.IsDesignMode)
+        if (!IsDesignMode)
         {
             return;
         }
@@ -43,7 +45,7 @@ internal static class DesignTimePreview
 
     public static void Run(Func<Task> action)
     {
-        if (!Design.IsDesignMode)
+        if (!IsDesignMode)
         {
             return;
         }

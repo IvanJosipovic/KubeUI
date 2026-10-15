@@ -11,7 +11,7 @@ public sealed class MainView : ViewBase<MainViewModel>
 {
     public MainView()
     {
-        if (Design.IsDesignMode)
+        if (DesignTimePreview.IsDesignMode)
         {
             DataContext = DesignTimePreview.Get<MainViewModel>();
         }

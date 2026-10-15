@@ -8,7 +8,7 @@ public sealed class ClusterSettingsView : ViewBase<ClusterSettingsViewModel>
 {
     public ClusterSettingsView()
     {
-        if (Design.IsDesignMode)
+        if (DesignTimePreview.IsDesignMode)
         {
             DataContext = DesignTimePreview.Get<ClusterSettingsViewModel>();
         }
