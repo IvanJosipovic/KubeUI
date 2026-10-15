@@ -99,7 +99,12 @@ public class SettingsService : ObservableObject, ISettingsService, IClusterSetti
 
     public virtual void SaveSettings()
     {
-        _persistence.Save(new SettingsPersistenceData
+        _ = TrySaveSettings();
+    }
+
+    public virtual bool TrySaveSettings()
+    {
+        var saved = _persistence.Save(new SettingsPersistenceData
         {
             Settings = Settings,
             Appearance = Appearance,
@@ -113,6 +118,7 @@ public class SettingsService : ObservableObject, ISettingsService, IClusterSetti
         {
             Dispatcher.UIThread.Post(ApplySettings);
         }
+        return saved;
     }
 
     public virtual void ApplySettings()

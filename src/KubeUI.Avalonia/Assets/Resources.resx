@@ -2434,7 +2434,11 @@
     <comment/>
   </data>
   <data name="AgentPermissionDialog_ContentFormat" xml:space="preserve">
-    <value>The agent requests {0}: {1}.This operation is {2}.</value>
+    <value>The agent requests {0}: {1}. This operation is {2}.</value>
+    <comment/>
+  </data>
+  <data name="AgentPermissionDialog_ContentWithRequesterFormat" xml:space="preserve">
+    <value>MCP client '{0}' requests {1}: {2}. This operation is {3}.</value>
     <comment/>
   </data>
   <data name="AgentPermissionDialog_UnspecifiedResource" xml:space="preserve">
@@ -2735,5 +2739,93 @@
   </data>
   <data name="NavigationView_ContextMenu_Collapse" xml:space="preserve">
     <value>Collapse</value>
+  </data>
+  <data name="SettingsView_McpClients_Description" xml:space="preserve">
+    <value>Create a separate bearer token for each trusted host app. KubeUI stores only token verifiers. ConfigMaps, custom resources, and pod logs may contain credentials; Secret reads still require approval.</value>
+    <comment/>
+  </data>
+  <data name="SettingsView_McpClients_Heading" xml:space="preserve">
+    <value>External MCP clients</value>
+    <comment/>
+  </data>
+  <data name="SettingsView_McpServerUnavailable" xml:space="preserve">
+    <value>MCP server is not listening. Check whether another process is using the configured port. Do not connect external clients until KubeUI is listening.</value>
+    <comment/>
+  </data>
+  <data name="SettingsView_McpClients_CreateHeading" xml:space="preserve">
+    <value>Create a client</value>
+    <comment/>
+  </data>
+  <data name="SettingsView_McpClients_ExistingHeading" xml:space="preserve">
+    <value>Existing clients</value>
+    <comment/>
+  </data>
+  <data name="SettingsView_McpClients_Empty" xml:space="preserve">
+    <value>No external clients yet.</value>
+    <comment/>
+  </data>
+  <data name="SettingsView_McpClientName_Label" xml:space="preserve">
+    <value>Client name</value>
+    <comment/>
+  </data>
+  <data name="SettingsView_McpClientName_Watermark" xml:space="preserve">
+    <value>For example, Codex or Claude Code</value>
+    <comment/>
+  </data>
+  <data name="SettingsView_McpClientName_Required" xml:space="preserve">
+    <value>Enter a client name.</value>
+    <comment/>
+  </data>
+  <data name="SettingsView_McpClientName_TooLong" xml:space="preserve">
+    <value>Client name must be 80 characters or fewer.</value>
+    <comment/>
+  </data>
+  <data name="SettingsView_McpClientName_Duplicate" xml:space="preserve">
+    <value>A client with this name already exists.</value>
+    <comment/>
+  </data>
+  <data name="SettingsView_McpClientClusters_Label" xml:space="preserve">
+    <value>Cluster access</value>
+    <comment/>
+  </data>
+  <data name="SettingsView_McpClientClusters_Description" xml:space="preserve">
+    <value>No checked clusters means all clusters, including clusters added later. Check one or more to limit this client to those clusters.</value>
+    <comment/>
+  </data>
+  <data name="SettingsView_McpGrant_AllClusters" xml:space="preserve">
+    <value>All clusters</value>
+    <comment/>
+  </data>
+  <data name="SettingsView_McpClientCreate" xml:space="preserve">
+    <value>Generate external client token</value>
+    <comment/>
+  </data>
+  <data name="SettingsView_McpClientRevoke" xml:space="preserve">
+    <value>Revoke</value>
+    <comment/>
+  </data>
+  <data name="SettingsView_McpToken_AccessibleName" xml:space="preserve">
+    <value>New external MCP client token</value>
+    <comment/>
+  </data>
+  <data name="SettingsView_McpTokenCreated" xml:space="preserve">
+    <value>Token created. Copy it now; KubeUI will not show it again.</value>
+    <comment/>
+  </data>
+  <data name="SettingsView_McpTokenInvalid" xml:space="preserve">
+    <value>Client details are invalid. Check that the name is unique and cluster selection contains no more than 100 valid clusters.</value>
+    <comment/>
+  </data>
+  <data name="SettingsView_McpTokenRevoked" xml:space="preserve">
+    <value>Token revoked. It can no longer access MCP.</value>
+    <comment/>
+  </data>
+  <data name="SettingsView_McpTokenCreateFailed" xml:space="preserve">
+    <value>Token was not created. Revoke unused tokens or check that KubeUI settings storage is available.</value>
+    <comment/>
+  </data>
+  <data name="SettingsView_McpTokenRevokeFailed" xml:space="preserve">
+    <value>Revocation was not saved. This token remains active until KubeUI can save the change.</value>
+    <comment/>
   </data>
 </root>

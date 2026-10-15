@@ -16,6 +16,8 @@ internal sealed class AcpAgentSession : IAgentSession
     private readonly Channel<AgentEvent> _events;
     private readonly IAcpProcess? _diagnosticProcess;
     private readonly IDisposable? _client;
+    private readonly IDisposable? _mcpCredentialLease;
+    private readonly IReadOnlyList<string> _sensitiveValues;
     private bool _disposed;
 
     public AcpAgentSession(
@@ -25,7 +27,9 @@ internal sealed class AcpAgentSession : IAgentSession
         Channel<AgentEvent> events,
         AgentContext? context = null,
         IAcpProcess? diagnosticProcess = null,
-        IDisposable? client = null)
+        IDisposable? client = null,
+        IDisposable? mcpCredentialLease = null,
+        IReadOnlyList<string>? sensitiveValues = null)
     {
         _id = id;
         _protocolId = protocolId;
@@ -34,6 +38,8 @@ internal sealed class AcpAgentSession : IAgentSession
         _events = events;
         _diagnosticProcess = diagnosticProcess;
         _client = client;
+        _mcpCredentialLease = mcpCredentialLease;
+        _sensitiveValues = sensitiveValues ?? [];
         if (_diagnosticProcess is not null)
             _diagnosticProcess.ErrorReceived += DiagnosticProcessOnError;
         if (_diagnosticProcess is not null)
@@ -63,8 +69,9 @@ internal sealed class AcpAgentSession : IAgentSession
         }
         catch (Exception exception)
         {
-            _events.Writer.TryComplete(exception);
-            throw;
+            var safeException = SanitizeException(exception);
+            _events.Writer.TryComplete(safeException);
+            throw safeException;
         }
     }
 
@@ -73,7 +80,14 @@ internal sealed class AcpAgentSession : IAgentSession
         using var activity = AgentActivitySource.Source.StartActivity("ai.session.cancel");
         activity?.SetTag("agent.protocol", "acp");
         activity?.SetTag("agent.session.id", Id);
-        await _connection.CancelAsync(new CancelNotification { SessionId = _protocolId }, cancellationToken).ConfigureAwait(false);
+        try
+        {
+            await _connection.CancelAsync(new CancelNotification { SessionId = _protocolId }, cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception exception)
+        {
+            throw SanitizeException(exception);
+        }
     }
 
     public async ValueTask DisposeAsync()
@@ -95,18 +109,46 @@ internal sealed class AcpAgentSession : IAgentSession
         }
         catch (Exception exception)
         {
-            activity?.SetStatus(ActivityStatusCode.Error, exception.Message);
-            activity?.AddException(exception);
+            if (activity is not null)
+            {
+                var safeException = SanitizeException(exception);
+                activity.SetStatus(ActivityStatusCode.Error, safeException.Message);
+                var tags = new ActivityTagsCollection
+                {
+                    ["exception.type"] = safeException.GetType().FullName,
+                    ["exception.message"] = safeException.Message
+                };
+                activity.AddEvent(new ActivityEvent("exception", tags: tags));
+            }
         }
-        _client?.Dispose();
-        if (_diagnosticProcess is not null)
-            await _diagnosticProcess.DisposeAsync().ConfigureAwait(false);
-        _events.Writer.TryComplete();
+        try
+        {
+            _client?.Dispose();
+            if (_diagnosticProcess is not null)
+                await _diagnosticProcess.DisposeAsync().ConfigureAwait(false);
+        }
+        finally
+        {
+            _mcpCredentialLease?.Dispose();
+            _events.Writer.TryComplete();
+        }
     }
 
     private void DiagnosticProcessOnError(string message)
-        => _events.Writer.TryWrite(new AgentDiagnosticEvent(message));
+        => _events.Writer.TryWrite(new AgentDiagnosticEvent(RedactSensitiveValues(message)));
 
     private void ProcessOnExited()
         => _events.Writer.TryComplete(new IOException("ACP agent process exited."));
+
+    private Exception SanitizeException(Exception exception)
+        => _sensitiveValues.Count == 0
+            ? exception
+            : new InvalidOperationException(RedactSensitiveValues(exception.Message));
+
+    private string RedactSensitiveValues(string value)
+    {
+        foreach (var sensitiveValue in _sensitiveValues)
+            value = value.Replace(sensitiveValue, "[redacted]", StringComparison.Ordinal);
+        return value;
+    }
 }

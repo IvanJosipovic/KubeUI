@@ -16,6 +16,9 @@ public sealed partial class Settings : ObservableObject
     public partial int McpServerPort { get; set; } = 62888;
 
     [ObservableProperty]
+    public partial ObservableCollection<McpExternalClientGrant> McpExternalClientGrants { get; set; } = [];
+
+    [ObservableProperty]
     public partial bool TelemetryEnabled { get; set; } = true;
 
     [ObservableProperty]
@@ -78,6 +81,18 @@ public sealed partial class Settings : ObservableObject
     }
 
     private static string GetClusterSettingsKey(IClusterRuntime cluster) => cluster.KubeConfigPath + " " + cluster.Name;
+}
+
+/// <summary>Persisted verifier and authorization scope for an external MCP client. An empty cluster list allows all clusters.</summary>
+public sealed record McpExternalClientGrant(
+    string Id,
+    string Name,
+    string TokenVerifier,
+    DateTimeOffset CreatedAt,
+    IReadOnlyList<string> AllowedClusters)
+{
+    /// <inheritdoc />
+    public override string ToString() => $"{nameof(McpExternalClientGrant)} {{ Id = {Id}, Name = {Name}, TokenVerifier = [redacted] }}";
 }
 
 public sealed partial class ClusterSettings : ObservableObject

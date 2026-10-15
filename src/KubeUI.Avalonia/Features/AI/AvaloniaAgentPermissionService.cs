@@ -17,16 +17,26 @@ public sealed class AvaloniaAgentPermissionService(IDialogService dialogService)
         cancellationToken.ThrowIfCancellationRequested();
 
         var owner = new PermissionDialogOwner();
+        var resource = request.Resource ?? Assets.Resources.AgentPermissionDialog_UnspecifiedResource;
+        var operationImpact = request.IsDestructive
+            ? Assets.Resources.AgentPermissionDialog_Destructive
+            : Assets.Resources.AgentPermissionDialog_NonDestructive;
+        var content = string.IsNullOrWhiteSpace(request.RequestingClient)
+            ? string.Format(
+                Assets.Resources.AgentPermissionDialog_ContentFormat!,
+                request.Action,
+                resource,
+                operationImpact)
+            : string.Format(
+                Assets.Resources.AgentPermissionDialog_ContentWithRequesterFormat!,
+                request.RequestingClient,
+                request.Action,
+                resource,
+                operationImpact);
         var settings = new ContentDialogSettings
         {
             Title = Assets.Resources.AgentPermissionDialog_Title,
-            Content = string.Format(
-                Assets.Resources.AgentPermissionDialog_ContentFormat!,
-                request.Action,
-                request.Resource ?? Assets.Resources.AgentPermissionDialog_UnspecifiedResource,
-                request.IsDestructive
-                    ? Assets.Resources.AgentPermissionDialog_Destructive
-                    : Assets.Resources.AgentPermissionDialog_NonDestructive),
+            Content = content,
             PrimaryButtonText = Assets.Resources.AgentPermissionDialog_Allow,
             SecondaryButtonText = Assets.Resources.AgentPermissionDialog_Deny,
             DefaultButton = FAContentDialogButton.Secondary
