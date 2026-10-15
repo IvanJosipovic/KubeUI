@@ -2,6 +2,7 @@ using System.Text;
 using FluentAvalonia.UI.Controls;
 using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
+using KubeUI.Avalonia.Infrastructure.Platform;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using LiveMarkdown.Avalonia;
 
@@ -10,6 +11,7 @@ namespace KubeUI.Avalonia.Shell.Documents.Updates;
 public sealed partial class UpdateAvailableViewModel : ViewModelBase
 {
     private readonly IDialogService _dialogService;
+    private readonly IPlatformServices _platformServices;
     private Func<Action<int>, Task>? _updateAsync;
 
     public ObservableStringBuilder MarkdownBuilder { get; } = new();
@@ -29,9 +31,10 @@ public sealed partial class UpdateAvailableViewModel : ViewModelBase
     [ObservableProperty]
     public partial string DownloadProgressText { get; private set; } = string.Empty;
 
-    public UpdateAvailableViewModel(IDialogService dialogService)
+    public UpdateAvailableViewModel(IDialogService dialogService, IPlatformServices platformServices)
     {
         _dialogService = dialogService;
+        _platformServices = platformServices;
         Id = nameof(UpdateAvailableViewModel);
         Title = Assets.Resources.UpdateAvailableView_Title;
         CanClose = true;
@@ -89,6 +92,19 @@ public sealed partial class UpdateAvailableViewModel : ViewModelBase
         }
     }
 
+    [RelayCommand]
+    private async Task OpenReleaseNoteLinkAsync(LinkClickedEventArgs args)
+    {
+        var uri = args.HRef;
+        if (uri.IsAbsoluteUri
+            && (uri.Scheme == Uri.UriSchemeHttp
+                || uri.Scheme == Uri.UriSchemeHttps
+                || uri.Scheme == Uri.UriSchemeMailto))
+        {
+            await _platformServices.LaunchUriAsync(uri);
+        }
+    }
+
     private void ReportDownloadProgress(int progress)
     {
         Dispatcher.UIThread.Post(() =>
@@ -117,8 +133,6 @@ public sealed partial class UpdateAvailableViewModel : ViewModelBase
                 markdown.AppendLine();
             }
 
-            markdown.Append("## ").AppendLine(version);
-            markdown.AppendLine();
             markdown.AppendLine(notes.Trim());
         }
 

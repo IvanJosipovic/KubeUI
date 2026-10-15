@@ -25,7 +25,8 @@ public sealed class UpdateAvailableView : ViewBase<UpdateAvailableViewModel>
                     .HorizontalScrollBarVisibility(ScrollBarVisibility.Disabled)
                     .Content(new MarkdownRenderer
                     {
-                        MarkdownBuilder = vm.MarkdownBuilder
+                        MarkdownBuilder = vm.MarkdownBuilder,
+                        LinkCommand = vm.OpenReleaseNoteLinkCommand
                     })
                     .Row(1),
                 new TextBlock()
