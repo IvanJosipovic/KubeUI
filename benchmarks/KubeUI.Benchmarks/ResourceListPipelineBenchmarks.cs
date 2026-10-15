@@ -33,7 +33,6 @@ public class ResourceListPipelineBenchmarks : IDisposable
     public int BindingResetThreshold { get; set; }
 
     [GlobalSetup]
-    [Obsolete]
     public void Setup()
     {
         _items = BuildItems(ItemCount);
@@ -51,8 +50,7 @@ public class ResourceListPipelineBenchmarks : IDisposable
         _sortSubject = new(_ascendingComparer);
         _subscription = _cache.Connect()
             .Filter(_filterSubject)
-            .Sort(_sortSubject)
-            .Bind(out _view, new()
+            .SortAndBind(out _view, _sortSubject, new()
             {
                 ResetThreshold = BindingResetThreshold
             })

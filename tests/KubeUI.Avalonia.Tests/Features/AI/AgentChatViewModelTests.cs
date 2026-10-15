@@ -259,6 +259,42 @@ public sealed class AgentChatViewModelTests
         await vm.DisposeAsync();
     }
 
+    [Fact]
+    public async Task send_uses_a_session_scoped_mcp_bearer_token_and_revokes_it_on_disposal()
+    {
+        await using var session = new TestSession("session-mcp-auth", []);
+        var agent = new TestAgent(session);
+        var settings = new Settings { McpServerEnabled = true, McpServerPort = 62888 };
+        var settingsService = new Mock<ISettingsService>();
+        settingsService.SetupGet(service => service.Settings).Returns(settings);
+        var credentials = new McpCredentialService(settingsService.Object);
+        var serverState = new McpServerState();
+        serverState.SetBoundPort(62888);
+        var vm = new AgentChatViewModel(
+            new TestRegistry(agent),
+            settingsService.Object,
+            new AgentContextService(),
+            serverState,
+            credentials)
+        {
+            Prompt = "List pods"
+        };
+
+        await vm.SendCommand.ExecuteAsync(null);
+
+        agent.Options!.McpEndpoint.ShouldBe("http://127.0.0.1:62888/mcp");
+        agent.Options.McpHeaders.ShouldContainKey("Authorization");
+        var authorization = agent.Options.McpHeaders["Authorization"];
+        authorization.ShouldStartWith("Bearer kui_");
+        var token = authorization["Bearer ".Length..];
+        credentials.Authenticate(token).ShouldNotBeNull();
+        agent.Options.ToString().ShouldNotContain(token);
+
+        await vm.DisposeAsync();
+
+        credentials.Authenticate(token).ShouldBeNull();
+    }
+
     private static AgentChatViewModel CreateViewModel(
         IAgentRegistry registry,
         ISettingsService? settingsService = null,

@@ -13,7 +13,7 @@
 - Port-forward navigation is recalculated only when the Pod resource configuration is processed. It is visible only when Pod list/watch permission and the port-forward create permission are available. The current implementation removes and recreates the port-forward link during that refresh.
 - Resource count observables are attached only when both the matching navigation link and a seeded resource container exist. `ResourceSeeded` notifications are marshalled to the UI dispatcher; there is no retry loop for a missing link. A count stream preserves an initial zero and is retained when an existing resource link is updated.
 - Connection failures update or open the shared cluster-error document. Missing namespace permission opens cluster settings and shows the permission prompt.
-- Selecting a resource link opens its document; selecting a category toggles its expansion. Selecting a disconnected cluster starts connection asynchronously, and selecting an already connected cluster toggles expansion.
+- One click on a navigation row activates it: resource links open their document, categories toggle expansion, and disconnected clusters start connecting. Clicking an already connected cluster toggles expansion. Native TreeView double-tap expansion is suppressed so it cannot toggle a row a second time.
 
 ## Invariants
 

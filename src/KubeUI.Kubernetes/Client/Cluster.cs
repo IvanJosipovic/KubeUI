@@ -1055,6 +1055,21 @@ public interface IResourceContainer
     IObservable<ResourceChange> ConnectChanges(GroupApiVersionKind kind);
     IObservable<int> ConnectCount();
     IReadOnlyList<IKubernetesObject<V1ObjectMeta>> Snapshot();
+
+    /// <summary>
+    /// Returns the first <paramref name="limit"/> matching resources in the requested order,
+    /// retaining at most <paramref name="limit"/> resources while scanning the cache.
+    /// </summary>
+    /// <param name="predicate">Returns whether a resource should be considered.</param>
+    /// <param name="comparer">Defines ascending result order.</param>
+    /// <param name="limit">Maximum number of resources to return; must be positive.</param>
+    /// <param name="cancellationToken">Cancels the cache scan.</param>
+    /// <returns>The matching resources in ascending order.</returns>
+    IReadOnlyList<IKubernetesObject<V1ObjectMeta>> QueryTop(
+        Func<IKubernetesObject<V1ObjectMeta>, bool> predicate,
+        IComparer<IKubernetesObject<V1ObjectMeta>> comparer,
+        int limit,
+        CancellationToken cancellationToken = default);
 }
 
 public interface IClearableResourceContainer : IResourceContainer
@@ -1065,6 +1080,13 @@ public interface IClearableResourceContainer : IResourceContainer
 public partial class ContainerClass<T> : ObservableObject, IClearableResourceContainer where T : class, IKubernetesObject<V1ObjectMeta>, new()
 {
     private Lazy<Task>? _seedTask;
+    private readonly ConcurrentDictionary<ResourceCacheKey, T> _queryItems = new();
+    private IDisposable _queryIndexSubscription;
+
+    public ContainerClass()
+    {
+        _queryIndexSubscription = SubscribeToQueryIndex();
+    }
 
     public int InformerCount => Informers.Count;
 
@@ -1097,6 +1119,49 @@ public partial class ContainerClass<T> : ObservableObject, IClearableResourceCon
 
     public IReadOnlyList<IKubernetesObject<V1ObjectMeta>> Snapshot()
         => Items.Items.Cast<IKubernetesObject<V1ObjectMeta>>().ToArray();
+
+    /// <inheritdoc />
+    public IReadOnlyList<IKubernetesObject<V1ObjectMeta>> QueryTop(
+        Func<IKubernetesObject<V1ObjectMeta>, bool> predicate,
+        IComparer<IKubernetesObject<V1ObjectMeta>> comparer,
+        int limit,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(predicate);
+        ArgumentNullException.ThrowIfNull(comparer);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(limit);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var reverseComparer = Comparer<IKubernetesObject<V1ObjectMeta>>.Create(
+            (left, right) => comparer.Compare(right, left));
+        var best = new PriorityQueue<IKubernetesObject<V1ObjectMeta>, IKubernetesObject<V1ObjectMeta>>(reverseComparer);
+        foreach (var item in _queryItems)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var resource = (IKubernetesObject<V1ObjectMeta>)item.Value;
+            if (!predicate(resource))
+                continue;
+
+            if (best.Count < limit)
+            {
+                best.Enqueue(resource, resource);
+                continue;
+            }
+
+            if (best.TryPeek(out _, out var currentWorst)
+                && comparer.Compare(resource, currentWorst) < 0)
+            {
+                best.Dequeue();
+                best.Enqueue(resource, resource);
+            }
+        }
+
+        var results = new List<IKubernetesObject<V1ObjectMeta>>(best.Count);
+        foreach (var item in best.UnorderedItems)
+            results.Add(item.Element);
+        results.Sort(comparer);
+        return results;
+    }
 
     [ObservableProperty]
     public partial List<IResourceInformer> Informers { get; set; } = [];
@@ -1139,9 +1204,24 @@ public partial class ContainerClass<T> : ObservableObject, IClearableResourceCon
 
         Informers.Clear();
         Items.Clear();
+        _queryItems.Clear();
+        _queryIndexSubscription.Dispose();
+        _queryIndexSubscription = SubscribeToQueryIndex();
         Interlocked.Exchange(ref _seedTask, null);
         Initialized = false;
     }
+
+    private IDisposable SubscribeToQueryIndex()
+        => Items.Connect().Subscribe(changes =>
+        {
+            foreach (var change in changes)
+            {
+                if (change.Reason == ChangeReason.Remove)
+                    _queryItems.TryRemove(change.Key, out _);
+                else
+                    _queryItems[change.Key] = change.Current;
+            }
+        });
 }
 
 public sealed class OperationKeyHandler : DelegatingHandler

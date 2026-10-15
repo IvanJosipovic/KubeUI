@@ -30,3 +30,8 @@ Tests using Avalonia capabilities should use `[AvaloniaFact]`. Pure model, seria
 - When replacing a test double, preserve the original observable behavior or strengthen it with a production-runtime regression; do not remove coverage merely to make a test fit the generated cluster.
 - Use coverage results to target high-fan-out navigation, resource readiness, relationship, CRD, and transport branches with behavior assertions.
 - In Release or parallel CI runs, wait for the exact view/cache state after resource mutations and selection changes; `Dispatcher.UIThread.RunJobs()` only drains queued UI work and is not a data-readiness guarantee.
+
+## MCP security tests
+- Exercise Host, Origin, and authentication boundaries through the production loopback host; rejected callers must not reach tool or cluster operations.
+- Cover selected external cluster grants, the empty-scope all-clusters behavior, credential revocation, Secret approval, cancellation, request/output limits, native Settings validation, and ACP credential lifecycle.
+- Use controllable `TimeProvider` and explicit task gates for rate-limit and concurrency tests; do not use sleeps.
