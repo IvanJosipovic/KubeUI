@@ -14,6 +14,7 @@ namespace KubeUI.Avalonia.Shell.Documents.Settings;
 
 public sealed class SettingsView() : ViewBase<SettingsViewModel>
 {
+    [Obsolete]
     protected override object Build(SettingsViewModel vm)
     {
         ArgumentNullException.ThrowIfNull(vm);

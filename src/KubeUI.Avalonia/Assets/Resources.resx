@@ -161,28 +161,44 @@
     <value>https://KubeUI.com</value>
     <comment/>
   </data>
-  <data name="MainView_CheckForUpdates_Content" xml:space="preserve">
-    <value>Update and restart now?</value>
+  <data name="UpdateAvailableView_Title" xml:space="preserve">
+    <value>Update Available</value>
     <comment/>
   </data>
-  <data name="MainView_CheckForUpdates_Secondary" xml:space="preserve">
-    <value>No</value>
+  <data name="UpdateAvailableView_VersionSummaryFormat" xml:space="preserve">
+    <value>Update Available {0} -&gt; {1}</value>
     <comment/>
   </data>
-  <data name="MainView_CheckForUpdates_Title" xml:space="preserve">
-    <value>New Update Available</value>
+  <data name="UpdateAvailableView_CurrentVersion_Unknown" xml:space="preserve">
+    <value>Unknown version</value>
     <comment/>
   </data>
-  <data name="MainView_CheckForUpdates_Updating_Content" xml:space="preserve">
-    <value>Please wait...</value>
+  <data name="UpdateAvailableView_NoReleaseNotes" xml:space="preserve">
+    <value>No release notes are available for this update.</value>
     <comment/>
   </data>
-  <data name="MainView_CheckForUpdates_Updating_Title" xml:space="preserve">
-    <value>Updating</value>
+  <data name="UpdateAvailableView_Update" xml:space="preserve">
+    <value>Update</value>
     <comment/>
   </data>
-  <data name="MainView_CheckForUpdates_Primary" xml:space="preserve">
-    <value>Yes</value>
+  <data name="UpdateAvailableView_DownloadProgress" xml:space="preserve">
+    <value>Downloading update: {0}%</value>
+    <comment/>
+  </data>
+  <data name="UpdateAvailableView_Confirm_Title" xml:space="preserve">
+    <value>Confirm Update</value>
+    <comment/>
+  </data>
+  <data name="UpdateAvailableView_Confirm_Content" xml:space="preserve">
+    <value>Are you sure you want to update to {0}?</value>
+    <comment/>
+  </data>
+  <data name="UpdateAvailableView_Confirm_Primary" xml:space="preserve">
+    <value>Update</value>
+    <comment/>
+  </data>
+  <data name="UpdateAvailableView_Confirm_Secondary" xml:space="preserve">
+    <value>Cancel</value>
     <comment/>
   </data>
   <data name="MainView_CheckForUpdates_NoUpdates_Title" xml:space="preserve">
