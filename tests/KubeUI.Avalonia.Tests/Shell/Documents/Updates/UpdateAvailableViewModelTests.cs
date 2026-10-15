@@ -7,6 +7,7 @@ using FluentAvalonia.UI.Controls;
 using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
+using KubeUI.Avalonia.Infrastructure.Platform;
 using KubeUI.Avalonia.Shell.Documents.Updates;
 using KubeUI.Avalonia.Shell.Main;
 using LiveMarkdown.Avalonia;
@@ -24,9 +25,9 @@ public sealed class UpdateAvailableViewModelTests
     {
         var markdown = UpdateAvailableViewModel.CreateReleaseNotesMarkdown(
         [
-            ("2.1.0", "Added a dashboard."),
-            ("2.2.0", "Fixed a bug."),
-            ("2.2.0", "Duplicate notes."),
+            ("2.1.0", "## 2.1.0\n\nAdded a dashboard."),
+            ("2.2.0", "## 2.2.0\n\nFixed a bug."),
+            ("2.2.0", "## 2.2.0\n\nDuplicate notes."),
             ("2.3.0", " ")
         ]);
 
@@ -57,8 +58,8 @@ public sealed class UpdateAvailableViewModelTests
             null,
             "2.3.0",
             [
-                ("2.2.0", "Improved startup."),
-                ("2.3.0", "Added update view.")
+                ("2.2.0", "## 2.2.0\n\nImproved startup."),
+                ("2.3.0", "## 2.3.0\n\nAdded update view.")
             ]);
 
         presentation.CurrentVersion.ShouldBe(Assets.Resources.UpdateAvailableView_CurrentVersion_Unknown);
@@ -167,7 +168,7 @@ public sealed class UpdateAvailableViewModelTests
             .ReturnsAsync(result);
 
         var updateStarted = false;
-        var viewModel = new UpdateAvailableViewModel(new DialogService(manager.Object));
+        var viewModel = new UpdateAvailableViewModel(new DialogService(manager.Object), Mock.Of<IPlatformServices>());
         viewModel.SetUpdate(
             "2.1.0",
             "2.2.0",
@@ -191,7 +192,7 @@ public sealed class UpdateAvailableViewModelTests
     [Fact]
     public async Task update_command_without_update_information_fails_explicitly()
     {
-        var viewModel = new UpdateAvailableViewModel(Mock.Of<IDialogService>());
+        var viewModel = new UpdateAvailableViewModel(Mock.Of<IDialogService>(), Mock.Of<IPlatformServices>());
 
         await Should.ThrowAsync<InvalidOperationException>(
             () => viewModel.UpdateCommand.ExecuteAsync(null));
@@ -209,7 +210,7 @@ public sealed class UpdateAvailableViewModelTests
                 It.IsAny<ContentDialogSettings>(),
                 It.IsAny<Func<object?, string>?>()))
             .ReturnsAsync(FAContentDialogResult.Primary);
-        var viewModel = new UpdateAvailableViewModel(new DialogService(manager.Object));
+        var viewModel = new UpdateAvailableViewModel(new DialogService(manager.Object), Mock.Of<IPlatformServices>());
         viewModel.SetUpdate(
             "2.1.0",
             "2.2.0",
@@ -227,7 +228,7 @@ public sealed class UpdateAvailableViewModelTests
     public void setting_update_updates_document_versions_and_markdown()
     {
         Mock<IDialogService> dialogService = new();
-        UpdateAvailableViewModel viewModel = new(dialogService.Object);
+        UpdateAvailableViewModel viewModel = new(dialogService.Object, Mock.Of<IPlatformServices>());
 
         viewModel.SetUpdate(
             "2.1.0",
@@ -244,7 +245,7 @@ public sealed class UpdateAvailableViewModelTests
     [AvaloniaFact]
     public async Task view_displays_update_versions_markdown_and_action()
     {
-        var viewModel = new UpdateAvailableViewModel(Mock.Of<IDialogService>());
+        var viewModel = new UpdateAvailableViewModel(Mock.Of<IDialogService>(), Mock.Of<IPlatformServices>());
         viewModel.SetUpdate(
             "2.1.0",
             "2.2.0",
@@ -279,7 +280,7 @@ public sealed class UpdateAvailableViewModelTests
                 It.IsAny<ContentDialogSettings>(),
                 It.IsAny<Func<object?, string>?>()))
             .ReturnsAsync(FAContentDialogResult.Primary);
-        UpdateAvailableViewModel viewModel = new(new DialogService(manager.Object));
+        UpdateAvailableViewModel viewModel = new(new DialogService(manager.Object), Mock.Of<IPlatformServices>());
         TaskCompletionSource updateStarted = new(TaskCreationOptions.RunContinuationsAsynchronously);
         TaskCompletionSource finishUpdate = new(TaskCreationOptions.RunContinuationsAsynchronously);
         viewModel.SetUpdate(
