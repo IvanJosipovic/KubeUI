@@ -9,7 +9,7 @@ namespace KubeUI.Kubernetes;
 public sealed class KubernetesModelCatalog
 {
     private readonly Dictionary<GroupApiVersionKind, Type> _types = [];
-    private readonly object _sync = new();
+    private readonly Lock _sync = new();
     private long _version;
 
     public long Version => Interlocked.Read(ref _version);

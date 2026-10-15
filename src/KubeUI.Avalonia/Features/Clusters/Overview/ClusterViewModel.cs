@@ -44,7 +44,14 @@ public sealed partial class ClusterViewModel : ViewModelBase, IInitializeCluster
         var nodes = Cluster.Runtime.GetResourceList<V1Node>();
 
         var allPodContainers = pods.SelectMany(p => p.Spec?.Containers ?? []).ToArray();
-        var allMetricContainers = (Cluster.Runtime.PodMetrics ?? []).SelectMany(m => m.Containers ?? []).ToArray();
+        var currentPodKeys = pods.Select(static pod => (Namespace: pod.Namespace(), Name: pod.Name())).ToHashSet();
+        var allMetricContainers = (Cluster.Runtime.PodMetrics ?? [])
+            .Where(metric => currentPodKeys.Contains((metric.Namespace(), metric.Name())))
+            .GroupBy(static metric => (Namespace: metric.Namespace(), Name: metric.Name()))
+            .Select(static group => group.MaxBy(static metric => metric.Timestamp))
+            .Where(static metric => metric != null)
+            .SelectMany(static metric => metric!.Containers ?? [])
+            .ToArray();
 
         PodGaugeData.TotalPods.Value = pods.Count;
         PodGaugeData.MaxPods.Value = nodes.Sum(x => x.Status.Capacity?.TryGetValue("pods", out var value) == true ? value.ToDouble() : 0);

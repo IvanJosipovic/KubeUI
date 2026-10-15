@@ -24,3 +24,5 @@ Use the resource actions to open an object's properties or YAML view. The YAML v
 ## Cluster overview
 
 The cluster overview presents pod, CPU, and memory summaries along with cluster events. CPU and memory metrics depend on metrics being available from the cluster. Empty or partial charts can therefore reflect cluster data availability rather than a connection problem.
+
+For Pod CPU and memory history in the resource list and properties pane, see [Monitoring](./monitoring).

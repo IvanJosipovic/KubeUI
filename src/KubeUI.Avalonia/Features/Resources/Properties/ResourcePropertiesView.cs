@@ -1,5 +1,4 @@
 using Avalonia.Controls.Primitives;
-using Avalonia.LogicalTree;
 using k8s;
 using k8s.Models;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
@@ -22,7 +21,7 @@ public partial class ResourcePropertiesView<T> : ViewBase<ResourcePropertiesView
     private Control[]? _propertyControls;
     private ResourceConfigBase<T>? _propertyConfig;
     private T? _propertyResource;
-    private bool _propertyControlsInitialized;
+    private ClusterWorkspace? _propertyCluster;
 
     protected override object Build(ResourcePropertiesViewModel<T> vm)
     {
@@ -162,61 +161,64 @@ public partial class ResourcePropertiesView<T> : ViewBase<ResourcePropertiesView
             return;
         }
 
+        if (DataContext is ResourcePropertiesViewModel<T> currentViewModel
+            && RefreshPropertiesInPlace(currentViewModel))
+        {
+            return;
+        }
+
         ClearItems();
         ReloadActions();
 
         if (DataContext is not ResourcePropertiesViewModel<T> viewModel)
         {
+            ResetPropertyControls();
             return;
         }
 
         if (viewModel.Object?.Metadata == null)
+        {
+            ResetPropertyControls();
             return;
+        }
 
         var obj = viewModel.Object;
 
-        _itemsPanel.Children.Add(new PropertyItem { Key = AppResources.ResourcePropertiesView_Name, Value = obj.Metadata.Name });
+        _itemsPanel.Children.Add(
+            new PropertyItem()
+                .Key(AppResources.ResourcePropertiesView_Name)
+                .BindValue(viewModel, static resource => resource?.Metadata?.Name));
         if (viewModel.ResourceConfig?.IsNamespaced == true)
         {
-            _itemsPanel.Children.Add(new PropertyItem { Key = AppResources.ResourcePropertiesView_Namespace, Value = obj.Metadata.NamespaceProperty });
+            _itemsPanel.Children.Add(
+                new PropertyItem()
+                    .Key(AppResources.ResourcePropertiesView_Namespace)
+                    .BindValue(viewModel, static resource => resource?.Metadata?.NamespaceProperty));
         }
 
-        _itemsPanel.Children.Add(new PropertyItem { Key = AppResources.ResourcePropertiesView_Created, Value = obj.Metadata.CreationTimestamp });
+        _itemsPanel.Children.Add(
+            new PropertyItem()
+                .Key(AppResources.ResourcePropertiesView_Created)
+                .BindValue(viewModel, static resource => resource?.Metadata?.CreationTimestamp));
 
         if (viewModel.ResourceConfig == null)
         {
+            ResetPropertyControls();
             return;
         }
 
-        var extras = GetPropertyControls(viewModel.ResourceConfig, obj, out var reused);
+        var extras = GetPropertyControls(viewModel.ResourceConfig, obj);
         foreach (var c in extras)
         {
-            if (!reused)
-            {
-                c.DataContext = obj;
-            }
+            c.DataContext = c is ViewBase<ResourcePropertiesViewModel<T>> ? viewModel : obj;
 
             c.HorizontalAlignment = HorizontalAlignment.Stretch;
             _itemsPanel.Children.Add(c);
 
-            if (!reused && viewModel.Cluster != null)
+            if (viewModel.Cluster != null)
             {
                 InitializeClusterControls(c, viewModel.Cluster);
             }
-        }
-
-        if (!reused)
-        {
-            _propertyControlsInitialized = viewModel.Cluster != null;
-        }
-        else if (!_propertyControlsInitialized && viewModel.Cluster != null)
-        {
-            foreach (var c in extras)
-            {
-                InitializeClusterControls(c, viewModel.Cluster);
-            }
-
-            _propertyControlsInitialized = true;
         }
 
         if (typeof(T) != typeof(Corev1Event)
@@ -233,7 +235,44 @@ public partial class ResourcePropertiesView<T> : ViewBase<ResourcePropertiesView
             eventsView.Initialize(viewModel.Cluster);
         }
 
+        _propertyCluster = viewModel.Cluster;
         QueueScrollToTop();
+    }
+
+    private bool RefreshPropertiesInPlace(ResourcePropertiesViewModel<T> viewModel)
+    {
+        var resource = viewModel.Object;
+        if (resource?.Metadata == null
+            || _propertyResource == null
+            || _propertyConfig == null
+            || !ReferenceEquals(_propertyConfig, viewModel.ResourceConfig)
+            || !ReferenceEquals(_propertyCluster, viewModel.Cluster)
+            || !IsSameResource(_propertyResource, resource)
+            || _propertyControls == null
+            || !_propertyControls.All(static control =>
+                control is IResourcePropertiesRefreshable<T>
+                || control is ViewBase<ResourcePropertiesViewModel<T>>))
+        {
+            return false;
+        }
+
+        foreach (var control in _propertyControls)
+        {
+            if (control is IResourcePropertiesRefreshable<T> refreshable)
+            {
+                refreshable.Refresh(resource);
+            }
+
+            ResourcePropertiesViewRefresher.Refresh(control, resource);
+        }
+
+        foreach (var eventsView in _itemsPanel.Children.OfType<ResourceEventsView>())
+        {
+            eventsView.DataContext = resource;
+        }
+
+        _propertyResource = resource;
+        return true;
     }
 
     private void ReloadActions()
@@ -309,7 +348,7 @@ public partial class ResourcePropertiesView<T> : ViewBase<ResourcePropertiesView
 
     private static void InitializeClusterControls(Control control, ClusterWorkspace cluster)
     {
-        foreach (var current in EnumerateLogicalControls(control))
+        foreach (var current in ResourcePropertiesViewRefresher.EnumerateControls(control))
         {
             if (current is IInitializeCluster init)
             {
@@ -318,33 +357,43 @@ public partial class ResourcePropertiesView<T> : ViewBase<ResourcePropertiesView
         }
     }
 
-    private Control[] GetPropertyControls(ResourceConfigBase<T> resourceConfig, T resource, out bool reused)
+    private Control[] GetPropertyControls(ResourceConfigBase<T> resourceConfig, T resource)
     {
-        if (_propertyControls is { Length: > 0 } controls
-            && ReferenceEquals(_propertyConfig, resourceConfig)
-            && _propertyResource is not null
-            && IsSameResource(_propertyResource, resource)
-            && controls.All(control => control is IResourcePropertiesRefreshable<T>))
-        {
-            foreach (var control in controls.OfType<IResourcePropertiesRefreshable<T>>())
-            {
-                control.Refresh(resource);
-            }
-
-            _propertyResource = resource;
-            reused = true;
-            return controls;
-        }
+        var previousControls = _propertyControls;
 
         var created = resourceConfig.Properties(resource)
             .Where(static control => control is not null)
             .ToArray();
+
+        DisposePropertyControls(previousControls);
+
         _propertyControls = created;
         _propertyConfig = resourceConfig;
         _propertyResource = resource;
-        _propertyControlsInitialized = false;
-        reused = false;
         return created;
+    }
+
+    private void ResetPropertyControls()
+    {
+        DisposePropertyControls(_propertyControls);
+
+        _propertyControls = null;
+        _propertyConfig = null;
+        _propertyResource = null;
+        _propertyCluster = null;
+    }
+
+    private static void DisposePropertyControls(Control[]? controls)
+    {
+        if (controls is null)
+        {
+            return;
+        }
+
+        foreach (var disposable in controls.OfType<IDisposable>())
+        {
+            disposable.Dispose();
+        }
     }
 
     private static bool IsSameResource(T left, T right)
@@ -355,47 +404,4 @@ public partial class ResourcePropertiesView<T> : ViewBase<ResourcePropertiesView
             && string.Equals(left.Metadata?.NamespaceProperty, right.Metadata?.NamespaceProperty, StringComparison.Ordinal);
     }
 
-    private static IEnumerable<Control> EnumerateLogicalControls(Control root)
-    {
-        var stack = new Stack<Control>();
-        var seen = new HashSet<Control>();
-        stack.Push(root);
-
-        while (stack.Count > 0)
-        {
-            var current = stack.Pop();
-            if (!seen.Add(current))
-            {
-                continue;
-            }
-
-            yield return current;
-
-            switch (current)
-            {
-                case Panel panel:
-                    foreach (var child in panel.Children.OfType<Control>())
-                    {
-                        stack.Push(child);
-                    }
-                    break;
-                case Decorator decorator when decorator.Child is Control child:
-                    stack.Push(child);
-                    break;
-                case ContentControl contentControl when contentControl.Content is Control child:
-                    stack.Push(child);
-                    break;
-            }
-
-            if (current is not ILogical logical)
-            {
-                continue;
-            }
-
-            foreach (var child in logical.LogicalChildren.OfType<Control>())
-            {
-                stack.Push(child);
-            }
-        }
-    }
 }

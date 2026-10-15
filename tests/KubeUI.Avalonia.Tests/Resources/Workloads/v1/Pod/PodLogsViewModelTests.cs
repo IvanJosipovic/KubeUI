@@ -4651,7 +4651,7 @@ public sealed class PodLogsViewModelTests
 
     private sealed class SynchronizedList<T> : IReadOnlyList<T>
     {
-        private readonly object _gate = new();
+        private readonly Lock _gate = new();
         private readonly List<T> _items = [];
 
         public int Count

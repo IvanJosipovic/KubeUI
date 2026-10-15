@@ -218,6 +218,12 @@ public class ClusterManagerTests
         }
 
         public IReadOnlyCollection<string> GetClusterNamespaces(IClusterRuntime cluster) => [];
+
+        public ClusterMetricsSettings GetClusterMetricsSettings(IClusterRuntime cluster) => new();
+
+        public void Persist()
+        {
+        }
     }
 
     private static K8SConfiguration CreateKubeConfig(string contextName, string clusterName, string userName, string server)

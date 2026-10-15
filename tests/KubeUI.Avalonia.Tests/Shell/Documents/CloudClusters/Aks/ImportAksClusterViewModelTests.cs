@@ -86,13 +86,13 @@ public sealed class ImportAksClusterViewModelTests
 
     private sealed class FakeAksClusterService : IAksClusterService
     {
-        public Task<AksAuthenticationStatus> GetAuthenticationStatusAsync(CancellationToken cancellationToken = default)
+        public Task<AzureAuthenticationStatus> GetAuthenticationStatusAsync(CancellationToken cancellationToken = default)
         {
-            return Task.FromResult(new AksAuthenticationStatus
+            return Task.FromResult(new AzureAuthenticationStatus
             {
                 AzureCliSignedIn = true,
-                AzureCliUsername = "cli@example.com",
-                AzureCliTenantId = "tenant-1"
+                Username = "cli@example.com",
+                TenantId = "tenant-1"
             });
         }
 
@@ -159,13 +159,13 @@ public sealed class ImportAksClusterViewModelTests
 
     private sealed class EmptyAksClusterService : IAksClusterService
     {
-        public Task<AksAuthenticationStatus> GetAuthenticationStatusAsync(CancellationToken cancellationToken = default)
+        public Task<AzureAuthenticationStatus> GetAuthenticationStatusAsync(CancellationToken cancellationToken = default)
         {
-            return Task.FromResult(new AksAuthenticationStatus
+            return Task.FromResult(new AzureAuthenticationStatus
             {
                 AzureCliSignedIn = false,
-                AzureCliUsername = null,
-                AzureCliTenantId = null
+                Username = null,
+                TenantId = null
             });
         }
 
