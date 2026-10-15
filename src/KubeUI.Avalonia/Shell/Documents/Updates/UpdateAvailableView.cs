@@ -1,5 +1,7 @@
 using Avalonia.Controls.Primitives;
+using Avalonia.Markup.Xaml.MarkupExtensions;
 using KubeUI.Avalonia.Infrastructure;
+using KubeUI.Avalonia.Styles;
 using LiveMarkdown.Avalonia;
 
 namespace KubeUI.Avalonia.Shell.Documents.Updates;
@@ -15,7 +17,7 @@ public sealed class UpdateAvailableView : ViewBase<UpdateAvailableViewModel>
             .Margin(12)
             .Children(
                 new TextBlock()
-                    .FontSize(20)
+                    .FontSize(new DynamicResourceExtension(Typography.TitleFontSizeResourceKey))
                     .FontWeight(FontWeight.SemiBold)
                     .Text(vm, x => x.VersionSummary)
                     .Margin(0, 0, 0, 12)

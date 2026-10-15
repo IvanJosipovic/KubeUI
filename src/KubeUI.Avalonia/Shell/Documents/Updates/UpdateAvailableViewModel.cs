@@ -51,7 +51,6 @@ public sealed partial class UpdateAvailableViewModel : ViewModelBase
             Assets.Resources.UpdateAvailableView_VersionSummaryFormat,
             currentVersion,
             latestVersion);
-        Title = VersionSummary;
         MarkdownBuilder.Clear();
         MarkdownBuilder.Append(releaseNotesMarkdown);
         _updateAsync = updateAsync;

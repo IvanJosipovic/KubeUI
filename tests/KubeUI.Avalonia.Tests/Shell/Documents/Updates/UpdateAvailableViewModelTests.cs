@@ -10,6 +10,7 @@ using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using KubeUI.Avalonia.Infrastructure.Platform;
 using KubeUI.Avalonia.Shell.Documents.Updates;
 using KubeUI.Avalonia.Shell.Main;
+using KubeUI.Avalonia.Styles;
 using LiveMarkdown.Avalonia;
 using Microsoft.Extensions.Logging;
 using Moq;
@@ -236,8 +237,8 @@ public sealed class UpdateAvailableViewModelTests
             "## 2.2.0\n\nNew feature.",
             _ => Task.CompletedTask);
 
-        viewModel.Title.ShouldBe("Update Available 2.1.0 -> 2.2.0");
-        viewModel.VersionSummary.ShouldBe(viewModel.Title);
+        viewModel.Title.ShouldBe(Assets.Resources.UpdateAvailableView_Title);
+        viewModel.VersionSummary.ShouldBe("Update Available 2.1.0 -> 2.2.0");
         viewModel.LatestVersion.ShouldBe("2.2.0");
         viewModel.MarkdownBuilder.ToString().ShouldContain("New feature.");
     }
@@ -258,9 +259,9 @@ public sealed class UpdateAvailableViewModelTests
         await TestApplicationExtensions.WaitForUiAsync(TestContext.Current.CancellationToken);
 
         var descendants = view.GetVisualDescendants().ToArray();
-        descendants.OfType<TextBlock>()
-            .Select(x => x.Text)
-            .ShouldContain("Update Available 2.1.0 -> 2.2.0");
+        var header = descendants.OfType<TextBlock>()
+            .Single(x => x.Text == "Update Available 2.1.0 -> 2.2.0");
+        header.FontSize.ShouldBe(GetResource(Application.Current!, Typography.TitleFontSizeResourceKey));
         descendants.OfType<MarkdownRenderer>().ShouldHaveSingleItem();
         descendants.OfType<Button>()
             .Any(button => button.Content?.ToString() == Assets.Resources.UpdateAvailableView_Update)
@@ -313,6 +314,12 @@ public sealed class UpdateAvailableViewModelTests
         await TestApplicationExtensions.WaitForUiAsync(TestContext.Current.CancellationToken);
         progressBar.IsVisible.ShouldBeFalse();
         viewModel.CanClose.ShouldBeTrue();
+    }
+
+    private static double GetResource(Application application, string key)
+    {
+        application.TryGetResource(key, application.ActualThemeVariant, out var value).ShouldBeTrue();
+        return Convert.ToDouble(value);
     }
 
     private sealed class StubHttpMessageHandler(
