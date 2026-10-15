@@ -1,5 +1,4 @@
 using System.Windows.Input;
-using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.VisualTree;
 using Avalonia.Xaml.Interactivity;
@@ -9,7 +8,6 @@ namespace KubeUI.Avalonia.Shell.Navigation;
 internal sealed class NavigationTreeSelectionBehavior : Behavior<TreeView>
 {
     private readonly ICommand _selectionChangedCommand;
-    private NavigationItem? _expandableItemSelectionToIgnore;
 
     public NavigationTreeSelectionBehavior(ICommand selectionChangedCommand)
     {
@@ -43,13 +41,6 @@ internal sealed class NavigationTreeSelectionBehavior : Behavior<TreeView>
     {
         if (args.AddedItems.Count > 0)
         {
-            var shouldIgnore = ReferenceEquals(args.AddedItems[0], _expandableItemSelectionToIgnore);
-            _expandableItemSelectionToIgnore = null;
-            if (shouldIgnore)
-            {
-                return;
-            }
-
             _selectionChangedCommand.Execute(args);
         }
     }
@@ -65,17 +56,13 @@ internal sealed class NavigationTreeSelectionBehavior : Behavior<TreeView>
         }
 
         var item = source.GetSelfAndVisualAncestors().OfType<TreeViewItem>().FirstOrDefault();
-        if (item is not null && ReferenceEquals(tree.SelectedItem, item.DataContext))
+        if (item is null)
         {
-            if (item.DataContext is NavigationItem navigationItem
-                && navigationItem is not ClusterNavigationNode
-                && navigationItem.NavigationItems.Count > 0
-                && !source.GetSelfAndVisualAncestors().OfType<ToggleButton>()
-                    .Any(toggle => ReferenceEquals(toggle.DataContext, navigationItem)))
-            {
-                _expandableItemSelectionToIgnore = navigationItem;
-            }
+            return;
+        }
 
+        if (ReferenceEquals(tree.SelectedItem, item.DataContext))
+        {
             tree.SelectedItem = null;
         }
     }

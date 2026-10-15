@@ -27,7 +27,7 @@ public sealed class NavigationView : ViewBase<NavigationViewModel>
     {
         ArgumentNullException.ThrowIfNull(vm);
 
-        return new TreeView()
+        return new NavigationTreeView()
             .Margin(new Thickness(-5, 0, 0, 0))
             .AutoScrollToSelectedItem(false)
             .ItemsSource(vm, x => x.Clusters)
