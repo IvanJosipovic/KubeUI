@@ -120,6 +120,34 @@ public static class FactoryExtensions
         return root?.RightPinnedDockables?.FirstOrDefault(x => x.Id == id);
     }
 
+    /// <summary>
+    /// Replaces a docked (not auto-hidden) <paramref name="existing"/> with <paramref name="replacement"/> in the same dock and position,
+    /// keeping it the active tab if it was, without moving keyboard focus. The replaced dockable is disposed.
+    /// </summary>
+    /// <param name="factory">The dock factory.</param>
+    /// <param name="existing">The docked dockable to replace.</param>
+    /// <param name="replacement">The dockable to show instead.</param>
+    /// <returns><see langword="true"/> when the replacement was docked; <see langword="false"/> when <paramref name="existing"/> has no owning dock.</returns>
+    public static bool ReplaceDockable(this IFactory factory, IDockable existing, IDockable replacement)
+    {
+        if (existing.Owner is not IDock owner || owner.VisibleDockables is not { } visible)
+        {
+            return false;
+        }
+
+        var index = visible.IndexOf(existing);
+        var wasActive = ReferenceEquals(owner.ActiveDockable, existing);
+        factory.RemoveDockable(existing, false);
+        factory.InsertDockable(owner, replacement, Math.Max(0, Math.Min(index, owner.VisibleDockables?.Count ?? 0)));
+        if (wasActive)
+        {
+            factory.SetActiveDockable(replacement);
+        }
+
+        DisposeReplaced(existing, replacement);
+        return true;
+    }
+
     private static void DisposeReplaced(IDockable replaced, IDockable replacement)
     {
         if (!ReferenceEquals(replaced, replacement) && replaced is IDisposable disposable)

@@ -403,7 +403,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         OnPropertyChanged(nameof(SelectedItem));
         OnPropertyChanged(nameof(SelectedItems));
         var selectedItems = SelectedItems?.Where(static selected => selected is not null).ToArray();
-        ResourceConfig?.ShowInPinnedProperties(selectedItems);
+        ResourceConfig?.ShowInOpenProperties(selectedItems);
         _agentContextService.SetContext(this, selectedItems is not { Length: > 0 }
             ? null
             : new AgentContext

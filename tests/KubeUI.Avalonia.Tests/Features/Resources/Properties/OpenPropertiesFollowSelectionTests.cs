@@ -11,16 +11,31 @@ using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Features.Resources.Properties;
 
-public sealed class PinnedPropertiesFollowSelectionTests
+public sealed class OpenPropertiesFollowSelectionTests
 {
     [AvaloniaFact]
-    public async Task pinned_properties_follow_list_selection_without_popping_open()
+    public async Task open_properties_follow_list_selection_in_place()
+    {
+        var (_, _, rightDock) = CreateLayout();
+        using var cluster = await Application.Current.CreateClusterAsync();
+        using var list = await CreatePodListAsync(cluster, Pod("api"), Pod("worker"));
+        list.ResourceConfig.View(new[] { SelectByName(list, "api") });
+        var properties = rightDock.VisibleDockables!.OfType<ResourcePropertiesViewModel<V1Pod>>().Single();
+
+        var worker = SelectByName(list, "worker");
+        await WaitForAsync(() => ReferenceEquals(properties.Object, worker));
+
+        rightDock.VisibleDockables!.OfType<ResourcePropertiesViewModel<V1Pod>>().ShouldHaveSingleItem().ShouldBeSameAs(properties);
+        properties.Cluster.ShouldBeSameAs(cluster);
+    }
+
+    [AvaloniaFact]
+    public async Task auto_hidden_properties_follow_list_selection_without_expanding()
     {
         var (factory, root, rightDock) = CreateLayout();
         using var cluster = await Application.Current.CreateClusterAsync();
         using var list = await CreatePodListAsync(cluster, Pod("api"), Pod("worker"));
-        var api = SelectByName(list, "api");
-        list.ResourceConfig.View(new[] { api });
+        list.ResourceConfig.View(new[] { SelectByName(list, "api") });
         var properties = rightDock.VisibleDockables!.OfType<ResourcePropertiesViewModel<V1Pod>>().Single();
         factory.PinDockable(properties);
         root.RightPinnedDockables.ShouldContain(properties);
@@ -31,23 +46,6 @@ public sealed class PinnedPropertiesFollowSelectionTests
         root.RightPinnedDockables!.ShouldHaveSingleItem().ShouldBeSameAs(properties);
         rightDock.VisibleDockables.ShouldNotContain(properties);
         root.PinnedDock?.VisibleDockables?.ShouldNotContain(properties);
-    }
-
-    [AvaloniaFact]
-    public async Task unpinned_properties_keep_their_object_when_selection_changes()
-    {
-        var (_, _, rightDock) = CreateLayout();
-        using var cluster = await Application.Current.CreateClusterAsync();
-        using var list = await CreatePodListAsync(cluster, Pod("api"), Pod("worker"));
-        var api = SelectByName(list, "api");
-        list.ResourceConfig.View(new[] { api });
-        var properties = rightDock.VisibleDockables!.OfType<ResourcePropertiesViewModel<V1Pod>>().Single();
-
-        SelectByName(list, "worker");
-        Dispatcher.UIThread.RunJobs();
-
-        properties.Object.ShouldBeSameAs(api);
-        rightDock.VisibleDockables!.OfType<ResourcePropertiesViewModel<V1Pod>>().ShouldHaveSingleItem().ShouldBeSameAs(properties);
     }
 
     [AvaloniaFact]
@@ -65,15 +63,14 @@ public sealed class PinnedPropertiesFollowSelectionTests
     }
 
     [AvaloniaFact]
-    public async Task pinned_properties_keep_current_object_for_multi_selection()
+    public async Task open_properties_keep_current_object_for_multi_selection()
     {
-        var (factory, _, rightDock) = CreateLayout();
+        var (_, _, rightDock) = CreateLayout();
         using var cluster = await Application.Current.CreateClusterAsync();
         using var list = await CreatePodListAsync(cluster, Pod("api"), Pod("worker"));
         var api = SelectByName(list, "api");
         list.ResourceConfig.View(new[] { api });
         var properties = rightDock.VisibleDockables!.OfType<ResourcePropertiesViewModel<V1Pod>>().Single();
-        factory.PinDockable(properties);
 
         list.SelectionModel.Select(IndexOf(list, "worker"));
         await WaitForAsync(() => list.SelectedItems?.Count == 2);
@@ -82,7 +79,7 @@ public sealed class PinnedPropertiesFollowSelectionTests
     }
 
     [AvaloniaFact]
-    public async Task pinned_properties_switch_to_another_resource_kind_and_stay_pinned()
+    public async Task auto_hidden_properties_switch_to_another_resource_kind_and_stay_hidden()
     {
         var (factory, root, rightDock) = CreateLayout();
         using var cluster = await Application.Current.CreateClusterAsync();
@@ -107,6 +104,37 @@ public sealed class PinnedPropertiesFollowSelectionTests
         var deploymentProperties = root.RightPinnedDockables!.ShouldHaveSingleItem().ShouldBeOfType<ResourcePropertiesViewModel<V1Deployment>>();
         deploymentProperties.Object.ShouldBeSameAs(deployment);
         rightDock.VisibleDockables!.ShouldNotContain(deploymentProperties);
+        podProperties.Cluster.ShouldBeNull();
+    }
+
+    [AvaloniaFact]
+    public async Task open_properties_switch_to_another_resource_kind_in_place()
+    {
+        var (_, _, rightDock) = CreateLayout();
+        using var cluster = await Application.Current.CreateClusterAsync();
+        using var pods = await CreatePodListAsync(cluster, Pod("api"));
+        pods.ResourceConfig.View(new[] { SelectByName(pods, "api") });
+        var podProperties = rightDock.VisibleDockables!.OfType<ResourcePropertiesViewModel<V1Pod>>().Single();
+        var index = rightDock.VisibleDockables!.IndexOf(podProperties);
+        using var deployments = Application.Current.GetRequiredTestService<ResourceListViewModel<V1Deployment>>();
+        deployments.Initialize(cluster);
+        var deployment = new V1Deployment
+        {
+            ApiVersion = V1Deployment.KubeApiVersion,
+            Kind = V1Deployment.KubeKind,
+            Metadata = new V1ObjectMeta { Name = "web", NamespaceProperty = "team-a" },
+        };
+        deployments.Objects.AddOrUpdate(deployment);
+        await WaitForAsync(() => deployments.ItemCount == 1);
+
+        deployments.SelectionModel.Select(0);
+
+        await WaitForAsync(() => rightDock.VisibleDockables!.OfType<ResourcePropertiesViewModel<V1Deployment>>().Any());
+        var deploymentProperties = rightDock.VisibleDockables!.OfType<ResourcePropertiesViewModel<V1Deployment>>().Single();
+        deploymentProperties.Object.ShouldBeSameAs(deployment);
+        rightDock.VisibleDockables!.IndexOf(deploymentProperties).ShouldBe(index);
+        rightDock.ActiveDockable.ShouldBeSameAs(deploymentProperties);
+        rightDock.VisibleDockables.ShouldNotContain(podProperties);
         podProperties.Cluster.ShouldBeNull();
     }
 
