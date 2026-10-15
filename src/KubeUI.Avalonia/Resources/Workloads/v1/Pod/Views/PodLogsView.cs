@@ -22,6 +22,7 @@ public sealed partial class PodLogsView : ViewBase<PodLogsViewModel>
     private const double SourcesWidth = 300;
     private static readonly StringNotNullOrEmptyConverter HasErrorConverter = new();
 
+    [RequiresUnreferencedCode()]
     protected override object Build(PodLogsViewModel vm)
     {
         ArgumentNullException.ThrowIfNull(vm);

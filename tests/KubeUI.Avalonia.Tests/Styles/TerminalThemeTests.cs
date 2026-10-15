@@ -4,25 +4,26 @@ using Avalonia.Media;
 using Avalonia.Styling;
 using KubeUI.Avalonia.Styles;
 using Shouldly;
+using SvcSystems.UI.Terminal;
 
 namespace KubeUI.Avalonia.Tests.Styles;
 
-public sealed class TerminalPaletteTests
+public sealed class TerminalThemeTests
 {
     [AvaloniaFact]
-    public void terminal_palette_provides_all_256_xterm_colors()
+    public void terminal_theme_provides_all_256_xterm_colors()
     {
-        var resources = TerminalPalette.CreateResources();
+        var theme = new TerminalTheme();
 
-        resources.Count.ShouldBe(256);
-        GetColor(resources, 0).ShouldBe(Color.Parse("#000000"));
-        GetColor(resources, 1).ShouldBe(Color.Parse("#800000"));
-        GetColor(resources, 15).ShouldBe(Color.Parse("#FFFFFF"));
-        GetColor(resources, 16).ShouldBe(Color.Parse("#000000"));
-        GetColor(resources, 17).ShouldBe(Color.Parse("#00005F"));
-        GetColor(resources, 231).ShouldBe(Color.Parse("#FFFFFF"));
-        GetColor(resources, 232).ShouldBe(Color.Parse("#080808"));
-        GetColor(resources, 255).ShouldBe(Color.Parse("#EEEEEE"));
+        theme.Resources.Count.ShouldBe(256);
+        GetColor(theme.Resources, 0).ShouldBe(Color.Parse("#000000"));
+        GetColor(theme.Resources, 1).ShouldBe(Color.Parse("#800000"));
+        GetColor(theme.Resources, 15).ShouldBe(Color.Parse("#FFFFFF"));
+        GetColor(theme.Resources, 16).ShouldBe(Color.Parse("#000000"));
+        GetColor(theme.Resources, 17).ShouldBe(Color.Parse("#00005F"));
+        GetColor(theme.Resources, 231).ShouldBe(Color.Parse("#FFFFFF"));
+        GetColor(theme.Resources, 232).ShouldBe(Color.Parse("#080808"));
+        GetColor(theme.Resources, 255).ShouldBe(Color.Parse("#EEEEEE"));
     }
 
     [AvaloniaFact]
@@ -43,7 +44,7 @@ public sealed class TerminalPaletteTests
         }
     }
 
-    private static Color GetColor(ResourceDictionary resources, int index)
+    private static Color GetColor(IResourceDictionary resources, int index)
     {
         return resources[$"SvcSystems.UI.TerminalColor{index}"].ShouldBeOfType<SolidColorBrush>().Color;
     }

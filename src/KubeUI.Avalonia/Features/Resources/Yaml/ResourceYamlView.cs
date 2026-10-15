@@ -25,6 +25,7 @@ public sealed partial class ResourceYamlView : ViewBase<ResourceYamlViewModel>
         DesignTimePreview.Run(InitializeDesignTimeDataAsync);
     }
 
+    [RequiresUnreferencedCode()]
     protected override object Build(ResourceYamlViewModel vm)
     {
         ArgumentNullException.ThrowIfNull(vm);

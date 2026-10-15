@@ -46,7 +46,6 @@ public sealed class Fluent : AvaloniaStyles
         Add(CreateStyleInclude("avares://LiveMarkdown.Avalonia/Styles.axaml"));
         Add(new DockFluentTheme());
         Add(new TerminalTheme());
-        Add(new AvaloniaStyles { Resources = TerminalPalette.CreateResources() });
 
         Add(new Style<ToolControl>()
             .Background(new DynamicResourceExtension("SystemRegionBrush")));
