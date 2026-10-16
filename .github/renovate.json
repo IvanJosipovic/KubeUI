@@ -117,6 +117,12 @@
       "matchPackageNames": [
         "westermo.graphx.*"
       ]
+    },
+    {
+      "groupName": "website dependencies",
+      "groupSlug": "website",
+      "matchFileNames": ["website/**"],
+      "semanticCommitType": "chore"
     }
   ],
   "customManagers": [

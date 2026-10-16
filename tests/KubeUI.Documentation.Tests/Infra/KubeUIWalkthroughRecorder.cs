@@ -52,7 +52,6 @@ internal static class KubeUIWalkthroughRecorder
     public static bool IsRecordingEnabled =>
         !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("KUBEUI_DOCS_VIDEO_DIR"));
 
-    [Obsolete]
     public static async Task RecordAsync(
         string theme,
         string clipName,
@@ -717,7 +716,6 @@ internal static class KubeUIWalkthroughRecorder
         VolumeName = volumeName,
     };
 
-    [Obsolete]
     private static async Task RecordClipAsync(
         string clipName,
         string theme,
@@ -976,7 +974,6 @@ internal static class KubeUIWalkthroughRecorder
         }
     }
 
-    [Obsolete]
     private static async Task<Point> ExploreYamlCompletionAsync(
         string field,
         Control root,
@@ -1052,7 +1049,6 @@ internal static class KubeUIWalkthroughRecorder
         return origin;
     }
 
-    [Obsolete]
     private static async Task<Point> NavigateRelationshipGraphAsync(
         WalkthroughAction action,
         Control root,
@@ -1164,7 +1160,6 @@ internal static class KubeUIWalkthroughRecorder
         => vertex.TranslatePoint(new Point(vertex.Bounds.Width / 2, vertex.Bounds.Height / 2), window)
             ?? throw new InvalidOperationException($"Could not locate graph node '{vertex.Vertex}'.");
 
-    [Obsolete]
     private static async Task<Point> DragRelationshipViewportAsync(
         Window window,
         CursorOverlay cursor,
@@ -1198,7 +1193,6 @@ internal static class KubeUIWalkthroughRecorder
         return dragEnd;
     }
 
-    [Obsolete]
     private static async Task<Point> TypeYamlTextAsync(
         WalkthroughAction action,
         Control root,
@@ -1500,7 +1494,6 @@ internal static class KubeUIWalkthroughRecorder
             ?? throw new InvalidOperationException("Could not locate the YAML editor caret in the window.");
     }
 
-    [Obsolete]
     private static async Task<Point> OpenNavigationSectionsAsync(
         string name,
         Control root,
@@ -1571,7 +1564,6 @@ internal static class KubeUIWalkthroughRecorder
             && FindNavigationParents(viewModel.Clusters, name, []);
     }
 
-    [Obsolete]
     private static async Task MoveCursorAsync(
         Window window,
         CursorOverlay cursor,
@@ -1597,7 +1589,6 @@ internal static class KubeUIWalkthroughRecorder
         }
     }
 
-    [Obsolete]
     private static async Task<Point> ParkYamlPointerAsync(
         Window window,
         CursorOverlay cursor,
@@ -1615,7 +1606,6 @@ internal static class KubeUIWalkthroughRecorder
         return destination;
     }
 
-    [Obsolete]
     private static async Task ClickAsync(
         Window window,
         CursorOverlay cursor,
@@ -1635,7 +1625,6 @@ internal static class KubeUIWalkthroughRecorder
         cursor.IsClicking = false;
     }
 
-    [Obsolete]
     private static string CaptureFrame(Window window, string directory, int stepIndex, int frameIndex)
     {
         Dispatcher.UIThread.RunJobs();
@@ -1645,11 +1634,10 @@ internal static class KubeUIWalkthroughRecorder
         using var bitmap = new RenderTargetBitmap(pixelSize, new Vector(96, 96));
         bitmap.Render(window);
         var path = Path.Combine(directory, $"step-{stepIndex:D3}-frame-{frameIndex:D4}.png");
-        bitmap.Save(path);
+        bitmap.Save(path, PngBitmapEncoderOptions.Default);
         return path;
     }
 
-    [Obsolete]
     private static void AddHeldFrame(
         Window window,
         string directory,

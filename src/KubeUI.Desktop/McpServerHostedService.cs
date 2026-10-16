@@ -17,6 +17,11 @@ internal sealed class McpServerHostedService(
     IServiceProvider desktopServices,
     int port) : IHostedService, IAsyncDisposable
 {
+    internal const string ClientRateLimitPolicyName = "KubeUI.Mcp.Client";
+    internal const int MaximumConcurrentRequests = 16;
+    internal const int MaximumRequestsPerMinute = 120;
+    internal const int MaximumRequestsPerMinutePerAddress = 600;
+
     private readonly IServiceProvider _desktopServices = desktopServices;
     private readonly int _port = port;
     private readonly ILogger<McpServerHostedService> _logger =
@@ -27,7 +32,12 @@ internal sealed class McpServerHostedService(
     {
         var serverOptions = new KestrelServerOptions
         {
-            ApplicationServices = _desktopServices
+            ApplicationServices = _desktopServices,
+            Limits =
+            {
+                MaxRequestBodySize = 1024 * 1024,
+                RequestHeadersTimeout = TimeSpan.FromSeconds(10)
+            }
         };
         serverOptions.Listen(IPAddress.Loopback, _port);
 
@@ -38,9 +48,16 @@ internal sealed class McpServerHostedService(
             loggerFactory);
 
         var applicationBuilder = new ApplicationBuilder(_desktopServices);
+        applicationBuilder.UseHostFiltering();
+        // Bound invalid credentials before routing; the limiter validates credentials before selecting partitions.
+        applicationBuilder.UseRateLimiter();
+        applicationBuilder.UseMiddleware<McpSecurityMiddleware>(_port);
         applicationBuilder.UseRouting();
+        // The second pass applies the endpoint's per-client policy after authentication.
+        applicationBuilder.UseRateLimiter();
         applicationBuilder.UseEndpoints(endpoints =>
-            endpoints.MapMcp(McpServerConfiguration.Path));
+            endpoints.MapMcp(McpServerConfiguration.Path)
+                .RequireRateLimiting(ClientRateLimitPolicyName));
 
         var application = new KestrelHttpApplication(
             applicationBuilder.Build(),
@@ -55,6 +72,7 @@ internal sealed class McpServerHostedService(
         catch (Exception exception) when (Program.IsPortBindFailure(exception))
         {
             server.Dispose();
+            _desktopServices.GetRequiredService<McpServerState>().SetBoundPort(null);
             _logger.LogWarning(
                 exception,
                 "The configured MCP server port {Port} could not be bound; continuing without MCP.",
@@ -70,6 +88,7 @@ internal sealed class McpServerHostedService(
         await _server.StopAsync(cancellationToken).ConfigureAwait(false);
         _server.Dispose();
         _server = null;
+        _desktopServices.GetRequiredService<McpServerState>().SetBoundPort(null);
     }
 
     public ValueTask DisposeAsync()
@@ -79,6 +98,7 @@ internal sealed class McpServerHostedService(
 
         _server.Dispose();
         _server = null;
+        _desktopServices.GetRequiredService<McpServerState>().SetBoundPort(null);
         return ValueTask.CompletedTask;
     }
 
