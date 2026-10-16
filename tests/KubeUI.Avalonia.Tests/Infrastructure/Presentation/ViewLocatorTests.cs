@@ -1,6 +1,7 @@
 using System.Diagnostics.Metrics;
 using Avalonia.Headless.XUnit;
 using k8s.Models;
+using KubeUI.Avalonia.Features.Crossplane.MRDiffDetection;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Shell.Main;
 using KubeUI.Kubernetes.Client;
@@ -31,6 +32,18 @@ public sealed class ViewLocatorTests
         var view = locator.Build(new HomeViewModel());
 
         view.ShouldBeOfType<HomeView>();
+    }
+
+    [AvaloniaFact]
+    public void Build_ResolvesCrossplaneDiffViewFromGeneratedViewFactory()
+    {
+        var services = Application.Current.GetTestServices();
+        var locator = services.GetRequiredService<ViewLocator>();
+        using var viewModel = services.GetRequiredService<MRDiffDetectionViewModel>();
+
+        var view = locator.Build(viewModel);
+
+        view.ShouldBeOfType<MRDiffDetectionView>();
     }
 
     [AvaloniaFact]

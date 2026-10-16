@@ -12,7 +12,14 @@ internal sealed class JsonBackedYamlTypeConverter<T>(JsonTypeInfo<T> jsonTypeInf
     public object? ReadYaml(IParser parser, Type type, ObjectDeserializer rootDeserializer)
     {
         var json = (JsonElement)rootDeserializer(typeof(JsonElement))!;
-        return json.Deserialize(jsonTypeInfo);
+        try
+        {
+            return json.Deserialize(jsonTypeInfo);
+        }
+        catch (JsonException exception)
+        {
+            throw new YamlException($"Invalid YAML representation for {typeof(T).Name}: {exception.Message}", exception);
+        }
     }
 
     public void WriteYaml(IEmitter emitter, object? value, Type type, ObjectSerializer serializer)

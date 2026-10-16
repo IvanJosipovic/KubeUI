@@ -2,6 +2,7 @@ using System.Collections.Frozen;
 using System.Text;
 using System.Text.Json;
 using k8s.Models;
+using KubernetesClient.Informer.Client;
 using KubeUI.Kubernetes.Serialization;
 using Shouldly;
 using YamlDotNet.Core;
@@ -15,8 +16,20 @@ public sealed class KubernetesYamlCollection
 }
 
 [Collection(KubernetesYamlCollection.Name)]
-public class KubernetesYamlTests
+public class KubernetesYamlTests : IDisposable
 {
+    private readonly bool _previousStaticContext = KubernetesYaml.UseStaticContext;
+
+    public KubernetesYamlTests()
+    {
+        KubernetesYaml.UseStaticContext = true;
+    }
+
+    public void Dispose()
+    {
+        KubernetesYaml.UseStaticContext = _previousStaticContext;
+    }
+
     [Fact]
     public void UseStaticContext_TogglesYamlBuildersAndDefaultsToReflection()
     {
@@ -51,12 +64,22 @@ public class KubernetesYamlTests
     }
 
     [Fact]
-    public void StaticContext_KnowsEveryKubernetesModelCatalogType()
+    public void StaticContext_KnowsRegisteredKubernetesResourceCatalogTypes()
     {
-        var catalog = new KubernetesModelCatalog();
+        var sharedCatalog = new KubernetesModelCatalog();
+        var catalog = new ClusterModelCatalog(sharedCatalog);
+        catalog.RegisterResource(GroupApiVersionKind.From<V1Pod>(), typeof(V1Pod));
+        catalog.RegisterResource(GroupApiVersionKind.From<V1Namespace>(), typeof(V1Namespace));
+        catalog.RegisterResource(GroupApiVersionKind.From<V1ConfigMap>(), typeof(V1ConfigMap));
+        catalog.RegisterResource(GroupApiVersionKind.From<V1Secret>(), typeof(V1Secret));
+        catalog.RegisterResource(GroupApiVersionKind.From<V1Deployment>(), typeof(V1Deployment));
+        catalog.RegisterResource(GroupApiVersionKind.From<V1CustomResourceDefinition>(), typeof(V1CustomResourceDefinition));
         var context = new KubernetesYamlStaticContext();
+        var modelTypes = sharedCatalog.GetYamlTypeMap().Values.Distinct().ToArray();
 
-        foreach (var modelType in catalog.GetYamlTypeMap().Values.Distinct())
+        modelTypes.ShouldNotBeEmpty();
+
+        foreach (var modelType in modelTypes)
         {
             context.IsKnownType(modelType).ShouldBeTrue(modelType.FullName);
         }
@@ -561,6 +584,47 @@ public class KubernetesYamlTests
     }
 
     [Fact]
+    public void JsonBackedYamlConverter_StrictModeRejectsUnknownPodSecurityContextMembers()
+    {
+        const string yaml = """
+            apiVersion: v1
+            kind: Pod
+            metadata:
+              name: strict-json-backed-field
+            spec:
+              securityContext:
+                runAsUsr: 1000
+            """;
+
+        Should.Throw<YamlException>(() => KubernetesYaml.Deserialize<V1Pod>(yaml, strict: true));
+
+        var lenient = KubernetesYaml.Deserialize<V1Pod>(yaml, strict: false);
+        lenient.Spec.SecurityContext.RunAsUser.ShouldBeNull();
+    }
+
+    [Fact]
+    public void GenericKubernetesObject_StrictModeRejectsDuplicateExtensionKeys()
+    {
+        const string yaml = """
+            apiVersion: example.com/v1
+            kind: Widget
+            metadata:
+              name: duplicate-field
+            spec:
+              value: first
+            spec:
+              value: second
+            """;
+
+        var exception = Should.Throw<YamlException>(
+            () => KubernetesYaml.Deserialize<GenericKubernetesObject>(yaml, strict: true));
+
+        exception.Message.ShouldContain("Duplicate key 'spec'");
+        var lenient = KubernetesYaml.Deserialize<GenericKubernetesObject>(yaml, strict: false);
+        lenient.Properties["spec"].GetProperty("value").GetString().ShouldBe("second");
+    }
+
+    [Fact]
     public void JsonBackedYamlConverter_RoundTripsContainerRestartExitCodes()
     {
         var pod = new V1Pod
@@ -823,7 +887,7 @@ public class KubernetesYamlTests
     {
         var catalog = new KubernetesModelCatalog();
         catalog.Register(
-            new KubernetesClient.Informer.Client.GroupApiVersionKind("", "v1", "PodTemplate", "podtemplates"),
+            new GroupApiVersionKind("", "v1", "PodTemplate", "podtemplates"),
             typeof(V1PodTemplate));
 
         var objects = KubernetesYaml.LoadAllFromString("""

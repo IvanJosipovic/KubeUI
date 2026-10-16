@@ -2,6 +2,7 @@ using System.Collections.Frozen;
 using System.Globalization;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using k8s;
 using k8s.Models;
 using YamlDotNet.Core;
@@ -21,9 +22,9 @@ public static class KubernetesYaml
     private static bool s_useStaticContext;
 
     private static readonly Lazy<IDeserializer> s_staticStrictDeserializer = new(() =>
-        CommonDeserializerBuilder.WithDuplicateKeyChecking().Build());
+        CreateStaticDeserializerBuilder(strict: true).WithDuplicateKeyChecking().Build());
     private static readonly Lazy<IDeserializer> s_staticDeserializer = new(() =>
-        CommonDeserializerBuilder.IgnoreUnmatchedProperties().Build());
+        CreateStaticDeserializerBuilder(strict: false).IgnoreUnmatchedProperties().Build());
     private static readonly Lazy<IValueSerializer> s_staticSerializer = new(CreateStaticSerializer);
 
     private static readonly Lazy<IDeserializer> s_reflectionStrictDeserializer = new(() =>
@@ -33,6 +34,17 @@ public static class KubernetesYaml
     private static readonly Lazy<IValueSerializer> s_reflectionSerializer = new(CreateReflectionSerializer);
 
     private static readonly KubernetesYamlStaticContext s_staticContext = new KubernetesYamlRuntimeContext();
+    private static readonly KubernetesJsonStaticContext s_strictJsonContext = CreateStrictJsonContext();
+
+    private static KubernetesJsonStaticContext CreateStrictJsonContext()
+    {
+        var options = new JsonSerializerOptions(KubernetesJsonStaticContext.Default.Options)
+        {
+            TypeInfoResolver = KubernetesJsonStaticContext.Default,
+            UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow,
+        };
+        return new KubernetesJsonStaticContext(options);
+    }
 
     private static bool IsStaticStringDictionary(Type type)
     {
@@ -91,25 +103,28 @@ public static class KubernetesYaml
         return null;
     }
 
-    private static StaticDeserializerBuilder CommonDeserializerBuilder =>
-        new StaticDeserializerBuilder(s_staticContext)
+    private static StaticDeserializerBuilder CreateStaticDeserializerBuilder(bool strict)
+    {
+        var jsonContext = strict ? s_strictJsonContext : KubernetesJsonStaticContext.Default;
+        return new StaticDeserializerBuilder(s_staticContext)
             .AddSystemTextJson()
-            .WithTypeConverter(new JsonBackedYamlTypeConverter<IntOrString>(KubernetesJsonStaticContext.Default.IntOrString))
+            .WithTypeConverter(new JsonBackedYamlTypeConverter<IntOrString>(jsonContext.IntOrString))
             .WithTypeConverter(new ByteArrayStringYamlConverter())
             .WithTypeConverter(new KubernetesByteArrayDictionaryYamlConverter())
             .WithTypeConverter(new KubernetesResourceQuantityYamlConverter())
             .WithTypeConverter(new KubernetesResourceQuantityDictionaryYamlConverter())
             .WithTypeConverter(new KubernetesStringDictionaryYamlConverter())
-            .WithTypeConverter(new GenericKubernetesObjectYamlConverter())
             .WithTypeConverter(new KubeConfigNamedExtensionYamlConverter())
-            .WithTypeConverter(new JsonBackedYamlTypeConverter<V1ContainerRestartRuleOnExitCodes>(KubernetesJsonStaticContext.Default.V1ContainerRestartRuleOnExitCodes))
-            .WithTypeConverter(new JsonBackedYamlTypeConverter<V1LinuxContainerUser>(KubernetesJsonStaticContext.Default.V1LinuxContainerUser))
-            .WithTypeConverter(new JsonBackedYamlTypeConverter<V1ListMeta>(KubernetesJsonStaticContext.Default.V1ListMeta))
-            .WithTypeConverter(new JsonBackedYamlTypeConverter<V1PodDisruptionBudgetStatus>(KubernetesJsonStaticContext.Default.V1PodDisruptionBudgetStatus))
-            .WithTypeConverter(new JsonBackedYamlTypeConverter<V1PodSecurityContext>(KubernetesJsonStaticContext.Default.V1PodSecurityContext))
+            .WithTypeConverter(new JsonBackedYamlTypeConverter<V1ContainerRestartRuleOnExitCodes>(jsonContext.V1ContainerRestartRuleOnExitCodes))
+            .WithTypeConverter(new JsonBackedYamlTypeConverter<V1LinuxContainerUser>(jsonContext.V1LinuxContainerUser))
+            .WithTypeConverter(new JsonBackedYamlTypeConverter<V1ListMeta>(jsonContext.V1ListMeta))
+            .WithTypeConverter(new JsonBackedYamlTypeConverter<V1PodDisruptionBudgetStatus>(jsonContext.V1PodDisruptionBudgetStatus))
+            .WithTypeConverter(new JsonBackedYamlTypeConverter<V1PodSecurityContext>(jsonContext.V1PodSecurityContext))
             .WithTypeConverter(new KubernetesDateTimeYamlConverter())
             .WithTypeConverter(new KubernetesDateTimeOffsetYamlConverter())
-            .WithAttemptingUnquotedStringTypeDeserialization();
+            .WithAttemptingUnquotedStringTypeDeserialization()
+            .WithTypeConverter(new GenericKubernetesObjectYamlConverter(strict));
+    }
 
     private static DeserializerBuilder CommonReflectionDeserializerBuilder =>
         new DeserializerBuilder()
@@ -160,7 +175,7 @@ public static class KubernetesYaml
             .WithTypeConverter(new KubernetesResourceQuantityYamlConverter())
             .WithTypeConverter(new KubernetesResourceQuantityDictionaryYamlConverter())
             .WithTypeConverter(new KubernetesStringDictionaryYamlConverter())
-            .WithTypeConverter(new GenericKubernetesObjectYamlConverter())
+            .WithTypeConverter(new GenericKubernetesObjectYamlConverter(strict: false))
             .WithTypeConverter(new KubeConfigNamedExtensionYamlConverter())
             .WithTypeConverter(new JsonBackedYamlTypeConverter<V1ContainerRestartRuleOnExitCodes>(KubernetesJsonStaticContext.Default.V1ContainerRestartRuleOnExitCodes))
             .WithTypeConverter(new JsonBackedYamlTypeConverter<V1LinuxContainerUser>(KubernetesJsonStaticContext.Default.V1LinuxContainerUser))
@@ -601,7 +616,7 @@ public static class KubernetesYaml
         }
     }
 
-    private sealed class GenericKubernetesObjectYamlConverter : IYamlTypeConverter
+    private sealed class GenericKubernetesObjectYamlConverter(bool strict) : IYamlTypeConverter
     {
         public bool Accepts(Type type)
         {
@@ -612,9 +627,16 @@ public static class KubernetesYaml
         {
             parser.Consume<MappingStart>();
             var resource = new GenericKubernetesObject();
+            var seenKeys = strict ? new HashSet<string>(StringComparer.Ordinal) : null;
             while (!parser.Accept<MappingEnd>(out _))
             {
-                var key = parser.Consume<Scalar>().Value;
+                var keyEvent = parser.Consume<Scalar>();
+                var key = keyEvent.Value;
+                if (seenKeys is not null && !seenKeys.Add(key))
+                {
+                    throw new YamlException(keyEvent.Start, keyEvent.End, $"Duplicate key '{key}'.");
+                }
+
                 switch (key)
                 {
                     case "apiVersion":
