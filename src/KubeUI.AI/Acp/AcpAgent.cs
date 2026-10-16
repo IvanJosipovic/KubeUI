@@ -141,7 +141,12 @@ public sealed class AcpAgent : IAgent
             if (formattedException is not null)
                 throw new InvalidOperationException(formattedException, sensitiveValues.Length == 0 ? exception : null);
             if (sensitiveValues.Length > 0)
-                throw new InvalidOperationException("ACP session creation failed; sensitive MCP connection data was omitted.");
+            {
+                var safeDiagnostic = RedactSensitiveValues(exception.ToString(), sensitiveValues);
+                throw new InvalidOperationException(
+                    "ACP session creation failed; sensitive MCP connection data was omitted.",
+                    new InvalidOperationException(safeDiagnostic));
+            }
             throw;
         }
     }

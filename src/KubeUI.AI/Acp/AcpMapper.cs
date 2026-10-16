@@ -1,6 +1,5 @@
 using dotacp.protocol;
 using KubeUI.AI.Agents;
-using Newtonsoft.Json;
 
 namespace KubeUI.AI.Acp;
 
@@ -55,5 +54,5 @@ internal static class AcpMapper
         _ => null
     };
 
-    private static string? Serialize(object? value) => value is null ? null : JsonConvert.SerializeObject(value);
+    private static string? Serialize(object? value) => AcpJsonValue.Serialize(value);
 }

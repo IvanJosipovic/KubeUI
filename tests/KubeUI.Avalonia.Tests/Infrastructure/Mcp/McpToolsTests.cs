@@ -9,6 +9,7 @@ using KubeUI.AI.Mcp;
 using KubeUI.AI.Permissions;
 using KubeUI.Avalonia.Infrastructure.Mcp;
 using KubeUI.Avalonia.Shell.Navigation;
+using KubeUI.Desktop;
 using KubeUI.Kubernetes.Serialization;
 using ModelContextProtocol.Server;
 using Moq;
@@ -260,7 +261,7 @@ public sealed class McpToolsTests
         var tools = CreateTools(session);
 
         var result = await tools.ListEvents("dev", "default");
-        var json = JsonSerializer.Serialize(result, new JsonSerializerOptions(JsonSerializerDefaults.Web));
+        var json = JsonSerializer.Serialize(result, McpToolJsonSerializationContext.CreateSerializerOptions());
 
         json.ShouldContain("\"reason\":\"FailedScheduling\"");
         json.ShouldContain("\"message\":\"0/3 nodes are available\"");

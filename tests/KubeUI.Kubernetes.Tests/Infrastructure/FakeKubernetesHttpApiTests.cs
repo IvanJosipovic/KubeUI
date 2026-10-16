@@ -1,14 +1,79 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Net;
+using System.Text;
+using System.Text.Json;
 using k8s;
 using k8s.Models;
+using KubeUI.Kubernetes.Serialization;
 using Shouldly;
 
 namespace KubeUI.Kubernetes.Tests.Infrastructure;
 
 public sealed class FakeKubernetesHttpApiTests
 {
+    [Fact]
+    public async Task KubernetesMetricsClientDeserializesNodeMetricsWhenReflectionIsDisabled()
+    {
+        JsonSerializer.IsReflectionEnabledByDefault.ShouldBeFalse();
+
+        var response = """
+            {
+              "apiVersion": "metrics.k8s.io/v1beta1",
+              "kind": "NodeMetricsList",
+              "metadata": {},
+              "items": [
+                {
+                  "metadata": { "name": "node-1" },
+                  "timestamp": "2026-09-24T12:00:00Z",
+                  "window": "30s",
+                  "usage": { "cpu": "100m", "memory": "64Mi" }
+                }
+              ]
+            }
+            """;
+        using var handler = new MetricsResponseHandler(response);
+        using var client = KubernetesClientMaterializer.Create(
+            new KubernetesClientConfiguration { Host = "http://fake-kubernetes" },
+            handler);
+
+        var metrics = await KubernetesMetricsClient.GetKubernetesNodesMetricsAsync(client, TestContext.Current.CancellationToken);
+
+        metrics.Items.ShouldHaveSingleItem().Name().ShouldBe("node-1");
+    }
+
+    [Fact]
+    public async Task KubernetesMetricsClientDeserializesPodMetricsWhenReflectionIsDisabled()
+    {
+        JsonSerializer.IsReflectionEnabledByDefault.ShouldBeFalse();
+
+        var response = """
+            {
+              "apiVersion": "metrics.k8s.io/v1beta1",
+              "kind": "PodMetricsList",
+              "metadata": {},
+              "items": [
+                {
+                  "metadata": { "name": "pod-1", "namespace": "default" },
+                  "timestamp": "2026-09-24T12:00:00Z",
+                  "window": "30s",
+                  "containers": [
+                    { "name": "app", "usage": { "cpu": "100m", "memory": "64Mi" } }
+                  ]
+                }
+              ]
+            }
+            """;
+        using var handler = new MetricsResponseHandler(response);
+        using var client = KubernetesClientMaterializer.Create(
+            new KubernetesClientConfiguration { Host = "http://fake-kubernetes" },
+            handler);
+
+        var metrics = await KubernetesMetricsClient.GetKubernetesPodsMetricsAsync(client, TestContext.Current.CancellationToken);
+
+        metrics.Items.ShouldHaveSingleItem().Name().ShouldBe("pod-1");
+    }
+
     [Fact]
     public async Task AggregatedDiscoveryClient_reuses_etags_without_replacing_cached_responses()
     {
@@ -121,6 +186,19 @@ public sealed class FakeKubernetesHttpApiTests
         api.RequestUris.ShouldContain(uri => uri != null && uri.AbsolutePath == "/api/v1/namespaces");
     }
 
+    private sealed class MetricsResponseHandler(string response) : DelegatingHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                RequestMessage = request,
+                Content = new StringContent(response, Encoding.UTF8, "application/json"),
+            });
+        }
+    }
+
     [Fact]
     public async Task FakeObjectsReceiveCreationTimestamps()
     {
@@ -194,8 +272,8 @@ public sealed class FakeKubernetesHttpApiTests
             new KubernetesClientConfiguration { Host = "http://fake-kubernetes" },
             api);
 
-        var nodes = await client.GetKubernetesNodesMetricsAsync();
-        var pods = await client.GetKubernetesPodsMetricsAsync();
+        var nodes = await KubernetesMetricsClient.GetKubernetesNodesMetricsAsync(client, TestContext.Current.CancellationToken);
+        var pods = await KubernetesMetricsClient.GetKubernetesPodsMetricsAsync(client, TestContext.Current.CancellationToken);
         var apiGroups = await client.Apis.GetAPIVersionsAsync();
 
         var nodeMetric = nodes.Items.ShouldHaveSingleItem();
@@ -232,6 +310,7 @@ public sealed class FakeKubernetesHttpApiTests
                 Kind = V1Namespace.KubeKind,
                 Metadata = new V1ObjectMeta { Name = "denied" },
             },
+            KubernetesJsonStaticContext.Default.Options,
             TestContext.Current.CancellationToken);
 
         response.StatusCode.ShouldBe(HttpStatusCode.Forbidden);

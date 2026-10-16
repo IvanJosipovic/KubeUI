@@ -1,14 +1,16 @@
 using Avalonia.Markup.Xaml.MarkupExtensions;
 using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
+using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Resources.Workloads.v1.Pod.Behaviors;
 using KubeUI.Avalonia.Services.Settings;
 using KubeUI.Avalonia.Styles;
 using SvcSystems.UI.Terminal;
 
+
 namespace KubeUI.Avalonia.Resources.Workloads.v1.Pod;
 
-public sealed class PodConsoleView : ViewBase<PodConsoleViewModel>
+public sealed class PodConsoleView : KubeUIView<PodConsoleViewModel>
 {
     protected override object Build(PodConsoleViewModel vm)
     {

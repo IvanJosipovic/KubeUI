@@ -1,6 +1,7 @@
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using KubeUI.Avalonia.Infrastructure;
+using KubeUI.Avalonia.Infrastructure.Presentation;
 using LiveMarkdown.Avalonia;
 
 namespace KubeUI.Avalonia.Features.AI;
@@ -8,7 +9,7 @@ namespace KubeUI.Avalonia.Features.AI;
 /// <summary>
 /// Represents the view for the agent chat interface.
 /// </summary>
-public sealed class AgentChatView : ViewBase<AgentChatViewModel>
+public sealed class AgentChatView : KubeUIView<AgentChatViewModel>
 {
     private ScrollViewer? _conversationScrollViewer = null!;
     private bool _conversationIsAtEnd = true;

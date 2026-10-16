@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO.Pipelines;
 using System.Text;
+using System.Text.Json;
 using dotacp.protocol;
 using KubeUI.AI.Acp;
 using KubeUI.AI.Agents;
@@ -21,7 +22,7 @@ public sealed class AcpAgentIntegrationTests
         var exception = new AcpException(
             -32602,
             "Invalid params",
-            new { type = new { errors = new[] { "Expected http" } } });
+            ParseJson("""{"type":{"errors":["Expected http"]}}"""));
 
         AcpErrorFormatter.Format(exception).ShouldBe(
             "ACP error -32602: Invalid params. Details: {\"type\":{\"errors\":[\"Expected http\"]}}");
@@ -29,7 +30,7 @@ public sealed class AcpAgentIntegrationTests
         var remoteException = new RemoteInvocationException(
             "Invalid params",
             -32602,
-            new { headers = new { errors = new[] { "Expected object" } } });
+            ParseJson("""{"headers":{"errors":["Expected object"]}}"""));
 
         AcpErrorFormatter.Format(remoteException).ShouldBe(
             "ACP error -32602: Invalid params. Details: {\"headers\":{\"errors\":[\"Expected object\"]}}");
@@ -40,7 +41,7 @@ public sealed class AcpAgentIntegrationTests
     {
         using var lease = new RecordingLease();
         await using var process = new InMemoryAcpProcess(
-            sessionCreationException: new AcpException(-32602, "Invalid params", new { type = "http" }));
+            sessionCreationException: new AcpException(-32602, "Invalid params", ParseJson("""{"type":"http"}""")));
         var agent = new AcpAgent(
             new AcpAgentDefinition { Id = "copilot", Name = "GitHub Copilot", Executable = "copilot" },
             () => process);
@@ -94,6 +95,32 @@ public sealed class AcpAgentIntegrationTests
     }
 
     [Fact]
+    public async Task acp_non_protocol_session_failure_preserves_redacted_diagnostic()
+    {
+        const string token = "mcp-non-protocol-canary-token";
+        using var lease = new RecordingLease();
+        await using var process = new FailingAcpProcess(
+            new TypeLoadException($"Failed with {token}: MultiplexingStream.Dispose."));
+        var agent = new AcpAgent(
+            new AcpAgentDefinition { Id = "redaction", Name = "Redaction ACP", Executable = "unused" },
+            () => process);
+
+        var exception = await Should.ThrowAsync<InvalidOperationException>(() => agent.CreateSessionAsync(new AgentSessionOptions
+        {
+            McpEndpoint = "http://127.0.0.1:62888/mcp",
+            McpHeaders = new Dictionary<string, string> { ["Authorization"] = $"Bearer {token}" },
+            McpCredentialLease = lease
+        }));
+
+        exception.Message.ShouldBe("ACP session creation failed; sensitive MCP connection data was omitted.");
+        exception.InnerException.ShouldNotBeNull();
+        exception.InnerException!.Message.ShouldContain("TypeLoadException");
+        exception.InnerException.Message.ShouldContain("MultiplexingStream.Dispose");
+        exception.ToString().ShouldNotContain(token);
+        lease.IsDisposed.ShouldBeTrue();
+    }
+
+    [Fact]
     public async Task acp_prompt_and_cancel_errors_redact_mcp_credentials()
     {
         const string token = "prompt-cancel-canary-token";
@@ -129,6 +156,12 @@ public sealed class AcpAgentIntegrationTests
         process.Disconnect();
         await session.DisposeAsync();
         lease.IsDisposed.ShouldBeTrue();
+    }
+
+    private static JsonElement ParseJson(string json)
+    {
+        using var document = JsonDocument.Parse(json);
+        return document.RootElement.Clone();
     }
 
     [Fact]
@@ -388,6 +421,24 @@ public sealed class AcpAgentIntegrationTests
             _output.Dispose();
             return ValueTask.CompletedTask;
         }
+    }
+
+    private sealed class FailingAcpProcess(Exception exception) : IAcpProcess
+    {
+        public event Action<string>? ErrorReceived { add { } remove { } }
+        public event Action? Exited { add { } remove { } }
+        public Stream Input => Stream.Null;
+        public Stream Output => Stream.Null;
+
+        public Task StartAsync(CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return Task.FromException(exception);
+        }
+
+        public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+
+        public ValueTask DisposeAsync() => ValueTask.CompletedTask;
     }
 
     private sealed class InMemoryAcpProcess(

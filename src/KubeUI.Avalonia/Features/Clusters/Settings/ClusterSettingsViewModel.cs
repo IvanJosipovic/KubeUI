@@ -69,4 +69,3 @@ public sealed partial class ClusterSettingsViewModel : ViewModelBase, IInitializ
         SettingsService.SaveSettings();
     }
 }
-

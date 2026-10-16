@@ -1,8 +1,6 @@
 using System.Diagnostics;
-using System.Reflection;
 using Avalonia.Controls.Templates;
 using Dock.Model.Core;
-using KubeUI.Avalonia.Features.Resources.Properties;
 using KubeUI.Avalonia.Infrastructure.Platform;
 
 namespace KubeUI.Avalonia.Infrastructure.Presentation;
@@ -12,13 +10,18 @@ sealed class ViewLocator : IDataTemplate
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<ViewLocator> _logger;
     private readonly Instrumentation _instrumentation;
-    private Type[]? _types;
+    private readonly IViewFactory[] _viewFactories;
 
-    public ViewLocator(IServiceProvider serviceProvider, ILogger<ViewLocator> logger, Instrumentation instrumentation)
+    public ViewLocator(
+        IServiceProvider serviceProvider,
+        ILogger<ViewLocator> logger,
+        Instrumentation instrumentation,
+        IViewFactory[]? viewFactories = null)
     {
         _serviceProvider = serviceProvider;
         _logger = logger;
         _instrumentation = instrumentation;
+        _viewFactories = viewFactories ?? [];
     }
 
     public Control Build(object? data)
@@ -26,13 +29,12 @@ sealed class ViewLocator : IDataTemplate
         ArgumentNullException.ThrowIfNull(data);
 
         var modelType = data.GetType();
-        var viewType = ResolveViewType(modelType);
+        var instance = ResolveView(data);
 
-        if (viewType is not null)
+        if (instance is not null)
         {
-            var instance = _serviceProvider.GetRequiredService(viewType);
             _instrumentation.ViewOpened.Add(1, new TagList { { "view", GetViewMetricName(instance.GetType(), modelType) } });
-            return (Control)instance;
+            return instance;
         }
 
         _logger.LogCritical("Unable to load View for ViewModel: {ViewModel}", modelType.FullName);
@@ -44,56 +46,22 @@ sealed class ViewLocator : IDataTemplate
         return data is ObservableObject or IDockable;
     }
 
-    private Type? ResolveViewType(Type modelType)
+    private Control? ResolveView(object model)
     {
-        if (modelType.IsGenericType && modelType.GetGenericTypeDefinition() == typeof(ResourcePropertiesViewModel<>))
+        if (model is IViewModelViewFactory viewFactory)
         {
-            return typeof(ResourcePropertiesView<>).MakeGenericType(modelType.GetGenericArguments());
+            return viewFactory.CreateView(_serviceProvider);
         }
 
-        var expectedName = GetUnboundFullName(modelType).Replace("ViewModel", "View", StringComparison.Ordinal);
-        var viewType = GetViewTypes().FirstOrDefault(type => string.Equals(GetUnboundFullName(type), expectedName, StringComparison.Ordinal));
-
-        if (viewType is null)
+        foreach (var factory in _viewFactories)
         {
-            return null;
+            if (factory.CanCreate(model))
+            {
+                return factory.Create(_serviceProvider);
+            }
         }
 
-        if (viewType.IsGenericTypeDefinition && modelType.IsGenericType)
-        {
-            return viewType.MakeGenericType(modelType.GetGenericArguments());
-        }
-
-        return viewType;
-    }
-
-    private Type[] GetViewTypes()
-    {
-        if (_types is not null)
-        {
-            return _types;
-        }
-
-        _types = AppDomain.CurrentDomain.GetAssemblies()
-            .Where(assembly => assembly.GetName().Name?.StartsWith("KubeUI", StringComparison.Ordinal) == true)
-            .SelectMany(GetExportedTypes)
-            .Where(type => type is not null)
-            .Cast<Type>()
-            .ToArray();
-
-        return _types;
-    }
-
-    private static IEnumerable<Type?> GetExportedTypes(Assembly assembly)
-    {
-        try
-        {
-            return assembly.GetExportedTypes();
-        }
-        catch (ReflectionTypeLoadException ex)
-        {
-            return ex.Types;
-        }
+        return null;
     }
 
     private static string GetPrettyName(Type type)
@@ -125,16 +93,13 @@ sealed class ViewLocator : IDataTemplate
         return $"{viewType.Name}<{string.Join(", ", argumentNames)}>";
     }
 
-    private static string GetUnboundFullName(Type type)
-    {
-        var fullName = type.IsGenericType ? type.GetGenericTypeDefinition().FullName : type.FullName;
-        ArgumentNullException.ThrowIfNull(fullName);
-
-        var genericTypeIndex = fullName.IndexOf('`');
-        return genericTypeIndex >= 0 ? fullName[..genericTypeIndex] : fullName;
-    }
 }
 
-
-
-
+/// <summary>Creates a view for a view model using the application's service provider.</summary>
+public interface IViewModelViewFactory
+{
+    /// <summary>Creates the view associated with this view model.</summary>
+    /// <param name="serviceProvider">Application services used to construct the view.</param>
+    /// <returns>Created view.</returns>
+    Control CreateView(IServiceProvider serviceProvider);
+}

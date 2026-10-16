@@ -2,6 +2,8 @@
   <PropertyGroup>
     <DebugType>embedded</DebugType>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <IsTrimmable>true</IsTrimmable>
+    <WarningsAsErrors>$(WarningsAsErrors);IL2026;IL2055;IL2057;IL2060;IL2062;IL2067;IL2070;IL2072;IL2075;IL2087;IL2090;IL2091</WarningsAsErrors>
   </PropertyGroup>
 
   <ItemGroup>
