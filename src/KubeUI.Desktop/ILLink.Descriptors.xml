@@ -1,0 +1,5 @@
+<linker>
+  <assembly fullname="Nerdbank.Streams">
+    <type fullname="Nerdbank.Streams.MultiplexingStream" preserve="all" />
+  </assembly>
+</linker>

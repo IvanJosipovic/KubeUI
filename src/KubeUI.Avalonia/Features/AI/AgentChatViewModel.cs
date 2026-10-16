@@ -27,6 +27,7 @@ public sealed partial class AgentChatViewModel : ViewModelBase, IAsyncDisposable
     private readonly IAgentContextService _contextService;
     private readonly IMcpServerState _mcpServerState;
     private readonly IMcpCredentialService? _mcpCredentialService;
+    private readonly ILogger<AgentChatViewModel>? _logger;
     private IAgentSession? _session;
     private IDisposable? _mcpCredentialLease;
     private CancellationTokenSource? _turnCancellation;
@@ -52,13 +53,15 @@ public sealed partial class AgentChatViewModel : ViewModelBase, IAsyncDisposable
         ISettingsService settingsService,
         IAgentContextService contextService,
         IMcpServerState mcpServerState,
-        IMcpCredentialService? mcpCredentialService = null)
+        IMcpCredentialService? mcpCredentialService = null,
+        ILogger<AgentChatViewModel>? logger = null)
     {
         _registry = registry;
         _settingsService = settingsService;
         _contextService = contextService;
         _mcpServerState = mcpServerState;
         _mcpCredentialService = mcpCredentialService;
+        _logger = logger;
         Messages.CollectionChanged += MessagesOnCollectionChanged;
         _settingsService.Settings.PropertyChanged += SettingsOnPropertyChanged;
         Context = _contextService.Context;
@@ -108,8 +111,9 @@ public sealed partial class AgentChatViewModel : ViewModelBase, IAsyncDisposable
                     TrustedMcpServers = new HashSet<string>(StringComparer.Ordinal) { "kubeui" }
                 }, _turnCancellation.Token);
             }
-            catch
+            catch (Exception exception)
             {
+                _logger?.LogError(exception, "Failed to create an ACP session for agent {AgentId}", SelectedAgent.Id);
                 mcpCredential?.Dispose();
                 _mcpCredentialLease = null;
                 throw;

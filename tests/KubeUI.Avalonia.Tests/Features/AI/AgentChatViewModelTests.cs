@@ -2,6 +2,7 @@ using System.Threading.Channels;
 using KubeUI.AI.Agents;
 using KubeUI.Avalonia.Features.AI;
 using KubeUI.Avalonia.Infrastructure.Mcp;
+using Microsoft.Extensions.Logging;
 using Moq;
 using Shouldly;
 
@@ -20,6 +21,30 @@ public sealed class AgentChatViewModelTests
 
         vm.Messages.Select(message => message.Text).ShouldBe([" Diagnose pod ".Trim(), "Pod is healthy."]);
         session.Prompt.ShouldEndWith("User request:\nDiagnose pod");
+        await vm.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task send_logs_acp_session_creation_exception()
+    {
+        var exception = new TypeLoadException(
+            "Method 'Dispose' in type 'Nerdbank.Streams.MultiplexingStream' does not have an implementation.");
+        await using var session = new TestSession("failed-session", []);
+        var logger = new Mock<ILogger<AgentChatViewModel>>();
+        var vm = CreateViewModel(
+            new TestRegistry(new TestAgent(session, sessionCreationException: exception)),
+            prompt: "Connect to cluster",
+            logger: logger.Object);
+
+        await vm.SendCommand.ExecuteAsync(null);
+
+        vm.Messages.Last().Text.ShouldContain(exception.Message);
+        logger.Verify(log => log.Log(
+            LogLevel.Error,
+            It.IsAny<EventId>(),
+            It.Is<It.IsAnyType>((state, _) => state.ToString()!.Contains("agent test", StringComparison.Ordinal)),
+            exception,
+            It.IsAny<Func<It.IsAnyType, Exception?, string>>()), Times.Once);
         await vm.DisposeAsync();
     }
 
@@ -301,14 +326,16 @@ public sealed class AgentChatViewModelTests
         IAgentContextService? contextService = null,
         IMcpServerState? mcpServerState = null,
         string? prompt = null,
-        AgentContext? context = null)
+        AgentContext? context = null,
+        ILogger<AgentChatViewModel>? logger = null)
     {
         settingsService ??= CreateSettingsService(new Settings());
         var viewModel = new AgentChatViewModel(
             registry,
             settingsService,
             contextService ?? new AgentContextService(),
-            mcpServerState ?? new McpServerState());
+            mcpServerState ?? new McpServerState(),
+            logger: logger);
         viewModel.Prompt = prompt ?? string.Empty;
         viewModel.Context = context;
         return viewModel;
@@ -326,7 +353,11 @@ public sealed class AgentChatViewModelTests
         public IReadOnlyList<IAgent> Agents => agents;
     }
 
-    private sealed class TestAgent(TestSession session, string id = "test", string name = "Test") : IAgent
+    private sealed class TestAgent(
+        TestSession session,
+        string id = "test",
+        string name = "Test",
+        Exception? sessionCreationException = null) : IAgent
     {
         public int CreateSessionCount { get; private set; }
         public AgentSessionOptions? Options { get; private set; }
@@ -337,6 +368,8 @@ public sealed class AgentChatViewModelTests
         {
             CreateSessionCount++;
             Options = options;
+            if (sessionCreationException is not null)
+                return Task.FromException<IAgentSession>(sessionCreationException);
             return Task.FromResult<IAgentSession>(session);
         }
 
