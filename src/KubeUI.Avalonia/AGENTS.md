@@ -15,6 +15,7 @@ References:
 
 ### Views and styling
 - Use C# for layout and visuals;
+- Views resolved by `ViewLocator` inherit `KubeUIView<TViewModel>`; `ServiceScan.SourceGenerator` discovers these mappings. Keep special runtime view factories on `IViewModelViewFactory`.
 - Prefer `StaticResource` for immutable resources and `DynamicResource` when runtime updates are required.
 
 ### Data binding

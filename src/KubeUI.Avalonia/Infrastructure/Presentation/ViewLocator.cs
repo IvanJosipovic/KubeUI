@@ -1,23 +1,7 @@
 using System.Diagnostics;
 using Avalonia.Controls.Templates;
 using Dock.Model.Core;
-using KubeUI.Avalonia.Features.AI;
-using KubeUI.Avalonia.Features.Clusters.Catalog;
-using KubeUI.Avalonia.Features.Clusters.Error;
-using KubeUI.Avalonia.Features.Clusters.Overview;
-using KubeUI.Avalonia.Features.Clusters.Settings;
-using KubeUI.Avalonia.Features.Resources.List;
-using KubeUI.Avalonia.Features.Resources.Visualization;
-using KubeUI.Avalonia.Features.Resources.Yaml;
 using KubeUI.Avalonia.Infrastructure.Platform;
-using KubeUI.Avalonia.Resources.Workloads.v1.Pod;
-using KubeUI.Avalonia.Resources.Workloads.v1.Pod.ViewModels;
-using KubeUI.Avalonia.Resources.Workloads.v1.Pod.Views;
-using KubeUI.Avalonia.Shell.Documents.About;
-using KubeUI.Avalonia.Shell.Documents.CloudClusters.Aks;
-using KubeUI.Avalonia.Shell.Documents.Settings;
-using KubeUI.Avalonia.Shell.Main;
-using KubeUI.Avalonia.Shell.Navigation;
 
 namespace KubeUI.Avalonia.Infrastructure.Presentation;
 
@@ -26,12 +10,18 @@ sealed class ViewLocator : IDataTemplate
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<ViewLocator> _logger;
     private readonly Instrumentation _instrumentation;
+    private readonly IViewFactory[] _viewFactories;
 
-    public ViewLocator(IServiceProvider serviceProvider, ILogger<ViewLocator> logger, Instrumentation instrumentation)
+    public ViewLocator(
+        IServiceProvider serviceProvider,
+        ILogger<ViewLocator> logger,
+        Instrumentation instrumentation,
+        IViewFactory[]? viewFactories = null)
     {
         _serviceProvider = serviceProvider;
         _logger = logger;
         _instrumentation = instrumentation;
+        _viewFactories = viewFactories ?? [];
     }
 
     public Control Build(object? data)
@@ -63,27 +53,15 @@ sealed class ViewLocator : IDataTemplate
             return viewFactory.CreateView(_serviceProvider);
         }
 
-        return model switch
+        foreach (var factory in _viewFactories)
         {
-            IResourceListViewModel => _serviceProvider.GetRequiredService<ResourceListView>(),
-            MainViewModel => _serviceProvider.GetRequiredService<MainView>(),
-            HomeViewModel => _serviceProvider.GetRequiredService<HomeView>(),
-            NavigationViewModel => _serviceProvider.GetRequiredService<NavigationView>(),
-            ClusterListViewModel => _serviceProvider.GetRequiredService<ClusterListView>(),
-            ClusterErrorViewModel => _serviceProvider.GetRequiredService<ClusterErrorView>(),
-            ClusterViewModel => _serviceProvider.GetRequiredService<ClusterView>(),
-            ClusterSettingsViewModel => _serviceProvider.GetRequiredService<ClusterSettingsView>(),
-            VisualizationViewModel => _serviceProvider.GetRequiredService<VisualizationView>(),
-            ResourceYamlViewModel => _serviceProvider.GetRequiredService<ResourceYamlView>(),
-            AgentChatViewModel => _serviceProvider.GetRequiredService<AgentChatView>(),
-            SettingsViewModel => _serviceProvider.GetRequiredService<SettingsView>(),
-            AboutViewModel => _serviceProvider.GetRequiredService<AboutView>(),
-            ImportAksClusterViewModel => _serviceProvider.GetRequiredService<ImportAksClusterView>(),
-            PodConsoleViewModel => _serviceProvider.GetRequiredService<PodConsoleView>(),
-            PortForwarderListViewModel => _serviceProvider.GetRequiredService<PortForwarderListView>(),
-            PodLogsViewModel => _serviceProvider.GetRequiredService<PodLogsView>(),
-            _ => null
-        };
+            if (factory.CanCreate(model))
+            {
+                return factory.Create(_serviceProvider);
+            }
+        }
+
+        return null;
     }
 
     private static string GetPrettyName(Type type)
@@ -125,5 +103,3 @@ public interface IViewModelViewFactory
     /// <returns>Created view.</returns>
     Control CreateView(IServiceProvider serviceProvider);
 }
-
-

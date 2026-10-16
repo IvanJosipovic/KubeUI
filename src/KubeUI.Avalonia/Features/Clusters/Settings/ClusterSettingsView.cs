@@ -1,10 +1,12 @@
 using Avalonia.Markup.Xaml.MarkupExtensions;
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
+using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Styles;
+
 
 namespace KubeUI.Avalonia.Features.Clusters.Settings;
 
-public sealed class ClusterSettingsView : ViewBase<ClusterSettingsViewModel>
+public sealed class ClusterSettingsView : KubeUIView<ClusterSettingsViewModel>
 {
     public ClusterSettingsView()
     {

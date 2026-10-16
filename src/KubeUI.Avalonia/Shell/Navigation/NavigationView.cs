@@ -9,11 +9,13 @@ using FluentIcons.Common;
 using KubeUI.Avalonia.Features.Clusters.Catalog.Behaviors;
 using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
+using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Kubernetes;
+
 
 namespace KubeUI.Avalonia.Shell.Navigation;
 
-public sealed class NavigationView : ViewBase<NavigationViewModel>
+public sealed class NavigationView : KubeUIView<NavigationViewModel>
 {
     public NavigationView()
     {

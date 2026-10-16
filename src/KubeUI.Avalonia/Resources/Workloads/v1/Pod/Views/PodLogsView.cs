@@ -9,15 +9,17 @@ using FluentIcons.Avalonia;
 using FluentIcons.Common;
 using KubeUI.Avalonia.Converters;
 using KubeUI.Avalonia.Infrastructure;
+using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Resources.Workloads.v1.Pod.Behaviors;
 using KubeUI.Avalonia.Resources.Workloads.v1.Pod.ViewModels;
 using KubeUI.Avalonia.Styles;
 using Ursa.Controls;
 
+
 namespace KubeUI.Avalonia.Resources.Workloads.v1.Pod.Views;
 
 /// <summary>Displays streamed pod logs with pod and container selection.</summary>
-public sealed partial class PodLogsView : ViewBase<PodLogsViewModel>
+public sealed partial class PodLogsView : KubeUIView<PodLogsViewModel>
 {
     private const double SourcesWidth = 300;
     private static readonly StringNotNullOrEmptyConverter HasErrorConverter = new();

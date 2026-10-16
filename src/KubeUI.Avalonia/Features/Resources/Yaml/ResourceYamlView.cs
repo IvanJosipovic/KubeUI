@@ -12,13 +12,15 @@ using k8s.Models;
 using KubeUI.Avalonia.Features.Resources.Yaml.Behaviors;
 using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
+using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Services.Settings;
 using KubeUI.Avalonia.Styles;
 using SharedConverters = KubeUI.Avalonia.Converters.Converters;
 
+
 namespace KubeUI.Avalonia.Features.Resources.Yaml;
 
-public sealed partial class ResourceYamlView : ViewBase<ResourceYamlViewModel>
+public sealed partial class ResourceYamlView : KubeUIView<ResourceYamlViewModel>
 {
     public ResourceYamlView()
     {

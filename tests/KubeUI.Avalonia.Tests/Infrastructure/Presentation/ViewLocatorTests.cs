@@ -2,6 +2,7 @@ using System.Diagnostics.Metrics;
 using Avalonia.Headless.XUnit;
 using k8s.Models;
 using KubeUI.Avalonia.Infrastructure.Presentation;
+using KubeUI.Avalonia.Shell.Main;
 using KubeUI.Kubernetes.Client;
 using Shouldly;
 
@@ -10,7 +11,7 @@ namespace KubeUI.Avalonia.Tests.Infrastructure.Presentation;
 public sealed class ViewLocatorTests
 {
     [AvaloniaFact]
-    public void Build_ResolvesClusterSettingsViewFromViewModelsNamespace()
+    public void Build_ResolvesClusterSettingsViewFromGeneratedFactory()
     {
         var services = Application.Current.GetTestServices();
         var locator = services.GetRequiredService<ViewLocator>();
@@ -19,6 +20,17 @@ public sealed class ViewLocatorTests
         var view = locator.Build(viewModel);
 
         view.ShouldBeOfType<ClusterSettingsView>();
+    }
+
+    [AvaloniaFact]
+    public void Build_ResolvesHomeViewFromGeneratedViewFactory()
+    {
+        var services = Application.Current.GetTestServices();
+        var locator = services.GetRequiredService<ViewLocator>();
+
+        var view = locator.Build(new HomeViewModel());
+
+        view.ShouldBeOfType<HomeView>();
     }
 
     [AvaloniaFact]
