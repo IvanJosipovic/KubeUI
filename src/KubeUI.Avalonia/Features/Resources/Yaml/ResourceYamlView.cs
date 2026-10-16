@@ -27,7 +27,7 @@ public sealed partial class ResourceYamlView : KubeUIView<ResourceYamlViewModel>
         DesignTimePreview.Run(InitializeDesignTimeDataAsync);
     }
 
-    [RequiresUnreferencedCode()]
+    [RequiresUnreferencedCode("Declarative YAML view construction may use members removed by trimming.")]
     protected override object Build(ResourceYamlViewModel vm)
     {
         ArgumentNullException.ThrowIfNull(vm);

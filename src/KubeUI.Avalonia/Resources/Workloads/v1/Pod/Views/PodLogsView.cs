@@ -24,7 +24,7 @@ public sealed partial class PodLogsView : KubeUIView<PodLogsViewModel>
     private const double SourcesWidth = 300;
     private static readonly StringNotNullOrEmptyConverter HasErrorConverter = new();
 
-    [RequiresUnreferencedCode()]
+    [RequiresUnreferencedCode("Declarative pod-log view construction may use members removed by trimming.")]
     protected override object Build(PodLogsViewModel vm)
     {
         ArgumentNullException.ThrowIfNull(vm);
