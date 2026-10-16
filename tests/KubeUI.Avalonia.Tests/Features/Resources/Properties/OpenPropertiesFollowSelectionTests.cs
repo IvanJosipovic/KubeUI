@@ -3,6 +3,7 @@ using Avalonia.Threading;
 using Dock.Model.Controls;
 using Dock.Model.Core;
 using DynamicData;
+using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Infrastructure.Docking;
@@ -166,6 +167,37 @@ public sealed class OpenPropertiesFollowSelectionTests
         properties.Cluster.ShouldBeSameAs(second);
         properties.Object.ShouldBeSameAs(moved);
         properties.ResourceConfig.ShouldBeSameAs(second.GetResourceConfig(GroupApiVersionKind.From<V1Pod>()));
+    }
+
+    [AvaloniaFact]
+    public async Task queued_update_for_previous_resource_is_ignored_after_retarget()
+    {
+        using var cluster = await Application.Current.CreateClusterAsync();
+        using var properties = Application.Current.GetRequiredTestService<ResourcePropertiesViewModel<V1Pod>>();
+        properties.Initialize(cluster, Pod("api"));
+        var worker = Pod("worker");
+
+        properties.Cluster_OnChange(WatchEventType.Modified, GroupApiVersionKind.From<V1Pod>(), Pod("api"));
+        properties.ShowResource(cluster, worker);
+        Dispatcher.UIThread.RunJobs();
+
+        properties.Object.ShouldBeSameAs(worker);
+    }
+
+    [AvaloniaFact]
+    public async Task queued_update_from_previous_cluster_is_ignored_after_retarget()
+    {
+        using var first = await Application.Current.CreateClusterAsync();
+        using var second = await Application.Current.CreateClusterAsync();
+        using var properties = Application.Current.GetRequiredTestService<ResourcePropertiesViewModel<V1Pod>>();
+        properties.Initialize(first, Pod("api"));
+        var sameNameInSecond = Pod("api");
+
+        properties.Cluster_OnChange(WatchEventType.Modified, GroupApiVersionKind.From<V1Pod>(), Pod("api"));
+        properties.ShowResource(second, sameNameInSecond);
+        Dispatcher.UIThread.RunJobs();
+
+        properties.Object.ShouldBeSameAs(sameNameInSecond);
     }
 
     private static (IFactory Factory, IRootDock Root, IToolDock RightDock) CreateLayout()
