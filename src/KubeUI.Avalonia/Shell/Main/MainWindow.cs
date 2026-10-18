@@ -49,6 +49,8 @@ public sealed class MainWindow : Window
     {
         return new NativeMenuItem(Assets.Resources.MainView_Menu_File!)
             .Menu([
+                CreateCommandItem(vm, Assets.Resources.MainView_Menu_File_LoadKubeConfig!, x => x.LoadKubeConfigCommand),
+                CreateCommandItem(vm, Assets.Resources.MainView_Menu_File_ImportAksCluster!, x => x.ImportAksClusterCommand),
                 CreateCommandItem(vm, Assets.Resources.MainView_Menu_File_Clusters!, x => x.OpenClustersCommand),
                 CreateCommandItem(vm, Assets.Resources.MainView_Menu_File_Settings!, x => x.OpenSettingsCommand),
                 new NativeMenuItemSeparator(),
@@ -69,6 +71,7 @@ public sealed class MainWindow : Window
     {
         return new NativeMenuItem(Assets.Resources.MainView_Menu_Help!)
             .Menu([
+                CreateCommandItem(vm, Assets.Resources.MainView_Menu_Help_CheckForUpdates!, x => x.CheckForUpdatesCommand),
                 CreateCommandItem(vm, Assets.Resources.MainView_Menu_Help_About!, x => x.OpenAboutCommand)
             ]);
     }
