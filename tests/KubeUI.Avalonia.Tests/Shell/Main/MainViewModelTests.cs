@@ -181,22 +181,27 @@ public sealed class MainViewModelTests
     public async Task help_menu_contains_check_for_updates_command()
     {
         var vm = CreateViewModel();
-        MainView view = new() { DataContext = vm };
-        using var window = Application.Current.CreateTestWindow(content: view);
-
+        var window = new MainWindow { DataContext = vm };
         window.Show();
-        await TestApplicationExtensions.WaitForUiAsync();
+        try
+        {
+            await TestApplicationExtensions.WaitForUiAsync();
 
-        view.GetVisualDescendants()
-            .OfType<Menu>()
-            .Single()
-            .Items
-            .OfType<MenuItem>()
-            .Single(item => item.Header?.ToString() == Assets.Resources.MainView_Menu_Help)
-            .Items
-            .OfType<MenuItem>()
-            .Select(item => item.Header?.ToString())
-            .ShouldContain("_Check for Updates");
+            var presenter = window.GetVisualDescendants().OfType<Menu>().Single();
+            var helpItem = Enumerable.Range(0, presenter.ItemCount)
+                .Select(presenter.ContainerFromIndex)
+                .OfType<MenuItem>()
+                .Single(item => item.Header?.ToString() == Assets.Resources.MainView_Menu_Help);
+
+            helpItem.Items
+                .OfType<NativeMenuItem>()
+                .Select(item => item.Header)
+                .ShouldContain(Assets.Resources.MainView_Menu_Help_CheckForUpdates);
+        }
+        finally
+        {
+            window.Close();
+        }
     }
 
     [Fact]
