@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Reflection;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
@@ -354,6 +355,40 @@ public sealed class SettingsViewModelTests
         viewModel.McpGrantMessage.ShouldBe(Assets.Resources.SettingsView_McpTokenRevokeFailed);
         viewModel.NewlyCreatedMcpToken.ShouldBe(token);
         settings.McpExternalClientGrants.Count.ShouldBe(1);
+    }
+
+    [AvaloniaFact]
+    public void mcp_client_name_box_shows_placeholder_text()
+    {
+        var settings = new AppSettings { McpServerEnabled = true };
+        var settingsService = new Mock<ISettingsService>();
+        settingsService.SetupGet(service => service.Settings).Returns(settings);
+        var agent = new Mock<IAgent>();
+        agent.SetupGet(value => value.Id).Returns("test");
+        agent.SetupGet(value => value.Name).Returns("Test agent");
+        var registry = new Mock<IAgentRegistry>();
+        registry.SetupGet(value => value.Agents).Returns([agent.Object]);
+        using var viewModel = CreateViewModel(settingsService.Object, registry.Object);
+        var view = new SettingsView { DataContext = viewModel };
+        using var window = Application.Current.CreateTestWindow(500, 700, view);
+
+        window.Show();
+        Dispatcher.UIThread.RunJobs();
+
+        var clientNameBox = view.GetVisualDescendants().OfType<TextBox>()
+            .Single(textBox => textBox.Name == nameof(SettingsViewModel.ExternalMcpClientName));
+
+        clientNameBox.PlaceholderText.ShouldBe(Assets.Resources.SettingsView_McpClientName_Watermark);
+    }
+
+    [Fact]
+    public void settings_view_members_are_not_marked_obsolete()
+    {
+        typeof(SettingsView)
+            .GetMembers(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static)
+            .Where(member => member.GetCustomAttribute<ObsoleteAttribute>() is not null)
+            .Select(member => member.Name)
+            .ShouldBeEmpty();
     }
 
     private static McpServerState CreateBoundMcpServerState()
