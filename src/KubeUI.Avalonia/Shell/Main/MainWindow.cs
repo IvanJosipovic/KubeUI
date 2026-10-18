@@ -28,6 +28,10 @@ public sealed class MainWindow : Window
         UpdateMenu();
     }
 
+    /// <summary>
+    /// Attaches the single application menu to this window. macOS turns it into the system menu bar;
+    /// every other platform presents the same menu in-window through <see cref="MainView"/>'s <see cref="NativeMenuBar"/>.
+    /// </summary>
     private void UpdateMenu()
     {
         if (DataContext is MainViewModel vm)

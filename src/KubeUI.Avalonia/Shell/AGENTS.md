@@ -8,4 +8,4 @@
 - Shell views stay thin.
 - Shared shell helpers should stay in `Shell/` or shared infrastructure, not in cluster or resource features.
 - Update discovery opens one docked Updates document, reusing it when already open. Render release notes with the shared Markdown control and require confirmation before starting an update.
-- The main menu exists twice: the in-window `Menu` in `Main/MainView.cs` (hidden on macOS) and the macOS `NativeMenu` in `Main/MainWindow.cs`. Every item added to one must be added to the other in the same order; `MainWindowMenuTests` enforces this.
+- The application menu is defined once as a `NativeMenu` built in `Main/MainWindow.cs` and attached to the window. `Main/MainView.cs` only hosts a `NativeMenuBar`, which presents that same menu in-window wherever the platform does not export a system menu bar (macOS exports it, so the in-window presenter hides itself). Never build a second menu in the view; add menu items to the `NativeMenu` only.
