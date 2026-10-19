@@ -17,8 +17,8 @@ namespace KubeUI.Kubernetes.Serialization;
 /// </summary>
 public static class KubernetesYaml
 {
-    private static readonly object s_deserializerLockObject = new();
-    private static readonly object s_serializerLockObject = new();
+    private static readonly Lock s_deserializerLockObject = new();
+    private static readonly Lock s_serializerLockObject = new();
     private static bool s_useStaticContext;
 
     private static readonly Lazy<IDeserializer> s_staticStrictDeserializer = new(() =>

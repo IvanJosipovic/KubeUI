@@ -7,7 +7,7 @@ namespace KubeUI.Kubernetes;
 
 public static class KubeUIKubernetesServiceCollectionExtensions
 {
-    private static readonly object _jsonConfigurationLock = new();
+    private static readonly Lock _jsonConfigurationLock = new();
     private static bool _isJsonConfigured;
 
     public static IServiceCollection AddKubeUIKubernetesServices(this IServiceCollection services)

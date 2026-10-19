@@ -47,26 +47,51 @@ internal static class McpToolAuditFilter
                     };
                 }
                 outcome = result.IsError == true
-                    ? McpToolOutcome.Denied
+                    ? McpToolOutcome.Failed
                     : McpToolOutcome.Succeeded;
+                if (result.IsError == true)
+                {
+                    logger.LogError(
+                        "MCP tool {ToolName} for client {ClientId} returned an error: {ErrorSummary}",
+                        toolName, clientId, GetErrorSummary(result));
+                }
                 return result;
             }
-            catch (OperationCanceledException)
+            catch (OperationCanceledException exception)
             {
                 outcome = McpToolOutcome.Cancelled;
+                logger.LogInformation(
+                    exception,
+                    "MCP tool {ToolName} for client {ClientId} was cancelled",
+                    toolName, clientId);
                 throw;
             }
             catch (UnauthorizedAccessException)
             {
                 outcome = McpToolOutcome.Denied;
-                throw new UnauthorizedAccessException("MCP client is not authorized for this tool.");
+                logger.LogWarning(
+                    "MCP tool {ToolName} for client {ClientId} was denied",
+                    toolName, clientId);
+                return new CallToolResult
+                {
+                    IsError = true,
+                    Content = [new TextContentBlock { Text = "The MCP tool request was denied by KubeUI." }]
+                };
             }
-            catch (ArgumentException)
+            catch (ArgumentException exception)
             {
+                logger.LogWarning(
+                    exception,
+                    "MCP tool {ToolName} for client {ClientId} rejected an invalid request",
+                    toolName, clientId);
                 throw;
             }
-            catch
+            catch (Exception exception)
             {
+                logger.LogError(
+                    exception,
+                    "MCP tool {ToolName} for client {ClientId} failed",
+                    toolName, clientId);
                 throw new InvalidOperationException("MCP tool request could not be completed.");
             }
             finally
@@ -92,5 +117,30 @@ internal static class McpToolAuditFilter
                 return true;
         }
         return outputBytes > MaximumOutputBytes;
+    }
+
+    private static string GetErrorSummary(CallToolResult result)
+    {
+        const int maximumSummaryLength = 2048;
+        var summary = new StringBuilder();
+        foreach (var content in result.Content)
+        {
+            if (content is not TextContentBlock text || string.IsNullOrWhiteSpace(text.Text))
+                continue;
+
+            if (summary.Length > 0)
+                summary.Append(" | ");
+            var remainingLength = maximumSummaryLength - summary.Length;
+            if (remainingLength <= 0)
+                break;
+            summary.Append(text.Text.AsSpan(0, Math.Min(text.Text.Length, remainingLength)));
+        }
+
+        if (summary.Length == 0)
+            return "MCP server returned an error result without text details.";
+
+        if (summary.Length == maximumSummaryLength)
+            summary.Append("…");
+        return summary.ToString();
     }
 }
