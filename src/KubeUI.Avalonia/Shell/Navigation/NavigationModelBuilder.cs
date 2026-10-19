@@ -71,6 +71,14 @@ internal sealed class NavigationModelBuilder
     private void AddCanonical(List<NavigationEntry> entries, ClusterWorkspace cluster, IResourceConfig resource)
     {
         var placement = resource.Navigation;
+        if (resource.IsCustomResource()
+            && !string.Equals(placement.SectionId, NavigationSections.CustomResourcesId, StringComparison.Ordinal))
+        {
+            placement = NavigationPlacement.InSection(
+                NavigationSections.CustomResourcesId,
+                NavigationTreeEditor.ConstructCustomResourceGroups(resource.Kind.Group));
+        }
+
         var section = _sections.Find(placement.SectionId);
         entries.Add(new ResourceEntry(
             NavigationIds.Canonical(cluster, resource.Kind),
@@ -85,6 +93,28 @@ internal sealed class NavigationModelBuilder
 
     private void AddAliases(List<NavigationEntry> entries, ClusterWorkspace cluster, IResourceConfig resource)
     {
+        var configuredPlacement = resource.Navigation;
+        if (resource.IsCustomResource()
+            && !string.Equals(configuredPlacement.SectionId, NavigationSections.CustomResourcesId, StringComparison.Ordinal))
+        {
+            var section = _sections.Find(configuredPlacement.SectionId);
+            if (configuredPlacement.SectionId is not null && section is null)
+            {
+                throw new InvalidOperationException(
+                    $"Custom resource navigation targets unknown section '{configuredPlacement.SectionId}'.");
+            }
+
+            entries.Add(new ResourceEntry(
+                NavigationIds.Alias(cluster, configuredPlacement.SectionId ?? "root", resource.Kind),
+                configuredPlacement.Name ?? resource.Name,
+                configuredPlacement.Order ?? resource.Order,
+                null,
+                section,
+                configuredPlacement.Groups,
+                resource.Kind,
+                IsAlias: true));
+        }
+
         foreach (var provider in _sections.Providers)
         {
             var placement = provider.Place(resource);
