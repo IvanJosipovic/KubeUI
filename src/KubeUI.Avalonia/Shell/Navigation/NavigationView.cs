@@ -45,7 +45,7 @@ public sealed class NavigationView : ViewBase<NavigationViewModel>
             )
             .DataTemplates(
                 CreateClusterTemplate(),
-                CreateResourceTemplate(),
+                CreateNavigationLinkTemplate(),
                 CreateNavigationItemTemplate()
             )
             .Behaviors(
@@ -105,43 +105,51 @@ public sealed class NavigationView : ViewBase<NavigationViewModel>
             node => node.NavigationItems);
     }
 
-    private static FuncTreeDataTemplate<ResourceNavigationLink> CreateResourceTemplate()
+    private static FuncTreeDataTemplate<NavigationLink> CreateNavigationLinkTemplate()
     {
-        return new FuncTreeDataTemplate<ResourceNavigationLink>(
+        return new FuncTreeDataTemplate<NavigationLink>(
             (link, _) =>
                 new Border()
                     .Margin(-5, 0, 0, 0)
                     .HorizontalAlignment(HorizontalAlignment.Stretch)
                     .Background(Brushes.Transparent)
-                    .ContextMenu(new ContextMenu()
-                        .Items([
-                            new MenuItem()
-                                .Header(Assets.Resources.NavigationView_ContextMenu_Open)
-                                .Command(link, x => x.OpenCommand)
-                                .CommandParameter(link)
-                                .Icon(new FluentIcon().Icon(Icon.DocumentEdit)),
-                            new MenuItem()
-                                .Header(Assets.Resources.NavigationView_ContextMenu_OpenNewTab)
-                                .Command(link, x => x.OpenInNewTabCommand)
-                                .CommandParameter(link)
-                                .Icon(new FluentIcon().Icon(Icon.AddSquare))
-                        ]))
-                        .Child(
-                            new StackPanel()
-                                .Orientation(Orientation.Horizontal)
-                                .Children(
-                                    new Image()
-                                        .Source(link, x => x.ResourceIcon),
-                                    new TextBlock()
-                                        .VerticalAlignment(VerticalAlignment.Center)
-                                        .Text(link, x => x.Name),
-                                    new TextBlock()
-                                        .VerticalAlignment(VerticalAlignment.Center)
-                                        .Margin(4, 0, 0, 0)
-                                        .Text(CompiledBinding.Create<ResourceNavigationLink, int>(x => x.Count.StreamBinding()))
-                                )
-                        ),
-                link => link.NavigationItems);
+                    .ContextMenu(link.ResourceKind is not null
+                        ? new ContextMenu()
+                            .Items([
+                                new MenuItem()
+                                    .Header(Assets.Resources.NavigationView_ContextMenu_Open)
+                                    .Command(link, x => x.OpenCommand)
+                                    .CommandParameter(link)
+                                    .Icon(new FluentIcon().Icon(Icon.DocumentEdit)),
+                                new MenuItem()
+                                    .Header(Assets.Resources.NavigationView_ContextMenu_OpenNewTab)
+                                    .Command(link, x => x.OpenInNewTabCommand)
+                                    .CommandParameter(link)
+                                    .Icon(new FluentIcon().Icon(Icon.AddSquare))
+                            ])
+                        : null)
+                    .Child(
+                        new StackPanel()
+                            .Orientation(Orientation.Horizontal)
+                            .VerticalAlignment(VerticalAlignment.Center)
+                            .Children(
+                                new Image()
+                                    .Source(link, x => x.ResourceIcon)
+                                    .IsVisible(link, x => x.ResourceIcon, BindingMode.OneWay, Converters.Converters.NotNull),
+                                new FluentIcon()
+                                    .BindValue(FluentIcon.IconProperty, CompiledBinding.Create<NavigationLink, Icon?>(x => x.FluentIcon, link))
+                                    .IsVisible(link, x => x.FluentIcon, BindingMode.OneWay, Converters.Converters.NotNull),
+                                new TextBlock()
+                                    .VerticalAlignment(VerticalAlignment.Center)
+                                    .Text(link, x => x.Name),
+                                new TextBlock()
+                                    .VerticalAlignment(VerticalAlignment.Center)
+                                    .Margin(4, 0, 0, 0)
+                                    .Text(CompiledBinding.Create<NavigationLink, int>(x => x.Count.StreamBinding()))
+                                    .IsVisible(link, x => x.ResourceKind, BindingMode.OneWay, Converters.Converters.NotNull)
+                            )
+                    ),
+            link => link.NavigationItems);
     }
 
     private static FuncTreeDataTemplate<NavigationItem> CreateNavigationItemTemplate()

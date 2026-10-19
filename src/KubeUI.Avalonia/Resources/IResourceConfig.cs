@@ -1,3 +1,4 @@
+using k8s.Models;
 using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Features.Resources.Common;
 using KubeUI.Avalonia.Infrastructure.Presentation;
@@ -11,15 +12,22 @@ namespace KubeUI.Avalonia.Resources
         bool CanListAndWatch { get; }
         bool PermissionsLoaded { get; }
         bool ShowNewResource { get; }
-        bool IsCustomResource { get; }
         bool SeedOnConnect => false;
         GroupApiVersionKind Kind { get; }
+
+        /// <summary>Gets where this kind's model comes from.</summary>
+        ResourceOrigin Origin { get; }
+
+        /// <summary>Gets the defining CRD for a discovered kind, or null for a built-in kind.</summary>
+        V1CustomResourceDefinition? CustomResourceDefinition => null;
+
+        /// <summary>Gets the canonical location of this kind in cluster navigation.</summary>
+        NavigationPlacement Navigation { get; }
         IList<IResourceListColumn> Columns();
         IEnumerable<MenuItemViewModel> GetDefaultMenuItems(IEnumerable? selectedItems);
         IEnumerable<MenuItemViewModel> GetCustomMenuItems(IEnumerable? selectedItems);
         int Order { get; }
         string Name { get; }
-        string? Category { get; }
         Style[] ListStyle();
         IEnumerable<(Verb verb, string? subresource)> Permissions();
         IEnumerable<AuthorizationRequest> ListWatchAuthorizationRequests()

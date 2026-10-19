@@ -200,10 +200,10 @@ public partial class NavigationLink : NavigationItem
 
     [ObservableProperty]
     public partial string? ViewModelKey { get; set; }
-}
 
-public partial class ResourceNavigationLink : NavigationLink
-{
+    [ObservableProperty]
+    public partial string? DocumentId { get; set; }
+
     [ObservableProperty]
     public partial GroupApiVersionKind? ResourceKind { get; set; }
 

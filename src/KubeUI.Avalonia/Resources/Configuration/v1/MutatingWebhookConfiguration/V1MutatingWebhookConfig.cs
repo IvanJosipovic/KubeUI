@@ -2,16 +2,16 @@ using k8s.Models;
 
 namespace KubeUI.Avalonia.Resources.Configuration.v1.MutatingWebhookConfiguration;
 
-public sealed partial class V1MutatingWebhookConfig : ResourceConfigBase<V1MutatingWebhookConfiguration>
+public sealed partial class V1MutatingWebhookConfig : ResourceConfig<V1MutatingWebhookConfiguration>
 {
     public V1MutatingWebhookConfig(IServiceProvider serviceProvider)
         : base(serviceProvider)
     {
     }
-    public override string Category => Assets.Resources.ResourceConfig_Category_Configuration!;
+    public override NavigationPlacement Navigation => NavigationPlacement.InSection(NavigationSections.ConfigurationId);
     public override int Order => 9;
 
-    public override IList<IResourceListColumn> Columns()
+    protected override IList<IResourceListColumn> CreateDefaultColumns()
     {
         return [
             NameColumn(SortDirection.Ascending),

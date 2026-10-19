@@ -2,12 +2,12 @@ using k8s.Models;
 
 namespace KubeUI.Avalonia.Resources.Core.v1.Namespace;
 
-public sealed partial class V1NamespaceConfig(IServiceProvider serviceProvider) : ResourceConfigBase<V1Namespace>(serviceProvider)
+public sealed partial class V1NamespaceConfig(IServiceProvider serviceProvider) : ResourceConfig<V1Namespace>(serviceProvider)
 {
     public override int Order => 6;
     public override bool SeedOnConnect => true;
 
-    public override IList<IResourceListColumn> Columns()
+    protected override IList<IResourceListColumn> CreateDefaultColumns()
     {
         return [
             NameColumn(SortDirection.Ascending),

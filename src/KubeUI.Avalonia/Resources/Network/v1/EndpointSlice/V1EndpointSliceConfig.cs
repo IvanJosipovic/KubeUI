@@ -2,17 +2,17 @@ using k8s.Models;
 
 namespace KubeUI.Avalonia.Resources.Network.v1.EndpointSlice;
 
-public sealed partial class V1EndpointSliceConfig : ResourceConfigBase<V1EndpointSlice>
+public sealed partial class V1EndpointSliceConfig : ResourceConfig<V1EndpointSlice>
 {
     public V1EndpointSliceConfig(IServiceProvider serviceProvider)
         : base(serviceProvider)
     {
     }
     public override bool IsNamespaced => true;
-    public override string Category => Assets.Resources.ResourceConfig_Category_Network!;
+    public override NavigationPlacement Navigation => NavigationPlacement.InSection(NavigationSections.NetworkId);
     public override int Order => 2;
 
-    public override IList<IResourceListColumn> Columns()
+    protected override IList<IResourceListColumn> CreateDefaultColumns()
     {
         return [
             NameColumn(SortDirection.Ascending),

@@ -116,8 +116,8 @@ public sealed class MRDiffDetectionViewModelTests
             serviceProvider.Object,
             NullLogger<ClusterWorkspace>.Instance,
             instrumentation);
-        var providerConfig = CreateResourceConfig(providerKind, "Providers", isCustomResource: true);
-        var widgetConfig = CreateResourceConfig(widgetKind, "Widgets", isCustomResource: true);
+        var providerConfig = CreateResourceConfig(providerKind, "Providers");
+        var widgetConfig = CreateResourceConfig(widgetKind, "Widgets");
         cluster.AddResourceConfigForTest(providerConfig.Object);
         cluster.AddResourceConfigForTest(widgetConfig.Object);
         var seedStarted = new TaskCompletionSource<CancellationToken>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -211,9 +211,11 @@ public sealed class MRDiffDetectionViewModelTests
             mainViewModel.Layout = previousLayout;
         }
 
-        providerConfig.SetupGet(config => config.IsCustomResource).Returns(false);
+        var typedProviderConfig = new Mock<IResourceConfig>();
+        typedProviderConfig.SetupGet(config => config.Kind).Returns(providerKind);
+        cluster.AddResourceConfigForTest(typedProviderConfig.Object);
         MRDiffDetectionViewModel.IsAvailable(cluster).ShouldBeFalse();
-        providerConfig.SetupGet(config => config.IsCustomResource).Returns(true);
+        cluster.AddResourceConfigForTest(providerConfig.Object);
         providerConfig.SetupGet(config => config.PermissionsLoaded).Returns(false);
         MRDiffDetectionViewModel.IsAvailable(cluster).ShouldBeFalse();
         providerConfig.SetupGet(config => config.PermissionsLoaded).Returns(true);
@@ -351,7 +353,7 @@ public sealed class MRDiffDetectionViewModelTests
             serviceProvider,
             NullLogger<ClusterWorkspace>.Instance,
             instrumentation);
-        cluster.AddResourceConfigForTest(CreateResourceConfig(providerKind, "Providers", isCustomResource: true).Object);
+        cluster.AddResourceConfigForTest(CreateResourceConfig(providerKind, "Providers").Object);
         var pod = new V1Pod
         {
             Metadata = new V1ObjectMeta { Name = "provider-demo-abc", NamespaceProperty = "crossplane-system" },
@@ -403,7 +405,7 @@ public sealed class MRDiffDetectionViewModelTests
             serviceProvider,
             NullLogger<ClusterWorkspace>.Instance,
             instrumentation);
-        cluster.AddResourceConfigForTest(CreateResourceConfig(providerKind, "Providers", isCustomResource: true).Object);
+        cluster.AddResourceConfigForTest(CreateResourceConfig(providerKind, "Providers").Object);
         using var monitor = new CrossplaneProviderLogMonitor(
             new ThrowingPodResolver(),
             new StaticPodLogStreamClient(string.Empty),
@@ -508,13 +510,21 @@ public sealed class MRDiffDetectionViewModelTests
 
     private static Mock<IResourceConfig> CreateResourceConfig(
         GroupApiVersionKind kind,
-        string name,
-        bool isCustomResource)
+        string name)
     {
         var config = new Mock<IResourceConfig>();
         config.SetupGet(resourceConfig => resourceConfig.Kind).Returns(kind);
         config.SetupGet(resourceConfig => resourceConfig.Name).Returns(name);
-        config.SetupGet(resourceConfig => resourceConfig.IsCustomResource).Returns(isCustomResource);
+        config.SetupGet(resourceConfig => resourceConfig.Origin).Returns(ResourceOrigin.CustomResourceDefinition);
+        config.SetupGet(resourceConfig => resourceConfig.CustomResourceDefinition).Returns(new V1CustomResourceDefinition
+        {
+            Spec = new V1CustomResourceDefinitionSpec
+            {
+                Group = kind.Group,
+                Names = new V1CustomResourceDefinitionNames { Kind = kind.Kind, Plural = kind.PluralName },
+                Scope = "Namespaced",
+            }
+        });
         config.SetupGet(resourceConfig => resourceConfig.PermissionsLoaded).Returns(true);
         config.SetupGet(resourceConfig => resourceConfig.CanListAndWatch).Returns(true);
         config.Setup(resourceConfig => resourceConfig.SeedResource(It.IsAny<bool>())).Returns(Task.CompletedTask);
