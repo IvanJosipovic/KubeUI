@@ -2,6 +2,7 @@ using System.Collections;
 using System.Diagnostics;
 using System.Reactive.Linq;
 using Avalonia.Controls;
+using Avalonia.Controls.Notifications;
 using Avalonia.Controls.Primitives;
 using Avalonia.Headless.XUnit;
 using Avalonia.Styling;
@@ -32,6 +33,20 @@ public class NavigationViewModelTests
     private NavigationViewModel CreateViewModel()
     {
         return Application.Current.GetTestServices().GetRequiredService<NavigationViewModel>();
+    }
+
+    private NavigationViewModel CreateViewModel(ILogger<NavigationViewModel> logger)
+    {
+        var services = Application.Current.GetTestServices();
+        return new NavigationViewModel(
+            logger,
+            services.GetRequiredService<INotificationManager>(),
+            services.GetRequiredService<HanumanInstitute.MvvmDialogs.IDialogService>(),
+            services.GetRequiredService<ClusterWorkspaceCatalog>(),
+            services,
+            services.GetRequiredService<IResourceNavigationService>(),
+            services.GetRequiredService<NavigationSectionCatalog>(),
+            services.GetRequiredService<Avalonia.Infrastructure.Platform.IPlatformServices>());
     }
 
     private static async Task<T?> WaitForValueAsync<T>(Func<T?> getValue, int timeoutMs = 3000, CancellationToken cancellationToken = default) where T : class
@@ -1553,6 +1568,36 @@ public class NavigationViewModelTests
     }
 
     [AvaloniaFact]
+    public async Task background_resource_config_burst_coalesces_reconciliation()
+    {
+        var services = Application.Current.GetTestServices();
+        var workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        await workspace.Connect();
+        await TestApplicationExtensions.WaitForUiAsync();
+
+        var logger = new ReconciliationCountingLogger();
+        using var vm = CreateViewModel(logger);
+        await TestApplicationExtensions.WaitForUiAsync();
+        logger.Reset();
+
+        Task.Run(() =>
+        {
+            for (var index = 0; index < 50; index++)
+            {
+                workspace.AddResourceConfigForTest(new FakeResourceConfig(
+                    typeof(TestPermissionResourceAlpha),
+                    "Alpha Permission Resource"));
+            }
+        }, TestContext.Current.CancellationToken).GetAwaiter().GetResult();
+
+        await TestApplicationExtensions.WaitForUiAsync();
+
+        logger.ReconciliationCount.ShouldBe(1);
+        var clusterNode = vm.Clusters.Single(node => node.Cluster == workspace);
+        FindResourceLink(clusterNode, "Alpha Permission Resource").ShouldNotBeNull();
+    }
+
+    [AvaloniaFact]
     public async Task port_forwarders_is_under_network_category_not_top_level()
     {
         var services = Application.Current.GetTestServices();
@@ -2690,6 +2735,33 @@ public class NavigationViewModelTests
             .Where(x => x is not NavigationLink)
             .Any()
             .ShouldBeFalse();
+    }
+    private sealed class ReconciliationCountingLogger : ILogger<NavigationViewModel>
+    {
+        private int _reconciliationCount;
+
+        public int ReconciliationCount => Volatile.Read(ref _reconciliationCount);
+
+        public IDisposable? BeginScope<TState>(TState state)
+            where TState : notnull
+            => null;
+
+        public bool IsEnabled(LogLevel logLevel) => true;
+
+        public void Log<TState>(
+            LogLevel logLevel,
+            EventId eventId,
+            TState state,
+            Exception? exception,
+            Func<TState, Exception?, string> formatter)
+        {
+            if (formatter(state, exception).StartsWith("Navigation reconciled for ", StringComparison.Ordinal))
+            {
+                Interlocked.Increment(ref _reconciliationCount);
+            }
+        }
+
+        public void Reset() => Interlocked.Exchange(ref _reconciliationCount, 0);
     }
 }
 

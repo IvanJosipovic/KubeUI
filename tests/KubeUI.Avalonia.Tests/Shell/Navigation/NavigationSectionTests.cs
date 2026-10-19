@@ -46,6 +46,35 @@ public sealed class NavigationSectionTests
             ["crossplane.io", "aws.crossplane.io", "provider.aws.crossplane.io"]);
     }
 
+    [AvaloniaFact]
+    public async Task configured_custom_resource_navigation_keeps_crd_canonical_link_and_adds_alias()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync(connect: false);
+        await workspace.Connect();
+        workspace.AddResourceConfigForTest(new FakeResourceConfig(typeof(V1CustomResourceDefinition), "Definitions"));
+        var resourceConfig = new FakeCustomResourceConfig(typeof(TestCustomResourceAlpha), "Alpha Resources")
+        {
+            Navigation = NavigationPlacement.InSection(
+                NavigationSections.NetworkId,
+                [new NavigationGroup("gateway", "Gateway", 0, null)]),
+        };
+        workspace.AddResourceConfigForTest(resourceConfig);
+
+        var builder = new NavigationModelBuilder(new NavigationSectionCatalog([]), NullLogger.Instance);
+        var entries = builder.Build(workspace)
+            .OfType<ResourceEntry>()
+            .Where(entry => entry.Kind == resourceConfig.Kind)
+            .ToArray();
+
+        var canonical = entries.Single(entry => !entry.IsAlias);
+        canonical.Section.ShouldNotBeNull().Id.ShouldBe(NavigationSections.CustomResourcesId);
+        canonical.Groups.Select(static group => group.Id).ShouldBe(["kubeui.com", "alpha.kubeui.com"]);
+
+        var alias = entries.Single(entry => entry.IsAlias);
+        alias.Section.ShouldNotBeNull().Id.ShouldBe(NavigationSections.NetworkId);
+        alias.Groups.Select(static group => group.Id).ShouldBe(["gateway"]);
+    }
+
     [Fact]
     public void section_catalog_sorts_sections_and_resolves_documents()
     {

@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using Avalonia.Controls.Notifications;
 using Dock.Model.Controls;
 using Dock.Model.Core;
@@ -31,6 +32,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
     private readonly NavigationTreeSynchronizer _treeSynchronizer;
     private readonly NavigationClusterCatalogSynchronizer _clusterNavigation;
     private readonly NavigationSelectionHandler _selection;
+    private readonly ConcurrentDictionary<ClusterWorkspace, byte> _queuedReconciliations = new();
 
     [ObservableProperty]
     public partial ClusterWorkspaceCatalog ClusterCatalog { get; set; }
@@ -376,7 +378,16 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
             return;
         }
 
-        Dispatcher.UIThread.Post(() => Reconcile(cluster));
+        if (!_queuedReconciliations.TryAdd(cluster, 0))
+        {
+            return;
+        }
+
+        Dispatcher.UIThread.Post(() =>
+        {
+            _queuedReconciliations.TryRemove(cluster, out _);
+            Reconcile(cluster);
+        }, DispatcherPriority.Background);
     }
 
     private void Reconcile(ClusterWorkspace cluster)
