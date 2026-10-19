@@ -16,9 +16,7 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<ClusterWorkspace> _logger;
     private readonly ConcurrentDictionary<GroupApiVersionKind, IResourceConfig> _resourceConfigs = new();
-    private readonly ConcurrentDictionary<string, IResourceConfig> _customResourceDefinitions = new(StringComparer.Ordinal);
     private readonly ConcurrentDictionary<string, long> _customResourceDefinitionGenerations = new(StringComparer.Ordinal);
-    private readonly object _customResourceDefinitionGate = new();
     private readonly CancellationTokenSource _disposeCancellation = new();
     private readonly object _connectLock = new();
     private bool _disposed;
@@ -55,10 +53,9 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
     public partial ObservableCollection<V1Namespace> SelectedNamespaces { get; set; } = [];
 
     /// <summary>
-    /// Raised after a resource config has been permission-evaluated.
+    /// Raised after a resource config has been permission-evaluated and registered by the workspace.
     /// </summary>
     public event Action<ClusterWorkspace, IResourceConfig>? ResourceConfigProcessed;
-    public event Action<ClusterWorkspace, IResourceConfig>? CustomResourceDefinitionProcessed;
     public event Action<ClusterWorkspace, GroupApiVersionKind>? CustomResourceDefinitionRemoved;
 
     private Activity? StartWorkspaceActivity(string activityName, ActivityKind activityKind = ActivityKind.Internal)
@@ -101,7 +98,6 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
 
             await UpdateResourceConfigsPermissionsAndEvaluateAsync().ConfigureAwait(false);
             await SeedResourcesConfiguredForConnectAsync().ConfigureAwait(false);
-            await ReplayCustomResourceDefinitionsAsync().ConfigureAwait(false);
             _workspaceStateInitialized = true;
         }
         catch (Exception ex)
@@ -119,19 +115,23 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
     {
         using var activity = StartWorkspaceActivity(nameof(UpdateResourceConfigsPermissionsAndEvaluateAsync));
 
-        var categoryBatches = (resourceConfigs ?? GetResourceConfigs())
+        var sectionBatches = (resourceConfigs ?? GetResourceConfigs())
             .GroupBy(static config => config.Navigation.SectionId, StringComparer.Ordinal)
-            .OrderBy(static category => ResolveSectionOrder(category.Key, category.Min(config => config.Order)))
-            .ThenBy(static category => category.Key, StringComparer.Ordinal);
+            .OrderBy(static section => ResolveSectionOrder(section.Key, section.Min(config => config.Order)))
+            .ThenBy(static section => section.Key, StringComparer.Ordinal);
 
-        foreach (var categoryBatch in categoryBatches)
+        foreach (var sectionBatch in sectionBatches)
         {
-            foreach (var orderBatch in categoryBatch.GroupBy(static config => config.Order).OrderBy(static batch => batch.Key))
+            foreach (var orderBatch in sectionBatch.GroupBy(static config => config.Order).OrderBy(static batch => batch.Key))
             {
                 await Parallel.ForEachAsync(
                     orderBatch,
                     new ParallelOptions { MaxDegreeOfParallelism = 4 },
-                    async (resourceConfig, _) => await UpdateResourceConfigPermissionsAndEvaluateAsync(resourceConfig).ConfigureAwait(false)).ConfigureAwait(false);
+                    async (resourceConfig, _) =>
+                    {
+                        await UpdateResourceConfigPermissionsAndEvaluateAsync(resourceConfig).ConfigureAwait(false);
+                        NotifyResourceConfigProcessed(resourceConfig);
+                    }).ConfigureAwait(false);
             }
         }
     }
@@ -151,12 +151,10 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
         }
     }
 
-    private async Task UpdateResourceConfigPermissionsAndEvaluateAsync(
-        IResourceConfig resourceConfig,
-        bool notifyProcessed = true)
+    private async Task UpdateResourceConfigPermissionsAndEvaluateAsync(IResourceConfig resourceConfig)
     {
         await UpdateResourceConfigPermissionsAsync(resourceConfig).ConfigureAwait(false);
-        await EvaluateResourceConfigAccessCoreAsync(resourceConfig, notifyProcessed).ConfigureAwait(false);
+        await EvaluateResourceConfigAccessCoreAsync(resourceConfig).ConfigureAwait(false);
     }
 
     public async Task Disconnect()
@@ -201,24 +199,17 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
         return _resourceConfigs.Values.ToList();
     }
 
-    /// <summary>Gets current CRD configs, including definitions without resource list access.</summary>
-    public IReadOnlyCollection<IResourceConfig> GetCustomResourceDefinitions()
-        => _customResourceDefinitions.Values.ToArray();
-
     internal void AddResourceConfigForTest(IResourceConfig resourceConfig)
     {
         resourceConfig.Initialize(this);
-        lock (_customResourceDefinitionGate)
+        if (resourceConfig.IsCustomResource())
         {
-            _resourceConfigs[resourceConfig.Kind] = resourceConfig;
-            if (resourceConfig.CustomResourceDefinition is { } definition
-                && !string.IsNullOrWhiteSpace(definition.Metadata?.Name))
-            {
-                _customResourceDefinitions[definition.Metadata.Name] = resourceConfig;
-            }
+            RemoveOtherCustomResourceVersions(resourceConfig.Kind);
         }
 
-        ProcessResourceConfigPermissionsUpdated(resourceConfig);
+        _resourceConfigs[resourceConfig.Kind] = resourceConfig;
+
+        NotifyResourceConfigProcessed(resourceConfig);
     }
 
     public void Dispose()
@@ -255,9 +246,7 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
         }
     }
 
-    private async Task EvaluateResourceConfigAccessCoreAsync(
-        IResourceConfig resourceConfig,
-        bool notifyProcessed = true)
+    private async Task EvaluateResourceConfigAccessCoreAsync(IResourceConfig resourceConfig)
     {
         ArgumentNullException.ThrowIfNull(resourceConfig);
 
@@ -269,11 +258,6 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
         {
             Activity.Current?.SetStatus(ActivityStatusCode.Error, ex.Message);
             _logger.LogDebug(ex, "Unable to evaluate permissions for {Kind}", resourceConfig.Kind);
-        }
-
-        if (notifyProcessed)
-        {
-            ProcessResourceConfigPermissionsUpdated(resourceConfig);
         }
     }
 
@@ -305,9 +289,10 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
         await resourceConfig.SeedResource().ConfigureAwait(false);
     }
 
-    private void ProcessResourceConfigPermissionsUpdated(IResourceConfig resourceConfig)
+    private void NotifyResourceConfigProcessed(IResourceConfig resourceConfig)
     {
-        using var activity = StartWorkspaceActivity(nameof(ProcessResourceConfigPermissionsUpdated));
+        using var activity = StartWorkspaceActivity(nameof(NotifyResourceConfigProcessed));
+        activity?.SetTag("kubernetes.resource_config.kind", resourceConfig.Kind.ToString());
 
         ResourceConfigProcessed?.Invoke(this, resourceConfig);
     }
@@ -331,55 +316,22 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
 
     private void ResetWorkspaceState()
     {
-        lock (_customResourceDefinitionGate)
+        var removedCustomResourceKinds = _resourceConfigs
+            .Where(static pair => pair.Value.IsCustomResource())
+            .Select(static pair => pair.Key)
+            .ToList();
+
+        if (removedCustomResourceKinds.Count == 0)
         {
-            foreach (var customResourceDefinition in _customResourceDefinitions.Values)
-            {
-                _resourceConfigs.TryRemove(customResourceDefinition.Kind, out _);
-            }
+            return;
         }
-    }
 
-    private async Task ReplayCustomResourceDefinitionsAsync()
-    {
-        using var activity = StartWorkspaceActivity(nameof(ReplayCustomResourceDefinitionsAsync));
-
-        foreach (var (definitionName, previousConfig) in _customResourceDefinitions.ToArray())
+        foreach (var removedKind in removedCustomResourceKinds)
         {
-            if (string.IsNullOrWhiteSpace(definitionName))
+            if (_resourceConfigs.TryRemove(removedKind, out _))
             {
-                continue;
+                NotifyCustomResourceDefinitionRemoved(removedKind);
             }
-
-            long replayGeneration;
-            lock (_customResourceDefinitionGate)
-            {
-                if (!_customResourceDefinitions.TryGetValue(definitionName, out var currentConfig)
-                    || !ReferenceEquals(currentConfig, previousConfig)
-                    || !_customResourceDefinitionGenerations.ContainsKey(definitionName))
-                {
-                    continue;
-                }
-
-                replayGeneration = _customResourceDefinitionGenerations.AddOrUpdate(
-                    definitionName,
-                    1,
-                    static (_, current) => current + 1);
-            }
-
-            var definitionConfig = _resourceConfigs.GetValueOrDefault(GroupApiVersionKind.From<V1CustomResourceDefinition>());
-            var definitionCanBeRead = definitionConfig is { PermissionsLoaded: true, CanListAndWatch: true };
-            var definition = definitionCanBeRead
-                ? Runtime.GetResource<V1CustomResourceDefinition>(null, definitionName)
-                : previousConfig.CustomResourceDefinition;
-
-            if (definition is null)
-            {
-                RemoveCustomResourceDefinitionIfCurrent(definitionName, previousConfig, replayGeneration);
-                continue;
-            }
-
-            await ProcessCustomResourceDefinitionAsync(definition, definitionName, replayGeneration).ConfigureAwait(false);
         }
     }
 
@@ -396,14 +348,10 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
         }
 
         var definitionName = crd.Name() ?? string.Empty;
-        long generation;
-        lock (_customResourceDefinitionGate)
-        {
-            generation = _customResourceDefinitionGenerations.AddOrUpdate(
-                definitionName,
-                1,
-                static (_, current) => current + 1);
-        }
+        var generation = _customResourceDefinitionGenerations.AddOrUpdate(
+            definitionName,
+            1,
+            static (_, current) => current + 1);
 
         if (eventType == WatchEventType.Deleted)
         {
@@ -412,6 +360,22 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
         else
         {
             _ = ProcessCustomResourceDefinitionAsync(crd, definitionName, generation);
+        }
+    }
+
+    private void RemoveOtherCustomResourceVersions(GroupApiVersionKind currentKind)
+    {
+        var previousKinds = _resourceConfigs
+            .Where(pair => pair.Value.IsCustomResource()
+                && pair.Key != currentKind
+                && string.Equals(pair.Key.Group, currentKind.Group, StringComparison.Ordinal)
+                && string.Equals(pair.Key.Kind, currentKind.Kind, StringComparison.Ordinal))
+            .Select(static pair => pair.Key)
+            .ToArray();
+
+        foreach (var previousKind in previousKinds)
+        {
+            RemoveCustomResourceDefinition(previousKind);
         }
     }
 
@@ -436,7 +400,7 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
                 resourceConfig.Kind,
                 generation);
 
-            await UpdateResourceConfigPermissionsAndEvaluateAsync(resourceConfig, notifyProcessed: false).ConfigureAwait(false);
+            await UpdateResourceConfigPermissionsAndEvaluateAsync(resourceConfig).ConfigureAwait(false);
 
             _logger.LogDebug(
                 "Custom resource definition access evaluated for {ClusterName}: Definition={DefinitionName}; ResourceKind={ResourceKind}; PermissionsLoaded={PermissionsLoaded}; CanListAndWatch={CanListAndWatch}; Generation={Generation}",
@@ -447,50 +411,18 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
                 resourceConfig.CanListAndWatch,
                 generation);
 
-            GroupApiVersionKind[] replacedKinds;
-            long currentGeneration;
-            lock (_customResourceDefinitionGate)
+            if (!resourceConfig.CanListAndWatch)
             {
-                if (!_customResourceDefinitionGenerations.TryGetValue(definitionName, out currentGeneration)
-                    || currentGeneration != generation)
-                {
-                    replacedKinds = [];
-                }
-                else
-                {
-                    replacedKinds = _customResourceDefinitions
-                        .Where(pair => pair.Value.Kind != resourceConfig.Kind
-                            && string.Equals(pair.Value.Kind.Group, resourceConfig.Kind.Group, StringComparison.Ordinal)
-                            && string.Equals(pair.Value.Kind.Kind, resourceConfig.Kind.Kind, StringComparison.Ordinal))
-                        .Select(static pair => pair.Value.Kind)
-                        .Distinct()
-                        .ToArray();
-
-                    foreach (var replacedKind in replacedKinds)
-                    {
-                        _resourceConfigs.TryRemove(replacedKind, out _);
-                        foreach (var previousDefinition in _customResourceDefinitions
-                                     .Where(pair => pair.Value.Kind == replacedKind)
-                                     .Select(static pair => pair.Key)
-                                     .ToArray())
-                        {
-                            _customResourceDefinitions.TryRemove(previousDefinition, out _);
-                        }
-                    }
-
-                    _customResourceDefinitions[definitionName] = resourceConfig;
-                    if (resourceConfig.CanListAndWatch)
-                    {
-                        _resourceConfigs[resourceConfig.Kind] = resourceConfig;
-                    }
-                    else
-                    {
-                        _resourceConfigs.TryRemove(resourceConfig.Kind, out _);
-                    }
-                }
+                _logger.LogDebug(
+                    "Custom resource definition skipped for {ClusterName}: list/watch access denied; Definition={DefinitionName}; ResourceKind={ResourceKind}",
+                    Runtime.Name,
+                    definitionName,
+                    resourceConfig.Kind);
+                return;
             }
 
-            if (currentGeneration != generation)
+            if (!_customResourceDefinitionGenerations.TryGetValue(definitionName, out var currentGeneration)
+                || currentGeneration != generation)
             {
                 _logger.LogDebug(
                     "Custom resource definition skipped for {ClusterName}: stale generation; Definition={DefinitionName}; ResourceKind={ResourceKind}; ExpectedGeneration={CurrentGeneration}; Generation={Generation}",
@@ -502,23 +434,15 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
                 return;
             }
 
-            foreach (var replacedKind in replacedKinds)
-            {
-                NotifyCustomResourceDefinitionRemoved(replacedKind);
-            }
-
+            RemoveOtherCustomResourceVersions(resourceConfig.Kind);
+            _resourceConfigs[resourceConfig.Kind] = resourceConfig;
             _logger.LogDebug(
-                "Custom resource definition processed for {ClusterName}: Definition={DefinitionName}; ResourceKind={ResourceKind}; CanListAndWatch={CanListAndWatch}; ConfigCount={ConfigCount}",
+                "Custom resource definition registered for {ClusterName}: Definition={DefinitionName}; ResourceKind={ResourceKind}; ConfigCount={ConfigCount}",
                 Runtime.Name,
                 definitionName,
                 resourceConfig.Kind,
-                resourceConfig.CanListAndWatch,
                 _resourceConfigs.Count);
-            CustomResourceDefinitionProcessed?.Invoke(this, resourceConfig);
-            if (resourceConfig.CanListAndWatch)
-            {
-                ProcessResourceConfigPermissionsUpdated(resourceConfig);
-            }
+            NotifyResourceConfigProcessed(resourceConfig);
         }
         catch (OperationCanceledException) when (_disposeCancellation.IsCancellationRequested)
         {
@@ -537,44 +461,9 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
 
     private void RemoveCustomResourceDefinition(GroupApiVersionKind kind)
     {
-        lock (_customResourceDefinitionGate)
+        if (_resourceConfigs.TryRemove(kind, out _))
         {
-            _resourceConfigs.TryRemove(kind, out _);
-            var matchingDefinitions = _customResourceDefinitions
-                .Where(pair => pair.Value.Kind == kind)
-                .Select(static pair => pair.Key)
-                .ToArray();
-            foreach (var definitionName in matchingDefinitions)
-            {
-                _customResourceDefinitions.TryRemove(definitionName, out _);
-            }
-        }
-
-        NotifyCustomResourceDefinitionRemoved(kind);
-    }
-
-    private void RemoveCustomResourceDefinitionIfCurrent(
-        string definitionName,
-        IResourceConfig expectedConfig,
-        long expectedGeneration)
-    {
-        var removed = false;
-        lock (_customResourceDefinitionGate)
-        {
-            if (_customResourceDefinitionGenerations.TryGetValue(definitionName, out var generation)
-                && generation == expectedGeneration
-                && _customResourceDefinitions.TryGetValue(definitionName, out var currentConfig)
-                && ReferenceEquals(currentConfig, expectedConfig))
-            {
-                _customResourceDefinitions.TryRemove(definitionName, out _);
-                _resourceConfigs.TryRemove(expectedConfig.Kind, out _);
-                removed = true;
-            }
-        }
-
-        if (removed)
-        {
-            NotifyCustomResourceDefinitionRemoved(expectedConfig.Kind);
+            NotifyCustomResourceDefinitionRemoved(kind);
         }
     }
 

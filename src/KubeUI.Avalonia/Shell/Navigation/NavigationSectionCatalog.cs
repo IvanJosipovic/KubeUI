@@ -6,7 +6,7 @@ namespace KubeUI.Avalonia.Shell.Navigation;
 public sealed class NavigationSectionCatalog
 {
     private readonly Dictionary<string, NavigationSection> _sections;
-    private readonly Dictionary<string, INavigationDocument> _documents;
+    private readonly Dictionary<string, NavigationDocument> _documents;
 
     /// <summary>Creates a catalog from section providers registered with dependency injection.</summary>
     public NavigationSectionCatalog(IEnumerable<INavigationSectionProvider> providers)
@@ -16,54 +16,46 @@ public sealed class NavigationSectionCatalog
             .ThenBy(static provider => provider.Section.Name, StringComparer.Ordinal)
             .ToArray();
 
-        var sections = new List<NavigationSection>(NavigationSections.BuiltIn);
-        foreach (var section in Providers.Select(static provider => provider.Section))
+        _sections = new Dictionary<string, NavigationSection>(StringComparer.Ordinal);
+        foreach (var section in NavigationSections.BuiltIn)
         {
-            var existing = sections.FirstOrDefault(candidate => string.Equals(candidate.Id, section.Id, StringComparison.Ordinal));
-            if (existing is null)
+            _sections[section.Id] = section;
+        }
+
+        foreach (var provider in Providers)
+        {
+            if (_sections.TryGetValue(provider.Section.Id, out var existing))
             {
-                sections.Add(section);
+                if (existing != provider.Section)
+                {
+                    throw new InvalidOperationException(
+                        $"Navigation section id '{provider.Section.Id}' conflicts with an existing section definition.");
+                }
+
+                continue;
             }
-            else if (existing != section)
+
+            _sections[provider.Section.Id] = provider.Section;
+        }
+
+        _documents = new Dictionary<string, NavigationDocument>(StringComparer.Ordinal);
+        foreach (var document in Providers.SelectMany(static provider => provider.Documents))
+        {
+            if (!_documents.TryAdd(document.Id, document))
             {
-                throw new InvalidOperationException($"Navigation section id '{section.Id}' conflicts with an existing section definition.");
+                throw new InvalidOperationException($"Navigation document id '{document.Id}' is registered more than once.");
             }
         }
-
-        var duplicate = sections
-            .GroupBy(static section => section.Id, StringComparer.Ordinal)
-            .FirstOrDefault(static group => group.Count() > 1);
-        if (duplicate is not null)
-        {
-            throw new InvalidOperationException($"Navigation section id '{duplicate.Key}' is registered more than once.");
-        }
-
-        Sections = sections;
-        _sections = sections.ToDictionary(static section => section.Id, StringComparer.Ordinal);
-
-        var documents = Providers.SelectMany(static provider => provider.Documents).ToArray();
-        var duplicateDocument = documents
-            .GroupBy(static document => document.Id, StringComparer.Ordinal)
-            .FirstOrDefault(static group => group.Count() > 1);
-        if (duplicateDocument is not null)
-        {
-            throw new InvalidOperationException($"Navigation document id '{duplicateDocument.Key}' is registered more than once.");
-        }
-
-        _documents = documents.ToDictionary(static document => document.Id, StringComparer.Ordinal);
     }
 
     /// <summary>Gets section providers ordered by section sort position.</summary>
     public IReadOnlyList<INavigationSectionProvider> Providers { get; }
-
-    /// <summary>Gets every known section, built-in and provider-declared.</summary>
-    public IReadOnlyList<NavigationSection> Sections { get; }
 
     /// <summary>Finds a section by id.</summary>
     public NavigationSection? Find(string? id)
         => !string.IsNullOrWhiteSpace(id) && _sections.TryGetValue(id, out var section) ? section : null;
 
     /// <summary>Resolves a registered navigation document by id.</summary>
-    public bool TryGetDocument(string id, out INavigationDocument document)
+    public bool TryGetDocument(string id, out NavigationDocument document)
         => _documents.TryGetValue(id, out document!);
 }

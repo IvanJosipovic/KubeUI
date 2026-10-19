@@ -167,7 +167,7 @@ public class ClusterWorkspaceTests
 
     [AvaloniaTheory, KubernetesBackendData]
     [Trait("Category", "Kind")]
-    public async Task retained_crd_descriptor_is_replayed_after_workspace_reconnect(KubernetesBackend backend)
+    public async Task custom_resource_config_is_dropped_on_disconnect_and_reregistered_when_the_crd_informer_lists_again(KubernetesBackend backend)
     {
         using var workspace = await Application.Current.CreateClusterAsync(config => config.Type = backend);
         await workspace.Runtime.SeedResource<V1CustomResourceDefinition>(true);
@@ -175,7 +175,7 @@ public class ClusterWorkspaceTests
         await workspace.Runtime.CreateAsync(crd, TestContext.Current.CancellationToken);
 
         var originalConfig = await TestWait.UntilValueAsync(
-            () => workspace.GetCustomResourceDefinitions().SingleOrDefault(config => config.CustomResourceDefinition!.Name() == crd.Name()),
+            () => GetCustomResourceConfig(workspace, crd),
             TimeSpan.FromSeconds(10),
             cancellationToken: TestContext.Current.CancellationToken,
             beforePoll: () => Dispatcher.UIThread.RunJobs());
@@ -183,20 +183,19 @@ public class ClusterWorkspaceTests
 
         await workspace.Disconnect();
 
-        workspace.GetCustomResourceDefinitions().ShouldContain(config => ReferenceEquals(config, originalConfig));
         workspace.GetResourceConfigs().ShouldNotContain(config => config.Kind == originalConfig.Kind);
 
         await workspace.Connect();
+        await workspace.Runtime.SeedResource<V1CustomResourceDefinition>(true);
 
-        var replayedConfig = await TestWait.UntilValueAsync(
-            () => workspace.GetCustomResourceDefinitions().SingleOrDefault(config =>
-                config.CustomResourceDefinition!.Name() == crd.Name() && !ReferenceEquals(config, originalConfig)),
+        var registeredConfig = await TestWait.UntilValueAsync(
+            () => GetCustomResourceConfig(workspace, crd),
             TimeSpan.FromSeconds(10),
             cancellationToken: TestContext.Current.CancellationToken,
             beforePoll: () => Dispatcher.UIThread.RunJobs());
-        replayedConfig.ShouldNotBeNull();
-        replayedConfig.Kind.ShouldBe(originalConfig.Kind);
-        workspace.GetResourceConfigs().ShouldContain(config => ReferenceEquals(config, replayedConfig));
+        registeredConfig.ShouldNotBeNull();
+        registeredConfig.Kind.ShouldBe(originalConfig.Kind);
+        registeredConfig.ShouldNotBeSameAs(originalConfig);
     }
 
     [AvaloniaTheory, KubernetesBackendData]

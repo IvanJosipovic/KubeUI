@@ -1,5 +1,3 @@
-using System.Collections.ObjectModel;
-using System.Reactive.Linq;
 using Avalonia.Headless.XUnit;
 using FluentIcons.Common;
 using k8s;
@@ -11,6 +9,7 @@ using KubeUI.Avalonia.Resources;
 using KubeUI.Avalonia.Services.Icons;
 using KubeUI.Avalonia.Shell.Navigation;
 using KubeUI.Kubernetes;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Shouldly;
@@ -46,35 +45,6 @@ public sealed class NavigationSectionTests
             ["crossplane.io", "aws.crossplane.io", "provider.aws.crossplane.io"]);
     }
 
-    [AvaloniaFact]
-    public async Task configured_custom_resource_navigation_keeps_crd_canonical_link_and_adds_alias()
-    {
-        using var workspace = await Application.Current.CreateClusterAsync(connect: false);
-        await workspace.Connect();
-        workspace.AddResourceConfigForTest(new FakeResourceConfig(typeof(V1CustomResourceDefinition), "Definitions"));
-        var resourceConfig = new FakeCustomResourceConfig(typeof(TestCustomResourceAlpha), "Alpha Resources")
-        {
-            Navigation = NavigationPlacement.InSection(
-                NavigationSections.NetworkId,
-                [new NavigationGroup("gateway", "Gateway", 0, null)]),
-        };
-        workspace.AddResourceConfigForTest(resourceConfig);
-
-        var builder = new NavigationModelBuilder(new NavigationSectionCatalog([]), NullLogger.Instance);
-        var entries = builder.Build(workspace)
-            .OfType<ResourceEntry>()
-            .Where(entry => entry.Kind == resourceConfig.Kind)
-            .ToArray();
-
-        var canonical = entries.Single(entry => !entry.IsAlias);
-        canonical.Section.ShouldNotBeNull().Id.ShouldBe(NavigationSections.CustomResourcesId);
-        canonical.Groups.Select(static group => group.Id).ShouldBe(["kubeui.com", "alpha.kubeui.com"]);
-
-        var alias = entries.Single(entry => entry.IsAlias);
-        alias.Section.ShouldNotBeNull().Id.ShouldBe(NavigationSections.NetworkId);
-        alias.Groups.Select(static group => group.Id).ShouldBe(["gateway"]);
-    }
-
     [Fact]
     public void section_catalog_sorts_sections_and_resolves_documents()
     {
@@ -103,26 +73,14 @@ public sealed class NavigationSectionTests
     }
 
     [Fact]
-    public void navigation_tree_editor_removes_nested_items_and_prunes_only_empty_generated_groups()
+    public void section_catalog_rejects_duplicate_document_ids()
     {
-        ObservableCollection<NavigationItem> items = [];
-        var generatedRoot = new NavigationItem { Id = "cluster-crd-group-root", Name = "Root" };
-        var generatedChild = new NavigationItem { Id = "cluster-crd-group-root/child", Name = "Child" };
-        var resource = new NavigationItem { Id = "resource", Name = "Resource" };
-        generatedRoot.NavigationItems.Add(generatedChild);
-        generatedChild.NavigationItems.Add(resource);
-        items.Add(generatedRoot);
-        items.Add(new NavigationItem { Id = "unrelated", Name = "Unrelated" });
+        var first = new TestNavigationSectionProvider("first", "First", 1);
+        first.SetDocument("Tool", isAvailable: true);
+        var second = new TestNavigationSectionProvider("second", "Second", 2);
+        second.SetDocument("Tool", isAvailable: true);
 
-        NavigationTreeEditor.Remove(items, "resource").ShouldBeTrue();
-        NavigationTreeEditor.Remove(items, "missing").ShouldBeFalse();
-        NavigationTreeEditor.RemoveEmptyGroups(
-            items,
-            item => item.Id.StartsWith("cluster-crd-group-", StringComparison.Ordinal));
-
-        items.Select(item => item.Name).ShouldBe(["Unrelated"]);
-        NavigationTreeEditor.Remove(items, "unrelated").ShouldBeTrue();
-        items.ShouldBeEmpty();
+        Should.Throw<InvalidOperationException>(() => new NavigationSectionCatalog([first, second]));
     }
 
     [Fact]
@@ -135,7 +93,39 @@ public sealed class NavigationSectionTests
     }
 
     [AvaloniaFact]
-    public async Task reconcile_preserves_aliases_moves_placements_updates_documents_and_prunes_empty_groups()
+    public async Task configured_custom_resource_navigation_places_link_at_configured_section_and_under_custom_resources()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync(connect: false);
+        await workspace.Connect();
+        workspace.AddResourceConfigForTest(new FakeResourceConfig(typeof(V1CustomResourceDefinition), "Definitions"));
+        var resourceConfig = new FakeCustomResourceConfig(typeof(TestCustomResourceAlpha), "Alpha Resources")
+        {
+            Navigation = NavigationPlacement.InSection(
+                NavigationSections.NetworkId,
+                [new NavigationGroup("gateway", "Gateway", 0, null)]),
+        };
+        workspace.AddResourceConfigForTest(resourceConfig);
+
+        using var node = new ClusterNavigationNode(workspace);
+        CreateBuilder(new NavigationSectionCatalog([])).Reconcile(node);
+
+        var network = node.NavigationItems.Single(item => item.Id == $"{workspace.Runtime.Name}-section-network");
+        var gateway = network.NavigationItems.Single(item => item.Name == "Gateway");
+        var canonical = gateway.NavigationItems.OfType<NavigationLink>()
+            .Single(link => link.ResourceKind == resourceConfig.Kind);
+        canonical.Id.ShouldBe($"{workspace.Runtime.Name}-{resourceConfig.Kind}");
+
+        var customResources = node.NavigationItems.Single(item => item.Id == $"{workspace.Runtime.Name}-section-custom-resources");
+        var group = customResources.NavigationItems.Single(item => item.Name == "kubeui.com");
+        var nested = group.NavigationItems.Single(item => item.Name == "alpha.kubeui.com");
+        var crdLink = nested.NavigationItems.OfType<NavigationLink>()
+            .Single(link => link.ResourceKind == resourceConfig.Kind);
+        crdLink.Id.ShouldContain("-section-resource-custom-resources-");
+        ReferenceEquals(canonical, crdLink).ShouldBeFalse();
+    }
+
+    [AvaloniaFact]
+    public async Task reconcile_preserves_links_moves_placements_updates_documents_and_prunes_empty_groups()
     {
         using var workspace = await Application.Current.CreateClusterAsync(connect: false);
         await workspace.Connect();
@@ -149,13 +139,9 @@ public sealed class NavigationSectionTests
         using var node = new ClusterNavigationNode(workspace);
         var unrelated = new NavigationItem { Id = "unrelated", Name = "Unrelated" };
         node.NavigationItems.Add(unrelated);
-        var builder = new NavigationModelBuilder(catalog, NullLogger.Instance);
-        var synchronizer = new NavigationTreeSynchronizer(
-            Application.Current.GetTestServices().GetRequiredService<IResourceIconService>(),
-            null,
-            null);
+        var builder = CreateBuilder(catalog);
 
-        void Reconcile() => synchronizer.Reconcile(node, builder.Build(workspace));
+        void Reconcile() => builder.Reconcile(node);
 
         Reconcile();
 
@@ -220,21 +206,15 @@ public sealed class NavigationSectionTests
         workspace.AddResourceConfigForTest(firstConfig);
 
         using var node = new ClusterNavigationNode(workspace);
-        var builder = new NavigationModelBuilder(
-            new NavigationSectionCatalog([new CrossplaneNavigationSectionProvider()]),
-            NullLogger.Instance);
-        var synchronizer = new NavigationTreeSynchronizer(
-            Application.Current.GetTestServices().GetRequiredService<IResourceIconService>(),
-            null,
-            null);
+        var builder = CreateBuilder(new NavigationSectionCatalog([new CrossplaneNavigationSectionProvider()]));
 
-        void Reconcile() => synchronizer.Reconcile(node, builder.Build(workspace));
+        void Reconcile() => builder.Reconcile(node);
 
         Reconcile();
         var section = node.NavigationItems.Single(item => item.Id == $"{workspace.Runtime.Name}-section-crossplane");
         var alias = FindResourceLink(section, firstConfig.Kind).ShouldNotBeNull();
         var identity = alias.Id;
-        var count = Observable.Return(0);
+        var count = System.Reactive.Linq.Observable.Return(0);
         alias.Count = count;
         alias.IsExpanded = true;
 
@@ -242,11 +222,8 @@ public sealed class NavigationSectionTests
         replacementConfig.CanListAndWatch.ShouldBeTrue();
         replacementConfig.PermissionsLoaded.ShouldBeTrue();
         workspace.AddResourceConfigForTest(replacementConfig);
-        workspace.GetCustomResourceDefinitions().ShouldContain(item => ReferenceEquals(item, replacementConfig));
-        var currentDefinition = workspace.GetCustomResourceDefinitions().Single();
-        currentDefinition.Kind.GroupApiVersion.ShouldBe(replacementConfig.Kind.GroupApiVersion);
-        currentDefinition.IsCustomResource().ShouldBeTrue();
-        currentDefinition.CanListAndWatch.ShouldBeTrue();
+        workspace.GetResourceConfigs().ShouldContain(item => ReferenceEquals(item, replacementConfig));
+        workspace.GetResourceConfigs().ShouldNotContain(item => ReferenceEquals(item, firstConfig));
         Reconcile();
 
         var currentSection = node.NavigationItems.SingleOrDefault(item => item.Id == section.Id).ShouldNotBeNull();
@@ -260,6 +237,13 @@ public sealed class NavigationSectionTests
         replacementAlias.Count.ShouldBeSameAs(count);
         replacementAlias.IsExpanded.ShouldBeTrue();
     }
+
+    private static NavigationTreeBuilder CreateBuilder(NavigationSectionCatalog catalog) => new(
+        catalog,
+        Application.Current.GetTestServices().GetRequiredService<IResourceIconService>(),
+        openCommand: null,
+        openInNewTabCommand: null,
+        NullLogger.Instance);
 
     private static NavigationLink? FindResourceLink(NavigationItem root, GroupApiVersionKind kind)
     {
@@ -303,7 +287,6 @@ public sealed class NavigationSectionTests
             .Returns(new GroupApiVersionKind(group, apiVersion, "TestResource", "testresources"));
         return config.Object;
     }
-
 }
 
 [KubernetesEntity(Group = "versions.crossplane.io", ApiVersion = "v1", Kind = "VersionedResource")]
@@ -324,7 +307,7 @@ internal sealed class TestCrossplaneVersionedResourceV2 : IKubernetesObject<V1Ob
 
 internal sealed class TestNavigationSectionProvider : INavigationSectionProvider
 {
-    private IReadOnlyList<INavigationDocument> _documents = [];
+    private IReadOnlyList<NavigationDocument> _documents = [];
 
     public TestNavigationSectionProvider(string id = "test-section", string name = "Test Section", int order = 100)
     {
@@ -338,7 +321,7 @@ internal sealed class TestNavigationSectionProvider : INavigationSectionProvider
 
     public bool IsResourceMatched { get; set; } = true;
 
-    public IReadOnlyList<INavigationDocument> Documents => _documents;
+    public IReadOnlyList<NavigationDocument> Documents => _documents;
 
     public NavigationPlacement? Place(IResourceConfig resource)
         => IsResourceMatched ? Placement with { SectionId = Section.Id } : null;
@@ -347,12 +330,26 @@ internal sealed class TestNavigationSectionProvider : INavigationSectionProvider
     {
         _documents =
         [
-            new NavigationDocument<NavigationViewModel>(
+            new NavigationDocument(
                 "test-tool",
                 name,
                 20,
                 Icon.DataUsage,
-                _ => isAvailable)
+                _ => isAvailable,
+                static (_, _) => throw new NotSupportedException()),
         ];
+    }
+
+    public void SetDocumentCount(int count)
+    {
+        _documents = Enumerable.Range(0, count)
+            .Select(index => new NavigationDocument(
+                $"test-tool-{index}",
+                $"Tool {index}",
+                index,
+                null,
+                static _ => true,
+                static (_, _) => throw new NotSupportedException()))
+            .ToArray();
     }
 }

@@ -475,7 +475,8 @@ public class NavigationViewModelTests
             "crossplane.io");
         await workspace.Runtime.AddOrUpdateResource(crd);
         var descriptor = await WaitForValueAsync(
-            () => workspace.GetCustomResourceDefinitions().SingleOrDefault(config => config.CustomResourceDefinition!.Name() == crd.Name()),
+            () => workspace.GetResourceConfigs().SingleOrDefault(config =>
+                config.IsCustomResource() && config.CustomResourceDefinition!.Name() == crd.Name()),
             timeoutMs: 10000);
         descriptor.ShouldNotBeNull();
 
@@ -1580,7 +1581,9 @@ public class NavigationViewModelTests
         await TestApplicationExtensions.WaitForUiAsync();
         logger.Reset();
 
-        Task.Run(() =>
+        // A raw thread keeps the burst off the dispatcher thread; Task.Run can be inlined
+        // into a blocked pool-backed dispatcher thread, turning the burst into inline reconciles.
+        var burst = new Thread(() =>
         {
             for (var index = 0; index < 50; index++)
             {
@@ -1588,7 +1591,9 @@ public class NavigationViewModelTests
                     typeof(TestPermissionResourceAlpha),
                     "Alpha Permission Resource"));
             }
-        }, TestContext.Current.CancellationToken).GetAwaiter().GetResult();
+        });
+        burst.Start();
+        burst.Join();
 
         await TestApplicationExtensions.WaitForUiAsync();
 
@@ -2348,12 +2353,13 @@ public class NavigationViewModelTests
         node.NavigationItems.Add(current);
 
         var originalCount = current.Count;
-        var synchronizer = new NavigationTreeSynchronizer(
+        var builder = new NavigationTreeBuilder(
+            new NavigationSectionCatalog([]),
             services.GetRequiredService<IResourceIconService>(),
             openCommand: null,
-            openInNewTabCommand: null);
-        var builder = new NavigationModelBuilder(new NavigationSectionCatalog([]), NullLogger.Instance);
-        synchronizer.Reconcile(node, builder.Build(workspace));
+            openInNewTabCommand: null,
+            NullLogger.Instance);
+        builder.Reconcile(node);
 
         node.NavigationItems.OfType<NavigationLink>()
             .Single(item => item.ResourceKind == GroupApiVersionKind.From<Corev1Event>()).ShouldBeSameAs(current);
@@ -2713,7 +2719,7 @@ public class NavigationViewModelTests
         await workspace.Runtime.DeleteResource(crd);
 
         await TestWait.UntilAsync(
-            () => workspace.GetCustomResourceDefinitions().All(config => config.Kind != GetCustomResourceKind(crd)),
+            () => workspace.GetResourceConfigs().All(config => config.Kind != GetCustomResourceKind(crd)),
             TimeSpan.FromSeconds(10),
             cancellationToken: TestContext.Current.CancellationToken,
             beforePoll: () => Dispatcher.UIThread.RunJobs());
