@@ -2,6 +2,7 @@ using FluentIcons.Common;
 using KubeUI.Avalonia.Features.Crossplane.MRDiffDetection;
 using KubeUI.Avalonia.Resources;
 using KubeUI.Avalonia.Shell.Navigation;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace KubeUI.Avalonia.Features.Crossplane;
 
@@ -19,18 +20,24 @@ internal sealed class CrossplaneNavigationSectionProvider : INavigationSectionPr
 
         Documents =
         [
-            new NavigationDocument<MRDiffDetectionViewModel>(
+            new NavigationDocument(
                 FeatureId,
                 Assets.Resources.MRDiffDetectionView_Title!,
                 100,
                 Icon.DataUsage,
-                static context => MRDiffDetectionViewModel.IsAvailable(context.Cluster))
+                MRDiffDetectionViewModel.IsAvailable,
+                static (services, cluster) =>
+                {
+                    var viewModel = services.GetRequiredService<MRDiffDetectionViewModel>();
+                    viewModel.Initialize(cluster);
+                    return viewModel;
+                })
         ];
     }
 
     public NavigationSection Section { get; }
 
-    public IReadOnlyList<INavigationDocument> Documents { get; }
+    public IReadOnlyList<NavigationDocument> Documents { get; }
 
     public NavigationPlacement? Place(IResourceConfig resource)
     {

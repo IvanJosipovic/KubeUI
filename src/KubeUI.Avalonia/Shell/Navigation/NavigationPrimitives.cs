@@ -16,7 +16,7 @@ public sealed record NavigationGroup(string Id, string Name, int Order, Icon? Ic
 /// <param name="Icon">Optional section icon.</param>
 public sealed record NavigationSection(string Id, string Name, int Order, Icon? Icon);
 
-/// <summary>Creates and updates shared navigation nodes used by the navigation tree.</summary>
+/// <summary>Creates and updates the shared navigation nodes used by the navigation tree.</summary>
 internal static class NavigationTreeEditor
 {
     public static NavigationItem EnsureNode(
@@ -43,51 +43,18 @@ internal static class NavigationTreeEditor
     public static ObservableCollection<NavigationItem> EnsurePath(
         ObservableCollection<NavigationItem> items,
         string idPrefix,
-        IReadOnlyList<NavigationGroup> path,
-        string firstSegmentSeparator = "/")
+        IReadOnlyList<NavigationGroup> path)
     {
         var target = items;
         var key = idPrefix;
         for (var index = 0; index < path.Count; index++)
         {
             var part = path[index];
-            key += (index == 0 ? firstSegmentSeparator : "/") + part.Id;
+            key += "/" + part.Id;
             target = EnsureNode(target, key, part.Name, part.Order, part.Icon).NavigationItems;
         }
 
         return target;
-    }
-
-    public static bool Remove(ObservableCollection<NavigationItem> items, string id)
-    {
-        for (var index = items.Count - 1; index >= 0; index--)
-        {
-            if (string.Equals(items[index].Id, id, StringComparison.Ordinal))
-            {
-                items.RemoveAt(index);
-                return true;
-            }
-
-            if (Remove(items[index].NavigationItems, id))
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    public static void RemoveEmptyGroups(ObservableCollection<NavigationItem> items, Func<NavigationItem, bool> isGeneratedGroup)
-    {
-        for (var index = items.Count - 1; index >= 0; index--)
-        {
-            var item = items[index];
-            RemoveEmptyGroups(item.NavigationItems, isGeneratedGroup);
-            if (item.NavigationItems.Count == 0 && isGeneratedGroup(item))
-            {
-                items.RemoveAt(index);
-            }
-        }
     }
 
     /// <summary>Builds the CRD group hierarchy for a custom resource group.</summary>
