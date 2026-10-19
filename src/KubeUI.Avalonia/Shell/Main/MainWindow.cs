@@ -42,18 +42,22 @@ public sealed class MainWindow : Window
         UpdateMenu();
     }
 
+    /// <summary>
+    /// Attaches the shared application menu to this window. macOS presents it as the system menu;
+    /// managed decorations present the same actions through their Options flyout.
+    /// </summary>
     private void UpdateMenu()
     {
+        NativeMenu.SetMenu(this, DataContext is MainViewModel menuViewModel
+            ? MainMenu.CreateNativeMenu(menuViewModel)
+            : null);
+
         if (UseNativeChrome)
         {
             WindowDecorationsTheme = null;
-            NativeMenu.SetMenu(this, DataContext is MainViewModel nativeViewModel
-                ? MainMenu.CreateNativeMenu(nativeViewModel)
-                : null);
             return;
         }
 
-        NativeMenu.SetMenu(this, null);
         WindowDecorationsTheme = DataContext is MainViewModel viewModel
             ? MainWindowDecorations.CreateTheme(this, viewModel)
             : null;

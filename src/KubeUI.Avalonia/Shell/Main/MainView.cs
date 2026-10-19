@@ -43,5 +43,4 @@ public sealed class MainView : ViewBase<MainViewModel>
             Command = command
         };
     }
-
 }
