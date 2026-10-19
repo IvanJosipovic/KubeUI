@@ -7,7 +7,6 @@ using Avalonia.Data.Converters;
 using Avalonia.Markup.Xaml.MarkupExtensions;
 using KubeUI.AI.Agents;
 using KubeUI.Avalonia.Features.Resources.Properties.Controls;
-using KubeUI.Avalonia.Infrastructure.Mcp;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Options;
 
@@ -16,7 +15,6 @@ namespace KubeUI.Avalonia.Shell.Documents.Settings;
 
 public sealed class SettingsView() : KubeUIView<SettingsViewModel>
 {
-    [Obsolete]
     protected override object Build(SettingsViewModel vm)
     {
         ArgumentNullException.ThrowIfNull(vm);
