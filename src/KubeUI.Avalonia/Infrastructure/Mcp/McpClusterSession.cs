@@ -2,6 +2,8 @@ using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
+using KubeUI.Avalonia.Resources;
+using KubeUI.Avalonia.Shell.Navigation;
 using KubeUI.Kubernetes;
 using KubeUI.Kubernetes.Resources.Relationships;
 
@@ -79,13 +81,25 @@ internal sealed class McpClusterSession(
         if (workspace is null)
             throw new InvalidOperationException($"Cluster {cluster.Name} is not backed by a KubeUI workspace.");
         return [.. workspace.GetResourceConfigs()
-            .OrderBy(config => config.Category ?? string.Empty, StringComparer.Ordinal)
-            .ThenBy(config => config.Order)
-            .ThenBy(config => config.Name, StringComparer.Ordinal)
-            .Select(static config => new McpSupportedResourceInfo(
-                config.Name, config.Category, config.Kind.Group, config.Kind.ApiVersion,
-                config.Kind.GroupApiVersion, config.Kind.Kind, config.IsNamespaced,
-                config.IsCustomResource, config.CanListAndWatch, config.PermissionsLoaded))];
+            .Select(config => (Config: config, Section: ResolveSectionName(config)))
+            .OrderBy(entry => entry.Section ?? string.Empty, StringComparer.Ordinal)
+            .ThenBy(entry => entry.Config.Order)
+            .ThenBy(entry => entry.Config.Name, StringComparer.Ordinal)
+            .Select(static entry => new McpSupportedResourceInfo(
+                entry.Config.Name, entry.Section, entry.Config.Kind.Group, entry.Config.Kind.ApiVersion,
+                entry.Config.Kind.GroupApiVersion, entry.Config.Kind.Kind, entry.Config.IsNamespaced,
+                entry.Config.IsCustomResource(), entry.Config.CanListAndWatch, entry.Config.PermissionsLoaded))];
+    }
+
+    private static string? ResolveSectionName(IResourceConfig config)
+    {
+        var sectionId = config.Navigation.SectionId;
+        if (string.IsNullOrWhiteSpace(sectionId))
+        {
+            return null;
+        }
+
+        return NavigationSections.Find(sectionId)?.Name ?? sectionId;
     }
 
     public async Task SeedResourceAsync(string? clusterName, GroupApiVersionKind resourceKind, CancellationToken cancellationToken = default)

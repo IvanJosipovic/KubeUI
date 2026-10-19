@@ -5,17 +5,17 @@ using KubeUI.Kubernetes;
 
 namespace KubeUI.Avalonia.Resources.Workloads.v1.Job;
 
-public sealed partial class V1JobConfig : ResourceConfigBase<V1Job>
+public sealed partial class V1JobConfig : ResourceConfig<V1Job>
 {
     public V1JobConfig(IServiceProvider serviceProvider)
         : base(serviceProvider)
     {
     }
     public override bool IsNamespaced => true;
-    public override string Category => Assets.Resources.ResourceConfig_Category_Workloads!;
+    public override NavigationPlacement Navigation => NavigationPlacement.InSection(NavigationSections.WorkloadsId);
     public override int Order => 5;
 
-    public override IList<IResourceListColumn> Columns()
+    protected override IList<IResourceListColumn> CreateDefaultColumns()
     {
         return [
             NameColumn(SortDirection.Ascending),

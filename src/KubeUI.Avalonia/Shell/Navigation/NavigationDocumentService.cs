@@ -11,7 +11,7 @@ namespace KubeUI.Avalonia.Shell.Navigation;
 
 public interface IResourceNavigationService
 {
-    void Open(ResourceNavigationLink navigation, bool forceNewTab = false);
+    void Open(NavigationLink navigation, bool forceNewTab = false);
     Task<bool> OpenResourceListAsync(string? clusterName, string apiVersion, string kind);
 }
 
@@ -59,7 +59,7 @@ internal sealed class NavigationDocumentService : IResourceNavigationService
         if (config is null)
             return false;
 
-        await Dispatcher.UIThread.InvokeAsync(() => Open(new ResourceNavigationLink
+        await Dispatcher.UIThread.InvokeAsync(() => Open(new NavigationLink
         {
             Cluster = workspace,
             Name = config.Name,
@@ -68,7 +68,7 @@ internal sealed class NavigationDocumentService : IResourceNavigationService
         return true;
     }
 
-    public void Open(ResourceNavigationLink navigation, bool forceNewTab = false)
+    public void Open(NavigationLink navigation, bool forceNewTab = false)
     {
         var config = ResolveConfig(navigation);
         if (config == null)
@@ -99,7 +99,7 @@ internal sealed class NavigationDocumentService : IResourceNavigationService
         _factory().AddToDocuments(document);
     }
 
-    private IResourceConfig? ResolveConfig(ResourceNavigationLink navigation)
+    private IResourceConfig? ResolveConfig(NavigationLink navigation)
     {
         return navigation.ResourceKind is { } kind
             ? navigation.Cluster.GetResourceConfig(kind)

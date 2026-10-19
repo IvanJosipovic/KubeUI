@@ -95,7 +95,7 @@ public sealed class NavigationViewTests
         var workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         using var navigation = services.GetRequiredService<NavigationViewModel>();
         var clusterNode = new ClusterNavigationNode(workspace) { IsExpanded = true };
-        var podsLink = new ResourceNavigationLink
+        var podsLink = new NavigationLink
         {
             Cluster = workspace,
             Id = "test-pods",
@@ -359,7 +359,7 @@ public sealed class NavigationViewTests
         var workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         using var navigation = services.GetRequiredService<NavigationViewModel>();
         var clusterNode = navigation.Clusters.Single(node => node.Cluster == workspace);
-        var podsLink = new ResourceNavigationLink
+        var podsLink = new NavigationLink
         {
             Id = "test-pods",
             Name = "Pods",
@@ -422,7 +422,7 @@ public sealed class NavigationViewTests
 
         var clusterNode = navigation.Clusters.Single(node => ReferenceEquals(node.Cluster, workspace));
         clusterNode.IsExpanded = true;
-        var podsLink = new ResourceNavigationLink
+        var podsLink = new NavigationLink
         {
             Id = "test-pods",
             Name = "Pods",

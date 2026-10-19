@@ -29,18 +29,27 @@ public class ClusterWorkspaceTests
     {
         var workspace = await Application.Current.CreateClusterAsync();
 
-        workspace.GetResourceConfigs().ShouldNotContain(config => config is CRDResourceConfig);
+        workspace.GetResourceConfigs().ShouldNotContain(config => config is CustomResourceConfig);
     }
 
     [AvaloniaFact]
     public async Task connected_workspace_registers_resource_config_models_in_catalog()
     {
-        var workspace = await Application.Current.CreateClusterAsync();
+        using var workspace = await Application.Current.CreateClusterAsync();
 
         workspace.Runtime.ModelCatalog
             .TryGetResourceKind("v1", "Pod", out var resourceKind)
             .ShouldBeTrue();
         resourceKind.ShouldBe(GroupApiVersionKind.From<V1Pod>());
+        workspace.Runtime.ModelCatalog.TryGetResourceSeeder(resourceKind, out var seedResource).ShouldBeTrue();
+
+        await seedResource(false, TestContext.Current.CancellationToken);
+
+        await TestWait.UntilAsync(
+            () => workspace.Runtime.Objects.TryGetValue(resourceKind, out var container)
+                && container is IResourceContainer { IsSeeded: true },
+            TimeSpan.FromSeconds(10),
+            cancellationToken: TestContext.Current.CancellationToken);
     }
 
     [AvaloniaTheory, KubernetesBackendData]
@@ -127,7 +136,7 @@ public class ClusterWorkspaceTests
     [Trait("Category", "Kind")]
     public async Task added_crd_adds_resource_config_and_gvk_catalog_entry(KubernetesBackend backend)
     {
-        var workspace = await Application.Current.CreateClusterAsync(
+        using var workspace = await Application.Current.CreateClusterAsync(
             config => config.Type = backend);
         await workspace.Runtime.SeedResource<V1CustomResourceDefinition>(true);
         var crd = ClusterWorkspaceTestCustomResourceDefinitionFactory.Create("tests.kubeui.com", "tests", "someString");
@@ -143,7 +152,50 @@ public class ClusterWorkspaceTests
             beforePoll: () => Dispatcher.UIThread.RunJobs());
         resourceConfig.ShouldNotBeNull();
         resourceConfig.Kind.ShouldBe(resourceKind);
-        resourceConfig.IsCustomResource.ShouldBeTrue();
+        resourceConfig.IsCustomResource().ShouldBeTrue();
+        resourceConfig.CustomResourceDefinition.ShouldNotBeNull().Name().ShouldBe(crd.Name());
+
+        await resourceConfig.SeedResource(false, TestContext.Current.CancellationToken);
+        await TestWait.UntilAsync(
+            () => workspace.Runtime.Objects.TryGetValue(resourceKind, out var container)
+                && container is IResourceContainer { IsSeeded: true },
+            TimeSpan.FromSeconds(10),
+            cancellationToken: TestContext.Current.CancellationToken,
+            beforePoll: () => Dispatcher.UIThread.RunJobs());
+    }
+
+    [AvaloniaTheory, KubernetesBackendData]
+    [Trait("Category", "Kind")]
+    public async Task retained_crd_descriptor_is_replayed_after_workspace_reconnect(KubernetesBackend backend)
+    {
+        using var workspace = await Application.Current.CreateClusterAsync(config => config.Type = backend);
+        await workspace.Runtime.SeedResource<V1CustomResourceDefinition>(true);
+        var crd = ClusterWorkspaceTestCustomResourceDefinitionFactory.Create("replay.kubeui.com", "replays", "value");
+        await workspace.Runtime.CreateAsync(crd, TestContext.Current.CancellationToken);
+
+        var originalConfig = await TestWait.UntilValueAsync(
+            () => workspace.GetCustomResourceDefinitions().SingleOrDefault(config => config.CustomResourceDefinition!.Name() == crd.Name()),
+            TimeSpan.FromSeconds(10),
+            cancellationToken: TestContext.Current.CancellationToken,
+            beforePoll: () => Dispatcher.UIThread.RunJobs());
+        originalConfig.ShouldNotBeNull();
+
+        await workspace.Disconnect();
+
+        workspace.GetCustomResourceDefinitions().ShouldContain(config => ReferenceEquals(config, originalConfig));
+        workspace.GetResourceConfigs().ShouldNotContain(config => config.Kind == originalConfig.Kind);
+
+        await workspace.Connect();
+
+        var replayedConfig = await TestWait.UntilValueAsync(
+            () => workspace.GetCustomResourceDefinitions().SingleOrDefault(config =>
+                config.CustomResourceDefinition!.Name() == crd.Name() && !ReferenceEquals(config, originalConfig)),
+            TimeSpan.FromSeconds(10),
+            cancellationToken: TestContext.Current.CancellationToken,
+            beforePoll: () => Dispatcher.UIThread.RunJobs());
+        replayedConfig.ShouldNotBeNull();
+        replayedConfig.Kind.ShouldBe(originalConfig.Kind);
+        workspace.GetResourceConfigs().ShouldContain(config => ReferenceEquals(config, replayedConfig));
     }
 
     [AvaloniaTheory, KubernetesBackendData]
@@ -157,7 +209,7 @@ public class ClusterWorkspaceTests
             new(TaskCreationOptions.RunContinuationsAsynchronously);
         workspace.ResourceConfigProcessed += (_, resourceConfig) =>
         {
-            if (resourceConfig.IsCustomResource)
+            if (resourceConfig.IsCustomResource())
             {
                 processedConfig.TrySetResult(workspace.GetResourceConfig(resourceConfig.Kind));
             }
@@ -619,7 +671,7 @@ public class ClusterWorkspaceTests
         }
 
         return workspace.GetResourceConfigs().FirstOrDefault(x =>
-            x.IsCustomResource
+            x.IsCustomResource()
             && string.Equals(x.Kind.Group, crd.Spec.Group, StringComparison.Ordinal)
             && string.Equals(x.Kind.ApiVersion, version, StringComparison.Ordinal)
             && string.Equals(x.Kind.Kind, crd.Spec.Names.Kind, StringComparison.Ordinal));
@@ -664,14 +716,14 @@ internal sealed class BlockingPodPermissionResourceConfig : IResourceConfig
     public bool CanListAndWatch { get; private set; }
     public bool PermissionsLoaded { get; private set; }
     public bool ShowNewResource => true;
-    public bool IsCustomResource => false;
     public GroupApiVersionKind Kind => GroupApiVersionKind.From(Type);
+    public NavigationPlacement Navigation => NavigationPlacement.Root;
     public IList<IResourceListColumn> Columns() => [];
     public IEnumerable<MenuItemViewModel> GetDefaultMenuItems(IEnumerable? selectedItems) => [];
     public IEnumerable<MenuItemViewModel> GetCustomMenuItems(IEnumerable? selectedItems) => [];
     public int Order => 0;
     public string Name => "Pods";
-    public string? Category => "Workloads";
+    public ResourceOrigin Origin => ResourceOrigin.BuiltIn;
     public Style[] ListStyle() => [];
     public Type Type { get; } = typeof(V1Pod);
     public IRelayCommand NewResourceCommand => throw new NotImplementedException();
@@ -710,14 +762,14 @@ internal sealed class ImmediatePermissionResourceConfig : IResourceConfig
     public bool CanListAndWatch { get; private set; }
     public bool PermissionsLoaded { get; private set; }
     public bool ShowNewResource => true;
-    public bool IsCustomResource => false;
     public GroupApiVersionKind Kind => GroupApiVersionKind.From(Type);
+    public NavigationPlacement Navigation => NavigationPlacement.Root;
     public IList<IResourceListColumn> Columns() => [];
     public IEnumerable<MenuItemViewModel> GetDefaultMenuItems(IEnumerable? selectedItems) => [];
     public IEnumerable<MenuItemViewModel> GetCustomMenuItems(IEnumerable? selectedItems) => [];
     public int Order => 0;
     public string Name { get; }
-    public string? Category => null;
+    public ResourceOrigin Origin => ResourceOrigin.BuiltIn;
     public Style[] ListStyle() => [];
     public Type Type { get; }
     public IRelayCommand NewResourceCommand => throw new NotImplementedException();

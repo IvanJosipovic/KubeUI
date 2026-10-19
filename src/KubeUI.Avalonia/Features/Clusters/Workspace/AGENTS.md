@@ -10,6 +10,8 @@
 - Informer creation for namespaced resources remains in the runtime and uses the namespaces currently known to the workspace/runtime.
 - Workspace connect/init should refresh resource permissions before any UI command or navigation logic depends on cached `CanI(...)` results.
 - Events exist so downstream UI can update incrementally.
+- Keep valid CRD descriptors separately from listable resource configs, including definitions whose resource list/watch access is denied.
+- Raise processed events for each current valid CRD and removal events even when no listable resource config exists; replay retained descriptors after reconnect and discard stale replay work by generation.
 - The workspace remains responsible for materializing settings-backed namespaces before permission-dependent UI relies on namespace-scoped access checks.
 
 ## Constraints
