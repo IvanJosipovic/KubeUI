@@ -28,6 +28,10 @@ public sealed class MainWindow : Window
         UpdateMenu();
     }
 
+    /// <summary>
+    /// Attaches the single application menu to this window. macOS turns it into the system menu bar;
+    /// every other platform presents the same menu in-window through <see cref="MainView"/>'s <see cref="NativeMenuBar"/>.
+    /// </summary>
     private void UpdateMenu()
     {
         if (DataContext is MainViewModel vm)
@@ -49,6 +53,8 @@ public sealed class MainWindow : Window
     {
         return new NativeMenuItem(Assets.Resources.MainView_Menu_File!)
             .Menu([
+                CreateCommandItem(vm, Assets.Resources.MainView_Menu_File_LoadKubeConfig!, x => x.LoadKubeConfigCommand),
+                CreateCommandItem(vm, Assets.Resources.MainView_Menu_File_ImportAksCluster!, x => x.ImportAksClusterCommand),
                 CreateCommandItem(vm, Assets.Resources.MainView_Menu_File_Clusters!, x => x.OpenClustersCommand),
                 CreateCommandItem(vm, Assets.Resources.MainView_Menu_File_Settings!, x => x.OpenSettingsCommand),
                 new NativeMenuItemSeparator(),
@@ -69,6 +75,7 @@ public sealed class MainWindow : Window
     {
         return new NativeMenuItem(Assets.Resources.MainView_Menu_Help!)
             .Menu([
+                CreateCommandItem(vm, Assets.Resources.MainView_Menu_Help_CheckForUpdates!, x => x.CheckForUpdatesCommand),
                 CreateCommandItem(vm, Assets.Resources.MainView_Menu_Help_About!, x => x.OpenAboutCommand)
             ]);
     }

@@ -108,7 +108,6 @@ public sealed class SettingsView() : KubeUIView<SettingsViewModel>
                     .Col(1));
     }
 
-    [Obsolete]
     private static ExpandableSection CreateMcpClientGrants(SettingsViewModel vm)
     {
         var tokenTextBox = new TextBox
@@ -224,7 +223,6 @@ public sealed class SettingsView() : KubeUIView<SettingsViewModel>
             }));
     }
 
-    [Obsolete]
     private static Grid CreateTextEntryRow(
         string label,
         SettingsViewModel vm,
@@ -238,7 +236,7 @@ public sealed class SettingsView() : KubeUIView<SettingsViewModel>
             textBox.Name = controlName;
         if (maximumLength is { } length)
             textBox.MaxLength = length;
-        textBox.Watermark = watermark;
+        textBox.PlaceholderText = watermark;
 
         return new Grid()
             .Cols("*,3*")

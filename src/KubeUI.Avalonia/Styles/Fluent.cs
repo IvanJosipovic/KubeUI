@@ -13,6 +13,7 @@ using Dock.Model.Core;
 using FluentAvalonia.Styling;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Infrastructure.Presentation;
+using LiveMarkdown.Avalonia;
 using Semi.Avalonia;
 using SvcSystems.UI.Terminal;
 using Ursa.Controls;
@@ -44,6 +45,7 @@ public sealed class Fluent : AvaloniaStyles
         Add(new DynamicTableViewTheme());
         Add(CreateStyleInclude("avares://AvaloniaEdit/Themes/Fluent/AvaloniaEdit.xaml"));
         Add(CreateStyleInclude("avares://LiveMarkdown.Avalonia/Styles.axaml"));
+        Add(CreateMarkdownTypographyStyles());
         Add(new DockFluentTheme());
         Add(new TerminalTheme());
 
@@ -108,6 +110,38 @@ public sealed class Fluent : AvaloniaStyles
                 }
             }
         };
+    }
+
+    private static AvaloniaStyles CreateMarkdownTypographyStyles()
+    {
+        // The bundled LiveMarkdown styles hard-code "Arial, 'Segoe UI', sans-serif"
+        // and the library FontSizeM (14) for markdown text. Re-apply the application
+        // typography so markdown follows the standard, user-configurable app font.
+        var styles = new AvaloniaStyles
+        {
+            new Style<MarkdownTextBlock>()
+                .Setter(TextElement.FontFamilyProperty, new DynamicResourceExtension(Typography.AppFontFamilyResourceKey))
+                .Setter(TextElement.FontSizeProperty, new DynamicResourceExtension(Typography.AppFontSizeResourceKey)),
+            new Style<CodeBlock>()
+                .Setter(TextElement.FontFamilyProperty, new DynamicResourceExtension(Typography.CodeFontFamilyResourceKey)),
+        };
+
+        // Code inside markdown follows the same code font and user-configurable
+        // console size as the YAML editor, console, and log views.
+        styles.Add(CreateMarkdownCodeStyle(
+            x => x.OfType<MarkdownRenderer>().Descendant().OfType<CodeInline>()));
+        styles.Add(CreateMarkdownCodeStyle(
+            x => x.OfType<MarkdownRenderer>().Descendant().OfType<CodeBlock>().Descendant().OfType<MarkdownTextBlock>()));
+
+        return styles;
+    }
+
+    private static Style CreateMarkdownCodeStyle(Func<Selector, Selector> selector)
+    {
+        var style = new Style(selector);
+        style.Setters.Add(new Setter(TextElement.FontFamilyProperty, new DynamicResourceExtension(Typography.CodeFontFamilyResourceKey)));
+        style.Setters.Add(new Setter(TextElement.FontSizeProperty, new DynamicResourceExtension(Typography.CodeFontSizeResourceKey)));
+        return style;
     }
 
     private static AvaloniaStyles CreateTypographyResources()

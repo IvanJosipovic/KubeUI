@@ -13,6 +13,9 @@ using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Services.Settings;
 using KubeUI.Avalonia.Shell.Main;
 using KubeUI.Avalonia.Styles;
+using LiveChartsCore;
+using LiveChartsCore.SkiaSharpView;
+using LiveChartsCore.Themes;
 using Microsoft.Extensions.Hosting;
 using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
@@ -83,6 +86,9 @@ public partial class App : Application, IServiceProviderHost
     {
         DockSettings.MinimumHorizontalDragDistance = 8;
         DockSettings.MinimumVerticalDragDistance = 8;
+
+        // Gauge arcs (cluster CPU/memory/pods) use flat ends; the default theme rounds them.
+        LiveCharts.Configure(settings => settings.AddDefaultTheme(theme => theme.HasRuleForGaugeSeries(series => series.CornerRadius = 0)));
 
         var fluent = new Fluent();
         Styles.Add(fluent);
