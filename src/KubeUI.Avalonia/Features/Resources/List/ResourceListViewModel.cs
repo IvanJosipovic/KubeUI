@@ -1,4 +1,5 @@
 using System.Collections.Specialized;
+using System.Diagnostics.CodeAnalysis;
 using Avalonia.Controls.Selection;
 using Avalonia.Controls.Templates;
 using DynamicData;
@@ -17,7 +18,7 @@ using SortDirection = KubeUI.Avalonia.Resources.SortDirection;
 
 namespace KubeUI.Avalonia.Features.Resources.List;
 
-public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluster, IDisposable, IResourceListViewModel where T : class, IKubernetesObject<V1ObjectMeta>, new()
+public partial class ResourceListViewModel<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T> : ViewModelBase, IInitializeCluster, IDisposable, IResourceListViewModel where T : class, IKubernetesObject<V1ObjectMeta>, new()
 {
     internal const string NamespaceScopeFilterId = "__namespace_scope__";
     private readonly IServiceProvider _serviceProvider;

@@ -14,7 +14,7 @@ public sealed class MainWindow : Window
         UseLayoutRounding = true;
         Content = new MainView();
 
-        if (Design.IsDesignMode)
+        if (DesignTimePreview.IsDesignMode)
         {
             DataContext = DesignTimePreview.Get<MainViewModel>();
         }

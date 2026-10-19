@@ -10,7 +10,7 @@ public sealed class CrossplaneProviderLogMonitor : IDisposable
     private readonly IPodLogSessionResolver _resolver;
     private readonly IPodLogStreamClient _streamClient;
     private readonly ILogger<CrossplaneProviderLogMonitor> _logger;
-    private readonly object _gate = new();
+    private readonly Lock _gate = new();
     private readonly RecentLogLineSet _seen = new(4096);
     private CancellationTokenSource? _cancellation;
     private string? _providerName;
@@ -293,7 +293,7 @@ public sealed class CrossplaneProviderLogMonitor : IDisposable
 
     private sealed class RecentLogLineSet(int capacity)
     {
-        private readonly object _gate = new();
+        private readonly Lock _gate = new();
         private readonly Dictionary<string, long> _keys = new(StringComparer.Ordinal);
         private readonly Queue<(string Key, long Generation)> _orderedKeys = new();
         private long _entryGeneration;

@@ -1,10 +1,12 @@
 using Avalonia.Markup.Xaml.MarkupExtensions;
 using KubeUI.Avalonia.Infrastructure;
+using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Styles;
+
 
 namespace KubeUI.Avalonia.Shell.Main;
 
-public sealed class HomeView() : ViewBase<HomeViewModel>
+public sealed class HomeView() : KubeUIView<HomeViewModel>
 {
     protected override object Build(HomeViewModel vm) =>
         new StackPanel()

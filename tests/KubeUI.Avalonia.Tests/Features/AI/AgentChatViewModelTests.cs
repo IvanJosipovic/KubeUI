@@ -2,8 +2,12 @@ using System.Threading.Channels;
 using KubeUI.AI.Agents;
 using KubeUI.Avalonia.Features.AI;
 using KubeUI.Avalonia.Infrastructure.Mcp;
+using Microsoft.Extensions.Logging;
 using Moq;
 using Shouldly;
+using SvcSystems.AI.AgentClientProtocol;
+using SvcSystems.AI.AgentClientProtocol.Agent.Models;
+using SvcSystems.AI.AgentClientProtocol.Models;
 
 namespace KubeUI.Avalonia.Tests.Features.AI;
 
@@ -12,7 +16,7 @@ public sealed class AgentChatViewModelTests
     [Fact]
     public async Task send_adds_user_message_and_streamed_agent_message()
     {
-        await using var session = new TestSession("session-1", [new AgentMessageEvent(new AgentMessage("assistant", "Pod is healthy."))]);
+        await using var session = new TestSession("session-1", [AssistantChunk("Pod is healthy.")]);
         var agent = new TestAgent(session);
         var vm = CreateViewModel(new TestRegistry(agent), prompt: " Diagnose pod ");
 
@@ -20,6 +24,29 @@ public sealed class AgentChatViewModelTests
 
         vm.Messages.Select(message => message.Text).ShouldBe([" Diagnose pod ".Trim(), "Pod is healthy."]);
         session.Prompt.ShouldEndWith("User request:\nDiagnose pod");
+        await vm.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task send_logs_acp_session_creation_exception()
+    {
+        var exception = new InvalidOperationException("ACP client initialization failed.");
+        await using var session = new TestSession("failed-session", []);
+        var logger = new Mock<ILogger<AgentChatViewModel>>();
+        var vm = CreateViewModel(
+            new TestRegistry(new TestAgent(session, sessionCreationException: exception)),
+            prompt: "Connect to cluster",
+            logger: logger.Object);
+
+        await vm.SendCommand.ExecuteAsync(null);
+
+        vm.Messages.Last().Text.ShouldContain(exception.Message);
+        logger.Verify(log => log.Log(
+            LogLevel.Error,
+            It.IsAny<EventId>(),
+            It.Is<It.IsAnyType>((state, _) => state.ToString()!.Contains("agent test", StringComparison.Ordinal)),
+            exception,
+            It.IsAny<Func<It.IsAnyType, Exception?, string>>()), Times.Once);
         await vm.DisposeAsync();
     }
 
@@ -43,10 +70,7 @@ public sealed class AgentChatViewModelTests
     public async Task send_coalesces_consecutive_assistant_chunks_into_one_message()
     {
         await using var session = new TestSession("session-stream", [
-            new AgentMessageEvent(new AgentMessage("assistant", "I")),
-            new AgentMessageEvent(new AgentMessage("assistant", "’m ")),
-            new AgentMessageEvent(new AgentMessage("assistant", "checking the cluster.")),
-            new AgentTurnCompletedEvent()
+            AssistantChunk("I"), AssistantChunk("’m "), AssistantChunk("checking the cluster."), TurnCompleted()
         ]);
         var vm = CreateViewModel(new TestRegistry(new TestAgent(session)), prompt: "Inspect");
 
@@ -74,16 +98,13 @@ public sealed class AgentChatViewModelTests
     }
 
     [Fact]
-    public async Task send_renders_normalized_agent_activity_events()
+    public async Task send_renders_protocol_agent_activity_events()
     {
         await using var session = new TestSession("session-activity", [
-            new AgentToolStartedEvent(new AgentToolCall("kubernetes.get", "{\"kind\":\"Pod\"}")),
-            new AgentToolCompletedEvent(new AgentToolResult("kubernetes.get", true)),
-            new AgentPlanChangedEvent(new AgentPlan(["Inspect pod"])),
-            new AgentPermissionRequestedEvent(new AgentPermissionRequest("read_file", "pod.yaml")),
-            new AgentUsageChangedEvent(new AgentUsage(2, 3, 5)),
-            new AgentStatusEvent("Inspecting cluster"),
-            new AgentTurnCompletedEvent()
+            new SessionUpdateEvent(new SessionUpdate(new ToolCall { ToolCallId = "call-1", Title = "kubernetes.get" })),
+            new SessionUpdateEvent(new SessionUpdate(new ToolCallUpdate { ToolCallId = "call-1", Status = "completed", Title = "kubernetes.get" })),
+            new SessionUpdateEvent(new SessionUpdate(new Plan { Entries = [new PlanEntry { Content = "Inspect pod", Priority = "high", Status = "pending" }] })),
+            TurnCompleted()
         ]);
         var vm = CreateViewModel(new TestRegistry(new TestAgent(session)), prompt: "Inspect");
 
@@ -91,10 +112,9 @@ public sealed class AgentChatViewModelTests
 
         vm.Messages.Select(message => (message.Role, message.Text)).ShouldBe([
             ("You", "Inspect"),
-            ("Tool", "▸ kubernetes.get {\"kind\":\"Pod\"}"),
+            ("Tool", "▸ kubernetes.get"),
             ("Tool", "✓ kubernetes.get"),
             ("Plan", "• Inspect pod"),
-            ("Permission", "read_file: pod.yaml"),
         ]);
         await vm.DisposeAsync();
     }
@@ -117,8 +137,7 @@ public sealed class AgentChatViewModelTests
     public async Task send_stops_reading_events_at_turn_completion_without_disposing_session()
     {
         await using var session = new TestSession("session-2", [
-            new AgentMessageEvent(new AgentMessage("assistant", "Done.")),
-            new AgentTurnCompletedEvent()
+            AssistantChunk("Done."), TurnCompleted()
         ], keepOpenAfterCompletion: true);
         var vm = CreateViewModel(new TestRegistry(new TestAgent(session)), prompt: "Check pod");
 
@@ -301,14 +320,16 @@ public sealed class AgentChatViewModelTests
         IAgentContextService? contextService = null,
         IMcpServerState? mcpServerState = null,
         string? prompt = null,
-        AgentContext? context = null)
+        AgentContext? context = null,
+        ILogger<AgentChatViewModel>? logger = null)
     {
         settingsService ??= CreateSettingsService(new Settings());
         var viewModel = new AgentChatViewModel(
             registry,
             settingsService,
             contextService ?? new AgentContextService(),
-            mcpServerState ?? new McpServerState());
+            mcpServerState ?? new McpServerState(),
+            logger: logger);
         viewModel.Prompt = prompt ?? string.Empty;
         viewModel.Context = context;
         return viewModel;
@@ -326,17 +347,22 @@ public sealed class AgentChatViewModelTests
         public IReadOnlyList<IAgent> Agents => agents;
     }
 
-    private sealed class TestAgent(TestSession session, string id = "test", string name = "Test") : IAgent
+    private sealed class TestAgent(
+        TestSession session,
+        string id = "test",
+        string name = "Test",
+        Exception? sessionCreationException = null) : IAgent
     {
         public int CreateSessionCount { get; private set; }
         public AgentSessionOptions? Options { get; private set; }
         public string Id => id;
         public string Name => name;
-        public AgentCapabilities Capabilities => AgentCapabilities.None;
         public Task<IAgentSession> CreateSessionAsync(AgentSessionOptions options, CancellationToken cancellationToken = default)
         {
             CreateSessionCount++;
             Options = options;
+            if (sessionCreationException is not null)
+                return Task.FromException<IAgentSession>(sessionCreationException);
             return Task.FromResult<IAgentSession>(session);
         }
 
@@ -346,7 +372,6 @@ public sealed class AgentChatViewModelTests
     {
         public string Id => "blocking";
         public string Name => "Blocking";
-        public AgentCapabilities Capabilities => AgentCapabilities.None;
         public Task<IAgentSession> CreateSessionAsync(AgentSessionOptions options, CancellationToken cancellationToken = default)
             => Task.FromResult<IAgentSession>(session);
     }
@@ -355,7 +380,6 @@ public sealed class AgentChatViewModelTests
     {
         public string Id => "failing";
         public string Name => "Failing";
-        public AgentCapabilities Capabilities => AgentCapabilities.None;
 
         public Task<IAgentSession> CreateSessionAsync(AgentSessionOptions options, CancellationToken cancellationToken = default)
             => Task.FromException<IAgentSession>(new InvalidOperationException(message));
@@ -368,7 +392,7 @@ public sealed class AgentChatViewModelTests
         public TaskCompletionSource Started { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
         public bool CancelCalled { get; private set; }
         public string Id => "blocking-session";
-        public IAsyncEnumerable<AgentEvent> Events => EmptyEvents();
+        public IAsyncEnumerable<SessionEvent> Events => EmptyEvents();
 
         public async Task PromptAsync(string prompt, CancellationToken cancellationToken = default)
         {
@@ -389,22 +413,22 @@ public sealed class AgentChatViewModelTests
             return ValueTask.CompletedTask;
         }
 
-        private static async IAsyncEnumerable<AgentEvent> EmptyEvents()
+        private static async IAsyncEnumerable<SessionEvent> EmptyEvents()
         {
             await Task.CompletedTask;
             yield break;
         }
     }
 
-    private sealed class TestSession(string id, IReadOnlyList<AgentEvent> events, bool keepOpenAfterCompletion = false) : IAgentSession
+    private sealed class TestSession(string id, IReadOnlyList<SessionEvent> events, bool keepOpenAfterCompletion = false) : IAgentSession
     {
         private readonly TaskCompletionSource _neverCompletes = new(TaskCreationOptions.RunContinuationsAsynchronously);
         public string Id => id;
         public string? Prompt { get; private set; }
         public bool WasDisposed { get; private set; }
-        public IAsyncEnumerable<AgentEvent> Events => ReadEventsAsync();
+        public IAsyncEnumerable<SessionEvent> Events => ReadEventsAsync();
 
-        private async IAsyncEnumerable<AgentEvent> ReadEventsAsync()
+        private async IAsyncEnumerable<SessionEvent> ReadEventsAsync()
         {
             foreach (var item in events)
             {
@@ -435,7 +459,6 @@ public sealed class AgentChatViewModelTests
     {
         public string Id => "streaming";
         public string Name => "Streaming";
-        public AgentCapabilities Capabilities => AgentCapabilities.None;
 
         public Task<IAgentSession> CreateSessionAsync(AgentSessionOptions options, CancellationToken cancellationToken = default)
             => Task.FromResult<IAgentSession>(session);
@@ -443,21 +466,21 @@ public sealed class AgentChatViewModelTests
 
     private sealed class StreamingTestSession : IAgentSession
     {
-        private readonly Channel<AgentEvent> _events = Channel.CreateUnbounded<AgentEvent>();
+        private readonly Channel<SessionEvent> _events = Channel.CreateUnbounded<SessionEvent>();
         private readonly TaskCompletionSource _completion = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
         public TaskCompletionSource FirstChunkSent { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
         public string Id => "streaming-session";
-        public IAsyncEnumerable<AgentEvent> Events => _events.Reader.ReadAllAsync();
+        public IAsyncEnumerable<SessionEvent> Events => _events.Reader.ReadAllAsync();
 
         public async Task PromptAsync(string prompt, CancellationToken cancellationToken = default)
         {
             await _events.Writer.WriteAsync(
-                new AgentMessageEvent(new AgentMessage("assistant", "The response has started.")),
+                AssistantChunk("The response has started."),
                 cancellationToken);
             FirstChunkSent.TrySetResult();
             await _completion.Task.WaitAsync(cancellationToken);
-            await _events.Writer.WriteAsync(new AgentTurnCompletedEvent(), cancellationToken);
+            await _events.Writer.WriteAsync(TurnCompleted(), cancellationToken);
         }
 
         public Task CancelAsync(CancellationToken cancellationToken = default)
@@ -475,4 +498,13 @@ public sealed class AgentChatViewModelTests
 
         public void Complete() => _completion.TrySetResult();
     }
+
+    private static SessionEvent AssistantChunk(string text)
+        => new SessionUpdateEvent(new SessionUpdate(new SessionUpdateVariant1AgentMessageChunk
+        {
+            Content = new ContentBlock(new TextContent { Text = text })
+        }));
+
+    private static SessionEvent TurnCompleted()
+        => new Completed(new PromptResponse { StopReason = "end_turn" });
 }

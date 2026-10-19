@@ -9,10 +9,12 @@ using FluentIcons.Common;
 using k8s.Models;
 using KubeUI.Avalonia.Features.Resources.Common;
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
+using KubeUI.Avalonia.Infrastructure.Presentation;
+
 
 namespace KubeUI.Avalonia.Features.Resources.Visualization;
 
-public sealed partial class VisualizationView : ViewBase<VisualizationViewModel>
+public sealed partial class VisualizationView : KubeUIView<VisualizationViewModel>
 {
     private static readonly FuncValueConverter<bool, double> NotReadyBorderOpacityConverter = new(
         isNotReady => isNotReady ? 1d : 0d);

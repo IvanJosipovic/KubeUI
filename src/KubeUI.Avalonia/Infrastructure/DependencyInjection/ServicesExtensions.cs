@@ -45,6 +45,7 @@ public static partial class KubeUIShellServiceCollectionExtensions
         services.AddSingleton<Instrumentation>();
         services.AddSingleton<IYamlValidationService, YamlSyntaxValidationService>();
         services.AddSingleton<ILogSink, LogSink>();
+        services.AddSingleton(GetViewFactories());
         services.AddSingleton<ViewLocator>();
         services.AddSingleton<IPodLogExportService, PodLogExportService>();
         services.AddSingleton<Func<PodLogsViewModel>>(sp =>
@@ -73,4 +74,12 @@ public static partial class KubeUIShellServiceCollectionExtensions
     [GenerateServiceRegistrations(AssignableTo = typeof(ViewBase<>), Lifetime = ServiceLifetime.Transient, AsSelf = true, AsImplementedInterfaces = false, AssemblyNameFilter = "KubeUI.Avalonia")]
     [GenerateServiceRegistrations(AssignableTo = typeof(RefreshingCellTextBlock), Lifetime = ServiceLifetime.Transient, AsSelf = true, AsImplementedInterfaces = false, AssemblyNameFilter = "KubeUI.Avalonia")]
     private static partial IServiceCollection AddKubeUIShellGeneratedServices(this IServiceCollection services);
+
+    [ScanForTypes(AssignableTo = typeof(IViewFactoryDefinition), Handler = nameof(CreateViewFactory))]
+    private static partial IViewFactory[] GetViewFactories();
+
+    private static IViewFactory CreateViewFactory<TView>()
+        where TView : Control, IViewFactoryDefinition =>
+        new DiscoveredViewFactory(TView.CanCreate, serviceProvider => serviceProvider.GetRequiredService<TView>());
+
 }

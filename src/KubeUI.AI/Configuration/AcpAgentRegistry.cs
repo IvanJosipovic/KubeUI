@@ -29,7 +29,7 @@ public sealed class AcpAgentRegistry : IAgentRegistry
         foreach (var definition in _definitions)
         {
             if (IsExecutableAvailable(definition.Executable))
-                _agents.Add(new AcpAgent(definition, _permissionService));
+                _agents.Add(new Agent(definition, _permissionService));
         }
     }
 

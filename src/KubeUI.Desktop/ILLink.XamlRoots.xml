@@ -1,0 +1,20 @@
+<linker>
+  <assembly fullname="AvaloniaEdit">
+    <type fullname="CompiledAvaloniaXaml.!XamlLoader" preserve="all" />
+  </assembly>
+  <assembly fullname="LiveMarkdown.Avalonia">
+    <type fullname="CompiledAvaloniaXaml.!XamlLoader" preserve="all" />
+  </assembly>
+  <assembly fullname="Semi.Avalonia">
+    <type fullname="CompiledAvaloniaXaml.!XamlLoader" preserve="all" />
+  </assembly>
+  <assembly fullname="Ursa.Themes.Semi">
+    <type fullname="CompiledAvaloniaXaml.!XamlLoader" preserve="all" />
+  </assembly>
+  <assembly fullname="Dock.Avalonia.Themes.Fluent">
+    <type fullname="CompiledAvaloniaXaml.!XamlLoader" preserve="all" />
+  </assembly>
+  <assembly fullname="Westermo.GraphX.Controls.Avalonia.Themes.Fluent">
+    <type fullname="CompiledAvaloniaXaml.!XamlLoader" preserve="all" />
+  </assembly>
+</linker>

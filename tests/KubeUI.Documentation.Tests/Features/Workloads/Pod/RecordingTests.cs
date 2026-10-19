@@ -13,6 +13,7 @@ namespace KubeUI.Documentation.Tests.Features.Workloads.Pod;
 public sealed class RecordingTests
 {
     [DocumentationVideoTheory]
+    [Obsolete]
     public Task Follow_pod_logs_up_the_controller_chain_video(string theme)
     {
         var webPodLogLines = Array.Empty<string>();

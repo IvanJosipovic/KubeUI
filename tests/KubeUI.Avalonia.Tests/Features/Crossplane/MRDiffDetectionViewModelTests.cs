@@ -475,14 +475,14 @@ public sealed class MRDiffDetectionViewModelTests
             + "\", New:\""
             + newValue
             + "\"}}}";
-        var payload = System.Text.Json.JsonSerializer.Serialize(new
+        var payload = new System.Text.Json.Nodes.JsonObject
         {
-            uid,
-            name,
-            @namespace = "default",
-            gvk,
-            instanceDiff
-        });
+            ["uid"] = uid,
+            ["name"] = name,
+            ["namespace"] = "default",
+            ["gvk"] = gvk,
+            ["instanceDiff"] = instanceDiff
+        }.ToJsonString();
         return $"DEBUG provider Diff detected {payload}";
     }
 
@@ -495,14 +495,14 @@ public sealed class MRDiffDetectionViewModelTests
             + "\"},\"largeField\":*terraform.ResourceAttrDiff{Old:\""
             + new string('x', 20_000)
             + "\", New:\"unused\"}}}";
-        var payload = System.Text.Json.JsonSerializer.Serialize(new
+        var payload = new System.Text.Json.Nodes.JsonObject
         {
-            uid,
-            name,
-            @namespace = "default",
-            gvk = "example.com/v1, Kind=Widget",
-            instanceDiff
-        });
+            ["uid"] = uid,
+            ["name"] = name,
+            ["namespace"] = "default",
+            ["gvk"] = "example.com/v1, Kind=Widget",
+            ["instanceDiff"] = instanceDiff
+        }.ToJsonString();
         return $"DEBUG provider Diff detected {payload}"[..16_384];
     }
 
