@@ -6,17 +6,17 @@ using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Resources;
 using KubeUI.Avalonia.Services.Icons;
 using KubeUI.Avalonia.Shell.Navigation;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Shell.Navigation;
 
-public sealed class NavigationTreeSynchronizerTests
+public sealed class NavigationTreeBuilderTests
 {
     [AvaloniaFact]
     public async Task standard_resource_link_moves_when_section_changes()
     {
-        var services = Application.Current.GetTestServices();
         using var workspace = await Application.Current.CreateClusterAsync(connect: false);
         await workspace.Connect();
         var config = new FakeResourceConfig(typeof(Corev1Event), "Events")
@@ -25,13 +25,9 @@ public sealed class NavigationTreeSynchronizerTests
         };
         workspace.AddResourceConfigForTest(config);
         using var node = new ClusterNavigationNode(workspace);
-        var synchronizer = new NavigationTreeSynchronizer(
-            services.GetRequiredService<IResourceIconService>(),
-            openCommand: null,
-            openInNewTabCommand: null);
-        var builder = new NavigationModelBuilder(new NavigationSectionCatalog([]), NullLogger.Instance);
+        var builder = CreateBuilder(new NavigationSectionCatalog([]));
 
-        synchronizer.Reconcile(node, builder.Build(workspace));
+        builder.Reconcile(node);
         var link = node.NavigationItems
             .Single(item => item.Name == "Workloads")
             .NavigationItems
@@ -39,7 +35,7 @@ public sealed class NavigationTreeSynchronizerTests
             .Single(item => item.ResourceKind == GroupApiVersionKind.From<Corev1Event>());
 
         config.Navigation = NavigationPlacement.InSection(NavigationSections.NetworkId);
-        synchronizer.Reconcile(node, builder.Build(workspace));
+        builder.Reconcile(node);
 
         node.NavigationItems.Single(item => item.Name == "Network").NavigationItems
             .ShouldContain(link);
@@ -50,23 +46,18 @@ public sealed class NavigationTreeSynchronizerTests
     [AvaloniaFact]
     public async Task attach_resource_count_ignores_unseeded_container()
     {
-        var services = Application.Current.GetTestServices();
         using var workspace = await Application.Current.CreateClusterAsync(connect: false);
         await workspace.Connect();
         var config = new FakeResourceConfig(typeof(TestCustomResourceKubeUi), "Test Customs");
         workspace.AddResourceConfigForTest(config);
         using var node = new ClusterNavigationNode(workspace);
-        var synchronizer = new NavigationTreeSynchronizer(
-            services.GetRequiredService<IResourceIconService>(),
-            openCommand: null,
-            openInNewTabCommand: null);
-        var builder = new NavigationModelBuilder(new NavigationSectionCatalog([]), NullLogger.Instance);
+        var builder = CreateBuilder(new NavigationSectionCatalog([]));
 
-        synchronizer.Reconcile(node, builder.Build(workspace));
+        builder.Reconcile(node);
         var link = node.NavigationItems.OfType<NavigationLink>()
             .Single(item => item.ResourceKind == GroupApiVersionKind.From<TestCustomResourceKubeUi>());
 
-        synchronizer.AttachResourceCount(node, GroupApiVersionKind.From<TestCustomResourceKubeUi>());
+        builder.AttachResourceCount(node, GroupApiVersionKind.From<TestCustomResourceKubeUi>());
 
         link.Count.ShouldBeNull();
     }
@@ -74,23 +65,18 @@ public sealed class NavigationTreeSynchronizerTests
     [AvaloniaFact]
     public async Task custom_resource_definition_link_is_removed_when_permission_is_lost()
     {
-        var services = Application.Current.GetTestServices();
         using var workspace = await Application.Current.CreateClusterAsync(connect: false);
         await workspace.Connect();
         var definition = new FakeResourceConfig(typeof(V1CustomResourceDefinition), "Definitions");
         workspace.AddResourceConfigForTest(definition);
         using var node = new ClusterNavigationNode(workspace);
-        var synchronizer = new NavigationTreeSynchronizer(
-            services.GetRequiredService<IResourceIconService>(),
-            openCommand: null,
-            openInNewTabCommand: null);
-        var builder = new NavigationModelBuilder(new NavigationSectionCatalog([]), NullLogger.Instance);
+        var builder = CreateBuilder(new NavigationSectionCatalog([]));
 
-        synchronizer.Reconcile(node, builder.Build(workspace));
+        builder.Reconcile(node);
         node.NavigationItems.ShouldContain(item => item.Name == "Definitions");
 
         definition.PermissionsLoaded = false;
-        synchronizer.Reconcile(node, builder.Build(workspace));
+        builder.Reconcile(node);
 
         node.NavigationItems.ShouldNotContain(item => item.Name == "Definitions");
     }
@@ -98,7 +84,6 @@ public sealed class NavigationTreeSynchronizerTests
     [AvaloniaFact]
     public async Task custom_resource_link_returns_to_its_group_when_existing_parent_is_stale()
     {
-        var services = Application.Current.GetTestServices();
         using var workspace = await Application.Current.CreateClusterAsync(connect: false);
         await workspace.Connect();
         var definition = new FakeResourceConfig(typeof(V1CustomResourceDefinition), "Definitions");
@@ -106,20 +91,16 @@ public sealed class NavigationTreeSynchronizerTests
         workspace.AddResourceConfigForTest(definition);
         workspace.AddResourceConfigForTest(custom);
         using var node = new ClusterNavigationNode(workspace);
-        var synchronizer = new NavigationTreeSynchronizer(
-            services.GetRequiredService<IResourceIconService>(),
-            openCommand: null,
-            openInNewTabCommand: null);
-        var builder = new NavigationModelBuilder(new NavigationSectionCatalog([]), NullLogger.Instance);
+        var builder = CreateBuilder(new NavigationSectionCatalog([]));
 
-        synchronizer.Reconcile(node, builder.Build(workspace));
+        builder.Reconcile(node);
         var root = node.NavigationItems.Single(item => item.Id == $"{workspace.Runtime.Name}-section-custom-resources");
         var group = root.NavigationItems.Single(item => item.Name == "kubeui.com");
         var link = group.NavigationItems.OfType<NavigationLink>().Single(item => item.ResourceKind is not null);
         group.NavigationItems.Remove(link);
         root.NavigationItems.Add(link);
 
-        synchronizer.Reconcile(node, builder.Build(workspace));
+        builder.Reconcile(node);
 
         group.NavigationItems.ShouldContain(link);
         root.NavigationItems.ShouldNotContain(link);
@@ -128,35 +109,38 @@ public sealed class NavigationTreeSynchronizerTests
     [AvaloniaFact]
     public async Task reconcile_handles_large_existing_navigation_tree_without_repeated_full_tree_scans()
     {
-        using var workspace = await Application.Current.CreateClusterAsync(connect: false);
-        using var node = new ClusterNavigationNode(workspace);
-        var synchronizer = new NavigationTreeSynchronizer(
-            Application.Current.GetTestServices().GetRequiredService<IResourceIconService>(),
-            openCommand: null,
-            openInNewTabCommand: null);
-        var section = new NavigationSection("performance", "Performance", 0, null);
-        var entries = Enumerable.Range(0, 6_000)
-            .Select(index => new DocumentEntry(
-                $"document-{index}",
-                $"Document {index}",
-                index,
-                null,
-                section,
-                [],
-                $"document-{index}"))
-            .Cast<NavigationEntry>()
-            .ToArray();
+        const int documentCount = 6_000;
 
-        synchronizer.Reconcile(node, entries);
-        var expectedLinks = node.NavigationItems.Single().NavigationItems.ToArray();
+        using var workspace = await Application.Current.CreateClusterAsync(connect: false);
+        await workspace.Connect();
+        var provider = new TestNavigationSectionProvider("performance", "Performance", 0);
+        provider.SetDocumentCount(documentCount);
+        using var node = new ClusterNavigationNode(workspace);
+        var builder = CreateBuilder(new NavigationSectionCatalog([provider]));
+
+        builder.Reconcile(node);
+        var section = node.NavigationItems.Single(item => item.Id == $"{workspace.Runtime.Name}-section-performance");
+        var expectedLinks = section.NavigationItems.OfType<NavigationLink>()
+            .Where(link => link.DocumentId is not null)
+            .ToArray();
+        expectedLinks.Length.ShouldBe(documentCount);
 
         var stopwatch = Stopwatch.StartNew();
-        synchronizer.Reconcile(node, entries);
+        builder.Reconcile(node);
         stopwatch.Stop();
 
         stopwatch.Elapsed.ShouldBeLessThan(TimeSpan.FromMilliseconds(500));
-        node.NavigationItems.Single().NavigationItems.Count.ShouldBe(entries.Length);
-        node.NavigationItems.Single().NavigationItems
-            .ShouldAllBe(link => expectedLinks.Contains(link, ReferenceEqualityComparer.Instance));
+        var documentLinks = section.NavigationItems.OfType<NavigationLink>()
+            .Where(link => link.DocumentId is not null)
+            .ToArray();
+        documentLinks.Length.ShouldBe(documentCount);
+        documentLinks.ShouldAllBe(link => expectedLinks.Contains(link, ReferenceEqualityComparer.Instance));
     }
+
+    private static NavigationTreeBuilder CreateBuilder(NavigationSectionCatalog catalog) => new(
+        catalog,
+        Application.Current.GetTestServices().GetRequiredService<IResourceIconService>(),
+        openCommand: null,
+        openInNewTabCommand: null,
+        NullLogger.Instance);
 }
