@@ -4,10 +4,11 @@ using KubeUI.Kubernetes;
 
 namespace KubeUI.Avalonia.Features.GatewayApi;
 
-internal sealed class TCPRouteConfig : GatewayApiCustomResourceConfig
+internal sealed class TCPRouteConfig : CustomResourceConfig
 {
-    protected override string NavigationSectionId => NavigationSections.NetworkId;
-
+    public override NavigationPlacement Navigation => NavigationPlacement.InSection(
+        NavigationSections.NetworkId,
+        [new NavigationGroup("gateway", Assets.Resources.NavigationView_GatewayApi!, 0, null)]);
     public override string? ApiGroup => "gateway.networking.k8s.io";
 
     public override string? ApiVersion => "v1";

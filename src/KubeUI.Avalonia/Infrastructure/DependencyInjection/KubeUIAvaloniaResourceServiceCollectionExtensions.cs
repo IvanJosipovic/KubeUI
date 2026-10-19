@@ -16,7 +16,7 @@ public static partial class KubeUIAvaloniaResourceServiceCollectionExtensions
     [GenerateServiceRegistrations(
         AssignableTo = typeof(CustomResourceConfig),
         Lifetime = ServiceLifetime.Transient,
-        ExcludeByTypeName = "KubeUI.Avalonia.Resources.CustomResourceConfig,KubeUI.Avalonia.Features.GatewayApi.GatewayApiCustomResourceConfig",
+        ExcludeByTypeName = "KubeUI.Avalonia.Resources.CustomResourceConfig",
         AssemblyNameFilter = "KubeUI.Avalonia")]
     private static partial IServiceCollection AddKubeUIAvaloniaCustomResourceConfigs(this IServiceCollection services);
 
