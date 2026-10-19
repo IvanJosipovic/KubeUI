@@ -11,6 +11,7 @@ on:
 concurrency:
   group: ${{ github.workflow }}
   cancel-in-progress: false
+  queue: max
 
 permissions:
   id-token: write

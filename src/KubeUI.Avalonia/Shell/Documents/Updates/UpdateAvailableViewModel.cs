@@ -5,6 +5,7 @@ using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using KubeUI.Avalonia.Infrastructure.Platform;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using LiveMarkdown.Avalonia;
+using Microsoft.Extensions.Logging;
 
 namespace KubeUI.Avalonia.Shell.Documents.Updates;
 
@@ -12,6 +13,7 @@ public sealed partial class UpdateAvailableViewModel : ViewModelBase
 {
     private readonly IDialogService _dialogService;
     private readonly IPlatformServices _platformServices;
+    private readonly ILogger<UpdateAvailableViewModel> _logger;
     private Func<Action<int>, Task>? _updateAsync;
 
     public ObservableStringBuilder MarkdownBuilder { get; } = new();
@@ -31,10 +33,14 @@ public sealed partial class UpdateAvailableViewModel : ViewModelBase
     [ObservableProperty]
     public partial string DownloadProgressText { get; private set; } = string.Empty;
 
-    public UpdateAvailableViewModel(IDialogService dialogService, IPlatformServices platformServices)
+    public UpdateAvailableViewModel(
+        IDialogService dialogService,
+        IPlatformServices platformServices,
+        ILogger<UpdateAvailableViewModel> logger)
     {
         _dialogService = dialogService;
         _platformServices = platformServices;
+        _logger = logger;
         Id = nameof(UpdateAvailableViewModel);
         Title = Assets.Resources.UpdateAvailableView_Title;
         CanClose = true;
@@ -83,6 +89,11 @@ public sealed partial class UpdateAvailableViewModel : ViewModelBase
         try
         {
             await updateAsync(ReportDownloadProgress);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unable to install update {Version}", LatestVersion);
+            await _dialogService.ShowContentDialogAsync(this, CreateUpdateFailureDialogSettings());
         }
         finally
         {
@@ -149,6 +160,17 @@ public sealed partial class UpdateAvailableViewModel : ViewModelBase
             PrimaryButtonText = Assets.Resources.UpdateAvailableView_Confirm_Primary,
             SecondaryButtonText = Assets.Resources.UpdateAvailableView_Confirm_Secondary,
             DefaultButton = FAContentDialogButton.Secondary
+        };
+    }
+
+    internal static ContentDialogSettings CreateUpdateFailureDialogSettings()
+    {
+        return new ContentDialogSettings
+        {
+            Title = Assets.Resources.UpdateAvailableView_Failure_Title,
+            Content = Assets.Resources.UpdateAvailableView_Failure_Content,
+            PrimaryButtonText = Assets.Resources.UpdateAvailableView_Failure_Primary,
+            DefaultButton = FAContentDialogButton.Primary
         };
     }
 }

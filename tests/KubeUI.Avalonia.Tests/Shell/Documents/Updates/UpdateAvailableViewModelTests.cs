@@ -87,6 +87,7 @@ public sealed class UpdateAvailableViewModelTests
                             { "tag_name": "v1.6.1", "body": "Intermediate changes." },
                             { "tag_name": "v1.6.0", "body": "Release without a Velopack package." },
                             { "tag_name": "v1.6.3", "body": "Newer than target." },
+                            { "tag_name": "not-a-version", "body": "Malformed release tag." },
                             { "tag_name": "v1.6.1-rc.1", "body": "Prerelease.", "prerelease": true },
                             { "tag_name": "v1.6.1-draft", "body": "Draft.", "draft": true },
                             { "tag_name": "v1.6.1", "body": "Duplicate." },
@@ -169,7 +170,7 @@ public sealed class UpdateAvailableViewModelTests
             .ReturnsAsync(result);
 
         var updateStarted = false;
-        var viewModel = new UpdateAvailableViewModel(new DialogService(manager.Object), Mock.Of<IPlatformServices>());
+        var viewModel = new UpdateAvailableViewModel(new DialogService(manager.Object), Mock.Of<IPlatformServices>(), Mock.Of<ILogger<UpdateAvailableViewModel>>());
         viewModel.SetUpdate(
             "2.1.0",
             "2.2.0",
@@ -180,7 +181,7 @@ public sealed class UpdateAvailableViewModelTests
                 return Task.CompletedTask;
             });
 
-        await viewModel.UpdateCommand.ExecuteAsync(null);
+        await viewModel.UpdateCommand.ExecuteAsync(null).WaitAsync(TestContext.Current.CancellationToken);
 
         dialogs.ShouldHaveSingleItem();
         dialogs[0].Title.ShouldBe(Assets.Resources.UpdateAvailableView_Confirm_Title);
@@ -193,15 +194,16 @@ public sealed class UpdateAvailableViewModelTests
     [Fact]
     public async Task update_command_without_update_information_fails_explicitly()
     {
-        var viewModel = new UpdateAvailableViewModel(Mock.Of<IDialogService>(), Mock.Of<IPlatformServices>());
+        var viewModel = new UpdateAvailableViewModel(Mock.Of<IDialogService>(), Mock.Of<IPlatformServices>(), Mock.Of<ILogger<UpdateAvailableViewModel>>());
 
         await Should.ThrowAsync<InvalidOperationException>(
-            () => viewModel.UpdateCommand.ExecuteAsync(null));
+            () => viewModel.UpdateCommand.ExecuteAsync(null).WaitAsync(TestContext.Current.CancellationToken));
     }
 
     [Fact]
-    public async Task update_command_resets_busy_state_and_propagates_update_failures()
+    public async Task update_command_reports_update_failures_and_resets_busy_state()
     {
+        List<ContentDialogSettings> dialogs = [];
         Mock<IDialogManager> manager = new();
         manager.SetupGet(x => x.Logger).Returns((ILogger<IDialogManager>?)null);
         manager.SetupProperty(x => x.AllowConcurrentDialogs);
@@ -210,17 +212,21 @@ public sealed class UpdateAvailableViewModelTests
                 It.IsAny<System.ComponentModel.INotifyPropertyChanged?>(),
                 It.IsAny<ContentDialogSettings>(),
                 It.IsAny<Func<object?, string>?>()))
+            .Callback<System.ComponentModel.INotifyPropertyChanged?, ContentDialogSettings, Func<object?, string>?>(
+                (_, settings, _) => dialogs.Add(settings))
             .ReturnsAsync(FAContentDialogResult.Primary);
-        var viewModel = new UpdateAvailableViewModel(new DialogService(manager.Object), Mock.Of<IPlatformServices>());
+        var viewModel = new UpdateAvailableViewModel(new DialogService(manager.Object), Mock.Of<IPlatformServices>(), Mock.Of<ILogger<UpdateAvailableViewModel>>());
         viewModel.SetUpdate(
             "2.1.0",
             "2.2.0",
             "## 2.2.0",
             _ => Task.FromException(new InvalidOperationException("Update failed.")));
 
-        await Should.ThrowAsync<InvalidOperationException>(
-            () => viewModel.UpdateCommand.ExecuteAsync(null));
+        await viewModel.UpdateCommand.ExecuteAsync(null).WaitAsync(TestContext.Current.CancellationToken);
 
+        dialogs.Count.ShouldBe(2);
+        dialogs[1].Title.ShouldBe(Assets.Resources.UpdateAvailableView_Failure_Title);
+        dialogs[1].Content.ShouldBe(Assets.Resources.UpdateAvailableView_Failure_Content);
         viewModel.IsUpdating.ShouldBeFalse();
         viewModel.CanClose.ShouldBeTrue();
     }
@@ -229,7 +235,7 @@ public sealed class UpdateAvailableViewModelTests
     public void setting_update_updates_document_versions_and_markdown()
     {
         Mock<IDialogService> dialogService = new();
-        UpdateAvailableViewModel viewModel = new(dialogService.Object, Mock.Of<IPlatformServices>());
+        UpdateAvailableViewModel viewModel = new(dialogService.Object, Mock.Of<IPlatformServices>(), Mock.Of<ILogger<UpdateAvailableViewModel>>());
 
         viewModel.SetUpdate(
             "2.1.0",
@@ -246,7 +252,7 @@ public sealed class UpdateAvailableViewModelTests
     [AvaloniaFact]
     public async Task view_displays_update_versions_markdown_and_action()
     {
-        var viewModel = new UpdateAvailableViewModel(Mock.Of<IDialogService>(), Mock.Of<IPlatformServices>());
+        var viewModel = new UpdateAvailableViewModel(Mock.Of<IDialogService>(), Mock.Of<IPlatformServices>(), Mock.Of<ILogger<UpdateAvailableViewModel>>());
         viewModel.SetUpdate(
             "2.1.0",
             "2.2.0",
@@ -281,7 +287,7 @@ public sealed class UpdateAvailableViewModelTests
                 It.IsAny<ContentDialogSettings>(),
                 It.IsAny<Func<object?, string>?>()))
             .ReturnsAsync(FAContentDialogResult.Primary);
-        UpdateAvailableViewModel viewModel = new(new DialogService(manager.Object), Mock.Of<IPlatformServices>());
+        UpdateAvailableViewModel viewModel = new(new DialogService(manager.Object), Mock.Of<IPlatformServices>(), Mock.Of<ILogger<UpdateAvailableViewModel>>());
         TaskCompletionSource updateStarted = new(TaskCreationOptions.RunContinuationsAsynchronously);
         TaskCompletionSource finishUpdate = new(TaskCreationOptions.RunContinuationsAsynchronously);
         viewModel.SetUpdate(

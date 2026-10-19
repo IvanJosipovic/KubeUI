@@ -365,12 +365,20 @@ public sealed partial class MainViewModel : ViewModelBase
 
             if (update is not null)
             {
-                using var httpClient = _httpClientFactory.CreateClient(GitHubReleasesHttpClientName);
-                var releaseNotes = await GetReleaseNotesAsync(
-                    httpClient,
-                    um.CurrentVersion!,
-                    update.TargetFullRelease.Version,
-                    SettingsService.Settings.PreReleaseChannel).ConfigureAwait(true);
+                IReadOnlyList<(string Version, string? Markdown)> releaseNotes = [];
+                try
+                {
+                    using var httpClient = _httpClientFactory.CreateClient(GitHubReleasesHttpClientName);
+                    releaseNotes = await GetReleaseNotesAsync(
+                        httpClient,
+                        um.CurrentVersion!,
+                        update.TargetFullRelease.Version,
+                        SettingsService.Settings.PreReleaseChannel).ConfigureAwait(true);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Unable to retrieve GitHub release notes; showing the update anyway");
+                }
 
                 var updatePresentation = CreateUpdatePresentation(
                     um.CurrentVersion?.ToString(),
@@ -457,7 +465,15 @@ public sealed partial class MainViewModel : ViewModelBase
                     continue;
                 }
 
-                var version = SemanticVersion.Parse(release.TagName.TrimStart('v', 'V'));
+                SemanticVersion version;
+                try
+                {
+                    version = SemanticVersion.Parse(release.TagName.TrimStart('v', 'V'));
+                }
+                catch (ArgumentException)
+                {
+                    continue;
+                }
                 if (version.CompareTo(currentVersion) == 0)
                 {
                     reachedCurrentVersion = true;
