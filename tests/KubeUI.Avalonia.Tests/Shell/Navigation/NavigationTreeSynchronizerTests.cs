@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Avalonia.Headless.XUnit;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
@@ -122,5 +123,40 @@ public sealed class NavigationTreeSynchronizerTests
 
         group.NavigationItems.ShouldContain(link);
         root.NavigationItems.ShouldNotContain(link);
+    }
+
+    [AvaloniaFact]
+    public async Task reconcile_handles_large_existing_navigation_tree_without_repeated_full_tree_scans()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync(connect: false);
+        using var node = new ClusterNavigationNode(workspace);
+        var synchronizer = new NavigationTreeSynchronizer(
+            Application.Current.GetTestServices().GetRequiredService<IResourceIconService>(),
+            openCommand: null,
+            openInNewTabCommand: null);
+        var section = new NavigationSection("performance", "Performance", 0, null);
+        var entries = Enumerable.Range(0, 6_000)
+            .Select(index => new DocumentEntry(
+                $"document-{index}",
+                $"Document {index}",
+                index,
+                null,
+                section,
+                [],
+                $"document-{index}"))
+            .Cast<NavigationEntry>()
+            .ToArray();
+
+        synchronizer.Reconcile(node, entries);
+        var expectedLinks = node.NavigationItems.Single().NavigationItems.ToArray();
+
+        var stopwatch = Stopwatch.StartNew();
+        synchronizer.Reconcile(node, entries);
+        stopwatch.Stop();
+
+        stopwatch.Elapsed.ShouldBeLessThan(TimeSpan.FromMilliseconds(500));
+        node.NavigationItems.Single().NavigationItems.Count.ShouldBe(entries.Length);
+        node.NavigationItems.Single().NavigationItems
+            .ShouldAllBe(link => expectedLinks.Contains(link, ReferenceEqualityComparer.Instance));
     }
 }

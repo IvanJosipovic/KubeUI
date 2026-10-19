@@ -30,11 +30,14 @@ internal sealed class NavigationTreeSynchronizer
     {
         var cluster = node.Cluster;
         var desiredIds = new HashSet<string>(StringComparer.Ordinal);
+        var existingItems = new Dictionary<string, NavigationItemLocation>(StringComparer.Ordinal);
+        IndexItems(node.NavigationItems, existingItems);
+
         foreach (var entry in entries)
         {
             desiredIds.Add(entry.Id);
             var target = ResolveTarget(node, cluster, entry, desiredIds);
-            Upsert(node, target, cluster, entry);
+            Upsert(target, cluster, entry, existingItems);
         }
 
         PruneGenerated(node.NavigationItems, cluster.Runtime.Name, desiredIds);
@@ -79,25 +82,26 @@ internal sealed class NavigationTreeSynchronizer
     }
 
     private void Upsert(
-        ClusterNavigationNode node,
         ObservableCollection<NavigationItem> target,
         ClusterWorkspace cluster,
-        NavigationEntry entry)
+        NavigationEntry entry,
+        Dictionary<string, NavigationItemLocation> existingItems)
     {
-        var existing = Find(node.NavigationItems, entry.Id) as NavigationLink;
-        if (existing is null)
+        if (!existingItems.TryGetValue(entry.Id, out var location)
+            || location.Item is not NavigationLink existing)
         {
             var created = new NavigationLink { Id = entry.Id };
             ApplyLink(created, cluster, entry);
             target.Add(created);
+            existingItems.TryAdd(entry.Id, new NavigationItemLocation(created, target));
             return;
         }
 
-        var parent = FindParentCollection(node.NavigationItems, entry.Id);
-        if (!ReferenceEquals(parent, target))
+        if (!ReferenceEquals(location.Parent, target))
         {
-            parent?.Remove(existing);
+            location.Parent.Remove(existing);
             target.Add(existing);
+            existingItems[entry.Id] = new NavigationItemLocation(existing, target);
         }
 
         ApplyLink(existing, cluster, entry);
@@ -222,43 +226,20 @@ internal sealed class NavigationTreeSynchronizer
             || id == $"{clusterName}-{NavigationTargets.LoadFolder}";
     }
 
-    private static NavigationItem? Find(IEnumerable<NavigationItem> items, string id)
+    private static void IndexItems(
+        ObservableCollection<NavigationItem> items,
+        Dictionary<string, NavigationItemLocation> index)
     {
         foreach (var item in items)
         {
-            if (string.Equals(item.Id, id, StringComparison.Ordinal))
-            {
-                return item;
-            }
-
-            var nested = Find(item.NavigationItems, id);
-            if (nested is not null)
-            {
-                return nested;
-            }
+            index.TryAdd(item.Id, new NavigationItemLocation(item, items));
+            IndexItems(item.NavigationItems, index);
         }
-
-        return null;
     }
 
-    private static ObservableCollection<NavigationItem>? FindParentCollection(ObservableCollection<NavigationItem> items, string id)
-    {
-        if (items.Any(item => string.Equals(item.Id, id, StringComparison.Ordinal)))
-        {
-            return items;
-        }
-
-        foreach (var item in items)
-        {
-            var nested = FindParentCollection(item.NavigationItems, id);
-            if (nested is not null)
-            {
-                return nested;
-            }
-        }
-
-        return null;
-    }
+    private readonly record struct NavigationItemLocation(
+        NavigationItem Item,
+        ObservableCollection<NavigationItem> Parent);
 
     private static IObservable<int> CreateResourceCountStream(ClusterWorkspace cluster, GroupApiVersionKind kind) =>
         cluster.Runtime.GetResourceCount(kind).Sample(TimeSpan.FromMilliseconds(100), AvaloniaScheduler.Instance);

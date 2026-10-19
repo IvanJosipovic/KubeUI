@@ -151,6 +151,7 @@ public class ClusterWorkspaceTests
             cancellationToken: TestContext.Current.CancellationToken,
             beforePoll: () => Dispatcher.UIThread.RunJobs());
         resourceConfig.ShouldNotBeNull();
+        resourceConfig.ShouldBeOfType<CustomResourceConfig>();
         resourceConfig.Kind.ShouldBe(resourceKind);
         resourceConfig.IsCustomResource().ShouldBeTrue();
         resourceConfig.CustomResourceDefinition.ShouldNotBeNull().Name().ShouldBe(crd.Name());

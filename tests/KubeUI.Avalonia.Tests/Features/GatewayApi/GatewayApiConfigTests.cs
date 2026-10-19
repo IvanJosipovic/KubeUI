@@ -75,9 +75,8 @@ public sealed class GatewayApiConfigTests
             config.ApiVersion.ShouldBe(version);
             config.Configure(CreateDefinition(group, version, kind, group == ExperimentalGroup ? "experimental" : "standard"));
             config.Navigation.SectionId.ShouldBe(NavigationSections.NetworkId);
-            string[] navigationGroups = group == ExperimentalGroup ? ["gateway", "experimental"] : ["gateway"];
             config.Navigation.Groups.Select(static navigationGroup => navigationGroup.Id)
-                .ShouldBe(navigationGroups);
+                .ShouldBe(group == ExperimentalGroup ? ["gateway", "experimental"] : ["gateway"]);
 
             var resource = config.CreateNewResource();
             resource.ApiVersion.ShouldBe($"{group}/{version}");
@@ -88,7 +87,7 @@ public sealed class GatewayApiConfigTests
     }
 
     [AvaloniaFact]
-    public void stable_group_kind_uses_installed_crd_channel_for_navigation()
+    public void experimental_api_group_uses_nested_experimental_navigation_group()
     {
         var standard = new HTTPRouteConfig();
         standard.Configure(CreateDefinition(StandardGroup, "v1", "HTTPRoute", "standard"));
@@ -98,10 +97,11 @@ public sealed class GatewayApiConfigTests
         var experimental = new HTTPRouteConfig();
         experimental.Configure(CreateDefinition(StandardGroup, "v1", "HTTPRoute", "experimental"));
         experimental.Navigation.SectionId.ShouldBe(NavigationSections.NetworkId);
-        experimental.Navigation.Groups.Select(static group => group.Id).ShouldBe(["gateway", "experimental"]);
+        experimental.Navigation.Groups.Select(static group => group.Id).ShouldBe(["gateway"]);
 
         var xKind = new XBackendConfig();
         xKind.Configure(CreateDefinition(ExperimentalGroup, "v1alpha1", "XBackend", "experimental"));
+        xKind.Navigation.SectionId.ShouldBe(NavigationSections.NetworkId);
         xKind.Navigation.Groups.Select(static group => group.Id).ShouldBe(["gateway", "experimental"]);
     }
 
