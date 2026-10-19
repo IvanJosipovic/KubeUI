@@ -10,27 +10,6 @@ namespace KubeUI.Avalonia.Tests.Shell.Main;
 public sealed class MainWindowMenuTests
 {
     [AvaloniaFact]
-    public async Task native_menu_matches_the_in_window_menu()
-    {
-        var viewModel = Application.Current.GetRequiredTestService<MainViewModel>();
-        var window = new MainWindow { DataContext = viewModel };
-        window.Show();
-        try
-        {
-            await TestApplicationExtensions.WaitForUiAsync();
-
-            var inWindowMenu = window.GetVisualDescendants().OfType<Menu>().Single();
-            var nativeMenu = NativeMenu.GetMenu(window).ShouldNotBeNull();
-
-            Describe(nativeMenu, viewModel).ShouldBe(Describe(inWindowMenu, viewModel));
-        }
-        finally
-        {
-            window.Close();
-        }
-    }
-
-    [AvaloniaFact]
     public async Task native_menu_exposes_kubeconfig_aks_and_update_commands()
     {
         var viewModel = Application.Current.GetRequiredTestService<MainViewModel>();
@@ -57,6 +36,75 @@ public sealed class MainWindowMenuTests
         }
     }
 
+    [AvaloniaFact]
+    public async Task native_menu_lists_the_expected_items_and_commands()
+    {
+        var viewModel = Application.Current.GetRequiredTestService<MainViewModel>();
+        var window = new MainWindow { DataContext = viewModel };
+        window.Show();
+        try
+        {
+            await TestApplicationExtensions.WaitForUiAsync();
+
+            Describe(NativeMenu.GetMenu(window).ShouldNotBeNull(), viewModel).ShouldBe(
+            [
+                Assets.Resources.MainView_Menu_File!,
+                $"  {Assets.Resources.MainView_Menu_File_LoadKubeConfig} -> {nameof(viewModel.LoadKubeConfigCommand)}",
+                $"  {Assets.Resources.MainView_Menu_File_ImportAksCluster} -> {nameof(viewModel.ImportAksClusterCommand)}",
+                $"  {Assets.Resources.MainView_Menu_File_Clusters} -> {nameof(viewModel.OpenClustersCommand)}",
+                $"  {Assets.Resources.MainView_Menu_File_Settings} -> {nameof(viewModel.OpenSettingsCommand)}",
+                "  ---",
+                $"  {Assets.Resources.MainView_Menu_File_Exit} -> {nameof(viewModel.CloseCommand)}",
+                Assets.Resources.MainView_Menu_Window!,
+                $"  {Assets.Resources.MainView_Menu_Window_ResetLayout} -> {nameof(viewModel.ResetLayoutCommand)}",
+                $"  {Assets.Resources.MainView_Menu_Window_SwitchTheme} -> {nameof(viewModel.SwitchThemeCommand)}",
+                Assets.Resources.MainView_Menu_Help!,
+                $"  {Assets.Resources.MainView_Menu_Help_CheckForUpdates} -> {nameof(viewModel.CheckForUpdatesCommand)}",
+                $"  {Assets.Resources.MainView_Menu_Help_About} -> {nameof(viewModel.OpenAboutCommand)}",
+            ]);
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task in_window_menu_bar_presents_the_window_menu()
+    {
+        var viewModel = Application.Current.GetRequiredTestService<MainViewModel>();
+        var window = new MainWindow { DataContext = viewModel };
+        window.Show();
+        try
+        {
+            var attached = NativeMenu.GetMenu(window).ShouldNotBeNull();
+
+            await TestApplicationExtensions.WaitForUiAsync();
+
+            // Exactly one menu bar is hosted by the view.
+            window.GetVisualDescendants().OfType<NativeMenuBar>().Single();
+
+            var presenter = window.GetVisualDescendants().OfType<Menu>().Single();
+
+            // Headless has no native menu exporter, so the bar presents the menu inside the window.
+            NativeMenu.GetIsNativeMenuExported(window).ShouldBeFalse();
+            presenter.IsVisible.ShouldBeTrue();
+            presenter.ItemsSource.ShouldBeSameAs(attached.Items);
+
+            var presentedHeaders = Enumerable.Range(0, presenter.ItemCount)
+                .Select(presenter.ContainerFromIndex)
+                .OfType<MenuItem>()
+                .Select(item => item.Header?.ToString())
+                .ToList();
+
+            presentedHeaders.ShouldBe(attached.Items.OfType<NativeMenuItem>().Select(item => item.Header).ToList());
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
     private static List<string> Describe(NativeMenu menu, MainViewModel viewModel)
     {
         List<string> lines = [];
@@ -66,21 +114,6 @@ public sealed class MainWindowMenuTests
             foreach (var item in top.Menu?.Items ?? [])
             {
                 lines.Add(item is NativeMenuItem child and not NativeMenuItemSeparator ? $"  {child.Header} -> {CommandName(child.Command, viewModel)}" : "  ---");
-            }
-        }
-
-        return lines;
-    }
-
-    private static List<string> Describe(Menu menu, MainViewModel viewModel)
-    {
-        List<string> lines = [];
-        foreach (var top in menu.Items.OfType<MenuItem>())
-        {
-            lines.Add(top.Header?.ToString() ?? string.Empty);
-            foreach (var item in top.Items)
-            {
-                lines.Add(item is MenuItem child ? $"  {child.Header} -> {CommandName(child.Command, viewModel)}" : "  ---");
             }
         }
 
@@ -101,7 +134,7 @@ public sealed class MainWindowMenuTests
             _ when ReferenceEquals(command, viewModel.SwitchThemeCommand) => nameof(viewModel.SwitchThemeCommand),
             _ when ReferenceEquals(command, viewModel.CheckForUpdatesCommand) => nameof(viewModel.CheckForUpdatesCommand),
             _ when ReferenceEquals(command, viewModel.OpenAboutCommand) => nameof(viewModel.OpenAboutCommand),
-            _ => command.GetType().Name,
+            _ => throw new InvalidOperationException($"Unexpected menu command of type '{command.GetType().Name}'."),
         };
     }
 }
