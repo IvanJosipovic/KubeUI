@@ -7,7 +7,7 @@ using KubeUI.Kubernetes;
 
 namespace KubeUI.Avalonia.Resources.Workloads.v1.CronJob;
 
-public sealed partial class V1CronJobConfig : ResourceConfigBase<V1CronJob>
+public sealed partial class V1CronJobConfig : ResourceConfig<V1CronJob>
 {
     private readonly TimeProvider _timeProvider;
     private const int KubernetesNameMaxLength = 63;
@@ -24,10 +24,10 @@ public sealed partial class V1CronJobConfig : ResourceConfigBase<V1CronJob>
         _timeProvider = timeProvider;
     }
     public override bool IsNamespaced => true;
-    public override string Category => Assets.Resources.ResourceConfig_Category_Workloads!;
+    public override NavigationPlacement Navigation => NavigationPlacement.InSection(NavigationSections.WorkloadsId);
     public override int Order => 6;
 
-    public override IList<IResourceListColumn> Columns()
+    protected override IList<IResourceListColumn> CreateDefaultColumns()
     {
         return [
             NameColumn(SortDirection.Ascending),
