@@ -507,7 +507,7 @@ public class ClusterWorkspaceTests
         await workspace.Runtime.DeleteAsync(invalidCrd, TestContext.Current.CancellationToken);
 
         await TestWait.UntilAsync(
-            () => GetCustomResourceConfig(workspace, crd) == null,
+            () => GetCustomResourceConfig(workspace, crd) == null && removedKind == resourceKind,
             TimeSpan.FromSeconds(10),
             cancellationToken: TestContext.Current.CancellationToken,
             beforePoll: () => Dispatcher.UIThread.RunJobs());
