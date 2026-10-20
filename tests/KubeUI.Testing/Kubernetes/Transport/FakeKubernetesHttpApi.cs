@@ -166,8 +166,17 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
     public IReadOnlyList<Uri?> RequestUris => _requestUris.ToArray();
 
     private int _authorizationRequestCount;
+    private int _rulesReviewRequestCount;
 
     public int AuthorizationRequestCount => Volatile.Read(ref _authorizationRequestCount);
+
+    public int RulesReviewRequestCount => Volatile.Read(ref _rulesReviewRequestCount);
+
+    /// <summary>Gets or sets whether rules reviews report incomplete results.</summary>
+    public bool SelfSubjectRulesReviewIncomplete { get; set; }
+
+    /// <summary>Gets or sets an optional error status returned for rules reviews.</summary>
+    public HttpStatusCode SelfSubjectRulesReviewStatusCode { get; set; }
 
     private readonly ConcurrentQueue<Uri?> _requestUris = new();
 
@@ -310,6 +319,11 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
             return SetRequest(request, Error(HttpStatusCode.ServiceUnavailable, "simulated connection failure"));
         }
 
+        if (path.Contains("selfsubjectrulesreviews", StringComparison.Ordinal))
+        {
+            return SetRequest(request, await HandleRulesReviewAsync(request, cancellationToken).ConfigureAwait(false));
+        }
+
         if (path.Contains("selfsubjectaccessreviews", StringComparison.Ordinal))
         {
             return SetRequest(request, await HandleAuthorizationAsync(request, cancellationToken).ConfigureAwait(false));
@@ -435,6 +449,142 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
             kind = "SelfSubjectAccessReview",
             status = new { allowed },
         }, HttpStatusCode.Created);
+    }
+
+    private async Task<HttpResponseMessage> HandleRulesReviewAsync(
+        HttpRequestMessage request,
+        CancellationToken cancellationToken)
+    {
+        Interlocked.Increment(ref _rulesReviewRequestCount);
+        var body = await request.Content!.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+        var root = JsonNode.Parse(body)?.AsObject();
+        var @namespace = root?["spec"]?["namespace"]?.GetValue<string>();
+        if (string.IsNullOrWhiteSpace(@namespace))
+        {
+            return Error(HttpStatusCode.BadRequest, "SelfSubjectRulesReview requires a namespace.");
+        }
+
+        var statusCode = SelfSubjectRulesReviewStatusCode;
+        if (statusCode != 0)
+        {
+            return Error(statusCode, "simulated rules review failure.");
+        }
+
+        if (SelfSubjectRulesReviewIncomplete)
+        {
+            return RulesReviewResponse([], incomplete: true);
+        }
+
+        if (HasDeniedPermissionForNamespace(@namespace))
+        {
+            return RulesReviewResponse([], incomplete: true);
+        }
+
+        if (!UseRoleBasedAuthorization)
+        {
+            return RulesReviewResponse(
+                [
+                    new V1PolicyRule
+                    {
+                        ApiGroups = ["*"],
+                        Resources = ["*"],
+                        Verbs = ["*"],
+                    },
+                ],
+                incomplete: false);
+        }
+
+        return RulesReviewResponse(GetSubjectRules(@namespace), incomplete: false);
+    }
+
+    private HttpResponseMessage RulesReviewResponse(
+        IReadOnlyCollection<V1PolicyRule> rules,
+        bool incomplete)
+    {
+        return Json(new
+        {
+            apiVersion = "authorization.k8s.io/v1",
+            kind = "SelfSubjectRulesReview",
+            status = new
+            {
+                resourceRules = rules.Select(rule => new
+                {
+                    verbs = rule.Verbs ?? [],
+                    apiGroups = rule.ApiGroups ?? [],
+                    resources = rule.Resources ?? [],
+                    resourceNames = rule.ResourceNames ?? [],
+                }),
+                nonResourceRules = Array.Empty<object>(),
+                incomplete,
+                evaluationError = incomplete ? "simulated incomplete rules" : string.Empty,
+            },
+        }, HttpStatusCode.Created);
+    }
+
+    private List<V1PolicyRule> GetSubjectRules(string @namespace)
+    {
+        var subject = ParseServiceAccount(AuthenticatedUser);
+        if (subject is null)
+        {
+            return [];
+        }
+
+        List<V1PolicyRule> rules = [];
+        foreach (var binding in _resources.Values)
+        {
+            if (string.Equals(binding["kind"]?.GetValue<string>(), "ClusterRoleBinding", StringComparison.Ordinal))
+            {
+                var clusterRoleBinding = binding.Deserialize<V1ClusterRoleBinding>();
+                if (clusterRoleBinding is not null && IsSubjectMatch(clusterRoleBinding.Subjects, subject.Value))
+                {
+                    var role = GetClusterRole(clusterRoleBinding.RoleRef?.Name);
+                    if (role?.Rules is not null)
+                    {
+                        rules.AddRange(role.Rules);
+                    }
+                }
+            }
+            else if (string.Equals(binding["kind"]?.GetValue<string>(), "RoleBinding", StringComparison.Ordinal))
+            {
+                var roleBinding = binding.Deserialize<V1RoleBinding>();
+                if (roleBinding is null
+                    || !string.Equals(roleBinding.Metadata?.NamespaceProperty, @namespace, StringComparison.Ordinal)
+                    || !IsSubjectMatch(roleBinding.Subjects, subject.Value))
+                {
+                    continue;
+                }
+
+                var roleRules = string.Equals(roleBinding.RoleRef?.Kind, "ClusterRole", StringComparison.Ordinal)
+                    ? GetClusterRole(roleBinding.RoleRef.Name)?.Rules
+                    : GetRole(roleBinding.RoleRef?.Name, roleBinding.Metadata?.NamespaceProperty)?.Rules;
+                if (roleRules is not null)
+                {
+                    rules.AddRange(roleRules);
+                }
+            }
+        }
+
+        return rules;
+    }
+
+    private bool HasDeniedPermissionForNamespace(string @namespace)
+    {
+        foreach (var permission in _permissions)
+        {
+            var parts = permission.Key.Split('|');
+            if (parts.Length != 4 || permission.Value)
+            {
+                continue;
+            }
+
+            var permissionNamespace = string.IsNullOrEmpty(parts[2]) ? null : parts[2];
+            if (permissionNamespace is null || string.Equals(permissionNamespace, @namespace, StringComparison.Ordinal))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private async Task<HttpResponseMessage> HandleResourceAsync(HttpRequestMessage request, Route route, CancellationToken cancellationToken)
@@ -881,7 +1031,8 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
         var requestedResource = string.IsNullOrEmpty(subresource) ? resource : resource + "/" + subresource;
         return rules?.Any(rule => Matches(rule.ApiGroups, group)
             && Matches(rule.Resources, requestedResource)
-            && Matches(rule.Verbs, verb)) == true;
+            && Matches(rule.Verbs, verb)
+            && rule.ResourceNames is not { Count: > 0 }) == true;
     }
 
     private static bool Matches(IList<string>? values, string value)
@@ -1016,7 +1167,8 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
     {
         if (resourceKey.StartsWith(collectionKey + "/", StringComparison.Ordinal))
         {
-            return true;
+            var remainder = resourceKey[(collectionKey.Length + 1)..];
+            return remainder.Length > 0 && !remainder.Contains('/');
         }
 
         var separator = resourceKey.LastIndexOf('/');

@@ -13,28 +13,36 @@ namespace KubeUI.Kubernetes;
 public partial class Cluster
 {
     private const int MaximumConcurrentNamespaceAuthorizationReviews = 8;
-    private readonly ConcurrentDictionary<string, bool> _permissionIndex = new();
+    private static readonly NamespaceRuleSet IncompleteNamespaceRules = new([], IsComplete: false);
+    private readonly ConcurrentDictionary<PermissionCacheKey, bool> _permissionIndex = new();
+    private readonly ConcurrentDictionary<string, NamespaceRuleSet> _namespaceRules = new(StringComparer.Ordinal);
+    private readonly ConcurrentDictionary<string, Lazy<Task<NamespaceRuleSet>>> _namespaceRuleLoads = new(StringComparer.Ordinal);
+    private int _authorizationCacheGeneration;
 
-    private static string BuildReviewKeyCore(
-        string? group,
-        string pluralName,
-        string version,
+    /// <inheritdoc />
+    public event Action? PermissionsInvalidated;
+
+    private readonly record struct PermissionCacheKey(
+        string Verb,
+        string? Group,
+        string Resource,
+        string? Namespace,
+        string? Subresource);
+
+    private sealed record NamespaceRuleSet(IReadOnlyList<V1ResourceRule> ResourceRules, bool IsComplete);
+
+    private static PermissionCacheKey BuildReviewKey(
+        GroupApiVersionKind kind,
         string verbString,
         string? @namespace = null,
         string? subresource = null)
     {
-        return $"{verbString}:{(string.IsNullOrEmpty(group) ? "" : group)}:{pluralName}:{(string.IsNullOrEmpty(@namespace) ? "" : @namespace)}:{(string.IsNullOrEmpty(subresource) ? "" : subresource)}:{version}";
-    }
-
-    private static string BuildReviewKey(GroupApiVersionKind kind, string verbString, string? @namespace = null, string? subresource = null)
-    {
-        return BuildReviewKeyCore(
-            kind.Group,
-            kind.PluralName,
-            kind.ApiVersion,
+        return new PermissionCacheKey(
             verbString,
-            @namespace,
-            subresource);
+            string.IsNullOrEmpty(kind.Group) ? null : kind.Group,
+            kind.PluralName,
+            string.IsNullOrEmpty(@namespace) ? null : @namespace,
+            string.IsNullOrEmpty(subresource) ? null : subresource);
     }
 
     [ObservableProperty]
@@ -57,7 +65,44 @@ public partial class Cluster
 
     private void ResetAuthorizationIndex()
     {
+        Interlocked.Increment(ref _authorizationCacheGeneration);
         _permissionIndex.Clear();
+        _namespaceRules.Clear();
+        _namespaceRuleLoads.Clear();
+    }
+
+    /// <inheritdoc />
+    public void InvalidatePermissions()
+    {
+        ResetAuthorizationIndex();
+        PermissionsInvalidated?.Invoke();
+    }
+
+    /// <inheritdoc />
+    public void InvalidateNamespacePermissions()
+    {
+        Interlocked.Increment(ref _authorizationCacheGeneration);
+
+        foreach (var key in _permissionIndex.Keys)
+        {
+            if (!string.IsNullOrEmpty(key.Namespace))
+            {
+                _permissionIndex.TryRemove(key, out _);
+            }
+        }
+
+        _namespaceRules.Clear();
+        _namespaceRuleLoads.Clear();
+    }
+
+    private void InvalidatePermissionsAfterForbiddenResponse()
+    {
+        if (!Connected || Client is null)
+        {
+            return;
+        }
+
+        InvalidatePermissions();
     }
 
     private static void SetAuthorizationActivityTags(Activity? activity, GroupApiVersionKind kind, Verb verb, string? @namespace, string? subresource)
@@ -99,10 +144,207 @@ public partial class Cluster
             }
         };
 
+        var generation = Volatile.Read(ref _authorizationCacheGeneration);
         var resp = await Client.AuthorizationV1.CreateSelfSubjectAccessReviewAsync(model);
         var allowed = resp.Status?.Allowed == true;
-        SetPermissionResult(kind, verbString, @namespace, subresource, allowed);
+        if (generation == Volatile.Read(ref _authorizationCacheGeneration))
+        {
+            SetPermissionResult(kind, verbString, @namespace, subresource, allowed);
+        }
+
         return allowed;
+    }
+
+    private Task<NamespaceRuleSet> GetNamespaceRulesAsync(string @namespace, CancellationToken cancellationToken)
+    {
+        if (_namespaceRules.TryGetValue(@namespace, out var cached))
+        {
+            return Task.FromResult(cached);
+        }
+
+        var lazy = _namespaceRuleLoads.GetOrAdd(
+            @namespace,
+            static (namespaceName, self) => new Lazy<Task<NamespaceRuleSet>>(
+                () => self.LoadNamespaceRulesAsync(namespaceName),
+                LazyThreadSafetyMode.ExecutionAndPublication),
+            this);
+        var generation = Volatile.Read(ref _authorizationCacheGeneration);
+
+        return AwaitNamespaceRulesAsync(@namespace, lazy, generation, cancellationToken);
+    }
+
+    private async Task<NamespaceRuleSet> AwaitNamespaceRulesAsync(
+        string @namespace,
+        Lazy<Task<NamespaceRuleSet>> lazy,
+        int generation,
+        CancellationToken cancellationToken)
+    {
+        var rules = await lazy.Value.WaitAsync(cancellationToken).ConfigureAwait(false);
+        if (generation == Volatile.Read(ref _authorizationCacheGeneration))
+        {
+            _namespaceRules.TryAdd(@namespace, rules);
+        }
+
+        return rules;
+    }
+
+    private async Task<NamespaceRuleSet> LoadNamespaceRulesAsync(string @namespace)
+    {
+        using var activity = StartClusterActivity(nameof(LoadNamespaceRulesAsync));
+        activity?.SetTag("kubernetes.namespace", @namespace);
+
+        var generation = Volatile.Read(ref _authorizationCacheGeneration);
+
+        try
+        {
+            var client = Client;
+            if (client is null)
+            {
+                return IncompleteNamespaceRules;
+            }
+
+            var review = new V1SelfSubjectRulesReview
+            {
+                ApiVersion = V1SelfSubjectRulesReview.KubeGroup + "/" + V1SelfSubjectRulesReview.KubeApiVersion,
+                Kind = V1SelfSubjectRulesReview.KubeKind,
+                Spec = new V1SelfSubjectRulesReviewSpec
+                {
+                    NamespaceProperty = @namespace,
+                },
+            };
+
+            var response = await client.AuthorizationV1
+                .CreateSelfSubjectRulesReviewAsync(review)
+                .ConfigureAwait(false);
+            var status = response.Status;
+            var isComplete = status is not null
+                && status.Incomplete != true
+                && string.IsNullOrEmpty(status.EvaluationError);
+            var result = new NamespaceRuleSet(
+                status?.ResourceRules?.ToArray() ?? [],
+                isComplete);
+
+            if (generation == Volatile.Read(ref _authorizationCacheGeneration))
+            {
+                _namespaceRules.TryAdd(@namespace, result);
+            }
+
+            return result;
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "Unable to load Kubernetes authorization rules for namespace {Namespace}", @namespace);
+            return IncompleteNamespaceRules;
+        }
+    }
+
+    private static bool RuleSetAllows(
+        NamespaceRuleSet ruleSet,
+        GroupApiVersionKind kind,
+        string verbString,
+        string? subresource)
+    {
+        foreach (var rule in ruleSet.ResourceRules)
+        {
+            if (RuleAllows(rule, kind, verbString, subresource))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool RuleAllows(
+        V1ResourceRule rule,
+        GroupApiVersionKind kind,
+        string verbString,
+        string? subresource)
+    {
+        if (!RuleValueMatches(rule.Verbs, verbString)
+            || !RuleValueMatches(rule.ApiGroups, kind.Group ?? string.Empty))
+        {
+            return false;
+        }
+
+        var requestedResource = string.IsNullOrEmpty(subresource)
+            ? kind.PluralName
+            : kind.PluralName + "/" + subresource;
+        if (!ResourceMatches(rule.Resources, requestedResource))
+        {
+            return false;
+        }
+
+        if (rule.ResourceNames is { Count: > 0 })
+        {
+            // resourceNames cannot be evaluated without a concrete object name, and Kubernetes
+            // ignores them for list, watch, create, and deletecollection.
+            return false;
+        }
+
+        return true;
+    }
+
+    private static bool RuleValueMatches(IList<string>? values, string value)
+    {
+        if (values is null)
+        {
+            return false;
+        }
+
+        foreach (var item in values)
+        {
+            if (item == "*" || string.Equals(item, value, StringComparison.Ordinal))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool ResourceMatches(IList<string>? ruleResources, string requestedResource)
+    {
+        if (ruleResources is null)
+        {
+            return false;
+        }
+
+        foreach (var ruleResource in ruleResources)
+        {
+            if (ruleResource == "*"
+                || string.Equals(ruleResource, requestedResource, StringComparison.Ordinal)
+                || ResourceSegmentsMatch(ruleResource, requestedResource))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool ResourceSegmentsMatch(string ruleResource, string requestedResource)
+    {
+        var ruleSeparator = ruleResource.IndexOf('/');
+        var requestedSeparator = requestedResource.IndexOf('/');
+
+        if (ruleSeparator < 0 || requestedSeparator < 0)
+        {
+            return false;
+        }
+
+        if (!string.Equals(ruleResource[..ruleSeparator], requestedResource[..requestedSeparator], StringComparison.Ordinal)
+            && ruleResource[..ruleSeparator] != "*")
+        {
+            return false;
+        }
+
+        return ruleResource[(ruleSeparator + 1)..] == "*"
+            || string.Equals(ruleResource[(ruleSeparator + 1)..], requestedResource[(requestedSeparator + 1)..], StringComparison.Ordinal);
     }
 
     public bool CanI(GroupApiVersionKind kind, Verb verb, string? @namespace = null, string? subresource = null)
@@ -115,7 +357,15 @@ public partial class Cluster
             return true;
         }
 
-        return _permissionIndex.TryGetValue(BuildReviewKey(kind, verbString, @namespace, subresource), out var allowed) && allowed;
+        if (_permissionIndex.TryGetValue(BuildReviewKey(kind, verbString, @namespace, subresource), out var allowed))
+        {
+            return allowed;
+        }
+
+        return !string.IsNullOrEmpty(@namespace)
+            && _namespaceRules.TryGetValue(@namespace, out var namespaceRules)
+            && namespaceRules.IsComplete
+            && RuleSetAllows(namespaceRules, kind, verbString, subresource);
     }
 
     private IReadOnlyCollection<string> GetKnownNamespaceNames()
@@ -152,7 +402,16 @@ public partial class Cluster
 
         await Parallel.ForEachAsync(GetKnownNamespaceNames(),
             new ParallelOptions { MaxDegreeOfParallelism = MaximumConcurrentNamespaceAuthorizationReviews },
-            async (namespaceName, _) => await BuildPermissionAsync(kind, verb, namespaceName, subresource).ConfigureAwait(false)).ConfigureAwait(false);
+            async (namespaceName, cancellationToken) =>
+            {
+                var rules = await GetNamespaceRulesAsync(namespaceName, cancellationToken).ConfigureAwait(false);
+                if (!rules.IsComplete)
+                {
+                    // Incomplete rule reviews cannot answer synchronously, so keep the exact
+                    // resource/verb decision available in the permission index.
+                    await BuildPermissionAsync(kind, verb, namespaceName, subresource).ConfigureAwait(false);
+                }
+            }).ConfigureAwait(false);
     }
 
     public bool CanI<T>(Verb verb, string? @namespace = null, string? subresource = null) where T : class, IKubernetesObject<V1ObjectMeta>, new()
@@ -170,13 +429,25 @@ public partial class Cluster
         var kind = GroupApiVersionKind.From<T>();
         SetAuthorizationActivityTags(activity, kind, verb, @namespace, subresource);
 
-        return await BuildPermissionAsync(kind, verb, @namespace, subresource).ConfigureAwait(false);
+        return await UpdateCanI(kind, verb, @namespace, subresource).ConfigureAwait(false);
     }
 
     public async Task<bool> UpdateCanI(GroupApiVersionKind kind, Verb verb, string? @namespace = null, string? subresource = null)
     {
         using var activity = StartClusterActivity(nameof(UpdateCanI));
         SetAuthorizationActivityTags(activity, kind, verb, @namespace, subresource);
+
+        if (string.IsNullOrEmpty(@namespace))
+        {
+            return await BuildPermissionAsync(kind, verb, subresource: subresource).ConfigureAwait(false);
+        }
+
+        var rules = await GetNamespaceRulesAsync(@namespace, CancellationToken.None).ConfigureAwait(false);
+        if (rules.IsComplete)
+        {
+            return RuleSetAllows(rules, kind, verb.ToString().ToLowerInvariant(), subresource);
+        }
+
         return await BuildPermissionAsync(kind, verb, @namespace, subresource).ConfigureAwait(false);
     }
 

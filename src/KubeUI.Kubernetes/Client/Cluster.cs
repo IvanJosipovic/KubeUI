@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Net;
 using System.Reactive.Linq;
 using System.Text;
 using DynamicData;
@@ -171,7 +172,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
                         })
                         .ConfigureTelemetry(_loggerFactory);
 
-                        var handler = new OperationKeyHandler()
+                        var handler = new OperationKeyHandler(InvalidatePermissionsAfterForbiddenResponse)
                         {
                             InnerHandler = new ResilienceHandler(pipe.Build())
                         };
@@ -1226,6 +1227,17 @@ public partial class ContainerClass<T> : ObservableObject, IClearableResourceCon
 
 public sealed class OperationKeyHandler : DelegatingHandler
 {
+    private readonly Action? _onForbidden;
+
+    public OperationKeyHandler()
+    {
+    }
+
+    public OperationKeyHandler(Action onForbidden)
+    {
+        _onForbidden = onForbidden ?? throw new ArgumentNullException(nameof(onForbidden));
+    }
+
     protected override async Task<HttpResponseMessage> SendAsync(
         HttpRequestMessage request,
         CancellationToken cancellationToken)
@@ -1237,7 +1249,14 @@ public sealed class OperationKeyHandler : DelegatingHandler
 
         try
         {
-            return await base.SendAsync(request, cancellationToken);
+            var response = await base.SendAsync(request, cancellationToken);
+            if (response.StatusCode == HttpStatusCode.Forbidden
+                && request.RequestUri?.AbsolutePath.Contains("selfsubject", StringComparison.Ordinal) != true)
+            {
+                _onForbidden?.Invoke();
+            }
+
+            return response;
         }
         finally
         {

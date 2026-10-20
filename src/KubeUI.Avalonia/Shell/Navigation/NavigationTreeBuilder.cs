@@ -86,7 +86,12 @@ internal sealed class NavigationTreeBuilder
                 continue;
             }
 
-            AddResource(node, cluster, resource, resource.Navigation, canonical: true);
+            AddResource(
+                node,
+                cluster,
+                resource,
+                resource.Navigation,
+                LinkId(cluster, $"resource-{ResourceKey(resource.Kind)}"));
 
             if (resource.IsCustomResource())
             {
@@ -95,7 +100,12 @@ internal sealed class NavigationTreeBuilder
                     NavigationTreeEditor.ConstructCustomResourceGroups(resource.Kind.Group));
                 if (!SameLocation(customResources, resource.Navigation))
                 {
-                    AddResource(node, cluster, resource, customResources, canonical: false);
+                    AddResource(
+                        node,
+                        cluster,
+                        resource,
+                        customResources,
+                        AliasId(cluster, "crd", resource, customResources));
                 }
             }
 
@@ -103,7 +113,12 @@ internal sealed class NavigationTreeBuilder
             {
                 if (provider.Place(resource) is { } alias && !SameLocation(alias, resource.Navigation))
                 {
-                    AddResource(node, cluster, resource, alias, canonical: false);
+                    AddResource(
+                        node,
+                        cluster,
+                        resource,
+                        alias,
+                        AliasId(cluster, "provider", resource, alias));
                 }
             }
         }
@@ -114,11 +129,8 @@ internal sealed class NavigationTreeBuilder
         ClusterWorkspace cluster,
         IResourceConfig resource,
         NavigationPlacement placement,
-        bool canonical)
+        string id)
     {
-        var id = canonical
-            ? LinkId(cluster, resource.Kind.ToString()!)
-            : $"{cluster.Runtime.Name}-section-resource-{placement.SectionId ?? "root"}-{resource.Kind.Group}/{resource.Kind.Kind}";
         var target = ResolveTarget(node, cluster, placement);
         _desiredIds.Add(id);
         Upsert(
@@ -316,6 +328,16 @@ internal sealed class NavigationTreeBuilder
 
     private static string LinkId(ClusterWorkspace cluster, string key)
         => $"{cluster.Runtime.Name}-{key}";
+
+    private static string ResourceKey(GroupApiVersionKind kind)
+        => $"{(string.IsNullOrEmpty(kind.Group) ? "core" : kind.Group)}/{kind.Kind}";
+
+    private static string AliasId(
+        ClusterWorkspace cluster,
+        string slot,
+        IResourceConfig resource,
+        NavigationPlacement placement)
+        => $"{cluster.Runtime.Name}-section-resource-{placement.SectionId ?? "root"}-{slot}-{ResourceKey(resource.Kind)}";
 
     private static bool CanListCustomResourceDefinitions(ClusterWorkspace cluster)
     {
