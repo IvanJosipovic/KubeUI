@@ -8,6 +8,9 @@
   - configuration changes add, update, or remove only the links whose ids are affected;
   - custom-resource-definition changes update the CRD branch and affected custom-resource links while unrelated links keep their instances;
   - cluster-name changes update navigation IDs in place.
+- Canonical resource-link ids use the resource group and kind, not the served API version, so CRD storage-version changes keep the same link instance and count stream.
+- Alias-link ids include the placement section, an alias slot (`crd` or `provider`), and the resource group and kind. Different alias sources in the same section cannot collide, and provider group-path moves keep the alias instance.
+- Subscribing an already-populated workspace performs one reconcile for the whole workspace; do not reconcile once per existing resource configuration.
 - Resource links require `PermissionsLoaded` and the configuration's resolved `CanListAndWatch` value. Namespace-specific permission fallback is resolved by the workspace/configuration layer; this view model does not independently inspect namespace permissions.
 - Typed kind behavior belongs on its `ResourceConfig<T>` subclass; CRD kind behavior, including canonical navigation placement, belongs on a matching `CustomResourceConfig` subclass. Navigation providers own sections, aliases, and feature documents only.
 - `INavigationSectionProvider` owns one top-level section: it declares the section (`NavigationSection`) and, per resource kind, zero or more alias placements (`Place(IResourceConfig)`) plus section-owned documents (`NavigationDocument`). `NavigationSectionCatalog` merges built-in sections with registered providers and rejects duplicate section or document ids.

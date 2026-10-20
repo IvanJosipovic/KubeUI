@@ -35,6 +35,15 @@ public sealed partial class ClusterSettingsViewModel : ViewModelBase, IInitializ
     public partial string DebugContainerImage { get; set; } = string.Empty;
 
     [RelayCommand]
+    private async Task RefreshPermissionsAsync()
+    {
+        if (Cluster is not null)
+        {
+            await Cluster.RefreshPermissionsAsync();
+        }
+    }
+
+    [RelayCommand]
     private void AddNamespace()
     {
         if (!string.IsNullOrEmpty(Namespace) && !ClusterSettings.Namespaces.Contains(Namespace))

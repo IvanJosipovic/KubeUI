@@ -1,7 +1,6 @@
 using System.Collections.Specialized;
 using System.Windows.Input;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
-using KubeUI.Avalonia.Resources;
 using KubeUI.Kubernetes;
 
 namespace KubeUI.Avalonia.Shell.Navigation;
@@ -12,7 +11,7 @@ internal sealed class NavigationClusterCatalogSynchronizer : IDisposable
     private readonly ObservableCollection<ClusterNavigationNode> _nodes;
     private readonly Action<ClusterWorkspace> _subscribe;
     private readonly Action<ClusterWorkspace> _unsubscribe;
-    private readonly Action<ClusterWorkspace, IResourceConfig> _applyResourceConfig;
+    private readonly Action<ClusterWorkspace> _reconcile;
     private readonly ICommand _toggleConnectionCommand;
     private readonly ICommand _openSettingsCommand;
     private readonly ILogger<NavigationClusterCatalogSynchronizer> _logger;
@@ -24,7 +23,7 @@ internal sealed class NavigationClusterCatalogSynchronizer : IDisposable
         ObservableCollection<ClusterNavigationNode> nodes,
         Action<ClusterWorkspace> subscribe,
         Action<ClusterWorkspace> unsubscribe,
-        Action<ClusterWorkspace, IResourceConfig> applyResourceConfig,
+        Action<ClusterWorkspace> reconcile,
         ICommand toggleConnectionCommand,
         ICommand openSettingsCommand,
         ILogger<NavigationClusterCatalogSynchronizer> logger)
@@ -33,7 +32,7 @@ internal sealed class NavigationClusterCatalogSynchronizer : IDisposable
         _nodes = nodes;
         _subscribe = subscribe;
         _unsubscribe = unsubscribe;
-        _applyResourceConfig = applyResourceConfig;
+        _reconcile = reconcile;
         _toggleConnectionCommand = toggleConnectionCommand;
         _openSettingsCommand = openSettingsCommand;
         _logger = logger;
@@ -147,11 +146,7 @@ internal sealed class NavigationClusterCatalogSynchronizer : IDisposable
 
         _nodesByWorkspace.Add(workspace, node);
         _nodes.Add(node);
-
-        foreach (var resourceConfig in workspace.GetResourceConfigs())
-        {
-            _applyResourceConfig(workspace, resourceConfig);
-        }
+        _reconcile(workspace);
 
         _logger.LogDebug("Navigation cluster node added: {ClusterName}; Items={Items}", workspace.Runtime.Name, node.NavigationItems.Count);
     }

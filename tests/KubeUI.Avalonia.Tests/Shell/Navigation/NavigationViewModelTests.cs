@@ -30,6 +30,9 @@ public class NavigationViewModelTests
     private static FakeCustomResourceConfig CreateConfiguredFakeCustomResourceConfig(Type resourceType, string name, bool canListAndWatch = true)
         => new(resourceType, name, canListAndWatch);
 
+    private static string GetCanonicalLinkId(ClusterWorkspace workspace, GroupApiVersionKind kind)
+        => $"{workspace.Runtime.Name}-resource-{(string.IsNullOrEmpty(kind.Group) ? "core" : kind.Group)}/{kind.Kind}";
+
     private NavigationViewModel CreateViewModel()
     {
         return Application.Current.GetTestServices().GetRequiredService<NavigationViewModel>();
@@ -432,7 +435,7 @@ public class NavigationViewModelTests
 
         await WaitForAsync(() => FindResourceLinks(node.NavigationItems, providerKind).Count == 2);
         var initialLinks = FindResourceLinks(node.NavigationItems, providerKind);
-        var canonical = initialLinks.Single(link => link.Id == $"{workspace.Runtime.Name}-{providerKind}");
+        var canonical = initialLinks.Single(link => link.Id == GetCanonicalLinkId(workspace, providerKind));
         var sectionAlias = initialLinks.Single(link => link.Id.Contains("-section-resource-crossplane-", StringComparison.Ordinal));
         var section = node.NavigationItems.Single(item => item.Id == $"{workspace.Runtime.Name}-section-crossplane");
         var group = section.NavigationItems.Single();
@@ -484,7 +487,7 @@ public class NavigationViewModelTests
         var node = vm.Clusters.Single(cluster => cluster.Cluster == workspace);
         await WaitForAsync(() => FindResourceLinks(node.NavigationItems, kind).Count == 2, timeoutMs: 10000);
         var links = FindResourceLinks(node.NavigationItems, kind);
-        var canonical = links.Single(link => link.Id == $"{workspace.Runtime.Name}-{kind}");
+        var canonical = links.Single(link => link.Id == GetCanonicalLinkId(workspace, kind));
         var alias = links.Single(link => link.Id.Contains("-section-resource-crossplane-", StringComparison.Ordinal));
         alias.OpenCommand.ShouldBe(canonical.OpenCommand);
         alias.OpenInNewTabCommand.ShouldBe(canonical.OpenInNewTabCommand);
@@ -2342,7 +2345,7 @@ public class NavigationViewModelTests
         var current = new NavigationLink
         {
             Cluster = workspace,
-            Id = $"{workspace.Runtime.Name}-{GroupApiVersionKind.From<Corev1Event>()}",
+            Id = GetCanonicalLinkId(workspace, GroupApiVersionKind.From<Corev1Event>()),
             Name = "Events",
             ResourceKind = GroupApiVersionKind.From<Corev1Event>(),
             Order = 1,
