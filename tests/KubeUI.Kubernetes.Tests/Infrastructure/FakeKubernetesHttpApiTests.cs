@@ -256,6 +256,34 @@ public sealed class FakeKubernetesHttpApiTests
     }
 
     [Fact]
+    public async Task NamespaceCollectionDoesNotIncludeResourcesFromNestedNamespaces()
+    {
+        using var api = new FakeKubernetesHttpApi();
+        api.Add(new V1ServiceAccount
+        {
+            ApiVersion = V1ServiceAccount.KubeApiVersion,
+            Kind = V1ServiceAccount.KubeKind,
+            Metadata = new V1ObjectMeta
+            {
+                Name = "nested-resource",
+                NamespaceProperty = "default",
+            },
+        });
+        using var httpClient = new HttpClient(api)
+        {
+            BaseAddress = new Uri("http://fake-kubernetes"),
+        };
+
+        var json = await httpClient.GetStringAsync(
+            "/api/v1/namespaces",
+            TestContext.Current.CancellationToken);
+        var namespaces = KubernetesJson.Deserialize<V1NamespaceList>(json);
+
+        namespaces.Items.ShouldContain(item => item.Name() == "default");
+        namespaces.Items.ShouldNotContain(item => item.Name() == "nested-resource");
+    }
+
+    [Fact]
     public async Task RbacResourcesAuthorizeConfiguredServiceAccount()
     {
         using var api = new FakeKubernetesHttpApi

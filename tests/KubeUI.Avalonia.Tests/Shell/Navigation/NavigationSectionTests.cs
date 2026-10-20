@@ -113,7 +113,7 @@ public sealed class NavigationSectionTests
         var gateway = network.NavigationItems.Single(item => item.Name == "Gateway");
         var canonical = gateway.NavigationItems.OfType<NavigationLink>()
             .Single(link => link.ResourceKind == resourceConfig.Kind);
-        canonical.Id.ShouldBe($"{workspace.Runtime.Name}-{resourceConfig.Kind}");
+        canonical.Id.ShouldBe($"{workspace.Runtime.Name}-resource-{resourceConfig.Kind.Group}/{resourceConfig.Kind.Kind}");
 
         var customResources = node.NavigationItems.Single(item => item.Id == $"{workspace.Runtime.Name}-section-custom-resources");
         var group = customResources.NavigationItems.Single(item => item.Name == "kubeui.com");
@@ -238,6 +238,75 @@ public sealed class NavigationSectionTests
         replacementAlias.IsExpanded.ShouldBeTrue();
     }
 
+    [AvaloniaFact]
+    public async Task canonical_identity_and_count_survive_resource_version_replacement()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync(connect: false);
+        await workspace.Connect();
+        workspace.AddResourceConfigForTest(new FakeResourceConfig(typeof(V1CustomResourceDefinition), "Definitions"));
+        var firstConfig = new FakeCustomResourceConfig(typeof(TestCrossplaneVersionedResourceV1), "Versioned Resources");
+        workspace.AddResourceConfigForTest(firstConfig);
+
+        using var node = new ClusterNavigationNode(workspace);
+        var builder = CreateBuilder(new NavigationSectionCatalog([new CrossplaneNavigationSectionProvider()]));
+
+        void Reconcile() => builder.Reconcile(node);
+
+        Reconcile();
+        var customResources = node.NavigationItems.Single(item => item.Id == $"{workspace.Runtime.Name}-section-custom-resources");
+        var canonical = FindResourceLink(customResources, firstConfig.Kind).ShouldNotBeNull();
+        var identity = canonical.Id;
+        var count = System.Reactive.Linq.Observable.Return(0);
+        canonical.Count = count;
+        canonical.IsExpanded = true;
+
+        var replacementConfig = new FakeCustomResourceConfig(typeof(TestCrossplaneVersionedResourceV2), "Versioned Resources");
+        workspace.AddResourceConfigForTest(replacementConfig);
+        Reconcile();
+
+        var replacementCanonical = FindResourceLink(customResources, replacementConfig.Kind).ShouldNotBeNull();
+        replacementCanonical.ShouldBeSameAs(canonical);
+        replacementCanonical.Id.ShouldBe(identity);
+        replacementCanonical.Id.ShouldBe(
+            $"{workspace.Runtime.Name}-resource-{replacementConfig.Kind.Group}/{replacementConfig.Kind.Kind}");
+        replacementCanonical.Count.ShouldBeSameAs(count);
+        replacementCanonical.IsExpanded.ShouldBeTrue();
+    }
+
+    [AvaloniaFact]
+    public async Task aliases_at_different_group_paths_do_not_collide()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync(connect: false);
+        await workspace.Connect();
+        workspace.AddResourceConfigForTest(new FakeResourceConfig(typeof(V1CustomResourceDefinition), "Definitions"));
+        var resourceConfig = new FakeCustomResourceConfig(typeof(TestCustomResourceAlpha), "Alpha Resources")
+        {
+            Navigation = NavigationPlacement.InSection(NavigationSections.WorkloadsId),
+        };
+        workspace.AddResourceConfigForTest(resourceConfig);
+
+        var provider = new TestNavigationSectionProvider(NavigationSections.CustomResources)
+        {
+            Placement = NavigationPlacement.InSection(
+                NavigationSections.CustomResourcesId,
+                [new NavigationGroup("provider-group", "Provider", 0, null)]),
+        };
+
+        using var node = new ClusterNavigationNode(workspace);
+        var builder = CreateBuilder(new NavigationSectionCatalog([provider]));
+
+        builder.Reconcile(node);
+
+        var customResources = node.NavigationItems.Single(item => item.Id == $"{workspace.Runtime.Name}-section-custom-resources");
+        var aliases = GetResourceLinks(customResources)
+            .Where(link => link.ResourceKind == resourceConfig.Kind)
+            .ToArray();
+        aliases.Length.ShouldBe(2);
+        aliases.Select(link => link.Id).Distinct(StringComparer.Ordinal).Count().ShouldBe(2);
+        aliases.ShouldContain(link => link.Id.Contains("-crd-", StringComparison.Ordinal));
+        aliases.ShouldContain(link => link.Id.Contains("-provider-", StringComparison.Ordinal));
+    }
+
     private static NavigationTreeBuilder CreateBuilder(NavigationSectionCatalog catalog) => new(
         catalog,
         Application.Current.GetTestServices().GetRequiredService<IResourceIconService>(),
@@ -310,9 +379,14 @@ internal sealed class TestNavigationSectionProvider : INavigationSectionProvider
     private IReadOnlyList<NavigationDocument> _documents = [];
 
     public TestNavigationSectionProvider(string id = "test-section", string name = "Test Section", int order = 100)
+        : this(new NavigationSection(id, name, order, null))
     {
-        Section = new NavigationSection(id, name, order, null);
-        Placement = NavigationPlacement.InSection(id);
+    }
+
+    public TestNavigationSectionProvider(NavigationSection section)
+    {
+        Section = section;
+        Placement = NavigationPlacement.InSection(section.Id);
     }
 
     public NavigationSection Section { get; }

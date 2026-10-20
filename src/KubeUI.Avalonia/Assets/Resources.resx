@@ -549,6 +549,18 @@
     <value>Remove</value>
     <comment/>
   </data>
+  <data name="ClusterSettingsView_PermissionsLabel" xml:space="preserve">
+    <value>Permissions</value>
+    <comment/>
+  </data>
+  <data name="ClusterSettingsView_RefreshPermissions" xml:space="preserve">
+    <value>Refresh Permissions</value>
+    <comment/>
+  </data>
+  <data name="ClusterSettingsView_RefreshPermissionsTooltip" xml:space="preserve">
+    <value>Discard cached authorization rules and re-evaluate resource access</value>
+    <comment/>
+  </data>
   <data name="ClusterSettingsView_DebugContainerImageLabel" xml:space="preserve">
     <value>Ephemeral Debug Image</value>
     <comment/>

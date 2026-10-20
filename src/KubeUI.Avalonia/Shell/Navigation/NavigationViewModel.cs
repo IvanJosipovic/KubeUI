@@ -77,7 +77,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
             Clusters,
             SubscribeCluster,
             UnsubscribeCluster,
-            (cluster, _) => Reconcile(cluster),
+            Reconcile,
             ToggleClusterConnectionCommand,
             OpenClusterSettingsCommand,
             _serviceProvider.GetRequiredService<ILogger<NavigationClusterCatalogSynchronizer>>());
