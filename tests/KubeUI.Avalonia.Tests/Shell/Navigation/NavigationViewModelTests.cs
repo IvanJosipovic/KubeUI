@@ -2034,10 +2034,7 @@ public class NavigationViewModelTests
         var workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
 
         await workspace.Connect();
-        await workspace.Runtime.AddOrUpdateResource(new V1Namespace
-        {
-            Metadata = new() { Name = "default" }
-        });
+        await workspace.Runtime.SeedResource<V1Namespace>(true);
 
         await TestApplicationExtensions.WaitForUiAsync();
 
@@ -2065,10 +2062,7 @@ public class NavigationViewModelTests
         var workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
 
         await workspace.Connect();
-        await workspace.Runtime.AddOrUpdateResource(new V1Namespace
-        {
-            Metadata = new() { Name = "default" }
-        });
+        await workspace.Runtime.SeedResource<V1Namespace>(true);
 
         await TestApplicationExtensions.WaitForUiAsync();
 
@@ -2090,7 +2084,11 @@ public class NavigationViewModelTests
             {
                 Name = "pod-one",
                 NamespaceProperty = "default"
-            }
+            },
+            Spec = new V1PodSpec
+            {
+                Containers = [new V1Container { Name = "app", Image = "busybox:1.36" }],
+            },
         });
 
         await vm.TreeViewSelectionChangedAsync(podsLink);
@@ -2105,7 +2103,7 @@ public class NavigationViewModelTests
         var services = Application.Current.GetTestServices();
         var workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         await workspace.Connect();
-        await workspace.Runtime.AddOrUpdateResource(new V1Namespace { Metadata = new() { Name = "default" } });
+        await workspace.Runtime.SeedResource<V1Namespace>(true);
 
         var navigation = CreateViewModel();
         navigation.ClusterCatalog.Clusters.Add(workspace);
@@ -2437,10 +2435,7 @@ public class NavigationViewModelTests
         var workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
 
         await workspace.Connect();
-        await workspace.Runtime.AddOrUpdateResource(new V1Namespace
-        {
-            Metadata = new() { Name = "default" }
-        });
+        await workspace.Runtime.SeedResource<V1Namespace>(true);
 
         await TestApplicationExtensions.WaitForUiAsync();
 
@@ -2473,10 +2468,7 @@ public class NavigationViewModelTests
         var workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         await workspace.Connect();
 
-        await workspace.Runtime.AddOrUpdateResource(new V1Namespace
-        {
-            Metadata = new() { Name = "default" }
-        });
+        await workspace.Runtime.SeedResource<V1Namespace>(true);
 
         await TestApplicationExtensions.WaitForUiAsync();
 

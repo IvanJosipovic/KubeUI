@@ -11,6 +11,7 @@
 - Use that namespace preparation from both workspace initialization and namespaced resource seeding.
 - If the cluster cannot list/watch a namespaced resource globally, the runtime should create informers for every known namespace where that resource has both list and watch access.
 - Informer creation for namespaced resources remains in the runtime and uses the namespaces currently known to the workspace/runtime.
+- Namespaced seeding must wait for API discovery when the resource scope is not known yet; never treat an incomplete discovery list as a cluster-scoped resource and return with zero informers.
 - Workspace connect/init should refresh resource permissions before any UI command or navigation logic depends on cached `CanI(...)` results.
 - Authorization uses one `SelfSubjectRulesReview` per namespace and evaluates cached rules locally. Cluster-scope checks and incomplete, failed, or erroring rules reviews fall back to `SelfSubjectAccessReview`.
 - Permission invalidation is trigger-only: connect, namespace-set changes, optional RBAC list/watch events, manual refresh from cluster settings, and scoped `403 Forbidden` responses. Do not add polling, periodic refresh timers, or window-activation refreshes.
