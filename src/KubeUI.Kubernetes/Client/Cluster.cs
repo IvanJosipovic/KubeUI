@@ -28,6 +28,8 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
 
     private KubernetesOpenApiSchemaLoader _openApiSchemaLoader;
     private KubernetesApiDiscoveryClient? _discoveryClient;
+    private readonly Lock _discoveryRefreshGate = new();
+    private Task? _discoveryRefreshTask;
 
     private IClusterSettingsStore _settings;
 
@@ -273,7 +275,12 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
             Client = null;
             Connected = false;
             _openApiSchemaLoader.Reset();
-            _discoveryClient = null;
+            lock (_discoveryRefreshGate)
+            {
+                _discoveryClient = null;
+                _discoveryRefreshTask = null;
+            }
+
             Status = ClusterStatus.None;
             LastError = null;
             ResetAuthorizationIndex();
@@ -452,7 +459,15 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
         {
             if (!IsResourceNamespaced<T>())
             {
-                return;
+                if (!TryFindDiscoveryResource(kind))
+                {
+                    await RefreshApiGroupDiscoveryListAsync().WaitAsync(informerCancellationToken).ConfigureAwait(false);
+                }
+
+                if (!IsResourceNamespaced<T>())
+                {
+                    return;
+                }
             }
 
             foreach (var item in GetResourceList<V1Namespace>())
@@ -512,7 +527,21 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
         });
     }
 
-    private async Task RefreshApiGroupDiscoveryListAsync()
+    private Task RefreshApiGroupDiscoveryListAsync()
+    {
+        lock (_discoveryRefreshGate)
+        {
+            if (_discoveryRefreshTask is { IsCompleted: false })
+            {
+                return _discoveryRefreshTask;
+            }
+
+            _discoveryRefreshTask = RefreshApiGroupDiscoveryListCoreAsync();
+            return _discoveryRefreshTask;
+        }
+    }
+
+    private async Task RefreshApiGroupDiscoveryListCoreAsync()
     {
         try
         {
@@ -862,6 +891,17 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
                     dryRun: dryRun);
             }
         }
+    }
+
+    private bool TryFindDiscoveryResource(GroupApiVersionKind kind)
+    {
+        if (_discoveryClient is null)
+        {
+            return false;
+        }
+
+        return GetAPIGroupDiscoveryListItem(kind, true) is not null
+            || GetAPIGroupDiscoveryListItem(kind) is not null;
     }
 
     public bool IsResourceNamespaced(GroupApiVersionKind kind)

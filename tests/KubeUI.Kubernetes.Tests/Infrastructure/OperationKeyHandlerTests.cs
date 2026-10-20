@@ -9,6 +9,7 @@ public sealed class OperationKeyHandlerTests
     public async Task forbidden_resource_response_invokes_permission_invalidation()
     {
         using var api = new FakeKubernetesHttpApi();
+        api.Register<k8s.Models.V1Pod>();
         api.SetPermission("pods", "list", false, "default");
         var invalidations = 0;
         using var handler = new OperationKeyHandler(() => invalidations++)
@@ -63,6 +64,7 @@ public sealed class OperationKeyHandlerTests
     public async Task successful_resource_response_does_not_invoke_permission_invalidation()
     {
         using var api = new FakeKubernetesHttpApi();
+        api.Register<k8s.Models.V1Pod>();
         var invalidations = 0;
         using var handler = new OperationKeyHandler(() => invalidations++)
         {

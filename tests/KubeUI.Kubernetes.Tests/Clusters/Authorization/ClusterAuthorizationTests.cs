@@ -92,6 +92,10 @@ public sealed class ClusterAuthorizationTests
             TestContext.Current.CancellationToken);
         var cluster = harness.Cluster;
         await cluster.Connect();
+        await TestWait.UntilAsync(
+            () => cluster.IsResourceNamespaced<V1Pod>() && cluster.IsResourceNamespaced<V1Deployment>(),
+            TimeSpan.FromSeconds(10),
+            cancellationToken: TestContext.Current.CancellationToken);
 
         await cluster.Permissions.UpdatePermissionsAllNamespaceAsync<V1Pod>(Verb.List);
         await cluster.Permissions.UpdatePermissionsAllNamespaceAsync<V1Pod>(Verb.Watch);
@@ -134,6 +138,10 @@ public sealed class ClusterAuthorizationTests
             TestContext.Current.CancellationToken);
         var cluster = harness.Cluster;
         await cluster.Connect();
+        await TestWait.UntilAsync(
+            () => cluster.IsResourceNamespaced<V1Secret>(),
+            TimeSpan.FromSeconds(10),
+            cancellationToken: TestContext.Current.CancellationToken);
 
         await cluster.Permissions.UpdatePermissionsAllNamespaceAsync<V1Secret>(Verb.List);
 
