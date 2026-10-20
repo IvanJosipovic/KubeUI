@@ -18,17 +18,31 @@ public sealed class PodLogsLauncherTests
     [AvaloniaFact]
     public async Task Deployment_launch_seeds_related_resources_and_streams_pod_logs()
     {
+        Dictionary<string, string> labels = new() { ["app"] = "api" };
         V1Deployment deployment = new()
         {
+            ApiVersion = V1Deployment.KubeApiVersion,
+            Kind = V1Deployment.KubeKind,
             Metadata = new V1ObjectMeta
             {
                 Name = "api",
                 NamespaceProperty = "default",
                 Uid = "deployment-uid",
             },
+            Spec = new V1DeploymentSpec
+            {
+                Selector = new V1LabelSelector { MatchLabels = labels },
+                Template = new V1PodTemplateSpec
+                {
+                    Metadata = new V1ObjectMeta { Labels = labels },
+                    Spec = new V1PodSpec { Containers = [new V1Container { Name = "app", Image = "busybox:1.36" }] },
+                },
+            },
         };
         V1ReplicaSet replicaSet = new()
         {
+            ApiVersion = V1ReplicaSet.KubeApiVersion,
+            Kind = V1ReplicaSet.KubeKind,
             Metadata = new V1ObjectMeta
             {
                 Name = "api-rs",
@@ -46,6 +60,15 @@ public sealed class PodLogsLauncherTests
                     },
                 ],
             },
+            Spec = new V1ReplicaSetSpec
+            {
+                Selector = new V1LabelSelector { MatchLabels = labels },
+                Template = new V1PodTemplateSpec
+                {
+                    Metadata = new V1ObjectMeta { Labels = labels },
+                    Spec = new V1PodSpec { Containers = [new V1Container { Name = "app", Image = "busybox:1.36" }] },
+                },
+            },
         };
         var pod = CreatePod("api-pod");
         pod.Metadata!.Uid = "pod-uid";
@@ -60,6 +83,7 @@ public sealed class PodLogsLauncherTests
                 Controller = true,
             },
         ];
+        pod.Metadata.Labels = labels;
         pod.Status = new V1PodStatus
         {
             Phase = "Running",
@@ -75,10 +99,11 @@ public sealed class PodLogsLauncherTests
 
         using var workspace = await Application.Current.CreateClusterAsync(config =>
         {
+            config.InitialResources = [deployment, replicaSet, pod];
             config.HttpHandlerFactory = () => [new DeploymentPodLogHandler(replicaSet, pod)];
         });
         await workspace.Runtime.SeedResource<V1Deployment>(true);
-        await workspace.Runtime.AddOrUpdateResource(deployment);
+        deployment = workspace.Runtime.GetResource<V1Deployment>("default", "api").ShouldNotBeNull();
         workspace.Runtime.Objects.ContainsKey(GroupApiVersionKind.From<V1ReplicaSet>()).ShouldBeFalse();
         workspace.Runtime.Objects.ContainsKey(GroupApiVersionKind.From<V1Pod>()).ShouldBeFalse();
 
@@ -262,8 +287,10 @@ public sealed class PodLogsLauncherTests
     {
         return new V1Pod
         {
+            ApiVersion = V1Pod.KubeApiVersion,
+            Kind = V1Pod.KubeKind,
             Metadata = new V1ObjectMeta { Name = name, NamespaceProperty = "default" },
-            Spec = new V1PodSpec { Containers = [new V1Container { Name = "app" }] },
+            Spec = new V1PodSpec { Containers = [new V1Container { Name = "app", Image = "busybox:1.36" }] },
         };
     }
 

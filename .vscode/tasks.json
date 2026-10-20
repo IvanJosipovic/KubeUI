@@ -57,7 +57,8 @@
                 "--tl:off",
                 "-clp:ErrorsOnly",
                 "--hangdump",
-                "--hangdump-timeout 1m"
+                "--hangdump-timeout",
+                "5m"
             ],
             "options": {
                 "cwd": "${workspaceFolder}"

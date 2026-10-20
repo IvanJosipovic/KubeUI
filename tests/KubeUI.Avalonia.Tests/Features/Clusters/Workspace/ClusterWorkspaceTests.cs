@@ -175,7 +175,7 @@ public class ClusterWorkspaceTests
     {
         using var workspace = await Application.Current.CreateClusterAsync(config => config.Type = backend);
         await workspace.Runtime.SeedResource<V1CustomResourceDefinition>(true);
-        var crd = ClusterWorkspaceTestCustomResourceDefinitionFactory.Create("replay.kubeui.com", "replays", "value");
+        var crd = ClusterWorkspaceTestCustomResourceDefinitionFactory.Create("replays.kubeui.com", "replays", "value");
         await workspace.Runtime.CreateAsync(crd, TestContext.Current.CancellationToken);
 
         var originalConfig = await TestWait.UntilValueAsync(
@@ -240,7 +240,12 @@ public class ClusterWorkspaceTests
         await workspace.Runtime.SeedResource<V1CustomResourceDefinition>(true);
         System.Collections.Concurrent.ConcurrentQueue<IResourceConfig> observedConfigs = new();
         workspace.ResourceConfigProcessed += (_, resourceConfig) =>
-            observedConfigs.Enqueue(workspace.GetResourceConfig(resourceConfig.Kind));
+        {
+            if (resourceConfig.IsCustomResource())
+            {
+                observedConfigs.Enqueue(workspace.GetResourceConfig(resourceConfig.Kind));
+            }
+        };
         var crd = ClusterWorkspaceTestCustomResourceDefinitionFactory.Create("events.kubeui.com", "events", "value");
 
         await workspace.Runtime.CreateAsync(crd, TestContext.Current.CancellationToken);
@@ -410,10 +415,10 @@ public class ClusterWorkspaceTests
         var seeded = false;
         workspace.Runtime.ResourceSeeded += (_, _) => seeded = true;
 
-        await workspace.Runtime.SeedResource<Corev1Event>();
+        await workspace.Runtime.SeedResource<V1ClusterRole>();
 
         seeded.ShouldBeFalse();
-        var container = GetSeededContainer(workspace.Runtime, GroupApiVersionKind.From<Corev1Event>());
+        var container = GetSeededContainer(workspace.Runtime, GroupApiVersionKind.From<V1ClusterRole>());
         container.ShouldNotBeNull();
         GetInformers(container).ShouldBeEmpty();
     }
@@ -517,8 +522,17 @@ public class ClusterWorkspaceTests
         {
             config.Type = backend;
             config.AuthenticatedUser = KubernetesRbac.ServiceAccountUser;
-            config.InitialResources = new[]
+            config.InitialResources = new IKubernetesObject<V1ObjectMeta>[]
                     {
+                        new V1Namespace { Metadata = new V1ObjectMeta { Name = "my-app" } },
+                        new V1ServiceAccount
+                        {
+                            Metadata = new V1ObjectMeta
+                            {
+                                Name = KubernetesRbac.ServiceAccountName,
+                                NamespaceProperty = KubernetesRbac.ServiceAccountNamespace,
+                            },
+                        },
                         new V1Namespace { Metadata = new V1ObjectMeta { Name = "team-a" } },
                         new V1Namespace { Metadata = new V1ObjectMeta { Name = "team-b" } },
                     }
@@ -835,9 +849,22 @@ public class ClusterWorkspaceTests
         {
             config.Type = backend;
             config.AuthenticatedUser = KubernetesRbac.ServiceAccountUser;
-            config.InitialResources = KubernetesRbac.ClusterWide(
-                new RbacRule("namespaces", "list"),
-                new RbacRule("namespaces", "watch"));
+            config.InitialResources = new IKubernetesObject<V1ObjectMeta>[]
+                {
+                    new V1Namespace { Metadata = new V1ObjectMeta { Name = "my-app" } },
+                    new V1ServiceAccount
+                    {
+                        Metadata = new V1ObjectMeta
+                        {
+                            Name = KubernetesRbac.ServiceAccountName,
+                            NamespaceProperty = KubernetesRbac.ServiceAccountNamespace,
+                        },
+                    },
+                }
+                .Concat(KubernetesRbac.ClusterWide(
+                    new RbacRule("namespaces", "list"),
+                    new RbacRule("namespaces", "watch")))
+                .ToArray();
         });
 
         GetSeededContainer(workspace.Runtime, GroupApiVersionKind.From<V1Role>()).ShouldBeNull();

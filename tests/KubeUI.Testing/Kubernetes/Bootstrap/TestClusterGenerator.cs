@@ -148,6 +148,28 @@ public sealed class TestClusterGenerator
             AuthenticatedUser = config.AuthenticatedUser,
         };
 
+        RegisterKubernetesModels(api, _services.GetRequiredService<KubernetesModelCatalog>());
+        api.Register<V1ConfigMap>();
+        api.Register<V1Pod>();
+        api.Register<V1CustomResourceDefinition>();
+        api.Register<V1Service>();
+        api.Register<V1ServiceAccount>();
+        api.Register<V1PersistentVolume>();
+        api.Register<V1PersistentVolumeClaim>();
+        api.Register<V1StorageClass>();
+        api.Register<V1Deployment>();
+        api.Register<V1ReplicaSet>();
+        api.Register<V1StatefulSet>();
+        api.Register<V1DaemonSet>();
+        api.Register<V1Job>();
+        api.Register<V1CronJob>();
+        api.Register<V1EndpointSlice>();
+        api.Register<Corev1Event>();
+        api.Register<V1Role>();
+        api.Register<V1RoleBinding>();
+        api.Register<V1ClusterRole>();
+        api.Register<V1ClusterRoleBinding>();
+
         foreach (IKubernetesObject resource in config.InitialResources)
         {
             api.Add(resource);
@@ -181,6 +203,45 @@ public sealed class TestClusterGenerator
         };
         return cluster;
     }
+
+    private static void RegisterKubernetesModels(FakeKubernetesHttpApi api, KubernetesModelCatalog catalog)
+    {
+        foreach (var yamlKey in catalog.GetYamlTypeMap().Keys)
+        {
+            var segments = yamlKey.Split('/');
+            var group = segments.Length == 3 ? segments[0] : string.Empty;
+            var version = segments[^2];
+            var kind = segments[^1];
+            if (IsBuiltInApiGroup(group)
+                && catalog.TryGetResourceKind(group, version, kind, out var resourceKind))
+            {
+                api.Register(resourceKind);
+            }
+        }
+    }
+
+    private static bool IsBuiltInApiGroup(string group)
+        => group is ""
+            or "admissionregistration.k8s.io"
+            or "apiextensions.k8s.io"
+            or "apiregistration.k8s.io"
+            or "apps"
+            or "authentication.k8s.io"
+            or "authorization.k8s.io"
+            or "autoscaling"
+            or "batch"
+            or "certificates.k8s.io"
+            or "coordination.k8s.io"
+            or "discovery.k8s.io"
+            or "events.k8s.io"
+            or "flowcontrol.apiserver.k8s.io"
+            or "networking.k8s.io"
+            or "node.k8s.io"
+            or "policy"
+            or "rbac.authorization.k8s.io"
+            or "resource.k8s.io"
+            or "scheduling.k8s.io"
+            or "storage.k8s.io";
 
     [System.Diagnostics.CodeAnalysis.SuppressMessage(
         "Reliability",

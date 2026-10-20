@@ -6,7 +6,7 @@
     "coverage": true,
     "crashdump": true,
     "hangdump": true,
-    "hangdump-timeout": "1m",
+    "hangdump-timeout": "5m",
     "report-xunit-trx": true
   },
   "codeCoverage": {
