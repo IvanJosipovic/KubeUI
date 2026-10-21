@@ -273,7 +273,8 @@ public sealed class MRDiffDetectionViewModelTests
         streamClient.OpenCount.ShouldBe(0);
 
         viewModel.ClearCommand.Execute(null);
-        await WaitForAsync(() => streamClient.OpenCount >= 2 && GetRows(viewModel).Length == 0);
+        await WaitForAsync(() => streamClient.OpenCount >= 1);
+        await WaitForAsync(() => GetRows(viewModel).Length == 0);
         providerCache.Remove(provider);
         await WaitForAsync(() => viewModel.Status == Assets.Resources.MRDiffDetectionView_SelectProvider);
         viewModel.SelectedProvider.ShouldBeNull();
@@ -616,7 +617,69 @@ public sealed class MRDiffDetectionViewModelTests
         {
             Interlocked.Increment(ref _openCount);
             var content = Interlocked.Exchange(ref _contentServed, 1) == 0 ? line + "\n" : string.Empty;
-            return Task.FromResult<Stream>(new MemoryStream(Encoding.UTF8.GetBytes(content)));
+            Stream stream = options.Follow
+                ? new BlockingTailStream(Encoding.UTF8.GetBytes(content), cancellationToken)
+                : new MemoryStream(Encoding.UTF8.GetBytes(content));
+            return Task.FromResult(stream);
+        }
+    }
+
+    private sealed class BlockingTailStream(byte[] content, CancellationToken cancellationToken) : Stream
+    {
+        private readonly MemoryStream _content = new(content);
+        private readonly TaskCompletionSource _tailWait = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public override bool CanRead => true;
+        public override bool CanSeek => false;
+        public override bool CanWrite => false;
+        public override long Length => throw new NotSupportedException();
+        public override long Position
+        {
+            get => throw new NotSupportedException();
+            set => throw new NotSupportedException();
+        }
+
+        public override void Flush() { }
+
+        public override int Read(byte[] buffer, int offset, int count)
+            => _content.Read(buffer, offset, count);
+
+        public override async ValueTask<int> ReadAsync(
+            Memory<byte> buffer,
+            CancellationToken token = default)
+        {
+            var bytesRead = await _content.ReadAsync(buffer, token);
+            if (bytesRead > 0)
+            {
+                return bytesRead;
+            }
+
+            using var linkedCancellation = CancellationTokenSource.CreateLinkedTokenSource(
+                cancellationToken,
+                token);
+            await _tailWait.Task.WaitAsync(linkedCancellation.Token);
+            return 0;
+        }
+
+        public override Task<int> ReadAsync(
+            byte[] buffer,
+            int offset,
+            int count,
+            CancellationToken token)
+            => ReadAsync(buffer.AsMemory(offset, count), token).AsTask();
+
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+        public override void SetLength(long value) => throw new NotSupportedException();
+        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                _content.Dispose();
+            }
+
+            base.Dispose(disposing);
         }
     }
 }

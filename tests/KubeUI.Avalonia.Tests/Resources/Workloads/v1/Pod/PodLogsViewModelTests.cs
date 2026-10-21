@@ -3101,6 +3101,11 @@ public sealed class PodLogsViewModelTests
         ConfigureRunningContainer(siblingPod, "app", "echo sibling line");
         await workspace.Runtime.AddOrUpdateResource(pod);
         await workspace.Runtime.AddOrUpdateResource(siblingPod);
+        await WaitForAsync(() =>
+            workspace.Runtime.GetResourceList<V1Deployment>().Any(item => item.Name() == "api")
+            && workspace.Runtime.GetResourceList<V1ReplicaSet>().Any(item => item.Name() == "api-rs")
+            && workspace.Runtime.GetResourceList<V1Pod>().Count(item =>
+                item.Name() is "api-pod" or "api-pod-sibling") == 2);
 
         var streamClient = new RecordingPodLogStreamClient();
         using var viewModel = CreateViewModel(
