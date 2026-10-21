@@ -11,8 +11,6 @@ internal sealed class ReferenceGrantConfig : CustomResourceConfig
         [new NavigationGroup("gateway", Assets.Resources.NavigationView_GatewayApi!, 0, null)]);
     public override string? ApiGroup => "gateway.networking.k8s.io";
 
-    public override string? ApiVersion => "v1beta1";
-
     public override string? KindName => "ReferenceGrant";
 
     protected override string Template => """

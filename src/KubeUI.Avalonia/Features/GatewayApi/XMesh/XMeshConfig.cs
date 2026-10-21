@@ -15,8 +15,6 @@ internal sealed class XMeshConfig : CustomResourceConfig
         ]);
     public override string? ApiGroup => "gateway.networking.x-k8s.io";
 
-    public override string? ApiVersion => "v1alpha1";
-
     public override string? KindName => "XMesh";
 
     protected override string Template => """

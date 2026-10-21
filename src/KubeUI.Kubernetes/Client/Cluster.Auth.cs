@@ -14,10 +14,7 @@ public partial class Cluster
 {
     private const int MaximumConcurrentNamespaceAuthorizationReviews = 8;
     private static readonly NamespaceRuleSet IncompleteNamespaceRules = new([], IsComplete: false);
-    private readonly ConcurrentDictionary<PermissionCacheKey, bool> _permissionIndex = new();
-    private readonly ConcurrentDictionary<string, NamespaceRuleSet> _namespaceRules = new(StringComparer.Ordinal);
-    private readonly ConcurrentDictionary<string, Lazy<Task<NamespaceRuleSet>>> _namespaceRuleLoads = new(StringComparer.Ordinal);
-    private int _authorizationCacheGeneration;
+    private AuthorizationCacheState _authorizationCache = new();
 
     /// <inheritdoc />
     public event Action? PermissionsInvalidated;
@@ -30,6 +27,19 @@ public partial class Cluster
         string? Subresource);
 
     private sealed record NamespaceRuleSet(IReadOnlyList<V1ResourceRule> ResourceRules, bool IsComplete);
+
+    /// <summary>
+    /// One generation of authorization caches. Invalidation replaces the whole state rather than
+    /// clearing dictionaries, so in-flight loads can only publish into the generation they started in.
+    /// </summary>
+    private sealed class AuthorizationCacheState
+    {
+        public ConcurrentDictionary<PermissionCacheKey, bool> PermissionIndex { get; } = new();
+
+        public ConcurrentDictionary<string, NamespaceRuleSet> NamespaceRules { get; } = new(StringComparer.Ordinal);
+
+        public ConcurrentDictionary<string, Lazy<Task<NamespaceRuleSet>>> NamespaceRuleLoads { get; } = new(StringComparer.Ordinal);
+    }
 
     private static PermissionCacheKey BuildReviewKey(
         GroupApiVersionKind kind,
@@ -57,18 +67,21 @@ public partial class Cluster
         ListNamespaces = CanI<V1Namespace>(Verb.List) && CanI<V1Namespace>(Verb.Watch);
     }
 
-    private void SetPermissionResult(GroupApiVersionKind kind, string verbString, string? @namespace, string? subresource, bool allowed)
+    private static void SetPermissionResult(
+        AuthorizationCacheState cache,
+        GroupApiVersionKind kind,
+        string verbString,
+        string? @namespace,
+        string? subresource,
+        bool allowed)
     {
         var key = BuildReviewKey(kind, verbString, @namespace, subresource);
-        _permissionIndex[key] = allowed;
+        cache.PermissionIndex[key] = allowed;
     }
 
     private void ResetAuthorizationIndex()
     {
-        Interlocked.Increment(ref _authorizationCacheGeneration);
-        _permissionIndex.Clear();
-        _namespaceRules.Clear();
-        _namespaceRuleLoads.Clear();
+        Interlocked.Exchange(ref _authorizationCache, new AuthorizationCacheState());
     }
 
     /// <inheritdoc />
@@ -81,18 +94,25 @@ public partial class Cluster
     /// <inheritdoc />
     public void InvalidateNamespacePermissions()
     {
-        Interlocked.Increment(ref _authorizationCacheGeneration);
-
-        foreach (var key in _permissionIndex.Keys)
+        while (true)
         {
-            if (!string.IsNullOrEmpty(key.Namespace))
+            var current = Volatile.Read(ref _authorizationCache);
+            var replacement = new AuthorizationCacheState();
+            foreach (var pair in current.PermissionIndex)
             {
-                _permissionIndex.TryRemove(key, out _);
+                if (string.IsNullOrEmpty(pair.Key.Namespace))
+                {
+                    replacement.PermissionIndex[pair.Key] = pair.Value;
+                }
+            }
+
+            if (ReferenceEquals(
+                    Interlocked.CompareExchange(ref _authorizationCache, replacement, current),
+                    current))
+            {
+                return;
             }
         }
-
-        _namespaceRules.Clear();
-        _namespaceRuleLoads.Clear();
     }
 
     private void InvalidatePermissionsAfterForbiddenResponse()
@@ -120,8 +140,9 @@ public partial class Cluster
         using var activity = StartClusterActivity(nameof(BuildPermissionAsync));
 
         var verbString = verb.ToString().ToLowerInvariant();
+        var cache = Volatile.Read(ref _authorizationCache);
         var keyCheck = BuildReviewKey(kind, verbString, @namespace, subresource);
-        if (_permissionIndex.TryGetValue(keyCheck, out var cached))
+        if (cache.PermissionIndex.TryGetValue(keyCheck, out var cached))
         {
             return cached;
         }
@@ -144,56 +165,45 @@ public partial class Cluster
             }
         };
 
-        var generation = Volatile.Read(ref _authorizationCacheGeneration);
         var resp = await Client.AuthorizationV1.CreateSelfSubjectAccessReviewAsync(model);
         var allowed = resp.Status?.Allowed == true;
-        if (generation == Volatile.Read(ref _authorizationCacheGeneration))
-        {
-            SetPermissionResult(kind, verbString, @namespace, subresource, allowed);
-        }
+        SetPermissionResult(cache, kind, verbString, @namespace, subresource, allowed);
 
         return allowed;
     }
 
     private Task<NamespaceRuleSet> GetNamespaceRulesAsync(string @namespace, CancellationToken cancellationToken)
     {
-        if (_namespaceRules.TryGetValue(@namespace, out var cached))
+        var cache = Volatile.Read(ref _authorizationCache);
+        if (cache.NamespaceRules.TryGetValue(@namespace, out var cached))
         {
             return Task.FromResult(cached);
         }
 
-        var lazy = _namespaceRuleLoads.GetOrAdd(
+        var lazy = cache.NamespaceRuleLoads.GetOrAdd(
             @namespace,
-            static (namespaceName, self) => new Lazy<Task<NamespaceRuleSet>>(
-                () => self.LoadNamespaceRulesAsync(namespaceName),
-                LazyThreadSafetyMode.ExecutionAndPublication),
-            this);
-        var generation = Volatile.Read(ref _authorizationCacheGeneration);
+            (namespaceName) => new Lazy<Task<NamespaceRuleSet>>(
+                () => LoadNamespaceRulesAsync(namespaceName, cache),
+                LazyThreadSafetyMode.ExecutionAndPublication));
 
-        return AwaitNamespaceRulesAsync(@namespace, lazy, generation, cancellationToken);
+        return AwaitNamespaceRulesAsync(cache, @namespace, lazy, cancellationToken);
     }
 
-    private async Task<NamespaceRuleSet> AwaitNamespaceRulesAsync(
+    private static async Task<NamespaceRuleSet> AwaitNamespaceRulesAsync(
+        AuthorizationCacheState cache,
         string @namespace,
         Lazy<Task<NamespaceRuleSet>> lazy,
-        int generation,
         CancellationToken cancellationToken)
     {
         var rules = await lazy.Value.WaitAsync(cancellationToken).ConfigureAwait(false);
-        if (generation == Volatile.Read(ref _authorizationCacheGeneration))
-        {
-            _namespaceRules.TryAdd(@namespace, rules);
-        }
-
+        cache.NamespaceRules.TryAdd(@namespace, rules);
         return rules;
     }
 
-    private async Task<NamespaceRuleSet> LoadNamespaceRulesAsync(string @namespace)
+    private async Task<NamespaceRuleSet> LoadNamespaceRulesAsync(string @namespace, AuthorizationCacheState cache)
     {
         using var activity = StartClusterActivity(nameof(LoadNamespaceRulesAsync));
         activity?.SetTag("kubernetes.namespace", @namespace);
-
-        var generation = Volatile.Read(ref _authorizationCacheGeneration);
 
         try
         {
@@ -224,10 +234,7 @@ public partial class Cluster
                 status?.ResourceRules?.ToArray() ?? [],
                 isComplete);
 
-            if (generation == Volatile.Read(ref _authorizationCacheGeneration))
-            {
-                _namespaceRules.TryAdd(@namespace, result);
-            }
+            cache.NamespaceRules.TryAdd(@namespace, result);
 
             return result;
         }
@@ -279,15 +286,19 @@ public partial class Cluster
             return false;
         }
 
-        if (rule.ResourceNames is { Count: > 0 })
+        if (rule.ResourceNames is { Count: > 0 } && IsNameSpecificVerb(verbString))
         {
-            // resourceNames cannot be evaluated without a concrete object name, and Kubernetes
-            // ignores them for list, watch, create, and deletecollection.
+            // resourceNames cannot be evaluated without a concrete object name. Kubernetes
+            // ignores them for list, watch, create, and deletecollection, so only
+            // name-specific verbs are denied when no object name is supplied.
             return false;
         }
 
         return true;
     }
+
+    private static bool IsNameSpecificVerb(string verbString)
+        => verbString is "delete" or "get" or "patch" or "update";
 
     private static bool RuleValueMatches(IList<string>? values, string value)
     {
@@ -343,29 +354,38 @@ public partial class Cluster
             return false;
         }
 
-        return ruleResource[(ruleSeparator + 1)..] == "*"
-            || string.Equals(ruleResource[(ruleSeparator + 1)..], requestedResource[(requestedSeparator + 1)..], StringComparison.Ordinal);
+        return string.Equals(
+            ruleResource[(ruleSeparator + 1)..],
+            requestedResource[(requestedSeparator + 1)..],
+            StringComparison.Ordinal);
     }
 
     public bool CanI(GroupApiVersionKind kind, Verb verb, string? @namespace = null, string? subresource = null)
     {
         var verbString = verb.ToString().ToLowerInvariant();
+        var cache = Volatile.Read(ref _authorizationCache);
         if (!string.IsNullOrEmpty(@namespace)
-            && _permissionIndex.TryGetValue(BuildReviewKey(kind, verbString, null, subresource), out var globalAllowed)
+            && cache.PermissionIndex.TryGetValue(BuildReviewKey(kind, verbString, null, subresource), out var globalAllowed)
             && globalAllowed)
         {
             return true;
         }
 
-        if (_permissionIndex.TryGetValue(BuildReviewKey(kind, verbString, @namespace, subresource), out var allowed))
+        if (cache.PermissionIndex.TryGetValue(BuildReviewKey(kind, verbString, @namespace, subresource), out var allowed))
         {
             return allowed;
         }
 
-        return !string.IsNullOrEmpty(@namespace)
-            && _namespaceRules.TryGetValue(@namespace, out var namespaceRules)
-            && namespaceRules.IsComplete
-            && RuleSetAllows(namespaceRules, kind, verbString, subresource);
+        if (!string.IsNullOrEmpty(@namespace)
+            && cache.NamespaceRules.TryGetValue(@namespace, out var namespaceRules)
+            && namespaceRules.IsComplete)
+        {
+            var ruleAllowed = RuleSetAllows(namespaceRules, kind, verbString, subresource);
+            SetPermissionResult(cache, kind, verbString, @namespace, subresource, ruleAllowed);
+            return ruleAllowed;
+        }
+
+        return false;
     }
 
     private IReadOnlyCollection<string> GetKnownNamespaceNames()
@@ -442,10 +462,14 @@ public partial class Cluster
             return await BuildPermissionAsync(kind, verb, subresource: subresource).ConfigureAwait(false);
         }
 
+        var cache = Volatile.Read(ref _authorizationCache);
         var rules = await GetNamespaceRulesAsync(@namespace, CancellationToken.None).ConfigureAwait(false);
         if (rules.IsComplete)
         {
-            return RuleSetAllows(rules, kind, verb.ToString().ToLowerInvariant(), subresource);
+            var verbString = verb.ToString().ToLowerInvariant();
+            var allowed = RuleSetAllows(rules, kind, verbString, subresource);
+            SetPermissionResult(cache, kind, verbString, @namespace, subresource, allowed);
+            return allowed;
         }
 
         return await BuildPermissionAsync(kind, verb, @namespace, subresource).ConfigureAwait(false);

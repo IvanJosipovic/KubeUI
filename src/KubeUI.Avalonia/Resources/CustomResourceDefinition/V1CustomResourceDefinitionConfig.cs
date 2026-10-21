@@ -109,7 +109,11 @@ public sealed partial class V1CustomResourceDefinitionConfig : ResourceConfig<V1
             return false;
         }
 
-        var resourceConfig = Cluster.GetResourceConfig(kind);
-        return resourceConfig?.PermissionsLoaded == true && resourceConfig.CanListAndWatch;
+        if (!Cluster.TryGetResourceConfig(kind, out var resourceConfig))
+        {
+            return false;
+        }
+
+        return resourceConfig.PermissionsLoaded && resourceConfig.CanListAndWatch;
     }
 }

@@ -9,7 +9,7 @@
   - custom-resource-definition changes update the CRD branch and affected custom-resource links while unrelated links keep their instances;
   - cluster-name changes update navigation IDs in place.
 - Canonical resource-link ids use the resource group and kind, not the served API version, so CRD storage-version changes keep the same link instance and count stream.
-- Alias-link ids include the placement section, an alias slot (`crd` or `provider`), and the resource group and kind. Different alias sources in the same section cannot collide, and provider group-path moves keep the alias instance.
+- Alias-link ids include the placement section, an alias slot (`crd` or the provider section id), and the resource group and kind. Different alias sources in the same section cannot collide, and provider group-path moves keep the alias instance.
 - Subscribing an already-populated workspace performs one reconcile for the whole workspace; do not reconcile once per existing resource configuration.
 - Resource links require `PermissionsLoaded` and the configuration's resolved `CanListAndWatch` value. Namespace-specific permission fallback is resolved by the workspace/configuration layer; this view model does not independently inspect namespace permissions.
 - Typed kind behavior belongs on its `ResourceConfig<T>` subclass; CRD kind behavior, including canonical navigation placement, belongs on a matching `CustomResourceConfig` subclass. Navigation providers own sections, aliases, and feature documents only.
@@ -20,9 +20,9 @@
 - `NavigationDocument` defines section documents (availability plus dockable creation). Do not restore feature paths or a separate feature catalog.
 - CRD resource configurations are not retained across disconnect: `ResetWorkspaceState` drops them and the CRD informer re-registers them on reconnect. Do not reintroduce descriptor retention or replay.
 - Port-forward navigation is recalculated on every reconcile: the link is present while Pod list/watch permission and the port-forward create permission are available, and its existing instance is reused otherwise. A missing or denied Pod configuration removes it.
-- Resource count observables are attached only when both the matching navigation link and a seeded resource container exist. `ResourceSeeded` notifications are marshalled to the UI dispatcher; there is no retry loop for a missing link. A count stream preserves an initial zero and is retained when an existing resource link is updated.
+- Resource count observables are attached only when both the matching navigation link and a seeded resource container exist. `ResourceSeeded` notifications are marshalled to the UI dispatcher; there is no retry loop for a missing link. A count stream preserves an initial zero and is retained when an existing resource link is updated with the same kind; a kind change clears the old stream and rebinds it to the replacement kind's container.
 - Connection failures update or open the shared cluster-error document. Missing namespace permission opens cluster settings and shows the permission prompt.
-- One click on a navigation row activates it: resource links open their document, sections and groups toggle expansion, and disconnected clusters start connecting. Clicking an already connected cluster toggles expansion. Native TreeView double-tap expansion is suppressed so it cannot toggle a row a second time.
+- One click on a navigation row activates it: resource links open their document, sections and groups toggle expansion, and disconnected clusters start connecting. Clicking an already connected cluster toggles expansion. Keyboard Enter or Space activates the focused row. Native TreeView double-tap expansion is suppressed so it cannot toggle a row a second time.
 
 ## Invariants
 

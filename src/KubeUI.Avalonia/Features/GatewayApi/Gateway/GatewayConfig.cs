@@ -11,8 +11,6 @@ internal sealed class GatewayConfig : CustomResourceConfig
         [new NavigationGroup("gateway", Assets.Resources.NavigationView_GatewayApi!, 0, null)]);
     public override string? ApiGroup => "gateway.networking.k8s.io";
 
-    public override string? ApiVersion => "v1";
-
     public override string? KindName => "Gateway";
 
     protected override string Template => """
