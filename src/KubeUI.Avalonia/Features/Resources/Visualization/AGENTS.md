@@ -10,11 +10,14 @@
 - Seed relationship-provider prerequisites and unresolved references through the cluster runtime. Rebuild when a required resource type is seeded so newly available relationships are reflected.
 - Keep graph metadata, including pending references and required seed prerequisites, when applying type/readiness filters.
 - Dispose runtime, workspace, and namespace subscriptions together with the view model; do not leave resource-change handlers active after disposal.
+- Named live scopes use `VisualizationScope`: namespace, localized resource description, annotation selector, and an explicit namespace-readonly option. The visualization must not know about Helm release names or ownership annotation keys; callers construct these selectors. Combine annotation requirements with AND semantics and select matching resources as roots, retaining their relationship ancestry, descendants, and cluster-scoped matches.
+- Apply selector projection after both full builds and incremental merges. Rebuild when selector membership changes to rediscover or remove whole subgraphs. Initialize a local namespace selection using the runtime namespace object when available, without changing cluster selection. Disable both namespace selection and linking only when the scope requests readonly controls. Generic resource and template-preview initialization remain unchanged and clear named scope state.
+- For every visualization scope, do not cancel an in-flight full build for each informer event. Update the resource store, publish the current valid snapshot, coalesce changes received during construction, and then build the latest snapshot so busy clusters cannot starve graph publication. Scope/filter changes, initialization, and disposal must still invalidate obsolete work immediately. Preserve incremental processing when no full rebuild is active.
 
 ## Pipeline stage ownership
 - `VisualizationResourceStore` owns keyed resource snapshots and owner-reference indexing; the ViewModel must not maintain a second resource index.
 - `VisualizationBuildCoordinator` owns pending rebuild coalescing, cancellation, and latest-request-wins version checks.
-- `ResourceGraphProjection` owns root, namespace, and incremental namespace reachability and must preserve graph metadata.
+- `ResourceGraphProjection` owns root, annotation-selector, namespace, and incremental namespace reachability and must preserve graph metadata.
 - `ResourceGraphDisplayFilter` owns display-only type/readiness filtering and must not mutate the complete graph.
 - `VisualizationSeedPlanner` owns unresolved-reference and seed-prerequisite resolution; seed planning must remain pure and separate from informer/resource mutation.
 - `VisualizationPipelineState` is the immutable boundary published from background preparation to the UI thread; stale versions must not publish it.

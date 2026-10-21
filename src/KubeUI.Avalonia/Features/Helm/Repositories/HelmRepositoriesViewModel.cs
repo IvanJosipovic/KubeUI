@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using Avalonia.Controls.Selection;
 using Dock.Model.Core;
 using DynamicData;
@@ -22,6 +23,9 @@ public sealed partial class HelmRepositoriesViewModel : ViewModelBase, IInitiali
     private HelmConnection? _connection;
 
     [ObservableProperty]
+    public partial int ItemCount { get; private set; }
+
+    [ObservableProperty]
     public partial ClusterWorkspace? Cluster { get; set; }
 
     [ObservableProperty]
@@ -43,11 +47,12 @@ public sealed partial class HelmRepositoriesViewModel : ViewModelBase, IInitiali
             _repositories,
             static repository => repository.Name,
             [
-                CreateColumn("name", Assets.Resources.HelmRepositoriesView_Name!, static repository => repository.Name, DynamicTableViewWidthMode.Pixel, 220),
-                CreateColumn("url", Assets.Resources.HelmRepositoriesView_Url!, static repository => repository.Url, DynamicTableViewWidthMode.Star, 1)
+                CreateColumn("name", Assets.Resources.HelmRepositoriesView_Name!, static repository => repository.Name, DynamicTableViewWidthMode.Star, 1),
+                CreateColumn("url", Assets.Resources.HelmRepositoriesView_Url!, static repository => repository.Url, DynamicTableViewWidthMode.Star, 2)
             ],
             options: new DynamicTableViewSourceOptions { SelectionIdentityMode = DynamicTableViewSelectionIdentityMode.Key });
         _tableSource.SelectionModel.SingleSelect = true;
+        _tableSource.SetSort([new("name", ListSortDirection.Ascending)]);
         _tableSource.SelectionModel.SelectionChanged += SelectionChanged;
         Title = Assets.Resources.HelmRepositoriesView_Title;
     }
@@ -76,6 +81,7 @@ public sealed partial class HelmRepositoriesViewModel : ViewModelBase, IInitiali
                 updater.Clear();
                 updater.AddOrUpdate(repositories);
             });
+            ItemCount = repositories.Count;
             Status = string.Empty;
         }
         catch (Exception exception)

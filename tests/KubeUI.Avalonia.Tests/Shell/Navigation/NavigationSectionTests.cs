@@ -20,24 +20,25 @@ namespace KubeUI.Avalonia.Tests.Shell.Navigation;
 public sealed class NavigationSectionTests
 {
     [Fact]
-    public void helm_section_contains_repository_and_release_documents()
+    public void helm_section_contains_chart_repository_and_release_documents()
     {
         var provider = new HelmNavigationSectionProvider();
 
         provider.Section.Id.ShouldBe("helm");
         provider.Section.Name.ShouldBe("Helm");
         provider.Documents.Select(document => document.Id).ShouldBe(
-            [HelmNavigationSectionProvider.RepositoriesDocumentId, HelmNavigationSectionProvider.ReleasesDocumentId]);
-        provider.Documents.Select(document => document.Name).ShouldBe(["Repositories", "Releases"]);
+            [HelmNavigationSectionProvider.ChartsDocumentId, HelmNavigationSectionProvider.RepositoriesDocumentId, HelmNavigationSectionProvider.ReleasesDocumentId]);
+        provider.Documents.Select(document => document.Name).ShouldBe(["Charts", "Repositories", "Releases"]);
         provider.Place(CreateResourceConfig("example.com")).ShouldBeNull();
 
         var catalog = new NavigationSectionCatalog([provider]);
         catalog.TryGetDocument(HelmNavigationSectionProvider.RepositoriesDocumentId, out _).ShouldBeTrue();
         catalog.TryGetDocument(HelmNavigationSectionProvider.ReleasesDocumentId, out _).ShouldBeTrue();
+        catalog.TryGetDocument(HelmNavigationSectionProvider.ChartsDocumentId, out _).ShouldBeTrue();
     }
 
     [AvaloniaFact]
-    public async Task helm_section_shows_both_documents_while_connected_and_prunes_when_disconnected()
+    public async Task helm_section_shows_all_documents_while_connected_and_prunes_when_disconnected()
     {
         using var workspace = await Application.Current.CreateClusterAsync(connect: false);
         await workspace.Connect();
@@ -48,7 +49,7 @@ public sealed class NavigationSectionTests
 
         var helm = node.NavigationItems.Single(item => item.Id == $"{workspace.Runtime.Name}-section-helm");
         helm.NavigationItems.OfType<NavigationLink>().Select(link => link.DocumentId).OrderBy(id => id)
-            .ShouldBe(new[] { HelmNavigationSectionProvider.ReleasesDocumentId, HelmNavigationSectionProvider.RepositoriesDocumentId }.OrderBy(id => id));
+            .ShouldBe(new[] { HelmNavigationSectionProvider.ReleasesDocumentId, HelmNavigationSectionProvider.ChartsDocumentId, HelmNavigationSectionProvider.RepositoriesDocumentId }.OrderBy(id => id));
 
         await workspace.Runtime.Disconnect();
         builder.Reconcile(node);

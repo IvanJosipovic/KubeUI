@@ -1,7 +1,7 @@
-using FluentIcons.Common;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
-using KubeUI.Avalonia.Features.Helm.Repositories;
+using KubeUI.Avalonia.Features.Helm.Charts;
 using KubeUI.Avalonia.Features.Helm.Releases;
+using KubeUI.Avalonia.Features.Helm.Repositories;
 using KubeUI.Avalonia.Resources;
 using KubeUI.Avalonia.Shell.Navigation;
 using Microsoft.Extensions.DependencyInjection;
@@ -12,6 +12,7 @@ internal sealed class HelmNavigationSectionProvider : INavigationSectionProvider
 {
     public const string RepositoriesDocumentId = "helm-repositories";
     public const string ReleasesDocumentId = "helm-releases";
+    public const string ChartsDocumentId = "helm-charts";
 
     public HelmNavigationSectionProvider()
     {
@@ -24,10 +25,22 @@ internal sealed class HelmNavigationSectionProvider : INavigationSectionProvider
         Documents =
         [
             new NavigationDocument(
+                ChartsDocumentId,
+                Assets.Resources.HelmChartsView_Title!,
+                150,
+                null,
+                IsAvailable,
+                static (services, cluster) =>
+                {
+                    var viewModel = services.GetRequiredService<HelmChartsViewModel>();
+                    viewModel.Initialize(cluster);
+                    return viewModel;
+                }),
+            new NavigationDocument(
                 RepositoriesDocumentId,
                 Assets.Resources.HelmRepositoriesView_Title!,
                 200,
-                Icon.Folder,
+                null,
                 IsAvailable,
                 static (services, cluster) =>
                 {

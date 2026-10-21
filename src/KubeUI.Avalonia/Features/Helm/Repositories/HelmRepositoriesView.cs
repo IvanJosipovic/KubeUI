@@ -23,28 +23,43 @@ public sealed class HelmRepositoriesView : ViewBase<HelmRepositoriesViewModel>
             .Children(
                 new Grid()
                     .Row(0)
+                    .MinHeight(32)
+                    .Margin(0, 2, 0, 2)
                     .Cols("Auto,Auto,*,Auto")
                     .Children(
                         new Button()
                             .Col(0)
-                            .Margin(0, 0, 6, 0)
+                            .Margin(2, 0, 0, 0)
                             .Command(vm, x => x.NewRepositoryCommand)
-                            .Content(new FluentIcon().Icon(Icon.Add))
+                            .Content(new FluentIcon().Icon(Icon.AddSquare))
                             .ToolTip_Tip(Assets.Resources.HelmRepositoriesView_New),
-                        new Button()
+                        new Label()
                             .Col(1)
-                            .Command(vm, x => x.UpdateIndexesCommand)
-                            .Content(new FluentIcon().Icon(Icon.ArrowSync))
-                            .ToolTip_Tip(Assets.Resources.HelmRepositoriesView_UpdateIndexes),
-                        new TextBlock()
-                            .Col(2)
-                            .VerticalAlignment(VerticalAlignment.Center)
-                            .Text(vm, x => x.Status),
-                        new Button()
+                            .Margin(2, 0, 0, 0)
+                            .VerticalContentAlignment(VerticalAlignment.Center)
+                            .Content(CompiledBinding.Create<HelmRepositoriesViewModel, int>(
+                                x => x.ItemCount, source: vm,
+                                stringFormat: Assets.Resources.HelmRepositoriesView_ItemsFormat)),
+                        new StackPanel()
                             .Col(3)
-                            .Command(vm, x => x.RefreshCommand)
-                            .Content(new FluentIcon().Icon(Icon.ArrowSync))
-                            .ToolTip_Tip(Assets.Resources.HelmRepositoriesView_Refresh)),
+                            .MaxWidth(700)
+                            .HorizontalAlignment(HorizontalAlignment.Right)
+                            .Orientation(Orientation.Horizontal)
+                            .Children(
+                                new TextBlock()
+                                    .MaxWidth(300)
+                                    .VerticalAlignment(VerticalAlignment.Center)
+                                    .TextWrapping(TextWrapping.Wrap)
+                                    .Text(vm, x => x.Status),
+                                new Button()
+                                    .Margin(0, 0, 2, 0)
+                                    .Command(vm, x => x.UpdateIndexesCommand)
+                                    .Content(new FluentIcon().Icon(Icon.ArrowDownload))
+                                    .ToolTip_Tip(Assets.Resources.HelmRepositoriesView_UpdateIndexes),
+                                new Button()
+                                    .Command(vm, x => x.RefreshCommand)
+                                    .Content(new FluentIcon().Icon(Icon.ArrowSync))
+                                    .ToolTip_Tip(Assets.Resources.HelmRepositoriesView_Refresh))),
                 table.Row(1));
     }
 
@@ -56,7 +71,7 @@ public sealed class HelmRepositoriesView : ViewBase<HelmRepositoriesViewModel>
                 .Header(Assets.Resources.HelmRepositoriesView_UpdateIndexes)
                 .Command(vm, x => x.UpdateRepositoryCommand)
                 .CommandParameter(repository)
-                .Icon(new FluentIcon().Icon(Icon.ArrowSync));
+                .Icon(new FluentIcon().Icon(Icon.ArrowDownload));
             yield return new MenuItem()
                 .Header(Assets.Resources.HelmRepositoriesView_Edit)
                 .Command(vm, x => x.EditRepositoryCommand)

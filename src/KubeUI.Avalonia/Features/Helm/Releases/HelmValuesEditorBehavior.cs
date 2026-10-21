@@ -39,15 +39,15 @@ internal sealed class HelmValuesEditorBehavior : Behavior<TextEditor>
         if (_viewModel is not null)
         {
             _viewModel.PropertyChanged += ViewModelPropertyChanged;
-            UpdateEditor(_viewModel.ValuesJson);
+            UpdateEditor(_viewModel.ValuesYaml);
         }
     }
 
     private void ViewModelPropertyChanged(object? sender, PropertyChangedEventArgs args)
     {
-        if (args.PropertyName == nameof(HelmReleaseEditorViewModel.ValuesJson) && _viewModel is not null)
+        if (args.PropertyName == nameof(HelmReleaseEditorViewModel.ValuesYaml) && _viewModel is not null)
         {
-            UpdateEditor(_viewModel.ValuesJson);
+            UpdateEditor(_viewModel.ValuesYaml);
         }
     }
 
@@ -55,7 +55,7 @@ internal sealed class HelmValuesEditorBehavior : Behavior<TextEditor>
     {
         if (!_updatingEditor && _viewModel is not null)
         {
-            _viewModel.ValuesJson = AssociatedObject.Text;
+            _viewModel.ValuesYaml = AssociatedObject.Text;
         }
     }
 

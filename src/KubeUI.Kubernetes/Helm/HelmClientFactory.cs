@@ -27,7 +27,7 @@ public sealed class HelmClientFactory : IHelmClientFactory
         {
             Kubeconfig = string.IsNullOrWhiteSpace(connection.KubeConfigPath) ? null : connection.KubeConfigPath,
             KubeContext = string.IsNullOrWhiteSpace(connection.Context) ? null : connection.Context,
-            Namespace = string.IsNullOrWhiteSpace(connection.Namespace) ? "default" : connection.Namespace,
+            DefaultNamespace = string.IsNullOrWhiteSpace(connection.Namespace) ? "default" : connection.Namespace,
         };
     }
 }

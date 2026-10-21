@@ -6,6 +6,59 @@ namespace KubeUI.Kubernetes.Tests.Helm;
 
 public sealed class HelmServiceTests
 {
+    [Fact]
+    public async Task Alpha9_operations_forward_search_revision_and_template_version()
+    {
+        var client = new FakeHelmClient { TemplateResult = "kind: ConfigMap" };
+        client.Charts.Add(new("cilium/cilium", "cilium", "1.20.3"));
+        using var factory = new FakeHelmClientFactory(client);
+        using var service = new HelmService(factory);
+        var token = TestContext.Current.CancellationToken;
+        var connection = CreateConnection();
+        var charts = await service.SearchChartsAsync(connection, "cilium", token);
+        charts.ShouldBe(client.Charts);
+        client.SearchCalls.ShouldBe(["cilium"]);
+        (await service.GetManifestAsync(connection, "cilium", 2, token)).ShouldBe(client.TemplateResult);
+        client.GetManifestCalls.ShouldBe([("cilium", "apps", 2)]);
+        Dictionary<string, object?> values = new() { ["enabled"] = true };
+        (await service.TemplateVersionAsync(connection, "cilium", "cilium/cilium", "1.20.3", values, token))
+            .ShouldBe(client.TemplateResult);
+        client.TemplateVersion.ShouldBe("1.20.3");
+        client.TemplateCalls[0].NamespaceName.ShouldBe("apps");
+        client.TemplateCalls[0].Values!.Value.GetProperty("enabled").GetBoolean().ShouldBeTrue();
+        client.SearchRepoCalls.ShouldContain(("cilium", true, true));
+    }
+
+    [Fact]
+    public async Task Alpha9_operations_reject_invalid_names_revisions_and_versions()
+    {
+        using var factory = new FakeHelmClientFactory(new FakeHelmClient());
+        using var service = new HelmService(factory);
+        var connection = CreateConnection();
+        await Should.ThrowAsync<ArgumentException>(() => service.SearchChartsAsync(connection, " "));
+        await Should.ThrowAsync<ArgumentException>(() => service.GetManifestAsync(connection, " "));
+        await Should.ThrowAsync<ArgumentOutOfRangeException>(() => service.GetManifestAsync(connection, "web", -1));
+        await Should.ThrowAsync<ArgumentException>(() => service.TemplateVersionAsync(connection, " ", "repo/chart", "1"));
+        await Should.ThrowAsync<ArgumentException>(() => service.TemplateVersionAsync(connection, "web", " ", "1"));
+        await Should.ThrowAsync<ArgumentException>(() => service.TemplateVersionAsync(connection, "web", "repo/chart", " "));
+    }
+
+    [Fact]
+    public async Task ListChartsAsync_uses_all_cached_versions_and_filters_exact_repository()
+    {
+        var client = new FakeHelmClient();
+        client.Charts.Add(new("repo-a/web", "web", "2.0.0"));
+        client.Charts.Add(new("repo-a/web", "web", "1.0.0"));
+        client.Charts.Add(new("repo-ab/web", "web", "3.0.0"));
+        using var factory = new FakeHelmClientFactory(client);
+        using var sut = CreateService(factory);
+
+        var charts = await sut.ListChartsAsync(CreateConnection(), "repo-a", TestContext.Current.CancellationToken);
+
+        charts.Select(chart => chart.Reference).ShouldBe(["repo-a/web", "repo-a/web"]);
+        client.SearchRepoCalls.ShouldBe([(string.Empty, true, true)]);
+    }
+
     private static HelmConnection CreateConnection() => new("/home/user/.kube/config", "kind-test", "apps");
 
     private static HelmService CreateService(FakeHelmClientFactory factory) => new(factory);
@@ -34,6 +87,7 @@ public sealed class HelmServiceTests
         await sut.AddRepositoryAsync(CreateConnection(), "internal", "https://charts.internal/index.yaml", "user", "secret", TestContext.Current.CancellationToken);
 
         client.AddRepositoryCalls.ShouldBe([("internal", "https://charts.internal/index.yaml", "user", "secret")]);
+        client.AddRepositoryForceUpdateCalls.ShouldBe([true]);
     }
 
     [Fact]
@@ -83,7 +137,7 @@ public sealed class HelmServiceTests
         var releases = await sut.ListReleasesAsync(CreateConnection(), allNamespaces: true, "nginx", TestContext.Current.CancellationToken);
 
         releases.Count.ShouldBe(1);
-        client.ListReleasesCalls.ShouldBe([(true, "nginx")]);
+        client.ListReleasesCalls.ShouldBe([(null, true, "nginx")]);
     }
 
     [Fact]
@@ -95,7 +149,7 @@ public sealed class HelmServiceTests
 
         await sut.ListReleasesAsync(CreateConnection(), allNamespaces: false, cancellationToken: TestContext.Current.CancellationToken);
 
-        client.ListReleasesCalls.ShouldBe([(false, null)]);
+        client.ListReleasesCalls.ShouldBe([("apps", false, null)]);
     }
 
     [Fact]
@@ -117,10 +171,15 @@ public sealed class HelmServiceTests
             createNamespace: true,
             wait: true,
             timeout: TimeSpan.FromMinutes(5),
-            cancellationToken: TestContext.Current.CancellationToken);
+            cancellationToken: TestContext.Current.CancellationToken,
+            version: "1.0.0");
 
         release.Name.ShouldBe("web");
-        client.InstallCalls.ShouldBe([("web", "bitnami/nginx", values, true, true, TimeSpan.FromMinutes(5))]);
+        client.InstallCalls.Count.ShouldBe(1);
+        client.InstallCalls[0].Values!.Value.GetProperty("replicas").GetInt32().ShouldBe(3);
+        client.InstallCalls[0].NamespaceName.ShouldBe("apps");
+        client.InstallCalls[0].ShouldBe(("web", "bitnami/nginx", "apps", client.InstallCalls[0].Values, true, true, TimeSpan.FromMinutes(5)));
+        client.InstallVersions.ShouldBe(["1.0.0"]);
     }
 
     [Fact]
@@ -133,9 +192,16 @@ public sealed class HelmServiceTests
         using var factory = new FakeHelmClientFactory(client);
         using var sut = CreateService(factory);
 
-        await sut.UpgradeAsync(CreateConnection(), "web", "bitnami/nginx", installIfMissing: true, cancellationToken: TestContext.Current.CancellationToken);
+        await sut.UpgradeAsync(
+            CreateConnection(),
+            "web",
+            "bitnami/nginx",
+            installIfMissing: true,
+            cancellationToken: TestContext.Current.CancellationToken,
+            version: "1.1.0");
 
-        client.UpgradeCalls.ShouldBe([("web", "bitnami/nginx", true)]);
+        client.UpgradeCalls.ShouldBe([("web", "bitnami/nginx", "apps", true)]);
+        client.UpgradeVersions.ShouldBe(["1.1.0"]);
     }
 
     [Fact]
@@ -151,7 +217,7 @@ public sealed class HelmServiceTests
         var release = await sut.StatusAsync(CreateConnection(), "web", TestContext.Current.CancellationToken);
 
         release.Chart.ShouldBe("nginx-1.1.0");
-        client.StatusCalls.ShouldBe(["web"]);
+        client.StatusCalls.ShouldBe([("web", "apps")]);
     }
 
     [Fact]
@@ -166,20 +232,22 @@ public sealed class HelmServiceTests
         var history = await sut.HistoryAsync(CreateConnection(), "web", TestContext.Current.CancellationToken);
 
         history.Count.ShouldBe(2);
-        client.HistoryCalls.ShouldBe(["web"]);
+        client.HistoryCalls.ShouldBe([("web", "apps")]);
     }
 
     [Fact]
     public async Task GetValuesAsync_returns_values()
     {
-        var client = new FakeHelmClient();
+        using var document = JsonDocument.Parse("{\"replicas\":3,\"nested\":{\"enabled\":true}}");
+        var client = new FakeHelmClient { Values = document.RootElement.Clone() };
         using var factory = new FakeHelmClientFactory(client);
         using var sut = CreateService(factory);
 
         var values = await sut.GetValuesAsync(CreateConnection(), "web", TestContext.Current.CancellationToken);
 
-        values.Count.ShouldBe(0);
-        client.GetValuesCalls.ShouldBe(["web"]);
+        values["replicas"].GetInt32().ShouldBe(3);
+        values["nested"].GetProperty("enabled").GetBoolean().ShouldBeTrue();
+        client.GetValuesCalls.ShouldBe([("web", "apps")]);
     }
 
     [Fact]
@@ -191,7 +259,7 @@ public sealed class HelmServiceTests
 
         await sut.RollbackAsync(CreateConnection(), "web", 3, TestContext.Current.CancellationToken, wait: true);
 
-        client.RollbackCalls.ShouldBe([("web", 3, true)]);
+        client.RollbackCalls.ShouldBe([("web", 3, "apps", true)]);
     }
 
     [Fact]
@@ -203,7 +271,7 @@ public sealed class HelmServiceTests
 
         await sut.UninstallAsync(CreateConnection(), "web", TestContext.Current.CancellationToken, wait: true);
 
-        client.UninstallCalls.ShouldBe(["web"]);
+        client.UninstallCalls.ShouldBe([("web", "apps", true)]);
         client.UninstallWaitCalls.ShouldBe([true]);
     }
 
@@ -256,7 +324,9 @@ public sealed class HelmServiceTests
         var manifest = await sut.TemplateAsync(CreateConnection(), "web", "bitnami/nginx", values, TestContext.Current.CancellationToken);
 
         manifest.ShouldBe("kind: Deployment");
-        client.TemplateCalls.ShouldBe([("web", "bitnami/nginx", values)]);
+        client.TemplateCalls.Count.ShouldBe(1);
+        client.TemplateCalls[0].NamespaceName.ShouldBe("apps");
+        client.TemplateCalls[0].Values!.Value.GetProperty("image").GetString().ShouldBe("nginx:1.27");
     }
 
     [Fact]

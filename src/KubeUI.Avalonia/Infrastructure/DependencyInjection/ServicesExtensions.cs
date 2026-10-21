@@ -7,8 +7,8 @@ using KubeUI.Avalonia.Features.AI;
 using KubeUI.Avalonia.Features.Crossplane;
 using KubeUI.Avalonia.Features.Crossplane.MRDiffDetection;
 using KubeUI.Avalonia.Features.Helm;
-using KubeUI.Avalonia.Features.Resources.Visualization;
 using KubeUI.Avalonia.Features.Resources.List.Controls;
+using KubeUI.Avalonia.Features.Resources.Visualization;
 using KubeUI.Avalonia.Features.Resources.Yaml;
 using KubeUI.Avalonia.Infrastructure.Logging;
 using KubeUI.Avalonia.Infrastructure.Platform;
@@ -64,6 +64,7 @@ public static partial class KubeUIShellServiceCollectionExtensions
         services.AddSingleton<IHelmVisualizationDocumentOpener, HelmVisualizationDocumentOpener>();
         services.AddTransient<IHelmReleasePreviewService, HelmReleasePreviewService>();
         services.AddTransient<Func<VisualizationViewModel>>(sp => () => sp.GetRequiredService<VisualizationViewModel>());
+        services.AddTransient<Func<ResourceYamlViewModel>>(sp => () => sp.GetRequiredService<ResourceYamlViewModel>());
         services.AddSingleton<NavigationSectionCatalog>();
         services.AddSingleton<CrossplaneDiffLogParser>();
         services.AddTransient<CrossplaneProviderLogMonitor>();

@@ -12,6 +12,22 @@ namespace KubeUI.Kubernetes;
 /// </remarks>
 public interface IHelmService
 {
+    /// <summary>Searches configured repository indexes for resolvable chart references and versions.</summary>
+    Task<IReadOnlyList<HelmChartSearchResult>> SearchChartsAsync(HelmConnection connection, string searchTerm, CancellationToken cancellationToken = default);
+
+    /// <summary>Lists chart versions from cached repository indexes, optionally for one repository.</summary>
+    /// <param name="connection">The Kubernetes connection Helm runs against.</param>
+    /// <param name="repositoryName">Optional exact configured repository name.</param>
+    /// <param name="cancellationToken">Cancels waiting for the operation to start.</param>
+    /// <returns>Chart references and versions in cached indexes.</returns>
+    Task<IReadOnlyList<HelmChartSearchResult>> ListChartsAsync(HelmConnection connection, string? repositoryName = null, CancellationToken cancellationToken = default);
+
+    /// <summary>Gets the manifest stored for a release revision.</summary>
+    Task<string> GetManifestAsync(HelmConnection connection, string releaseName, int revision = 0, CancellationToken cancellationToken = default);
+
+    /// <summary>Renders a specific chart version using the supplied values.</summary>
+    Task<string> TemplateVersionAsync(HelmConnection connection, string releaseName, string chart, string version, IReadOnlyDictionary<string, object?>? values = null, CancellationToken cancellationToken = default);
+
     /// <summary>
     /// Lists the configured chart repositories.
     /// </summary>
@@ -97,8 +113,9 @@ public interface IHelmService
     /// <param name="wait">Wait for the release resources to become ready.</param>
     /// <param name="timeout">Optional timeout applied when waiting.</param>
     /// <param name="cancellationToken">Cancels waiting for the operation to start.</param>
+    /// <param name="version">Optional chart version to install.</param>
     /// <returns>The created release.</returns>
-    Task<HelmRelease> InstallAsync(HelmConnection connection, string releaseName, string chart, IReadOnlyDictionary<string, object?>? values = null, bool createNamespace = false, bool wait = false, TimeSpan? timeout = null, CancellationToken cancellationToken = default);
+    Task<HelmRelease> InstallAsync(HelmConnection connection, string releaseName, string chart, IReadOnlyDictionary<string, object?>? values = null, bool createNamespace = false, bool wait = false, TimeSpan? timeout = null, CancellationToken cancellationToken = default, string? version = null);
 
     /// <summary>
     /// Upgrades an existing release, optionally installing it when it is missing.
@@ -112,8 +129,9 @@ public interface IHelmService
     /// <param name="wait">Wait for the release resources to become ready.</param>
     /// <param name="timeout">Optional timeout applied when waiting.</param>
     /// <param name="cancellationToken">Cancels waiting for the operation to start.</param>
+    /// <param name="version">Optional chart version to upgrade to.</param>
     /// <returns>The upgraded release.</returns>
-    Task<HelmRelease> UpgradeAsync(HelmConnection connection, string releaseName, string chart, IReadOnlyDictionary<string, object?>? values = null, bool installIfMissing = false, bool createNamespace = false, bool wait = false, TimeSpan? timeout = null, CancellationToken cancellationToken = default);
+    Task<HelmRelease> UpgradeAsync(HelmConnection connection, string releaseName, string chart, IReadOnlyDictionary<string, object?>? values = null, bool installIfMissing = false, bool createNamespace = false, bool wait = false, TimeSpan? timeout = null, CancellationToken cancellationToken = default, string? version = null);
 
     /// <summary>
     /// Rolls a release back to a revision, or to its previous revision when <paramref name="revision"/> is zero.

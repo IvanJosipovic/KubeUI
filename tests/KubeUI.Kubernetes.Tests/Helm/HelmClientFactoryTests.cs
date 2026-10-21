@@ -14,7 +14,7 @@ public sealed class HelmClientFactoryTests
 
         options.Kubeconfig.ShouldBe("/home/user/.kube/config");
         options.KubeContext.ShouldBe("kind-test");
-        options.Namespace.ShouldBe("apps");
+        options.DefaultNamespace.ShouldBe("apps");
     }
 
     [Fact]
@@ -26,7 +26,7 @@ public sealed class HelmClientFactoryTests
 
         options.Kubeconfig.ShouldBeNull();
         options.KubeContext.ShouldBeNull();
-        options.Namespace.ShouldBe("default");
+        options.DefaultNamespace.ShouldBe("default");
     }
 
     [Fact]

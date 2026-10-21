@@ -23,8 +23,67 @@ public sealed class HelmService : IHelmService, IDisposable
     }
 
     /// <inheritdoc />
+    public Task<IReadOnlyList<HelmChartSearchResult>> SearchChartsAsync(HelmConnection connection, string searchTerm, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(searchTerm);
+        return InvokeAsync(connection, client => client.SearchRepo(keyword: searchTerm, versions: true, devel: true), cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public Task<IReadOnlyList<HelmChartSearchResult>> ListChartsAsync(HelmConnection connection, string? repositoryName = null, CancellationToken cancellationToken = default)
+    {
+        if (repositoryName is not null)
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(repositoryName);
+        }
+
+        return InvokeAsync(
+            connection,
+            client =>
+            {
+                var charts = client.SearchRepo(keyword: string.Empty, versions: true, devel: true);
+                if (repositoryName is null)
+                {
+                    return charts;
+                }
+
+                var prefix = $"{repositoryName}/";
+                return charts.Where(chart => chart.Reference.StartsWith(prefix, StringComparison.Ordinal)).ToArray();
+            },
+            cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public Task<string> GetManifestAsync(HelmConnection connection, string releaseName, int revision = 0, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(releaseName);
+        ArgumentOutOfRangeException.ThrowIfNegative(revision);
+        return InvokeAsync(
+            connection,
+            client => client.GetManifest(releaseName, connection.Namespace, revision),
+            cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public Task<string> TemplateVersionAsync(HelmConnection connection, string releaseName, string chart, string version, IReadOnlyDictionary<string, object?>? values = null, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(releaseName);
+        ArgumentException.ThrowIfNullOrWhiteSpace(chart);
+        ArgumentException.ThrowIfNullOrWhiteSpace(version);
+        return InvokeAsync(
+            connection,
+            client => client.Template(
+                name: releaseName,
+                chart: chart,
+                namespaceName: connection.Namespace,
+                setValues: ToJsonElement(values),
+                version: version),
+            cancellationToken);
+    }
+
+    /// <inheritdoc />
     public Task<IReadOnlyList<HelmRepository>> ListRepositoriesAsync(HelmConnection connection, CancellationToken cancellationToken = default)
-        => InvokeAsync(connection, static client => client.ListRepositories(), cancellationToken);
+        => InvokeAsync(connection, static client => client.RepoList(), cancellationToken);
 
     /// <inheritdoc />
     public Task AddRepositoryAsync(HelmConnection connection, string name, string url, string? username = null, string? password = null, CancellationToken cancellationToken = default)
@@ -34,7 +93,7 @@ public sealed class HelmService : IHelmService, IDisposable
 
         return InvokeVoidAsync(
             connection,
-            client => client.AddRepository(name, url, username, password),
+            client => client.RepoAdd(name, url, username, password, forceUpdate: true),
             cancellationToken);
     }
 
@@ -42,36 +101,45 @@ public sealed class HelmService : IHelmService, IDisposable
     public Task RemoveRepositoryAsync(HelmConnection connection, string name, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
-        return InvokeVoidAsync(connection, client => client.RemoveRepository(name), cancellationToken);
+        return InvokeVoidAsync(connection, client => client.RepoRemove(name), cancellationToken);
     }
 
     /// <inheritdoc />
     public Task UpdateRepositoriesAsync(HelmConnection connection, CancellationToken cancellationToken = default)
-        => InvokeVoidAsync(connection, static client => client.UpdateRepositories(), cancellationToken);
+        => InvokeVoidAsync(connection, static client => client.RepoUpdate(), cancellationToken);
 
     /// <inheritdoc />
     public Task<IReadOnlyList<HelmRelease>> ListReleasesAsync(HelmConnection connection, bool allNamespaces = true, string? filter = null, CancellationToken cancellationToken = default)
-        => InvokeAsync(connection, client => client.ListReleases(allNamespaces, filter), cancellationToken);
+        => InvokeAsync(
+            connection,
+            client => client.List(
+                namespaceName: allNamespaces ? null : connection.Namespace,
+                allNamespaces: allNamespaces,
+                filter: filter),
+            cancellationToken);
 
     /// <inheritdoc />
     public Task<HelmRelease> StatusAsync(HelmConnection connection, string releaseName, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(releaseName);
-        return InvokeAsync(connection, client => client.Status(releaseName), cancellationToken);
+        return InvokeAsync(connection, client => client.Status(releaseName, connection.Namespace), cancellationToken);
     }
 
     /// <inheritdoc />
     public Task<IReadOnlyList<HelmRelease>> HistoryAsync(HelmConnection connection, string releaseName, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(releaseName);
-        return InvokeAsync(connection, client => client.History(releaseName), cancellationToken);
+        return InvokeAsync(connection, client => client.History(releaseName, connection.Namespace), cancellationToken);
     }
 
     /// <inheritdoc />
     public Task<IReadOnlyDictionary<string, JsonElement>> GetValuesAsync(HelmConnection connection, string releaseName, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(releaseName);
-        return InvokeAsync(connection, client => client.GetValues(releaseName), cancellationToken);
+        return InvokeAsync(
+            connection,
+            client => GetValues(client.GetValues(releaseName, connection.Namespace)),
+            cancellationToken);
     }
 
     /// <inheritdoc />
@@ -83,14 +151,23 @@ public sealed class HelmService : IHelmService, IDisposable
         bool createNamespace = false,
         bool wait = false,
         TimeSpan? timeout = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        string? version = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(releaseName);
         ArgumentException.ThrowIfNullOrWhiteSpace(chart);
 
         return InvokeAsync(
             connection,
-            client => client.Install(releaseName, chart, valuesFiles: null, values, createNamespace, wait, timeout),
+            client => client.Install(
+                name: releaseName,
+                chart: chart,
+                namespaceName: connection.Namespace,
+                setValues: ToJsonElement(values),
+                createNamespace: createNamespace,
+                wait: wait,
+                timeout: timeout,
+                version: version),
             cancellationToken);
     }
 
@@ -104,14 +181,24 @@ public sealed class HelmService : IHelmService, IDisposable
         bool createNamespace = false,
         bool wait = false,
         TimeSpan? timeout = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        string? version = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(releaseName);
         ArgumentException.ThrowIfNullOrWhiteSpace(chart);
 
         return InvokeAsync(
             connection,
-            client => client.Upgrade(releaseName, chart, valuesFiles: null, values, installIfMissing, createNamespace, wait, timeout),
+            client => client.Upgrade(
+                release: releaseName,
+                chart: chart,
+                namespaceName: connection.Namespace,
+                setValues: ToJsonElement(values),
+                install: installIfMissing,
+                createNamespace: createNamespace,
+                wait: wait,
+                timeout: timeout,
+                version: version),
             cancellationToken);
     }
 
@@ -119,14 +206,24 @@ public sealed class HelmService : IHelmService, IDisposable
     public Task RollbackAsync(HelmConnection connection, string releaseName, int revision = 0, CancellationToken cancellationToken = default, bool wait = false)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(releaseName);
-        return InvokeVoidAsync(connection, client => client.Rollback(releaseName, revision, wait), cancellationToken);
+        return InvokeVoidAsync(
+            connection,
+            client => client.Rollback(
+                releaseName,
+                revision,
+                namespaceName: connection.Namespace,
+                wait: wait),
+            cancellationToken);
     }
 
     /// <inheritdoc />
     public Task UninstallAsync(HelmConnection connection, string releaseName, CancellationToken cancellationToken = default, bool wait = false)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(releaseName);
-        return InvokeVoidAsync(connection, client => client.Uninstall(releaseName, wait), cancellationToken);
+        return InvokeVoidAsync(
+            connection,
+            client => client.Uninstall(releaseName, connection.Namespace, wait),
+            cancellationToken);
     }
 
     /// <inheritdoc />
@@ -140,7 +237,41 @@ public sealed class HelmService : IHelmService, IDisposable
         ArgumentException.ThrowIfNullOrWhiteSpace(releaseName);
         ArgumentException.ThrowIfNullOrWhiteSpace(chart);
 
-        return InvokeAsync(connection, client => client.Template(releaseName, chart, valuesFiles: null, values), cancellationToken);
+        return InvokeAsync(
+            connection,
+            client => client.Template(
+                name: releaseName,
+                chart: chart,
+                namespaceName: connection.Namespace,
+                setValues: ToJsonElement(values)),
+            cancellationToken);
+    }
+
+    private static JsonElement? ToJsonElement(IReadOnlyDictionary<string, object?>? values)
+    {
+        if (values is null)
+        {
+            return null;
+        }
+
+        using var document = JsonDocument.Parse(k8s.KubernetesJson.Serialize(values));
+        return document.RootElement.Clone();
+    }
+
+    private static IReadOnlyDictionary<string, JsonElement> GetValues(JsonElement values)
+    {
+        if (values.ValueKind != JsonValueKind.Object)
+        {
+            throw new JsonException("Helm release values must be a JSON object.");
+        }
+
+        var result = new Dictionary<string, JsonElement>(values.EnumerateObject().Count(), StringComparer.Ordinal);
+        foreach (var property in values.EnumerateObject())
+        {
+            result.Add(property.Name, property.Value.Clone());
+        }
+
+        return result;
     }
 
     private Task InvokeVoidAsync(HelmConnection connection, Action<IHelmClient> operation, CancellationToken cancellationToken)

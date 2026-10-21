@@ -2934,6 +2934,7 @@
   <data name="HelmReleasesView_Install" xml:space="preserve"><value>Install release</value></data>
   <data name="HelmReleasesView_RollbackRevision" xml:space="preserve"><value>Target revision</value></data>
   <data name="HelmReleasesView_ItemsFormat" xml:space="preserve"><value>Releases: {0}</value></data>
+  <data name="HelmRepositoriesView_ItemsFormat" xml:space="preserve"><value>Repositories: {0}</value></data>
   <data name="HelmReleasesView_Rollback" xml:space="preserve"><value>Rollback</value></data>
   <data name="HelmReleasesView_Wait" xml:space="preserve"><value>Wait for actions</value></data>
   <data name="HelmReleasesView_Refresh" xml:space="preserve"><value>Refresh</value></data>
@@ -2952,8 +2953,15 @@
   <data name="HelmReleaseEditorView_Name" xml:space="preserve"><value>Release name</value></data>
   <data name="HelmReleaseEditorView_Chart" xml:space="preserve"><value>Chart reference</value></data>
   <data name="HelmReleaseEditorView_Namespace" xml:space="preserve"><value>Namespace</value></data>
-  <data name="HelmReleaseEditorView_ValuesJson" xml:space="preserve"><value>Values (JSON)</value></data>
-  <data name="HelmReleaseEditorView_ValuesMustBeObject" xml:space="preserve"><value>Values must be a JSON object.</value></data>
+  <data name="HelmReleaseEditorView_ValuesYaml" xml:space="preserve"><value>Values (YAML)</value></data>
+  <data name="HelmReleaseEditorView_ChartVersion" xml:space="preserve"><value>Chart version</value></data>
+  <data name="HelmReleaseEditorView_Repository" xml:space="preserve"><value>Repository</value></data>
+  <data name="HelmReleaseEditorView_SearchCharts" xml:space="preserve"><value>Search charts</value></data>
+  <data name="HelmReleaseEditorView_ChartReference" xml:space="preserve"><value>Chart reference (manual or OCI)</value></data>
+  <data name="HelmReleaseEditorView_NoCharts" xml:space="preserve"><value>No charts matched the search. Update repository indexes or change the search text.</value></data>
+  <data name="HelmReleaseEditorView_ChartVersionNotice" xml:space="preserve"><value>Selected chart version is used for install, upgrade, and preview. Leave version empty to use Helm's default resolution.</value></data>
+  <data name="HelmReleaseEditorView_ValuesMustBeObject" xml:space="preserve"><value>Values must be a YAML mapping.</value></data>
+  <data name="HelmReleaseEditorView_ChooseChartReference" xml:space="preserve"><value>No unique repository chart reference found. Enter the chart reference (repository/chart or OCI URL) before upgrading or previewing.</value></data>
   <data name="HelmReleaseEditorView_Timeout" xml:space="preserve"><value>Timeout seconds (0 = no timeout)</value></data>
   <data name="HelmReleaseEditorView_CreateNamespace" xml:space="preserve"><value>Create namespace if missing</value></data>
   <data name="HelmReleaseEditorView_Wait" xml:space="preserve"><value>Wait for resources</value></data>
@@ -2966,4 +2974,14 @@
   <data name="HelmReleaseEditorView_ConfirmInstallContent" xml:space="preserve"><value>Install release '{0}' using chart '{1}' in namespace '{2}'?</value></data>
   <data name="HelmReleaseEditorView_ConfirmUpgradeContent" xml:space="preserve"><value>Upgrade release '{0}' using chart '{1}' in namespace '{2}'?</value></data>
   <data name="HelmReleasePreviewService_NoResources" xml:space="preserve"><value>Helm rendered no Kubernetes resources to visualize.</value></data>
+  <data name="HelmReleasePreviewService_ReleaseTitle" xml:space="preserve"><value>Helm release: {0} ({1})</value></data>
+  <data name="HelmReleasesView_ValuesTitle" xml:space="preserve"><value>Helm values: {0} ({1})</value></data>
+  <data name="HelmChartsView_Title" xml:space="preserve"><value>Charts</value></data>
+  <data name="HelmChartsView_Chart" xml:space="preserve"><value>Chart</value></data>
+  <data name="HelmChartsView_Reference" xml:space="preserve"><value>Reference</value></data>
+  <data name="HelmChartsView_LatestVersion" xml:space="preserve"><value>Latest Version</value></data>
+  <data name="HelmChartsView_Install" xml:space="preserve"><value>Install chart</value></data>
+  <data name="HelmChartsView_ItemsFormat" xml:space="preserve"><value>Charts: {0}</value></data>
+  <data name="HelmChartsView_SearchPlaceholder" xml:space="preserve"><value>Search</value></data>
+  <data name="HelmChartsView_SearchNotice" xml:space="preserve"><value>Charts come from cached repository indexes. Update repository indexes to load their latest versions.</value></data>
 </root>

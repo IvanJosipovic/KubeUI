@@ -1,16 +1,16 @@
 using System.Collections.Specialized;
-using System.Text;
-using System.Text.Json;
+using System.Globalization;
 using Avalonia.Controls.Selection;
 using Dock.Model.Core;
 using DynamicData;
 using FluentAvalonia.UI.Controls;
-using Helm.NET;
 using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
+using Helm.NET;
 using k8s.Models;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Features.Helm;
+using KubeUI.Avalonia.Features.Resources.Yaml;
 using KubeUI.Avalonia.Infrastructure.Docking;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Kubernetes;
@@ -24,6 +24,7 @@ public sealed partial class HelmReleasesViewModel : ViewModelBase, IInitializeCl
     private readonly IFactory _factory;
     private readonly IDialogService _dialogService;
     private readonly IHelmReleasePreviewService _previewService;
+    private readonly Func<ResourceYamlViewModel> _createYamlViewer;
     private readonly SourceCache<HelmRelease, string> _releases = new(static release => $"{release.Namespace}\u001f{release.Name}");
     private readonly DynamicTableViewSource<HelmRelease, string> _tableSource;
     private readonly ObservableCollection<V1Namespace> _localSelectedNamespaces = [];
@@ -56,23 +57,23 @@ public sealed partial class HelmReleasesViewModel : ViewModelBase, IInitializeCl
         IHelmService helmService,
         IFactory factory,
         IDialogService dialogService,
-        IHelmReleasePreviewService previewService)
+        IHelmReleasePreviewService previewService,
+        Func<ResourceYamlViewModel> createYamlViewer)
     {
         _helmService = helmService;
         _factory = factory;
         _dialogService = dialogService;
         _previewService = previewService;
+        _createYamlViewer = createYamlViewer;
         _tableSource = new DynamicTableViewSource<HelmRelease, string>(
             _releases,
             static release => $"{release.Namespace}\u001f{release.Name}",
             [
-                CreateColumn("name", Assets.Resources.HelmReleasesView_Name!, static release => release.Name, DynamicTableViewWidthMode.Pixel, 180),
-                CreateColumn("namespace", Assets.Resources.HelmReleasesView_Namespace!, static release => release.Namespace, DynamicTableViewWidthMode.Pixel, 140),
-                CreateColumn("revision", Assets.Resources.HelmReleasesView_Revision!, static release => release.Revision, DynamicTableViewWidthMode.Pixel, 80),
-                CreateColumn("status", Assets.Resources.HelmReleasesView_Status!, static release => release.Status, DynamicTableViewWidthMode.Pixel, 120),
-                CreateColumn("chart", Assets.Resources.HelmReleasesView_Chart!, static release => release.Chart, DynamicTableViewWidthMode.Star, 1),
-                CreateColumn("app-version", Assets.Resources.HelmReleasesView_AppVersion!, static release => release.AppVersion, DynamicTableViewWidthMode.Pixel, 120),
-                CreateColumn("updated", Assets.Resources.HelmReleasesView_Updated!, static release => release.Updated, DynamicTableViewWidthMode.Pixel, 180)
+                CreateColumn("name", Assets.Resources.HelmReleasesView_Name!, static release => release.Name, DynamicTableViewWidthMode.Star, 1.5),
+                CreateColumn("namespace", Assets.Resources.HelmReleasesView_Namespace!, static release => release.Namespace, DynamicTableViewWidthMode.Star, 1.2),
+                CreateColumn("app-version", Assets.Resources.HelmReleasesView_AppVersion!, static release => release.AppVersion, DynamicTableViewWidthMode.Star, 1),
+                CreateColumn("status", Assets.Resources.HelmReleasesView_Status!, static release => release.Status, DynamicTableViewWidthMode.Star, 1),
+                CreateColumn("updated", Assets.Resources.HelmReleasesView_Updated!, static release => FormatUpdated(release.Updated), DynamicTableViewWidthMode.Star, 1)
             ],
             options: new DynamicTableViewSourceOptions { SelectionIdentityMode = DynamicTableViewSelectionIdentityMode.Key });
         _tableSource.SelectionModel.SingleSelect = true;
@@ -134,6 +135,20 @@ public sealed partial class HelmReleasesViewModel : ViewModelBase, IInitializeCl
     private void NewRelease() => OpenEditor(null);
 
     [RelayCommand]
+    private async Task InstallChart(HelmChartSearchResult? chart)
+    {
+        if (chart is null || Cluster is null || _connection is null)
+        {
+            return;
+        }
+
+        var editor = new HelmReleaseEditorViewModel(_helmService, _factory, this, _previewService, _dialogService);
+        editor.Initialize(Cluster, _connection, null);
+        await editor.SelectInstallChartAsync(chart);
+        _factory.AddToDocuments(editor);
+    }
+
+    [RelayCommand]
     private void UpgradeRelease(HelmRelease? release)
     {
         if (release is not null)
@@ -143,7 +158,7 @@ public sealed partial class HelmReleasesViewModel : ViewModelBase, IInitializeCl
     }
 
     [RelayCommand]
-    private async Task VisualizeRelease(HelmRelease? release, CancellationToken cancellationToken = default)
+    private void VisualizeRelease(HelmRelease? release)
     {
         if (_connection is null || Cluster is null || release is null)
         {
@@ -152,15 +167,7 @@ public sealed partial class HelmReleasesViewModel : ViewModelBase, IInitializeCl
 
         try
         {
-            var connection = _connection with { Namespace = release.Namespace };
-            var releaseValues = await _helmService.GetValuesAsync(connection, release.Name, cancellationToken);
-            var values = new Dictionary<string, object?>(StringComparer.Ordinal);
-            foreach (var (key, value) in releaseValues)
-            {
-                values[key] = value.Clone();
-            }
-
-            await _previewService.PreviewAsync(Cluster, connection, release.Name, release.Chart, values, cancellationToken);
+            _previewService.VisualizeRelease(Cluster, release.Name, release.Namespace);
             Status = string.Empty;
         }
         catch (Exception exception)
@@ -199,7 +206,17 @@ public sealed partial class HelmReleasesViewModel : ViewModelBase, IInitializeCl
         try
         {
             var values = await _helmService.GetValuesAsync(_connection with { Namespace = release.Namespace }, release.Name, cancellationToken);
-            Status = FormatValues(values);
+            var yaml = HelmValuesYaml.Serialize(values);
+            var id = $"helm-values-{Cluster!.Runtime.Name}-{release.Namespace}-{release.Name}";
+            var viewer = _factory.FindDockableById(id) is ResourceYamlViewModel existing
+                ? existing
+                : _createYamlViewer();
+            viewer.InitializeReadOnly(
+                string.Format(Assets.Resources.HelmReleasesView_ValuesTitle!, release.Name, release.Namespace),
+                id,
+                yaml);
+            _factory.AddToBottom(viewer);
+            Status = string.Empty;
         }
         catch (Exception exception)
         {
@@ -319,24 +336,6 @@ public sealed partial class HelmReleasesViewModel : ViewModelBase, IInitializeCl
     private void SelectionChanged(object? sender, SelectionModelSelectionChangedEventArgs args)
         => SelectedRelease = _tableSource.SelectionModel.SelectedItem as HelmRelease;
 
-    private static string FormatValues(IReadOnlyDictionary<string, JsonElement> values)
-    {
-        using var stream = new MemoryStream();
-        using (var writer = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = true }))
-        {
-            writer.WriteStartObject();
-            foreach (var (name, value) in values)
-            {
-                writer.WritePropertyName(name);
-                value.WriteTo(writer);
-            }
-
-            writer.WriteEndObject();
-        }
-
-        return Encoding.UTF8.GetString(stream.ToArray());
-    }
-
     private static StackPanel CreateRollbackDialogContent(
         ReleaseActionDialogViewModel viewModel,
         HelmRelease release,
@@ -349,7 +348,7 @@ public sealed partial class HelmReleasesViewModel : ViewModelBase, IInitializeCl
                     release.Name,
                     release.Namespace)),
                 new TextBlock().Text(Assets.Resources.HelmReleasesView_RollbackRevision),
-                new global::Avalonia.Controls.NumericUpDown()
+                new NumericUpDown()
                     .Minimum(0)
                     .Maximum(maximumRevision)
                     .Value(viewModel, x => x.Revision, BindingMode.TwoWay),
@@ -381,6 +380,11 @@ public sealed partial class HelmReleasesViewModel : ViewModelBase, IInitializeCl
         column.Width = width;
         return column;
     }
+
+    private static string FormatUpdated(string updated)
+        => DateTimeOffset.TryParse(updated, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var dateTime)
+            ? dateTime.ToLocalTime().ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture)
+            : updated;
 
     partial void OnIsNamespaceSelectionLinkedChanged(bool value)
     {

@@ -1,9 +1,11 @@
-using Avalonia.Controls.Templates;
 using Avalonia.Controls.Primitives;
+using Avalonia.Controls.Templates;
+using Avalonia.Xaml.Interactions.Core;
 using FluentIcons.Avalonia;
 using FluentIcons.Common;
 using Helm.NET;
 using k8s.Models;
+using KubeUI.Avalonia.Infrastructure;
 using Ursa.Controls;
 
 namespace KubeUI.Avalonia.Features.Helm.Releases;
@@ -23,6 +25,11 @@ public sealed class HelmReleasesView : ViewBase<HelmReleasesViewModel>
         };
 
         return new Grid()
+            .Behaviors(new EventTriggerBehavior
+            {
+                EventName = nameof(Loaded),
+                Actions = [new InvokeCommandAction { Command = vm.RefreshCommand }]
+            })
             .Rows("Auto,*")
             .Children(
                 new Grid()
@@ -35,7 +42,7 @@ public sealed class HelmReleasesView : ViewBase<HelmReleasesViewModel>
                             .Col(0)
                             .Margin(2, 0, 0, 0)
                             .Command(vm, x => x.NewReleaseCommand)
-                            .Content(new FluentIcon().Icon(Icon.Add))
+                            .Content(new FluentIcon().Icon(Icon.AddSquare))
                             .ToolTip_Tip(Assets.Resources.HelmReleasesView_Install),
                         new Label()
                             .Col(1)
@@ -97,11 +104,6 @@ public sealed class HelmReleasesView : ViewBase<HelmReleasesViewModel>
                 .Command(vm, x => x.VisualizeReleaseCommand)
                 .CommandParameter(release)
                 .Icon(new FluentIcon().Icon(Icon.DataUsage));
-            yield return new MenuItem()
-                .Header(Assets.Resources.HelmReleasesView_StatusAction)
-                .Command(vm, x => x.ViewStatusCommand)
-                .CommandParameter(release)
-                .Icon(new FluentIcon().Icon(Icon.Info));
             yield return new MenuItem()
                 .Header(Assets.Resources.HelmReleasesView_Values)
                 .Command(vm, x => x.ViewValuesCommand)
