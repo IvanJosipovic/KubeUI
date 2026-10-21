@@ -128,7 +128,8 @@
       "separateMajorMinor": true,
       "groupSlug": "modelcontextprotocol",
       "matchPackageNames": [
-        "modelcontextprotocol.*"
+        "ModelContextProtocol"
+        "ModelContextProtocol.*"
       ]
     },
     {
