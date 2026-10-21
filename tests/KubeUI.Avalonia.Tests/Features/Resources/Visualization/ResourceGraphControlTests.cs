@@ -2109,8 +2109,7 @@ public sealed class ResourceGraphControlTests
             control.Graph = new ResourceRelationshipGraph([pod], []);
 
             await WaitForAsync(() => control.Area.VertexList.Count == 1);
-            await WaitForAsync(() => control.IsViewportStable);
-
+            await WaitForAsync(() => control.ZoomControl.Zoom != 0.5);
             control.ZoomControl.Zoom.ShouldNotBe(0.5);
         }
         finally
