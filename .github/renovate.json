@@ -124,6 +124,15 @@
       ]
     },
     {
+      "groupName": "ModelContextProtocol",
+      "separateMajorMinor": true,
+      "groupSlug": "modelcontextprotocol",
+      "matchPackageNames": [
+        "ModelContextProtocol"
+        "ModelContextProtocol.*"
+      ]
+    },
+    {
       "groupName": "website dependencies",
       "groupSlug": "website",
       "matchFileNames": ["website/**"],
