@@ -94,7 +94,7 @@
     <PackageReference Include="Svg.Controls.Skia.Avalonia" Version="12.0.0.17" />
     <PackageReference Include="TextMateSharp" Version="2.0.4" />
     <PackageReference Include="TextMateSharp.Grammars" Version="2.0.4" />
-    <PackageReference Include="1.2.161" Version="1.2.161" />
+    <PackageReference Include="Velopack" Version="1.2.161" />
     <PackageReference Include="Xaml.Behaviors.Avalonia" Version="12.0.7" />
   </ItemGroup>
 
