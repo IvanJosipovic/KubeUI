@@ -51,6 +51,7 @@ public interface IMcpClusterSession
 internal sealed class McpClusterSession(
     IClusterRuntimeCatalog runtimeCatalog,
     ClusterWorkspaceCatalog workspaceCatalog,
+    NavigationSectionCatalog navigationSections,
     ILogger<McpClusterSession> logger,
     IResourceRelationshipBuilder relationshipBuilder) : IMcpClusterSession
 {
@@ -81,25 +82,15 @@ internal sealed class McpClusterSession(
         if (workspace is null)
             throw new InvalidOperationException($"Cluster {cluster.Name} is not backed by a KubeUI workspace.");
         return [.. workspace.GetResourceConfigs()
-            .Select(config => (Config: config, Section: ResolveSectionName(config)))
-            .OrderBy(entry => entry.Section ?? string.Empty, StringComparer.Ordinal)
+            .Select(config => (Config: config, Section: navigationSections.Find(config.Navigation.SectionId)))
+            .OrderBy(entry => entry.Section?.Order ?? int.MaxValue)
+            .ThenBy(entry => entry.Section?.Name ?? string.Empty, StringComparer.Ordinal)
             .ThenBy(entry => entry.Config.Order)
             .ThenBy(entry => entry.Config.Name, StringComparer.Ordinal)
             .Select(static entry => new McpSupportedResourceInfo(
-                entry.Config.Name, entry.Section, entry.Config.Kind.Group, entry.Config.Kind.ApiVersion,
+                entry.Config.Name, entry.Section?.Name, entry.Config.Kind.Group, entry.Config.Kind.ApiVersion,
                 entry.Config.Kind.GroupApiVersion, entry.Config.Kind.Kind, entry.Config.IsNamespaced,
                 entry.Config.IsCustomResource(), entry.Config.CanListAndWatch, entry.Config.PermissionsLoaded))];
-    }
-
-    private static string? ResolveSectionName(IResourceConfig config)
-    {
-        var sectionId = config.Navigation.SectionId;
-        if (string.IsNullOrWhiteSpace(sectionId))
-        {
-            return null;
-        }
-
-        return NavigationSections.Find(sectionId)?.Name ?? sectionId;
     }
 
     public async Task SeedResourceAsync(string? clusterName, GroupApiVersionKind resourceKind, CancellationToken cancellationToken = default)

@@ -55,11 +55,12 @@ public class CustomResourceConfig : ResourceConfig<GenericKubernetesObject>
     /// <summary>Gets the CRD kind handled by this config, or null for the generic fallback.</summary>
     public virtual string? KindName { get; }
 
-    /// <summary>Gets the optional served API version handled by this config.</summary>
+    /// <summary>Gets the optional served API version handled by this config; null matches any served version.</summary>
     public virtual string? ApiVersion { get; }
 
     internal bool IsFallback => ApiGroup is null && KindName is null && ApiVersion is null;
 
+    /// <summary>Gets whether the CRD serves the configured API version, if one was specified.</summary>
     internal bool Matches(V1CustomResourceDefinition crd)
     {
         var spec = crd.Spec;
@@ -75,8 +76,8 @@ public class CustomResourceConfig : ResourceConfig<GenericKubernetesObject>
             return true;
         }
 
-        var storageVersion = spec.Versions?.FirstOrDefault(static version => version.Storage && version.Served)?.Name;
-        return string.Equals(ApiVersion, storageVersion, StringComparison.Ordinal);
+        return spec.Versions?.Any(version => version.Served
+            && string.Equals(version.Name, ApiVersion, StringComparison.Ordinal)) == true;
     }
 
     internal static CustomResourceConfig Select(
@@ -229,7 +230,7 @@ public class CustomResourceConfig : ResourceConfig<GenericKubernetesObject>
             }
         }
 
-        if (!ReplaceAdditionalPrinterColumns)
+        if (IncludeAdditionalPrinterColumns)
         {
             _columns.AddRange(crdPrinterColumns);
         }
@@ -239,8 +240,8 @@ public class CustomResourceConfig : ResourceConfig<GenericKubernetesObject>
         _columns.Add(AgeColumn());
     }
 
-    /// <summary>Gets whether CRD printer columns should be omitted for this kind.</summary>
-    protected virtual bool ReplaceAdditionalPrinterColumns => false;
+    /// <summary>Gets whether CRD printer columns should be included for this kind.</summary>
+    protected virtual bool IncludeAdditionalPrinterColumns => true;
 
     /// <summary>Creates columns specific to this CRD kind.</summary>
     /// <param name="crd">CRD being configured.</param>
@@ -324,7 +325,7 @@ public class CustomResourceConfig : ResourceConfig<GenericKubernetesObject>
 
     protected override IList<IResourceListColumn> CreateDefaultColumns()
     {
-        return _columns;
+        return _columns.ToArray();
     }
 
     public override Task EvaluateListWatchAccessAsync()

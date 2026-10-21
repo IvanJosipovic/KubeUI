@@ -197,7 +197,7 @@ public sealed class NavigationSectionTests
     }
 
     [AvaloniaFact]
-    public async Task alias_identity_and_count_survive_resource_version_replacement()
+    public async Task alias_identity_survives_and_stale_count_is_cleared_on_resource_version_replacement()
     {
         using var workspace = await Application.Current.CreateClusterAsync(connect: false);
         await workspace.Connect();
@@ -214,8 +214,6 @@ public sealed class NavigationSectionTests
         var section = node.NavigationItems.Single(item => item.Id == $"{workspace.Runtime.Name}-section-crossplane");
         var alias = FindResourceLink(section, firstConfig.Kind).ShouldNotBeNull();
         var identity = alias.Id;
-        var count = System.Reactive.Linq.Observable.Return(0);
-        alias.Count = count;
         alias.IsExpanded = true;
 
         var replacementConfig = new FakeCustomResourceConfig(typeof(TestCrossplaneVersionedResourceV2), "Versioned Resources");
@@ -234,12 +232,12 @@ public sealed class NavigationSectionTests
         replacementAlias.ShouldBeSameAs(alias);
         replacementAlias.Id.ShouldBe(identity);
         replacementAlias.ResourceKind.ShouldBe(replacementConfig.Kind);
-        replacementAlias.Count.ShouldBeSameAs(count);
+        replacementAlias.Count.ShouldBeNull();
         replacementAlias.IsExpanded.ShouldBeTrue();
     }
 
     [AvaloniaFact]
-    public async Task canonical_identity_and_count_survive_resource_version_replacement()
+    public async Task canonical_identity_survives_and_stale_count_is_cleared_on_resource_version_replacement()
     {
         using var workspace = await Application.Current.CreateClusterAsync(connect: false);
         await workspace.Connect();
@@ -256,8 +254,6 @@ public sealed class NavigationSectionTests
         var customResources = node.NavigationItems.Single(item => item.Id == $"{workspace.Runtime.Name}-section-custom-resources");
         var canonical = FindResourceLink(customResources, firstConfig.Kind).ShouldNotBeNull();
         var identity = canonical.Id;
-        var count = System.Reactive.Linq.Observable.Return(0);
-        canonical.Count = count;
         canonical.IsExpanded = true;
 
         var replacementConfig = new FakeCustomResourceConfig(typeof(TestCrossplaneVersionedResourceV2), "Versioned Resources");
@@ -269,7 +265,7 @@ public sealed class NavigationSectionTests
         replacementCanonical.Id.ShouldBe(identity);
         replacementCanonical.Id.ShouldBe(
             $"{workspace.Runtime.Name}-resource-{replacementConfig.Kind.Group}/{replacementConfig.Kind.Kind}");
-        replacementCanonical.Count.ShouldBeSameAs(count);
+        replacementCanonical.Count.ShouldBeNull();
         replacementCanonical.IsExpanded.ShouldBeTrue();
     }
 

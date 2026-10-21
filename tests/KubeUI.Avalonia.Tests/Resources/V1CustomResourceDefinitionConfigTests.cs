@@ -155,7 +155,7 @@ public class V1CustomResourceDefinitionConfigTests
         IResourceListColumn? customColumn = null)
         : CustomResourceConfig(serviceProvider, "kubeui.com", "Test")
     {
-        protected override bool ReplaceAdditionalPrinterColumns => configurePresentation;
+        protected override bool IncludeAdditionalPrinterColumns => !configurePresentation;
 
         protected override IEnumerable<IResourceListColumn> CreateAdditionalColumns(V1CustomResourceDefinition crd)
             => customColumn is null ? [] : [customColumn];

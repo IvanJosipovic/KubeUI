@@ -155,9 +155,10 @@ public sealed class NavigationViewTests
         ReferenceEquals(tree.SelectedItem, section).ShouldBeTrue();
 
         ClickNavigationItem(window, treeItem, section.Name);
-        sectionSelections.ShouldBe(2);
+        sectionSelections.ShouldBe(1);
         section.IsExpanded.ShouldBeFalse();
         treeItem.IsExpanded.ShouldBeFalse();
+        ReferenceEquals(tree.SelectedItem, section).ShouldBeTrue();
 
         var expander = treeItem.GetVisualDescendants().OfType<ToggleButton>()
             .First(toggle => ReferenceEquals(toggle.DataContext, section));

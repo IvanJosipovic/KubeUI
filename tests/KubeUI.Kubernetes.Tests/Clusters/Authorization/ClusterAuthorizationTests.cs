@@ -225,7 +225,7 @@ public sealed class ClusterAuthorizationTests
 
     [Theory, KubernetesBackendData]
     [Trait("Category", "Kind")]
-    public async Task resource_names_do_not_grant_unnamed_checks(KubernetesBackend backend)
+    public async Task resource_name_rules_apply_only_to_name_specific_verbs(KubernetesBackend backend)
     {
         await using var harness = await new TestClusterGenerator().CreateAsync(
             new TestClusterConfig
@@ -255,7 +255,7 @@ public sealed class ClusterAuthorizationTests
                                 ApiGroups = [""],
                                 Resources = ["pods"],
                                 ResourceNames = ["only-this-pod"],
-                                Verbs = ["get"],
+                                Verbs = ["get", "delete", "list", "watch"],
                             },
                         ],
                     },
@@ -292,6 +292,58 @@ public sealed class ClusterAuthorizationTests
         await cluster.Permissions.UpdatePermissionsAllNamespaceAsync<V1Pod>(Verb.Get);
 
         cluster.Permissions.CanI<V1Pod>(Verb.Get, "my-app").ShouldBeFalse();
+        cluster.Permissions.CanI<V1Pod>(Verb.Delete, "my-app").ShouldBeFalse();
+        cluster.Permissions.CanI<V1Pod>(Verb.List, "my-app").ShouldBeTrue();
+        cluster.Permissions.CanI<V1Pod>(Verb.Watch, "my-app").ShouldBeTrue();
+    }
+
+    [Fact]
+    public async Task wildcard_subresources_do_not_grant_unlisted_subresources()
+    {
+        await using var harness = await new TestClusterGenerator().CreateAsync(
+            new TestClusterConfig
+            {
+                Type = KubernetesBackend.Fake,
+                AuthenticatedUser = KubernetesRbac.ServiceAccountUser,
+                InitialResources =
+                [
+                    new V1Namespace { Metadata = new V1ObjectMeta { Name = "my-app" } },
+                    new V1ServiceAccount
+                    {
+                        Metadata = new V1ObjectMeta
+                        {
+                            Name = KubernetesRbac.ServiceAccountName,
+                            NamespaceProperty = KubernetesRbac.ServiceAccountNamespace,
+                        },
+                    },
+                    KubernetesRbac.NamespacedRole(
+                        "my-app",
+                        "wildcard-subresource",
+                        new RbacRule("pods/*", "get")),
+                    KubernetesRbac.NamespacedRoleBinding(
+                        "my-app",
+                        "wildcard-subresource",
+                        "wildcard-subresource"),
+                    KubernetesRbac.NamespacedRole(
+                        "my-app",
+                        "any-resource-log",
+                        new RbacRule("*/log", "get")),
+                    KubernetesRbac.NamespacedRoleBinding(
+                        "my-app",
+                        "any-resource-log",
+                        "any-resource-log"),
+                    .. KubernetesRbac.ClusterWide(
+                        new RbacRule("namespaces", "list"),
+                        new RbacRule("namespaces", "watch")),
+                ],
+            },
+            TestContext.Current.CancellationToken);
+        var cluster = harness.Cluster;
+        await cluster.Connect();
+
+        var podKind = GroupApiVersionKind.From<V1Pod>();
+        (await cluster.Permissions.UpdateCanI(podKind, Verb.Get, "my-app", "log")).ShouldBeTrue();
+        (await cluster.Permissions.UpdateCanI(podKind, Verb.Get, "my-app", "exec")).ShouldBeFalse();
     }
 
     [Theory, KubernetesBackendData]
@@ -370,6 +422,40 @@ public sealed class ClusterAuthorizationTests
 
         (await cluster.Permissions.UpdateCanI(kind, Verb.List, "default")).ShouldBeTrue();
         cluster.Permissions.CanI(kind, Verb.List).ShouldBeFalse();
+    }
+
+    [Fact]
+    public async Task namespace_invalidation_during_rules_load_does_not_publish_stale_rules()
+    {
+        var state = new RulesReviewGateState();
+        var config = CreateRestrictedClusterConfig(
+            KubernetesBackend.Fake,
+            KubernetesRbac.InNamespace("default", new RbacRule("pods", "list")));
+        config.HttpHandlerFactory = () => [new RulesReviewGateHandler(state)];
+
+        await using var harness = await new TestClusterGenerator().CreateAsync(
+            config,
+            TestContext.Current.CancellationToken);
+        var cluster = harness.Cluster;
+        await cluster.Connect();
+        cluster.Permissions.InvalidatePermissions();
+
+        var kind = GroupApiVersionKind.From<V1Pod>();
+        var staleLoad = cluster.Permissions.UpdateCanI(kind, Verb.List, "default");
+        await TestWait.UntilAsync(
+            () => state.RequestCount > 0,
+            TimeSpan.FromSeconds(10),
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        cluster.Permissions.InvalidateNamespacePermissions();
+        state.Gate.SetResult();
+
+        (await staleLoad).ShouldBeTrue();
+        cluster.Permissions.CanI(kind, Verb.List, "default").ShouldBeFalse();
+
+        var requestsBeforeReload = state.RequestCount;
+        (await cluster.Permissions.UpdateCanI(kind, Verb.List, "default")).ShouldBeTrue();
+        state.RequestCount.ShouldBeGreaterThan(requestsBeforeReload);
     }
 
     [Theory, KubernetesBackendData]
@@ -630,6 +716,42 @@ public sealed class ClusterAuthorizationTests
 
             cancellationToken.ThrowIfCancellationRequested();
             await TestWait.NextPollAsync(TimeSpan.FromMilliseconds(25), cancellationToken).ConfigureAwait(false);
+        }
+    }
+
+    private sealed class RulesReviewGateState
+    {
+        private int _requestCount;
+        private int _isBlocking;
+
+        public TaskCompletionSource Gate { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public int RequestCount => Volatile.Read(ref _requestCount);
+
+        public void StartBlocking() => Volatile.Write(ref _isBlocking, 1);
+
+        public bool TryBlockRequest()
+        {
+            Interlocked.Increment(ref _requestCount);
+            return Volatile.Read(ref _isBlocking) != 0;
+        }
+    }
+
+    private sealed class RulesReviewGateHandler(RulesReviewGateState state) : DelegatingHandler
+    {
+        protected override async Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request,
+            CancellationToken cancellationToken)
+        {
+            if (request.RequestUri?.AbsolutePath.EndsWith(
+                    "/selfsubjectrulesreviews",
+                    StringComparison.Ordinal) == true
+                && state.TryBlockRequest())
+            {
+                await state.Gate.Task.WaitAsync(cancellationToken);
+            }
+
+            return await base.SendAsync(request, cancellationToken);
         }
     }
 }
