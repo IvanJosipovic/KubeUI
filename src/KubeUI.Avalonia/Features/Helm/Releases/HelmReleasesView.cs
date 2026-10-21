@@ -27,50 +27,45 @@ public sealed class HelmReleasesView : ViewBase<HelmReleasesViewModel>
             .Children(
                 new Grid()
                     .Row(0)
-                    .Cols("Auto,Auto,Auto,Auto,Auto,Auto,Auto,*,Auto")
+                    .MinHeight(32)
+                    .Margin(0, 2, 0, 2)
+                    .Cols("Auto,Auto,*,Auto")
                     .Children(
                         new Button()
                             .Col(0)
-                            .Margin(0, 0, 6, 0)
+                            .Margin(2, 0, 0, 0)
                             .Command(vm, x => x.NewReleaseCommand)
                             .Content(new FluentIcon().Icon(Icon.Add))
                             .ToolTip_Tip(Assets.Resources.HelmReleasesView_Install),
-                        CreateNamespaceSelector(vm).Col(1),
-                        new ToggleButton()
-                            .Col(2)
-                            .Margin(0, 0, 6, 0)
-                            .IsChecked(vm, x => x.IsNamespaceSelectionLinked, BindingMode.TwoWay)
-                            .ToolTip_Tip(Assets.Resources.ResourceListView_NamespaceLink)
-                            .Content(new FluentIcon().Icon(Icon.Link)),
-                        new TextBlock()
+                        new Label()
+                            .Col(1)
+                            .Margin(2, 0, 0, 0)
+                            .VerticalContentAlignment(VerticalAlignment.Center)
+                            .Content(CompiledBinding.Create<HelmReleasesViewModel, int>(
+                                x => x.ItemCount,
+                                source: vm,
+                                stringFormat: Assets.Resources.HelmReleasesView_ItemsFormat)),
+                        new StackPanel()
                             .Col(3)
-                            .VerticalAlignment(VerticalAlignment.Center)
-                            .Text(Assets.Resources.HelmReleasesView_RollbackRevision),
-                        new global::Avalonia.Controls.NumericUpDown()
-                            .Col(4)
-                            .Width(90)
-                            .Minimum(0)
-                            .Value(vm, x => x.RollbackRevision, BindingMode.TwoWay),
-                        new Button()
-                            .Col(5)
-                            .Command(vm, x => x.RollbackCommand)
-                            .CommandParameter(vm, x => x.SelectedRelease)
-                            .Content(Assets.Resources.HelmReleasesView_Rollback),
-                        new CheckBox()
-                            .Col(6)
-                            .Margin(6, 0, 6, 0)
-                            .VerticalAlignment(VerticalAlignment.Center)
-                            .Content(Assets.Resources.HelmReleasesView_Wait)
-                            .IsChecked(vm, x => x.WaitForActions, BindingMode.TwoWay),
-                        new TextBlock()
-                            .Col(7)
-                            .VerticalAlignment(VerticalAlignment.Center)
-                            .Text(vm, x => x.Status),
-                        new Button()
-                            .Col(8)
-                            .Command(vm, x => x.RefreshCommand)
-                            .Content(new FluentIcon().Icon(Icon.ArrowSync))
-                            .ToolTip_Tip(Assets.Resources.HelmReleasesView_Refresh)),
+                            .MaxWidth(700)
+                            .HorizontalAlignment(HorizontalAlignment.Right)
+                            .Orientation(Orientation.Horizontal)
+                            .Children(
+                                CreateNamespaceSelector(vm),
+                                new ToggleButton()
+                                    .Margin(0, 0, 2, 0)
+                                    .IsChecked(vm, x => x.IsNamespaceSelectionLinked, BindingMode.TwoWay)
+                                    .ToolTip_Tip(Assets.Resources.ResourceListView_NamespaceLink)
+                                    .Content(new FluentIcon().Icon(Icon.Link)),
+                                new TextBlock()
+                                    .MaxWidth(300)
+                                    .VerticalAlignment(VerticalAlignment.Center)
+                                    .TextWrapping(TextWrapping.Wrap)
+                                    .Text(vm, x => x.Status),
+                                new Button()
+                                    .Command(vm, x => x.RefreshCommand)
+                                    .Content(new FluentIcon().Icon(Icon.ArrowSync))
+                                    .ToolTip_Tip(Assets.Resources.HelmReleasesView_Refresh))),
                 table.Row(1));
     }
 

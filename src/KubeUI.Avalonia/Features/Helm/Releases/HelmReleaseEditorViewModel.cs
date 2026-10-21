@@ -1,6 +1,9 @@
 using System.Text.Json;
 using Dock.Model.Core;
+using FluentAvalonia.UI.Controls;
 using Helm.NET;
+using HanumanInstitute.MvvmDialogs;
+using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Features.Helm;
 using KubeUI.Avalonia.Infrastructure.Docking;
@@ -13,6 +16,7 @@ public sealed partial class HelmReleaseEditorViewModel : ViewModelBase
 {
     private readonly IHelmService _helmService;
     private readonly IFactory _factory;
+    private readonly IDialogService _dialogService;
     private readonly HelmReleasesViewModel _parent;
     private readonly IHelmReleasePreviewService _previewService;
     private HelmConnection? _connection;
@@ -52,12 +56,14 @@ public sealed partial class HelmReleaseEditorViewModel : ViewModelBase
         IHelmService helmService,
         IFactory factory,
         HelmReleasesViewModel parent,
-        IHelmReleasePreviewService previewService)
+        IHelmReleasePreviewService previewService,
+        IDialogService dialogService)
     {
         _helmService = helmService;
         _factory = factory;
         _parent = parent;
         _previewService = previewService;
+        _dialogService = dialogService;
     }
 
     public void Initialize(ClusterWorkspace cluster, HelmConnection connection, HelmRelease? release)
@@ -84,6 +90,28 @@ public sealed partial class HelmReleaseEditorViewModel : ViewModelBase
         if (!TryParseValues(out var values, out var error))
         {
             Error = error;
+            return;
+        }
+
+        var confirmation = await _dialogService.ShowContentDialogAsync(this, new ContentDialogSettings
+        {
+            Title = _editing
+                ? Assets.Resources.HelmReleaseEditorView_ConfirmUpgradeTitle
+                : Assets.Resources.HelmReleaseEditorView_ConfirmInstallTitle,
+            Content = string.Format(
+                _editing
+                    ? Assets.Resources.HelmReleaseEditorView_ConfirmUpgradeContent!
+                    : Assets.Resources.HelmReleaseEditorView_ConfirmInstallContent!,
+                ReleaseName.Trim(),
+                Chart.Trim(),
+                Namespace.Trim()),
+            PrimaryButtonText = Assets.Resources.HelmReleaseEditorView_InstallUpgrade,
+            SecondaryButtonText = Assets.Resources.HelmReleaseEditorView_Cancel,
+            DefaultButton = FAContentDialogButton.Secondary
+        });
+
+        if (confirmation != FAContentDialogResult.Primary)
+        {
             return;
         }
 

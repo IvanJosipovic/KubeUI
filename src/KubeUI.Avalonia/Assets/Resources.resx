@@ -2933,6 +2933,7 @@
   <data name="HelmReleasesView_Updated" xml:space="preserve"><value>Updated</value></data>
   <data name="HelmReleasesView_Install" xml:space="preserve"><value>Install release</value></data>
   <data name="HelmReleasesView_RollbackRevision" xml:space="preserve"><value>Target revision</value></data>
+  <data name="HelmReleasesView_ItemsFormat" xml:space="preserve"><value>Releases: {0}</value></data>
   <data name="HelmReleasesView_Rollback" xml:space="preserve"><value>Rollback</value></data>
   <data name="HelmReleasesView_Wait" xml:space="preserve"><value>Wait for actions</value></data>
   <data name="HelmReleasesView_Refresh" xml:space="preserve"><value>Refresh</value></data>
@@ -2944,6 +2945,8 @@
   <data name="HelmReleasesView_Uninstall" xml:space="preserve"><value>Uninstall</value></data>
   <data name="HelmReleasesView_UninstallTitle" xml:space="preserve"><value>Uninstall release?</value></data>
   <data name="HelmReleasesView_UninstallContent" xml:space="preserve"><value>Uninstall release '{0}' from namespace '{1}'?</value></data>
+  <data name="HelmReleasesView_RollbackDialog_Title" xml:space="preserve"><value>Roll back release?</value></data>
+  <data name="HelmReleasesView_RollbackDialog_Content" xml:space="preserve"><value>Roll back release '{0}' in namespace '{1}'? Revision 0 selects the previous revision.</value></data>
   <data name="HelmReleaseEditorView_InstallTitle" xml:space="preserve"><value>Install Helm release</value></data>
   <data name="HelmReleaseEditorView_UpgradeTitle" xml:space="preserve"><value>Upgrade Helm release</value></data>
   <data name="HelmReleaseEditorView_Name" xml:space="preserve"><value>Release name</value></data>
@@ -2958,5 +2961,9 @@
   <data name="HelmReleaseEditorView_Cancel" xml:space="preserve"><value>Cancel</value></data>
   <data name="HelmReleaseEditorView_Preview" xml:space="preserve"><value>Preview in visualization</value></data>
   <data name="HelmReleaseEditorView_InstallUpgrade" xml:space="preserve"><value>Install / Upgrade</value></data>
+  <data name="HelmReleaseEditorView_ConfirmInstallTitle" xml:space="preserve"><value>Install release?</value></data>
+  <data name="HelmReleaseEditorView_ConfirmUpgradeTitle" xml:space="preserve"><value>Upgrade release?</value></data>
+  <data name="HelmReleaseEditorView_ConfirmInstallContent" xml:space="preserve"><value>Install release '{0}' using chart '{1}' in namespace '{2}'?</value></data>
+  <data name="HelmReleaseEditorView_ConfirmUpgradeContent" xml:space="preserve"><value>Upgrade release '{0}' using chart '{1}' in namespace '{2}'?</value></data>
   <data name="HelmReleasePreviewService_NoResources" xml:space="preserve"><value>Helm rendered no Kubernetes resources to visualize.</value></data>
 </root>

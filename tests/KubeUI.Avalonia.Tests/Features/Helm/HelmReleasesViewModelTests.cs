@@ -1,7 +1,10 @@
 using Avalonia.Headless.XUnit;
+using Avalonia.Controls;
 using Dock.Model.Core;
+using FluentAvalonia.UI.Controls;
 using Helm.NET;
 using HanumanInstitute.MvvmDialogs;
+using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using KubeUI.Avalonia.Features.Helm;
 using KubeUI.Avalonia.Features.Helm.Releases;
 using KubeUI.Kubernetes;
@@ -56,6 +59,10 @@ public sealed class HelmReleasesViewModelTests
         viewModel.SelectedNamespaces.Add(new V1Namespace { Metadata = new V1ObjectMeta { Name = "system" } });
         await TestWait.UntilAsync(() => viewModel.ItemCount == 2, TimeSpan.FromSeconds(5), cancellationToken: TestContext.Current.CancellationToken);
         workspace.SelectedNamespaces.Count.ShouldBe(1);
+
+        viewModel.SelectedNamespaces.Clear();
+        await viewModel.RefreshCommand.ExecuteAsync(null).WaitAsync(TestContext.Current.CancellationToken);
+        await TestWait.UntilAsync(() => viewModel.ItemCount == releases.Length, TimeSpan.FromSeconds(5), cancellationToken: TestContext.Current.CancellationToken);
     }
 
     [AvaloniaFact]
@@ -78,7 +85,10 @@ public sealed class HelmReleasesViewModelTests
             .Setup(service => service.HistoryAsync(It.IsAny<HelmConnection>(), release.Name, It.IsAny<CancellationToken>()))
             .ReturnsAsync([release]);
         helmService
-            .Setup(service => service.RollbackAsync(It.IsAny<HelmConnection>(), release.Name, 4, It.IsAny<CancellationToken>(), false))
+            .Setup(service => service.RollbackAsync(It.IsAny<HelmConnection>(), release.Name, 0, It.IsAny<CancellationToken>(), false))
+            .Returns(Task.CompletedTask);
+        helmService
+            .Setup(service => service.UninstallAsync(It.IsAny<HelmConnection>(), release.Name, It.IsAny<CancellationToken>(), false))
             .Returns(Task.CompletedTask);
         previewService
             .Setup(service => service.PreviewAsync(
@@ -86,8 +96,12 @@ public sealed class HelmReleasesViewModelTests
                 It.IsAny<IReadOnlyDictionary<string, object?>>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
         var factory = new Mock<IFactory>();
-        var dialogs = new Mock<IDialogService>();
-        using var viewModel = new HelmReleasesViewModel(helmService.Object, factory.Object, dialogs.Object, previewService.Object);
+        List<ContentDialogSettings> dialogs = [];
+        using var viewModel = new HelmReleasesViewModel(
+            helmService.Object,
+            factory.Object,
+            HelmDialogTestHelper.CreateConfirmingDialogService(dialogs),
+            previewService.Object);
         viewModel.Initialize(workspace);
 
         await viewModel.ViewStatusCommand.ExecuteAsync(release).WaitAsync(TestContext.Current.CancellationToken);
@@ -97,14 +111,19 @@ public sealed class HelmReleasesViewModelTests
         await viewModel.ViewHistoryCommand.ExecuteAsync(release).WaitAsync(TestContext.Current.CancellationToken);
         viewModel.Status.ShouldContain("2: deployed");
 
-        viewModel.RollbackRevision = 4;
         await viewModel.RollbackCommand.ExecuteAsync(release).WaitAsync(TestContext.Current.CancellationToken);
         await viewModel.VisualizeReleaseCommand.ExecuteAsync(release).WaitAsync(TestContext.Current.CancellationToken);
+        await viewModel.UninstallCommand.ExecuteAsync(release).WaitAsync(TestContext.Current.CancellationToken);
 
         helmService.Verify(service => service.RollbackAsync(
             It.Is<HelmConnection>(connection => connection.Namespace == "apps"),
             release.Name,
-            4,
+            0,
+            It.IsAny<CancellationToken>(),
+            false), Times.Once);
+        helmService.Verify(service => service.UninstallAsync(
+            It.Is<HelmConnection>(connection => connection.Namespace == release.Namespace),
+            release.Name,
             It.IsAny<CancellationToken>(),
             false), Times.Once);
         previewService.Verify(service => service.PreviewAsync(
@@ -114,5 +133,9 @@ public sealed class HelmReleasesViewModelTests
             release.Chart,
             It.IsAny<IReadOnlyDictionary<string, object?>>(),
             It.IsAny<CancellationToken>()), Times.Once);
+        dialogs.Count.ShouldBe(2);
+        dialogs[0].Content.ShouldBeOfType<StackPanel>().Children.OfType<global::Avalonia.Controls.NumericUpDown>().ShouldHaveSingleItem();
+        dialogs[0].Content.ShouldBeOfType<StackPanel>().Children.OfType<CheckBox>().ShouldHaveSingleItem();
+        dialogs[1].Content.ShouldBeOfType<StackPanel>().Children.OfType<CheckBox>().ShouldHaveSingleItem();
     }
 }

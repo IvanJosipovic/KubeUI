@@ -45,12 +45,6 @@ public sealed partial class HelmReleasesViewModel : ViewModelBase, IInitializeCl
     [ObservableProperty]
     public partial string Status { get; private set; } = string.Empty;
 
-    [ObservableProperty]
-    public partial int RollbackRevision { get; set; }
-
-    [ObservableProperty]
-    public partial bool WaitForActions { get; set; }
-
     public IDynamicTableViewSource TableSource => _tableSource;
 
     public ISelectionModel SelectionModel => _tableSource.SelectionModel;
@@ -240,9 +234,30 @@ public sealed partial class HelmReleasesViewModel : ViewModelBase, IInitializeCl
             return;
         }
 
+        var maximumRevision = int.TryParse(release.Revision, out var revision) ? revision : 0;
+        var dialogViewModel = new ReleaseActionDialogViewModel();
+        var result = await _dialogService.ShowContentDialogAsync(this, new ContentDialogSettings
+        {
+            Title = Assets.Resources.HelmReleasesView_RollbackDialog_Title,
+            Content = CreateRollbackDialogContent(dialogViewModel, release, maximumRevision),
+            PrimaryButtonText = Assets.Resources.HelmReleasesView_Rollback,
+            SecondaryButtonText = Assets.Resources.HelmRepositoryEditorView_Cancel,
+            DefaultButton = FAContentDialogButton.Secondary
+        });
+
+        if (result != FAContentDialogResult.Primary)
+        {
+            return;
+        }
+
         try
         {
-            await _helmService.RollbackAsync(_connection with { Namespace = release.Namespace }, release.Name, RollbackRevision, cancellationToken, WaitForActions);
+            await _helmService.RollbackAsync(
+                _connection with { Namespace = release.Namespace },
+                release.Name,
+                dialogViewModel.Revision,
+                cancellationToken,
+                dialogViewModel.WaitForAction);
             await Refresh(cancellationToken);
         }
         catch (Exception exception)
@@ -259,10 +274,11 @@ public sealed partial class HelmReleasesViewModel : ViewModelBase, IInitializeCl
             return;
         }
 
+        ReleaseActionDialogViewModel dialogViewModel = new();
         var result = await _dialogService.ShowContentDialogAsync(this, new ContentDialogSettings
         {
             Title = Assets.Resources.HelmReleasesView_UninstallTitle,
-            Content = string.Format(Assets.Resources.HelmReleasesView_UninstallContent!, release.Name, release.Namespace),
+            Content = CreateUninstallDialogContent(dialogViewModel, release),
             PrimaryButtonText = Assets.Resources.HelmReleasesView_Uninstall,
             SecondaryButtonText = Assets.Resources.HelmRepositoryEditorView_Cancel,
             DefaultButton = FAContentDialogButton.Secondary
@@ -275,7 +291,11 @@ public sealed partial class HelmReleasesViewModel : ViewModelBase, IInitializeCl
 
         try
         {
-            await _helmService.UninstallAsync(_connection with { Namespace = release.Namespace }, release.Name, cancellationToken, WaitForActions);
+            await _helmService.UninstallAsync(
+                _connection with { Namespace = release.Namespace },
+                release.Name,
+                cancellationToken,
+                dialogViewModel.WaitForAction);
             await Refresh(cancellationToken);
         }
         catch (Exception exception)
@@ -291,7 +311,7 @@ public sealed partial class HelmReleasesViewModel : ViewModelBase, IInitializeCl
             return;
         }
 
-        var editor = new HelmReleaseEditorViewModel(_helmService, _factory, this, _previewService);
+        var editor = new HelmReleaseEditorViewModel(_helmService, _factory, this, _previewService, _dialogService);
         editor.Initialize(Cluster, _connection, release);
         _factory.AddToDocuments(editor);
     }
@@ -316,6 +336,38 @@ public sealed partial class HelmReleasesViewModel : ViewModelBase, IInitializeCl
 
         return Encoding.UTF8.GetString(stream.ToArray());
     }
+
+    private static StackPanel CreateRollbackDialogContent(
+        ReleaseActionDialogViewModel viewModel,
+        HelmRelease release,
+        int maximumRevision)
+        => new StackPanel()
+            .Spacing(8)
+            .Children(
+                new TextBlock().Text(string.Format(
+                    Assets.Resources.HelmReleasesView_RollbackDialog_Content!,
+                    release.Name,
+                    release.Namespace)),
+                new TextBlock().Text(Assets.Resources.HelmReleasesView_RollbackRevision),
+                new global::Avalonia.Controls.NumericUpDown()
+                    .Minimum(0)
+                    .Maximum(maximumRevision)
+                    .Value(viewModel, x => x.Revision, BindingMode.TwoWay),
+                new CheckBox()
+                    .Content(Assets.Resources.HelmReleasesView_Wait)
+                    .IsChecked(viewModel, x => x.WaitForAction, BindingMode.TwoWay));
+
+    private static StackPanel CreateUninstallDialogContent(ReleaseActionDialogViewModel viewModel, HelmRelease release)
+        => new StackPanel()
+            .Spacing(8)
+            .Children(
+                new TextBlock().Text(string.Format(
+                    Assets.Resources.HelmReleasesView_UninstallContent!,
+                    release.Name,
+                    release.Namespace)),
+                new CheckBox()
+                    .Content(Assets.Resources.HelmReleasesView_Wait)
+                    .IsChecked(viewModel, x => x.WaitForAction, BindingMode.TwoWay));
 
     private static DynamicTableViewColumn<HelmRelease> CreateColumn<TValue>(
         string key,
@@ -416,5 +468,14 @@ public sealed partial class HelmReleasesViewModel : ViewModelBase, IInitializeCl
         _tableSource.SelectionModel.SelectionChanged -= SelectionChanged;
         _tableSource.Dispose();
         _releases.Dispose();
+    }
+
+    private sealed partial class ReleaseActionDialogViewModel : ObservableObject
+    {
+        [ObservableProperty]
+        public partial int Revision { get; set; }
+
+        [ObservableProperty]
+        public partial bool WaitForAction { get; set; }
     }
 }

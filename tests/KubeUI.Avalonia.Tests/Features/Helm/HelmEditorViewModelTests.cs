@@ -77,10 +77,10 @@ public sealed class HelmEditorViewModelTests
                 TimeSpan.FromSeconds(30), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new HelmRelease("web", "apps", "1", "2026-01-01", "deployed", "nginx-1.0.0", "1.0.0"));
         var factory = new Mock<IFactory>();
-        var dialogs = new Mock<IDialogService>();
-        using var releases = new HelmReleasesViewModel(helmService.Object, factory.Object, dialogs.Object, previewService.Object);
+        var dialogs = HelmDialogTestHelper.CreateConfirmingDialogService();
+        using var releases = new HelmReleasesViewModel(helmService.Object, factory.Object, dialogs, previewService.Object);
         releases.Initialize(workspace);
-        var editor = new HelmReleaseEditorViewModel(helmService.Object, factory.Object, releases, previewService.Object);
+        var editor = new HelmReleaseEditorViewModel(helmService.Object, factory.Object, releases, previewService.Object, dialogs);
         editor.Initialize(workspace, new HelmConnection("config", "context", "apps"), null);
         editor.ReleaseName = "web";
         editor.Chart = "bitnami/nginx";
