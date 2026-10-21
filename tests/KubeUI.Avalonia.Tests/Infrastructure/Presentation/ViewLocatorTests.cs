@@ -3,6 +3,7 @@ using Avalonia.Headless.XUnit;
 using k8s.Models;
 using KubeUI.Avalonia.Features.Crossplane.MRDiffDetection;
 using KubeUI.Avalonia.Infrastructure.Presentation;
+using KubeUI.Avalonia.Shell.Documents.Updates;
 using KubeUI.Avalonia.Shell.Main;
 using KubeUI.Kubernetes.Client;
 using Shouldly;
@@ -32,6 +33,18 @@ public sealed class ViewLocatorTests
         var view = locator.Build(new HomeViewModel());
 
         view.ShouldBeOfType<HomeView>();
+    }
+
+    [AvaloniaFact]
+    public void Build_ResolvesUpdateAvailableViewFromGeneratedViewFactory()
+    {
+        var services = Application.Current.GetTestServices();
+        var locator = services.GetRequiredService<ViewLocator>();
+        var viewModel = services.GetRequiredService<UpdateAvailableViewModel>();
+
+        var view = locator.Build(viewModel);
+
+        view.ShouldBeOfType<UpdateAvailableView>();
     }
 
     [AvaloniaFact]
