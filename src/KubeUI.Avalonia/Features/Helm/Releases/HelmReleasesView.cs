@@ -1,6 +1,10 @@
+using Avalonia.Controls.Templates;
+using Avalonia.Controls.Primitives;
 using FluentIcons.Avalonia;
 using FluentIcons.Common;
 using Helm.NET;
+using k8s.Models;
+using Ursa.Controls;
 
 namespace KubeUI.Avalonia.Features.Helm.Releases;
 
@@ -23,7 +27,7 @@ public sealed class HelmReleasesView : ViewBase<HelmReleasesViewModel>
             .Children(
                 new Grid()
                     .Row(0)
-                    .Cols("Auto,Auto,Auto,Auto,Auto,Auto,*,Auto")
+                    .Cols("Auto,Auto,Auto,Auto,Auto,Auto,Auto,*,Auto")
                     .Children(
                         new Button()
                             .Col(0)
@@ -31,42 +35,62 @@ public sealed class HelmReleasesView : ViewBase<HelmReleasesViewModel>
                             .Command(vm, x => x.NewReleaseCommand)
                             .Content(new FluentIcon().Icon(Icon.Add))
                             .ToolTip_Tip(Assets.Resources.HelmReleasesView_Install),
-                        new CheckBox()
-                            .Col(1)
-                            .Margin(0, 0, 6, 0)
-                            .VerticalAlignment(VerticalAlignment.Center)
-                            .Content(Assets.Resources.HelmReleasesView_AllNamespaces)
-                            .IsChecked(vm, x => x.AllNamespaces, BindingMode.TwoWay),
-                        new TextBlock()
+                        CreateNamespaceSelector(vm).Col(1),
+                        new ToggleButton()
                             .Col(2)
+                            .Margin(0, 0, 6, 0)
+                            .IsChecked(vm, x => x.IsNamespaceSelectionLinked, BindingMode.TwoWay)
+                            .ToolTip_Tip(Assets.Resources.ResourceListView_NamespaceLink)
+                            .Content(new FluentIcon().Icon(Icon.Link)),
+                        new TextBlock()
+                            .Col(3)
                             .VerticalAlignment(VerticalAlignment.Center)
                             .Text(Assets.Resources.HelmReleasesView_RollbackRevision),
-                        new NumericUpDown()
-                            .Col(3)
+                        new global::Avalonia.Controls.NumericUpDown()
+                            .Col(4)
                             .Width(90)
                             .Minimum(0)
                             .Value(vm, x => x.RollbackRevision, BindingMode.TwoWay),
                         new Button()
-                            .Col(4)
+                            .Col(5)
                             .Command(vm, x => x.RollbackCommand)
                             .CommandParameter(vm, x => x.SelectedRelease)
                             .Content(Assets.Resources.HelmReleasesView_Rollback),
                         new CheckBox()
-                            .Col(5)
+                            .Col(6)
                             .Margin(6, 0, 6, 0)
                             .VerticalAlignment(VerticalAlignment.Center)
                             .Content(Assets.Resources.HelmReleasesView_Wait)
                             .IsChecked(vm, x => x.WaitForActions, BindingMode.TwoWay),
                         new TextBlock()
-                            .Col(6)
+                            .Col(7)
                             .VerticalAlignment(VerticalAlignment.Center)
                             .Text(vm, x => x.Status),
                         new Button()
-                            .Col(7)
+                            .Col(8)
                             .Command(vm, x => x.RefreshCommand)
                             .Content(new FluentIcon().Icon(Icon.ArrowSync))
                             .ToolTip_Tip(Assets.Resources.HelmReleasesView_Refresh)),
                 table.Row(1));
+    }
+
+    private static MultiComboBox CreateNamespaceSelector(HelmReleasesViewModel viewModel)
+    {
+        var template = new FuncDataTemplate<V1Namespace>((ns, _) =>
+            new TextBlock().Text(ns?.Metadata?.Name ?? string.Empty));
+
+        return new MultiComboBox()
+            .Width(200)
+            .MinWidth(140)
+            .MaxHeight(20)
+            .Margin(0, 0, 2, 0)
+            .HorizontalAlignment(HorizontalAlignment.Stretch)
+            .Classes("ClearButton")
+            .ItemsSource(CompiledBinding.Create<HelmReleasesViewModel, IEnumerable>(x => x.Cluster!.Runtime.Namespaces, source: viewModel))
+            .PlaceholderText(Assets.Resources.ResourceListView_SelectNamespace)
+            .SelectedItems(CompiledBinding.Create<HelmReleasesViewModel, IList>(x => x.SelectedNamespaces, source: viewModel))
+            .ItemTemplate(template)
+            .SelectedItemTemplate(template);
     }
 
     private static IEnumerable<MenuItem> CreateContextMenuItems(HelmReleasesViewModel vm, IReadOnlyList<object> targets)

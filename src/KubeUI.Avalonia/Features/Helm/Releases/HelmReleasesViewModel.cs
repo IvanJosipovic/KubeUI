@@ -1,3 +1,4 @@
+using System.Collections.Specialized;
 using System.Text;
 using System.Text.Json;
 using Avalonia.Controls.Selection;
@@ -7,6 +8,7 @@ using FluentAvalonia.UI.Controls;
 using Helm.NET;
 using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
+using k8s.Models;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Features.Helm;
 using KubeUI.Avalonia.Infrastructure.Docking;
@@ -17,13 +19,19 @@ namespace KubeUI.Avalonia.Features.Helm.Releases;
 
 public sealed partial class HelmReleasesViewModel : ViewModelBase, IInitializeCluster, IDisposable
 {
+    private const string NamespaceScopeFilterId = "helm-releases-namespace";
     private readonly IHelmService _helmService;
     private readonly IFactory _factory;
     private readonly IDialogService _dialogService;
     private readonly IHelmReleasePreviewService _previewService;
     private readonly SourceCache<HelmRelease, string> _releases = new(static release => $"{release.Namespace}\u001f{release.Name}");
     private readonly DynamicTableViewSource<HelmRelease, string> _tableSource;
+    private readonly ObservableCollection<V1Namespace> _localSelectedNamespaces = [];
+    private readonly INotifyCollectionChanged? _itemsNotifications;
     private HelmConnection? _connection;
+
+    [ObservableProperty]
+    public partial int ItemCount { get; private set; }
 
     [ObservableProperty]
     public partial ClusterWorkspace? Cluster { get; set; }
@@ -32,7 +40,7 @@ public sealed partial class HelmReleasesViewModel : ViewModelBase, IInitializeCl
     public partial HelmRelease? SelectedRelease { get; set; }
 
     [ObservableProperty]
-    public partial bool AllNamespaces { get; set; } = true;
+    public partial bool IsNamespaceSelectionLinked { get; set; } = true;
 
     [ObservableProperty]
     public partial string Status { get; private set; } = string.Empty;
@@ -46,6 +54,9 @@ public sealed partial class HelmReleasesViewModel : ViewModelBase, IInitializeCl
     public IDynamicTableViewSource TableSource => _tableSource;
 
     public ISelectionModel SelectionModel => _tableSource.SelectionModel;
+
+    public ObservableCollection<V1Namespace> SelectedNamespaces
+        => IsNamespaceSelectionLinked && Cluster is not null ? Cluster.SelectedNamespaces : _localSelectedNamespaces;
 
     public HelmReleasesViewModel(
         IHelmService helmService,
@@ -72,17 +83,26 @@ public sealed partial class HelmReleasesViewModel : ViewModelBase, IInitializeCl
             options: new DynamicTableViewSourceOptions { SelectionIdentityMode = DynamicTableViewSelectionIdentityMode.Key });
         _tableSource.SelectionModel.SingleSelect = true;
         _tableSource.SelectionModel.SelectionChanged += SelectionChanged;
+        _itemsNotifications = _tableSource.Items as INotifyCollectionChanged;
+        if (_itemsNotifications is not null)
+        {
+            _itemsNotifications.CollectionChanged += ItemsOnCollectionChanged;
+        }
+
         Title = Assets.Resources.HelmReleasesView_Title;
     }
 
     public void Initialize(ClusterWorkspace cluster)
     {
+        UnsubscribeFromSelectedNamespaces();
         Cluster = cluster;
         Id = $"{nameof(HelmReleasesViewModel)}-{cluster.Runtime.Name}";
         _connection = new HelmConnection(
             cluster.Runtime.KubeConfigPath,
             cluster.Runtime.Name,
             cluster.SelectedNamespaces.FirstOrDefault()?.Metadata?.Name ?? "default");
+        SubscribeToSelectedNamespaces();
+        SetNamespaceFilter();
         _ = RefreshCommand.ExecuteAsync(null);
     }
 
@@ -100,12 +120,14 @@ public sealed partial class HelmReleasesViewModel : ViewModelBase, IInitializeCl
             {
                 Namespace = Cluster?.SelectedNamespaces.FirstOrDefault()?.Metadata?.Name ?? _connection.Namespace
             };
-            var releases = await _helmService.ListReleasesAsync(connection, AllNamespaces, cancellationToken: cancellationToken);
+            var releases = await _helmService.ListReleasesAsync(connection, allNamespaces: true, cancellationToken: cancellationToken);
             _releases.Edit(updater =>
             {
                 updater.Clear();
                 updater.AddOrUpdate(releases);
             });
+            SetNamespaceFilter();
+            UpdateItemCount();
             Status = string.Empty;
         }
         catch (Exception exception)
@@ -308,10 +330,89 @@ public sealed partial class HelmReleasesViewModel : ViewModelBase, IInitializeCl
         return column;
     }
 
-    partial void OnAllNamespacesChanged(bool value) => _ = RefreshCommand.ExecuteAsync(null);
+    partial void OnIsNamespaceSelectionLinkedChanged(bool value)
+    {
+        if (Cluster is null)
+        {
+            OnPropertyChanged(nameof(SelectedNamespaces));
+            return;
+        }
+
+        if (!value)
+        {
+            CopyNamespaces(Cluster.SelectedNamespaces, _localSelectedNamespaces);
+        }
+
+        SubscribeToSelectedNamespaces();
+        OnPropertyChanged(nameof(SelectedNamespaces));
+        SetNamespaceFilter();
+    }
+
+    private void SelectedNamespaces_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs args)
+        => SetNamespaceFilter();
+
+    private void SubscribeToSelectedNamespaces()
+    {
+        UnsubscribeFromSelectedNamespaces();
+        SelectedNamespaces.CollectionChanged += SelectedNamespaces_CollectionChanged;
+    }
+
+    private void UnsubscribeFromSelectedNamespaces()
+    {
+        Cluster?.SelectedNamespaces.CollectionChanged -= SelectedNamespaces_CollectionChanged;
+        _localSelectedNamespaces.CollectionChanged -= SelectedNamespaces_CollectionChanged;
+    }
+
+    private void SetNamespaceFilter()
+    {
+        if (SelectedNamespaces.Count == 0)
+        {
+            _tableSource.SetScopeFilter(NamespaceScopeFilterId, null);
+            return;
+        }
+
+        var namespaces = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var selectedNamespace in SelectedNamespaces)
+        {
+            if (selectedNamespace.Metadata?.Name is { Length: > 0 } name)
+            {
+                namespaces.Add(name);
+            }
+        }
+
+        _tableSource.SetScopeFilter(
+            NamespaceScopeFilterId,
+            item => item is HelmRelease release && namespaces.Contains(release.Namespace));
+    }
+
+    private void ItemsOnCollectionChanged(object? sender, NotifyCollectionChangedEventArgs args)
+        => UpdateItemCount();
+
+    private void UpdateItemCount()
+    {
+        if (_tableSource.Items is ICollection items)
+        {
+            ItemCount = items.Count;
+        }
+    }
+
+    private static void CopyNamespaces(IEnumerable<V1Namespace> source, ObservableCollection<V1Namespace> target)
+    {
+        target.Clear();
+        foreach (var selectedNamespace in source)
+        {
+            target.Add(selectedNamespace);
+        }
+    }
 
     public void Dispose()
     {
+        UnsubscribeFromSelectedNamespaces();
+        if (_itemsNotifications is not null)
+        {
+            _itemsNotifications.CollectionChanged -= ItemsOnCollectionChanged;
+        }
+
         _tableSource.SelectionModel.SelectionChanged -= SelectionChanged;
         _tableSource.Dispose();
         _releases.Dispose();

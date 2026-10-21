@@ -14,11 +14,17 @@ namespace KubeUI.Avalonia.Tests.Features.Helm;
 public sealed class HelmReleasesViewModelTests
 {
     [AvaloniaFact]
-    public async Task Refresh_passes_all_namespace_scope_and_selected_namespace_to_helm_service()
+    public async Task Release_filter_follows_linked_and_local_namespace_selection()
     {
         using var workspace = await Application.Current.CreateClusterAsync(connect: false);
         workspace.SelectedNamespaces.Add(new V1Namespace { Metadata = new V1ObjectMeta { Name = "apps" } });
-        var calls = new List<(HelmConnection Connection, bool AllNamespaces)>();
+        workspace.SelectedNamespaces.Add(new V1Namespace { Metadata = new V1ObjectMeta { Name = "system" } });
+        var releases = new[]
+        {
+            new HelmRelease("web", "apps", "1", "2026-01-01", "deployed", "nginx-1.0.0", "1.0.0"),
+            new HelmRelease("dns", "system", "1", "2026-01-01", "deployed", "dns-1.0.0", "1.0.0"),
+            new HelmRelease("other", "other", "1", "2026-01-01", "deployed", "other-1.0.0", "1.0.0")
+        };
         var helmService = new Mock<IHelmService>();
         var previewService = new Mock<IHelmReleasePreviewService>();
         helmService
@@ -27,8 +33,7 @@ public sealed class HelmReleasesViewModelTests
                 It.IsAny<bool>(),
                 It.IsAny<string?>(),
                 It.IsAny<CancellationToken>()))
-            .Callback<HelmConnection, bool, string?, CancellationToken>((connection, allNamespaces, _, _) => calls.Add((connection, allNamespaces)))
-            .ReturnsAsync(Array.Empty<HelmRelease>());
+            .ReturnsAsync(releases);
         var factory = new Mock<IFactory>();
         var dialogs = new Mock<IDialogService>();
         using var viewModel = new HelmReleasesViewModel(helmService.Object, factory.Object, dialogs.Object, previewService.Object);
@@ -36,12 +41,21 @@ public sealed class HelmReleasesViewModelTests
         viewModel.Initialize(workspace);
         await viewModel.RefreshCommand.ExecuteAsync(null);
 
-        calls.ShouldContain(call => call.AllNamespaces && call.Connection.Namespace == "apps");
+        ReferenceEquals(viewModel.SelectedNamespaces, workspace.SelectedNamespaces).ShouldBeTrue();
+        await TestWait.UntilAsync(() => viewModel.ItemCount == 2, TimeSpan.FromSeconds(5), cancellationToken: TestContext.Current.CancellationToken);
+        helmService.Verify(service => service.ListReleasesAsync(
+            It.Is<HelmConnection>(connection => connection.Namespace == "apps"),
+            true,
+            It.IsAny<string?>(),
+            It.IsAny<CancellationToken>()), Times.AtLeastOnce);
 
-        viewModel.AllNamespaces = false;
-        await viewModel.RefreshCommand.ExecuteAsync(null);
+        workspace.SelectedNamespaces.RemoveAt(1);
+        await TestWait.UntilAsync(() => viewModel.ItemCount == 1, TimeSpan.FromSeconds(5), cancellationToken: TestContext.Current.CancellationToken);
 
-        calls.ShouldContain(call => !call.AllNamespaces && call.Connection.Namespace == "apps");
+        viewModel.IsNamespaceSelectionLinked = false;
+        viewModel.SelectedNamespaces.Add(new V1Namespace { Metadata = new V1ObjectMeta { Name = "system" } });
+        await TestWait.UntilAsync(() => viewModel.ItemCount == 2, TimeSpan.FromSeconds(5), cancellationToken: TestContext.Current.CancellationToken);
+        workspace.SelectedNamespaces.Count.ShouldBe(1);
     }
 
     [AvaloniaFact]

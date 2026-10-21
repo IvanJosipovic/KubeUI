@@ -2932,7 +2932,6 @@
   <data name="HelmReleasesView_AppVersion" xml:space="preserve"><value>App version</value></data>
   <data name="HelmReleasesView_Updated" xml:space="preserve"><value>Updated</value></data>
   <data name="HelmReleasesView_Install" xml:space="preserve"><value>Install release</value></data>
-  <data name="HelmReleasesView_AllNamespaces" xml:space="preserve"><value>All namespaces</value></data>
   <data name="HelmReleasesView_RollbackRevision" xml:space="preserve"><value>Target revision</value></data>
   <data name="HelmReleasesView_Rollback" xml:space="preserve"><value>Rollback</value></data>
   <data name="HelmReleasesView_Wait" xml:space="preserve"><value>Wait for actions</value></data>
