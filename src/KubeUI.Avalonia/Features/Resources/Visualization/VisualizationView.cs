@@ -60,7 +60,7 @@ public sealed partial class VisualizationView : ViewBase<VisualizationViewModel>
                 new Label()
                     .Content(vm, x => x.RootResourceDisplay)
                     .VerticalContentAlignment(VerticalAlignment.Center)
-                    .IsVisible(vm, x => x.RootResource, converter: Converters.Converters.NotNull));
+                    .IsVisible(vm, x => x.IsRootResourceDisplayVisible));
     }
 
     private static StackPanel CreateRightToolbar(VisualizationViewModel vm)

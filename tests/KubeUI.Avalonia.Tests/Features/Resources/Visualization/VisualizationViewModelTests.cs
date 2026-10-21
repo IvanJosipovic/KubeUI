@@ -10,6 +10,50 @@ namespace KubeUI.Avalonia.Tests.Features.Resources.Visualization;
 
 public sealed class VisualizationViewModelTests
 {
+    [AvaloniaFact]
+    public async Task preview_initializes_relationship_graph_without_adding_resources_to_cluster()
+    {
+        using var cluster = await Application.Current.CreateClusterAsync(config => config.Type = KubernetesBackend.Fake);
+        var runtimeObjectCount = cluster.Runtime.Objects.Count;
+        var deployment = new V1Deployment
+        {
+            ApiVersion = "apps/v1",
+            Kind = "Deployment",
+            Metadata = new V1ObjectMeta { Name = "web", NamespaceProperty = "apps", Uid = "deployment-uid" }
+        };
+        var replicaSet = new V1ReplicaSet
+        {
+            ApiVersion = "apps/v1",
+            Kind = "ReplicaSet",
+            Metadata = new V1ObjectMeta
+            {
+                Name = "web-abc",
+                NamespaceProperty = "apps",
+                Uid = "replicaset-uid",
+                OwnerReferences =
+                [
+                    new V1OwnerReference
+                    {
+                        ApiVersion = "apps/v1",
+                        Kind = "Deployment",
+                        Name = "web",
+                        Uid = "deployment-uid"
+                    }
+                ]
+            }
+        };
+        using var viewModel = new VisualizationViewModel();
+
+        viewModel.InitializePreview(cluster, "web", [deployment, replicaSet]);
+
+        await TestWait.UntilAsync(() => viewModel.Graph?.Resources.Count == 2, TimeSpan.FromSeconds(5));
+
+        viewModel.IsPreview.ShouldBeTrue();
+        viewModel.PreviewTitle.ShouldBe("web");
+        viewModel.Graph!.Relationships.ShouldContain(relationship => relationship.Kind == ResourceRelationshipKind.Owner);
+        cluster.Runtime.Objects.Count.ShouldBe(runtimeObjectCount);
+    }
+
     [Fact]
     public void selecting_another_namespace_removes_resources_from_previous_selection()
     {

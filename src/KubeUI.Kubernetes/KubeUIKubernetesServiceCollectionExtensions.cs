@@ -21,6 +21,8 @@ public static class KubeUIKubernetesServiceCollectionExtensions
         services.AddTransient<ClusterModelCatalog>();
         services.AddSingleton<IKubernetesYamlSerializer, KubernetesYamlSerializer>();
         services.AddSingleton<IAksClusterService, AksClusterService>();
+        services.AddSingleton<IHelmClientFactory, HelmClientFactory>();
+        services.AddSingleton<IHelmService, HelmService>();
         services.AddTransient<Cluster>();
         services.AddTransient<IClusterRuntime>(sp => sp.GetRequiredService<Cluster>());
         services.AddSingleton<ClusterManager>();
