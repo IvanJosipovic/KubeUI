@@ -124,7 +124,7 @@
       ]
     },
     {
-      "groupName": "modelcontextprotocol",
+      "groupName": "ModelContextProtocol",
       "separateMajorMinor": true,
       "groupSlug": "modelcontextprotocol",
       "matchPackageNames": [
