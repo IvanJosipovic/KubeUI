@@ -111,15 +111,8 @@ public class NavigationViewModelTests
         using var vm = CreateViewModel();
         var clusterNode = vm.Clusters.Single(node => node.Cluster == workspace);
 
-        await vm.HandleSelectionChangedCommand.ExecuteAsync(null);
-        await vm.HandleSelectionChangedCommand.ExecuteAsync(new SelectionChangedEventArgs(
-            SelectingItemsControl.SelectionChangedEvent,
-            Array.Empty<object>(),
-            Array.Empty<object>()));
-        await vm.HandleSelectionChangedCommand.ExecuteAsync(new SelectionChangedEventArgs(
-            SelectingItemsControl.SelectionChangedEvent,
-            new object[] { new NavigationItem() },
-            Array.Empty<object>()));
+        await vm.ActivateNavigationItemCommand.ExecuteAsync(null);
+        await vm.ActivateNavigationItemCommand.ExecuteAsync(new NavigationItem());
         await vm.TreeViewSelectionChangedAsync(null);
         await vm.ToggleClusterConnectionCommand.ExecuteAsync(null);
         await vm.OpenClusterSettingsCommand.ExecuteAsync(null);

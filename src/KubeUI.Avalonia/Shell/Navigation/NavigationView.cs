@@ -49,7 +49,7 @@ public sealed class NavigationView : ViewBase<NavigationViewModel>
                 CreateNavigationItemTemplate()
             )
             .Behaviors(
-                new NavigationTreeSelectionBehavior(vm.HandleSelectionChangedCommand),
+                new NavigationTreeSelectionBehavior(vm.ActivateNavigationItemCommand),
                 new TreeViewItemContextMenuBehavior()
             );
     }
@@ -146,7 +146,7 @@ public sealed class NavigationView : ViewBase<NavigationViewModel>
                                     .VerticalAlignment(VerticalAlignment.Center)
                                     .Margin(4, 0, 0, 0)
                                     .Text(CompiledBinding.Create<NavigationLink, int>(x => x.Count.StreamBinding()))
-                                    .IsVisible(link, x => x.ResourceKind, BindingMode.OneWay, Converters.Converters.NotNull)
+                                    .IsVisible(link, x => x.Count, BindingMode.OneWay, Converters.Converters.NotNull)
                             )
                     ),
             link => link.NavigationItems);

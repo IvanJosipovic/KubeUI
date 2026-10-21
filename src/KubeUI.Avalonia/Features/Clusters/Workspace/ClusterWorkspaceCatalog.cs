@@ -44,15 +44,6 @@ public sealed class ClusterWorkspaceCatalog : IDisposable
         return runtime == null ? null : GetOrCreate(runtime);
     }
 
-    /// <summary>Refreshes cached permissions for every connected workspace.</summary>
-    public async Task RefreshPermissionsAsync()
-    {
-        foreach (var workspace in Clusters.ToArray())
-        {
-            await workspace.RefreshPermissionsAsync().ConfigureAwait(false);
-        }
-    }
-
     public void Dispose()
     {
         if (_runtimeCatalog.Clusters is INotifyCollectionChanged changed)

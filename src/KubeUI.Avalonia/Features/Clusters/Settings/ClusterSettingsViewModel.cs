@@ -34,12 +34,25 @@ public sealed partial class ClusterSettingsViewModel : ViewModelBase, IInitializ
     [ObservableProperty]
     public partial string DebugContainerImage { get; set; } = string.Empty;
 
+    [ObservableProperty]
+    public partial bool IsRefreshingPermissions { get; set; }
+
     [RelayCommand]
     private async Task RefreshPermissionsAsync()
     {
-        if (Cluster is not null)
+        if (Cluster is null || IsRefreshingPermissions)
+        {
+            return;
+        }
+
+        IsRefreshingPermissions = true;
+        try
         {
             await Cluster.RefreshPermissionsAsync();
+        }
+        finally
+        {
+            IsRefreshingPermissions = false;
         }
     }
 

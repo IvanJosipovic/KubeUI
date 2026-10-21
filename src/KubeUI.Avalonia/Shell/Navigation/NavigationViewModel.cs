@@ -90,10 +90,9 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
     }
 
     [RelayCommand]
-    private Task HandleSelectionChangedAsync(SelectionChangedEventArgs? e)
+    private Task ActivateNavigationItemAsync(object? item)
     {
-        var selectedItem = e?.AddedItems.Count > 0 ? e.AddedItems[0] : null;
-        return TreeViewSelectionChangedAsync(selectedItem);
+        return TreeViewSelectionChangedAsync(item);
     }
 
     internal async Task TreeViewSelectionChangedAsync(object? item)
@@ -275,7 +274,8 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
     {
         if (sender is not IClusterRuntime runtime
             || (e.PropertyName != nameof(IClusterRuntime.Status)
-                && e.PropertyName != nameof(IClusterRuntime.Connected)))
+                && e.PropertyName != nameof(IClusterRuntime.Connected)
+                && e.PropertyName != nameof(IClusterRuntime.Name)))
         {
             return;
         }
@@ -286,6 +286,12 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
             e.PropertyName,
             runtime.Connected,
             runtime.Status);
+
+        if (e.PropertyName == nameof(IClusterRuntime.Name) && Dispatcher.UIThread.CheckAccess())
+        {
+            RenameCluster(runtime);
+            return;
+        }
 
         Dispatcher.UIThread.Post(() =>
         {
@@ -298,6 +304,12 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
             if (!_clusterNavigation.TryGetNode(cluster, out var node))
             {
                 _logger.LogDebug("Navigation runtime state event ignored because node is missing for {ClusterName}", runtime.Name);
+                return;
+            }
+
+            if (e.PropertyName == nameof(IClusterRuntime.Name))
+            {
+                RenameCluster(runtime);
                 return;
             }
 
@@ -325,6 +337,21 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
                 ShowClusterError(runtime.LastError);
             }
         });
+    }
+
+    private void RenameCluster(IClusterRuntime runtime)
+    {
+        if (!_clusterNavigation.TryGetWorkspace(runtime, out var cluster)
+            || !_clusterNavigation.TryGetNode(cluster, out var node))
+        {
+            return;
+        }
+
+        node.UpdateNavigationName(runtime.Name);
+        if (runtime.Connected && runtime.Status == ClusterStatus.Connected)
+        {
+            Reconcile(cluster);
+        }
     }
 
     private static void ApplyClusterExpansion(ClusterNavigationNode clusterNode)

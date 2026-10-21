@@ -2,7 +2,6 @@ using System.Windows.Input;
 using FluentIcons.Common;
 using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
-using KubeUI.Avalonia.Infrastructure.Threading;
 using KubeUI.Kubernetes;
 using Swordfish.NET.Collections;
 
@@ -74,10 +73,6 @@ public partial class ClusterNavigationNode : NavigationItem, IDisposable
         {
             OnPropertyChanged(nameof(ConnectionMenuHeader));
             OnPropertyChanged(nameof(ConnectionMenuIcon));
-        }
-        else if (e.PropertyName == nameof(IClusterRuntime.Name))
-        {
-            AvaloniaScheduler.Instance.Invoke(() => UpdateNavigationName(Cluster.Runtime.Name));
         }
     }
 
@@ -196,6 +191,8 @@ public partial class NavigationLink : NavigationItem
 
     [ObservableProperty]
     public partial IObservable<int>? Count { get; set; }
+
+    internal GroupApiVersionKind? CountResourceKind { get; set; }
 
     [ObservableProperty]
     public partial ICommand? OpenCommand { get; set; }

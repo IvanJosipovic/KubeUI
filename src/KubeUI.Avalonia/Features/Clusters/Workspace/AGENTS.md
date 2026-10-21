@@ -15,7 +15,7 @@
 - Workspace connect/init should refresh resource permissions before any UI command or navigation logic depends on cached `CanI(...)` results.
 - Authorization uses one `SelfSubjectRulesReview` per namespace and evaluates cached rules locally. Cluster-scope checks and incomplete, failed, or erroring rules reviews fall back to `SelfSubjectAccessReview`.
 - Permission invalidation is trigger-only: connect, namespace-set changes, optional RBAC list/watch events, manual refresh from cluster settings, and scoped `403 Forbidden` responses. Do not add polling, periodic refresh timers, or window-activation refreshes.
-- Coalesce concurrent refresh triggers without dropping them: a trigger received while a refresh worker is active schedules one follow-up refresh after the current pass.
+- Coalesce concurrent refresh triggers without dropping them: a trigger received while a refresh worker is active schedules one follow-up refresh after the current pass. The shared worker debounces trigger bursts for 500 ms and combines full and namespace-only refresh scopes, with full refresh taking precedence.
 - Namespace-set changes discard only namespace-scoped authorization decisions; retain cluster-wide decisions so an added or removed namespace does not trigger redundant access reviews for globally allowed resources.
 - Start RBAC watchers only for kinds whose resource configuration has both list and watch access. Without those rights, permissions remain best-effort until another trigger fires.
 - Events exist so downstream UI can update incrementally.

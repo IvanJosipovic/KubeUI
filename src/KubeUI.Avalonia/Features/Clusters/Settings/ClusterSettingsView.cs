@@ -92,6 +92,7 @@ public sealed class ClusterSettingsView : ViewBase<ClusterSettingsViewModel>
                     .Col(1)
                     .HorizontalAlignment(HorizontalAlignment.Left)
                     .Content(Assets.Resources.ClusterSettingsView_RefreshPermissions)
+                    .IsEnabled(vm, x => x.IsRefreshingPermissions, BindingMode.OneWay, Converters.Converters.Not)
                     .Command(vm, x => x.RefreshPermissionsCommand));
     }
 

@@ -152,11 +152,16 @@ public sealed class AgentChatViewTests
         Dispatcher.UIThread.RunJobs();
 
         var scrollViewer = GetConversationScrollViewer(view);
+        await WaitForAsync(() => scrollViewer.Extent.Height > scrollViewer.Viewport.Height);
+        scrollViewer.ScrollToEnd();
+        await WaitForAsync(() => scrollViewer.ScrollBarMaximum.Y > 0
+            && scrollViewer.Offset.Y >= scrollViewer.ScrollBarMaximum.Y);
         scrollViewer.Offset = new Vector(0, 0);
-        Dispatcher.UIThread.RunJobs();
+        await WaitForAsync(() => scrollViewer.Offset.Y == 0);
+        var previousExtent = scrollViewer.Extent.Height;
 
         vm.Messages.Add(new AgentChatMessage("assistant", "A new message."));
-        Dispatcher.UIThread.RunJobs();
+        await WaitForAsync(() => scrollViewer.Extent.Height > previousExtent);
 
         scrollViewer.Offset.Y.ShouldBe(0);
     }
