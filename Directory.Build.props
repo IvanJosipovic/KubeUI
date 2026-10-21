@@ -1,7 +1,7 @@
 <Project>
   <PropertyGroup>
     <TargetFramework>net11.0</TargetFramework>
-    <JsonSerializerIsReflectionEnabledByDefault>false</JsonSerializerIsReflectionEnabledByDefault>
+    <JsonSerializerIsReflectionEnabledByDefault>true</JsonSerializerIsReflectionEnabledByDefault>
     <TrimmerSingleWarn>false</TrimmerSingleWarn>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
