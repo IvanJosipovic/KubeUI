@@ -17,6 +17,11 @@
   },
   "packageRules": [
     {
+      "description": "Update NuGet minimum versions",
+      "matchManagers": ["nuget"],
+      "rangeStrategy": "bump"
+    },
+    {
       "matchManagers": [ "nuget" ],
       "matchPackageNames": [
         "OpenTelemetry.Instrumentation.Process",
