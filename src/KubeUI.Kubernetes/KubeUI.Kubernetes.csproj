@@ -31,7 +31,7 @@
     <PackageReference Include="KubernetesClient.Informer" Version="1.4.0" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="11.0.0-rc.2.26504.105" />
     <PackageReference Include="Microsoft.Extensions.Http.Resilience" Version="10.11.0" />
-    <PackageReference Include="Microsoft.OpenApi" Version="3.10.2" />
+    <PackageReference Include="Microsoft.OpenApi" Version="3.11.0" />
     <PackageReference Include="Swordfish.NET.CollectionsV3" Version="3.3.16" />
     <PackageReference Include="YamlDotNet.System.Text.Json" Version="1.11.1" />
   </ItemGroup>
