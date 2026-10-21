@@ -9,8 +9,7 @@
 
     <WarningsAsErrors>$(WarningsAsErrors);CA1001;CS0618</WarningsAsErrors>
 
-    <AnalysisLevel>latest</AnalysisLevel>
-    <AnalysisMode>Recommended</AnalysisMode>
+    <AnalysisLevel>latest-recommended</AnalysisLevel>
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <TestingPlatformShowTestsFailure>true</TestingPlatformShowTestsFailure>
 

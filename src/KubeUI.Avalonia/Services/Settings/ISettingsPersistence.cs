@@ -8,7 +8,7 @@ public interface ISettingsPersistence
     string SettingsDirectory { get; }
     bool EnsureDirectoryExists();
     SettingsPersistenceData Load();
-    void Save(SettingsPersistenceData data);
+    bool Save(SettingsPersistenceData data);
 }
 
 public sealed class SettingsPersistenceData

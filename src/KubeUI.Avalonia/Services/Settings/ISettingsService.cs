@@ -11,4 +11,6 @@ public interface ISettingsService : IClusterSettingsStore
     IClusterSettingsStore Clusters { get; }
     void ApplySettings();
     void SaveSettings();
+    /// <summary>Saves settings and reports whether the persisted file was updated.</summary>
+    bool TrySaveSettings();
 }

@@ -51,6 +51,25 @@ public sealed class SettingsPersistenceLoaderTests
         }
     }
 
+    [Fact]
+    public void load_restricts_settings_file_permissions_on_unix()
+    {
+        if (OperatingSystem.IsWindows())
+            return;
+        var path = CreateSettingsFile("{}");
+
+        try
+        {
+            _ = SettingsPersistenceLoader.Load(path);
+
+            File.GetUnixFileMode(path).ShouldBe(UnixFileMode.UserRead | UnixFileMode.UserWrite);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
     private static string CreateSettingsFile(string contents)
     {
         var path = Path.Combine(Path.GetTempPath(), $"kubeui-settings-{Guid.NewGuid():N}.json");

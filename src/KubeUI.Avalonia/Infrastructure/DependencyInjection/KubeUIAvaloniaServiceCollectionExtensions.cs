@@ -3,6 +3,7 @@ using Dock.Model.Core;
 using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
+using KubeUI.AI.Mcp;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Features.Resources.Editor;
 using KubeUI.Avalonia.Infrastructure.Dialogs;
@@ -33,6 +34,9 @@ public static class KubeUIAvaloniaServiceCollectionExtensions
             () => sp.GetRequiredService<IFactory>()));
         services.AddSingleton<McpServerState>();
         services.AddSingleton<IMcpServerState>(sp => sp.GetRequiredService<McpServerState>());
+        services.AddSingleton<McpRequestIdentityAccessor>();
+        services.AddSingleton<IMcpCredentialService, McpCredentialService>();
+        services.AddSingleton(TimeProvider.System);
         services.AddSingleton<IResourceNavigationService>(sp => new NavigationDocumentService(
             sp,
             sp.GetRequiredService<ILogger<NavigationDocumentService>>(),

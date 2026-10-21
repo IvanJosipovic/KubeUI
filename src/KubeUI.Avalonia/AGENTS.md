@@ -16,6 +16,8 @@ References:
 ### Views and styling
 - Use C# for layout and visuals;
 - Prefer `StaticResource` for immutable resources and `DynamicResource` when runtime updates are required.
+- Use `Typography.TitleFontSizeResourceKey` for view and document titles so headers match the shared type scale.
+- Markdown surfaces must use the shared application typography (app font family and size); markdown code must use the shared code font family and console font size. Do not rely on the bundled Markdown default font.
 
 ### Data binding
 - Use compiled bindings only on all binding scopes.
