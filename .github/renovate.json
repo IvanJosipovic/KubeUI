@@ -17,6 +17,11 @@
   },
   "packageRules": [
     {
+      "description": "Update NuGet minimum versions",
+      "matchManagers": ["nuget"],
+      "rangeStrategy": "bump"
+    },
+    {
       "matchManagers": [ "nuget" ],
       "matchPackageNames": [
         "OpenTelemetry.Instrumentation.Process",
@@ -116,6 +121,15 @@
       "groupSlug": "westermo-graphx",
       "matchPackageNames": [
         "westermo.graphx.*"
+      ]
+    },
+    {
+      "groupName": "ModelContextProtocol",
+      "separateMajorMinor": true,
+      "groupSlug": "modelcontextprotocol",
+      "matchPackageNames": [
+        "ModelContextProtocol",
+        "ModelContextProtocol.*"
       ]
     },
     {
