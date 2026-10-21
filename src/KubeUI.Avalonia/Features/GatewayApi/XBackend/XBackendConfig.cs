@@ -15,8 +15,6 @@ internal sealed class XBackendConfig : CustomResourceConfig
         ]);
     public override string? ApiGroup => "gateway.networking.x-k8s.io";
 
-    public override string? ApiVersion => "v1alpha1";
-
     public override string? KindName => "XBackend";
 
     protected override string Template => """

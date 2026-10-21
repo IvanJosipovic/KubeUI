@@ -11,8 +11,6 @@ internal sealed class BackendTLSPolicyConfig : CustomResourceConfig
         [new NavigationGroup("gateway", Assets.Resources.NavigationView_GatewayApi!, 0, null)]);
     public override string? ApiGroup => "gateway.networking.k8s.io";
 
-    public override string? ApiVersion => "v1";
-
     public override string? KindName => "BackendTLSPolicy";
 
     protected override string Template => """

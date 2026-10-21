@@ -30,6 +30,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
     private KubernetesApiDiscoveryClient? _discoveryClient;
     private readonly Lock _discoveryRefreshGate = new();
     private Task? _discoveryRefreshTask;
+    private bool _discoveryRefreshRequested;
 
     private IClusterSettingsStore _settings;
 
@@ -279,6 +280,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
             {
                 _discoveryClient = null;
                 _discoveryRefreshTask = null;
+                _discoveryRefreshRequested = false;
             }
 
             Status = ClusterStatus.None;
@@ -531,13 +533,32 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
     {
         lock (_discoveryRefreshGate)
         {
-            if (_discoveryRefreshTask is { IsCompleted: false })
+            _discoveryRefreshRequested = true;
+            if (_discoveryRefreshTask is null || _discoveryRefreshTask.IsCompleted)
             {
-                return _discoveryRefreshTask;
+                _discoveryRefreshTask = RunDiscoveryRefreshWorkerAsync();
             }
 
-            _discoveryRefreshTask = RefreshApiGroupDiscoveryListCoreAsync();
             return _discoveryRefreshTask;
+        }
+    }
+
+    private async Task RunDiscoveryRefreshWorkerAsync()
+    {
+        while (true)
+        {
+            lock (_discoveryRefreshGate)
+            {
+                if (!_discoveryRefreshRequested)
+                {
+                    _discoveryRefreshTask = null;
+                    return;
+                }
+
+                _discoveryRefreshRequested = false;
+            }
+
+            await RefreshApiGroupDiscoveryListCoreAsync().ConfigureAwait(false);
         }
     }
 
@@ -1291,9 +1312,17 @@ public sealed class OperationKeyHandler : DelegatingHandler
         {
             var response = await base.SendAsync(request, cancellationToken);
             if (response.StatusCode == HttpStatusCode.Forbidden
-                && request.RequestUri?.AbsolutePath.Contains("selfsubject", StringComparison.Ordinal) != true)
+                && !IsSelfSubjectReviewRequest(request))
             {
-                _onForbidden?.Invoke();
+                try
+                {
+                    _onForbidden?.Invoke();
+                }
+                catch (Exception ex)
+                {
+                    // Authorization refresh is best-effort and must never break the original response.
+                    Debug.WriteLine(ex);
+                }
             }
 
             return response;
@@ -1302,5 +1331,18 @@ public sealed class OperationKeyHandler : DelegatingHandler
         {
             ResilienceContextPool.Shared.Return(ctx);
         }
+    }
+
+    private static bool IsSelfSubjectReviewRequest(HttpRequestMessage request)
+    {
+        var path = request.RequestUri?.AbsolutePath;
+        return string.Equals(
+                   path,
+                   "/apis/authorization.k8s.io/v1/selfsubjectaccessreviews",
+                   StringComparison.Ordinal)
+               || string.Equals(
+                   path,
+                   "/apis/authorization.k8s.io/v1/selfsubjectrulesreviews",
+                   StringComparison.Ordinal);
     }
 }

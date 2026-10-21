@@ -15,7 +15,7 @@ public sealed class GatewayApiConfigTests
     private const string ExperimentalGroup = "gateway.networking.x-k8s.io";
 
     [AvaloniaFact]
-    public void dependency_injection_registers_one_config_per_gateway_api_crd_identity_and_storage_version()
+    public void dependency_injection_registers_one_config_per_gateway_api_crd_identity()
     {
         var actual = Application.Current.GetTestServices()
             .GetServices<CustomResourceConfig>()
@@ -27,19 +27,19 @@ public sealed class GatewayApiConfigTests
 
         (string? ApiGroup, string? ApiVersion, string? KindName)[] expected =
         [
-            (StandardGroup, "v1", "BackendTLSPolicy"),
-            (StandardGroup, "v1", "GRPCRoute"),
-            (StandardGroup, "v1", "Gateway"),
-            (StandardGroup, "v1", "GatewayClass"),
-            (StandardGroup, "v1", "HTTPRoute"),
-            (StandardGroup, "v1", "ListenerSet"),
-            (StandardGroup, "v1beta1", "ReferenceGrant"),
-            (StandardGroup, "v1", "TCPRoute"),
-            (StandardGroup, "v1", "TLSRoute"),
-            (StandardGroup, "v1", "UDPRoute"),
-            (ExperimentalGroup, "v1alpha1", "XBackend"),
-            (ExperimentalGroup, "v1alpha1", "XBackendTrafficPolicy"),
-            (ExperimentalGroup, "v1alpha1", "XMesh"),
+            (StandardGroup, null, "BackendTLSPolicy"),
+            (StandardGroup, null, "GRPCRoute"),
+            (StandardGroup, null, "Gateway"),
+            (StandardGroup, null, "GatewayClass"),
+            (StandardGroup, null, "HTTPRoute"),
+            (StandardGroup, null, "ListenerSet"),
+            (StandardGroup, null, "ReferenceGrant"),
+            (StandardGroup, null, "TCPRoute"),
+            (StandardGroup, null, "TLSRoute"),
+            (StandardGroup, null, "UDPRoute"),
+            (ExperimentalGroup, null, "XBackend"),
+            (ExperimentalGroup, null, "XBackendTrafficPolicy"),
+            (ExperimentalGroup, null, "XMesh"),
         ];
 
         actual.ShouldBe(expected);
@@ -72,7 +72,7 @@ public sealed class GatewayApiConfigTests
         foreach (var (group, version, kind, property) in expected)
         {
             var config = configurations.Single(config => config.ApiGroup == group && config.KindName == kind);
-            config.ApiVersion.ShouldBe(version);
+            config.ApiVersion.ShouldBeNull();
             config.Configure(CreateDefinition(group, version, kind, group == ExperimentalGroup ? "experimental" : "standard"));
             config.Navigation.SectionId.ShouldBe(NavigationSections.NetworkId);
             config.Navigation.Groups.Select(static navigationGroup => navigationGroup.Id)
@@ -103,6 +103,18 @@ public sealed class GatewayApiConfigTests
         xKind.Configure(CreateDefinition(ExperimentalGroup, "v1alpha1", "XBackend", "experimental"));
         xKind.Navigation.SectionId.ShouldBe(NavigationSections.NetworkId);
         xKind.Navigation.Groups.Select(static group => group.Id).ShouldBe(["gateway", "experimental"]);
+    }
+
+    [AvaloniaFact]
+    public void gateway_configs_match_served_versions_other_than_the_storage_version()
+    {
+        var config = new TCPRouteConfig();
+        var definition = CreateDefinition(StandardGroup, "v1alpha2", "TCPRoute", "experimental");
+
+        config.Matches(definition).ShouldBeTrue();
+        config.Configure(definition);
+        config.Kind.ApiVersion.ShouldBe("v1alpha2");
+        config.Navigation.Groups.Select(static group => group.Id).ShouldBe(["gateway"]);
     }
 
     private static V1CustomResourceDefinition CreateDefinition(string group, string version, string kind, string channel)

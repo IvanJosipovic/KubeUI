@@ -118,7 +118,7 @@ internal sealed class NavigationTreeBuilder
                         cluster,
                         resource,
                         alias,
-                        AliasId(cluster, "provider", resource, alias));
+                        AliasId(cluster, $"provider-{provider.Section.Id}", resource, alias));
                 }
             }
         }
@@ -176,8 +176,9 @@ internal sealed class NavigationTreeBuilder
     private void AddPortForwarders(ClusterNavigationNode node, ClusterWorkspace cluster)
     {
         var podKind = GroupApiVersionKind.From<V1Pod>();
-        var podConfig = cluster.GetResourceConfigs().FirstOrDefault(config => config.Kind == podKind);
-        if (podConfig is not { PermissionsLoaded: true, CanListAndWatch: true } || !CanCreatePortForward(cluster, podKind))
+        if (!cluster.TryGetResourceConfig(podKind, out var podConfig)
+            || podConfig is not { PermissionsLoaded: true, CanListAndWatch: true }
+            || !CanCreatePortForward(cluster, podKind))
         {
             return;
         }
@@ -209,7 +210,10 @@ internal sealed class NavigationTreeBuilder
 
         if (_sections.Find(sectionId) is not { } section)
         {
-            throw new InvalidOperationException($"Navigation placement targets unknown section '{sectionId}'.");
+            _logger.LogWarning(
+                "Navigation placement targets unknown section {SectionId}; placing resource in the cluster root",
+                sectionId);
+            return node.NavigationItems;
         }
 
         var nodeId = $"{cluster.Runtime.Name}-section-{section.Id}";
@@ -242,18 +246,20 @@ internal sealed class NavigationTreeBuilder
         string? documentId,
         string? viewModelKey)
     {
-        if (!_existing.TryGetValue(id, out var location) || location.Item is not NavigationLink link)
+        var isNew = !_existing.TryGetValue(id, out var location) || location.Item is not NavigationLink;
+        var isMoving = !isNew && !ReferenceEquals(location.Parent, target);
+        NavigationLink link;
+        if (isNew)
         {
             link = new NavigationLink { Id = id };
-            target.Add(link);
-            location = new ItemLocation(link, target);
-            _existing[id] = location;
         }
-        else if (!ReferenceEquals(location.Parent, target))
+        else
         {
-            location.Parent.Remove(link);
-            target.Add(link);
-            _existing[id] = new ItemLocation(link, target);
+            link = (NavigationLink)location.Item;
+            if (isMoving)
+            {
+                location.Parent.Remove(link);
+            }
         }
 
         link.Name = name;
@@ -262,6 +268,12 @@ internal sealed class NavigationTreeBuilder
         link.FluentIcon = icon;
         link.ViewModelKey = viewModelKey;
         link.DocumentId = documentId;
+        if (link.ResourceKind != resource?.Kind)
+        {
+            link.Count = null;
+            link.CountResourceKind = null;
+        }
+
         link.ResourceKind = resource?.Kind;
         link.ResourceIcon = resource is null ? null : _icons.GetIcon(resource.Kind);
         link.OpenCommand = resource is null ? null : _openCommand;
@@ -270,16 +282,28 @@ internal sealed class NavigationTreeBuilder
         {
             AttachCount(link, cluster, resource.Kind);
         }
+
+        if (isNew || isMoving)
+        {
+            target.Add(link);
+            _existing[id] = new ItemLocation(link, target);
+        }
     }
 
     private static void AttachCount(NavigationLink link, ClusterWorkspace cluster, GroupApiVersionKind kind)
     {
-        if (link.Count is null
-            && cluster.Runtime.Objects.TryGetValue(kind, out var container)
+        if (link.Count is not null
+            && (link.CountResourceKind is null || link.CountResourceKind == kind))
+        {
+            return;
+        }
+
+        if (cluster.Runtime.Objects.TryGetValue(kind, out var container)
             && container is IResourceContainer { IsSeeded: true })
         {
             link.Count = cluster.Runtime.GetResourceCount(kind)
                 .Sample(TimeSpan.FromMilliseconds(100), AvaloniaScheduler.Instance);
+            link.CountResourceKind = kind;
         }
     }
 
@@ -341,9 +365,10 @@ internal sealed class NavigationTreeBuilder
 
     private static bool CanListCustomResourceDefinitions(ClusterWorkspace cluster)
     {
-        var definitionConfig = cluster.GetResourceConfigs()
-            .FirstOrDefault(config => config.Kind == GroupApiVersionKind.From<V1CustomResourceDefinition>());
-        return definitionConfig is { PermissionsLoaded: true, CanListAndWatch: true };
+        return cluster.TryGetResourceConfig(
+                   GroupApiVersionKind.From<V1CustomResourceDefinition>(),
+                   out var definitionConfig)
+               && definitionConfig is { PermissionsLoaded: true, CanListAndWatch: true };
     }
 
     private bool CanCreatePortForward(ClusterWorkspace cluster, GroupApiVersionKind podKind)

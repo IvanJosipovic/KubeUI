@@ -2845,9 +2845,6 @@
     <value>Revocation was not saved. This token remains active until KubeUI can save the change.</value>
     <comment/>
   </data>
-  <data name="ResourceConfig_Category_GatewayApi" xml:space="preserve">
-    <value>Gateway API</value>
-  </data>
   <data name="NavigationView_GatewayApi" xml:space="preserve">
     <value>Gateway</value>
   </data>
