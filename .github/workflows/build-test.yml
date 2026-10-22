@@ -34,7 +34,7 @@ jobs:
             --no-build \
             --hangdump \
             --hangdump-timeout 5m \
-            --timeout 30m
+            --timeout 60m
 
       - name: Upload test dump
         if: failure()

@@ -1,15 +1,11 @@
 using KubeUI.Avalonia.Resources;
-using KubeUI.Avalonia.Shell.Navigation;
 using KubeUI.Kubernetes;
 
 namespace KubeUI.Avalonia.Features.GatewayApi;
 
-internal sealed class TCPRouteConfig : CustomResourceConfig
+internal sealed class TCPRouteConfig : GatewayApiCustomResourceConfig
 {
-    public override NavigationPlacement Navigation => NavigationPlacement.InSection(
-        NavigationSections.NetworkId,
-        [new NavigationGroup("gateway", Assets.Resources.NavigationView_GatewayApi!, 0, null)]);
-    public override string? ApiGroup => "gateway.networking.k8s.io";
+    public override string? ApiGroup => StableGroup;
 
     public override string? KindName => "TCPRoute";
 

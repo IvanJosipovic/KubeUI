@@ -4010,7 +4010,7 @@ public sealed class PodLogsViewModelTests
         {
             for (var i = 0; i < ephemeralContainers.Length; i++)
             {
-            ephemeralContainerList.Add(new V1EphemeralContainer { Name = ephemeralContainers[i], Image = "busybox:1.36" });
+                ephemeralContainerList.Add(new V1EphemeralContainer { Name = ephemeralContainers[i], Image = "busybox:1.36" });
             }
         }
 
@@ -4019,7 +4019,7 @@ public sealed class PodLogsViewModelTests
         {
             for (var i = 0; i < initContainers.Length; i++)
             {
-            initContainerList.Add(new V1Container { Name = initContainers[i], Image = "busybox:1.36" });
+                initContainerList.Add(new V1Container { Name = initContainers[i], Image = "busybox:1.36" });
             }
         }
 

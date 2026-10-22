@@ -583,6 +583,10 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
             return;
         }
 
+        // The generation is recorded here, before the definition is processed, so that a
+        // repeated event for the same generation does not start a second processing pass.
+        // A definition that cannot resolve a served storage version returns above and is
+        // never recorded, so it is retried when the definition changes.
         if (crd.Metadata?.Generation is long generation && generation > 0)
         {
             _customResourceDefinitionObservedGenerations[definitionName] = generation;
