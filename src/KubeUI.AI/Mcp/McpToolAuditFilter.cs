@@ -94,10 +94,6 @@ internal static partial class McpToolAuditFilter
             outcome = result.IsError == true
                 ? McpToolOutcome.Failed
                 : McpToolOutcome.Succeeded;
-            if (result.IsError == true)
-            {
-                LogToolReturnedError(logger, toolName, clientId, GetErrorSummary(result));
-            }
 
             return new McpToolAuditOutcome(outcome, result);
         }
@@ -148,36 +144,6 @@ internal static partial class McpToolAuditFilter
         }
         return outputBytes > MaximumOutputBytes;
     }
-
-    private static string GetErrorSummary(CallToolResult result)
-    {
-        const int maximumSummaryLength = 2048;
-        var summary = new StringBuilder();
-        foreach (var content in result.Content)
-        {
-            if (content is not TextContentBlock text || string.IsNullOrWhiteSpace(text.Text))
-                continue;
-
-            if (summary.Length > 0)
-                summary.Append(" | ");
-            var remainingLength = maximumSummaryLength - summary.Length;
-            if (remainingLength <= 0)
-                break;
-            summary.Append(text.Text.AsSpan(0, Math.Min(text.Text.Length, remainingLength)));
-        }
-
-        if (summary.Length == 0)
-            return "MCP server returned an error result without text details.";
-
-        if (summary.Length == maximumSummaryLength)
-            summary.Append("…");
-        return summary.ToString();
-    }
-
-    [LoggerMessage(
-        Level = LogLevel.Error,
-        Message = "MCP tool {ToolName} for client {ClientId} returned an error: {ErrorSummary}")]
-    private static partial void LogToolReturnedError(ILogger logger, string toolName, string clientId, string errorSummary);
 
     [LoggerMessage(
         Level = LogLevel.Information,

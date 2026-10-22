@@ -23,6 +23,7 @@ internal sealed class AcpToolCallTracker
 
         if (update is SessionUpdateEvent { Update.Value: ToolCall tool })
         {
+            _completedToolCalls.Remove(tool.ToolCallId);
             return _startedToolCalls.Add(tool.ToolCallId);
         }
 

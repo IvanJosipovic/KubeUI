@@ -42,6 +42,7 @@ internal static class Program
         EnsureMacOsPath();
 
         using var host = CreateHostBuilder(args).Build();
+        host.Services.ConfigureKubeUIKubernetesJsonLogging();
 
         try
         {

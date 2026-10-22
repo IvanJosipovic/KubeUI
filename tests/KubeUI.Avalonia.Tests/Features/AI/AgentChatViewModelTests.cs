@@ -134,7 +134,7 @@ public sealed class AgentChatViewModelTests
         ]);
         var vm = CreateViewModel(new TestRegistry(new TestAgent(session)), prompt: "Inspect");
 
-        await vm.SendCommand.ExecuteAsync(null);
+        await vm.SendCommand.ExecuteAsync(null).WaitAsync(TestContext.Current.CancellationToken);
 
         vm.Messages.Select(message => message.Text).ShouldBe([
             "Inspect",
@@ -152,7 +152,7 @@ public sealed class AgentChatViewModelTests
         ]);
         var vm = CreateViewModel(new TestRegistry(new TestAgent(session)), prompt: "Inspect");
 
-        await vm.SendCommand.ExecuteAsync(null);
+        await vm.SendCommand.ExecuteAsync(null).WaitAsync(TestContext.Current.CancellationToken);
 
         vm.Messages.Select(message => message.Text).ShouldBe([
             "Inspect",

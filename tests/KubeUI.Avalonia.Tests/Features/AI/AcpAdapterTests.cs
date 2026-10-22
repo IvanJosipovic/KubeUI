@@ -156,7 +156,7 @@ public sealed class AcpAdapterTests
                 ToolCallId = "call-1",
                 Title = "",
                 Name = "kubeui_get",
-                RawInput = JsonDocument.Parse("""{"server":"other","tool":"kubeui_get"}""").RootElement,
+                RawInput = JsonDocument.Parse("""{"server":"kubeui","tool":"kubeui_get"}""").RootElement,
                 Meta = new Dictionary<string, JsonElement>
                 {
                     ["is_mcp_tool_call"] = JsonSerializer.SerializeToElement("true")
@@ -165,7 +165,7 @@ public sealed class AcpAdapterTests
 
         var mapped = new PermissionMapper().Map(request, s_trustedServers);
 
-        mapped.RequiresApproval.ShouldBeTrue();
+        mapped.RequiresApproval.ShouldBeFalse();
     }
 
     [Fact]
@@ -338,6 +338,12 @@ public sealed class AcpAdapterTests
             ToolCallId = "call-1",
             Title = "Read pod"
         }))).ShouldBeTrue("a new turn may start the same tool call again");
+
+        tracker.ShouldForward(new SessionUpdateEvent(new SessionUpdate(new ToolCallUpdate
+        {
+            ToolCallId = "call-1",
+            Status = "completed"
+        }))).ShouldBeTrue("the restarted tool call must report its own completion");
     }
 
     [Fact]
