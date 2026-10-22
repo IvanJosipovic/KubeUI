@@ -391,7 +391,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
     [RelayCommand(CanExecute = nameof(CanNewResource))]
     public async Task NewResourceUiEditor()
     {
-        await ServiceProvider.GetRequiredService<IResourceEditorLauncher>().OpenNew(Cluster, CreateNewResource());
+        await ServiceProvider.GetRequiredService<IResourceEditorLauncher>().OpenForCreate(Cluster, CreateNewResource());
     }
 
     IRelayCommand IResourceConfig.NewResourceUiEditorCommand => NewResourceUiEditorCommand;

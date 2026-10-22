@@ -406,3 +406,6 @@ packed
 .dotnet
 .testagent
 .netcoredbg-mcp.pid
+
+# Local debugger MCP configuration
+.debugmcp.json

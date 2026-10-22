@@ -12,6 +12,7 @@ using FluentIcons.Avalonia;
 using FluentIcons.Common;
 using KubeUI.Avalonia.Features.Resources.Editor;
 using KubeUI.Avalonia.Features.Resources.Properties.Controls;
+using KubeUI.Kubernetes.Resources.Editor;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Features.Resources.Editor;
@@ -117,11 +118,13 @@ public sealed class ResourceEditorNodeControlTests
         document["spec"].ShouldBeNull();
         specSection.IsExpanded.ShouldBeFalse();
 
+        // The cleared section no longer has children, so reopening it cannot resurrect the
+        // deleted content.
         specSection.IsExpanded = true;
         Dispatcher.UIThread.RunJobs();
-        spec.Children.Single(node => node.Name == "replicas").NumberValue = "3";
+        spec.Children.ShouldBeEmpty();
 
-        document["spec"]!["replicas"]!.GetValue<decimal>().ShouldBe(3m);
+        document["spec"].ShouldBeNull();
     }
 
     [AvaloniaFact]
@@ -129,7 +132,7 @@ public sealed class ResourceEditorNodeControlTests
     {
         var schema = ObjectSchema("root", new Dictionary<string, ResourceEditorSchemaNode>
         {
-            ["apiVersion"] = ScalarSchema("apiVersion", ResourceEditorValueKind.String),
+            ["apiVersion"] = ScalarSchema("apiVersion", ResourceEditorValueKind.StringKind),
         });
         var root = ResourceEditorNodeViewModel.Create(schema, JsonNode.Parse("{\"apiVersion\":\"v1\"}")!);
         var control = new ResourceEditorNodeControl(root);
@@ -149,7 +152,7 @@ public sealed class ResourceEditorNodeControlTests
     {
         var schema = new ResourceEditorSchemaNode(
             "values",
-            ResourceEditorValueKind.String,
+            ResourceEditorValueKind.StringKind,
             null,
             new Dictionary<string, ResourceEditorSchemaNode>(StringComparer.Ordinal),
             null,
@@ -189,15 +192,15 @@ public sealed class ResourceEditorNodeControlTests
     {
         var schema = ObjectSchema("root", new Dictionary<string, ResourceEditorSchemaNode>
         {
-            ["replicas"] = ScalarSchema("replicas", ResourceEditorValueKind.Number),
-            ["mode"] = ScalarSchema("mode", ResourceEditorValueKind.Enum, ["Active", "Passive"]),
-            ["values"] = ScalarSchema("values", ResourceEditorValueKind.String, isYamlEditor: true),
+            ["replicas"] = ScalarSchema("replicas", ResourceEditorValueKind.NumberKind),
+            ["mode"] = ScalarSchema("mode", ResourceEditorValueKind.EnumKind, ["Active", "Passive"]),
+            ["values"] = ScalarSchema("values", ResourceEditorValueKind.StringKind, isYamlEditor: true),
             ["labels"] = new(
                 "labels",
-                ResourceEditorValueKind.Map,
+                ResourceEditorValueKind.MapKind,
                 null,
                 EmptyProperties,
-                ScalarSchema("value", ResourceEditorValueKind.String),
+                ScalarSchema("value", ResourceEditorValueKind.StringKind),
                 [],
                 EmptyRequired,
                 null),
@@ -300,16 +303,16 @@ public sealed class ResourceEditorNodeControlTests
     {
         var container = ObjectSchema("container", new Dictionary<string, ResourceEditorSchemaNode>
         {
-            ["name"] = ScalarSchema("name", ResourceEditorValueKind.String),
+            ["name"] = ScalarSchema("name", ResourceEditorValueKind.StringKind),
         });
         var spec = ObjectSchema("spec", new Dictionary<string, ResourceEditorSchemaNode>
         {
-            ["replicas"] = ScalarSchema("replicas", ResourceEditorValueKind.Number, description: "Replica count"),
-            ["enabled"] = ScalarSchema("enabled", ResourceEditorValueKind.Boolean),
-            ["mode"] = ScalarSchema("mode", ResourceEditorValueKind.Enum, ["Active", "Passive"]),
-            ["note"] = ScalarSchema("note", ResourceEditorValueKind.String),
-            ["containers"] = new("containers", ResourceEditorValueKind.Array, null, EmptyProperties, container, [], EmptyRequired, "Container list"),
-            ["labels"] = new("labels", ResourceEditorValueKind.Map, null, EmptyProperties, ScalarSchema("value", ResourceEditorValueKind.String), [], EmptyRequired, "Labels"),
+            ["replicas"] = ScalarSchema("replicas", ResourceEditorValueKind.NumberKind, description: "Replica count"),
+            ["enabled"] = ScalarSchema("enabled", ResourceEditorValueKind.BooleanKind),
+            ["mode"] = ScalarSchema("mode", ResourceEditorValueKind.EnumKind, ["Active", "Passive"]),
+            ["note"] = ScalarSchema("note", ResourceEditorValueKind.StringKind),
+            ["containers"] = new("containers", ResourceEditorValueKind.ArrayKind, null, EmptyProperties, container, [], EmptyRequired, "Container list"),
+            ["labels"] = new("labels", ResourceEditorValueKind.MapKind, null, EmptyProperties, ScalarSchema("value", ResourceEditorValueKind.StringKind), [], EmptyRequired, "Labels"),
         });
         return ObjectSchema("root", new Dictionary<string, ResourceEditorSchemaNode> { ["spec"] = spec });
     }
@@ -317,7 +320,7 @@ public sealed class ResourceEditorNodeControlTests
     private static ResourceEditorSchemaNode ObjectSchema(
         string name,
         IReadOnlyDictionary<string, ResourceEditorSchemaNode> properties)
-        => new(name, ResourceEditorValueKind.Object, null, properties, null, [], EmptyRequired, null);
+        => new(name, ResourceEditorValueKind.ObjectKind, null, properties, null, [], EmptyRequired, null);
 
     private static ResourceEditorSchemaNode ScalarSchema(
         string name,

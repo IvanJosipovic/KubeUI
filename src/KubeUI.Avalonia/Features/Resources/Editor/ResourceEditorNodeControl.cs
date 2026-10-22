@@ -11,6 +11,7 @@ using FluentIcons.Avalonia;
 using FluentIcons.Common;
 using KubeUI.Avalonia.Features.Resources.Properties.Controls;
 using KubeUI.Avalonia.Styles;
+using KubeUI.Kubernetes.Resources.Editor;
 
 namespace KubeUI.Avalonia.Features.Resources.Editor;
 
@@ -26,7 +27,7 @@ public sealed class ResourceEditorNodeControl : UserControl
 
     public ResourceEditorNodeViewModel Node { get; }
 
-    private static Control CreateSection(ResourceEditorNodeViewModel node)
+    private static Border CreateSection(ResourceEditorNodeViewModel node)
     {
         var children = new ItemsControl()
             .ItemTemplate(new FuncDataTemplate<ResourceEditorNodeViewModel>(
@@ -63,7 +64,7 @@ public sealed class ResourceEditorNodeControl : UserControl
         return validationBorder;
     }
 
-    private static Control CreateHeader(ResourceEditorNodeViewModel node)
+    private static Grid CreateHeader(ResourceEditorNodeViewModel node)
     {
         var title = new TextBlock()
             .FontWeight(FontWeight.SemiBold)
@@ -121,7 +122,7 @@ public sealed class ResourceEditorNodeControl : UserControl
         return new Border().IsVisible(false);
     }
 
-    private static Control CreateScalar(ResourceEditorNodeViewModel node)
+    private static Grid CreateScalar(ResourceEditorNodeViewModel node)
     {
         var label = new StackPanel()
             .Orientation(Orientation.Horizontal)
@@ -182,7 +183,7 @@ public sealed class ResourceEditorNodeControl : UserControl
             return editor;
         }
 
-        if (node.Kind == ResourceEditorValueKind.Boolean)
+        if (node.Kind == ResourceEditorValueKind.BooleanKind)
         {
             var editor = new CheckBox()
                 .Name("BooleanEditor")
@@ -195,7 +196,7 @@ public sealed class ResourceEditorNodeControl : UserControl
             return editor;
         }
 
-        if (node.Kind == ResourceEditorValueKind.Enum)
+        if (node.Kind == ResourceEditorValueKind.EnumKind)
         {
             var editor = new ComboBox()
                 .Name("EnumEditor")
@@ -212,11 +213,11 @@ public sealed class ResourceEditorNodeControl : UserControl
         }
 
         var text = CreateTextEditor(
-            node.Kind == ResourceEditorValueKind.Number ? "NumberEditor" : "StringEditor",
+            node.Kind == ResourceEditorValueKind.NumberKind ? "NumberEditor" : "StringEditor",
             node.IsReadOnly);
-        text.AcceptsReturn = node.Kind == ResourceEditorValueKind.Unknown;
+        text.AcceptsReturn = node.Kind == ResourceEditorValueKind.UnknownKind;
         text.TextWrapping = TextWrapping.Wrap;
-        if (node.Kind == ResourceEditorValueKind.Number)
+        if (node.Kind == ResourceEditorValueKind.NumberKind)
         {
             text.Bind(
                 TextBox.TextProperty,

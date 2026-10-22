@@ -35,6 +35,8 @@ References:
 ## 3) ViewModel base
 
 - All ViewModels inherit from `ViewModelBase`.
+- `ViewModelBase` derives from the Dock `Tool` base class, so only screen-level and document-level view models use it.
+- Item models that are rendered inside a view but are not independently dockable (table rows, tree nodes, cell models) inherit from `ObservableObject` instead.
 
 ## 4) Input and interaction via Xaml.Behaviors
 

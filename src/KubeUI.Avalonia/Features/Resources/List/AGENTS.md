@@ -8,6 +8,7 @@
 - Namespaced resources default to a linked namespace filter that derives selections from the workspace's selected namespaces.
 - The resource list can switch to a local namespace selection mode that preserves its own filter choices without mutating the cluster workspace selection.
 - The library owns the 250 ms search debounce and worker-side filtering, search, and sorting; only bound collection publication and count updates run on the UI thread.
+- The "Create" button opens a flyout that offers either a YAML document or the schema-driven UI resource editor. The YAML path opens the YAML document; the UI editor path opens the resource editor for a new resource of the same kind.
 
 ## Validation
 - Keep app tests focused on namespace scope, Kubernetes actions, and resource-specific cells.

@@ -9,8 +9,11 @@ namespace KubeUI.Avalonia.Features.Resources.Editor;
 
 public interface IResourceEditorLauncher
 {
+    /// <summary>Opens the editor for an existing resource.</summary>
     Task Open(ClusterWorkspace cluster, IKubernetesObject<V1ObjectMeta> resource);
-    Task OpenNew(ClusterWorkspace cluster, IKubernetesObject<V1ObjectMeta> resource);
+
+    /// <summary>Opens the editor to create a resource of the same kind.</summary>
+    Task OpenForCreate(ClusterWorkspace cluster, IKubernetesObject<V1ObjectMeta> resource);
 }
 
 internal sealed class ResourceEditorLauncher : IResourceEditorLauncher
@@ -27,7 +30,7 @@ internal sealed class ResourceEditorLauncher : IResourceEditorLauncher
     public Task Open(ClusterWorkspace cluster, IKubernetesObject<V1ObjectMeta> resource)
         => OpenCore(cluster, resource, false);
 
-    public Task OpenNew(ClusterWorkspace cluster, IKubernetesObject<V1ObjectMeta> resource)
+    public Task OpenForCreate(ClusterWorkspace cluster, IKubernetesObject<V1ObjectMeta> resource)
         => OpenCore(cluster, resource, true);
 
     private async Task OpenCore(ClusterWorkspace cluster, IKubernetesObject<V1ObjectMeta> resource, bool isNew)
@@ -36,7 +39,7 @@ internal sealed class ResourceEditorLauncher : IResourceEditorLauncher
 
         var vm = _services.GetRequiredService<ResourceEditorViewModel>();
         if (isNew)
-            vm.InitializeNew(cluster, resource);
+            vm.InitializeForCreate(cluster, resource);
         else
             vm.Initialize(cluster, resource);
         var documents = _factory().GetDockable<IDocumentDock>("Documents")

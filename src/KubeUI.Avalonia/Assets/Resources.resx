@@ -473,18 +473,18 @@
     <value>Open New Tab</value>
     <comment/>
   </data>
-    <data name="ResourceListView_NewResource" xml:space="preserve">
-      <value>Create a new Resource</value>
-      <comment/>
-    </data>
+  <data name="ResourceListView_NewResource" xml:space="preserve">
+    <value>Create a new Resource</value>
+    <comment/>
+  </data>
   <data name="ResourceListView_NewResourceYaml" xml:space="preserve">
-      <value>Create YAML</value>
-      <comment/>
-    </data>
+    <value>Create YAML</value>
+    <comment/>
+  </data>
   <data name="ResourceListView_NewResourceUiEditor" xml:space="preserve">
-      <value>Create with UI Editor</value>
-      <comment/>
-    </data>
+    <value>Create with UI Editor</value>
+    <comment/>
+  </data>
   <data name="ResourceListView_NamespaceLink" xml:space="preserve">
     <value>Linked namespace selection</value>
     <comment/>
@@ -2686,6 +2686,18 @@
   </data>
   <data name="ResourceEditorView_ValidationFailed" xml:space="preserve">
     <value>Validation failed</value>
+  </data>
+  <data name="ResourceEditorView_SaveSucceeded" xml:space="preserve">
+    <value>Save succeeded</value>
+  </data>
+  <data name="ResourceEditorView_SaveSucceededMessage" xml:space="preserve">
+    <value>The resource was applied to the cluster.</value>
+  </data>
+  <data name="ResourceEditorView_SaveFailed" xml:space="preserve">
+    <value>Save failed</value>
+  </data>
+  <data name="ResourceEditorView_SaveConflict" xml:space="preserve">
+    <value>Save conflict</value>
   </data>
   <data name="ResourceEditorView_AddItem" xml:space="preserve">
     <value>Add item</value>

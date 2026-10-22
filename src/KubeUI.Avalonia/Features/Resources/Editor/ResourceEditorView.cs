@@ -1,8 +1,10 @@
 using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Templates;
+using Avalonia.Markup.Xaml.MarkupExtensions;
 using FluentAvalonia.UI.Controls;
 using FluentIcons.Avalonia;
 using FluentIcons.Common;
+using KubeUI.Avalonia.Styles;
 
 namespace KubeUI.Avalonia.Features.Resources.Editor;
 
@@ -50,16 +52,22 @@ public sealed class ResourceEditorView : ViewBase<ResourceEditorViewModel>
             .Message(vm, x => x.ActionResultMessage)
             .Severity(vm, x => x.ActionResultSeverity);
 
-        return new Grid().Rows("Auto,Auto,*").Children(
-            new StackPanel()
+        return new Grid().Rows("Auto,Auto,Auto,*").Children(
+            new TextBlock()
                 .Row(0)
+                .Margin(8, 6, 8, 2)
+                .FontSize(new DynamicResourceExtension(Typography.TitleFontSizeResourceKey))
+                .Text(vm, x => x.Title),
+            new StackPanel()
+                .Row(1)
+                .Margin(4, 0, 4, 4)
                 .Orientation(Orientation.Horizontal)
                 .Children(save, validate, reset),
-            actionBar.Row(1),
+            actionBar.Row(2),
             new ScrollViewer()
                 .VerticalScrollBarVisibility(ScrollBarVisibility.Auto)
                 .HorizontalScrollBarVisibility(ScrollBarVisibility.Disabled)
                 .Content(editorHost)
-                .Row(2));
+                .Row(3));
     }
 }

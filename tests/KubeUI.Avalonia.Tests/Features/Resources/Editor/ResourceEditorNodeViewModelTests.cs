@@ -1,6 +1,7 @@
 using System.Text.Json.Nodes;
 using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Features.Resources.Editor;
+using KubeUI.Kubernetes.Resources.Editor;
 using Microsoft.OpenApi;
 
 namespace KubeUI.Avalonia.Tests.Features.Resources.Editor;
@@ -23,18 +24,18 @@ public sealed class ResourceEditorNodeViewModelTests
         var root = ResourceEditorNodeViewModel.Create(CreateSchema(), document.Root);
 
         var spec = Assert.Single(root.Children);
-        Assert.Equal(ResourceEditorValueKind.Object, spec.Kind);
+        Assert.Equal(ResourceEditorValueKind.ObjectKind, spec.Kind);
         Assert.True(spec.IsSection);
         Assert.Equal(3, spec.Children.Count);
 
         var containers = Assert.Single(spec.Children, child => child.Name == "containers");
-        Assert.Equal(ResourceEditorValueKind.Array, containers.Kind);
+        Assert.Equal(ResourceEditorValueKind.ArrayKind, containers.Kind);
         var firstContainer = Assert.Single(containers.Children);
         Assert.Equal("Item 1", firstContainer.DisplayName);
         Assert.Equal(2, firstContainer.Children.Count);
 
         var labels = Assert.Single(spec.Children, child => child.Name == "labels");
-        Assert.Equal(ResourceEditorValueKind.Map, labels.Kind);
+        Assert.Equal(ResourceEditorValueKind.MapKind, labels.Kind);
         Assert.Equal("platform", Assert.Single(labels.Children).StringValue);
     }
 
@@ -64,8 +65,8 @@ public sealed class ResourceEditorNodeViewModelTests
     {
         var schema = ObjectSchema("root", new Dictionary<string, ResourceEditorSchemaNode>
         {
-            ["mode"] = ScalarSchema("mode", ResourceEditorValueKind.Enum, enumValues: ["Active", "Passive"]),
-            ["enabled"] = ScalarSchema("enabled", ResourceEditorValueKind.Boolean),
+            ["mode"] = ScalarSchema("mode", ResourceEditorValueKind.EnumKind, enumValues: ["Active", "Passive"]),
+            ["enabled"] = ScalarSchema("enabled", ResourceEditorValueKind.BooleanKind),
         });
         var document = ResourceEditorDocument.Parse("{\"mode\":\"Active\",\"enabled\":true}");
         var root = ResourceEditorNodeViewModel.Create(schema, document.Root);
@@ -85,7 +86,7 @@ public sealed class ResourceEditorNodeViewModelTests
     {
         var schema = ObjectSchema("root", new Dictionary<string, ResourceEditorSchemaNode>
         {
-            ["mode"] = ScalarSchema("mode", ResourceEditorValueKind.Enum, enumValues: ["Active", "Passive"]),
+            ["mode"] = ScalarSchema("mode", ResourceEditorValueKind.EnumKind, enumValues: ["Active", "Passive"]),
         }, required: new HashSet<string>(["mode"], StringComparer.Ordinal));
         var root = ResourceEditorNodeViewModel.Create(schema, JsonNode.Parse("{\"mode\":\"Active\"}")!);
 
@@ -145,7 +146,7 @@ public sealed class ResourceEditorNodeViewModelTests
             "root",
             new Dictionary<string, ResourceEditorSchemaNode>
             {
-                ["spec"] = ScalarSchema("spec", ResourceEditorValueKind.String, description: "Desired state"),
+                ["spec"] = ScalarSchema("spec", ResourceEditorValueKind.StringKind, description: "Desired state"),
             },
             required: new HashSet<string>(["spec"], StringComparer.Ordinal));
         var root = ResourceEditorNodeViewModel.Create(schema, JsonNode.Parse("{\"spec\":\"ready\"}")!);
@@ -161,8 +162,8 @@ public sealed class ResourceEditorNodeViewModelTests
     {
         var schema = ObjectSchema("root", new Dictionary<string, ResourceEditorSchemaNode>
         {
-            ["apiVersion"] = ScalarSchema("apiVersion", ResourceEditorValueKind.String),
-            ["kind"] = ScalarSchema("kind", ResourceEditorValueKind.String),
+            ["apiVersion"] = ScalarSchema("apiVersion", ResourceEditorValueKind.StringKind),
+            ["kind"] = ScalarSchema("kind", ResourceEditorValueKind.StringKind),
         });
         var document = ResourceEditorDocument.Parse("{\"apiVersion\":\"v1\",\"kind\":\"Pod\"}");
         var root = ResourceEditorNodeViewModel.Create(schema, document.Root);
@@ -185,9 +186,9 @@ public sealed class ResourceEditorNodeViewModelTests
         {
             ["status"] = ObjectSchema("status", new Dictionary<string, ResourceEditorSchemaNode>
             {
-                ["phase"] = ScalarSchema("phase", ResourceEditorValueKind.String),
-                ["conditions"] = new("conditions", ResourceEditorValueKind.Array, null, EmptyProperties,
-                    ScalarSchema("condition", ResourceEditorValueKind.String), [], EmptyRequired, null),
+                ["phase"] = ScalarSchema("phase", ResourceEditorValueKind.StringKind),
+                ["conditions"] = new("conditions", ResourceEditorValueKind.ArrayKind, null, EmptyProperties,
+                    ScalarSchema("condition", ResourceEditorValueKind.StringKind), [], EmptyRequired, null),
             }),
         });
         var document = ResourceEditorDocument.Parse("{\"status\":{\"phase\":\"Running\",\"conditions\":[]}}");
@@ -212,7 +213,7 @@ public sealed class ResourceEditorNodeViewModelTests
     {
         var schema = ObjectSchema("root", new Dictionary<string, ResourceEditorSchemaNode>
         {
-            ["values"] = ScalarSchema("values", ResourceEditorValueKind.String, isYamlEditor: true),
+            ["values"] = ScalarSchema("values", ResourceEditorValueKind.StringKind, isYamlEditor: true),
         });
         var document = ResourceEditorDocument.Parse("{\"values\":\"{\\\"allow\\\":{\\\"enabled\\\":false}}\"}");
         var root = ResourceEditorNodeViewModel.Create(schema, document.Root);
@@ -227,11 +228,75 @@ public sealed class ResourceEditorNodeViewModelTests
     }
 
     [Fact]
+    public void YamlScalarString_WritesBackPlainTextWithoutJsonQuoting()
+    {
+        var schema = ObjectSchema("root", new Dictionary<string, ResourceEditorSchemaNode>
+        {
+            ["values"] = ScalarSchema("values", ResourceEditorValueKind.StringKind, isYamlEditor: true),
+        });
+        var document = ResourceEditorDocument.Parse("{\"values\":\"hello\"}");
+        var values = Assert.Single(ResourceEditorNodeViewModel.Create(schema, document.Root).Children);
+
+        Assert.True(values.IsYamlText);
+        Assert.Equal("hello", values.YamlValue);
+
+        values.YamlValue = "goodbye";
+
+        Assert.Equal("goodbye", document.Root["values"]!.GetValue<string>());
+        Assert.DoesNotContain("\"", document.Root["values"]!.GetValue<string>(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void YamlScalarString_DoesNotQuoteTheValueWhenOnlyWhitespaceChanges()
+    {
+        var schema = ObjectSchema("root", new Dictionary<string, ResourceEditorSchemaNode>
+        {
+            ["values"] = ScalarSchema("values", ResourceEditorValueKind.StringKind, isYamlEditor: true),
+        });
+        var document = ResourceEditorDocument.Parse("{\"values\":\"hello\"}");
+        var values = Assert.Single(ResourceEditorNodeViewModel.Create(schema, document.Root).Children);
+
+        values.YamlValue = "hello ";
+
+        Assert.Equal("hello", document.Root["values"]!.GetValue<string>());
+    }
+
+    [Fact]
+    public void ClearingSection_DetachesChildrenSoEditsCannotResurrectDeletedData()
+    {
+        var document = ResourceEditorDocument.Parse("{\"spec\":{\"replicas\":2}}");
+        var root = ResourceEditorNodeViewModel.Create(CreateSchema(), document.Root);
+        var spec = Assert.Single(root.Children, child => child.Name == "spec");
+        var replicas = Assert.Single(spec.Children, child => child.Name == "replicas");
+
+        spec.ClearSectionCommand.Execute(null);
+
+        Assert.Null(document.Root["spec"]);
+
+        replicas.NumberValue = "99";
+
+        Assert.Null(document.Root["spec"]);
+        Assert.Equal("{\"spec\":null}", document.Root.ToJsonString());
+    }
+
+    [Fact]
+    public void ClearingSection_RemovesTheClearedChildFromTheTree()
+    {
+        var document = ResourceEditorDocument.Parse("{\"spec\":{\"replicas\":2}}");
+        var root = ResourceEditorNodeViewModel.Create(CreateSchema(), document.Root);
+        var spec = Assert.Single(root.Children, child => child.Name == "spec");
+
+        spec.ClearSectionCommand.Execute(null);
+
+        Assert.Empty(spec.Children);
+    }
+
+    [Fact]
     public void JsonLookingStringWithoutYamlSchema_UsesNormalStringEditor()
     {
         var schema = ObjectSchema("root", new Dictionary<string, ResourceEditorSchemaNode>
         {
-            ["values"] = ScalarSchema("values", ResourceEditorValueKind.String),
+            ["values"] = ScalarSchema("values", ResourceEditorValueKind.StringKind),
         });
         var document = ResourceEditorDocument.Parse("{\"values\":\"{\\\"enabled\\\":true}\"}");
         var values = Assert.Single(ResourceEditorNodeViewModel.Create(schema, document.Root).Children);
@@ -280,14 +345,14 @@ public sealed class ResourceEditorNodeViewModelTests
     {
         var container = ObjectSchema("container", new Dictionary<string, ResourceEditorSchemaNode>
         {
-            ["name"] = ScalarSchema("name", ResourceEditorValueKind.String),
-            ["enabled"] = ScalarSchema("enabled", ResourceEditorValueKind.Boolean),
+            ["name"] = ScalarSchema("name", ResourceEditorValueKind.StringKind),
+            ["enabled"] = ScalarSchema("enabled", ResourceEditorValueKind.BooleanKind),
         });
         var spec = ObjectSchema("spec", new Dictionary<string, ResourceEditorSchemaNode>
         {
-            ["replicas"] = ScalarSchema("replicas", ResourceEditorValueKind.Number),
-            ["containers"] = new("containers", ResourceEditorValueKind.Array, null, EmptyProperties, container, [], EmptyRequired, "Container list"),
-            ["labels"] = new("labels", ResourceEditorValueKind.Map, null, EmptyProperties, ScalarSchema("value", ResourceEditorValueKind.String), [], EmptyRequired, "Labels"),
+            ["replicas"] = ScalarSchema("replicas", ResourceEditorValueKind.NumberKind),
+            ["containers"] = new("containers", ResourceEditorValueKind.ArrayKind, null, EmptyProperties, container, [], EmptyRequired, "Container list"),
+            ["labels"] = new("labels", ResourceEditorValueKind.MapKind, null, EmptyProperties, ScalarSchema("value", ResourceEditorValueKind.StringKind), [], EmptyRequired, "Labels"),
         });
         return ObjectSchema("root", new Dictionary<string, ResourceEditorSchemaNode> { ["spec"] = spec });
     }
@@ -296,7 +361,7 @@ public sealed class ResourceEditorNodeViewModelTests
         string name,
         IReadOnlyDictionary<string, ResourceEditorSchemaNode> properties,
         IReadOnlySet<string>? required = null)
-        => new(name, ResourceEditorValueKind.Object, null, properties, null, [], required ?? EmptyRequired, null);
+        => new(name, ResourceEditorValueKind.ObjectKind, null, properties, null, [], required ?? EmptyRequired, null);
 
     private static ResourceEditorSchemaNode ScalarSchema(
         string name,

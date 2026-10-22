@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Net;
 using System.Text;
 using System.Text.Json.Nodes;
 using FluentAvalonia.UI.Controls;
@@ -9,6 +10,7 @@ using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Kubernetes;
+using KubeUI.Kubernetes.Resources.Editor;
 using KubeUI.Kubernetes.Serialization;
 
 namespace KubeUI.Avalonia.Features.Resources.Editor;
@@ -17,7 +19,6 @@ public sealed partial class ResourceEditorViewModel : ViewModelBase, IDisposable
 {
     private readonly ILogger<ResourceEditorViewModel> _logger;
     private GroupApiVersionKind _kind;
-    private CancellationTokenSource? _saveCancellation;
 
     [ObservableProperty] public partial ClusterWorkspace? Cluster { get; set; }
     [ObservableProperty] public partial IKubernetesObject<V1ObjectMeta>? Object { get; private set; }
@@ -39,11 +40,8 @@ public sealed partial class ResourceEditorViewModel : ViewModelBase, IDisposable
         ? FAInfoBarSeverity.Success
         : FAInfoBarSeverity.Error;
 
-    public ResourceEditorViewModel(
-        IKubernetesYamlSerializer serializer,
-        ILogger<ResourceEditorViewModel> logger)
+    public ResourceEditorViewModel(ILogger<ResourceEditorViewModel> logger)
     {
-        _ = serializer;
         _logger = logger;
         Title = "Resource Editor";
         Id = nameof(ResourceEditorViewModel);
@@ -57,10 +55,12 @@ public sealed partial class ResourceEditorViewModel : ViewModelBase, IDisposable
     public bool CanCreate => Cluster is not null && Object is not null
         && Cluster.Runtime.Permissions.CanI(_kind, Verb.Create, Object.Metadata?.NamespaceProperty);
 
+    /// <summary>Initializes the editor for an existing resource.</summary>
     public void Initialize(ClusterWorkspace cluster, IKubernetesObject<V1ObjectMeta> resource)
         => InitializeCore(cluster, resource, false);
 
-    public void InitializeNew(ClusterWorkspace cluster, IKubernetesObject<V1ObjectMeta> resource)
+    /// <summary>Initializes the editor to create a resource of the same kind.</summary>
+    public void InitializeForCreate(ClusterWorkspace cluster, IKubernetesObject<V1ObjectMeta> resource)
         => InitializeCore(cluster, resource, true);
 
     private void InitializeCore(ClusterWorkspace cluster, IKubernetesObject<V1ObjectMeta> resource, bool isNew)
@@ -82,15 +82,6 @@ public sealed partial class ResourceEditorViewModel : ViewModelBase, IDisposable
         Cluster.Runtime.OnChange += OnClusterChange;
         Validate();
         RebuildEditorTree();
-        NotifyStateChanged();
-    }
-
-    public void SetValue(string path, JsonNode? value)
-    {
-        if (Document is null)
-            throw new InvalidOperationException("Resource editor has not been initialized.");
-        SetPath(Document.Root, path, value);
-        Validate();
         NotifyStateChanged();
     }
 
@@ -159,10 +150,15 @@ public sealed partial class ResourceEditorViewModel : ViewModelBase, IDisposable
             var summary = allErrors.Count == 0 ? message : FormatValidationErrors(allErrors);
             ErrorMessage = summary;
             SetActionResult(false, Assets.Resources.ResourceEditorView_ValidationFailed, summary);
-            _logger.LogError(ex, "Error validating resource editor document");
+            LogValidationFailed(ex);
         }
         NotifyStateChanged();
     }
+
+    [LoggerMessage(
+        Level = LogLevel.Error,
+        Message = "Error validating resource editor document.")]
+    private partial void LogValidationFailed(Exception exception);
 
     private static string FormatValidationErrors(IEnumerable<ResourceEditorValidationError> errors)
         => string.Join(
@@ -181,25 +177,57 @@ public sealed partial class ResourceEditorViewModel : ViewModelBase, IDisposable
 
         IsSaving = true;
         ErrorMessage = null;
-        _saveCancellation?.Dispose();
-        _saveCancellation = new CancellationTokenSource();
         try
         {
             var json = Document.Root.ToJsonString();
-            await using var stream = new MemoryStream(Encoding.UTF8.GetBytes(json));
-            await Cluster.Runtime.ImportYaml(stream).ConfigureAwait(false);
-            Document = ResourceEditorDocument.Parse(json);
+
+            // The resource is applied as a single object so the server-assigned UID and
+            // resource version come back and are written into the document. Without them a
+            // second save would try to create the resource again instead of replacing it.
+            var applied = await Cluster.Runtime.ApplyResource(ToResource(json)).ConfigureAwait(false);
+
+            // The saved JSON becomes the new baseline. The editor tree holds closures over the
+            // current JsonObject instances, so the tree must be rebuilt against the new baseline
+            // or subsequent edits would keep mutating the discarded document.
+            Document = ResourceEditorDocument.Parse(KubernetesJson.Serialize(applied));
+            Object = applied;
             if (IsCreateMode)
             {
                 IsCreateMode = false;
                 OnPropertyChanged(nameof(IsCreateMode));
             }
-            NotifyStateChanged();
+
+            RebuildEditorTree();
+            Validate();
+            SetActionResult(
+                true,
+                Assets.Resources.ResourceEditorView_SaveSucceeded,
+                Assets.Resources.ResourceEditorView_SaveSucceededMessage);
         }
         catch (Exception ex)
         {
-            ErrorMessage = ex.Message;
-            _logger.LogError(ex, "Error saving resource editor document");
+            var message = Utilities.GetUserFacingErrorMessage(ex);
+            ErrorMessage = message;
+            LogSaveFailed(ex);
+
+            var serverErrors = Utilities.GetKubernetesStatusCauses(ex)
+                .Select(cause => new ResourceEditorValidationError(cause.Path, cause.Message))
+                .ToArray();
+            if (serverErrors.Length > 0)
+            {
+                var allErrors = new List<ResourceEditorValidationError>();
+                EditorRoot?.AppendLocalValidationErrors(allErrors);
+                allErrors.AddRange(serverErrors);
+                ValidationErrors = allErrors;
+                EditorRoot?.SetDocumentValidationErrors(serverErrors);
+            }
+
+            SetActionResult(
+                false,
+                IsConflict(ex)
+                    ? Assets.Resources.ResourceEditorView_SaveConflict
+                    : Assets.Resources.ResourceEditorView_SaveFailed,
+                message);
         }
         finally
         {
@@ -207,6 +235,22 @@ public sealed partial class ResourceEditorViewModel : ViewModelBase, IDisposable
             NotifyStateChanged();
         }
     }
+
+    private static bool IsConflict(Exception ex)
+        => Utilities.GetKubernetesStatusCode(ex) == (int)HttpStatusCode.Conflict;
+
+    /// <summary>
+    /// Converts the edited document back into the resource type that is being edited.
+    /// </summary>
+    /// <param name="json">The edited document JSON.</param>
+    /// <returns>The resource represented by the document.</returns>
+    private GenericKubernetesObject ToResource(string json)
+        => KubernetesJson.Deserialize<GenericKubernetesObject>(json);
+
+    [LoggerMessage(
+        Level = LogLevel.Error,
+        Message = "Error saving resource editor document.")]
+    private partial void LogSaveFailed(Exception exception);
 
     private void OnClusterChange(WatchEventType eventType, GroupApiVersionKind kind, IKubernetesObject<V1ObjectMeta> resource)
     {
@@ -221,7 +265,7 @@ public sealed partial class ResourceEditorViewModel : ViewModelBase, IDisposable
         ValidationMessage = null;
         var errors = new List<ResourceEditorValidationError>();
         if (Document is not null && Schema is not null)
-            ValidateNode(Document.Root, Schema, string.Empty, errors);
+            ValidateNode(Document.Root, Schema, string.Empty, isRequired: false, errors);
         EditorRoot?.AppendLocalValidationErrors(errors);
         ValidationErrors = errors;
         EditorRoot?.SetDocumentValidationErrors(errors);
@@ -290,41 +334,85 @@ public sealed partial class ResourceEditorViewModel : ViewModelBase, IDisposable
         ErrorMessage = null;
     }
 
-    private static void ValidateNode(JsonNode? value, ResourceEditorSchemaNode schema, string path, List<ResourceEditorValidationError> errors)
+    private static void ValidateNode(
+        JsonNode? value,
+        ResourceEditorSchemaNode schema,
+        string path,
+        bool isRequired,
+        List<ResourceEditorValidationError> errors)
     {
-        var currentPath = string.IsNullOrEmpty(path) ? schema.Name : path;
         if (value is null)
         {
-            if (schema.IsRequired)
-                errors.Add(new(currentPath, "Value is required."));
+            if (isRequired)
+                errors.Add(new(path, "Value is required."));
             return;
         }
-        if (schema.ValueKind == ResourceEditorValueKind.Object && value is JsonObject obj)
+
+        if (schema.ValueKind == ResourceEditorValueKind.ObjectKind && value is JsonObject obj)
         {
             foreach (var child in schema.Properties.Values)
-                if (obj.TryGetPropertyValue(child.Name, out var childValue))
-                    ValidateNode(childValue, child, string.IsNullOrEmpty(path) ? child.Name : $"{path}.{child.Name}", errors);
+            {
+                obj.TryGetPropertyValue(child.Name, out var childValue);
+                ValidateNode(
+                    childValue,
+                    child,
+                    JoinPath(path, child.Name),
+                    schema.Required.Contains(child.Name),
+                    errors);
+            }
+
             foreach (var required in schema.Required)
+            {
                 if (!obj.ContainsKey(required) || obj[required] is null)
-                    errors.Add(new($"{currentPath}.{required}", "Value is required."));
+                    errors.Add(new(JoinPath(path, required), "Value is required."));
+            }
         }
-        else if (schema.ValueKind == ResourceEditorValueKind.Object)
-            errors.Add(new(currentPath, "Value must be an object."));
-        else if (schema.ValueKind == ResourceEditorValueKind.Array && value is not JsonArray)
-            errors.Add(new(currentPath, "Value must be an array."));
-        else if (schema.ValueKind == ResourceEditorValueKind.Map && value is not JsonObject)
-            errors.Add(new(currentPath, "Value must be an object."));
-        else if (schema.ValueKind == ResourceEditorValueKind.Enum && value is JsonValue enumValue
-            && enumValue.TryGetValue<string>(out var text) && !schema.EnumValues.Contains(text, StringComparer.Ordinal))
-            errors.Add(new(currentPath, "Value is not valid for this enum."));
+        else if (schema.ValueKind == ResourceEditorValueKind.ObjectKind)
+        {
+            errors.Add(new(path, "Value must be an object."));
+        }
+        else if (schema.ValueKind == ResourceEditorValueKind.ArrayKind)
+        {
+            if (value is not JsonArray array)
+            {
+                errors.Add(new(path, "Value must be an array."));
+            }
+            else if (schema.Items is not null)
+            {
+                for (var index = 0; index < array.Count; index++)
+                    ValidateNode(array[index], schema.Items, $"{path}[{index}]", isRequired: false, errors);
+            }
+        }
+        else if (schema.ValueKind == ResourceEditorValueKind.MapKind)
+        {
+            if (value is not JsonObject map)
+            {
+                errors.Add(new(path, "Value must be an object."));
+            }
+            else if (schema.Items is not null)
+            {
+                foreach (var entry in map)
+                    ValidateNode(entry.Value, schema.Items, JoinPath(path, entry.Key), isRequired: false, errors);
+            }
+        }
+        else if (schema.ValueKind == ResourceEditorValueKind.EnumKind
+            && value is JsonValue enumValue
+            && enumValue.TryGetValue<string>(out var text)
+            && !schema.EnumValues.Contains(text, StringComparer.Ordinal))
+        {
+            errors.Add(new(path, "Value is not valid for this enum."));
+        }
 
         if (schema.Format == "date-time"
             && value is JsonValue dateValue
             && dateValue.TryGetValue<string>(out var dateText)
             && !string.IsNullOrEmpty(dateText)
             && !DateTimeOffset.TryParse(dateText, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out _))
-            errors.Add(new(currentPath, "Value must be a valid date-time."));
+            errors.Add(new(path, "Value must be a valid date-time."));
     }
+
+    private static string JoinPath(string path, string name)
+        => string.IsNullOrEmpty(path) ? name : $"{path}.{name}";
 
     private static IEnumerable<ResourceEditorNodeViewModel> EnumerateNodes(ResourceEditorNodeViewModel node)
     {
@@ -332,17 +420,6 @@ public sealed partial class ResourceEditorViewModel : ViewModelBase, IDisposable
         foreach (var child in node.Children)
             foreach (var descendant in EnumerateNodes(child))
                 yield return descendant;
-    }
-
-    private static void SetPath(JsonObject root, string path, JsonNode? value)
-    {
-        var segments = path.Split('.', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-        if (segments.Length == 0)
-            throw new ArgumentException("Path cannot be empty.", nameof(path));
-        var current = root;
-        for (var i = 0; i < segments.Length - 1; i++)
-            current = current[segments[i]] as JsonObject ?? throw new KeyNotFoundException(path);
-        current[segments[^1]] = value;
     }
 
     private void NotifyStateChanged()
@@ -358,6 +435,5 @@ public sealed partial class ResourceEditorViewModel : ViewModelBase, IDisposable
     {
         if (Cluster is not null)
             Cluster.Runtime.OnChange -= OnClusterChange;
-        _saveCancellation?.Dispose();
     }
 }

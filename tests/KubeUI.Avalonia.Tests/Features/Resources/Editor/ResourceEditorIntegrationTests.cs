@@ -1,3 +1,5 @@
+using System.Net;
+using System.Text;
 using System.Text.Json.Nodes;
 using Avalonia.Automation;
 using Avalonia.Controls;
@@ -15,6 +17,8 @@ using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Features.Resources.Editor;
 using KubeUI.Avalonia.Features.Resources.Properties.Controls;
 using KubeUI.Avalonia.Infrastructure.Presentation;
+using KubeUI.Kubernetes.Resources.Editor;
+using KubeUI.Testing.Kubernetes.Bootstrap;
 using Microsoft.OpenApi;
 using Shouldly;
 
@@ -78,11 +82,68 @@ public sealed class ResourceEditorIntegrationTests
             .ShouldBeSameAs(root);
 
         var spec = root.Properties["spec"];
-        spec.Properties["nodeSelector"].ValueKind.ShouldBe(ResourceEditorValueKind.Map);
+        spec.Properties["nodeSelector"].ValueKind.ShouldBe(ResourceEditorValueKind.MapKind);
         spec.Properties["nodeSelector"].Items.ShouldNotBeNull();
-        spec.Properties["containers"].ValueKind.ShouldBe(ResourceEditorValueKind.Array);
-        spec.Properties["containers"].Items!.ValueKind.ShouldBe(ResourceEditorValueKind.Object);
-        spec.Properties["restartPolicy"].ValueKind.ShouldBe(ResourceEditorValueKind.Enum);
+        spec.Properties["containers"].ValueKind.ShouldBe(ResourceEditorValueKind.ArrayKind);
+        spec.Properties["containers"].Items!.ValueKind.ShouldBe(ResourceEditorValueKind.ObjectKind);
+        spec.Properties["restartPolicy"].ValueKind.ShouldBe(ResourceEditorValueKind.EnumKind);
+    }
+
+    [AvaloniaFact]
+    public void OneOf_schema_branches_do_not_require_mutually_exclusive_fields()
+    {
+        var document = new OpenApiDocument
+        {
+            Components = new OpenApiComponents
+            {
+                Schemas = new Dictionary<string, IOpenApiSchema>
+                {
+                    ["io.k8s.api.core.v1.Pod"] = new OpenApiSchema
+                    {
+                        Type = JsonSchemaType.Object,
+                        Properties = new Dictionary<string, IOpenApiSchema>
+                        {
+                            ["spec"] = new OpenApiSchema
+                            {
+                                Type = JsonSchemaType.Object,
+                                OneOf = new List<IOpenApiSchema>
+                                {
+                                    new OpenApiSchema
+                                    {
+                                        Type = JsonSchemaType.Object,
+                                        Required = new HashSet<string>(["alpha"], StringComparer.Ordinal),
+                                        Properties = new Dictionary<string, IOpenApiSchema>
+                                        {
+                                            ["alpha"] = new OpenApiSchema { Type = JsonSchemaType.String },
+                                        },
+                                    },
+                                    new OpenApiSchema
+                                    {
+                                        Type = JsonSchemaType.Object,
+                                        Required = new HashSet<string>(["beta"], StringComparer.Ordinal),
+                                        Properties = new Dictionary<string, IOpenApiSchema>
+                                        {
+                                            ["beta"] = new OpenApiSchema { Type = JsonSchemaType.String },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        };
+        var catalog = new KubernetesOpenApiSchemaCatalog();
+        catalog.Register(document);
+
+        var root = ResourceEditorSchemaNode.CreateRoot(
+            GroupApiVersionKind.From<V1Pod>(),
+            catalog);
+        var spec = root.Properties["spec"];
+
+        spec.ValueKind.ShouldBe(ResourceEditorValueKind.ObjectKind);
+        spec.Properties.Keys.ShouldBe(["alpha", "beta"], ignoreOrder: true);
+        spec.Required.ShouldBeEmpty("oneOf branches are alternatives, so only one branch may be required at a time");
     }
 
     [AvaloniaFact]
@@ -137,11 +198,184 @@ public sealed class ResourceEditorIntegrationTests
     }
 
     [AvaloniaFact]
+    public async Task Saving_rebuilds_the_editor_tree_so_later_edits_are_kept()
+    {
+        using var cluster = await Application.Current.CreateClusterAsync();
+        using var vm = Application.Current.GetRequiredTestService<ResourceEditorViewModel>();
+        var pod = new V1Pod
+        {
+            ApiVersion = "v1",
+            Kind = "Pod",
+            Metadata = new V1ObjectMeta { Name = "pod-1", NamespaceProperty = "default" },
+            Spec = new V1PodSpec { Containers = [new V1Container { Name = "app", Image = "nginx" }] },
+        };
+
+        vm.Initialize(cluster, pod);
+        var name = vm.EditorRoot!.Children.Single(node => node.Name == "metadata").Children.Single(node => node.Name == "name");
+        name.StringValue = "pod-2";
+
+        await vm.SaveCommand.ExecuteAsync(null).WaitAsync(TestContext.Current.CancellationToken);
+
+        vm.IsDirty.ShouldBeFalse();
+        vm.HasActionSuccessResult.ShouldBeTrue();
+        vm.ActionResultTitle.ShouldBe(Assets.Resources.ResourceEditorView_SaveSucceeded);
+
+        var nameAfterSave = vm.EditorRoot!.Children.Single(node => node.Name == "metadata").Children.Single(node => node.Name == "name");
+        nameAfterSave.StringValue = "pod-3";
+
+        vm.IsDirty.ShouldBeTrue("an edit made after a save must mark the document as dirty");
+        vm.Document!.Root["metadata"]!["name"]!.GetValue<string>().ShouldBe("pod-3");
+        vm.CanSave.ShouldBeTrue();
+    }
+
+    [AvaloniaFact]
+    public async Task Saving_a_created_resource_records_the_server_assigned_identity()
+    {
+        using var cluster = await Application.Current.CreateClusterAsync();
+        using var vm = Application.Current.GetRequiredTestService<ResourceEditorViewModel>();
+        vm.InitializeForCreate(cluster, new V1Pod
+        {
+            ApiVersion = "v1",
+            Kind = "Pod",
+            Metadata = new V1ObjectMeta { Name = "temp", NamespaceProperty = "default" },
+            Spec = new V1PodSpec { Containers = [new V1Container { Name = "app", Image = "nginx" }] },
+        });
+
+        await vm.SaveCommand.ExecuteAsync(null).WaitAsync(TestContext.Current.CancellationToken);
+
+        vm.IsCreateMode.ShouldBeFalse();
+        vm.HasActionFailureResult.ShouldBeFalse();
+        vm.ErrorMessage.ShouldBeNull();
+        vm.Document!.Root["metadata"]!["uid"]!.GetValue<string>().ShouldNotBeNullOrEmpty();
+    }
+
+    [AvaloniaFact]
+    public async Task A_failed_save_reports_the_server_error_to_the_user()
+    {
+        var services = Application.Current.GetTestServices();
+        var config = services.GetRequiredService<TestClusterConfig>();
+        var previousHandlerFactory = config.HttpHandlerFactory;
+        var writeGate = new WriteRejectionGate();
+        config.HttpHandlerFactory = () => [new RejectWriteHandler(writeGate)];
+
+        using var cluster = await Application.Current.CreateClusterAsync();
+        config.HttpHandlerFactory = previousHandlerFactory;
+        await cluster.Runtime.EnsureOpenApiSchemasAsync().WaitAsync(TestContext.Current.CancellationToken);
+
+        using var vm = Application.Current.GetRequiredTestService<ResourceEditorViewModel>();
+        vm.Initialize(cluster, new V1Pod
+        {
+            ApiVersion = "v1",
+            Kind = "Pod",
+            Metadata = new V1ObjectMeta { Name = "pod-1", NamespaceProperty = "default" },
+            Spec = new V1PodSpec { Containers = [new V1Container { Name = "app", Image = "nginx" }] },
+        });
+
+        var name = vm.EditorRoot!.Children.Single(node => node.Name == "metadata").Children.Single(node => node.Name == "name");
+        name.StringValue = "pod-2";
+
+        // The write is rejected by the transport, so the editor must report the failure.
+        writeGate.RejectWrites = true;
+        await vm.SaveCommand.ExecuteAsync(null).WaitAsync(TestContext.Current.CancellationToken);
+
+        vm.HasActionFailureResult.ShouldBeTrue();
+        vm.ActionResultTitle.ShouldBe(Assets.Resources.ResourceEditorView_SaveConflict);
+        vm.ActionResultMessage.ShouldNotBeNullOrWhiteSpace();
+        vm.ErrorMessage.ShouldNotBeNullOrWhiteSpace();
+    }
+
+    [AvaloniaFact]
+    public async Task A_save_rejected_for_another_reason_reports_a_save_failure()
+    {
+        var services = Application.Current.GetTestServices();
+        var config = services.GetRequiredService<TestClusterConfig>();
+        var previousHandlerFactory = config.HttpHandlerFactory;
+        var writeGate = new WriteRejectionGate();
+        writeGate.RejectWrites = true;
+        writeGate.RejectionStatusCode = HttpStatusCode.UnprocessableEntity;
+        config.HttpHandlerFactory = () => [new RejectWriteHandler(writeGate)];
+
+        using var cluster = await Application.Current.CreateClusterAsync();
+        config.HttpHandlerFactory = previousHandlerFactory;
+        await cluster.Runtime.EnsureOpenApiSchemasAsync().WaitAsync(TestContext.Current.CancellationToken);
+
+        using var vm = Application.Current.GetRequiredTestService<ResourceEditorViewModel>();
+        vm.Initialize(cluster, new V1Pod
+        {
+            ApiVersion = "v1",
+            Kind = "Pod",
+            Metadata = new V1ObjectMeta { Name = "pod-1", NamespaceProperty = "default" },
+            Spec = new V1PodSpec { Containers = [new V1Container { Name = "app", Image = "nginx" }] },
+        });
+
+        var name = vm.EditorRoot!.Children.Single(node => node.Name == "metadata").Children.Single(node => node.Name == "name");
+        name.StringValue = "pod-2";
+
+        await vm.SaveCommand.ExecuteAsync(null).WaitAsync(TestContext.Current.CancellationToken);
+
+        vm.HasActionFailureResult.ShouldBeTrue();
+        vm.ActionResultTitle.ShouldBe(Assets.Resources.ResourceEditorView_SaveFailed);
+        vm.ActionResultMessage.ShouldNotBeNullOrWhiteSpace();
+        vm.ErrorMessage.ShouldNotBeNullOrWhiteSpace();
+    }
+
+    [AvaloniaFact]
+    public async Task Root_level_required_errors_are_attached_to_the_affected_node()
+    {
+        using var cluster = await Application.Current.CreateClusterAsync();
+        cluster.Runtime.ModelCatalog.RegisterOpenApiSchema(new OpenApiDocument
+        {
+            Components = new OpenApiComponents
+            {
+                Schemas = new Dictionary<string, IOpenApiSchema>
+                {
+                    ["io.k8s.api.core.v1.Pod"] = new OpenApiSchema
+                    {
+                        Type = JsonSchemaType.Object,
+                        Required = new HashSet<string>(["spec"], StringComparer.Ordinal),
+                        Properties = new Dictionary<string, IOpenApiSchema>
+                        {
+                            ["spec"] = new OpenApiSchema
+                            {
+                                Type = JsonSchemaType.Object,
+                                Properties = new Dictionary<string, IOpenApiSchema>
+                                {
+                                    ["replicas"] = new OpenApiSchema { Type = JsonSchemaType.Integer },
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        });
+
+        using var vm = Application.Current.GetRequiredTestService<ResourceEditorViewModel>();
+        vm.Initialize(cluster, new V1Pod
+        {
+            ApiVersion = "v1",
+            Kind = "Pod",
+            Metadata = new V1ObjectMeta { Name = "pod-1", NamespaceProperty = "default" },
+            Spec = new V1PodSpec { Containers = [new V1Container { Name = "app", Image = "nginx" }] },
+        });
+
+        // Removing the required "spec" property from the document must surface a validation
+        // error on the node whose path is "spec".
+        var specNode = vm.EditorRoot!.Children.Single(node => node.Name == "spec");
+        specNode.ClearSectionCommand.Execute(null);
+
+        vm.ValidationErrors.ShouldNotBeEmpty();
+        vm.ValidationErrors.ShouldAllBe(error => error.Path == "spec");
+
+        var spec = vm.EditorRoot!.Children.Single(node => node.Name == "spec");
+        spec.HasErrors.ShouldBeTrue();
+    }
+
+    [AvaloniaFact]
     public async Task UI_editor_shows_local_validation_error_immediately_after_edit()
     {
         using var cluster = await Application.Current.CreateClusterAsync();
         using var vm = Application.Current.GetRequiredTestService<ResourceEditorViewModel>();
-        vm.InitializeNew(cluster, new V1Pod
+        vm.InitializeForCreate(cluster, new V1Pod
         {
             ApiVersion = "v1",
             Kind = "Pod",
@@ -184,7 +418,7 @@ public sealed class ResourceEditorIntegrationTests
     {
         using var cluster = await Application.Current.CreateClusterAsync();
         using var vm = Application.Current.GetRequiredTestService<ResourceEditorViewModel>();
-        vm.InitializeNew(cluster, new V1Pod
+        vm.InitializeForCreate(cluster, new V1Pod
         {
             ApiVersion = "v1",
             Kind = "Pod",
@@ -241,7 +475,7 @@ public sealed class ResourceEditorIntegrationTests
     {
         using var cluster = await Application.Current.CreateClusterAsync();
         using var vm = Application.Current.GetRequiredTestService<ResourceEditorViewModel>();
-        vm.InitializeNew(cluster, new V1Pod
+        vm.InitializeForCreate(cluster, new V1Pod
         {
             ApiVersion = "v1",
             Kind = "Pod",
@@ -347,7 +581,7 @@ public sealed class ResourceEditorIntegrationTests
             Metadata = new V1ObjectMeta { Name = "temp", NamespaceProperty = "default" },
         };
 
-        await launcher.OpenNew(cluster, pod);
+        await launcher.OpenForCreate(cluster, pod);
 
         var editor = documents.VisibleDockables!.OfType<ResourceEditorViewModel>().Single();
         try
@@ -387,7 +621,7 @@ public sealed class ResourceEditorIntegrationTests
             cluster.Runtime.ModelCatalog.OpenApiSchemas.Count.ShouldBe(0);
 
             var launcher = services.GetRequiredService<IResourceEditorLauncher>();
-            openTask = launcher.OpenNew(cluster, new V1Pod
+            openTask = launcher.OpenForCreate(cluster, new V1Pod
             {
                 ApiVersion = "v1",
                 Kind = "Pod",
@@ -459,6 +693,60 @@ public sealed class ResourceEditorIntegrationTests
             }
 
             return await base.SendAsync(request, cancellationToken);
+        }
+    }
+
+    /// <summary>
+    /// Controls whether resource writes are rejected by the transport.
+    /// </summary>
+    private sealed class WriteRejectionGate
+    {
+        public bool RejectWrites { get; set; }
+
+        public HttpStatusCode RejectionStatusCode { get; set; } = HttpStatusCode.Conflict;
+    }
+
+    /// <summary>
+    /// Rejects resource writes so the editor can be observed reporting a failed save.
+    /// </summary>
+    private sealed class RejectWriteHandler(WriteRejectionGate gate) : DelegatingHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request,
+            CancellationToken cancellationToken)
+        {
+            if (gate.RejectWrites
+                && IsResourceWrite(request))
+            {
+                var response = new HttpResponseMessage(gate.RejectionStatusCode)
+                {
+                    Content = new StringContent(
+                        """{"kind":"Status","status":"Failure","message":"The resource was rejected.","reason":"Invalid","code":422}""",
+                        Encoding.UTF8,
+                        "application/json"),
+                };
+                return Task.FromResult(response);
+            }
+
+            return base.SendAsync(request, cancellationToken);
+        }
+
+        /// <summary>
+        /// Determines whether the request writes a resource. Authorization review requests also
+        /// use POST, so they must not be treated as resource writes.
+        /// </summary>
+        private static bool IsResourceWrite(HttpRequestMessage request)
+        {
+            if (request.Method != HttpMethod.Post
+                && request.Method != HttpMethod.Put
+                && request.Method != HttpMethod.Patch)
+            {
+                return false;
+            }
+
+            var path = request.RequestUri?.AbsolutePath ?? string.Empty;
+            return !path.StartsWith("/apis/authorization.k8s.io/", StringComparison.Ordinal)
+                && !path.StartsWith("/apis/authentication.k8s.io/", StringComparison.Ordinal);
         }
     }
 }

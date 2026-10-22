@@ -38,7 +38,7 @@ namespace KubeUI.Avalonia.Resources
         Task SeedResource(bool waitForReady, CancellationToken cancellationToken)
             => SeedResource(waitForReady);
         IRelayCommand NewResourceCommand { get; }
-        IRelayCommand NewResourceUiEditorCommand => NewResourceCommand;
+        IRelayCommand NewResourceUiEditorCommand { get; }
         IRelayCommand<IList> ViewCommand { get; }
         IAsyncRelayCommand<IList> DeleteCommand { get; }
     }

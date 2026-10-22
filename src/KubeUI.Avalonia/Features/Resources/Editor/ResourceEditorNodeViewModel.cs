@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using KubeUI.Kubernetes.Resources.Editor;
 using KubeUI.Kubernetes.Serialization;
 
 namespace KubeUI.Avalonia.Features.Resources.Editor;
@@ -15,6 +16,7 @@ public sealed partial class ResourceEditorNodeViewModel : ObservableObject, INot
     private readonly Action<ResourceEditorNodeViewModel>? _remove;
     private ResourceEditorNodeViewModel? _parent;
     private JsonNode? _value;
+    private bool _detached;
     private string _stringValue = string.Empty;
     private string _numberValue = string.Empty;
     private bool _booleanValue;
@@ -57,16 +59,16 @@ public sealed partial class ResourceEditorNodeViewModel : ObservableObject, INot
 
     public string Name { get; }
     public string Path { get; }
-    public string Description { get; }
+    public string? Description { get; }
     public ResourceEditorValueKind Kind { get; }
     public bool IsRequired { get; }
     public bool IsReadOnly => string.Equals(Path, "apiVersion", StringComparison.Ordinal)
         || string.Equals(Path, "kind", StringComparison.Ordinal)
         || string.Equals(Path, "status", StringComparison.Ordinal)
         || Path.StartsWith("status.", StringComparison.Ordinal);
-    public bool IsSection => !IsYamlText && (Kind is ResourceEditorValueKind.Object or ResourceEditorValueKind.Array or ResourceEditorValueKind.Map);
-    public bool CanAddItem => Kind == ResourceEditorValueKind.Array && !IsReadOnly;
-    public bool CanAddMapEntry => Kind == ResourceEditorValueKind.Map && !IsReadOnly;
+    public bool IsSection => !IsYamlText && (Kind is ResourceEditorValueKind.ObjectKind or ResourceEditorValueKind.ArrayKind or ResourceEditorValueKind.MapKind);
+    public bool CanAddItem => Kind == ResourceEditorValueKind.ArrayKind && !IsReadOnly;
+    public bool CanAddMapEntry => Kind == ResourceEditorValueKind.MapKind && !IsReadOnly;
     public bool CanClearSection => IsSection && !string.IsNullOrEmpty(Path) && !IsReadOnly;
     public bool CanRemove => _remove is not null && !IsReadOnly;
     public IReadOnlyList<string> EnumValues { get; }
@@ -74,9 +76,9 @@ public sealed partial class ResourceEditorNodeViewModel : ObservableObject, INot
     public ObservableCollection<ResourceEditorNodeViewModel> Children { get; } = [];
     public string DisplayValue => Kind switch
     {
-        ResourceEditorValueKind.Boolean => _booleanValue ? "true" : "false",
-        ResourceEditorValueKind.Enum => _selectedEnum ?? string.Empty,
-        ResourceEditorValueKind.Number => _numberValue,
+        ResourceEditorValueKind.BooleanKind => _booleanValue ? "true" : "false",
+        ResourceEditorValueKind.EnumKind => _selectedEnum ?? string.Empty,
+        ResourceEditorValueKind.NumberKind => _numberValue,
         _ => _stringValue,
     };
     public bool IsYamlText { get; private set; }
@@ -88,7 +90,7 @@ public sealed partial class ResourceEditorNodeViewModel : ObservableObject, INot
         get => _yamlValue;
         set
         {
-            if (!IsYamlText || !SetProperty(ref _yamlValue, value))
+            if (!IsYamlText || _detached || !SetProperty(ref _yamlValue, value))
                 return;
             try
             {
@@ -102,7 +104,7 @@ public sealed partial class ResourceEditorNodeViewModel : ObservableObject, INot
 
                 SetLocalValidation(nameof(YamlValue), null);
                 ReplaceValue(_value is JsonValue && TryGetValue<string>(_value) is not null
-                    ? JsonValue.Create(parsed.ToJsonString())
+                    ? JsonValue.Create(ToFieldText(parsed))
                     : parsed);
             }
             catch (Exception ex) when (ex is YamlDotNet.Core.YamlException or JsonException)
@@ -111,6 +113,19 @@ public sealed partial class ResourceEditorNodeViewModel : ObservableObject, INot
                 _changed();
             }
         }
+    }
+
+    /// <summary>
+    /// Converts parsed YAML content back to the text stored in a string-typed field.
+    /// </summary>
+    /// <param name="parsed">The parsed YAML content.</param>
+    /// <returns>The scalar text for scalar content, or the JSON representation for structured content.</returns>
+    private static string ToFieldText(JsonNode parsed)
+    {
+        if (parsed is not JsonValue scalar)
+            return parsed.ToJsonString();
+
+        return scalar.TryGetValue<string>(out var text) ? text : scalar.ToJsonString();
     }
 
     [ObservableProperty]
@@ -135,10 +150,10 @@ public sealed partial class ResourceEditorNodeViewModel : ObservableObject, INot
         ? nameof(YamlValue)
         : Kind switch
         {
-            ResourceEditorValueKind.String or ResourceEditorValueKind.Unknown => nameof(StringValue),
-            ResourceEditorValueKind.Number => nameof(NumberValue),
-            ResourceEditorValueKind.Boolean => nameof(BooleanValue),
-            ResourceEditorValueKind.Enum => nameof(SelectedEnumOption),
+            ResourceEditorValueKind.StringKind or ResourceEditorValueKind.UnknownKind => nameof(StringValue),
+            ResourceEditorValueKind.NumberKind => nameof(NumberValue),
+            ResourceEditorValueKind.BooleanKind => nameof(BooleanValue),
+            ResourceEditorValueKind.EnumKind => nameof(SelectedEnumOption),
             _ => SectionValidationPropertyName,
         };
 
@@ -147,7 +162,7 @@ public sealed partial class ResourceEditorNodeViewModel : ObservableObject, INot
         get => _stringValue;
         set
         {
-            if (IsReadOnly)
+            if (IsReadOnly || _detached)
                 return;
             if (!SetProperty(ref _stringValue, value))
                 return;
@@ -162,7 +177,7 @@ public sealed partial class ResourceEditorNodeViewModel : ObservableObject, INot
         get => _numberValue;
         set
         {
-            if (IsReadOnly)
+            if (IsReadOnly || _detached)
                 return;
             if (!SetProperty(ref _numberValue, value))
                 return;
@@ -183,7 +198,7 @@ public sealed partial class ResourceEditorNodeViewModel : ObservableObject, INot
         get => _booleanValue;
         set
         {
-            if (IsReadOnly)
+            if (IsReadOnly || _detached)
                 return;
             if (!SetProperty(ref _booleanValue, value))
                 return;
@@ -198,7 +213,7 @@ public sealed partial class ResourceEditorNodeViewModel : ObservableObject, INot
         get => _selectedEnum;
         set
         {
-            if (IsReadOnly)
+            if (IsReadOnly || _detached)
                 return;
             if (!SetProperty(ref _selectedEnum, value))
                 return;
@@ -233,9 +248,9 @@ public sealed partial class ResourceEditorNodeViewModel : ObservableObject, INot
     [RelayCommand]
     public void AddItem()
     {
-        if (IsReadOnly)
+        if (IsReadOnly || _detached)
             return;
-        if (Kind != ResourceEditorValueKind.Array)
+        if (Kind != ResourceEditorValueKind.ArrayKind)
             throw new InvalidOperationException("Only array nodes can add items.");
 
         var array = EnsureArray();
@@ -254,15 +269,23 @@ public sealed partial class ResourceEditorNodeViewModel : ObservableObject, INot
         IsExpanded = false;
         _value = null;
         _replace(null);
-        RebuildChildren();
+
+        // `_replace` re-creates the owning object when the slot is written, so the value is
+        // reset afterwards. The section is gone, so it keeps neither a value nor children and
+        // the detached children can no longer resurrect the deleted content.
+        _value = null;
+        foreach (var child in Children)
+            child.Detach();
+        Children.Clear();
+        PublishValidationErrors();
         _changed();
     }
 
     public bool TryAddMapEntry(string key)
     {
-        if (IsReadOnly)
+        if (IsReadOnly || _detached)
             return false;
-        if (Kind != ResourceEditorValueKind.Map)
+        if (Kind != ResourceEditorValueKind.MapKind)
             throw new InvalidOperationException("Only map nodes can add entries.");
         if (string.IsNullOrWhiteSpace(key))
         {
@@ -302,16 +325,16 @@ public sealed partial class ResourceEditorNodeViewModel : ObservableObject, INot
     public void RemoveChild(ResourceEditorNodeViewModel child)
     {
         ArgumentNullException.ThrowIfNull(child);
-        if (IsReadOnly)
+        if (IsReadOnly || _detached)
             return;
-        if (Kind == ResourceEditorValueKind.Array && _value is JsonArray array)
+        if (Kind == ResourceEditorValueKind.ArrayKind && _value is JsonArray array)
         {
             var index = Children.IndexOf(child);
             if (index < 0)
                 return;
             array.RemoveAt(index);
         }
-        else if (Kind == ResourceEditorValueKind.Map && _value is JsonObject map)
+        else if (Kind == ResourceEditorValueKind.MapKind && _value is JsonObject map)
         {
             if (!map.Remove(child.DisplayName))
                 return;
@@ -464,41 +487,54 @@ public sealed partial class ResourceEditorNodeViewModel : ObservableObject, INot
     {
         switch (Kind)
         {
-            case ResourceEditorValueKind.String:
+            case ResourceEditorValueKind.StringKind:
                 _stringValue = TryGetValue<string>(value) ?? string.Empty;
                 InitializeYamlEditor(value);
                 break;
-            case ResourceEditorValueKind.Number:
+            case ResourceEditorValueKind.NumberKind:
                 _numberValue = value?.ToJsonString() ?? string.Empty;
                 break;
-            case ResourceEditorValueKind.Boolean:
+            case ResourceEditorValueKind.BooleanKind:
                 _booleanValue = TryGetValue<bool>(value);
                 break;
-            case ResourceEditorValueKind.Enum:
+            case ResourceEditorValueKind.EnumKind:
                 _selectedEnum = TryGetValue<string>(value);
                 break;
-            case ResourceEditorValueKind.Unknown:
+            case ResourceEditorValueKind.UnknownKind:
                 _stringValue = value is JsonValue ? TryGetValue<string>(value) ?? value.ToJsonString() : value?.ToJsonString() ?? string.Empty;
                 InitializeYamlEditor(value);
                 break;
         }
 
-        if (Kind is ResourceEditorValueKind.Object or ResourceEditorValueKind.Map)
+        if (Kind is ResourceEditorValueKind.ObjectKind or ResourceEditorValueKind.MapKind)
             InitializeYamlEditor(value);
     }
 
     private void RebuildChildren()
     {
         foreach (var child in Children)
-            child._parent = null;
+            child.Detach();
         Children.Clear();
-        if (Kind == ResourceEditorValueKind.Object)
+        if (Kind == ResourceEditorValueKind.ObjectKind)
             BuildObjectChildren();
-        else if (Kind == ResourceEditorValueKind.Array)
+        else if (Kind == ResourceEditorValueKind.ArrayKind)
             BuildArrayChildren();
-        else if (Kind == ResourceEditorValueKind.Map)
+        else if (Kind == ResourceEditorValueKind.MapKind)
             BuildMapChildren();
         PublishValidationErrors();
+    }
+
+    /// <summary>
+    /// Detaches this node from the document so a stale node can no longer mutate the
+    /// JSON subtree it was built from.
+    /// </summary>
+    private void Detach()
+    {
+        foreach (var child in Children)
+            child.Detach();
+        Children.Clear();
+        _parent = null;
+        _detached = true;
     }
 
     private void BuildObjectChildren()
@@ -582,6 +618,9 @@ public sealed partial class ResourceEditorNodeViewModel : ObservableObject, INot
 
     private void ReplaceValue(JsonNode? value)
     {
+        if (_detached)
+            return;
+
         _value = value;
         _replace(value);
         _changed();
@@ -590,11 +629,11 @@ public sealed partial class ResourceEditorNodeViewModel : ObservableObject, INot
     private static JsonNode? CreateDefaultValue(ResourceEditorSchemaNode schema)
         => schema.ValueKind switch
         {
-            ResourceEditorValueKind.Object or ResourceEditorValueKind.Map => new JsonObject(),
-            ResourceEditorValueKind.Array => new JsonArray(),
-            ResourceEditorValueKind.Boolean => JsonValue.Create(false),
-            ResourceEditorValueKind.Number => JsonValue.Create(0m),
-            ResourceEditorValueKind.Enum => schema.EnumValues.Count > 0 ? JsonValue.Create(schema.EnumValues[0]) : null,
+            ResourceEditorValueKind.ObjectKind or ResourceEditorValueKind.MapKind => new JsonObject(),
+            ResourceEditorValueKind.ArrayKind => new JsonArray(),
+            ResourceEditorValueKind.BooleanKind => JsonValue.Create(false),
+            ResourceEditorValueKind.NumberKind => JsonValue.Create(0m),
+            ResourceEditorValueKind.EnumKind => schema.EnumValues.Count > 0 ? JsonValue.Create(schema.EnumValues[0]) : null,
             _ => JsonValue.Create(string.Empty),
         };
 
@@ -602,12 +641,12 @@ public sealed partial class ResourceEditorNodeViewModel : ObservableObject, INot
     {
         var kind = value switch
         {
-            JsonObject => ResourceEditorValueKind.Map,
-            JsonArray => ResourceEditorValueKind.Array,
-            JsonValue jsonValue when jsonValue.TryGetValue<bool>(out _) => ResourceEditorValueKind.Boolean,
-            JsonValue jsonValue when jsonValue.TryGetValue<decimal>(out _) => ResourceEditorValueKind.Number,
-            JsonValue => ResourceEditorValueKind.String,
-            _ => ResourceEditorValueKind.Unknown,
+            JsonObject => ResourceEditorValueKind.MapKind,
+            JsonArray => ResourceEditorValueKind.ArrayKind,
+            JsonValue jsonValue when jsonValue.TryGetValue<bool>(out _) => ResourceEditorValueKind.BooleanKind,
+            JsonValue jsonValue when jsonValue.TryGetValue<decimal>(out _) => ResourceEditorValueKind.NumberKind,
+            JsonValue => ResourceEditorValueKind.StringKind,
+            _ => ResourceEditorValueKind.UnknownKind,
         };
         return new(name, kind, null,
             new Dictionary<string, ResourceEditorSchemaNode>(StringComparer.Ordinal), null, [],

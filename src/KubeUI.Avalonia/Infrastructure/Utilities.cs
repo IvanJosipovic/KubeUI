@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Avalonia.Controls.Notifications;
 using Avalonia.Input;
 using Avalonia.Xaml.Interactivity;
@@ -103,10 +104,23 @@ public static class Utilities
                 .Select(cause => (cause.Field!, cause.Message!))
                 .ToArray() ?? [];
         }
-        catch
+        catch (JsonException)
         {
             return [];
         }
+    }
+
+    /// <summary>
+    /// Gets the HTTP status code reported by a Kubernetes API failure, when one is available.
+    /// </summary>
+    /// <param name="ex">The exception raised by the Kubernetes client.</param>
+    /// <returns>The status code, or <see langword="null"/> when the failure did not carry one.</returns>
+    internal static int? GetKubernetesStatusCode(Exception ex)
+    {
+        var meaningfulException = GetMeaningfulException(ex);
+        return meaningfulException is HttpOperationException opEx
+            ? (int?)opEx.Response.StatusCode
+            : null;
     }
 
     internal static Exception GetMeaningfulException(Exception ex)
