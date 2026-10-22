@@ -29,7 +29,7 @@ public sealed class NavigationSectionCatalog
                 if (existing != provider.Section)
                 {
                     throw new InvalidOperationException(
-                        $"Navigation section id '{provider.Section.Id}' conflicts with an existing section definition.");
+                        $"Navigation section id '{provider.Section.Id}' declared by '{provider.GetType().Name}' conflicts with an existing section definition.");
                 }
 
                 continue;
@@ -39,11 +39,15 @@ public sealed class NavigationSectionCatalog
         }
 
         _documents = new Dictionary<string, NavigationDocument>(StringComparer.Ordinal);
-        foreach (var document in Providers.SelectMany(static provider => provider.Documents))
+        foreach (var provider in Providers)
         {
-            if (!_documents.TryAdd(document.Id, document))
+            foreach (var document in provider.Documents)
             {
-                throw new InvalidOperationException($"Navigation document id '{document.Id}' is registered more than once.");
+                if (!_documents.TryAdd(document.Id, document))
+                {
+                    throw new InvalidOperationException(
+                        $"Navigation document id '{document.Id}' declared by '{provider.GetType().Name}' is registered more than once.");
+                }
             }
         }
     }

@@ -123,6 +123,22 @@ public class V1CustomResourceDefinitionConfigTests
     }
 
     [AvaloniaFact]
+    public void custom_resource_config_reports_a_definition_without_a_served_storage_version()
+    {
+        var services = Application.Current.GetTestServices();
+        var config = ActivatorUtilities.CreateInstance<CustomResourceConfig>(services);
+        var crd = ClusterWorkspaceTestCustomResourceDefinitionFactory.Create("kubeui.com", "widgets", "value");
+
+        // A definition whose storage version is not served cannot be listed or watched. The
+        // failure must be reported explicitly instead of surfacing as an unhandled
+        // sequence access.
+        crd.Spec.Versions = [new V1CustomResourceDefinitionVersion { Name = "v1", Served = false, Storage = true }];
+
+        Should.Throw<InvalidOperationException>(() => config.Configure(crd));
+        config.Definition.ShouldBeNull();
+    }
+
+    [AvaloniaFact]
     public void registered_crd_configuration_replaces_printer_columns_and_adds_resource_actions()
     {
         var services = Application.Current.GetTestServices();

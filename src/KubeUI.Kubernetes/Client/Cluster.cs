@@ -1288,7 +1288,10 @@ public partial class ContainerClass<T> : ObservableObject, IClearableResourceCon
 
 public sealed class OperationKeyHandler : DelegatingHandler
 {
+    private static readonly TimeSpan ForbiddenCoalesceWindow = TimeSpan.FromSeconds(5);
+
     private readonly Action? _onForbidden;
+    private long _lastForbiddenNotificationTicks;
 
     public OperationKeyHandler()
     {
@@ -1311,18 +1314,9 @@ public sealed class OperationKeyHandler : DelegatingHandler
         try
         {
             var response = await base.SendAsync(request, cancellationToken);
-            if (response.StatusCode == HttpStatusCode.Forbidden
-                && !IsSelfSubjectReviewRequest(request))
+            if (response.StatusCode == HttpStatusCode.Forbidden)
             {
-                try
-                {
-                    _onForbidden?.Invoke();
-                }
-                catch (Exception ex)
-                {
-                    // Authorization refresh is best-effort and must never break the original response.
-                    Debug.WriteLine(ex);
-                }
+                NotifyForbidden(request);
             }
 
             return response;
@@ -1333,16 +1327,58 @@ public sealed class OperationKeyHandler : DelegatingHandler
         }
     }
 
+    /// <summary>
+    /// Reports a forbidden response to the permission cache.
+    /// </summary>
+    private void NotifyForbidden(HttpRequestMessage request)
+    {
+        // A rules review reports the caller's own permissions, so a forbidden review cannot
+        // mean the caller's permissions changed. Reporting it would make the refresh loop
+        // retrigger itself.
+        if (_onForbidden is null || IsSelfSubjectReviewRequest(request))
+        {
+            return;
+        }
+
+        // A forbidden response is usually a legitimate, permanent denial for the requested
+        // resource. Reporting every one of them would wipe the permission cache and re-run
+        // every authorization review, which reproduces the same denial and repeats the cycle.
+        // Coalesce a burst of forbidden responses into a single invalidation.
+        var now = DateTime.UtcNow.Ticks;
+        var previous = Interlocked.Read(ref _lastForbiddenNotificationTicks);
+        if (previous != 0
+            && now - previous < ForbiddenCoalesceWindow.Ticks)
+        {
+            return;
+        }
+
+        if (Interlocked.CompareExchange(ref _lastForbiddenNotificationTicks, now, previous) != previous)
+        {
+            return;
+        }
+
+        try
+        {
+            _onForbidden();
+        }
+        catch (Exception ex)
+        {
+            // Authorization refresh is best-effort and must never break the original response.
+            Debug.WriteLine(ex);
+        }
+    }
+
     private static bool IsSelfSubjectReviewRequest(HttpRequestMessage request)
     {
         var path = request.RequestUri?.AbsolutePath;
-        return string.Equals(
-                   path,
-                   "/apis/authorization.k8s.io/v1/selfsubjectaccessreviews",
-                   StringComparison.Ordinal)
-               || string.Equals(
-                   path,
-                   "/apis/authorization.k8s.io/v1/selfsubjectrulesreviews",
-                   StringComparison.Ordinal);
+        if (string.IsNullOrEmpty(path))
+        {
+            return false;
+        }
+
+        // Compare the trailing path segments so a configured API path prefix does not
+        // change the outcome.
+        return path.EndsWith("/selfsubjectaccessreviews", StringComparison.Ordinal)
+            || path.EndsWith("/selfsubjectrulesreviews", StringComparison.Ordinal);
     }
 }

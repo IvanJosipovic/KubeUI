@@ -2640,10 +2640,42 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
     {
         var requestedResource = string.IsNullOrEmpty(subresource) ? resource : resource + "/" + subresource;
         return rules?.Any(rule => Matches(rule.ApiGroups, group)
-            && Matches(rule.Resources, requestedResource)
+            && ResourceMatches(rule.Resources, requestedResource, subresource)
             && Matches(rule.Verbs, verb)
             && (rule.ResourceNames is not { Count: > 0 }
                 || (resourceName is not null && rule.ResourceNames.Contains(resourceName)))) == true;
+    }
+
+    /// <summary>
+    /// Mirrors the API server's resource matching. Only exact matches and the
+    /// "*/subresource" form are accepted; "pods/*" does not authorize "pods/status".
+    /// </summary>
+    private static bool ResourceMatches(IList<string>? ruleResources, string requestedResource, string? requestedSubresource)
+    {
+        if (ruleResources is null)
+        {
+            return false;
+        }
+
+        foreach (var ruleResource in ruleResources)
+        {
+            if (ruleResource == "*" || string.Equals(ruleResource, requestedResource, StringComparison.Ordinal))
+            {
+                return true;
+            }
+
+            if (string.IsNullOrEmpty(requestedSubresource)
+                || ruleResource.Length != requestedSubresource.Length + 2
+                || !ruleResource.StartsWith("*/", StringComparison.Ordinal)
+                || !ruleResource.EndsWith(requestedSubresource, StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            return true;
+        }
+
+        return false;
     }
 
     private static bool Matches(IList<string>? values, string value)
