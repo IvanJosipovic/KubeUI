@@ -16,8 +16,10 @@ using KubeUI.Avalonia.Resources.Workloads.v1.Pod.Services;
 using KubeUI.Avalonia.Resources.Workloads.v1.Pod.ViewModels;
 using KubeUI.Avalonia.Services.Icons;
 using KubeUI.Avalonia.Services.Settings;
+using KubeUI.Avalonia.Shell.Main;
 using KubeUI.Avalonia.Shell.Navigation;
 using KubeUI.Kubernetes;
+using Microsoft.Extensions.Http.Resilience;
 using ServiceScan.SourceGenerator;
 
 namespace KubeUI.Avalonia.Infrastructure.DependencyInjection;
@@ -33,6 +35,11 @@ public static partial class KubeUIShellServiceCollectionExtensions
     public static IServiceCollection AddKubeUIShellServices(this IServiceCollection services)
     {
         services.AddKubeUIShellGeneratedServices();
+        services.AddHttpClient(MainViewModel.GitHubReleasesHttpClientName, client =>
+        {
+            client.DefaultRequestHeaders.UserAgent.ParseAdd("KubeUI");
+            client.DefaultRequestHeaders.Accept.ParseAdd("application/vnd.github+json");
+        }).AddStandardResilienceHandler();
         services.AddSingleton<IPlatformServices, AvaloniaPlatformServices>();
         services.AddSingleton<IUiRefreshClock, AvaloniaUiRefreshClock>();
         services.AddSingleton(TimeProvider.System);

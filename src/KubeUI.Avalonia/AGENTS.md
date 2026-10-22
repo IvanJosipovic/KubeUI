@@ -17,6 +17,8 @@ References:
 - Use C# for layout and visuals;
 - When constructing Avalonia controls in C#, prefer fluent property/collection methods over object initializers. Use initializers only for properties without a fluent API.
 - Prefer `StaticResource` for immutable resources and `DynamicResource` when runtime updates are required.
+- Use `Typography.TitleFontSizeResourceKey` for view and document titles so headers match the shared type scale.
+- Markdown surfaces must use the shared application typography (app font family and size); markdown code must use the shared code font family and console font size. Do not rely on the bundled Markdown default font.
 
 ### Data binding
 - Use compiled bindings only on all binding scopes.

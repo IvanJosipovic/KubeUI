@@ -219,7 +219,6 @@ public sealed class SettingsView() : ViewBase<SettingsViewModel>
             }));
     }
 
-    [Obsolete]
     private static Grid CreateTextEntryRow(
         string label,
         SettingsViewModel vm,
@@ -233,7 +232,7 @@ public sealed class SettingsView() : ViewBase<SettingsViewModel>
             textBox.Name = controlName;
         if (maximumLength is { } length)
             textBox.MaxLength = length;
-        textBox.Watermark = watermark;
+        textBox.PlaceholderText = watermark;
 
         return new Grid()
             .Cols("*,3*")
