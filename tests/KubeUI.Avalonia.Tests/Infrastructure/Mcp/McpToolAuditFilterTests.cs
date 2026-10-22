@@ -191,7 +191,7 @@ public sealed class McpToolAuditFilterTests
             TestContext.Current.CancellationToken);
 
         logger.Entries.ShouldContain(entry =>
-            entry.Level == LogLevel.Error
+            entry.Level == LogLevel.Information
             && entry.Message.Contains("kubeui_get_resource_yaml")
             && entry.Message.Contains("client-1"));
         logger.Entries.ShouldNotContain(entry => entry.Message.Contains("secret value"));
