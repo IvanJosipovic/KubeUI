@@ -72,6 +72,46 @@ public sealed class VisualizationViewModelTests
         viewModel.Error.ShouldBeNull();
     }
 
+    [AvaloniaFact]
+    public async Task annotation_scope_ignores_changes_from_unrelated_namespaces()
+    {
+        using var cluster = await Application.Current.CreateClusterAsync(config => config.Type = KubernetesBackend.Fake);
+        await cluster.Runtime.SeedResource<V1ConfigMap>(true, TestContext.Current.CancellationToken);
+        await cluster.Runtime.AddOrUpdateResource(new V1Namespace { Metadata = new V1ObjectMeta { Name = "authentik" } });
+        await cluster.Runtime.AddOrUpdateResource(new V1Namespace { Metadata = new V1ObjectMeta { Name = "other" } });
+        var realBuilder = new ResourceRelationshipBuilder();
+        var builder = new Mock<IResourceRelationshipBuilder>();
+        builder.Setup(item => item.Build(It.IsAny<IEnumerable<IKubernetesObject<V1ObjectMeta>>>(),
+                It.IsAny<IReadOnlySet<string>>(), It.IsAny<bool>()))
+            .Returns((IEnumerable<IKubernetesObject<V1ObjectMeta>> source, IReadOnlySet<string> namespaces, bool hideNoise) =>
+                realBuilder.Build(source, namespaces, hideNoise));
+        builder.Setup(item => item.BuildAdditionDelta(It.IsAny<IEnumerable<IKubernetesObject<V1ObjectMeta>>>(),
+                It.IsAny<ResourceKey>(), It.IsAny<IReadOnlySet<string>>(), It.IsAny<bool>()))
+            .Returns((IEnumerable<IKubernetesObject<V1ObjectMeta>> source, ResourceKey key, IReadOnlySet<string> namespaces, bool hideNoise) =>
+                realBuilder.BuildAdditionDelta(source, key, namespaces, hideNoise));
+        using var viewModel = new VisualizationViewModel(builder.Object);
+        viewModel.InitializeScope(cluster, ReleaseScope("authentik", "authentik"));
+        await TestWait.UntilAsync(() => viewModel.Graph is not null,
+            TimeSpan.FromSeconds(5), cancellationToken: TestContext.Current.CancellationToken);
+
+        await cluster.Runtime.AddOrUpdateResource(ReleaseConfigMap("baseline", "authentik"));
+        await TestWait.UntilAsync(() => viewModel.Graph!.Resources.Any(item => item.Name() == "baseline"),
+            TimeSpan.FromSeconds(5), cancellationToken: TestContext.Current.CancellationToken);
+        var builds = BuildCount(builder);
+
+        await cluster.Runtime.AddOrUpdateResource(ConfigMapResource("outside", "other"));
+        await cluster.Runtime.AddOrUpdateResource(ReleaseConfigMap("inside", "authentik"));
+        await TestWait.UntilAsync(() => viewModel.Graph!.Resources.Any(item => item.Name() == "inside"),
+            TimeSpan.FromSeconds(5), cancellationToken: TestContext.Current.CancellationToken);
+
+        viewModel.Graph!.Resources.Any(item => item.Name() == "outside").ShouldBeFalse();
+        BuildCount(builder).ShouldBe(builds);
+        builder.Verify(item => item.BuildAdditionDelta(It.IsAny<IEnumerable<IKubernetesObject<V1ObjectMeta>>>(),
+            It.Is<ResourceKey>(key => key.Name == "outside"), It.IsAny<IReadOnlySet<string>>(),
+            It.IsAny<bool>()), Times.Never);
+        viewModel.Error.ShouldBeNull();
+    }
+
     [AvaloniaTheory]
     [InlineData(true)]
     [InlineData(false)]
@@ -868,6 +908,32 @@ public sealed class VisualizationViewModelTests
 
     private static V1Namespace NamespaceResource(string name)
         => new() { Metadata = new V1ObjectMeta { Name = name } };
+
+    private static int BuildCount(Mock<IResourceRelationshipBuilder> builder)
+        => builder.Invocations.Count(invocation => invocation.Method.Name == nameof(IResourceRelationshipBuilder.Build));
+
+    private static V1ConfigMap ConfigMapResource(string name, string namespaceName)
+        => new()
+        {
+            ApiVersion = "v1",
+            Kind = "ConfigMap",
+            Metadata = new V1ObjectMeta
+            {
+                NamespaceProperty = namespaceName,
+                Name = name,
+            },
+        };
+
+    private static V1ConfigMap ReleaseConfigMap(string name, string namespaceName)
+    {
+        var resource = ConfigMapResource(name, namespaceName);
+        resource.Metadata.Annotations = new Dictionary<string, string>
+        {
+            ["meta.helm.sh/release-name"] = "authentik",
+            ["meta.helm.sh/release-namespace"] = "authentik",
+        };
+        return resource;
+    }
 
     private static GenericKubernetesObject ClusterResource(string apiVersion, string kind, string name, string uid)
         => new()

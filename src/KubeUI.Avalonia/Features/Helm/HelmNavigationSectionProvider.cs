@@ -19,7 +19,7 @@ internal sealed class HelmNavigationSectionProvider : INavigationSectionProvider
         Section = new NavigationSection(
             "helm",
             Assets.Resources.NavigationView_Helm!,
-            NavigationSections.AccessControl.Order,
+            NavigationSections.AfterCustomResourcesOrder,
             null);
 
         Documents =

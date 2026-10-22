@@ -2,7 +2,6 @@ using System.ComponentModel;
 using DynamicData;
 using Helm.NET;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
-using KubeUI.Avalonia.Features.Helm.Releases;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Kubernetes;
 using NuGet.Versioning;
@@ -13,7 +12,7 @@ namespace KubeUI.Avalonia.Features.Helm.Charts;
 public sealed partial class HelmChartsViewModel : ViewModelBase, IInitializeCluster, IDisposable
 {
     private readonly IHelmService _helmService;
-    private readonly HelmReleasesViewModel _releases;
+    private readonly IHelmDocumentOpener _documentOpener;
     private readonly SourceCache<HelmChartSearchResult, string> _charts = new(chart => chart.Reference);
     private readonly DynamicTableViewSource<HelmChartSearchResult, string> _tableSource;
     private IReadOnlyList<HelmChartSearchResult> _matches = [];
@@ -50,10 +49,10 @@ public sealed partial class HelmChartsViewModel : ViewModelBase, IInitializeClus
     public IDynamicTableViewSource TableSource => _tableSource;
 
     /// <summary>Creates the charts document.</summary>
-    public HelmChartsViewModel(IHelmService helmService, HelmReleasesViewModel releases)
+    public HelmChartsViewModel(IHelmService helmService, IHelmDocumentOpener documentOpener)
     {
         _helmService = helmService;
-        _releases = releases;
+        _documentOpener = documentOpener;
         _tableSource = new DynamicTableViewSource<HelmChartSearchResult, string>(
             _charts, chart => chart.Reference,
             [
@@ -71,8 +70,10 @@ public sealed partial class HelmChartsViewModel : ViewModelBase, IInitializeClus
     public void Initialize(ClusterWorkspace cluster)
     {
         Cluster = cluster;
-        _connection = new HelmConnection(cluster.Runtime.KubeConfigPath, cluster.Runtime.Name, null);
-        _releases.Initialize(cluster);
+        _connection = new HelmConnection(
+            cluster.Runtime.KubeConfigPath,
+            cluster.Runtime.Name,
+            cluster.SelectedNamespaces.FirstOrDefault()?.Metadata?.Name ?? "default");
         Id = $"{nameof(HelmChartsViewModel)}-{cluster.Runtime.Name}";
         _ = RefreshCommand.ExecuteAsync(null);
     }
@@ -100,7 +101,7 @@ public sealed partial class HelmChartsViewModel : ViewModelBase, IInitializeClus
                 ? selected : Repositories.FirstOrDefault();
             _matches = await _helmService.ListChartsAsync(_connection, cancellationToken: cancellationToken);
             ApplyRepositoryFilter();
-            Status = ItemCount == 0 ? Assets.Resources.HelmReleaseEditorView_NoCharts! : string.Empty;
+            Status = ItemCount == 0 ? Assets.Resources.Shared_NoCharts! : string.Empty;
         }
         catch (Exception exception)
         {
@@ -131,14 +132,14 @@ public sealed partial class HelmChartsViewModel : ViewModelBase, IInitializeClus
     [RelayCommand]
     private async Task InstallChart(HelmChartSearchResult? chart)
     {
-        if (chart is null)
+        if (chart is null || Cluster is null || _connection is null)
         {
             return;
         }
 
         try
         {
-            await _releases.InstallChartCommand.ExecuteAsync(chart);
+            await _documentOpener.OpenReleaseEditorForChartAsync(Cluster, _connection, chart);
             Status = string.Empty;
         }
         catch (Exception exception)

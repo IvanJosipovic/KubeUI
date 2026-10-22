@@ -765,12 +765,6 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
             return;
         }
 
-        if (_fullBuildRunning)
-        {
-            _resourceRebuildPending = true;
-            return;
-        }
-
         if (_scope is not null && previousResource is not null
             && _scope.Selector.Matches(previousResource) != _scope.Selector.Matches(change.Resource))
         {
@@ -780,6 +774,12 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 
         if (!ResourceCanAffectGraph(change.Resource))
         {
+            return;
+        }
+
+        if (_fullBuildRunning)
+        {
+            _resourceRebuildPending = true;
             return;
         }
 
@@ -1093,16 +1093,21 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 
     private bool ResourceCanAffectGraph(IKubernetesObject<V1ObjectMeta> resource)
     {
-        if (_scope is not null)
-        {
-            return true;
-        }
-
         if (HideNoise && (resource is Corev1Event
             || resource is V1ReplicaSet replicaSet && replicaSet.Status?.Replicas == 0
             || resource is V1Pod pod && pod.Status?.Phase == "Succeeded"))
         {
             return false;
+        }
+
+        if (_scope is { } scope)
+        {
+            // A named scope projects the selector matches plus their relationship ancestry and descendants.
+            // Resources from the scope namespace can still join through ownership; anything else only counts
+            // when it is already connected to the graph.
+            return scope.Selector.Matches(resource)
+                || string.Equals(resource.Namespace(), scope.Namespace, StringComparison.Ordinal)
+                || IsConnectedToGraph(resource);
         }
 
         var cluster = Cluster;
@@ -1133,6 +1138,11 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
             return SelectedNamespaces.Any(selected => selected.Name() == namespaceName);
         }
 
+        return IsConnectedToGraph(resource);
+    }
+
+    private bool IsConnectedToGraph(IKubernetesObject<V1ObjectMeta> resource)
+    {
         var identity = GetIdentity(resource);
         return _completeGraph.Resources.Any(current => GetIdentity(current) == identity)
             || _resourceStore.HasOwnerReferencesTo(resource)

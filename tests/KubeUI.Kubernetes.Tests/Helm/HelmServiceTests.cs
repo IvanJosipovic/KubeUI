@@ -7,7 +7,7 @@ namespace KubeUI.Kubernetes.Tests.Helm;
 public sealed class HelmServiceTests
 {
     [Fact]
-    public async Task Alpha9_operations_forward_search_revision_and_template_version()
+    public async Task Alpha9_operations_forward_manifest_and_template_version()
     {
         var client = new FakeHelmClient { TemplateResult = "kind: ConfigMap" };
         client.Charts.Add(new("cilium/cilium", "cilium", "1.20.3"));
@@ -15,9 +15,10 @@ public sealed class HelmServiceTests
         using var service = new HelmService(factory);
         var token = TestContext.Current.CancellationToken;
         var connection = CreateConnection();
-        var charts = await service.SearchChartsAsync(connection, "cilium", token);
+        var charts = await service.ListChartsAsync(connection, "cilium", token);
         charts.ShouldBe(client.Charts);
-        client.SearchCalls.ShouldBe(["cilium"]);
+        client.SearchRepoCalls.ShouldBe([(string.Empty, true, true)]);
+        client.ListChartsCalls.ShouldBe([null]);
         (await service.GetManifestAsync(connection, "cilium", 2, token)).ShouldBe(client.TemplateResult);
         client.GetManifestCalls.ShouldBe([("cilium", "apps", 2)]);
         Dictionary<string, object?> values = new() { ["enabled"] = true };
@@ -26,7 +27,7 @@ public sealed class HelmServiceTests
         client.TemplateVersion.ShouldBe("1.20.3");
         client.TemplateCalls[0].NamespaceName.ShouldBe("apps");
         client.TemplateCalls[0].Values!.Value.GetProperty("enabled").GetBoolean().ShouldBeTrue();
-        client.SearchRepoCalls.ShouldContain(("cilium", true, true));
+        client.SearchRepoCalls.ShouldContain((string.Empty, true, true));
     }
 
     [Fact]
@@ -35,7 +36,6 @@ public sealed class HelmServiceTests
         using var factory = new FakeHelmClientFactory(new FakeHelmClient());
         using var service = new HelmService(factory);
         var connection = CreateConnection();
-        await Should.ThrowAsync<ArgumentException>(() => service.SearchChartsAsync(connection, " "));
         await Should.ThrowAsync<ArgumentException>(() => service.GetManifestAsync(connection, " "));
         await Should.ThrowAsync<ArgumentOutOfRangeException>(() => service.GetManifestAsync(connection, "web", -1));
         await Should.ThrowAsync<ArgumentException>(() => service.TemplateVersionAsync(connection, " ", "repo/chart", "1"));

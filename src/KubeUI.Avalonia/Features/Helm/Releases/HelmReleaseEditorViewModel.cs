@@ -17,7 +17,7 @@ public sealed partial class HelmReleaseEditorViewModel : ViewModelBase
     private readonly IHelmService _helmService;
     private readonly IFactory _factory;
     private readonly IDialogService _dialogService;
-    private readonly HelmReleasesViewModel _parent;
+    private readonly IHelmListNotifier _listNotifier;
     private readonly IHelmReleasePreviewService _previewService;
     private HelmConnection? _connection;
     private ClusterWorkspace? _cluster;
@@ -96,13 +96,13 @@ public sealed partial class HelmReleaseEditorViewModel : ViewModelBase
     public HelmReleaseEditorViewModel(
         IHelmService helmService,
         IFactory factory,
-        HelmReleasesViewModel parent,
+        IHelmListNotifier listNotifier,
         IHelmReleasePreviewService previewService,
         IDialogService dialogService)
     {
         _helmService = helmService;
         _factory = factory;
-        _parent = parent;
+        _listNotifier = listNotifier;
         _previewService = previewService;
         _dialogService = dialogService;
     }
@@ -230,7 +230,7 @@ public sealed partial class HelmReleaseEditorViewModel : ViewModelBase
         {
             var matches = await _helmService.ListChartsAsync(_connection, cancellationToken: cancellationToken);
             SetChartMatches(matches);
-            Error = _chartMatches.Count == 0 ? Assets.Resources.HelmReleaseEditorView_NoCharts! : string.Empty;
+            Error = _chartMatches.Count == 0 ? Assets.Resources.Shared_NoCharts! : string.Empty;
         }
         catch (Exception exception)
         {
@@ -328,12 +328,6 @@ public sealed partial class HelmReleaseEditorViewModel : ViewModelBase
             return;
         }
 
-        if (IsUpgrade && SelectedVersion is not null && !AvailableVersions.Contains(SelectedVersion))
-        {
-            Error = ChartVersionNotice;
-            return;
-        }
-
         if (!TryParseValues(out var values, out var error))
         {
             Error = error;
@@ -353,7 +347,7 @@ public sealed partial class HelmReleaseEditorViewModel : ViewModelBase
                 Chart.Trim(),
                 Namespace.Trim()),
             PrimaryButtonText = Assets.Resources.HelmReleaseEditorView_InstallUpgrade,
-            SecondaryButtonText = Assets.Resources.HelmReleaseEditorView_Cancel,
+            SecondaryButtonText = Assets.Resources.Shared_Cancel,
             DefaultButton = FAContentDialogButton.Secondary
         });
 
@@ -394,7 +388,7 @@ public sealed partial class HelmReleaseEditorViewModel : ViewModelBase
                     version: SelectedVersion);
             }
 
-            await _parent.RefreshCommand.ExecuteAsync(null);
+            _listNotifier.NotifyReleasesChanged();
             _factory.RemoveDockable(this, false);
         }
         catch (Exception exception)

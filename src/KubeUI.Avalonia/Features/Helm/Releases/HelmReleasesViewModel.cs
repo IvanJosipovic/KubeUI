@@ -1,6 +1,7 @@
 using System.Collections.Specialized;
 using System.Globalization;
 using Avalonia.Controls.Selection;
+using Avalonia.Threading;
 using Dock.Model.Core;
 using DynamicData;
 using FluentAvalonia.UI.Controls;
@@ -10,6 +11,7 @@ using Helm.NET;
 using k8s.Models;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Features.Helm;
+using KubeUI.Avalonia.Features.Resources.Properties.Controls;
 using KubeUI.Avalonia.Features.Resources.Yaml;
 using KubeUI.Avalonia.Infrastructure.Docking;
 using KubeUI.Avalonia.Infrastructure.Presentation;
@@ -25,11 +27,14 @@ public sealed partial class HelmReleasesViewModel : ViewModelBase, IInitializeCl
     private readonly IDialogService _dialogService;
     private readonly IHelmReleasePreviewService _previewService;
     private readonly Func<ResourceYamlViewModel> _createYamlViewer;
+    private readonly IHelmDocumentOpener _documentOpener;
+    private readonly IHelmListNotifier _listNotifier;
     private readonly SourceCache<HelmRelease, string> _releases = new(static release => $"{release.Namespace}\u001f{release.Name}");
     private readonly DynamicTableViewSource<HelmRelease, string> _tableSource;
     private readonly ObservableCollection<V1Namespace> _localSelectedNamespaces = [];
     private readonly INotifyCollectionChanged? _itemsNotifications;
     private HelmConnection? _connection;
+    private bool _disposed;
 
     [ObservableProperty]
     public partial int ItemCount { get; private set; }
@@ -58,13 +63,18 @@ public sealed partial class HelmReleasesViewModel : ViewModelBase, IInitializeCl
         IFactory factory,
         IDialogService dialogService,
         IHelmReleasePreviewService previewService,
-        Func<ResourceYamlViewModel> createYamlViewer)
+        Func<ResourceYamlViewModel> createYamlViewer,
+        IHelmDocumentOpener documentOpener,
+        IHelmListNotifier listNotifier)
     {
         _helmService = helmService;
         _factory = factory;
         _dialogService = dialogService;
         _previewService = previewService;
         _createYamlViewer = createYamlViewer;
+        _documentOpener = documentOpener;
+        _listNotifier = listNotifier;
+        _listNotifier.ReleasesChanged += OnReleasesChanged;
         _tableSource = new DynamicTableViewSource<HelmRelease, string>(
             _releases,
             static release => $"{release.Namespace}\u001f{release.Name}",
@@ -73,7 +83,7 @@ public sealed partial class HelmReleasesViewModel : ViewModelBase, IInitializeCl
                 CreateColumn("namespace", Assets.Resources.HelmReleasesView_Namespace!, static release => release.Namespace, DynamicTableViewWidthMode.Star, 1.2),
                 CreateColumn("app-version", Assets.Resources.HelmReleasesView_AppVersion!, static release => release.AppVersion, DynamicTableViewWidthMode.Star, 1),
                 CreateColumn("status", Assets.Resources.HelmReleasesView_Status!, static release => release.Status, DynamicTableViewWidthMode.Star, 1),
-                CreateColumn("updated", Assets.Resources.HelmReleasesView_Updated!, static release => FormatUpdated(release.Updated), DynamicTableViewWidthMode.Star, 1)
+                CreateColumn("updated", Assets.Resources.HelmReleasesView_Updated!, static release => FormatUpdated(release.Updated, DateTime.UtcNow), DynamicTableViewWidthMode.Star, 1)
             ],
             options: new DynamicTableViewSourceOptions { SelectionIdentityMode = DynamicTableViewSelectionIdentityMode.Key });
         _tableSource.SelectionModel.SingleSelect = true;
@@ -133,20 +143,6 @@ public sealed partial class HelmReleasesViewModel : ViewModelBase, IInitializeCl
 
     [RelayCommand]
     private void NewRelease() => OpenEditor(null);
-
-    [RelayCommand]
-    private async Task InstallChart(HelmChartSearchResult? chart)
-    {
-        if (chart is null || Cluster is null || _connection is null)
-        {
-            return;
-        }
-
-        var editor = new HelmReleaseEditorViewModel(_helmService, _factory, this, _previewService, _dialogService);
-        editor.Initialize(Cluster, _connection, null);
-        await editor.SelectInstallChartAsync(chart);
-        _factory.AddToDocuments(editor);
-    }
 
     [RelayCommand]
     private void UpgradeRelease(HelmRelease? release)
@@ -258,7 +254,7 @@ public sealed partial class HelmReleasesViewModel : ViewModelBase, IInitializeCl
             Title = Assets.Resources.HelmReleasesView_RollbackDialog_Title,
             Content = CreateRollbackDialogContent(dialogViewModel, release, maximumRevision),
             PrimaryButtonText = Assets.Resources.HelmReleasesView_Rollback,
-            SecondaryButtonText = Assets.Resources.HelmRepositoryEditorView_Cancel,
+            SecondaryButtonText = Assets.Resources.Shared_Cancel,
             DefaultButton = FAContentDialogButton.Secondary
         });
 
@@ -297,7 +293,7 @@ public sealed partial class HelmReleasesViewModel : ViewModelBase, IInitializeCl
             Title = Assets.Resources.HelmReleasesView_UninstallTitle,
             Content = CreateUninstallDialogContent(dialogViewModel, release),
             PrimaryButtonText = Assets.Resources.HelmReleasesView_Uninstall,
-            SecondaryButtonText = Assets.Resources.HelmRepositoryEditorView_Cancel,
+            SecondaryButtonText = Assets.Resources.Shared_Cancel,
             DefaultButton = FAContentDialogButton.Secondary
         });
 
@@ -328,9 +324,29 @@ public sealed partial class HelmReleasesViewModel : ViewModelBase, IInitializeCl
             return;
         }
 
-        var editor = new HelmReleaseEditorViewModel(_helmService, _factory, this, _previewService, _dialogService);
-        editor.Initialize(Cluster, _connection, release);
-        _factory.AddToDocuments(editor);
+        _documentOpener.OpenReleaseEditor(Cluster, _connection, release);
+    }
+
+    private void OnReleasesChanged(object? sender, EventArgs args)
+    {
+        if (_disposed)
+        {
+            return;
+        }
+
+        if (Dispatcher.UIThread.CheckAccess())
+        {
+            _ = RefreshCommand.ExecuteAsync(null);
+            return;
+        }
+
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (!_disposed)
+            {
+                _ = RefreshCommand.ExecuteAsync(null);
+            }
+        });
     }
 
     private void SelectionChanged(object? sender, SelectionModelSelectionChangedEventArgs args)
@@ -381,9 +397,9 @@ public sealed partial class HelmReleasesViewModel : ViewModelBase, IInitializeCl
         return column;
     }
 
-    private static string FormatUpdated(string updated)
+    internal static string FormatUpdated(string updated, DateTime utcNow)
         => DateTimeOffset.TryParse(updated, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var dateTime)
-            ? dateTime.ToLocalTime().ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture)
+            ? RelativeTimeFormatter.FormatPrettyAge(dateTime.UtcDateTime, utcNow)
             : updated;
 
     partial void OnIsNamespaceSelectionLinkedChanged(bool value)
@@ -463,6 +479,8 @@ public sealed partial class HelmReleasesViewModel : ViewModelBase, IInitializeCl
 
     public void Dispose()
     {
+        _disposed = true;
+        _listNotifier.ReleasesChanged -= OnReleasesChanged;
         UnsubscribeFromSelectedNamespaces();
         if (_itemsNotifications is not null)
         {

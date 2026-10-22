@@ -8,7 +8,7 @@ using Helm.NET;
 using KubeUI.Avalonia.Features.Helm;
 using KubeUI.Avalonia.Features.Helm.Charts;
 using KubeUI.Avalonia.Features.Helm.Releases;
-using KubeUI.Avalonia.Features.Resources.Yaml;
+using KubeUI.Avalonia.Features.Helm.Repositories;
 using KubeUI.Kubernetes;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
@@ -41,10 +41,13 @@ public sealed class HelmChartsViewModelTests
         HelmReleaseEditorViewModel? opened = null;
         factory.Setup(item => item.InsertDockable(documents, It.IsAny<IDockable>(), 0))
             .Callback<IDock, IDockable, int>((_, dockable, _) => opened = dockable.ShouldBeOfType<HelmReleaseEditorViewModel>());
-        using var releases = new HelmReleasesViewModel(helm.Object, factory.Object, Mock.Of<IDialogService>(),
-            Mock.Of<IHelmReleasePreviewService>(), () => Application.Current.GetRequiredTestService<ResourceYamlViewModel>());
-        using var charts = new HelmChartsViewModel(helm.Object, releases);
+        using var charts = new HelmChartsViewModel(helm.Object, CreateOpener(helm, factory));
         charts.SelectedRepository = "first";
+        workspace.SelectedNamespaces.Clear();
+        workspace.SelectedNamespaces.Add(new k8s.Models.V1Namespace
+        {
+            Metadata = new k8s.Models.V1ObjectMeta { Name = "apps" }
+        });
         using var services = new ServiceCollection().AddSingleton(charts).BuildServiceProvider();
         var navigation = new HelmNavigationSectionProvider().Documents
             .Single(document => document.Id == HelmNavigationSectionProvider.ChartsDocumentId);
@@ -53,8 +56,6 @@ public sealed class HelmChartsViewModelTests
         charts.Repositories.ShouldBe(["Alpha", "beta", "first", "second", "zeta"]);
         charts.SelectedRepository.ShouldBe("first");
         charts.Status.ShouldBeEmpty();
-        helm.Verify(service => service.SearchChartsAsync(It.IsAny<HelmConnection>(), It.IsAny<string>(),
-            It.IsAny<CancellationToken>()), Times.Never);
         charts.SearchText = " web ";
         await charts.RefreshCommand.ExecuteAsync(null).WaitAsync(TestContext.Current.CancellationToken);
         charts.ItemCount.ShouldBe(1);
@@ -80,6 +81,7 @@ public sealed class HelmChartsViewModelTests
             await charts.InstallChartCommand.ExecuteAsync(menu.CommandParameter).WaitAsync(TestContext.Current.CancellationToken);
             opened.ShouldNotBeNull();
             opened.IsUpgrade.ShouldBeFalse();
+            opened.Namespace.ShouldBe("apps");
             opened.Chart.ShouldBe("second/web");
             opened.SelectedRepository.ShouldBe("second");
             opened.SelectedChart.ShouldBe("web");
@@ -113,11 +115,7 @@ public sealed class HelmChartsViewModelTests
         var pending = new TaskCompletionSource<IReadOnlyList<HelmRepository>>(TaskCreationOptions.RunContinuationsAsynchronously);
         helm.Setup(service => service.ListRepositoriesAsync(It.IsAny<HelmConnection>(), It.IsAny<CancellationToken>()))
             .Returns(pending.Task);
-        helm.Setup(service => service.ListReleasesAsync(It.IsAny<HelmConnection>(), true, null, It.IsAny<CancellationToken>()))
-            .ReturnsAsync([]);
-        using var releases = new HelmReleasesViewModel(helm.Object, Mock.Of<IFactory>(), Mock.Of<IDialogService>(),
-            Mock.Of<IHelmReleasePreviewService>(), () => Application.Current.GetRequiredTestService<ResourceYamlViewModel>());
-        using var charts = new HelmChartsViewModel(helm.Object, releases);
+        using var charts = new HelmChartsViewModel(helm.Object, Mock.Of<IHelmDocumentOpener>());
         await charts.RefreshCommand.ExecuteAsync(null).WaitAsync(TestContext.Current.CancellationToken);
         charts.Initialize(workspace);
         charts.IsLoading.ShouldBeTrue();
@@ -149,8 +147,6 @@ public sealed class HelmChartsViewModelTests
         var helm = new Mock<IHelmService>();
         helm.Setup(service => service.ListRepositoriesAsync(It.IsAny<HelmConnection>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync([new("repo", "https://repo.test")]);
-        helm.Setup(service => service.ListReleasesAsync(It.IsAny<HelmConnection>(), true, null, It.IsAny<CancellationToken>()))
-            .ReturnsAsync([]);
         var search = helm.Setup(service => service.ListChartsAsync(It.IsAny<HelmConnection>(), It.IsAny<string>(), It.IsAny<CancellationToken>()));
         if (fails)
         {
@@ -161,14 +157,12 @@ public sealed class HelmChartsViewModelTests
             search.ReturnsAsync([]);
         }
 
-        using var releases = new HelmReleasesViewModel(helm.Object, Mock.Of<IFactory>(), Mock.Of<IDialogService>(),
-            Mock.Of<IHelmReleasePreviewService>(), () => Application.Current.GetRequiredTestService<ResourceYamlViewModel>());
-        using var charts = new HelmChartsViewModel(helm.Object, releases);
+        using var charts = new HelmChartsViewModel(helm.Object, Mock.Of<IHelmDocumentOpener>());
         charts.Initialize(workspace);
         await charts.RefreshCommand.ExecutionTask!.WaitAsync(TestContext.Current.CancellationToken);
         charts.SearchText = "missing";
         await charts.RefreshCommand.ExecuteAsync(null).WaitAsync(TestContext.Current.CancellationToken);
-        charts.Status.ShouldBe(fails ? "Index unavailable" : Assets.Resources.HelmReleaseEditorView_NoCharts);
+        charts.Status.ShouldBe(fails ? "Index unavailable" : Assets.Resources.Shared_NoCharts);
         charts.ItemCount.ShouldBe(0);
         charts.IsLoading.ShouldBeFalse();
         await charts.InstallChartCommand.ExecuteAsync(null).WaitAsync(TestContext.Current.CancellationToken);
@@ -179,4 +173,18 @@ public sealed class HelmChartsViewModelTests
         charts.SelectedRepository.ShouldBeNull();
         charts.Repositories.ShouldBeEmpty();
     }
+
+    private static HelmDocumentOpener CreateOpener(Mock<IHelmService> helm, Mock<IFactory> factory)
+        => new(
+            () => new HelmReleaseEditorViewModel(
+                helm.Object,
+                factory.Object,
+                Mock.Of<IHelmListNotifier>(),
+                Mock.Of<IHelmReleasePreviewService>(),
+                Mock.Of<IDialogService>()),
+            () => new HelmRepositoryEditorViewModel(
+                helm.Object,
+                factory.Object,
+                Mock.Of<IHelmListNotifier>()),
+            factory.Object);
 }

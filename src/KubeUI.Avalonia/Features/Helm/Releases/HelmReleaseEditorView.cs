@@ -113,7 +113,7 @@ public sealed class HelmReleaseEditorView : ViewBase<HelmReleaseEditorViewModel>
                     .Children(
                         new Button()
                             .Command(vm, x => x.CancelCommand)
-                            .Content(Assets.Resources.HelmReleaseEditorView_Cancel),
+                            .Content(Assets.Resources.Shared_Cancel),
                         new Button()
                             .Command(vm, x => x.PreviewCommand)
                             .Content(Assets.Resources.HelmReleaseEditorView_Preview),

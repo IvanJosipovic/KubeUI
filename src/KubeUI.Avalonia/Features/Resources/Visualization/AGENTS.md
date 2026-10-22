@@ -4,7 +4,7 @@
 - Apply the selected namespace and noise filters during graph construction. Unrelated namespaced resources must not enter the graph through incremental updates.
 - Preserve valid relationships to cluster-scoped resources and explicitly related resources from other namespaces.
 - Treat `RootResource` as a graph scope: include the root and resources reachable through the relationship traversal rules, then apply the root filter to both resources and relationships.
-- Marshal runtime resource-change state updates and UI notifications to the UI thread. Perform relationship graph construction and other expensive work off the UI thread. Use incremental addition deltas only when the resource can affect the current graph; otherwise leave the current graph unchanged.
+- Marshal runtime resource-change state updates and UI notifications to the UI thread. Perform relationship graph construction and other expensive work off the UI thread. Use incremental addition deltas only when the resource can affect the current graph; otherwise leave the current graph unchanged. For named scopes, a resource can affect the graph only when it matches the selector, belongs to the scope namespace, or is already connected through relationships or owner references.
 - Rebuild when updates can affect existing relationships, namespace selection changes, root selection changes, or visualization filters change.
 - Merge incremental deltas without bypassing namespace and root filtering, and preserve pending references and seed prerequisites from the complete graph.
 - Seed relationship-provider prerequisites and unresolved references through the cluster runtime. Rebuild when a required resource type is seeded so newly available relationships are reflected.

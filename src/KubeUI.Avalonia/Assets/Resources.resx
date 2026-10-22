@@ -1285,6 +1285,18 @@
     <value>Source</value>
     <comment/>
   </data>
+  <data name="Shared_Cancel" xml:space="preserve">
+    <value>Cancel</value>
+    <comment/>
+  </data>
+  <data name="Shared_Refresh" xml:space="preserve">
+    <value>Refresh</value>
+    <comment/>
+  </data>
+  <data name="Shared_NoCharts" xml:space="preserve">
+    <value>No charts matched the search. Update repository indexes or change the search text.</value>
+    <comment/>
+  </data>
   <data name="Shared_Count" xml:space="preserve">
     <value>Count</value>
     <comment/>
@@ -2879,9 +2891,6 @@
   <data name="HelmRepositoriesView_UpdateIndexes" xml:space="preserve">
     <value>Update repository indexes</value>
   </data>
-  <data name="HelmRepositoriesView_Refresh" xml:space="preserve">
-    <value>Refresh</value>
-  </data>
   <data name="HelmRepositoriesView_Edit" xml:space="preserve">
     <value>Edit</value>
   </data>
@@ -2915,9 +2924,6 @@
   <data name="HelmRepositoryEditorView_CredentialsNote" xml:space="preserve">
     <value>Helm does not return saved credentials. Re-enter them when editing a protected repository.</value>
   </data>
-  <data name="HelmRepositoryEditorView_Cancel" xml:space="preserve">
-    <value>Cancel</value>
-  </data>
   <data name="HelmRepositoryEditorView_Save" xml:space="preserve">
     <value>Save</value>
   </data>
@@ -2937,7 +2943,6 @@
   <data name="HelmRepositoriesView_ItemsFormat" xml:space="preserve"><value>Repositories: {0}</value></data>
   <data name="HelmReleasesView_Rollback" xml:space="preserve"><value>Rollback</value></data>
   <data name="HelmReleasesView_Wait" xml:space="preserve"><value>Wait for actions</value></data>
-  <data name="HelmReleasesView_Refresh" xml:space="preserve"><value>Refresh</value></data>
   <data name="HelmReleasesView_StatusAction" xml:space="preserve"><value>View status</value></data>
   <data name="HelmReleasesView_Visualize" xml:space="preserve"><value>Visualize</value></data>
   <data name="HelmReleasesView_Values" xml:space="preserve"><value>View values</value></data>
@@ -2958,7 +2963,6 @@
   <data name="HelmReleaseEditorView_Repository" xml:space="preserve"><value>Repository</value></data>
   <data name="HelmReleaseEditorView_SearchCharts" xml:space="preserve"><value>Search charts</value></data>
   <data name="HelmReleaseEditorView_ChartReference" xml:space="preserve"><value>Chart reference (manual or OCI)</value></data>
-  <data name="HelmReleaseEditorView_NoCharts" xml:space="preserve"><value>No charts matched the search. Update repository indexes or change the search text.</value></data>
   <data name="HelmReleaseEditorView_ChartVersionNotice" xml:space="preserve"><value>Selected chart version is used for install, upgrade, and preview. Leave version empty to use Helm's default resolution.</value></data>
   <data name="HelmReleaseEditorView_ValuesMustBeObject" xml:space="preserve"><value>Values must be a YAML mapping.</value></data>
   <data name="HelmReleaseEditorView_ChooseChartReference" xml:space="preserve"><value>No unique repository chart reference found. Enter the chart reference (repository/chart or OCI URL) before upgrading or previewing.</value></data>
@@ -2966,7 +2970,6 @@
   <data name="HelmReleaseEditorView_CreateNamespace" xml:space="preserve"><value>Create namespace if missing</value></data>
   <data name="HelmReleaseEditorView_Wait" xml:space="preserve"><value>Wait for resources</value></data>
   <data name="HelmReleaseEditorView_InstallIfMissing" xml:space="preserve"><value>Install if the release does not exist</value></data>
-  <data name="HelmReleaseEditorView_Cancel" xml:space="preserve"><value>Cancel</value></data>
   <data name="HelmReleaseEditorView_Preview" xml:space="preserve"><value>Preview in visualization</value></data>
   <data name="HelmReleaseEditorView_InstallUpgrade" xml:space="preserve"><value>Install / Upgrade</value></data>
   <data name="HelmReleaseEditorView_ConfirmInstallTitle" xml:space="preserve"><value>Install release?</value></data>

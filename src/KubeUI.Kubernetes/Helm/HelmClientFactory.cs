@@ -19,6 +19,11 @@ public sealed class HelmClientFactory : IHelmClientFactory
     /// </summary>
     /// <param name="connection">The Kubernetes connection to map.</param>
     /// <returns>The Helm client options for the connection.</returns>
+    /// <remarks>
+    /// Helm resolves an operation without an explicit namespace to <see cref="HelmClientOptions.DefaultNamespace"/>
+    /// and <see cref="HelmClientOptions.DefaultNamespace"/> cannot be left unset. The connection namespace is
+    /// therefore passed through when present, and Helm's own default is kept otherwise.
+    /// </remarks>
     internal static HelmClientOptions CreateOptions(HelmConnection connection)
     {
         ArgumentNullException.ThrowIfNull(connection);

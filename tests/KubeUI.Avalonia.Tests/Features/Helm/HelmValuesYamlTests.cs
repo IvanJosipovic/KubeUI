@@ -1,6 +1,7 @@
 using System.Text.Json;
 using KubeUI.Avalonia.Features.Helm;
 using Shouldly;
+using YamlDotNet.Core;
 
 namespace KubeUI.Avalonia.Tests.Features.Helm;
 
@@ -28,4 +29,42 @@ public sealed class HelmValuesYamlTests
         server.GetProperty("ports").EnumerateArray().Select(item => item.GetInt32()).ShouldBe([80, 443]);
         server.GetProperty("unset").ValueKind.ShouldBe(JsonValueKind.Null);
     }
+
+    [Fact]
+    public void Values_resolve_anchors_and_merge_keys_with_explicit_overrides()
+    {
+        var parsed = HelmValuesYaml.Parse("""
+            defaults: &defaults
+              replicas: 2
+              image: nginx
+            server:
+              <<: *defaults
+              image: apache
+            """);
+
+        using var result = JsonDocument.Parse(k8s.KubernetesJson.Serialize(parsed));
+
+        var server = result.RootElement.GetProperty("server");
+        server.GetProperty("replicas").GetInt32().ShouldBe(2);
+        server.GetProperty("image").GetString().ShouldBe("apache");
+    }
+
+    [Fact]
+    public void Values_reject_duplicate_keys()
+    {
+        var exception = Should.Throw<YamlException>(() => HelmValuesYaml.Parse("""
+            replicas: 1
+            replicas: 2
+            """));
+
+        exception.Message.ShouldContain("replicas");
+    }
+
+    [Fact]
+    public void Values_reject_non_mapping_documents()
+        => Should.Throw<YamlException>(() => HelmValuesYaml.Parse("- one\n- two"));
+
+    [Fact]
+    public void Values_reject_empty_documents()
+        => Should.Throw<InvalidOperationException>(() => HelmValuesYaml.Parse(string.Empty));
 }

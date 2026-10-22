@@ -12,9 +12,6 @@ namespace KubeUI.Kubernetes;
 /// </remarks>
 public interface IHelmService
 {
-    /// <summary>Searches configured repository indexes for resolvable chart references and versions.</summary>
-    Task<IReadOnlyList<HelmChartSearchResult>> SearchChartsAsync(HelmConnection connection, string searchTerm, CancellationToken cancellationToken = default);
-
     /// <summary>Lists chart versions from cached repository indexes, optionally for one repository.</summary>
     /// <param name="connection">The Kubernetes connection Helm runs against.</param>
     /// <param name="repositoryName">Optional exact configured repository name.</param>
@@ -23,6 +20,11 @@ public interface IHelmService
     Task<IReadOnlyList<HelmChartSearchResult>> ListChartsAsync(HelmConnection connection, string? repositoryName = null, CancellationToken cancellationToken = default);
 
     /// <summary>Gets the manifest stored for a release revision.</summary>
+    /// <remarks>
+    /// Exposes Helm's stored release output for release inspection and Helm.NET parity checks. The live release
+    /// visualization deliberately reads cluster resources instead and must not substitute this stored manifest for
+    /// rendered or edited chart templates.
+    /// </remarks>
     Task<string> GetManifestAsync(HelmConnection connection, string releaseName, int revision = 0, CancellationToken cancellationToken = default);
 
     /// <summary>Renders a specific chart version using the supplied values.</summary>

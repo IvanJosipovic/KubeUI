@@ -19,6 +19,15 @@ namespace KubeUI.Avalonia.Tests.Features.Helm;
 
 public sealed class HelmReleasesViewModelTests
 {
+    [Theory]
+    [InlineData("2026-10-21T12:58:46Z", "1m14s")]
+    [InlineData("not a timestamp", "not a timestamp")]
+    public void Updated_column_uses_pretty_age_and_preserves_unparseable_values(string updated, string expected)
+    {
+        HelmReleasesViewModel.FormatUpdated(updated, new DateTime(2026, 10, 21, 13, 0, 0, DateTimeKind.Utc))
+            .ShouldBe(expected);
+    }
+
     [AvaloniaFact]
     public async Task View_values_reports_fetch_errors_without_creating_yaml_viewer()
     {
@@ -30,7 +39,8 @@ public sealed class HelmReleasesViewModelTests
             .ThrowsAsync(new InvalidOperationException("Values unavailable"));
         var createViewer = new Mock<Func<ResourceYamlViewModel>>();
         using var viewModel = new HelmReleasesViewModel(helm.Object, Mock.Of<IFactory>(), Mock.Of<IDialogService>(),
-            Mock.Of<IHelmReleasePreviewService>(), createViewer.Object);
+            Mock.Of<IHelmReleasePreviewService>(), createViewer.Object, Mock.Of<IHelmDocumentOpener>(),
+            Mock.Of<IHelmListNotifier>());
         viewModel.Initialize(workspace);
         await viewModel.RefreshCommand.ExecutionTask!.WaitAsync(TestContext.Current.CancellationToken);
 
@@ -64,7 +74,8 @@ public sealed class HelmReleasesViewModelTests
             });
         using var viewModel = new HelmReleasesViewModel(
             helm.Object, factory.Object, Mock.Of<IDialogService>(), Mock.Of<IHelmReleasePreviewService>(),
-            () => Application.Current.GetRequiredTestService<ResourceYamlViewModel>());
+            () => Application.Current.GetRequiredTestService<ResourceYamlViewModel>(),
+            Mock.Of<IHelmDocumentOpener>(), Mock.Of<IHelmListNotifier>());
         viewModel.Initialize(workspace);
         await viewModel.RefreshCommand.ExecutionTask!.WaitAsync(TestContext.Current.CancellationToken);
 
@@ -138,7 +149,8 @@ public sealed class HelmReleasesViewModelTests
             .ReturnsAsync([release, new HelmRelease("web", "apps", "1", "", "deployed", "web-1.0.0", "")]);
         using var viewModel = new HelmReleasesViewModel(
             helm.Object, Mock.Of<IFactory>(), Mock.Of<IDialogService>(), Mock.Of<IHelmReleasePreviewService>(),
-            () => Application.Current.GetRequiredTestService<ResourceYamlViewModel>());
+            () => Application.Current.GetRequiredTestService<ResourceYamlViewModel>(),
+            Mock.Of<IHelmDocumentOpener>(), Mock.Of<IHelmListNotifier>());
         viewModel.Initialize(workspace);
         await viewModel.RefreshCommand.ExecutionTask!.WaitAsync(TestContext.Current.CancellationToken);
         var view = new HelmReleasesView { DataContext = viewModel };
@@ -173,7 +185,8 @@ public sealed class HelmReleasesViewModelTests
         preview.Setup(service => service.VisualizeRelease(workspace, "cilium", "kube-system"))
             .Throws(new InvalidOperationException("Unable to open visualization"));
         using var viewModel = new HelmReleasesViewModel(helm.Object, Mock.Of<IFactory>(), Mock.Of<IDialogService>(), preview.Object,
-            () => Application.Current.GetRequiredTestService<ResourceYamlViewModel>());
+            () => Application.Current.GetRequiredTestService<ResourceYamlViewModel>(),
+            Mock.Of<IHelmDocumentOpener>(), Mock.Of<IHelmListNotifier>());
         viewModel.Initialize(workspace);
         viewModel.VisualizeReleaseCommand.Execute(new HelmRelease("cilium", "kube-system", "1", "", "deployed", "cilium-1.20.3", ""));
 
@@ -191,7 +204,8 @@ public sealed class HelmReleasesViewModelTests
             It.IsAny<CancellationToken>())).ReturnsAsync(new Dictionary<string, JsonElement>());
         var preview = new Mock<IHelmReleasePreviewService>();
         using var viewModel = new HelmReleasesViewModel(helm.Object, Mock.Of<IFactory>(), Mock.Of<IDialogService>(), preview.Object,
-            () => Application.Current.GetRequiredTestService<ResourceYamlViewModel>());
+            () => Application.Current.GetRequiredTestService<ResourceYamlViewModel>(),
+            Mock.Of<IHelmDocumentOpener>(), Mock.Of<IHelmListNotifier>());
         viewModel.Initialize(workspace);
         var release = new HelmRelease("cilium", "kube-system", "1", "", "deployed", "cilium-1.20.3", "");
 
@@ -229,7 +243,8 @@ public sealed class HelmReleasesViewModelTests
         var factory = new Mock<IFactory>();
         var dialogs = new Mock<IDialogService>();
         using var viewModel = new HelmReleasesViewModel(helmService.Object, factory.Object, dialogs.Object, previewService.Object,
-            () => Application.Current.GetRequiredTestService<ResourceYamlViewModel>());
+            () => Application.Current.GetRequiredTestService<ResourceYamlViewModel>(),
+            Mock.Of<IHelmDocumentOpener>(), Mock.Of<IHelmListNotifier>());
 
         viewModel.Initialize(workspace);
         await viewModel.RefreshCommand.ExecuteAsync(null).WaitAsync(TestContext.Current.CancellationToken);
@@ -289,7 +304,9 @@ public sealed class HelmReleasesViewModelTests
             factory.Object,
             HelmDialogTestHelper.CreateConfirmingDialogService(dialogs),
             previewService.Object,
-            () => yamlViewer);
+            () => yamlViewer,
+            Mock.Of<IHelmDocumentOpener>(),
+            Mock.Of<IHelmListNotifier>());
         viewModel.Initialize(workspace);
 
         await viewModel.ViewStatusCommand.ExecuteAsync(release).WaitAsync(TestContext.Current.CancellationToken);
@@ -321,5 +338,57 @@ public sealed class HelmReleasesViewModelTests
         dialogs[0].Content.ShouldBeOfType<StackPanel>().Children.OfType<NumericUpDown>().ShouldHaveSingleItem();
         dialogs[0].Content.ShouldBeOfType<StackPanel>().Children.OfType<CheckBox>().ShouldHaveSingleItem();
         dialogs[1].Content.ShouldBeOfType<StackPanel>().Children.OfType<CheckBox>().ShouldHaveSingleItem();
+    }
+
+    [AvaloniaFact]
+    public async Task Release_list_refreshes_when_an_editor_reports_a_change()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync(connect: false);
+        workspace.SelectedNamespaces.Clear();
+        var helm = new Mock<IHelmService>();
+        helm.Setup(service => service.ListReleasesAsync(It.IsAny<HelmConnection>(), true,
+            It.IsAny<string?>(), It.IsAny<CancellationToken>())).ReturnsAsync([]);
+        var notifier = new HelmListNotifier();
+        using var viewModel = new HelmReleasesViewModel(helm.Object, Mock.Of<IFactory>(), Mock.Of<IDialogService>(),
+            Mock.Of<IHelmReleasePreviewService>(),
+            () => Application.Current.GetRequiredTestService<ResourceYamlViewModel>(),
+            Mock.Of<IHelmDocumentOpener>(), notifier);
+        viewModel.Initialize(workspace);
+        await viewModel.RefreshCommand.ExecuteAsync(null).WaitAsync(TestContext.Current.CancellationToken);
+        viewModel.ItemCount.ShouldBe(0);
+
+        helm.Setup(service => service.ListReleasesAsync(It.IsAny<HelmConnection>(), true,
+                It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync([new HelmRelease("web", "apps", "1", "", "deployed", "web-1.0", "")]);
+        notifier.NotifyReleasesChanged();
+
+        await TestWait.UntilAsync(() => viewModel.ItemCount == 1,
+            TimeSpan.FromSeconds(5), cancellationToken: TestContext.Current.CancellationToken);
+    }
+
+    [AvaloniaFact]
+    public async Task Release_editor_commands_open_documents_through_the_opener()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync(connect: false);
+        var helm = new Mock<IHelmService>();
+        helm.Setup(service => service.ListReleasesAsync(It.IsAny<HelmConnection>(), true,
+            It.IsAny<string?>(), It.IsAny<CancellationToken>())).ReturnsAsync([]);
+        var opener = new Mock<IHelmDocumentOpener>();
+        using var viewModel = new HelmReleasesViewModel(helm.Object, Mock.Of<IFactory>(), Mock.Of<IDialogService>(),
+            Mock.Of<IHelmReleasePreviewService>(),
+            () => Application.Current.GetRequiredTestService<ResourceYamlViewModel>(),
+            opener.Object, Mock.Of<IHelmListNotifier>());
+        viewModel.Initialize(workspace);
+        var release = new HelmRelease("web", "apps", "1", "", "deployed", "web-1.0", "");
+
+        viewModel.NewReleaseCommand.Execute(null);
+        viewModel.UpgradeReleaseCommand.Execute(release);
+
+        opener.Verify(item => item.OpenReleaseEditor(workspace,
+            It.Is<HelmConnection>(connection => connection.KubeConfigPath == workspace.Runtime.KubeConfigPath), null),
+            Times.Once);
+        opener.Verify(item => item.OpenReleaseEditor(workspace,
+            It.Is<HelmConnection>(connection => connection.KubeConfigPath == workspace.Runtime.KubeConfigPath), release),
+            Times.Once);
     }
 }

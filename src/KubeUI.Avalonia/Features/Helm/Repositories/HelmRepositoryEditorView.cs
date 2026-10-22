@@ -39,7 +39,7 @@ public sealed class HelmRepositoryEditorView : ViewBase<HelmRepositoryEditorView
                     .Children(
                         new Button()
                             .Command(vm, x => x.CancelCommand)
-                            .Content(Assets.Resources.HelmRepositoryEditorView_Cancel),
+                            .Content(Assets.Resources.Shared_Cancel),
                         new Button()
                             .Command(vm, x => x.SaveCommand)
                             .Content(Assets.Resources.HelmRepositoryEditorView_Save)));

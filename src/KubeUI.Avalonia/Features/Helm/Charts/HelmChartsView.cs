@@ -58,7 +58,7 @@ public sealed class HelmChartsView : ViewBase<HelmChartsViewModel>
                             .Margin(0, 0, 2, 0)
                             .Command(vm, x => x.RefreshCommand)
                             .Content(new FluentIcon().Icon(Icon.ArrowSync))
-                            .ToolTip_Tip(Assets.Resources.HelmReleasesView_Refresh))),
+                            .ToolTip_Tip(Assets.Resources.Shared_Refresh))),
             table.Row(1));
     }
 }

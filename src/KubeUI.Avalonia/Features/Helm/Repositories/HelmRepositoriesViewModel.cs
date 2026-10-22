@@ -1,13 +1,12 @@
 using System.ComponentModel;
 using Avalonia.Controls.Selection;
-using Dock.Model.Core;
+using Avalonia.Threading;
 using DynamicData;
 using FluentAvalonia.UI.Controls;
 using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using Helm.NET;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
-using KubeUI.Avalonia.Infrastructure.Docking;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Kubernetes;
 
@@ -16,11 +15,13 @@ namespace KubeUI.Avalonia.Features.Helm.Repositories;
 public sealed partial class HelmRepositoriesViewModel : ViewModelBase, IInitializeCluster, IDisposable
 {
     private readonly IHelmService _helmService;
-    private readonly IFactory _factory;
     private readonly IDialogService _dialogService;
+    private readonly IHelmDocumentOpener _documentOpener;
+    private readonly IHelmListNotifier _listNotifier;
     private readonly SourceCache<HelmRepository, string> _repositories = new(static repository => repository.Name);
     private readonly DynamicTableViewSource<HelmRepository, string> _tableSource;
     private HelmConnection? _connection;
+    private bool _disposed;
 
     [ObservableProperty]
     public partial int ItemCount { get; private set; }
@@ -38,11 +39,17 @@ public sealed partial class HelmRepositoriesViewModel : ViewModelBase, IInitiali
 
     public ISelectionModel SelectionModel => _tableSource.SelectionModel;
 
-    public HelmRepositoriesViewModel(IHelmService helmService, IFactory factory, IDialogService dialogService)
+    public HelmRepositoriesViewModel(
+        IHelmService helmService,
+        IDialogService dialogService,
+        IHelmDocumentOpener documentOpener,
+        IHelmListNotifier listNotifier)
     {
         _helmService = helmService;
-        _factory = factory;
         _dialogService = dialogService;
+        _documentOpener = documentOpener;
+        _listNotifier = listNotifier;
+        _listNotifier.RepositoriesChanged += OnRepositoriesChanged;
         _tableSource = new DynamicTableViewSource<HelmRepository, string>(
             _repositories,
             static repository => repository.Name,
@@ -110,17 +117,6 @@ public sealed partial class HelmRepositoriesViewModel : ViewModelBase, IInitiali
     }
 
     [RelayCommand]
-    private async Task UpdateRepository(HelmRepository? repository, CancellationToken cancellationToken = default)
-    {
-        if (repository is null)
-        {
-            return;
-        }
-
-        await UpdateIndexes(cancellationToken);
-    }
-
-    [RelayCommand]
     private void NewRepository() => OpenEditor(null);
 
     [RelayCommand]
@@ -145,7 +141,7 @@ public sealed partial class HelmRepositoriesViewModel : ViewModelBase, IInitiali
             Title = Assets.Resources.HelmRepositoriesView_DeleteTitle,
             Content = string.Format(Assets.Resources.HelmRepositoriesView_DeleteContent!, repository.Name),
             PrimaryButtonText = Assets.Resources.HelmRepositoriesView_Delete,
-            SecondaryButtonText = Assets.Resources.HelmRepositoryEditorView_Cancel,
+            SecondaryButtonText = Assets.Resources.Shared_Cancel,
             DefaultButton = FAContentDialogButton.Secondary
         });
 
@@ -172,9 +168,29 @@ public sealed partial class HelmRepositoriesViewModel : ViewModelBase, IInitiali
             return;
         }
 
-        var editor = new HelmRepositoryEditorViewModel(_helmService, _factory, this);
-        editor.Initialize(Cluster, _connection, repository);
-        _factory.AddToDocuments(editor);
+        _documentOpener.OpenRepositoryEditor(Cluster, _connection, repository);
+    }
+
+    private void OnRepositoriesChanged(object? sender, EventArgs args)
+    {
+        if (_disposed)
+        {
+            return;
+        }
+
+        if (Dispatcher.UIThread.CheckAccess())
+        {
+            _ = RefreshCommand.ExecuteAsync(null);
+            return;
+        }
+
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (!_disposed)
+            {
+                _ = RefreshCommand.ExecuteAsync(null);
+            }
+        });
     }
 
     private void SelectionChanged(object? sender, SelectionModelSelectionChangedEventArgs args)
@@ -195,6 +211,8 @@ public sealed partial class HelmRepositoriesViewModel : ViewModelBase, IInitiali
 
     public void Dispose()
     {
+        _disposed = true;
+        _listNotifier.RepositoriesChanged -= OnRepositoriesChanged;
         _tableSource.SelectionModel.SelectionChanged -= SelectionChanged;
         _tableSource.Dispose();
         _repositories.Dispose();

@@ -72,7 +72,7 @@ public sealed class HelmReleasesView : ViewBase<HelmReleasesViewModel>
                                 new Button()
                                     .Command(vm, x => x.RefreshCommand)
                                     .Content(new FluentIcon().Icon(Icon.ArrowSync))
-                                    .ToolTip_Tip(Assets.Resources.HelmReleasesView_Refresh))),
+                                    .ToolTip_Tip(Assets.Resources.Shared_Refresh))),
                 table.Row(1));
     }
 

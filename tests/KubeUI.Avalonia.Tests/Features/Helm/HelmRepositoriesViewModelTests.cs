@@ -25,10 +25,12 @@ public sealed class HelmRepositoriesViewModelTests
             .ReturnsAsync([new HelmRepository("test", "https://example.test")]);
         helm.Setup(service => service.ListReleasesAsync(It.IsAny<HelmConnection>(), true,
             It.IsAny<string?>(), It.IsAny<CancellationToken>())).ReturnsAsync([]);
-        using var repositories = new HelmRepositoriesViewModel(helm.Object, Mock.Of<IFactory>(), Mock.Of<IDialogService>());
+        using var repositories = new HelmRepositoriesViewModel(helm.Object, Mock.Of<IDialogService>(),
+            Mock.Of<IHelmDocumentOpener>(), Mock.Of<IHelmListNotifier>());
         using var releases = new HelmReleasesViewModel(helm.Object, Mock.Of<IFactory>(), Mock.Of<IDialogService>(),
             Mock.Of<IHelmReleasePreviewService>(),
-            () => Application.Current.GetRequiredTestService<ResourceYamlViewModel>());
+            () => Application.Current.GetRequiredTestService<ResourceYamlViewModel>(),
+            Mock.Of<IHelmDocumentOpener>(), Mock.Of<IHelmListNotifier>());
         repositories.Initialize(workspace);
         releases.Initialize(workspace);
         await repositories.RefreshCommand.ExecutionTask!.WaitAsync(TestContext.Current.CancellationToken);
@@ -85,9 +87,9 @@ public sealed class HelmRepositoriesViewModelTests
         helmService
             .Setup(service => service.UpdateRepositoriesAsync(It.IsAny<HelmConnection>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
-        var factory = new Mock<IFactory>();
         var dialogs = new Mock<IDialogService>();
-        using var viewModel = new HelmRepositoriesViewModel(helmService.Object, factory.Object, dialogs.Object);
+        using var viewModel = new HelmRepositoriesViewModel(helmService.Object, dialogs.Object,
+            Mock.Of<IHelmDocumentOpener>(), Mock.Of<IHelmListNotifier>());
         viewModel.Initialize(workspace);
 
         await viewModel.RefreshCommand.ExecuteAsync(null).WaitAsync(TestContext.Current.CancellationToken);
@@ -98,5 +100,31 @@ public sealed class HelmRepositoriesViewModelTests
             It.IsAny<CancellationToken>()), Times.AtLeastOnce);
         helmService.Verify(service => service.UpdateRepositoriesAsync(It.IsAny<HelmConnection>(), It.IsAny<CancellationToken>()), Times.Once);
         viewModel.Status.ShouldBe(Assets.Resources.HelmRepositoriesView_IndexesUpdated);
+    }
+
+    [AvaloniaFact]
+    public async Task Repository_editor_notifications_reload_open_lists()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync(connect: false);
+        var helmService = new Mock<IHelmService>();
+        helmService
+            .Setup(service => service.ListRepositoriesAsync(It.IsAny<HelmConnection>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync([new HelmRepository("first", "https://first.test")]);
+        var notifier = new HelmListNotifier();
+        using var viewModel = new HelmRepositoriesViewModel(helmService.Object, Mock.Of<IDialogService>(),
+            Mock.Of<IHelmDocumentOpener>(), notifier);
+        viewModel.Initialize(workspace);
+        await viewModel.RefreshCommand.ExecuteAsync(null).WaitAsync(TestContext.Current.CancellationToken);
+        viewModel.ItemCount.ShouldBe(1);
+
+        helmService
+            .Setup(service => service.ListRepositoriesAsync(It.IsAny<HelmConnection>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync([
+                new HelmRepository("first", "https://first.test"),
+                new HelmRepository("second", "https://second.test")]);
+        notifier.NotifyRepositoriesChanged();
+
+        await TestWait.UntilAsync(() => viewModel.ItemCount == 2,
+            TimeSpan.FromSeconds(5), cancellationToken: TestContext.Current.CancellationToken);
     }
 }

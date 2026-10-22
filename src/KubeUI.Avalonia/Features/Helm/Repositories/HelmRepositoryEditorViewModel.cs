@@ -11,9 +11,10 @@ public sealed partial class HelmRepositoryEditorViewModel : ViewModelBase
 {
     private readonly IHelmService _helmService;
     private readonly IFactory _factory;
-    private readonly HelmRepositoriesViewModel _parent;
+    private readonly IHelmListNotifier _listNotifier;
     private HelmConnection? _connection;
     private string? _originalName;
+    private string _originalUrl = string.Empty;
 
     [ObservableProperty]
     public partial string Name { get; set; } = string.Empty;
@@ -30,17 +31,18 @@ public sealed partial class HelmRepositoryEditorViewModel : ViewModelBase
     [ObservableProperty]
     public partial string Error { get; private set; } = string.Empty;
 
-    public HelmRepositoryEditorViewModel(IHelmService helmService, IFactory factory, HelmRepositoriesViewModel parent)
+    public HelmRepositoryEditorViewModel(IHelmService helmService, IFactory factory, IHelmListNotifier listNotifier)
     {
         _helmService = helmService;
         _factory = factory;
-        _parent = parent;
+        _listNotifier = listNotifier;
     }
 
     public void Initialize(ClusterWorkspace cluster, HelmConnection connection, HelmRepository? repository)
     {
         _connection = connection;
         _originalName = repository?.Name;
+        _originalUrl = repository?.Url ?? string.Empty;
         Name = repository?.Name ?? string.Empty;
         Url = repository?.Url ?? string.Empty;
         Title = repository is null ? Assets.Resources.HelmRepositoryEditorView_NewTitle : Assets.Resources.HelmRepositoryEditorView_EditTitle;
@@ -57,19 +59,34 @@ public sealed partial class HelmRepositoryEditorViewModel : ViewModelBase
 
         try
         {
-            await _helmService.AddRepositoryAsync(
-                _connection,
-                Name.Trim(),
-                Url.Trim(),
-                string.IsNullOrWhiteSpace(Username) ? null : Username,
-                string.IsNullOrEmpty(Password) ? null : Password,
-                cancellationToken);
-            if (_originalName is not null && !string.Equals(_originalName, Name.Trim(), StringComparison.Ordinal))
+            var name = Name.Trim();
+            var url = Url.Trim();
+            var username = string.IsNullOrWhiteSpace(Username) ? null : Username;
+            var password = string.IsNullOrEmpty(Password) ? null : Password;
+            var changed = _originalName is null
+                || !string.Equals(_originalName, name, StringComparison.Ordinal)
+                || !string.Equals(_originalUrl, url, StringComparison.Ordinal)
+                || username is not null
+                || password is not null;
+
+            // Helm does not return stored credentials, so re-adding an unchanged repository would drop its basic
+            // auth without the user asking for any change.
+            if (changed)
             {
-                await _helmService.RemoveRepositoryAsync(_connection, _originalName, cancellationToken);
+                await _helmService.AddRepositoryAsync(
+                    _connection,
+                    name,
+                    url,
+                    username,
+                    password,
+                    cancellationToken);
+                if (_originalName is not null && !string.Equals(_originalName, name, StringComparison.Ordinal))
+                {
+                    await _helmService.RemoveRepositoryAsync(_connection, _originalName, cancellationToken);
+                }
             }
 
-            await _parent.RefreshCommand.ExecuteAsync(null);
+            _listNotifier.NotifyRepositoriesChanged();
             _factory.RemoveDockable(this, false);
         }
         catch (Exception exception)

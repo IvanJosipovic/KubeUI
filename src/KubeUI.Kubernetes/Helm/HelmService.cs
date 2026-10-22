@@ -11,6 +11,8 @@ public sealed class HelmService : IHelmService, IDisposable
 {
     private readonly IHelmClientFactory _clientFactory;
     private readonly SemaphoreSlim _nativeGate = new(1, 1);
+    private readonly CancellationTokenSource _disposeCancellation = new();
+    private int _disposed;
 
     /// <summary>
     /// Initializes a Helm service.
@@ -20,13 +22,6 @@ public sealed class HelmService : IHelmService, IDisposable
     {
         ArgumentNullException.ThrowIfNull(clientFactory);
         _clientFactory = clientFactory;
-    }
-
-    /// <inheritdoc />
-    public Task<IReadOnlyList<HelmChartSearchResult>> SearchChartsAsync(HelmConnection connection, string searchTerm, CancellationToken cancellationToken = default)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(searchTerm);
-        return InvokeAsync(connection, client => client.SearchRepo(keyword: searchTerm, versions: true, devel: true), cancellationToken);
     }
 
     /// <inheritdoc />
@@ -288,13 +283,17 @@ public sealed class HelmService : IHelmService, IDisposable
     {
         ArgumentNullException.ThrowIfNull(connection);
         ArgumentNullException.ThrowIfNull(operation);
+        ObjectDisposedException.ThrowIf(Volatile.Read(ref _disposed) != 0, this);
         cancellationToken.ThrowIfCancellationRequested();
 
         // Client construction is cheap and stays outside the native-call gate. The native operation itself
         // is serialized because Helm repository configuration and the Go shim are process-wide.
         var client = _clientFactory.Create(connection);
 
-        await _nativeGate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        using var linkedCancellation = CancellationTokenSource.CreateLinkedTokenSource(
+            cancellationToken,
+            _disposeCancellation.Token);
+        await _nativeGate.WaitAsync(linkedCancellation.Token).ConfigureAwait(false);
         try
         {
             // Helm's native calls are synchronous and cannot be cancelled once they started.
@@ -306,6 +305,22 @@ public sealed class HelmService : IHelmService, IDisposable
         }
     }
 
-    /// <inheritdoc />
-    public void Dispose() => _nativeGate.Dispose();
+    /// <summary>
+    /// Cancels queued operations and waits for the native call that owns the gate.
+    /// </summary>
+    public void Dispose()
+    {
+        if (Interlocked.Exchange(ref _disposed, 1) != 0)
+        {
+            return;
+        }
+
+        // Native Helm calls cannot be cancelled once they start. Reject new operations, cancel queued ones,
+        // and wait for the running call so the gate is never disposed under a waiter.
+        _disposeCancellation.Cancel();
+        _nativeGate.Wait();
+        _nativeGate.Release();
+        _nativeGate.Dispose();
+        _disposeCancellation.Dispose();
+    }
 }

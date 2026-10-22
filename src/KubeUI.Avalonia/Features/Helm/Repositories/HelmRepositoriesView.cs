@@ -59,7 +59,7 @@ public sealed class HelmRepositoriesView : ViewBase<HelmRepositoriesViewModel>
                                 new Button()
                                     .Command(vm, x => x.RefreshCommand)
                                     .Content(new FluentIcon().Icon(Icon.ArrowSync))
-                                    .ToolTip_Tip(Assets.Resources.HelmRepositoriesView_Refresh))),
+                                    .ToolTip_Tip(Assets.Resources.Shared_Refresh))),
                 table.Row(1));
     }
 
@@ -67,11 +67,6 @@ public sealed class HelmRepositoriesView : ViewBase<HelmRepositoriesViewModel>
     {
         foreach (var repository in targets.OfType<HelmRepository>())
         {
-            yield return new MenuItem()
-                .Header(Assets.Resources.HelmRepositoriesView_UpdateIndexes)
-                .Command(vm, x => x.UpdateRepositoryCommand)
-                .CommandParameter(repository)
-                .Icon(new FluentIcon().Icon(Icon.ArrowDownload));
             yield return new MenuItem()
                 .Header(Assets.Resources.HelmRepositoriesView_Edit)
                 .Command(vm, x => x.EditRepositoryCommand)

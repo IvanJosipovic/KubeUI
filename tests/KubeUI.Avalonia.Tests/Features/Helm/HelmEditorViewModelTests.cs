@@ -60,11 +60,8 @@ public sealed class HelmEditorViewModelTests
 
         var preview = new Mock<IHelmReleasePreviewService>(MockBehavior.Strict);
         var factory = new Mock<IFactory>();
-        using var releases = new HelmReleasesViewModel(helm.Object, factory.Object, Mock.Of<IDialogService>(),
-            preview.Object,
-            () => Application.Current.GetRequiredTestService<ResourceYamlViewModel>());
-        var editor = new HelmReleaseEditorViewModel(helm.Object, factory.Object, releases, preview.Object,
-            Mock.Of<IDialogService>());
+        var editor = new HelmReleaseEditorViewModel(helm.Object, factory.Object, Mock.Of<IHelmListNotifier>(),
+            preview.Object, Mock.Of<IDialogService>());
         editor.Initialize(workspace, new HelmConnection("config", "context", "wrong"),
             hasChartMetadata ? metadata : metadata with { ChartName = "", ChartVersion = "" });
         await editor.InitializationTask.WaitAsync(TestContext.Current.CancellationToken);
@@ -147,10 +144,7 @@ public sealed class HelmEditorViewModelTests
             .ReturnsAsync([
                 new("first/web", "web", "1.0"), new("second/web", "web", "2.0"),
                 new("second/other", "other", "3.0"), new("second/other", "other", "4.0")]);
-        using var releases = new HelmReleasesViewModel(helm.Object, Mock.Of<IFactory>(), Mock.Of<IDialogService>(),
-            Mock.Of<IHelmReleasePreviewService>(),
-            () => Application.Current.GetRequiredTestService<ResourceYamlViewModel>());
-        var editor = new HelmReleaseEditorViewModel(helm.Object, Mock.Of<IFactory>(), releases,
+        var editor = new HelmReleaseEditorViewModel(helm.Object, Mock.Of<IFactory>(), Mock.Of<IHelmListNotifier>(),
             Mock.Of<IHelmReleasePreviewService>(), Mock.Of<IDialogService>());
         editor.Initialize(workspace, new HelmConnection("config", "context", "apps"),
             new HelmRelease("web", "apps", "1", "", "deployed", "web-1.0", "", "web", "1.0"));
@@ -220,10 +214,7 @@ public sealed class HelmEditorViewModelTests
             search.ReturnsAsync([]);
         }
 
-        using var releases = new HelmReleasesViewModel(helm.Object, Mock.Of<IFactory>(), Mock.Of<IDialogService>(),
-            Mock.Of<IHelmReleasePreviewService>(),
-            () => Application.Current.GetRequiredTestService<ResourceYamlViewModel>());
-        var editor = new HelmReleaseEditorViewModel(helm.Object, Mock.Of<IFactory>(), releases,
+        var editor = new HelmReleaseEditorViewModel(helm.Object, Mock.Of<IFactory>(), Mock.Of<IHelmListNotifier>(),
             Mock.Of<IHelmReleasePreviewService>(), Mock.Of<IDialogService>());
         editor.Initialize(workspace, new HelmConnection("config", "context", "apps"), null);
         await editor.InitializationTask.WaitAsync(TestContext.Current.CancellationToken);
@@ -243,10 +234,7 @@ public sealed class HelmEditorViewModelTests
         var helm = CreateHelmServiceMock();
         helm.Setup(service => service.ListRepositoriesAsync(It.IsAny<HelmConnection>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync([]);
-        using var releases = new HelmReleasesViewModel(helm.Object, Mock.Of<IFactory>(), Mock.Of<IDialogService>(),
-            Mock.Of<IHelmReleasePreviewService>(),
-            () => Application.Current.GetRequiredTestService<ResourceYamlViewModel>());
-        var editor = new HelmReleaseEditorViewModel(helm.Object, Mock.Of<IFactory>(), releases,
+        var editor = new HelmReleaseEditorViewModel(helm.Object, Mock.Of<IFactory>(), Mock.Of<IHelmListNotifier>(),
             Mock.Of<IHelmReleasePreviewService>(), Mock.Of<IDialogService>());
         editor.Initialize(workspace, new HelmConnection("config", "context", "apps"), null);
         await editor.InitializationTask.WaitAsync(TestContext.Current.CancellationToken);
@@ -316,10 +304,10 @@ public sealed class HelmEditorViewModelTests
         var factory = new Mock<IFactory>();
         var dialogs = HelmDialogTestHelper.CreateConfirmingDialogService();
         var preview = new Mock<IHelmReleasePreviewService>();
-        using var releases = new HelmReleasesViewModel(helm.Object, factory.Object, dialogs, preview.Object,
-            () => Application.Current.GetRequiredTestService<ResourceYamlViewModel>());
-        releases.Initialize(workspace);
-        var editor = new HelmReleaseEditorViewModel(helm.Object, factory.Object, releases, preview.Object, dialogs);
+        var notifier = new HelmListNotifier();
+        var releaseChanges = 0;
+        notifier.ReleasesChanged += (_, _) => releaseChanges++;
+        var editor = new HelmReleaseEditorViewModel(helm.Object, factory.Object, notifier, preview.Object, dialogs);
         editor.Initialize(workspace, new HelmConnection("config", "context", "wrong"),
             hasChartMetadata ? release : release with { ChartName = "", ChartVersion = "" });
 
@@ -399,6 +387,7 @@ public sealed class HelmEditorViewModelTests
             It.Is<HelmConnection>(connection => connection.Namespace == "apps"), "web", "bitnami/nginx",
             It.Is<IReadOnlyDictionary<string, object?>>(values => Convert.ToInt64(values["replicas"]) == 5),
             false, false, true, TimeSpan.FromMinutes(5), It.IsAny<CancellationToken>(), "2.0.0"), Times.Once);
+        releaseChanges.ShouldBe(1);
     }
 
     [AvaloniaTheory]
@@ -413,10 +402,7 @@ public sealed class HelmEditorViewModelTests
         var helm = CreateHelmServiceMock();
         helm.Setup(service => service.ListRepositoriesAsync(It.IsAny<HelmConnection>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync([]);
-        using var releases = new HelmReleasesViewModel(helm.Object, Mock.Of<IFactory>(), Mock.Of<IDialogService>(),
-            Mock.Of<IHelmReleasePreviewService>(),
-            () => Application.Current.GetRequiredTestService<ResourceYamlViewModel>());
-        var editor = new HelmReleaseEditorViewModel(helm.Object, Mock.Of<IFactory>(), releases,
+        var editor = new HelmReleaseEditorViewModel(helm.Object, Mock.Of<IFactory>(), Mock.Of<IHelmListNotifier>(),
             Mock.Of<IHelmReleasePreviewService>(), Mock.Of<IDialogService>());
         editor.Initialize(workspace, new HelmConnection("config", "context", "apps"), null);
         await editor.InitializationTask.WaitAsync(TestContext.Current.CancellationToken);
@@ -447,10 +433,7 @@ public sealed class HelmEditorViewModelTests
             .ReturnsAsync(new HelmRelease("web", "apps", "1", "", "deployed", "nginx-1.0", "", "nginx", "1.0"));
         helm.Setup(service => service.ListChartsAsync(It.IsAny<HelmConnection>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync([new("first/nginx", "nginx", "1.0"), new("second/nginx", "nginx", "1.0")]);
-        using var releases = new HelmReleasesViewModel(helm.Object, Mock.Of<IFactory>(), Mock.Of<IDialogService>(),
-            Mock.Of<IHelmReleasePreviewService>(),
-            () => Application.Current.GetRequiredTestService<ResourceYamlViewModel>());
-        var editor = new HelmReleaseEditorViewModel(helm.Object, Mock.Of<IFactory>(), releases,
+        var editor = new HelmReleaseEditorViewModel(helm.Object, Mock.Of<IFactory>(), Mock.Of<IHelmListNotifier>(),
             Mock.Of<IHelmReleasePreviewService>(), Mock.Of<IDialogService>());
         editor.Initialize(workspace, new HelmConnection("config", "context", "apps"),
             new HelmRelease("web", "apps", "1", "", "deployed", "nginx-1.0", ""));
@@ -502,10 +485,10 @@ public sealed class HelmEditorViewModelTests
                 It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
         var factory = new Mock<IFactory>();
-        var dialogs = new Mock<IDialogService>();
-        using var repositories = new HelmRepositoriesViewModel(helmService.Object, factory.Object, dialogs.Object);
-        repositories.Initialize(workspace);
-        var editor = new HelmRepositoryEditorViewModel(helmService.Object, factory.Object, repositories);
+        var notifier = new HelmListNotifier();
+        var repositoryChanges = 0;
+        notifier.RepositoriesChanged += (_, _) => repositoryChanges++;
+        var editor = new HelmRepositoryEditorViewModel(helmService.Object, factory.Object, notifier);
         editor.Initialize(workspace, new HelmConnection("config", "context", null), null);
         editor.Name = "private";
         editor.Url = "https://charts.example.com";
@@ -521,6 +504,29 @@ public sealed class HelmEditorViewModelTests
             "user",
             "secret",
             It.IsAny<CancellationToken>()), Times.Once);
+        repositoryChanges.ShouldBe(1);
+        factory.Verify(service => service.RemoveDockable(editor, false), Times.Once);
+    }
+
+    [AvaloniaFact]
+    public async Task Repository_form_skips_unchanged_edit_so_stored_credentials_survive()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync(connect: false);
+        var helmService = CreateHelmServiceMock();
+        var factory = new Mock<IFactory>();
+        var notifier = new HelmListNotifier();
+        var repositoryChanges = 0;
+        notifier.RepositoriesChanged += (_, _) => repositoryChanges++;
+        var editor = new HelmRepositoryEditorViewModel(helmService.Object, factory.Object, notifier);
+        editor.Initialize(workspace, new HelmConnection("config", "context", null),
+            new HelmRepository("private", "https://charts.example.com"));
+
+        await editor.SaveCommand.ExecuteAsync(null).WaitAsync(TestContext.Current.CancellationToken);
+
+        helmService.Verify(service => service.AddRepositoryAsync(
+            It.IsAny<HelmConnection>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string?>(),
+            It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Never);
+        repositoryChanges.ShouldBe(1);
         factory.Verify(service => service.RemoveDockable(editor, false), Times.Once);
     }
 
@@ -553,10 +559,11 @@ public sealed class HelmEditorViewModelTests
             .ReturnsAsync(new HelmRelease("web", "apps", "1", "2026-01-01", "deployed", "nginx-1.0.0", "1.0.0"));
         var factory = new Mock<IFactory>();
         var dialogs = HelmDialogTestHelper.CreateConfirmingDialogService();
-        using var releases = new HelmReleasesViewModel(helmService.Object, factory.Object, dialogs, previewService.Object,
-            () => Application.Current.GetRequiredTestService<ResourceYamlViewModel>());
-        releases.Initialize(workspace);
-        var editor = new HelmReleaseEditorViewModel(helmService.Object, factory.Object, releases, previewService.Object, dialogs);
+        var notifier = new HelmListNotifier();
+        var releaseChanges = 0;
+        notifier.ReleasesChanged += (_, _) => releaseChanges++;
+        var editor = new HelmReleaseEditorViewModel(helmService.Object, factory.Object, notifier,
+            previewService.Object, dialogs);
         editor.Initialize(workspace, new HelmConnection("config", "context", "apps"), null);
         await editor.InitializationTask.WaitAsync(TestContext.Current.CancellationToken);
         editor.ChartSearch = "nginx";
@@ -592,6 +599,7 @@ public sealed class HelmEditorViewModelTests
             true,
             TimeSpan.FromSeconds(30),
             It.IsAny<CancellationToken>()), Times.Once);
+        releaseChanges.ShouldBe(1);
         factory.Verify(service => service.RemoveDockable(editor, false), Times.Once);
     }
 
