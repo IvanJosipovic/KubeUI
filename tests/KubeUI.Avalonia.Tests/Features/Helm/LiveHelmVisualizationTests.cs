@@ -3,6 +3,7 @@ using k8s;
 using k8s.Models;
 using KubeUI.Avalonia.Features.Helm;
 using KubeUI.Avalonia.Features.Resources.Visualization;
+using KubeUI.Avalonia.Tests.Infra;
 using KubeUI.Kubernetes;
 using Moq;
 using Shouldly;
@@ -11,10 +12,10 @@ namespace KubeUI.Avalonia.Tests.Features.Helm;
 
 public sealed class LiveHelmVisualizationTests
 {
-    [AvaloniaFact(Explicit = true)]
+    [LiveClusterFact]
     public async Task Alpha10_lists_releases_across_namespaces_and_reads_release_metadata()
     {
-        var context = Environment.GetEnvironmentVariable("KUBEUI_LIVE_CONTEXT")
+        var context = Environment.GetEnvironmentVariable(LiveClusterFactAttribute.ContextVariable)
             ?? throw new InvalidOperationException("Set KUBEUI_LIVE_CONTEXT to the kubeconfig context containing Authentik.");
         using var cluster = await Application.Current.CreateClusterAsync(config =>
         {
@@ -33,10 +34,10 @@ public sealed class LiveHelmVisualizationTests
             $"All-namespace releases: {releases.Count}; Authentik chart: {authentik.ChartName} {authentik.ChartVersion}");
     }
 
-    [AvaloniaFact(Explicit = true)]
+    [LiveClusterFact]
     public async Task Alpha10_reads_stored_authentik_manifest()
     {
-        var context = Environment.GetEnvironmentVariable("KUBEUI_LIVE_CONTEXT")
+        var context = Environment.GetEnvironmentVariable(LiveClusterFactAttribute.ContextVariable)
             ?? throw new InvalidOperationException("Set KUBEUI_LIVE_CONTEXT to the kubeconfig context containing Authentik.");
         using var cluster = await Application.Current.CreateClusterAsync(config =>
         {
@@ -49,12 +50,12 @@ public sealed class LiveHelmVisualizationTests
             .ShouldNotBeEmpty();
     }
 
-    [AvaloniaFact(Explicit = true)]
+    [LiveClusterFact]
     public async Task Authentik_live_release_visualization_loads_deployments()
     {
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
         timeout.CancelAfter(TimeSpan.FromSeconds(90));
-        var context = Environment.GetEnvironmentVariable("KUBEUI_LIVE_CONTEXT")
+        var context = Environment.GetEnvironmentVariable(LiveClusterFactAttribute.ContextVariable)
             ?? throw new InvalidOperationException("Set KUBEUI_LIVE_CONTEXT to the kubeconfig context containing Authentik.");
         using var cluster = await Application.Current.CreateClusterAsync(config =>
         {
