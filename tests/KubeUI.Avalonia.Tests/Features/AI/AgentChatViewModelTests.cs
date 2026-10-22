@@ -1,3 +1,4 @@
+using System.Text.Json;
 using System.Threading.Channels;
 using KubeUI.AI.Agents;
 using KubeUI.Avalonia.Features.AI;
@@ -115,6 +116,47 @@ public sealed class AgentChatViewModelTests
             ("Tool", "▸ kubernetes.get"),
             ("Tool", "✓ kubernetes.get"),
             ("Plan", "• Inspect pod"),
+        ]);
+        await vm.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task send_renders_tool_call_raw_input()
+    {
+        await using var session = new TestSession("session-tool-input", [
+            new SessionUpdateEvent(new SessionUpdate(new ToolCall
+            {
+                ToolCallId = "call-1",
+                Title = "kubernetes.get",
+                RawInput = JsonDocument.Parse("""{"namespace":"default"}""").RootElement
+            })),
+            TurnCompleted()
+        ]);
+        var vm = CreateViewModel(new TestRegistry(new TestAgent(session)), prompt: "Inspect");
+
+        await vm.SendCommand.ExecuteAsync(null);
+
+        vm.Messages.Select(message => message.Text).ShouldBe([
+            "Inspect",
+            """▸ kubernetes.get {"namespace":"default"}""",
+        ]);
+        await vm.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task send_omits_tool_input_when_agent_does_not_supply_it()
+    {
+        await using var session = new TestSession("session-no-tool-input", [
+            new SessionUpdateEvent(new SessionUpdate(new ToolCall { ToolCallId = "call-1", Title = "kubernetes.get" })),
+            TurnCompleted()
+        ]);
+        var vm = CreateViewModel(new TestRegistry(new TestAgent(session)), prompt: "Inspect");
+
+        await vm.SendCommand.ExecuteAsync(null);
+
+        vm.Messages.Select(message => message.Text).ShouldBe([
+            "Inspect",
+            "▸ kubernetes.get",
         ]);
         await vm.DisposeAsync();
     }

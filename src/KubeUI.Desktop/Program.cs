@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Net.Sockets;
 using System.Reflection;
 using Avalonia;
@@ -15,6 +16,7 @@ using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
 using KubeUI.Avalonia.Infrastructure.Platform;
 using KubeUI.Avalonia.Services.Settings;
+using KubeUI.Kubernetes;
 using KubeUI.Kubernetes.Serialization;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -79,7 +81,7 @@ internal static class Program
             .ConfigureFonts(fontManager => fontManager.AddFontCollection(new CascadiaMonoFontCollection()))
             .WithInterFont()
             .UseServiceProvider(services)
-            .UseComponentControlFactory(type => (Control)ActivatorUtilities.CreateInstance(services, type))
+            .UseComponentControlFactory(type => CreateComponentControl(type, services))
             .UseViewInitializationStrategy(ViewInitializationStrategy.Lazy);
 #if DEBUG
         if (enableDevelopmentTools)
@@ -95,6 +97,19 @@ internal static class Program
 #endif
         return builder;
     }
+
+    /// <summary>
+    /// Creates a declarative component control from the application's service provider.
+    /// </summary>
+    /// <param name="type">Component control type requested by the declarative view factory.</param>
+    /// <param name="services">Application services used to construct the control.</param>
+    /// <returns>The created control.</returns>
+    [UnconditionalSuppressMessage(
+        "Trimming",
+        "IL2067",
+        Justification = "Avalonia.Markup.Declarative exposes the component factory as an unannotated Func<Type, Control>. KubeUI declares no ComponentBase types, so this reflection path is unreachable; all views are resolved through the generated ViewLocator factories.")]
+    private static Control CreateComponentControl(Type type, IServiceProvider services)
+        => (Control)ActivatorUtilities.CreateInstance(services, type);
 
     internal static void StartHostAfterAvaloniaSetup(
         IHost host,
@@ -192,6 +207,9 @@ internal static class Program
         // Tests use this helper only; keep streamed MCP responses from stretching each host teardown to the full shutdown grace period.
         hostBuilder.Services.Configure<HostOptions>(options => options.ShutdownTimeout = TimeSpan.FromSeconds(1));
         var host = hostBuilder.Build();
+        // Report Kubernetes types that still fall back to reflection-based serialization so the
+        // remaining source-generation gaps are visible in the logs.
+        host.Services.ConfigureKubeUIKubernetesJsonLogging();
         host.Start();
         return host;
     }

@@ -64,6 +64,45 @@ public class KubernetesYamlTests : IDisposable
     }
 
     [Fact]
+    public void StaticContext_RoundTripsPodYamlWithoutReflectionFallback()
+    {
+        // The Release build is trimmed, so the YAML path must not depend on the reflection
+        // serializer. This test project runs with JsonSerializerIsReflectionEnabledByDefault=false,
+        // which reproduces the trimmed runtime behaviour.
+        KubernetesYaml.UseStaticContext.ShouldBeTrue();
+
+        var yaml = """
+            apiVersion: v1
+            kind: Pod
+            metadata:
+              name: static-pod
+              namespace: default
+            spec:
+              containers:
+                - name: app
+                  image: nginx:1.27
+                  ports:
+                    - containerPort: 8080
+                  resources:
+                    limits:
+                      memory: 128Mi
+            """;
+
+        var pod = KubernetesYaml.Deserialize<V1Pod>(yaml);
+
+        pod.Metadata.Name.ShouldBe("static-pod");
+        pod.Metadata.NamespaceProperty.ShouldBe("default");
+        pod.Spec.Containers.ShouldHaveSingleItem().Image.ShouldBe("nginx:1.27");
+        pod.Spec.Containers[0].Ports.ShouldHaveSingleItem().ContainerPort.ShouldBe(8080);
+        pod.Spec.Containers[0].Resources.Limits["memory"].ToString().ShouldBe("128Mi");
+
+        var serialized = KubernetesYaml.Serialize(pod);
+        var roundTripped = KubernetesYaml.Deserialize<V1Pod>(serialized);
+        roundTripped.Metadata.Name.ShouldBe("static-pod");
+        roundTripped.Spec.Containers.ShouldHaveSingleItem().Image.ShouldBe("nginx:1.27");
+    }
+
+    [Fact]
     public void StaticContext_KnowsRegisteredKubernetesResourceCatalogTypes()
     {
         var sharedCatalog = new KubernetesModelCatalog();

@@ -67,6 +67,7 @@ Docker
 - Resource keys in `Resources.resx` must use `{ViewOrControlName}_{Name}` for view/control-owned UI text, `{ResourceConfigName}_{Name}` for resource-list column headers and resource-config actions, or `Shared_{Name}` for labels shared across multiple views, controls, or configs.
 - No hacks or weird workarounds; if you think you need one, ask for guidance.
 - When a new feature is added, update the closest Agents.md with the feature requirements
+- Use `System.Threading.Lock` for mutual exclusion. `Lock` is non-reentrant and thread-affine, unlike `Monitor` on a plain `object`: never acquire a lock that the current thread already holds, and never await while holding one. Release the lock before any `await` that could re-enter the guarded code.
 
 ## 8) Trimmed Release publishing
 - Desktop Release publishes use full trimming and must retain visible linker diagnostics.

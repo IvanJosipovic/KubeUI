@@ -1,3 +1,4 @@
+using System.Text.Json;
 using KubeUI.AI.Agents;
 using KubeUI.Avalonia.Infrastructure.Mcp;
 using KubeUI.Avalonia.Infrastructure.Presentation;
@@ -131,7 +132,10 @@ public sealed partial class AgentChatViewModel : ViewModelBase, IAsyncDisposable
                 else if (item is SessionUpdateEvent { Update.Value: ToolCall toolStarted })
                     Messages.Add(new AgentChatMessage(
                         Assets.Resources.AgentChatView_Tool,
-                        string.Format(Assets.Resources.AgentChatView_ToolStartedFormat!, toolStarted.Title ?? toolStarted.Name ?? toolStarted.ToolCallId, string.Empty)));
+                        string.Format(
+                            Assets.Resources.AgentChatView_ToolStartedFormat!,
+                            toolStarted.Title ?? toolStarted.Name ?? toolStarted.ToolCallId,
+                            FormatInput(toolStarted.RawInput))));
                 else if (item is SessionUpdateEvent { Update.Value: ToolCallUpdate toolCompleted }
                     && toolCompleted.Status is "completed" or "failed")
                 {
@@ -141,7 +145,7 @@ public sealed partial class AgentChatViewModel : ViewModelBase, IAsyncDisposable
                     {
                         _logger?.LogError(
                             "AI agent {AgentId} tool {ToolName} failed.",
-                            SelectedAgent.Id,
+                            SelectedAgent?.Id,
                             toolName);
                     }
                     Messages.Add(new AgentChatMessage(
@@ -257,6 +261,17 @@ public sealed partial class AgentChatViewModel : ViewModelBase, IAsyncDisposable
         }
 
         Messages.Add(new AgentChatMessage("assistant", text));
+    }
+
+    private static string FormatInput(JsonElement? input)
+    {
+        if (input is not { } element || element.ValueKind == JsonValueKind.Undefined)
+            return string.Empty;
+
+        var raw = element.GetRawText();
+        return string.IsNullOrWhiteSpace(raw)
+            ? string.Empty
+            : string.Format(Assets.Resources.AgentChatView_ToolInputFormat!, raw);
     }
 
     private void MessagesOnCollectionChanged(object? _, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
