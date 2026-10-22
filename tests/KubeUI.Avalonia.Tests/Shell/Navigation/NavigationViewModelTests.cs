@@ -1775,7 +1775,13 @@ public class NavigationViewModelTests
         await TestApplicationExtensions.WaitForUiAsync();
 
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
-        clusterNode.NavigationItems.Last().Name.ShouldBe("Custom Resource Definitions");
+        var customResources = clusterNode.NavigationItems.Single(x => x.Name == "Custom Resource Definitions");
+        // Provider sections such as Helm are declared after the custom resources section, so
+        // custom resources must sort after the built-in resource sections, not be the last root item.
+        clusterNode.NavigationItems
+            .Where(x => x.Name != "Custom Resource Definitions" && x.Name != "Helm")
+            .ShouldAllBe(x => x.Order < customResources.Order);
+        clusterNode.NavigationItems.ShouldContain(x => x.Name == "Helm");
     }
 
     [AvaloniaFact]
