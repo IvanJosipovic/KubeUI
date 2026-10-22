@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
@@ -21,11 +22,21 @@ public sealed class HelmReleasesViewModelTests
 {
     [Theory]
     [InlineData("2026-10-21T12:58:46Z", "1m14s")]
-    [InlineData("not a timestamp", "not a timestamp")]
-    public void Updated_column_uses_pretty_age_and_preserves_unparseable_values(string updated, string expected)
+    [InlineData("2026-10-21T13:00:00Z", "0ms")]
+    public void Updated_column_uses_pretty_age(string updated, string expected)
     {
-        HelmReleasesViewModel.FormatUpdated(updated, new DateTime(2026, 10, 21, 13, 0, 0, DateTimeKind.Utc))
+        HelmReleasesViewModel.FormatUpdated(
+                DateTimeOffset.Parse(updated, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal),
+                new DateTime(2026, 10, 21, 13, 0, 0, DateTimeKind.Utc))
             .ShouldBe(expected);
+    }
+
+    [Fact]
+    public void Timestamp_is_formatted_as_utc_iso_8601()
+    {
+        HelmReleasesViewModel.FormatTimestamp(
+                new DateTimeOffset(2026, 1, 2, 3, 4, 5, TimeSpan.FromHours(2)))
+            .ShouldBe("2026-01-02T01:04:05Z");
     }
 
     [AvaloniaFact]
@@ -44,7 +55,7 @@ public sealed class HelmReleasesViewModelTests
         viewModel.Initialize(workspace);
         await viewModel.RefreshCommand.ExecutionTask!.WaitAsync(TestContext.Current.CancellationToken);
 
-        await viewModel.ViewValuesCommand.ExecuteAsync(new HelmRelease("web", "apps", "1", "", "deployed", "web-1.0", ""));
+        await viewModel.ViewValuesCommand.ExecuteAsync(new HelmRelease("web", "apps", 1, new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), "deployed", "web-1.0", ""));
 
         viewModel.Status.ShouldBe("Values unavailable");
         createViewer.Verify(factory => factory(), Times.Never);
@@ -79,7 +90,7 @@ public sealed class HelmReleasesViewModelTests
         viewModel.Initialize(workspace);
         await viewModel.RefreshCommand.ExecutionTask!.WaitAsync(TestContext.Current.CancellationToken);
 
-        await viewModel.ViewValuesCommand.ExecuteAsync(new HelmRelease("web", "apps", "1", "", "deployed", "web-1.0", ""));
+        await viewModel.ViewValuesCommand.ExecuteAsync(new HelmRelease("web", "apps", 1, new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), "deployed", "web-1.0", ""));
 
         viewModel.Status.ShouldBeEmpty();
         using var yaml = opened.ShouldNotBeNull();
@@ -128,7 +139,7 @@ public sealed class HelmReleasesViewModelTests
 
         helm.Setup(service => service.GetValuesAsync(It.IsAny<HelmConnection>(), "web", It.IsAny<CancellationToken>()))
             .ReturnsAsync(new Dictionary<string, JsonElement> { ["replicas"] = JsonSerializer.SerializeToElement(4) });
-        await viewModel.ViewValuesCommand.ExecuteAsync(new HelmRelease("web", "apps", "1", "", "deployed", "web-1.0", ""));
+        await viewModel.ViewValuesCommand.ExecuteAsync(new HelmRelease("web", "apps", 1, new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), "deployed", "web-1.0", ""));
         viewModel.Status.ShouldBeEmpty();
         yaml.YamlDocument.Text.ShouldContain("replicas: 4");
         factory.Verify(item => item.InsertDockable(bottom, It.IsAny<IDockable>(), It.IsAny<int>()), Times.Once);
@@ -141,12 +152,12 @@ public sealed class HelmReleasesViewModelTests
         using var workspace = await Application.Current.CreateClusterAsync(connect: false);
         workspace.SelectedNamespaces.Clear();
         var helm = new Mock<IHelmService>();
-        var release = new HelmRelease("cilium", "kube-system", "1", "", "deployed", "cilium-1.20.3", "");
+        var release = new HelmRelease("cilium", "kube-system", 1, new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), "deployed", "cilium-1.20.3", "");
         helm.SetupSequence(service => service.ListReleasesAsync(It.IsAny<HelmConnection>(), true,
                 It.IsAny<string?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync([])
             .ReturnsAsync([release])
-            .ReturnsAsync([release, new HelmRelease("web", "apps", "1", "", "deployed", "web-1.0.0", "")]);
+            .ReturnsAsync([release, new HelmRelease("web", "apps", 1, new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), "deployed", "web-1.0.0", "")]);
         using var viewModel = new HelmReleasesViewModel(
             helm.Object, Mock.Of<IFactory>(), Mock.Of<IDialogService>(), Mock.Of<IHelmReleasePreviewService>(),
             () => Application.Current.GetRequiredTestService<ResourceYamlViewModel>(),
@@ -188,7 +199,7 @@ public sealed class HelmReleasesViewModelTests
             () => Application.Current.GetRequiredTestService<ResourceYamlViewModel>(),
             Mock.Of<IHelmDocumentOpener>(), Mock.Of<IHelmListNotifier>());
         viewModel.Initialize(workspace);
-        viewModel.VisualizeReleaseCommand.Execute(new HelmRelease("cilium", "kube-system", "1", "", "deployed", "cilium-1.20.3", ""));
+        viewModel.VisualizeReleaseCommand.Execute(new HelmRelease("cilium", "kube-system", 1, new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), "deployed", "cilium-1.20.3", ""));
 
         viewModel.Status.ShouldBe("Unable to open visualization");
     }
@@ -207,7 +218,7 @@ public sealed class HelmReleasesViewModelTests
             () => Application.Current.GetRequiredTestService<ResourceYamlViewModel>(),
             Mock.Of<IHelmDocumentOpener>(), Mock.Of<IHelmListNotifier>());
         viewModel.Initialize(workspace);
-        var release = new HelmRelease("cilium", "kube-system", "1", "", "deployed", "cilium-1.20.3", "");
+        var release = new HelmRelease("cilium", "kube-system", 1, new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), "deployed", "cilium-1.20.3", "");
 
         viewModel.VisualizeReleaseCommand.Execute(release);
 
@@ -227,9 +238,9 @@ public sealed class HelmReleasesViewModelTests
         workspace.SelectedNamespaces.Add(new V1Namespace { Metadata = new V1ObjectMeta { Name = "system" } });
         var releases = new[]
         {
-            new HelmRelease("web", "apps", "1", "2026-01-01", "deployed", "nginx-1.0.0", "1.0.0"),
-            new HelmRelease("dns", "system", "1", "2026-01-01", "deployed", "dns-1.0.0", "1.0.0"),
-            new HelmRelease("other", "other", "1", "2026-01-01", "deployed", "other-1.0.0", "1.0.0")
+            new HelmRelease("web", "apps", 1, new DateTimeOffset(2026, 01, 01, 0, 0, 0, TimeSpan.Zero), "deployed", "nginx-1.0.0", "1.0.0"),
+            new HelmRelease("dns", "system", 1, new DateTimeOffset(2026, 01, 01, 0, 0, 0, TimeSpan.Zero), "deployed", "dns-1.0.0", "1.0.0"),
+            new HelmRelease("other", "other", 1, new DateTimeOffset(2026, 01, 01, 0, 0, 0, TimeSpan.Zero), "deployed", "other-1.0.0", "1.0.0")
         };
         var helmService = new Mock<IHelmService>();
         var previewService = new Mock<IHelmReleasePreviewService>();
@@ -276,7 +287,7 @@ public sealed class HelmReleasesViewModelTests
         using var workspace = await Application.Current.CreateClusterAsync(connect: false);
         var helmService = new Mock<IHelmService>();
         var previewService = new Mock<IHelmReleasePreviewService>();
-        var release = new HelmRelease("web", "apps", "2", "2026-01-02", "deployed", "nginx-1.1.0", "1.1.0");
+        var release = new HelmRelease("web", "apps", 2, new DateTimeOffset(2026, 01, 02, 0, 0, 0, TimeSpan.Zero), "deployed", "nginx-1.1.0", "1.1.0");
         helmService
             .Setup(service => service.ListReleasesAsync(It.IsAny<HelmConnection>(), It.IsAny<bool>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Array.Empty<HelmRelease>());
@@ -359,7 +370,7 @@ public sealed class HelmReleasesViewModelTests
 
         helm.Setup(service => service.ListReleasesAsync(It.IsAny<HelmConnection>(), true,
                 It.IsAny<string?>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync([new HelmRelease("web", "apps", "1", "", "deployed", "web-1.0", "")]);
+            .ReturnsAsync([new HelmRelease("web", "apps", 1, new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), "deployed", "web-1.0", "")]);
         notifier.NotifyReleasesChanged();
 
         await TestWait.UntilAsync(() => viewModel.ItemCount == 1,
@@ -379,7 +390,7 @@ public sealed class HelmReleasesViewModelTests
             () => Application.Current.GetRequiredTestService<ResourceYamlViewModel>(),
             opener.Object, Mock.Of<IHelmListNotifier>());
         viewModel.Initialize(workspace);
-        var release = new HelmRelease("web", "apps", "1", "", "deployed", "web-1.0", "");
+        var release = new HelmRelease("web", "apps", 1, new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), "deployed", "web-1.0", "");
 
         viewModel.NewReleaseCommand.Execute(null);
         viewModel.UpgradeReleaseCommand.Execute(release);

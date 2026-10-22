@@ -12,7 +12,7 @@ namespace KubeUI.Avalonia.Tests.Features.Helm;
 public sealed class LiveHelmVisualizationTests
 {
     [AvaloniaFact(Explicit = true)]
-    public async Task Alpha9_lists_releases_across_namespaces_and_reads_release_metadata()
+    public async Task Alpha10_lists_releases_across_namespaces_and_reads_release_metadata()
     {
         var context = Environment.GetEnvironmentVariable("KUBEUI_LIVE_CONTEXT")
             ?? throw new InvalidOperationException("Set KUBEUI_LIVE_CONTEXT to the kubeconfig context containing Authentik.");
@@ -34,7 +34,7 @@ public sealed class LiveHelmVisualizationTests
     }
 
     [AvaloniaFact(Explicit = true)]
-    public async Task Alpha9_reads_stored_authentik_manifest()
+    public async Task Alpha10_reads_stored_authentik_manifest()
     {
         var context = Environment.GetEnvironmentVariable("KUBEUI_LIVE_CONTEXT")
             ?? throw new InvalidOperationException("Set KUBEUI_LIVE_CONTEXT to the kubeconfig context containing Authentik.");

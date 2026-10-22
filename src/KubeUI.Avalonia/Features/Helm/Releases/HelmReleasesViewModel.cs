@@ -183,7 +183,7 @@ public sealed partial class HelmReleasesViewModel : ViewModelBase, IInitializeCl
         try
         {
             var status = await _helmService.StatusAsync(_connection with { Namespace = release.Namespace }, release.Name, cancellationToken);
-            Status = $"{status.Name} · {status.Status} · {status.Chart} · {status.Updated}";
+            Status = $"{status.Name} · {status.Status} · {status.Chart} · {FormatTimestamp(status.Updated)}";
         }
         catch (Exception exception)
         {
@@ -231,7 +231,7 @@ public sealed partial class HelmReleasesViewModel : ViewModelBase, IInitializeCl
         try
         {
             var history = await _helmService.HistoryAsync(_connection with { Namespace = release.Namespace }, release.Name, cancellationToken);
-            Status = string.Join(Environment.NewLine, history.Select(item => $"{item.Revision}: {item.Status} · {item.Chart} · {item.Updated}"));
+            Status = string.Join(Environment.NewLine, history.Select(item => $"{item.Revision}: {item.Status} · {item.Chart} · {FormatTimestamp(item.Updated)}"));
         }
         catch (Exception exception)
         {
@@ -247,7 +247,7 @@ public sealed partial class HelmReleasesViewModel : ViewModelBase, IInitializeCl
             return;
         }
 
-        var maximumRevision = int.TryParse(release.Revision, out var revision) ? revision : 0;
+        var maximumRevision = release.Revision;
         var dialogViewModel = new ReleaseActionDialogViewModel();
         var result = await _dialogService.ShowContentDialogAsync(this, new ContentDialogSettings
         {
@@ -397,10 +397,11 @@ public sealed partial class HelmReleasesViewModel : ViewModelBase, IInitializeCl
         return column;
     }
 
-    internal static string FormatUpdated(string updated, DateTime utcNow)
-        => DateTimeOffset.TryParse(updated, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var dateTime)
-            ? RelativeTimeFormatter.FormatPrettyAge(dateTime.UtcDateTime, utcNow)
-            : updated;
+    internal static string FormatUpdated(DateTimeOffset updated, DateTime utcNow)
+        => RelativeTimeFormatter.FormatPrettyAge(updated.UtcDateTime, utcNow);
+
+    internal static string FormatTimestamp(DateTimeOffset updated)
+        => updated.UtcDateTime.ToString("yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture);
 
     partial void OnIsNamespaceSelectionLinkedChanged(bool value)
     {

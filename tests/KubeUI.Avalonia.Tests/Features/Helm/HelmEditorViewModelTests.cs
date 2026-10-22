@@ -37,7 +37,7 @@ public sealed class HelmEditorViewModelTests
                 It.Is<HelmConnection>(connection => connection.Namespace == "apps"), "web", It.IsAny<CancellationToken>()))
             .ReturnsAsync(json.RootElement.EnumerateObject()
                 .ToDictionary(property => property.Name, property => property.Value.Clone()));
-        var metadata = new HelmRelease("web", "apps", "1", "", "deployed", "nginx-1.0", "", "nginx", "1.0");
+        var metadata = new HelmRelease("web", "apps", 1, new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), "deployed", "nginx-1.0", "", "nginx", "1.0");
         if (!hasChartMetadata)
         {
             helm.Setup(service => service.StatusAsync(
@@ -147,7 +147,7 @@ public sealed class HelmEditorViewModelTests
         var editor = new HelmReleaseEditorViewModel(helm.Object, Mock.Of<IFactory>(), Mock.Of<IHelmListNotifier>(),
             Mock.Of<IHelmReleasePreviewService>(), Mock.Of<IDialogService>());
         editor.Initialize(workspace, new HelmConnection("config", "context", "apps"),
-            new HelmRelease("web", "apps", "1", "", "deployed", "web-1.0", "", "web", "1.0"));
+            new HelmRelease("web", "apps", 1, new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), "deployed", "web-1.0", "", "web", "1.0"));
         await editor.InitializationTask.WaitAsync(TestContext.Current.CancellationToken);
 
         editor.Repositories.ShouldBe(["first", "second"]);
@@ -293,14 +293,14 @@ public sealed class HelmEditorViewModelTests
                 new("other/unrelated", "unrelated", "9.0.0")]);
         helm.Setup(service => service.ListRepositoriesAsync(It.IsAny<HelmConnection>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync([new("bitnami", "https://example.test")]);
-        var release = new HelmRelease("web", "apps", "1", "", "deployed", "nginx-1.0.0", "", "nginx", "1.0.0");
+        var release = new HelmRelease("web", "apps", 1, new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), "deployed", "nginx-1.0.0", "", "nginx", "1.0.0");
         helm.Setup(service => service.StatusAsync(It.IsAny<HelmConnection>(), "web", It.IsAny<CancellationToken>()))
             .ReturnsAsync(release);
         helm.Setup(service => service.UpgradeAsync(
                 It.IsAny<HelmConnection>(), "web", "bitnami/nginx", It.IsAny<IReadOnlyDictionary<string, object?>>(),
                 It.IsAny<bool>(), It.IsAny<bool>(), It.IsAny<bool>(), It.IsAny<TimeSpan?>(),
                 It.IsAny<CancellationToken>(), "2.0.0"))
-            .ReturnsAsync(new HelmRelease("web", "apps", "2", "", "deployed", "nginx-2.0.0", "2.0.0", "nginx", "2.0.0"));
+            .ReturnsAsync(new HelmRelease("web", "apps", 2, new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), "deployed", "nginx-2.0.0", "2.0.0", "nginx", "2.0.0"));
         var factory = new Mock<IFactory>();
         var dialogs = HelmDialogTestHelper.CreateConfirmingDialogService();
         var preview = new Mock<IHelmReleasePreviewService>();
@@ -430,13 +430,13 @@ public sealed class HelmEditorViewModelTests
         helm.Setup(service => service.GetValuesAsync(It.IsAny<HelmConnection>(), "web", It.IsAny<CancellationToken>()))
             .Returns(pendingValues.Task);
         helm.Setup(service => service.StatusAsync(It.IsAny<HelmConnection>(), "web", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new HelmRelease("web", "apps", "1", "", "deployed", "nginx-1.0", "", "nginx", "1.0"));
+            .ReturnsAsync(new HelmRelease("web", "apps", 1, new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), "deployed", "nginx-1.0", "", "nginx", "1.0"));
         helm.Setup(service => service.ListChartsAsync(It.IsAny<HelmConnection>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync([new("first/nginx", "nginx", "1.0"), new("second/nginx", "nginx", "1.0")]);
         var editor = new HelmReleaseEditorViewModel(helm.Object, Mock.Of<IFactory>(), Mock.Of<IHelmListNotifier>(),
             Mock.Of<IHelmReleasePreviewService>(), Mock.Of<IDialogService>());
         editor.Initialize(workspace, new HelmConnection("config", "context", "apps"),
-            new HelmRelease("web", "apps", "1", "", "deployed", "nginx-1.0", ""));
+            new HelmRelease("web", "apps", 1, new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), "deployed", "nginx-1.0", ""));
         editor.IsLoading.ShouldBeTrue();
         editor.SaveCommand.CanExecute(null).ShouldBeFalse();
         if (valuesSucceed)
@@ -556,7 +556,7 @@ public sealed class HelmEditorViewModelTests
             .Setup(service => service.InstallAsync(
                 It.IsAny<HelmConnection>(), "web", "bitnami/nginx", It.IsAny<IReadOnlyDictionary<string, object?>>(), true, true,
                 TimeSpan.FromSeconds(30), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new HelmRelease("web", "apps", "1", "2026-01-01", "deployed", "nginx-1.0.0", "1.0.0"));
+            .ReturnsAsync(new HelmRelease("web", "apps", 1, new DateTimeOffset(2026, 01, 01, 0, 0, 0, TimeSpan.Zero), "deployed", "nginx-1.0.0", "1.0.0"));
         var factory = new Mock<IFactory>();
         var dialogs = HelmDialogTestHelper.CreateConfirmingDialogService();
         var notifier = new HelmListNotifier();

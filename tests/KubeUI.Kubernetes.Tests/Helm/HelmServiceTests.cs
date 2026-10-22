@@ -7,7 +7,7 @@ namespace KubeUI.Kubernetes.Tests.Helm;
 public sealed class HelmServiceTests
 {
     [Fact]
-    public async Task Alpha9_operations_forward_manifest_and_template_version()
+    public async Task Alpha10_operations_forward_manifest_and_template_version()
     {
         var client = new FakeHelmClient { TemplateResult = "kind: ConfigMap" };
         client.Charts.Add(new("cilium/cilium", "cilium", "1.20.3"));
@@ -31,7 +31,7 @@ public sealed class HelmServiceTests
     }
 
     [Fact]
-    public async Task Alpha9_operations_reject_invalid_names_revisions_and_versions()
+    public async Task Alpha10_operations_reject_invalid_names_revisions_and_versions()
     {
         using var factory = new FakeHelmClientFactory(new FakeHelmClient());
         using var service = new HelmService(factory);
@@ -130,7 +130,7 @@ public sealed class HelmServiceTests
     public async Task ListReleasesAsync_passes_all_namespaces_and_filter()
     {
         var client = new FakeHelmClient();
-        client.Releases.Add(new HelmRelease("nginx", "apps", "1", "2026-01-01", "deployed", "nginx-1.0.0", "1.0.0"));
+        client.Releases.Add(new HelmRelease("nginx", "apps", 1, new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), "deployed", "nginx-1.0.0", "1.0.0"));
         using var factory = new FakeHelmClientFactory(client);
         using var sut = CreateService(factory);
 
@@ -157,7 +157,7 @@ public sealed class HelmServiceTests
     {
         var client = new FakeHelmClient
         {
-            InstallRelease = new HelmRelease("web", "apps", "1", "2026-01-01", "deployed", "nginx-1.0.0", "1.0.0"),
+            InstallRelease = new HelmRelease("web", "apps", 1, new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), "deployed", "nginx-1.0.0", "1.0.0"),
         };
         using var factory = new FakeHelmClientFactory(client);
         using var sut = CreateService(factory);
@@ -187,7 +187,7 @@ public sealed class HelmServiceTests
     {
         var client = new FakeHelmClient
         {
-            UpgradeRelease = new HelmRelease("web", "apps", "2", "2026-01-02", "deployed", "nginx-1.1.0", "1.1.0"),
+            UpgradeRelease = new HelmRelease("web", "apps", 2, new DateTimeOffset(2026, 1, 2, 0, 0, 0, TimeSpan.Zero), "deployed", "nginx-1.1.0", "1.1.0"),
         };
         using var factory = new FakeHelmClientFactory(client);
         using var sut = CreateService(factory);
@@ -209,7 +209,7 @@ public sealed class HelmServiceTests
     {
         var client = new FakeHelmClient
         {
-            StatusRelease = new HelmRelease("web", "apps", "2", "2026-01-02", "deployed", "nginx-1.1.0", "1.1.0"),
+            StatusRelease = new HelmRelease("web", "apps", 2, new DateTimeOffset(2026, 1, 2, 0, 0, 0, TimeSpan.Zero), "deployed", "nginx-1.1.0", "1.1.0"),
         };
         using var factory = new FakeHelmClientFactory(client);
         using var sut = CreateService(factory);
@@ -224,8 +224,8 @@ public sealed class HelmServiceTests
     public async Task HistoryAsync_returns_revisions()
     {
         var client = new FakeHelmClient();
-        client.HistoryReleases.Add(new HelmRelease("web", "apps", "1", "2026-01-01", "superseded", "nginx-1.0.0", "1.0.0"));
-        client.HistoryReleases.Add(new HelmRelease("web", "apps", "2", "2026-01-02", "deployed", "nginx-1.1.0", "1.1.0"));
+        client.HistoryReleases.Add(new HelmRelease("web", "apps", 1, new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), "superseded", "nginx-1.0.0", "1.0.0"));
+        client.HistoryReleases.Add(new HelmRelease("web", "apps", 2, new DateTimeOffset(2026, 1, 2, 0, 0, 0, TimeSpan.Zero), "deployed", "nginx-1.1.0", "1.1.0"));
         using var factory = new FakeHelmClientFactory(client);
         using var sut = CreateService(factory);
 
