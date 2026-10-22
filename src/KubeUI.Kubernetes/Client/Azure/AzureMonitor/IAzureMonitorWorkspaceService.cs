@@ -18,4 +18,7 @@ public interface IAzureMonitorWorkspaceService
 
     /// <summary>Gets an access token for the Azure Monitor Prometheus query API.</summary>
     ValueTask<AccessToken> GetPrometheusAccessTokenAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>Discards the cached Prometheus access token so the next request acquires a fresh one.</summary>
+    ValueTask RefreshPrometheusAccessTokenAsync(CancellationToken cancellationToken = default);
 }

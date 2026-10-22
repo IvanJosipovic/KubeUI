@@ -57,15 +57,11 @@ public sealed class SettingsServiceTests
 
         public SettingsPersistenceData Load() => data;
 
-        public void Save(SettingsPersistenceData persistenceData)
+        public bool Save(SettingsPersistenceData persistenceData)
         {
             SaveCalls++;
             Saved = persistenceData;
-        }
-
-        bool ISettingsPersistence.Save(SettingsPersistenceData data)
-        {
-            throw new NotImplementedException();
+            return true;
         }
     }
 }

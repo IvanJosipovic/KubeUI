@@ -5,6 +5,7 @@ namespace KubeUI.Kubernetes;
 
 public sealed partial class MetricsService : ObservableObject, IMetricsService, IDisposable
 {
+    private static readonly TimeSpan s_disposeTimeout = TimeSpan.FromSeconds(5);
 
     private readonly ILogger<MetricsService> _logger;
     private readonly IClusterSettingsStore _settings;
@@ -17,8 +18,8 @@ public sealed partial class MetricsService : ObservableObject, IMetricsService, 
     private ResolvedPrometheusEndpoint? _resolvedPrometheusEndpoint;
     private IPrometheusProvider? _resolvedPrometheusProvider;
 
-    public MetricsService(ILogger<MetricsService> logger, IClusterSettingsStore settings, IEnumerable<IPrometheusProvider> prometheusProviders, IPrometheusQueryClient prometheusQueryClient)
-        : this(logger, settings, prometheusProviders, prometheusQueryClient, TimeProvider.System)
+    public MetricsService(ILogger<MetricsService> logger, IClusterSettingsStore settings, IEnumerable<IPrometheusProvider> prometheusProviders, IPrometheusQueryClient prometheusQueryClient, IThreadDispatcher dispatcher)
+        : this(logger, settings, prometheusProviders, prometheusQueryClient, dispatcher, TimeProvider.System)
     {
     }
 
@@ -27,13 +28,14 @@ public sealed partial class MetricsService : ObservableObject, IMetricsService, 
         IClusterSettingsStore settings,
         IEnumerable<IPrometheusProvider> prometheusProviders,
         IPrometheusQueryClient prometheusQueryClient,
+        IThreadDispatcher dispatcher,
         TimeProvider timeProvider)
     {
         _logger = logger;
         _settings = settings;
         _prometheusProviders = prometheusProviders.ToDictionary(static x => x.Kind);
         _prometheusQueryClient = prometheusQueryClient;
-        _kubernetesMetricsCollector = new KubernetesMetricsCollector(logger, PodMetrics, NodeMetrics);
+        _kubernetesMetricsCollector = new KubernetesMetricsCollector(logger, dispatcher, PodMetrics, NodeMetrics);
         _prometheusMetricQueries = new PrometheusMetricQueries(logger, prometheusQueryClient, timeProvider);
     }
 
@@ -51,7 +53,20 @@ public sealed partial class MetricsService : ObservableObject, IMetricsService, 
     public ImmutableArray<NodeMetrics> GetNodeMetricsSnapshot(string nodeName)
         => _kubernetesMetricsCollector.GetNodeMetricsSnapshot(nodeName);
 
+    /// <summary>Rebuilds the per-resource snapshot indexes from the current metric collections.</summary>
+    /// <remarks>
+    /// The indexes are normally rebuilt by the collector after each sync. This is exposed so tests can
+    /// seed metric collections directly and have the snapshots reflect them.
+    /// </remarks>
     internal void RebuildMetricSnapshots() => _kubernetesMetricsCollector.RebuildSnapshotIndexes();
+
+    /// <inheritdoc />
+    public ImmutableArray<PodMetrics> GetAllPodMetricsSnapshot()
+        => _kubernetesMetricsCollector.GetAllPodMetricsSnapshot();
+
+    /// <inheritdoc />
+    public ImmutableArray<NodeMetrics> GetAllNodeMetricsSnapshot()
+        => _kubernetesMetricsCollector.GetAllNodeMetricsSnapshot();
 
     [ObservableProperty]
     public partial bool IsMetricsAvailable { get; set; }
@@ -148,6 +163,16 @@ public sealed partial class MetricsService : ObservableObject, IMetricsService, 
         _cluster = null;
     }
 
+    /// <summary>Releases the resources owned by the metrics service.</summary>
+    /// <remarks>
+    /// This is separate from <see cref="StopAsync"/> so that stopping a cluster and disposing the
+    /// service are independent operations, and disposing the service twice is safe.
+    /// </remarks>
+    internal void ReleaseResources()
+    {
+        _kubernetesMetricsCollector.Dispose();
+    }
+
     public Task<MetricResultSet> RequestMetricsAsync(MetricRequest request, CancellationToken cancellationToken = default)
     {
         if (_cluster == null
@@ -155,7 +180,9 @@ public sealed partial class MetricsService : ObservableObject, IMetricsService, 
             || _resolvedPrometheusEndpoint == null
             || ActiveMetricsBackend.Type != MetricsServiceType.Prometheus)
         {
-            return Task.FromResult(MetricResultSet.Empty);
+            // The active backend cannot serve Prometheus queries. Reporting this explicitly lets the
+            // UI show "backend unavailable" instead of claiming there are simply no metrics.
+            return Task.FromResult(MetricResultSet.BackendUnavailableResult);
         }
         return _prometheusMetricQueries.RequestAsync(
             _cluster,
@@ -322,9 +349,29 @@ public sealed partial class MetricsService : ObservableObject, IMetricsService, 
 
     internal Task SyncKubernetesMetricsAsync(Cluster cluster, CancellationToken cancellationToken) => _kubernetesMetricsCollector.SyncAsync(cluster, cancellationToken);
 
+    /// <summary>Stops the metrics service without blocking the calling thread indefinitely.</summary>
+    /// <remarks>
+    /// Stopping waits for in-flight Prometheus queries, which can take up to the request timeout plus
+    /// retry backoff. Blocking the UI thread on that would hang the application during shutdown, so
+    /// the wait is bounded and the remaining work is abandoned.
+    /// </remarks>
     public void Dispose()
     {
-        StopAsync().GetAwaiter().GetResult();
+        try
+        {
+            StopAsync().WaitAsync(s_disposeTimeout).GetAwaiter().GetResult();
+        }
+        catch (TimeoutException)
+        {
+            _logger.LogWarning("Timed out while stopping the metrics service; continuing without waiting for in-flight metric requests.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "Ignoring failure while stopping the metrics service.");
+        }
+
+        // The collector owns its own synchronization primitives and is disposed separately, so that a
+        // later StopAsync on an already disposed service stays safe.
     }
 
     private static string DescribeEndpoint(ResolvedPrometheusEndpoint endpoint)

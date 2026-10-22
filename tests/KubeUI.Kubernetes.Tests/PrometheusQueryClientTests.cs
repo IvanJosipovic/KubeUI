@@ -23,7 +23,7 @@ public sealed class PrometheusQueryClientTests
         var fixture = CreateCluster("microk8s", kubernetesHandler);
         await using var cluster = fixture.Cluster;
         using var metricsService = fixture.Service;
-        var client = new PrometheusQueryClient(NullLogger<PrometheusQueryClient>.Instance);
+        using var client = new PrometheusQueryClient(NullLogger<PrometheusQueryClient>.Instance);
         var endpoint = new ResolvedPrometheusEndpoint(
             PrometheusProviderKind.Operator,
             "Prometheus Operator",
@@ -62,7 +62,7 @@ public sealed class PrometheusQueryClientTests
         await using var cluster = fixture.Cluster;
         using var metricsService = fixture.Service;
         var existingPortForwarder = cluster.AddServicePortForward("monitoring", "prometheus-operated", 9090);
-        var client = new PrometheusQueryClient(
+        using var client = new PrometheusQueryClient(
             NullLogger<PrometheusQueryClient>.Instance,
             null,
             () => queryHandler);
@@ -193,7 +193,7 @@ public sealed class PrometheusQueryClientTests
     }
 
     [Fact]
-    public async Task QueryRangeAsync_uses_a_fresh_azure_token_for_each_query()
+    public async Task QueryRangeAsync_reuses_the_azure_token_attached_to_the_transport()
     {
         string[] observedTokens = [];
         using var handler = new RecordingHandler(request => observedTokens = [.. observedTokens, request.Headers.Authorization?.Parameter ?? string.Empty]);
@@ -221,8 +221,48 @@ public sealed class PrometheusQueryClientTests
         await client.QueryRangeAsync(cluster, endpoint, "up", DateTimeOffset.UnixEpoch, DateTimeOffset.UnixEpoch.AddMinutes(1), 60);
         await client.QueryRangeAsync(cluster, endpoint, "up", DateTimeOffset.UnixEpoch, DateTimeOffset.UnixEpoch.AddMinutes(1), 60);
 
+        // The token is attached to the transport once, so the second query reuses it instead of
+        // resolving a new token for every single HTTP request.
+        observedTokens.ShouldBe(["azure-token-1", "azure-token-1"]);
+        azureService.TokenRequests.ShouldBe(1);
+        await client.ResetAsync();
+    }
+
+    [Fact]
+    public async Task QueryRangeAsync_refreshes_the_azure_token_and_retries_after_unauthorized()
+    {
+        string[] observedTokens = [];
+        using var handler = new SequencedStatusHandler(
+            [HttpStatusCode.Unauthorized, HttpStatusCode.OK],
+            request => observedTokens = [.. observedTokens, request.Headers.Authorization?.Parameter ?? string.Empty]);
+        var azureService = new FakeAzureMonitorWorkspaceService();
+        using var client = new PrometheusQueryClient(
+            NullLogger<PrometheusQueryClient>.Instance,
+            azureService,
+            () => handler);
+        var fixture = CreateCluster("azure-prometheus");
+        await using var cluster = fixture.Cluster;
+        using var metricsService = fixture.Service;
+        var endpoint = new ResolvedPrometheusEndpoint(
+            PrometheusProviderKind.AzureMonitor,
+            "Azure Managed Prometheus",
+            true,
+            null,
+            null,
+            null,
+            "https://workspace.eastus.prometheus.monitor.azure.com",
+            true,
+            string.Empty,
+            null,
+            UseAzureMonitorAuthentication: true);
+
+        var response = await client.QueryRangeAsync(cluster, endpoint, "up", DateTimeOffset.UnixEpoch, DateTimeOffset.UnixEpoch.AddMinutes(1), 60);
+
+        response.ShouldNotBeNull();
+        response.Status.ShouldBe("success");
         observedTokens.ShouldBe(["azure-token-1", "azure-token-2"]);
         azureService.TokenRequests.ShouldBe(2);
+        azureService.TokenRefreshRequests.ShouldBe(1);
         await client.ResetAsync();
     }
 
@@ -269,7 +309,8 @@ public sealed class PrometheusQueryClientTests
                 new ExternalPrometheusProvider(),
                 new AzureMonitorPrometheusProvider(),
             ],
-            new NoopPrometheusQueryClient());
+            new NoopPrometheusQueryClient(),
+            new ImmediateThreadDispatcher());
         var cluster = new Cluster(
             NullLogger<Cluster>.Instance,
             NullLoggerFactory.Instance,
@@ -334,6 +375,8 @@ public sealed class PrometheusQueryClientTests
     {
         public int TokenRequests { get; private set; }
 
+        public int TokenRefreshRequests { get; private set; }
+
         public Task<AzureAuthenticationStatus> GetAuthenticationStatusAsync(CancellationToken cancellationToken = default)
             => Task.FromResult(new AzureAuthenticationStatus { AzureCliSignedIn = true });
 
@@ -345,6 +388,38 @@ public sealed class PrometheusQueryClientTests
 
         public ValueTask<AccessToken> GetPrometheusAccessTokenAsync(CancellationToken cancellationToken = default)
             => ValueTask.FromResult(new AccessToken($"azure-token-{++TokenRequests}", DateTimeOffset.UtcNow.AddMinutes(5)));
+
+        public ValueTask RefreshPrometheusAccessTokenAsync(CancellationToken cancellationToken = default)
+        {
+            TokenRefreshRequests++;
+            return ValueTask.CompletedTask;
+        }
+    }
+
+    /// <summary>Handler that returns a scripted sequence of status codes.</summary>
+    private sealed class SequencedStatusHandler : DelegatingHandler
+    {
+        public SequencedStatusHandler(IReadOnlyList<HttpStatusCode> statusCodes, Action<HttpRequestMessage> record)
+        {
+            _statusCodes = statusCodes;
+            _record = record;
+        }
+
+        private readonly IReadOnlyList<HttpStatusCode> _statusCodes;
+        private readonly Action<HttpRequestMessage> _record;
+        private int _index;
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            var index = Interlocked.Increment(ref _index) - 1;
+            var statusCode = index < _statusCodes.Count ? _statusCodes[index] : HttpStatusCode.OK;
+            _record(request);
+            return Task.FromResult(new HttpResponseMessage(statusCode)
+            {
+                Content = new StringContent("{\"status\":\"success\",\"data\":{\"resultType\":\"matrix\",\"result\":[]}}"),
+                RequestMessage = request,
+            });
+        }
     }
 
     private sealed class RecordingHandler : DelegatingHandler

@@ -1,3 +1,4 @@
+using System.Net;
 using System.Net.Http.Headers;
 
 namespace KubeUI.Kubernetes;
@@ -13,19 +14,8 @@ public sealed partial class PrometheusQueryClient
         CancellationToken cancellationToken)
     {
         var url = BuildDirectUrl(query, start, end, stepSeconds);
-        using HttpRequestMessage request = new(HttpMethod.Get, url);
-        if (endpoint.UseAzureMonitorAuthentication)
-        {
-            if (_azureMonitorWorkspaceService is null)
-            {
-                throw new InvalidOperationException("Azure Monitor authentication is not configured.");
-            }
 
-            var token = await _azureMonitorWorkspaceService.GetPrometheusAccessTokenAsync(cancellationToken).ConfigureAwait(false);
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token.Token);
-        }
-
-        using var response = await _httpClient!.SendAsync(request, cancellationToken).ConfigureAwait(false);
+        using var response = await SendWithAuthenticationAsync(endpoint, url, cancellationToken).ConfigureAwait(false);
         if (!response.IsSuccessStatusCode)
         {
             var error = await ReadErrorSummaryAsync(response, cancellationToken).ConfigureAwait(false);
@@ -41,6 +31,59 @@ public sealed partial class PrometheusQueryClient
         return await response.Content.ReadFromJsonAsync(
             CustomSourceGenerationContext.Default.PrometheusClientQueryRangeResponse,
             cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Sends the query, attaching the transport-level authorization header when one is configured.
+    /// </summary>
+    /// <remarks>
+    /// The Azure Monitor token is attached to the transport when it is prepared. If the token has
+    /// expired in the meantime the request is rejected with 401, so a fresh token is resolved and the
+    /// request is retried once.
+    /// </remarks>
+    private async Task<HttpResponseMessage> SendWithAuthenticationAsync(
+        ResolvedPrometheusEndpoint endpoint,
+        string url,
+        CancellationToken cancellationToken)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Get, url);
+        var response = await _httpClient!.SendAsync(request, cancellationToken).ConfigureAwait(false);
+
+        if (response.StatusCode != HttpStatusCode.Unauthorized || !endpoint.UseAzureMonitorAuthentication)
+        {
+            return response;
+        }
+
+        response.Dispose();
+
+        var token = await GetAzureMonitorTokenAsync(cancellationToken, forceRefresh: true).ConfigureAwait(false);
+        using var retryRequest = new HttpRequestMessage(HttpMethod.Get, url);
+        if (!string.IsNullOrWhiteSpace(token))
+        {
+            retryRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        }
+
+        return await _httpClient!.SendAsync(retryRequest, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>Resolves an Azure Monitor Prometheus access token.</summary>
+    /// <param name="cancellationToken">Token used to cancel the acquisition.</param>
+    /// <param name="forceRefresh">Whether to bypass the cached token and acquire a new one.</param>
+    /// <returns>The access token, or <see langword="null"/> when Azure Monitor authentication is not configured.</returns>
+    private async Task<string?> GetAzureMonitorTokenAsync(CancellationToken cancellationToken, bool forceRefresh = false)
+    {
+        if (_azureMonitorWorkspaceService is null)
+        {
+            throw new InvalidOperationException("Azure Monitor authentication is not configured.");
+        }
+
+        if (forceRefresh)
+        {
+            await _azureMonitorWorkspaceService.RefreshPrometheusAccessTokenAsync(cancellationToken).ConfigureAwait(false);
+        }
+
+        var token = await _azureMonitorWorkspaceService.GetPrometheusAccessTokenAsync(cancellationToken).ConfigureAwait(false);
+        return token.Token;
     }
 
     private static async Task<string> ReadErrorSummaryAsync(HttpResponseMessage response, CancellationToken cancellationToken)
@@ -59,7 +102,20 @@ public sealed partial class PrometheusQueryClient
     private static HttpClient CreateDirectHttpClient(ResolvedPrometheusEndpoint endpoint, HttpMessageHandler? handler)
     {
         var client = handler is null ? new HttpClient() : new HttpClient(handler);
-        client.BaseAddress = new Uri(endpoint.DirectUrl!.TrimEnd('/') + endpoint.PathPrefix.TrimEnd('/') + "/", UriKind.Absolute);
+        client.BaseAddress = BuildBaseAddress(endpoint);
         return client;
+    }
+
+    /// <summary>Builds the base address for a direct Prometheus endpoint.</summary>
+    /// <param name="endpoint">The resolved endpoint.</param>
+    /// <returns>The base address including the configured path prefix.</returns>
+    private static Uri BuildBaseAddress(ResolvedPrometheusEndpoint endpoint)
+    {
+        var builder = new UriBuilder(endpoint.DirectUrl!)
+        {
+            Path = string.IsNullOrEmpty(endpoint.PathPrefix) ? "/" : endpoint.PathPrefix.TrimEnd('/') + "/",
+        };
+
+        return builder.Uri;
     }
 }

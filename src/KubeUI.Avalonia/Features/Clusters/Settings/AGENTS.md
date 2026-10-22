@@ -11,3 +11,7 @@
 - Keep rendered metrics selectors and conditional Prometheus fields covered by Avalonia headless tests.
 - Cover active backend status rendering and runtime updates when changing metrics lifecycle state.
 - Test settings through controls and bindings, not only direct model mutation.
+
+## Lifecycle
+- `ClusterSettingsViewModel` implements `IDisposable` and unsubscribes from the cluster runtime, the cluster settings, and the metrics settings. The view disposes the view model in `OnDetachedFromVisualTree`, so a closed settings document does not keep the view model alive.
+- View models that subscribe to runtime or settings events must expose a disposal path; subscribing without an unsubscribe leaks the view model for the lifetime of the process.

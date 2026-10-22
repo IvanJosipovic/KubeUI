@@ -1,4 +1,6 @@
 using System.Net.Http.Headers;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace KubeUI.Kubernetes;
 
@@ -70,18 +72,30 @@ public sealed partial class PrometheusQueryClient : IPrometheusQueryClient, IDis
     }
 
     /// <summary>Disposes the cached HTTP transport and transport setup gate.</summary>
+    /// <remarks>
+    /// The gate is acquired without blocking indefinitely: if a transport setup is already in progress
+    /// the cached client is still released, and the gate is left undisposed so an in-flight caller can
+    /// release it safely.
+    /// </remarks>
     public void Dispose()
     {
-        _transportGate.Wait();
-        try
+        if (_transportGate.Wait(TimeSpan.FromSeconds(5)))
         {
-            ResetTransport();
+            try
+            {
+                ResetTransport();
+            }
+            finally
+            {
+                _transportGate.Release();
+                _transportGate.Dispose();
+            }
+
+            return;
         }
-        finally
-        {
-            _transportGate.Release();
-            _transportGate.Dispose();
-        }
+
+        _logger.LogWarning("Timed out waiting for the Prometheus transport gate while disposing the query client.");
+        ResetTransport();
     }
 
     private async Task EnsureTransportAsync(Cluster cluster, ResolvedPrometheusEndpoint endpoint, CancellationToken cancellationToken)
@@ -115,6 +129,16 @@ public sealed partial class PrometheusQueryClient : IPrometheusQueryClient, IDis
                     && !string.IsNullOrWhiteSpace(endpoint.BearerToken))
                 {
                     _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", endpoint.BearerToken);
+                }
+                else if (_httpClient is not null && endpoint.UseAzureMonitorAuthentication)
+                {
+                    // The Azure Monitor token is valid for roughly an hour, so it is attached to the
+                    // transport once instead of being resolved for every individual query.
+                    var token = await GetAzureMonitorTokenAsync(cancellationToken).ConfigureAwait(false);
+                    if (!string.IsNullOrWhiteSpace(token))
+                    {
+                        _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+                    }
                 }
 
                 LogPreparedTransport(cluster, endpoint);
@@ -167,6 +191,12 @@ public sealed partial class PrometheusQueryClient : IPrometheusQueryClient, IDis
 
     private static string CreateEndpointKey(Cluster cluster, ResolvedPrometheusEndpoint endpoint)
     {
+        // The bearer token is hashed rather than embedded so the credential is not retained in a
+        // long-lived string used as a cache key.
+        var tokenHash = string.IsNullOrWhiteSpace(endpoint.BearerToken)
+            ? string.Empty
+            : Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(endpoint.BearerToken)));
+
         return string.Join(
             "|",
             cluster.Name,
@@ -177,7 +207,7 @@ public sealed partial class PrometheusQueryClient : IPrometheusQueryClient, IDis
             endpoint.DirectUrl ?? string.Empty,
             endpoint.UseHttps,
             endpoint.PathPrefix,
-            endpoint.BearerToken ?? string.Empty,
+            tokenHash,
             endpoint.UseAzureMonitorAuthentication);
     }
 }

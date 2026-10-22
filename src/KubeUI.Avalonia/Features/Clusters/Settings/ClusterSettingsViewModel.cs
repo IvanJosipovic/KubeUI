@@ -6,13 +6,14 @@ using KubeUI.Kubernetes;
 
 namespace KubeUI.Avalonia.Features.Clusters.Settings;
 
-public sealed partial class ClusterSettingsViewModel : ViewModelBase, IInitializeCluster
+public sealed partial class ClusterSettingsViewModel : ViewModelBase, IInitializeCluster, IDisposable
 {
     private ClusterSettings? _subscribedClusterSettings;
     private ClusterMetricsSettings? _subscribedMetricsSettings;
     private INotifyPropertyChanged? _subscribedRuntime;
     private readonly IAzureMonitorWorkspaceService _azureMonitorWorkspaceService;
     private int _workspaceLoadVersion;
+    private bool _disposed;
 
     public ISettingsService SettingsService { get; }
 
@@ -448,6 +449,40 @@ public sealed partial class ClusterSettingsViewModel : ViewModelBase, IInitializ
         OnPropertyChanged(nameof(ShowPrometheusCustomTransportSettings));
         OnPropertyChanged(nameof(ShowAzureMonitorSettings));
         OnPropertyChanged(nameof(ActiveMetricsServiceText));
+    }
+
+    /// <summary>Releases the event subscriptions held by this view model.</summary>
+    /// <remarks>
+    /// The cluster runtime, the cluster settings and the metrics settings all hold strong references
+    /// to this view model while subscribed. Without an explicit teardown the view model would outlive
+    /// the settings document and continue reacting to changes on the cluster it was displaying.
+    /// </remarks>
+    public void Dispose()
+    {
+        if (_disposed)
+        {
+            return;
+        }
+
+        _disposed = true;
+
+        if (_subscribedRuntime is not null)
+        {
+            _subscribedRuntime.PropertyChanged -= OnRuntimePropertyChanged;
+            _subscribedRuntime = null;
+        }
+
+        if (_subscribedClusterSettings is not null)
+        {
+            _subscribedClusterSettings.PropertyChanged -= OnClusterSettingsPropertyChanged;
+            _subscribedClusterSettings = null;
+        }
+
+        if (_subscribedMetricsSettings is not null)
+        {
+            _subscribedMetricsSettings.PropertyChanged -= OnMetricsSettingsPropertyChanged;
+            _subscribedMetricsSettings = null;
+        }
     }
 }
 

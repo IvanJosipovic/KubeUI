@@ -13,5 +13,7 @@
 - Preserve metric history and its refresh cadence across snapshots of the same resource and metrics target; re-render existing samples with updated limits, invalidating only when resource identity, backend, or query target changes.
 - Align history buckets to fixed five-minute boundaries and update only changed bar properties so 30-second samples do not redraw the whole cell.
 - Read immutable per-resource Metrics Server snapshots and aggregate both backends off the UI thread; keep Avalonia control and bar updates on the UI thread.
-- Azure Managed Prometheus uses Azure CLI authentication and a selected Azure Monitor workspace. Never persist access tokens; obtain fresh credentials for query requests.
+- Azure Managed Prometheus uses the default Azure credential chain (`DefaultAzureCredential`, which covers the Azure CLI, managed identity, workload identity, and developer credentials) and a selected Azure Monitor workspace. Never persist access tokens; the bearer token is attached to the transport once and refreshed only after a `401`.
+- Prometheus label values are escaped for the Prometheus string literal in the query builder, and pod-name selectors are validated against the Prometheus label-name allowlist before they are interpolated into a query.
+- The Prometheus query cache is keyed per query, not per request, so one failing query does not invalidate the other queries of a panel; only successful results are cached.
 - UI tests must use rendered controls, `TestClusterGenerator`, observable predicates, task gates, or `TestWait`; do not use `Task.Delay` or `Thread.Sleep`.

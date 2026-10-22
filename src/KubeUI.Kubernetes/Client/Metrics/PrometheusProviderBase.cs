@@ -18,34 +18,10 @@ public abstract class PrometheusProviderBase : IPrometheusProvider
             MetricCategory.Nodes => BuildNodeQuery(queryName, options),
             MetricCategory.Pvc => BuildPvcQuery(queryName, options),
             MetricCategory.Ingress => BuildIngressQuery(queryName, options),
-            MetricCategory.Cluster => BuildClusterQuery(queryName, options),
             _ => throw new InvalidOperationException($"Unsupported metrics category '{category}'."),
         };
 
     public abstract Task<ResolvedPrometheusEndpoint?> TryResolveServiceAsync(k8s.Kubernetes client, ClusterMetricsSettings settings, CancellationToken cancellationToken = default);
-
-    protected virtual string BuildClusterQuery(string queryName, IReadOnlyDictionary<string, string> options)
-    {
-        var instance = GetOption(options, "instance", ".*");
-        var mountpoints = GetOption(options, "mountpoints", "^/$");
-
-        return queryName switch
-        {
-            "cpuUsage" => $$"""sum(rate(node_cpu_seconds_total{node=~"{{instance}}",mode=~"user|system"}[{{GetRateAccuracy(options)}}]))""",
-            "cpuCapacity" => $$"""sum(kube_node_status_capacity{node=~"{{instance}}", resource="cpu"})""",
-            "cpuAllocatableCapacity" => $$"""sum(kube_node_status_allocatable{node=~"{{instance}}", resource="cpu"})""",
-            "memoryUsage" => $$"""sum(node_memory_MemTotal_bytes{node=~"{{instance}}"} - (node_memory_MemFree_bytes{node=~"{{instance}}"} + node_memory_Buffers_bytes{node=~"{{instance}}"} + node_memory_Cached_bytes{node=~"{{instance}}"}) )""",
-            "workloadMemoryUsage" => $$"""sum(container_memory_working_set_bytes{image!="",pod!="" ,node=~"{{instance}}"})""",
-            "memoryCapacity" => $$"""sum(kube_node_status_capacity{node=~"{{instance}}", resource="memory"})""",
-            "memoryAllocatableCapacity" => $$"""sum(kube_node_status_allocatable{node=~"{{instance}}", resource="memory"})""",
-            "podUsage" => $$"""sum(kube_pod_info{node=~"{{instance}}"})""",
-            "podCapacity" => $$"""sum(kube_node_status_capacity{node=~"{{instance}}", resource="pods"})""",
-            "podAllocatableCapacity" => $$"""sum(kube_node_status_allocatable{node=~"{{instance}}", resource="pods"})""",
-            "fsSize" => $$"""sum(node_filesystem_size_bytes{mountpoint=~"{{mountpoints}}"} * on (pod,namespace) group_left(node) kube_pod_info{node=~"{{instance}}"})""",
-            "fsUsage" => $$"""sum((node_filesystem_size_bytes{mountpoint=~"{{mountpoints}}"} - node_filesystem_avail_bytes{mountpoint=~"{{mountpoints}}"}) * on (pod,namespace) group_left(node) kube_pod_info{node=~"{{instance}}"})""",
-            _ => throw new InvalidOperationException($"Unsupported cluster query '{queryName}'."),
-        };
-    }
 
     protected virtual string BuildNodeQuery(string queryName, IReadOnlyDictionary<string, string> options)
     {
@@ -78,9 +54,10 @@ public abstract class PrometheusProviderBase : IPrometheusProvider
     {
         var pods = GetOption(options, "pods", ".*");
         var ns = GetRequiredOption(options, "namespace");
-        var selector = GetOption(options, "selector", "pod, namespace");
+        var selector = GetSeriesSelector(options);
         var rateAccuracy = GetRateAccuracy(options);
         var container = GetOptionalOption(options, "container");
+        var labelSelector = GetOptionalOption(options, "labelSelector");
         var escapedPods = EscapePrometheusString(pods);
         var escapedNamespace = EscapePrometheusString(ns);
         var escapedContainer = container is null ? null : EscapePrometheusString(container);
@@ -90,6 +67,18 @@ public abstract class PrometheusProviderBase : IPrometheusProvider
         var containerResourceMatcher = string.IsNullOrWhiteSpace(container)
             ? string.Empty
             : $",container=\"{escapedContainer}\"";
+
+        // When the workload is identified by a label selector, the query matches on the label through
+        // kube_pod_labels instead of on a regex alternation of every matching pod name. Enumerating the
+        // pod names produces a very large regex that Prometheus has to evaluate against every series
+        // in the cluster, which is expensive for large deployments.
+        if (!string.IsNullOrWhiteSpace(labelSelector))
+        {
+            // The label selector is already expressed as Prometheus label matchers by the caller, so it
+            // is inserted as-is; only the label names and values it carries are validated there.
+            var labelMatch = $",namespace=\"{escapedNamespace}\",{labelSelector}";
+            return BuildPodQueryByLabel(queryName, selector, rateAccuracy, containerUsageMatcher, containerResourceMatcher, labelMatch);
+        }
 
         return queryName switch
         {
@@ -108,10 +97,39 @@ public abstract class PrometheusProviderBase : IPrometheusProvider
         };
     }
 
+    /// <summary>Builds a pod query that resolves the workload through <c>kube_pod_labels</c>.</summary>
+    /// <param name="queryName">The metric to query.</param>
+    /// <param name="selector">The grouping labels for the result series.</param>
+    /// <param name="rateAccuracy">The rate window used by the query.</param>
+    /// <param name="containerUsageMatcher">The container matcher applied to usage metrics.</param>
+    /// <param name="containerResourceMatcher">The container matcher applied to resource metrics.</param>
+    /// <param name="labelMatch">The label matcher joining the container series to the pod labels.</param>
+    /// <returns>The PromQL query.</returns>
+    protected virtual string BuildPodQueryByLabel(
+        string queryName,
+        string selector,
+        string rateAccuracy,
+        string containerUsageMatcher,
+        string containerResourceMatcher,
+        string labelMatch)
+    {
+        return queryName switch
+        {
+            "cpuUsage" => $$"""sum(rate(container_cpu_usage_seconds_total{image!="",{{containerUsageMatcher}}} * on (namespace, pod) group_left() group_right(kube_pod_labels{{{labelMatch}}})[{{rateAccuracy}}])) by ({{selector}})""",
+            "memoryUsage" => $$"""sum(container_memory_working_set_bytes{image!="",{{containerUsageMatcher}}} * on (namespace, pod) group_left() group_right(kube_pod_labels{{{labelMatch}}})) by ({{selector}})""",
+            "fsUsage" => $$"""sum(container_fs_usage_bytes{image!="",{{containerUsageMatcher}}} * on (namespace, pod) group_left() group_right(kube_pod_labels{{{labelMatch}}})) by ({{selector}})""",
+            "fsWrites" => $$"""sum(rate(container_fs_writes_bytes_total{image!="",{{containerUsageMatcher}}} * on (namespace, pod) group_left() group_right(kube_pod_labels{{{labelMatch}}})[{{rateAccuracy}}])) by ({{selector}})""",
+            "fsReads" => $$"""sum(rate(container_fs_reads_bytes_total{image!="",{{containerUsageMatcher}}} * on (namespace, pod) group_left() group_right(kube_pod_labels{{{labelMatch}}})[{{rateAccuracy}}])) by ({{selector}})""",
+            "networkReceive" => $$"""sum(rate(container_network_receive_bytes_total{} * on (namespace, pod) group_left() group_right(kube_pod_labels{{{labelMatch}}})[{{rateAccuracy}}])) by ({{selector}})""",
+            "networkTransmit" => $$"""sum(rate(container_network_transmit_bytes_total{} * on (namespace, pod) group_left() group_right(kube_pod_labels{{{labelMatch}}})[{{rateAccuracy}}])) by ({{selector}})""",
+            _ => throw new InvalidOperationException($"Unsupported pod query '{queryName}'."),
+        };
+    }
+
     protected virtual string BuildPvcQuery(string queryName, IReadOnlyDictionary<string, string> options)
     {
-        var pvc = GetRequiredOption(options, "pvc");
-        var ns = GetRequiredOption(options, "namespace");
+        var pvc = EscapePrometheusString(GetRequiredOption(options, "pvc"));
+        var ns = EscapePrometheusString(GetRequiredOption(options, "namespace"));
 
         return queryName switch
         {
@@ -123,8 +141,8 @@ public abstract class PrometheusProviderBase : IPrometheusProvider
 
     protected virtual string BuildIngressQuery(string queryName, IReadOnlyDictionary<string, string> options)
     {
-        var ingress = GetRequiredOption(options, "ingress");
-        var ns = GetRequiredOption(options, "namespace");
+        var ingress = EscapePrometheusString(GetRequiredOption(options, "ingress"));
+        var ns = EscapePrometheusString(GetRequiredOption(options, "namespace"));
         var rateAccuracy = GetRateAccuracy(options);
 
         return queryName switch
@@ -183,6 +201,50 @@ public abstract class PrometheusProviderBase : IPrometheusProvider
     }
 
     protected static string GetRateAccuracy(IReadOnlyDictionary<string, string> options) => GetOption(options, "rateAccuracy", "1m");
+
+    /// <summary>
+    /// Reads the <c>selector</c> option and validates that it only contains Prometheus label names.
+    /// </summary>
+    /// <remarks>
+    /// The selector is spliced verbatim into the <c>by (...)</c> clause of the generated PromQL, so it must
+    /// never be able to carry arbitrary PromQL. Only <c>[a-zA-Z_][a-zA-Z0-9_]*</c> label names separated by
+    /// commas are accepted.
+    /// </remarks>
+    /// <param name="options">The metric query options.</param>
+    /// <returns>The validated comma-separated label names.</returns>
+    /// <exception cref="InvalidOperationException">The selector contains an invalid label name.</exception>
+    protected static string GetSeriesSelector(IReadOnlyDictionary<string, string> options)
+    {
+        var selector = GetOption(options, "selector", "pod, namespace");
+        var names = selector.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        foreach (var name in names)
+        {
+            if (!IsValidPrometheusLabelName(name))
+            {
+                throw new InvalidOperationException($"Metrics option 'selector' contains an invalid label name '{name}'.");
+            }
+        }
+
+        return names.Length == 0 ? "pod, namespace" : string.Join(", ", names);
+    }
+
+    private static bool IsValidPrometheusLabelName(string name)
+    {
+        if (name.Length == 0 || (!char.IsAsciiLetter(name[0]) && name[0] != '_'))
+        {
+            return false;
+        }
+
+        foreach (var character in name.AsSpan(1))
+        {
+            if (!char.IsAsciiLetterOrDigit(character) && character != '_')
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
 
     protected static string GetRequiredOption(IReadOnlyDictionary<string, string> options, string key)
     {

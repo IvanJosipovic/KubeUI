@@ -34,15 +34,19 @@ internal static class MetricsHistoryBuckets
         double? limit,
         double chartHeight)
     {
+        // The window is anchored to fixed five-minute boundaries, and both the start and the exclusive
+        // end of the window use the same aligned boundary so the reported bucket range always matches
+        // the samples that were considered.
         var utcEndTicks = end.ToUniversalTime().Ticks;
         var alignedEndTicks = ((utcEndTicks + BucketSize.Ticks - 1) / BucketSize.Ticks) * BucketSize.Ticks;
-        var start = new DateTimeOffset(alignedEndTicks, TimeSpan.Zero) - History;
+        var windowEnd = new DateTimeOffset(alignedEndTicks, TimeSpan.Zero);
+        var start = windowEnd - History;
         var values = new double[BucketCount];
         var hasValues = new bool[BucketCount];
 
         foreach (var point in points)
         {
-            if (point.Timestamp < start || point.Timestamp >= end)
+            if (point.Timestamp < start || point.Timestamp >= windowEnd)
             {
                 continue;
             }

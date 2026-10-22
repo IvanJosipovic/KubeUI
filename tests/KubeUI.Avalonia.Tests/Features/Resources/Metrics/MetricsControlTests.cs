@@ -968,7 +968,8 @@ public sealed class MetricsControlTests
                 NullLogger<MetricsService>.Instance,
                 settings,
                 [new ExternalPrometheusProvider()],
-                queryClient ?? new FakePrometheusQueryClient());
+                queryClient ?? new FakePrometheusQueryClient(),
+                new ImmediateThreadDispatcher());
             var cluster = new Cluster(
                 NullLogger<Cluster>.Instance,
                 services.GetRequiredService<ILoggerFactory>(),
@@ -1037,7 +1038,8 @@ public sealed class MetricsControlTests
                 NullLogger<MetricsService>.Instance,
                 settings,
                 [new ExternalPrometheusProvider()],
-                new FakePrometheusQueryClient());
+                new FakePrometheusQueryClient(),
+                new ImmediateThreadDispatcher());
             var cluster = new Cluster(
                 NullLogger<Cluster>.Instance,
                 services.GetRequiredService<ILoggerFactory>(),

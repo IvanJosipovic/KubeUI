@@ -261,7 +261,7 @@ internal static class MetricsControlMetricsServerBackend
         string containerName)
     {
         var samples = new List<MetricsServerSamplePoint>();
-        foreach (var metric in cluster.Runtime.PodMetrics)
+        foreach (var metric in cluster.Runtime.GetAllPodMetricsSnapshot())
         {
             if (!string.Equals(metric.Name(), pod.Name(), StringComparison.Ordinal)
                 || !string.Equals(metric.Namespace(), pod.Namespace(), StringComparison.Ordinal)
@@ -278,8 +278,8 @@ internal static class MetricsControlMetricsServerBackend
 
             samples.Add(new MetricsServerSamplePoint(
                 metric.Timestamp.Value.ToLocalTime(),
-                (double)containerMetric.Usage["cpu"].ToDecimal(),
-                containerMetric.Usage["memory"].ToInt64()));
+                GetContainerCpu(containerMetric.Usage),
+                GetContainerMemory(containerMetric.Usage)));
         }
 
         SortSamples(samples);
@@ -338,7 +338,7 @@ internal static class MetricsControlMetricsServerBackend
         }
 
         Dictionary<DateTime, (double Cpu, double Memory)> aggregates = [];
-        foreach (var metric in cluster.Runtime.PodMetrics)
+        foreach (var metric in cluster.Runtime.GetAllPodMetricsSnapshot())
         {
             if (!metric.Timestamp.HasValue
                 || !selectedPods.Contains((metric.Namespace(), metric.Name())))
@@ -352,8 +352,8 @@ internal static class MetricsControlMetricsServerBackend
             {
                 foreach (var containerMetric in metric.Containers)
                 {
-                    aggregate.Cpu += (double)containerMetric.Usage["cpu"].ToDecimal();
-                    aggregate.Memory += containerMetric.Usage["memory"].ToInt64();
+                    aggregate.Cpu += GetContainerCpu(containerMetric.Usage);
+                    aggregate.Memory += GetContainerMemory(containerMetric.Usage);
                 }
             }
 
@@ -373,7 +373,7 @@ internal static class MetricsControlMetricsServerBackend
     private static List<MetricsServerSamplePoint> CreateNodeMetricsServerSamples(ClusterWorkspace cluster, V1Node node)
     {
         var samples = new List<MetricsServerSamplePoint>();
-        foreach (var metric in cluster.Runtime.NodeMetrics)
+        foreach (var metric in cluster.Runtime.GetAllNodeMetricsSnapshot())
         {
             if (!string.Equals(metric.Name(), node.Name(), StringComparison.Ordinal)
                 || !metric.Timestamp.HasValue)
@@ -383,11 +383,31 @@ internal static class MetricsControlMetricsServerBackend
 
             samples.Add(new MetricsServerSamplePoint(
                 metric.Timestamp.Value.ToLocalTime(),
-                (double)metric.Usage["cpu"].ToDecimal(),
-                metric.Usage["memory"].ToInt64()));
+                GetContainerCpu(metric.Usage),
+                GetContainerMemory(metric.Usage)));
         }
 
         return samples;
+    }
+
+    /// <summary>Reads the reported CPU usage, tolerating metrics that omit the resource.</summary>
+    /// <param name="usage">The usage map reported by the Metrics Server.</param>
+    /// <returns>The CPU usage in cores, or zero when the resource is not reported.</returns>
+    private static double GetContainerCpu(IDictionary<string, ResourceQuantity>? usage)
+    {
+        return usage?.TryGetValue("cpu", out var quantity) == true
+            ? (double)quantity.ToDecimal()
+            : 0;
+    }
+
+    /// <summary>Reads the reported memory usage, tolerating metrics that omit the resource.</summary>
+    /// <param name="usage">The usage map reported by the Metrics Server.</param>
+    /// <returns>The memory usage in bytes, or zero when the resource is not reported.</returns>
+    private static long GetContainerMemory(IDictionary<string, ResourceQuantity>? usage)
+    {
+        return usage?.TryGetValue("memory", out var quantity) == true
+            ? quantity.ToInt64()
+            : 0;
     }
 
     private static void SortSamples(List<MetricsServerSamplePoint> samples)

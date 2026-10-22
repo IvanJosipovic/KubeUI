@@ -20,15 +20,19 @@ public sealed class AzureMonitorWorkspaceService : IAzureMonitorWorkspaceService
     private readonly SemaphoreSlim _prometheusTokenLock = new(1, 1);
     private AccessToken? _prometheusAccessToken;
 
-    /// <summary>Creates the service using the Azure CLI credential.</summary>
+    /// <summary>Creates the service using the default Azure credential chain.</summary>
+    /// <remarks>
+    /// <see cref="DefaultAzureCredential"/> covers the Azure CLI, managed identity, workload identity
+    /// and developer credentials, so the feature works outside a developer workstation.
+    /// </remarks>
     public AzureMonitorWorkspaceService()
-        : this(new AzureCliCredential(), NullLogger<AzureMonitorWorkspaceService>.Instance)
+        : this(new DefaultAzureCredential(), NullLogger<AzureMonitorWorkspaceService>.Instance)
     {
     }
 
-    /// <summary>Creates the service using the Azure CLI credential and application logger.</summary>
+    /// <summary>Creates the service using the default Azure credential chain and application logger.</summary>
     public AzureMonitorWorkspaceService(ILogger<AzureMonitorWorkspaceService> logger)
-        : this(new AzureCliCredential(), logger)
+        : this(new DefaultAzureCredential(), logger)
     {
     }
 
@@ -87,9 +91,12 @@ public sealed class AzureMonitorWorkspaceService : IAzureMonitorWorkspaceService
 
         ArmClient armClient = new(_credential);
         var subscription = armClient.GetSubscriptionResource(new ResourceIdentifier($"/subscriptions/{subscriptionId}"));
+
         List<AzureMonitorWorkspaceInfo> workspaces = [];
         await foreach (var resourceGroup in subscription.GetResourceGroups().GetAllAsync(cancellationToken: cancellationToken).ConfigureAwait(false))
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             await foreach (var workspace in resourceGroup.GetMonitorWorkspaceResources().GetAllAsync(cancellationToken).ConfigureAwait(false))
             {
                 var endpoint = workspace.Data.Metrics?.PrometheusQueryEndpoint;
@@ -157,13 +164,27 @@ public sealed class AzureMonitorWorkspaceService : IAzureMonitorWorkspaceService
         }
     }
 
+    /// <inheritdoc />
+    public async ValueTask RefreshPrometheusAccessTokenAsync(CancellationToken cancellationToken = default)
+    {
+        await _prometheusTokenLock.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            _prometheusAccessToken = null;
+        }
+        finally
+        {
+            _prometheusTokenLock.Release();
+        }
+    }
+
     /// <summary>Releases resources used by the service.</summary>
     public void Dispose()
     {
         _prometheusTokenLock.Dispose();
     }
 
-    private static string? ReadClaim(string jwt, string claimName)
+    private string? ReadClaim(string jwt, string claimName)
     {
         var parts = jwt.Split('.');
         if (parts.Length < 2)
@@ -178,12 +199,14 @@ public sealed class AzureMonitorWorkspaceService : IAzureMonitorWorkspaceService
             using var document = JsonDocument.Parse(Convert.FromBase64String(payload));
             return document.RootElement.TryGetProperty(claimName, out var claim) ? claim.GetString() : null;
         }
-        catch (FormatException)
+        catch (FormatException ex)
         {
+            _logger.LogDebug(ex, "The Azure access token could not be decoded while reading the '{ClaimName}' claim.", claimName);
             return null;
         }
-        catch (JsonException)
+        catch (JsonException ex)
         {
+            _logger.LogDebug(ex, "The Azure access token payload could not be parsed while reading the '{ClaimName}' claim.", claimName);
             return null;
         }
     }

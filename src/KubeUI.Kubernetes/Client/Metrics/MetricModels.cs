@@ -2,7 +2,6 @@ namespace KubeUI.Kubernetes;
 
 public enum MetricCategory
 {
-    Cluster,
     Nodes,
     Pods,
     WorkloadPods,
@@ -40,9 +39,19 @@ public sealed class MetricResultSet
     /// <summary>Gets whether one or more metric queries failed while producing this result.</summary>
     public bool HadRequestFailures { get; init; }
 
+    /// <summary>Gets whether the requested backend is not able to serve Prometheus queries.</summary>
+    /// <remarks>
+    /// This distinguishes "the active backend cannot answer Prometheus queries" from "the query
+    /// legitimately returned no data", so the UI can report the correct state.
+    /// </remarks>
+    public bool BackendUnavailable { get; init; }
+
     public bool IsEmpty => Metrics.Values.All(static series => series.Count == 0 || series.All(static item => item.Points.Count == 0));
 
     public static MetricResultSet Empty { get; } = new();
+
+    /// <summary>Gets a result that indicates the active backend cannot serve Prometheus queries.</summary>
+    public static MetricResultSet BackendUnavailableResult { get; } = new() { BackendUnavailable = true, HadRequestFailures = true };
 }
 
 public sealed class MetricQueryDefinition

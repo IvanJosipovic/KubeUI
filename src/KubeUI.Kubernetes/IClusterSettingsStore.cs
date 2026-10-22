@@ -9,6 +9,4 @@ public interface IClusterSettingsStore
     IReadOnlyCollection<string> GetClusterNamespaces(IClusterRuntime cluster);
 
     ClusterMetricsSettings GetClusterMetricsSettings(IClusterRuntime cluster);
-
-    void Persist();
 }

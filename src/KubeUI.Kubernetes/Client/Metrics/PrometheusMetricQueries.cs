@@ -26,8 +26,8 @@ internal sealed class PrometheusMetricQueries(
     .AddTimeout(new Polly.Timeout.TimeoutStrategyOptions { Timeout = s_requestTimeout })
     .Build();
     private readonly Lock _sync = new();
-    private readonly Dictionary<string, CachedResult> _cache = new(StringComparer.Ordinal);
-    private readonly Dictionary<string, Task<MetricResultSet>> _inflight = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, CachedSeries> _queryCache = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, InflightRequest> _inflight = new(StringComparer.Ordinal);
 
     public async Task<MetricResultSet> RequestAsync(
         Cluster cluster,
@@ -38,46 +38,23 @@ internal sealed class PrometheusMetricQueries(
         CancellationToken cancellationToken)
     {
         var (start, end, stepSeconds) = ResolveTimeRange(request);
-        var key = CreateCacheKey(request, start, end, stepSeconds);
-        Task<MetricResultSet>? task;
-        var ownsRequest = false;
-        lock (_sync)
-        {
-            if (_cache.TryGetValue(key, out var cached) && timeProvider.GetUtcNow() - cached.Timestamp < s_cacheDuration)
-                return cached.Result;
-            if (!_inflight.TryGetValue(key, out task))
-            {
-                task = LoadAsync(cluster, endpoint, provider, request, start, end, stepSeconds, lifecycleToken, cancellationToken);
-                _inflight[key] = task;
-                ownsRequest = true;
-            }
-        }
 
-        if (!ownsRequest)
-            return await task!.ConfigureAwait(false);
+        using var linked = CancellationTokenSource.CreateLinkedTokenSource(lifecycleToken, cancellationToken);
+        var loaded = await Task.WhenAll(request.Queries.Select(query =>
+            LoadSeriesAsync(cluster, endpoint, provider, query, request.Category, start, end, stepSeconds, request.Frames, linked.Token))).ConfigureAwait(false);
 
-        try
+        return new MetricResultSet
         {
-            var result = await task.ConfigureAwait(false);
-            if (!result.HadRequestFailures)
-            {
-                lock (_sync)
-                    _cache[key] = new CachedResult(timeProvider.GetUtcNow(), result);
-            }
-            return result;
-        }
-        finally
-        {
-            lock (_sync)
-                _inflight.Remove(key);
-        }
+            Metrics = loaded.ToDictionary(static item => item.Name, static item => item.Series, StringComparer.Ordinal),
+            HadRequestFailures = loaded.Any(static item => item.Failed),
+        };
     }
 
     public async Task StopAsync()
     {
         Task[] requests;
         lock (_sync)
-            requests = _inflight.Values.Distinct().ToArray();
+            requests = _inflight.Values.Select(static entry => entry.Task).Distinct().ToArray();
         if (requests.Length > 0)
         {
             try
@@ -88,23 +65,68 @@ internal sealed class PrometheusMetricQueries(
         await queryClient.ResetAsync().ConfigureAwait(false);
         lock (_sync)
         {
-            _cache.Clear();
+            _queryCache.Clear();
             _inflight.Clear();
         }
     }
 
-    private async Task<MetricResultSet> LoadAsync(Cluster cluster, ResolvedPrometheusEndpoint endpoint, IPrometheusProvider provider, MetricRequest request, DateTimeOffset start, DateTimeOffset end, int stepSeconds, CancellationToken lifecycleToken, CancellationToken cancellationToken)
+    /// <summary>
+    /// Loads a single metric series, coalescing concurrent requests for the same query and caching
+    /// successful results.
+    /// </summary>
+    /// <remarks>
+    /// Caching is performed per query rather than per request so that a single failing query does not
+    /// make every other query in the same panel uncacheable, which would multiply request volume
+    /// against the cluster's Prometheus on each refresh.
+    /// </remarks>
+    private async Task<(string Name, IReadOnlyList<MetricSeries> Series, bool Failed)> LoadSeriesAsync(Cluster cluster, ResolvedPrometheusEndpoint endpoint, IPrometheusProvider provider, MetricQueryDefinition definition, MetricCategory category, DateTimeOffset start, DateTimeOffset end, int stepSeconds, int frames, CancellationToken cancellationToken)
     {
-        using var linked = CancellationTokenSource.CreateLinkedTokenSource(lifecycleToken, cancellationToken);
-        var loaded = await Task.WhenAll(request.Queries.Select(query => LoadSeriesAsync(cluster, endpoint, provider, query, request.Category, start, end, stepSeconds, request.Frames, linked.Token))).ConfigureAwait(false);
-        return new MetricResultSet
+        var key = CreateQueryCacheKey(definition, category, start, end, stepSeconds, frames);
+
+        InflightRequest inflight;
+        lock (_sync)
         {
-            Metrics = loaded.ToDictionary(static item => item.Name, static item => item.Series, StringComparer.Ordinal),
-            HadRequestFailures = loaded.Any(static item => item.Failed),
-        };
+            if (_queryCache.TryGetValue(key, out var cached) && timeProvider.GetUtcNow() - cached.Timestamp < s_cacheDuration)
+            {
+                return (definition.Name, cached.Series, false);
+            }
+
+            if (!_inflight.TryGetValue(key, out inflight!))
+            {
+                inflight = new InflightRequest(QuerySeriesAsync(cluster, endpoint, provider, definition, category, start, end, stepSeconds, frames, cancellationToken));
+                _inflight[key] = inflight;
+            }
+        }
+
+        SeriesLoadResult loaded;
+        try
+        {
+            loaded = await inflight.Task.ConfigureAwait(false);
+        }
+        finally
+        {
+            // Only the owner of the in-flight entry may remove it, and only while it is still the
+            // current entry. Removing unconditionally would let a later request for the same key
+            // attach to an already-completed task and observe a stale result.
+            lock (_sync)
+            {
+                if (_inflight.TryGetValue(key, out var current) && ReferenceEquals(current, inflight))
+                {
+                    _inflight.Remove(key);
+                }
+            }
+        }
+
+        if (!loaded.Failed)
+        {
+            lock (_sync)
+                _queryCache[key] = new CachedSeries(timeProvider.GetUtcNow(), loaded.Series);
+        }
+
+        return (definition.Name, loaded.Series, loaded.Failed);
     }
 
-    private async Task<(string Name, IReadOnlyList<MetricSeries> Series, bool Failed)> LoadSeriesAsync(Cluster cluster, ResolvedPrometheusEndpoint endpoint, IPrometheusProvider provider, MetricQueryDefinition definition, MetricCategory category, DateTimeOffset start, DateTimeOffset end, int stepSeconds, int frames, CancellationToken cancellationToken)
+    private async Task<SeriesLoadResult> QuerySeriesAsync(Cluster cluster, ResolvedPrometheusEndpoint endpoint, IPrometheusProvider provider, MetricQueryDefinition definition, MetricCategory category, DateTimeOffset start, DateTimeOffset end, int stepSeconds, int frames, CancellationToken cancellationToken)
     {
         var query = provider.BuildQuery(category, definition.Name, definition.Options);
         logger.LogDebug("Requesting Prometheus metric {Metric} for cluster {Cluster} over {Start:u} to {End:u} at {StepSeconds}s step.", definition.Name, cluster.Name, start, end, stepSeconds);
@@ -113,12 +135,12 @@ internal sealed class PrometheusMetricQueries(
         {
             if (response != null)
                 logger.LogWarning("Prometheus returned status {Status} for metric {Metric} on cluster {Cluster}. Error type: {ErrorType}. Error: {Error}", response.Status, definition.Name, cluster.Name, response.ErrorType, response.Error);
-            return (definition.Name, [], true);
+            return new SeriesLoadResult([], true);
         }
         var series = NormalizeResultSet(definition.Name, response, frames, stepSeconds);
         if (series.Count == 0)
             logger.LogDebug("Prometheus returned no series for metric {Metric} on cluster {Cluster}.", definition.Name, cluster.Name);
-        return (definition.Name, series, false);
+        return new SeriesLoadResult(series, false);
     }
 
     private async Task<PrometheusClientQueryRangeResponse?> ExecuteAsync(Cluster cluster, ResolvedPrometheusEndpoint endpoint, IPrometheusProvider provider, string query, DateTimeOffset start, DateTimeOffset end, int stepSeconds, CancellationToken cancellationToken)
@@ -155,11 +177,12 @@ internal sealed class PrometheusMetricQueries(
         return (start, end, step);
     }
 
-    private static string CreateCacheKey(MetricRequest request, DateTimeOffset start, DateTimeOffset end, int step)
+    private static string CreateQueryCacheKey(MetricQueryDefinition definition, MetricCategory category, DateTimeOffset start, DateTimeOffset end, int step, int frames)
     {
-        var queries = request.Queries.OrderBy(static query => query.Name, StringComparer.Ordinal)
-            .Select(static query => $"{query.Name}:{string.Join(",", query.Options.OrderBy(static option => option.Key, StringComparer.Ordinal).Select(static option => $"{option.Key}={option.Value}"))}");
-        return $"{request.Category}|{start.ToUnixTimeSeconds()}|{end.ToUnixTimeSeconds()}|{step}|{request.Frames}|{string.Join("|", queries)}";
+        var options = string.Join(",", definition.Options
+            .OrderBy(static option => option.Key, StringComparer.Ordinal)
+            .Select(static option => $"{option.Key}={option.Value}"));
+        return $"{category}|{definition.Name}|{options}|{start.ToUnixTimeSeconds()}|{end.ToUnixTimeSeconds()}|{step}|{frames}";
     }
 
     private static IReadOnlyList<MetricSeries> NormalizeResultSet(string name, PrometheusClientQueryRangeResponse response, int frames, int step)
@@ -196,5 +219,13 @@ internal sealed class PrometheusMetricQueries(
         return normalized;
     }
 
-    private sealed record CachedResult(DateTimeOffset Timestamp, MetricResultSet Result);
+    private sealed record CachedSeries(DateTimeOffset Timestamp, IReadOnlyList<MetricSeries> Series);
+
+    private sealed record SeriesLoadResult(IReadOnlyList<MetricSeries> Series, bool Failed);
+
+    /// <summary>Tracks a single in-flight metric load so only its owner can remove it from the map.</summary>
+    private sealed class InflightRequest(Task<SeriesLoadResult> task)
+    {
+        public Task<SeriesLoadResult> Task { get; } = task;
+    }
 }

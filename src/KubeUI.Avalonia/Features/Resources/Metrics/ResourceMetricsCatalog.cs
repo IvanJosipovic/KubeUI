@@ -197,21 +197,31 @@ internal static class ResourceMetricsCatalog
         }
 
         var matchingPods = await GetMatchingPodsAsync(cluster, ns, selector).ConfigureAwait(false);
-        var pods = matchingPods
-            .Select(pod => Regex.Escape(pod.Name()))
-            .ToArray();
-
-        if (pods.Length == 0)
+        if (matchingPods.Count == 0)
         {
             return new ResourceMetricsDescriptor([], string.Format(Assets.Resources.Metrics_NoPodsForWorkload!, workloadName));
         }
 
+        // The workload is identified by its label selector rather than by a regex alternation of every
+        // matching pod name. A large deployment would otherwise produce a very large regex that
+        // Prometheus has to evaluate against every series in the cluster on each refresh.
+        var labelSelector = BuildPrometheusLabelSelector(selector);
         var options = new Dictionary<string, string>(StringComparer.Ordinal)
         {
             ["namespace"] = ns,
-            ["pods"] = string.Join("|", pods),
+            ["pods"] = ".*",
             ["selector"] = seriesSelector,
         };
+
+        if (!string.IsNullOrWhiteSpace(labelSelector))
+        {
+            options["labelSelector"] = labelSelector;
+        }
+        else
+        {
+            // The selector cannot be expressed as a label match, so fall back to matching pod names.
+            options["pods"] = string.Join("|", matchingPods.Select(pod => Regex.Escape(pod.Name())));
+        }
 
         return new ResourceMetricsDescriptor(
             [
@@ -233,6 +243,57 @@ internal static class ResourceMetricsCatalog
                 ]),
             ],
             string.Format(Assets.Resources.Metrics_NoPrometheusWorkload!, workloadName));
+    }
+
+    /// <summary>Builds a Prometheus label matcher for a Kubernetes label selector.</summary>
+    /// <remarks>
+    /// The <c>kube_pod_labels</c> metric exposes every Kubernetes label as <c>label_&lt;key&gt;</c>,
+    /// so a Kubernetes selector of <c>app=myapp</c> becomes the Prometheus matcher
+    /// <c>label_app="myapp"</c>. Only a selector that requires exact label values can be expressed
+    /// this way; set-based expressions are reported as unsupported and the caller falls back to
+    /// matching pod names.
+    /// </remarks>
+    /// <param name="selector">The Kubernetes label selector.</param>
+    /// <returns>The label matcher, or an empty string when the selector cannot be expressed.</returns>
+    internal static string BuildPrometheusLabelSelector(V1LabelSelector? selector)
+    {
+        if (selector?.MatchLabels is not { Count: > 0 } matchLabels)
+        {
+            return string.Empty;
+        }
+
+        if (selector.MatchExpressions is { Count: > 0 })
+        {
+            return string.Empty;
+        }
+
+        foreach (var pair in matchLabels)
+        {
+            if (!IsValidPrometheusLabelName(pair.Key))
+            {
+                return string.Empty;
+            }
+        }
+
+        return string.Join(",", matchLabels.Select(static pair => $"label_{pair.Key}=\"{pair.Value}\""));
+    }
+
+    private static bool IsValidPrometheusLabelName(string name)
+    {
+        if (name.Length == 0 || (!char.IsAsciiLetter(name[0]) && name[0] != '_'))
+        {
+            return false;
+        }
+
+        foreach (var character in name.AsSpan(1))
+        {
+            if (!char.IsAsciiLetterOrDigit(character) && character != '_')
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     internal static async Task<IReadOnlyList<V1Pod>> GetMatchingPodsAsync(

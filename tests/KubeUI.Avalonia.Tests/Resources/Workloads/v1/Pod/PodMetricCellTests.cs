@@ -155,7 +155,11 @@ public sealed class PodMetricCellTests
 
         window.Show();
         cell.Initialize(fixture.Workspace);
-        Dispatcher.UIThread.RunJobs();
+
+        // The history is aggregated on a background task, so the bars only appear once that task
+        // completed and the result was applied on the UI thread. Draining the dispatcher alone is
+        // not a data-readiness guarantee.
+        await WaitForMetricBarsAsync(cell);
 
         MetricBars(cell).ShouldNotBeEmpty();
         MetricBars(cell).Any(bar => IsThemeBrush(bar.Background, "PodStatusWarningBrush")).ShouldBeTrue();
@@ -286,7 +290,10 @@ public sealed class PodMetricCellTests
 
         window.Show();
         cell.Initialize(fixture.Workspace);
-        Dispatcher.UIThread.RunJobs();
+
+        // The history is aggregated on a background task, so the bars only appear once that task
+        // completed and the result was applied on the UI thread.
+        await WaitForMetricBarsAsync(cell);
 
         var panel = cell.GetVisualDescendants().OfType<Canvas>().Single();
         var bars = MetricBars(cell);
@@ -1631,6 +1638,7 @@ public sealed class PodMetricCellTests
                 settings,
                 [new ExternalPrometheusProvider()],
                 queryClient,
+                new ImmediateThreadDispatcher(),
                 timeProvider);
             var cluster = new Cluster(
                 NullLogger<Cluster>.Instance,

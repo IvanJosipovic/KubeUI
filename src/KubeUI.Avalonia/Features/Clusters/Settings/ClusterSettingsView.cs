@@ -17,6 +17,14 @@ public sealed class ClusterSettingsView : ViewBase<ClusterSettingsViewModel>
         }
     }
 
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        // The view model subscribes to the cluster runtime and to the persisted settings. Releasing it
+        // here prevents the view model from outliving the settings document.
+        (DataContext as IDisposable)?.Dispose();
+        base.OnDetachedFromVisualTree(e);
+    }
+
     protected override object Build(ClusterSettingsViewModel vm)
     {
         ArgumentNullException.ThrowIfNull(vm);

@@ -415,7 +415,8 @@ public sealed class MetricsServiceTests
                 new ExternalPrometheusProvider(),
                 new AzureMonitorPrometheusProvider(),
             ],
-            queryClient);
+            queryClient,
+            new ImmediateThreadDispatcher());
     }
 
     private static Cluster CreateCluster(string name, MetricsService metricsService, IClusterSettingsStore settings, IKubernetes? client = null)

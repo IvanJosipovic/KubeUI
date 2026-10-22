@@ -1,3 +1,4 @@
+using System.Text;
 using KubeUI.Avalonia.Features.Resources.Metrics.Controls;
 using KubeUI.Kubernetes;
 
@@ -7,9 +8,9 @@ namespace KubeUI.Avalonia.Resources.Workloads.v1.Pod;
 public sealed class PodPrometheusHistoryIndex
 {
     private const int MaximumIndexedResultSets = 4;
-    private readonly object _sync = new();
-    private readonly Dictionary<MetricResultSet, Lazy<Task<PodMetricHistoryIndexData>>> _indexes = new();
-    private readonly Queue<MetricResultSet> _indexOrder = new();
+    private readonly Lock _sync = new();
+    private readonly Dictionary<string, Lazy<Task<PodMetricHistoryIndexData>>> _indexes = new(StringComparer.Ordinal);
+    private readonly Queue<string> _indexOrder = new();
     private int _indexBuildCount;
 
     /// <summary>Creates a bounded cache for aggregated Pod Prometheus histories.</summary>
@@ -27,26 +28,27 @@ public sealed class PodPrometheusHistoryIndex
     {
         ArgumentNullException.ThrowIfNull(result);
 
-        Task<PodMetricHistoryIndexData> indexTask;
+        // The cache is keyed by the content of the result rather than by its identity, so an
+        // equivalent result produced by a different request still reuses the existing index.
+        var cacheKey = CreateCacheKey(result);
+        Lazy<Task<PodMetricHistoryIndexData>> lazyIndex;
         lock (_sync)
         {
-            if (!_indexes.TryGetValue(result, out var lazyIndex))
+            if (!_indexes.TryGetValue(cacheKey, out lazyIndex!))
             {
                 lazyIndex = new Lazy<Task<PodMetricHistoryIndexData>>(
                     () => Task.Run(() => BuildIndex(result)),
                     LazyThreadSafetyMode.ExecutionAndPublication);
-                _indexes.Add(result, lazyIndex);
-                _indexOrder.Enqueue(result);
+                _indexes.Add(cacheKey, lazyIndex);
+                _indexOrder.Enqueue(cacheKey);
                 if (_indexOrder.Count > MaximumIndexedResultSets)
                 {
                     _indexes.Remove(_indexOrder.Dequeue());
                 }
             }
-
-            indexTask = lazyIndex.Value;
         }
 
-        var index = await indexTask.WaitAsync(cancellationToken).ConfigureAwait(false);
+        var index = await lazyIndex.Value.WaitAsync(cancellationToken).ConfigureAwait(false);
         var key = new PodMetricHistoryKey(namespaceName ?? string.Empty, podName ?? string.Empty);
         var podHistory = index.ByPod.TryGetValue(key, out var history)
             ? history
@@ -58,6 +60,35 @@ public sealed class PodPrometheusHistoryIndex
         }
 
         return Merge(index.UnlabeledHistory, podHistory);
+    }
+
+    private static string CreateCacheKey(MetricResultSet result)
+    {
+        var builder = new StringBuilder();
+        foreach (var metric in result.Metrics.OrderBy(static metric => metric.Key, StringComparer.Ordinal))
+        {
+            builder.Append(metric.Key).Append('|');
+            foreach (var series in metric.Value.OrderBy(static series => series.Name, StringComparer.Ordinal))
+            {
+                builder.Append(series.Name).Append(':');
+                foreach (var label in series.Labels.OrderBy(static label => label.Key, StringComparer.Ordinal))
+                {
+                    builder.Append(label.Key).Append('=').Append(label.Value).Append(',');
+                }
+
+                // The point values are part of the index, so they have to be part of the key. Without
+                // them a result with the same series and labels but different samples would reuse a
+                // stale index and report the previous values.
+                foreach (var point in series.Points)
+                {
+                    builder.Append(point.Timestamp.ToUnixTimeMilliseconds()).Append('=').Append(point.Value).Append(',');
+                }
+
+                builder.Append(';');
+            }
+        }
+
+        return builder.ToString();
     }
 
     private PodMetricHistoryIndexData BuildIndex(MetricResultSet result)

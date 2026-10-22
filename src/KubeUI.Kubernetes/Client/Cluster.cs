@@ -89,6 +89,14 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
     public ImmutableArray<NodeMetrics> GetNodeMetricsSnapshot(string nodeName)
         => _metricsService.GetNodeMetricsSnapshot(nodeName);
 
+    /// <inheritdoc />
+    public ImmutableArray<PodMetrics> GetAllPodMetricsSnapshot()
+        => _metricsService.GetAllPodMetricsSnapshot();
+
+    /// <inheritdoc />
+    public ImmutableArray<NodeMetrics> GetAllNodeMetricsSnapshot()
+        => _metricsService.GetAllNodeMetricsSnapshot();
+
     public bool IsMetricsAvailable => _metricsService.IsMetricsAvailable;
 
     public ActiveMetricsBackend ActiveMetricsBackend => _metricsService.ActiveMetricsBackend;
@@ -152,6 +160,19 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
         }
         _openApiSchemaLoader.Dispose();
         _connectionLimiter.Dispose();
+        if (_metricsService is MetricsService metricsService)
+        {
+            metricsService.ReleaseResources();
+        }
+    }
+
+    /// <summary>Releases the resources owned by the metrics service of this cluster.</summary>
+    internal void ReleaseMetricsResources()
+    {
+        if (_metricsService is MetricsService metricsService)
+        {
+            metricsService.ReleaseResources();
+        }
     }
 
     private Activity? StartClusterActivity(string activityName, ActivityKind activityKind = ActivityKind.Internal)

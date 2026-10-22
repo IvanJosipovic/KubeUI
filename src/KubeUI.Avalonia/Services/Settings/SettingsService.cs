@@ -107,11 +107,6 @@ public class SettingsService : ObservableObject, ISettingsService, IClusterSetti
         return Settings.GetClusterSettings(cluster).MetricsSettings;
     }
 
-    public void Persist()
-    {
-        SaveSettings();
-    }
-
     public virtual void SaveSettings()
     {
         _ = TrySaveSettings();

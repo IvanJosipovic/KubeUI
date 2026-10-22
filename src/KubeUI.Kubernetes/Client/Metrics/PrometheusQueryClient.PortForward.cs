@@ -68,8 +68,8 @@ public sealed partial class PrometheusQueryClient
     {
         var scheme = endpoint.UseHttps ? Uri.UriSchemeHttps : Uri.UriSchemeHttp;
         var host = $"{endpoint.ServiceName}.{endpoint.Namespace}.svc";
-        var pathPrefix = endpoint.PathPrefix.TrimEnd('/');
-        var baseAddress = new UriBuilder(scheme, host, localPort, pathPrefix + "/").Uri;
+        var pathPrefix = string.IsNullOrEmpty(endpoint.PathPrefix) ? "/" : endpoint.PathPrefix.TrimEnd('/') + "/";
+        var baseAddress = new UriBuilder(scheme, host, localPort, pathPrefix).Uri;
 
 #pragma warning disable CA2000 // HttpClient owns the handler and disposes it when the client is disposed.
         HttpClient client = handler is null

@@ -65,6 +65,7 @@ public sealed partial class MetricsControl : UserControl, IInitializeCluster, IN
     private MetricTabViewModel? _selectedTab;
     private MetricPanelViewModel? _selectedPanel;
 
+    /// <summary>Notifies bindings that a plain CLR property on this control has changed.</summary>
     public event PropertyChangedEventHandler? PropertyChanged;
 
     public ObservableCollection<MetricTabViewModel> Tabs { get; } = [];
@@ -278,6 +279,13 @@ public sealed partial class MetricsControl : UserControl, IInitializeCluster, IN
         OnPropertyChanged(propertyName);
     }
 
+    /// <summary>Raises the change notification for a plain CLR property on this control.</summary>
+    /// <remarks>
+    /// The control exposes plain CLR properties alongside its Avalonia properties, so it publishes
+    /// its own change notifications rather than relying on the base <see cref="Avalonia.AvaloniaObject"/>
+    /// implementation, which only reports changes to <see cref="AvaloniaProperty"/> values.
+    /// </remarks>
+    /// <param name="propertyName">The name of the property that changed.</param>
     private void OnPropertyChanged(string propertyName)
     {
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
@@ -466,11 +474,11 @@ public sealed partial class MetricsControl : UserControl, IInitializeCluster, IN
                 {
                     if (Dispatcher.UIThread.CheckAccess())
                     {
-                        await RefreshCoreAsync(cancellationToken).ConfigureAwait(false);
+                        await RefreshCoreAsync(cancellationToken);
                     }
                     else
                     {
-                        await Dispatcher.UIThread.InvokeAsync(async () => await RefreshCoreAsync(cancellationToken).ConfigureAwait(false));
+                        await Dispatcher.UIThread.InvokeAsync(() => RefreshCoreAsync(cancellationToken));
                     }
                 }
                 catch (OperationCanceledException)
@@ -501,6 +509,14 @@ public sealed partial class MetricsControl : UserControl, IInitializeCluster, IN
         }
     }
 
+    /// <summary>Refreshes the metric tabs for the current resource.</summary>
+    /// <remarks>
+    /// This method reads and writes control state, so every await inside it must resume on the UI
+    /// thread. The awaits deliberately omit <c>ConfigureAwait(false)</c>: the data load itself is
+    /// asynchronous and does not block the UI thread, but the continuation has to run where the
+    /// control state it touches is safe to access.
+    /// </remarks>
+    /// <param name="cancellationToken">Token used to cancel the refresh.</param>
     private async Task RefreshCoreAsync(CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -511,7 +527,7 @@ public sealed partial class MetricsControl : UserControl, IInitializeCluster, IN
 
         if (Pod != null && Container != null)
         {
-            await RefreshPodContainerCoreAsync(cancellationToken).ConfigureAwait(false);
+            await RefreshPodContainerCoreAsync(cancellationToken);
             return;
         }
 
@@ -528,7 +544,7 @@ public sealed partial class MetricsControl : UserControl, IInitializeCluster, IN
 
         if (Pod != null && Container != null)
         {
-            await RefreshPodContainerCoreAsync(cancellationToken).ConfigureAwait(false);
+            await RefreshPodContainerCoreAsync(cancellationToken);
             return;
         }
 
@@ -578,7 +594,7 @@ public sealed partial class MetricsControl : UserControl, IInitializeCluster, IN
             StatusText = LoadingStatusText;
         }
 
-        var descriptor = await ResourceMetricsCatalog.CreateAsync(_cluster, resource).ConfigureAwait(false);
+        var descriptor = await ResourceMetricsCatalog.CreateAsync(_cluster, resource);
         cancellationToken.ThrowIfCancellationRequested();
         if (descriptor == null)
         {
@@ -664,7 +680,7 @@ public sealed partial class MetricsControl : UserControl, IInitializeCluster, IN
             });
         }
 
-        var snapshot = await LoadPrometheusTabSnapshotAsync(tabDefinition, cancellationToken).ConfigureAwait(false);
+        var snapshot = await LoadPrometheusTabSnapshotAsync(tabDefinition, cancellationToken);
         await Dispatcher.UIThread.InvokeAsync(() =>
         {
             var tab = Tabs.FirstOrDefault(x => string.Equals(x.Title, tabDefinition.Title, StringComparison.Ordinal));
@@ -839,7 +855,7 @@ public sealed partial class MetricsControl : UserControl, IInitializeCluster, IN
             });
         }
 
-        var snapshot = await LoadPodContainerPrometheusTabSnapshotAsync(tabDefinition, cancellationToken).ConfigureAwait(false);
+        var snapshot = await LoadPodContainerPrometheusTabSnapshotAsync(tabDefinition, cancellationToken);
         await Dispatcher.UIThread.InvokeAsync(() =>
         {
             var tab = Tabs.FirstOrDefault(x => string.Equals(x.Title, tabDefinition.Title, StringComparison.Ordinal));

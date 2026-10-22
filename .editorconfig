@@ -254,21 +254,21 @@ dotnet_diagnostic.IDE0060.severity = error
 
 dotnet_diagnostic.CS4014.severity = error
 
+# IDE0022: Use block body for method
+dotnet_diagnostic.IDE0022.severity = none
+
 # Xaml files
-
-# IDE0005: Using directive is unnecessary.
-dotnet_diagnostic.IDE0005.severity = error
-
-# IDE0330: Use 'System.Threading.Lock'
-dotnet_diagnostic.IDE0330.severity = suggestion
 
 [*.{xaml,axaml}]
 indent_size = 2
 end_of_line = lf
 indent_style = space
 
-# IDE0022: Use block body for method
-dotnet_diagnostic.IDE0022.severity = none
+# IDE0005: Using directive is unnecessary.
+dotnet_diagnostic.IDE0005.severity = error
+
+# IDE0330: Use 'System.Threading.Lock'
+dotnet_diagnostic.IDE0330.severity = suggestion
 
 [*.g.cs]
 generated_code = true

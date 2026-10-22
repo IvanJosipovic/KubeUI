@@ -124,7 +124,7 @@ public sealed class ClusterSettingsViewModelTests
         var workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         var settingsService = services.GetRequiredService<ISettingsService>();
         var azureService = new FakeAzureMonitorWorkspaceService();
-        var viewModel = new ClusterSettingsViewModel(settingsService, azureService);
+        using var viewModel = new ClusterSettingsViewModel(settingsService, azureService);
         viewModel.Initialize(workspace);
         viewModel.ClusterSettings.MetricsSettings.MetricsServiceType = MetricsServiceType.Prometheus;
         viewModel.ClusterSettings.MetricsSettings.PrometheusProviderKind = PrometheusProviderKind.AzureMonitor;
@@ -155,7 +155,7 @@ public sealed class ClusterSettingsViewModelTests
         metricsSettings.AzureMonitorWorkspaceId = "/subscriptions/subscription-1/resourceGroups/rg/providers/Microsoft.Monitor/accounts/workspace-1";
         metricsSettings.AzureMonitorQueryEndpoint = "https://workspace-1.eastus.prometheus.monitor.azure.com";
 
-        var viewModel = new ClusterSettingsViewModel(settingsService, new FakeAzureMonitorWorkspaceService());
+        using var viewModel = new ClusterSettingsViewModel(settingsService, new FakeAzureMonitorWorkspaceService());
         viewModel.Initialize(workspace);
         var view = new ClusterSettingsView { ViewModel = viewModel };
         using var window = Application.Current.CreateTestWindow(content: view);
@@ -185,7 +185,7 @@ public sealed class ClusterSettingsViewModelTests
     {
         var services = Application.Current.GetTestServices();
         var workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
-        var viewModel = new ClusterSettingsViewModel(
+        using var viewModel = new ClusterSettingsViewModel(
             services.GetRequiredService<ISettingsService>(),
             new FakeAzureMonitorWorkspaceService(azureCliSignedIn: false));
         viewModel.Initialize(workspace);
@@ -219,5 +219,8 @@ public sealed class ClusterSettingsViewModelTests
 
         public ValueTask<AccessToken> GetPrometheusAccessTokenAsync(CancellationToken cancellationToken = default)
             => ValueTask.FromResult(new AccessToken("test-token", DateTimeOffset.UtcNow.AddMinutes(5)));
+
+        public ValueTask RefreshPrometheusAccessTokenAsync(CancellationToken cancellationToken = default)
+            => ValueTask.CompletedTask;
     }
 }

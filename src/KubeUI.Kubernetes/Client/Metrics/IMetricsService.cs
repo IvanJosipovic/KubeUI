@@ -15,6 +15,12 @@ public interface IMetricsService
     /// <summary>Gets an immutable snapshot of retained metrics for one Node.</summary>
     ImmutableArray<NodeMetrics> GetNodeMetricsSnapshot(string nodeName);
 
+    /// <summary>Gets an immutable snapshot of every retained Pod metric.</summary>
+    ImmutableArray<PodMetrics> GetAllPodMetricsSnapshot();
+
+    /// <summary>Gets an immutable snapshot of every retained Node metric.</summary>
+    ImmutableArray<NodeMetrics> GetAllNodeMetricsSnapshot();
+
     bool IsMetricsAvailable { get; }
 
     ActiveMetricsBackend ActiveMetricsBackend { get; }

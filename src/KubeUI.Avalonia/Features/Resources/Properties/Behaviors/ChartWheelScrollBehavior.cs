@@ -8,22 +8,26 @@ namespace KubeUI.Avalonia.Features.Resources.Properties.Behaviors;
 public sealed class ChartWheelScrollBehavior : Behavior<CartesianChart>
 {
     private const double ScrollStep = 48;
+    private const RoutingStrategies s_routingStrategies = RoutingStrategies.Tunnel;
+    private bool _handlerAttached;
 
     protected override void OnAttached()
     {
         base.OnAttached();
 
-        if (AssociatedObject != null)
+        if (AssociatedObject != null && !_handlerAttached)
         {
-            AssociatedObject.AddHandler(InputElement.PointerWheelChangedEvent, OnPointerWheelChanged, RoutingStrategies.Tunnel, handledEventsToo: true);
+            AssociatedObject.AddHandler(InputElement.PointerWheelChangedEvent, OnPointerWheelChanged, s_routingStrategies, handledEventsToo: true);
+            _handlerAttached = true;
         }
     }
 
     protected override void OnDetaching()
     {
-        if (AssociatedObject != null)
+        if (AssociatedObject != null && _handlerAttached)
         {
             AssociatedObject.RemoveHandler(InputElement.PointerWheelChangedEvent, OnPointerWheelChanged);
+            _handlerAttached = false;
         }
 
         base.OnDetaching();
@@ -31,6 +35,13 @@ public sealed class ChartWheelScrollBehavior : Behavior<CartesianChart>
 
     private void OnPointerWheelChanged(object? sender, PointerWheelEventArgs e)
     {
+        // A nested scrollable that already handled the event keeps it, so scrolling inside the chart
+        // content is not stolen by the outer scroll viewer.
+        if (e.Handled)
+        {
+            return;
+        }
+
         var scrollViewer = AssociatedObject?.FindAncestorOfType<ScrollViewer>();
         if (scrollViewer == null)
         {
