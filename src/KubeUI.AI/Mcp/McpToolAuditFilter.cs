@@ -14,7 +14,12 @@ internal enum McpToolOutcome
     Succeeded
 }
 
-internal static class McpToolAuditFilter
+/// <summary>Outcome of a single audited MCP tool call.</summary>
+/// <param name="Outcome">Audit category recorded for the call.</param>
+/// <param name="Result">Result returned to the caller, when the call completed without throwing.</param>
+internal sealed record McpToolAuditOutcome(McpToolOutcome Outcome, CallToolResult? Result);
+
+internal static partial class McpToolAuditFilter
 {
     private const int MaximumOutputBytes = 1024 * 1024;
 
@@ -23,84 +28,105 @@ internal static class McpToolAuditFilter
         filters.AddCallToolFilter(next => async (context, cancellationToken) =>
         {
             var identity = context.Services.GetRequiredService<McpRequestIdentityAccessor>().Current;
-            var clientId = identity?.Id ?? "unauthenticated";
             var toolName = context.Params.Name;
             var logger = context.Services.GetRequiredService<ILoggerFactory>().CreateLogger("KubeUI.Mcp.Audit");
             var timeProvider = context.Services.GetRequiredService<TimeProvider>();
-            var started = timeProvider.GetTimestamp();
-            var outcome = McpToolOutcome.Failed;
-            try
+
+            var outcome = await ExecuteAsync(
+                identity,
+                toolName,
+                logger,
+                timeProvider,
+                cancellationToken => next(context, cancellationToken),
+                cancellationToken).ConfigureAwait(false);
+
+            return outcome.Result!;
+        });
+    }
+
+    /// <summary>
+    /// Runs a single MCP tool call through the audit policy.
+    /// </summary>
+    /// <param name="identity">Authenticated caller, or <see langword="null"/> for an unauthenticated request.</param>
+    /// <param name="toolName">Name of the invoked tool.</param>
+    /// <param name="logger">Audit logger.</param>
+    /// <param name="timeProvider">Time provider used to measure the call duration.</param>
+    /// <param name="handler">Invokes the tool.</param>
+    /// <param name="cancellationToken">Token used to cancel the call.</param>
+    /// <returns>The audit outcome and the result returned to the caller.</returns>
+    /// <exception cref="OperationCanceledException">The call was cancelled.</exception>
+    /// <exception cref="ArgumentException">The request was invalid.</exception>
+    /// <exception cref="InvalidOperationException">The call failed unexpectedly.</exception>
+    internal static async Task<McpToolAuditOutcome> ExecuteAsync(
+        McpClientIdentity? identity,
+        string toolName,
+        ILogger logger,
+        TimeProvider timeProvider,
+        Func<CancellationToken, ValueTask<CallToolResult>> handler,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(logger);
+        ArgumentNullException.ThrowIfNull(timeProvider);
+        ArgumentNullException.ThrowIfNull(handler);
+
+        var clientId = identity?.Id ?? "unauthenticated";
+        var started = timeProvider.GetTimestamp();
+        var outcome = McpToolOutcome.Failed;
+        try
+        {
+            if (identity is null)
+                throw new UnauthorizedAccessException();
+
+            var result = await handler(cancellationToken).ConfigureAwait(false);
+            if (ExceedsOutputLimit(result))
             {
-                if (identity is null)
-                    throw new UnauthorizedAccessException();
-                var result = await next(context, cancellationToken).ConfigureAwait(false);
-                if (ExceedsOutputLimit(result))
-                {
-                    outcome = McpToolOutcome.Oversized;
-                    return new CallToolResult
-                    {
-                        IsError = true,
-                        Content = [new TextContentBlock
-                        {
-                            Text = "MCP output exceeds the 1 MiB response limit. Narrow the request and retry."
-                        }]
-                    };
-                }
-                outcome = result.IsError == true
-                    ? McpToolOutcome.Failed
-                    : McpToolOutcome.Succeeded;
-                if (result.IsError == true)
-                {
-                    logger.LogError(
-                        "MCP tool {ToolName} for client {ClientId} returned an error: {ErrorSummary}",
-                        toolName, clientId, GetErrorSummary(result));
-                }
-                return result;
-            }
-            catch (OperationCanceledException exception)
-            {
-                outcome = McpToolOutcome.Cancelled;
-                logger.LogInformation(
-                    exception,
-                    "MCP tool {ToolName} for client {ClientId} was cancelled",
-                    toolName, clientId);
-                throw;
-            }
-            catch (UnauthorizedAccessException)
-            {
-                outcome = McpToolOutcome.Denied;
-                logger.LogWarning(
-                    "MCP tool {ToolName} for client {ClientId} was denied",
-                    toolName, clientId);
-                return new CallToolResult
+                outcome = McpToolOutcome.Oversized;
+                return new McpToolAuditOutcome(outcome, new CallToolResult
                 {
                     IsError = true,
-                    Content = [new TextContentBlock { Text = "The MCP tool request was denied by KubeUI." }]
-                };
+                    Content = [new TextContentBlock
+                    {
+                        Text = "MCP output exceeds the 1 MiB response limit. Narrow the request and retry."
+                    }]
+                });
             }
-            catch (ArgumentException exception)
+
+            outcome = result.IsError == true
+                ? McpToolOutcome.Failed
+                : McpToolOutcome.Succeeded;
+
+            return new McpToolAuditOutcome(outcome, result);
+        }
+        catch (OperationCanceledException exception)
+        {
+            outcome = McpToolOutcome.Cancelled;
+            LogToolCancelled(logger, exception, toolName, clientId);
+            throw;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            outcome = McpToolOutcome.Denied;
+            LogToolDenied(logger, toolName, clientId);
+            return new McpToolAuditOutcome(outcome, new CallToolResult
             {
-                logger.LogWarning(
-                    exception,
-                    "MCP tool {ToolName} for client {ClientId} rejected an invalid request",
-                    toolName, clientId);
-                throw;
-            }
-            catch (Exception exception)
-            {
-                logger.LogError(
-                    exception,
-                    "MCP tool {ToolName} for client {ClientId} failed",
-                    toolName, clientId);
-                throw new InvalidOperationException("MCP tool request could not be completed.");
-            }
-            finally
-            {
-                logger.LogInformation(
-                    "MCP tool {ToolName} for client {ClientId} ended with {Outcome} in {ElapsedMilliseconds} ms",
-                    toolName, clientId, outcome, timeProvider.GetElapsedTime(started).TotalMilliseconds);
-            }
-        });
+                IsError = true,
+                Content = [new TextContentBlock { Text = "The MCP tool request was denied by KubeUI." }]
+            });
+        }
+        catch (ArgumentException exception)
+        {
+            LogToolInvalidRequest(logger, exception, toolName, clientId);
+            throw;
+        }
+        catch (Exception exception)
+        {
+            LogToolFailed(logger, exception, toolName, clientId);
+            throw new InvalidOperationException("MCP tool request could not be completed.", exception);
+        }
+        finally
+        {
+            LogToolCompleted(logger, toolName, clientId, outcome, timeProvider.GetElapsedTime(started).TotalMilliseconds);
+        }
     }
 
     internal static bool ExceedsOutputLimit(CallToolResult result)
@@ -119,28 +145,28 @@ internal static class McpToolAuditFilter
         return outputBytes > MaximumOutputBytes;
     }
 
-    private static string GetErrorSummary(CallToolResult result)
-    {
-        const int maximumSummaryLength = 2048;
-        var summary = new StringBuilder();
-        foreach (var content in result.Content)
-        {
-            if (content is not TextContentBlock text || string.IsNullOrWhiteSpace(text.Text))
-                continue;
+    [LoggerMessage(
+        Level = LogLevel.Information,
+        Message = "MCP tool {ToolName} for client {ClientId} was cancelled")]
+    private static partial void LogToolCancelled(ILogger logger, Exception exception, string toolName, string clientId);
 
-            if (summary.Length > 0)
-                summary.Append(" | ");
-            var remainingLength = maximumSummaryLength - summary.Length;
-            if (remainingLength <= 0)
-                break;
-            summary.Append(text.Text.AsSpan(0, Math.Min(text.Text.Length, remainingLength)));
-        }
+    [LoggerMessage(
+        Level = LogLevel.Warning,
+        Message = "MCP tool {ToolName} for client {ClientId} was denied")]
+    private static partial void LogToolDenied(ILogger logger, string toolName, string clientId);
 
-        if (summary.Length == 0)
-            return "MCP server returned an error result without text details.";
+    [LoggerMessage(
+        Level = LogLevel.Warning,
+        Message = "MCP tool {ToolName} for client {ClientId} rejected an invalid request")]
+    private static partial void LogToolInvalidRequest(ILogger logger, Exception exception, string toolName, string clientId);
 
-        if (summary.Length == maximumSummaryLength)
-            summary.Append("…");
-        return summary.ToString();
-    }
+    [LoggerMessage(
+        Level = LogLevel.Error,
+        Message = "MCP tool {ToolName} for client {ClientId} failed")]
+    private static partial void LogToolFailed(ILogger logger, Exception exception, string toolName, string clientId);
+
+    [LoggerMessage(
+        Level = LogLevel.Information,
+        Message = "MCP tool {ToolName} for client {ClientId} ended with {Outcome} in {ElapsedMilliseconds} ms")]
+    private static partial void LogToolCompleted(ILogger logger, string toolName, string clientId, McpToolOutcome outcome, double elapsedMilliseconds);
 }

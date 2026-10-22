@@ -20,7 +20,14 @@ internal sealed class PermissionMapper
         var action = !string.IsNullOrWhiteSpace(request.ToolCall.Title)
             ? request.ToolCall.Title
             : mcpAction ?? request.ToolCall.Name ?? "ACP tool";
-        var trustedMcp = isMcpTool && server is not null && trustedMcpServers.Contains(server);
+
+        // An MCP tool is only trusted when both the server and the tool identity are known.
+        // Incomplete tool identity stays approval gated so a trusted server cannot be used to
+        // reach an unidentified tool.
+        var hasCompleteMcpIdentity = !string.IsNullOrWhiteSpace(server) && !string.IsNullOrWhiteSpace(tool);
+        var trustedMcp = isMcpTool
+            && hasCompleteMcpIdentity
+            && trustedMcpServers.Contains(server!);
 
         return new AgentPermissionRequest(
             action,

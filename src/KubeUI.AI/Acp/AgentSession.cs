@@ -17,8 +17,7 @@ internal sealed class AgentSession : IAgentSession
     private readonly Channel<SessionEvent> _events;
     private readonly IDisposable? _mcpCredentialLease;
     private readonly IReadOnlyList<string> _sensitiveValues;
-    private readonly HashSet<string> _startedToolCalls = new(StringComparer.Ordinal);
-    private readonly HashSet<string> _completedToolCalls = new(StringComparer.Ordinal);
+    private readonly AcpToolCallTracker _toolCallTracker = new();
     private bool _disposed;
 
     public AgentSession(
@@ -52,20 +51,8 @@ internal sealed class AgentSession : IAgentSession
         {
             await foreach (var update in _session.PromptAsync(text, cancellationToken).ConfigureAwait(false))
             {
-                if (update is SessionUpdateEvent { Update.Value: ToolCall tool })
-                {
-                    if (!_startedToolCalls.Add(tool.ToolCallId))
-                        continue;
-                }
-                else if (update is SessionUpdateEvent { Update.Value: ToolCallUpdate toolUpdate })
-                {
-                    if (toolUpdate.Status is "completed" or "failed")
-                    {
-                        if (!_completedToolCalls.Add(toolUpdate.ToolCallId))
-                            continue;
-                        _startedToolCalls.Remove(toolUpdate.ToolCallId);
-                    }
-                }
+                if (!_toolCallTracker.ShouldForward(update))
+                    continue;
                 _events.Writer.TryWrite(update);
             }
         }
