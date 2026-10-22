@@ -225,7 +225,7 @@ public sealed class ClusterAuthorizationTests
 
     [Theory, KubernetesBackendData]
     [Trait("Category", "Kind")]
-    public async Task resource_name_rules_apply_only_to_name_specific_verbs(KubernetesBackend backend)
+    public async Task resource_name_rules_do_not_authorize_unnamed_requests(KubernetesBackend backend)
     {
         await using var harness = await new TestClusterGenerator().CreateAsync(
             new TestClusterConfig
@@ -291,10 +291,14 @@ public sealed class ClusterAuthorizationTests
 
         await cluster.Permissions.UpdatePermissionsAllNamespaceAsync<V1Pod>(Verb.Get);
 
+        // A rule constrained by resourceNames only authorizes requests that name the object.
+        // KubeUI evaluates permissions without an object name, and the API server evaluates
+        // list and watch without a name as well, so a resourceNames-scoped rule authorizes
+        // none of these requests.
         cluster.Permissions.CanI<V1Pod>(Verb.Get, "my-app").ShouldBeFalse();
         cluster.Permissions.CanI<V1Pod>(Verb.Delete, "my-app").ShouldBeFalse();
-        cluster.Permissions.CanI<V1Pod>(Verb.List, "my-app").ShouldBeTrue();
-        cluster.Permissions.CanI<V1Pod>(Verb.Watch, "my-app").ShouldBeTrue();
+        cluster.Permissions.CanI<V1Pod>(Verb.List, "my-app").ShouldBeFalse();
+        cluster.Permissions.CanI<V1Pod>(Verb.Watch, "my-app").ShouldBeFalse();
     }
 
     [Fact]
@@ -344,6 +348,10 @@ public sealed class ClusterAuthorizationTests
         var podKind = GroupApiVersionKind.From<V1Pod>();
         (await cluster.Permissions.UpdateCanI(podKind, Verb.Get, "my-app", "log")).ShouldBeTrue();
         (await cluster.Permissions.UpdateCanI(podKind, Verb.Get, "my-app", "exec")).ShouldBeFalse();
+
+        // "pods/*" is not a wildcard form the API server accepts, so it does not authorize
+        // the "log" subresource of pods.
+        (await cluster.Permissions.UpdateCanI(podKind, Verb.Get, "my-app", "status")).ShouldBeFalse();
     }
 
     [Theory, KubernetesBackendData]

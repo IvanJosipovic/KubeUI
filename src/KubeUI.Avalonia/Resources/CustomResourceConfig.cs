@@ -126,8 +126,8 @@ public class CustomResourceConfig : ResourceConfig<GenericKubernetesObject>
     /// <inheritdoc />
     public override ResourceOrigin Origin => ResourceOrigin.CustomResourceDefinition;
 
-    /// <summary>Gets the CRD that defines this resource kind.</summary>
-    public V1CustomResourceDefinition Definition { get; private set; } = new();
+    /// <summary>Gets the CRD that defines this resource kind, or null before it is configured.</summary>
+    public V1CustomResourceDefinition? Definition { get; private set; }
 
     /// <inheritdoc />
     public override V1CustomResourceDefinition? CustomResourceDefinition => Definition;
@@ -160,27 +160,30 @@ public class CustomResourceConfig : ResourceConfig<GenericKubernetesObject>
 
     /// <summary>Configures this instance from a current CRD definition.</summary>
     /// <param name="crd">The valid CRD defining the dynamic resource.</param>
+    /// <exception cref="InvalidOperationException">
+    /// The definition does not expose a served storage version.
+    /// </exception>
     public void Configure(V1CustomResourceDefinition crd)
     {
-        Definition = crd;
+        ArgumentNullException.ThrowIfNull(crd);
+
         _columns.Clear();
         if (!crd.TryGetResourceKind(out _kind) || crd.Spec is not { } spec)
         {
             throw new InvalidOperationException("CRD has no served storage version.");
         }
 
-        var version = spec.Versions.First(candidate => candidate.Served && candidate.Storage);
+        // A definition whose storage version is not served cannot be listed or watched. The
+        // caller treats that as a temporary condition, so the failure must be explicit
+        // instead of an unhandled sequence access.
+        var version = spec.Versions?.FirstOrDefault(candidate => candidate.Served && candidate.Storage)
+            ?? throw new InvalidOperationException("CRD has no served storage version.");
+
+        Definition = crd;
         _resourceName = spec.Names!.Kind.Humanize(LetterCasing.Title).Pluralize();
         _groups = NavigationTreeEditor.ConstructCustomResourceGroups(spec.Group);
 
-        if (spec.Scope == "Namespaced")
-        {
-            _isNamespaced = true;
-        }
-        else
-        {
-            _isNamespaced = false;
-        }
+        _isNamespaced = spec.Scope == "Namespaced";
 
         _columns.Add(NameColumn(SortDirection.Ascending));
         if (IsNamespaced)
@@ -326,22 +329,6 @@ public class CustomResourceConfig : ResourceConfig<GenericKubernetesObject>
     protected override IList<IResourceListColumn> CreateDefaultColumns()
     {
         return _columns.ToArray();
-    }
-
-    public override Task EvaluateListWatchAccessAsync()
-    {
-        PermissionsLoaded = false;
-        CanListAndWatch = false;
-        CanListAndWatch = Cluster.Runtime.Permissions.CanIAnyNamespace(
-            Kind,
-            IsNamespaced,
-            Verb.List)
-            && Cluster.Runtime.Permissions.CanIAnyNamespace(
-                Kind,
-                IsNamespaced,
-                Verb.Watch);
-        PermissionsLoaded = true;
-        return Task.CompletedTask;
     }
 
     private static string CreateColumnKey(string name)

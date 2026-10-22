@@ -88,7 +88,7 @@ internal sealed class McpClusterSession(
             .ThenBy(entry => entry.Config.Order)
             .ThenBy(entry => entry.Config.Name, StringComparer.Ordinal)
             .Select(static entry => new McpSupportedResourceInfo(
-                entry.Config.Name, entry.Section?.Name, entry.Config.Kind.Group, entry.Config.Kind.ApiVersion,
+                entry.Config.Name, entry.Section?.Name ?? string.Empty, entry.Config.Kind.Group, entry.Config.Kind.ApiVersion,
                 entry.Config.Kind.GroupApiVersion, entry.Config.Kind.Kind, entry.Config.IsNamespaced,
                 entry.Config.IsCustomResource(), entry.Config.CanListAndWatch, entry.Config.PermissionsLoaded))];
     }

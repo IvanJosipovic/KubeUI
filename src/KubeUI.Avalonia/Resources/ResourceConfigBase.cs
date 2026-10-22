@@ -46,6 +46,9 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
     private void InitializeServices(IServiceProvider serviceProvider)
     {
         ArgumentNullException.ThrowIfNull(serviceProvider);
+
+        // Services are resolved once. A configuration that is created without a service
+        // provider receives one when it is initialized against a cluster.
         if (ServiceProvider is not null)
         {
             return;
@@ -341,7 +344,11 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
         return Task.CompletedTask;
     }
 
-    private bool HasListAndWatchAccess()
+    /// <summary>
+    /// Determines whether this kind can be listed and watched, either cluster-wide or in at
+    /// least one namespace. Subclasses that resolve access differently must not narrow this.
+    /// </summary>
+    protected bool HasListAndWatchAccess()
     {
         if (Cluster.Runtime.Permissions.CanIAnyNamespace(Kind, IsNamespaced, Verb.List)
             && Cluster.Runtime.Permissions.CanIAnyNamespace(Kind, IsNamespaced, Verb.Watch))

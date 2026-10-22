@@ -19,8 +19,6 @@ internal sealed class NavigationTreeBuilder
     private readonly ICommand? _openCommand;
     private readonly ICommand? _openInNewTabCommand;
     private readonly ILogger _logger;
-    private readonly HashSet<string> _desiredIds = new(StringComparer.Ordinal);
-    private readonly Dictionary<string, ItemLocation> _existing = new(StringComparer.Ordinal);
 
     public NavigationTreeBuilder(
         NavigationSectionCatalog sections,
@@ -36,27 +34,53 @@ internal sealed class NavigationTreeBuilder
         _logger = logger;
     }
 
+    /// <summary>
+    /// State for a single reconcile pass. The builder is shared by every cluster, so this
+    /// state must not live on the builder instance.
+    /// </summary>
+    private sealed class ReconcileContext
+    {
+        public ReconcileContext(ClusterNavigationNode node)
+        {
+            Node = node;
+            Index(node.NavigationItems, node.NavigationItems);
+        }
+
+        public ClusterNavigationNode Node { get; }
+
+        public HashSet<string> DesiredIds { get; } = new(StringComparer.Ordinal);
+
+        public Dictionary<string, ItemLocation> Existing { get; } = new(StringComparer.Ordinal);
+
+        private void Index(ObservableCollection<NavigationItem> items, ObservableCollection<NavigationItem> parent)
+        {
+            foreach (var item in items)
+            {
+                Existing.TryAdd(item.Id, new ItemLocation(item, parent));
+                Index(item.NavigationItems, item.NavigationItems);
+            }
+        }
+    }
+
     /// <summary>Applies the current workspace state to a cluster node while preserving link identity.</summary>
     public void Reconcile(ClusterNavigationNode node)
     {
         var cluster = node.Cluster;
-        _desiredIds.Clear();
-        _existing.Clear();
-        Index(node.NavigationItems, node.NavigationItems);
+        var context = new ReconcileContext(node);
 
         foreach (var target in NavigationTargets.FixedClusterLinks)
         {
-            _desiredIds.Add(LinkId(cluster, target.Key));
+            context.DesiredIds.Add(LinkId(cluster, target.Key));
         }
 
         if (cluster.Runtime.Status == ClusterStatus.Connected)
         {
-            AddResourceLinks(node, cluster);
-            AddDocuments(node, cluster);
-            AddPortForwarders(node, cluster);
+            AddResourceLinks(context, cluster);
+            AddDocuments(context, cluster);
+            AddPortForwarders(context, cluster);
         }
 
-        Prune(node.NavigationItems, cluster.Runtime.Name);
+        Prune(node.NavigationItems, cluster.Runtime.Name, context.DesiredIds);
     }
 
     /// <summary>Attaches count streams for a seeded resource kind to matching links.</summary>
@@ -71,7 +95,7 @@ internal sealed class NavigationTreeBuilder
         }
     }
 
-    private void AddResourceLinks(ClusterNavigationNode node, ClusterWorkspace cluster)
+    private void AddResourceLinks(ReconcileContext context, ClusterWorkspace cluster)
     {
         var canListDefinitions = CanListCustomResourceDefinitions(cluster);
         foreach (var resource in cluster.GetResourceConfigs())
@@ -87,7 +111,7 @@ internal sealed class NavigationTreeBuilder
             }
 
             AddResource(
-                node,
+                context,
                 cluster,
                 resource,
                 resource.Navigation,
@@ -101,7 +125,7 @@ internal sealed class NavigationTreeBuilder
                 if (!SameLocation(customResources, resource.Navigation))
                 {
                     AddResource(
-                        node,
+                        context,
                         cluster,
                         resource,
                         customResources,
@@ -114,7 +138,7 @@ internal sealed class NavigationTreeBuilder
                 if (provider.Place(resource) is { } alias && !SameLocation(alias, resource.Navigation))
                 {
                     AddResource(
-                        node,
+                        context,
                         cluster,
                         resource,
                         alias,
@@ -125,15 +149,16 @@ internal sealed class NavigationTreeBuilder
     }
 
     private void AddResource(
-        ClusterNavigationNode node,
+        ReconcileContext context,
         ClusterWorkspace cluster,
         IResourceConfig resource,
         NavigationPlacement placement,
         string id)
     {
-        var target = ResolveTarget(node, cluster, placement);
-        _desiredIds.Add(id);
+        var target = ResolveTarget(context, cluster, placement);
+        context.DesiredIds.Add(id);
         Upsert(
+            context,
             target,
             cluster,
             id,
@@ -145,7 +170,7 @@ internal sealed class NavigationTreeBuilder
             viewModelKey: null);
     }
 
-    private void AddDocuments(ClusterNavigationNode node, ClusterWorkspace cluster)
+    private void AddDocuments(ReconcileContext context, ClusterWorkspace cluster)
     {
         foreach (var provider in _sections.Providers)
         {
@@ -157,9 +182,10 @@ internal sealed class NavigationTreeBuilder
                 }
 
                 var id = $"{cluster.Runtime.Name}-section-document-{provider.Section.Id}-{document.Id}";
-                var target = ResolveTarget(node, cluster, NavigationPlacement.InSection(provider.Section.Id));
-                _desiredIds.Add(id);
+                var target = ResolveTarget(context, cluster, NavigationPlacement.InSection(provider.Section.Id));
+                context.DesiredIds.Add(id);
                 Upsert(
+                    context,
                     target,
                     cluster,
                     id,
@@ -173,7 +199,7 @@ internal sealed class NavigationTreeBuilder
         }
     }
 
-    private void AddPortForwarders(ClusterNavigationNode node, ClusterWorkspace cluster)
+    private void AddPortForwarders(ReconcileContext context, ClusterWorkspace cluster)
     {
         var podKind = GroupApiVersionKind.From<V1Pod>();
         if (!cluster.TryGetResourceConfig(podKind, out var podConfig)
@@ -184,9 +210,10 @@ internal sealed class NavigationTreeBuilder
         }
 
         var id = LinkId(cluster, NavigationTargets.PortForwarders);
-        var target = ResolveTarget(node, cluster, NavigationPlacement.InSection(NavigationSections.NetworkId));
-        _desiredIds.Add(id);
+        var target = ResolveTarget(context, cluster, NavigationPlacement.InSection(NavigationSections.NetworkId));
+        context.DesiredIds.Add(id);
         Upsert(
+            context,
             target,
             cluster,
             id,
@@ -199,10 +226,11 @@ internal sealed class NavigationTreeBuilder
     }
 
     private ObservableCollection<NavigationItem> ResolveTarget(
-        ClusterNavigationNode node,
+        ReconcileContext context,
         ClusterWorkspace cluster,
         NavigationPlacement placement)
     {
+        var node = context.Node;
         if (placement.SectionId is not { } sectionId)
         {
             return node.NavigationItems;
@@ -217,7 +245,7 @@ internal sealed class NavigationTreeBuilder
         }
 
         var nodeId = $"{cluster.Runtime.Name}-section-{section.Id}";
-        _desiredIds.Add(nodeId);
+        context.DesiredIds.Add(nodeId);
         var root = NavigationTreeEditor.EnsureNode(node.NavigationItems, nodeId, section.Name, section.Order, section.Icon);
         if (placement.Groups.Count == 0)
         {
@@ -229,13 +257,14 @@ internal sealed class NavigationTreeBuilder
         foreach (var group in placement.Groups)
         {
             prefix += "/" + group.Id;
-            _desiredIds.Add(prefix);
+            context.DesiredIds.Add(prefix);
         }
 
         return target;
     }
 
     private void Upsert(
+        ReconcileContext context,
         ObservableCollection<NavigationItem> target,
         ClusterWorkspace cluster,
         string id,
@@ -246,7 +275,7 @@ internal sealed class NavigationTreeBuilder
         string? documentId,
         string? viewModelKey)
     {
-        var isNew = !_existing.TryGetValue(id, out var location) || location.Item is not NavigationLink;
+        var isNew = !context.Existing.TryGetValue(id, out var location) || location.Item is not NavigationLink;
         var isMoving = !isNew && !ReferenceEquals(location.Parent, target);
         NavigationLink link;
         if (isNew)
@@ -286,7 +315,7 @@ internal sealed class NavigationTreeBuilder
         if (isNew || isMoving)
         {
             target.Add(link);
-            _existing[id] = new ItemLocation(link, target);
+            context.Existing[id] = new ItemLocation(link, target);
         }
     }
 
@@ -307,14 +336,14 @@ internal sealed class NavigationTreeBuilder
         }
     }
 
-    private void Prune(ObservableCollection<NavigationItem> items, string clusterName)
+    private void Prune(ObservableCollection<NavigationItem> items, string clusterName, HashSet<string> desiredIds)
     {
         for (var index = items.Count - 1; index >= 0; index--)
         {
             var item = items[index];
             if (item is NavigationLink link)
             {
-                if (!_desiredIds.Contains(link.Id))
+                if (!desiredIds.Contains(link.Id))
                 {
                     items.RemoveAt(index);
                 }
@@ -322,7 +351,7 @@ internal sealed class NavigationTreeBuilder
                 continue;
             }
 
-            Prune(item.NavigationItems, clusterName);
+            Prune(item.NavigationItems, clusterName, desiredIds);
             if (item.NavigationItems.Count == 0
                 && item.Id.StartsWith($"{clusterName}-section", StringComparison.Ordinal))
             {
@@ -397,15 +426,6 @@ internal sealed class NavigationTreeBuilder
             {
                 yield return nested;
             }
-        }
-    }
-
-    private void Index(ObservableCollection<NavigationItem> items, ObservableCollection<NavigationItem> parent)
-    {
-        foreach (var item in items)
-        {
-            _existing.TryAdd(item.Id, new ItemLocation(item, parent));
-            Index(item.NavigationItems, item.NavigationItems);
         }
     }
 

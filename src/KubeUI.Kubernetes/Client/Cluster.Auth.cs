@@ -98,6 +98,8 @@ public partial class Cluster
         {
             var current = Volatile.Read(ref _authorizationCache);
             var replacement = new AuthorizationCacheState();
+
+            // Keep cluster-wide decisions: an added or removed namespace does not change them.
             foreach (var pair in current.PermissionIndex)
             {
                 if (string.IsNullOrEmpty(pair.Key.Namespace))
@@ -106,6 +108,9 @@ public partial class Cluster
                 }
             }
 
+            // Namespace-scoped decisions and rule sets are discarded. A replacement generation
+            // is used so that in-flight loads started in the previous generation can only
+            // publish into that generation.
             if (ReferenceEquals(
                     Interlocked.CompareExchange(ref _authorizationCache, replacement, current),
                     current))
@@ -165,7 +170,15 @@ public partial class Cluster
             }
         };
 
-        var resp = await Client.AuthorizationV1.CreateSelfSubjectAccessReviewAsync(model);
+        var client = Client;
+        if (client is null)
+        {
+            // The cluster is not connected. Report the permission as denied instead of
+            // dereferencing a missing client.
+            return false;
+        }
+
+        var resp = await client.AuthorizationV1.CreateSelfSubjectAccessReviewAsync(model);
         var allowed = resp.Status?.Allowed == true;
         SetPermissionResult(cache, kind, verbString, @namespace, subresource, allowed);
 
@@ -281,24 +294,19 @@ public partial class Cluster
         var requestedResource = string.IsNullOrEmpty(subresource)
             ? kind.PluralName
             : kind.PluralName + "/" + subresource;
-        if (!ResourceMatches(rule.Resources, requestedResource))
+        if (!ResourceMatches(rule.Resources, requestedResource, subresource))
         {
             return false;
         }
 
-        if (rule.ResourceNames is { Count: > 0 } && IsNameSpecificVerb(verbString))
-        {
-            // resourceNames cannot be evaluated without a concrete object name. Kubernetes
-            // ignores them for list, watch, create, and deletecollection, so only
-            // name-specific verbs are denied when no object name is supplied.
-            return false;
-        }
-
-        return true;
+        // A rule constrained by resourceNames only authorizes requests that name a concrete
+        // object. KubeUI evaluates permissions without an object name, so such a rule never
+        // matches here. The API server behaves the same way: resourceNames-scoped rules do not
+        // authorize list, watch, create, or deletecollection, because those requests carry no
+        // object name. KubeUI must agree with the server or the same permission would be
+        // answered differently depending on which evaluation path was used.
+        return rule.ResourceNames is not { Count: > 0 };
     }
-
-    private static bool IsNameSpecificVerb(string verbString)
-        => verbString is "delete" or "get" or "patch" or "update";
 
     private static bool RuleValueMatches(IList<string>? values, string value)
     {
@@ -318,7 +326,10 @@ public partial class Cluster
         return false;
     }
 
-    private static bool ResourceMatches(IList<string>? ruleResources, string requestedResource)
+    private static bool ResourceMatches(
+        IList<string>? ruleResources,
+        string requestedResource,
+        string? requestedSubresource)
     {
         if (ruleResources is null)
         {
@@ -327,37 +338,30 @@ public partial class Cluster
 
         foreach (var ruleResource in ruleResources)
         {
-            if (ruleResource == "*"
-                || string.Equals(ruleResource, requestedResource, StringComparison.Ordinal)
-                || ResourceSegmentsMatch(ruleResource, requestedResource))
+            if (ruleResource == "*")
             {
                 return true;
             }
+
+            if (string.Equals(ruleResource, requestedResource, StringComparison.Ordinal))
+            {
+                return true;
+            }
+
+            // The API server also authorizes "*/subresource" rules, for example "*/status".
+            // No other wildcard form is accepted: "pods/*" does not authorize "pods/status".
+            if (string.IsNullOrEmpty(requestedSubresource)
+                || ruleResource.Length != requestedSubresource.Length + 2
+                || !ruleResource.StartsWith("*/", StringComparison.Ordinal)
+                || !ruleResource.EndsWith(requestedSubresource, StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            return true;
         }
 
         return false;
-    }
-
-    private static bool ResourceSegmentsMatch(string ruleResource, string requestedResource)
-    {
-        var ruleSeparator = ruleResource.IndexOf('/');
-        var requestedSeparator = requestedResource.IndexOf('/');
-
-        if (ruleSeparator < 0 || requestedSeparator < 0)
-        {
-            return false;
-        }
-
-        if (!string.Equals(ruleResource[..ruleSeparator], requestedResource[..requestedSeparator], StringComparison.Ordinal)
-            && ruleResource[..ruleSeparator] != "*")
-        {
-            return false;
-        }
-
-        return string.Equals(
-            ruleResource[(ruleSeparator + 1)..],
-            requestedResource[(requestedSeparator + 1)..],
-            StringComparison.Ordinal);
     }
 
     public bool CanI(GroupApiVersionKind kind, Verb verb, string? @namespace = null, string? subresource = null)
@@ -380,9 +384,10 @@ public partial class Cluster
             && cache.NamespaceRules.TryGetValue(@namespace, out var namespaceRules)
             && namespaceRules.IsComplete)
         {
-            var ruleAllowed = RuleSetAllows(namespaceRules, kind, verbString, subresource);
-            SetPermissionResult(cache, kind, verbString, @namespace, subresource, ruleAllowed);
-            return ruleAllowed;
+            // Rule-derived answers are not written to the permission index. A rule set can
+            // change without the index being invalidated, and a cached denial would then
+            // outlive the rule set that produced it. The rule set is the cache here.
+            return RuleSetAllows(namespaceRules, kind, verbString, subresource);
         }
 
         return false;
@@ -462,14 +467,13 @@ public partial class Cluster
             return await BuildPermissionAsync(kind, verb, subresource: subresource).ConfigureAwait(false);
         }
 
-        var cache = Volatile.Read(ref _authorizationCache);
         var rules = await GetNamespaceRulesAsync(@namespace, CancellationToken.None).ConfigureAwait(false);
         if (rules.IsComplete)
         {
+            // Rule-derived answers are not written to the permission index; the rule set is
+            // the authoritative cache for namespace-scoped decisions.
             var verbString = verb.ToString().ToLowerInvariant();
-            var allowed = RuleSetAllows(rules, kind, verbString, subresource);
-            SetPermissionResult(cache, kind, verbString, @namespace, subresource, allowed);
-            return allowed;
+            return RuleSetAllows(rules, kind, verbString, subresource);
         }
 
         return await BuildPermissionAsync(kind, verb, @namespace, subresource).ConfigureAwait(false);
