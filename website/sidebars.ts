@@ -29,6 +29,7 @@ const sidebars: SidebarsConfig = {
       ],
     },
     'features',
+    'mcp-server',
     'permissions',
     'troubleshooting',
   ],

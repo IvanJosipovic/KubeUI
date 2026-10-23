@@ -152,8 +152,9 @@ public class TestApp : App, IDisposable
 
         public SettingsPersistenceData Load() => new();
 
-        public void Save(SettingsPersistenceData data)
+        public bool Save(SettingsPersistenceData data)
         {
+            return true;
         }
     }
 

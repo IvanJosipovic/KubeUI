@@ -3,7 +3,7 @@ namespace KubeUI.Avalonia.Infrastructure.Mcp;
 /// <summary>
 /// Exposes the runtime state of the embedded MCP server.
 /// </summary>
-public interface IMcpServerState
+public interface IMcpServerState : INotifyPropertyChanged
 {
     /// <summary>
     /// Gets the port the embedded MCP server actually bound to, or null when the server did not bind.
@@ -14,12 +14,13 @@ public interface IMcpServerState
 /// <summary>
 /// Tracks the runtime state of the embedded MCP server; updated by the host after a successful bind.
 /// </summary>
-public sealed class McpServerState : IMcpServerState
+public sealed partial class McpServerState : ObservableObject, IMcpServerState
 {
-    public int? BoundPort { get; private set; }
+    [ObservableProperty]
+    public partial int? BoundPort { get; private set; }
 
     /// <summary>
     /// Records the port the embedded MCP server bound to.
     /// </summary>
-    public void SetBoundPort(int port) => BoundPort = port;
+    public void SetBoundPort(int? port) => BoundPort = port;
 }

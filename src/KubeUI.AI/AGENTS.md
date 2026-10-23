@@ -6,6 +6,9 @@
 - Keep prompts, responses, credentials, kubeconfigs, and Kubernetes Secret contents out of telemetry by default.
 - Add adapter and mapping tests for every supported ACP union or update variant.
 - Gate HTTP MCP session entries on the agent's negotiated HTTP MCP capability.
+- KubeUI-owned MCP sessions use a per-session in-memory bearer credential forwarded only in the MCP HTTP headers; revoke it on unsupported negotiation, session creation failure, and session disposal.
+- Keep MCP request identity, tool-call audit categories, and tool-result size limits in this project. Audit only client ID, tool name, result category, and duration; exclude tokens, prompts, cluster data, and tool results.
+- Keep MCP credentials out of prompts, command arguments, record dumps, diagnostic events, exceptions, and telemetry.
 - Treat ACP file line numbers as 1-based and enforce configured `AgentSessionOptions.FileSystemRoots`.
 - Terminal output limits retain newest output, omit exit status until process exit, and observe capture-task failures during release and disposal.
 - Unsupported ACP extension methods and notifications fail explicitly; fake ACP tests remain external-process free.
