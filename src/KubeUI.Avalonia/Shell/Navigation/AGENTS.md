@@ -14,6 +14,9 @@
 - Resource count observables are attached only when both the matching navigation link and a seeded resource container exist. `ResourceSeeded` notifications are marshalled to the UI dispatcher; there is no retry loop for a missing link. A count stream preserves an initial zero and is retained when an existing resource link is updated.
 - Connection failures update or open the shared cluster-error document. Missing namespace permission opens cluster settings and shows the permission prompt.
 - One click on a navigation row activates it: resource links open their document, categories toggle expansion, and disconnected clusters start connecting. Clicking an already connected cluster toggles expansion. Native TreeView double-tap expansion is suppressed so it cannot toggle a row a second time.
+- Cluster nodes exist only for enabled workspaces (`ClusterWorkspace.IsEnabled`). Toggling `IsEnabled` removes or re-inserts the node in catalog order without rebuilding other nodes.
+- Cluster nodes display `ClusterWorkspace.DisplayName` (alias or context name); navigation IDs keep using the runtime context name.
+- The cluster context menu has an explicit Expand/Collapse item (`ToggleClusterExpansionCommand`): it toggles a connected cluster and connects a disconnected one (which expands on connect).
 
 ## Invariants
 

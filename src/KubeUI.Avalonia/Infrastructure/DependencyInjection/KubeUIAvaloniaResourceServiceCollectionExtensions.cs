@@ -8,6 +8,7 @@ public static partial class KubeUIAvaloniaResourceServiceCollectionExtensions
 {
     public static IServiceCollection AddKubeUIAvaloniaResourceServices(this IServiceCollection services)
     {
+        services.AddSingleton<ClusterWorkspacePreferences>();
         services.AddSingleton<ClusterWorkspaceCatalog>();
         return services.AddKubeUIAvaloniaResourceGeneratedServices();
     }

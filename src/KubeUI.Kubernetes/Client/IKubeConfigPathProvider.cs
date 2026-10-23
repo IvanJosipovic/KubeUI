@@ -9,4 +9,9 @@ public interface IKubeConfigPathProvider
     /// Gets the default kubeconfig file path.
     /// </summary>
     string DefaultPath { get; }
+
+    /// <summary>
+    /// Gets the directory scanned for additional kubeconfig files, or <see langword="null"/> when discovery is not available.
+    /// </summary>
+    string? DiscoveryDirectory { get; }
 }
