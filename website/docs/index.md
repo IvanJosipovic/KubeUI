@@ -21,6 +21,7 @@ Use these guides to install KubeUI, connect to Kubernetes, and work with resourc
 - [Visualize resource relationships](./resource-visualization)
 - [Use workload tools](./workload-tools)
 - [Follow Pod logs](./pod-logs)
+- [Monitor Pods and configure metrics](./monitoring)
 
 ## Reference
 

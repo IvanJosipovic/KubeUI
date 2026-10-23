@@ -50,6 +50,12 @@ public sealed class KubernetesTestSettingsStore : IClusterSettingsStore
     public IReadOnlyCollection<string> GetClusterNamespaces(IClusterRuntime cluster) =>
         _namespaces.TryGetValue(cluster, out var namespaces) ? namespaces : [];
 
+    public ClusterMetricsSettings GetClusterMetricsSettings(IClusterRuntime cluster) => new();
+
+    public void Persist()
+    {
+    }
+
     public void SetClusterNamespaces(IClusterRuntime cluster, params string[] namespaces) =>
         _namespaces[cluster] = namespaces;
 }

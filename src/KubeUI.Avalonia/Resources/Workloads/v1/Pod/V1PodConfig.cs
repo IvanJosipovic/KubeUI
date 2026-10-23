@@ -89,8 +89,8 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
             {
                 Key = "cpu",
                 Name = Assets.Resources.V1PodConfig_CPU!,
-                CustomControl = typeof(PodMetricCPUCellView),
-                Field = x => Cluster.Runtime.PodMetrics.FirstOrDefault(y => y.Name() == x.Name() && y.Namespace() == x.Namespace())?.Containers.Sum(z => z.Usage["cpu"]) ?? 0,
+                CustomControl = typeof(MetricsHistoryCPUCellView),
+                Field = x => Cluster.Runtime.PodMetrics.Where(y => y.Name() == x.Name() && y.Namespace() == x.Namespace()).MaxBy(y => y.Timestamp)?.Containers.Sum(z => GetContainerCpu(z)) ?? 0,
                 Width = 80,
                 WidthMode = DynamicTableViewWidthMode.Pixel
             });
@@ -98,14 +98,34 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
             {
                 Key = "memory",
                 Name = Assets.Resources.V1PodConfig_Memory!,
-                CustomControl = typeof(PodMetricMemoryCellView),
-                Field = x => Cluster.Runtime.PodMetrics.FirstOrDefault(y => y.Name() == x.Name() && y.Namespace() == x.Namespace())?.Containers.Sum(z => z.Usage["memory"]) ?? 0,
+                CustomControl = typeof(MetricsHistoryMemoryCellView),
+                Field = x => Cluster.Runtime.PodMetrics.Where(y => y.Name() == x.Name() && y.Namespace() == x.Namespace()).MaxBy(y => y.Timestamp)?.Containers.Sum(z => GetContainerMemory(z)) ?? 0,
                 Width = 80,
                 WidthMode = DynamicTableViewWidthMode.Pixel
             });
         }
 
         return cols;
+    }
+
+    /// <summary>Reads the reported CPU usage for a container, tolerating metrics that omit the resource.</summary>
+    /// <param name="containerMetric">The container metrics reported by the Metrics Server.</param>
+    /// <returns>The CPU usage in cores, or zero when the resource is not reported.</returns>
+    private static decimal GetContainerCpu(ContainerMetrics containerMetric)
+    {
+        return containerMetric.Usage?.TryGetValue("cpu", out var quantity) == true
+            ? quantity.ToDecimal()
+            : 0;
+    }
+
+    /// <summary>Reads the reported memory usage for a container, tolerating metrics that omit the resource.</summary>
+    /// <param name="containerMetric">The container metrics reported by the Metrics Server.</param>
+    /// <returns>The memory usage in bytes, or zero when the resource is not reported.</returns>
+    private static decimal GetContainerMemory(ContainerMetrics containerMetric)
+    {
+        return containerMetric.Usage?.TryGetValue("memory", out var quantity) == true
+            ? quantity.ToInt64()
+            : 0;
     }
 
     protected override IEnumerable<MenuItemViewModel> CreateCustomMenuItems(IEnumerable<V1Pod>? selectedItems)

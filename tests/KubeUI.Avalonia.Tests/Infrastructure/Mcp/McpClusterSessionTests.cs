@@ -2,7 +2,6 @@ using Avalonia.Headless.XUnit;
 using DynamicData;
 using k8s.Models;
 using KubeUI.Avalonia.Infrastructure.Mcp;
-using KubeUI.Kubernetes;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Infrastructure.Mcp;

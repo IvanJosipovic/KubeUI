@@ -144,6 +144,22 @@ public sealed class PortForwarderTests
     }
 
     [Fact]
+    public async Task AddServicePortForward_recreates_inactive_forwarder_for_same_target()
+    {
+        await using var harness = await new TestClusterGenerator().CreateAsync(new TestClusterConfig(), TestContext.Current.CancellationToken);
+        var cluster = harness.Cluster;
+        await cluster.Connect();
+        var existing = cluster.AddServicePortForward("default", "prometheus", 9090);
+        existing.Stop();
+
+        var recreated = cluster.AddServicePortForward("default", "prometheus", 9090);
+
+        ReferenceEquals(recreated, existing).ShouldBeFalse();
+        recreated.Status.ShouldBe("Active");
+        cluster.PortForwarders.Count.ShouldBe(1);
+    }
+
+    [Fact]
     public async Task Port_forward_uses_mocked_transport_and_copies_client_bytes()
     {
         await using var harness = await new TestClusterGenerator().CreateAsync(new TestClusterConfig(), TestContext.Current.CancellationToken);
@@ -166,7 +182,7 @@ public sealed class PortForwarderTests
         var factory = new Mock<IPortForwardSessionFactory>(MockBehavior.Strict);
         factory.Setup(x => x.CreateAsync("pod-1", "default", 8080)).ReturnsAsync(session.Object);
 
-        using var sut = new PortForwarder(cluster, "default", localPort: 0, sessionFactory: factory.Object);
+        using var sut = new PortForwarder(cluster, "default", localPort: 0, sessionFactory: factory.Object, logger: Microsoft.Extensions.Logging.Abstractions.NullLogger.Instance);
         sut.SetPod("pod-1", 8080);
         sut.Start();
 
@@ -412,7 +428,7 @@ public sealed class PortForwarderTests
         var factory = new Mock<IPortForwardSessionFactory>(MockBehavior.Strict);
         factory.Setup(x => x.CreateAsync("prometheus-0", "default", 9090)).ReturnsAsync(session.Object);
 
-        using var sut = new PortForwarder(cluster, "default", localPort: 0, sessionFactory: factory.Object);
+        using var sut = new PortForwarder(cluster, "default", localPort: 0, sessionFactory: factory.Object, logger: Microsoft.Extensions.Logging.Abstractions.NullLogger.Instance);
         sut.SetService("prometheus", 9090);
         sut.Start();
 

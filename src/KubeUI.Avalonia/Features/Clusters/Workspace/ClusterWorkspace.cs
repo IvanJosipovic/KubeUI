@@ -18,7 +18,7 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
     private readonly ConcurrentDictionary<GroupApiVersionKind, IResourceConfig> _resourceConfigs = new();
     private readonly ConcurrentDictionary<string, long> _customResourceDefinitionGenerations = new(StringComparer.Ordinal);
     private readonly CancellationTokenSource _disposeCancellation = new();
-    private readonly object _connectLock = new();
+    private readonly Lock _connectLock = new();
     private bool _disposed;
     private bool _workspaceStateInitialized;
     private Task? _connectTask;

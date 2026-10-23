@@ -7,4 +7,6 @@ public interface IClusterSettingsStore
     void AddKubeConfigPath(string path);
 
     IReadOnlyCollection<string> GetClusterNamespaces(IClusterRuntime cluster);
+
+    ClusterMetricsSettings GetClusterMetricsSettings(IClusterRuntime cluster);
 }
