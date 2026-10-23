@@ -489,12 +489,12 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
                 switch (eventType)
                 {
                     case WatchEventType.Added:
-                        items.AddOrUpdate(item);
                         RegisterCustomResourceDefinition(item as V1CustomResourceDefinition);
+                        items.AddOrUpdate(item);
                         break;
                     case WatchEventType.Modified:
-                        items.AddOrUpdate(item);
                         RegisterCustomResourceDefinition(item as V1CustomResourceDefinition);
+                        items.AddOrUpdate(item);
                         break;
                     case WatchEventType.Deleted:
                         items.Remove(item);

@@ -52,6 +52,8 @@ public sealed class Agent : IAgent
             environment[item.Key] = item.Value;
 
         AcpClient? client = null;
+        var mcpCredentialLease = options.McpCredentialLease;
+        var leaseTransferred = false;
         try
         {
             client = await AcpClient.StartAsync(new ProcessOptions
@@ -67,7 +69,10 @@ public sealed class Agent : IAgent
             var useHttpMcp = !string.IsNullOrWhiteSpace(options.McpEndpoint)
                 && agentCapabilities?.McpCapabilities?.Http == true;
             if (!useHttpMcp)
-                options.McpCredentialLease?.Dispose();
+            {
+                mcpCredentialLease?.Dispose();
+                mcpCredentialLease = null;
+            }
 
             var authMethods = client.Agent.AuthMethods?
                 .Select(static method => method.Value)
@@ -104,16 +109,18 @@ public sealed class Agent : IAgent
                     : []
             }, cancellationToken).ConfigureAwait(false);
             sessionActivity?.SetTag("agent.session.id", session.Id);
+            leaseTransferred = true;
             return new AgentSession(session, client, terminal, events, options.Context,
-                useHttpMcp ? options.McpCredentialLease : null, sensitiveValues);
+                useHttpMcp ? mcpCredentialLease : null, sensitiveValues);
         }
         catch (Exception exception)
         {
-            options.McpCredentialLease?.Dispose();
             RecordException(activity, exception, sensitiveValues);
             if (client is not null)
                 await client.DisposeAsync().ConfigureAwait(false);
             terminal.Dispose();
+            if (!leaseTransferred)
+                mcpCredentialLease?.Dispose();
             throw SanitizeException(exception, sensitiveValues);
         }
     }
