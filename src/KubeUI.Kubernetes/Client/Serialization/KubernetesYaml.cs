@@ -37,9 +37,16 @@ public static class KubernetesYaml
 
     // Thread-local pools to avoid lock contention while maintaining thread-safety
     // YamlDotNet deserializers/serializers are not thread-safe for shared instances
-    private static ThreadLocal<IDeserializer> s_threadLocalStrictDeserializer = new(() => GetDeserializer(strict: true));
-    private static ThreadLocal<IDeserializer> s_threadLocalDeserializer = new(() => GetDeserializer(strict: false));
-    private static ThreadLocal<IValueSerializer> s_threadLocalSerializer = new(() => Serializer);
+    private static ThreadLocal<IDeserializer> s_threadLocalStrictDeserializer = new(() =>
+        UseStaticContext
+            ? CreateStaticDeserializerBuilder(strict: true).WithDuplicateKeyChecking().Build()
+            : CommonReflectionDeserializerBuilder.WithDuplicateKeyChecking().Build());
+    private static ThreadLocal<IDeserializer> s_threadLocalDeserializer = new(() =>
+        UseStaticContext
+            ? CreateStaticDeserializerBuilder(strict: false).IgnoreUnmatchedProperties().Build()
+            : CommonReflectionDeserializerBuilder.IgnoreUnmatchedProperties().Build());
+    private static ThreadLocal<IValueSerializer> s_threadLocalSerializer = new(() =>
+        UseStaticContext ? CreateStaticSerializer() : CreateReflectionSerializer());
 
     private static KubernetesJsonStaticContext CreateStrictJsonContext()
     {
@@ -163,9 +170,16 @@ public static class KubernetesYaml
             s_threadLocalSerializer.Dispose();
 
             // Recreate the thread-local instances with the new context
-            s_threadLocalStrictDeserializer = new ThreadLocal<IDeserializer>(() => GetDeserializer(strict: true));
-            s_threadLocalDeserializer = new ThreadLocal<IDeserializer>(() => GetDeserializer(strict: false));
-            s_threadLocalSerializer = new ThreadLocal<IValueSerializer>(() => Serializer);
+            s_threadLocalStrictDeserializer = new ThreadLocal<IDeserializer>(() =>
+                UseStaticContext
+                    ? CreateStaticDeserializerBuilder(strict: true).WithDuplicateKeyChecking().Build()
+                    : CommonReflectionDeserializerBuilder.WithDuplicateKeyChecking().Build());
+            s_threadLocalDeserializer = new ThreadLocal<IDeserializer>(() =>
+                UseStaticContext
+                    ? CreateStaticDeserializerBuilder(strict: false).IgnoreUnmatchedProperties().Build()
+                    : CommonReflectionDeserializerBuilder.IgnoreUnmatchedProperties().Build());
+            s_threadLocalSerializer = new ThreadLocal<IValueSerializer>(() =>
+                UseStaticContext ? CreateStaticSerializer() : CreateReflectionSerializer());
         }
     }
 

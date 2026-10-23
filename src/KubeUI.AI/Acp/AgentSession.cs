@@ -109,7 +109,7 @@ internal sealed class AgentSession : IAgentSession
         }
         catch (Exception exception)
         {
-            exceptions.Add(exception);
+            exceptions.Add(SanitizeException(exception));
         }
 
         try
@@ -118,7 +118,7 @@ internal sealed class AgentSession : IAgentSession
         }
         catch (Exception exception)
         {
-            exceptions.Add(exception);
+            exceptions.Add(SanitizeException(exception));
         }
 
         _events.Writer.TryComplete();
