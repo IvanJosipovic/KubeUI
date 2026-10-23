@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using DynamicData;
 using Helm.NET;
+using Avalonia.Threading;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Kubernetes;
@@ -17,6 +18,8 @@ public sealed partial class HelmChartsViewModel : ViewModelBase, IInitializeClus
     private readonly DynamicTableViewSource<HelmChartSearchResult, string> _tableSource;
     private IReadOnlyList<HelmChartSearchResult> _matches = [];
     private HelmConnection? _connection;
+    private CancellationTokenSource? _searchDebounce;
+    private static readonly TimeSpan SearchDebounce = TimeSpan.FromMilliseconds(300);
 
     /// <summary>Workspace owning this chart document.</summary>
     [ObservableProperty]
@@ -152,7 +155,32 @@ public sealed partial class HelmChartsViewModel : ViewModelBase, IInitializeClus
 
     partial void OnSelectedRepositoryChanged(string? value) => ApplyRepositoryFilter();
 
-    partial void OnSearchTextChanged(string value) => ApplyRepositoryFilter();
+    partial void OnSearchTextChanged(string value)
+    {
+        CancellationTokenSource next = new();
+        CancellationTokenSource? previous = Interlocked.Exchange(ref _searchDebounce, next);
+        previous?.Cancel();
+        previous?.Dispose();
+        _ = ApplySearchAfterDelayAsync(next);
+    }
+
+    private async Task ApplySearchAfterDelayAsync(CancellationTokenSource debounce)
+    {
+        try
+        {
+            await Task.Delay(SearchDebounce, debounce.Token).ConfigureAwait(false);
+            Dispatcher.UIThread.Post(() =>
+            {
+                if (!debounce.IsCancellationRequested && ReferenceEquals(Volatile.Read(ref _searchDebounce), debounce))
+                {
+                    ApplyRepositoryFilter();
+                }
+            });
+        }
+        catch (OperationCanceledException)
+        {
+        }
+    }
 
     private void ApplyRepositoryFilter()
     {
@@ -189,6 +217,9 @@ public sealed partial class HelmChartsViewModel : ViewModelBase, IInitializeClus
     /// <inheritdoc />
     public void Dispose()
     {
+        var debounce = Interlocked.Exchange(ref _searchDebounce, null);
+        debounce?.Cancel();
+        debounce?.Dispose();
         _tableSource.Dispose();
         _charts.Dispose();
     }

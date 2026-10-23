@@ -294,6 +294,7 @@ internal sealed class FakeHelmClient : IHelmClient
 
     public void RepoAdd(string name, string url, string? username = null, string? password = null, bool forceUpdate = false)
     {
+        Enter();
         AddRepositoryCalls.Add((name, url, username, password));
         AddRepositoryForceUpdateCalls.Add(forceUpdate);
     }

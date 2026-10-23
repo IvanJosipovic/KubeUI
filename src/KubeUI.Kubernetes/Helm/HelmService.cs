@@ -1,18 +1,23 @@
 using System.Text.Json;
+using System.Threading;
 using Helm.NET;
 
 namespace KubeUI.Kubernetes;
 
 /// <summary>
-/// Default <see cref="IHelmService"/> that runs Helm's native client off the calling thread and
-/// serializes native Helm operations because repository configuration is shared by default and the native shim is synchronous.
+/// Default <see cref="IHelmService"/> that runs Helm's native client off the calling thread.
+/// Uses a reader-writer lock to allow concurrent read operations while serializing write operations,
+/// because Helm repository configuration and the Go shim are process-wide.
 /// </summary>
 public sealed class HelmService : IHelmService, IDisposable
 {
     private readonly IHelmClientFactory _clientFactory;
-    private readonly SemaphoreSlim _nativeGate = new(1, 1);
+    private readonly ReaderWriterLockSlim _nativeGate = new(LockRecursionPolicy.NoRecursion);
     private readonly CancellationTokenSource _disposeCancellation = new();
     private int _disposed;
+
+    // Timeout for waiting on the native gate during disposal
+    private static readonly TimeSpan DisposeGateTimeout = TimeSpan.FromSeconds(30);
 
     /// <summary>
     /// Initializes a Helm service.
@@ -45,7 +50,8 @@ public sealed class HelmService : IHelmService, IDisposable
                 var prefix = $"{repositoryName}/";
                 return charts.Where(chart => chart.Reference.StartsWith(prefix, StringComparison.Ordinal)).ToArray();
             },
-            cancellationToken);
+            cancellationToken,
+            isWriteOperation: false);
     }
 
     /// <inheritdoc />
@@ -56,7 +62,8 @@ public sealed class HelmService : IHelmService, IDisposable
         return InvokeAsync(
             connection,
             client => client.GetManifest(releaseName, connection.Namespace, revision),
-            cancellationToken);
+            cancellationToken,
+            isWriteOperation: false);
     }
 
     /// <inheritdoc />
@@ -73,12 +80,13 @@ public sealed class HelmService : IHelmService, IDisposable
                 namespaceName: connection.Namespace,
                 setValues: ToJsonElement(values),
                 version: version),
-            cancellationToken);
+            cancellationToken,
+            isWriteOperation: false);
     }
 
     /// <inheritdoc />
     public Task<IReadOnlyList<HelmRepository>> ListRepositoriesAsync(HelmConnection connection, CancellationToken cancellationToken = default)
-        => InvokeAsync(connection, static client => client.RepoList(), cancellationToken);
+        => InvokeAsync(connection, static client => client.RepoList(), cancellationToken, isWriteOperation: false);
 
     /// <inheritdoc />
     public Task AddRepositoryAsync(HelmConnection connection, string name, string url, string? username = null, string? password = null, CancellationToken cancellationToken = default)
@@ -89,19 +97,20 @@ public sealed class HelmService : IHelmService, IDisposable
         return InvokeVoidAsync(
             connection,
             client => client.RepoAdd(name, url, username, password, forceUpdate: true),
-            cancellationToken);
+            cancellationToken,
+            isWriteOperation: true);
     }
 
     /// <inheritdoc />
     public Task RemoveRepositoryAsync(HelmConnection connection, string name, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
-        return InvokeVoidAsync(connection, client => client.RepoRemove(name), cancellationToken);
+        return InvokeVoidAsync(connection, client => client.RepoRemove(name), cancellationToken, isWriteOperation: true);
     }
 
     /// <inheritdoc />
     public Task UpdateRepositoriesAsync(HelmConnection connection, CancellationToken cancellationToken = default)
-        => InvokeVoidAsync(connection, static client => client.RepoUpdate(), cancellationToken);
+        => InvokeVoidAsync(connection, static client => client.RepoUpdate(), cancellationToken, isWriteOperation: true);
 
     /// <inheritdoc />
     public Task<IReadOnlyList<HelmRelease>> ListReleasesAsync(HelmConnection connection, bool allNamespaces = true, string? filter = null, CancellationToken cancellationToken = default)
@@ -111,20 +120,21 @@ public sealed class HelmService : IHelmService, IDisposable
                 namespaceName: allNamespaces ? null : connection.Namespace,
                 allNamespaces: allNamespaces,
                 filter: filter),
-            cancellationToken);
+            cancellationToken,
+            isWriteOperation: false);
 
     /// <inheritdoc />
     public Task<HelmRelease> StatusAsync(HelmConnection connection, string releaseName, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(releaseName);
-        return InvokeAsync(connection, client => client.Status(releaseName, connection.Namespace), cancellationToken);
+        return InvokeAsync(connection, client => client.Status(releaseName, connection.Namespace), cancellationToken, isWriteOperation: false);
     }
 
     /// <inheritdoc />
     public Task<IReadOnlyList<HelmRelease>> HistoryAsync(HelmConnection connection, string releaseName, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(releaseName);
-        return InvokeAsync(connection, client => client.History(releaseName, connection.Namespace), cancellationToken);
+        return InvokeAsync(connection, client => client.History(releaseName, connection.Namespace), cancellationToken, isWriteOperation: false);
     }
 
     /// <inheritdoc />
@@ -134,7 +144,8 @@ public sealed class HelmService : IHelmService, IDisposable
         return InvokeAsync(
             connection,
             client => GetValues(client.GetValues(releaseName, connection.Namespace)),
-            cancellationToken);
+            cancellationToken,
+            isWriteOperation: false);
     }
 
     /// <inheritdoc />
@@ -163,7 +174,8 @@ public sealed class HelmService : IHelmService, IDisposable
                 wait: wait,
                 timeout: timeout,
                 version: version),
-            cancellationToken);
+            cancellationToken,
+            isWriteOperation: true);
     }
 
     /// <inheritdoc />
@@ -194,7 +206,8 @@ public sealed class HelmService : IHelmService, IDisposable
                 wait: wait,
                 timeout: timeout,
                 version: version),
-            cancellationToken);
+            cancellationToken,
+            isWriteOperation: true);
     }
 
     /// <inheritdoc />
@@ -208,7 +221,8 @@ public sealed class HelmService : IHelmService, IDisposable
                 revision,
                 namespaceName: connection.Namespace,
                 wait: wait),
-            cancellationToken);
+            cancellationToken,
+            isWriteOperation: true);
     }
 
     /// <inheritdoc />
@@ -218,7 +232,8 @@ public sealed class HelmService : IHelmService, IDisposable
         return InvokeVoidAsync(
             connection,
             client => client.Uninstall(releaseName, connection.Namespace, wait),
-            cancellationToken);
+            cancellationToken,
+            isWriteOperation: true);
     }
 
     /// <inheritdoc />
@@ -239,7 +254,8 @@ public sealed class HelmService : IHelmService, IDisposable
                 chart: chart,
                 namespaceName: connection.Namespace,
                 setValues: ToJsonElement(values)),
-            cancellationToken);
+            cancellationToken,
+            isWriteOperation: false);
     }
 
     private static JsonElement? ToJsonElement(IReadOnlyDictionary<string, object?>? values)
@@ -269,7 +285,7 @@ public sealed class HelmService : IHelmService, IDisposable
         return result;
     }
 
-    private Task InvokeVoidAsync(HelmConnection connection, Action<IHelmClient> operation, CancellationToken cancellationToken)
+    private Task InvokeVoidAsync(HelmConnection connection, Action<IHelmClient> operation, CancellationToken cancellationToken, bool isWriteOperation = false)
         => InvokeAsync(
             connection,
             client =>
@@ -277,32 +293,56 @@ public sealed class HelmService : IHelmService, IDisposable
                 operation(client);
                 return true;
             },
-            cancellationToken);
+            cancellationToken,
+            isWriteOperation);
 
-    private async Task<T> InvokeAsync<T>(HelmConnection connection, Func<IHelmClient, T> operation, CancellationToken cancellationToken)
+    private Task<T> InvokeAsync<T>(HelmConnection connection, Func<IHelmClient, T> operation, CancellationToken cancellationToken, bool isWriteOperation = false)
     {
         ArgumentNullException.ThrowIfNull(connection);
         ArgumentNullException.ThrowIfNull(operation);
         ObjectDisposedException.ThrowIf(Volatile.Read(ref _disposed) != 0, this);
         cancellationToken.ThrowIfCancellationRequested();
 
-        // Client construction is cheap and stays outside the native-call gate. The native operation itself
-        // is serialized because Helm repository configuration and the Go shim are process-wide.
+        // Client construction is cheap and stays outside the native-call gate.
         var client = _clientFactory.Create(connection);
 
-        using var linkedCancellation = CancellationTokenSource.CreateLinkedTokenSource(
-            cancellationToken,
-            _disposeCancellation.Token);
-        await _nativeGate.WaitAsync(linkedCancellation.Token).ConfigureAwait(false);
-        try
+        var disposeToken = _disposeCancellation.Token;
+        return Task.Run(() =>
         {
-            // Helm's native calls are synchronous and cannot be cancelled once they started.
-            return await Task.Run(() => operation(client), CancellationToken.None).ConfigureAwait(false);
-        }
-        finally
-        {
-            _nativeGate.Release();
-        }
+            using var linkedCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, disposeToken);
+            var token = linkedCancellation.Token;
+            while (true)
+            {
+                token.ThrowIfCancellationRequested();
+                ObjectDisposedException.ThrowIf(Volatile.Read(ref _disposed) != 0, this);
+
+                var entered = isWriteOperation
+                    ? _nativeGate.TryEnterWriteLock(TimeSpan.FromMilliseconds(50))
+                    : _nativeGate.TryEnterReadLock(TimeSpan.FromMilliseconds(50));
+                if (!entered)
+                {
+                    continue;
+                }
+
+                try
+                {
+                    token.ThrowIfCancellationRequested();
+                    ObjectDisposedException.ThrowIf(Volatile.Read(ref _disposed) != 0, this);
+                    return operation(client);
+                }
+                finally
+                {
+                    if (isWriteOperation)
+                    {
+                        _nativeGate.ExitWriteLock();
+                    }
+                    else
+                    {
+                        _nativeGate.ExitReadLock();
+                    }
+                }
+            }
+        }, CancellationToken.None);
     }
 
     /// <summary>
@@ -318,8 +358,31 @@ public sealed class HelmService : IHelmService, IDisposable
         // Native Helm calls cannot be cancelled once they start. Reject new operations, cancel queued ones,
         // and wait for the running call so the gate is never disposed under a waiter.
         _disposeCancellation.Cancel();
-        _nativeGate.Wait();
-        _nativeGate.Release();
+
+        // Wait for active operations to complete. Native Helm calls cannot be cancelled once started.
+        var waitStart = DateTime.UtcNow;
+        while (true)
+        {
+            var writerActive = !_nativeGate.TryEnterReadLock(0);
+            if (!writerActive)
+            {
+                _nativeGate.ExitReadLock();
+            }
+
+            if (_nativeGate.CurrentReadCount == 0 && _nativeGate.WaitingReadCount == 0 && _nativeGate.WaitingWriteCount == 0 && !writerActive)
+            {
+                break;
+            }
+
+            if (DateTime.UtcNow - waitStart > DisposeGateTimeout)
+            {
+                // Keep synchronization objects alive if a native call is stuck; disposing them would race the call.
+                System.Diagnostics.Debug.WriteLine($"HelmService.Dispose: Native operation still running after {DisposeGateTimeout}.");
+                return;
+            }
+            Thread.Sleep(10);
+        }
+
         _nativeGate.Dispose();
         _disposeCancellation.Dispose();
     }

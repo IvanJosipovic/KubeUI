@@ -2,6 +2,7 @@ using Avalonia.Xaml.Interactivity;
 using AvaloniaEdit;
 using AvaloniaEdit.TextMate;
 using TextMateSharp.Grammars;
+using TextMateSharp.Themes;
 
 namespace KubeUI.Avalonia.Features.Resources.Yaml.Behaviors;
 
@@ -10,6 +11,8 @@ public sealed class YamlSyntaxHighlightingBehavior : Behavior<TextEditor>
 {
     private TextMate.Installation? _installation;
     private RegistryOptions? _registry;
+    private IRawTheme? _lightTheme;
+    private IRawTheme? _darkTheme;
 
     internal bool IsInstalled => _installation is not null;
 
@@ -17,7 +20,10 @@ public sealed class YamlSyntaxHighlightingBehavior : Behavior<TextEditor>
     {
         base.OnAttached();
         _registry = new RegistryOptions(GetTheme());
+        _lightTheme = _registry.LoadTheme(ThemeName.Light);
+        _darkTheme = _registry.LoadTheme(ThemeName.DarkPlus);
         _installation = AssociatedObject.InstallTextMate(_registry, true);
+        _installation.SetTheme(GetThemeObject());
         _installation.SetGrammar(_registry.GetScopeByLanguageId(_registry.GetLanguageByExtension(".yaml").Id));
         Application.Current!.ActualThemeVariantChanged += ThemeChanged;
     }
@@ -28,6 +34,8 @@ public sealed class YamlSyntaxHighlightingBehavior : Behavior<TextEditor>
         _installation!.Dispose();
         _installation = null;
         _registry = null;
+        _lightTheme = null;
+        _darkTheme = null;
         base.OnDetaching();
     }
 
@@ -35,5 +43,8 @@ public sealed class YamlSyntaxHighlightingBehavior : Behavior<TextEditor>
         => Application.Current!.ActualThemeVariant == ThemeVariant.Light ? ThemeName.Light : ThemeName.DarkPlus;
 
     private void ThemeChanged(object? sender, EventArgs args)
-        => _installation!.SetTheme(_registry!.LoadTheme(GetTheme()));
+        => _installation!.SetTheme(GetThemeObject());
+
+    private IRawTheme GetThemeObject()
+        => GetTheme() == ThemeName.Light ? _lightTheme! : _darkTheme!;
 }

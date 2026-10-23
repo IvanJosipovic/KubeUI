@@ -330,30 +330,95 @@ public sealed class HelmServiceTests
     }
 
     [Fact]
-    public async Task Native_operations_for_different_connections_are_serialized()
+    public async Task Read_operations_for_different_connections_run_concurrently()
+    {
+        // Use separate clients for each connection to test true concurrency
+        var client1 = new FakeHelmClient { BlockingEntries = 1 };
+        var client2 = new FakeHelmClient { BlockingEntries = 1 };
+        var factory = new MultiClientHelmClientFactory(client1, client2);
+        using var sut = new HelmService(factory);
+        var connection1 = CreateConnection();
+        var connection2 = new HelmConnection("/other/config", "other-context", "system");
+
+        var first = sut.ListReleasesAsync(connection1, cancellationToken: TestContext.Current.CancellationToken);
+        await client1.FirstEntry.Task.WaitAsync(TestContext.Current.CancellationToken);
+
+        var second = sut.ListReleasesAsync(connection2, cancellationToken: TestContext.Current.CancellationToken);
+        await client2.FirstEntry.Task.WaitAsync(TestContext.Current.CancellationToken);
+
+        // With ReaderWriterLockSlim, read operations run concurrently
+        // Both operations should be blocked on their respective FirstEntry
+        first.IsCompleted.ShouldBeFalse();
+        second.IsCompleted.ShouldBeFalse();
+
+        client1.Release.SetResult();
+        client2.Release.SetResult();
+        var firstResult = await first;
+        var secondResult = await second;
+
+        firstResult.Count.ShouldBe(0);
+        secondResult.Count.ShouldBe(0);
+        // Both operations should have entered (concurrent reads)
+        client1.EntryCount.ShouldBe(1);
+        client2.EntryCount.ShouldBe(1);
+    }
+
+    [Fact]
+    public async Task Write_operations_for_different_connections_are_serialized()
     {
         var client = new FakeHelmClient { BlockingEntries = 1 };
         using var factory = new FakeHelmClientFactory(client);
         using var sut = CreateService(factory);
         var connection = CreateConnection();
 
-        var first = sut.ListRepositoriesAsync(connection, TestContext.Current.CancellationToken);
+        var first = sut.AddRepositoryAsync(connection, "repo1", "https://repo1.test", cancellationToken: TestContext.Current.CancellationToken);
         await client.FirstEntry.Task.WaitAsync(TestContext.Current.CancellationToken);
 
-        var second = sut.ListRepositoriesAsync(
+        var second = sut.AddRepositoryAsync(
             new HelmConnection("/other/config", "other-context", "system"),
-            TestContext.Current.CancellationToken);
+            "repo2", "https://repo2.test",
+            cancellationToken: TestContext.Current.CancellationToken);
         await factory.SecondCreated.Task.WaitAsync(TestContext.Current.CancellationToken);
 
+        // Write operations should be serialized
         second.IsCompleted.ShouldBeFalse();
 
         client.Release.SetResult();
-        var firstResult = await first;
-        var secondResult = await second;
+        await first;
+        await second;
 
-        firstResult.Count.ShouldBe(0);
-        secondResult.Count.ShouldBe(0);
         client.MaxConcurrent.ShouldBe(1);
         client.EntryCount.ShouldBe(2);
+    }
+
+    [Fact]
+    public async Task Queued_operation_can_be_cancelled_while_native_write_is_running()
+    {
+        var client = new FakeHelmClient { BlockingEntries = 1 };
+        using var factory = new FakeHelmClientFactory(client);
+        using var sut = CreateService(factory);
+        using var cancellation = new CancellationTokenSource();
+
+        var first = sut.AddRepositoryAsync(CreateConnection(), "repo", "https://repo.test", cancellationToken: TestContext.Current.CancellationToken);
+        await client.FirstEntry.Task.WaitAsync(TestContext.Current.CancellationToken);
+        var queued = sut.ListRepositoriesAsync(CreateConnection(), cancellation.Token);
+
+        cancellation.Cancel();
+        await Should.ThrowAsync<OperationCanceledException>(() => queued);
+
+        client.Release.SetResult();
+        await first;
+        client.EntryCount.ShouldBe(1);
+    }
+
+    private sealed class MultiClientHelmClientFactory(IHelmClient client1, IHelmClient client2) : IHelmClientFactory
+    {
+        private int _callCount;
+
+        public IHelmClient Create(HelmConnection connection)
+        {
+            var count = Interlocked.Increment(ref _callCount);
+            return count == 1 ? client1 : client2;
+        }
     }
 }
