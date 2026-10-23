@@ -8,6 +8,7 @@ using KubeUI.Avalonia.Infrastructure.Threading;
 using KubeUI.Avalonia.Resources;
 using KubeUI.Avalonia.Services.Icons;
 using KubeUI.Kubernetes;
+using KubeUI.Kubernetes.Resources.GatewayApi;
 
 namespace KubeUI.Avalonia.Shell.Navigation;
 
@@ -42,7 +43,11 @@ internal sealed class NavigationResourceSynchronizer
             return;
         }
 
-        if (resourceConfig.Kind == GroupApiVersionKind.From<V1CustomResourceDefinition>() || resourceConfig.IsCustomResource)
+        if (resourceConfig is IGatewayApiResourceConfig { GatewayApiChannel: { } channel })
+        {
+            UpdateGatewayApiNavigation(node, cluster, resourceConfig, channel);
+        }
+        else if (resourceConfig.Kind == GroupApiVersionKind.From<V1CustomResourceDefinition>() || resourceConfig.IsCustomResource)
         {
             UpdateCustomResourceNavigation(node, cluster, resourceConfig, resourceConfigs);
         }
@@ -105,11 +110,9 @@ internal sealed class NavigationResourceSynchronizer
 
     private void UpdateStandardResourceNavigation(ClusterNavigationNode node, ClusterWorkspace cluster, IResourceConfig config)
     {
-        var resourceId = $"{cluster.Runtime.Name}-{config.Kind}";
         if (!config.PermissionsLoaded || !config.CanListAndWatch)
         {
-            RemoveNavigationItem(node.NavigationItems, resourceId);
-            RemoveEmptyCategories(node.NavigationItems, cluster);
+            RemoveResourceLink(node, cluster, config);
             return;
         }
 
@@ -119,6 +122,52 @@ internal sealed class NavigationResourceSynchronizer
             target = EnsureNavigationCategory(node.NavigationItems, cluster, config.Category, config.Order).NavigationItems;
         }
 
+        PlaceResourceLink(node, cluster, config, target);
+    }
+
+    private void UpdateGatewayApiNavigation(ClusterNavigationNode node, ClusterWorkspace cluster, IResourceConfig config, GatewayApiChannel channel)
+    {
+        if (!config.PermissionsLoaded || !config.CanListAndWatch)
+        {
+            RemoveResourceLink(node, cluster, config);
+            return;
+        }
+
+        var target = EnsureNavigationCategory(node.NavigationItems, cluster, ResourceCategories.GatewayApi, ResourceCategories.GatewayApiNavigationOrder).NavigationItems;
+        if (channel == GatewayApiChannel.Experimental)
+        {
+            var id = $"{cluster.Runtime.Name}-category-gateway-api-experimental";
+            var experimental = target.FirstOrDefault(item => item.Id == id);
+            if (experimental is null)
+            {
+                experimental = new NavigationItem
+                {
+                    Id = id,
+                    Name = Assets.Resources.NavigationView_GatewayApiExperimental!,
+                    Order = int.MaxValue,
+                    FluentIcon = Icon.Beaker,
+                };
+                target.Add(experimental);
+            }
+
+            target = experimental.NavigationItems;
+        }
+
+        PlaceResourceLink(node, cluster, config, target);
+    }
+
+    private static bool IsGatewayApi(IResourceConfig config) =>
+        config is IGatewayApiResourceConfig { GatewayApiChannel: not null };
+
+    private static void RemoveResourceLink(ClusterNavigationNode node, ClusterWorkspace cluster, IResourceConfig config)
+    {
+        RemoveNavigationItem(node.NavigationItems, $"{cluster.Runtime.Name}-{config.Kind}");
+        RemoveEmptyCategories(node.NavigationItems, cluster);
+    }
+
+    private void PlaceResourceLink(ClusterNavigationNode node, ClusterWorkspace cluster, IResourceConfig config, ObservableCollection<NavigationItem> target)
+    {
+        var resourceId = $"{cluster.Runtime.Name}-{config.Kind}";
         var existingParent = FindNavigationParentCollection(node.NavigationItems, resourceId);
         var existing = existingParent?.FirstOrDefault(item => item.Id == resourceId);
         var desired = CreateResourceNavigationLink(cluster, config);
@@ -192,7 +241,7 @@ internal sealed class NavigationResourceSynchronizer
 
             UpdateCustomResourceLink(root, cluster, definition);
             foreach (var config in configs
-                         .Where(config => config.IsCustomResource && config.PermissionsLoaded && config.CanListAndWatch)
+                         .Where(config => config.IsCustomResource && !IsGatewayApi(config) && config.PermissionsLoaded && config.CanListAndWatch)
                          .OrderBy(config => config.Order)
                          .ThenBy(config => config.Name, StringComparer.Ordinal))
             {

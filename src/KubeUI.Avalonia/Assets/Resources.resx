@@ -2741,6 +2741,12 @@
     <value>Instances</value>
     <comment/>
   </data>
+  <data name="ResourceConfig_Category_GatewayApi" xml:space="preserve">
+    <value>Gateway API</value>
+  </data>
+  <data name="NavigationView_GatewayApiExperimental" xml:space="preserve">
+    <value>Experimental</value>
+  </data>
   <data name="SettingsView_McpClients_Description" xml:space="preserve">
     <value>Create a separate bearer token for each trusted host app. KubeUI stores only token verifiers. ConfigMaps, custom resources, and pod logs may contain credentials; Secret reads still require approval.</value>
     <comment/>
