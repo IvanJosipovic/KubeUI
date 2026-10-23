@@ -4,32 +4,36 @@ using System.Text;
 
 namespace KubeUI.Kubernetes;
 
-public sealed partial class PrometheusQueryClient : IPrometheusQueryClient, IDisposable
+public sealed partial class PrometheusQueryClient : IPrometheusQueryClient, IDisposable, IAsyncDisposable
 {
     private readonly ILogger<PrometheusQueryClient> _logger;
     private readonly IAzureMonitorWorkspaceService? _azureMonitorWorkspaceService;
+    private readonly IHttpClientFactory? _httpClientFactory;
     private readonly Func<HttpMessageHandler>? _directHandlerFactory;
     private readonly SemaphoreSlim _transportGate = new(1, 1);
     private HttpClient? _httpClient;
     private string? _endpointKey;
+    private bool _disposed;
 
     public PrometheusQueryClient(ILogger<PrometheusQueryClient> logger)
-        : this(logger, null, null)
+        : this(logger, null, null, null)
     {
     }
 
-    public PrometheusQueryClient(ILogger<PrometheusQueryClient> logger, IAzureMonitorWorkspaceService azureMonitorWorkspaceService)
-        : this(logger, azureMonitorWorkspaceService, null)
+    public PrometheusQueryClient(ILogger<PrometheusQueryClient> logger, IAzureMonitorWorkspaceService azureMonitorWorkspaceService, IHttpClientFactory? httpClientFactory = null)
+        : this(logger, azureMonitorWorkspaceService, httpClientFactory, null)
     {
     }
 
     internal PrometheusQueryClient(
         ILogger<PrometheusQueryClient> logger,
         IAzureMonitorWorkspaceService? azureMonitorWorkspaceService,
+        IHttpClientFactory? httpClientFactory,
         Func<HttpMessageHandler>? directHandlerFactory)
     {
         _logger = logger;
         _azureMonitorWorkspaceService = azureMonitorWorkspaceService;
+        _httpClientFactory = httpClientFactory;
         _directHandlerFactory = directHandlerFactory;
     }
 
@@ -79,6 +83,18 @@ public sealed partial class PrometheusQueryClient : IPrometheusQueryClient, IDis
     /// </remarks>
     public void Dispose()
     {
+        DisposeAsync().AsTask().Wait(TimeSpan.FromSeconds(5));
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_disposed)
+        {
+            return;
+        }
+
+        _disposed = true;
+
         if (_transportGate.Wait(TimeSpan.FromSeconds(5)))
         {
             try
@@ -115,13 +131,13 @@ public sealed partial class PrometheusQueryClient : IPrometheusQueryClient, IDis
             {
                 if (!string.IsNullOrWhiteSpace(endpoint.DirectUrl))
                 {
-                    _httpClient = CreateDirectHttpClient(endpoint, _directHandlerFactory?.Invoke());
+                    _httpClient = CreateDirectHttpClient(endpoint, _directHandlerFactory?.Invoke(), _httpClientFactory);
                 }
                 else
                 {
                     await cluster.SeedResource<k8s.Models.V1Service>(true, cancellationToken).ConfigureAwait(false);
                     await EnsureServiceAvailableAsync(cluster, endpoint, cancellationToken).ConfigureAwait(false);
-                    PrepareServicePortForwardTransport(cluster, endpoint);
+                    PrepareServicePortForwardTransport(cluster, endpoint, _httpClientFactory);
                 }
 
                 if (_httpClient is not null

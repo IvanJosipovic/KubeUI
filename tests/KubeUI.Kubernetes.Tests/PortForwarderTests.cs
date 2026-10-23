@@ -182,7 +182,7 @@ public sealed class PortForwarderTests
         var factory = new Mock<IPortForwardSessionFactory>(MockBehavior.Strict);
         factory.Setup(x => x.CreateAsync("pod-1", "default", 8080)).ReturnsAsync(session.Object);
 
-        using var sut = new PortForwarder(cluster, "default", localPort: 0, sessionFactory: factory.Object);
+        using var sut = new PortForwarder(cluster, "default", localPort: 0, sessionFactory: factory.Object, logger: Microsoft.Extensions.Logging.Abstractions.NullLogger.Instance);
         sut.SetPod("pod-1", 8080);
         sut.Start();
 
@@ -428,7 +428,7 @@ public sealed class PortForwarderTests
         var factory = new Mock<IPortForwardSessionFactory>(MockBehavior.Strict);
         factory.Setup(x => x.CreateAsync("prometheus-0", "default", 9090)).ReturnsAsync(session.Object);
 
-        using var sut = new PortForwarder(cluster, "default", localPort: 0, sessionFactory: factory.Object);
+        using var sut = new PortForwarder(cluster, "default", localPort: 0, sessionFactory: factory.Object, logger: Microsoft.Extensions.Logging.Abstractions.NullLogger.Instance);
         sut.SetService("prometheus", 9090);
         sut.Start();
 

@@ -38,7 +38,7 @@ public sealed partial class PrometheusQueryClient
         cluster.GetResourceSourceCache<k8s.Models.V1Service>().Edit(updater => updater.AddOrUpdate(service));
     }
 
-    private void PrepareServicePortForwardTransport(Cluster cluster, ResolvedPrometheusEndpoint endpoint)
+    private void PrepareServicePortForwardTransport(Cluster cluster, ResolvedPrometheusEndpoint endpoint, IHttpClientFactory? factory)
     {
         if (string.IsNullOrWhiteSpace(endpoint.Namespace)
             || string.IsNullOrWhiteSpace(endpoint.ServiceName)
@@ -58,29 +58,39 @@ public sealed partial class PrometheusQueryClient
             throw new InvalidOperationException($"Could not start Prometheus service port-forward: {status}.");
         }
 
-        _httpClient = CreateServicePortForwardHttpClient(endpoint, portForwarder.LocalPort, _directHandlerFactory?.Invoke());
+        _httpClient = CreateServicePortForwardHttpClient(endpoint, portForwarder.LocalPort, _directHandlerFactory?.Invoke(), factory);
     }
 
     private static HttpClient CreateServicePortForwardHttpClient(
         ResolvedPrometheusEndpoint endpoint,
         int localPort,
-        HttpMessageHandler? handler)
+        HttpMessageHandler? handler,
+        IHttpClientFactory? factory)
     {
         var scheme = endpoint.UseHttps ? Uri.UriSchemeHttps : Uri.UriSchemeHttp;
         var host = $"{endpoint.ServiceName}.{endpoint.Namespace}.svc";
         var pathPrefix = string.IsNullOrEmpty(endpoint.PathPrefix) ? "/" : endpoint.PathPrefix.TrimEnd('/') + "/";
         var baseAddress = new UriBuilder(scheme, host, localPort, pathPrefix).Uri;
 
+        HttpClient client;
+        if (factory is not null)
+        {
+            client = factory.CreateClient();
+            client.BaseAddress = baseAddress;
+        }
+        else if (handler is null)
+        {
 #pragma warning disable CA2000 // HttpClient owns the handler and disposes it when the client is disposed.
-        HttpClient client = handler is null
-            ? new HttpClient(new SocketsHttpHandler
+            client = new HttpClient(new SocketsHttpHandler
             {
                 ConnectCallback = async (_, cancellationToken) =>
                 {
                     Socket socket = new(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
                     try
                     {
-                        await socket.ConnectAsync(IPAddress.Loopback, localPort, cancellationToken).ConfigureAwait(false);
+                        using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                        cts.CancelAfter(TimeSpan.FromSeconds(5));
+                        await socket.ConnectAsync(IPAddress.Loopback, localPort, cts.Token).ConfigureAwait(false);
                         return new NetworkStream(socket, ownsSocket: true);
                     }
                     catch
@@ -89,10 +99,15 @@ public sealed partial class PrometheusQueryClient
                         throw;
                     }
                 },
-            }, disposeHandler: true)
-            : new HttpClient(handler);
+            }, disposeHandler: true);
 #pragma warning restore CA2000
-        client.BaseAddress = baseAddress;
+            client.BaseAddress = baseAddress;
+        }
+        else
+        {
+            client = new HttpClient(handler);
+            client.BaseAddress = baseAddress;
+        }
         return client;
     }
 }

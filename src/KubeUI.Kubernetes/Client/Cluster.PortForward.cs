@@ -10,7 +10,7 @@ public partial class Cluster
 #pragma warning disable CA2000 // PortForwarders owns forwarders after Add.
     public PortForwarder AddPodPortForward(string @namespace, string podName, int containerPort)
     {
-        var pf = new PortForwarder(this, @namespace, localPort: 0, _portForwardSessionFactory);
+        var pf = new PortForwarder(this, @namespace, localPort: 0, _portForwardSessionFactory, _loggerFactory.CreateLogger<PortForwarder>());
         pf.SetPod(podName, containerPort);
 
         var existing = FindPortForwarder(pf);
@@ -27,7 +27,7 @@ public partial class Cluster
 
     public PortForwarder AddServicePortForward(string @namespace, string serviceName, int servicePort)
     {
-        var pf = new PortForwarder(this, @namespace, localPort: 0, _portForwardSessionFactory);
+        var pf = new PortForwarder(this, @namespace, localPort: 0, _portForwardSessionFactory, _loggerFactory.CreateLogger<PortForwarder>());
         pf.SetService(serviceName, servicePort);
 
         return AddOrReusePortForwarderOnDispatcher(pf);

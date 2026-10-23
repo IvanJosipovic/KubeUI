@@ -23,7 +23,7 @@ public sealed class PrometheusQueryClientTests
         var fixture = CreateCluster("microk8s", kubernetesHandler);
         await using var cluster = fixture.Cluster;
         using var metricsService = fixture.Service;
-        using var client = new PrometheusQueryClient(NullLogger<PrometheusQueryClient>.Instance);
+        using var client = new PrometheusQueryClient(NullLogger<PrometheusQueryClient>.Instance, null, null, null);
         var endpoint = new ResolvedPrometheusEndpoint(
             PrometheusProviderKind.Operator,
             "Prometheus Operator",
@@ -64,6 +64,7 @@ public sealed class PrometheusQueryClientTests
         var existingPortForwarder = cluster.AddServicePortForward("monitoring", "prometheus-operated", 9090);
         using var client = new PrometheusQueryClient(
             NullLogger<PrometheusQueryClient>.Instance,
+            null,
             null,
             () => queryHandler);
         var endpoint = new ResolvedPrometheusEndpoint(
@@ -140,6 +141,7 @@ public sealed class PrometheusQueryClientTests
         using var client = new PrometheusQueryClient(
             NullLogger<PrometheusQueryClient>.Instance,
             null,
+            null,
             () =>
             {
                 Interlocked.Increment(ref httpHandlerCreations);
@@ -201,6 +203,7 @@ public sealed class PrometheusQueryClientTests
         using var client = new PrometheusQueryClient(
             NullLogger<PrometheusQueryClient>.Instance,
             azureService,
+            null,
             () => handler);
         var fixture = CreateCluster("azure-prometheus");
         await using var cluster = fixture.Cluster;
@@ -239,6 +242,7 @@ public sealed class PrometheusQueryClientTests
         using var client = new PrometheusQueryClient(
             NullLogger<PrometheusQueryClient>.Instance,
             azureService,
+            null,
             () => handler);
         var fixture = CreateCluster("azure-prometheus");
         await using var cluster = fixture.Cluster;

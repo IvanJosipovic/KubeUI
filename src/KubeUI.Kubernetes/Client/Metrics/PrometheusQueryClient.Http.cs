@@ -99,9 +99,21 @@ public sealed partial class PrometheusQueryClient
         return new Uri(_httpClient!.BaseAddress!, relativeUrl).AbsoluteUri;
     }
 
-    private static HttpClient CreateDirectHttpClient(ResolvedPrometheusEndpoint endpoint, HttpMessageHandler? handler)
+    private static HttpClient CreateDirectHttpClient(ResolvedPrometheusEndpoint endpoint, HttpMessageHandler? handler, IHttpClientFactory? factory)
     {
-        var client = handler is null ? new HttpClient() : new HttpClient(handler);
+        HttpClient client;
+        if (factory is not null)
+        {
+            client = factory.CreateClient();
+        }
+        else if (handler is not null)
+        {
+            client = new HttpClient(handler);
+        }
+        else
+        {
+            client = new HttpClient();
+        }
         client.BaseAddress = BuildBaseAddress(endpoint);
         return client;
     }
