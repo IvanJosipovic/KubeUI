@@ -13,19 +13,22 @@ internal sealed class ResourceEditorYamlTextBehavior : Behavior<TextEditor>
     private static readonly IIndentationStrategy s_yamlIndentationStrategy = new YamlIndentationStrategy();
     private Installation? _textMateInstallation;
     private RegistryOptions? _registryOptions;
+    private Application? _application;
 
     protected override void OnAttached()
     {
         base.OnAttached();
         if (AssociatedObject is not null)
         {
+            _application = Application.Current;
             ConfigureEditor(AssociatedObject);
             AssociatedObject.TextChanged += OnTextChanged;
             AssociatedObject.AddHandler(
                 Control.RequestBringIntoViewEvent,
                 OnRequestBringIntoView,
                 RoutingStrategies.Direct | RoutingStrategies.Tunnel | RoutingStrategies.Bubble);
-            Application.Current!.ActualThemeVariantChanged += OnThemeChanged;
+            if (_application is not null)
+                _application.ActualThemeVariantChanged += OnThemeChanged;
         }
     }
 
@@ -35,7 +38,11 @@ internal sealed class ResourceEditorYamlTextBehavior : Behavior<TextEditor>
         {
             AssociatedObject.TextChanged -= OnTextChanged;
             AssociatedObject.RemoveHandler(Control.RequestBringIntoViewEvent, OnRequestBringIntoView);
-            Application.Current!.ActualThemeVariantChanged -= OnThemeChanged;
+        }
+        if (_application is not null)
+        {
+            _application.ActualThemeVariantChanged -= OnThemeChanged;
+            _application = null;
         }
         _textMateInstallation?.Dispose();
         _textMateInstallation = null;
@@ -68,8 +75,8 @@ internal sealed class ResourceEditorYamlTextBehavior : Behavior<TextEditor>
         _textMateInstallation.SetTheme(_registryOptions.LoadTheme(GetThemeName()));
     }
 
-    private static ThemeName GetThemeName()
-        => Application.Current?.ActualThemeVariant == ThemeVariant.Light
+    private ThemeName GetThemeName()
+        => _application?.ActualThemeVariant == ThemeVariant.Light
             ? ThemeName.Light
             : ThemeName.DarkPlus;
 

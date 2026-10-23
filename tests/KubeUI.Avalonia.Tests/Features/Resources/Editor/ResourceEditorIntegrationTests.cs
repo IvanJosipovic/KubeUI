@@ -229,6 +229,43 @@ public sealed class ResourceEditorIntegrationTests
     }
 
     [AvaloniaFact]
+    public async Task Clean_editor_refreshes_its_document_when_the_cluster_resource_changes()
+    {
+        using var cluster = await Application.Current.CreateClusterAsync();
+        await cluster.Runtime.SeedResource<V1Pod>(true).WaitAsync(TestContext.Current.CancellationToken);
+        var pod = new V1Pod
+        {
+            ApiVersion = "v1",
+            Kind = "Pod",
+            Metadata = new V1ObjectMeta { Name = "pod-1", NamespaceProperty = "default" },
+            Spec = new V1PodSpec { Containers = [new V1Container { Name = "app", Image = "nginx" }] },
+        };
+        await cluster.Runtime.AddOrUpdateResource(pod).WaitAsync(TestContext.Current.CancellationToken);
+        await TestWait.UntilAsync(
+            () => cluster.Runtime.GetResource<V1Pod>("default", "pod-1")?.Metadata?.Uid is not null,
+            TimeSpan.FromSeconds(5),
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        using var vm = Application.Current.GetRequiredTestService<ResourceEditorViewModel>();
+        vm.Initialize(cluster, pod);
+        var previousEditorRoot = vm.EditorRoot;
+        var updatedPod = Utilities.CloneObject(pod);
+        updatedPod.Metadata.Labels = new Dictionary<string, string> { ["source"] = "watch" };
+        await cluster.Runtime.AddOrUpdateResource(updatedPod).WaitAsync(TestContext.Current.CancellationToken);
+
+        await TestWait.UntilAsync(
+            () => vm.Object?.Metadata?.Labels?.TryGetValue("source", out var value) == true && value == "watch",
+            timeout: TimeSpan.FromSeconds(5),
+            pollInterval: TimeSpan.FromMilliseconds(25),
+            cancellationToken: TestContext.Current.CancellationToken,
+            beforePoll: () => Dispatcher.UIThread.RunJobs());
+
+        vm.Document!.Root["metadata"]!["labels"]!["source"]!.GetValue<string>().ShouldBe("watch");
+        vm.IsDirty.ShouldBeFalse();
+        vm.EditorRoot.ShouldNotBeSameAs(previousEditorRoot);
+    }
+
+    [AvaloniaFact]
     public async Task Saving_a_created_resource_records_the_server_assigned_identity()
     {
         using var cluster = await Application.Current.CreateClusterAsync();

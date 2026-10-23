@@ -254,10 +254,26 @@ public sealed partial class ResourceEditorViewModel : ViewModelBase, IDisposable
 
     private void OnClusterChange(WatchEventType eventType, GroupApiVersionKind kind, IKubernetesObject<V1ObjectMeta> resource)
     {
-        if (Object is null || kind != _kind || resource.Name() != Object.Name() || resource.Namespace() != Object.Namespace())
+        if (eventType is not (WatchEventType.Added or WatchEventType.Modified))
             return;
-        if (!IsDirty)
-            Dispatcher.UIThread.Post(() => Object = resource);
+
+        Dispatcher.UIThread.Post(() =>
+        {
+            var currentObject = Object;
+            if (currentObject is null
+                || IsCreateMode
+                || _kind != kind
+                || currentObject.Name() != resource.Name()
+                || currentObject.Namespace() != resource.Namespace()
+                || IsDirty)
+                return;
+
+            Object = resource;
+            Document = ResourceEditorDocument.Parse(KubernetesJson.Serialize(resource));
+            RebuildEditorTree();
+            Validate();
+            NotifyStateChanged();
+        });
     }
 
     private void Validate()
