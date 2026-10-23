@@ -80,7 +80,7 @@
     <PackageReference Include="Irihi.Ursa.Themes.Semi" Version="2.2.0" />
     <PackageReference Include="JsonPathLINQ" Version="1.0.0-alpha.16" />
     <PackageReference Include="LiveChartsCore.SkiaSharpView.Avalonia" Version="2.1.0-dev-798" />
-    <PackageReference Include="LiveMarkdown.Avalonia" Version="2.4.3" />
+    <PackageReference Include="LiveMarkdown.Avalonia" Version="2.5.1" />
     <PackageReference Include="ModelContextProtocol" Version="2.3.0" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="11.0.0-rc.2.26504.105" />
     <PackageReference Include="OpenTelemetry" Version="1.20.1" />
