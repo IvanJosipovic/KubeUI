@@ -1,11 +1,14 @@
 using System.Diagnostics.Metrics;
+using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
+using KubeUI.Avalonia.Infrastructure.Platform;
 using k8s.Models;
 using KubeUI.Avalonia.Features.Crossplane.MRDiffDetection;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Shell.Documents.Updates;
 using KubeUI.Avalonia.Shell.Main;
 using KubeUI.Kubernetes.Client;
+using Microsoft.Extensions.Logging;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Infrastructure.Presentation;
@@ -104,4 +107,21 @@ public sealed class ViewLocatorTests
 
         view.ShouldBeOfType<ResourcePropertiesView<V1Pod>>();
     }
+
+    [AvaloniaFact]
+    public void Build_UsesFallbackForRepeatedUnmappedViewModel()
+    {
+        var services = Application.Current.GetTestServices();
+        var locator = new ViewLocator(
+            services,
+            services.GetRequiredService<ILogger<ViewLocator>>(),
+            services.GetRequiredService<Instrumentation>(),
+            []);
+        var viewModel = new UnmappedViewModel();
+
+        locator.Build(viewModel).ShouldBeOfType<TextBlock>();
+        locator.Build(viewModel).ShouldBeOfType<TextBlock>();
+    }
+
+    private sealed class UnmappedViewModel;
 }

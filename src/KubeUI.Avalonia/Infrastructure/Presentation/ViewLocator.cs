@@ -62,6 +62,11 @@ sealed class ViewLocator : IDataTemplate
         // Try to find a cached factory for this exact type
         if (_viewFactoryMap.TryGetValue(modelType, out var cachedFactory))
         {
+            if (cachedFactory is NullViewFactory)
+            {
+                return null;
+            }
+
             return cachedFactory.Create(_serviceProvider);
         }
 
