@@ -1,3 +1,4 @@
+using System.Net;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Media;
@@ -6,8 +7,12 @@ using Dock.Avalonia.Controls;
 using Dock.Model.Controls;
 using Dock.Model.Core;
 using Dock.Model.Mvvm.Controls;
+using KubeUI.Avalonia.Infrastructure.DependencyInjection;
 using KubeUI.Avalonia.Shell.Documents.CloudClusters.Aks;
+using KubeUI.Avalonia.Shell.Documents.Updates;
 using KubeUI.Avalonia.Shell.Main;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Http;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Shell.Main;
@@ -34,6 +39,74 @@ public sealed class MainViewModelTests
             .OfType<ImportAksClusterViewModel>()
             .Count()
             .ShouldBe(1);
+    }
+
+    [AvaloniaFact]
+    public void update_check_opens_one_document_and_refreshes_it_on_subsequent_checks()
+    {
+        var vm = CreateViewModel();
+        var factory = Application.Current.GetRequiredTestService<IFactory>();
+        var documents = factory.GetDockable<IDocumentDock>("Documents")
+            .ShouldNotBeNull();
+
+        vm.ShowUpdateAvailableView("2.1.0", "2.2.0", "## 2.2.0", _ => Task.CompletedTask);
+        var updateViewModel = documents.VisibleDockables!
+            .OfType<UpdateAvailableViewModel>()
+            .ShouldHaveSingleItem();
+
+        try
+        {
+            vm.ShowUpdateAvailableView("2.2.0", "2.3.0", "## 2.3.0", _ => Task.CompletedTask);
+
+            documents.VisibleDockables!
+                .OfType<UpdateAvailableViewModel>()
+                .ShouldHaveSingleItem()
+                .ShouldBeSameAs(updateViewModel);
+            updateViewModel.VersionSummary.ShouldBe("Update Available 2.2.0 -> 2.3.0");
+        }
+        finally
+        {
+            factory.CloseDockable(updateViewModel);
+        }
+    }
+
+    [Fact]
+    public async Task github_releases_http_client_retries_transient_failures()
+    {
+        var requestCount = 0;
+        using var handler = new StubHttpMessageHandler((_, _) =>
+            Interlocked.Increment(ref requestCount) == 1
+                ? HttpStatusCode.ServiceUnavailable
+                : HttpStatusCode.OK);
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddKubeUIShellServices();
+        services.Configure<HttpClientFactoryOptions>(
+            MainViewModel.GitHubReleasesHttpClientName,
+            options => options.HttpMessageHandlerBuilderActions.Add(
+                builder => builder.PrimaryHandler = handler));
+
+        using var serviceProvider = services.BuildServiceProvider();
+        using var client = serviceProvider.GetRequiredService<IHttpClientFactory>()
+            .CreateClient(MainViewModel.GitHubReleasesHttpClientName);
+        using var response = await client.GetAsync(
+            "https://api.github.com/releases",
+            TestContext.Current.CancellationToken);
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        requestCount.ShouldBe(2);
+    }
+
+    private sealed class StubHttpMessageHandler(
+        Func<HttpRequestMessage, CancellationToken, HttpStatusCode> responseFactory) : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request,
+            CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return Task.FromResult(new HttpResponseMessage(responseFactory(request, cancellationToken)));
+        }
     }
 
     [AvaloniaFact]
@@ -181,22 +254,27 @@ public sealed class MainViewModelTests
     public async Task help_menu_contains_check_for_updates_command()
     {
         var vm = CreateViewModel();
-        MainView view = new() { DataContext = vm };
-        using var window = Application.Current.CreateTestWindow(content: view);
-
+        var window = new MainWindow { DataContext = vm };
         window.Show();
-        await TestApplicationExtensions.WaitForUiAsync();
+        try
+        {
+            await TestApplicationExtensions.WaitForUiAsync();
 
-        view.GetVisualDescendants()
-            .OfType<Menu>()
-            .Single()
-            .Items
-            .OfType<MenuItem>()
-            .Single(item => item.Header?.ToString() == Assets.Resources.MainView_Menu_Help)
-            .Items
-            .OfType<MenuItem>()
-            .Select(item => item.Header?.ToString())
-            .ShouldContain("_Check for Updates");
+            var presenter = window.GetVisualDescendants().OfType<Menu>().Single();
+            var helpItem = Enumerable.Range(0, presenter.ItemCount)
+                .Select(presenter.ContainerFromIndex)
+                .OfType<MenuItem>()
+                .Single(item => item.Header?.ToString() == Assets.Resources.MainView_Menu_Help);
+
+            helpItem.Items
+                .OfType<NativeMenuItem>()
+                .Select(item => item.Header)
+                .ShouldContain(Assets.Resources.MainView_Menu_Help_CheckForUpdates);
+        }
+        finally
+        {
+            window.Close();
+        }
     }
 
     [Fact]
