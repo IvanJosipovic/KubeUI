@@ -12,6 +12,7 @@ using KubernetesClient.Informer.Client;
 using KubeUI.Kubernetes.Client;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Http.Resilience;
+using Microsoft.Extensions.Options;
 using Polly;
 using YamlDotNet.Core;
 using YamlDotNet.Core.Events;
@@ -100,7 +101,8 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
     /// <param name="settings">Cluster settings store.</param>
     /// <param name="serviceProvider">Application service provider.</param>
     /// <param name="dispatcher">Dispatcher used for UI-bound observable updates.</param>
-    public Cluster(ILogger<Cluster> logger, ILoggerFactory loggerFactory, ClusterModelCatalog modelCatalog, IClusterSettingsStore settings, IServiceProvider serviceProvider, IThreadDispatcher dispatcher)
+    /// <param name="authorizationOptions">Authorization behavior options.</param>
+    public Cluster(ILogger<Cluster> logger, ILoggerFactory loggerFactory, ClusterModelCatalog modelCatalog, IClusterSettingsStore settings, IServiceProvider serviceProvider, IThreadDispatcher dispatcher, IOptions<ClusterAuthorizationOptions>? authorizationOptions = null)
     {
         _loggerFactory = loggerFactory;
         _logger = logger;
@@ -112,7 +114,10 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
         _settings = settings;
         _serviceProvider = serviceProvider;
         _dispatcher = dispatcher;
+        _authorizationOptions = authorizationOptions?.Value ?? new ClusterAuthorizationOptions();
     }
+
+    private ClusterAuthorizationOptions _authorizationOptions;
 
     public async ValueTask DisposeAsync()
     {
@@ -175,7 +180,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
                         })
                         .ConfigureTelemetry(_loggerFactory);
 
-                        var handler = new OperationKeyHandler(InvalidatePermissionsAfterForbiddenResponse)
+                        var handler = new OperationKeyHandler(InvalidatePermissionsAfterForbiddenResponse, _authorizationOptions.ForbiddenCoalesceWindow)
                         {
                             InnerHandler = new ResilienceHandler(pipe.Build())
                         };
@@ -1288,19 +1293,25 @@ public partial class ContainerClass<T> : ObservableObject, IClearableResourceCon
 
 public sealed class OperationKeyHandler : DelegatingHandler
 {
-    private static readonly TimeSpan ForbiddenCoalesceWindow = TimeSpan.FromSeconds(5);
+        private readonly TimeSpan _forbiddenCoalesceWindow;
+        private readonly Action? _onForbidden;
+        private long _lastForbiddenNotificationTicks;
 
-    private readonly Action? _onForbidden;
-    private long _lastForbiddenNotificationTicks;
+        public OperationKeyHandler()
+            : this(null, TimeSpan.FromSeconds(5))
+        {
+        }
 
-    public OperationKeyHandler()
-    {
-    }
+        public OperationKeyHandler(Action onForbidden)
+            : this(onForbidden, TimeSpan.FromSeconds(5))
+        {
+        }
 
-    public OperationKeyHandler(Action onForbidden)
-    {
-        _onForbidden = onForbidden ?? throw new ArgumentNullException(nameof(onForbidden));
-    }
+        public OperationKeyHandler(Action? onForbidden, TimeSpan forbiddenCoalesceWindow)
+        {
+            _onForbidden = onForbidden;
+            _forbiddenCoalesceWindow = forbiddenCoalesceWindow;
+        }
 
     protected override async Task<HttpResponseMessage> SendAsync(
         HttpRequestMessage request,
@@ -1347,7 +1358,7 @@ public sealed class OperationKeyHandler : DelegatingHandler
         var now = DateTime.UtcNow.Ticks;
         var previous = Interlocked.Read(ref _lastForbiddenNotificationTicks);
         if (previous != 0
-            && now - previous < ForbiddenCoalesceWindow.Ticks)
+            && now - previous < _forbiddenCoalesceWindow.Ticks)
         {
             return;
         }

@@ -356,7 +356,7 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
     internal void AddResourceConfigForTest(IResourceConfig resourceConfig)
     {
         resourceConfig.Initialize(this);
-        if (resourceConfig.IsCustomResource())
+        if (resourceConfig.IsCustomResource)
         {
             RemoveOtherCustomResourceVersions(resourceConfig.Kind);
         }
@@ -401,7 +401,7 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
 
         foreach (var resourceConfig in _serviceProvider.GetServices<IResourceConfig>())
         {
-            if (resourceConfig.IsCustomResource())
+            if (resourceConfig.IsCustomResource)
             {
                 continue;
             }
@@ -528,7 +528,7 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
         _customResourceDefinitionObservedGenerations.Clear();
 
         var removedCustomResourceKinds = _resourceConfigs
-            .Where(static pair => pair.Value.IsCustomResource())
+            .Where(static pair => pair.Value.IsCustomResource)
             .Select(static pair => pair.Key)
             .ToList();
 
@@ -600,7 +600,7 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
     private void RemoveOtherCustomResourceVersions(GroupApiVersionKind currentKind)
     {
         var previousKinds = _resourceConfigs
-            .Where(pair => pair.Value.IsCustomResource()
+            .Where(pair => pair.Value.IsCustomResource
                 && pair.Key != currentKind
                 && string.Equals(pair.Key.Group, currentKind.Group, StringComparison.Ordinal)
                 && string.Equals(pair.Key.Kind, currentKind.Kind, StringComparison.Ordinal))
@@ -696,7 +696,7 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
     private void RemoveCustomResourceDefinition(string definitionName, V1CustomResourceDefinition crd)
     {
         var removedKinds = _resourceConfigs
-            .Where(pair => pair.Value.IsCustomResource()
+            .Where(pair => pair.Value.IsCustomResource
                 && MatchesCustomResourceDefinition(pair.Value, definitionName, crd))
             .Select(static pair => pair.Key)
             .ToArray();
