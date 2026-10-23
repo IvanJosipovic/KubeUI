@@ -205,7 +205,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         {
             foreach (var resourceConfig in cluster.GetResourceConfigs())
             {
-                if (resourceConfig.IsCustomResource() && resourceConfig.IsNamespaced)
+                if (resourceConfig.IsCustomResource && resourceConfig.IsNamespaced)
                 {
                     RequireSeed(cluster, resourceConfig.Kind);
                 }

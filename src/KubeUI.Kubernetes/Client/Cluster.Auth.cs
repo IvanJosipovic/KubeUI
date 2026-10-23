@@ -187,29 +187,37 @@ public partial class Cluster
 
     private Task<NamespaceRuleSet> GetNamespaceRulesAsync(string @namespace, CancellationToken cancellationToken)
     {
+        // First check without allocating a lazy - read current cache generation
         var cache = Volatile.Read(ref _authorizationCache);
         if (cache.NamespaceRules.TryGetValue(@namespace, out var cached))
         {
             return Task.FromResult(cached);
         }
 
+        // Use a lazy factory that reads the CURRENT cache generation at execution time,
+        // not at capture time. This avoids the race where InvalidateNamespacePermissions
+        // replaces the cache between reading it and creating the lazy.
         var lazy = cache.NamespaceRuleLoads.GetOrAdd(
             @namespace,
-            (namespaceName) => new Lazy<Task<NamespaceRuleSet>>(
-                () => LoadNamespaceRulesAsync(namespaceName, cache),
-                LazyThreadSafetyMode.ExecutionAndPublication));
+            static (namespaceName, state) => new Lazy<Task<NamespaceRuleSet>>(
+                () => state.LoadNamespaceRulesAsync(namespaceName, Volatile.Read(ref state._authorizationCache)),
+                LazyThreadSafetyMode.ExecutionAndPublication),
+            this);
 
-        return AwaitNamespaceRulesAsync(cache, @namespace, lazy, cancellationToken);
+        // Read the cache again for AwaitNamespaceRulesAsync to use the current generation
+        return AwaitNamespaceRulesAsync(this, @namespace, lazy, cancellationToken);
     }
 
     private static async Task<NamespaceRuleSet> AwaitNamespaceRulesAsync(
-        AuthorizationCacheState cache,
+        Cluster cluster,
         string @namespace,
         Lazy<Task<NamespaceRuleSet>> lazy,
         CancellationToken cancellationToken)
     {
         var rules = await lazy.Value.WaitAsync(cancellationToken).ConfigureAwait(false);
-        cache.NamespaceRules.TryAdd(@namespace, rules);
+        // Use the current cache generation to store the result
+        var currentCache = Volatile.Read(ref cluster._authorizationCache);
+        currentCache.NamespaceRules.TryAdd(@namespace, rules);
         return rules;
     }
 

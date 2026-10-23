@@ -47,9 +47,10 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
     {
         ArgumentNullException.ThrowIfNull(serviceProvider);
 
-        // Services are resolved once. A configuration that is created without a service
-        // provider receives one when it is initialized against a cluster.
-        if (ServiceProvider is not null)
+        // Services are resolved once per service provider. A configuration that is created
+        // without a service provider receives one when it is initialized against a cluster.
+        // If initialized with a different service provider (e.g., different cluster), re-initialize.
+        if (ServiceProvider == serviceProvider)
         {
             return;
         }

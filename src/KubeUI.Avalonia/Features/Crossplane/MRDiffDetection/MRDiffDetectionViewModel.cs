@@ -145,7 +145,7 @@ public sealed partial class MRDiffDetectionViewModel : ViewModelBase, IInitializ
     public static bool IsAvailable(ClusterWorkspace cluster)
     {
         return cluster.GetResourceConfigs().Any(config =>
-            config.IsCustomResource()
+            config.IsCustomResource
             && string.Equals(config.Kind.Group, "pkg.crossplane.io", StringComparison.Ordinal)
             && string.Equals(config.Kind.Kind, "Provider", StringComparison.Ordinal)
             && config.PermissionsLoaded
@@ -175,7 +175,7 @@ public sealed partial class MRDiffDetectionViewModel : ViewModelBase, IInitializ
         _ = StartMonitoringAsync(null);
 
         var providerConfig = cluster.GetResourceConfigs().FirstOrDefault(config =>
-            config.IsCustomResource()
+            config.IsCustomResource
             && string.Equals(config.Kind.Group, "pkg.crossplane.io", StringComparison.Ordinal)
             && string.Equals(config.Kind.Kind, "Provider", StringComparison.Ordinal));
         if (providerConfig is null)

@@ -157,7 +157,7 @@ public class ClusterWorkspaceTests
         resourceConfig.ShouldNotBeNull();
         resourceConfig.ShouldBeOfType<CustomResourceConfig>();
         resourceConfig.Kind.ShouldBe(resourceKind);
-        resourceConfig.IsCustomResource().ShouldBeTrue();
+        resourceConfig.IsCustomResource.ShouldBeTrue();
         resourceConfig.CustomResourceDefinition.ShouldNotBeNull().Name().ShouldBe(crd.Name());
 
         await resourceConfig.SeedResource(false, TestContext.Current.CancellationToken);
@@ -213,7 +213,7 @@ public class ClusterWorkspaceTests
             new(TaskCreationOptions.RunContinuationsAsynchronously);
         workspace.ResourceConfigProcessed += (_, resourceConfig) =>
         {
-            if (resourceConfig.IsCustomResource())
+            if (resourceConfig.IsCustomResource)
             {
                 processedConfig.TrySetResult(workspace.GetResourceConfig(resourceConfig.Kind));
             }
@@ -241,7 +241,7 @@ public class ClusterWorkspaceTests
         System.Collections.Concurrent.ConcurrentQueue<IResourceConfig> observedConfigs = new();
         workspace.ResourceConfigProcessed += (_, resourceConfig) =>
         {
-            if (resourceConfig.IsCustomResource())
+            if (resourceConfig.IsCustomResource)
             {
                 observedConfigs.Enqueue(workspace.GetResourceConfig(resourceConfig.Kind));
             }
@@ -358,7 +358,7 @@ public class ClusterWorkspaceTests
         var processedConfigs = 0;
         workspace.ResourceConfigProcessed += (_, resourceConfig) =>
         {
-            if (resourceConfig.IsCustomResource())
+            if (resourceConfig.IsCustomResource)
             {
                 Interlocked.Increment(ref processedConfigs);
             }
@@ -981,7 +981,7 @@ public class ClusterWorkspaceTests
         }
 
         return workspace.GetResourceConfigs().FirstOrDefault(x =>
-            x.IsCustomResource()
+            x.IsCustomResource
             && string.Equals(x.Kind.Group, crd.Spec.Group, StringComparison.Ordinal)
             && string.Equals(x.Kind.ApiVersion, version, StringComparison.Ordinal)
             && string.Equals(x.Kind.Kind, crd.Spec.Names.Kind, StringComparison.Ordinal));

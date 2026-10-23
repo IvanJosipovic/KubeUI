@@ -498,7 +498,7 @@ public class V1CustomResourceDefinitionConfigTests
 
         resource.Origin.ShouldBe(ResourceOrigin.BuiltIn);
         resource.CustomResourceDefinition.ShouldBeNull();
-        resource.IsCustomResource().ShouldBeFalse();
+        resource.IsCustomResource.ShouldBeFalse();
     }
 
     [AvaloniaFact]
@@ -513,6 +513,6 @@ public class V1CustomResourceDefinitionConfigTests
 
         resource.Origin.ShouldBe(ResourceOrigin.CustomResourceDefinition);
         resource.CustomResourceDefinition.ShouldBeSameAs(crd);
-        resource.IsCustomResource().ShouldBeTrue();
+        resource.IsCustomResource.ShouldBeTrue();
     }
 }

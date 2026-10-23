@@ -329,7 +329,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
 
             if (runtime.Connected && runtime.Status == ClusterStatus.Connected)
             {
-                Reconcile(cluster);
+                ApplyOnUiThread(cluster);
             }
 
             if (runtime.Status == ClusterStatus.Errored)
@@ -350,7 +350,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
         node.UpdateNavigationName(runtime.Name);
         if (runtime.Connected && runtime.Status == ClusterStatus.Connected)
         {
-            Reconcile(cluster);
+            ApplyOnUiThread(cluster);
         }
     }
 

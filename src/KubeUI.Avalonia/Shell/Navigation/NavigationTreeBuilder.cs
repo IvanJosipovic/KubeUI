@@ -86,7 +86,9 @@ internal sealed class NavigationTreeBuilder
     /// <summary>Attaches count streams for a seeded resource kind to matching links.</summary>
     public void AttachResourceCount(ClusterNavigationNode node, GroupApiVersionKind kind)
     {
-        foreach (var link in EnumerateLinks(node.NavigationItems))
+        // Take a snapshot of links to avoid issues if the tree is modified during iteration
+        var links = EnumerateLinks(node.NavigationItems).ToArray();
+        foreach (var link in links)
         {
             if (link.ResourceKind == kind)
             {
@@ -105,7 +107,7 @@ internal sealed class NavigationTreeBuilder
                 continue;
             }
 
-            if (resource.IsCustomResource() && !canListDefinitions)
+            if (resource.IsCustomResource && !canListDefinitions)
             {
                 continue;
             }
@@ -117,7 +119,7 @@ internal sealed class NavigationTreeBuilder
                 resource.Navigation,
                 LinkId(cluster, $"resource-{ResourceKey(resource.Kind)}"));
 
-            if (resource.IsCustomResource())
+            if (resource.IsCustomResource)
             {
                 var customResources = NavigationPlacement.InSection(
                     NavigationSections.CustomResourcesId,
