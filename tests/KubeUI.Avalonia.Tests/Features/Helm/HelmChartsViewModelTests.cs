@@ -1,10 +1,12 @@
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Headless.XUnit;
 using Dock.Model.Controls;
 using Dock.Model.Core;
 using Dock.Model.Mvvm.Controls;
 using HanumanInstitute.MvvmDialogs;
 using Helm.NET;
+using k8s.Models;
 using KubeUI.Avalonia.Features.Helm;
 using KubeUI.Avalonia.Features.Helm.Charts;
 using KubeUI.Avalonia.Features.Helm.Releases;
@@ -14,6 +16,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using Shouldly;
 using SvcSystems.Avalonia.DynamicTableView;
+using Ursa.Controls;
 
 namespace KubeUI.Avalonia.Tests.Features.Helm;
 
@@ -44,16 +47,16 @@ public sealed class HelmChartsViewModelTests
         using var charts = new HelmChartsViewModel(helm.Object, CreateOpener(helm, factory));
         charts.SelectedRepository = "first";
         workspace.SelectedNamespaces.Clear();
-        workspace.SelectedNamespaces.Add(new k8s.Models.V1Namespace
+        workspace.SelectedNamespaces.Add(new V1Namespace
         {
-            Metadata = new k8s.Models.V1ObjectMeta { Name = "apps" }
+            Metadata = new V1ObjectMeta { Name = "apps" }
         });
         using var services = new ServiceCollection().AddSingleton(charts).BuildServiceProvider();
         var navigation = new HelmNavigationSectionProvider().Documents
             .Single(document => document.Id == HelmNavigationSectionProvider.ChartsDocumentId);
         navigation.CreateDockable(services, workspace).ShouldBeSameAs(charts);
         await charts.RefreshCommand.ExecutionTask!.WaitAsync(TestContext.Current.CancellationToken);
-        charts.Repositories.ShouldBe(["Alpha", "beta", "first", "second", "zeta"]);
+        charts.Repositories.ShouldBe([Assets.Resources.HelmChartsView_AllRepositories, "Alpha", "beta", "first", "second", "zeta"]);
         charts.SelectedRepository.ShouldBe("first");
         charts.Status.ShouldBeEmpty();
         charts.SearchText = " web ";
@@ -67,7 +70,7 @@ public sealed class HelmChartsViewModelTests
             window.Show();
             await TestApplicationExtensions.WaitForUiAsync();
             var controls = global::Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(view).ToArray();
-            var header = controls.OfType<Grid>().First(grid => grid.ColumnDefinitions.Count == 3);
+            var header = controls.OfType<Grid>().First(grid => grid.ColumnDefinitions.Count == 4);
             header.MinHeight.ShouldBe(32);
             header.Margin.ShouldBe(new Thickness(0, 2));
             var repository = controls.OfType<ComboBox>().Single();
@@ -105,6 +108,82 @@ public sealed class HelmChartsViewModelTests
         {
             window.Close();
         }
+    }
+
+    [AvaloniaFact]
+    public async Task Charts_show_all_repositories_when_all_selected()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync(connect: false);
+        var helm = new Mock<IHelmService>();
+        helm.Setup(service => service.ListRepositoriesAsync(It.IsAny<HelmConnection>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync([new("first", "https://first.test"), new("second", "https://second.test")]);
+        helm.Setup(service => service.ListReleasesAsync(It.IsAny<HelmConnection>(), true, null, It.IsAny<CancellationToken>()))
+            .ReturnsAsync([]);
+        helm.Setup(service => service.ListChartsAsync(It.IsAny<HelmConnection>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync([
+                new("first/web", "web", "2.0"),
+                new("second/api", "api", "1.0")]);
+        using var charts = new HelmChartsViewModel(helm.Object, Mock.Of<IHelmDocumentOpener>());
+        charts.Initialize(workspace);
+        await charts.RefreshCommand.ExecutionTask!.WaitAsync(TestContext.Current.CancellationToken);
+
+        charts.SelectedRepository = Assets.Resources.HelmChartsView_AllRepositories;
+        charts.ItemCount.ShouldBe(2);
+
+        charts.SelectedRepository = "first";
+        charts.ItemCount.ShouldBe(1);
+
+        charts.SelectedRepository = "second";
+        charts.ItemCount.ShouldBe(1);
+    }
+
+    [AvaloniaFact]
+    public async Task Charts_namespace_selection_linked_to_workspace_by_default()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync(connect: false);
+        var helm = new Mock<IHelmService>();
+        helm.Setup(service => service.ListRepositoriesAsync(It.IsAny<HelmConnection>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync([new("repo", "https://repo.test")]);
+        helm.Setup(service => service.ListReleasesAsync(It.IsAny<HelmConnection>(), true, null, It.IsAny<CancellationToken>()))
+            .ReturnsAsync([]);
+        helm.Setup(service => service.ListChartsAsync(It.IsAny<HelmConnection>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync([new("repo/web", "web", "1.0")]);
+        using var charts = new HelmChartsViewModel(helm.Object, Mock.Of<IHelmDocumentOpener>());
+        charts.IsNamespaceSelectionLinked.ShouldBeTrue();
+        charts.SelectedNamespaces.ShouldBeSameAs(workspace.SelectedNamespaces);
+
+        charts.Initialize(workspace);
+        await charts.RefreshCommand.ExecutionTask!.WaitAsync(TestContext.Current.CancellationToken);
+
+        workspace.SelectedNamespaces.Clear();
+        workspace.SelectedNamespaces.Add(new V1Namespace { Metadata = new V1ObjectMeta { Name = "prod" } });
+        charts.SelectedNamespaces.ShouldContain(ns => ns.Metadata != null && ns.Metadata.Name == "prod");
+    }
+
+    [AvaloniaFact]
+    public async Task Charts_namespace_selection_can_be_unlinked()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync(connect: false);
+        var helm = new Mock<IHelmService>();
+        helm.Setup(service => service.ListRepositoriesAsync(It.IsAny<HelmConnection>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync([new("repo", "https://repo.test")]);
+        helm.Setup(service => service.ListReleasesAsync(It.IsAny<HelmConnection>(), true, null, It.IsAny<CancellationToken>()))
+            .ReturnsAsync([]);
+        helm.Setup(service => service.ListChartsAsync(It.IsAny<HelmConnection>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync([new("repo/web", "web", "1.0")]);
+        using var charts = new HelmChartsViewModel(helm.Object, Mock.Of<IHelmDocumentOpener>());
+        charts.Initialize(workspace);
+        await charts.RefreshCommand.ExecutionTask!.WaitAsync(TestContext.Current.CancellationToken);
+
+        charts.IsNamespaceSelectionLinked = false;
+        charts.SelectedNamespaces.ShouldNotBeSameAs(workspace.SelectedNamespaces);
+        charts.SelectedNamespaces.Clear();
+        charts.SelectedNamespaces.Add(new V1Namespace { Metadata = new V1ObjectMeta { Name = "custom" } });
+
+        workspace.SelectedNamespaces.Clear();
+        workspace.SelectedNamespaces.Add(new V1Namespace { Metadata = new V1ObjectMeta { Name = "prod" } });
+        charts.SelectedNamespaces.ShouldContain(ns => ns.Metadata != null && ns.Metadata.Name == "custom");
+        charts.SelectedNamespaces.ShouldNotContain(ns => ns.Metadata != null && ns.Metadata.Name == "prod");
     }
 
     [AvaloniaFact]
@@ -170,8 +249,8 @@ public sealed class HelmChartsViewModelTests
             .ReturnsAsync([]);
         charts.SearchText = "";
         await charts.RefreshCommand.ExecuteAsync(null).WaitAsync(TestContext.Current.CancellationToken);
-        charts.SelectedRepository.ShouldBeNull();
-        charts.Repositories.ShouldBeEmpty();
+        charts.SelectedRepository.ShouldBe(Assets.Resources.HelmChartsView_AllRepositories);
+        charts.Repositories.ShouldBe([Assets.Resources.HelmChartsView_AllRepositories]);
     }
 
     private static HelmDocumentOpener CreateOpener(Mock<IHelmService> helm, Mock<IFactory> factory)
