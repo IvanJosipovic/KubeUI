@@ -27,12 +27,9 @@ public sealed class MainView : ViewBase<MainViewModel>
             CreateFontSizeBinding(Key.Add, KeyModifiers.Control, vm.IncreaseFontSizeCommand),
             CreateFontSizeBinding(Key.OemMinus, KeyModifiers.Control, vm.DecreaseFontSizeCommand),
             CreateFontSizeBinding(Key.Subtract, KeyModifiers.Control, vm.DecreaseFontSizeCommand))
-            .Rows("Auto,*")
             .Children(
-                CreateMenuBar(),
                 new DockControl()
                     .Col(0)
-                    .Row(1)
                     .Margin(4)
                     .Factory(vm, vm => vm.Factory)
                     .Layout(vm, vm => vm.Layout));
@@ -45,13 +42,5 @@ public sealed class MainView : ViewBase<MainViewModel>
             Gesture = new KeyGesture(key, modifiers),
             Command = command
         };
-    }
-
-    private static NativeMenuBar CreateMenuBar()
-    {
-        return new NativeMenuBar()
-            .Col(0)
-            .Row(0)
-            .VerticalAlignment(VerticalAlignment.Top);
     }
 }
