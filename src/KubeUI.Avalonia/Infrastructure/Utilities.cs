@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Avalonia.Controls.Notifications;
 using Avalonia.Input;
 using Avalonia.Xaml.Interactivity;
@@ -87,6 +88,39 @@ public static class Utilities
         }
 
         return meaningfulException.Message;
+    }
+
+    internal static IReadOnlyList<(string Path, string Message)> GetKubernetesStatusCauses(Exception ex)
+    {
+        var meaningfulException = GetMeaningfulException(ex);
+        if (meaningfulException is not HttpOperationException opEx)
+            return [];
+
+        try
+        {
+            var status = KubernetesJson.Deserialize<V1Status>(opEx.Response.Content);
+            return status?.Details?.Causes?
+                .Where(cause => !string.IsNullOrWhiteSpace(cause.Field) && !string.IsNullOrWhiteSpace(cause.Message))
+                .Select(cause => (cause.Field!, cause.Message!))
+                .ToArray() ?? [];
+        }
+        catch (JsonException)
+        {
+            return [];
+        }
+    }
+
+    /// <summary>
+    /// Gets the HTTP status code reported by a Kubernetes API failure, when one is available.
+    /// </summary>
+    /// <param name="ex">The exception raised by the Kubernetes client.</param>
+    /// <returns>The status code, or <see langword="null"/> when the failure did not carry one.</returns>
+    internal static int? GetKubernetesStatusCode(Exception ex)
+    {
+        var meaningfulException = GetMeaningfulException(ex);
+        return meaningfulException is HttpOperationException opEx
+            ? (int?)opEx.Response.StatusCode
+            : null;
     }
 
     internal static Exception GetMeaningfulException(Exception ex)

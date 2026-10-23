@@ -13,6 +13,18 @@ namespace KubeUI.Avalonia.Tests.Features.Resources.List;
 public sealed class ResourceListViewModelTests
 {
     [AvaloniaFact]
+    public void New_resource_button_flyout_contains_yaml_and_ui_editor_choices()
+    {
+        var flyout = ResourceListView.CreateNewResourceFlyout();
+
+        flyout.Items.Count.ShouldBe(2);
+        var items = flyout.Items.OfType<MenuItem>().ToArray();
+        items.Select(item => item.Header).ShouldBe(["Create YAML", "Create with UI Editor"]);
+        foreach (var item in items)
+            item.Icon.ShouldNotBeNull();
+    }
+
+    [AvaloniaFact]
     public async Task Namespace_scope_search_filter_and_sort_compose_in_the_library_source()
     {
         using var cluster = await Application.Current.CreateClusterAsync();

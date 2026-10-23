@@ -38,6 +38,13 @@ public interface IClusterRuntime
     PortForwarder AddServicePortForward(string @namespace, string serviceName, int servicePort);
     void RemovePortForward(PortForwarder pf);
     Task AddOrUpdateResource<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new();
+    /// <summary>
+    /// Creates or replaces a single resource and returns the object the server accepted.
+    /// </summary>
+    /// <typeparam name="T">The resource type.</typeparam>
+    /// <param name="item">The resource to apply.</param>
+    /// <returns>The resource as the server stored it, including the assigned UID and resource version.</returns>
+    Task<T> ApplyResource<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new();
     Task Connect();
     Task EnsureOpenApiSchemasAsync();
     Task Disconnect();
