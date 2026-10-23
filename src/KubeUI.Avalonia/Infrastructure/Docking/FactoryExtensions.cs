@@ -65,18 +65,24 @@ public static class FactoryExtensions
         return true;
     }
 
-    public static void AddToRight(this IFactory factory, IDockable vm)
+    /// <summary>
+    /// Shows <paramref name="vm"/> in the right tool dock, replacing (and disposing) any dockable with the same id.
+    /// If the replaced dockable was pinned, the new one is pinned in its place.
+    /// </summary>
+    /// <param name="factory">The dock factory.</param>
+    /// <param name="vm">The dockable to show.</param>
+    /// <param name="previewPinned">Whether a pinned replacement is temporarily shown; pass <see langword="false"/> to keep it collapsed.</param>
+    public static void AddToRight(this IFactory factory, IDockable vm, bool previewPinned = true)
     {
         var rightDock = factory.GetDockable<IToolDock>("RightDock");
 
-        var root = factory.GetDockable<IRootDock>("Root");
-
-        var pinnedDoc = root.RightPinnedDockables?.FirstOrDefault(x => x.Id == vm.Id);
+        var pinnedDoc = factory.FindRightPinnedDockable(vm.Id);
 
         if (pinnedDoc != null)
         {
             vm.PinnedBounds = pinnedDoc.PinnedBounds;
             factory.RemoveDockable(pinnedDoc, false);
+            DisposeReplaced(pinnedDoc, vm);
         }
 
         var existingDock = factory.FindDockableById(vm.Id);
@@ -84,6 +90,7 @@ public static class FactoryExtensions
         if (existingDock != null)
         {
             factory.RemoveDockable(existingDock, false);
+            DisposeReplaced(existingDock, vm);
         }
 
         var insertIndex = rightDock.VisibleDockables?.Count ?? 0;
@@ -94,7 +101,58 @@ public static class FactoryExtensions
         if (pinnedDoc != null)
         {
             factory.PinDockable(vm);
-            factory.PreviewPinnedDockable(vm);
+            if (previewPinned)
+            {
+                factory.PreviewPinnedDockable(vm);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Finds a dockable with <paramref name="id"/> that is pinned to the right auto-hide strip.
+    /// </summary>
+    /// <param name="factory">The dock factory.</param>
+    /// <param name="id">The dockable id.</param>
+    /// <returns>The pinned dockable, or <see langword="null"/> when none is pinned.</returns>
+    public static IDockable? FindRightPinnedDockable(this IFactory factory, string id)
+    {
+        var root = factory.GetDockable<IRootDock>("Root");
+        return root?.RightPinnedDockables?.FirstOrDefault(x => x.Id == id);
+    }
+
+    /// <summary>
+    /// Replaces a docked (not auto-hidden) <paramref name="existing"/> with <paramref name="replacement"/> in the same dock and position,
+    /// keeping it the active tab if it was, without moving keyboard focus. The replaced dockable is disposed.
+    /// </summary>
+    /// <param name="factory">The dock factory.</param>
+    /// <param name="existing">The docked dockable to replace.</param>
+    /// <param name="replacement">The dockable to show instead.</param>
+    /// <returns><see langword="true"/> when the replacement was docked; <see langword="false"/> when <paramref name="existing"/> has no owning dock.</returns>
+    public static bool ReplaceDockable(this IFactory factory, IDockable existing, IDockable replacement)
+    {
+        if (existing.Owner is not IDock owner || owner.VisibleDockables is not { } visible)
+        {
+            return false;
+        }
+
+        var index = visible.IndexOf(existing);
+        var wasActive = ReferenceEquals(owner.ActiveDockable, existing);
+        factory.RemoveDockable(existing, false);
+        factory.InsertDockable(owner, replacement, Math.Max(0, Math.Min(index, owner.VisibleDockables?.Count ?? 0)));
+        if (wasActive)
+        {
+            factory.SetActiveDockable(replacement);
+        }
+
+        DisposeReplaced(existing, replacement);
+        return true;
+    }
+
+    private static void DisposeReplaced(IDockable replaced, IDockable replacement)
+    {
+        if (!ReferenceEquals(replaced, replacement) && replaced is IDisposable disposable)
+        {
+            disposable.Dispose();
         }
     }
 }

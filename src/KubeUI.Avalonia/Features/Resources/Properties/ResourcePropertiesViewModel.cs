@@ -42,11 +42,29 @@ public sealed partial class ResourcePropertiesViewModel<T> : ViewModelBase, IDis
 
     public void Initialize(ClusterWorkspace cluster, T resource)
     {
-        Cluster = cluster;
-        Object = resource;
+        ShowResource(cluster, resource);
+    }
+
+    /// <summary>
+    /// Shows <paramref name="resource"/> in this view, moving the live-update subscription when the cluster changes.
+    /// </summary>
+    /// <param name="cluster">The cluster workspace that owns the resource.</param>
+    /// <param name="resource">The resource to show.</param>
+    public void ShowResource(ClusterWorkspace cluster, T resource)
+    {
+        ArgumentNullException.ThrowIfNull(cluster);
+        ArgumentNullException.ThrowIfNull(resource);
+
+        if (!ReferenceEquals(Cluster, cluster))
+        {
+            Cluster?.Runtime.OnChange -= Cluster_OnChange;
+            Cluster = cluster;
+            Cluster.Runtime.OnChange += Cluster_OnChange;
+        }
+
         Kind = resource.GetResourceKind(cluster.Runtime.ModelCatalog);
-        ResourceConfig = Cluster.GetResourceConfig<T>(Kind);
-        Cluster.Runtime.OnChange += Cluster_OnChange;
+        ResourceConfig = cluster.GetResourceConfig<T>(Kind);
+        Object = resource;
     }
 
     partial void OnResourceConfigChanged(ResourceConfigBase<T> value)
@@ -64,18 +82,34 @@ public sealed partial class ResourcePropertiesViewModel<T> : ViewModelBase, IDis
 
     public void Cluster_OnChange(WatchEventType eventType, GroupApiVersionKind groupApiVersionKind, IKubernetesObject<V1ObjectMeta> resource)
     {
-        if (Object != null
+        var cluster = Cluster;
+        if (!IsShown(resource))
+        {
+            return;
+        }
+
+        Dispatcher.UIThread.Post(() =>
+        {
+            // The view may have been retargeted (or moved to another cluster) before this runs.
+            if (ReferenceEquals(Cluster, cluster) && IsShown(resource))
+            {
+                Object = (T)resource;
+            }
+        });
+    }
+
+    private bool IsShown(IKubernetesObject<V1ObjectMeta> resource)
+    {
+        return Object != null
             && Object.Kind == resource.Kind
             && Object.ApiVersion == resource.ApiVersion
             && Object.Metadata.Name == resource.Metadata.Name
-            && Object.Metadata.NamespaceProperty == resource.Metadata.NamespaceProperty)
-        {
-            Dispatcher.UIThread.Post(() => Object = (T)resource);
-        }
+            && Object.Metadata.NamespaceProperty == resource.Metadata.NamespaceProperty;
     }
 
     public void Dispose()
     {
         Cluster?.Runtime.OnChange -= Cluster_OnChange;
+        Cluster = null;
     }
 }

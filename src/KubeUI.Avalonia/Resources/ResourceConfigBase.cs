@@ -457,6 +457,48 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
         return items?.Count == 1;
     }
 
+    /// <summary>
+    /// Shows a single selected resource in the Properties view when one is already open (docked or auto-hidden); otherwise does nothing.
+    /// Keeping the Properties view open opts into following the list selection. It is never opened, expanded or focused here,
+    /// and multi-selection leaves it unchanged.
+    /// </summary>
+    /// <param name="items">The current selection.</param>
+    public void ShowInOpenProperties(IList? items)
+    {
+        if (items is not { Count: 1 } || items[0] is not T resource)
+        {
+            return;
+        }
+
+        const string propertiesId = nameof(ResourcePropertiesViewModel<>);
+        var autoHidden = _factory.FindRightPinnedDockable(propertiesId);
+        var open = autoHidden ?? _factory.FindDockableById(propertiesId);
+        if (open is null)
+        {
+            return;
+        }
+
+        if (open is ResourcePropertiesViewModel<T> properties)
+        {
+            if (!ReferenceEquals(properties.Object, resource) || !ReferenceEquals(properties.Cluster, Cluster))
+            {
+                properties.ShowResource(Cluster, resource);
+            }
+
+            return;
+        }
+
+        var instance = ServiceProvider.GetRequiredService<ResourcePropertiesViewModel<T>>();
+        instance.Initialize(Cluster, resource);
+        instance.CanFloat = false;
+        instance.CanDockAsDocument = false;
+
+        if (autoHidden is not null || !_factory.ReplaceDockable(open, instance))
+        {
+            _factory.AddToRight(instance, previewPinned: false);
+        }
+    }
+
     [RelayCommand(CanExecute = nameof(CanViewYaml))]
     public void ViewYaml(IList items)
     {
