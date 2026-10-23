@@ -472,7 +472,7 @@ public class NavigationViewModelTests
         await workspace.Runtime.AddOrUpdateResource(crd);
         var descriptor = await WaitForValueAsync(
             () => workspace.GetResourceConfigs().SingleOrDefault(config =>
-                config.IsCustomResource() && config.CustomResourceDefinition!.Name() == crd.Name()),
+                config.IsCustomResource && config.CustomResourceDefinition!.Name() == crd.Name()),
             timeoutMs: 10000);
         descriptor.ShouldNotBeNull();
 
@@ -1982,14 +1982,14 @@ public class NavigationViewModelTests
             documents.VisibleDockables?.OfType<IResourceListViewModel>().Any(x =>
                 ReferenceEquals(x.Cluster, workspace)
                 && x.Kind == updatedKind
-                && x.ResourceConfig.IsCustomResource()) == true,
+                && x.ResourceConfig.IsCustomResource) == true,
             timeoutMs: 10000);
 
         var openedDocument = documents.VisibleDockables!
             .OfType<IResourceListViewModel>()
             .Single(x => ReferenceEquals(x.Cluster, workspace) && x.Kind == updatedKind);
 
-        openedDocument.ResourceConfig.IsCustomResource().ShouldBeTrue();
+        openedDocument.ResourceConfig.IsCustomResource.ShouldBeTrue();
     }
 
     [AvaloniaFact]

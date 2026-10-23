@@ -90,7 +90,7 @@ internal sealed class McpClusterSession(
             .Select(static entry => new McpSupportedResourceInfo(
                 entry.Config.Name, entry.Section?.Name ?? string.Empty, entry.Config.Kind.Group, entry.Config.Kind.ApiVersion,
                 entry.Config.Kind.GroupApiVersion, entry.Config.Kind.Kind, entry.Config.IsNamespaced,
-                entry.Config.IsCustomResource(), entry.Config.CanListAndWatch, entry.Config.PermissionsLoaded))];
+                entry.Config.IsCustomResource, entry.Config.CanListAndWatch, entry.Config.PermissionsLoaded))];
     }
 
     public async Task SeedResourceAsync(string? clusterName, GroupApiVersionKind resourceKind, CancellationToken cancellationToken = default)

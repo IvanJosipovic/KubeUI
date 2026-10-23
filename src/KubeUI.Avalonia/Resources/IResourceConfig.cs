@@ -15,6 +15,9 @@ namespace KubeUI.Avalonia.Resources
         bool SeedOnConnect => false;
         GroupApiVersionKind Kind { get; }
 
+        /// <summary>Gets whether this resource configuration is backed by a custom resource definition.</summary>
+        bool IsCustomResource => Origin == ResourceOrigin.CustomResourceDefinition;
+
         /// <summary>Gets where this kind's model comes from.</summary>
         ResourceOrigin Origin { get; }
 

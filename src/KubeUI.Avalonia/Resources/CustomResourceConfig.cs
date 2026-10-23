@@ -15,6 +15,7 @@ namespace KubeUI.Avalonia.Resources;
 /// <summary>Configures a dynamically discovered Kubernetes resource from its CRD definition.</summary>
 public class CustomResourceConfig : ResourceConfig<GenericKubernetesObject>
 {
+    private readonly object _configureLock = new();
     private bool _isNamespaced = true;
     private string? _resourceName;
     private GroupApiVersionKind _kind;
@@ -97,10 +98,37 @@ public class CustomResourceConfig : ResourceConfig<GenericKubernetesObject>
         var matching = available
             .Where(configuration => configuration.Matches(crd))
             .ToArray();
+        
+        // If multiple configs match, prioritize:
+        // 1. Exact storage version match (ApiVersion specified and matches storage version)
+        // 2. Exact served version match (ApiVersion specified and matches any served version)
+        // 3. Version-agnostic config (ApiVersion == null)
+        // 4. Fallback
         if (matching.Length > 1)
         {
+            var spec = crd.Spec;
+            var storageVersion = spec?.Versions?.FirstOrDefault(v => v.Storage && v.Served)?.Name;
+            
+            var prioritized = matching
+                .Select(config => (config, priority: GetConfigPriority(config, storageVersion)))
+                .OrderBy(x => x.priority)
+                .Select(x => x.config)
+                .ToArray();
+            
+            // If top priority is unique, use it
+            var topPriority = prioritized.First();
+            var topPriorityValue = GetConfigPriority(topPriority, storageVersion);
+            var samePriorityCount = prioritized.Count(c => GetConfigPriority(c, storageVersion) == topPriorityValue);
+            
+            if (samePriorityCount == 1)
+            {
+                return topPriority;
+            }
+            
+            // If still ambiguous at top priority, throw with details
+            var ambiguous = prioritized.Where(c => GetConfigPriority(c, storageVersion) == topPriorityValue).ToArray();
             throw new InvalidOperationException(
-                $"More than one CustomResourceConfig matches CRD '{crd.Name()}'.");
+                $"More than one CustomResourceConfig matches CRD '{crd.Name()}' with equal priority: {string.Join(", ", ambiguous.Select(c => c.GetType().Name + (c.ApiVersion != null ? $" (ApiVersion={c.ApiVersion})" : " (version-agnostic)")))}.");
         }
 
         if (matching.Length == 1)
@@ -115,6 +143,22 @@ public class CustomResourceConfig : ResourceConfig<GenericKubernetesObject>
             0 => throw new InvalidOperationException("No generic CustomResourceConfig fallback is registered."),
             _ => throw new InvalidOperationException("More than one generic CustomResourceConfig fallback is registered."),
         };
+    }
+
+    private static int GetConfigPriority(CustomResourceConfig config, string? storageVersion)
+    {
+        // Priority 0: Exact storage version match
+        if (config.ApiVersion != null && storageVersion != null && string.Equals(config.ApiVersion, storageVersion, StringComparison.Ordinal))
+        {
+            return 0;
+        }
+        // Priority 1: Exact served version match (non-storage)
+        if (config.ApiVersion != null)
+        {
+            return 1;
+        }
+        // Priority 2: Version-agnostic
+        return 2;
     }
 
     public override bool IsNamespaced => _isNamespaced;
@@ -167,80 +211,83 @@ public class CustomResourceConfig : ResourceConfig<GenericKubernetesObject>
     {
         ArgumentNullException.ThrowIfNull(crd);
 
-        _columns.Clear();
-        if (!crd.TryGetResourceKind(out _kind) || crd.Spec is not { } spec)
+        lock (_configureLock)
         {
-            throw new InvalidOperationException("CRD has no served storage version.");
-        }
-
-        // A definition whose storage version is not served cannot be listed or watched. The
-        // caller treats that as a temporary condition, so the failure must be explicit
-        // instead of an unhandled sequence access.
-        var version = spec.Versions?.FirstOrDefault(candidate => candidate.Served && candidate.Storage)
-            ?? throw new InvalidOperationException("CRD has no served storage version.");
-
-        Definition = crd;
-        _resourceName = spec.Names!.Kind.Humanize(LetterCasing.Title).Pluralize();
-        _groups = NavigationTreeEditor.ConstructCustomResourceGroups(spec.Group);
-
-        _isNamespaced = spec.Scope == "Namespaced";
-
-        _columns.Add(NameColumn(SortDirection.Ascending));
-        if (IsNamespaced)
-        {
-            _columns.Add(NamespaceColumn());
-        }
-
-        List<IResourceListColumn> crdPrinterColumns = [];
-
-        if (version.AdditionalPrinterColumns != null)
-        {
-            foreach (var item in version.AdditionalPrinterColumns)
+            _columns.Clear();
+            if (!crd.TryGetResourceKind(out _kind) || crd.Spec is not { } spec)
             {
-                if (string.Equals(item.JsonPath, ".metadata.creationTimestamp", StringComparison.Ordinal))
-                {
-                    continue;
-                }
+                throw new InvalidOperationException("CRD has no served storage version.");
+            }
 
-                try
+            // A definition whose storage version is not served cannot be listed or watched. The
+            // caller treats that as a temporary condition, so the failure must be explicit
+            // instead of an unhandled sequence access.
+            var version = spec.Versions?.FirstOrDefault(candidate => candidate.Served && candidate.Storage)
+                ?? throw new InvalidOperationException("CRD has no served storage version.");
+
+            Definition = crd;
+            _resourceName = spec.Names!.Kind.Humanize(LetterCasing.Title).Pluralize();
+            _groups = NavigationTreeEditor.ConstructCustomResourceGroups(spec.Group);
+
+            _isNamespaced = spec.Scope == "Namespaced";
+
+            _columns.Add(NameColumn(SortDirection.Ascending));
+            if (IsNamespaced)
+            {
+                _columns.Add(NamespaceColumn());
+            }
+
+            List<IResourceListColumn> crdPrinterColumns = [];
+
+            if (version.AdditionalPrinterColumns != null)
+            {
+                foreach (var item in version.AdditionalPrinterColumns)
                 {
-                    switch (item.Type, item.Format)
+                    if (string.Equals(item.JsonPath, ".metadata.creationTimestamp", StringComparison.Ordinal))
                     {
-                        case ("integer", "int64"):
-                            crdPrinterColumns.Add(CreateColumn(item.Name, item.JsonPath, ConvertInt64));
-                            break;
-                        case ("integer", _):
-                            crdPrinterColumns.Add(CreateColumn(item.Name, item.JsonPath, ConvertInt32));
-                            break;
-                        case ("number", _):
-                            crdPrinterColumns.Add(CreateColumn(item.Name, item.JsonPath, ConvertDouble));
-                            break;
-                        case ("boolean", _):
-                            crdPrinterColumns.Add(CreateColumn(item.Name, item.JsonPath, ConvertBoolean));
-                            break;
-                        case ("date", _):
-                            crdPrinterColumns.Add(CreateDateColumn(item.Name, item.JsonPath));
-                            break;
-                        default:
-                            crdPrinterColumns.Add(CreateStringColumn(item.Name, item.JsonPath));
-                            break;
+                        continue;
+                    }
+
+                    try
+                    {
+                        switch (item.Type, item.Format)
+                        {
+                            case ("integer", "int64"):
+                                crdPrinterColumns.Add(CreateColumn(item.Name, item.JsonPath, ConvertInt64));
+                                break;
+                            case ("integer", _):
+                                crdPrinterColumns.Add(CreateColumn(item.Name, item.JsonPath, ConvertInt32));
+                                break;
+                            case ("number", _):
+                                crdPrinterColumns.Add(CreateColumn(item.Name, item.JsonPath, ConvertDouble));
+                                break;
+                            case ("boolean", _):
+                                crdPrinterColumns.Add(CreateColumn(item.Name, item.JsonPath, ConvertBoolean));
+                                break;
+                            case ("date", _):
+                                crdPrinterColumns.Add(CreateDateColumn(item.Name, item.JsonPath));
+                                break;
+                            default:
+                                crdPrinterColumns.Add(CreateStringColumn(item.Name, item.JsonPath));
+                                break;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Unable to generate generic resource column: {Name} in {Resource}", item.Name, crd.Name());
                     }
                 }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Unable to generate generic resource column: {Name} in {Resource}", item.Name, crd.Name());
-                }
             }
+
+            if (IncludeAdditionalPrinterColumns)
+            {
+                _columns.AddRange(crdPrinterColumns);
+            }
+
+            _columns.AddRange(CreateAdditionalColumns(crd));
+
+            _columns.Add(AgeColumn());
         }
-
-        if (IncludeAdditionalPrinterColumns)
-        {
-            _columns.AddRange(crdPrinterColumns);
-        }
-
-        _columns.AddRange(CreateAdditionalColumns(crd));
-
-        _columns.Add(AgeColumn());
     }
 
     /// <summary>Gets whether CRD printer columns should be included for this kind.</summary>
