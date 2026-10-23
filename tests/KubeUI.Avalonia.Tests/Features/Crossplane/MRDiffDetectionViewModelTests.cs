@@ -517,6 +517,7 @@ public sealed class MRDiffDetectionViewModelTests
         config.SetupGet(resourceConfig => resourceConfig.Kind).Returns(kind);
         config.SetupGet(resourceConfig => resourceConfig.Name).Returns(name);
         config.SetupGet(resourceConfig => resourceConfig.Origin).Returns(ResourceOrigin.CustomResourceDefinition);
+        config.SetupGet(resourceConfig => resourceConfig.IsCustomResource).Returns(true);
         config.SetupGet(resourceConfig => resourceConfig.CustomResourceDefinition).Returns(new V1CustomResourceDefinition
         {
             Spec = new V1CustomResourceDefinitionSpec
