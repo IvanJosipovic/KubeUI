@@ -6,18 +6,18 @@ using KubeUI.Kubernetes;
 
 namespace KubeUI.Avalonia.Resources.Workloads.v1.ReplicaSet;
 
-public sealed partial class V1ReplicaSetConfig : ResourceConfigBase<V1ReplicaSet>
+public sealed partial class V1ReplicaSetConfig : ResourceConfig<V1ReplicaSet>
 {
     public V1ReplicaSetConfig(IServiceProvider serviceProvider)
         : base(serviceProvider)
     {
     }
     public override bool IsNamespaced => true;
-    public override string Category => Assets.Resources.ResourceConfig_Category_Workloads!;
+    public override NavigationPlacement Navigation => NavigationPlacement.InSection(NavigationSections.WorkloadsId);
 
     public override int Order => 4;
 
-    public override IList<IResourceListColumn> Columns()
+    protected override IList<IResourceListColumn> CreateDefaultColumns()
     {
         return [
             NameColumn(SortDirection.Ascending),

@@ -3,11 +3,13 @@ namespace KubeUI.Kubernetes.Tests.Clusters.Runtime;
 using System.Reactive.Linq;
 using System.Reactive.Threading.Tasks;
 using DynamicData;
+using KubernetesClient.Informer.Client;
 using Shouldly;
 using V1Namespace = k8s.Models.V1Namespace;
 using V1ObjectMeta = k8s.Models.V1ObjectMeta;
 using V1Pod = k8s.Models.V1Pod;
 using V1Service = k8s.Models.V1Service;
+using V1ServiceAccount = k8s.Models.V1ServiceAccount;
 
 [Trait("Category", "Kind")]
 public sealed class ClusterRuntimeTests : ClusterRuntimeAssertions
@@ -87,6 +89,107 @@ public sealed class ClusterRuntimeTests : ClusterRuntimeAssertions
         cluster.Permissions.CanIAnyNamespace<V1Pod>(Verb.List).ShouldBeTrue();
         cluster.Permissions.CanIAnyNamespace<V1Pod>(Verb.Watch).ShouldBeTrue();
         cluster.Permissions.CanIAnyNamespace<V1Service>(Verb.List).ShouldBeFalse();
+    }
+
+    [Fact]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(
+        "Reliability",
+        "CA2000",
+        Justification = "The HTTP handler ownership transfers to the generated client pipeline.")]
+    public async Task SeedingNamespacedResourceWaitsForApiDiscovery()
+    {
+        var discoveryState = new DiscoveryGateState();
+        await using var clusterScope = await new TestClusterGenerator().CreateAsync(
+            new TestClusterConfig
+            {
+                Type = KubernetesBackend.Fake,
+                AuthenticatedUser = KubernetesRbac.ServiceAccountUser,
+                InitialResources =
+                [
+                    new V1Namespace { Metadata = new V1ObjectMeta { Name = "my-app" } },
+                    new V1ServiceAccount
+                    {
+                        Metadata = new V1ObjectMeta
+                        {
+                            Name = KubernetesRbac.ServiceAccountName,
+                            NamespaceProperty = KubernetesRbac.ServiceAccountNamespace,
+                        },
+                    },
+                    .. KubernetesRbac.ClusterWide(
+                        new RbacRule("namespaces", "list"),
+                        new RbacRule("namespaces", "watch")),
+                    .. KubernetesRbac.InNamespace(
+                        "my-app",
+                        new RbacRule("pods", "list"),
+                        new RbacRule("pods", "watch")),
+                ],
+                HttpHandlerFactory = () => [new DiscoveryGateHandler(discoveryState)],
+            },
+            TestContext.Current.CancellationToken);
+        var cluster = clusterScope.Cluster;
+        await cluster.Connect();
+        cluster.Connected.ShouldBeTrue();
+
+        await TestWait.UntilAsync(
+            () => discoveryState.RequestCount > 0,
+            TimeSpan.FromSeconds(10),
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        var podKind = GroupApiVersionKind.From<V1Pod>();
+        await cluster.Permissions.UpdatePermissionsAllNamespaceAsync(podKind, true, Verb.List);
+        await cluster.Permissions.UpdatePermissionsAllNamespaceAsync(podKind, true, Verb.Watch);
+
+        try
+        {
+            var seedTask = cluster.SeedResource<V1Pod>(waitForReady: true);
+
+            await TestWait.NextPollAsync(
+                TimeSpan.FromMilliseconds(50),
+                TestContext.Current.CancellationToken);
+            seedTask.IsCompleted.ShouldBeFalse(
+                $"globalPods={cluster.Permissions.CanI<V1Pod>(Verb.List)}; namespaced={cluster.IsResourceNamespaced<V1Pod>()}; fault={seedTask.Exception}");
+
+            discoveryState.Gate.SetResult();
+            await seedTask.WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken);
+        }
+        finally
+        {
+            discoveryState.Gate.TrySetResult();
+        }
+
+        var container = cluster.Objects[podKind].ShouldBeOfType<ContainerClass<V1Pod>>();
+        container.InformerCount.ShouldBe(
+            1,
+            $"connected={cluster.Connected}; namespaced={cluster.IsResourceNamespaced<V1Pod>()}; requests={discoveryState.RequestCount}");
+    }
+
+    private sealed class DiscoveryGateState
+    {
+        private int _requestCount;
+
+        public TaskCompletionSource Gate { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public int RequestCount => Volatile.Read(ref _requestCount);
+
+        public void OnDiscoveryRequest() => Interlocked.Increment(ref _requestCount);
+    }
+
+    private sealed class DiscoveryGateHandler(DiscoveryGateState state) : DelegatingHandler
+    {
+        protected override async Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request,
+            CancellationToken cancellationToken)
+        {
+            var path = request.RequestUri?.AbsolutePath;
+            if (string.Equals(path, "/api", StringComparison.Ordinal)
+                || string.Equals(path, "/apis", StringComparison.Ordinal))
+            {
+                state.OnDiscoveryRequest();
+                await state.Gate.Task.WaitAsync(cancellationToken);
+            }
+
+            return await base.SendAsync(request, cancellationToken);
+        }
     }
 
     protected override async Task<TestCluster> CreateHarnessAsync(KubernetesBackend backend)

@@ -549,6 +549,18 @@
     <value>Remove</value>
     <comment/>
   </data>
+  <data name="ClusterSettingsView_PermissionsLabel" xml:space="preserve">
+    <value>Permissions</value>
+    <comment/>
+  </data>
+  <data name="ClusterSettingsView_RefreshPermissions" xml:space="preserve">
+    <value>Refresh Permissions</value>
+    <comment/>
+  </data>
+  <data name="ClusterSettingsView_RefreshPermissionsTooltip" xml:space="preserve">
+    <value>Discard cached authorization rules and re-evaluate resource access</value>
+    <comment/>
+  </data>
   <data name="ClusterSettingsView_DebugContainerImageLabel" xml:space="preserve">
     <value>Ephemeral Debug Image</value>
     <comment/>
@@ -1997,6 +2009,10 @@
     <value>Scope</value>
     <comment/>
   </data>
+  <data name="V1CustomResourceDefinitionConfig_NavigationName" xml:space="preserve">
+    <value>Definitions</value>
+    <comment/>
+  </data>
   <data name="V1ClusterRoleBindingConfig_Bindings" xml:space="preserve">
     <value>Bindings</value>
     <comment/>
@@ -2828,5 +2844,14 @@
   <data name="SettingsView_McpTokenRevokeFailed" xml:space="preserve">
     <value>Revocation was not saved. This token remains active until KubeUI can save the change.</value>
     <comment/>
+  </data>
+  <data name="NavigationView_GatewayApi" xml:space="preserve">
+    <value>Gateway</value>
+  </data>
+  <data name="NavigationView_GatewayApiExperimental" xml:space="preserve">
+    <value>Experimental</value>
+  </data>
+  <data name="NavigationView_Crossplane" xml:space="preserve">
+    <value>Crossplane</value>
   </data>
 </root>

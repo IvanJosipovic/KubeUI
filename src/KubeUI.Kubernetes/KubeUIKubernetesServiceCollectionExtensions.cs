@@ -1,6 +1,7 @@
 using System.Text.Json.Serialization.Metadata;
 using k8s;
 using KubeUI.Kubernetes.Serialization;
+using Microsoft.Extensions.Options;
 
 namespace KubeUI.Kubernetes;
 
@@ -26,6 +27,7 @@ public static class KubeUIKubernetesServiceCollectionExtensions
         services.AddSingleton<ClusterManager>();
         services.AddSingleton<IClusterRuntimeCatalog>(sp => sp.GetRequiredService<ClusterManager>());
         services.AddHostedService<ClusterManagerStartupService>();
+        services.AddOptions<ClusterAuthorizationOptions>();
         return services;
     }
 

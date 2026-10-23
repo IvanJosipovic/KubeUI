@@ -549,7 +549,7 @@ public sealed class ResourceGraphControlTests
             Metadata = new() { Name = "default", Uid = "default-namespace-uid" },
         };
         cluster.SelectedNamespaces.Add(namespaceResource);
-        var pod = CreatePod("reopened");
+        var pod = CreatePodForApi("reopened");
         await cluster.Runtime.AddOrUpdateResource(pod);
 
         var factory = Application.Current.GetRequiredTestService<IFactory>();
@@ -583,7 +583,7 @@ public sealed class ResourceGraphControlTests
         var cluster = await Application.Current.CreateClusterAsync(config => config.Type = KubernetesBackend.Fake);
         cluster.SelectedNamespaces.Add(new V1Namespace { Metadata = new() { Name = "default" } });
         await cluster.Runtime.SeedResource<V1Pod>(true);
-        var pod = CreatePod("reload-before-snapshot");
+        var pod = CreatePodForApi("reload-before-snapshot");
         await cluster.Runtime.AddOrUpdateResource(pod);
 
         using (VisualizationViewModel firstView = new(new ResourceRelationshipBuilder()))
@@ -1199,9 +1199,9 @@ public sealed class ResourceGraphControlTests
         cluster.SelectedNamespaces.Add(new V1Namespace { Metadata = new() { Name = "default" } });
         await cluster.Runtime.SeedResource<V1Pod>(true);
 
-        var root = CreatePod("root");
-        var intermediate = CreatePod("intermediate");
-        var leaf = CreatePod("leaf");
+        var root = CreatePodForApi("root");
+        var intermediate = CreatePodForApi("intermediate");
+        var leaf = CreatePodForApi("leaf");
         await cluster.Runtime.AddOrUpdateResource(root);
         await cluster.Runtime.AddOrUpdateResource(intermediate);
         await cluster.Runtime.AddOrUpdateResource(leaf);
@@ -1241,12 +1241,12 @@ public sealed class ResourceGraphControlTests
         await builder.WaitForInitialBuildAsync();
         await WaitForAsync(() => !viewModel.IsRebuildPendingOrRunning);
 
-        await cluster.Runtime.AddOrUpdateResource(CreatePod("first"));
+        await cluster.Runtime.AddOrUpdateResource(CreatePodForApi("first"));
         await builder.WaitForAdditionStartedAsync();
         try
         {
-            await cluster.Runtime.AddOrUpdateResource(CreatePod("second"));
-            await cluster.Runtime.AddOrUpdateResource(CreatePod("third"));
+            await cluster.Runtime.AddOrUpdateResource(CreatePodForApi("second"));
+            await cluster.Runtime.AddOrUpdateResource(CreatePodForApi("third"));
             await WaitForAsync(() => cluster.Runtime.GetResource<V1Pod>("default", "third") is not null);
             await TestApplicationExtensions.WaitForUiAsync();
             await WaitForNextPollAsync();
@@ -1635,7 +1635,7 @@ public sealed class ResourceGraphControlTests
         viewModel.Initialize(cluster);
         await builder.WaitForInitialBuildAsync();
 
-        await cluster.Runtime.AddOrUpdateResource(CreatePod("pending"));
+        await cluster.Runtime.AddOrUpdateResource(CreatePodForApi("pending"));
         await builder.WaitForAdditionStartedAsync();
 
         V1ReplicaSet noise = new()
@@ -2109,8 +2109,7 @@ public sealed class ResourceGraphControlTests
             control.Graph = new ResourceRelationshipGraph([pod], []);
 
             await WaitForAsync(() => control.Area.VertexList.Count == 1);
-            await WaitForAsync(() => control.IsViewportStable);
-
+            await WaitForAsync(() => control.ZoomControl.Zoom != 0.5);
             control.ZoomControl.Zoom.ShouldNotBe(0.5);
         }
         finally
@@ -2777,6 +2776,13 @@ public sealed class ResourceGraphControlTests
             ],
         },
     };
+
+    private static V1Pod CreatePodForApi(string name, string namespaceName = "default")
+    {
+        var pod = CreatePod(name, namespaceName);
+        pod.Metadata!.Uid = null;
+        return pod;
+    }
 
     private sealed class RecordingIconService(IResourceIconService inner) : IResourceIconService
     {

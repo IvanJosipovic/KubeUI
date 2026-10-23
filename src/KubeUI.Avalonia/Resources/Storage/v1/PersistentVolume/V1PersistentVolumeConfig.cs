@@ -2,16 +2,16 @@ using k8s.Models;
 
 namespace KubeUI.Avalonia.Resources.Storage.v1.PersistentVolume;
 
-public sealed partial class V1PersistentVolumeConfig : ResourceConfigBase<V1PersistentVolume>
+public sealed partial class V1PersistentVolumeConfig : ResourceConfig<V1PersistentVolume>
 {
     public V1PersistentVolumeConfig(IServiceProvider serviceProvider)
         : base(serviceProvider)
     {
     }
-    public override string Category => Assets.Resources.ResourceConfig_Category_Storage!;
+    public override NavigationPlacement Navigation => NavigationPlacement.InSection(NavigationSections.StorageId);
     public override int Order => 1;
 
-    public override IList<IResourceListColumn> Columns()
+    protected override IList<IResourceListColumn> CreateDefaultColumns()
     {
         return [
             NameColumn(SortDirection.Ascending),
