@@ -535,12 +535,26 @@ public sealed partial class ClusterManager : ObservableObject, IClusterRuntimeCa
     {
         try
         {
-            LoadFromConfigFromPath(e.FullPath);
+            OnKubeConfigFileChanged(e.FullPath);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error Watching Kube Config {Path}", e.FullPath);
         }
+    }
+
+    internal void OnKubeConfigFileChanged(string path)
+    {
+        lock (_syncRoot)
+        {
+            // Watcher events can arrive after RemoveKubeConfig stopped watching the file; ignore them.
+            if (!_fileWatchers.ContainsKey(path))
+            {
+                return;
+            }
+        }
+
+        LoadFromConfigFromPath(path);
     }
 
     private void StartDiscoveryWatcher(string directory)

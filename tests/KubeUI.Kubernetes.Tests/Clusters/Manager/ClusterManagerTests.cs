@@ -250,6 +250,28 @@ public class ClusterManagerTests
     }
 
     [Fact]
+    public async Task Late_file_change_event_after_RemoveKubeConfig_does_not_restore_it()
+    {
+        using var directory = new TemporaryDirectory();
+        using var otherDirectory = new TemporaryDirectory();
+        var defaultPath = WriteKubeConfig(directory.Path, "config", "default-context");
+        var customPath = WriteKubeConfig(otherDirectory.Path, "custom.yaml", "custom-context");
+        var settings = new KubernetesTestSettingsStore();
+        await using var scope = CreateManager(settings, defaultPath, directory.Path);
+        await scope.Manager.LoadClustersAsync(TestContext.Current.CancellationToken);
+        scope.Manager.LoadFromConfigFromPath(customPath);
+        scope.Dispatcher.Drain();
+        scope.Manager.RemoveKubeConfig(customPath);
+        scope.Dispatcher.Drain();
+
+        scope.Manager.OnKubeConfigFileChanged(customPath);
+        scope.Dispatcher.Drain();
+
+        scope.Manager.GetCluster("custom-context").ShouldBeNull();
+        settings.KubeConfigPaths.ShouldNotContain(customPath);
+    }
+
+    [Fact]
     public async Task RemoveKubeConfig_keeps_clusters_from_discoverable_file_and_ignores_default_path()
     {
         using var directory = new TemporaryDirectory();
