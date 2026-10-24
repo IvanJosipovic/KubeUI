@@ -6,13 +6,24 @@ namespace KubeUI.Avalonia.Features.Helm;
 
 internal static class HelmValuesYaml
 {
-    public static string Serialize(IReadOnlyDictionary<string, JsonElement> values)
-        => KubernetesYaml.Serialize(KubernetesYaml.Deserialize<Dictionary<string, object>>(
+    public static string Serialize(JsonElement values)
+    {
+        if (values.ValueKind != JsonValueKind.Object)
+        {
+            throw new JsonException("Helm release values must be a JSON object.");
+        }
+
+        return KubernetesYaml.Serialize(KubernetesYaml.Deserialize<Dictionary<string, object>>(
             k8s.KubernetesJson.Serialize(values)));
+    }
 
     public static IReadOnlyDictionary<string, object?> Parse(string yaml)
     {
         ArgumentNullException.ThrowIfNull(yaml);
+        if (string.IsNullOrWhiteSpace(yaml))
+        {
+            return new Dictionary<string, object?>();
+        }
 
         // Load the document tree first so duplicate explicit keys are rejected on the raw structure. The
         // merging parser resolves `<<` keys before the deserializer's duplicate check runs, which would

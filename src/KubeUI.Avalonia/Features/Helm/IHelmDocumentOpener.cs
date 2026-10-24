@@ -4,7 +4,7 @@ using KubeUI.Kubernetes;
 
 namespace KubeUI.Avalonia.Features.Helm;
 
-/// <summary>Opens Helm editor documents for releases and repositories.</summary>
+/// <summary>Opens Helm documents for charts, releases, and repositories.</summary>
 public interface IHelmDocumentOpener
 {
     /// <summary>Opens an install editor, or an upgrade editor when a release is supplied.</summary>
@@ -24,4 +24,9 @@ public interface IHelmDocumentOpener
     /// <param name="connection">Helm connection the editor operates on.</param>
     /// <param name="repository">Repository to edit, or <see langword="null"/> to add a new repository.</param>
     void OpenRepositoryEditor(ClusterWorkspace cluster, HelmConnection connection, HelmRepository? repository);
+
+    /// <summary>Opens or focuses the cluster chart list, optionally filtered to a repository.</summary>
+    /// <param name="cluster">Workspace owning the chart document.</param>
+    /// <param name="repositoryName">Repository to filter by, or <see langword="null"/> to keep the current filter.</param>
+    void OpenCharts(ClusterWorkspace cluster, string? repositoryName = null);
 }

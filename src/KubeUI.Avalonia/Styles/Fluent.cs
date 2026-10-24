@@ -6,6 +6,7 @@ using Avalonia.Markup.Xaml.MarkupExtensions;
 using Avalonia.Markup.Xaml.Styling;
 using Avalonia.Themes.Fluent;
 using Avalonia.Xaml.Interactivity;
+using AvaloniaEdit;
 using Dock.Avalonia.Controls;
 using Dock.Avalonia.Themes.Fluent;
 using Dock.Model.Core;
@@ -45,6 +46,9 @@ public sealed class Fluent : AvaloniaStyles
         Add(CreateMarkdownTypographyStyles());
         Add(new DockFluentTheme());
         Add(new TerminalTheme());
+
+        Add(new Style<TextEditor>()
+            .Background(new DynamicResourceExtension("SystemAltHighColor")));
 
         Add(new Style<ToolControl>()
             .Background(new DynamicResourceExtension("SystemRegionBrush")));

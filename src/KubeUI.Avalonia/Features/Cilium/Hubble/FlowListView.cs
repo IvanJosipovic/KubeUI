@@ -1,3 +1,4 @@
+using System.Windows.Input;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Templates;
@@ -12,7 +13,6 @@ using KubeUI.Avalonia.Features.Resources.Common;
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
 using KubeUI.Cilium.Hubble;
 using SvcSystems.Avalonia.DynamicTableView;
-using System.Windows.Input;
 using UrsaControls = Ursa.Controls;
 
 namespace KubeUI.Avalonia.Features.Cilium.Hubble;
@@ -52,7 +52,8 @@ public sealed partial class FlowListView : ViewBase<FlowListViewModel>
     protected override void OnDataContextChanged(EventArgs e)
     {
         base.OnDataContextChanged(e);
-        if (DataContext is not FlowListViewModel vm) return;
+        if (DataContext is not FlowListViewModel vm)
+            return;
 
         _table.Source = vm.TableSource;
         _table.ContextMenuItemsFactory = vm.GetContextMenuItems;
@@ -84,7 +85,8 @@ public sealed partial class FlowListView : ViewBase<FlowListViewModel>
 
     private void TryRestoreState()
     {
-        if (DataContext is not FlowListViewModel vm) return;
+        if (DataContext is not FlowListViewModel vm)
+            return;
 
         var restoreTableState = !ReferenceEquals(_restoredTable, _table) || !ReferenceEquals(_restoredViewModel, vm);
         var state = restoreTableState ? vm.TableViewRuntimeState : null;
@@ -157,14 +159,14 @@ public sealed partial class FlowListView : ViewBase<FlowListViewModel>
                         new ComboBox()
                             .Width(120)
                             .Margin(0, 0, 2, 0)
-                            .ItemsSource(new[] { KubeUI.Cilium.Hubble.FlowVerdict.Forwarded, KubeUI.Cilium.Hubble.FlowVerdict.Dropped, KubeUI.Cilium.Hubble.FlowVerdict.Error })
-                            .SelectedItem(CompiledBinding.Create<FlowListViewModel, KubeUI.Cilium.Hubble.FlowVerdict?>(x => x.Filter.Verdict, mode: BindingMode.TwoWay))
+                            .ItemsSource(new[] { FlowVerdict.Forwarded, FlowVerdict.Dropped, FlowVerdict.Error })
+                            .SelectedItem(CompiledBinding.Create<FlowListViewModel, FlowVerdict?>(x => x.Filter.Verdict, mode: BindingMode.TwoWay))
                             .PlaceholderText(Assets.Resources.FlowListView_FilterVerdictAll)
-                            .ItemTemplate(new FuncDataTemplate<KubeUI.Cilium.Hubble.FlowVerdict>((v, _) => new TextBlock().Text(v switch
+                            .ItemTemplate(new FuncDataTemplate<FlowVerdict>((v, _) => new TextBlock().Text(v switch
                             {
-                                KubeUI.Cilium.Hubble.FlowVerdict.Forwarded => Assets.Resources.FlowVerdict_Allowed,
-                                KubeUI.Cilium.Hubble.FlowVerdict.Dropped => Assets.Resources.FlowVerdict_Dropped,
-                                KubeUI.Cilium.Hubble.FlowVerdict.Error => Assets.Resources.FlowVerdict_Error,
+                                FlowVerdict.Forwarded => Assets.Resources.FlowVerdict_Allowed,
+                                FlowVerdict.Dropped => Assets.Resources.FlowVerdict_Dropped,
+                                FlowVerdict.Error => Assets.Resources.FlowVerdict_Error,
                                 _ => Assets.Resources.FlowVerdict_Unknown
                             }))),
 
@@ -223,7 +225,7 @@ public sealed partial class FlowListView : ViewBase<FlowListViewModel>
         return new ContextMenu()
             .Styles(
                 new Style<MenuItem>()
-                    .Setter(MenuItem.IsVisibleProperty, CompiledBinding.Create<MenuItemViewModel, bool>(x => x.IsVisible))
+                    .Setter(IsVisibleProperty, CompiledBinding.Create<MenuItemViewModel, bool>(x => x.IsVisible))
                     .Setter(HeaderedItemsControl.HeaderProperty, CompiledBinding.Create<MenuItemViewModel, string?>(x => x.Title))
                     .Setter(MenuItem.CommandProperty, CompiledBinding.Create<MenuItemViewModel, ICommand?>(x => x.Command))
                     .Setter(MenuItem.CommandParameterProperty, CompiledBinding.Create<MenuItemViewModel, object?>(x => x.CommandParameter))
@@ -234,7 +236,7 @@ public sealed partial class FlowListView : ViewBase<FlowListViewModel>
     }
 }
 
-file sealed class BoolToBrushConverter : global::Avalonia.Data.Converters.IValueConverter
+file sealed class BoolToBrushConverter : IValueConverter
 {
     private readonly object _trueValue;
     private readonly object _falseValue;
@@ -248,7 +250,7 @@ file sealed class BoolToBrushConverter : global::Avalonia.Data.Converters.IValue
     public object? Convert(object? value, Type targetType, object? parameter, System.Globalization.CultureInfo culture)
     {
         var selected = value is true ? _trueValue : _falseValue;
-        return selected is DynamicResourceExtension dre 
+        return selected is DynamicResourceExtension dre
             ? (Application.Current?.TryGetResource(dre.ResourceKey, Application.Current.ActualThemeVariant, out var r) == true ? r : selected)
             : selected;
     }

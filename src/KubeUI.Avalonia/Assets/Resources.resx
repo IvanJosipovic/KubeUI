@@ -2949,29 +2949,55 @@
   <data name="HelmReleasesView_StatusAction" xml:space="preserve"><value>View status</value></data>
   <data name="HelmReleasesView_Visualize" xml:space="preserve"><value>Visualize</value></data>
   <data name="HelmReleasesView_Values" xml:space="preserve"><value>View values</value></data>
-  <data name="HelmReleasesView_History" xml:space="preserve"><value>View history</value></data>
   <data name="HelmReleasesView_Upgrade" xml:space="preserve"><value>Upgrade</value></data>
   <data name="HelmReleasesView_Uninstall" xml:space="preserve"><value>Uninstall</value></data>
   <data name="HelmReleasesView_UninstallTitle" xml:space="preserve"><value>Uninstall release?</value></data>
   <data name="HelmReleasesView_UninstallContent" xml:space="preserve"><value>Uninstall release '{0}' from namespace '{1}'?</value></data>
   <data name="HelmReleasesView_RollbackDialog_Title" xml:space="preserve"><value>Roll back release?</value></data>
   <data name="HelmReleasesView_RollbackDialog_Content" xml:space="preserve"><value>Roll back release '{0}' in namespace '{1}'? Revision 0 selects the previous revision.</value></data>
+  <data name="HelmReleasesView_HistoryLabel" xml:space="preserve"><value>Release History</value></data>
+  <data name="HelmRepositoriesView_ViewCharts" xml:space="preserve"><value>View Charts</value></data>
+  <data name="HelmRepositoriesView_Edit" xml:space="preserve"><value>Edit</value></data>
+  <data name="HelmRepositoriesView_Delete" xml:space="preserve"><value>Delete</value></data>
+  <data name="HelmRepositoriesView_DeleteTitle" xml:space="preserve"><value>Delete repository?</value></data>
+  <data name="HelmRepositoriesView_DeleteContent" xml:space="preserve"><value>Delete repository '{0}'?</value></data>
+  <data name="HelmRepositoriesView_New" xml:space="preserve"><value>New repository</value></data>
+  <data name="HelmRepositoriesView_ItemsFormat" xml:space="preserve"><value>Repositories: {0}</value></data>
+  <data name="HelmRepositoriesView_Name" xml:space="preserve"><value>Name</value></data>
+  <data name="HelmRepositoriesView_Url" xml:space="preserve"><value>URL</value></data>
+  <data name="HelmRepositoriesView_UpdateIndexes" xml:space="preserve"><value>Update indexes</value></data>
+  <data name="HelmRepositoriesView_IndexesUpdated" xml:space="preserve"><value>Indexes updated</value></data>
+  <data name="HelmRepositoriesView_RefreshFailed" xml:space="preserve"><value>Refresh failed</value></data>
+  <data name="HelmRepositoriesView_IndexUpdateFailed" xml:space="preserve"><value>Update failed</value></data>
+  <data name="HelmRepositoriesView_DeleteFailed" xml:space="preserve"><value>Delete failed</value></data>
+  <data name="HelmReleasesView_RefreshFailed" xml:space="preserve"><value>Refresh failed</value></data>
+  <data name="HelmReleasesView_VisualizeFailed" xml:space="preserve"><value>Visualize failed</value></data>
+  <data name="HelmReleasesView_StatusLoaded" xml:space="preserve"><value>Status loaded</value></data>
+  <data name="HelmReleasesView_StatusFailed" xml:space="preserve"><value>Status failed</value></data>
+  <data name="HelmReleasesView_ValuesFailed" xml:space="preserve"><value>Values failed</value></data>
+  <data name="HelmReleasesView_RollbackFailed" xml:space="preserve"><value>Rollback failed</value></data>
+  <data name="HelmReleasesView_UninstallFailed" xml:space="preserve"><value>Uninstall failed</value></data>
   <data name="HelmReleaseEditorView_InstallTitle" xml:space="preserve"><value>Install Helm release</value></data>
   <data name="HelmReleaseEditorView_UpgradeTitle" xml:space="preserve"><value>Upgrade Helm release</value></data>
   <data name="HelmReleaseEditorView_Name" xml:space="preserve"><value>Release name</value></data>
+  <data name="HelmReleaseEditorView_ReleaseNameRequired" xml:space="preserve"><value>Release name is required.</value></data>
   <data name="HelmReleaseEditorView_Chart" xml:space="preserve"><value>Chart reference</value></data>
+  <data name="HelmReleaseEditorView_ChartRequired" xml:space="preserve"><value>Choose a chart or enter a chart reference.</value></data>
   <data name="HelmReleaseEditorView_Namespace" xml:space="preserve"><value>Namespace</value></data>
+  <data name="HelmReleaseEditorView_NamespaceRequired" xml:space="preserve"><value>Namespace is required.</value></data>
   <data name="HelmReleaseEditorView_ValuesYaml" xml:space="preserve"><value>Values (YAML)</value></data>
   <data name="HelmReleaseEditorView_ChartVersion" xml:space="preserve"><value>Chart version</value></data>
+  <data name="HelmReleaseEditorView_VersionRequired" xml:space="preserve"><value>Select a chart version.</value></data>
   <data name="HelmReleaseEditorView_Repository" xml:space="preserve"><value>Repository</value></data>
-  <data name="HelmReleaseEditorView_SearchCharts" xml:space="preserve"><value>Search charts</value></data>
+  <data name="HelmReleaseEditorView_ChartSource" xml:space="preserve"><value>Chart source</value></data>
+  <data name="HelmReleaseEditorView_RepositorySource" xml:space="preserve"><value>Repository</value></data>
+  <data name="HelmReleaseEditorView_OciSource" xml:space="preserve"><value>OCI</value></data>
   <data name="HelmReleaseEditorView_ChartReference" xml:space="preserve"><value>Chart reference (manual or OCI)</value></data>
   <data name="HelmReleaseEditorView_ChartVersionNotice" xml:space="preserve"><value>Selected chart version is used for install, upgrade, and preview. Leave version empty to use Helm's default resolution.</value></data>
   <data name="HelmReleaseEditorView_ValuesMustBeObject" xml:space="preserve"><value>Values must be a YAML mapping.</value></data>
   <data name="HelmReleaseEditorView_ChooseChartReference" xml:space="preserve"><value>No unique repository chart reference found. Enter the chart reference (repository/chart or OCI URL) before upgrading or previewing.</value></data>
   <data name="HelmReleaseEditorView_Timeout" xml:space="preserve"><value>Timeout seconds (0 = no timeout)</value></data>
   <data name="HelmReleaseEditorView_CreateNamespace" xml:space="preserve"><value>Create namespace if missing</value></data>
-  <data name="HelmReleaseEditorView_Wait" xml:space="preserve"><value>Wait for resources</value></data>
   <data name="HelmReleaseEditorView_InstallIfMissing" xml:space="preserve"><value>Install if the release does not exist</value></data>
   <data name="HelmReleaseEditorView_Preview" xml:space="preserve"><value>Preview in visualization</value></data>
   <data name="HelmReleaseEditorView_InstallUpgrade" xml:space="preserve"><value>Install / Upgrade</value></data>
@@ -2984,7 +3010,7 @@
   <data name="HelmReleasesView_ValuesTitle" xml:space="preserve"><value>Helm values: {0} ({1})</value></data>
   <data name="HelmChartsView_Title" xml:space="preserve"><value>Charts</value></data>
   <data name="HelmChartsView_Chart" xml:space="preserve"><value>Chart</value></data>
-  <data name="HelmChartsView_Reference" xml:space="preserve"><value>Reference</value></data>
+  <data name="HelmChartsView_Description" xml:space="preserve"><value>Description</value></data>
   <data name="HelmChartsView_LatestVersion" xml:space="preserve"><value>Latest Version</value></data>
   <data name="HelmChartsView_Install" xml:space="preserve"><value>Install chart</value></data>
   <data name="HelmChartsView_ItemsFormat" xml:space="preserve"><value>Charts: {0}</value></data>
@@ -2992,6 +3018,7 @@
   <data name="HelmChartsView_SearchNotice" xml:space="preserve"><value>Charts come from cached repository indexes. Update repository indexes to load their latest versions.</value></data>
   <data name="HelmChartsView_AllRepositories" xml:space="preserve"><value>All repositories</value></data>
   <data name="HelmChartsView_Repository" xml:space="preserve"><value>Repository</value></data>
+  <data name="HelmReleaseEditorView_ChartVersionPlaceholder" xml:space="preserve"><value>Leave empty to use latest</value></data>
   <data name="FlowListView_Title" xml:space="preserve"><value>Network Flows</value></data>
   <data name="FlowListView_TooltipClear" xml:space="preserve"><value>Clear all flows</value></data>
   <data name="FlowListView_ItemsFormat" xml:space="preserve"><value>Flows: {0}</value></data>
@@ -3030,6 +3057,8 @@
   <data name="ServiceMapView_Title" xml:space="preserve"><value>Service Map</value></data>
   <data name="ServiceMapView_AggregateByNamespace" xml:space="preserve"><value>Aggregate by Namespace</value></data>
   <data name="ServiceMapView_ShowErrorsOnly" xml:space="preserve"><value>Show Errors Only</value></data>
+  <data name="ServiceMapView_TooltipAggregate" xml:space="preserve"><value>Aggregate by namespace</value></data>
+  <data name="ServiceMapView_TooltipErrorsOnly" xml:space="preserve"><value>Show errors only</value></data>
   <data name="ServiceMapView_TimeWindowMinutes" xml:space="preserve"><value>min</value></data>
   <data name="ServiceMapView_Nodes" xml:space="preserve"><value>Nodes</value></data>
   <data name="ServiceMapView_Edges" xml:space="preserve"><value>Edges</value></data>

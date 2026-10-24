@@ -8,6 +8,7 @@ using KubeUI.Avalonia.Features.Cilium.Hubble;
 using KubeUI.Avalonia.Features.Crossplane;
 using KubeUI.Avalonia.Features.Crossplane.MRDiffDetection;
 using KubeUI.Avalonia.Features.Helm;
+using KubeUI.Avalonia.Features.Helm.Charts;
 using KubeUI.Avalonia.Features.Helm.Releases;
 using KubeUI.Avalonia.Features.Helm.Repositories;
 using KubeUI.Avalonia.Features.Resources.List.Controls;
@@ -65,9 +66,9 @@ public static partial class KubeUIShellServiceCollectionExtensions
         services.AddSingleton<INavigationSectionProvider, CrossplaneNavigationSectionProvider>();
         services.AddSingleton<INavigationSectionProvider, HelmNavigationSectionProvider>();
         services.AddSingleton<INavigationSectionProvider, HubbleNavigationSectionProvider>();
-        services.AddSingleton<IHelmVisualizationDocumentOpener, HelmVisualizationDocumentOpener>();
         services.AddSingleton<IHelmListNotifier, HelmListNotifier>();
         services.AddTransient<IHelmDocumentOpener, HelmDocumentOpener>();
+        services.AddTransient<Func<HelmChartsViewModel>>(sp => () => sp.GetRequiredService<HelmChartsViewModel>());
         services.AddTransient<Func<HelmReleaseEditorViewModel>>(sp => () => sp.GetRequiredService<HelmReleaseEditorViewModel>());
         services.AddTransient<Func<HelmRepositoryEditorViewModel>>(sp => () => sp.GetRequiredService<HelmRepositoryEditorViewModel>());
         services.AddTransient<IHelmReleasePreviewService, HelmReleasePreviewService>();

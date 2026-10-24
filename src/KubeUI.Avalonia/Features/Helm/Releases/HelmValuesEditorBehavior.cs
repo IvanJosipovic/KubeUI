@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using Avalonia.VisualTree;
 using Avalonia.Xaml.Interactivity;
 using AvaloniaEdit;
 
@@ -7,6 +8,10 @@ namespace KubeUI.Avalonia.Features.Helm.Releases;
 internal sealed class HelmValuesEditorBehavior : Behavior<TextEditor>
 {
     private HelmReleaseEditorViewModel? _viewModel;
+    private ScrollViewer? _editorScrollViewer;
+    private ScrollViewer? _formScrollViewer;
+    private Vector? _pendingEditorScrollOffset;
+    private Vector? _pendingFormScrollOffset;
     private bool _updatingEditor;
 
     protected override void OnAttached()
@@ -14,6 +19,7 @@ internal sealed class HelmValuesEditorBehavior : Behavior<TextEditor>
         base.OnAttached();
         AssociatedObject.DataContextChanged += DataContextChanged;
         AssociatedObject.TextChanged += EditorTextChanged;
+        AssociatedObject.LayoutUpdated += LayoutUpdated;
         SetViewModel(AssociatedObject.DataContext as HelmReleaseEditorViewModel);
     }
 
@@ -21,7 +27,12 @@ internal sealed class HelmValuesEditorBehavior : Behavior<TextEditor>
     {
         AssociatedObject.DataContextChanged -= DataContextChanged;
         AssociatedObject.TextChanged -= EditorTextChanged;
+        AssociatedObject.LayoutUpdated -= LayoutUpdated;
         SetViewModel(null);
+        _editorScrollViewer = null;
+        _formScrollViewer = null;
+        _pendingEditorScrollOffset = null;
+        _pendingFormScrollOffset = null;
         base.OnDetaching();
     }
 
@@ -66,14 +77,48 @@ internal sealed class HelmValuesEditorBehavior : Behavior<TextEditor>
             return;
         }
 
+        AttachScrollViewers();
+        _pendingEditorScrollOffset = _editorScrollViewer?.Offset;
+        _pendingFormScrollOffset = _formScrollViewer?.Offset;
+        var caretOffset = AssociatedObject.CaretOffset;
         _updatingEditor = true;
         try
         {
             AssociatedObject.Text = text;
+            AssociatedObject.CaretOffset = Math.Min(caretOffset, text.Length);
         }
         finally
         {
             _updatingEditor = false;
         }
+    }
+
+    private void LayoutUpdated(object? sender, EventArgs args)
+    {
+        AttachScrollViewers();
+
+        if (_pendingEditorScrollOffset is Vector editorOffset)
+        {
+            _pendingEditorScrollOffset = null;
+            if (_editorScrollViewer is not null)
+            {
+                _editorScrollViewer.Offset = editorOffset;
+            }
+        }
+
+        if (_pendingFormScrollOffset is Vector formOffset)
+        {
+            _pendingFormScrollOffset = null;
+            if (_formScrollViewer is not null)
+            {
+                _formScrollViewer.Offset = formOffset;
+            }
+        }
+    }
+
+    private void AttachScrollViewers()
+    {
+        _editorScrollViewer = AssociatedObject.GetVisualDescendants().OfType<ScrollViewer>().FirstOrDefault();
+        _formScrollViewer = AssociatedObject.GetVisualAncestors().OfType<ScrollViewer>().FirstOrDefault();
     }
 }

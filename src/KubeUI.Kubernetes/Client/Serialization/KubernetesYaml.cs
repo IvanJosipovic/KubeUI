@@ -201,17 +201,30 @@ public static class KubernetesYaml
 
     private static List<object> LoadAllFromStringCore(string content, Func<string, Type> resolveType, bool strict)
     {
-        var types = new List<Type>();
+        var types = new List<Type?>();
         var parser = new MergingParser(new Parser(new StringReader(content)));
         parser.Consume<StreamStart>();
         while (parser.Accept<DocumentStart>(out _))
         {
-            Dictionary<object, object> dict;
+            Dictionary<object, object>? dict;
             lock (s_deserializerLockObject)
             {
                 dict = GetDeserializer(strict).Deserialize<Dictionary<object, object>>(parser);
             }
-            types.Add(resolveType(dict["apiVersion"] + "/" + dict["kind"]));
+
+            if (dict is null)
+            {
+                types.Add(null);
+                continue;
+            }
+
+            if (!dict.TryGetValue("apiVersion", out var apiVersion)
+                || !dict.TryGetValue("kind", out var kind))
+            {
+                throw new YamlException("Kubernetes resource document is missing apiVersion or kind.");
+            }
+
+            types.Add(resolveType(apiVersion + "/" + kind));
         }
 
         parser = new MergingParser(new Parser(new StringReader(content)));
@@ -221,6 +234,16 @@ public static class KubernetesYaml
         while (parser.Accept<DocumentStart>(out _))
         {
             var objType = types[ix++];
+            if (objType is null)
+            {
+                lock (s_deserializerLockObject)
+                {
+                    GetDeserializer(strict).Deserialize<object?>(parser);
+                }
+
+                continue;
+            }
+
             object obj;
             lock (s_deserializerLockObject)
             {

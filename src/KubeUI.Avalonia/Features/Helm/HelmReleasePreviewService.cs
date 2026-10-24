@@ -1,8 +1,10 @@
+using Dock.Model.Core;
 using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Features.Resources.Visualization;
+using KubeUI.Avalonia.Infrastructure.Docking;
 using KubeUI.Kubernetes;
 using KubeUI.Kubernetes.Resources.Relationships;
 using KubeUI.Kubernetes.Serialization;
@@ -14,21 +16,23 @@ public sealed class HelmReleasePreviewService : IHelmReleasePreviewService
 {
     private readonly IHelmService _helmService;
     private readonly Func<VisualizationViewModel> _createVisualization;
-    private readonly IHelmVisualizationDocumentOpener _documentOpener;
+    private readonly IFactory _factory;
 
     /// <summary>Creates the Helm release preview service.</summary>
     /// <param name="helmService">The Helm client abstraction used for chart rendering.</param>
+    /// <param name="createVisualization">Creates the visualization document model.</param>
+    /// <param name="factory">Application dock factory used to open visualization documents.</param>
     public HelmReleasePreviewService(
         IHelmService helmService,
         Func<VisualizationViewModel> createVisualization,
-        IHelmVisualizationDocumentOpener documentOpener)
+        IFactory factory)
     {
         ArgumentNullException.ThrowIfNull(helmService);
         ArgumentNullException.ThrowIfNull(createVisualization);
-        ArgumentNullException.ThrowIfNull(documentOpener);
+        ArgumentNullException.ThrowIfNull(factory);
         _helmService = helmService;
         _createVisualization = createVisualization;
-        _documentOpener = documentOpener;
+        _factory = factory;
     }
 
     /// <inheritdoc />
@@ -57,7 +61,7 @@ public sealed class HelmReleasePreviewService : IHelmReleasePreviewService
                 ["meta.helm.sh/release-namespace"] = releaseNamespace
             }),
             IsNamespaceReadOnly: true));
-        _documentOpener.Open(viewModel);
+        _factory.AddToDocuments(viewModel);
     }
 
     /// <inheritdoc />
@@ -103,6 +107,6 @@ public sealed class HelmReleasePreviewService : IHelmReleasePreviewService
 
         var viewModel = _createVisualization();
         viewModel.InitializePreview(cluster, releaseName, resources);
-        _documentOpener.Open(viewModel);
+        _factory.AddToDocuments(viewModel);
     }
 }

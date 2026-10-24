@@ -1,13 +1,13 @@
 using System.Reactive.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using k8s.Models;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Infrastructure.Threading;
 using KubeUI.Cilium;
 using KubeUI.Cilium.Hubble;
 using KubeUI.Kubernetes;
-using k8s.Models;
 using Microsoft.Extensions.Logging;
 using HubbleConnectionStatus = KubeUI.Cilium.Hubble.ConnectionStatus;
 
@@ -214,8 +214,10 @@ public sealed partial class ServiceMapViewModel : ViewModelBase, IInitializeClus
 
     private static string PodKey(string ns, string pod, string ip, uint identity)
     {
-        if (!string.IsNullOrEmpty(pod)) return $"{ns}/{pod}";
-        if (!string.IsNullOrEmpty(ip)) return $"ip/{ip}";
+        if (!string.IsNullOrEmpty(pod))
+            return $"{ns}/{pod}";
+        if (!string.IsNullOrEmpty(ip))
+            return $"ip/{ip}";
         return identity == 0 ? "world" : $"identity/{identity}";
     }
 

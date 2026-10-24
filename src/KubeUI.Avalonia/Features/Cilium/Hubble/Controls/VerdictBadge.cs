@@ -1,6 +1,6 @@
 using Avalonia;
-using Avalonia.Media;
 using Avalonia.Markup.Declarative;
+using Avalonia.Media;
 using KubeUI.Cilium.Hubble;
 
 namespace KubeUI.Avalonia.Features.Cilium.Hubble.Controls;

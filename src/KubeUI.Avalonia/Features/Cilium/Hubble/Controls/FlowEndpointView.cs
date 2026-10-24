@@ -1,6 +1,6 @@
 using Avalonia;
-using Avalonia.Media;
 using Avalonia.Markup.Declarative;
+using Avalonia.Media;
 using KubeUI.Cilium.Hubble;
 
 namespace KubeUI.Avalonia.Features.Cilium.Hubble.Controls;
@@ -32,7 +32,8 @@ public sealed class FlowEndpointView : StackPanel
         this.GetObservable(EndpointProperty).Subscribe(e =>
         {
             Children.Clear();
-            if (e == null) return;
+            if (e == null)
+                return;
 
             var secondaryBrush = Application.Current?.TryGetResource("SystemBaseMediumBrush", Application.Current.ActualThemeVariant, out var r) == true && r is IBrush b ? b : Brushes.Gray;
 

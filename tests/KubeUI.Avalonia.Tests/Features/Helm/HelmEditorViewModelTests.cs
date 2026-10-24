@@ -1,8 +1,11 @@
+using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
+using Avalonia.Media;
 using Avalonia.Styling;
 using Avalonia.Xaml.Interactivity;
 using AvaloniaEdit;
+using AvaloniaEdit.Folding;
 using Dock.Model.Core;
 using HanumanInstitute.MvvmDialogs;
 using Helm.NET;
@@ -18,6 +21,53 @@ namespace KubeUI.Avalonia.Tests.Features.Helm;
 
 public sealed class HelmEditorViewModelTests
 {
+    [AvaloniaFact]
+    public async Task Release_values_editor_supports_nested_yaml_folding()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync(connect: false);
+        var helm = CreateHelmServiceMock();
+        helm.Setup(service => service.ListRepositoriesAsync(It.IsAny<HelmConnection>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync([]);
+        var editor = new HelmReleaseEditorViewModel(
+            helm.Object,
+            Mock.Of<IFactory>(),
+            Mock.Of<IHelmListNotifier>(),
+            Mock.Of<IHelmReleasePreviewService>(),
+            Mock.Of<IDialogService>());
+        editor.Initialize(workspace, new HelmConnection("config", "context", "apps"), null);
+        await editor.InitializationTask.WaitAsync(TestContext.Current.CancellationToken);
+        editor.ValuesYaml = "replicas: 2\nserver:\n  ingress:\n    enabled: true\n";
+
+        var view = new HelmReleaseEditorView { DataContext = editor };
+        using var window = Application.Current.CreateTestWindow(content: view);
+        try
+        {
+            window.Show();
+            await TestApplicationExtensions.WaitForUiAsync();
+            var textEditor = global::Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(view)
+                .OfType<TextEditor>().Single();
+            var foldingMargin = textEditor.TextArea.LeftMargins.OfType<FoldingMargin>().Single();
+
+            foldingMargin.FoldingManager.ShouldNotBeNull();
+            foldingMargin.FoldingManager!.AllFoldings
+                .Select(folding => folding.Title.Trim())
+                .ShouldContain("server:");
+            foldingMargin.FoldingManager.AllFoldings
+                .Select(folding => folding.Title.Trim())
+                .ShouldContain("ingress:");
+            var ingressFolding = foldingMargin.FoldingManager.AllFoldings
+                .Single(folding => folding.Title.Trim() == "ingress:");
+            ingressFolding.IsFolded = true;
+            ingressFolding.IsFolded.ShouldBeTrue();
+            ingressFolding.IsFolded = false;
+            ingressFolding.IsFolded.ShouldBeFalse();
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
     [AvaloniaTheory]
     [InlineData("no-repositories", false)]
     [InlineData("no-repositories", true)]
@@ -35,8 +85,7 @@ public sealed class HelmEditorViewModelTests
         using var json = System.Text.Json.JsonDocument.Parse("""{"replicas":3,"server":{"enabled":true}}""");
         helm.Setup(service => service.GetValuesAsync(
                 It.Is<HelmConnection>(connection => connection.Namespace == "apps"), "web", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(json.RootElement.EnumerateObject()
-                .ToDictionary(property => property.Name, property => property.Value.Clone()));
+            .ReturnsAsync(json.RootElement.Clone());
         var metadata = new HelmRelease("web", "apps", 1, new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), "deployed", "nginx-1.0", "", "nginx", "1.0");
         if (!hasChartMetadata)
         {
@@ -67,7 +116,7 @@ public sealed class HelmEditorViewModelTests
         await editor.InitializationTask.WaitAsync(TestContext.Current.CancellationToken);
 
         editor.IsLoading.ShouldBeFalse();
-        editor.Error.ShouldBe(scenario == "index-unavailable"
+        GetFieldError(editor, nameof(HelmReleaseEditorViewModel.SelectedChart)).ShouldBe(scenario == "index-unavailable"
             ? "Repository index unavailable"
             : Assets.Resources.HelmReleaseEditorView_ChooseChartReference);
         editor.Chart.ShouldBeEmpty();
@@ -89,15 +138,22 @@ public sealed class HelmEditorViewModelTests
             var textEditor = global::Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(view)
                 .OfType<TextEditor>().Single();
             textEditor.IsReadOnly.ShouldBeFalse();
+            var chartSelector = global::Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(view)
+                .OfType<ComboBox>().Single(control => control.Name == "Chart");
+            DataValidationErrors.GetHasErrors(chartSelector).ShouldBeTrue();
+            DataValidationErrors.GetErrors(chartSelector).Cast<string>()
+                .ShouldContain(GetFieldError(editor, nameof(HelmReleaseEditorViewModel.SelectedChart)));
             textEditor.Text = "replicas: 4\nserver:\n  enabled: true\n";
             editor.ValuesYaml.ShouldBe(textEditor.Text);
+            editor.IsOciSource = true;
             foreach (var reference in new[] { "manual/nginx", "oci://registry.test/charts/nginx" })
             {
                 editor.Chart = reference;
-                editor.AvailableVersions.ShouldBe(["1.0"]);
-                editor.SelectedVersion.ShouldBe("1.0");
+                editor.AvailableVersions.ShouldBeEmpty();
+                editor.SelectedVersion.ShouldBeNull();
                 editor.SelectedRepository.ShouldBeNull();
                 editor.SelectedChart.ShouldBeNull();
+                editor.SelectedVersion = "1.0";
                 editor.PreviewCommand.CanExecute(null).ShouldBeTrue();
                 preview.SetupSequence(service => service.PreviewVersionAsync(workspace,
                         It.Is<HelmConnection>(connection => connection.Namespace == "apps"),
@@ -107,13 +163,16 @@ public sealed class HelmEditorViewModelTests
                     .ThrowsAsync(new InvalidOperationException("Chart reference cannot be resolved"))
                     .Returns(Task.CompletedTask);
                 await editor.PreviewCommand.ExecuteAsync(null).WaitAsync(TestContext.Current.CancellationToken);
-                editor.Error.ShouldBe("Chart reference cannot be resolved");
+                GetFieldError(editor, nameof(HelmReleaseEditorViewModel.Chart)).ShouldBe("Chart reference cannot be resolved");
+                var chartReference = global::Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(view)
+                    .OfType<TextBox>().Single(control => control.Name == "ChartReference");
+                DataValidationErrors.GetHasErrors(chartReference).ShouldBeTrue();
                 editor.Chart.ShouldBe(reference);
                 editor.SelectedVersion.ShouldBe("1.0");
                 editor.ValuesYaml.ShouldBe("replicas: 4\nserver:\n  enabled: true\n");
                 editor.PreviewCommand.CanExecute(null).ShouldBeTrue();
                 await editor.PreviewCommand.ExecuteAsync(null).WaitAsync(TestContext.Current.CancellationToken);
-                editor.Error.ShouldBeEmpty();
+                editor.HasErrors.ShouldBeFalse();
             }
         }
         finally
@@ -122,8 +181,7 @@ public sealed class HelmEditorViewModelTests
         }
 
         preview.VerifyAll();
-        editor.SaveCommand.CanExecute(null).ShouldBeFalse();
-        await editor.SaveCommand.ExecuteAsync(null).WaitAsync(TestContext.Current.CancellationToken);
+        editor.SaveCommand.CanExecute(null).ShouldBeTrue();
         helm.Verify(service => service.UpgradeAsync(
             It.IsAny<HelmConnection>(), It.IsAny<string>(), It.IsAny<string>(),
             It.IsAny<IReadOnlyDictionary<string, object?>>(), It.IsAny<bool>(), It.IsAny<bool>(), It.IsAny<bool>(),
@@ -139,7 +197,7 @@ public sealed class HelmEditorViewModelTests
         helm.Setup(service => service.ListRepositoriesAsync(It.IsAny<HelmConnection>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync([new("first", "https://first.test"), new("second", "https://second.test")]);
         helm.Setup(service => service.GetValuesAsync(It.IsAny<HelmConnection>(), "web", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new Dictionary<string, System.Text.Json.JsonElement>());
+            .ReturnsAsync(System.Text.Json.JsonSerializer.SerializeToElement(new Dictionary<string, object?>()));
         helm.Setup(service => service.ListChartsAsync(It.IsAny<HelmConnection>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync([
                 new("first/web", "web", "1.0"), new("second/web", "web", "2.0"),
@@ -158,36 +216,158 @@ public sealed class HelmEditorViewModelTests
         {
             window.Show();
             await TestApplicationExtensions.WaitForUiAsync();
-            var dropdowns = global::Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(view)
-                .OfType<ComboBox>().ToDictionary(control => control.Name!);
+            var controls = global::Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(view).ToArray();
+            var repositorySource = controls.OfType<RadioButton>()
+                .Single(control => Equals(control.Content, Assets.Resources.HelmReleaseEditorView_RepositorySource));
+            var ociSource = controls.OfType<RadioButton>()
+                .Single(control => Equals(control.Content, Assets.Resources.HelmReleaseEditorView_OciSource));
+            repositorySource.IsChecked.ShouldBe(true);
+            var dropdowns = controls.OfType<ComboBox>().ToDictionary(control => control.Name!);
+            var chartReference = controls.OfType<TextBox>().Single(control => control.Name == "ChartReference");
+            var chartVersionText = controls.OfType<TextBox>().Single(control => control.Name == "ChartVersionText");
+            dropdowns["Repository"].IsVisible.ShouldBeTrue();
+            dropdowns["Chart"].IsVisible.ShouldBeTrue();
+            dropdowns["ChartVersion"].IsVisible.ShouldBeTrue();
+            chartReference.IsVisible.ShouldBeFalse();
+            chartVersionText.IsVisible.ShouldBeFalse();
+            dropdowns["Chart"].IsEnabled.ShouldBeFalse();
+            dropdowns["ChartVersion"].IsEnabled.ShouldBeFalse();
+            ociSource.IsChecked = true;
+            editor.IsOciSource.ShouldBeTrue();
+            dropdowns["Repository"].IsVisible.ShouldBeFalse();
+            dropdowns["Chart"].IsVisible.ShouldBeFalse();
+            dropdowns["ChartVersion"].IsVisible.ShouldBeFalse();
+            chartReference.IsVisible.ShouldBeTrue();
+            chartVersionText.IsVisible.ShouldBeTrue();
+            chartReference.IsEnabled.ShouldBeTrue();
+            chartVersionText.IsEnabled.ShouldBeFalse();
+            chartReference.Text = "oci://registry.test/web";
+            chartVersionText.IsEnabled.ShouldBeTrue();
+            chartVersionText.Text = "9.1.0";
+            editor.SelectedVersion.ShouldBe("9.1.0");
+            repositorySource.IsChecked = true;
+            editor.IsOciSource.ShouldBeFalse();
+            dropdowns["ChartVersion"].IsVisible.ShouldBeTrue();
+            chartVersionText.IsVisible.ShouldBeFalse();
             dropdowns["Repository"].SelectedItem = "second";
-            editor.AvailableCharts.ShouldBe(["web"]);
+            editor.AvailableCharts.ShouldBe(["web", "other"]);
+            dropdowns["Chart"].IsEnabled.ShouldBeTrue();
+            dropdowns["ChartVersion"].IsEnabled.ShouldBeFalse();
+            dropdowns["ChartVersion"].PlaceholderText.ShouldBeNullOrEmpty();
             dropdowns["Chart"].SelectedItem = "web";
+            dropdowns["ChartVersion"].IsEnabled.ShouldBeTrue();
             editor.Chart.ShouldBe("second/web");
             editor.AvailableVersions.ShouldBe(["2.0", "1.0"]);
             editor.SelectedVersion.ShouldBe("1.0");
             dropdowns["ChartVersion"].SelectedItem = "2.0";
+            editor.SelectedVersion.ShouldBe("2.0");
             dropdowns["Repository"].SelectedItem = "first";
             editor.Chart.ShouldBe("first/web");
             editor.AvailableVersions.ShouldBe(["1.0"]);
             editor.SelectedVersion.ShouldBe("1.0");
 
             editor.SelectedRepository = "second";
-            editor.ChartSearch = "other";
-            await editor.SearchChartsCommand.ExecuteAsync(null);
-            editor.AvailableCharts.ShouldBe(["other"]);
-            editor.SelectedChart.ShouldBeNull();
-            editor.Chart.ShouldBeEmpty();
+            editor.AvailableCharts.ShouldBe(["web", "other"]);
+            editor.SelectedChart.ShouldBe("web");
+            editor.Chart.ShouldBe("second/web");
             editor.SelectedChart = "other";
             editor.Chart.ShouldBe("second/other");
             editor.AvailableVersions.ShouldBe(["3.0", "4.0"]);
             editor.SelectedVersion.ShouldBeNull();
             editor.SelectedVersion = "4.0";
             editor.PreviewCommand.CanExecute(null).ShouldBeTrue();
+            editor.IsOciSource = true;
             editor.Chart = "oci://registry.test/web";
             editor.SelectedChart.ShouldBeNull();
-            editor.AvailableVersions.ShouldBe(["1.0"]);
-            editor.SelectedVersion.ShouldBe("1.0");
+            editor.AvailableVersions.ShouldBeEmpty();
+            editor.SelectedVersion.ShouldBeNull();
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task Selected_chart_and_version_load_default_values_and_oci_input_is_debounced()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync(connect: false);
+        var helm = CreateHelmServiceMock();
+        helm.Setup(service => service.ListRepositoriesAsync(It.IsAny<HelmConnection>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync([new("stable", "https://stable.test")]);
+        helm.Setup(service => service.ListChartsAsync(It.IsAny<HelmConnection>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync([new("stable/web", "web", "1.0"), new("stable/web", "web", "2.0")]);
+        helm.Setup(service => service.GetChartValuesAsync(
+                It.IsAny<HelmConnection>(), It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((HelmConnection connection, string chart, string? version, CancellationToken cancellationToken) =>
+                $"chart: {chart}\nversion: {version ?? "default"}\n"
+                + string.Join('\n', Enumerable.Range(0, version == "2.0" ? 180 : 100).Select(index => $"value{index}: {index}")) + "\n");
+        var editor = new HelmReleaseEditorViewModel(helm.Object, Mock.Of<IFactory>(), Mock.Of<IHelmListNotifier>(),
+            Mock.Of<IHelmReleasePreviewService>(), Mock.Of<IDialogService>());
+        editor.Initialize(workspace, new HelmConnection("config", "context", "apps"), null);
+        await editor.InitializationTask.WaitAsync(TestContext.Current.CancellationToken);
+        editor.ValuesYaml.ShouldBeEmpty();
+        editor.ReleaseName = "web";
+        var view = new HelmReleaseEditorView { DataContext = editor };
+        using var window = Application.Current.CreateTestWindow(content: view);
+        try
+        {
+            window.Width = 700;
+            window.Height = 450;
+            window.Show();
+            await TestApplicationExtensions.WaitForUiAsync();
+            var outerScrollViewer = global::Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(view)
+                .OfType<ScrollViewer>().First();
+            var textEditor = global::Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(view)
+                .OfType<TextEditor>().Single();
+            var valuesScrollViewer = global::Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(textEditor)
+                .OfType<ScrollViewer>().First();
+            outerScrollViewer.Offset = new Vector(0, 100);
+            outerScrollViewer.Offset.Y.ShouldBe(100);
+            var dropdowns = global::Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(view)
+                .OfType<ComboBox>().ToDictionary(control => control.Name!);
+
+            dropdowns["Repository"].SelectedItem = "stable";
+            dropdowns["Chart"].SelectedItem = "web";
+            editor.SelectedVersion.ShouldBeNull();
+            editor.ValuesYaml.ShouldBeEmpty();
+            editor.SaveCommand.CanExecute(null).ShouldBeFalse();
+            editor.PreviewCommand.CanExecute(null).ShouldBeFalse();
+            helm.Verify(service => service.GetChartValuesAsync(
+                It.IsAny<HelmConnection>(), "stable/web", It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Never);
+
+            dropdowns["ChartVersion"].Focus();
+            dropdowns["ChartVersion"].SelectedItem = "1.0";
+            await TestWait.UntilAsync(() => editor.ValuesYaml.Contains("version: 1.0", StringComparison.Ordinal),
+                TimeSpan.FromSeconds(5), cancellationToken: TestContext.Current.CancellationToken);
+            await TestApplicationExtensions.WaitForUiAsync();
+
+            editor.ValuesYaml.ShouldStartWith("chart: stable/web\nversion: 1.0\n");
+            outerScrollViewer.Offset.Y.ShouldBe(100);
+            valuesScrollViewer.Offset.Y.ShouldBe(0);
+            textEditor.TextArea.Caret.Offset.ShouldBe(0);
+
+            var priorEditorOffset = new Vector(0, Math.Min(80, valuesScrollViewer.ScrollBarMaximum.Y));
+            valuesScrollViewer.Offset = priorEditorOffset;
+            editor.SelectedVersion = "2.0";
+            await TestWait.UntilAsync(() => editor.ValuesYaml.Contains("version: 2.0", StringComparison.Ordinal),
+                TimeSpan.FromSeconds(5), cancellationToken: TestContext.Current.CancellationToken);
+            await TestApplicationExtensions.WaitForUiAsync();
+            valuesScrollViewer.Offset.ShouldBe(priorEditorOffset);
+            outerScrollViewer.Offset.Y.ShouldBe(100);
+
+            editor.IsOciSource = true;
+            editor.Chart = "oci://registry.test/charts/old";
+            editor.Chart = "oci://registry.test/charts/web";
+            editor.SelectedVersion = "3.0";
+            await TestWait.UntilAsync(() => editor.ValuesYaml.Contains("version: 3.0", StringComparison.Ordinal),
+                TimeSpan.FromSeconds(5), cancellationToken: TestContext.Current.CancellationToken);
+
+            editor.ValuesYaml.ShouldStartWith("chart: oci://registry.test/charts/web\nversion: 3.0\n");
+            helm.Verify(service => service.GetChartValuesAsync(
+                It.IsAny<HelmConnection>(), "oci://registry.test/charts/web", "3.0", It.IsAny<CancellationToken>()), Times.Once);
+            helm.Verify(service => service.GetChartValuesAsync(
+                It.IsAny<HelmConnection>(), "oci://registry.test/charts/old", It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Never);
         }
         finally
         {
@@ -198,7 +378,7 @@ public sealed class HelmEditorViewModelTests
     [AvaloniaTheory]
     [InlineData(false)]
     [InlineData(true)]
-    public async Task Install_chart_search_surfaces_no_matches_or_repository_errors(bool fails)
+    public async Task Install_catalog_load_surfaces_repository_errors(bool fails)
     {
         using var workspace = await Application.Current.CreateClusterAsync(connect: false);
         var helm = CreateHelmServiceMock();
@@ -219,10 +399,8 @@ public sealed class HelmEditorViewModelTests
         editor.Initialize(workspace, new HelmConnection("config", "context", "apps"), null);
         await editor.InitializationTask.WaitAsync(TestContext.Current.CancellationToken);
         editor.Repositories.ShouldBe(["repo"]);
-        editor.SearchChartsCommand.CanExecute(null).ShouldBeFalse();
-        editor.ChartSearch = "web";
-        await editor.SearchChartsCommand.ExecuteAsync(null);
-        editor.Error.ShouldNotBeEmpty();
+        GetFieldError(editor, nameof(HelmReleaseEditorViewModel.SelectedChart))
+            .ShouldBe(fails ? "Repository index unavailable" : string.Empty);
         editor.IsLoading.ShouldBeFalse();
         editor.AvailableCharts.ShouldBeEmpty();
     }
@@ -249,6 +427,30 @@ public sealed class HelmEditorViewModelTests
             await TestApplicationExtensions.WaitForUiAsync();
             var controls = global::Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(view).ToArray();
             var textEditor = controls.OfType<TextEditor>().Single();
+            var namespaceLabel = controls.OfType<TextBlock>()
+                .Single(control => control.Text == Assets.Resources.HelmReleaseEditorView_Namespace);
+            var createNamespace = controls.OfType<CheckBox>()
+                .Single(control => AutomationProperties.GetName(control) == Assets.Resources.HelmReleaseEditorView_CreateNamespace);
+            var createNamespaceLabel = controls.OfType<TextBlock>()
+                .Single(control => control.Text == Assets.Resources.HelmReleaseEditorView_CreateNamespace);
+            var timeoutLabel = controls.OfType<TextBlock>()
+                .Single(control => control.Text == Assets.Resources.HelmReleaseEditorView_Timeout);
+            var namespaceInput = controls.OfType<TextBox>().Where(control => control.IsVisible).ElementAt(1);
+            namespaceLabel.TranslatePoint(default, view)!.Value.Y.ShouldBeLessThan(createNamespace.TranslatePoint(default, view)!.Value.Y);
+            createNamespaceLabel.TranslatePoint(default, view)!.Value.X.ShouldBe(namespaceLabel.TranslatePoint(default, view)!.Value.X);
+            createNamespace.TranslatePoint(default, view)!.Value.X.ShouldBe(namespaceInput.TranslatePoint(default, view)!.Value.X);
+            createNamespaceLabel.TranslatePoint(default, view)!.Value.Y.ShouldBe(createNamespace.TranslatePoint(default, view)!.Value.Y);
+            createNamespace.TranslatePoint(default, view)!.Value.Y.ShouldBeLessThan(timeoutLabel.TranslatePoint(default, view)!.Value.Y);
+            timeoutLabel.TranslatePoint(default, view)!.Value.Y.ShouldBeLessThan(textEditor.TranslatePoint(default, view)!.Value.Y);
+            textEditor.FontWeight.ShouldBe(FontWeight.Normal);
+            textEditor.ShowLineNumbers.ShouldBeTrue();
+            textEditor.WordWrap.ShouldBeFalse();
+            textEditor.Options.ConvertTabsToSpaces.ShouldBeTrue();
+            textEditor.Options.EnableEmailHyperlinks.ShouldBeFalse();
+            textEditor.Options.EnableHyperlinks.ShouldBeFalse();
+            textEditor.Options.HighlightCurrentLine.ShouldBeTrue();
+            textEditor.Options.IndentationSize.ShouldBe(2);
+            textEditor.Options.ShowBoxForControlCharacters.ShouldBeFalse();
             var valuesScroll = global::Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(textEditor)
                 .OfType<ScrollViewer>().First();
             valuesScroll.Extent.Height.ShouldBeGreaterThan(valuesScroll.Viewport.Height);
@@ -284,7 +486,7 @@ public sealed class HelmEditorViewModelTests
         using var json = System.Text.Json.JsonDocument.Parse("""{"replicas":3,"server":{"name":"true"},"enabled":true}""");
         helm.Setup(service => service.GetValuesAsync(
             It.Is<HelmConnection>(connection => connection.Namespace == "apps"), "web", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(json.RootElement.EnumerateObject().ToDictionary(property => property.Name, property => property.Value.Clone()));
+            .ReturnsAsync(json.RootElement.Clone());
         helm.Setup(service => service.ListChartsAsync(It.IsAny<HelmConnection>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync([
                 new("bitnami/nginx", "nginx", "2.0.0"),
@@ -320,7 +522,7 @@ public sealed class HelmEditorViewModelTests
         editor.SelectedChart.ShouldBe("nginx");
         editor.AvailableVersions.ShouldBe(["2.0.0", "1.0.0"]);
         editor.SelectedVersion.ShouldBe("1.0.0");
-        editor.Error.ShouldBeEmpty();
+        editor.HasErrors.ShouldBeFalse();
         var view = new HelmReleaseEditorView { DataContext = editor };
         using var window = Application.Current.CreateTestWindow(content: view);
         try
@@ -343,8 +545,14 @@ public sealed class HelmEditorViewModelTests
             var repositoryPosition = dropdowns["Repository"].TranslatePoint(default, view).ShouldNotBeNull();
             var chartPosition = dropdowns["Chart"].TranslatePoint(default, view).ShouldNotBeNull();
             var versionPosition = versions.TranslatePoint(default, view).ShouldNotBeNull();
+            var namespaceField = global::Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(view)
+                .OfType<TextBox>().Where(control => control.IsVisible).ElementAt(1);
+            var namespacePosition = namespaceField.TranslatePoint(default, view).ShouldNotBeNull();
+            var chartVersionGap = versionPosition.Y - chartPosition.Y - dropdowns["Chart"].Bounds.Height;
+            var versionNamespaceGap = namespacePosition.Y - versionPosition.Y - versions.Bounds.Height;
             chartPosition.X.ShouldBe(repositoryPosition.X);
             versionPosition.X.ShouldBe(repositoryPosition.X);
+            Math.Abs(chartVersionGap - versionNamespaceGap).ShouldBeLessThanOrEqualTo(2);
             dropdowns["Chart"].Bounds.Width.ShouldBe(dropdowns["Repository"].Bounds.Width);
             versions.Bounds.Width.ShouldBe(dropdowns["Repository"].Bounds.Width);
             versions.SelectedItem.ShouldBe("1.0.0");
@@ -394,7 +602,6 @@ public sealed class HelmEditorViewModelTests
     [InlineData("replicas: [")]
     [InlineData("- first\n- second")]
     [InlineData("42")]
-    [InlineData("")]
     [InlineData("replicas: 1\nreplicas: 2")]
     public async Task Release_form_rejects_non_mapping_or_invalid_yaml(string yaml)
     {
@@ -406,6 +613,7 @@ public sealed class HelmEditorViewModelTests
             Mock.Of<IHelmReleasePreviewService>(), Mock.Of<IDialogService>());
         editor.Initialize(workspace, new HelmConnection("config", "context", "apps"), null);
         await editor.InitializationTask.WaitAsync(TestContext.Current.CancellationToken);
+        editor.ValuesYaml.ShouldBeEmpty();
         editor.ReleaseName = "web";
         editor.Chart = "bitnami/nginx";
         editor.ValuesYaml = yaml;
@@ -413,7 +621,24 @@ public sealed class HelmEditorViewModelTests
         editor.SaveCommand.CanExecute(null).ShouldBeFalse();
         editor.PreviewCommand.CanExecute(null).ShouldBeFalse();
         await editor.PreviewCommand.ExecuteAsync(null);
-        editor.Error.ShouldNotBeEmpty();
+        GetFieldError(editor, nameof(HelmReleaseEditorViewModel.ValuesYaml)).ShouldNotBeEmpty();
+
+        var view = new HelmReleaseEditorView { DataContext = editor };
+        using var window = Application.Current.CreateTestWindow(content: view);
+        try
+        {
+            window.Show();
+            await TestApplicationExtensions.WaitForUiAsync();
+            var valuesEditor = global::Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(view)
+                .OfType<TextEditor>().Single();
+            DataValidationErrors.GetHasErrors(valuesEditor).ShouldBeTrue();
+            DataValidationErrors.GetErrors(valuesEditor).Cast<string>()
+                .ShouldContain(GetFieldError(editor, nameof(HelmReleaseEditorViewModel.ValuesYaml)));
+        }
+        finally
+        {
+            window.Close();
+        }
     }
 
     [AvaloniaTheory]
@@ -423,7 +648,7 @@ public sealed class HelmEditorViewModelTests
     {
         using var workspace = await Application.Current.CreateClusterAsync(connect: false);
         var helm = CreateHelmServiceMock();
-        var pendingValues = new TaskCompletionSource<IReadOnlyDictionary<string, System.Text.Json.JsonElement>>(
+        var pendingValues = new TaskCompletionSource<System.Text.Json.JsonElement>(
             TaskCreationOptions.RunContinuationsAsynchronously);
         helm.Setup(service => service.ListRepositoriesAsync(It.IsAny<HelmConnection>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync([]);
@@ -441,7 +666,7 @@ public sealed class HelmEditorViewModelTests
         editor.SaveCommand.CanExecute(null).ShouldBeFalse();
         if (valuesSucceed)
         {
-            pendingValues.SetResult(new Dictionary<string, System.Text.Json.JsonElement>());
+            pendingValues.SetResult(System.Text.Json.JsonSerializer.SerializeToElement(new Dictionary<string, object?>()));
         }
         else
         {
@@ -450,20 +675,107 @@ public sealed class HelmEditorViewModelTests
 
         await editor.InitializationTask.WaitAsync(TestContext.Current.CancellationToken);
         editor.IsLoading.ShouldBeFalse();
-        editor.Error.ShouldNotBeEmpty();
+        GetFieldError(editor, valuesSucceed
+            ? nameof(HelmReleaseEditorViewModel.SelectedChart)
+            : nameof(HelmReleaseEditorViewModel.ReleaseName)).ShouldNotBeEmpty();
         editor.Chart.ShouldBeEmpty();
+        editor.IsOciSource = true;
         editor.Chart = "manual/nginx";
-        editor.SaveCommand.CanExecute(null).ShouldBeFalse();
+        editor.SaveCommand.CanExecute(null).ShouldBe(valuesSucceed);
         editor.PreviewCommand.CanExecute(null).ShouldBe(valuesSucceed);
         if (valuesSucceed)
         {
-            editor.AvailableVersions.ShouldBe(["1.0"]);
-            editor.SelectedVersion.ShouldBe("1.0");
+            editor.AvailableVersions.ShouldBeEmpty();
+            editor.SelectedVersion.ShouldBeNull();
+            editor.SelectedVersion = "1.0";
             editor.Chart = "first/nginx";
             editor.AvailableVersions.ShouldBe(["1.0"]);
             editor.SelectedVersion.ShouldBe("1.0");
             editor.SelectedVersion = null;
             editor.PreviewCommand.CanExecute(null).ShouldBeTrue();
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task Clearing_timeout_does_not_create_a_binding_error()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync(connect: false);
+        var helm = CreateHelmServiceMock();
+        helm.Setup(service => service.ListRepositoriesAsync(It.IsAny<HelmConnection>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync([]);
+        var editor = new HelmReleaseEditorViewModel(
+            helm.Object,
+            Mock.Of<IFactory>(),
+            Mock.Of<IHelmListNotifier>(),
+            Mock.Of<IHelmReleasePreviewService>(),
+            Mock.Of<IDialogService>());
+        editor.Initialize(workspace, new HelmConnection("config", "context", "apps"), null);
+        await editor.InitializationTask.WaitAsync(TestContext.Current.CancellationToken);
+
+        var view = new HelmReleaseEditorView { DataContext = editor };
+        using var window = Application.Current.CreateTestWindow(content: view);
+        try
+        {
+            window.Show();
+            await TestApplicationExtensions.WaitForUiAsync();
+            var timeoutInput = global::Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(view)
+                .OfType<NumericUpDown>().Single();
+
+            timeoutInput.Value = null;
+            await TestApplicationExtensions.WaitForUiAsync();
+
+            timeoutInput.Value.ShouldBeNull();
+            editor.TimeoutSeconds.ShouldBeNull();
+            DataValidationErrors.GetHasErrors(timeoutInput).ShouldBeFalse();
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task Selecting_repository_chart_shows_required_error_on_chart_version()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync(connect: false);
+        var helm = new Mock<IHelmService>();
+        helm.Setup(service => service.ListRepositoriesAsync(It.IsAny<HelmConnection>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync([new HelmRepository("stable", "https://stable.test")]);
+        helm.Setup(service => service.ListChartsAsync(
+                It.IsAny<HelmConnection>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync([new HelmChartSearchResult("stable/web", "web", "1.0")]);
+        var editor = new HelmReleaseEditorViewModel(
+            helm.Object,
+            Mock.Of<IFactory>(),
+            Mock.Of<IHelmListNotifier>(),
+            Mock.Of<IHelmReleasePreviewService>(),
+            Mock.Of<IDialogService>());
+        editor.Initialize(workspace, new HelmConnection("config", "context", "apps"), null);
+        await editor.InitializationTask.WaitAsync(TestContext.Current.CancellationToken);
+
+        editor.SelectedRepository = "stable";
+        GetFieldError(editor, nameof(HelmReleaseEditorViewModel.SelectedChart))
+            .ShouldBe(Assets.Resources.HelmReleaseEditorView_ChartRequired);
+        GetFieldError(editor, nameof(HelmReleaseEditorViewModel.SelectedVersion)).ShouldBeEmpty();
+        editor.SelectedChart = "web";
+
+        GetFieldError(editor, nameof(HelmReleaseEditorViewModel.SelectedVersion))
+            .ShouldBe(Assets.Resources.HelmReleaseEditorView_VersionRequired);
+        var view = new HelmReleaseEditorView { DataContext = editor };
+        using var window = Application.Current.CreateTestWindow(content: view);
+        try
+        {
+            window.Show();
+            await TestApplicationExtensions.WaitForUiAsync();
+            var versionSelector = global::Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(view)
+                .OfType<ComboBox>().Single(control => control.Name == "ChartVersion");
+            DataValidationErrors.GetHasErrors(versionSelector).ShouldBeTrue();
+            DataValidationErrors.GetErrors(versionSelector).Cast<string>()
+                .ShouldContain(Assets.Resources.HelmReleaseEditorView_VersionRequired);
+        }
+        finally
+        {
+            window.Close();
         }
     }
 
@@ -544,11 +856,12 @@ public sealed class HelmEditorViewModelTests
             .Setup(service => service.ListReleasesAsync(It.IsAny<HelmConnection>(), It.IsAny<bool>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Array.Empty<HelmRelease>());
         previewService
-            .Setup(service => service.PreviewAsync(
+            .Setup(service => service.PreviewVersionAsync(
                 workspace,
                 It.IsAny<HelmConnection>(),
                 "web",
                 "bitnami/nginx",
+                "1.0",
                 It.IsAny<IReadOnlyDictionary<string, object?>>(),
                 It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
@@ -566,28 +879,27 @@ public sealed class HelmEditorViewModelTests
             previewService.Object, dialogs);
         editor.Initialize(workspace, new HelmConnection("config", "context", "apps"), null);
         await editor.InitializationTask.WaitAsync(TestContext.Current.CancellationToken);
-        editor.ChartSearch = "nginx";
-        await editor.SearchChartsCommand.ExecuteAsync(null);
         editor.SelectedRepository = "bitnami";
         editor.SelectedChart = "nginx";
+        editor.SelectedVersion = "1.0";
         editor.Chart.ShouldBe("bitnami/nginx");
-        editor.Error.ShouldBeEmpty();
+        editor.HasErrors.ShouldBeFalse();
         editor.ReleaseName = "web";
         editor.Chart = "bitnami/nginx";
         editor.Namespace = "apps";
         editor.ValuesYaml = "replicas: 3";
         editor.CreateNamespace = true;
-        editor.WaitForReady = true;
         editor.TimeoutSeconds = 30;
 
         await editor.PreviewCommand.ExecuteAsync(null).WaitAsync(TestContext.Current.CancellationToken);
         await editor.SaveCommand.ExecuteAsync(null).WaitAsync(TestContext.Current.CancellationToken);
 
-        previewService.Verify(service => service.PreviewAsync(
+        previewService.Verify(service => service.PreviewVersionAsync(
             workspace,
             It.Is<HelmConnection>(connection => connection.Namespace == "apps"),
             "web",
             "bitnami/nginx",
+            "1.0",
             It.Is<IReadOnlyDictionary<string, object?>>(values => values.ContainsKey("replicas")),
             It.IsAny<CancellationToken>()), Times.Once);
         helmService.Verify(service => service.InstallAsync(
@@ -598,7 +910,8 @@ public sealed class HelmEditorViewModelTests
             true,
             true,
             TimeSpan.FromSeconds(30),
-            It.IsAny<CancellationToken>()), Times.Once);
+            It.IsAny<CancellationToken>(),
+            "1.0"), Times.Once);
         releaseChanges.ShouldBe(1);
         factory.Verify(service => service.RemoveDockable(editor, false), Times.Once);
     }
@@ -606,9 +919,15 @@ public sealed class HelmEditorViewModelTests
     private static Mock<IHelmService> CreateHelmServiceMock()
     {
         var helm = new Mock<IHelmService>();
+        helm.Setup(service => service.GetChartValuesAsync(
+                It.IsAny<HelmConnection>(), It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync("{}\n");
         helm.Setup(service => service.ListChartsAsync(
                 It.IsAny<HelmConnection>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Array.Empty<HelmChartSearchResult>());
         return helm;
     }
+
+    private static string GetFieldError(HelmReleaseEditorViewModel editor, string propertyName)
+        => editor.GetErrors(propertyName).Cast<string>().SingleOrDefault() ?? string.Empty;
 }

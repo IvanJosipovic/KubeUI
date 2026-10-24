@@ -20,6 +20,8 @@ internal sealed class FakeHelmClient : IHelmClient
     public HelmRelease? UpgradeRelease { get; init; }
     public HelmRelease? StatusRelease { get; init; }
     public string TemplateResult { get; init; } = string.Empty;
+    public string ChartValuesResult { get; init; } = string.Empty;
+    public List<(string Chart, string? Version)> ShowValuesCalls { get; } = [];
     public List<HelmChartSearchResult> Charts { get; } = [];
     public List<string?> ListChartsCalls { get; } = [];
     public List<string> SearchCalls { get; } = [];
@@ -116,6 +118,23 @@ internal sealed class FakeHelmClient : IHelmClient
     {
         GetManifestCalls.Add((releaseName, namespaceName, revision));
         return TemplateResult;
+    }
+
+    public string ShowValues(
+        string chart,
+        string? version = null,
+        string? repo = null,
+        string? username = null,
+        string? password = null,
+        string? caFile = null,
+        string? certFile = null,
+        string? keyFile = null,
+        bool insecureSkipTlsVerify = false,
+        bool passCredentials = false,
+        bool plainHttp = false)
+    {
+        ShowValuesCalls.Add((chart, version));
+        return ChartValuesResult;
     }
 
     public HelmRelease Install(

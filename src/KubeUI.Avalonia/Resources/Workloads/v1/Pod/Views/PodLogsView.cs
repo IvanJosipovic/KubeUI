@@ -187,7 +187,6 @@ public sealed partial class PodLogsView : ViewBase<PodLogsViewModel>
 
         var editor = new TextEditor()
             .Row(1)
-            .Background(new DynamicResourceExtension("SystemAltHighColor"))
             .Document(vm, x => x.Logs)
             .FontFamily(new DynamicResourceExtension(Typography.CodeFontFamilyResourceKey))
             .FontSize(new DynamicResourceExtension(Typography.CodeFontSizeResourceKey))

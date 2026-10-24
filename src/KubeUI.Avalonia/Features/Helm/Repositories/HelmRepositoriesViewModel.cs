@@ -9,6 +9,7 @@ using Helm.NET;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Kubernetes;
+using Microsoft.Extensions.Logging;
 
 namespace KubeUI.Avalonia.Features.Helm.Repositories;
 
@@ -18,6 +19,7 @@ public sealed partial class HelmRepositoriesViewModel : ViewModelBase, IInitiali
     private readonly IDialogService _dialogService;
     private readonly IHelmDocumentOpener _documentOpener;
     private readonly IHelmListNotifier _listNotifier;
+    private readonly ILogger<HelmRepositoriesViewModel>? _logger;
     private readonly SourceCache<HelmRepository, string> _repositories = new(static repository => repository.Name);
     private readonly DynamicTableViewSource<HelmRepository, string> _tableSource;
     private HelmConnection? _connection;
@@ -43,12 +45,14 @@ public sealed partial class HelmRepositoriesViewModel : ViewModelBase, IInitiali
         IHelmService helmService,
         IDialogService dialogService,
         IHelmDocumentOpener documentOpener,
-        IHelmListNotifier listNotifier)
+        IHelmListNotifier listNotifier,
+        ILogger<HelmRepositoriesViewModel>? logger = null)
     {
         _helmService = helmService;
         _dialogService = dialogService;
         _documentOpener = documentOpener;
         _listNotifier = listNotifier;
+        _logger = logger;
         _listNotifier.RepositoriesChanged += OnRepositoriesChanged;
         _tableSource = new DynamicTableViewSource<HelmRepository, string>(
             _repositories,
@@ -93,7 +97,8 @@ public sealed partial class HelmRepositoriesViewModel : ViewModelBase, IInitiali
         }
         catch (Exception exception)
         {
-            Status = exception.Message;
+            _logger?.LogError(exception, "Failed to refresh Helm repositories");
+            Status = Assets.Resources.HelmRepositoriesView_RefreshFailed!;
         }
     }
 
@@ -112,7 +117,8 @@ public sealed partial class HelmRepositoriesViewModel : ViewModelBase, IInitiali
         }
         catch (Exception exception)
         {
-            Status = exception.Message;
+            _logger?.LogError(exception, "Failed to update Helm repository indexes");
+            Status = Assets.Resources.HelmRepositoriesView_IndexUpdateFailed!;
         }
     }
 
@@ -157,8 +163,20 @@ public sealed partial class HelmRepositoriesViewModel : ViewModelBase, IInitiali
         }
         catch (Exception exception)
         {
-            Status = exception.Message;
+            _logger?.LogError(exception, "Failed to delete Helm repository {RepositoryName}", repository.Name);
+            Status = Assets.Resources.HelmRepositoriesView_DeleteFailed!;
         }
+    }
+
+    [RelayCommand]
+    private void ViewCharts(HelmRepository? repository)
+    {
+        if (repository is null || Cluster is null)
+        {
+            return;
+        }
+
+        _documentOpener.OpenCharts(Cluster, repository.Name);
     }
 
     private void OpenEditor(HelmRepository? repository)

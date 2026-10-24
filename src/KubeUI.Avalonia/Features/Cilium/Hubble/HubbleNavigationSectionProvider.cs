@@ -1,5 +1,5 @@
-using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Features.Cilium.Hubble;
+using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Resources;
 using KubeUI.Avalonia.Shell.Navigation;
 using KubeUI.Cilium;

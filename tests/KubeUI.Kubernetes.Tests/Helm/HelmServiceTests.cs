@@ -7,6 +7,19 @@ namespace KubeUI.Kubernetes.Tests.Helm;
 public sealed class HelmServiceTests
 {
     [Fact]
+    public async Task GetChartValues_returns_default_yaml_for_chart_and_selected_version()
+    {
+        var client = new FakeHelmClient { ChartValuesResult = "replicas: 2\n" };
+        using var factory = new FakeHelmClientFactory(client);
+        using var service = new HelmService(factory);
+
+        var result = await service.GetChartValuesAsync(new HelmConnection("config", "context", "apps"), "oci://registry.test/charts/web", "1.2.3", TestContext.Current.CancellationToken);
+
+        result.ShouldBe("replicas: 2\n");
+        client.ShowValuesCalls.ShouldBe([("oci://registry.test/charts/web", "1.2.3")]);
+    }
+
+    [Fact]
     public async Task Alpha10_operations_forward_manifest_and_template_version()
     {
         var client = new FakeHelmClient { TemplateResult = "kind: ConfigMap" };
@@ -245,8 +258,9 @@ public sealed class HelmServiceTests
 
         var values = await sut.GetValuesAsync(CreateConnection(), "web", TestContext.Current.CancellationToken);
 
-        values["replicas"].GetInt32().ShouldBe(3);
-        values["nested"].GetProperty("enabled").GetBoolean().ShouldBeTrue();
+        values.ValueKind.ShouldBe(JsonValueKind.Object);
+        values.GetProperty("replicas").GetInt32().ShouldBe(3);
+        values.GetProperty("nested").GetProperty("enabled").GetBoolean().ShouldBeTrue();
         client.GetValuesCalls.ShouldBe([("web", "apps")]);
     }
 

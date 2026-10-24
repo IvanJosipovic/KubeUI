@@ -5,10 +5,10 @@ using System.Security.Cryptography.X509Certificates;
 using DynamicData.Kernel;
 using Grpc.Core;
 using Grpc.Net.Client;
+using k8s.Models;
 using KubeUI.Kubernetes;
 using Microsoft.Extensions.Logging;
 using Pb = KubeUI.Cilium.Hubble.Models;
-using k8s.Models;
 
 namespace KubeUI.Cilium.Hubble;
 

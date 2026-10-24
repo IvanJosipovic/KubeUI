@@ -1,6 +1,6 @@
 using System;
-using System.ComponentModel;
 using System.Collections.Specialized;
+using System.ComponentModel;
 using System.Reactive.Linq;
 using Avalonia.Controls.Selection;
 using Avalonia.Controls.Templates;
@@ -9,6 +9,7 @@ using Avalonia.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DynamicData;
+using k8s.Models;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Features.Resources.Common;
 using KubeUI.Avalonia.Infrastructure.Presentation;
@@ -16,11 +17,10 @@ using KubeUI.Avalonia.Infrastructure.Threading;
 using KubeUI.Avalonia.Resources;
 using KubeUI.Cilium;
 using KubeUI.Cilium.Hubble;
-using SvcSystems.Avalonia.DynamicTableView;
-using Controls = KubeUI.Avalonia.Features.Cilium.Hubble.Controls;
-using k8s.Models;
 using KubeUI.Kubernetes;
 using Microsoft.Extensions.Logging;
+using SvcSystems.Avalonia.DynamicTableView;
+using Controls = KubeUI.Avalonia.Features.Cilium.Hubble.Controls;
 using HubbleConnectionStatus = KubeUI.Cilium.Hubble.ConnectionStatus;
 
 
@@ -226,7 +226,8 @@ public sealed partial class FlowListViewModel : ViewModelBase, IInitializeCluste
 
     private void OnFlowReceived(FlowViewModel flow)
     {
-        if (Volatile.Read(ref _disposeState) != 0 || IsPaused) return;
+        if (Volatile.Read(ref _disposeState) != 0 || IsPaused)
+            return;
 
         _flowCache.AddOrUpdate(flow);
 
@@ -284,7 +285,8 @@ public sealed partial class FlowListViewModel : ViewModelBase, IInitializeCluste
 
     partial void OnSearchQueryChanged(string value)
     {
-        if (_tableSource != null) _tableSource.SearchText = value;
+        if (_tableSource != null)
+            _tableSource.SearchText = value;
     }
 
     private void OnFilterPropertyChanged(object? sender, PropertyChangedEventArgs e)

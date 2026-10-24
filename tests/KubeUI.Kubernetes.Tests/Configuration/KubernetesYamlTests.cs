@@ -92,6 +92,32 @@ public class KubernetesYamlTests
     }
 
     [Fact]
+    public void LoadAllFromStringSkipsCommentOnlyDocumentsBetweenResources()
+    {
+        var yaml = """
+            apiVersion: v1
+            kind: Pod
+            metadata:
+              name: first
+            ---
+            # This template intentionally renders an empty YAML document.
+            ---
+            apiVersion: v1
+            kind: Pod
+            metadata:
+              name: second
+            """.ReplaceLineEndings("\n");
+
+        var objects = KubernetesYaml.LoadAllFromString(yaml, key => key switch
+        {
+            "v1/Pod" => typeof(V1Pod),
+            _ => throw new InvalidOperationException($"Unexpected resource type '{key}'.")
+        });
+
+        objects.Cast<V1Pod>().Select(pod => pod.Metadata.Name).ShouldBe(["first", "second"]);
+    }
+
+    [Fact]
     public void LoadAllFromStringUsesAllAvailableKubernetesModelTypes()
     {
         var catalog = new KubernetesModelCatalog();

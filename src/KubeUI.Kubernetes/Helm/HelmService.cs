@@ -55,6 +55,17 @@ public sealed class HelmService : IHelmService, IDisposable
     }
 
     /// <inheritdoc />
+    public Task<string> GetChartValuesAsync(HelmConnection connection, string chart, string? version = null, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(chart);
+        return InvokeAsync(
+            connection,
+            client => client.ShowValues(chart, version),
+            cancellationToken,
+            isWriteOperation: false);
+    }
+
+    /// <inheritdoc />
     public Task<string> GetManifestAsync(HelmConnection connection, string releaseName, int revision = 0, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(releaseName);
@@ -138,12 +149,21 @@ public sealed class HelmService : IHelmService, IDisposable
     }
 
     /// <inheritdoc />
-    public Task<IReadOnlyDictionary<string, JsonElement>> GetValuesAsync(HelmConnection connection, string releaseName, CancellationToken cancellationToken = default)
+    public Task<JsonElement> GetValuesAsync(HelmConnection connection, string releaseName, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(releaseName);
         return InvokeAsync(
             connection,
-            client => GetValues(client.GetValues(releaseName, connection.Namespace)),
+            client =>
+            {
+                var values = client.GetValues(releaseName, connection.Namespace);
+                if (values.ValueKind != JsonValueKind.Object)
+                {
+                    throw new JsonException("Helm release values must be a JSON object.");
+                }
+
+                return values.Clone();
+            },
             cancellationToken,
             isWriteOperation: false);
     }
@@ -267,22 +287,6 @@ public sealed class HelmService : IHelmService, IDisposable
 
         using var document = JsonDocument.Parse(k8s.KubernetesJson.Serialize(values));
         return document.RootElement.Clone();
-    }
-
-    private static IReadOnlyDictionary<string, JsonElement> GetValues(JsonElement values)
-    {
-        if (values.ValueKind != JsonValueKind.Object)
-        {
-            throw new JsonException("Helm release values must be a JSON object.");
-        }
-
-        var result = new Dictionary<string, JsonElement>(values.EnumerateObject().Count(), StringComparer.Ordinal);
-        foreach (var property in values.EnumerateObject())
-        {
-            result.Add(property.Name, property.Value.Clone());
-        }
-
-        return result;
     }
 
     private Task InvokeVoidAsync(HelmConnection connection, Action<IHelmClient> operation, CancellationToken cancellationToken, bool isWriteOperation = false)
