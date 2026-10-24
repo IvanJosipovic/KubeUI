@@ -8,6 +8,19 @@ namespace KubeUI.Kubernetes.Resources.Relationships;
 /// </summary>
 public static class ResourceGraphProjection
 {
+    /// <summary>Scopes a graph to selected resources, their ancestors, and non-GitOps descendants.</summary>
+    /// <param name="graph">The complete relationship graph.</param>
+    /// <param name="selector">Annotation requirements identifying graph roots.</param>
+    /// <returns>The selected graph with discovery metadata preserved.</returns>
+    public static ResourceRelationshipGraph ToSelector(
+        ResourceRelationshipGraph graph, ResourceAnnotationSelector selector)
+    {
+        ArgumentNullException.ThrowIfNull(graph);
+        ArgumentNullException.ThrowIfNull(selector);
+        var roots = graph.Resources.Where(selector.Matches);
+        return ToRoots(graph, roots, followGitOpsDescendants: false);
+    }
+
     /// <summary>Projects graph to resources reachable from root, including ancestors and descendants.</summary>
     public static ResourceRelationshipGraph ToRootResource(
         ResourceRelationshipGraph graph,
@@ -16,19 +29,27 @@ public static class ResourceGraphProjection
         ArgumentNullException.ThrowIfNull(graph);
         ArgumentNullException.ThrowIfNull(root);
 
-        var rootIdentity = Identity(root);
+        return ToRoots(graph, [root], followGitOpsDescendants: true);
+    }
+
+    private static ResourceRelationshipGraph ToRoots(
+        ResourceRelationshipGraph graph,
+        IEnumerable<IKubernetesObject<V1ObjectMeta>> roots,
+        bool followGitOpsDescendants)
+    {
+        var rootIdentities = roots.Select(Identity).ToHashSet();
         Dictionary<ResourceIdentity, List<ResourceIdentity>> parentsByChild = [];
-        Dictionary<ResourceIdentity, List<ResourceIdentity>> childrenByParent = [];
+        Dictionary<ResourceIdentity, List<ResourceRelationship>> childrenByParent = [];
         foreach (var relationship in graph.Relationships)
         {
             parentsByChild.TryAdd(relationship.Target, []);
             parentsByChild[relationship.Target].Add(relationship.Source);
             childrenByParent.TryAdd(relationship.Source, []);
-            childrenByParent[relationship.Source].Add(relationship.Target);
+            childrenByParent[relationship.Source].Add(relationship);
         }
 
-        HashSet<ResourceIdentity> ancestors = [rootIdentity];
-        Queue<ResourceIdentity> parents = new([rootIdentity]);
+        HashSet<ResourceIdentity> ancestors = [.. rootIdentities];
+        Queue<ResourceIdentity> parents = new(rootIdentities);
         while (parents.Count > 0)
         {
             var current = parents.Dequeue();
@@ -47,12 +68,12 @@ public static class ResourceGraphProjection
         }
 
         HashSet<ResourceIdentity> included = [.. ancestors];
-        Queue<ResourceIdentity> descendants = new([rootIdentity]);
+        Queue<ResourceIdentity> descendants = new(rootIdentities);
         HashSet<ResourceIdentity> visitedDescendants = [];
         while (descendants.Count > 0)
         {
             var current = descendants.Dequeue();
-            if (!visitedDescendants.Add(current) || current != rootIdentity && ancestors.Contains(current))
+            if (!visitedDescendants.Add(current) || !rootIdentities.Contains(current) && ancestors.Contains(current))
             {
                 continue;
             }
@@ -62,11 +83,16 @@ public static class ResourceGraphProjection
                 continue;
             }
 
-            foreach (var child in childIdentities)
+            foreach (var relationship in childIdentities)
             {
-                if (included.Add(child))
+                if (!followGitOpsDescendants && relationship.Kind == ResourceRelationshipKind.GitOps)
                 {
-                    descendants.Enqueue(child);
+                    continue;
+                }
+
+                if (included.Add(relationship.Target))
+                {
+                    descendants.Enqueue(relationship.Target);
                 }
             }
         }

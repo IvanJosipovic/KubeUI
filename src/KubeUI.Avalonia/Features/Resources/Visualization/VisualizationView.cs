@@ -60,7 +60,7 @@ public sealed partial class VisualizationView : ViewBase<VisualizationViewModel>
                 new Label()
                     .Content(vm, x => x.RootResourceDisplay)
                     .VerticalContentAlignment(VerticalAlignment.Center)
-                    .IsVisible(vm, x => x.RootResource, converter: Converters.Converters.NotNull));
+                    .IsVisible(vm, x => x.IsRootResourceDisplayVisible));
     }
 
     private static StackPanel CreateRightToolbar(VisualizationViewModel vm)
@@ -92,12 +92,14 @@ public sealed partial class VisualizationView : ViewBase<VisualizationViewModel>
                     .PlaceholderText(Assets.Resources.ResourceListView_SelectNamespace)
                     .SelectedItemTemplate(template)
                     .ItemTemplate(template)
+                    .IsEnabled(vm, x => x.IsNamespaceSelectionEnabled)
                     .IsVisible(vm, x => x.IsNamespaceSelectorVisible),
                 new ToggleButton()
                     .Margin(0, 0, 2, 0)
                     .IsChecked(vm, x => x.IsNamespaceSelectionLinked, BindingMode.TwoWay)
                     .ToolTip_Tip(Assets.Resources.ResourceListView_NamespaceLink)
                     .Content(new FluentIcon().Icon(Icon.Link))
+                    .IsEnabled(vm, x => x.IsNamespaceSelectionEnabled)
                     .IsVisible(vm, x => x.IsNamespaceSelectorVisible));
     }
 

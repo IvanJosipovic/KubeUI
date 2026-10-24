@@ -1,7 +1,6 @@
 using System.Text.Json.Serialization.Metadata;
 using k8s;
 using KubeUI.Kubernetes.Serialization;
-using Microsoft.Extensions.Options;
 
 namespace KubeUI.Kubernetes;
 
@@ -22,12 +21,13 @@ public static class KubeUIKubernetesServiceCollectionExtensions
         services.AddTransient<ClusterModelCatalog>();
         services.AddSingleton<IKubernetesYamlSerializer, KubernetesYamlSerializer>();
         services.AddSingleton<IAksClusterService, AksClusterService>();
+        services.AddSingleton<IHelmClientFactory, HelmClientFactory>();
+        services.AddSingleton<IHelmService, HelmService>();
         services.AddTransient<Cluster>();
         services.AddTransient<IClusterRuntime>(sp => sp.GetRequiredService<Cluster>());
         services.AddSingleton<ClusterManager>();
         services.AddSingleton<IClusterRuntimeCatalog>(sp => sp.GetRequiredService<ClusterManager>());
         services.AddHostedService<ClusterManagerStartupService>();
-        services.AddOptions<ClusterAuthorizationOptions>();
         return services;
     }
 

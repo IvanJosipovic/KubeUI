@@ -68,11 +68,13 @@ public sealed partial class ResourceYamlView : ViewBase<ResourceYamlViewModel>
             .Orientation(Orientation.Horizontal)
             .Children(
                 new Button()
+                    .IsVisible(vm, x => x.IsReadOnlyLocked, BindingMode.OneWay, SharedConverters.Not)
                     .Command(vm, x => x.SetEditModeCommand)
                     .ToolTip_Tip(YamlDocumentationViewFactory.CreateCodeText(Assets.Resources.ResourceYamlView_Edit))
                     .Content(new FluentIcon().Icon(Icon.DocumentEdit)),
                 new ToggleButton()
                     .Name("HideNoisyFieldsToggle", Scope)
+                    .IsVisible(vm, x => x.IsReadOnlyLocked, BindingMode.OneWay, SharedConverters.Not)
                     .IsChecked(vm, x => x.HideNoisyFields, BindingMode.TwoWay)
                     .ToolTip_Tip(YamlDocumentationViewFactory.CreateCodeText(Assets.Resources.ResourceYamlView_HideNoisyFields))
                     .Content(new FluentIcon().Icon(Icon.EyeOff)),
@@ -135,6 +137,7 @@ public sealed partial class ResourceYamlView : ViewBase<ResourceYamlViewModel>
             })
             .Behaviors(
                 new YamlEditorBehavior(),
+                new YamlSyntaxHighlightingBehavior(),
                 new YamlDiagnosticRenderingBehavior(),
                 new YamlHoverToolTipBehavior(hoverPopup),
                 new YamlEditorScrollBehavior())

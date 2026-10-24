@@ -5,6 +5,7 @@ using k8s.Models;
 using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Features.Crossplane;
+using KubeUI.Avalonia.Features.Helm;
 using KubeUI.Avalonia.Resources;
 using KubeUI.Avalonia.Services.Icons;
 using KubeUI.Avalonia.Shell.Navigation;
@@ -18,6 +19,44 @@ namespace KubeUI.Avalonia.Tests.Shell.Navigation;
 
 public sealed class NavigationSectionTests
 {
+    [Fact]
+    public void helm_section_contains_chart_repository_and_release_documents()
+    {
+        var provider = new HelmNavigationSectionProvider();
+
+        provider.Section.Id.ShouldBe("helm");
+        provider.Section.Name.ShouldBe("Helm");
+        provider.Documents.Select(document => document.Id).ShouldBe(
+            [HelmNavigationSectionProvider.ChartsDocumentId, HelmNavigationSectionProvider.RepositoriesDocumentId, HelmNavigationSectionProvider.ReleasesDocumentId]);
+        provider.Documents.Select(document => document.Name).ShouldBe(["Charts", "Repositories", "Releases"]);
+        provider.Place(CreateResourceConfig("example.com")).ShouldBeNull();
+
+        var catalog = new NavigationSectionCatalog([provider]);
+        catalog.TryGetDocument(HelmNavigationSectionProvider.RepositoriesDocumentId, out _).ShouldBeTrue();
+        catalog.TryGetDocument(HelmNavigationSectionProvider.ReleasesDocumentId, out _).ShouldBeTrue();
+        catalog.TryGetDocument(HelmNavigationSectionProvider.ChartsDocumentId, out _).ShouldBeTrue();
+    }
+
+    [AvaloniaFact]
+    public async Task helm_section_shows_all_documents_while_connected_and_prunes_when_disconnected()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync(connect: false);
+        await workspace.Connect();
+        using var node = new ClusterNavigationNode(workspace);
+        var builder = CreateBuilder(new NavigationSectionCatalog([new HelmNavigationSectionProvider()]));
+
+        builder.Reconcile(node);
+
+        var helm = node.NavigationItems.Single(item => item.Id == $"{workspace.Runtime.Name}-section-helm");
+        helm.NavigationItems.OfType<NavigationLink>().Select(link => link.DocumentId).OrderBy(id => id)
+            .ShouldBe(new[] { HelmNavigationSectionProvider.ReleasesDocumentId, HelmNavigationSectionProvider.ChartsDocumentId, HelmNavigationSectionProvider.RepositoriesDocumentId }.OrderBy(id => id));
+
+        await workspace.Runtime.Disconnect();
+        builder.Reconcile(node);
+
+        node.NavigationItems.ShouldNotContain(item => item.Id == $"{workspace.Runtime.Name}-section-helm");
+    }
+
     [Theory]
     [InlineData("crossplane.io", true)]
     [InlineData("pkg.crossplane.io", true)]
