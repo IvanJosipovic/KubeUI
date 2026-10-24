@@ -98,7 +98,7 @@ public class CustomResourceConfig : ResourceConfig<GenericKubernetesObject>
         var matching = available
             .Where(configuration => configuration.Matches(crd))
             .ToArray();
-        
+
         // If multiple configs match, prioritize:
         // 1. Exact storage version match (ApiVersion specified and matches storage version)
         // 2. Exact served version match (ApiVersion specified and matches any served version)
@@ -108,23 +108,23 @@ public class CustomResourceConfig : ResourceConfig<GenericKubernetesObject>
         {
             var spec = crd.Spec;
             var storageVersion = spec?.Versions?.FirstOrDefault(v => v.Storage && v.Served)?.Name;
-            
+
             var prioritized = matching
                 .Select(config => (config, priority: GetConfigPriority(config, storageVersion)))
                 .OrderBy(x => x.priority)
                 .Select(x => x.config)
                 .ToArray();
-            
+
             // If top priority is unique, use it
             var topPriority = prioritized.First();
             var topPriorityValue = GetConfigPriority(topPriority, storageVersion);
             var samePriorityCount = prioritized.Count(c => GetConfigPriority(c, storageVersion) == topPriorityValue);
-            
+
             if (samePriorityCount == 1)
             {
                 return topPriority;
             }
-            
+
             // If still ambiguous at top priority, throw with details
             var ambiguous = prioritized.Where(c => GetConfigPriority(c, storageVersion) == topPriorityValue).ToArray();
             throw new InvalidOperationException(
