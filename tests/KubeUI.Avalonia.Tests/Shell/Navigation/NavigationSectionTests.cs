@@ -4,6 +4,7 @@ using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
+using KubeUI.Avalonia.Features.Cilium.Hubble;
 using KubeUI.Avalonia.Features.Crossplane;
 using KubeUI.Avalonia.Features.Helm;
 using KubeUI.Avalonia.Resources;
@@ -55,6 +56,33 @@ public sealed class NavigationSectionTests
         builder.Reconcile(node);
 
         node.NavigationItems.ShouldNotContain(item => item.Id == $"{workspace.Runtime.Name}-section-helm");
+    }
+
+    [AvaloniaFact]
+    public async Task hubble_documents_are_nested_under_cilium_and_hubble()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync(
+            config => config.Resources =
+            [
+                new V1CustomResourceDefinition
+                {
+                    Metadata = new V1ObjectMeta { Name = "ciliumnetworkpolicies.cilium.io" }
+                }
+            ],
+            connect: false);
+        await workspace.Connect();
+
+        using var node = new ClusterNavigationNode(workspace);
+        var provider = new HubbleNavigationSectionProvider();
+        var builder = CreateBuilder(new NavigationSectionCatalog([provider]));
+
+        builder.Reconcile(node);
+
+        var cilium = node.NavigationItems.Single(item => item.Id == $"{workspace.Runtime.Name}-section-cilium");
+        cilium.Name.ShouldBe(Assets.Resources.NavigationView_Cilium);
+        var hubble = cilium.NavigationItems.Single(item => item.Name == Assets.Resources.Hubble_GroupName);
+        hubble.NavigationItems.OfType<NavigationLink>().Select(link => link.DocumentId).OrderBy(id => id)
+            .ShouldBe(new[] { HubbleNavigationSectionProvider.FlowsDocumentId, HubbleNavigationSectionProvider.ServiceMapDocumentId }.OrderBy(id => id));
     }
 
     [Theory]

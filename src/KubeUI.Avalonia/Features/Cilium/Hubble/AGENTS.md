@@ -6,6 +6,7 @@
 - Keep navigation, document lifecycle, filtering, and Avalonia rendering in `KubeUI.Avalonia`.
 - Resolve Hubble connections through `IHubbleConnectionFactory`; do not construct transport from a view or view model.
 - Treat each Hubble document as the owner of its connection and subscriptions. Cancel initialization and dispose subscriptions and connections when the document closes.
+- Keep Hubble documents under the Cilium navigation section, nested in the Hubble group.
 
 ## Flow and graph behavior
 

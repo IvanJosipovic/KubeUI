@@ -2867,6 +2867,9 @@
   <data name="NavigationView_GatewayApiExperimental" xml:space="preserve">
     <value>Experimental</value>
   </data>
+  <data name="NavigationView_Cilium" xml:space="preserve">
+    <value>Cilium</value>
+  </data>
   <data name="NavigationView_Crossplane" xml:space="preserve">
     <value>Crossplane</value>
   </data>

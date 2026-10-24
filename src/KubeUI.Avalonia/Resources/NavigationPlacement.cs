@@ -35,6 +35,9 @@ public interface INavigationSectionProvider
     /// <summary>Gets the section this provider owns.</summary>
     NavigationSection Section { get; }
 
+    /// <summary>Gets the location for this section's documents, defaulting to the section root.</summary>
+    NavigationPlacement DocumentPlacement => NavigationPlacement.InSection(Section.Id);
+
     /// <summary>Gets this section's alias placement for a resource kind, or null when unmatched.</summary>
     /// <param name="resource">The resource configuration being considered.</param>
     NavigationPlacement? Place(IResourceConfig resource);

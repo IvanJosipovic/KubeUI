@@ -184,7 +184,7 @@ internal sealed class NavigationTreeBuilder
                 }
 
                 var id = $"{cluster.Runtime.Name}-section-document-{provider.Section.Id}-{document.Id}";
-                var target = ResolveTarget(context, cluster, NavigationPlacement.InSection(provider.Section.Id));
+                var target = ResolveTarget(context, cluster, provider.DocumentPlacement);
                 context.DesiredIds.Add(id);
                 Upsert(
                     context,

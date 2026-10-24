@@ -15,8 +15,8 @@ internal sealed class HubbleNavigationSectionProvider : INavigationSectionProvid
     public HubbleNavigationSectionProvider()
     {
         Section = new NavigationSection(
-            "hubble",
-            Assets.Resources.Hubble_GroupName!,
+            NavigationSections.CiliumId,
+            Assets.Resources.NavigationView_Cilium!,
             NavigationSections.AfterCustomResourcesOrder,
             null);
 
@@ -50,6 +50,10 @@ internal sealed class HubbleNavigationSectionProvider : INavigationSectionProvid
     }
 
     public NavigationSection Section { get; }
+
+    public NavigationPlacement DocumentPlacement => NavigationPlacement.InSection(
+        Section.Id,
+        [new NavigationGroup("hubble", Assets.Resources.Hubble_GroupName!, 0, null)]);
 
     public IReadOnlyList<NavigationDocument> Documents { get; }
 
