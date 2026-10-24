@@ -2989,4 +2989,50 @@
   <data name="HelmChartsView_SearchNotice" xml:space="preserve"><value>Charts come from cached repository indexes. Update repository indexes to load their latest versions.</value></data>
   <data name="HelmChartsView_AllRepositories" xml:space="preserve"><value>All repositories</value></data>
   <data name="HelmChartsView_Repository" xml:space="preserve"><value>Repository</value></data>
+  <data name="FlowListView_Title" xml:space="preserve"><value>Network Flows</value></data>
+  <data name="FlowListView_TooltipClear" xml:space="preserve"><value>Clear all flows</value></data>
+  <data name="FlowListView_ItemsFormat" xml:space="preserve"><value>Flows: {0}</value></data>
+  <data name="FlowListView_SearchWatermark" xml:space="preserve"><value>Search flows...</value></data>
+  <data name="FlowListView_FilterVerdictAll" xml:space="preserve"><value>All Verdicts</value></data>
+  <data name="FlowListView_FilterDirectionAll" xml:space="preserve"><value>All Directions</value></data>
+  <data name="FlowListView_FilterPortWatermark" xml:space="preserve"><value>Port</value></data>
+  <data name="FlowListView_FilterErrorsOnly" xml:space="preserve"><value>Errors Only</value></data>
+  <data name="FlowListView_ButtonResetFilter" xml:space="preserve"><value>Reset Filter</value></data>
+  <data name="FlowListView_StatusDisconnected" xml:space="preserve"><value>Disconnected</value></data>
+  <data name="FlowListView_StatusConnecting" xml:space="preserve"><value>Connecting...</value></data>
+  <data name="FlowListView_StatusConnected" xml:space="preserve"><value>Connected</value></data>
+  <data name="FlowListView_StatusError" xml:space="preserve"><value>Error</value></data>
+  <data name="FlowListView_StatusCiliumNotDetected" xml:space="preserve"><value>Cilium not detected</value></data>
+  <data name="FlowListView_ColumnTimestamp" xml:space="preserve"><value>Timestamp</value></data>
+  <data name="FlowListView_ColumnVerdict" xml:space="preserve"><value>Verdict</value></data>
+  <data name="FlowListView_ColumnDirection" xml:space="preserve"><value>Dir</value></data>
+  <data name="FlowListView_ColumnSource" xml:space="preserve"><value>Source</value></data>
+  <data name="FlowListView_ColumnDestination" xml:space="preserve"><value>Destination</value></data>
+  <data name="FlowListView_ColumnProtocol" xml:space="preserve"><value>Protocol</value></data>
+  <data name="FlowListView_ColumnPort" xml:space="preserve"><value>Port</value></data>
+  <data name="FlowListView_ColumnBytes" xml:space="preserve"><value>Bytes</value></data>
+  <data name="FlowListView_ColumnLatency" xml:space="preserve"><value>Latency</value></data>
+  <data name="FlowListView_ColumnPolicy" xml:space="preserve"><value>Policy</value></data>
+  <data name="FlowListView_NoPolicy" xml:space="preserve"><value>—</value></data>
+  <data name="FlowVerdict_Unknown" xml:space="preserve"><value>Unknown</value></data>
+  <data name="FlowVerdict_Allowed" xml:space="preserve"><value>Allowed</value></data>
+  <data name="FlowVerdict_Denied" xml:space="preserve"><value>Denied</value></data>
+  <data name="FlowVerdict_Dropped" xml:space="preserve"><value>Dropped</value></data>
+  <data name="FlowVerdict_Error" xml:space="preserve"><value>Error</value></data>
+  <data name="FlowVerdict_Forwarded" xml:space="preserve"><value>Forwarded</value></data>
+  <data name="FlowDirection_Unknown" xml:space="preserve"><value>Unknown</value></data>
+  <data name="FlowDirection_Ingress" xml:space="preserve"><value>Ingress</value></data>
+  <data name="FlowDirection_Egress" xml:space="preserve"><value>Egress</value></data>
+  <data name="FlowDirection_Lateral" xml:space="preserve"><value>Lateral</value></data>
+  <data name="ServiceMapView_Title" xml:space="preserve"><value>Service Map</value></data>
+  <data name="ServiceMapView_AggregateByNamespace" xml:space="preserve"><value>Aggregate by Namespace</value></data>
+  <data name="ServiceMapView_ShowDeniedOnly" xml:space="preserve"><value>Show Denied Only</value></data>
+  <data name="ServiceMapView_ResetLayout" xml:space="preserve"><value>Reset Layout</value></data>
+  <data name="ServiceMapView_TimeWindowMinutes" xml:space="preserve"><value>min</value></data>
+  <data name="ServiceMapView_Nodes" xml:space="preserve"><value>Nodes</value></data>
+  <data name="ServiceMapView_Edges" xml:space="preserve"><value>Edges</value></data>
+  <data name="Hubble_GroupName" xml:space="preserve"><value>Hubble</value></data>
+  <data name="Hubble_Flows_Title" xml:space="preserve"><value>Flows</value></data>
+  <data name="Hubble_ServiceMap_Title" xml:space="preserve"><value>Service Map</value></data>
+  <data name="Hubble_PolicyVerdicts_Title" xml:space="preserve"><value>Policy Verdicts</value></data>
 </root>
