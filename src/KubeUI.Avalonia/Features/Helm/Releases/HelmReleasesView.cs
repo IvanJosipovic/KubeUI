@@ -58,17 +58,17 @@ public sealed class HelmReleasesView : ViewBase<HelmReleasesViewModel>
                             .HorizontalAlignment(HorizontalAlignment.Right)
                             .Orientation(Orientation.Horizontal)
                             .Children(
+                                new TextBlock()
+                                    .MaxWidth(300)
+                                    .VerticalAlignment(VerticalAlignment.Center)
+                                    .TextWrapping(TextWrapping.Wrap)
+                                    .Text(vm, x => x.Status),
                                 CreateNamespaceSelector(vm),
                                 new ToggleButton()
                                     .Margin(0, 0, 2, 0)
                                     .IsChecked(vm, x => x.IsNamespaceSelectionLinked, BindingMode.TwoWay)
                                     .ToolTip_Tip(Assets.Resources.ResourceListView_NamespaceLink)
                                     .Content(new FluentIcon().Icon(Icon.Link)),
-                                new TextBlock()
-                                    .MaxWidth(300)
-                                    .VerticalAlignment(VerticalAlignment.Center)
-                                    .TextWrapping(TextWrapping.Wrap)
-                                    .Text(vm, x => x.Status),
                                 new Button()
                                     .Command(vm, x => x.RefreshCommand)
                                     .Content(new FluentIcon().Icon(Icon.ArrowSync))
@@ -109,11 +109,6 @@ public sealed class HelmReleasesView : ViewBase<HelmReleasesViewModel>
                 .Command(vm, x => x.ViewValuesCommand)
                 .CommandParameter(release)
                 .Icon(new FluentIcon().Icon(Icon.Code));
-            yield return new MenuItem()
-                .Header(Assets.Resources.HelmReleasesView_History)
-                .Command(vm, x => x.ViewHistoryCommand)
-                .CommandParameter(release)
-                .Icon(new FluentIcon().Icon(Icon.History));
             yield return new MenuItem()
                 .Header(Assets.Resources.HelmReleasesView_Upgrade)
                 .Command(vm, x => x.UpgradeReleaseCommand)

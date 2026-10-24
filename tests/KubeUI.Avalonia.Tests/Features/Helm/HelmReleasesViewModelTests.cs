@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text.Json;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
+using Avalonia.VisualTree;
 using Dock.Model.Controls;
 using Dock.Model.Core;
 using FluentAvalonia.UI.Controls;
@@ -53,11 +54,11 @@ public sealed class HelmReleasesViewModelTests
             Mock.Of<IHelmReleasePreviewService>(), createViewer.Object, Mock.Of<IHelmDocumentOpener>(),
             Mock.Of<IHelmListNotifier>());
         viewModel.Initialize(workspace);
-        await viewModel.RefreshCommand.ExecutionTask!.WaitAsync(TestContext.Current.CancellationToken);
+        await viewModel.RefreshCommand.ExecuteAsync(null).WaitAsync(TestContext.Current.CancellationToken);
 
         await viewModel.ViewValuesCommand.ExecuteAsync(new HelmRelease("web", "apps", 1, new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), "deployed", "web-1.0", ""));
 
-        viewModel.Status.ShouldBe("Values unavailable");
+        viewModel.Status.ShouldBe(Assets.Resources.HelmReleasesView_ValuesFailed);
         createViewer.Verify(factory => factory(), Times.Never);
     }
 
@@ -70,8 +71,8 @@ public sealed class HelmReleasesViewModelTests
             It.IsAny<string?>(), It.IsAny<CancellationToken>())).ReturnsAsync([]);
         using var json = JsonDocument.Parse("""{"enabled":true,"replicas":2,"server":{"name":"true","ports":[80,443]},"unset":null}""");
         helm.Setup(service => service.GetValuesAsync(
-            It.Is<HelmConnection>(connection => connection.Namespace == "apps"), "web", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(json.RootElement.EnumerateObject().ToDictionary(property => property.Name, property => property.Value.Clone()));
+                It.Is<HelmConnection>(connection => connection.Namespace == "apps"), "web", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(json.RootElement.Clone());
         var factory = new Mock<IFactory>();
         ResourceYamlViewModel? opened = null;
         var bottom = Mock.Of<IToolDock>();
@@ -88,7 +89,7 @@ public sealed class HelmReleasesViewModelTests
             () => Application.Current.GetRequiredTestService<ResourceYamlViewModel>(),
             Mock.Of<IHelmDocumentOpener>(), Mock.Of<IHelmListNotifier>());
         viewModel.Initialize(workspace);
-        await viewModel.RefreshCommand.ExecutionTask!.WaitAsync(TestContext.Current.CancellationToken);
+        await viewModel.RefreshCommand.ExecuteAsync(null).WaitAsync(TestContext.Current.CancellationToken);
 
         await viewModel.ViewValuesCommand.ExecuteAsync(new HelmRelease("web", "apps", 1, new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), "deployed", "web-1.0", ""));
 
@@ -138,7 +139,7 @@ public sealed class HelmReleasesViewModelTests
         }
 
         helm.Setup(service => service.GetValuesAsync(It.IsAny<HelmConnection>(), "web", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new Dictionary<string, JsonElement> { ["replicas"] = JsonSerializer.SerializeToElement(4) });
+            .ReturnsAsync(JsonSerializer.SerializeToElement(new { replicas = 4 }));
         await viewModel.ViewValuesCommand.ExecuteAsync(new HelmRelease("web", "apps", 1, new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), "deployed", "web-1.0", ""));
         viewModel.Status.ShouldBeEmpty();
         yaml.YamlDocument.Text.ShouldContain("replicas: 4");
@@ -155,7 +156,6 @@ public sealed class HelmReleasesViewModelTests
         var release = new HelmRelease("cilium", "kube-system", 1, new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), "deployed", "cilium-1.20.3", "");
         helm.SetupSequence(service => service.ListReleasesAsync(It.IsAny<HelmConnection>(), true,
                 It.IsAny<string?>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync([])
             .ReturnsAsync([release])
             .ReturnsAsync([release, new HelmRelease("web", "apps", 1, new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), "deployed", "web-1.0.0", "")]);
         using var viewModel = new HelmReleasesViewModel(
@@ -163,21 +163,30 @@ public sealed class HelmReleasesViewModelTests
             () => Application.Current.GetRequiredTestService<ResourceYamlViewModel>(),
             Mock.Of<IHelmDocumentOpener>(), Mock.Of<IHelmListNotifier>());
         viewModel.Initialize(workspace);
-        await viewModel.RefreshCommand.ExecutionTask!.WaitAsync(TestContext.Current.CancellationToken);
         var view = new HelmReleasesView { DataContext = viewModel };
         using var window = Application.Current.CreateTestWindow(content: view);
         try
         {
             window.Show();
+            var toolbar = view.GetVisualDescendants().OfType<StackPanel>()
+                .Single(panel => panel.Orientation == global::Avalonia.Layout.Orientation.Horizontal
+                    && panel.Children.OfType<Ursa.Controls.MultiComboBox>().Any());
+            toolbar.Children[0].ShouldBeOfType<TextBlock>();
             await TestWait.UntilAsync(() => viewModel.ItemCount == 1,
                 TimeSpan.FromSeconds(5), cancellationToken: TestContext.Current.CancellationToken);
+            await TestWait.UntilAsync(
+                () => view.GetVisualDescendants().OfType<TextBlock>().Any(textBlock => textBlock.Name == "CellTextBlock"),
+                TimeSpan.FromSeconds(5), cancellationToken: TestContext.Current.CancellationToken);
+            view.GetVisualDescendants().OfType<TextBlock>()
+                .Single(textBlock => textBlock.Name == "CellTextBlock")
+                .Text.ShouldBe(HelmReleasesViewModel.FormatUpdated(release.Updated, DateTime.UtcNow));
             window.Content = null;
             await TestApplicationExtensions.WaitForUiAsync();
             window.Content = view;
             await TestWait.UntilAsync(() => viewModel.ItemCount == 2,
                 TimeSpan.FromSeconds(5), cancellationToken: TestContext.Current.CancellationToken);
             helm.Verify(service => service.ListReleasesAsync(It.IsAny<HelmConnection>(), true,
-                It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Exactly(3));
+                It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
         }
         finally
         {
@@ -201,7 +210,7 @@ public sealed class HelmReleasesViewModelTests
         viewModel.Initialize(workspace);
         viewModel.VisualizeReleaseCommand.Execute(new HelmRelease("cilium", "kube-system", 1, new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), "deployed", "cilium-1.20.3", ""));
 
-        viewModel.Status.ShouldBe("Unable to open visualization");
+        viewModel.Status.ShouldBe(Assets.Resources.HelmReleasesView_VisualizeFailed);
     }
 
     [AvaloniaFact]
@@ -212,7 +221,7 @@ public sealed class HelmReleasesViewModelTests
         helm.Setup(service => service.ListReleasesAsync(It.IsAny<HelmConnection>(), It.IsAny<bool>(),
             It.IsAny<string?>(), It.IsAny<CancellationToken>())).ReturnsAsync([]);
         helm.Setup(service => service.GetValuesAsync(It.IsAny<HelmConnection>(), It.IsAny<string>(),
-            It.IsAny<CancellationToken>())).ReturnsAsync(new Dictionary<string, JsonElement>());
+            It.IsAny<CancellationToken>())).ReturnsAsync(JsonSerializer.SerializeToElement(new Dictionary<string, object?>()));
         var preview = new Mock<IHelmReleasePreviewService>();
         using var viewModel = new HelmReleasesViewModel(helm.Object, Mock.Of<IFactory>(), Mock.Of<IDialogService>(), preview.Object,
             () => Application.Current.GetRequiredTestService<ResourceYamlViewModel>(),
@@ -296,7 +305,7 @@ public sealed class HelmReleasesViewModelTests
             .ReturnsAsync(release);
         helmService
             .Setup(service => service.GetValuesAsync(It.IsAny<HelmConnection>(), release.Name, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new Dictionary<string, JsonElement>());
+            .ReturnsAsync(JsonSerializer.SerializeToElement(new Dictionary<string, object?>()));
         helmService
             .Setup(service => service.HistoryAsync(It.IsAny<HelmConnection>(), release.Name, It.IsAny<CancellationToken>()))
             .ReturnsAsync([release]);
@@ -321,13 +330,10 @@ public sealed class HelmReleasesViewModelTests
         viewModel.Initialize(workspace);
 
         await viewModel.ViewStatusCommand.ExecuteAsync(release).WaitAsync(TestContext.Current.CancellationToken);
-        viewModel.Status.ShouldContain("deployed");
+        viewModel.Status.ShouldBe(Assets.Resources.HelmReleasesView_StatusLoaded);
         await viewModel.ViewValuesCommand.ExecuteAsync(release).WaitAsync(TestContext.Current.CancellationToken);
         viewModel.Status.ShouldBeEmpty();
         yamlViewer.YamlDocument.Text.ShouldContain("{}");
-        await viewModel.ViewHistoryCommand.ExecuteAsync(release).WaitAsync(TestContext.Current.CancellationToken);
-        viewModel.Status.ShouldContain("2: deployed");
-
         await viewModel.RollbackCommand.ExecuteAsync(release).WaitAsync(TestContext.Current.CancellationToken);
         viewModel.VisualizeReleaseCommand.Execute(release);
         await viewModel.UninstallCommand.ExecuteAsync(release).WaitAsync(TestContext.Current.CancellationToken);

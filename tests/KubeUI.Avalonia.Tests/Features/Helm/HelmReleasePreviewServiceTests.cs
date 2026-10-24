@@ -1,8 +1,12 @@
 using Avalonia.Headless.XUnit;
+using Dock.Model.Controls;
+using Dock.Model.Core;
+using Dock.Model.Mvvm.Controls;
 using Helm.NET;
 using k8s.Models;
 using KubeUI.Avalonia.Features.Helm;
 using KubeUI.Avalonia.Features.Resources.Visualization;
+using KubeUI.Avalonia.Infrastructure.Docking;
 using KubeUI.Kubernetes;
 using KubeUI.Kubernetes.Resources.Relationships;
 using Moq;
@@ -22,13 +26,14 @@ public sealed class HelmReleasePreviewServiceTests
         Dictionary<string, object?> values = new() { ["replicas"] = 2 };
         helm.Setup(service => service.TemplateVersionAsync(connection, "web", "repo/web", "2.0", values,
             It.IsAny<CancellationToken>())).ReturnsAsync("apiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: preview\n");
-        var opener = new Mock<IHelmVisualizationDocumentOpener>();
-        var service = new HelmReleasePreviewService(helm.Object, () => viewModel, opener.Object);
+        var factory = CreateFactory();
+        var service = new HelmReleasePreviewService(helm.Object, () => viewModel, factory.Object);
 
         await service.PreviewVersionAsync(cluster, connection, "web", "repo/web", "2.0", values,
             TestContext.Current.CancellationToken);
 
-        opener.Verify(item => item.Open(viewModel), Times.Once);
+        factory.Verify(item => item.InsertDockable(
+            It.IsAny<IDocumentDock>(), viewModel, It.IsAny<int>()), Times.Once);
         viewModel.IsPreview.ShouldBeTrue();
         helm.VerifyAll();
     }
@@ -39,8 +44,8 @@ public sealed class HelmReleasePreviewServiceTests
         using var cluster = await Application.Current.CreateClusterAsync(config => config.Type = KubernetesBackend.Fake);
         using var viewModel = new VisualizationViewModel();
         var helm = new Mock<IHelmService>(MockBehavior.Strict);
-        var opener = new Mock<IHelmVisualizationDocumentOpener>();
-        var sut = new HelmReleasePreviewService(helm.Object, () => viewModel, opener.Object);
+        var factory = CreateFactory();
+        var sut = new HelmReleasePreviewService(helm.Object, () => viewModel, factory.Object);
 
         await cluster.Runtime.AddOrUpdateResource(new V1Namespace
         {
@@ -79,7 +84,8 @@ public sealed class HelmReleasePreviewServiceTests
         await TestWait.UntilAsync(() => viewModel.Graph!.Resources.Count == 1,
             TimeSpan.FromSeconds(5), cancellationToken: TestContext.Current.CancellationToken);
         viewModel.Graph!.Resources.Single().Metadata.Name.ShouldBe("kube-system");
-        opener.Verify(service => service.Open(viewModel), Times.Once);
+        factory.Verify(item => item.InsertDockable(
+            It.IsAny<IDocumentDock>(), viewModel, It.IsAny<int>()), Times.Once);
         helm.VerifyNoOtherCalls();
     }
 
@@ -120,10 +126,8 @@ public sealed class HelmReleasePreviewServiceTests
                 It.IsAny<IReadOnlyDictionary<string, object?>>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(manifest);
-        var opener = new Mock<IHelmVisualizationDocumentOpener>();
-        opener.Setup(service => service.Open(It.IsAny<VisualizationViewModel>()))
-            .Callback<VisualizationViewModel>(viewModel => openedViewModel = viewModel);
-        var sut = new HelmReleasePreviewService(helmService.Object, static () => new VisualizationViewModel(), opener.Object);
+        var factory = CreateFactory(dockable => openedViewModel = dockable as VisualizationViewModel);
+        var sut = new HelmReleasePreviewService(helmService.Object, static () => new VisualizationViewModel(), factory.Object);
 
         await sut.PreviewAsync(
             cluster,
@@ -154,7 +158,8 @@ public sealed class HelmReleasePreviewServiceTests
             "bitnami/nginx",
             It.IsAny<IReadOnlyDictionary<string, object?>>(),
             It.IsAny<CancellationToken>()), Times.Once);
-        opener.Verify(service => service.Open(It.IsAny<VisualizationViewModel>()), Times.Once);
+        factory.Verify(item => item.InsertDockable(
+            It.IsAny<IDocumentDock>(), It.IsAny<VisualizationViewModel>(), It.IsAny<int>()), Times.Once);
     }
 
     [AvaloniaFact]
@@ -170,8 +175,8 @@ public sealed class HelmReleasePreviewServiceTests
                 It.IsAny<IReadOnlyDictionary<string, object?>>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(string.Empty);
-        var opener = new Mock<IHelmVisualizationDocumentOpener>();
-        var sut = new HelmReleasePreviewService(helmService.Object, static () => new VisualizationViewModel(), opener.Object);
+        var factory = CreateFactory();
+        var sut = new HelmReleasePreviewService(helmService.Object, static () => new VisualizationViewModel(), factory.Object);
 
         await Should.ThrowAsync<InvalidOperationException>(() => sut.PreviewAsync(
             cluster,
@@ -180,6 +185,17 @@ public sealed class HelmReleasePreviewServiceTests
             "bitnami/nginx",
             cancellationToken: TestContext.Current.CancellationToken));
 
-        opener.Verify(service => service.Open(It.IsAny<VisualizationViewModel>()), Times.Never);
+        factory.Verify(item => item.InsertDockable(
+            It.IsAny<IDocumentDock>(), It.IsAny<VisualizationViewModel>(), It.IsAny<int>()), Times.Never);
+    }
+
+    private static Mock<IFactory> CreateFactory(Action<IDockable>? onInsert = null)
+    {
+        var factory = new Mock<IFactory>();
+        var documents = new DocumentDock { VisibleDockables = [] };
+        factory.Setup(item => item.GetDockable<IDocumentDock>("Documents")).Returns(documents);
+        factory.Setup(item => item.InsertDockable(documents, It.IsAny<IDockable>(), It.IsAny<int>()))
+            .Callback<IDock, IDockable, int>((_, dockable, _) => onInsert?.Invoke(dockable));
+        return factory;
     }
 }

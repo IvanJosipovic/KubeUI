@@ -1,8 +1,12 @@
 using Avalonia.Headless.XUnit;
+using Dock.Model.Controls;
+using Dock.Model.Core;
+using Dock.Model.Mvvm.Controls;
 using k8s;
 using k8s.Models;
 using KubeUI.Avalonia.Features.Helm;
 using KubeUI.Avalonia.Features.Resources.Visualization;
+using KubeUI.Avalonia.Infrastructure.Docking;
 using KubeUI.Avalonia.Tests.Infra;
 using KubeUI.Kubernetes;
 using Moq;
@@ -70,8 +74,11 @@ public sealed class LiveHelmVisualizationTests
             .Select(item => item.Name()).ToArray();
         expected.ShouldNotBeEmpty();
         using var viewModel = new VisualizationViewModel();
-        var service = new HelmReleasePreviewService(
-            Mock.Of<IHelmService>(), () => viewModel, Mock.Of<IHelmVisualizationDocumentOpener>());
+        var factory = new Mock<IFactory>();
+        var documents = new DocumentDock { VisibleDockables = [] };
+        factory.Setup(item => item.GetDockable<IDocumentDock>("Documents")).Returns(documents);
+        factory.Setup(item => item.InsertDockable(documents, It.IsAny<IDockable>(), It.IsAny<int>()));
+        var service = new HelmReleasePreviewService(Mock.Of<IHelmService>(), () => viewModel, factory.Object);
         service.VisualizeRelease(cluster, "authentik", "authentik");
         using var window = Application.Current.CreateTestWindow(content: new VisualizationView { DataContext = viewModel });
         try

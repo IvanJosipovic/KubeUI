@@ -19,6 +19,14 @@ public interface IHelmService
     /// <returns>Chart references and versions in cached indexes.</returns>
     Task<IReadOnlyList<HelmChartSearchResult>> ListChartsAsync(HelmConnection connection, string? repositoryName = null, CancellationToken cancellationToken = default);
 
+    /// <summary>Gets a chart's default values.yaml content.</summary>
+    /// <param name="connection">The Kubernetes connection Helm runs against.</param>
+    /// <param name="chart">Chart reference or OCI reference.</param>
+    /// <param name="version">Optional chart version.</param>
+    /// <param name="cancellationToken">Cancels waiting for the operation to start.</param>
+    /// <returns>The chart's default values in YAML form.</returns>
+    Task<string> GetChartValuesAsync(HelmConnection connection, string chart, string? version = null, CancellationToken cancellationToken = default);
+
     /// <summary>Gets the manifest stored for a release revision.</summary>
     /// <remarks>
     /// Exposes Helm's stored release output for release inspection and Helm.NET parity checks. The live release
@@ -101,8 +109,8 @@ public interface IHelmService
     /// <param name="connection">The Kubernetes connection Helm runs against.</param>
     /// <param name="releaseName">The release name.</param>
     /// <param name="cancellationToken">Cancels waiting for the operation to start.</param>
-    /// <returns>The release values.</returns>
-    Task<IReadOnlyDictionary<string, JsonElement>> GetValuesAsync(HelmConnection connection, string releaseName, CancellationToken cancellationToken = default);
+    /// <returns>The release values as a JSON object.</returns>
+    Task<JsonElement> GetValuesAsync(HelmConnection connection, string releaseName, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Installs a chart as a new release.
@@ -166,4 +174,5 @@ public interface IHelmService
     /// <param name="cancellationToken">Cancels waiting for the operation to start.</param>
     /// <returns>The rendered manifest.</returns>
     Task<string> TemplateAsync(HelmConnection connection, string releaseName, string chart, IReadOnlyDictionary<string, object?>? values = null, CancellationToken cancellationToken = default);
+
 }

@@ -28,11 +28,40 @@ public sealed partial class HelmReleaseEditorViewModel : ViewModelBase
     private string _installedVersion = string.Empty;
     private string _installedChartName = string.Empty;
     private bool _updatingChartSelection;
+    private bool _applyingChartDefaults;
+    private bool _valuesWereEdited;
+    private CancellationTokenSource? _chartValuesLoadCancellation;
 
-    /// <summary>Configured repositories and repositories returned by chart search.</summary>
+    /// <summary>Configured repositories and repositories returned by cached catalogs.</summary>
     public ObservableCollection<string> Repositories { get; } = [];
 
-    /// <summary>Chart names matching the search in the selected repository.</summary>
+    /// <summary>Whether user-entered OCI chart reference is selected instead of repository catalog.</summary>
+    [ObservableProperty]
+    public partial bool IsOciSource { get; set; }
+
+    /// <summary>Whether repository catalog chart selection is active.</summary>
+    public bool IsRepositorySource
+    {
+        get => !IsOciSource;
+        set
+        {
+            if (value)
+            {
+                IsOciSource = false;
+            }
+        }
+    }
+
+    /// <summary>Whether chart dropdown can be used.</summary>
+    public bool CanSelectRepositoryChart => !IsLoading && !string.IsNullOrWhiteSpace(SelectedRepository);
+
+    /// <summary>Whether repository chart-version dropdown can be used.</summary>
+    public bool CanSelectRepositoryChartVersion => !IsLoading && !string.IsNullOrWhiteSpace(SelectedChart);
+
+    /// <summary>Whether OCI chart-version text can be edited.</summary>
+    public bool CanEditOciChartVersion => !IsLoading && !string.IsNullOrWhiteSpace(Chart);
+
+    /// <summary>Chart names available in the selected repository.</summary>
     public ObservableCollection<string> AvailableCharts { get; } = [];
 
     /// <summary>Repository selected for chart discovery.</summary>
@@ -42,10 +71,6 @@ public sealed partial class HelmReleaseEditorViewModel : ViewModelBase
     /// <summary>Chart selected within the repository.</summary>
     [ObservableProperty]
     public partial string? SelectedChart { get; set; }
-
-    /// <summary>Chart name substring used to search repository indexes.</summary>
-    [ObservableProperty]
-    public partial string ChartSearch { get; set; } = string.Empty;
 
     /// <summary>Chart versions available for the selected repository reference, including the installed version.</summary>
     public ObservableCollection<string> AvailableVersions { get; } = [];
@@ -67,7 +92,7 @@ public sealed partial class HelmReleaseEditorViewModel : ViewModelBase
     public partial string Namespace { get; set; } = "default";
 
     [ObservableProperty]
-    public partial string ValuesYaml { get; set; } = "{}";
+    public partial string ValuesYaml { get; set; } = string.Empty;
 
     /// <summary>Whether installed values and chart metadata are currently loading.</summary>
     [ObservableProperty]
@@ -109,6 +134,8 @@ public sealed partial class HelmReleaseEditorViewModel : ViewModelBase
 
     public void Initialize(ClusterWorkspace cluster, HelmConnection connection, HelmRelease? release)
     {
+        CancelChartValuesLoad();
+        _valuesWereEdited = false;
         _cluster = cluster;
         _connection = connection;
         _editing = release is not null;
@@ -120,13 +147,15 @@ public sealed partial class HelmReleaseEditorViewModel : ViewModelBase
         SelectedChart = null;
         Repositories.Clear();
         AvailableCharts.Clear();
-        ChartSearch = _installedChartName;
+        IsOciSource = false;
         AvailableVersions.Clear();
         SelectedVersion = null;
         _valuesLoaded = release is null;
         ReleaseName = release?.Name ?? string.Empty;
         Chart = string.Empty;
-        ValuesYaml = "{}";
+        _applyingChartDefaults = true;
+        ValuesYaml = string.Empty;
+        _applyingChartDefaults = false;
         Error = string.Empty;
         Namespace = release?.Namespace ?? connection.Namespace ?? "default";
         Title = release is null ? Assets.Resources.HelmReleaseEditorView_InstallTitle : Assets.Resources.HelmReleaseEditorView_UpgradeTitle;
@@ -146,11 +175,11 @@ public sealed partial class HelmReleaseEditorViewModel : ViewModelBase
             SelectedRepository = chart.Reference[..separator];
         }
 
-        ChartSearch = chart.ChartName;
         UpdateAvailableCharts();
         SelectedChart = chart.ChartName;
         Chart = chart.Reference;
         SelectedVersion = chart.Version;
+
     }
 
     [RelayCommand]
@@ -177,7 +206,6 @@ public sealed partial class HelmReleaseEditorViewModel : ViewModelBase
                     : _release;
                 _installedVersion = metadata.ChartVersion;
                 _installedChartName = metadata.ChartName;
-                ChartSearch = metadata.ChartName;
             }
 
             var repositories = await _helmService.ListRepositoriesAsync(_connection, cancellationToken);
@@ -217,33 +245,6 @@ public sealed partial class HelmReleaseEditorViewModel : ViewModelBase
         }
     }
 
-    [RelayCommand(CanExecute = nameof(CanSearchCharts))]
-    private async Task SearchCharts(CancellationToken cancellationToken)
-    {
-        if (_connection is null)
-        {
-            return;
-        }
-
-        IsLoading = true;
-        try
-        {
-            var matches = await _helmService.ListChartsAsync(_connection, cancellationToken: cancellationToken);
-            SetChartMatches(matches);
-            Error = _chartMatches.Count == 0 ? Assets.Resources.Shared_NoCharts! : string.Empty;
-        }
-        catch (Exception exception)
-        {
-            Error = exception.Message;
-        }
-        finally
-        {
-            IsLoading = false;
-        }
-    }
-
-    private bool CanSearchCharts() => !IsLoading && !string.IsNullOrWhiteSpace(ChartSearch);
-
     private void SetChartMatches(IReadOnlyList<HelmChartSearchResult> matches)
     {
         _chartMatches = matches;
@@ -266,6 +267,7 @@ public sealed partial class HelmReleaseEditorViewModel : ViewModelBase
 
     partial void OnSelectedRepositoryChanged(string? value)
     {
+        OnPropertyChanged(nameof(CanSelectRepositoryChart));
         if (!_updatingChartSelection)
         {
             UpdateAvailableCharts();
@@ -282,8 +284,6 @@ public sealed partial class HelmReleaseEditorViewModel : ViewModelBase
             foreach (var match in _chartMatches)
             {
                 if (match.Reference.StartsWith($"{SelectedRepository}/", StringComparison.Ordinal)
-                    && (string.IsNullOrWhiteSpace(ChartSearch)
-                        || match.ChartName.Contains(ChartSearch.Trim(), StringComparison.OrdinalIgnoreCase))
                     && !AvailableCharts.Contains(match.ChartName))
                 {
                     AvailableCharts.Add(match.ChartName);
@@ -297,7 +297,11 @@ public sealed partial class HelmReleaseEditorViewModel : ViewModelBase
             _updatingChartSelection = false;
         }
 
-        Chart = SelectedChart is null || SelectedRepository is null ? string.Empty : $"{SelectedRepository}/{SelectedChart}";
+        if (!IsOciSource)
+        {
+            Chart = SelectedChart is null || SelectedRepository is null ? string.Empty : $"{SelectedRepository}/{SelectedChart}";
+        }
+
         if (SelectedChart is null)
         {
             SelectedVersion = null;
@@ -306,13 +310,41 @@ public sealed partial class HelmReleaseEditorViewModel : ViewModelBase
 
     partial void OnSelectedChartChanged(string? value)
     {
-        if (!_updatingChartSelection)
+        OnPropertyChanged(nameof(CanSelectRepositoryChartVersion));
+        if (!_updatingChartSelection && !IsOciSource)
         {
             Chart = value is null || SelectedRepository is null ? string.Empty : $"{SelectedRepository}/{value}";
         }
     }
 
-    partial void OnChartSearchChanged(string value) => SearchChartsCommand.NotifyCanExecuteChanged();
+    partial void OnIsOciSourceChanged(bool value)
+    {
+        OnPropertyChanged(nameof(IsRepositorySource));
+        if (_updatingChartSelection)
+        {
+            return;
+        }
+
+        _updatingChartSelection = true;
+        try
+        {
+            SelectedChart = null;
+        }
+        finally
+        {
+            _updatingChartSelection = false;
+        }
+
+        Chart = string.Empty;
+        SelectedVersion = null;
+        if (!value)
+        {
+            UpdateAvailableCharts();
+        }
+
+        SaveCommand.NotifyCanExecuteChanged();
+        PreviewCommand.NotifyCanExecuteChanged();
+    }
 
     [RelayCommand(CanExecute = nameof(CanSave))]
     private async Task Save(CancellationToken cancellationToken = default)
@@ -322,7 +354,7 @@ public sealed partial class HelmReleaseEditorViewModel : ViewModelBase
             return;
         }
 
-        if (IsUpgrade && !IsCatalogChartReference())
+        if (IsUpgrade && string.IsNullOrWhiteSpace(Chart))
         {
             Error = Assets.Resources.HelmReleaseEditorView_ChooseChartReference!;
             return;
@@ -441,18 +473,10 @@ public sealed partial class HelmReleaseEditorViewModel : ViewModelBase
     [RelayCommand]
     private void Cancel() => _factory.RemoveDockable(this, false);
 
-    private bool CanSave() => CanPreview() && (!IsUpgrade || IsCatalogChartReference());
-
-    private bool IsCatalogChartReference()
-        => SelectedRepository is not null
-            && SelectedChart is not null
-            && _chartMatches.Any(match => match.Reference == Chart
-                && match.ChartName == SelectedChart
-                && Chart.StartsWith($"{SelectedRepository}/", StringComparison.Ordinal));
+    private bool CanSave() => CanPreview();
 
     private bool CanPreview()
         => !IsLoading && _valuesLoaded
-            && (!IsUpgrade || SelectedVersion is null || AvailableVersions.Contains(SelectedVersion))
             && !string.IsNullOrWhiteSpace(ReleaseName)
             && !string.IsNullOrWhiteSpace(Chart)
             && !string.IsNullOrWhiteSpace(Namespace)
@@ -483,7 +507,13 @@ public sealed partial class HelmReleaseEditorViewModel : ViewModelBase
 
     partial void OnChartChanged(string value)
     {
-        if (!_updatingChartSelection)
+        OnPropertyChanged(nameof(CanEditOciChartVersion));
+        if (!_updatingChartSelection && !string.IsNullOrWhiteSpace(value))
+        {
+            _valuesWereEdited = false;
+        }
+
+        if (!_updatingChartSelection && !IsOciSource)
         {
             _updatingChartSelection = true;
             try
@@ -515,8 +545,24 @@ public sealed partial class HelmReleaseEditorViewModel : ViewModelBase
                 _updatingChartSelection = false;
             }
         }
+        else if (!_updatingChartSelection)
+        {
+            _updatingChartSelection = true;
+            try
+            {
+                SelectedChart = null;
+            }
+            finally
+            {
+                _updatingChartSelection = false;
+            }
+        }
 
         UpdateAvailableVersions();
+        if (!_updatingChartSelection)
+        {
+            ScheduleChartDefaultsLoad(debounce: IsOciSource);
+        }
         SaveCommand.NotifyCanExecuteChanged();
         PreviewCommand.NotifyCanExecuteChanged();
     }
@@ -533,7 +579,8 @@ public sealed partial class HelmReleaseEditorViewModel : ViewModelBase
             }
         }
 
-        var isInstalledChart = SelectedChart is null || SelectedChart == _installedChartName;
+        var isInstalledChart = string.IsNullOrWhiteSpace(Chart)
+            || (!string.IsNullOrWhiteSpace(_installedChartName) && SelectedChart == _installedChartName);
         if (isInstalledChart && !string.IsNullOrWhiteSpace(_installedVersion) && !AvailableVersions.Contains(_installedVersion))
         {
             AvailableVersions.Add(_installedVersion);
@@ -546,6 +593,12 @@ public sealed partial class HelmReleaseEditorViewModel : ViewModelBase
 
     partial void OnSelectedVersionChanged(string? value)
     {
+        if (!_updatingChartSelection)
+        {
+            _valuesWereEdited = false;
+            ScheduleChartDefaultsLoad(debounce: IsOciSource);
+        }
+
         SaveCommand.NotifyCanExecuteChanged();
         PreviewCommand.NotifyCanExecuteChanged();
     }
@@ -558,6 +611,12 @@ public sealed partial class HelmReleaseEditorViewModel : ViewModelBase
 
     partial void OnValuesYamlChanged(string value)
     {
+        if (!_applyingChartDefaults && _release is null && _connection is not null)
+        {
+            _valuesWereEdited = true;
+            CancelChartValuesLoad();
+        }
+
         SaveCommand.NotifyCanExecuteChanged();
         PreviewCommand.NotifyCanExecuteChanged();
     }
@@ -570,8 +629,74 @@ public sealed partial class HelmReleaseEditorViewModel : ViewModelBase
 
     partial void OnIsLoadingChanged(bool value)
     {
-        SearchChartsCommand.NotifyCanExecuteChanged();
+        OnPropertyChanged(nameof(CanSelectRepositoryChart));
+        OnPropertyChanged(nameof(CanSelectRepositoryChartVersion));
+        OnPropertyChanged(nameof(CanEditOciChartVersion));
         SaveCommand.NotifyCanExecuteChanged();
         PreviewCommand.NotifyCanExecuteChanged();
+    }
+
+    private void ScheduleChartDefaultsLoad(bool debounce)
+    {
+        if (_release is not null || _connection is null || string.IsNullOrWhiteSpace(Chart))
+        {
+            CancelChartValuesLoad();
+            return;
+        }
+
+        CancelChartValuesLoad();
+        var cancellation = new CancellationTokenSource();
+        _chartValuesLoadCancellation = cancellation;
+        _ = LoadChartDefaultsAsync(Chart, SelectedVersion, debounce, cancellation);
+    }
+
+    private async Task LoadChartDefaultsAsync(string chart, string? version, bool debounce, CancellationTokenSource cancellation)
+    {
+        try
+        {
+            if (debounce)
+            {
+                await Task.Delay(TimeSpan.FromMilliseconds(400), cancellation.Token);
+            }
+
+            var values = await _helmService.GetChartValuesAsync(_connection!, chart, version, cancellation.Token);
+            if (!cancellation.IsCancellationRequested
+                && ReferenceEquals(_chartValuesLoadCancellation, cancellation)
+                && Chart == chart
+                && SelectedVersion == version
+                && !_valuesWereEdited)
+            {
+                _applyingChartDefaults = true;
+                ValuesYaml = values;
+                _applyingChartDefaults = false;
+                Error = string.Empty;
+            }
+        }
+        catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
+        {
+        }
+        catch (Exception exception)
+        {
+            if (!cancellation.IsCancellationRequested && ReferenceEquals(_chartValuesLoadCancellation, cancellation))
+            {
+                Error = exception.Message;
+            }
+        }
+        finally
+        {
+            if (ReferenceEquals(_chartValuesLoadCancellation, cancellation))
+            {
+                _chartValuesLoadCancellation = null;
+            }
+
+            cancellation.Dispose();
+        }
+    }
+
+    private void CancelChartValuesLoad()
+    {
+        var cancellation = _chartValuesLoadCancellation;
+        _chartValuesLoadCancellation = null;
+        cancellation?.Cancel();
     }
 }

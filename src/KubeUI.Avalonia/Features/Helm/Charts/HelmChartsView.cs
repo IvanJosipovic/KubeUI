@@ -28,18 +28,16 @@ public sealed class HelmChartsView : ViewBase<HelmChartsViewModel>
                 new Label().Margin(2, 0, 0, 0).VerticalContentAlignment(VerticalAlignment.Center)
                     .Content(CompiledBinding.Create<HelmChartsViewModel, int>(x => x.ItemCount,
                         source: vm, stringFormat: Assets.Resources.HelmChartsView_ItemsFormat)),
-                new StackPanel().Col(2).MaxWidth(456)
+                new StackPanel().Col(2).MaxWidth(760)
                     .HorizontalAlignment(HorizontalAlignment.Right)
                     .Orientation(Orientation.Horizontal)
                     .Children(
                         new TextBox()
-                            .Width(200)
+                            .Width(180)
                             .MinWidth(120)
+                            .Height(32)
                             .Margin(0, 0, 2, 0)
-                            .HorizontalAlignment(HorizontalAlignment.Stretch)
-                            .VerticalAlignment(VerticalAlignment.Stretch)
                             .VerticalContentAlignment(VerticalAlignment.Center)
-                            .Background(Brushes.Transparent)
                             .PlaceholderText(Assets.Resources.HelmChartsView_SearchPlaceholder)
                             .Text(vm, x => x.SearchText, BindingMode.TwoWay),
                         new ComboBox().Name("Repository", Scope)
@@ -60,5 +58,16 @@ public sealed class HelmChartsView : ViewBase<HelmChartsViewModel>
                             .Content(new FluentIcon().Icon(Icon.ArrowSync))
                             .ToolTip_Tip(Assets.Resources.Shared_Refresh))),
             table.Row(1));
+    }
+
+    /// <inheritdoc />
+    protected override void OnLoaded(RoutedEventArgs e)
+    {
+        base.OnLoaded(e);
+
+        if (DataContext is HelmChartsViewModel viewModel)
+        {
+            viewModel.RefreshCommand.Execute(null);
+        }
     }
 }

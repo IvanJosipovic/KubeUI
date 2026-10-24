@@ -68,6 +68,11 @@ public sealed class HelmRepositoriesView : ViewBase<HelmRepositoriesViewModel>
         foreach (var repository in targets.OfType<HelmRepository>())
         {
             yield return new MenuItem()
+                .Header(Assets.Resources.HelmRepositoriesView_ViewCharts)
+                .Command(vm, x => x.ViewChartsCommand)
+                .CommandParameter(repository)
+                .Icon(new FluentIcon().Icon(Icon.DataUsage));
+            yield return new MenuItem()
                 .Header(Assets.Resources.HelmRepositoriesView_Edit)
                 .Command(vm, x => x.EditRepositoryCommand)
                 .CommandParameter(repository)

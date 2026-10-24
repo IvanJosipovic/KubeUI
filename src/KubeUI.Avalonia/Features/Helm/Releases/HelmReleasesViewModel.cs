@@ -1,6 +1,9 @@
 using System.Collections.Specialized;
 using System.Globalization;
 using Avalonia.Controls.Selection;
+using Avalonia.Controls.Templates;
+using Avalonia.Markup.Xaml.MarkupExtensions;
+using Avalonia.Media;
 using Avalonia.Threading;
 using Dock.Model.Core;
 using DynamicData;
@@ -11,11 +14,15 @@ using Helm.NET;
 using k8s.Models;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Features.Helm;
+using KubeUI.Avalonia.Features.Resources.List.Controls;
 using KubeUI.Avalonia.Features.Resources.Properties.Controls;
 using KubeUI.Avalonia.Features.Resources.Yaml;
 using KubeUI.Avalonia.Infrastructure.Docking;
 using KubeUI.Avalonia.Infrastructure.Presentation;
+using KubeUI.Avalonia.Infrastructure.Threading;
+using KubeUI.Avalonia.Styles;
 using KubeUI.Kubernetes;
+using Microsoft.Extensions.Logging;
 
 namespace KubeUI.Avalonia.Features.Helm.Releases;
 
@@ -29,6 +36,8 @@ public sealed partial class HelmReleasesViewModel : ViewModelBase, IInitializeCl
     private readonly Func<ResourceYamlViewModel> _createYamlViewer;
     private readonly IHelmDocumentOpener _documentOpener;
     private readonly IHelmListNotifier _listNotifier;
+    private readonly IUiRefreshClock? _refreshClock;
+    private readonly ILogger<HelmReleasesViewModel>? _logger;
     private readonly SourceCache<HelmRelease, string> _releases = new(static release => $"{release.Namespace}\u001f{release.Name}");
     private readonly DynamicTableViewSource<HelmRelease, string> _tableSource;
     private readonly ObservableCollection<V1Namespace> _localSelectedNamespaces = [];
@@ -65,7 +74,9 @@ public sealed partial class HelmReleasesViewModel : ViewModelBase, IInitializeCl
         IHelmReleasePreviewService previewService,
         Func<ResourceYamlViewModel> createYamlViewer,
         IHelmDocumentOpener documentOpener,
-        IHelmListNotifier listNotifier)
+        IHelmListNotifier listNotifier,
+        IUiRefreshClock? refreshClock = null,
+        ILogger<HelmReleasesViewModel>? logger = null)
     {
         _helmService = helmService;
         _factory = factory;
@@ -74,6 +85,8 @@ public sealed partial class HelmReleasesViewModel : ViewModelBase, IInitializeCl
         _createYamlViewer = createYamlViewer;
         _documentOpener = documentOpener;
         _listNotifier = listNotifier;
+        _refreshClock = refreshClock;
+        _logger = logger;
         _listNotifier.ReleasesChanged += OnReleasesChanged;
         _tableSource = new DynamicTableViewSource<HelmRelease, string>(
             _releases,
@@ -83,7 +96,7 @@ public sealed partial class HelmReleasesViewModel : ViewModelBase, IInitializeCl
                 CreateColumn("namespace", Assets.Resources.HelmReleasesView_Namespace!, static release => release.Namespace, DynamicTableViewWidthMode.Star, 1.2),
                 CreateColumn("app-version", Assets.Resources.HelmReleasesView_AppVersion!, static release => release.AppVersion, DynamicTableViewWidthMode.Star, 1),
                 CreateColumn("status", Assets.Resources.HelmReleasesView_Status!, static release => release.Status, DynamicTableViewWidthMode.Star, 1),
-                CreateColumn("updated", Assets.Resources.HelmReleasesView_Updated!, static release => FormatUpdated(release.Updated, DateTime.UtcNow), DynamicTableViewWidthMode.Star, 1)
+                CreateUpdatedColumn(_refreshClock)
             ],
             options: new DynamicTableViewSourceOptions { SelectionIdentityMode = DynamicTableViewSelectionIdentityMode.Key });
         _tableSource.SelectionModel.SingleSelect = true;
@@ -108,7 +121,6 @@ public sealed partial class HelmReleasesViewModel : ViewModelBase, IInitializeCl
             cluster.SelectedNamespaces.FirstOrDefault()?.Metadata?.Name ?? "default");
         SubscribeToSelectedNamespaces();
         SetNamespaceFilter();
-        _ = RefreshCommand.ExecuteAsync(null);
     }
 
     [RelayCommand]
@@ -137,7 +149,8 @@ public sealed partial class HelmReleasesViewModel : ViewModelBase, IInitializeCl
         }
         catch (Exception exception)
         {
-            Status = exception.Message;
+            _logger?.LogError(exception, "Failed to refresh Helm releases");
+            Status = Assets.Resources.HelmReleasesView_RefreshFailed!;
         }
     }
 
@@ -168,7 +181,8 @@ public sealed partial class HelmReleasesViewModel : ViewModelBase, IInitializeCl
         }
         catch (Exception exception)
         {
-            Status = exception.Message;
+            _logger?.LogError(exception, "Failed to visualize Helm release {ReleaseName}", release.Name);
+            Status = Assets.Resources.HelmReleasesView_VisualizeFailed!;
         }
     }
 
@@ -182,12 +196,13 @@ public sealed partial class HelmReleasesViewModel : ViewModelBase, IInitializeCl
 
         try
         {
-            var status = await _helmService.StatusAsync(_connection with { Namespace = release.Namespace }, release.Name, cancellationToken);
-            Status = $"{status.Name} · {status.Status} · {status.Chart} · {FormatTimestamp(status.Updated)}";
+            await _helmService.StatusAsync(_connection with { Namespace = release.Namespace }, release.Name, cancellationToken);
+            Status = Assets.Resources.HelmReleasesView_StatusLoaded!;
         }
         catch (Exception exception)
         {
-            Status = exception.Message;
+            _logger?.LogError(exception, "Failed to load status for Helm release {ReleaseName}", release.Name);
+            Status = Assets.Resources.HelmReleasesView_StatusFailed!;
         }
     }
 
@@ -216,26 +231,8 @@ public sealed partial class HelmReleasesViewModel : ViewModelBase, IInitializeCl
         }
         catch (Exception exception)
         {
-            Status = exception.Message;
-        }
-    }
-
-    [RelayCommand]
-    private async Task ViewHistory(HelmRelease? release, CancellationToken cancellationToken = default)
-    {
-        if (_connection is null || release is null)
-        {
-            return;
-        }
-
-        try
-        {
-            var history = await _helmService.HistoryAsync(_connection with { Namespace = release.Namespace }, release.Name, cancellationToken);
-            Status = string.Join(Environment.NewLine, history.Select(item => $"{item.Revision}: {item.Status} · {item.Chart} · {FormatTimestamp(item.Updated)}"));
-        }
-        catch (Exception exception)
-        {
-            Status = exception.Message;
+            _logger?.LogError(exception, "Failed to load values for Helm release {ReleaseName}", release.Name);
+            Status = Assets.Resources.HelmReleasesView_ValuesFailed!;
         }
     }
 
@@ -247,24 +244,25 @@ public sealed partial class HelmReleasesViewModel : ViewModelBase, IInitializeCl
             return;
         }
 
-        var maximumRevision = release.Revision;
-        var dialogViewModel = new ReleaseActionDialogViewModel();
-        var result = await _dialogService.ShowContentDialogAsync(this, new ContentDialogSettings
-        {
-            Title = Assets.Resources.HelmReleasesView_RollbackDialog_Title,
-            Content = CreateRollbackDialogContent(dialogViewModel, release, maximumRevision),
-            PrimaryButtonText = Assets.Resources.HelmReleasesView_Rollback,
-            SecondaryButtonText = Assets.Resources.Shared_Cancel,
-            DefaultButton = FAContentDialogButton.Secondary
-        });
-
-        if (result != FAContentDialogResult.Primary)
-        {
-            return;
-        }
-
         try
         {
+            var history = await _helmService.HistoryAsync(_connection with { Namespace = release.Namespace }, release.Name, cancellationToken);
+            var maximumRevision = release.Revision;
+            var dialogViewModel = new ReleaseActionDialogViewModel { Revision = 0 };
+            var result = await _dialogService.ShowContentDialogAsync(this, new ContentDialogSettings
+            {
+                Title = Assets.Resources.HelmReleasesView_RollbackDialog_Title,
+                Content = CreateRollbackDialogContent(dialogViewModel, release, maximumRevision, history),
+                PrimaryButtonText = Assets.Resources.HelmReleasesView_Rollback,
+                SecondaryButtonText = Assets.Resources.Shared_Cancel,
+                DefaultButton = FAContentDialogButton.Secondary
+            });
+
+            if (result != FAContentDialogResult.Primary)
+            {
+                return;
+            }
+
             await _helmService.RollbackAsync(
                 _connection with { Namespace = release.Namespace },
                 release.Name,
@@ -275,7 +273,8 @@ public sealed partial class HelmReleasesViewModel : ViewModelBase, IInitializeCl
         }
         catch (Exception exception)
         {
-            Status = exception.Message;
+            _logger?.LogError(exception, "Failed to roll back Helm release {ReleaseName}", release.Name);
+            Status = Assets.Resources.HelmReleasesView_RollbackFailed!;
         }
     }
 
@@ -313,7 +312,8 @@ public sealed partial class HelmReleasesViewModel : ViewModelBase, IInitializeCl
         }
         catch (Exception exception)
         {
-            Status = exception.Message;
+            _logger?.LogError(exception, "Failed to uninstall Helm release {ReleaseName}", release.Name);
+            Status = Assets.Resources.HelmReleasesView_UninstallFailed!;
         }
     }
 
@@ -355,8 +355,18 @@ public sealed partial class HelmReleasesViewModel : ViewModelBase, IInitializeCl
     private static StackPanel CreateRollbackDialogContent(
         ReleaseActionDialogViewModel viewModel,
         HelmRelease release,
-        int maximumRevision)
-        => new StackPanel()
+        int maximumRevision,
+        IReadOnlyList<HelmRelease> history)
+    {
+        var historyItems = history
+            .OrderByDescending(h => h.Revision)
+            .Select(h => new TextBlock()
+                .Text($"{h.Revision}: {h.Status} · {h.Chart} · {FormatTimestamp(h.Updated)}")
+                .FontFamily(new DynamicResourceExtension(Typography.CodeFontFamilyResourceKey))
+                .FontSize(new DynamicResourceExtension(Typography.CodeFontSizeResourceKey)))
+            .ToArray();
+
+        return new StackPanel()
             .Spacing(8)
             .Children(
                 new TextBlock().Text(string.Format(
@@ -370,7 +380,12 @@ public sealed partial class HelmReleasesViewModel : ViewModelBase, IInitializeCl
                     .Value(viewModel, x => x.Revision, BindingMode.TwoWay),
                 new CheckBox()
                     .Content(Assets.Resources.HelmReleasesView_Wait)
-                    .IsChecked(viewModel, x => x.WaitForAction, BindingMode.TwoWay));
+                    .IsChecked(viewModel, x => x.WaitForAction, BindingMode.TwoWay),
+                new TextBlock().Text(Assets.Resources.HelmReleasesView_HistoryLabel).FontWeight(FontWeight.Bold),
+                new ScrollViewer()
+                    .MaxHeight(200)
+                    .Content(new StackPanel().Spacing(2).Children(historyItems)));
+    }
 
     private static StackPanel CreateUninstallDialogContent(ReleaseActionDialogViewModel viewModel, HelmRelease release)
         => new StackPanel()
@@ -397,11 +412,32 @@ public sealed partial class HelmReleasesViewModel : ViewModelBase, IInitializeCl
         return column;
     }
 
+    private static DynamicTableViewColumn<HelmRelease> CreateUpdatedColumn(IUiRefreshClock? refreshClock)
+    {
+        var column = DynamicTableViewColumn<HelmRelease>.Create(
+            "updated", Assets.Resources.HelmReleasesView_Updated!, static release => release.Updated);
+        column.WidthMode = DynamicTableViewWidthMode.Star;
+        column.Width = 1;
+        column.CellTemplate = new FuncDataTemplate<HelmRelease>(
+            (release, _) => new HelmReleaseUpdatedCell(refreshClock) { DataContext = release.Updated },
+            supportsRecycling: true);
+        return column;
+    }
+
     internal static string FormatUpdated(DateTimeOffset updated, DateTime utcNow)
         => RelativeTimeFormatter.FormatPrettyAge(updated.UtcDateTime, utcNow);
 
     internal static string FormatTimestamp(DateTimeOffset updated)
         => updated.UtcDateTime.ToString("yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture);
+
+    private sealed class HelmReleaseUpdatedCell(IUiRefreshClock? refreshClock)
+        : RefreshingCellTextBlock(refreshClock)
+    {
+        protected override string ResolveText(object? dataContext)
+            => dataContext is DateTimeOffset updated
+                ? FormatUpdated(updated, DateTime.UtcNow)
+                : string.Empty;
+    }
 
     partial void OnIsNamespaceSelectionLinkedChanged(bool value)
     {

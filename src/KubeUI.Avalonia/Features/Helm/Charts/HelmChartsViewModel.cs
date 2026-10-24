@@ -1,5 +1,5 @@
+using System.Collections.Specialized;
 using System.ComponentModel;
-using Avalonia.Threading;
 using DynamicData;
 using Helm.NET;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
@@ -16,10 +16,11 @@ public sealed partial class HelmChartsViewModel : ViewModelBase, IInitializeClus
     private readonly IHelmDocumentOpener _documentOpener;
     private readonly SourceCache<HelmChartSearchResult, string> _charts = new(chart => chart.Reference);
     private readonly DynamicTableViewSource<HelmChartSearchResult, string> _tableSource;
+    private readonly INotifyCollectionChanged? _itemsNotifications;
     private IReadOnlyList<HelmChartSearchResult> _matches = [];
     private HelmConnection? _connection;
-    private CancellationTokenSource? _searchDebounce;
-    private static readonly TimeSpan SearchDebounce = TimeSpan.FromMilliseconds(300);
+    private string? _requestedRepository;
+    private bool _repositoriesLoaded;
 
     /// <summary>Workspace owning this chart document.</summary>
     [ObservableProperty]
@@ -32,7 +33,7 @@ public sealed partial class HelmChartsViewModel : ViewModelBase, IInitializeClus
     [ObservableProperty]
     public partial string? SelectedRepository { get; set; }
 
-    /// <summary>Chart-name substring to search.</summary>
+    /// <summary>Chart-name search query.</summary>
     [ObservableProperty]
     public partial string SearchText { get; set; } = string.Empty;
 
@@ -42,7 +43,7 @@ public sealed partial class HelmChartsViewModel : ViewModelBase, IInitializeClus
 
     /// <summary>Discovery guidance and operation errors.</summary>
     [ObservableProperty]
-    public partial string Status { get; private set; } = Assets.Resources.HelmChartsView_SearchNotice!;
+    public partial string Status { get; private set; } = string.Empty;
 
     /// <summary>Whether discovery is running.</summary>
     [ObservableProperty]
@@ -60,12 +61,19 @@ public sealed partial class HelmChartsViewModel : ViewModelBase, IInitializeClus
             _charts, chart => chart.Reference,
             [
                 CreateColumn("chart", Assets.Resources.HelmChartsView_Chart!, static chart => chart.ChartName, 2),
-                CreateColumn("reference", Assets.Resources.HelmChartsView_Reference!, static chart => chart.Reference, 1),
+                CreateColumn("description", Assets.Resources.HelmChartsView_Description!, static chart => chart.Description, 1),
                 CreateColumn("version", Assets.Resources.HelmChartsView_LatestVersion!, static chart => chart.Version, 1)
             ],
             options: new DynamicTableViewSourceOptions { SelectionIdentityMode = DynamicTableViewSelectionIdentityMode.Key });
         _tableSource.SelectionModel.SingleSelect = true;
         _tableSource.SetSort([new("chart", ListSortDirection.Ascending)]);
+        _tableSource.SearchText = SearchText;
+        _itemsNotifications = _tableSource.Items as INotifyCollectionChanged;
+        if (_itemsNotifications is not null)
+        {
+            _itemsNotifications.CollectionChanged += ItemsOnCollectionChanged;
+        }
+
         Title = Assets.Resources.HelmChartsView_Title;
     }
 
@@ -78,7 +86,6 @@ public sealed partial class HelmChartsViewModel : ViewModelBase, IInitializeClus
             cluster.Runtime.Name,
             cluster.SelectedNamespaces.FirstOrDefault()?.Metadata?.Name ?? "default");
         Id = $"{nameof(HelmChartsViewModel)}-{cluster.Runtime.Name}";
-        _ = RefreshCommand.ExecuteAsync(null);
     }
 
     [RelayCommand(CanExecute = nameof(CanRefresh))]
@@ -93,18 +100,20 @@ public sealed partial class HelmChartsViewModel : ViewModelBase, IInitializeClus
         try
         {
             var repositories = await _helmService.ListRepositoriesAsync(_connection, cancellationToken);
-            var selected = SelectedRepository;
+            var selected = _requestedRepository ?? SelectedRepository;
             Repositories.Clear();
             foreach (var repository in repositories.OrderBy(static repository => repository.Name, StringComparer.OrdinalIgnoreCase))
             {
                 Repositories.Add(repository.Name);
             }
 
+            _repositoriesLoaded = true;
+            _requestedRepository = null;
             SelectedRepository = selected is not null && Repositories.Contains(selected)
                 ? selected : Repositories.FirstOrDefault();
             _matches = await _helmService.ListChartsAsync(_connection, cancellationToken: cancellationToken);
             ApplyRepositoryFilter();
-            Status = ItemCount == 0 ? Assets.Resources.Shared_NoCharts! : string.Empty;
+            Status = _charts.Count == 0 ? Assets.Resources.Shared_NoCharts! : string.Empty;
         }
         catch (Exception exception)
         {
@@ -155,30 +164,20 @@ public sealed partial class HelmChartsViewModel : ViewModelBase, IInitializeClus
 
     partial void OnSelectedRepositoryChanged(string? value) => ApplyRepositoryFilter();
 
-    partial void OnSearchTextChanged(string value)
-    {
-        CancellationTokenSource next = new();
-        CancellationTokenSource? previous = Interlocked.Exchange(ref _searchDebounce, next);
-        previous?.Cancel();
-        previous?.Dispose();
-        _ = ApplySearchAfterDelayAsync(next);
-    }
+    partial void OnSearchTextChanged(string value) => _tableSource.SearchText = value;
 
-    private async Task ApplySearchAfterDelayAsync(CancellationTokenSource debounce)
+    /// <summary>Applies an explicit repository filter to the chart list.</summary>
+    /// <param name="repositoryName">Repository name to filter by.</param>
+    public void SelectRepository(string repositoryName)
     {
-        try
+        ArgumentException.ThrowIfNullOrWhiteSpace(repositoryName);
+        if (_repositoriesLoaded)
         {
-            await Task.Delay(SearchDebounce, debounce.Token).ConfigureAwait(false);
-            Dispatcher.UIThread.Post(() =>
-            {
-                if (!debounce.IsCancellationRequested && ReferenceEquals(Volatile.Read(ref _searchDebounce), debounce))
-                {
-                    ApplyRepositoryFilter();
-                }
-            });
+            SelectedRepository = repositoryName;
         }
-        catch (OperationCanceledException)
+        else
         {
+            _requestedRepository = repositoryName;
         }
     }
 
@@ -187,9 +186,7 @@ public sealed partial class HelmChartsViewModel : ViewModelBase, IInitializeClus
         Dictionary<string, (HelmChartSearchResult Chart, NuGetVersion Version)> latestByReference = new(StringComparer.Ordinal);
         foreach (var chart in _matches)
         {
-            if ((SelectedRepository is not null && !chart.Reference.StartsWith($"{SelectedRepository}/", StringComparison.Ordinal))
-                || (!string.IsNullOrWhiteSpace(SearchText)
-                    && !chart.ChartName.Contains(SearchText.Trim(), StringComparison.OrdinalIgnoreCase)))
+            if (SelectedRepository is not null && !chart.Reference.StartsWith($"{SelectedRepository}/", StringComparison.Ordinal))
             {
                 continue;
             }
@@ -211,15 +208,28 @@ public sealed partial class HelmChartsViewModel : ViewModelBase, IInitializeClus
             updater.Clear();
             updater.AddOrUpdate(latestByReference.Values.Select(static item => item.Chart));
         });
-        ItemCount = _charts.Count;
+        UpdateItemCount();
+    }
+
+    private void ItemsOnCollectionChanged(object? sender, NotifyCollectionChangedEventArgs args)
+        => UpdateItemCount();
+
+    private void UpdateItemCount()
+    {
+        if (_tableSource.Items is ICollection items)
+        {
+            ItemCount = items.Count;
+        }
     }
 
     /// <inheritdoc />
     public void Dispose()
     {
-        var debounce = Interlocked.Exchange(ref _searchDebounce, null);
-        debounce?.Cancel();
-        debounce?.Dispose();
+        if (_itemsNotifications is not null)
+        {
+            _itemsNotifications.CollectionChanged -= ItemsOnCollectionChanged;
+        }
+
         _tableSource.Dispose();
         _charts.Dispose();
     }

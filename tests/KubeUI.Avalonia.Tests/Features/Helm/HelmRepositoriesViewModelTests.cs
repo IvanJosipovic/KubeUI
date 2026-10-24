@@ -127,4 +127,23 @@ public sealed class HelmRepositoriesViewModelTests
         await TestWait.UntilAsync(() => viewModel.ItemCount == 2,
             TimeSpan.FromSeconds(5), cancellationToken: TestContext.Current.CancellationToken);
     }
+
+    [AvaloniaFact]
+    public async Task View_charts_opens_the_charts_document_for_the_repository()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync(connect: false);
+        var helmService = new Mock<IHelmService>();
+        helmService
+            .Setup(service => service.ListRepositoriesAsync(It.IsAny<HelmConnection>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync([new HelmRepository("bitnami", "https://charts.bitnami.com/bitnami")]);
+        var opener = new Mock<IHelmDocumentOpener>();
+        using var viewModel = new HelmRepositoriesViewModel(helmService.Object, Mock.Of<IDialogService>(),
+            opener.Object, Mock.Of<IHelmListNotifier>());
+        viewModel.Initialize(workspace);
+        await viewModel.RefreshCommand.ExecuteAsync(null).WaitAsync(TestContext.Current.CancellationToken);
+
+        viewModel.ViewChartsCommand.Execute(new HelmRepository("bitnami", "https://charts.bitnami.com/bitnami"));
+
+        opener.Verify(item => item.OpenCharts(workspace, "bitnami"), Times.Once);
+    }
 }

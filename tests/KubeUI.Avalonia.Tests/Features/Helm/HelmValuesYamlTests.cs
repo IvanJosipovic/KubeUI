@@ -13,10 +13,7 @@ public sealed class HelmValuesYamlTests
         using var source = JsonDocument.Parse("""
             {"replicas":3,"enabled":true,"server":{"name":"true","number":"123","ports":[80,443],"unset":null},"ratio":1.25}
             """);
-        var values = source.RootElement.EnumerateObject()
-            .ToDictionary(property => property.Name, property => property.Value.Clone());
-
-        var yaml = HelmValuesYaml.Serialize(values);
+        var yaml = HelmValuesYaml.Serialize(source.RootElement);
         var parsed = HelmValuesYaml.Parse(yaml);
         using var result = JsonDocument.Parse(k8s.KubernetesJson.Serialize(parsed));
 
@@ -65,6 +62,6 @@ public sealed class HelmValuesYamlTests
         => Should.Throw<YamlException>(() => HelmValuesYaml.Parse("- one\n- two"));
 
     [Fact]
-    public void Values_reject_empty_documents()
-        => Should.Throw<InvalidOperationException>(() => HelmValuesYaml.Parse(string.Empty));
+    public void Blank_values_parse_as_empty_mapping()
+        => HelmValuesYaml.Parse(string.Empty).ShouldBeEmpty();
 }
