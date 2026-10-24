@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Templates;
 using Avalonia.Input;
@@ -8,19 +9,22 @@ using FluentIcons.Avalonia;
 using FluentIcons.Common;
 using KubeUI.Avalonia.Converters;
 using KubeUI.Avalonia.Infrastructure;
+using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Resources.Workloads.v1.Pod.Behaviors;
 using KubeUI.Avalonia.Resources.Workloads.v1.Pod.ViewModels;
 using KubeUI.Avalonia.Styles;
 using Ursa.Controls;
 
+
 namespace KubeUI.Avalonia.Resources.Workloads.v1.Pod.Views;
 
 /// <summary>Displays streamed pod logs with pod and container selection.</summary>
-public sealed partial class PodLogsView : ViewBase<PodLogsViewModel>
+public sealed partial class PodLogsView : KubeUIView<PodLogsViewModel>
 {
     private const double SourcesWidth = 300;
     private static readonly StringNotNullOrEmptyConverter HasErrorConverter = new();
 
+    [RequiresUnreferencedCode("Declarative pod-log view construction may use members removed by trimming.")]
     protected override object Build(PodLogsViewModel vm)
     {
         ArgumentNullException.ThrowIfNull(vm);
@@ -178,6 +182,7 @@ public sealed partial class PodLogsView : ViewBase<PodLogsViewModel>
                     .Content(new FluentIcon().Icon(Icon.TextWrap)));
     }
 
+    [RequiresUnreferencedCode("Calls KubeUI.Avalonia.Resources.Workloads.v1.Pod.Views.PodLogsView.CreateContextMenu(TextEditor)")]
     private TextEditor CreateEditor(PodLogsViewModel vm)
     {
         PodLogsEditorBehavior behavior = new();
@@ -210,6 +215,7 @@ public sealed partial class PodLogsView : ViewBase<PodLogsViewModel>
         return editor;
     }
 
+    [RequiresUnreferencedCode("Calls Avalonia.Xaml.Interactions.Core.EventTriggerBehavior.EventTriggerBehavior()")]
     private static ContextMenu CreateContextMenu(TextEditor editor)
     {
         return new ContextMenu()

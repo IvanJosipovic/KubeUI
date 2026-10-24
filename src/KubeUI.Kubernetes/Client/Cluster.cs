@@ -512,12 +512,12 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
                 switch (eventType)
                 {
                     case WatchEventType.Added:
-                        items.AddOrUpdate(item);
                         RegisterCustomResourceDefinition(item as V1CustomResourceDefinition);
+                        items.AddOrUpdate(item);
                         break;
                     case WatchEventType.Modified:
-                        items.AddOrUpdate(item);
                         RegisterCustomResourceDefinition(item as V1CustomResourceDefinition);
+                        items.AddOrUpdate(item);
                         break;
                     case WatchEventType.Deleted:
                         items.Remove(item);
@@ -1293,25 +1293,25 @@ public partial class ContainerClass<T> : ObservableObject, IClearableResourceCon
 
 public sealed class OperationKeyHandler : DelegatingHandler
 {
-        private readonly TimeSpan _forbiddenCoalesceWindow;
-        private readonly Action? _onForbidden;
-        private long _lastForbiddenNotificationTicks;
+    private readonly TimeSpan _forbiddenCoalesceWindow;
+    private readonly Action? _onForbidden;
+    private long _lastForbiddenNotificationTicks;
 
-        public OperationKeyHandler()
-            : this(null, TimeSpan.FromSeconds(5))
-        {
-        }
+    public OperationKeyHandler()
+        : this(null, TimeSpan.FromSeconds(5))
+    {
+    }
 
-        public OperationKeyHandler(Action onForbidden)
-            : this(onForbidden, TimeSpan.FromSeconds(5))
-        {
-        }
+    public OperationKeyHandler(Action onForbidden)
+        : this(onForbidden, TimeSpan.FromSeconds(5))
+    {
+    }
 
-        public OperationKeyHandler(Action? onForbidden, TimeSpan forbiddenCoalesceWindow)
-        {
-            _onForbidden = onForbidden;
-            _forbiddenCoalesceWindow = forbiddenCoalesceWindow;
-        }
+    public OperationKeyHandler(Action? onForbidden, TimeSpan forbiddenCoalesceWindow)
+    {
+        _onForbidden = onForbidden;
+        _forbiddenCoalesceWindow = forbiddenCoalesceWindow;
+    }
 
     protected override async Task<HttpResponseMessage> SendAsync(
         HttpRequestMessage request,

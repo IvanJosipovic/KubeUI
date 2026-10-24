@@ -1,10 +1,12 @@
-﻿using Avalonia.Markup.Xaml.MarkupExtensions;
+using Avalonia.Markup.Xaml.MarkupExtensions;
 using KubeUI.Avalonia.Infrastructure;
+using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Styles;
+
 
 namespace KubeUI.Avalonia.Shell.Documents.About;
 
-public sealed class AboutView() : ViewBase<AboutViewModel>()
+public sealed class AboutView() : KubeUIView<AboutViewModel>()
 {
     protected override object Build(AboutViewModel vm) =>
         new StackPanel()

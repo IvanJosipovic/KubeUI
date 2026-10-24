@@ -1159,22 +1159,22 @@ public sealed class ResourceGraphControlTests
 
         await cluster.Runtime.Client!.GetGenericClient<V1Pod>().PatchNamespacedAsync<V1Pod>(
             new V1Patch(
-                KubernetesJson.Serialize(new
+                new System.Text.Json.Nodes.JsonObject
                 {
-                    metadata = new
+                    ["metadata"] = new System.Text.Json.Nodes.JsonObject
                     {
-                        ownerReferences = new[]
+                        ["ownerReferences"] = new System.Text.Json.Nodes.JsonArray
                         {
-                            new
+                            new System.Text.Json.Nodes.JsonObject
                             {
-                                apiVersion = secondOwner.ApiVersion,
-                                kind = secondOwner.Kind,
-                                name = secondOwner.Name(),
-                                uid = secondOwner.Uid(),
+                                ["apiVersion"] = secondOwner.ApiVersion,
+                                ["kind"] = secondOwner.Kind,
+                                ["name"] = secondOwner.Name(),
+                                ["uid"] = secondOwner.Uid(),
                             },
                         },
                     },
-                }),
+                }.ToJsonString(),
                 V1Patch.PatchType.MergePatch),
             "default",
             pod.Name());
@@ -1868,13 +1868,13 @@ public sealed class ResourceGraphControlTests
         await Task.Run(
             () => cluster.Runtime.Client!.GetGenericClient<V1Pod>().PatchNamespacedAsync<V1Pod>(
                 new V1Patch(
-                    KubernetesJson.Serialize(new
+                    new System.Text.Json.Nodes.JsonObject
                     {
-                        metadata = new
+                        ["metadata"] = new System.Text.Json.Nodes.JsonObject
                         {
-                            labels = new Dictionary<string, string> { ["updated"] = "true" },
+                            ["labels"] = new System.Text.Json.Nodes.JsonObject { ["updated"] = "true" },
                         },
-                    }),
+                    }.ToJsonString(),
                     V1Patch.PatchType.MergePatch),
                 "default",
                 "background",

@@ -3,6 +3,9 @@
   <PropertyGroup>
     <DebugType>embedded</DebugType>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <IsTrimmable>true</IsTrimmable>
+    <Nullable>enable</Nullable>
+    <WarningsAsErrors>$(WarningsAsErrors);IL2026;IL2055;IL2057;IL2060;IL2062;IL2067;IL2070;IL2072;IL2075;IL2087;IL2090;IL2091</WarningsAsErrors>
   </PropertyGroup>
 
   <ItemGroup>
@@ -34,5 +37,6 @@
     <PackageReference Include="Microsoft.OpenApi" Version="3.11.0" />
     <PackageReference Include="Swordfish.NET.CollectionsV3" Version="3.3.16" />
     <PackageReference Include="YamlDotNet.System.Text.Json" Version="1.11.1" />
+    <PackageReference Include="Vecc.YamlDotNet.Analyzers.StaticGenerator" Version="18.1.0" PrivateAssets="all" />
   </ItemGroup>
 </Project>

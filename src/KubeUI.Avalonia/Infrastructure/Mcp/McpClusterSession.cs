@@ -35,14 +35,14 @@ public interface IMcpClusterSession
 {
     Task<IClusterRuntime> GetConnectedClusterAsync(string? clusterName);
     Task SeedResourceAsync(string? clusterName, GroupApiVersionKind resourceKind, CancellationToken cancellationToken = default);
-    Task<IReadOnlyList<McpSupportedResourceInfo>> ListSupportedResourcesAsync(string? clusterName);
+    Task<McpSupportedResourceInfo[]> ListSupportedResourcesAsync(string? clusterName);
     Task<McpResourcePage> ListResourcesAsync(
         string? clusterName, string apiVersion, string kind, string? @namespace, int limit,
         CancellationToken cancellationToken = default, string? cursor = null);
     Task<McpEventPage> ListEventsAsync(
         string? clusterName, string? @namespace, int limit,
         CancellationToken cancellationToken = default, string? cursor = null);
-    Task<IReadOnlyList<McpRelatedResourceInfo>> ListRelatedResourcesAsync(
+    Task<McpRelatedResourceInfo[]> ListRelatedResourcesAsync(
         string? clusterName, string apiVersion, string kind, string name, string? @namespace, int limit, CancellationToken cancellationToken = default);
     Task<McpResourceGraphInfo> GetResourceGraphAsync(
         string? clusterName, string apiVersion, string kind, string name, string? @namespace, int limit, CancellationToken cancellationToken = default);
@@ -75,7 +75,7 @@ internal sealed class McpClusterSession(
         return workspace.Runtime;
     }
 
-    public async Task<IReadOnlyList<McpSupportedResourceInfo>> ListSupportedResourcesAsync(string? clusterName)
+    public async Task<McpSupportedResourceInfo[]> ListSupportedResourcesAsync(string? clusterName)
     {
         var cluster = await GetConnectedClusterAsync(clusterName).ConfigureAwait(false);
         var workspace = workspaceCatalog.GetCluster(cluster.Name);
@@ -132,7 +132,7 @@ internal sealed class McpClusterSession(
         await workspace.GetResourceConfig(resourceKind).SeedResource(waitForReady: true, cancellationToken: cancellationToken).ConfigureAwait(false);
         if (!cluster.Objects.TryGetValue(resourceKind, out var value)
             || value is not IResourceContainer container)
-            return new McpResourcePage([], null);
+            return new McpResourcePage(Array.Empty<McpResourceInfo>(), null);
 
         var after = decodedCursor is null
             ? (ResourceSortKey?)null
@@ -203,7 +203,7 @@ internal sealed class McpClusterSession(
         if (!cluster.Objects.TryGetValue(resourceKind, out var value)
             || value is not IResourceContainer container)
         {
-            return new McpEventPage([], null);
+            return new McpEventPage(Array.Empty<Corev1Event>(), null);
         }
 
         var after = decodedCursor is null
@@ -239,11 +239,11 @@ internal sealed class McpClusterSession(
         return new McpEventPage(events, nextCursor);
     }
 
-    public async Task<IReadOnlyList<McpRelatedResourceInfo>> ListRelatedResourcesAsync(
+    public async Task<McpRelatedResourceInfo[]> ListRelatedResourcesAsync(
         string? clusterName, string apiVersion, string kind, string name, string? @namespace, int limit, CancellationToken cancellationToken = default)
     {
         var graph = await BuildResourceGraphAsync(clusterName, apiVersion, kind, name, @namespace, limit, cancellationToken).ConfigureAwait(false);
-        return graph.Relationships;
+        return graph.Relationships.ToArray();
     }
 
     public async Task<McpResourceGraphInfo> GetResourceGraphAsync(

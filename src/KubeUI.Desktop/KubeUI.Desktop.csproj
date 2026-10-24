@@ -6,6 +6,8 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <PublishSingleFile>true</PublishSingleFile>
     <PublishSelfContained>true</PublishSelfContained>
+    <PublishTrimmed Condition="'$(Configuration)' == 'Release'">true</PublishTrimmed>
+    <TrimMode Condition="'$(Configuration)' == 'Release'">full</TrimMode>
     <PublishReadyToRun>true</PublishReadyToRun>
     <PublishReadyToRunComposite>false</PublishReadyToRunComposite>
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
@@ -29,6 +31,16 @@
 
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(Configuration)' == 'Release'">
+    <TrimmerRootAssembly Include="KubernetesClient" /> <!-- Reflection-based YAML serialization inspects Kubernetes API models. -->
+    <!-- Whole-assembly roots increase bundle size; each item retains the named reflection-based runtime feature. -->
+    <TrimmerRootAssembly Include="Xaml.Behaviors.Interactivity" /> <!-- Pod log editor EventTriggerBehavior and CallMethodAction. -->
+    <TrimmerRootAssembly Include="JsonPathLINQ" /> <!-- Kubernetes JSONPath resource queries. -->
+    <TrimmerRootAssembly Include="HanumanInstitute.MvvmDialogs.Avalonia" /> <!-- Runtime Avalonia dialog/view resolution. -->
+    <TrimmerRootAssembly Include="Dock.Avalonia" /> <!-- Docking default templates and runtime view creation. -->
+    <TrimmerRootDescriptor Include="ILLink.XamlRoots.xml" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(Configuration)' == 'Debug'">
