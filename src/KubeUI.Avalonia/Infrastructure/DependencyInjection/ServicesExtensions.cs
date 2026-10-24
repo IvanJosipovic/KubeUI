@@ -73,6 +73,8 @@ public static partial class KubeUIShellServiceCollectionExtensions
         services.AddTransient<IHelmReleasePreviewService, HelmReleasePreviewService>();
         services.AddTransient<Func<VisualizationViewModel>>(sp => () => sp.GetRequiredService<VisualizationViewModel>());
         services.AddTransient<Func<ResourceYamlViewModel>>(sp => () => sp.GetRequiredService<ResourceYamlViewModel>());
+        services.AddTransient<FlowListViewModel>();
+        services.AddTransient<ServiceMapViewModel>();
         services.AddTransient<Func<FlowListViewModel>>(sp => () => sp.GetRequiredService<FlowListViewModel>());
         services.AddTransient<Func<ServiceMapViewModel>>(sp => () => sp.GetRequiredService<ServiceMapViewModel>());
         services.AddSingleton<NavigationSectionCatalog>();
