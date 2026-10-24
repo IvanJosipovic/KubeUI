@@ -3,7 +3,6 @@ using System.Globalization;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Threading;
 using k8s;
 using k8s.Models;
 using YamlDotNet.Core;
@@ -49,16 +48,6 @@ public static class KubernetesYaml
     private static bool IsStaticStringDictionary(Type type)
     {
         return type == typeof(IDictionary<string, ResourceQuantity>) || type == typeof(Dictionary<string, ResourceQuantity>)
-            || type == typeof(IDictionary<string, V1beta1Counter>) || type == typeof(Dictionary<string, V1beta1Counter>)
-            || type == typeof(IDictionary<string, V1beta1DeviceAttribute>) || type == typeof(Dictionary<string, V1beta1DeviceAttribute>)
-            || type == typeof(IDictionary<string, V1beta1DeviceCapacity>) || type == typeof(Dictionary<string, V1beta1DeviceCapacity>)
-            || type == typeof(IDictionary<string, V1beta2Counter>) || type == typeof(Dictionary<string, V1beta2Counter>)
-            || type == typeof(IDictionary<string, V1beta2DeviceAttribute>) || type == typeof(Dictionary<string, V1beta2DeviceAttribute>)
-            || type == typeof(IDictionary<string, V1beta2DeviceCapacity>) || type == typeof(Dictionary<string, V1beta2DeviceCapacity>)
-            || type == typeof(IDictionary<string, V1Counter>) || type == typeof(Dictionary<string, V1Counter>)
-            || type == typeof(IDictionary<string, V1DeviceAttribute>) || type == typeof(Dictionary<string, V1DeviceAttribute>)
-            || type == typeof(IDictionary<string, V1DeviceCapacity>) || type == typeof(Dictionary<string, V1DeviceCapacity>)
-            || type == typeof(IDictionary<string, V1JSONSchemaProps>) || type == typeof(Dictionary<string, V1JSONSchemaProps>)
             || type == typeof(IDictionary<string, byte[]>) || type == typeof(Dictionary<string, byte[]>)
             || type == typeof(IDictionary<string, IList<string>>) || type == typeof(Dictionary<string, IList<string>>)
             || type == typeof(IDictionary<string, DateTime?>) || type == typeof(Dictionary<string, DateTime?>)
@@ -70,26 +59,6 @@ public static class KubernetesYaml
     {
         if (type == typeof(IDictionary<string, ResourceQuantity>) || type == typeof(Dictionary<string, ResourceQuantity>))
             return new Dictionary<string, ResourceQuantity>();
-        if (type == typeof(IDictionary<string, V1beta1Counter>) || type == typeof(Dictionary<string, V1beta1Counter>))
-            return new Dictionary<string, V1beta1Counter>();
-        if (type == typeof(IDictionary<string, V1beta1DeviceAttribute>) || type == typeof(Dictionary<string, V1beta1DeviceAttribute>))
-            return new Dictionary<string, V1beta1DeviceAttribute>();
-        if (type == typeof(IDictionary<string, V1beta1DeviceCapacity>) || type == typeof(Dictionary<string, V1beta1DeviceCapacity>))
-            return new Dictionary<string, V1beta1DeviceCapacity>();
-        if (type == typeof(IDictionary<string, V1beta2Counter>) || type == typeof(Dictionary<string, V1beta2Counter>))
-            return new Dictionary<string, V1beta2Counter>();
-        if (type == typeof(IDictionary<string, V1beta2DeviceAttribute>) || type == typeof(Dictionary<string, V1beta2DeviceAttribute>))
-            return new Dictionary<string, V1beta2DeviceAttribute>();
-        if (type == typeof(IDictionary<string, V1beta2DeviceCapacity>) || type == typeof(Dictionary<string, V1beta2DeviceCapacity>))
-            return new Dictionary<string, V1beta2DeviceCapacity>();
-        if (type == typeof(IDictionary<string, V1Counter>) || type == typeof(Dictionary<string, V1Counter>))
-            return new Dictionary<string, V1Counter>();
-        if (type == typeof(IDictionary<string, V1DeviceAttribute>) || type == typeof(Dictionary<string, V1DeviceAttribute>))
-            return new Dictionary<string, V1DeviceAttribute>();
-        if (type == typeof(IDictionary<string, V1DeviceCapacity>) || type == typeof(Dictionary<string, V1DeviceCapacity>))
-            return new Dictionary<string, V1DeviceCapacity>();
-        if (type == typeof(IDictionary<string, V1JSONSchemaProps>) || type == typeof(Dictionary<string, V1JSONSchemaProps>))
-            return new Dictionary<string, V1JSONSchemaProps>();
         if (type == typeof(IDictionary<string, byte[]>) || type == typeof(Dictionary<string, byte[]>))
             return new Dictionary<string, byte[]>();
         if (type == typeof(IDictionary<string, IList<string>>) || type == typeof(Dictionary<string, IList<string>>))
@@ -114,6 +83,11 @@ public static class KubernetesYaml
             .WithTypeConverter(new KubernetesResourceQuantityYamlConverter())
             .WithTypeConverter(new KubernetesResourceQuantityDictionaryYamlConverter())
             .WithTypeConverter(new KubernetesStringDictionaryYamlConverter())
+            .WithTypeConverter(new KubernetesJsonSchemaPropsDictionaryYamlConverter())
+            .WithTypeConverter(new KubernetesCounterDictionaryYamlConverter())
+            .WithTypeConverter(new KubernetesDeviceAttributeDictionaryYamlConverter())
+            .WithTypeConverter(new KubernetesDeviceCapacityDictionaryYamlConverter())
+            .WithTypeConverter(new KubernetesNodeAllocatableResourceDictionaryYamlConverter())
             .WithTypeConverter(new KubeConfigNamedExtensionYamlConverter())
             .WithTypeConverter(new JsonBackedYamlTypeConverter<V1ContainerRestartRuleOnExitCodes>(jsonContext.V1ContainerRestartRuleOnExitCodes))
             .WithTypeConverter(new JsonBackedYamlTypeConverter<V1LinuxContainerUser>(jsonContext.V1LinuxContainerUser))
@@ -634,6 +608,222 @@ public static class KubernetesYaml
         }
     }
 
+    private sealed class KubernetesJsonSchemaPropsDictionaryYamlConverter : IYamlTypeConverter
+    {
+        public bool Accepts(Type type)
+        {
+            return type == typeof(IDictionary<string, V1JSONSchemaProps>)
+                || type == typeof(Dictionary<string, V1JSONSchemaProps>);
+        }
+
+        public object ReadYaml(IParser parser, Type type, ObjectDeserializer rootDeserializer)
+        {
+            parser.Consume<MappingStart>();
+            var values = new Dictionary<string, V1JSONSchemaProps>();
+            while (!parser.Accept<MappingEnd>(out _))
+            {
+                var key = parser.Consume<Scalar>().Value;
+                var value = (V1JSONSchemaProps?)rootDeserializer(typeof(V1JSONSchemaProps))
+                    ?? throw new YamlException($"Kubernetes JSON schema props value for '{key}' cannot be null.");
+                values.Add(key, value);
+            }
+
+            parser.Consume<MappingEnd>();
+            return values;
+        }
+
+        public void WriteYaml(IEmitter emitter, object? value, Type type, ObjectSerializer serializer)
+        {
+            emitter.Emit(new MappingStart());
+            if (value is IDictionary<string, V1JSONSchemaProps> values)
+            {
+                foreach (var (key, item) in values)
+                {
+                    emitter.Emit(new Scalar(key));
+                    serializer(item, typeof(V1JSONSchemaProps));
+                }
+            }
+
+            emitter.Emit(new MappingEnd());
+        }
+    }
+
+    private sealed class KubernetesCounterDictionaryYamlConverter : IYamlTypeConverter
+    {
+        public bool Accepts(Type type)
+        {
+            return type == typeof(IDictionary<string, V1Counter>)
+                || type == typeof(Dictionary<string, V1Counter>)
+                || type == typeof(IDictionary<string, V1beta1Counter>)
+                || type == typeof(Dictionary<string, V1beta1Counter>)
+                || type == typeof(IDictionary<string, V1beta2Counter>)
+                || type == typeof(Dictionary<string, V1beta2Counter>);
+        }
+
+        public object ReadYaml(IParser parser, Type type, ObjectDeserializer rootDeserializer)
+        {
+            parser.Consume<MappingStart>();
+            var values = new Dictionary<string, object>();
+            while (!parser.Accept<MappingEnd>(out _))
+            {
+                var key = parser.Consume<Scalar>().Value;
+                var valueType = type.GetGenericArguments()[1];
+                var value = rootDeserializer(valueType)
+                    ?? throw new YamlException($"Kubernetes counter value for '{key}' cannot be null.");
+                values.Add(key, value);
+            }
+
+            parser.Consume<MappingEnd>();
+            return values;
+        }
+
+        public void WriteYaml(IEmitter emitter, object? value, Type type, ObjectSerializer serializer)
+        {
+            emitter.Emit(new MappingStart());
+            if (value is IDictionary<string, object> values)
+            {
+                foreach (var (key, item) in values)
+                {
+                    emitter.Emit(new Scalar(key));
+                    serializer(item, item.GetType());
+                }
+            }
+            emitter.Emit(new MappingEnd());
+        }
+    }
+
+    private sealed class KubernetesDeviceAttributeDictionaryYamlConverter : IYamlTypeConverter
+    {
+        public bool Accepts(Type type)
+        {
+            return type == typeof(IDictionary<string, V1DeviceAttribute>)
+                || type == typeof(Dictionary<string, V1DeviceAttribute>)
+                || type == typeof(IDictionary<string, V1beta1DeviceAttribute>)
+                || type == typeof(Dictionary<string, V1beta1DeviceAttribute>)
+                || type == typeof(IDictionary<string, V1beta2DeviceAttribute>)
+                || type == typeof(Dictionary<string, V1beta2DeviceAttribute>);
+        }
+
+        public object ReadYaml(IParser parser, Type type, ObjectDeserializer rootDeserializer)
+        {
+            parser.Consume<MappingStart>();
+            var values = new Dictionary<string, object>();
+            while (!parser.Accept<MappingEnd>(out _))
+            {
+                var key = parser.Consume<Scalar>().Value;
+                var valueType = type.GetGenericArguments()[1];
+                var value = rootDeserializer(valueType)
+                    ?? throw new YamlException($"Kubernetes device attribute value for '{key}' cannot be null.");
+                values.Add(key, value);
+            }
+
+            parser.Consume<MappingEnd>();
+            return values;
+        }
+
+        public void WriteYaml(IEmitter emitter, object? value, Type type, ObjectSerializer serializer)
+        {
+            emitter.Emit(new MappingStart());
+            if (value is IDictionary<string, object> values)
+            {
+                foreach (var (key, item) in values)
+                {
+                    emitter.Emit(new Scalar(key));
+                    serializer(item, item.GetType());
+                }
+            }
+            emitter.Emit(new MappingEnd());
+        }
+    }
+
+    private sealed class KubernetesDeviceCapacityDictionaryYamlConverter : IYamlTypeConverter
+    {
+        public bool Accepts(Type type)
+        {
+            return type == typeof(IDictionary<string, V1DeviceCapacity>)
+                || type == typeof(Dictionary<string, V1DeviceCapacity>)
+                || type == typeof(IDictionary<string, V1beta1DeviceCapacity>)
+                || type == typeof(Dictionary<string, V1beta1DeviceCapacity>)
+                || type == typeof(IDictionary<string, V1beta2DeviceCapacity>)
+                || type == typeof(Dictionary<string, V1beta2DeviceCapacity>);
+        }
+
+        public object ReadYaml(IParser parser, Type type, ObjectDeserializer rootDeserializer)
+        {
+            parser.Consume<MappingStart>();
+            var values = new Dictionary<string, object>();
+            while (!parser.Accept<MappingEnd>(out _))
+            {
+                var key = parser.Consume<Scalar>().Value;
+                var valueType = type.GetGenericArguments()[1];
+                var value = rootDeserializer(valueType)
+                    ?? throw new YamlException($"Kubernetes device capacity value for '{key}' cannot be null.");
+                values.Add(key, value);
+            }
+
+            parser.Consume<MappingEnd>();
+            return values;
+        }
+
+        public void WriteYaml(IEmitter emitter, object? value, Type type, ObjectSerializer serializer)
+        {
+            emitter.Emit(new MappingStart());
+            if (value is IDictionary<string, object> values)
+            {
+                foreach (var (key, item) in values)
+                {
+                    emitter.Emit(new Scalar(key));
+                    serializer(item, item.GetType());
+                }
+            }
+            emitter.Emit(new MappingEnd());
+        }
+    }
+
+    private sealed class KubernetesNodeAllocatableResourceDictionaryYamlConverter : IYamlTypeConverter
+    {
+        public bool Accepts(Type type)
+        {
+            return type == typeof(IDictionary<string, V1NodeAllocatableResource>)
+                || type == typeof(Dictionary<string, V1NodeAllocatableResource>)
+                || type == typeof(IDictionary<string, V1beta1NodeAllocatableResource>)
+                || type == typeof(Dictionary<string, V1beta1NodeAllocatableResource>)
+                || type == typeof(IDictionary<string, V1beta2NodeAllocatableResource>)
+                || type == typeof(Dictionary<string, V1beta2NodeAllocatableResource>);
+        }
+
+        public object ReadYaml(IParser parser, Type type, ObjectDeserializer rootDeserializer)
+        {
+            parser.Consume<MappingStart>();
+            var values = new Dictionary<string, object>();
+            while (!parser.Accept<MappingEnd>(out _))
+            {
+                var key = parser.Consume<Scalar>().Value;
+                var valueType = type.GetGenericArguments()[1];
+                var value = rootDeserializer(valueType)
+                    ?? throw new YamlException($"Kubernetes node allocatable resource value for '{key}' cannot be null.");
+                values.Add(key, value);
+            }
+
+            parser.Consume<MappingEnd>();
+            return values;
+        }
+
+        public void WriteYaml(IEmitter emitter, object? value, Type type, ObjectSerializer serializer)
+        {
+            emitter.Emit(new MappingStart());
+            if (value is IDictionary<string, object> values)
+            {
+                foreach (var (key, item) in values)
+                {
+                    emitter.Emit(new Scalar(key));
+                    serializer(item, item.GetType());
+                }
+            }
+            emitter.Emit(new MappingEnd());
+        }
+    }
+
     private sealed class GenericKubernetesObjectYamlConverter(bool strict) : IYamlTypeConverter
     {
         public bool Accepts(Type type)
@@ -929,3 +1119,4 @@ public static class KubernetesYaml
     }
 
 }
+

@@ -3,9 +3,9 @@ using System.Diagnostics;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text;
-using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Text.Json.Serialization.Metadata;
 using k8s;
 using k8s.Models;
 using KubeUI.Kubernetes.Serialization;
@@ -17,6 +17,14 @@ namespace KubeUI.Kubernetes.Tests.Infrastructure;
 
 public sealed class FakeKubernetesHttpApiTests
 {
+    private static readonly JsonSerializerOptions s_testJsonSerializerOptions = new()
+    {
+        TypeInfoResolver = new DefaultJsonTypeInfoResolver(),
+    };
+
+    private static JsonContent CreateJsonContent<T>(T value)
+        => JsonContent.Create(value, options: s_testJsonSerializerOptions);
+
     [Fact]
     public async Task KubernetesMetricsClientDeserializesNodeMetricsWhenReflectionIsDisabled()
     {
@@ -543,19 +551,19 @@ public sealed class FakeKubernetesHttpApiTests
 
         var create = await client.PostAsync(
             "/api/v1/namespaces/default/configmaps",
-            JsonContent.Create(new { apiVersion = "v1", kind = "ConfigMap", metadata = new { name = "cm-a", @namespace = "default" } }),
+            CreateJsonContent(new { apiVersion = "v1", kind = "ConfigMap", metadata = new { name = "cm-a", @namespace = "default" } }),
             TestContext.Current.CancellationToken);
         create.StatusCode.ShouldBe(HttpStatusCode.Created, await create.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
 
         var duplicate = await client.PostAsync(
             "/api/v1/namespaces/default/configmaps",
-            JsonContent.Create(new { apiVersion = "v1", kind = "ConfigMap", metadata = new { name = "cm-a", @namespace = "default" } }),
+            CreateJsonContent(new { apiVersion = "v1", kind = "ConfigMap", metadata = new { name = "cm-a", @namespace = "default" } }),
             TestContext.Current.CancellationToken);
         duplicate.StatusCode.ShouldBe(HttpStatusCode.Conflict);
 
         var dryRun = await client.PostAsync(
             "/api/v1/namespaces/default/configmaps?dryRun=All",
-            JsonContent.Create(new { apiVersion = "v1", kind = "ConfigMap", metadata = new { name = "cm-dry", @namespace = "default" } }),
+            CreateJsonContent(new { apiVersion = "v1", kind = "ConfigMap", metadata = new { name = "cm-dry", @namespace = "default" } }),
             TestContext.Current.CancellationToken);
         dryRun.StatusCode.ShouldBe(HttpStatusCode.Created);
         (await client.GetAsync("/api/v1/namespaces/default/configmaps/cm-dry", TestContext.Current.CancellationToken))
@@ -563,13 +571,13 @@ public sealed class FakeKubernetesHttpApiTests
 
         var missingNamespace = await client.PostAsync(
             "/api/v1/namespaces/missing/configmaps",
-            JsonContent.Create(new { apiVersion = "v1", kind = "ConfigMap", metadata = new { name = "cm-b", @namespace = "missing" } }),
+            CreateJsonContent(new { apiVersion = "v1", kind = "ConfigMap", metadata = new { name = "cm-b", @namespace = "missing" } }),
             TestContext.Current.CancellationToken);
         missingNamespace.StatusCode.ShouldBe(HttpStatusCode.NotFound);
 
         (await client.PutAsync(
             "/api/v1/namespaces/default/configmaps/missing",
-            JsonContent.Create(new { apiVersion = "v1", kind = "ConfigMap", metadata = new { name = "missing" } }),
+            CreateJsonContent(new { apiVersion = "v1", kind = "ConfigMap", metadata = new { name = "missing" } }),
             TestContext.Current.CancellationToken)).StatusCode.ShouldBe(HttpStatusCode.NotFound);
 
         (await client.PatchAsync(
@@ -589,7 +597,7 @@ public sealed class FakeKubernetesHttpApiTests
         using var client = CreateHttpClient(api);
         await client.PostAsync(
             "/api/v1/namespaces/default/configmaps",
-            JsonContent.Create(new { apiVersion = "v1", kind = "ConfigMap", metadata = new { name = "cm-a", @namespace = "default" } }),
+            CreateJsonContent(new { apiVersion = "v1", kind = "ConfigMap", metadata = new { name = "cm-a", @namespace = "default" } }),
             TestContext.Current.CancellationToken);
 
         var stored = JsonNode.Parse(await client.GetStringAsync(
@@ -599,13 +607,13 @@ public sealed class FakeKubernetesHttpApiTests
 
         var withoutVersion = await client.PutAsync(
             "/api/v1/namespaces/default/configmaps/cm-a",
-            JsonContent.Create(new { apiVersion = "v1", kind = "ConfigMap", metadata = new { name = "cm-a", @namespace = "default" } }),
+            CreateJsonContent(new { apiVersion = "v1", kind = "ConfigMap", metadata = new { name = "cm-a", @namespace = "default" } }),
             TestContext.Current.CancellationToken);
         withoutVersion.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
 
         var stale = await client.PutAsync(
             "/api/v1/namespaces/default/configmaps/cm-a",
-            JsonContent.Create(new
+            CreateJsonContent(new
             {
                 apiVersion = "v1",
                 kind = "ConfigMap",
@@ -616,7 +624,7 @@ public sealed class FakeKubernetesHttpApiTests
 
         var updated = await client.PutAsync(
             "/api/v1/namespaces/default/configmaps/cm-a",
-            JsonContent.Create(new
+            CreateJsonContent(new
             {
                 apiVersion = "v1",
                 kind = "ConfigMap",
@@ -636,7 +644,7 @@ public sealed class FakeKubernetesHttpApiTests
 
         var response = await client.PostAsync(
             "/api/v1/namespaces/default/configmaps",
-            JsonContent.Create(new
+            CreateJsonContent(new
             {
                 apiVersion = "v1",
                 kind = "ConfigMap",
@@ -657,7 +665,7 @@ public sealed class FakeKubernetesHttpApiTests
         using var client = CreateHttpClient(api);
         await client.PostAsync(
             "/api/v1/namespaces/default/configmaps",
-            JsonContent.Create(new
+            CreateJsonContent(new
             {
                 apiVersion = "v1",
                 kind = "ConfigMap",
@@ -682,7 +690,7 @@ public sealed class FakeKubernetesHttpApiTests
         original["data"]!["state"] = "replaced";
         var replace = await client.PutAsync(
             "/api/v1/namespaces/default/configmaps/dry-run-update?dryRun=All",
-            JsonContent.Create(original),
+            CreateJsonContent(original),
             TestContext.Current.CancellationToken);
         replace.StatusCode.ShouldBe(HttpStatusCode.OK);
 
@@ -702,7 +710,7 @@ public sealed class FakeKubernetesHttpApiTests
         using var client = CreateHttpClient(api);
         await client.PostAsync(
             "/api/v1/namespaces/default/configmaps",
-            JsonContent.Create(new
+            CreateJsonContent(new
             {
                 apiVersion = "v1",
                 kind = "ConfigMap",
@@ -725,7 +733,7 @@ public sealed class FakeKubernetesHttpApiTests
 
         await client.PostAsync(
             "/apis/apps/v1/namespaces/default/deployments",
-            JsonContent.Create(new
+            CreateJsonContent(new
             {
                 apiVersion = "apps/v1",
                 kind = "Deployment",
@@ -775,7 +783,7 @@ public sealed class FakeKubernetesHttpApiTests
         using var client = CreateHttpClient(api);
         await client.PostAsync(
             "/api/v1/namespaces/default/configmaps",
-            JsonContent.Create(new
+            CreateJsonContent(new
             {
                 apiVersion = "v1",
                 kind = "ConfigMap",
@@ -790,7 +798,7 @@ public sealed class FakeKubernetesHttpApiTests
 
         var precondition = new HttpRequestMessage(HttpMethod.Delete, "/api/v1/namespaces/default/configmaps/cm-final")
         {
-            Content = JsonContent.Create(new
+            Content = CreateJsonContent(new
             {
                 apiVersion = "v1",
                 kind = "DeleteOptions",
@@ -815,7 +823,7 @@ public sealed class FakeKubernetesHttpApiTests
         pending["metadata"]!["finalizers"] = new JsonArray();
         var cleared = await client.PutAsync(
             "/api/v1/namespaces/default/configmaps/cm-final",
-            JsonContent.Create(pending),
+            CreateJsonContent(pending),
             TestContext.Current.CancellationToken);
         cleared.StatusCode.ShouldBe(HttpStatusCode.OK);
         (await client.GetAsync("/api/v1/namespaces/default/configmaps/cm-final", TestContext.Current.CancellationToken))
@@ -830,7 +838,7 @@ public sealed class FakeKubernetesHttpApiTests
         using var client = CreateHttpClient(api);
         await client.PostAsync(
             "/apis/apps/v1/namespaces/default/deployments",
-            JsonContent.Create(new
+            CreateJsonContent(new
             {
                 apiVersion = "apps/v1",
                 kind = "Deployment",
@@ -901,7 +909,7 @@ public sealed class FakeKubernetesHttpApiTests
         using var client = CreateHttpClient(api);
         var allowed = await client.PostAsync(
             "/apis/authorization.k8s.io/v1/selfsubjectaccessreviews",
-            JsonContent.Create(new
+            CreateJsonContent(new
             {
                 apiVersion = "authorization.k8s.io/v1",
                 kind = "SelfSubjectAccessReview",
@@ -913,7 +921,7 @@ public sealed class FakeKubernetesHttpApiTests
 
         var denied = await client.PostAsync(
             "/apis/authorization.k8s.io/v1/selfsubjectaccessreviews",
-            JsonContent.Create(new
+            CreateJsonContent(new
             {
                 apiVersion = "authorization.k8s.io/v1",
                 kind = "SelfSubjectAccessReview",
@@ -1005,7 +1013,7 @@ public sealed class FakeKubernetesHttpApiTests
 
         var crd = await client.PostAsync(
             "/apis/apiextensions.k8s.io/v1/customresourcedefinitions",
-            JsonContent.Create(new
+            CreateJsonContent(new
             {
                 apiVersion = "apiextensions.k8s.io/v1",
                 kind = "CustomResourceDefinition",
@@ -1040,7 +1048,7 @@ public sealed class FakeKubernetesHttpApiTests
 
         var created = await client.PostAsync(
             "/apis/example.test/v1/widgets",
-            JsonContent.Create(new
+            CreateJsonContent(new
             {
                 apiVersion = "example.test/v1",
                 kind = "Widget",

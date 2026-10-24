@@ -587,7 +587,7 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
                 continue;
             }
 
-            var clusterRoleBinding = binding.Deserialize<V1ClusterRoleBinding>();
+            var clusterRoleBinding = binding.Deserialize<V1ClusterRoleBinding>(s_jsonSerializerOptions);
             if (clusterRoleBinding is null || !IsSubjectMatch(clusterRoleBinding.Subjects, subject.Value))
             {
                 continue;
@@ -697,7 +697,7 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
         {
             if (string.Equals(binding["kind"]?.GetValue<string>(), "ClusterRoleBinding", StringComparison.Ordinal))
             {
-                var clusterRoleBinding = binding.Deserialize<V1ClusterRoleBinding>();
+                var clusterRoleBinding = binding.Deserialize<V1ClusterRoleBinding>(s_jsonSerializerOptions);
                 if (clusterRoleBinding is not null && IsSubjectMatch(clusterRoleBinding.Subjects, subject.Value))
                 {
                     var role = GetClusterRole(clusterRoleBinding.RoleRef?.Name);
@@ -709,7 +709,7 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
             }
             else if (string.Equals(binding["kind"]?.GetValue<string>(), "RoleBinding", StringComparison.Ordinal))
             {
-                var roleBinding = binding.Deserialize<V1RoleBinding>();
+                var roleBinding = binding.Deserialize<V1RoleBinding>(s_jsonSerializerOptions);
                 if (roleBinding is null
                     || !string.Equals(roleBinding.Metadata?.NamespaceProperty, @namespace, StringComparison.Ordinal)
                     || !IsSubjectMatch(roleBinding.Subjects, subject.Value))
