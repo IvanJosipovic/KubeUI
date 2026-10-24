@@ -1,4 +1,5 @@
 using System;
+using System.ComponentModel;
 using System.Collections.Specialized;
 using System.Reactive.Linq;
 using Avalonia.Controls.Selection;
@@ -15,20 +16,27 @@ using KubeUI.Avalonia.Infrastructure.Threading;
 using KubeUI.Avalonia.Resources;
 using KubeUI.Cilium;
 using KubeUI.Cilium.Hubble;
+using SvcSystems.Avalonia.DynamicTableView;
 using Controls = KubeUI.Avalonia.Features.Cilium.Hubble.Controls;
 using k8s.Models;
 using KubeUI.Kubernetes;
 using Microsoft.Extensions.Logging;
+using HubbleConnectionStatus = KubeUI.Cilium.Hubble.ConnectionStatus;
 
 
 namespace KubeUI.Avalonia.Features.Cilium.Hubble;
 
-public sealed partial class FlowListViewModel : ViewModelBase, IInitializeCluster, IDisposable
+public sealed partial class FlowListViewModel : ViewModelBase, IInitializeCluster, IDisposable, IAsyncDisposable
 {
+    private const string FilterScopeKey = "hubble-flow-scope";
     private readonly ILogger<FlowListViewModel> _logger;
-    private readonly HubbleClientFactory _hubbleClientFactory;
-    private HubbleConnection? _connection;
+    private readonly IHubbleConnectionFactory _hubbleClientFactory;
+    private readonly object _lifecycleGate = new();
+    private IHubbleConnection? _connection;
     private IDisposable? _flowSubscription;
+    private CancellationTokenSource _lifetime = new();
+    private int _disposeState;
+    private Task? _initializationTask;
     private readonly SourceCache<FlowViewModel, FlowCacheKey> _flowCache = new(FlowCacheKey.From);
     private DynamicTableViewSource<FlowViewModel, FlowCacheKey>? _tableSource;
     private readonly ObservableCollection<V1Namespace> _localSelectedNamespaces = [];
@@ -41,7 +49,7 @@ public sealed partial class FlowListViewModel : ViewModelBase, IInitializeCluste
     [ObservableProperty] public partial int FlowCount { get; set; }
     [ObservableProperty] public partial bool IsPaused { get; set; }
     [ObservableProperty] public partial int MaxFlows { get; set; } = 10000;
-    [ObservableProperty] public partial FlowFilterViewModel Filter { get; set; } = new();
+    public FlowFilterViewModel Filter { get; } = new();
 
     [ObservableProperty] public partial DynamicTableViewState? TableViewRuntimeState { get; set; }
 
@@ -53,7 +61,6 @@ public sealed partial class FlowListViewModel : ViewModelBase, IInitializeCluste
         => Cluster != null ? Cluster.SelectedNamespaces : _localSelectedNamespaces;
 
     public IRelayCommand ClearCommand { get; }
-    public IRelayCommand<FlowViewModel[]> ViewFlowCommand { get; }
     public IRelayCommand ResetFilterCommand { get; }
 
     public IEnumerable<MenuItemViewModel> GetContextMenuItems(IEnumerable? _)
@@ -63,59 +70,86 @@ public sealed partial class FlowListViewModel : ViewModelBase, IInitializeCluste
 
     public FlowListViewModel(
         ILogger<FlowListViewModel> logger,
-        HubbleClientFactory hubbleClientFactory)
+        IHubbleConnectionFactory hubbleClientFactory)
     {
         _logger = logger;
         _hubbleClientFactory = hubbleClientFactory;
 
-        ClearCommand = new RelayCommand(() => _flowCache.Clear());
-        ViewFlowCommand = new RelayCommand<FlowViewModel[]>(flows =>
+        ClearCommand = new RelayCommand(() =>
         {
-            // Open flow detail view - TODO
+            _flowCache.Clear();
+            FlowCount = 0;
         });
         ResetFilterCommand = new RelayCommand(() => Filter.Reset());
-
-        Title = Assets.Resources.FlowListView_Title;
-    }
-
-    public void Initialize(ClusterWorkspace cluster)
-    {
-        _ = InitializeAsync(cluster, CancellationToken.None);
-    }
-
-    public async Task InitializeAsync(ClusterWorkspace cluster, CancellationToken ct = default)
-    {
-        Cluster = cluster;
-        Id = $"FlowList-{cluster.Runtime.Name}";
-
-        if (!await cluster.Runtime.IsCiliumInstalledAsync(ct))
-        {
-            ConnectionStatus = Assets.Resources.FlowListView_StatusCiliumNotDetected;
-            return;
-        }
-
-        _connection = _hubbleClientFactory.CreateConnection(cluster.Runtime);
-        _connection.StatusChanged += OnConnectionStatusChanged;
-        await _connection.StartAsync(ct);
-
-        var columns = CreateColumns();
+        Filter.PropertyChanged += OnFilterPropertyChanged;
 
         _tableSource = new DynamicTableViewSource<FlowViewModel, FlowCacheKey>(
             _flowCache,
             FlowCacheKey.From,
-            columns,
+            CreateColumns(),
             options: new DynamicTableViewSourceOptions
             {
                 SelectionIdentityMode = DynamicTableViewSelectionIdentityMode.Key
             });
         _tableSource.SearchText = SearchQuery;
+        ApplyFilter();
 
-        _flowSubscription = _connection.Flows
-            .Where(f => Filter.Matches(f))
-            .ObserveOn(AvaloniaScheduler.Instance)
-            .Subscribe(OnFlowReceived, ex => _logger.LogError(ex, "Flow stream error"));
+        Title = Assets.Resources.FlowListView_Title;
+    }
 
-        IsConnected = true;
+    public void Initialize(ClusterWorkspace cluster)
+        => _ = InitializeAsync(cluster, _lifetime.Token);
+
+    /// <summary>Starts Hubble flow collection for the specified cluster.</summary>
+    /// <param name="cluster">Cluster workspace to read flows from.</param>
+    /// <param name="ct">Cancellation token for initialization.</param>
+    /// <returns>A task that completes when the stream is ready or initialization fails.</returns>
+    public Task InitializeAsync(ClusterWorkspace cluster, CancellationToken ct = default)
+    {
+        lock (_lifecycleGate)
+        {
+            if (_disposeState != 0)
+            {
+                return Task.CompletedTask;
+            }
+
+            return _initializationTask ??= InitializeCoreAsync(cluster, ct);
+        }
+    }
+
+    private async Task InitializeCoreAsync(ClusterWorkspace cluster, CancellationToken ct)
+    {
+        using var linkedCancellation = CancellationTokenSource.CreateLinkedTokenSource(ct, _lifetime.Token);
+        Cluster = cluster;
+        Id = $"FlowList-{cluster.Runtime.Name}";
+        cluster.SelectedNamespaces.CollectionChanged += OnSelectedNamespacesChanged;
+        try
+        {
+            ConnectionStatus = Assets.Resources.FlowListView_StatusConnecting;
+            if (!await cluster.Runtime.IsCiliumInstalledAsync(linkedCancellation.Token).ConfigureAwait(true))
+            {
+                ConnectionStatus = Assets.Resources.FlowListView_StatusCiliumNotDetected;
+                return;
+            }
+
+            _connection = _hubbleClientFactory.CreateConnection(cluster.Runtime);
+            _connection.StatusChanged += OnConnectionStatusChanged;
+            ApplyFilter();
+            await _connection.StartAsync(linkedCancellation.Token).ConfigureAwait(true);
+            _flowSubscription = _connection.Flows
+                .ObserveOn(AvaloniaScheduler.Instance)
+                .Subscribe(OnFlowReceived, OnFlowStreamError);
+        }
+        catch (OperationCanceledException) when (linkedCancellation.IsCancellationRequested)
+        {
+            ConnectionStatus = Assets.Resources.FlowListView_StatusDisconnected;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unable to initialize Hubble flow list");
+            ConnectionStatus = $"{Assets.Resources.FlowListView_StatusError}: {ex.Message}";
+            IsConnected = false;
+        }
     }
 
     private static DynamicTableViewColumn<FlowViewModel>[] CreateColumns()
@@ -169,12 +203,6 @@ public sealed partial class FlowListViewModel : ViewModelBase, IInitializeCluste
                 flow => flow.DestinationPort,
                 null),
             new DynamicTableViewColumn<FlowViewModel>(
-                "Bytes",
-                Assets.Resources.FlowListView_ColumnBytes,
-                typeof(string),
-                flow => flow.BytesHumanReadable,
-                null),
-            new DynamicTableViewColumn<FlowViewModel>(
                 "Latency",
                 Assets.Resources.FlowListView_ColumnLatency,
                 typeof(string),
@@ -198,35 +226,102 @@ public sealed partial class FlowListViewModel : ViewModelBase, IInitializeCluste
 
     private void OnFlowReceived(FlowViewModel flow)
     {
-        if (IsPaused) return;
+        if (Volatile.Read(ref _disposeState) != 0 || IsPaused) return;
 
         _flowCache.AddOrUpdate(flow);
 
         if (_flowCache.Count > MaxFlows)
         {
-            var oldest = _flowCache.Items.OrderBy(f => f.Timestamp).First();
+            FlowViewModel? oldest = null;
+            foreach (var cachedFlow in _flowCache.Items)
+            {
+                if (oldest is null || cachedFlow.Timestamp < oldest.Timestamp)
+                {
+                    oldest = cachedFlow;
+                }
+            }
+
+            if (oldest is null)
+            {
+                return;
+            }
+
             _flowCache.Remove(oldest);
         }
 
         FlowCount = _flowCache.Count;
     }
 
-    private void OnConnectionStatusChanged(KubeUI.Cilium.Hubble.ConnectionStatus status)
+    private void OnConnectionStatusChanged(HubbleConnectionStatus status)
     {
-        ConnectionStatus = status switch
+        void UpdateStatus()
         {
-            KubeUI.Cilium.Hubble.ConnectionStatus.Disconnected => Assets.Resources.FlowListView_StatusDisconnected,
-            KubeUI.Cilium.Hubble.ConnectionStatus.Connecting => Assets.Resources.FlowListView_StatusConnecting,
-            KubeUI.Cilium.Hubble.ConnectionStatus.Connected => Assets.Resources.FlowListView_StatusConnected,
-            KubeUI.Cilium.Hubble.ConnectionStatus.Error => Assets.Resources.FlowListView_StatusError,
-            _ => status.ToString()
-        };
-        IsConnected = status == KubeUI.Cilium.Hubble.ConnectionStatus.Connected;
+            if (Volatile.Read(ref _disposeState) != 0)
+            {
+                return;
+            }
+
+            ConnectionStatus = status switch
+            {
+                HubbleConnectionStatus.Disconnected => Assets.Resources.FlowListView_StatusDisconnected,
+                HubbleConnectionStatus.Connecting => Assets.Resources.FlowListView_StatusConnecting,
+                HubbleConnectionStatus.Connected => Assets.Resources.FlowListView_StatusConnected,
+                HubbleConnectionStatus.Error => Assets.Resources.FlowListView_StatusError,
+                _ => status.ToString()
+            };
+            IsConnected = status == HubbleConnectionStatus.Connected;
+        }
+
+        if (Dispatcher.UIThread.CheckAccess())
+        {
+            UpdateStatus();
+        }
+        else
+        {
+            Dispatcher.UIThread.Post(UpdateStatus);
+        }
     }
 
     partial void OnSearchQueryChanged(string value)
     {
         if (_tableSource != null) _tableSource.SearchText = value;
+    }
+
+    private void OnFilterPropertyChanged(object? sender, PropertyChangedEventArgs e)
+        => ApplyFilter();
+
+    private void OnSelectedNamespacesChanged(object? sender, NotifyCollectionChangedEventArgs e)
+        => ApplyFilter();
+
+    private void ApplyFilter()
+    {
+        if (_tableSource is null)
+        {
+            return;
+        }
+
+        var criteria = Filter.Capture();
+        var selectedNamespaces = SelectedNamespaces
+            .Select(static item => item.Name())
+            .Where(static name => !string.IsNullOrWhiteSpace(name))
+            .ToHashSet(StringComparer.Ordinal);
+        _tableSource.SetScopeFilter(FilterScopeKey, item =>
+        {
+            if (item is not FlowViewModel flow || !criteria.Matches(flow))
+            {
+                return false;
+            }
+
+            return selectedNamespaces.Count == 0
+                || selectedNamespaces.Contains(flow.SourceNamespace)
+                || selectedNamespaces.Contains(flow.DestinationNamespace);
+        });
+    }
+
+    private void OnFlowStreamError(Exception exception)
+    {
+        _logger.LogError(exception, "Flow stream error");
+        OnConnectionStatusChanged(HubbleConnectionStatus.Error);
     }
 
     public void CaptureSelectionState()
@@ -270,10 +365,43 @@ public sealed partial class FlowListViewModel : ViewModelBase, IInitializeCluste
     }
 
     public void Dispose()
+        => _ = DisposeAsync();
+
+    /// <summary>Stops flow collection and releases the connection and table resources.</summary>
+    public async ValueTask DisposeAsync()
     {
+        Task? initializationTask;
+        lock (_lifecycleGate)
+        {
+            if (Interlocked.Exchange(ref _disposeState, 1) != 0)
+            {
+                return;
+            }
+
+            _lifetime.Cancel();
+            initializationTask = _initializationTask;
+        }
+
+        if (initializationTask is not null)
+        {
+            await initializationTask.ConfigureAwait(false);
+        }
+
         _flowSubscription?.Dispose();
-        _ = _connection?.DisposeAsync();
+        Filter.PropertyChanged -= OnFilterPropertyChanged;
+        if (Cluster is not null)
+        {
+            Cluster.SelectedNamespaces.CollectionChanged -= OnSelectedNamespacesChanged;
+        }
+
+        if (_connection is not null)
+        {
+            _connection.StatusChanged -= OnConnectionStatusChanged;
+            await _connection.DisposeAsync().ConfigureAwait(false);
+        }
+
         _tableSource?.Dispose();
         _flowCache.Dispose();
+        _lifetime.Dispose();
     }
 }

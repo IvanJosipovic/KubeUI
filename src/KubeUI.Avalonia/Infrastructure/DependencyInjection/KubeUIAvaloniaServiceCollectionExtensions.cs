@@ -11,6 +11,7 @@ using KubeUI.Avalonia.Infrastructure.Mcp;
 using KubeUI.Avalonia.Infrastructure.Platform;
 using KubeUI.Avalonia.Infrastructure.Threading;
 using KubeUI.Avalonia.Shell.Navigation;
+using KubeUI.Cilium;
 using KubeUI.Kubernetes;
 using KubeUI.Kubernetes.Resources.Relationships;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -23,6 +24,7 @@ public static class KubeUIAvaloniaServiceCollectionExtensions
     {
         services.AddKubeUIAvaloniaServices();
         services.AddKubeUIKubernetesServices();
+        services.AddCilium();
         services.Replace(ServiceDescriptor.Singleton<IThreadDispatcher>(AvaloniaScheduler.Instance));
         services.AddKubeUIDialogServices();
         services.AddSingleton<IMcpClusterSession, McpClusterSession>();

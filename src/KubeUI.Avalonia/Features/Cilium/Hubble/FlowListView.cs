@@ -2,11 +2,9 @@ using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Templates;
 using Avalonia.Data.Converters;
-using Avalonia.Interactivity;
 using Avalonia.Markup.Declarative;
 using Avalonia.Markup.Xaml.MarkupExtensions;
 using Avalonia.Media;
-using Avalonia.VisualTree;
 using CommunityToolkit.Mvvm.Input;
 using FluentIcons.Avalonia;
 using FluentIcons.Common;
@@ -15,7 +13,6 @@ using KubeUI.Avalonia.Infrastructure.DependencyInjection;
 using KubeUI.Cilium.Hubble;
 using SvcSystems.Avalonia.DynamicTableView;
 using System.Windows.Input;
-using Avalonia.Input;
 using UrsaControls = Ursa.Controls;
 
 namespace KubeUI.Avalonia.Features.Cilium.Hubble;
@@ -82,24 +79,7 @@ public sealed partial class FlowListView : ViewBase<FlowListViewModel>
             Source = viewModel.TableSource,
             ContextMenu = CreateContextMenu()
         };
-        table.DoubleTapped += TableOnDoubleTapped;
         return table;
-    }
-
-    private void TableOnDoubleTapped(object? sender, RoutedEventArgs e)
-    {
-        if (DataContext is not FlowListViewModel viewModel) return;
-        if (e.Source is not Visual source) return;
-
-        var row = source.GetSelfAndVisualAncestors().OfType<TableViewRow>().FirstOrDefault();
-        if (row?.DataContext is FlowViewModel clickedItem)
-        {
-            var selectedItems = viewModel.SelectionModel.SelectedItems.OfType<FlowViewModel>().ToList();
-            if (selectedItems.Count == 0) selectedItems.Add(clickedItem);
-
-            if (viewModel.ViewFlowCommand.CanExecute(selectedItems.ToArray()))
-                viewModel.ViewFlowCommand.Execute(selectedItems.ToArray());
-        }
     }
 
     private void TryRestoreState()
@@ -148,7 +128,7 @@ public sealed partial class FlowListView : ViewBase<FlowListViewModel>
                     .Margin(2, 0, 0, 0)
                     .Command(vm.ClearCommand)
                     .ToolTip_Tip(Assets.Resources.FlowListView_TooltipClear)
-                    .Content(new TextBlock().Text("Clear")),
+                    .Content(new TextBlock().Text(Assets.Resources.FlowListView_ButtonClear)),
 
                 new Label()
                     .Col(1)

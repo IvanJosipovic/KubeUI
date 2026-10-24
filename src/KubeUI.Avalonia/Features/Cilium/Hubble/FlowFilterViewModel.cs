@@ -18,18 +18,19 @@ public sealed partial class FlowFilterViewModel : ViewModelBase
     [ObservableProperty] public partial bool ShowOnlyErrors { get; set; }
 
     public bool Matches(FlowViewModel flow)
-    {
-        if (ShowOnlyErrors && flow.Verdict != FlowVerdict.Dropped) return false;
-        if (!string.IsNullOrEmpty(SourceNamespace) && flow.SourceNamespace != SourceNamespace) return false;
-        if (!string.IsNullOrEmpty(DestinationNamespace) && flow.DestinationNamespace != DestinationNamespace) return false;
-        if (!string.IsNullOrEmpty(SourcePod) && !flow.SourcePod.Contains(SourcePod, StringComparison.OrdinalIgnoreCase)) return false;
-        if (!string.IsNullOrEmpty(DestinationPod) && !flow.DestinationPod.Contains(DestinationPod, StringComparison.OrdinalIgnoreCase)) return false;
-        if (Verdict.HasValue && flow.Verdict != Verdict) return false;
-        if (Direction.HasValue && flow.Direction != Direction) return false;
-        if (DestinationPort.HasValue && flow.DestinationPort != DestinationPort) return false;
-        if (!string.IsNullOrEmpty(Protocol) && !flow.Protocol.Contains(Protocol, StringComparison.OrdinalIgnoreCase)) return false;
-        return true;
-    }
+        => Capture().Matches(flow);
+
+    internal FlowFilterCriteria Capture()
+        => new(
+            SourceNamespace,
+            DestinationNamespace,
+            SourcePod,
+            DestinationPod,
+            Verdict,
+            Direction,
+            DestinationPort,
+            Protocol,
+            ShowOnlyErrors);
 
     public void Reset()
     {
@@ -39,5 +40,31 @@ public sealed partial class FlowFilterViewModel : ViewModelBase
         DestinationPort = null;
         Protocol = null;
         ShowOnlyErrors = false;
+    }
+}
+
+internal readonly record struct FlowFilterCriteria(
+    string? SourceNamespace,
+    string? DestinationNamespace,
+    string? SourcePod,
+    string? DestinationPod,
+    FlowVerdict? Verdict,
+    FlowDirection? Direction,
+    int? DestinationPort,
+    string? Protocol,
+    bool ShowOnlyErrors)
+{
+    public bool Matches(FlowViewModel flow)
+    {
+        if (ShowOnlyErrors && flow.Verdict is not (FlowVerdict.Dropped or FlowVerdict.Error)) return false;
+        if (!string.IsNullOrEmpty(SourceNamespace) && flow.SourceNamespace != SourceNamespace) return false;
+        if (!string.IsNullOrEmpty(DestinationNamespace) && flow.DestinationNamespace != DestinationNamespace) return false;
+        if (!string.IsNullOrEmpty(SourcePod) && !flow.SourcePod.Contains(SourcePod, StringComparison.OrdinalIgnoreCase)) return false;
+        if (!string.IsNullOrEmpty(DestinationPod) && !flow.DestinationPod.Contains(DestinationPod, StringComparison.OrdinalIgnoreCase)) return false;
+        if (Verdict.HasValue && flow.Verdict != Verdict) return false;
+        if (Direction.HasValue && flow.Direction != Direction) return false;
+        if (DestinationPort.HasValue && flow.DestinationPort != DestinationPort) return false;
+        if (!string.IsNullOrEmpty(Protocol) && !flow.Protocol.Contains(Protocol, StringComparison.OrdinalIgnoreCase)) return false;
+        return true;
     }
 }

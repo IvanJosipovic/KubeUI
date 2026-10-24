@@ -3010,8 +3010,8 @@
   <data name="FlowListView_ColumnDestination" xml:space="preserve"><value>Destination</value></data>
   <data name="FlowListView_ColumnProtocol" xml:space="preserve"><value>Protocol</value></data>
   <data name="FlowListView_ColumnPort" xml:space="preserve"><value>Port</value></data>
-  <data name="FlowListView_ColumnBytes" xml:space="preserve"><value>Bytes</value></data>
   <data name="FlowListView_ColumnLatency" xml:space="preserve"><value>Latency</value></data>
+  <data name="FlowListView_ButtonClear" xml:space="preserve"><value>Clear</value></data>
   <data name="FlowListView_ColumnPolicy" xml:space="preserve"><value>Policy</value></data>
   <data name="FlowListView_NoPolicy" xml:space="preserve"><value>—</value></data>
   <data name="FlowVerdict_Unknown" xml:space="preserve"><value>Unknown</value></data>
@@ -3026,11 +3026,23 @@
   <data name="FlowDirection_Lateral" xml:space="preserve"><value>Lateral</value></data>
   <data name="ServiceMapView_Title" xml:space="preserve"><value>Service Map</value></data>
   <data name="ServiceMapView_AggregateByNamespace" xml:space="preserve"><value>Aggregate by Namespace</value></data>
-  <data name="ServiceMapView_ShowDeniedOnly" xml:space="preserve"><value>Show Denied Only</value></data>
-  <data name="ServiceMapView_ResetLayout" xml:space="preserve"><value>Reset Layout</value></data>
+  <data name="ServiceMapView_ShowErrorsOnly" xml:space="preserve"><value>Show Errors Only</value></data>
   <data name="ServiceMapView_TimeWindowMinutes" xml:space="preserve"><value>min</value></data>
   <data name="ServiceMapView_Nodes" xml:space="preserve"><value>Nodes</value></data>
   <data name="ServiceMapView_Edges" xml:space="preserve"><value>Edges</value></data>
+  <data name="ServiceMapView_GraphCountsFormat" xml:space="preserve"><value>Nodes: {0}  Edges: {1}</value></data>
+  <data name="ServiceMapView_NodeDetails" xml:space="preserve"><value>Inspect node</value></data>
+  <data name="ServiceMapView_ShowFlowsForNode" xml:space="preserve"><value>Show node flows</value></data>
+  <data name="ServiceMapView_SelectedNodeFlows" xml:space="preserve"><value>Flows for selected node</value></data>
+  <data name="ServiceMapView_NoFlows" xml:space="preserve"><value>No flows in the selected time window.</value></data>
+  <data name="ServiceMapView_StatusConnecting" xml:space="preserve"><value>Connecting</value></data>
+  <data name="ServiceMapView_StatusConnected" xml:space="preserve"><value>Connected</value></data>
+  <data name="ServiceMapView_StatusDisconnected" xml:space="preserve"><value>Disconnected</value></data>
+  <data name="ServiceMapView_StatusCiliumNotDetected" xml:space="preserve"><value>Cilium not detected</value></data>
+  <data name="ServiceMapView_StatusError" xml:space="preserve"><value>Hubble connection failed</value></data>
+  <data name="ServiceMapView_StatusErrorFormat" xml:space="preserve"><value>Hubble connection failed: {0}</value></data>
+  <data name="ServiceMapGraphControl_External" xml:space="preserve"><value>External</value></data>
+  <data name="ServiceMapGraphControl_FlowCountsFormat" xml:space="preserve"><value>In {0}  Out {1}  Denied {2}</value></data>
   <data name="Hubble_GroupName" xml:space="preserve"><value>Hubble</value></data>
   <data name="Hubble_Flows_Title" xml:space="preserve"><value>Flows</value></data>
   <data name="Hubble_ServiceMap_Title" xml:space="preserve"><value>Service Map</value></data>

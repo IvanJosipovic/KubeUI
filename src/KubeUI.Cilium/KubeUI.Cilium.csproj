@@ -13,6 +13,7 @@
     <Using Include="Microsoft.Extensions.Logging" />
     <Using Include="System.Collections" />
     <Using Include="System.Collections.ObjectModel" />
+    <Using Include="System.Linq" />
     <Using Include="System.Reactive.Linq" />
   </ItemGroup>
 

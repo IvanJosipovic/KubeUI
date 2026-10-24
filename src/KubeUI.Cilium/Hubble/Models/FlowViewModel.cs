@@ -24,6 +24,8 @@ public enum FlowDirection
 
 public sealed partial class FlowViewModel : ObservableObject
 {
+    private readonly string _fallbackCacheIdentity = Guid.NewGuid().ToString("N");
+
     public FlowViewModel() { }
 
     public FlowViewModel(Pb.Flow flow)
@@ -60,7 +62,6 @@ public sealed partial class FlowViewModel : ObservableObject
     [ObservableProperty] public partial string Protocol { get; set; } = string.Empty;
     [ObservableProperty] public partial int DestinationPort { get; set; }
     [ObservableProperty] public partial int SourcePort { get; set; }
-    [ObservableProperty] public partial long Bytes { get; set; }
     [ObservableProperty] public partial TimeSpan? Latency { get; set; }
     [ObservableProperty] public partial bool IsReply { get; set; }
 
@@ -79,15 +80,17 @@ public sealed partial class FlowViewModel : ObservableObject
     [ObservableProperty] public partial Pb.L7FlowType L7Type { get; set; }
 
     // Computed
-    public string BytesHumanReadable => FormatBytes(Bytes);
-    public string LatencyHumanReadable => Latency?.TotalMilliseconds.ToString("F1") + " ms" ?? "\u2014";
+    public string LatencyHumanReadable => Latency is { } latency
+        ? $"{latency.TotalMilliseconds:F1} ms"
+        : "\u2014";
 
     public FlowEndpoint Source => new()
     {
         Namespace = SourceNamespace,
         Pod = SourcePod,
         Workload = SourceWorkload,
-        Identity = SourceIdentity
+        Identity = SourceIdentity,
+        Ip = SourceIp
     };
 
     public FlowEndpoint Destination => new()
@@ -95,10 +98,11 @@ public sealed partial class FlowViewModel : ObservableObject
         Namespace = DestinationNamespace,
         Pod = DestinationPod,
         Workload = DestinationWorkload,
-        Identity = DestinationIdentity
+        Identity = DestinationIdentity,
+        Ip = DestinationIp
     };
 
-    public FlowCacheKey CacheKey => new(SourceNamespace, SourcePod, DestinationNamespace, DestinationPod, DestinationPort, Protocol);
+    public FlowCacheKey CacheKey => new(string.IsNullOrWhiteSpace(Uuid) ? _fallbackCacheIdentity : Uuid);
 
     public void UpdateFrom(Pb.Flow flow)
     {
@@ -171,9 +175,10 @@ public sealed partial class FlowViewModel : ObservableObject
             }
         }
 
-        Bytes = 0; // Not directly available in flow, would need to calculate from layers
-        Latency = null; // Not directly in flow
-        
+        Latency = flow.L7 is { LatencyNs: > 0 } l7
+            ? TimeSpan.FromTicks((long)Math.Min(l7.LatencyNs / 100, (ulong)TimeSpan.MaxValue.Ticks))
+            : null;
+
         IsReply = flow.IsReply ?? false;
 
         if (flow.EgressDeniedBy.Count > 0)
@@ -217,25 +222,12 @@ public sealed partial class FlowViewModel : ObservableObject
         }
     }
 
-    private static string FormatBytes(long bytes) => bytes switch
-    {
-        < 1024 => $"{bytes} B",
-        < 1024 * 1024 => $"{bytes / 1024.0:F1} KB",
-        < 1024 * 1024 * 1024 => $"{bytes / (1024.0 * 1024):F1} MB",
-        _ => $"{bytes / (1024.0 * 1024 * 1024):F1} GB"
-    };
 }
 
-public readonly record struct FlowCacheKey(
-    string SourceNamespace,
-    string SourcePod,
-    string DestinationNamespace,
-    string DestinationPod,
-    int DestinationPort,
-    string Protocol)
+public readonly record struct FlowCacheKey(string EventId)
 {
     public static FlowCacheKey From(FlowViewModel flow)
-        => new(flow.SourceNamespace, flow.SourcePod, flow.DestinationNamespace, flow.DestinationPod, flow.DestinationPort, flow.Protocol);
+        => flow.CacheKey;
 }
 
 public sealed class FlowEndpoint
@@ -244,6 +236,7 @@ public sealed class FlowEndpoint
     public string Pod { get; init; } = string.Empty;
     public string? Workload { get; init; }
     public uint? Identity { get; init; }
+    public string Ip { get; init; } = string.Empty;
 }
 
 public sealed class ServiceMapGraph
@@ -260,8 +253,8 @@ public sealed class ServiceMapNode
     public string Name { get; init; } = string.Empty;
     public string Namespace { get; init; } = string.Empty;
     public string? WorkloadType { get; init; }
-    public long IngressBytes { get; set; }
-    public long EgressBytes { get; set; }
+    public int IngressFlowCount { get; set; }
+    public int EgressFlowCount { get; set; }
     public int DeniedCount { get; set; }
     public int AllowedCount { get; set; }
 }
@@ -270,7 +263,6 @@ public sealed class ServiceMapEdge
 {
     public string SourceId { get; init; } = string.Empty;
     public string TargetId { get; init; } = string.Empty;
-    public long Bytes { get; set; }
     public int FlowCount { get; set; }
     public int DeniedCount { get; set; }
     public FlowVerdict DominantVerdict { get; set; }
