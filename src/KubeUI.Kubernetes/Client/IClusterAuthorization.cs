@@ -7,6 +7,12 @@ namespace KubeUI.Kubernetes;
 /// <summary>Provides cached and live Kubernetes authorization checks.</summary>
 public interface IClusterAuthorization
 {
+    /// <summary>Raised after the full authorization cache has been discarded.</summary>
+    event Action? PermissionsInvalidated;
+    /// <summary>Discards cached authorization decisions and rule sets.</summary>
+    void InvalidatePermissions();
+    /// <summary>Discards namespace-scoped authorization decisions and rule sets while retaining cluster-wide decisions.</summary>
+    void InvalidateNamespacePermissions();
     /// <summary>Returns cached permission for a resource and optional namespace/subresource.</summary>
     bool CanI(GroupApiVersionKind kind, Verb verb, string? @namespace = null, string? subresource = null);
     /// <summary>Returns whether permission exists in any namespace, or cluster-wide when <paramref name="namespaced"/> is false.</summary>

@@ -148,6 +148,28 @@ public sealed class TestClusterGenerator
             AuthenticatedUser = config.AuthenticatedUser,
         };
 
+        RegisterKubernetesModels(api, _services.GetRequiredService<KubernetesModelCatalog>());
+        api.Register<V1ConfigMap>();
+        api.Register<V1Pod>();
+        api.Register<V1CustomResourceDefinition>();
+        api.Register<V1Service>();
+        api.Register<V1ServiceAccount>();
+        api.Register<V1PersistentVolume>();
+        api.Register<V1PersistentVolumeClaim>();
+        api.Register<V1StorageClass>();
+        api.Register<V1Deployment>();
+        api.Register<V1ReplicaSet>();
+        api.Register<V1StatefulSet>();
+        api.Register<V1DaemonSet>();
+        api.Register<V1Job>();
+        api.Register<V1CronJob>();
+        api.Register<V1EndpointSlice>();
+        api.Register<Corev1Event>();
+        api.Register<V1Role>();
+        api.Register<V1RoleBinding>();
+        api.Register<V1ClusterRole>();
+        api.Register<V1ClusterRoleBinding>();
+
         foreach (IKubernetesObject resource in config.InitialResources)
         {
             api.Add(resource);
@@ -165,11 +187,15 @@ public sealed class TestClusterGenerator
             masterUrl: "http://fake-kubernetes");
         var handlers = CreateHttpHandlers(config, out _);
         var client = CreateClient(clientConfig, api, handlers);
+        var adminClient = CreateClient(
+            clientConfig,
+            api.CreateClient("system:admin", useRoleBasedAuthorization: false),
+            []);
         var cluster = await CreateTestClusterAsync(client, kubeConfig, clientConfig, config, cancellationToken, _ =>
         {
             api.Shutdown();
             return Task.CompletedTask;
-        }, api).ConfigureAwait(false);
+        }, api, adminClient: adminClient).ConfigureAwait(false);
         cluster.Cluster.KubernetesClientFactory = configuration =>
         {
             var reconnectHandlers = CreateHttpHandlers(config, out _);
@@ -177,6 +203,45 @@ public sealed class TestClusterGenerator
         };
         return cluster;
     }
+
+    private static void RegisterKubernetesModels(FakeKubernetesHttpApi api, KubernetesModelCatalog catalog)
+    {
+        foreach (var yamlKey in catalog.GetYamlTypeMap().Keys)
+        {
+            var segments = yamlKey.Split('/');
+            var group = segments.Length == 3 ? segments[0] : string.Empty;
+            var version = segments[^2];
+            var kind = segments[^1];
+            if (IsBuiltInApiGroup(group)
+                && catalog.TryGetResourceKind(group, version, kind, out var resourceKind))
+            {
+                api.Register(resourceKind);
+            }
+        }
+    }
+
+    private static bool IsBuiltInApiGroup(string group)
+        => group is ""
+            or "admissionregistration.k8s.io"
+            or "apiextensions.k8s.io"
+            or "apiregistration.k8s.io"
+            or "apps"
+            or "authentication.k8s.io"
+            or "authorization.k8s.io"
+            or "autoscaling"
+            or "batch"
+            or "certificates.k8s.io"
+            or "coordination.k8s.io"
+            or "discovery.k8s.io"
+            or "events.k8s.io"
+            or "flowcontrol.apiserver.k8s.io"
+            or "networking.k8s.io"
+            or "node.k8s.io"
+            or "policy"
+            or "rbac.authorization.k8s.io"
+            or "resource.k8s.io"
+            or "scheduling.k8s.io"
+            or "storage.k8s.io";
 
     [System.Diagnostics.CodeAnalysis.SuppressMessage(
         "Reliability",
@@ -197,12 +262,12 @@ public sealed class TestClusterGenerator
             masterUrl: null);
         clientConfig.FirstMessageHandlerSetup = config.FirstMessageHandlerSetup;
         var handlers = CreateHttpHandlers(config, out _);
-        var client = CreateClient(clientConfig, terminalHandler: null, handlers);
+        var adminClient = CreateClient(clientConfig, terminalHandler: null, handlers);
+        var client = adminClient;
         try
         {
-            await ApplyResourcesAsync(client, config.InitialResources, cancellationToken).ConfigureAwait(false);
-            await ApplyInitialYamlAsync(client, config.InitialYaml, _services.GetRequiredService<KubernetesModelCatalog>().GetYamlTypeMap(), cancellationToken).ConfigureAwait(false);
-            client.Dispose();
+            await ApplyResourcesAsync(adminClient, config.InitialResources, cancellationToken).ConfigureAwait(false);
+            await ApplyInitialYamlAsync(adminClient, config.InitialYaml, _services.GetRequiredService<KubernetesModelCatalog>().GetYamlTypeMap(), cancellationToken).ConfigureAwait(false);
             ApplyImpersonation(kubeConfig, config.AuthenticatedUser);
             clientConfig = KubernetesClientConfiguration.BuildConfigFromConfigObject(kubeConfig, config.Name, masterUrl: null);
             clientConfig.FirstMessageHandlerSetup = config.FirstMessageHandlerSetup;
@@ -217,11 +282,17 @@ public sealed class TestClusterGenerator
                 clientFactory: configuration => CreateClient(
                     configuration,
                     terminalHandler: null,
-                    CreateHttpHandlers(config, out _))).ConfigureAwait(false);
+                    CreateHttpHandlers(config, out _)),
+                adminClient: adminClient).ConfigureAwait(false);
         }
         catch
         {
-            client.Dispose();
+            if (!ReferenceEquals(client, adminClient))
+            {
+                client.Dispose();
+            }
+
+            adminClient.Dispose();
             throw;
         }
     }
@@ -247,15 +318,16 @@ public sealed class TestClusterGenerator
                 config,
                 out _,
                 includeConfiguredHandlers: false);
-            var client = CreateClient(clientConfig, terminalHandler: null, handlers);
+            var adminClient = CreateClient(clientConfig, terminalHandler: null, handlers);
+            var client = adminClient;
             try
             {
-                await ApplyResourcesAsync(client, config.InitialResources, cancellationToken).ConfigureAwait(false);
-                await ApplyInitialYamlAsync(client, config.InitialYaml, _services.GetRequiredService<KubernetesModelCatalog>().GetYamlTypeMap(), cancellationToken).ConfigureAwait(false);
+                await ApplyResourcesAsync(adminClient, config.InitialResources, cancellationToken).ConfigureAwait(false);
+                await ApplyInitialYamlAsync(adminClient, config.InitialYaml, _services.GetRequiredService<KubernetesModelCatalog>().GetYamlTypeMap(), cancellationToken).ConfigureAwait(false);
                 if (!string.Equals(config.AuthenticatedUser, "system:admin", StringComparison.Ordinal))
                 {
                     var (namespaceName, serviceAccountName) = ParseServiceAccount(config.AuthenticatedUser);
-                    var tokenResponse = await client.CoreV1.CreateNamespacedServiceAccountTokenAsync(
+                    var tokenResponse = await adminClient.CoreV1.CreateNamespacedServiceAccountTokenAsync(
                         new Authenticationv1TokenRequest
                         {
                             ApiVersion = "authentication.k8s.io/v1",
@@ -272,7 +344,6 @@ public sealed class TestClusterGenerator
                         ?? throw new InvalidOperationException("Kind returned an empty service-account token."));
                 }
 
-                client.Dispose();
                 clientConfig = KubernetesClientConfiguration.BuildConfigFromConfigObject(kubeConfig, null, null);
                 clientConfig.FirstMessageHandlerSetup = config.FirstMessageHandlerSetup;
                 client = CreateClient(
@@ -290,11 +361,17 @@ public sealed class TestClusterGenerator
                     clientFactory: configuration => CreateClient(
                         configuration,
                         terminalHandler: null,
-                        CreateHttpHandlers(config, out _, includeHandlerFactory: false))).ConfigureAwait(false);
+                        CreateHttpHandlers(config, out _, includeHandlerFactory: false)),
+                    adminClient: adminClient).ConfigureAwait(false);
             }
             catch
             {
-                client.Dispose();
+                if (!ReferenceEquals(client, adminClient))
+                {
+                    client.Dispose();
+                }
+
+                adminClient.Dispose();
                 throw;
             }
         }
@@ -313,7 +390,8 @@ public sealed class TestClusterGenerator
         CancellationToken cancellationToken,
         Func<CancellationToken, Task>? cleanup = null,
         FakeKubernetesHttpApi? fakeApi = null,
-        Func<KubernetesClientConfiguration, IKubernetes>? clientFactory = null)
+        Func<KubernetesClientConfiguration, IKubernetes>? clientFactory = null,
+        IKubernetes? adminClient = null)
     {
         _ = config;
         _ = cancellationToken;
@@ -327,7 +405,7 @@ public sealed class TestClusterGenerator
         if (cleanup is not null)
             finalCleanup = cleanup;
 
-        return new TestCluster(client, kubeConfig, clientConfiguration, cluster, _services, finalCleanup, fakeApi);
+        return new TestCluster(client, kubeConfig, clientConfiguration, cluster, _services, finalCleanup, fakeApi, adminClient);
     }
 
     private static IKubernetes CreateClient(

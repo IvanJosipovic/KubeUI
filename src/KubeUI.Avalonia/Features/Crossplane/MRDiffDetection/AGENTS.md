@@ -1,6 +1,7 @@
 # MR Diff Detection
 
 - The feature is available only when Crossplane Provider resources are present in the connected cluster.
+- Keep MR Diff Detection as a Crossplane section feature; expose it only when `pkg.crossplane.io/Provider` has list/watch access.
 - Provider selection owns the pod-log monitor lifecycle; changing providers or disposing the view must cancel and await the previous monitor.
 - Read retained logs from all matching provider pods and continue following current container logs. Detect container restarts for the same pod and resume monitoring without clearing accumulated rows.
 - Parse only `Diff detected` records and expose structured rows through `DynamicTableView`; keep log parsing details out of the view. Recover only complete attributes from truncated log lines and report that the displayed data is incomplete.

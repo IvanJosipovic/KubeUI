@@ -95,7 +95,7 @@ public sealed class NavigationViewTests
         var workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         using var navigation = services.GetRequiredService<NavigationViewModel>();
         var clusterNode = new ClusterNavigationNode(workspace) { IsExpanded = true };
-        var podsLink = new ResourceNavigationLink
+        var podsLink = new NavigationLink
         {
             Cluster = workspace,
             Id = "test-pods",
@@ -155,9 +155,10 @@ public sealed class NavigationViewTests
         ReferenceEquals(tree.SelectedItem, section).ShouldBeTrue();
 
         ClickNavigationItem(window, treeItem, section.Name);
-        sectionSelections.ShouldBe(2);
+        sectionSelections.ShouldBe(1);
         section.IsExpanded.ShouldBeFalse();
         treeItem.IsExpanded.ShouldBeFalse();
+        ReferenceEquals(tree.SelectedItem, section).ShouldBeTrue();
 
         var expander = treeItem.GetVisualDescendants().OfType<ToggleButton>()
             .First(toggle => ReferenceEquals(toggle.DataContext, section));
@@ -359,7 +360,7 @@ public sealed class NavigationViewTests
         var workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         using var navigation = services.GetRequiredService<NavigationViewModel>();
         var clusterNode = navigation.Clusters.Single(node => node.Cluster == workspace);
-        var podsLink = new ResourceNavigationLink
+        var podsLink = new NavigationLink
         {
             Id = "test-pods",
             Name = "Pods",
@@ -422,7 +423,7 @@ public sealed class NavigationViewTests
 
         var clusterNode = navigation.Clusters.Single(node => ReferenceEquals(node.Cluster, workspace));
         clusterNode.IsExpanded = true;
-        var podsLink = new ResourceNavigationLink
+        var podsLink = new NavigationLink
         {
             Id = "test-pods",
             Name = "Pods",

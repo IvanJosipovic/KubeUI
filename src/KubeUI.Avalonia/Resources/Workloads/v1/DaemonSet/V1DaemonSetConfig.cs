@@ -6,18 +6,18 @@ using KubeUI.Kubernetes;
 
 namespace KubeUI.Avalonia.Resources.Workloads.v1.DaemonSet;
 
-public sealed partial class V1DaemonSetConfig : ResourceConfigBase<V1DaemonSet>
+public sealed partial class V1DaemonSetConfig : ResourceConfig<V1DaemonSet>
 {
     public V1DaemonSetConfig(IServiceProvider serviceProvider)
         : base(serviceProvider)
     {
     }
     public override bool IsNamespaced => true;
-    public override string Category => Assets.Resources.ResourceConfig_Category_Workloads!;
+    public override NavigationPlacement Navigation => NavigationPlacement.InSection(NavigationSections.WorkloadsId);
 
     public override int Order => 2;
 
-    public override IList<IResourceListColumn> Columns()
+    protected override IList<IResourceListColumn> CreateDefaultColumns()
     {
         return [
             NameColumn(SortDirection.Ascending),
