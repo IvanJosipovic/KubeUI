@@ -1,10 +1,13 @@
+using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
+using AvaloniaEdit;
 using Dock.Model.Controls;
 using Dock.Model.Core;
 using Dock.Model.Mvvm.Controls;
 using Helm.NET;
 using k8s.Models;
 using KubeUI.Avalonia.Features.Helm;
+using KubeUI.Avalonia.Features.Helm.Releases;
 using KubeUI.Avalonia.Features.Resources.Visualization;
 using KubeUI.Avalonia.Infrastructure.Docking;
 using KubeUI.Kubernetes;
@@ -160,6 +163,163 @@ public sealed class HelmReleasePreviewServiceTests
             It.IsAny<CancellationToken>()), Times.Once);
         factory.Verify(item => item.InsertDockable(
             It.IsAny<IDocumentDock>(), It.IsAny<VisualizationViewModel>(), It.IsAny<int>()), Times.Once);
+    }
+
+    [AvaloniaFact]
+    public async Task New_release_preview_can_be_reopened_after_close()
+    {
+        const string chart = "oci://docker.io/envoyproxy/gateway-helm";
+        const string manifest = """
+            apiVersion: v1
+            kind: ConfigMap
+            metadata:
+              name: preview-config
+            ---
+            # Helm charts can emit comment-only documents when a template is disabled.
+            ---
+            apiVersion: v1
+            kind: ServiceAccount
+            metadata:
+              name: preview-account
+            """;
+        using var cluster = await Application.Current.CreateClusterAsync(config => config.Type = KubernetesBackend.Fake);
+        VisualizationViewModel? openedVisualization = null;
+        var helm = new Mock<IHelmService>();
+        helm.Setup(service => service.GetChartValuesAsync(
+                It.IsAny<HelmConnection>(), chart, null, It.IsAny<CancellationToken>()))
+            .ReturnsAsync("replicas: 2\n");
+        helm.Setup(service => service.TemplateAsync(
+                It.IsAny<HelmConnection>(), "gateway", chart,
+                It.IsAny<IReadOnlyDictionary<string, object?>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(manifest);
+        var factory = CreateFactory(dockable => openedVisualization = dockable as VisualizationViewModel);
+        var previewService = new HelmReleasePreviewService(helm.Object, static () => new VisualizationViewModel(), factory.Object);
+        var editor = new HelmReleaseEditorViewModel(
+            helm.Object,
+            Mock.Of<IFactory>(),
+            Mock.Of<IHelmListNotifier>(),
+            previewService,
+            Mock.Of<HanumanInstitute.MvvmDialogs.IDialogService>());
+        editor.Initialize(cluster, new HelmConnection("config", "context", "apps"), null);
+        await editor.InitializationTask.WaitAsync(TestContext.Current.CancellationToken);
+        editor.ReleaseName = "gateway";
+        editor.IsOciSource = true;
+        editor.Chart = chart;
+        await TestWait.UntilAsync(
+            () => editor.ValuesYaml.Contains("replicas: 2", StringComparison.Ordinal),
+            TimeSpan.FromSeconds(5),
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        for (var attempt = 0; attempt < 2; attempt++)
+        {
+            await editor.PreviewCommand.ExecuteAsync(null).WaitAsync(TestContext.Current.CancellationToken);
+            var visualization = openedVisualization.ShouldNotBeNull();
+            using (visualization)
+            {
+                var view = new VisualizationView { DataContext = visualization };
+                using var window = Application.Current.CreateTestWindow(content: view);
+                try
+                {
+                    window.Show();
+                    await TestWait.UntilAsync(
+                        () => visualization.Graph?.Resources.Count > 1 || visualization.Error is not null,
+                        TimeSpan.FromSeconds(10),
+                        cancellationToken: TestContext.Current.CancellationToken);
+                    var graphControl = global::Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(view)
+                        .OfType<ResourceGraphControl>().Single();
+                    await TestWait.UntilAsync(
+                        () => graphControl.IsViewportStable || visualization.Error is not null,
+                        TimeSpan.FromSeconds(10),
+                        cancellationToken: TestContext.Current.CancellationToken);
+                    visualization.Error.ShouldBeNull();
+                }
+                finally
+                {
+                    window.Close();
+                }
+            }
+
+            openedVisualization = null;
+        }
+
+        helm.Verify(service => service.TemplateAsync(
+            It.IsAny<HelmConnection>(), "gateway", chart,
+            It.IsAny<IReadOnlyDictionary<string, object?>>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
+    }
+
+    [AvaloniaFact]
+    public async Task Repository_install_preview_preserves_edited_values_when_returning_to_editor()
+    {
+        using var cluster = await Application.Current.CreateClusterAsync(config => config.Type = KubernetesBackend.Fake);
+        VisualizationViewModel? openedVisualization = null;
+        var helm = new Mock<IHelmService>();
+        helm.Setup(service => service.ListRepositoriesAsync(It.IsAny<HelmConnection>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync([new("stable", "https://stable.test")]);
+        helm.Setup(service => service.ListChartsAsync(
+                It.IsAny<HelmConnection>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync([new("stable/web", "web", "1.0")]);
+        helm.Setup(service => service.GetChartValuesAsync(
+                It.IsAny<HelmConnection>(), "stable/web", "1.0", It.IsAny<CancellationToken>()))
+            .ReturnsAsync("replicas: 2\nserver:\n  enabled: true\n");
+        helm.Setup(service => service.TemplateVersionAsync(
+                It.IsAny<HelmConnection>(), "web", "stable/web", "1.0",
+                It.Is<IReadOnlyDictionary<string, object?>>(values => Convert.ToInt64(values["replicas"]) == 4),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync((HelmConnection _, string _, string _, string _, IReadOnlyDictionary<string, object?> values, CancellationToken _) =>
+                $"apiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: preview\ndata:\n  replicas: \"{values["replicas"]}\"\n");
+        var factory = CreateFactory(dockable => openedVisualization = dockable as VisualizationViewModel);
+        var previewService = new HelmReleasePreviewService(helm.Object, static () => new VisualizationViewModel(), factory.Object);
+        var editor = new HelmReleaseEditorViewModel(
+            helm.Object,
+            Mock.Of<IFactory>(),
+            Mock.Of<IHelmListNotifier>(),
+            previewService,
+            Mock.Of<HanumanInstitute.MvvmDialogs.IDialogService>());
+        editor.Initialize(cluster, new HelmConnection("config", "context", "apps"), null);
+        await editor.InitializationTask.WaitAsync(TestContext.Current.CancellationToken);
+        editor.ReleaseName = "web";
+        editor.SelectedRepository = "stable";
+        editor.SelectedChart = "web";
+        editor.SelectedVersion = "1.0";
+        await TestWait.UntilAsync(
+            () => editor.ValuesYaml.Contains("replicas: 2", StringComparison.Ordinal),
+            TimeSpan.FromSeconds(5),
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        var view = new HelmReleaseEditorView { DataContext = editor };
+        using (var window = Application.Current.CreateTestWindow(content: view))
+        {
+            window.Show();
+            await TestApplicationExtensions.WaitForUiAsync();
+            var textEditor = global::Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(view)
+                .OfType<TextEditor>().Single();
+            textEditor.Text = "replicas: 4\nserver:\n  enabled: false\n";
+            await TestApplicationExtensions.WaitForUiAsync();
+            await editor.PreviewCommand.ExecuteAsync(null).WaitAsync(TestContext.Current.CancellationToken);
+            editor.ValuesYaml.ShouldBe("replicas: 4\nserver:\n  enabled: false\n");
+            var visualization = openedVisualization.ShouldNotBeNull();
+            await TestWait.UntilAsync(
+                () => visualization.Graph?.Resources.Count == 1,
+                TimeSpan.FromSeconds(5),
+                cancellationToken: TestContext.Current.CancellationToken);
+            visualization.Graph!.Resources.OfType<V1ConfigMap>().Single().Data!["replicas"].ShouldBe("4");
+            window.Close();
+        }
+
+        var returnedView = new HelmReleaseEditorView { DataContext = editor };
+        using var returnedWindow = Application.Current.CreateTestWindow(content: returnedView);
+        try
+        {
+            returnedWindow.Show();
+            await TestApplicationExtensions.WaitForUiAsync();
+            global::Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(returnedView)
+                .OfType<TextEditor>().Single().Text.ShouldBe("replicas: 4\nserver:\n  enabled: false\n");
+        }
+        finally
+        {
+            returnedWindow.Close();
+            openedVisualization?.Dispose();
+        }
     }
 
     [AvaloniaFact]

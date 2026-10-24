@@ -2977,10 +2977,14 @@
   <data name="HelmReleaseEditorView_InstallTitle" xml:space="preserve"><value>Install Helm release</value></data>
   <data name="HelmReleaseEditorView_UpgradeTitle" xml:space="preserve"><value>Upgrade Helm release</value></data>
   <data name="HelmReleaseEditorView_Name" xml:space="preserve"><value>Release name</value></data>
+  <data name="HelmReleaseEditorView_ReleaseNameRequired" xml:space="preserve"><value>Release name is required.</value></data>
   <data name="HelmReleaseEditorView_Chart" xml:space="preserve"><value>Chart reference</value></data>
+  <data name="HelmReleaseEditorView_ChartRequired" xml:space="preserve"><value>Choose a chart or enter a chart reference.</value></data>
   <data name="HelmReleaseEditorView_Namespace" xml:space="preserve"><value>Namespace</value></data>
+  <data name="HelmReleaseEditorView_NamespaceRequired" xml:space="preserve"><value>Namespace is required.</value></data>
   <data name="HelmReleaseEditorView_ValuesYaml" xml:space="preserve"><value>Values (YAML)</value></data>
   <data name="HelmReleaseEditorView_ChartVersion" xml:space="preserve"><value>Chart version</value></data>
+  <data name="HelmReleaseEditorView_VersionRequired" xml:space="preserve"><value>Select a chart version.</value></data>
   <data name="HelmReleaseEditorView_Repository" xml:space="preserve"><value>Repository</value></data>
   <data name="HelmReleaseEditorView_ChartSource" xml:space="preserve"><value>Chart source</value></data>
   <data name="HelmReleaseEditorView_RepositorySource" xml:space="preserve"><value>Repository</value></data>
@@ -2991,7 +2995,6 @@
   <data name="HelmReleaseEditorView_ChooseChartReference" xml:space="preserve"><value>No unique repository chart reference found. Enter the chart reference (repository/chart or OCI URL) before upgrading or previewing.</value></data>
   <data name="HelmReleaseEditorView_Timeout" xml:space="preserve"><value>Timeout seconds (0 = no timeout)</value></data>
   <data name="HelmReleaseEditorView_CreateNamespace" xml:space="preserve"><value>Create namespace if missing</value></data>
-  <data name="HelmReleaseEditorView_Wait" xml:space="preserve"><value>Wait for resources</value></data>
   <data name="HelmReleaseEditorView_InstallIfMissing" xml:space="preserve"><value>Install if the release does not exist</value></data>
   <data name="HelmReleaseEditorView_Preview" xml:space="preserve"><value>Preview in visualization</value></data>
   <data name="HelmReleaseEditorView_InstallUpgrade" xml:space="preserve"><value>Install / Upgrade</value></data>

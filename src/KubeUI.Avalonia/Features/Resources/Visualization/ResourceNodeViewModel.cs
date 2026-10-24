@@ -22,6 +22,10 @@ public sealed partial class ResourceNodeViewModel : ViewModelBase
     [ObservableProperty]
     public partial IImage Icon { get; set; }
 
+    /// <summary>Whether this node belongs to a read-only rendered preview.</summary>
+    [ObservableProperty]
+    public partial bool IsPreview { get; set; }
+
     [ObservableProperty]
     internal partial bool IsUpdated { get; set; }
 
@@ -32,6 +36,9 @@ public sealed partial class ResourceNodeViewModel : ViewModelBase
         _resourceVersion = value.Metadata?.ResourceVersion;
         OnPropertyChanged(nameof(IsNotReady));
     }
+
+    partial void OnIsPreviewChanged(bool value)
+        => OnPropertyChanged(nameof(ContextMenuItems));
 
     internal bool HasResourceChanged(IKubernetesObject<V1ObjectMeta> resource)
         => !ReferenceEquals(Resource, resource)
@@ -70,9 +77,20 @@ public sealed partial class ResourceNodeViewModel : ViewModelBase
             }
 
             var config = Cluster.GetResourceConfig(Resource);
-            return config == null
-                ? []
-                : ResourceActionPresenter.Compose(config, new[] { Resource });
+            if (config is null)
+            {
+                return [];
+            }
+
+            var selectedItems = new[] { Resource };
+            if (IsPreview)
+            {
+                return config.GetDefaultMenuItems(selectedItems)
+                    .Where(item => item.Title == Assets.Resources.ResourceConfigBase_MenuItem_View
+                        || item.Title == Assets.Resources.ResourceConfigBase_MenuItem_ViewYaml);
+            }
+
+            return ResourceActionPresenter.Compose(config, selectedItems);
         }
     }
 }

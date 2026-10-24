@@ -117,7 +117,6 @@ public sealed partial class ResourceYamlView : ViewBase<ResourceYamlViewModel>
     {
         var editor = new TextEditor()
             .Row(2)
-            .Background(new DynamicResourceExtension("SystemAltHighColor"))
             .FontFamily(new DynamicResourceExtension(Typography.CodeFontFamilyResourceKey))
             .FontSize(new DynamicResourceExtension(Typography.CodeFontSizeResourceKey))
             .FontWeight(FontWeight.Normal)

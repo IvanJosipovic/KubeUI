@@ -353,7 +353,7 @@ public sealed class HelmReleasesViewModelTests
             workspace, release.Name, release.Namespace), Times.Once);
         dialogs.Count.ShouldBe(2);
         dialogs[0].Content.ShouldBeOfType<StackPanel>().Children.OfType<NumericUpDown>().ShouldHaveSingleItem();
-        dialogs[0].Content.ShouldBeOfType<StackPanel>().Children.OfType<CheckBox>().ShouldHaveSingleItem();
+        dialogs[0].Content.ShouldBeOfType<StackPanel>().Children.OfType<CheckBox>().ShouldBeEmpty();
         dialogs[1].Content.ShouldBeOfType<StackPanel>().Children.OfType<CheckBox>().ShouldHaveSingleItem();
     }
 

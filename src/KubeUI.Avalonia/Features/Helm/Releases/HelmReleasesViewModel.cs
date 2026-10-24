@@ -268,7 +268,7 @@ public sealed partial class HelmReleasesViewModel : ViewModelBase, IInitializeCl
                 release.Name,
                 dialogViewModel.Revision,
                 cancellationToken,
-                dialogViewModel.WaitForAction);
+                wait: false);
             await Refresh(cancellationToken);
         }
         catch (Exception exception)
@@ -378,9 +378,6 @@ public sealed partial class HelmReleasesViewModel : ViewModelBase, IInitializeCl
                     .Minimum(0)
                     .Maximum(maximumRevision)
                     .Value(viewModel, x => x.Revision, BindingMode.TwoWay),
-                new CheckBox()
-                    .Content(Assets.Resources.HelmReleasesView_Wait)
-                    .IsChecked(viewModel, x => x.WaitForAction, BindingMode.TwoWay),
                 new TextBlock().Text(Assets.Resources.HelmReleasesView_HistoryLabel).FontWeight(FontWeight.Bold),
                 new ScrollViewer()
                     .MaxHeight(200)
