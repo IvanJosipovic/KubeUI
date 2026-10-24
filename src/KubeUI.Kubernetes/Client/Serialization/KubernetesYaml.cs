@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Threading;
 using k8s;
 using k8s.Models;
 using YamlDotNet.Core;
@@ -17,24 +18,23 @@ namespace KubeUI.Kubernetes.Serialization;
 /// </summary>
 public static class KubernetesYaml
 {
-    private static readonly Lock s_deserializerLockObject = new();
-    private static readonly Lock s_serializerLockObject = new();
     private static bool s_useStaticContext;
-
-    private static readonly Lazy<IDeserializer> s_staticStrictDeserializer = new(() =>
-        CreateStaticDeserializerBuilder(strict: true).WithDuplicateKeyChecking().Build());
-    private static readonly Lazy<IDeserializer> s_staticDeserializer = new(() =>
-        CreateStaticDeserializerBuilder(strict: false).IgnoreUnmatchedProperties().Build());
-    private static readonly Lazy<IValueSerializer> s_staticSerializer = new(CreateStaticSerializer);
-
-    private static readonly Lazy<IDeserializer> s_reflectionStrictDeserializer = new(() =>
-        CommonReflectionDeserializerBuilder.WithDuplicateKeyChecking().Build());
-    private static readonly Lazy<IDeserializer> s_reflectionDeserializer = new(() =>
-        CommonReflectionDeserializerBuilder.IgnoreUnmatchedProperties().Build());
-    private static readonly Lazy<IValueSerializer> s_reflectionSerializer = new(CreateReflectionSerializer);
 
     private static readonly KubernetesYamlStaticContext s_staticContext = new KubernetesYamlRuntimeContext();
     private static readonly KubernetesJsonStaticContext s_strictJsonContext = CreateStrictJsonContext();
+
+    // Thread-local pools to avoid lock contention while maintaining thread-safety
+    // YamlDotNet deserializers/serializers are not thread-safe for shared instances
+    private static ThreadLocal<IDeserializer> s_threadLocalStrictDeserializer = new(() =>
+        UseStaticContext
+            ? CreateStaticDeserializerBuilder(strict: true).WithDuplicateKeyChecking().Build()
+            : CommonReflectionDeserializerBuilder.WithDuplicateKeyChecking().Build());
+    private static ThreadLocal<IDeserializer> s_threadLocalDeserializer = new(() =>
+        UseStaticContext
+            ? CreateStaticDeserializerBuilder(strict: false).IgnoreUnmatchedProperties().Build()
+            : CommonReflectionDeserializerBuilder.IgnoreUnmatchedProperties().Build());
+    private static ThreadLocal<IValueSerializer> s_threadLocalSerializer = new(() =>
+        UseStaticContext ? CreateStaticSerializer() : CreateReflectionSerializer());
 
     private static KubernetesJsonStaticContext CreateStrictJsonContext()
     {
@@ -140,29 +140,47 @@ public static class KubernetesYaml
 
     /// <summary>
     /// Selects generated static YAML metadata when <see langword="true"/>; defaults to reflection.
+    /// <para>
+    /// <b>WARNING:</b> This property should be set once at application startup before any YAML operations.
+    /// Changing it at runtime while other threads are performing YAML operations is not thread-safe
+    /// and will result in undefined behavior.
+    /// </para>
     /// </summary>
     public static bool UseStaticContext
     {
         get => Volatile.Read(ref s_useStaticContext);
-        set => Volatile.Write(ref s_useStaticContext, value);
+        set
+        {
+            Volatile.Write(ref s_useStaticContext, value);
+            // Invalidate thread-local caches when the context changes
+            s_threadLocalStrictDeserializer.Dispose();
+            s_threadLocalDeserializer.Dispose();
+            s_threadLocalSerializer.Dispose();
+
+            // Recreate the thread-local instances with the new context
+            s_threadLocalStrictDeserializer = new ThreadLocal<IDeserializer>(() =>
+                UseStaticContext
+                    ? CreateStaticDeserializerBuilder(strict: true).WithDuplicateKeyChecking().Build()
+                    : CommonReflectionDeserializerBuilder.WithDuplicateKeyChecking().Build());
+            s_threadLocalDeserializer = new ThreadLocal<IDeserializer>(() =>
+                UseStaticContext
+                    ? CreateStaticDeserializerBuilder(strict: false).IgnoreUnmatchedProperties().Build()
+                    : CommonReflectionDeserializerBuilder.IgnoreUnmatchedProperties().Build());
+            s_threadLocalSerializer = new ThreadLocal<IValueSerializer>(() =>
+                UseStaticContext ? CreateStaticSerializer() : CreateReflectionSerializer());
+        }
     }
 
-    public static IDeserializer StrictDeserializer => UseStaticContext
-        ? s_staticStrictDeserializer.Value
-        : s_reflectionStrictDeserializer.Value;
+    public static IDeserializer StrictDeserializer => s_threadLocalStrictDeserializer.Value;
 
-    public static IDeserializer Deserializer => UseStaticContext
-        ? s_staticDeserializer.Value
-        : s_reflectionDeserializer.Value;
+    public static IDeserializer Deserializer => s_threadLocalDeserializer.Value;
 
     public static IDeserializer GetDeserializer(bool strict = false)
     {
         return strict ? StrictDeserializer : Deserializer;
     }
 
-    public static IValueSerializer Serializer => UseStaticContext
-        ? s_staticSerializer.Value
-        : s_reflectionSerializer.Value;
+    public static IValueSerializer Serializer => s_threadLocalSerializer.Value;
 
     private static IValueSerializer CreateStaticSerializer() =>
         new StaticSerializerBuilder(s_staticContext)
@@ -807,15 +825,11 @@ public static class KubernetesYaml
         parser.Consume<StreamStart>();
         var ix = 0;
         var results = new List<object>();
+        var deserializer = strict ? s_threadLocalStrictDeserializer.Value : s_threadLocalDeserializer.Value;
         while (parser.Accept<DocumentStart>(out _))
         {
             var objType = types[ix++];
-            object obj;
-            lock (s_deserializerLockObject)
-            {
-                obj = GetDeserializer(strict).Deserialize(parser, objType);
-            }
-
+            var obj = deserializer.Deserialize(parser, objType);
             results.Add(obj);
         }
 
@@ -838,44 +852,34 @@ public static class KubernetesYaml
     public static TValue Deserialize<TValue>(string yaml, bool strict = false)
     {
         using var reader = new StringReader(yaml);
-        lock (s_deserializerLockObject)
-        {
-            return GetDeserializer(strict).Deserialize<TValue>(new MergingParser(new Parser(reader)));
-        }
+        var deserializer = strict ? s_threadLocalStrictDeserializer.Value : s_threadLocalDeserializer.Value;
+        return deserializer.Deserialize<TValue>(new MergingParser(new Parser(reader)));
     }
 
     public static TValue Deserialize<TValue>(Stream yaml, bool strict = false)
     {
         using var reader = new StreamReader(yaml);
-        lock (s_deserializerLockObject)
-        {
-            return GetDeserializer(strict).Deserialize<TValue>(new MergingParser(new Parser(reader)));
-        }
+        var deserializer = strict ? s_threadLocalStrictDeserializer.Value : s_threadLocalDeserializer.Value;
+        return deserializer.Deserialize<TValue>(new MergingParser(new Parser(reader)));
     }
 
     public static object? Deserialize(string yaml, Type type, bool strict = false)
     {
         using var reader = new StringReader(yaml);
-        lock (s_deserializerLockObject)
-        {
-            return GetDeserializer(strict).Deserialize(new MergingParser(new Parser(reader)), type);
-        }
+        var deserializer = strict ? s_threadLocalStrictDeserializer.Value : s_threadLocalDeserializer.Value;
+        return deserializer.Deserialize(new MergingParser(new Parser(reader)), type);
     }
 
     public static object? Deserialize(IParser parser, Type type, bool strict = false)
     {
-        lock (s_deserializerLockObject)
-        {
-            return GetDeserializer(strict).Deserialize(parser, type);
-        }
+        var deserializer = strict ? s_threadLocalStrictDeserializer.Value : s_threadLocalDeserializer.Value;
+        return deserializer.Deserialize(parser, type);
     }
 
     public static object? Deserialize(IParser parser, bool strict = false)
     {
-        lock (s_deserializerLockObject)
-        {
-            return GetDeserializer(strict).Deserialize(parser);
-        }
+        var deserializer = strict ? s_threadLocalStrictDeserializer.Value : s_threadLocalDeserializer.Value;
+        return deserializer.Deserialize(parser);
     }
 
     public static string SerializeAll(IEnumerable<object> values)
@@ -888,6 +892,7 @@ public static class KubernetesYaml
         var stringBuilder = new StringBuilder();
         var writer = new StringWriter(stringBuilder);
         var emitter = new Emitter(writer);
+        var serializer = s_threadLocalSerializer.Value;
 
         emitter.Emit(new StreamStart());
 
@@ -896,10 +901,7 @@ public static class KubernetesYaml
             if (value != null)
             {
                 emitter.Emit(new DocumentStart());
-                lock (s_serializerLockObject)
-                {
-                    Serializer.SerializeValue(emitter, value, value.GetType());
-                }
+                serializer.SerializeValue(emitter, value, value.GetType());
                 emitter.Emit(new DocumentEnd(true));
             }
         }
@@ -917,13 +919,11 @@ public static class KubernetesYaml
         var stringBuilder = new StringBuilder();
         var writer = new StringWriter(stringBuilder);
         var emitter = new Emitter(writer);
+        var serializer = s_threadLocalSerializer.Value;
 
         emitter.Emit(new StreamStart());
         emitter.Emit(new DocumentStart());
-        lock (s_serializerLockObject)
-        {
-            Serializer.SerializeValue(emitter, value, value.GetType());
-        }
+        serializer.SerializeValue(emitter, value, value.GetType());
 
         return stringBuilder.ToString();
     }

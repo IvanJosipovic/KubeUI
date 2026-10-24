@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Diagnostics;
 using Avalonia.Controls.Templates;
 using Dock.Model.Core;
@@ -11,6 +12,7 @@ sealed class ViewLocator : IDataTemplate
     private readonly ILogger<ViewLocator> _logger;
     private readonly Instrumentation _instrumentation;
     private readonly IViewFactory[] _viewFactories;
+    private readonly Dictionary<Type, IViewFactory> _viewFactoryMap;
 
     public ViewLocator(
         IServiceProvider serviceProvider,
@@ -22,6 +24,8 @@ sealed class ViewLocator : IDataTemplate
         _logger = logger;
         _instrumentation = instrumentation;
         _viewFactories = viewFactories ?? [];
+
+        _viewFactoryMap = new Dictionary<Type, IViewFactory>();
     }
 
     public Control Build(object? data)
@@ -53,14 +57,31 @@ sealed class ViewLocator : IDataTemplate
             return viewFactory.CreateView(_serviceProvider);
         }
 
+        var modelType = model.GetType();
+
+        // Try to find a cached factory for this exact type
+        if (_viewFactoryMap.TryGetValue(modelType, out var cachedFactory))
+        {
+            if (cachedFactory is NullViewFactory)
+            {
+                return null;
+            }
+
+            return cachedFactory.Create(_serviceProvider);
+        }
+
+        // Linear search as fallback, then cache the result
         foreach (var factory in _viewFactories)
         {
             if (factory.CanCreate(model))
             {
+                _viewFactoryMap[modelType] = factory;
                 return factory.Create(_serviceProvider);
             }
         }
 
+        // Cache negative result to avoid repeated searches
+        _viewFactoryMap[modelType] = NullViewFactory.Instance;
         return null;
     }
 
@@ -93,6 +114,17 @@ sealed class ViewLocator : IDataTemplate
         return $"{viewType.Name}<{string.Join(", ", argumentNames)}>";
     }
 
+    /// <summary>
+    /// Null object pattern for caching negative lookups.
+    /// </summary>
+    private sealed class NullViewFactory : IViewFactory
+    {
+        public static readonly NullViewFactory Instance = new();
+
+        public bool CanCreate(object viewModel) => false;
+
+        public Control Create(IServiceProvider serviceProvider) => throw new InvalidOperationException("NullViewFactory should never be used to create views");
+    }
 }
 
 /// <summary>Creates a view for a view model using the application's service provider.</summary>

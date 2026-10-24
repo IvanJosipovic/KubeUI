@@ -81,11 +81,17 @@ internal sealed class AgentSession : IAgentSession
         _disposed = true;
         using var activity = AgentActivitySource.Source.StartActivity("ai.agent.stop");
         activity?.SetTag("agent.protocol", "acp");
+
+        var exceptions = new List<Exception>();
+
         try
-        { await _client.DisposeAsync().ConfigureAwait(false); }
+        {
+            await _client.DisposeAsync().ConfigureAwait(false);
+        }
         catch (Exception exception)
         {
             var safeException = SanitizeException(exception);
+            exceptions.Add(safeException);
             if (activity is not null)
             {
                 activity.SetStatus(ActivityStatusCode.Error, safeException.Message);
@@ -96,11 +102,30 @@ internal sealed class AgentSession : IAgentSession
                 }));
             }
         }
-        finally
+
+        try
         {
             await _terminal.DisposeAsync().ConfigureAwait(false);
+        }
+        catch (Exception exception)
+        {
+            exceptions.Add(SanitizeException(exception));
+        }
+
+        try
+        {
             _mcpCredentialLease?.Dispose();
-            _events.Writer.TryComplete();
+        }
+        catch (Exception exception)
+        {
+            exceptions.Add(SanitizeException(exception));
+        }
+
+        _events.Writer.TryComplete();
+
+        if (exceptions.Count > 0)
+        {
+            throw new AggregateException("One or more errors occurred during disposal", exceptions);
         }
     }
 
