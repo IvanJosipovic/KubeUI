@@ -116,17 +116,44 @@ public sealed class Agent : IAgent
         catch (Exception exception)
         {
             RecordException(activity, exception, sensitiveValues);
+            var exceptions = new List<Exception>();
+
+            if (client is not null)
+            {
+                try
+                {
+                    await client.DisposeAsync().ConfigureAwait(false);
+                }
+                catch (Exception cleanupException)
+                {
+                    exceptions.Add(cleanupException);
+                }
+            }
+
             try
             {
-                if (client is not null)
-                    await client.DisposeAsync().ConfigureAwait(false);
                 terminal.Dispose();
             }
-            finally
+            catch (Exception cleanupException)
+            {
+                exceptions.Add(cleanupException);
+            }
+
+            try
             {
                 if (!leaseTransferred)
                     mcpCredentialLease?.Dispose();
             }
+            catch (Exception cleanupException)
+            {
+                exceptions.Add(cleanupException);
+            }
+
+            if (exceptions.Count > 0)
+            {
+                throw new AggregateException("One or more errors occurred during session creation cleanup", exceptions);
+            }
+
             throw SanitizeException(exception, sensitiveValues);
         }
     }

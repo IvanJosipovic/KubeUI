@@ -20,18 +20,6 @@ public static class KubernetesYaml
 {
     private static bool s_useStaticContext;
 
-    private static readonly Lazy<IDeserializer> s_staticStrictDeserializer = new(() =>
-        CreateStaticDeserializerBuilder(strict: true).WithDuplicateKeyChecking().Build());
-    private static readonly Lazy<IDeserializer> s_staticDeserializer = new(() =>
-        CreateStaticDeserializerBuilder(strict: false).IgnoreUnmatchedProperties().Build());
-    private static readonly Lazy<IValueSerializer> s_staticSerializer = new(CreateStaticSerializer);
-
-    private static readonly Lazy<IDeserializer> s_reflectionStrictDeserializer = new(() =>
-        CommonReflectionDeserializerBuilder.WithDuplicateKeyChecking().Build());
-    private static readonly Lazy<IDeserializer> s_reflectionDeserializer = new(() =>
-        CommonReflectionDeserializerBuilder.IgnoreUnmatchedProperties().Build());
-    private static readonly Lazy<IValueSerializer> s_reflectionSerializer = new(CreateReflectionSerializer);
-
     private static readonly KubernetesYamlStaticContext s_staticContext = new KubernetesYamlRuntimeContext();
     private static readonly KubernetesJsonStaticContext s_strictJsonContext = CreateStrictJsonContext();
 
@@ -183,22 +171,16 @@ public static class KubernetesYaml
         }
     }
 
-    public static IDeserializer StrictDeserializer => UseStaticContext
-        ? s_staticStrictDeserializer.Value
-        : s_reflectionStrictDeserializer.Value;
+    public static IDeserializer StrictDeserializer => s_threadLocalStrictDeserializer.Value;
 
-    public static IDeserializer Deserializer => UseStaticContext
-        ? s_staticDeserializer.Value
-        : s_reflectionDeserializer.Value;
+    public static IDeserializer Deserializer => s_threadLocalDeserializer.Value;
 
     public static IDeserializer GetDeserializer(bool strict = false)
     {
         return strict ? StrictDeserializer : Deserializer;
     }
 
-    public static IValueSerializer Serializer => UseStaticContext
-        ? s_staticSerializer.Value
-        : s_reflectionSerializer.Value;
+    public static IValueSerializer Serializer => s_threadLocalSerializer.Value;
 
     private static IValueSerializer CreateStaticSerializer() =>
         new StaticSerializerBuilder(s_staticContext)
