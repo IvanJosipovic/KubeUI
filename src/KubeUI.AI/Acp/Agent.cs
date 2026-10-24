@@ -126,7 +126,7 @@ public sealed class Agent : IAgent
                 }
                 catch (Exception cleanupException)
                 {
-                    exceptions.Add(cleanupException);
+                    exceptions.Add(SanitizeException(cleanupException, sensitiveValues));
                 }
             }
 
@@ -136,7 +136,7 @@ public sealed class Agent : IAgent
             }
             catch (Exception cleanupException)
             {
-                exceptions.Add(cleanupException);
+                exceptions.Add(SanitizeException(cleanupException, sensitiveValues));
             }
 
             try
@@ -146,7 +146,7 @@ public sealed class Agent : IAgent
             }
             catch (Exception cleanupException)
             {
-                exceptions.Add(cleanupException);
+                exceptions.Add(SanitizeException(cleanupException, sensitiveValues));
             }
 
             if (exceptions.Count > 0)
