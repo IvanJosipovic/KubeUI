@@ -50,6 +50,7 @@ jobs:
           name: KubeUI Tests
           path: TestResults/*.trx
           reporter: dotnet-trx
+          fail-on-error: false
 
       - name: Test Summary
         uses: EnricoMi/publish-unit-test-result-action@v2
