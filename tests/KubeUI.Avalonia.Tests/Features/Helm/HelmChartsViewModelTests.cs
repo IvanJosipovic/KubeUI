@@ -209,7 +209,7 @@ public sealed class HelmChartsViewModelTests
         using var charts = new HelmChartsViewModel(helm.Object, Mock.Of<IHelmDocumentOpener>());
         charts.Initialize(workspace);
         await charts.RefreshCommand.ExecuteAsync(null).WaitAsync(TestContext.Current.CancellationToken);
-        charts.Status.ShouldBe(fails ? "Index unavailable" : Assets.Resources.Shared_NoCharts);
+        charts.Status.ShouldBe(fails ? Assets.Resources.Shared_ErrorOccurred : Assets.Resources.Shared_NoCharts);
         charts.ItemCount.ShouldBe(0);
         charts.IsLoading.ShouldBeFalse();
         await charts.InstallChartCommand.ExecuteAsync(null).WaitAsync(TestContext.Current.CancellationToken);
