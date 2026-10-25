@@ -2988,7 +2988,7 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
         public override long Length => 0;
         public override long Position { get => 0; set => throw new NotSupportedException(); }
         public override void Flush() => throw new NotSupportedException();
-        public override int ReadAsync(byte[] buffer, int offset, int count) => ReadAsync(buffer.AsMemory(offset, count), cancellationToken).GetAwaiter().GetResult();
+        public override int Read(byte[] buffer, int offset, int count) => ReadAsync(buffer.AsMemory(offset, count), cancellationToken).GetAwaiter().GetResult();
         public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken token = default)
         {
             using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, token, shutdownCancellation);

@@ -642,7 +642,7 @@ public sealed class MRDiffDetectionViewModelTests
 
         public override void Flush() { }
 
-        public override int ReadAsync(byte[] buffer, int offset, int count)
+        public override int Read(byte[] buffer, int offset, int count)
             => _content.Read(buffer, offset, count);
 
         public override async ValueTask<int> ReadAsync(

@@ -1,10 +1,11 @@
 using FluentIcons.Avalonia;
 using FluentIcons.Common;
 using Helm.NET;
+using KubeUI.Avalonia.Infrastructure.Presentation;
 
 namespace KubeUI.Avalonia.Features.Helm.Repositories;
 
-public sealed class HelmRepositoriesView : ViewBase<HelmRepositoriesViewModel>
+public sealed class HelmRepositoriesView : KubeUIView<HelmRepositoriesViewModel>
 {
     protected override object Build(HelmRepositoriesViewModel vm)
     {

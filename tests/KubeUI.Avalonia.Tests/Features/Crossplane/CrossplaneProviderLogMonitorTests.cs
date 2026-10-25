@@ -389,7 +389,7 @@ public sealed class CrossplaneProviderLogMonitorTests
         {
         }
 
-        public override int ReadAsync(byte[] buffer, int offset, int count)
+        public override int Read(byte[] buffer, int offset, int count)
             => throw new NotSupportedException();
 
         public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)

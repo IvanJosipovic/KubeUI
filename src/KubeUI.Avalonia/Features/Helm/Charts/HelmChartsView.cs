@@ -1,11 +1,12 @@
 using FluentIcons.Avalonia;
 using FluentIcons.Common;
 using Helm.NET;
+using KubeUI.Avalonia.Infrastructure.Presentation;
 
 namespace KubeUI.Avalonia.Features.Helm.Charts;
 
 /// <summary>Repository-filtered Helm chart search with install actions.</summary>
-public sealed class HelmChartsView : ViewBase<HelmChartsViewModel>
+public sealed class HelmChartsView : KubeUIView<HelmChartsViewModel>
 {
     /// <inheritdoc />
     protected override object Build(HelmChartsViewModel vm)

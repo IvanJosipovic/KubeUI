@@ -1,6 +1,7 @@
 # Helm Feature
 
 - Helm integrations live under `Features/Helm/`; Kubernetes-layer contracts and Helm client operations live in `KubeUI.Kubernetes/Helm/`.
+- Docked Helm views inherit `KubeUIView<TViewModel>` so generated `ViewLocator` discovery can create them.
 - Use `Helm.NET` for Helm actions; never launch the Helm executable.
 - Run synchronous native calls off the UI thread and serialize native Helm calls because the shim and default repository configuration are process-wide.
 - Helm navigation owns the `Helm` section with `Repositories`, `Charts`, and `Releases` documents placed after custom resources via `NavigationSections.AfterCustomResourcesOrder`; Helm data is not a Kubernetes `ResourceConfig`.

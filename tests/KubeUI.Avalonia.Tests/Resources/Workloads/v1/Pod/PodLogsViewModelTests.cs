@@ -4779,10 +4779,8 @@ public sealed class PodLogsViewModelTests
         {
         }
 
-        public override async Task<int> ReadAsync(byte[] destination, int offset, int count)
-        {
-            return await ReadAsync(destination.AsMemory(offset, count)).AsTask();
-        }
+        public override int Read(byte[] destination, int offset, int count)
+            => ReadAsync(destination.AsMemory(offset, count)).GetAwaiter().GetResult();
 
         public override ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken = default)
         {
@@ -4972,7 +4970,7 @@ public sealed class PodLogsViewModelTests
             set => throw new NotSupportedException();
         }
 
-        public override int ReadAsync(byte[] buffer, int offset, int count)
+        public override int Read(byte[] buffer, int offset, int count)
         {
             if (_position >= _buffer.Length)
             {

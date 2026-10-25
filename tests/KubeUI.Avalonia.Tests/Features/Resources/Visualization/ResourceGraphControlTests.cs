@@ -2365,7 +2365,7 @@ public sealed class ResourceGraphControlTests
             return new ResourceRelationshipGraph(resources.ToArray(), []);
         }
 
-        public async Task<ResourceRelationshipGraph> BuildAdditionDeltaAsync(
+        public ResourceRelationshipGraph BuildAdditionDelta(
             IEnumerable<IKubernetesObject<V1ObjectMeta>> resources,
             ResourceKey addedResource,
             IReadOnlySet<string> selectedNamespaces,
@@ -2383,7 +2383,7 @@ public sealed class ResourceGraphControlTests
             }
 
             _additionStarted.TrySetResult();
-            await _releaseAddition.Task;
+            _releaseAddition.Task.GetAwaiter().GetResult();
             Interlocked.Decrement(ref _activeAdditions);
             return new ResourceRelationshipGraph(resources.ToArray(), []);
         }
@@ -2646,14 +2646,14 @@ public sealed class ResourceGraphControlTests
             return ResourceRelationshipGraph.Empty;
         }
 
-        public async Task<ResourceRelationshipGraph> BuildAdditionDeltaAsync(
+        public ResourceRelationshipGraph BuildAdditionDelta(
             IEnumerable<IKubernetesObject<V1ObjectMeta>> resources,
             ResourceKey addedResource,
             IReadOnlySet<string> selectedNamespaces,
             bool hideNoise)
         {
             _additionStarted.TrySetResult();
-            await _releaseAddition.Task;
+            _releaseAddition.Task.GetAwaiter().GetResult();
             _additionCompleted.TrySetResult();
             var resource = resources.SingleOrDefault(item => item.Name() == addedResource.Name);
             return resource == null
