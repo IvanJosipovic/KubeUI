@@ -943,4 +943,36 @@ public class KubernetesYamlTests : IDisposable
         objects.Single().ShouldBeOfType<V1PodTemplate>();
     }
 
+    [Fact]
+    public void CustomResourceDefinition_RoundTripsWithV1JSONSchemaPropsInStaticContext()
+    {
+        // The CustomResourceDefinition schema contains V1JSONSchemaProps in
+        // spec.versions[].schema.openAPIV3Schema.properties. This is a
+        // IDictionary<string, V1JSONSchemaProps> which was incorrectly treated
+        // as a plain string dictionary, causing "apiVersion not found" errors
+        // when deserializing CRDs with static context enabled.
+        using var scope = new StaticContextScope(true);
+
+        var crd = KubernetesYaml.Deserialize<V1CustomResourceDefinition>(KubernetesTestData.CustomResourceDefinitionYaml, strict: true);
+
+        crd.ShouldNotBeNull();
+        crd.Spec.Group.ShouldBe("kubeui.com");
+        crd.Spec.Names.Plural.ShouldBe("tests");
+        crd.Spec.Versions.ShouldHaveSingleItem();
+        var version = crd.Spec.Versions[0];
+        version.Name.ShouldBe("v1beta1");
+        version.Schema.ShouldNotBeNull();
+        version.Schema.OpenAPIV3Schema.ShouldNotBeNull();
+        version.Schema.OpenAPIV3Schema.Properties.ShouldNotBeNull();
+        version.Schema.OpenAPIV3Schema.Properties.Keys.ShouldContain("apiVersion");
+        version.Schema.OpenAPIV3Schema.Properties.Keys.ShouldContain("kind");
+        version.Schema.OpenAPIV3Schema.Properties.Keys.ShouldContain("metadata");
+        version.Schema.OpenAPIV3Schema.Properties.Keys.ShouldContain("spec");
+
+        var serialized = KubernetesYaml.Serialize(crd);
+        var roundTripped = KubernetesYaml.Deserialize<V1CustomResourceDefinition>(serialized, strict: true);
+        roundTripped.Spec.Group.ShouldBe("kubeui.com");
+        roundTripped.Spec.Versions[0].Schema.OpenAPIV3Schema.Properties.Keys.ShouldContain("apiVersion");
+    }
+
 }

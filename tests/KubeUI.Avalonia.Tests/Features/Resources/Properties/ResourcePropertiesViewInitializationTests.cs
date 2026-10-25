@@ -20,7 +20,7 @@ public sealed class ResourcePropertiesViewInitializationTests
     {
         var services = Application.Current.GetTestServices();
         using var workspace = await Application.Current.CreateClusterAsync();
-        var config = ActivatorUtilities.CreateInstance<CRDResourceConfig>(services);
+        var config = ActivatorUtilities.CreateInstance<CustomResourceConfig>(services);
         config.Initialize(workspace);
         config.Configure(new V1CustomResourceDefinition
         {
@@ -212,6 +212,9 @@ public sealed class ResourcePropertiesViewInitializationTests
         }
 
         public TrackingClusterControl TrackingControl { get; } = new();
+
+        public override Task SeedResource(bool waitForReady, CancellationToken cancellationToken)
+            => Task.CompletedTask;
 
         public override Control[] Properties(V1Pod resource)
         {

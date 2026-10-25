@@ -85,14 +85,18 @@ public sealed partial class VisualizationView : KubeUIView<VisualizationViewMode
                     .IsEnabled(vm, x => x.HasResourceTypes),
                 new Ursa.Controls.MultiComboBox()
                     .Width(200)
+                    .MinWidth(140)
                     .MaxHeight(20)
+                    .Margin(0, 0, 2, 0)
                     .Classes("ClearButton")
                     .ItemsSource(vm, x => x.Cluster.Runtime.Namespaces)
                     .SelectedItems(vm, x => x.SelectedNamespaces)
+                    .PlaceholderText(Assets.Resources.ResourceListView_SelectNamespace)
                     .SelectedItemTemplate(template)
                     .ItemTemplate(template)
                     .IsVisible(vm, x => x.IsNamespaceSelectorVisible),
                 new ToggleButton()
+                    .Margin(0, 0, 2, 0)
                     .IsChecked(vm, x => x.IsNamespaceSelectionLinked, BindingMode.TwoWay)
                     .ToolTip_Tip(Assets.Resources.ResourceListView_NamespaceLink)
                     .Content(new FluentIcon().Icon(Icon.Link))

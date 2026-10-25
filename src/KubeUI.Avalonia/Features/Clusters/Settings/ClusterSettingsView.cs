@@ -27,6 +27,7 @@ public sealed class ClusterSettingsView : KubeUIView<ClusterSettingsViewModel>
                     .FontSize(new DynamicResourceExtension(Typography.TitleFontSizeResourceKey))
                     .Text(vm, x => x.Cluster.Runtime.Name, BindingMode.OneWay, Converters.Converters.StringFormat(Assets.Resources.ClusterSettingsView_TitleFormat)),
                 CreateNamespacesRow(vm),
+                CreatePermissionsRow(vm),
                 CreateDebugContainerImageRow(vm));
     }
 
@@ -78,6 +79,23 @@ public sealed class ClusterSettingsView : KubeUIView<ClusterSettingsViewModel>
                             .Content(Assets.Resources.ClusterSettingsView_Remove)
                             .Command(vm, x => x.RemoveNamespaceCommand)
                             .CommandParameter(ns)));
+    }
+
+    private static Grid CreatePermissionsRow(ClusterSettingsViewModel vm)
+    {
+        return new Grid()
+            .Cols("*,2*")
+            .ToolTip_Tip(Assets.Resources.ClusterSettingsView_RefreshPermissionsTooltip)
+            .Children(
+                new Label()
+                    .Content(Assets.Resources.ClusterSettingsView_PermissionsLabel)
+                    .Col(0),
+                new Button()
+                    .Col(1)
+                    .HorizontalAlignment(HorizontalAlignment.Left)
+                    .Content(Assets.Resources.ClusterSettingsView_RefreshPermissions)
+                    .IsEnabled(vm, x => x.IsRefreshingPermissions, BindingMode.OneWay, Converters.Converters.Not)
+                    .Command(vm, x => x.RefreshPermissionsCommand));
     }
 
     private static Grid CreateDebugContainerImageRow(ClusterSettingsViewModel vm)

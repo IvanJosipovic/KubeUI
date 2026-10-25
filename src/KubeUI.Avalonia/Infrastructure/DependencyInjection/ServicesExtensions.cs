@@ -4,6 +4,7 @@ using KubeUI.AI.Agents;
 using KubeUI.AI.Configuration;
 using KubeUI.AI.Permissions;
 using KubeUI.Avalonia.Features.AI;
+using KubeUI.Avalonia.Features.Crossplane;
 using KubeUI.Avalonia.Features.Crossplane.MRDiffDetection;
 using KubeUI.Avalonia.Features.Resources.List.Controls;
 using KubeUI.Avalonia.Features.Resources.Yaml;
@@ -11,6 +12,7 @@ using KubeUI.Avalonia.Infrastructure.Logging;
 using KubeUI.Avalonia.Infrastructure.Platform;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Infrastructure.Threading;
+using KubeUI.Avalonia.Resources;
 using KubeUI.Avalonia.Resources.Workloads.v1.Pod.Services;
 using KubeUI.Avalonia.Resources.Workloads.v1.Pod.ViewModels;
 using KubeUI.Avalonia.Services.Icons;
@@ -55,8 +57,9 @@ public static partial class KubeUIShellServiceCollectionExtensions
         services.AddSingleton<ISettingsPersistence, FileSettingsPersistence>();
         services.AddSingleton<ISettingsService, SettingsService>();
         services.AddSingleton<IResourceIconService, ResourceIconService>();
-        services.AddSingleton<NavigationFeatureCatalog>();
-        services.AddSingleton(_ => CrossplaneNavigationFeature.CreateDefinition());
+        services.AddTransient(static serviceProvider => new CustomResourceConfig(serviceProvider));
+        services.AddSingleton<INavigationSectionProvider, CrossplaneNavigationSectionProvider>();
+        services.AddSingleton<NavigationSectionCatalog>();
         services.AddSingleton<CrossplaneDiffLogParser>();
         services.AddTransient<CrossplaneProviderLogMonitor>();
         services.AddSingleton<IAgentRegistry>(sp => new AcpAgentRegistry(

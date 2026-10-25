@@ -1,9 +1,9 @@
 using System.Diagnostics.Metrics;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
-using KubeUI.Avalonia.Infrastructure.Platform;
 using k8s.Models;
 using KubeUI.Avalonia.Features.Crossplane.MRDiffDetection;
+using KubeUI.Avalonia.Infrastructure.Platform;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Shell.Documents.Updates;
 using KubeUI.Avalonia.Shell.Main;

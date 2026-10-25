@@ -49,16 +49,16 @@ public sealed class LimitedAccessNavigationTests
         await navigation.TreeViewSelectionChangedAsync(deploymentsLink).WaitAsync(TestContext.Current.CancellationToken);
     }
 
-    private static ResourceNavigationLink? FindResourceLink(ClusterNavigationNode root, string name)
+    private static NavigationLink? FindResourceLink(ClusterNavigationNode root, string name)
     {
         return FindResourceLink(root.NavigationItems, name);
     }
 
-    private static ResourceNavigationLink? FindResourceLink(IEnumerable<NavigationItem> items, string name)
+    private static NavigationLink? FindResourceLink(IEnumerable<NavigationItem> items, string name)
     {
         foreach (var child in items)
         {
-            if (child is ResourceNavigationLink resourceLink && string.Equals(resourceLink.Name, name, StringComparison.Ordinal))
+            if (child is NavigationLink resourceLink && resourceLink.ResourceKind is not null && string.Equals(resourceLink.Name, name, StringComparison.Ordinal))
             {
                 return resourceLink;
             }

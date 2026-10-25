@@ -35,7 +35,7 @@ public sealed class PodLogStreamClientTests
         await harness.Cluster.AddOrUpdateResource(new V1Pod
         {
             Metadata = new V1ObjectMeta { Name = "pod", NamespaceProperty = "default" },
-            Spec = new V1PodSpec { Containers = [new V1Container { Name = "app" }] },
+            Spec = new V1PodSpec { Containers = [new V1Container { Name = "app", Image = "busybox:1.36" }] },
         });
 
         await using var stream = await client.OpenAsync(
