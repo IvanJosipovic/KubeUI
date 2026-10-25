@@ -1297,6 +1297,10 @@
     <value>No charts matched the search. Update repository indexes or change the search text.</value>
     <comment/>
   </data>
+  <data name="Shared_ErrorOccurred" xml:space="preserve">
+    <value>Error occurred</value>
+    <comment/>
+  </data>
   <data name="Shared_Count" xml:space="preserve">
     <value>Count</value>
     <comment/>
