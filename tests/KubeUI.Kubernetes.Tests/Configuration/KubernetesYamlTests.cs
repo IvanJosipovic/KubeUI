@@ -948,6 +948,14 @@ public class KubernetesYamlTests : IDisposable
     }
 
     [Fact]
+    public void LoadAllFromStringRejectsSequenceDocuments()
+    {
+        Should.Throw<YamlException>(() => KubernetesYaml.LoadAllFromString(
+            "---\n- a\n",
+            static _ => typeof(V1Pod)));
+    }
+
+    [Fact]
     public void LoadAllFromStringUsesAllAvailableKubernetesModelTypes()
     {
         var catalog = new KubernetesModelCatalog();

@@ -185,7 +185,7 @@ public sealed class HelmEditorViewModelTests
         helm.Verify(service => service.UpgradeAsync(
             It.IsAny<HelmConnection>(), It.IsAny<string>(), It.IsAny<string>(),
             It.IsAny<IReadOnlyDictionary<string, object?>>(), It.IsAny<bool>(), It.IsAny<bool>(), It.IsAny<bool>(),
-            It.IsAny<TimeSpan?>(), It.IsAny<CancellationToken>()), Times.Never);
+            It.IsAny<TimeSpan?>(), It.IsAny<CancellationToken>(), It.IsAny<string?>()), Times.Never);
         factory.Verify(service => service.RemoveDockable(editor, false), Times.Never);
     }
 
@@ -868,7 +868,7 @@ public sealed class HelmEditorViewModelTests
         helmService
             .Setup(service => service.InstallAsync(
                 It.IsAny<HelmConnection>(), "web", "bitnami/nginx", It.IsAny<IReadOnlyDictionary<string, object?>>(), true, true,
-                TimeSpan.FromSeconds(30), It.IsAny<CancellationToken>()))
+                TimeSpan.FromSeconds(30), It.IsAny<CancellationToken>(), "1.0"))
             .ReturnsAsync(new HelmRelease("web", "apps", 1, new DateTimeOffset(2026, 01, 01, 0, 0, 0, TimeSpan.Zero), "deployed", "nginx-1.0.0", "1.0.0"));
         var factory = new Mock<IFactory>();
         var dialogs = HelmDialogTestHelper.CreateConfirmingDialogService();

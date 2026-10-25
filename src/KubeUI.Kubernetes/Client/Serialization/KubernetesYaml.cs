@@ -1042,6 +1042,13 @@ public static class KubernetesYaml
             parser.Consume<DocumentStart>();
             if (!parser.Accept<MappingStart>(out _))
             {
+                if (!parser.Accept<Scalar>(out var scalar)
+                    || scalar.Value.Length != 0
+                    || scalar.Style != ScalarStyle.Plain)
+                {
+                    throw new YamlException("A Kubernetes document must be a mapping.");
+                }
+
                 types.Add(null);
                 while (!parser.Accept<DocumentEnd>(out _))
                 {

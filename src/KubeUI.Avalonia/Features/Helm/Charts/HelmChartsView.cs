@@ -1,6 +1,9 @@
+using System.Diagnostics.CodeAnalysis;
+using Avalonia.Xaml.Interactions.Core;
 using FluentIcons.Avalonia;
 using FluentIcons.Common;
 using Helm.NET;
+using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 
 namespace KubeUI.Avalonia.Features.Helm.Charts;
@@ -9,6 +12,7 @@ namespace KubeUI.Avalonia.Features.Helm.Charts;
 public sealed class HelmChartsView : KubeUIView<HelmChartsViewModel>
 {
     /// <inheritdoc />
+    [RequiresUnreferencedCode()]
     protected override object Build(HelmChartsViewModel vm)
     {
         ArgumentNullException.ThrowIfNull(vm);
@@ -24,7 +28,13 @@ public sealed class HelmChartsView : KubeUIView<HelmChartsViewModel>
                     .CommandParameter(chart)
                     .Icon(new FluentIcon().Icon(Icon.AddSquare)))
         };
-        return new Grid().Rows("Auto,*").Children(
+        return new Grid()
+            .Behaviors(new EventTriggerBehavior
+            {
+                EventName = nameof(Loaded),
+                Actions = [new InvokeCommandAction { Command = vm.RefreshCommand }]
+            })
+            .Rows("Auto,*").Children(
             new Grid().Row(0).MinHeight(32).Margin(0, 2, 0, 2).Cols("Auto,*,Auto").Children(
                 new Label().Margin(2, 0, 0, 0).VerticalContentAlignment(VerticalAlignment.Center)
                     .Content(CompiledBinding.Create<HelmChartsViewModel, int>(x => x.ItemCount,
@@ -61,14 +71,4 @@ public sealed class HelmChartsView : KubeUIView<HelmChartsViewModel>
             table.Row(1));
     }
 
-    /// <inheritdoc />
-    protected override void OnLoaded(RoutedEventArgs e)
-    {
-        base.OnLoaded(e);
-
-        if (DataContext is HelmChartsViewModel viewModel)
-        {
-            viewModel.RefreshCommand.Execute(null);
-        }
-    }
 }

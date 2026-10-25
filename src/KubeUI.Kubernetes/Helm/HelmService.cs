@@ -6,8 +6,7 @@ namespace KubeUI.Kubernetes;
 
 /// <summary>
 /// Default <see cref="IHelmService"/> that runs Helm's native client off the calling thread.
-/// Uses a reader-writer lock to allow concurrent read operations while serializing write operations,
-/// because Helm repository configuration and the Go shim are process-wide.
+/// Uses an exclusive gate for every native call because Helm repository configuration and the Go shim are process-wide.
 /// </summary>
 public sealed class HelmService : IHelmService, IDisposable
 {
@@ -51,7 +50,7 @@ public sealed class HelmService : IHelmService, IDisposable
                 return charts.Where(chart => chart.Reference.StartsWith(prefix, StringComparison.Ordinal)).ToArray();
             },
             cancellationToken,
-            isWriteOperation: false);
+            isWriteOperation: true);
     }
 
     /// <inheritdoc />
@@ -62,7 +61,7 @@ public sealed class HelmService : IHelmService, IDisposable
             connection,
             client => client.ShowValues(chart, version),
             cancellationToken,
-            isWriteOperation: false);
+            isWriteOperation: true);
     }
 
     /// <inheritdoc />
@@ -74,7 +73,7 @@ public sealed class HelmService : IHelmService, IDisposable
             connection,
             client => client.GetManifest(releaseName, connection.Namespace, revision),
             cancellationToken,
-            isWriteOperation: false);
+            isWriteOperation: true);
     }
 
     /// <inheritdoc />
@@ -92,12 +91,12 @@ public sealed class HelmService : IHelmService, IDisposable
                 setValues: ToJsonElement(values),
                 version: version),
             cancellationToken,
-            isWriteOperation: false);
+            isWriteOperation: true);
     }
 
     /// <inheritdoc />
     public Task<IReadOnlyList<HelmRepository>> ListRepositoriesAsync(HelmConnection connection, CancellationToken cancellationToken = default)
-        => InvokeAsync(connection, static client => client.RepoList(), cancellationToken, isWriteOperation: false);
+        => InvokeAsync(connection, static client => client.RepoList(), cancellationToken, isWriteOperation: true);
 
     /// <inheritdoc />
     public Task AddRepositoryAsync(HelmConnection connection, string name, string url, string? username = null, string? password = null, CancellationToken cancellationToken = default)
@@ -132,20 +131,20 @@ public sealed class HelmService : IHelmService, IDisposable
                 allNamespaces: allNamespaces,
                 filter: filter),
             cancellationToken,
-            isWriteOperation: false);
+            isWriteOperation: true);
 
     /// <inheritdoc />
     public Task<HelmRelease> StatusAsync(HelmConnection connection, string releaseName, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(releaseName);
-        return InvokeAsync(connection, client => client.Status(releaseName, connection.Namespace), cancellationToken, isWriteOperation: false);
+        return InvokeAsync(connection, client => client.Status(releaseName, connection.Namespace), cancellationToken, isWriteOperation: true);
     }
 
     /// <inheritdoc />
     public Task<IReadOnlyList<HelmRelease>> HistoryAsync(HelmConnection connection, string releaseName, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(releaseName);
-        return InvokeAsync(connection, client => client.History(releaseName, connection.Namespace), cancellationToken, isWriteOperation: false);
+        return InvokeAsync(connection, client => client.History(releaseName, connection.Namespace), cancellationToken, isWriteOperation: true);
     }
 
     /// <inheritdoc />
@@ -165,7 +164,7 @@ public sealed class HelmService : IHelmService, IDisposable
                 return values.Clone();
             },
             cancellationToken,
-            isWriteOperation: false);
+            isWriteOperation: true);
     }
 
     /// <inheritdoc />
@@ -275,7 +274,7 @@ public sealed class HelmService : IHelmService, IDisposable
                 namespaceName: connection.Namespace,
                 setValues: ToJsonElement(values)),
             cancellationToken,
-            isWriteOperation: false);
+            isWriteOperation: true);
     }
 
     private static JsonElement? ToJsonElement(IReadOnlyDictionary<string, object?>? values)
