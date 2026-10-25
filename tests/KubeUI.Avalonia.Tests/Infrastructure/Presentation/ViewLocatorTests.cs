@@ -1,8 +1,14 @@
 using System.Diagnostics.Metrics;
+using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using k8s.Models;
+using KubeUI.Avalonia.Features.Crossplane.MRDiffDetection;
+using KubeUI.Avalonia.Infrastructure.Platform;
 using KubeUI.Avalonia.Infrastructure.Presentation;
+using KubeUI.Avalonia.Shell.Documents.Updates;
+using KubeUI.Avalonia.Shell.Main;
 using KubeUI.Kubernetes.Client;
+using Microsoft.Extensions.Logging;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Infrastructure.Presentation;
@@ -10,7 +16,7 @@ namespace KubeUI.Avalonia.Tests.Infrastructure.Presentation;
 public sealed class ViewLocatorTests
 {
     [AvaloniaFact]
-    public void Build_ResolvesClusterSettingsViewFromViewModelsNamespace()
+    public void Build_ResolvesClusterSettingsViewFromGeneratedFactory()
     {
         var services = Application.Current.GetTestServices();
         var locator = services.GetRequiredService<ViewLocator>();
@@ -19,6 +25,41 @@ public sealed class ViewLocatorTests
         var view = locator.Build(viewModel);
 
         view.ShouldBeOfType<ClusterSettingsView>();
+    }
+
+    [AvaloniaFact]
+    public void Build_ResolvesHomeViewFromGeneratedViewFactory()
+    {
+        var services = Application.Current.GetTestServices();
+        var locator = services.GetRequiredService<ViewLocator>();
+
+        var view = locator.Build(new HomeViewModel());
+
+        view.ShouldBeOfType<HomeView>();
+    }
+
+    [AvaloniaFact]
+    public void Build_ResolvesUpdateAvailableViewFromGeneratedViewFactory()
+    {
+        var services = Application.Current.GetTestServices();
+        var locator = services.GetRequiredService<ViewLocator>();
+        var viewModel = services.GetRequiredService<UpdateAvailableViewModel>();
+
+        var view = locator.Build(viewModel);
+
+        view.ShouldBeOfType<UpdateAvailableView>();
+    }
+
+    [AvaloniaFact]
+    public void Build_ResolvesCrossplaneDiffViewFromGeneratedViewFactory()
+    {
+        var services = Application.Current.GetTestServices();
+        var locator = services.GetRequiredService<ViewLocator>();
+        using var viewModel = services.GetRequiredService<MRDiffDetectionViewModel>();
+
+        var view = locator.Build(viewModel);
+
+        view.ShouldBeOfType<MRDiffDetectionView>();
     }
 
     [AvaloniaFact]
@@ -54,4 +95,33 @@ public sealed class ViewLocatorTests
         view.ShouldBeOfType<ResourceListView>();
         measurements.ShouldContain("ResourceListView<V1Pod>");
     }
+
+    [AvaloniaFact]
+    public void Build_ResolvesGenericResourcePropertiesViewWithoutRuntimeTypeDiscovery()
+    {
+        var services = Application.Current.GetTestServices();
+        var locator = services.GetRequiredService<ViewLocator>();
+        using var viewModel = new ResourcePropertiesViewModel<V1Pod>();
+
+        var view = locator.Build(viewModel);
+
+        view.ShouldBeOfType<ResourcePropertiesView<V1Pod>>();
+    }
+
+    [AvaloniaFact]
+    public void Build_UsesFallbackForRepeatedUnmappedViewModel()
+    {
+        var services = Application.Current.GetTestServices();
+        var locator = new ViewLocator(
+            services,
+            services.GetRequiredService<ILogger<ViewLocator>>(),
+            services.GetRequiredService<Instrumentation>(),
+            []);
+        var viewModel = new UnmappedViewModel();
+
+        locator.Build(viewModel).ShouldBeOfType<TextBlock>();
+        locator.Build(viewModel).ShouldBeOfType<TextBlock>();
+    }
+
+    private sealed class UnmappedViewModel;
 }

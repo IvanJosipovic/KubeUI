@@ -1,4 +1,4 @@
-using System.Text.Json;
+using System.Text.Json.Nodes;
 using Shouldly;
 
 namespace KubeUI.Kubernetes.Tests.Crossplane;
@@ -147,15 +147,15 @@ public sealed class CrossplaneDiffLogParserTests
     public void Ignores_missing_required_string_properties_and_invalid_gvk()
     {
         var parser = new CrossplaneDiffLogParser();
-        var incompletePayload = JsonSerializer.Serialize(new
+        var incompletePayload = new JsonObject
         {
-            name = "widget",
-            @namespace = "default",
-            gvk = "example.com/v1, Kind=Widget",
-            instanceDiff = """*terraform.InstanceDiff{Attributes:map[string]*terraform.ResourceAttrDiff{"field":*terraform.ResourceAttrDiff{Old:"old"}}}"""
-        });
+            ["name"] = "widget",
+            ["namespace"] = "default",
+            ["gvk"] = "example.com/v1, Kind=Widget",
+            ["instanceDiff"] = """*terraform.InstanceDiff{Attributes:map[string]*terraform.ResourceAttrDiff{"field":*terraform.ResourceAttrDiff{Old:"old"}}}"""
+        };
 
-        parser.Parse($"DEBUG provider Diff detected {incompletePayload}").ShouldBeEmpty();
+        parser.Parse($"DEBUG provider Diff detected {incompletePayload.ToJsonString()}").ShouldBeEmpty();
         parser.Parse(CreateLine("""*terraform.InstanceDiff{Attributes:map[string]*terraform.ResourceAttrDiff{"field":*terraform.ResourceAttrDiff{Old:"old"}}}""", gvk: "example.com/v1")).ShouldBeEmpty();
 
         foreach (var gvk in new[] { ", Kind=Widget", " , Kind=Widget", "example.com/v1, Kind=", "example.com/v1, Kind= " })
@@ -163,7 +163,7 @@ public sealed class CrossplaneDiffLogParserTests
             parser.Parse(CreateLine("""*terraform.InstanceDiff{Attributes:map[string]*terraform.ResourceAttrDiff{"field":*terraform.ResourceAttrDiff{Old:"old"}}}""", gvk)).ShouldBeEmpty();
         }
 
-        var requiredProperties = new Dictionary<string, object>
+        var requiredProperties = new Dictionary<string, string>
         {
             ["uid"] = "uid-1",
             ["name"] = "widget",
@@ -173,11 +173,13 @@ public sealed class CrossplaneDiffLogParserTests
         };
         foreach (var property in requiredProperties.Keys.ToArray())
         {
-            var payload = new Dictionary<string, object>(requiredProperties)
+            var payload = new JsonObject();
+            foreach (var requiredProperty in requiredProperties)
             {
-                [property] = 1
-            };
-            parser.Parse($"DEBUG provider Diff detected {JsonSerializer.Serialize(payload)}").ShouldBeEmpty();
+                payload[requiredProperty.Key] = requiredProperty.Key == property ? 1 : requiredProperty.Value;
+            }
+
+            parser.Parse($"DEBUG provider Diff detected {payload.ToJsonString()}").ShouldBeEmpty();
         }
     }
 
@@ -197,16 +199,8 @@ public sealed class CrossplaneDiffLogParserTests
     public void Decodes_go_string_escapes_in_diff_values()
     {
         var instanceDiff = """*terraform.InstanceDiff{Attributes:map[string]*terraform.ResourceAttrDiff{"spec.value":*terraform.ResourceAttrDiff{Old:"before\x3c\u003c\141\a\b\f\r\t\v\\\"", New:"line\nnext\U0001F642", NewComputed:true, NewRemoved:true, RequiresNew:true}}}""";
-        var payload = JsonSerializer.Serialize(new
-        {
-            uid = "uid-1",
-            name = "widget",
-            @namespace = "default",
-            gvk = "example.com/v1, Kind=Widget",
-            instanceDiff
-        });
 
-        var record = new CrossplaneDiffLogParser().Parse($"DEBUG provider Diff detected {payload}").ShouldHaveSingleItem();
+        var record = new CrossplaneDiffLogParser().Parse(CreateLine(instanceDiff)).ShouldHaveSingleItem();
 
         record.OldValue.ShouldBe("before<<a\a\b\f\r\t\v\\\"");
         record.NewValue.ShouldBe(string.Concat("line\nnext", char.ConvertFromUtf32(0x1F642)));
@@ -357,14 +351,14 @@ public sealed class CrossplaneDiffLogParserTests
 
     private static string CreateLine(string instanceDiff, string gvk = "example.com/v1, Kind=Widget")
     {
-        var payload = JsonSerializer.Serialize(new
+        var payload = new JsonObject
         {
-            uid = "uid-1",
-            name = "widget",
-            @namespace = "default",
-            gvk,
-            instanceDiff
-        });
-        return $"DEBUG provider Diff detected {payload}";
+            ["uid"] = "uid-1",
+            ["name"] = "widget",
+            ["namespace"] = "default",
+            ["gvk"] = gvk,
+            ["instanceDiff"] = instanceDiff
+        };
+        return $"DEBUG provider Diff detected {payload.ToJsonString()}";
     }
 }

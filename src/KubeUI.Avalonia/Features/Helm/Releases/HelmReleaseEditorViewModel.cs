@@ -747,7 +747,7 @@ public sealed partial class HelmReleaseEditorViewModel : ViewModelBase, INotifyD
                 && !_valuesWereEdited)
             {
                 _applyingChartDefaults = true;
-                ValuesYaml = values;
+                ValuesYaml = values ?? string.Empty;
                 _applyingChartDefaults = false;
                 ClearFieldError(nameof(SelectedVersion));
             }

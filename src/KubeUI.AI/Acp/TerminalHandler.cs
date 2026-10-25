@@ -1,17 +1,19 @@
 using System.Diagnostics;
 using System.Text;
-using dotacp.protocol;
 using KubeUI.AI.Agents;
 using KubeUI.AI.Diagnostics;
 using KubeUI.AI.Permissions;
+using SvcSystems.AI.AgentClientProtocol;
+using SvcSystems.AI.AgentClientProtocol.Client.Models;
+using SvcSystems.AI.AgentClientProtocol.Models;
 
 namespace KubeUI.AI.Acp;
 
-internal sealed class AcpTerminalHandler(IAgentPermissionService permissionService) : IDisposable, IAsyncDisposable
+internal sealed class TerminalHandler(IAgentPermissionService permissionService) : ITerminalHandler, IDisposable, IAsyncDisposable
 {
     private readonly System.Collections.Concurrent.ConcurrentDictionary<string, TerminalState> _terminals = new(StringComparer.Ordinal);
 
-    public async Task<CreateTerminalResponse> CreateAsync(CreateTerminalRequest request, CancellationToken cancellationToken = default)
+    public async ValueTask<string> CreateAsync(CreateTerminalRequest request, CancellationToken cancellationToken = default)
     {
         using var activity = AgentActivitySource.Source.StartActivity("ai.tool.execute");
         activity?.SetTag("agent.protocol", "acp");
@@ -57,36 +59,35 @@ internal sealed class AcpTerminalHandler(IAgentPermissionService permissionServi
         var terminal = new TerminalState(process, request.OutputByteLimit);
         _terminals[terminalId] = terminal;
         terminal.StartCapture();
-        return new CreateTerminalResponse { TerminalId = terminalId };
+        return terminalId;
     }
 
-    public Task<KillTerminalResponse> KillAsync(KillTerminalRequest request, CancellationToken _ = default)
+    public ValueTask KillAsync(KillTerminalRequest request, CancellationToken _ = default)
     {
         if (_terminals.TryGetValue(request.TerminalId, out var terminal) && !terminal.Process.HasExited)
             terminal.Process.Kill(entireProcessTree: true);
-        return Task.FromResult(new KillTerminalResponse());
+        return ValueTask.CompletedTask;
     }
 
-    public Task<TerminalOutputResponse> OutputAsync(TerminalOutputRequest request, CancellationToken _ = default)
+    public ValueTask<TerminalOutputResponse> GetOutputAsync(TerminalOutputRequest request, CancellationToken _ = default)
     {
         if (!_terminals.TryGetValue(request.TerminalId, out var terminal))
             throw new InvalidOperationException($"Terminal '{request.TerminalId}' was not found.");
-        return Task.FromResult(terminal.ToResponse());
+        return ValueTask.FromResult(terminal.ToResponse());
     }
 
-    public async Task<ReleaseTerminalResponse> ReleaseAsync(ReleaseTerminalRequest request, CancellationToken _ = default)
+    public async ValueTask ReleaseAsync(ReleaseTerminalRequest request, CancellationToken _ = default)
     {
         if (_terminals.TryRemove(request.TerminalId, out var terminal))
             await terminal.DisposeAsync().ConfigureAwait(false);
-        return new ReleaseTerminalResponse();
     }
 
-    public async Task<WaitForTerminalExitResponse> WaitAsync(WaitForTerminalExitRequest request, CancellationToken cancellationToken = default)
+    public async ValueTask<TerminalExitStatus> WaitForExitAsync(WaitForTerminalExitRequest request, CancellationToken cancellationToken = default)
     {
         if (!_terminals.TryGetValue(request.TerminalId, out var terminal))
             throw new InvalidOperationException($"Terminal '{request.TerminalId}' was not found.");
         await terminal.Exited.Task.WaitAsync(cancellationToken).ConfigureAwait(false);
-        return new WaitForTerminalExitResponse { ExitCode = terminal.ExitCode };
+        return new TerminalExitStatus { ExitCode = terminal.ExitCode };
     }
 
     public void Dispose()
@@ -130,7 +131,7 @@ internal sealed class AcpTerminalHandler(IAgentPermissionService permissionServi
 
     private static string FormatInvocation(CreateTerminalRequest request)
     {
-        var arguments = request.Args is { Length: > 0 }
+        var arguments = request.Args is { Count: > 0 }
             ? $" {string.Join(' ', request.Args)}"
             : string.Empty;
         var workingDirectory = string.IsNullOrWhiteSpace(request.Cwd)
@@ -141,7 +142,7 @@ internal sealed class AcpTerminalHandler(IAgentPermissionService permissionServi
 
     private sealed class TerminalState(Process process, ulong? outputByteLimit) : IDisposable
     {
-        private readonly object _gate = new();
+        private readonly Lock _gate = new();
         private readonly StringBuilder _output = new();
         private readonly ulong? _outputByteLimit = outputByteLimit;
         private Task? _captureTask;

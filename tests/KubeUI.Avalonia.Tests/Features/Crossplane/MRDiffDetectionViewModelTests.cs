@@ -478,14 +478,14 @@ public sealed class MRDiffDetectionViewModelTests
             + "\", New:\""
             + newValue
             + "\"}}}";
-        var payload = System.Text.Json.JsonSerializer.Serialize(new
+        var payload = new System.Text.Json.Nodes.JsonObject
         {
-            uid,
-            name,
-            @namespace = "default",
-            gvk,
-            instanceDiff
-        });
+            ["uid"] = uid,
+            ["name"] = name,
+            ["namespace"] = "default",
+            ["gvk"] = gvk,
+            ["instanceDiff"] = instanceDiff
+        }.ToJsonString();
         return $"DEBUG provider Diff detected {payload}";
     }
 
@@ -498,14 +498,14 @@ public sealed class MRDiffDetectionViewModelTests
             + "\"},\"largeField\":*terraform.ResourceAttrDiff{Old:\""
             + new string('x', 20_000)
             + "\", New:\"unused\"}}}";
-        var payload = System.Text.Json.JsonSerializer.Serialize(new
+        var payload = new System.Text.Json.Nodes.JsonObject
         {
-            uid,
-            name,
-            @namespace = "default",
-            gvk = "example.com/v1, Kind=Widget",
-            instanceDiff
-        });
+            ["uid"] = uid,
+            ["name"] = name,
+            ["namespace"] = "default",
+            ["gvk"] = "example.com/v1, Kind=Widget",
+            ["instanceDiff"] = instanceDiff
+        }.ToJsonString();
         return $"DEBUG provider Diff detected {payload}"[..16_384];
     }
 
@@ -517,6 +517,7 @@ public sealed class MRDiffDetectionViewModelTests
         config.SetupGet(resourceConfig => resourceConfig.Kind).Returns(kind);
         config.SetupGet(resourceConfig => resourceConfig.Name).Returns(name);
         config.SetupGet(resourceConfig => resourceConfig.Origin).Returns(ResourceOrigin.CustomResourceDefinition);
+        config.SetupGet(resourceConfig => resourceConfig.IsCustomResource).Returns(true);
         config.SetupGet(resourceConfig => resourceConfig.CustomResourceDefinition).Returns(new V1CustomResourceDefinition
         {
             Spec = new V1CustomResourceDefinitionSpec
@@ -641,7 +642,7 @@ public sealed class MRDiffDetectionViewModelTests
 
         public override void Flush() { }
 
-        public override int Read(byte[] buffer, int offset, int count)
+        public override int ReadAsync(byte[] buffer, int offset, int count)
             => _content.Read(buffer, offset, count);
 
         public override async ValueTask<int> ReadAsync(

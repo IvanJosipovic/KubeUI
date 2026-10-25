@@ -274,7 +274,7 @@ public sealed class PodAttachTests
         {
         }
 
-        public override int Read(byte[] buffer, int offset, int count)
+        public override int ReadAsync(byte[] buffer, int offset, int count)
         {
             throw new NotSupportedException();
         }

@@ -1,10 +1,18 @@
 using System.Net;
+using System.Net.Http.Json;
+using System.Text.Json;
+using System.Text.Json.Serialization.Metadata;
 using Shouldly;
 
 namespace KubeUI.Kubernetes.Tests.Infrastructure;
 
 public sealed class OperationKeyHandlerTests
 {
+    private static readonly JsonSerializerOptions s_testJsonSerializerOptions = new()
+    {
+        TypeInfoResolver = new DefaultJsonTypeInfoResolver(),
+    };
+
     [Fact]
     public async Task forbidden_resource_response_invokes_permission_invalidation()
     {
@@ -54,6 +62,7 @@ public sealed class OperationKeyHandlerTests
                 kind = "SelfSubjectRulesReview",
                 spec = new { @namespace = "default" },
             },
+            s_testJsonSerializerOptions,
             TestContext.Current.CancellationToken);
 
         response.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
@@ -138,6 +147,7 @@ public sealed class OperationKeyHandlerTests
                 kind = "SelfSubjectRulesReview",
                 spec = new { @namespace = "default" },
             },
+            s_testJsonSerializerOptions,
             TestContext.Current.CancellationToken);
 
         response.StatusCode.ShouldBe(HttpStatusCode.Forbidden);

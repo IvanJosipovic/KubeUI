@@ -483,7 +483,7 @@ public sealed class PortForwarderTests
         {
         }
 
-        public override int Read(byte[] buffer, int offset, int count)
+        public override int ReadAsync(byte[] buffer, int offset, int count)
         {
             return 0;
         }

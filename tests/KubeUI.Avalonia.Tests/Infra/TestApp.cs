@@ -35,18 +35,18 @@ public class TestApp : App, IDisposable
     {
         _host = BuildHost();
         InitializeApplication(_host.Services);
-        Dispatcher.UIThread.ShutdownFinished += OnDispatcherShutdownFinished;
+        Dispatcher.UIThread.ShutdownFinished += OnDispatcherShutdownFinishedAsync;
     }
 
-    private async void OnDispatcherShutdownFinished(object? sender, EventArgs e)
+    private async Task OnDispatcherShutdownFinishedAsync(object? sender, EventArgs e)
     {
-        Dispatcher.UIThread.ShutdownFinished -= OnDispatcherShutdownFinished;
-        await DisposeAsync().ConfigureAwait(false);
+        Dispatcher.UIThread.ShutdownFinished -= OnDispatcherShutdownFinishedAsync;
+        await (await DisposeAsync()).ConfigureAwait(false);
     }
 
-    public void Dispose()
+    public async Task DisposeAsync()
     {
-        DisposeAsync().GetAwaiter().GetResult();
+        await await DisposeAsync();
         GC.SuppressFinalize(this);
     }
 
@@ -140,7 +140,6 @@ public class TestApp : App, IDisposable
         });
 
         var host = builder.Build();
-        host.Services.ConfigureKubeUIKubernetesJsonLogging();
         return host;
     }
 

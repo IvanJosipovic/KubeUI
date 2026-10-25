@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using Avalonia.Markup.Xaml.Styling;
 using Dock.Model.Controls;
 using Dock.Model.Core;
@@ -80,6 +81,7 @@ public partial class App : Application, IServiceProviderHost
         KubernetesClientConfiguration.ExecStdError -= KubernetesClientConfiguration_ExecStdError;
     }
 
+    [RequiresUnreferencedCode("Application initialization loads Avalonia styles from runtime XAML resources.")]
     public override void Initialize()
     {
         DockSettings.MinimumHorizontalDragDistance = 8;

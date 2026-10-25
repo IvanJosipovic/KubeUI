@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Templates;
 using Avalonia.Xaml.Interactions.Core;
@@ -12,6 +13,7 @@ namespace KubeUI.Avalonia.Features.Helm.Releases;
 
 public sealed class HelmReleasesView : ViewBase<HelmReleasesViewModel>
 {
+    [RequiresUnreferencedCode()]
     protected override object Build(HelmReleasesViewModel vm)
     {
         ArgumentNullException.ThrowIfNull(vm);

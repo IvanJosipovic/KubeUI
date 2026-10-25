@@ -89,7 +89,7 @@ public sealed class ResourceGraphControlTests
         using VisualizationViewModel viewModel = new(new ResourceRelationshipBuilder());
         var pod = CreatePod("direct-apply");
 
-        viewModel.ApplyGraph(new ResourceRelationshipGraph([pod], []));
+        await viewModel.ApplyGraphAsync(new ResourceRelationshipGraph([pod], []));
 
         await WaitForAsync(() => viewModel.Graph!.Resources.Contains(pod));
     }
@@ -1192,22 +1192,22 @@ public sealed class ResourceGraphControlTests
 
         await cluster.Runtime.Client!.GetGenericClient<V1Pod>().PatchNamespacedAsync<V1Pod>(
             new V1Patch(
-                KubernetesJson.Serialize(new
+                new System.Text.Json.Nodes.JsonObject
                 {
-                    metadata = new
+                    ["metadata"] = new System.Text.Json.Nodes.JsonObject
                     {
-                        ownerReferences = new[]
+                        ["ownerReferences"] = new System.Text.Json.Nodes.JsonArray
                         {
-                            new
+                            new System.Text.Json.Nodes.JsonObject
                             {
-                                apiVersion = secondOwner.ApiVersion,
-                                kind = secondOwner.Kind,
-                                name = secondOwner.Name(),
-                                uid = secondOwner.Uid(),
+                                ["apiVersion"] = secondOwner.ApiVersion,
+                                ["kind"] = secondOwner.Kind,
+                                ["name"] = secondOwner.Name(),
+                                ["uid"] = secondOwner.Uid(),
                             },
                         },
                     },
-                }),
+                }.ToJsonString(),
                 V1Patch.PatchType.MergePatch),
             "default",
             pod.Name());
@@ -1901,13 +1901,13 @@ public sealed class ResourceGraphControlTests
         await Task.Run(
             () => cluster.Runtime.Client!.GetGenericClient<V1Pod>().PatchNamespacedAsync<V1Pod>(
                 new V1Patch(
-                    KubernetesJson.Serialize(new
+                    new System.Text.Json.Nodes.JsonObject
                     {
-                        metadata = new
+                        ["metadata"] = new System.Text.Json.Nodes.JsonObject
                         {
-                            labels = new Dictionary<string, string> { ["updated"] = "true" },
+                            ["labels"] = new System.Text.Json.Nodes.JsonObject { ["updated"] = "true" },
                         },
-                    }),
+                    }.ToJsonString(),
                     V1Patch.PatchType.MergePatch),
                 "default",
                 "background",
@@ -2365,7 +2365,7 @@ public sealed class ResourceGraphControlTests
             return new ResourceRelationshipGraph(resources.ToArray(), []);
         }
 
-        public ResourceRelationshipGraph BuildAdditionDelta(
+        public async Task<ResourceRelationshipGraph> BuildAdditionDeltaAsync(
             IEnumerable<IKubernetesObject<V1ObjectMeta>> resources,
             ResourceKey addedResource,
             IReadOnlySet<string> selectedNamespaces,
@@ -2383,7 +2383,7 @@ public sealed class ResourceGraphControlTests
             }
 
             _additionStarted.TrySetResult();
-            _releaseAddition.Task.GetAwaiter().GetResult();
+            await _releaseAddition.Task;
             Interlocked.Decrement(ref _activeAdditions);
             return new ResourceRelationshipGraph(resources.ToArray(), []);
         }
@@ -2646,14 +2646,14 @@ public sealed class ResourceGraphControlTests
             return ResourceRelationshipGraph.Empty;
         }
 
-        public ResourceRelationshipGraph BuildAdditionDelta(
+        public async Task<ResourceRelationshipGraph> BuildAdditionDeltaAsync(
             IEnumerable<IKubernetesObject<V1ObjectMeta>> resources,
             ResourceKey addedResource,
             IReadOnlySet<string> selectedNamespaces,
             bool hideNoise)
         {
             _additionStarted.TrySetResult();
-            _releaseAddition.Task.GetAwaiter().GetResult();
+            await _releaseAddition.Task;
             _additionCompleted.TrySetResult();
             var resource = resources.SingleOrDefault(item => item.Name() == addedResource.Name);
             return resource == null

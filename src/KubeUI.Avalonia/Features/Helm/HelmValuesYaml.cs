@@ -13,8 +13,7 @@ internal static class HelmValuesYaml
             throw new JsonException("Helm release values must be a JSON object.");
         }
 
-        return KubernetesYaml.Serialize(KubernetesYaml.Deserialize<Dictionary<string, object>>(
-            k8s.KubernetesJson.Serialize(values)));
+        return KubernetesYaml.Serialize(values);
     }
 
     public static IReadOnlyDictionary<string, object?> Parse(string yaml)

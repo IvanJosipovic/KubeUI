@@ -15,7 +15,7 @@ namespace KubeUI.Avalonia.Resources;
 /// <summary>Configures a dynamically discovered Kubernetes resource from its CRD definition.</summary>
 public class CustomResourceConfig : ResourceConfig<GenericKubernetesObject>
 {
-    private readonly object _configureLock = new();
+    private readonly Lock _configureLock = new();
     private bool _isNamespaced = true;
     private string? _resourceName;
     private GroupApiVersionKind _kind;

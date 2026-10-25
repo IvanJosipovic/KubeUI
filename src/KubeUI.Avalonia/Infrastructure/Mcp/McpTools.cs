@@ -39,12 +39,13 @@ public sealed class McpTools(
     private readonly McpRequestIdentityAccessor? _identityAccessor = identityAccessor;
     private readonly IMcpServerState? _mcpServerState = mcpServerState;
     [McpServerTool(Name = "kubeui_list_clusters", Title = "List KubeUI clusters", Destructive = false, ReadOnly = true, Idempotent = true), Description("Lists Kubernetes clusters known to KubeUI.")]
-    public IReadOnlyList<McpClusterInfo> ListClusters()
+    public McpClusterInfo[] ListClusters()
     {
         var defaultName = clusterCatalog.GetDefault()?.Name;
-        return [.. clusterCatalog.Clusters
+        return clusterCatalog.Clusters
             .Where(cluster => IsClusterAllowed(cluster.Name))
-            .Select(cluster => ToClusterInfo(cluster, defaultName))];
+            .Select(cluster => ToClusterInfo(cluster, defaultName))
+            .ToArray();
     }
 
     [McpServerTool(Name = "kubeui_connect_cluster", Title = "Connect KubeUI cluster", Destructive = false, Idempotent = true), Description("Connects a KubeUI Kubernetes cluster.")]
@@ -56,7 +57,7 @@ public sealed class McpTools(
     }
 
     [McpServerTool(Name = "kubeui_list_supported_resources", Title = "List supported Kubernetes resources", Destructive = false, ReadOnly = true, Idempotent = true), Description("Lists resources supported by KubeUI.")]
-    public Task<IReadOnlyList<McpSupportedResourceInfo>> ListSupportedResources(string? cluster = null)
+    public Task<McpSupportedResourceInfo[]> ListSupportedResources(string? cluster = null)
     {
         EnsureClusterAllowed(cluster);
         return clusterSession.ListSupportedResourcesAsync(cluster);
@@ -110,7 +111,7 @@ public sealed class McpTools(
     }
 
     [McpServerTool(Name = "kubeui_related_resources", Title = "List related Kubernetes resources", Destructive = false, ReadOnly = true, Idempotent = true), Description("Lists resources directly related to a Kubernetes resource through KubeUI's relationship model.")]
-    public Task<IReadOnlyList<McpRelatedResourceInfo>> ListRelatedResources(
+    public Task<McpRelatedResourceInfo[]> ListRelatedResources(
         string? cluster, string apiVersion, string kind, string name, string? @namespace = null, int limit = 100, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();

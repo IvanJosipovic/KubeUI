@@ -4,15 +4,19 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Text.Json.Serialization.Metadata;
 using System.Threading.Channels;
 using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
+using KubeUI.Kubernetes.Serialization;
 
 namespace KubeUI.Testing.Kubernetes.Transport;
 
 public sealed class FakeKubernetesHttpApi : DelegatingHandler
 {
+    private static readonly JsonSerializerOptions s_jsonSerializerOptions = CreateJsonSerializerOptions();
+
     private readonly BackendState _state;
     private readonly ConcurrentDictionary<string, ResourceDefinition> _definitions;
     private readonly ConcurrentDictionary<string, JsonObject> _resources;
@@ -212,7 +216,7 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
         }
 
         var api = GroupApiVersionKind.From<T>();
-        var json = ParseObject(KubernetesJson.Serialize(resource));
+        var json = ParseObject(JsonSerializer.Serialize(resource, resource.GetType(), s_jsonSerializerOptions));
         NormalizeSecret(json);
         EnsureMetadata(json, resource.Metadata);
         RegisterPolicyResources(json);
@@ -583,7 +587,7 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
                 continue;
             }
 
-            var clusterRoleBinding = binding.Deserialize<V1ClusterRoleBinding>();
+            var clusterRoleBinding = binding.Deserialize<V1ClusterRoleBinding>(s_jsonSerializerOptions);
             if (clusterRoleBinding is null || !IsSubjectMatch(clusterRoleBinding.Subjects, subject.Value))
             {
                 continue;
@@ -693,7 +697,7 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
         {
             if (string.Equals(binding["kind"]?.GetValue<string>(), "ClusterRoleBinding", StringComparison.Ordinal))
             {
-                var clusterRoleBinding = binding.Deserialize<V1ClusterRoleBinding>();
+                var clusterRoleBinding = binding.Deserialize<V1ClusterRoleBinding>(s_jsonSerializerOptions);
                 if (clusterRoleBinding is not null && IsSubjectMatch(clusterRoleBinding.Subjects, subject.Value))
                 {
                     var role = GetClusterRole(clusterRoleBinding.RoleRef?.Name);
@@ -705,7 +709,7 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
             }
             else if (string.Equals(binding["kind"]?.GetValue<string>(), "RoleBinding", StringComparison.Ordinal))
             {
-                var roleBinding = binding.Deserialize<V1RoleBinding>();
+                var roleBinding = binding.Deserialize<V1RoleBinding>(s_jsonSerializerOptions);
                 if (roleBinding is null
                     || !string.Equals(roleBinding.Metadata?.NamespaceProperty, @namespace, StringComparison.Ordinal)
                     || !IsSubjectMatch(roleBinding.Subjects, subject.Value))
@@ -2585,7 +2589,7 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
         {
             if (string.Equals(binding["kind"]?.GetValue<string>(), "ClusterRoleBinding", StringComparison.Ordinal))
             {
-                var clusterRoleBinding = binding.Deserialize<V1ClusterRoleBinding>();
+                var clusterRoleBinding = binding.Deserialize<V1ClusterRoleBinding>(s_jsonSerializerOptions);
                 if (clusterRoleBinding is not null && IsSubjectMatch(clusterRoleBinding.Subjects, subject.Value))
                 {
                     var role = GetClusterRole(clusterRoleBinding.RoleRef?.Name);
@@ -2597,7 +2601,7 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
             }
             else if (string.Equals(binding["kind"]?.GetValue<string>(), "RoleBinding", StringComparison.Ordinal))
             {
-                var roleBinding = binding.Deserialize<V1RoleBinding>();
+                var roleBinding = binding.Deserialize<V1RoleBinding>(s_jsonSerializerOptions);
                 if (roleBinding is null
                     || !string.Equals(roleBinding.Metadata?.NamespaceProperty, @namespace, StringComparison.Ordinal)
                     || !IsSubjectMatch(roleBinding.Subjects, subject.Value))
@@ -2621,13 +2625,13 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
     private V1ClusterRole? GetClusterRole(string? name)
         => _resources.Values
             .Where(resource => string.Equals(resource["kind"]?.GetValue<string>(), "ClusterRole", StringComparison.Ordinal))
-            .Select(resource => resource.Deserialize<V1ClusterRole>())
+            .Select(resource => resource.Deserialize<V1ClusterRole>(s_jsonSerializerOptions))
             .FirstOrDefault(role => string.Equals(role?.Name(), name, StringComparison.Ordinal));
 
     private V1Role? GetRole(string? name, string? @namespace)
         => _resources.Values
             .Where(resource => string.Equals(resource["kind"]?.GetValue<string>(), "Role", StringComparison.Ordinal))
-            .Select(resource => resource.Deserialize<V1Role>())
+            .Select(resource => resource.Deserialize<V1Role>(s_jsonSerializerOptions))
             .FirstOrDefault(role => string.Equals(role?.Name(), name, StringComparison.Ordinal)
                 && string.Equals(role.Namespace(), @namespace, StringComparison.Ordinal));
 
@@ -2898,7 +2902,7 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
         {
             ["type"] = type,
             ["object"] = resource.DeepClone(),
-        });
+        }, s_jsonSerializerOptions);
         var line = new byte[payload.Length + 1];
         payload.CopyTo(line, 0);
         line[^1] = (byte)'\n';
@@ -2984,7 +2988,7 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
         public override long Length => 0;
         public override long Position { get => 0; set => throw new NotSupportedException(); }
         public override void Flush() => throw new NotSupportedException();
-        public override int Read(byte[] buffer, int offset, int count) => ReadAsync(buffer.AsMemory(offset, count), cancellationToken).GetAwaiter().GetResult();
+        public override int ReadAsync(byte[] buffer, int offset, int count) => ReadAsync(buffer.AsMemory(offset, count), cancellationToken).GetAwaiter().GetResult();
         public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken token = default)
         {
             using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, token, shutdownCancellation);
@@ -3026,7 +3030,7 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
 
     private static HttpResponseMessage Json(object value, HttpStatusCode status = HttpStatusCode.OK) => new(status)
     {
-        Content = JsonContent.Create(value),
+        Content = JsonContent.Create(value, value.GetType(), options: s_jsonSerializerOptions),
     };
 
     private static HttpResponseMessage Text(string value) => new(HttpStatusCode.OK)
@@ -3089,6 +3093,18 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
                 causes = new[] { new { field, message, reason } },
             },
         }, HttpStatusCode.UnprocessableEntity);
+
+    private static JsonSerializerOptions CreateJsonSerializerOptions()
+    {
+        var options = new JsonSerializerOptions(KubernetesJsonStaticContext.Default.Options)
+        {
+            TypeInfoResolver = JsonTypeInfoResolver.Combine(
+                KubernetesJsonStaticContext.Default,
+                new DefaultJsonTypeInfoResolver()),
+        };
+        return options;
+    }
+
 
     private static string DefinitionKey(string group, string version, string plural) => $"{group}/{version}/{plural}";
 

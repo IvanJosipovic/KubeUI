@@ -1,7 +1,7 @@
 using System.Diagnostics;
 using System.Globalization;
 using System.Reflection;
-using System.Text.Json;
+using System.Text.Json.Nodes;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless;
@@ -509,43 +509,43 @@ internal static class KubeUIWalkthroughRecorder
     private static GenericKubernetesObject CreateNodeMetrics(int index)
     {
         var nodeName = $"node-{index}";
-        return KubernetesJson.Deserialize<GenericKubernetesObject>(JsonSerializer.Serialize(new
+        return KubernetesJson.Deserialize<GenericKubernetesObject>(new JsonObject
         {
-            apiVersion = "metrics.k8s.io/v1beta1",
-            kind = "NodeMetrics",
-            metadata = new { name = nodeName },
-            timestamp = DateTime.UtcNow,
-            window = "30s",
-            usage = new Dictionary<string, string>
+            ["apiVersion"] = "metrics.k8s.io/v1beta1",
+            ["kind"] = "NodeMetrics",
+            ["metadata"] = new JsonObject { ["name"] = nodeName },
+            ["timestamp"] = DateTime.UtcNow,
+            ["window"] = "30s",
+            ["usage"] = new JsonObject
             {
                 ["cpu"] = $"{420 + index * 135}m",
                 ["memory"] = $"{1800 + index * 375}Mi",
             },
-        }))!;
+        }.ToJsonString())!;
     }
 
     private static GenericKubernetesObject CreatePodMetrics(string podName, string containerName, int index)
     {
-        return KubernetesJson.Deserialize<GenericKubernetesObject>(JsonSerializer.Serialize(new
+        return KubernetesJson.Deserialize<GenericKubernetesObject>(new JsonObject
         {
-            apiVersion = "metrics.k8s.io/v1beta1",
-            kind = "PodMetrics",
-            metadata = new { name = podName, @namespace = "default" },
-            timestamp = DateTime.UtcNow,
-            window = "30s",
-            containers = new[]
+            ["apiVersion"] = "metrics.k8s.io/v1beta1",
+            ["kind"] = "PodMetrics",
+            ["metadata"] = new JsonObject { ["name"] = podName, ["namespace"] = "default" },
+            ["timestamp"] = DateTime.UtcNow,
+            ["window"] = "30s",
+            ["containers"] = new JsonArray
             {
-                new
+                new JsonObject
                 {
-                    name = containerName,
-                    usage = new Dictionary<string, string>
+                    ["name"] = containerName,
+                    ["usage"] = new JsonObject
                     {
                         ["cpu"] = $"{25 + index * 17}m",
                         ["memory"] = $"{42 + index * 19}Mi",
                     },
                 },
             },
-        }))!;
+        }.ToJsonString())!;
     }
 
     private static string GetPodQosClass(int index) => (index % 5) switch
