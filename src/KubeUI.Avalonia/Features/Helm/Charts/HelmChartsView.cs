@@ -12,7 +12,7 @@ namespace KubeUI.Avalonia.Features.Helm.Charts;
 public sealed class HelmChartsView : KubeUIView<HelmChartsViewModel>
 {
     /// <inheritdoc />
-    [RequiresUnreferencedCode()]
+    [RequiresUnreferencedCode("DynamicTableView creates columns from runtime Helm chart metadata.")]
     protected override object Build(HelmChartsViewModel vm)
     {
         ArgumentNullException.ThrowIfNull(vm);
