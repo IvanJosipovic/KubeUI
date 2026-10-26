@@ -26,6 +26,9 @@ public sealed class NavigationSectionTests
 
         provider.Section.Id.ShouldBe("helm");
         provider.Section.Name.ShouldBe("Helm");
+        provider.Section.Icon.ShouldBeNull();
+        provider.Section.SvgIcon.ShouldBe(HelmNavigationSectionProvider.IconAssetPath);
+        provider.Section.SvgIconDark.ShouldBe(HelmNavigationSectionProvider.IconDarkAssetPath);
         provider.Documents.Select(document => document.Id).ShouldBe(
             [HelmNavigationSectionProvider.ChartsDocumentId, HelmNavigationSectionProvider.RepositoriesDocumentId, HelmNavigationSectionProvider.ReleasesDocumentId]);
         provider.Documents.Select(document => document.Name).ShouldBe(["Charts", "Repositories", "Releases"]);
@@ -55,6 +58,46 @@ public sealed class NavigationSectionTests
         builder.Reconcile(node);
 
         node.NavigationItems.ShouldNotContain(item => item.Id == $"{workspace.Runtime.Name}-section-helm");
+    }
+
+    [AvaloniaFact]
+    public async Task helm_section_node_uses_svg_icon_without_fluent_icon()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync(connect: false);
+        await workspace.Connect();
+        using var node = new ClusterNavigationNode(workspace);
+        var builder = CreateBuilder(new NavigationSectionCatalog([new HelmNavigationSectionProvider()]));
+
+        builder.Reconcile(node);
+
+        var helm = node.NavigationItems.Single(item => item.Id == $"{workspace.Runtime.Name}-section-helm");
+        helm.SvgIcon.ShouldBe(HelmNavigationSectionProvider.IconAssetPath);
+        helm.SvgIconDark.ShouldBe(HelmNavigationSectionProvider.IconDarkAssetPath);
+        helm.FluentIcon.ShouldBeNull();
+    }
+
+    [Fact]
+    public void section_svg_icon_overrides_fluent_icon_and_clears_when_removed()
+    {
+        System.Collections.ObjectModel.ObservableCollection<NavigationItem> items = [];
+
+        var withSvg = NavigationTreeEditor.EnsureNode(
+            items,
+            "section",
+            "Section",
+            1,
+            Icon.DataUsage,
+            "/Assets/helm/helm-icon-color.svg",
+            "/Assets/helm/helm-icon-white.svg");
+        withSvg.FluentIcon.ShouldBeNull();
+        withSvg.SvgIcon.ShouldBe("/Assets/helm/helm-icon-color.svg");
+        withSvg.SvgIconDark.ShouldBe("/Assets/helm/helm-icon-white.svg");
+
+        var fluentOnly = NavigationTreeEditor.EnsureNode(items, "section", "Section", 1, Icon.DataUsage);
+        fluentOnly.ShouldBeSameAs(withSvg);
+        fluentOnly.FluentIcon.ShouldBe(Icon.DataUsage);
+        fluentOnly.SvgIcon.ShouldBeNull();
+        fluentOnly.SvgIconDark.ShouldBeNull();
     }
 
     [Theory]

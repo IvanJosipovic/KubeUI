@@ -248,7 +248,7 @@ internal sealed class NavigationTreeBuilder
 
         var nodeId = $"{cluster.Runtime.Name}-section-{section.Id}";
         context.DesiredIds.Add(nodeId);
-        var root = NavigationTreeEditor.EnsureNode(node.NavigationItems, nodeId, section.Name, section.Order, section.Icon);
+        var root = NavigationTreeEditor.EnsureNode(node.NavigationItems, nodeId, section.Name, section.Order, section.Icon, section.SvgIcon, section.SvgIconDark);
         if (placement.Groups.Count == 0)
         {
             return root.NavigationItems;
