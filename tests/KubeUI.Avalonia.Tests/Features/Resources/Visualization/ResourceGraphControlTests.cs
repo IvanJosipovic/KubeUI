@@ -66,7 +66,7 @@ public sealed class ResourceGraphControlTests
     }
 
     [AvaloniaFact]
-    public async Task initial_graph_materialization_resolves_icons_off_ui_thread()
+    public async Task initial_graph_materialization_creates_ui_images_on_ui_thread()
     {
         RecordingIconService iconService = new(Application.Current.GetRequiredTestService<IResourceIconService>());
         using ResourceGraphControl control = new(iconService)
@@ -79,8 +79,8 @@ public sealed class ResourceGraphControlTests
         await WaitForAsync(() => control.Area.LogicCore?.Graph?.VertexCount == 32);
 
         iconService.Calls.ShouldBeGreaterThan(0);
-        iconService.BackgroundThreadCalls.ShouldBeGreaterThan(0);
-        iconService.UiThreadCalls.ShouldBe(0);
+        iconService.UiThreadCalls.ShouldBeGreaterThan(0);
+        iconService.BackgroundThreadCalls.ShouldBe(0);
     }
 
     [AvaloniaFact]
@@ -89,7 +89,7 @@ public sealed class ResourceGraphControlTests
         using VisualizationViewModel viewModel = new(new ResourceRelationshipBuilder());
         var pod = CreatePod("direct-apply");
 
-        viewModel.ApplyGraph(new ResourceRelationshipGraph([pod], []));
+        await viewModel.ApplyGraphAsync(new ResourceRelationshipGraph([pod], []));
 
         await WaitForAsync(() => viewModel.Graph!.Resources.Contains(pod));
     }
@@ -183,6 +183,39 @@ public sealed class ResourceGraphControlTests
         view.GetVisualDescendants().OfType<SelectableTextBlock>()
             .Select(control => control.Text)
             .ShouldContain("visualization failed");
+    }
+
+    [AvaloniaFact]
+    public async Task helm_preview_nodes_only_offer_read_only_context_actions()
+    {
+        using var cluster = await Application.Current.CreateClusterAsync(config => config.Type = KubernetesBackend.Fake);
+        using VisualizationViewModel viewModel = new(new ResourceRelationshipBuilder());
+        V1ConfigMap configMap = new()
+        {
+            ApiVersion = "v1",
+            Kind = V1ConfigMap.KubeKind,
+            Metadata = new() { Name = "preview-config", NamespaceProperty = "default" },
+        };
+        viewModel.InitializePreview(cluster, "preview", [configMap]);
+
+        var view = new VisualizationView { DataContext = viewModel };
+        using var window = Application.Current.CreateTestWindow(content: view);
+        try
+        {
+            window.Show();
+            var control = view.GetVisualDescendants().OfType<ResourceGraphControl>().Single();
+            await WaitForAsync(() => control.Area.VertexList.Count == 1);
+            ((ResourceGraphVertex)control.Area.VertexList.Values.Single().DataContext!).Node.ContextMenuItems
+                .Select(item => item.Title)
+                .ShouldBe([
+                    Assets.Resources.ResourceConfigBase_MenuItem_View,
+                    Assets.Resources.ResourceConfigBase_MenuItem_ViewYaml,
+                ]);
+        }
+        finally
+        {
+            window.Close();
+        }
     }
 
     [Fact]
@@ -2199,7 +2232,7 @@ public sealed class ResourceGraphControlTests
         {
             window.Show();
             await WaitForAsync(() => control.Area.VertexList.Count == 1);
-            await TestApplicationExtensions.WaitForUiAsync();
+            await WaitForAsync(() => control.IsViewportStable);
 
             control.ZoomControl.Zoom = 0.5;
             control.ZoomControl.TranslateX = 400;
@@ -2207,7 +2240,7 @@ public sealed class ResourceGraphControlTests
             control.Graph = new ResourceRelationshipGraph([first, second], []);
 
             await WaitForAsync(() => control.Area.VertexList.Count == 2);
-            await TestApplicationExtensions.WaitForUiAsync();
+            await WaitForAsync(() => control.IsViewportStable);
 
             control.ZoomControl.Zoom.ShouldBe(0.5);
             control.ZoomControl.TranslateX.ShouldBe(400);

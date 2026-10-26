@@ -89,6 +89,7 @@ public static class KubernetesYaml
             .WithTypeConverter(new KubernetesDeviceCapacityDictionaryYamlConverter())
             .WithTypeConverter(new KubernetesNodeAllocatableResourceDictionaryYamlConverter())
             .WithTypeConverter(new KubeConfigNamedExtensionYamlConverter())
+            .WithTypeConverter(new DynamicStringObjectDictionaryYamlConverter())
             .WithTypeConverter(new JsonBackedYamlTypeConverter<V1ContainerRestartRuleOnExitCodes>(jsonContext.V1ContainerRestartRuleOnExitCodes))
             .WithTypeConverter(new JsonBackedYamlTypeConverter<V1LinuxContainerUser>(jsonContext.V1LinuxContainerUser))
             .WithTypeConverter(new JsonBackedYamlTypeConverter<V1ListMeta>(jsonContext.V1ListMeta))
@@ -453,6 +454,64 @@ public static class KubernetesYaml
                 default:
                     throw new YamlException("Unsupported kubeconfig extension data value.");
             }
+        }
+    }
+
+    private sealed class DynamicStringObjectDictionaryYamlConverter : IYamlTypeConverter
+    {
+        public bool Accepts(Type type)
+            => type == typeof(Dictionary<string, object>) || type == typeof(Dictionary<string, object?>);
+
+        public object? ReadYaml(IParser parser, Type type, ObjectDeserializer rootDeserializer)
+        {
+            var json = (JsonElement)rootDeserializer(typeof(JsonElement))!;
+            if (json.ValueKind != JsonValueKind.Object)
+            {
+                throw new YamlException("Expected a YAML mapping.");
+            }
+
+            return ConvertObject(json);
+        }
+
+        public void WriteYaml(IEmitter emitter, object? value, Type type, ObjectSerializer serializer)
+            => throw new NotSupportedException();
+
+        private static Dictionary<string, object?> ConvertObject(JsonElement value)
+        {
+            var dictionary = new Dictionary<string, object?>(StringComparer.Ordinal);
+            foreach (var property in value.EnumerateObject())
+            {
+                dictionary.Add(property.Name, ConvertValue(property.Value));
+            }
+
+            return dictionary;
+        }
+
+        private static object? ConvertValue(JsonElement value)
+        {
+            return value.ValueKind switch
+            {
+                JsonValueKind.Object => ConvertNestedObject(value),
+                JsonValueKind.Array => value.EnumerateArray().Select(ConvertValue).ToList(),
+                JsonValueKind.String => value.GetString(),
+                JsonValueKind.Number when value.TryGetInt64(out var integer) => integer,
+                JsonValueKind.Number => value.GetDouble(),
+                JsonValueKind.True => true,
+                JsonValueKind.False => false,
+                JsonValueKind.Null or JsonValueKind.Undefined => null,
+                _ => throw new YamlException("Unsupported YAML value.")
+            };
+        }
+
+        private static Dictionary<object, object?> ConvertNestedObject(JsonElement value)
+        {
+            var dictionary = new Dictionary<object, object?>();
+            foreach (var property in value.EnumerateObject())
+            {
+                dictionary.Add(property.Name, ConvertValue(property.Value));
+            }
+
+            return dictionary;
         }
     }
 
@@ -975,12 +1034,31 @@ public static class KubernetesYaml
 
     private static List<object> LoadAllFromStringCore(string content, Func<string, Type> resolveType, bool strict)
     {
-        var types = new List<Type>();
+        var types = new List<Type?>();
         var parser = new MergingParser(new Parser(new StringReader(content)));
         parser.Consume<StreamStart>();
         while (parser.Accept<DocumentStart>(out _))
         {
             parser.Consume<DocumentStart>();
+            if (!parser.Accept<MappingStart>(out _))
+            {
+                if (!parser.Accept<Scalar>(out var scalar)
+                    || scalar.Value.Length != 0
+                    || scalar.Style != ScalarStyle.Plain)
+                {
+                    throw new YamlException("A Kubernetes document must be a mapping.");
+                }
+
+                types.Add(null);
+                while (!parser.Accept<DocumentEnd>(out _))
+                {
+                    parser.SkipThisAndNestedEvents();
+                }
+
+                parser.Consume<DocumentEnd>();
+                continue;
+            }
+
             parser.Consume<MappingStart>();
             string? apiVersion = null;
             string? kind = null;
@@ -1003,7 +1081,7 @@ public static class KubernetesYaml
 
             parser.Consume<MappingEnd>();
             parser.Consume<DocumentEnd>();
-            if (apiVersion == null || kind == null)
+            if (apiVersion is null || kind is null)
             {
                 throw new YamlException("A Kubernetes document must include apiVersion and kind.");
             }
@@ -1019,6 +1097,12 @@ public static class KubernetesYaml
         while (parser.Accept<DocumentStart>(out _))
         {
             var objType = types[ix++];
+            if (objType is null)
+            {
+                deserializer.Deserialize<object?>(parser);
+                continue;
+            }
+
             var obj = deserializer.Deserialize(parser, objType);
             results.Add(obj);
         }
@@ -1119,4 +1203,3 @@ public static class KubernetesYaml
     }
 
 }
-

@@ -157,6 +157,9 @@ public partial class NavigationItem : ObservableObject, IExpandableNavigationNod
     public partial string? SvgIcon { get; set; }
 
     [ObservableProperty]
+    public partial string? SvgIconDark { get; set; }
+
+    [ObservableProperty]
     public partial string? StyleIcon { get; set; }
 
     [ObservableProperty]

@@ -337,7 +337,7 @@ public sealed class VisualizationViewModelTests
         coordinator.Enqueue(2);
         await secondStarted.Task;
         releaseSecond.SetResult();
-        await TestWait.UntilAsync(() => !coordinator.IsPendingOrRunning, TimeSpan.FromSeconds(5));
+        await TestWait.UntilAsync(() => !coordinator.IsPendingOrRunning, TimeSpan.FromSeconds(5), cancellationToken: TestContext.Current.CancellationToken);
 
         started.ShouldBe([1, 2]);
     }
@@ -373,7 +373,7 @@ public sealed class VisualizationViewModelTests
         coordinator.Invalidate();
         await secondStarted.Task;
         releaseSecond.SetResult();
-        await TestWait.UntilAsync(() => !coordinator.IsPendingOrRunning, TimeSpan.FromSeconds(5));
+        await TestWait.UntilAsync(() => !coordinator.IsPendingOrRunning, TimeSpan.FromSeconds(5), cancellationToken: TestContext.Current.CancellationToken);
 
         started.ShouldBe([(1, 1), (2, 2)]);
     }

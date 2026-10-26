@@ -74,17 +74,11 @@ public sealed class NavigationViewTests
     {
         var culture = CultureInfo.InvariantCulture;
         var geometry = new StringToGeometryConverter();
-        var svg = new StringToSvgImageConverter();
 
         geometry.Convert("M 0,0 L 1,1", typeof(object), null, culture).ShouldNotBeNull();
         geometry.Convert(string.Empty, typeof(object), null, culture).ShouldBeNull();
         geometry.Convert(42, typeof(object), null, culture).ShouldBeNull();
         geometry.ConvertBack(null, typeof(object), null, culture).ShouldBe(BindingOperations.DoNothing);
-
-        svg.Convert("/Assets/kube/blank.svg", typeof(object), null, culture).ShouldNotBeNull();
-        svg.Convert(" ", typeof(object), null, culture).ShouldBeNull();
-        svg.Convert(42, typeof(object), null, culture).ShouldBeNull();
-        svg.ConvertBack(null, typeof(object), null, culture).ShouldBe(BindingOperations.DoNothing);
     }
 
     [AvaloniaFact]

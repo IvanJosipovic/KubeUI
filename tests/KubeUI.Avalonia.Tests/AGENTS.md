@@ -36,3 +36,9 @@ Tests using Avalonia capabilities should use `[AvaloniaFact]`. Pure model, seria
 - Exercise Host, Origin, and authentication boundaries through the production loopback host; rejected callers must not reach tool or cluster operations.
 - Cover selected external cluster grants, the empty-scope all-clusters behavior, credential revocation, Secret approval, cancellation, request/output limits, native Settings validation, and ACP credential lifecycle.
 - Use controllable `TimeProvider` and explicit task gates for rate-limit and concurrency tests; do not use sleeps.
+
+## Opt-in live Helm visualization validation
+- `LiveHelmVisualizationTests` is opt-in and read-only: it checks an existing `authentik` release in namespace `authentik` through the production workspace and visualization pipeline. It must not create, update, or delete cluster resources.
+- Mark live-cluster tests with `[LiveClusterFact]`, not `Explicit = true`. An explicit test is reported as `NotRunnable` in the TRX file and the CI test reporter counts it as a failure; `[LiveClusterFact]` skips the test when `KUBEUI_LIVE_CONTEXT` is unset so it is reported as `NotExecuted` and counted as skipped.
+- Set `KUBEUI_LIVE_CONTEXT` to the host kubeconfig context, build first, then run `dotnet test --project tests\KubeUI.Avalonia.Tests\KubeUI.Avalonia.Tests.csproj --no-build --no-restore --filter-class '*LiveHelmVisualizationTests' --minimum-expected-tests 1`.
+- Keep the graph-publication starvation regression deterministic with the fake backend and explicit build gates; the live test supplements, not replaces, that regression.

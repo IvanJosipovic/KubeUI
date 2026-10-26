@@ -59,6 +59,7 @@ Reference: https://github.com/wieslawsoltes/Dock
 Reference: https://github.com/AvaloniaUI/AvaloniaEdit
 
 - Use AvaloniaEdit `TextEditor` for all code/text editing surfaces.
+- Apply shared `TextEditor` background styling in `Styles/Fluent.cs`; do not set it per view.
 - Enable syntax highlighting using TextMate grammars/themes.
 - Keep editor configuration in ViewModels and bind to the view.
 

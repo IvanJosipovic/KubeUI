@@ -4780,9 +4780,7 @@ public sealed class PodLogsViewModelTests
         }
 
         public override int Read(byte[] destination, int offset, int count)
-        {
-            return ReadAsync(destination.AsMemory(offset, count)).AsTask().GetAwaiter().GetResult();
-        }
+            => ReadAsync(destination.AsMemory(offset, count)).GetAwaiter().GetResult();
 
         public override ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken = default)
         {

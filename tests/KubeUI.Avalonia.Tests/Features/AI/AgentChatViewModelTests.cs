@@ -434,7 +434,7 @@ public sealed class AgentChatViewModelTests
         public TaskCompletionSource Started { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
         public bool CancelCalled { get; private set; }
         public string Id => "blocking-session";
-        public IAsyncEnumerable<SessionEvent> Events => EmptyEvents();
+        public IAsyncEnumerable<SessionEvent> Events => EmptyEventsAsync();
 
         public async Task PromptAsync(string prompt, CancellationToken cancellationToken = default)
         {
@@ -455,7 +455,7 @@ public sealed class AgentChatViewModelTests
             return ValueTask.CompletedTask;
         }
 
-        private static async IAsyncEnumerable<SessionEvent> EmptyEvents()
+        private static async IAsyncEnumerable<SessionEvent> EmptyEventsAsync()
         {
             await Task.CompletedTask;
             yield break;

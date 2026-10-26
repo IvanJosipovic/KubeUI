@@ -3,7 +3,6 @@ using System.Reactive.Linq;
 using Avalonia.Controls.Shapes;
 using Avalonia.Controls.Templates;
 using Avalonia.Data.Converters;
-using Avalonia.Svg.Skia;
 using FluentIcons.Avalonia;
 using FluentIcons.Common;
 using KubeUI.Avalonia.Features.Clusters.Catalog.Behaviors;
@@ -169,10 +168,11 @@ public sealed class NavigationView : KubeUIView<NavigationViewModel>
                         new PathIcon()
                             .Data(item, x => x.StyleIcon, BindingMode.OneWay, new StringToGeometryConverter())
                             .IsVisible(item, x => x.StyleIcon, BindingMode.OneWay, Converters.Converters.NotNull),
-                        new Image()
+                        new ThemedSvgImage()
                             .Width(16)
                             .Height(16)
-                            .Source(item, x => x.SvgIcon, BindingMode.OneWay, new StringToSvgImageConverter())
+                            .BindValue(ThemedSvgImage.SourcePathProperty, CompiledBinding.Create<NavigationItem, string?>(x => x.SvgIcon, item))
+                            .BindValue(ThemedSvgImage.DarkSourcePathProperty, CompiledBinding.Create<NavigationItem, string?>(x => x.SvgIconDark, item))
                             .IsVisible(item, x => x.SvgIcon, BindingMode.OneWay, Converters.Converters.NotNull),
                         new TextBlock()
                             .VerticalAlignment(VerticalAlignment.Center)
@@ -189,29 +189,6 @@ internal sealed class StringToGeometryConverter : IValueConverter
         if (value is string geometryText && !string.IsNullOrWhiteSpace(geometryText))
         {
             return Geometry.Parse(geometryText);
-        }
-
-        return null;
-    }
-
-    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
-    {
-        return BindingOperations.DoNothing;
-    }
-}
-
-internal sealed class StringToSvgImageConverter : IValueConverter
-{
-    private static readonly Uri AppUri = new("avares://KubeUI.Avalonia");
-
-    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
-    {
-        if (value is string path && !string.IsNullOrWhiteSpace(path))
-        {
-            return new SvgImage
-            {
-                Source = SvgSource.Load(path, AppUri),
-            };
         }
 
         return null;
