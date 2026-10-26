@@ -22,6 +22,48 @@ namespace KubeUI.Avalonia.Tests.Features.Helm;
 public sealed class HelmEditorViewModelTests
 {
     [AvaloniaFact]
+    public async Task Upgrade_editors_for_same_release_name_in_different_namespaces_have_distinct_ids()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync(connect: false);
+        using var valuesDocument = System.Text.Json.JsonDocument.Parse("{}");
+        var helm = new Mock<IHelmService>();
+        helm.Setup(service => service.ListRepositoriesAsync(It.IsAny<HelmConnection>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync([]);
+        helm.Setup(service => service.ListChartsAsync(It.IsAny<HelmConnection>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync([]);
+        helm.Setup(service => service.GetValuesAsync(It.IsAny<HelmConnection>(), "web", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(valuesDocument.RootElement.Clone());
+
+        HelmReleaseEditorViewModel CreateEditor() => new(
+            helm.Object,
+            Mock.Of<IFactory>(),
+            Mock.Of<IHelmListNotifier>(),
+            Mock.Of<IHelmReleasePreviewService>(),
+            Mock.Of<IDialogService>());
+        static HelmRelease CreateRelease(string releaseNamespace) => new(
+            "web",
+            releaseNamespace,
+            1,
+            new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
+            "deployed",
+            "nginx-1.0.0",
+            "1.0.0",
+            "nginx",
+            "1.0.0");
+
+        var appsEditor = CreateEditor();
+        var stagingEditor = CreateEditor();
+        appsEditor.Initialize(workspace, new HelmConnection("config", "context", "apps"), CreateRelease("apps"));
+        stagingEditor.Initialize(workspace, new HelmConnection("config", "context", "staging"), CreateRelease("staging"));
+        await Task.WhenAll(appsEditor.InitializationTask, stagingEditor.InitializationTask)
+            .WaitAsync(TestContext.Current.CancellationToken);
+
+        appsEditor.Id.ShouldNotBe(stagingEditor.Id);
+        appsEditor.Id.ShouldContain("-apps-web");
+        stagingEditor.Id.ShouldContain("-staging-web");
+    }
+
+    [AvaloniaFact]
     public async Task Release_values_editor_supports_nested_yaml_folding()
     {
         using var workspace = await Application.Current.CreateClusterAsync(connect: false);
