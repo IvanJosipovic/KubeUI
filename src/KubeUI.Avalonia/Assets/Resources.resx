@@ -3056,7 +3056,6 @@
   <data name="FlowDirection_Lateral" xml:space="preserve"><value>Lateral</value></data>
   <data name="ServiceMapView_Title" xml:space="preserve"><value>Service Map</value></data>
   <data name="ServiceMapView_LayoutAlgorithm" xml:space="preserve"><value>Layout algorithm</value></data>
-  <data name="ServiceMapView_EdgeRoutingAlgorithm" xml:space="preserve"><value>Edge routing</value></data>
   <data name="ServiceMapView_Layout_BoundedFR" xml:space="preserve"><value>Bounded FR</value></data>
   <data name="ServiceMapView_Layout_Circular" xml:space="preserve"><value>Circular</value></data>
   <data name="ServiceMapView_Layout_CompoundFDP" xml:space="preserve"><value>Compound FDP</value></data>
@@ -3068,10 +3067,6 @@
   <data name="ServiceMapView_Layout_Random" xml:space="preserve"><value>Random</value></data>
   <data name="ServiceMapView_Layout_Sugiyama" xml:space="preserve"><value>Sugiyama</value></data>
   <data name="ServiceMapView_Layout_Tree" xml:space="preserve"><value>Tree</value></data>
-  <data name="ServiceMapView_Routing_Bundling" xml:space="preserve"><value>Bundling</value></data>
-  <data name="ServiceMapView_Routing_None" xml:space="preserve"><value>None</value></data>
-  <data name="ServiceMapView_Routing_PathFinder" xml:space="preserve"><value>Path finder</value></data>
-  <data name="ServiceMapView_Routing_SimpleER" xml:space="preserve"><value>Simple routing</value></data>
   <data name="ServiceMapView_AggregateByNamespace" xml:space="preserve"><value>Aggregate by Namespace</value></data>
   <data name="ServiceMapView_ShowErrorsOnly" xml:space="preserve"><value>Show Errors Only</value></data>
   <data name="ServiceMapView_TooltipAggregate" xml:space="preserve"><value>Aggregate by namespace</value></data>
@@ -3091,8 +3086,26 @@
   <data name="ServiceMapView_StatusError" xml:space="preserve"><value>Hubble connection failed</value></data>
   <data name="ServiceMapView_StatusErrorFormat" xml:space="preserve"><value>Hubble connection failed: {0}</value></data>
   <data name="ServiceMapGraphControl_External" xml:space="preserve"><value>External</value></data>
+  <data name="ServiceMapGraphControl_View" xml:space="preserve"><value>View</value></data>
   <data name="ServiceMapGraphControl_FlowCountsFormat" xml:space="preserve"><value>In {0}  Out {1}  Denied {2}</value></data>
+  <data name="ServiceMapGraphControl_IncomingPortFormat" xml:space="preserve"><value>→ {0} • {1}{2}</value></data>
   <data name="ServiceMapGraphControl_EdgeTooltipFormat" xml:space="preserve"><value>{0} flow events · destination ports: {1}</value></data>
+  <data name="ServiceMapGraphControl_NodeTooltipFormat" xml:space="preserve"><value>{0} ({1})&#10;Namespace: {2}&#10;Ingress: {3} · Egress: {4} · Allowed: {5} · Denied: {6}&#10;Access points: {7}</value></data>
+  <data name="ServiceMapNodePropertiesView_Title" xml:space="preserve"><value>Service map node</value></data>
+  <data name="ServiceMapNodePropertiesView_TitleFormat" xml:space="preserve"><value>Service map: {0}</value></data>
+  <data name="ServiceMapNodePropertiesView_NoNode" xml:space="preserve"><value>No node selected.</value></data>
+  <data name="ServiceMapNodePropertiesView_Id" xml:space="preserve"><value>Identity</value></data>
+  <data name="ServiceMapNodePropertiesView_Name" xml:space="preserve"><value>Name</value></data>
+  <data name="ServiceMapNodePropertiesView_Namespace" xml:space="preserve"><value>Namespace</value></data>
+  <data name="ServiceMapNodePropertiesView_WorkloadType" xml:space="preserve"><value>Workload type</value></data>
+  <data name="ServiceMapNodePropertiesView_IngressFlows" xml:space="preserve"><value>Ingress flows</value></data>
+  <data name="ServiceMapNodePropertiesView_EgressFlows" xml:space="preserve"><value>Egress flows</value></data>
+  <data name="ServiceMapNodePropertiesView_AllowedFlows" xml:space="preserve"><value>Allowed flows</value></data>
+  <data name="ServiceMapNodePropertiesView_DeniedFlows" xml:space="preserve"><value>Denied flows</value></data>
+  <data name="ServiceMapNodePropertiesView_AccessPoints" xml:space="preserve"><value>Access points</value></data>
+  <data name="ServiceMapNodePropertiesView_AccessPointFormat" xml:space="preserve"><value>{0}:{1} — {2} flows, {3} denied; applications: {4}</value></data>
+  <data name="ServiceMapNodePropertiesView_NoAccessPoints" xml:space="preserve"><value>None</value></data>
+  <data name="ServiceMapNodePropertiesView_NoApplicationProtocols" xml:space="preserve"><value>None</value></data>
   <data name="Hubble_GroupName" xml:space="preserve"><value>Hubble</value></data>
   <data name="Hubble_Flows_Title" xml:space="preserve"><value>Flows</value></data>
   <data name="Hubble_ServiceMap_Title" xml:space="preserve"><value>Service Map</value></data>

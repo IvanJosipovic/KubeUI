@@ -9,6 +9,7 @@ using FluentIcons.Common;
 using k8s.Models;
 using KubeUI.Avalonia.Features.Resources.Common;
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
+using KubeUI.Avalonia.Infrastructure.Presentation;
 
 namespace KubeUI.Avalonia.Features.Resources.Visualization;
 
@@ -175,23 +176,12 @@ public sealed partial class VisualizationView : ViewBase<VisualizationViewModel>
                                 x => x.IsNotReady,
                                 source: node,
                                 converter: NotReadyBorderOpacityConverter)),
-                        new StackPanel()
+                        ResourceGraphNodeContent.Create(
+                                new Image().Source(node, x => x.Icon, BindingMode.OneWay),
+                                new TextBlock().Text(node, x => x.Resource.Kind),
+                                new TextBlock().Text(node, x => x.Resource.Metadata.Name))
                             .ToolTip_Tip(content)
-                            .ContextFlyout(ResourceActionPresenter.CreateFlyout(node.ContextMenuItems))
-                            .Children(
-                                new Image()
-                                    .Width(64)
-                                    .Height(64)
-                                    .Source(node, x => x.Icon, BindingMode.OneWay),
-                                new TextBlock()
-                                    .TextAlignment(TextAlignment.Center)
-                                    .TextWrapping(TextWrapping.Wrap)
-                                    .Text(node, x => x.Resource.Kind),
-                                new TextBlock()
-                                    .TextAlignment(TextAlignment.Center)
-                                    .TextWrapping(TextWrapping.Wrap)
-                                    .Text(node, x => x.Resource.Metadata.Name)
-                            )));
+                            .ContextFlyout(ResourceActionPresenter.CreateFlyout(node.ContextMenuItems))));
     }
 
     private async Task InitializeDesignTimeDataAsync()

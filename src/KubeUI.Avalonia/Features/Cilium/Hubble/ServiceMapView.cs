@@ -94,7 +94,6 @@ public sealed partial class ServiceMapView : ViewBase<ServiceMapViewModel>
                     .VerticalAlignment(VerticalAlignment.Center)
                     .Children(
                         CreateLayoutSelector(vm),
-                        CreateEdgeRoutingSelector(vm),
                         CreateNamespaceSelector(vm),
                         new ToggleButton()
                             .Margin(0, 0, 2, 0)
@@ -121,22 +120,6 @@ public sealed partial class ServiceMapView : ViewBase<ServiceMapViewModel>
             .ToolTip_Tip(Assets.Resources.ServiceMapView_LayoutAlgorithm);
     }
 
-    private static ComboBox CreateEdgeRoutingSelector(ServiceMapViewModel viewModel)
-    {
-        var algorithms = Enum.GetValues<EdgeRoutingAlgorithmTypeEnum>();
-        return new ComboBox()
-            .Width(140)
-            .Height(32)
-            .ItemsSource(algorithms)
-            .SelectedItem(CompiledBinding.Create<ServiceMapViewModel, EdgeRoutingAlgorithmTypeEnum>(
-                x => x.EdgeRoutingAlgorithm,
-                source: viewModel,
-                mode: BindingMode.TwoWay))
-            .ItemTemplate(new FuncDataTemplate<EdgeRoutingAlgorithmTypeEnum>((algorithm, _) =>
-                new TextBlock().Text(GetEdgeRoutingAlgorithmName(algorithm))))
-            .ToolTip_Tip(Assets.Resources.ServiceMapView_EdgeRoutingAlgorithm);
-    }
-
     private static string GetLayoutAlgorithmName(LayoutAlgorithmTypeEnum algorithm)
     {
         return algorithm switch
@@ -152,18 +135,6 @@ public sealed partial class ServiceMapView : ViewBase<ServiceMapViewModel>
             LayoutAlgorithmTypeEnum.SimpleRandom => Assets.Resources.ServiceMapView_Layout_Random!,
             LayoutAlgorithmTypeEnum.Sugiyama => Assets.Resources.ServiceMapView_Layout_Sugiyama!,
             LayoutAlgorithmTypeEnum.Tree => Assets.Resources.ServiceMapView_Layout_Tree!,
-            _ => algorithm.ToString()
-        };
-    }
-
-    private static string GetEdgeRoutingAlgorithmName(EdgeRoutingAlgorithmTypeEnum algorithm)
-    {
-        return algorithm switch
-        {
-            EdgeRoutingAlgorithmTypeEnum.Bundling => Assets.Resources.ServiceMapView_Routing_Bundling!,
-            EdgeRoutingAlgorithmTypeEnum.None => Assets.Resources.ServiceMapView_Routing_None!,
-            EdgeRoutingAlgorithmTypeEnum.PathFinder => Assets.Resources.ServiceMapView_Routing_PathFinder!,
-            EdgeRoutingAlgorithmTypeEnum.SimpleER => Assets.Resources.ServiceMapView_Routing_SimpleER!,
             _ => algorithm.ToString()
         };
     }
@@ -198,8 +169,8 @@ public sealed partial class ServiceMapView : ViewBase<ServiceMapViewModel>
                 ServiceMapGraphControl.LayoutAlgorithmProperty,
                 CompiledBinding.Create<ServiceMapViewModel, LayoutAlgorithmTypeEnum>(x => x.LayoutAlgorithm, source: vm))
             .BindValue(
-                ServiceMapGraphControl.EdgeRoutingAlgorithmProperty,
-                CompiledBinding.Create<ServiceMapViewModel, EdgeRoutingAlgorithmTypeEnum>(x => x.EdgeRoutingAlgorithm, source: vm));
+                ServiceMapGraphControl.ViewNodeCommandProperty,
+                CompiledBinding.Create<ServiceMapViewModel, System.Windows.Input.ICommand>(x => x.ViewNodeCommand, source: vm));
     }
 
     private static ScrollViewer CreateSelectedFlows()

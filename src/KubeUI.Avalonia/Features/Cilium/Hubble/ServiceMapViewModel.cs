@@ -1,10 +1,13 @@
 using System.Collections.Specialized;
 using System.Reactive.Linq;
+using System.Windows.Input;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Dock.Model.Core;
 using k8s.Models;
 using KubeUI.Avalonia.Features.Cilium.Hubble.Controls;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
+using KubeUI.Avalonia.Infrastructure.Docking;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Infrastructure.Threading;
 using KubeUI.Cilium;
@@ -20,6 +23,7 @@ public sealed partial class ServiceMapViewModel : ViewModelBase, IInitializeClus
 {
     private readonly ILogger<ServiceMapViewModel> _logger;
     private readonly IHubbleConnectionFactory _hubbleClientFactory;
+    private readonly IFactory _factory;
     private readonly object _lifecycleGate = new();
     private readonly ServiceMapGraphBuilder _graphBuilder = new();
     private readonly ObservableCollection<V1Namespace> _localSelectedNamespaces = [];
@@ -50,7 +54,7 @@ public sealed partial class ServiceMapViewModel : ViewModelBase, IInitializeClus
     /// <summary>Gets or sets the GraphX layout algorithm used by the service map.</summary>
     [ObservableProperty] public partial LayoutAlgorithmTypeEnum LayoutAlgorithm { get; set; } = LayoutAlgorithmTypeEnum.CompoundFDP;
     /// <summary>Gets or sets the GraphX edge-routing algorithm used by the service map.</summary>
-    [ObservableProperty] public partial EdgeRoutingAlgorithmTypeEnum EdgeRoutingAlgorithm { get; set; } = EdgeRoutingAlgorithmTypeEnum.SimpleER;
+    [ObservableProperty] public partial EdgeRoutingAlgorithmTypeEnum EdgeRoutingAlgorithm { get; set; } = EdgeRoutingAlgorithmTypeEnum.None;
     [ObservableProperty] public partial ServiceMapNode? SelectedNode { get; set; }
     [ObservableProperty] public partial bool IsNamespaceSelectionLinked { get; set; } = true;
 
@@ -83,15 +87,32 @@ public sealed partial class ServiceMapViewModel : ViewModelBase, IInitializeClus
     public bool HasFlows => Graph?.NodeCount > 0;
 
     public IRelayCommand<ServiceMapNode> ShowFlowsForNodeCommand { get; }
+    /// <summary>Gets the command that opens properties for a selected service-map node.</summary>
+    public ICommand ViewNodeCommand { get; }
 
-    public ServiceMapViewModel(ILogger<ServiceMapViewModel> logger, IHubbleConnectionFactory hubbleClientFactory)
+    public ServiceMapViewModel(
+        ILogger<ServiceMapViewModel> logger,
+        IHubbleConnectionFactory hubbleClientFactory,
+        IFactory factory)
     {
         _logger = logger;
         _hubbleClientFactory = hubbleClientFactory;
+        _factory = factory;
 
         ShowFlowsForNodeCommand = new RelayCommand<ServiceMapNode>(ShowFlowsForNode);
+        ViewNodeCommand = new RelayCommand<ServiceMapNode>(ViewNode);
         Title = Assets.Resources.ServiceMapView_Title;
         Graph = new ServiceMapGraph();
+    }
+
+    private void ViewNode(ServiceMapNode? node)
+    {
+        if (node is null)
+            return;
+
+        var properties = new ServiceMapNodePropertiesViewModel();
+        properties.Initialize(node);
+        _factory.AddToRight(properties);
     }
 
     public void Initialize(ClusterWorkspace cluster)

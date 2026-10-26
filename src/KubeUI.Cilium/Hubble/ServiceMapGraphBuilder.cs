@@ -359,7 +359,7 @@ public sealed class ServiceMapGraphBuilder
 
         if (!string.IsNullOrWhiteSpace(pod))
         {
-            return new EndpointNode($"{ns}/{pod}", pod, ns, null);
+            return new EndpointNode($"{ns}/{pod}", pod, ns, "Pod");
         }
 
         if (!string.IsNullOrWhiteSpace(ip))

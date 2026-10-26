@@ -28,6 +28,7 @@ public sealed class HubbleModelTests
     }
 
     [Fact]
+    [Obsolete]
     public void Flow_mapper_reads_layer_seven_latency()
     {
         var flow = new Flow
@@ -39,6 +40,7 @@ public sealed class HubbleModelTests
     }
 
     [Fact]
+    [Obsolete]
     public void Flow_mapper_reads_source_and_destination_services()
     {
         var flow = new Flow
@@ -92,6 +94,18 @@ public sealed class HubbleModelTests
                 showOnlyErrors: false,
                 namespaces: ["team-a"])
             .ShouldContain(flow);
+    }
+
+    [Fact]
+    public void Service_map_pod_nodes_retain_pod_kind_for_resource_icon_lookup()
+    {
+        var builder = new ServiceMapGraphBuilder();
+        builder.AddFlow(Flow("pod-kind"));
+
+        var pod = builder.Build(TimeSpan.FromMinutes(5), namespaces: ["team-a", "team-b"])
+            .Nodes.Single(node => node.Id == "team-a/client");
+
+        pod.WorkloadType.ShouldBe("Pod");
     }
 
     [Fact]
@@ -183,6 +197,7 @@ public sealed class HubbleModelTests
     }
 
     [Fact]
+    [Obsolete]
     public void Flow_mapper_keeps_endpoint_dns_names_and_world_identity_for_service_map()
     {
         var flow = new Flow
@@ -198,6 +213,7 @@ public sealed class HubbleModelTests
     }
 
     [Fact]
+    [Obsolete]
     public void Service_map_access_points_use_mapped_destination_port_not_source_port()
     {
         var flow = new Flow

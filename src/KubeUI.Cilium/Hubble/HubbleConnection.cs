@@ -131,6 +131,7 @@ public sealed class HubbleConnection : IHubbleConnection
     private IObservable<FlowViewModel> CreateFlowObservable(IReadOnlyList<string>? namespaces)
         => Observable.Create<FlowViewModel>((observer, token) => ReadFlowsAsync(observer, token, namespaces));
 
+    [Obsolete]
     private async Task ReadFlowsAsync(
         IObserver<FlowViewModel> observer,
         CancellationToken subscriptionToken,
