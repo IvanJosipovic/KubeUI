@@ -14,7 +14,9 @@ public sealed record NavigationGroup(string Id, string Name, int Order, Icon? Ic
 /// <param name="Name">Localized display name.</param>
 /// <param name="Order">Sort position relative to other navigation items.</param>
 /// <param name="Icon">Optional section icon.</param>
-public sealed record NavigationSection(string Id, string Name, int Order, Icon? Icon);
+/// <param name="SvgIcon">Optional asset path to an SVG icon; when set it is rendered instead of <paramref name="Icon"/>.</param>
+/// <param name="SvgIconDark">Optional dark-theme SVG asset path; <paramref name="SvgIcon"/> is used as the fallback.</param>
+public sealed record NavigationSection(string Id, string Name, int Order, Icon? Icon, string? SvgIcon = null, string? SvgIconDark = null);
 
 /// <summary>Creates and updates the shared navigation nodes used by the navigation tree.</summary>
 internal static class NavigationTreeEditor
@@ -24,20 +26,31 @@ internal static class NavigationTreeEditor
         string id,
         string name,
         int order,
-        Icon? icon = null)
+        Icon? icon = null,
+        string? svgIcon = null,
+        string? svgIconDark = null)
     {
         var existing = items.FirstOrDefault(item => string.Equals(item.Id, id, StringComparison.Ordinal));
         if (existing is not null)
         {
             existing.Name = name;
             existing.Order = order;
-            existing.FluentIcon = icon;
+            ApplyIcon(existing, icon, svgIcon, svgIconDark);
             return existing;
         }
 
-        var created = new NavigationItem { Id = id, Name = name, Order = order, FluentIcon = icon };
+        var created = new NavigationItem { Id = id, Name = name, Order = order };
+        ApplyIcon(created, icon, svgIcon, svgIconDark);
         items.Add(created);
         return created;
+    }
+
+    /// <summary>Applies the section icon to a node; the SVG icon wins so a node never renders two icons.</summary>
+    private static void ApplyIcon(NavigationItem item, Icon? icon, string? svgIcon, string? svgIconDark)
+    {
+        item.FluentIcon = svgIcon is null ? icon : null;
+        item.SvgIcon = svgIcon;
+        item.SvgIconDark = svgIcon is null ? null : svgIconDark;
     }
 
     public static ObservableCollection<NavigationItem> EnsurePath(

@@ -5,11 +5,12 @@ using Avalonia.Xaml.Interactions.Core;
 using AvaloniaEdit;
 using KubeUI.Avalonia.Features.Resources.Yaml.Behaviors;
 using KubeUI.Avalonia.Infrastructure;
+using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Styles;
 
 namespace KubeUI.Avalonia.Features.Helm.Releases;
 
-public sealed class HelmReleaseEditorView : ViewBase<HelmReleaseEditorViewModel>
+public sealed class HelmReleaseEditorView : KubeUIView<HelmReleaseEditorViewModel>
 {
     protected override object Build(HelmReleaseEditorViewModel vm)
     {
@@ -31,7 +32,7 @@ public sealed class HelmReleaseEditorView : ViewBase<HelmReleaseEditorViewModel>
             .ColumnSpacing(12)
             .Children(
                 new TextBlock().Row(0).Col(0).Text(Assets.Resources.HelmReleaseEditorView_Name),
-                new TextBox().Row(0).Col(1).IsReadOnly(vm, x => x.IsUpgrade).Text(vm, x => x.ReleaseName, BindingMode.TwoWay),
+                new TextBox().Row(0).Col(1).Name("ReleaseName", Scope).IsReadOnly(vm, x => x.IsUpgrade).Text(vm, x => x.ReleaseName, BindingMode.TwoWay),
                 new TextBlock().Row(1).Col(0).Text(Assets.Resources.HelmReleaseEditorView_ChartSource),
                 new StackPanel()
                     .Row(1).Col(1)
@@ -104,6 +105,7 @@ public sealed class HelmReleaseEditorView : ViewBase<HelmReleaseEditorViewModel>
                 new TextEditor()
                     .Row(8)
                     .Col(1)
+                    .Name("ValuesYamlEditor", Scope)
                     .MinHeight(200)
                     .MaxHeight(400)
                     .IsReadOnly(vm, x => x.IsLoading)

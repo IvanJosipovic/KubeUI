@@ -12,8 +12,8 @@
     <PackageReference Include="Microsoft.Testing.Extensions.CodeCoverage" Version="18.12.0" />
     <PackageReference Include="Microsoft.Testing.Extensions.CrashDump" Version="2.5.1" />
     <PackageReference Include="Microsoft.Testing.Extensions.HangDump" Version="2.5.1" />
-    <PackageReference Include="StreamJsonRpc" Version="2.25.29" PrivateAssets="all" />
     <PackageReference Include="xunit.v3.mtp-v2" Version="3.2.2" />
+    <PackageReference Include="SvcSystems.AI.AgentClientProtocol" Version="1.0.0-alpha.5" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup>

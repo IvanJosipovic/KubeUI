@@ -147,7 +147,7 @@ public class ClusterWorkspaceTests
 
         await workspace.Runtime.CreateAsync(crd, TestContext.Current.CancellationToken);
 
-        var resourceKind = await WaitForRegisteredCustomResourceKind(workspace.Runtime, crd);
+        var resourceKind = await WaitForRegisteredCustomResourceKindAsync(workspace.Runtime, crd);
 
         var resourceConfig = await TestWait.UntilValueAsync(
             () => GetCustomResourceConfig(workspace, crd),
@@ -276,7 +276,7 @@ public class ClusterWorkspaceTests
 
         await workspace.Runtime.CreateAsync(originalCrd, TestContext.Current.CancellationToken);
 
-        var originalKind = await WaitForRegisteredCustomResourceKind(workspace.Runtime, originalCrd);
+        var originalKind = await WaitForRegisteredCustomResourceKindAsync(workspace.Runtime, originalCrd);
         await workspace.Runtime.Permissions.UpdateCanI(GetCustomResourceKind(originalCrd), Verb.List);
         await workspace.Runtime.Permissions.UpdateCanI(GetCustomResourceKind(originalCrd), Verb.Watch);
         await SeedResourceAsync(workspace.Runtime, originalKind);
@@ -299,7 +299,7 @@ public class ClusterWorkspaceTests
         updatedCrd.Metadata.Generation = 2;
         await workspace.Runtime.ReplaceAsync(updatedCrd, TestContext.Current.CancellationToken);
 
-        var updatedKind = await WaitForRegisteredCustomResourceKind(workspace.Runtime, updatedCrd);
+        var updatedKind = await WaitForRegisteredCustomResourceKindAsync(workspace.Runtime, updatedCrd);
         updatedKind.ShouldBe(originalKind);
 
         var updatedResourceConfig = await TestWait.UntilValueAsync(
@@ -339,7 +339,7 @@ public class ClusterWorkspaceTests
 
         await workspace.Runtime.CreateAsync(originalCrd, TestContext.Current.CancellationToken);
 
-        var originalKind = await WaitForRegisteredCustomResourceKind(workspace.Runtime, originalCrd);
+        var originalKind = await WaitForRegisteredCustomResourceKindAsync(workspace.Runtime, originalCrd);
         await workspace.Runtime.Permissions.UpdateCanI(GetCustomResourceKind(originalCrd), Verb.List);
         await workspace.Runtime.Permissions.UpdateCanI(GetCustomResourceKind(originalCrd), Verb.Watch);
         await SeedResourceAsync(workspace.Runtime, originalKind);
@@ -447,7 +447,7 @@ public class ClusterWorkspaceTests
 
         await workspace.Runtime.CreateAsync(crd, TestContext.Current.CancellationToken);
 
-        var resourceKind = await WaitForRegisteredCustomResourceKind(workspace.Runtime, crd);
+        var resourceKind = await WaitForRegisteredCustomResourceKindAsync(workspace.Runtime, crd);
         await workspace.Runtime.Permissions.UpdateCanI(GetCustomResourceKind(crd), Verb.List);
         await workspace.Runtime.Permissions.UpdateCanI(GetCustomResourceKind(crd), Verb.Watch);
         await SeedResourceAsync(workspace.Runtime, resourceKind);
@@ -486,7 +486,7 @@ public class ClusterWorkspaceTests
 
         await workspace.Runtime.CreateAsync(crd, TestContext.Current.CancellationToken);
 
-        var resourceKind = await WaitForRegisteredCustomResourceKind(workspace.Runtime, crd);
+        var resourceKind = await WaitForRegisteredCustomResourceKindAsync(workspace.Runtime, crd);
         var resourceConfig = await TestWait.UntilValueAsync(
             () => GetCustomResourceConfig(workspace, crd),
             TimeSpan.FromSeconds(10),
@@ -640,7 +640,7 @@ public class ClusterWorkspaceTests
 
         await workspace.Runtime.CreateAsync(crd, TestContext.Current.CancellationToken);
 
-        var resourceKind = await WaitForRegisteredCustomResourceKind(workspace.Runtime, crd);
+        var resourceKind = await WaitForRegisteredCustomResourceKindAsync(workspace.Runtime, crd);
 
         await workspace.Disconnect();
 
@@ -705,7 +705,7 @@ public class ClusterWorkspaceTests
         var crd = ClusterWorkspaceTestCustomResourceDefinitionFactory.Create("tests.kubeui.com", "tests", "someString");
         await workspace.Runtime.AddOrUpdateResource(crd);
 
-        var resourceKind = await WaitForRegisteredCustomResourceKind(workspace.Runtime, crd);
+        var resourceKind = await WaitForRegisteredCustomResourceKindAsync(workspace.Runtime, crd);
 
         await TestWait.UntilAsync(
             () => GetCustomResourceConfig(workspace, crd) != null,
@@ -945,7 +945,7 @@ public class ClusterWorkspaceTests
             cancellationToken);
     }
 
-    private static async Task<GroupApiVersionKind> WaitForRegisteredCustomResourceKind(
+    private static async Task<GroupApiVersionKind> WaitForRegisteredCustomResourceKindAsync(
         IClusterRuntime runtime,
         V1CustomResourceDefinition crd)
     {

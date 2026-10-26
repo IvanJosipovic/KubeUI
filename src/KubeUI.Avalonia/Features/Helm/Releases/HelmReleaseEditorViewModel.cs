@@ -178,7 +178,9 @@ public sealed partial class HelmReleaseEditorViewModel : ViewModelBase, INotifyD
         _applyingChartDefaults = false;
         Namespace = release?.Namespace ?? connection.Namespace ?? "default";
         Title = release is null ? Assets.Resources.HelmReleaseEditorView_InstallTitle : Assets.Resources.HelmReleaseEditorView_UpgradeTitle;
-        Id = $"{nameof(HelmReleaseEditorViewModel)}-{cluster.Runtime.Name}-{release?.Name ?? Guid.NewGuid().ToString("N")}";
+        Id = release is null
+            ? $"{nameof(HelmReleaseEditorViewModel)}-{cluster.Runtime.Name}-{Guid.NewGuid():N}"
+            : $"{nameof(HelmReleaseEditorViewModel)}-{cluster.Runtime.Name}-{release.Namespace}-{release.Name}";
         OnPropertyChanged(nameof(IsUpgrade));
         InitializationTask = LoadReleaseCommand.ExecuteAsync(null);
     }
@@ -747,7 +749,7 @@ public sealed partial class HelmReleaseEditorViewModel : ViewModelBase, INotifyD
                 && !_valuesWereEdited)
             {
                 _applyingChartDefaults = true;
-                ValuesYaml = values;
+                ValuesYaml = values ?? string.Empty;
                 _applyingChartDefaults = false;
                 ClearFieldError(nameof(SelectedVersion));
             }

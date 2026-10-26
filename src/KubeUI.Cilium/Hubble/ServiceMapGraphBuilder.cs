@@ -7,7 +7,7 @@ namespace KubeUI.Cilium.Hubble;
 public sealed class ServiceMapGraphBuilder
 {
     private static readonly TimeSpan s_maxRetention = TimeSpan.FromHours(1);
-    private readonly object _gate = new();
+    private readonly Lock _gate = new();
     private readonly FlowViewModel[] _recentFlows;
     private readonly int _maxRetainedFlows;
     private int _nextFlowIndex;

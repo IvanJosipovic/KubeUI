@@ -143,7 +143,7 @@ public sealed class HelmChartsViewModelTests
             factory.Setup(item => item.InsertDockable(documents, It.IsAny<IDockable>(), 0))
                 .Throws(new InvalidOperationException("Cannot open document"));
             await charts.InstallChartCommand.ExecuteAsync(menu.CommandParameter).WaitAsync(TestContext.Current.CancellationToken);
-            charts.Status.ShouldBe("Cannot open document");
+            charts.Status.ShouldBe(Assets.Resources.Shared_ErrorOccurred);
 
             charts.SelectedRepository = "first";
             await TestWait.UntilAsync(() => charts.ItemCount == 1,
@@ -188,7 +188,7 @@ public sealed class HelmChartsViewModelTests
         helm.Setup(service => service.ListRepositoriesAsync(It.IsAny<HelmConnection>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new InvalidOperationException("Repository configuration unavailable"));
         await charts.RefreshCommand.ExecuteAsync(null).WaitAsync(TestContext.Current.CancellationToken);
-        charts.Status.ShouldBe("Repository configuration unavailable");
+        charts.Status.ShouldBe(Assets.Resources.Shared_ErrorOccurred);
         await TestWait.UntilAsync(() => charts.ItemCount == 0,
             TimeSpan.FromSeconds(5), cancellationToken: TestContext.Current.CancellationToken);
     }
@@ -215,7 +215,7 @@ public sealed class HelmChartsViewModelTests
         using var charts = new HelmChartsViewModel(helm.Object, Mock.Of<IHelmDocumentOpener>());
         charts.Initialize(workspace);
         await charts.RefreshCommand.ExecuteAsync(null).WaitAsync(TestContext.Current.CancellationToken);
-        charts.Status.ShouldBe(fails ? "Index unavailable" : Assets.Resources.Shared_NoCharts);
+        charts.Status.ShouldBe(fails ? Assets.Resources.Shared_ErrorOccurred : Assets.Resources.Shared_NoCharts);
         charts.ItemCount.ShouldBe(0);
         charts.IsLoading.ShouldBeFalse();
         await charts.InstallChartCommand.ExecuteAsync(null).WaitAsync(TestContext.Current.CancellationToken);

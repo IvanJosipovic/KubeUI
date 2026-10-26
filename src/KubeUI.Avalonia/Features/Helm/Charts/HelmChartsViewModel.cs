@@ -5,6 +5,7 @@ using Helm.NET;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Kubernetes;
+using Microsoft.Extensions.Logging;
 using NuGet.Versioning;
 
 namespace KubeUI.Avalonia.Features.Helm.Charts;
@@ -14,6 +15,7 @@ public sealed partial class HelmChartsViewModel : ViewModelBase, IInitializeClus
 {
     private readonly IHelmService _helmService;
     private readonly IHelmDocumentOpener _documentOpener;
+    private readonly ILogger<HelmChartsViewModel>? _logger;
     private readonly SourceCache<HelmChartSearchResult, string> _charts = new(chart => chart.Reference);
     private readonly DynamicTableViewSource<HelmChartSearchResult, string> _tableSource;
     private readonly INotifyCollectionChanged? _itemsNotifications;
@@ -53,10 +55,11 @@ public sealed partial class HelmChartsViewModel : ViewModelBase, IInitializeClus
     public IDynamicTableViewSource TableSource => _tableSource;
 
     /// <summary>Creates the charts document.</summary>
-    public HelmChartsViewModel(IHelmService helmService, IHelmDocumentOpener documentOpener)
+    public HelmChartsViewModel(IHelmService helmService, IHelmDocumentOpener documentOpener, ILogger<HelmChartsViewModel>? logger = null)
     {
         _helmService = helmService;
         _documentOpener = documentOpener;
+        _logger = logger;
         _tableSource = new DynamicTableViewSource<HelmChartSearchResult, string>(
             _charts, chart => chart.Reference,
             [
@@ -119,7 +122,8 @@ public sealed partial class HelmChartsViewModel : ViewModelBase, IInitializeClus
         {
             _matches = [];
             ApplyRepositoryFilter();
-            Status = exception.Message;
+            Status = Assets.Resources.Shared_ErrorOccurred;
+            _logger?.LogError(exception, "Helm refresh failed");
         }
         finally
         {
@@ -156,7 +160,8 @@ public sealed partial class HelmChartsViewModel : ViewModelBase, IInitializeClus
         }
         catch (Exception exception)
         {
-            Status = exception.Message;
+            Status = Assets.Resources.Shared_ErrorOccurred;
+            _logger?.LogError(exception, "Failed to open install editor");
         }
     }
 

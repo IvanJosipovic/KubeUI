@@ -344,37 +344,31 @@ public sealed class HelmServiceTests
     }
 
     [Fact]
-    public async Task Read_operations_for_different_connections_run_concurrently()
+    public async Task Native_read_operations_for_different_connections_are_serialized()
     {
-        // Use separate clients for each connection to test true concurrency
-        var client1 = new FakeHelmClient { BlockingEntries = 1 };
-        var client2 = new FakeHelmClient { BlockingEntries = 1 };
-        var factory = new MultiClientHelmClientFactory(client1, client2);
-        using var sut = new HelmService(factory);
+        var client = new FakeHelmClient { BlockingEntries = 2 };
+        using var factory = new FakeHelmClientFactory(client);
+        using var sut = CreateService(factory);
         var connection1 = CreateConnection();
         var connection2 = new HelmConnection("/other/config", "other-context", "system");
 
         var first = sut.ListReleasesAsync(connection1, cancellationToken: TestContext.Current.CancellationToken);
-        await client1.FirstEntry.Task.WaitAsync(TestContext.Current.CancellationToken);
+        await client.FirstEntry.Task.WaitAsync(TestContext.Current.CancellationToken);
 
         var second = sut.ListReleasesAsync(connection2, cancellationToken: TestContext.Current.CancellationToken);
-        await client2.FirstEntry.Task.WaitAsync(TestContext.Current.CancellationToken);
-
-        // With ReaderWriterLockSlim, read operations run concurrently
-        // Both operations should be blocked on their respective FirstEntry
         first.IsCompleted.ShouldBeFalse();
         second.IsCompleted.ShouldBeFalse();
 
-        client1.Release.SetResult();
-        client2.Release.SetResult();
+        await factory.SecondCreated.Task.WaitAsync(TestContext.Current.CancellationToken);
+        client.EntryCount.ShouldBe(1);
+        client.Release.SetResult();
         var firstResult = await first;
         var secondResult = await second;
 
         firstResult.Count.ShouldBe(0);
         secondResult.Count.ShouldBe(0);
-        // Both operations should have entered (concurrent reads)
-        client1.EntryCount.ShouldBe(1);
-        client2.EntryCount.ShouldBe(1);
+        client.EntryCount.ShouldBe(2);
+        client.MaxConcurrent.ShouldBe(1);
     }
 
     [Fact]
@@ -425,14 +419,4 @@ public sealed class HelmServiceTests
         client.EntryCount.ShouldBe(1);
     }
 
-    private sealed class MultiClientHelmClientFactory(IHelmClient client1, IHelmClient client2) : IHelmClientFactory
-    {
-        private int _callCount;
-
-        public IHelmClient Create(HelmConnection connection)
-        {
-            var count = Interlocked.Increment(ref _callCount);
-            return count == 1 ? client1 : client2;
-        }
-    }
 }

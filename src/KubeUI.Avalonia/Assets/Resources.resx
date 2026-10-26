@@ -1297,6 +1297,10 @@
     <value>No charts matched the search. Update repository indexes or change the search text.</value>
     <comment/>
   </data>
+  <data name="Shared_ErrorOccurred" xml:space="preserve">
+    <value>Error occurred</value>
+    <comment/>
+  </data>
   <data name="Shared_Count" xml:space="preserve">
     <value>Count</value>
     <comment/>
@@ -2886,7 +2890,7 @@
     <value>URL</value>
   </data>
   <data name="HelmRepositoriesView_IndexesUpdated" xml:space="preserve">
-    <value>Repository indexes updated.</value>
+    <value>Indexes updated</value>
   </data>
   <data name="HelmRepositoriesView_New" xml:space="preserve">
     <value>New repository</value>
@@ -2957,16 +2961,6 @@
   <data name="HelmReleasesView_RollbackDialog_Content" xml:space="preserve"><value>Roll back release '{0}' in namespace '{1}'? Revision 0 selects the previous revision.</value></data>
   <data name="HelmReleasesView_HistoryLabel" xml:space="preserve"><value>Release History</value></data>
   <data name="HelmRepositoriesView_ViewCharts" xml:space="preserve"><value>View Charts</value></data>
-  <data name="HelmRepositoriesView_Edit" xml:space="preserve"><value>Edit</value></data>
-  <data name="HelmRepositoriesView_Delete" xml:space="preserve"><value>Delete</value></data>
-  <data name="HelmRepositoriesView_DeleteTitle" xml:space="preserve"><value>Delete repository?</value></data>
-  <data name="HelmRepositoriesView_DeleteContent" xml:space="preserve"><value>Delete repository '{0}'?</value></data>
-  <data name="HelmRepositoriesView_New" xml:space="preserve"><value>New repository</value></data>
-  <data name="HelmRepositoriesView_ItemsFormat" xml:space="preserve"><value>Repositories: {0}</value></data>
-  <data name="HelmRepositoriesView_Name" xml:space="preserve"><value>Name</value></data>
-  <data name="HelmRepositoriesView_Url" xml:space="preserve"><value>URL</value></data>
-  <data name="HelmRepositoriesView_UpdateIndexes" xml:space="preserve"><value>Update indexes</value></data>
-  <data name="HelmRepositoriesView_IndexesUpdated" xml:space="preserve"><value>Indexes updated</value></data>
   <data name="HelmRepositoriesView_RefreshFailed" xml:space="preserve"><value>Refresh failed</value></data>
   <data name="HelmRepositoriesView_IndexUpdateFailed" xml:space="preserve"><value>Update failed</value></data>
   <data name="HelmRepositoriesView_DeleteFailed" xml:space="preserve"><value>Delete failed</value></data>

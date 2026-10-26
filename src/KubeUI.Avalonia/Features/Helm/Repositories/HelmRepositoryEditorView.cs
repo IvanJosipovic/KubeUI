@@ -1,6 +1,8 @@
+using KubeUI.Avalonia.Infrastructure.Presentation;
+
 namespace KubeUI.Avalonia.Features.Helm.Repositories;
 
-public sealed class HelmRepositoryEditorView : ViewBase<HelmRepositoryEditorViewModel>
+public sealed class HelmRepositoryEditorView : KubeUIView<HelmRepositoryEditorViewModel>
 {
     protected override object Build(HelmRepositoryEditorViewModel vm)
     {

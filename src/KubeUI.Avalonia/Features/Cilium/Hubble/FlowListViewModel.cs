@@ -33,8 +33,8 @@ public sealed partial class FlowListViewModel : ViewModelBase, IInitializeCluste
     private const string FilterScopeKey = "hubble-flow-scope";
     private readonly ILogger<FlowListViewModel> _logger;
     private readonly IHubbleConnectionFactory _hubbleClientFactory;
-    private readonly object _lifecycleGate = new();
-    private readonly object _flowUpdateGate = new();
+    private readonly Lock _lifecycleGate = new();
+    private readonly Lock _flowUpdateGate = new();
     private IHubbleConnection? _connection;
     private IDisposable? _flowSubscription;
     private CancellationTokenSource _lifetime = new();

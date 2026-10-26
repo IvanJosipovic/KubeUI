@@ -14,13 +14,21 @@ internal sealed class HelmNavigationSectionProvider : INavigationSectionProvider
     public const string ReleasesDocumentId = "helm-releases";
     public const string ChartsDocumentId = "helm-charts";
 
+    /// <summary>Asset path of the official CNCF Helm color icon, used in the light theme (see Assets/helm/README.md for licensing).</summary>
+    public const string IconAssetPath = "/Assets/helm/helm-icon-color.svg";
+
+    /// <summary>Asset path of the official CNCF Helm white icon, used in the dark theme.</summary>
+    public const string IconDarkAssetPath = "/Assets/helm/helm-icon-white.svg";
+
     public HelmNavigationSectionProvider()
     {
         Section = new NavigationSection(
             "helm",
             Assets.Resources.NavigationView_Helm!,
             NavigationSections.AfterCustomResourcesOrder,
-            null);
+            null,
+            IconAssetPath,
+            IconDarkAssetPath);
 
         Documents =
         [

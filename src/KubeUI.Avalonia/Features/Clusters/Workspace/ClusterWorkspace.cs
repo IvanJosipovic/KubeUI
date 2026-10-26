@@ -34,7 +34,7 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
     private const int PermissionRefreshNamespaces = 2;
     private static readonly TimeSpan PermissionRefreshDebounce = TimeSpan.FromMilliseconds(500);
 
-    private readonly object _connectLock = new();
+    private readonly Lock _connectLock = new();
     private readonly SemaphoreSlim _permissionRefreshGate = new(1, 1);
     private long _customResourceDefinitionRevision;
     private int _permissionRefreshRequested;

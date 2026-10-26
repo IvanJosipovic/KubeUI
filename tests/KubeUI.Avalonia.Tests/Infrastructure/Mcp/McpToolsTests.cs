@@ -9,6 +9,7 @@ using KubeUI.AI.Mcp;
 using KubeUI.AI.Permissions;
 using KubeUI.Avalonia.Infrastructure.Mcp;
 using KubeUI.Avalonia.Shell.Navigation;
+using KubeUI.Desktop;
 using KubeUI.Kubernetes.Serialization;
 using ModelContextProtocol.Server;
 using Moq;
@@ -260,7 +261,7 @@ public sealed class McpToolsTests
         var tools = CreateTools(session);
 
         var result = await tools.ListEvents("dev", "default");
-        var json = JsonSerializer.Serialize(result, new JsonSerializerOptions(JsonSerializerDefaults.Web));
+        var json = JsonSerializer.Serialize(result, McpToolJsonSerializationContext.CreateSerializerOptions());
 
         json.ShouldContain("\"reason\":\"FailedScheduling\"");
         json.ShouldContain("\"message\":\"0/3 nodes are available\"");
@@ -290,7 +291,7 @@ public sealed class McpToolsTests
             "dev", "default", cursor: mismatchedEventCursor));
 
         using var cancellation = new CancellationTokenSource();
-        cancellation.Cancel();
+        await cancellation.CancelAsync();
         await Should.ThrowAsync<OperationCanceledException>(() => tools.ListEvents(
             "dev", "default", cancellationToken: cancellation.Token));
     }
@@ -371,8 +372,8 @@ public sealed class McpToolsTests
         await Should.ThrowAsync<ArgumentOutOfRangeException>(() => tools.ListResources("dev", "v1", "Pod", limit: 501));
         await Should.ThrowAsync<ArgumentException>(() => tools.ListResources(
             "dev", "v1", "Pod", cursor: new string('x', 4097)));
-        Should.Throw<ArgumentOutOfRangeException>(() => tools.ListRelatedResources("dev", "v1", "Pod", "api", limit: 0));
-        Should.Throw<ArgumentOutOfRangeException>(() => tools.GetResourceGraph("dev", "v1", "Pod", "api", limit: 501));
+        await Should.ThrowAsync<ArgumentOutOfRangeException>(() => tools.ListRelatedResources("dev", "v1", "Pod", "api", limit: 0));
+        await Should.ThrowAsync<ArgumentOutOfRangeException>(() => tools.GetResourceGraph("dev", "v1", "Pod", "api", limit: 501));
         await Should.ThrowAsync<ArgumentException>(() => tools.GetPodLogs("dev", "default", "bad_name"));
         await Should.ThrowAsync<ArgumentException>(() => tools.GetPodLogs("dev", "default", string.Empty));
         await Should.ThrowAsync<ArgumentException>(() => tools.GetPodLogs("dev", "default", new string('a', 254)));
@@ -467,7 +468,7 @@ public sealed class McpToolsTests
     public async Task diff_resource_yaml_honors_cancellation_before_cluster_access()
     {
         using var cancellation = new CancellationTokenSource();
-        cancellation.Cancel();
+        await cancellation.CancelAsync();
         var session = new Mock<IMcpClusterSession>(MockBehavior.Strict);
         var tools = CreateTools(session);
 
@@ -587,7 +588,7 @@ public sealed class McpToolsTests
     public async Task pod_logs_propagates_cancellation_from_log_request()
     {
         using var cancellation = new CancellationTokenSource();
-        cancellation.Cancel();
+        await cancellation.CancelAsync();
         var operations = new Mock<ICoreV1Operations>(MockBehavior.Strict);
         operations.Setup(x => x.ReadNamespacedPodLogWithHttpMessagesAsync(
                 It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<bool?>(), It.IsAny<bool?>(),

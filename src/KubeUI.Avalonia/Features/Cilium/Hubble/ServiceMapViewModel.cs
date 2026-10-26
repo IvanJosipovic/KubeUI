@@ -24,7 +24,7 @@ public sealed partial class ServiceMapViewModel : ViewModelBase, IInitializeClus
     private readonly ILogger<ServiceMapViewModel> _logger;
     private readonly IHubbleConnectionFactory _hubbleClientFactory;
     private readonly IFactory _factory;
-    private readonly object _lifecycleGate = new();
+    private readonly Lock _lifecycleGate = new();
     private readonly ServiceMapGraphBuilder _graphBuilder = new();
     private readonly ObservableCollection<V1Namespace> _localSelectedNamespaces = [];
     private readonly ObservableCollection<FlowViewModel> _selectedNodeFlows = [];

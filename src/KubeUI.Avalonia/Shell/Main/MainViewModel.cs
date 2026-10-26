@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Net.Http.Json;
 using System.Runtime.InteropServices;
 using System.Text.Json.Serialization;
@@ -447,8 +448,9 @@ public sealed partial class MainViewModel : ViewModelBase
         for (var page = 1; ; page++)
         {
             var uri = $"https://api.github.com/repos/IvanJosipovic/KubeUI/releases?per_page={releasesPerPage}&page={page}";
-            var githubReleases = await httpClient.GetFromJsonAsync<GitHubReleaseResponse[]>(
+            var githubReleases = await httpClient.GetFromJsonAsync(
                 uri,
+                GitHubReleaseJsonContext.Default.GitHubReleaseResponseArray,
                 cancellationToken).ConfigureAwait(false) ?? [];
 
             if (githubReleases.Length == 0)
@@ -518,6 +520,9 @@ public sealed partial class MainViewModel : ViewModelBase
         [JsonPropertyName("prerelease")]
         public bool Prerelease { get; init; }
     }
+
+    [JsonSerializable(typeof(GitHubReleaseResponse[]))]
+    private partial class GitHubReleaseJsonContext : JsonSerializerContext;
 
     private async Task ShowNoUpdatesAvailableAsync()
     {

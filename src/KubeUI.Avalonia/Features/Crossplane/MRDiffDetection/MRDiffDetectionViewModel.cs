@@ -36,7 +36,7 @@ public sealed partial class MRDiffDetectionViewModel : ViewModelBase, IInitializ
     private readonly ConcurrentDictionary<string, byte> _seededGvks = new(StringComparer.Ordinal);
     private readonly CancellationTokenSource _processingCancellation = new();
     private readonly CancellationToken _processingToken;
-    private readonly object _seedTasksGate = new();
+    private readonly Lock _seedTasksGate = new();
     private readonly List<Task> _seedTasks = [];
     private readonly SourceCache<CrossplaneDiffRow, string> _rowsSource = new(row => row.Key);
     private readonly DynamicTableViewSource<CrossplaneDiffRow, string> _tableSource;

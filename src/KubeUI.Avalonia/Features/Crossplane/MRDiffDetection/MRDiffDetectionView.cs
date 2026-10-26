@@ -1,11 +1,12 @@
 using Avalonia.Controls.Templates;
 using FluentIcons.Avalonia;
 using FluentIcons.Common;
+using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Kubernetes;
 
 namespace KubeUI.Avalonia.Features.Crossplane.MRDiffDetection;
 
-public sealed class MRDiffDetectionView : ViewBase<MRDiffDetectionViewModel>
+public sealed class MRDiffDetectionView : KubeUIView<MRDiffDetectionViewModel>
 {
     protected override object Build(MRDiffDetectionViewModel vm)
     {

@@ -1,6 +1,7 @@
 using System.Text.Json;
 using k8s;
 using KubernetesClient.Informer.Client;
+using KubeUI.Kubernetes.Serialization;
 using Shouldly;
 
 namespace KubeUI.Kubernetes.Tests.Models;
@@ -40,11 +41,10 @@ public sealed class GenericKubernetesObjectTests
     [Fact]
     public void JsonExtensionData_RoundTripsCompleteDocument()
     {
-        var options = new JsonSerializerOptions();
         var resource = KubernetesJson.Deserialize<GenericKubernetesObject>("{\"apiVersion\":\"example.com/v1\",\"kind\":\"Widget\",\"metadata\":{\"name\":\"one\"},\"spec\":{\"value\":\"kept\"}}");
 
-        var json = JsonSerializer.Serialize(resource, options);
-        var roundTripped = JsonSerializer.Deserialize<GenericKubernetesObject>(json, options);
+        var json = JsonSerializer.Serialize(resource, KubernetesJsonStaticContext.Default.GenericKubernetesObject);
+        var roundTripped = JsonSerializer.Deserialize(json, KubernetesJsonStaticContext.Default.GenericKubernetesObject);
 
         roundTripped.ShouldNotBeNull();
         roundTripped!.Properties["spec"].GetProperty("value").GetString().ShouldBe("kept");

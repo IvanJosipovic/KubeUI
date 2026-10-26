@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Templates;
 using Avalonia.Xaml.Interactions.Core;
@@ -6,12 +7,14 @@ using FluentIcons.Common;
 using Helm.NET;
 using k8s.Models;
 using KubeUI.Avalonia.Infrastructure;
+using KubeUI.Avalonia.Infrastructure.Presentation;
 using Ursa.Controls;
 
 namespace KubeUI.Avalonia.Features.Helm.Releases;
 
-public sealed class HelmReleasesView : ViewBase<HelmReleasesViewModel>
+public sealed class HelmReleasesView : KubeUIView<HelmReleasesViewModel>
 {
+    [RequiresUnreferencedCode("DynamicTableView creates columns from runtime Helm release metadata.")]
     protected override object Build(HelmReleasesViewModel vm)
     {
         ArgumentNullException.ThrowIfNull(vm);

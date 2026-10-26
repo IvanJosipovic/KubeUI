@@ -1,58 +1,59 @@
-using dotacp.protocol;
 using KubeUI.AI.Agents;
 using KubeUI.AI.Permissions;
+using SvcSystems.AI.AgentClientProtocol;
+using SvcSystems.AI.AgentClientProtocol.Client.Models;
 
 namespace KubeUI.AI.Acp;
 
-internal sealed class AcpFileSystemHandler(
+internal sealed class FileSystemHandler(
     IAgentPermissionService permissionService,
-    IReadOnlySet<string>? fileSystemRoots = null)
+    IReadOnlySet<string>? fileSystemRoots = null) : IFileSystemHandler
 {
     private readonly string[] _fileSystemRoots = fileSystemRoots is null
         ? []
         : fileSystemRoots.Select(Path.GetFullPath).ToArray();
 
-    public async Task<ReadTextFileResponse> ReadTextFileAsync(
+    public async ValueTask<string> ReadTextFileAsync(
         ReadTextFileRequest request,
         CancellationToken cancellationToken = default)
     {
+        var path = request.Path;
         var permission = await permissionService.RequestPermissionAsync(
-            new AgentPermissionRequest("read_file", request.Path), cancellationToken).ConfigureAwait(false);
+            new AgentPermissionRequest("read_file", path), cancellationToken).ConfigureAwait(false);
         if (!permission.Allowed)
-            throw new UnauthorizedAccessException(permission.Reason ?? $"Reading '{request.Path}' was denied.");
-        EnsurePathAllowed(request.Path);
+            throw new UnauthorizedAccessException(permission.Reason ?? $"Reading '{path}' was denied.");
+        EnsurePathAllowed(path);
 
         var start = request.Line is null ? 0 : checked((int)request.Line.Value - 1);
-        var limit = request.Limit is null ? int.MaxValue : checked((int)request.Limit.Value);
-        if (start < 0 || limit < 0)
-            return new ReadTextFileResponse { Content = string.Empty };
+        var lineLimit = request.Limit is null ? int.MaxValue : checked((int)request.Limit.Value);
+        if (start < 0 || lineLimit < 0)
+            return string.Empty;
 
-        using var reader = File.OpenText(request.Path);
+        using var reader = File.OpenText(path);
         for (var index = 0; index < start; index++)
         {
             if (await reader.ReadLineAsync(cancellationToken).ConfigureAwait(false) is null)
-                return new ReadTextFileResponse { Content = string.Empty };
+                return string.Empty;
         }
 
-        var selected = new List<string>(Math.Min(limit, 256));
-        while (selected.Count < limit
-            && await reader.ReadLineAsync(cancellationToken).ConfigureAwait(false) is { } line)
-            selected.Add(line);
-        return new ReadTextFileResponse { Content = string.Join('\n', selected) };
+        var selected = new List<string>(Math.Min(lineLimit, 256));
+        while (selected.Count < lineLimit
+            && await reader.ReadLineAsync(cancellationToken).ConfigureAwait(false) is { } text)
+            selected.Add(text);
+        return string.Join('\n', selected);
     }
 
-    public async Task<WriteTextFileResponse> WriteTextFileAsync(
+    public async ValueTask WriteTextFileAsync(
         WriteTextFileRequest request,
         CancellationToken cancellationToken = default)
     {
+        var path = request.Path;
         var permission = await permissionService.RequestPermissionAsync(
-            new AgentPermissionRequest("write_file", request.Path, IsDestructive: true), cancellationToken).ConfigureAwait(false);
+            new AgentPermissionRequest("write_file", path, IsDestructive: true), cancellationToken).ConfigureAwait(false);
         if (!permission.Allowed)
-            throw new UnauthorizedAccessException(permission.Reason ?? $"Writing '{request.Path}' was denied.");
-        EnsurePathAllowed(request.Path);
-
-        await File.WriteAllTextAsync(request.Path, request.Content, cancellationToken).ConfigureAwait(false);
-        return new WriteTextFileResponse();
+            throw new UnauthorizedAccessException(permission.Reason ?? $"Writing '{path}' was denied.");
+        EnsurePathAllowed(path);
+        await File.WriteAllTextAsync(path, request.Content, cancellationToken).ConfigureAwait(false);
     }
 
     private void EnsurePathAllowed(string path)
@@ -90,14 +91,8 @@ internal sealed class AcpFileSystemHandler(
         {
             return File.GetAttributes(path).HasFlag(FileAttributes.ReparsePoint);
         }
-        catch (FileNotFoundException)
-        {
-            return false;
-        }
-        catch (DirectoryNotFoundException)
-        {
-            return false;
-        }
+        catch (FileNotFoundException) { return false; }
+        catch (DirectoryNotFoundException) { return false; }
     }
 
     private static bool IsWithinRoot(string path, string root, StringComparison comparison)
