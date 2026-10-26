@@ -36,6 +36,7 @@ public sealed partial class HelmReleasesViewModel : ViewModelBase, IInitializeCl
     private readonly Func<ResourceYamlViewModel> _createYamlViewer;
     private readonly IHelmDocumentOpener _documentOpener;
     private readonly IHelmListNotifier _listNotifier;
+    private readonly IUiRefreshClock? _refreshClock;
     private readonly ILogger<HelmReleasesViewModel>? _logger;
     private readonly SourceCache<HelmRelease, string> _releases = new(static release => $"{release.Namespace}\u001f{release.Name}");
     private readonly DynamicTableViewSource<HelmRelease, string> _tableSource;
@@ -74,6 +75,7 @@ public sealed partial class HelmReleasesViewModel : ViewModelBase, IInitializeCl
         Func<ResourceYamlViewModel> createYamlViewer,
         IHelmDocumentOpener documentOpener,
         IHelmListNotifier listNotifier,
+        IUiRefreshClock? refreshClock = null,
         ILogger<HelmReleasesViewModel>? logger = null)
     {
         _helmService = helmService;
@@ -83,6 +85,7 @@ public sealed partial class HelmReleasesViewModel : ViewModelBase, IInitializeCl
         _createYamlViewer = createYamlViewer;
         _documentOpener = documentOpener;
         _listNotifier = listNotifier;
+        _refreshClock = refreshClock;
         _logger = logger;
         _listNotifier.ReleasesChanged += OnReleasesChanged;
         _tableSource = new DynamicTableViewSource<HelmRelease, string>(
@@ -92,8 +95,8 @@ public sealed partial class HelmReleasesViewModel : ViewModelBase, IInitializeCl
                 CreateColumn("name", Assets.Resources.HelmReleasesView_Name!, static release => release.Name, DynamicTableViewWidthMode.Star, 1.5),
                 CreateColumn("namespace", Assets.Resources.HelmReleasesView_Namespace!, static release => release.Namespace, DynamicTableViewWidthMode.Star, 1.2),
                 CreateColumn("app-version", Assets.Resources.HelmReleasesView_AppVersion!, static release => release.AppVersion, DynamicTableViewWidthMode.Star, 1),
-                CreateColumn("status", Assets.Resources.HelmReleasesView_Status!, static release => release.Status, DynamicTableViewWidthMode.Auto, 1),
-                CreateColumn("updated", Assets.Resources.HelmReleasesView_Updated!, static release => FormatUpdated(release.Updated, DateTime.UtcNow), DynamicTableViewWidthMode.Auto, 1)
+                CreateColumn("status", Assets.Resources.HelmReleasesView_Status!, static release => release.Status, DynamicTableViewWidthMode.Star, 1),
+                CreateUpdatedColumn(_refreshClock)
             ],
             options: new DynamicTableViewSourceOptions { SelectionIdentityMode = DynamicTableViewSelectionIdentityMode.Key });
         _tableSource.SelectionModel.SingleSelect = true;
@@ -406,11 +409,32 @@ public sealed partial class HelmReleasesViewModel : ViewModelBase, IInitializeCl
         return column;
     }
 
+    private static DynamicTableViewColumn<HelmRelease> CreateUpdatedColumn(IUiRefreshClock? refreshClock)
+    {
+        var column = DynamicTableViewColumn<HelmRelease>.Create(
+            "updated", Assets.Resources.HelmReleasesView_Updated!, static release => release.Updated);
+        column.WidthMode = DynamicTableViewWidthMode.Star;
+        column.Width = 1;
+        column.CellTemplate = new FuncDataTemplate<HelmRelease>(
+            (release, _) => new HelmReleaseUpdatedCell(refreshClock) { DataContext = release.Updated },
+            supportsRecycling: true);
+        return column;
+    }
+
     internal static string FormatUpdated(DateTimeOffset updated, DateTime utcNow)
         => RelativeTimeFormatter.FormatPrettyAge(updated.UtcDateTime, utcNow);
 
     internal static string FormatTimestamp(DateTimeOffset updated)
         => updated.UtcDateTime.ToString("yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture);
+
+    private sealed class HelmReleaseUpdatedCell(IUiRefreshClock? refreshClock)
+        : RefreshingCellTextBlock(refreshClock)
+    {
+        protected override string ResolveText(object? dataContext)
+            => dataContext is DateTimeOffset updated
+                ? FormatUpdated(updated, DateTime.UtcNow)
+                : string.Empty;
+    }
 
     partial void OnIsNamespaceSelectionLinkedChanged(bool value)
     {

@@ -3009,10 +3009,10 @@
   <data name="HelmChartsView_Install" xml:space="preserve"><value>Install chart</value></data>
   <data name="HelmChartsView_ItemsFormat" xml:space="preserve"><value>Charts: {0}</value></data>
   <data name="HelmChartsView_SearchPlaceholder" xml:space="preserve"><value>Search</value></data>
+  <data name="HelmReleaseEditorView_ChartVersionPlaceholder" xml:space="preserve"><value>Leave empty to use latest</value></data>
   <data name="HelmChartsView_SearchNotice" xml:space="preserve"><value>Charts come from cached repository indexes. Update repository indexes to load their latest versions.</value></data>
   <data name="HelmChartsView_AllRepositories" xml:space="preserve"><value>All repositories</value></data>
   <data name="HelmChartsView_Repository" xml:space="preserve"><value>Repository</value></data>
-  <data name="HelmReleaseEditorView_ChartVersionPlaceholder" xml:space="preserve"><value>Leave empty to use latest</value></data>
   <data name="FlowListView_Title" xml:space="preserve"><value>Network Flows</value></data>
   <data name="FlowListView_TooltipClear" xml:space="preserve"><value>Clear all flows</value></data>
   <data name="FlowListView_ItemsFormat" xml:space="preserve"><value>Flows: {0}</value></data>

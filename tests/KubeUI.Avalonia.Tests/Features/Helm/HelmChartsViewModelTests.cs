@@ -70,12 +70,6 @@ public sealed class HelmChartsViewModelTests
             .ReturnsAsync([
                 new("first/web", "web", "2.0"), new("first/web", "web", "1.0"),
                 new("second/web", "web", "3.0"), new("second/web-tools", "web-tools", "1.0")]);
-        helm.Setup(service => service.GetChartValuesAsync(
-                It.IsAny<HelmConnection>(),
-                It.IsAny<string>(),
-                It.IsAny<string?>(),
-                It.IsAny<CancellationToken>()))
-            .ReturnsAsync(string.Empty);
         var factory = new Mock<IFactory>();
         var documents = new DocumentDock { VisibleDockables = [] };
         factory.Setup(item => item.GetDockable<IDocumentDock>("Documents")).Returns(documents);
