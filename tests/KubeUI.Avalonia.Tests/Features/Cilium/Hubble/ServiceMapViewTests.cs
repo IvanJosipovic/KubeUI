@@ -12,15 +12,147 @@ using KubeUI.Avalonia.Tests.Infra;
 using KubeUI.Cilium.Hubble;
 using KubeUI.Testing.Utilities;
 using Microsoft.Extensions.DependencyInjection;
+using QuikGraph;
 using Shouldly;
+using Westermo.GraphX.Common.Enums;
 using Westermo.GraphX.Controls.Behaviours;
 using Westermo.GraphX.Controls.Controls;
 using Westermo.GraphX.Controls.Controls.EdgePointers;
+using Westermo.GraphX.Logic.Algorithms.LayoutAlgorithms;
+using Westermo.GraphX.Logic.Algorithms.OverlapRemoval;
 
 namespace KubeUI.Avalonia.Tests.Features.Cilium.Hubble;
 
 public sealed class ServiceMapViewTests
 {
+    [AvaloniaFact]
+    public async Task GraphX_layout_and_edge_routing_options_can_be_selected()
+    {
+        var graph = new ServiceMapGraph();
+        graph.Nodes.Add(new ServiceMapNode { Id = "team-a/client", Name = "client", Namespace = "team-a" });
+        graph.Nodes.Add(new ServiceMapNode { Id = "team-a/api", Name = "api", Namespace = "team-a" });
+        graph.Nodes.Add(new ServiceMapNode { Id = "team-b/worker", Name = "worker", Namespace = "team-b" });
+        graph.Nodes.Add(new ServiceMapNode { Id = "world/dns", Name = "dns" });
+        graph.Edges.Add(new ServiceMapEdge { SourceId = "team-a/client", TargetId = "team-a/api", FlowCount = 1 });
+        graph.Edges.Add(new ServiceMapEdge { SourceId = "team-a/api", TargetId = "team-b/worker", FlowCount = 1 });
+        graph.Edges.Add(new ServiceMapEdge { SourceId = "team-b/worker", TargetId = "world/dns", FlowCount = 1 });
+
+        var graphControl = new ServiceMapGraphControl { Graph = graph };
+        using var window = Application.Current.CreateTestWindow(1200, 800, graphControl);
+        window.Show();
+        await TestWait.UntilAsync(
+            () => graphControl.HasGeneratedGraph && graphControl.LayoutTask?.IsCompleted == true,
+            timeoutMs: 10_000,
+            cancellationToken: TestContext.Current.CancellationToken,
+            beforePoll: () => Dispatcher.UIThread.RunJobs());
+        await graphControl.LayoutTask!.WaitAsync(TestContext.Current.CancellationToken);
+
+        var overlapParameters = graphControl.Area.LogicCore!.DefaultOverlapRemovalAlgorithmParams
+            .ShouldBeOfType<OverlapRemovalParameters>();
+        overlapParameters.HorizontalGap.ShouldBeGreaterThanOrEqualTo(100);
+        overlapParameters.VerticalGap.ShouldBeGreaterThanOrEqualTo(100);
+
+        foreach (var algorithm in Enum.GetValues<LayoutAlgorithmTypeEnum>())
+        {
+            if (algorithm == LayoutAlgorithmTypeEnum.Custom)
+                continue;
+
+            graphControl.LayoutAlgorithm = algorithm;
+            await graphControl.LayoutTask!.WaitAsync(TestContext.Current.CancellationToken);
+            graphControl.ActiveExternalLayoutAlgorithm.ShouldBe(algorithm);
+            graphControl.Area.GetVertexPositions().Values
+                .ShouldAllBe(static position => double.IsFinite(position.X) && double.IsFinite(position.Y));
+        }
+
+        graphControl.LayoutAlgorithm = LayoutAlgorithmTypeEnum.CompoundFDP;
+        await graphControl.LayoutTask!.WaitAsync(TestContext.Current.CancellationToken);
+        foreach (var algorithm in Enum.GetValues<EdgeRoutingAlgorithmTypeEnum>())
+        {
+            graphControl.EdgeRoutingAlgorithm = algorithm;
+            await graphControl.LayoutTask!.WaitAsync(TestContext.Current.CancellationToken);
+            graphControl.GraphXEdgeCount.ShouldBe(graph.Edges.Count);
+            graphControl.Area.LogicCore!.DefaultEdgeRoutingAlgorithm.ShouldBe(algorithm);
+        }
+
+        var compoundGraph = graphControl.Area.LogicCore!.Graph!;
+        foreach (var node in graph.Nodes)
+        {
+            var vertex = compoundGraph.Vertices.Single(candidate => candidate.Id == node.Id);
+            compoundGraph.GetParent(vertex).ShouldNotBeNull();
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task Service_map_groups_namespace_nodes_and_external_nodes_in_compound_layout()
+    {
+        var graph = new ServiceMapGraph();
+        graph.Nodes.Add(new ServiceMapNode { Id = "team-a/client", Name = "client", Namespace = "team-a" });
+        graph.Nodes.Add(new ServiceMapNode { Id = "team-a/api", Name = "api", Namespace = "team-a" });
+        graph.Nodes.Add(new ServiceMapNode { Id = "team-b/worker", Name = "worker", Namespace = "team-b" });
+        graph.Nodes.Add(new ServiceMapNode { Id = "world/dns", Name = "dns" });
+        graph.Nodes.Add(new ServiceMapNode { Id = "world/external", Name = "external" });
+        graph.Edges.Add(new ServiceMapEdge { SourceId = "team-a/client", TargetId = "team-a/api", FlowCount = 1 });
+        graph.Edges.Add(new ServiceMapEdge { SourceId = "team-a/api", TargetId = "team-b/worker", FlowCount = 1 });
+        graph.Edges.Add(new ServiceMapEdge { SourceId = "team-a/client", TargetId = "world/dns", FlowCount = 1 });
+        graph.Edges.Add(new ServiceMapEdge { SourceId = "world/dns", TargetId = "world/external", FlowCount = 1 });
+
+        var graphControl = new ServiceMapGraphControl { Graph = graph };
+        using var window = Application.Current.CreateTestWindow(1000, 700, graphControl);
+        window.Show();
+        await TestWait.UntilAsync(
+            () => graphControl.HasGeneratedGraph,
+            timeoutMs: 5_000,
+            cancellationToken: TestContext.Current.CancellationToken,
+            beforePoll: () => Dispatcher.UIThread.RunJobs());
+
+        graphControl.GraphXVertexCount.ShouldBe(graph.Nodes.Count);
+        graphControl.Area.LogicCore!.DefaultEdgeRoutingAlgorithm.ShouldBe(EdgeRoutingAlgorithmTypeEnum.SimpleER);
+        var compoundGraph = graphControl.Area.LogicCore!.Graph!
+            .ShouldBeOfType<CompoundGraph<ServiceMapGraphControl.ServiceMapVertex, ServiceMapGraphControl.ServiceMapEdge>>();
+        var vertices = compoundGraph.Vertices
+            .Where(vertex => compoundGraph.GetParent(vertex) is not null)
+            .ToDictionary(vertex => vertex.Id);
+        var teamAParent = compoundGraph.GetParent(vertices["team-a/client"]);
+        teamAParent.ShouldNotBeNull();
+        compoundGraph.GetParent(vertices["team-a/api"]).ShouldBe(teamAParent);
+        compoundGraph.GetParent(vertices["team-b/worker"]).ShouldNotBe(teamAParent);
+        var worldParent = compoundGraph.GetParent(vertices["world/dns"]);
+        worldParent.ShouldNotBe(teamAParent);
+        compoundGraph.GetParent(vertices["world/external"]).ShouldBe(worldParent);
+        compoundGraph.VertexCount.ShouldBe(graph.Nodes.Count + 3);
+        graphControl.Area.VertexList.Count.ShouldBe(graph.Nodes.Count);
+
+        var movedApi = new ServiceMapGraph();
+        movedApi.Nodes.Add(new ServiceMapNode { Id = "team-a/client", Name = "client", Namespace = "team-a" });
+        movedApi.Nodes.Add(new ServiceMapNode { Id = "team-a/api", Name = "api", Namespace = "team-b" });
+        movedApi.Nodes.Add(new ServiceMapNode { Id = "team-b/worker", Name = "worker", Namespace = "team-b" });
+        movedApi.Nodes.Add(new ServiceMapNode { Id = "world/dns", Name = "dns" });
+        movedApi.Nodes.Add(new ServiceMapNode { Id = "world/external", Name = "external" });
+        movedApi.Edges.Add(new ServiceMapEdge { SourceId = "team-a/client", TargetId = "team-a/api", FlowCount = 1 });
+        movedApi.Edges.Add(new ServiceMapEdge { SourceId = "team-a/api", TargetId = "team-b/worker", FlowCount = 1 });
+        movedApi.Edges.Add(new ServiceMapEdge { SourceId = "team-a/client", TargetId = "world/dns", FlowCount = 1 });
+        movedApi.Edges.Add(new ServiceMapEdge { SourceId = "world/dns", TargetId = "world/external", FlowCount = 1 });
+        graphControl.Graph = movedApi;
+        await TestWait.UntilAsync(
+            () =>
+            {
+                var updatedCompoundGraph = graphControl.Area.LogicCore!.Graph!;
+                var updatedVertices = updatedCompoundGraph.Vertices
+                    .Where(vertex => updatedCompoundGraph.GetParent(vertex) is not null)
+                    .ToDictionary(vertex => vertex.Id);
+                return ReferenceEquals(
+                    updatedCompoundGraph.GetParent(updatedVertices["team-a/api"]),
+                    updatedCompoundGraph.GetParent(updatedVertices["team-b/worker"]));
+            },
+            timeoutMs: 5_000,
+            cancellationToken: TestContext.Current.CancellationToken,
+            beforePoll: () => Dispatcher.UIThread.RunJobs());
+
+        var refreshedGraph = graphControl.Area.LogicCore!.Graph!;
+        refreshedGraph.VertexCount.ShouldBe(graph.Nodes.Count + 3);
+        graphControl.Area.VertexList.Count.ShouldBe(graph.Nodes.Count);
+    }
+
     [AvaloniaFact]
     public async Task Reverse_traffic_keeps_directed_edges_with_one_arrow_each()
     {
@@ -184,8 +316,22 @@ public sealed class ServiceMapViewTests
             .OfType<TextBlock>()
             .Single(textBlock => textBlock.Text == viewModel.GraphSummary);
         view.GetVisualDescendants().OfType<ToggleButton>().Count().ShouldBe(3);
-        var timeWindowSelector = view.GetVisualDescendants().OfType<ComboBox>().ShouldHaveSingleItem();
+        var comboBoxes = view.GetVisualDescendants().OfType<ComboBox>().ToArray();
+        comboBoxes.Length.ShouldBe(3);
+        var timeWindowSelector = comboBoxes.Single(comboBox => comboBox.SelectedItem is TimeSpan);
         timeWindowSelector.Bounds.Height.ShouldBe(32);
+        var layoutSelector = comboBoxes.Single(comboBox => comboBox.SelectedItem is LayoutAlgorithmTypeEnum);
+        var edgeRoutingSelector = comboBoxes.Single(comboBox => comboBox.SelectedItem is EdgeRoutingAlgorithmTypeEnum);
+        layoutSelector.SelectedItem.ShouldBe(LayoutAlgorithmTypeEnum.CompoundFDP);
+        edgeRoutingSelector.SelectedItem.ShouldBe(EdgeRoutingAlgorithmTypeEnum.SimpleER);
+        layoutSelector.ItemsSource.ShouldBeAssignableTo<IEnumerable<LayoutAlgorithmTypeEnum>>().Count()
+            .ShouldBe(Enum.GetValues<LayoutAlgorithmTypeEnum>().Length - 1);
+        edgeRoutingSelector.ItemsSource.ShouldBeAssignableTo<IEnumerable<EdgeRoutingAlgorithmTypeEnum>>().Count()
+            .ShouldBe(Enum.GetValues<EdgeRoutingAlgorithmTypeEnum>().Length);
+        layoutSelector.SelectedItem = LayoutAlgorithmTypeEnum.Circular;
+        edgeRoutingSelector.SelectedItem = EdgeRoutingAlgorithmTypeEnum.Bundling;
+        viewModel.LayoutAlgorithm.ShouldBe(LayoutAlgorithmTypeEnum.Circular);
+        viewModel.EdgeRoutingAlgorithm.ShouldBe(EdgeRoutingAlgorithmTypeEnum.Bundling);
 
         var graph = new ServiceMapGraph();
         graph.Nodes.Add(new ServiceMapNode { Id = "team-a/client", Name = "client", Namespace = "team-a" });
@@ -222,6 +368,8 @@ public sealed class ServiceMapViewTests
             beforePoll: () => Dispatcher.UIThread.RunJobs());
 
         ReferenceEquals(graphControl.Graph, graph).ShouldBeTrue();
+        graphControl.LayoutAlgorithm.ShouldBe(LayoutAlgorithmTypeEnum.Circular);
+        graphControl.EdgeRoutingAlgorithm.ShouldBe(EdgeRoutingAlgorithmTypeEnum.Bundling);
         graphControl.GraphXVertexCount.ShouldBe(2);
         graphControl.GraphXEdgeCount.ShouldBe(1);
         graphControl.Area.VertexList.Values

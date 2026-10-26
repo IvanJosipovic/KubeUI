@@ -6,14 +6,15 @@ using Avalonia.Markup.Xaml.MarkupExtensions;
 using Avalonia.VisualTree;
 using KubeUI.Avalonia.Features.Resources.Visualization;
 using KubeUI.Cilium.Hubble;
-using QuikGraph;
 using Westermo.GraphX.Common.Enums;
+using Westermo.GraphX.Common.Interfaces;
 using Westermo.GraphX.Common.Models;
 using Westermo.GraphX.Controls.Behaviours;
 using Westermo.GraphX.Controls.Controls;
 using Westermo.GraphX.Controls.Controls.ZoomControl;
 using Westermo.GraphX.Controls.Controls.ZoomControl.SupportClasses;
 using Westermo.GraphX.Controls.Models.Interfaces;
+using Westermo.GraphX.Logic.Algorithms.EdgeRouting;
 using Westermo.GraphX.Logic.Algorithms.LayoutAlgorithms;
 using Westermo.GraphX.Logic.Algorithms.OverlapRemoval;
 using Westermo.GraphX.Logic.Models;
@@ -27,16 +28,27 @@ public sealed class ServiceMapGraphControl : UserControl, IDisposable, IGraphCon
 
     public static readonly DirectProperty<ServiceMapGraphControl, ServiceMapGraph?> GraphProperty =
         AvaloniaProperty.RegisterDirect<ServiceMapGraphControl, ServiceMapGraph?>(nameof(Graph), control => control.Graph, (control, value) => control.Graph = value);
-    private readonly GraphArea<ServiceMapVertex, ServiceMapEdge, BidirectionalGraph<ServiceMapVertex, ServiceMapEdge>> _area;
-    private readonly GXLogicCore<ServiceMapVertex, ServiceMapEdge, BidirectionalGraph<ServiceMapVertex, ServiceMapEdge>> _logicCore;
+    public static readonly DirectProperty<ServiceMapGraphControl, LayoutAlgorithmTypeEnum> LayoutAlgorithmProperty =
+        AvaloniaProperty.RegisterDirect<ServiceMapGraphControl, LayoutAlgorithmTypeEnum>(
+            nameof(LayoutAlgorithm), control => control.LayoutAlgorithm, (control, value) => control.LayoutAlgorithm = value);
+    public static readonly DirectProperty<ServiceMapGraphControl, EdgeRoutingAlgorithmTypeEnum> EdgeRoutingAlgorithmProperty =
+        AvaloniaProperty.RegisterDirect<ServiceMapGraphControl, EdgeRoutingAlgorithmTypeEnum>(
+            nameof(EdgeRoutingAlgorithm), control => control.EdgeRoutingAlgorithm, (control, value) => control.EdgeRoutingAlgorithm = value);
+    private readonly GraphArea<ServiceMapVertex, ServiceMapEdge, CompoundGraph<ServiceMapVertex, ServiceMapEdge>> _area;
+    private readonly GXLogicCore<ServiceMapVertex, ServiceMapEdge, CompoundGraph<ServiceMapVertex, ServiceMapEdge>> _logicCore;
     private readonly ZoomControl _zoomControl;
     private readonly Dictionary<string, ServiceMapVertex> _vertices = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, ServiceMapVertex> _groups = new(StringComparer.Ordinal);
+    private readonly ServiceMapExternalLayout _externalLayout;
     private ServiceMapGraph? _graph;
+    private LayoutAlgorithmTypeEnum _layoutAlgorithm = LayoutAlgorithmTypeEnum.CompoundFDP;
+    private EdgeRoutingAlgorithmTypeEnum _edgeRoutingAlgorithm = EdgeRoutingAlgorithmTypeEnum.SimpleER;
     private ServiceMapGraph? _pendingGraph;
     private CancellationTokenSource? _bufferCancellation;
     private CancellationTokenSource? _layoutCancellation;
     private Task? _layoutTask;
     private bool _layoutPending;
+    private bool _relayoutPending;
     private bool _attached;
     private bool _hasGeneratedGraph;
     private bool _disposed;
@@ -65,19 +77,58 @@ public sealed class ServiceMapGraphControl : UserControl, IDisposable, IGraphCon
         }
     }
 
+    /// <summary>Gets or sets GraphX layout algorithm used to position service nodes.</summary>
+    public LayoutAlgorithmTypeEnum LayoutAlgorithm
+    {
+        get => _layoutAlgorithm;
+        set
+        {
+            if (_layoutAlgorithm == value)
+                return;
+            var old = _layoutAlgorithm;
+            _layoutAlgorithm = value;
+            _externalLayout.Algorithm = value;
+            RaisePropertyChanged(LayoutAlgorithmProperty, old, value);
+            RequestRelayout();
+        }
+    }
+
+    /// <summary>Gets or sets GraphX edge-routing algorithm used to draw connections.</summary>
+    public EdgeRoutingAlgorithmTypeEnum EdgeRoutingAlgorithm
+    {
+        get => _edgeRoutingAlgorithm;
+        set
+        {
+            if (_edgeRoutingAlgorithm == value)
+                return;
+            var old = _edgeRoutingAlgorithm;
+            _edgeRoutingAlgorithm = value;
+            _logicCore.DefaultEdgeRoutingAlgorithm = value;
+            _logicCore.DefaultEdgeRoutingAlgorithmParams = CreateEdgeRoutingParameters(value);
+            RaisePropertyChanged(EdgeRoutingAlgorithmProperty, old, value);
+            RequestRelayout();
+        }
+    }
+
     public GraphAreaBase FactoryRootArea => _area;
-    internal GraphArea<ServiceMapVertex, ServiceMapEdge, BidirectionalGraph<ServiceMapVertex, ServiceMapEdge>> Area => _area;
+    internal GraphArea<ServiceMapVertex, ServiceMapEdge, CompoundGraph<ServiceMapVertex, ServiceMapEdge>> Area => _area;
     internal int GraphXVertexCount => _vertices.Count;
     internal int GraphXEdgeCount => _logicCore.Graph?.EdgeCount ?? 0;
     internal bool HasGeneratedGraph => _hasGeneratedGraph;
+    internal LayoutAlgorithmTypeEnum ActiveExternalLayoutAlgorithm => _externalLayout.Algorithm;
+    internal Task? LayoutTask => _layoutTask;
 
     public ServiceMapGraphControl()
     {
-        _logicCore = new GXLogicCore<ServiceMapVertex, ServiceMapEdge, BidirectionalGraph<ServiceMapVertex, ServiceMapEdge>>
+        CompoundGraph<ServiceMapVertex, ServiceMapEdge> graph = new();
+        _externalLayout = new ServiceMapExternalLayout(graph);
+        _logicCore = new GXLogicCore<ServiceMapVertex, ServiceMapEdge, CompoundGraph<ServiceMapVertex, ServiceMapEdge>>
         {
-            DefaultLayoutAlgorithm = LayoutAlgorithmTypeEnum.Tree,
+            Graph = graph,
+            DefaultLayoutAlgorithm = LayoutAlgorithmTypeEnum.Custom,
+            ExternalLayoutAlgorithm = _externalLayout,
             DefaultOverlapRemovalAlgorithm = OverlapRemovalAlgorithmTypeEnum.FSA,
-            DefaultEdgeRoutingAlgorithm = EdgeRoutingAlgorithmTypeEnum.None,
+            DefaultEdgeRoutingAlgorithm = EdgeRoutingAlgorithmTypeEnum.SimpleER,
             EnableParallelEdges = true,
             ParallelEdgeDistance = 20,
             DefaultLayoutAlgorithmParams = new SimpleTreeLayoutParameters
@@ -87,10 +138,10 @@ public sealed class ServiceMapGraphControl : UserControl, IDisposable, IGraphCon
                 VertexGap = 120,
                 SpanningTreeGeneration = SpanningTreeGeneration.DFS,
             },
-            DefaultOverlapRemovalAlgorithmParams = new OverlapRemovalParameters { HorizontalGap = 36, VerticalGap = 36 },
+            DefaultOverlapRemovalAlgorithmParams = new OverlapRemovalParameters { HorizontalGap = 120, VerticalGap = 120 },
             AsyncAlgorithmCompute = true,
         };
-        _area = new GraphArea<ServiceMapVertex, ServiceMapEdge, BidirectionalGraph<ServiceMapVertex, ServiceMapEdge>>
+        _area = new GraphArea<ServiceMapVertex, ServiceMapEdge, CompoundGraph<ServiceMapVertex, ServiceMapEdge>>
         {
             LogicCore = _logicCore,
             ControlFactory = this,
@@ -137,6 +188,7 @@ public sealed class ServiceMapGraphControl : UserControl, IDisposable, IGraphCon
         _layoutCancellation?.Cancel();
         _hasGeneratedGraph = false;
         _vertices.Clear();
+        _groups.Clear();
         _area.ClearLayout(clearStates: true, clearLogicCore: true);
         base.OnDetachedFromVisualTree(e);
     }
@@ -178,7 +230,9 @@ public sealed class ServiceMapGraphControl : UserControl, IDisposable, IGraphCon
         }
 
         var graph = _logicCore.Graph
-            ?? new BidirectionalGraph<ServiceMapVertex, ServiceMapEdge>();
+            ?? new CompoundGraph<ServiceMapVertex, ServiceMapEdge>();
+        _externalLayout.Graph = graph;
+        _logicCore.Graph = graph;
         var topologyChanged = false;
         var desiredNodeIds = new HashSet<string>(StringComparer.Ordinal);
         if (snapshot is not null)
@@ -187,6 +241,7 @@ public sealed class ServiceMapGraphControl : UserControl, IDisposable, IGraphCon
 
         foreach (var vertex in _vertices.Values.Where(vertex => !desiredNodeIds.Contains(vertex.Id)).ToArray())
         {
+            RemoveChildMembership(graph, vertex);
             _area.RemoveVertexAndEdges(vertex);
             if (graph.ContainsVertex(vertex))
                 graph.RemoveVertex(vertex);
@@ -200,6 +255,12 @@ public sealed class ServiceMapGraphControl : UserControl, IDisposable, IGraphCon
             {
                 if (_vertices.TryGetValue(node.Id, out var vertex))
                 {
+                    var groupKey = GetGroupKey(node);
+                    if (!ReferenceEquals(graph.GetParent(vertex), GetOrCreateGroup(graph, groupKey)))
+                    {
+                        MoveToGroup(graph, vertex, groupKey);
+                        topologyChanged = true;
+                    }
                     vertex.Node = node;
                     UpdateNodeControl(vertex);
                 }
@@ -207,6 +268,7 @@ public sealed class ServiceMapGraphControl : UserControl, IDisposable, IGraphCon
                 {
                     vertex = new ServiceMapVertex(node);
                     _vertices.Add(node.Id, vertex);
+                    graph.AddChildVertex(GetOrCreateGroup(graph, GetGroupKey(node)), vertex);
                     _area.AddVertexAndData(vertex, CreateVertexControl(vertex), generateLabel: false);
                     topologyChanged = true;
                 }
@@ -244,19 +306,54 @@ public sealed class ServiceMapGraphControl : UserControl, IDisposable, IGraphCon
             topologyChanged = true;
         }
 
+        RemoveEmptyGroups(graph);
         _logicCore.Graph = graph;
-        if (topologyChanged || (!_hasGeneratedGraph && graph.VertexCount > 0))
+        if (topologyChanged || _relayoutPending || (!_hasGeneratedGraph && graph.VertexCount > 0))
+        {
+            _relayoutPending = false;
             QueueLayout();
+        }
     }
 
     private void QueueLayout()
     {
         _layoutPending = false;
+        _relayoutPending = false;
         _layoutCancellation?.Cancel();
         _layoutCancellation?.Dispose();
         var cancellation = new CancellationTokenSource();
         _layoutCancellation = cancellation;
         _layoutTask = LayoutAsync(cancellation.Token);
+    }
+
+    private void RequestRelayout()
+    {
+        if (!_hasGeneratedGraph || _disposed || _logicCore.Graph is not { VertexCount: > 0 })
+            return;
+
+        if (_layoutTask is { IsCompleted: false })
+        {
+            _layoutPending = true;
+            _relayoutPending = true;
+            return;
+        }
+
+        QueueLayout();
+    }
+
+    private static IEdgeRoutingParameters? CreateEdgeRoutingParameters(EdgeRoutingAlgorithmTypeEnum algorithm)
+    {
+        return algorithm switch
+        {
+            EdgeRoutingAlgorithmTypeEnum.PathFinder => new PathFinderEdgeRoutingParameters(),
+            EdgeRoutingAlgorithmTypeEnum.SimpleER => new SimpleERParameters(),
+            EdgeRoutingAlgorithmTypeEnum.Bundling => new BundleEdgeRoutingParameters
+            {
+                Iterations = 50,
+                RepulseOpposite = true
+            },
+            _ => null
+        };
     }
 
     private async Task LayoutAsync(CancellationToken cancellationToken)
@@ -300,7 +397,7 @@ public sealed class ServiceMapGraphControl : UserControl, IDisposable, IGraphCon
 
     private static Border CreateNode(ServiceMapVertex vertex)
     {
-        var node = vertex.Node;
+        var node = vertex.Node ?? throw new InvalidOperationException("Group vertices are excluded from rendering.");
         var border = new Border().Width(200).MinHeight(84).Padding(12, 9).CornerRadius(8).Classes("ServiceMapNode");
         if (node.DeniedCount > 0)
         {
@@ -345,9 +442,10 @@ public sealed class ServiceMapGraphControl : UserControl, IDisposable, IGraphCon
 
     private void UpdateNodeControl(ServiceMapVertex vertex)
     {
+        if (vertex.Node is not { } node)
+            return;
         if (!_area.VertexList.TryGetValue(vertex, out var control))
             return;
-        var node = vertex.Node;
         var border = control.GetVisualDescendants()
             .OfType<Border>()
             .FirstOrDefault(static candidate => candidate.Classes.Contains("ServiceMapNode"));
@@ -413,10 +511,178 @@ public sealed class ServiceMapGraphControl : UserControl, IDisposable, IGraphCon
         _logicCore.Dispose();
     }
 
-    internal sealed class ServiceMapVertex(ServiceMapNode node) : VertexBase
+    private static string GetGroupKey(ServiceMapNode node) => string.IsNullOrEmpty(node.Namespace)
+        ? string.Empty
+        : node.Namespace;
+
+    private ServiceMapVertex GetOrCreateGroup(CompoundGraph<ServiceMapVertex, ServiceMapEdge> graph, string groupKey)
     {
-        public string Id { get; } = node.Id;
-        public ServiceMapNode Node { get; set; } = node;
+        if (_groups.TryGetValue(groupKey, out var group))
+            return group;
+
+        group = graph.Vertices.FirstOrDefault(candidate => candidate.IsGroup && candidate.GroupKey == groupKey);
+        if (group is not null)
+        {
+            _groups.Add(groupKey, group);
+            return group;
+        }
+
+        group = ServiceMapVertex.CreateGroup(groupKey);
+        graph.AddVertex(group);
+        _groups.Add(groupKey, group);
+        return group;
+    }
+
+    private void MoveToGroup(
+        CompoundGraph<ServiceMapVertex, ServiceMapEdge> graph,
+        ServiceMapVertex vertex,
+        string groupKey)
+    {
+        RemoveChildMembership(graph, vertex);
+        graph.AddChildVertex(GetOrCreateGroup(graph, groupKey), vertex);
+    }
+
+    private static void RemoveChildMembership(
+        CompoundGraph<ServiceMapVertex, ServiceMapEdge> graph,
+        ServiceMapVertex vertex)
+    {
+        var parent = graph.GetParent(vertex);
+        if (parent is not null && graph.GetChildrenVertices(parent) is ICollection<ServiceMapVertex> children)
+            children.Remove(vertex);
+    }
+
+    private void RemoveEmptyGroups(CompoundGraph<ServiceMapVertex, ServiceMapEdge> graph)
+    {
+        foreach (var group in _groups.Values.Where(group => graph.GetChildrenCount(group) == 0).ToArray())
+        {
+            graph.RemoveVertex(group);
+            _groups.Remove(group.GroupKey);
+        }
+    }
+
+    internal sealed class ServiceMapVertex : VertexBase
+    {
+        public string Id { get; }
+        public ServiceMapNode? Node { get; set; }
+        public bool IsGroup { get; }
+        public string GroupKey { get; }
+
+        public ServiceMapVertex(ServiceMapNode node)
+        {
+            Id = node.Id;
+            Node = node;
+            GroupKey = GetGroupKey(node);
+        }
+
+        private ServiceMapVertex(string groupKey)
+        {
+            Id = $"\0group/{groupKey}";
+            GroupKey = groupKey;
+            IsGroup = true;
+            SkipProcessing = ProcessingOptionEnum.Exclude;
+        }
+
+        public static ServiceMapVertex CreateGroup(string groupKey) => new(groupKey);
+    }
+
+    private sealed class ServiceMapExternalLayout(
+        CompoundGraph<ServiceMapVertex, ServiceMapEdge> graph) :
+        IExternalLayout<ServiceMapVertex, ServiceMapEdge>
+    {
+        private readonly Dictionary<ServiceMapVertex, Westermo.GraphX.Measure.Point> _positions = [];
+
+        public CompoundGraph<ServiceMapVertex, ServiceMapEdge> Graph { get; set; } = graph;
+        public LayoutAlgorithmTypeEnum Algorithm { get; set; } = LayoutAlgorithmTypeEnum.CompoundFDP;
+        public IDictionary<ServiceMapVertex, Westermo.GraphX.Measure.Point> VertexPositions => _positions;
+        public IDictionary<ServiceMapVertex, Westermo.GraphX.Measure.Size> VertexSizes { get; set; } = new Dictionary<ServiceMapVertex, Westermo.GraphX.Measure.Size>();
+        public bool NeedVertexSizes => true;
+        public bool SupportsObjectFreeze => false;
+
+        public void Compute(CancellationToken cancellationToken)
+        {
+            var vertices = Graph.Vertices.Where(vertex => !vertex.IsGroup).ToArray();
+            if (vertices.Length == 0)
+            {
+                _positions.Clear();
+                return;
+            }
+
+            var sizes = Graph.Vertices.ToDictionary(
+                static vertex => vertex,
+                vertex => vertex.IsGroup
+                    ? new Westermo.GraphX.Measure.Size(180, 120)
+                    : VertexSizes[vertex]);
+            var borders = Graph.Vertices.ToDictionary(
+                static vertex => vertex,
+                static vertex => vertex.IsGroup ? new Westermo.GraphX.Measure.Thickness(12, 12, 12, 12) : default);
+            var layoutTypes = Graph.Vertices.ToDictionary(
+                static vertex => vertex,
+                static _ => CompoundVertexInnerLayoutType.Automatic);
+            var initialPositions = _positions
+                .Where(pair => !pair.Key.IsGroup && vertices.Contains(pair.Key))
+                .ToDictionary(static pair => pair.Key, static pair => pair.Value);
+            IDictionary<ServiceMapVertex, Westermo.GraphX.Measure.Point> computedPositions;
+            if (Algorithm == LayoutAlgorithmTypeEnum.CompoundFDP)
+            {
+                var compoundLayout = new CompoundFDPLayoutAlgorithm<ServiceMapVertex, ServiceMapEdge, CompoundGraph<ServiceMapVertex, ServiceMapEdge>>(
+                    Graph,
+                    sizes,
+                    borders,
+                    layoutTypes,
+                    initialPositions,
+                    new CompoundFDPLayoutParameters
+                    {
+                        Seed = 42,
+                        IdealEdgeLength = 280,
+                        GravitationFactor = 10,
+                        NestingFactor = 0.35
+                    });
+                compoundLayout.Compute(cancellationToken);
+                computedPositions = compoundLayout.VertexPositions;
+            }
+            else
+            {
+                ILayoutAlgorithm<ServiceMapVertex, ServiceMapEdge, CompoundGraph<ServiceMapVertex, ServiceMapEdge>> layoutAlgorithm;
+                if (Algorithm == LayoutAlgorithmTypeEnum.SimpleRandom)
+                {
+                    layoutAlgorithm = new RandomLayoutAlgorithm<
+                        ServiceMapVertex,
+                        ServiceMapEdge,
+                        CompoundGraph<ServiceMapVertex, ServiceMapEdge>>(
+                            Graph,
+                            initialPositions,
+                            new RandomLayoutAlgorithmParams { Seed = 42 })
+                    {
+                        VertexSizes = sizes
+                    };
+                }
+                else
+                {
+                    var algorithmFactory = new AlgorithmFactory<
+                        ServiceMapVertex,
+                        ServiceMapEdge,
+                        CompoundGraph<ServiceMapVertex, ServiceMapEdge>>();
+                    layoutAlgorithm = algorithmFactory.CreateLayoutAlgorithm(
+                        Algorithm,
+                        Graph,
+                        initialPositions,
+                        sizes,
+                        algorithmFactory.CreateLayoutParameters(Algorithm))
+                        ?? throw new InvalidOperationException($"GraphX does not support layout algorithm {Algorithm}.");
+                }
+                layoutAlgorithm.Compute(cancellationToken);
+                computedPositions = layoutAlgorithm.VertexPositions;
+            }
+
+            _positions.Clear();
+            foreach (var vertex in vertices)
+                _positions.Add(vertex, computedPositions[vertex]);
+        }
+
+        public void ResetGraph(IEnumerable<ServiceMapVertex> vertices, IEnumerable<ServiceMapEdge> edges)
+        {
+            // Rebuilding from flat collections would discard compound parent-child membership.
+        }
     }
 
     internal sealed class ServiceMapEdge(ServiceMapVertex source, ServiceMapVertex target, KubeUI.Cilium.Hubble.ServiceMapEdge edge)

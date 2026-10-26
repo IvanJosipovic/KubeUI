@@ -3055,6 +3055,23 @@
   <data name="FlowDirection_Egress" xml:space="preserve"><value>Egress</value></data>
   <data name="FlowDirection_Lateral" xml:space="preserve"><value>Lateral</value></data>
   <data name="ServiceMapView_Title" xml:space="preserve"><value>Service Map</value></data>
+  <data name="ServiceMapView_LayoutAlgorithm" xml:space="preserve"><value>Layout algorithm</value></data>
+  <data name="ServiceMapView_EdgeRoutingAlgorithm" xml:space="preserve"><value>Edge routing</value></data>
+  <data name="ServiceMapView_Layout_BoundedFR" xml:space="preserve"><value>Bounded FR</value></data>
+  <data name="ServiceMapView_Layout_Circular" xml:space="preserve"><value>Circular</value></data>
+  <data name="ServiceMapView_Layout_CompoundFDP" xml:space="preserve"><value>Compound FDP</value></data>
+  <data name="ServiceMapView_Layout_EfficientSugiyama" xml:space="preserve"><value>Efficient Sugiyama</value></data>
+  <data name="ServiceMapView_Layout_FR" xml:space="preserve"><value>Fruchterman-Reingold</value></data>
+  <data name="ServiceMapView_Layout_ISOM" xml:space="preserve"><value>ISOM</value></data>
+  <data name="ServiceMapView_Layout_KK" xml:space="preserve"><value>Kamada-Kawai</value></data>
+  <data name="ServiceMapView_Layout_LinLog" xml:space="preserve"><value>LinLog</value></data>
+  <data name="ServiceMapView_Layout_Random" xml:space="preserve"><value>Random</value></data>
+  <data name="ServiceMapView_Layout_Sugiyama" xml:space="preserve"><value>Sugiyama</value></data>
+  <data name="ServiceMapView_Layout_Tree" xml:space="preserve"><value>Tree</value></data>
+  <data name="ServiceMapView_Routing_Bundling" xml:space="preserve"><value>Bundling</value></data>
+  <data name="ServiceMapView_Routing_None" xml:space="preserve"><value>None</value></data>
+  <data name="ServiceMapView_Routing_PathFinder" xml:space="preserve"><value>Path finder</value></data>
+  <data name="ServiceMapView_Routing_SimpleER" xml:space="preserve"><value>Simple routing</value></data>
   <data name="ServiceMapView_AggregateByNamespace" xml:space="preserve"><value>Aggregate by Namespace</value></data>
   <data name="ServiceMapView_ShowErrorsOnly" xml:space="preserve"><value>Show Errors Only</value></data>
   <data name="ServiceMapView_TooltipAggregate" xml:space="preserve"><value>Aggregate by namespace</value></data>

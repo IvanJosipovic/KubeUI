@@ -11,6 +11,7 @@ using KubeUI.Avalonia.Features.Cilium.Hubble.Controls;
 using KubeUI.Avalonia.Features.Resources.Common;
 using KubeUI.Cilium.Hubble;
 using SvcSystems.Avalonia.DynamicTableView;
+using Westermo.GraphX.Common.Enums;
 using UrsaControls = Ursa.Controls;
 
 namespace KubeUI.Avalonia.Features.Cilium.Hubble;
@@ -87,17 +88,84 @@ public sealed partial class ServiceMapView : ViewBase<ServiceMapViewModel>
                             .Text(CompiledBinding.Create<ServiceMapViewModel, string>(x => x.GraphSummary))),
                 new StackPanel()
                     .Col(3)
-                    .MaxWidth(456)
+                    .MaxWidth(620)
                     .HorizontalAlignment(HorizontalAlignment.Right)
                     .Orientation(Orientation.Horizontal)
                     .VerticalAlignment(VerticalAlignment.Center)
                     .Children(
+                        CreateLayoutSelector(vm),
+                        CreateEdgeRoutingSelector(vm),
                         CreateNamespaceSelector(vm),
                         new ToggleButton()
                             .Margin(0, 0, 2, 0)
                             .IsChecked(CompiledBinding.Create<ServiceMapViewModel, bool>(x => x.IsNamespaceSelectionLinked, source: vm, mode: BindingMode.TwoWay))
                             .ToolTip_Tip(Assets.Resources.ResourceListView_NamespaceLink)
                             .Content(new FluentIcon().Icon(Icon.Link))));
+    }
+
+    private static ComboBox CreateLayoutSelector(ServiceMapViewModel viewModel)
+    {
+        var algorithms = Enum.GetValues<LayoutAlgorithmTypeEnum>()
+            .Where(static algorithm => algorithm != LayoutAlgorithmTypeEnum.Custom)
+            .ToArray();
+        return new ComboBox()
+            .Width(148)
+            .Height(32)
+            .ItemsSource(algorithms)
+            .SelectedItem(CompiledBinding.Create<ServiceMapViewModel, LayoutAlgorithmTypeEnum>(
+                x => x.LayoutAlgorithm,
+                source: viewModel,
+                mode: BindingMode.TwoWay))
+            .ItemTemplate(new FuncDataTemplate<LayoutAlgorithmTypeEnum>((algorithm, _) =>
+                new TextBlock().Text(GetLayoutAlgorithmName(algorithm))))
+            .ToolTip_Tip(Assets.Resources.ServiceMapView_LayoutAlgorithm);
+    }
+
+    private static ComboBox CreateEdgeRoutingSelector(ServiceMapViewModel viewModel)
+    {
+        var algorithms = Enum.GetValues<EdgeRoutingAlgorithmTypeEnum>();
+        return new ComboBox()
+            .Width(140)
+            .Height(32)
+            .ItemsSource(algorithms)
+            .SelectedItem(CompiledBinding.Create<ServiceMapViewModel, EdgeRoutingAlgorithmTypeEnum>(
+                x => x.EdgeRoutingAlgorithm,
+                source: viewModel,
+                mode: BindingMode.TwoWay))
+            .ItemTemplate(new FuncDataTemplate<EdgeRoutingAlgorithmTypeEnum>((algorithm, _) =>
+                new TextBlock().Text(GetEdgeRoutingAlgorithmName(algorithm))))
+            .ToolTip_Tip(Assets.Resources.ServiceMapView_EdgeRoutingAlgorithm);
+    }
+
+    private static string GetLayoutAlgorithmName(LayoutAlgorithmTypeEnum algorithm)
+    {
+        return algorithm switch
+        {
+            LayoutAlgorithmTypeEnum.BoundedFR => Assets.Resources.ServiceMapView_Layout_BoundedFR!,
+            LayoutAlgorithmTypeEnum.Circular => Assets.Resources.ServiceMapView_Layout_Circular!,
+            LayoutAlgorithmTypeEnum.CompoundFDP => Assets.Resources.ServiceMapView_Layout_CompoundFDP!,
+            LayoutAlgorithmTypeEnum.EfficientSugiyama => Assets.Resources.ServiceMapView_Layout_EfficientSugiyama!,
+            LayoutAlgorithmTypeEnum.FR => Assets.Resources.ServiceMapView_Layout_FR!,
+            LayoutAlgorithmTypeEnum.ISOM => Assets.Resources.ServiceMapView_Layout_ISOM!,
+            LayoutAlgorithmTypeEnum.KK => Assets.Resources.ServiceMapView_Layout_KK!,
+            LayoutAlgorithmTypeEnum.LinLog => Assets.Resources.ServiceMapView_Layout_LinLog!,
+            LayoutAlgorithmTypeEnum.SimpleRandom => Assets.Resources.ServiceMapView_Layout_Random!,
+            LayoutAlgorithmTypeEnum.Sugiyama => Assets.Resources.ServiceMapView_Layout_Sugiyama!,
+            LayoutAlgorithmTypeEnum.Tree => Assets.Resources.ServiceMapView_Layout_Tree!,
+            _ => algorithm.ToString()
+        };
+    }
+
+    private static string GetEdgeRoutingAlgorithmName(EdgeRoutingAlgorithmTypeEnum algorithm)
+    {
+        return algorithm switch
+        {
+            EdgeRoutingAlgorithmTypeEnum.Bundling => Assets.Resources.ServiceMapView_Routing_Bundling!,
+            EdgeRoutingAlgorithmTypeEnum.None => Assets.Resources.ServiceMapView_Routing_None!,
+            EdgeRoutingAlgorithmTypeEnum.PathFinder => Assets.Resources.ServiceMapView_Routing_PathFinder!,
+            EdgeRoutingAlgorithmTypeEnum.SimpleER => Assets.Resources.ServiceMapView_Routing_SimpleER!,
+            _ => algorithm.ToString()
+        };
     }
 
     private static UrsaControls.MultiComboBox CreateNamespaceSelector(ServiceMapViewModel viewModel)
@@ -125,7 +193,13 @@ public sealed partial class ServiceMapView : ViewBase<ServiceMapViewModel>
         return new ServiceMapGraphControl()
             .BindValue(
                 ServiceMapGraphControl.GraphProperty,
-                CompiledBinding.Create<ServiceMapViewModel, ServiceMapGraph?>(x => x.Graph, source: vm));
+                CompiledBinding.Create<ServiceMapViewModel, ServiceMapGraph?>(x => x.Graph, source: vm))
+            .BindValue(
+                ServiceMapGraphControl.LayoutAlgorithmProperty,
+                CompiledBinding.Create<ServiceMapViewModel, LayoutAlgorithmTypeEnum>(x => x.LayoutAlgorithm, source: vm))
+            .BindValue(
+                ServiceMapGraphControl.EdgeRoutingAlgorithmProperty,
+                CompiledBinding.Create<ServiceMapViewModel, EdgeRoutingAlgorithmTypeEnum>(x => x.EdgeRoutingAlgorithm, source: vm));
     }
 
     private static ScrollViewer CreateSelectedFlows()

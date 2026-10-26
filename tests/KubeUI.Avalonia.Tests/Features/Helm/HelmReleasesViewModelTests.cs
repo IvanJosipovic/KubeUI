@@ -194,12 +194,10 @@ public sealed class HelmReleasesViewModelTests
             toolbar.Children[0].ShouldBeOfType<TextBlock>();
             await TestWait.UntilAsync(() => viewModel.ItemCount == 1,
                 TimeSpan.FromSeconds(5), cancellationToken: TestContext.Current.CancellationToken);
+            var expectedUpdated = HelmReleasesViewModel.FormatUpdated(release.Updated, DateTime.UtcNow);
             await TestWait.UntilAsync(
-                () => view.GetVisualDescendants().OfType<TextBlock>().Any(textBlock => textBlock.Name == "CellTextBlock"),
+                () => view.GetVisualDescendants().OfType<TextBlock>().Any(textBlock => textBlock.Text == expectedUpdated),
                 TimeSpan.FromSeconds(5), cancellationToken: TestContext.Current.CancellationToken);
-            view.GetVisualDescendants().OfType<TextBlock>()
-                .Single(textBlock => textBlock.Name == "CellTextBlock")
-                .Text.ShouldBe(HelmReleasesViewModel.FormatUpdated(release.Updated, DateTime.UtcNow));
             window.Content = null;
             await TestApplicationExtensions.WaitForUiAsync();
             window.Content = view;

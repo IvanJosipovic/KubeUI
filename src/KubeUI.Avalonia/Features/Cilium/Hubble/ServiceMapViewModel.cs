@@ -11,6 +11,7 @@ using KubeUI.Cilium;
 using KubeUI.Cilium.Hubble;
 using KubeUI.Kubernetes;
 using Microsoft.Extensions.Logging;
+using Westermo.GraphX.Common.Enums;
 using HubbleConnectionStatus = KubeUI.Cilium.Hubble.ConnectionStatus;
 
 namespace KubeUI.Avalonia.Features.Cilium.Hubble;
@@ -46,6 +47,10 @@ public sealed partial class ServiceMapViewModel : ViewModelBase, IInitializeClus
     [ObservableProperty] public partial TimeSpan TimeWindow { get; set; } = TimeSpan.FromMinutes(5);
     [ObservableProperty] public partial bool ShowOnlyErrors { get; set; }
     [ObservableProperty] public partial bool AggregateByNamespace { get; set; }
+    /// <summary>Gets or sets the GraphX layout algorithm used by the service map.</summary>
+    [ObservableProperty] public partial LayoutAlgorithmTypeEnum LayoutAlgorithm { get; set; } = LayoutAlgorithmTypeEnum.CompoundFDP;
+    /// <summary>Gets or sets the GraphX edge-routing algorithm used by the service map.</summary>
+    [ObservableProperty] public partial EdgeRoutingAlgorithmTypeEnum EdgeRoutingAlgorithm { get; set; } = EdgeRoutingAlgorithmTypeEnum.SimpleER;
     [ObservableProperty] public partial ServiceMapNode? SelectedNode { get; set; }
     [ObservableProperty] public partial bool IsNamespaceSelectionLinked { get; set; } = true;
 
