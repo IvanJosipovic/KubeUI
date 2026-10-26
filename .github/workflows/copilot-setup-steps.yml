@@ -27,7 +27,7 @@ jobs:
           curl -fsSL https://aka.ms/apm-unix | APM_INSTALL_DIR="$HOME/.local/bin" sh
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
       - name: Install agent dependencies
-        run: apm install
+        run: apm install --update
       - name: Setup .NET Core
         uses: actions/setup-dotnet@v6
         with:
