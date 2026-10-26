@@ -305,7 +305,9 @@ public partial class PortForwarder : ObservableObject, IEquatable<PortForwarder>
             }
         }
 
-        return null;
+        return string.IsNullOrEmpty(servicePort.Name) && ports.Count == 1
+            ? ports[0]
+            : null;
     }
 
     private static bool TrySelectPod(V1EndpointSlice endpointSlice, out string podName)

@@ -47,7 +47,13 @@ public sealed partial class FlowViewModel : ObservableObject
     [ObservableProperty] public partial uint SourceIdentity { get; set; }
     [ObservableProperty] public partial string? SourceWorkload { get; set; }
     [ObservableProperty] public partial string? SourceWorkloadKind { get; set; }
+    /// <summary>Gets or sets the service associated with the source endpoint.</summary>
+    [ObservableProperty] public partial string? SourceServiceName { get; set; }
+    /// <summary>Gets or sets the namespace of the source service.</summary>
+    [ObservableProperty] public partial string? SourceServiceNamespace { get; set; }
     [ObservableProperty] public partial string SourceIp { get; set; } = string.Empty;
+    [ObservableProperty] public partial string[] SourceNames { get; set; } = [];
+    [ObservableProperty] public partial bool SourceIsWorld { get; set; }
 
     // Destination
     [ObservableProperty] public partial string DestinationNamespace { get; set; } = string.Empty;
@@ -56,12 +62,19 @@ public sealed partial class FlowViewModel : ObservableObject
     [ObservableProperty] public partial uint DestinationIdentity { get; set; }
     [ObservableProperty] public partial string? DestinationWorkload { get; set; }
     [ObservableProperty] public partial string? DestinationWorkloadKind { get; set; }
+    /// <summary>Gets or sets the service associated with the destination endpoint.</summary>
+    [ObservableProperty] public partial string? DestinationServiceName { get; set; }
+    /// <summary>Gets or sets the namespace of the destination service.</summary>
+    [ObservableProperty] public partial string? DestinationServiceNamespace { get; set; }
     [ObservableProperty] public partial string DestinationIp { get; set; } = string.Empty;
+    [ObservableProperty] public partial string[] DestinationNames { get; set; } = [];
+    [ObservableProperty] public partial bool DestinationIsWorld { get; set; }
 
     // Network
     [ObservableProperty] public partial string Protocol { get; set; } = string.Empty;
     [ObservableProperty] public partial int DestinationPort { get; set; }
     [ObservableProperty] public partial int SourcePort { get; set; }
+    [ObservableProperty] public partial string? ApplicationProtocol { get; set; }
     [ObservableProperty] public partial TimeSpan? Latency { get; set; }
     [ObservableProperty] public partial bool IsReply { get; set; }
 
@@ -104,6 +117,7 @@ public sealed partial class FlowViewModel : ObservableObject
 
     public FlowCacheKey CacheKey => new(string.IsNullOrWhiteSpace(Uuid) ? _fallbackCacheIdentity : Uuid);
 
+    [Obsolete]
     public void UpdateFrom(Pb.Flow flow)
     {
         if (flow.Time != null)
@@ -127,7 +141,17 @@ public sealed partial class FlowViewModel : ObservableObject
             SourceIdentity = flow.Source.Identity;
             SourceWorkload = flow.Source.Workloads.Count > 0 ? flow.Source.Workloads[0].Name : null;
             SourceWorkloadKind = flow.Source.Workloads.Count > 0 ? flow.Source.Workloads[0].Kind : null;
+            SourceIsWorld = IsWorldEndpoint(flow.Source);
         }
+        else
+        {
+            SourceIsWorld = false;
+        }
+
+        SourceNames = flow.SourceNames.ToArray();
+
+        SourceServiceName = flow.SourceService?.Name;
+        SourceServiceNamespace = flow.SourceService?.Namespace;
 
         if (flow.Destination != null)
         {
@@ -137,7 +161,17 @@ public sealed partial class FlowViewModel : ObservableObject
             DestinationIdentity = flow.Destination.Identity;
             DestinationWorkload = flow.Destination.Workloads.Count > 0 ? flow.Destination.Workloads[0].Name : null;
             DestinationWorkloadKind = flow.Destination.Workloads.Count > 0 ? flow.Destination.Workloads[0].Kind : null;
+            DestinationIsWorld = IsWorldEndpoint(flow.Destination);
         }
+        else
+        {
+            DestinationIsWorld = false;
+        }
+
+        DestinationNames = flow.DestinationNames.ToArray();
+
+        DestinationServiceName = flow.DestinationService?.Name;
+        DestinationServiceNamespace = flow.DestinationService?.Namespace;
 
         if (flow.IP != null)
         {
@@ -211,17 +245,31 @@ public sealed partial class FlowViewModel : ObservableObject
             L7Type = flow.L7.Type;
             if (flow.L7.Dns != null)
             {
+                ApplicationProtocol = "DNS";
                 DnsQuery = flow.L7.Dns.Query;
             }
             if (flow.L7.Http != null)
             {
+                ApplicationProtocol = "HTTP";
                 HttpMethod = flow.L7.Http.Method;
                 HttpPath = flow.L7.Http.Url;
                 HttpStatusCode = flow.L7.Http.Code > 0 ? (int?)flow.L7.Http.Code : null;
             }
+            if (flow.L7.Kafka != null)
+            {
+                ApplicationProtocol = "Kafka";
+            }
+        }
+        else
+        {
+            ApplicationProtocol = null;
         }
     }
 
+    private static bool IsWorldEndpoint(Pb.Endpoint endpoint)
+        => endpoint.Labels.Contains("reserved:world")
+            || endpoint.Labels.Contains("reserved:world-ipv4")
+            || endpoint.Labels.Contains("reserved:world-ipv6");
 }
 
 public readonly record struct FlowCacheKey(string EventId)
@@ -257,6 +305,9 @@ public sealed class ServiceMapNode
     public int EgressFlowCount { get; set; }
     public int DeniedCount { get; set; }
     public int AllowedCount { get; set; }
+    /// <summary>Gets protocol/port access points aggregated for this node.</summary>
+    public List<ServiceMapAccessPoint> AccessPoints { get; } = [];
+    internal Dictionary<(string Protocol, int Port), ServiceMapAccessPoint> AccessPointIndex { get; } = [];
 }
 
 public sealed class ServiceMapEdge
@@ -266,4 +317,23 @@ public sealed class ServiceMapEdge
     public int FlowCount { get; set; }
     public int DeniedCount { get; set; }
     public FlowVerdict DominantVerdict { get; set; }
+    /// <summary>Gets protocol/port access points aggregated for this directed service link.</summary>
+    public List<ServiceMapAccessPoint> AccessPoints { get; } = [];
+    internal Dictionary<(string Protocol, int Port), ServiceMapAccessPoint> AccessPointIndex { get; } = [];
+}
+
+/// <summary>Aggregated flow counts for one destination protocol and port.</summary>
+public sealed class ServiceMapAccessPoint
+{
+    /// <summary>Gets the transport or network protocol observed for the access point.</summary>
+    public string Protocol { get; init; } = string.Empty;
+    /// <summary>Gets the destination port, or zero when the event has no port.</summary>
+    public int Port { get; init; }
+    /// <summary>Gets or sets the number of matching Hubble flow events.</summary>
+    public int FlowCount { get; set; }
+    /// <summary>Gets or sets the number of denied Hubble flow events.</summary>
+    public int DeniedCount { get; set; }
+    /// <summary>Gets L7 application protocols observed on this access point.</summary>
+    public List<string> ApplicationProtocols { get; } = [];
+    internal HashSet<string> ApplicationProtocolIndex { get; } = new(StringComparer.Ordinal);
 }

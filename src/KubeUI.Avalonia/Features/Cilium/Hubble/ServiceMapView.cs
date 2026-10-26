@@ -1,9 +1,17 @@
+using System.Collections;
+using System.Diagnostics.CodeAnalysis;
 using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Templates;
 using Avalonia.Markup.Declarative;
 using Avalonia.Markup.Xaml.MarkupExtensions;
+using FluentIcons.Avalonia;
+using FluentIcons.Common;
+using k8s.Models;
 using KubeUI.Avalonia.Features.Cilium.Hubble.Controls;
+using KubeUI.Avalonia.Features.Resources.Common;
 using KubeUI.Cilium.Hubble;
+using SvcSystems.Avalonia.DynamicTableView;
+using UrsaControls = Ursa.Controls;
 
 namespace KubeUI.Avalonia.Features.Cilium.Hubble;
 
@@ -12,113 +20,126 @@ public sealed partial class ServiceMapView : ViewBase<ServiceMapViewModel>
     protected override object Build(ServiceMapViewModel vm)
     {
         return new Grid()
-            .Rows("Auto,*")
+            .Rows("Auto,Auto,*")
             .Children(
-                CreateTopBar().Row(0),
+                CreateTopBar(vm).Row(0),
+                CreateSelectedFlows().Row(1),
                 new Grid()
-                    .Cols("*,320")
+                    .Margin(6)
                     .Children(
-                        new Border()
-                            .Margin(6)
-                            .BorderThickness(1)
-                            .BorderBrush(new DynamicResourceExtension("SystemBaseMediumBrush"))
-                            .Child(
-                                new Grid()
-                                    .Children(
-                                        new ScrollViewer()
-                                            .HorizontalScrollBarVisibility(ScrollBarVisibility.Auto)
-                                            .VerticalScrollBarVisibility(ScrollBarVisibility.Auto)
-                                            .Content(new ServiceMapGraphControl()
-                                                .Bind(
-                                                    ServiceMapGraphControl.GraphProperty,
-                                                    CompiledBinding.Create<ServiceMapViewModel, ServiceMapGraph?>(x => x.Graph))),
-                                        new TextBlock()
-                                            .HorizontalAlignment(HorizontalAlignment.Center)
-                                            .VerticalAlignment(VerticalAlignment.Center)
-                                            .Text(Assets.Resources.ServiceMapView_NoFlows)
-                                            .IsVisible(CompiledBinding.Create<ServiceMapViewModel, bool>(x => !x.HasFlows))))
-                            .Col(0),
-                        CreateNodePanel(vm).Col(1))
-                    .Row(1));
+                        CreateGraphViewer(vm),
+                        new TextBlock()
+                            .HorizontalAlignment(HorizontalAlignment.Center)
+                            .VerticalAlignment(VerticalAlignment.Center)
+                            .Text(CompiledBinding.Create<ServiceMapViewModel, string>(x => x.EmptyStateMessage))
+                            .IsVisible(CompiledBinding.Create<ServiceMapViewModel, bool>(x => !x.HasFlows)))
+                    .Row(2));
     }
 
-    private static Border CreateTopBar()
+    private static Grid CreateTopBar(ServiceMapViewModel vm)
     {
-        var graphTextBinding = CompiledBinding.Create<ServiceMapViewModel, string>(x => GraphText(x));
-        return new Border()
-            .Classes("toolbar")
-            .MinHeight(40)
-            .Child(
+        return new Grid()
+            .Row(0)
+            .MinHeight(32)
+            .Margin(0, 2, 0, 2)
+            .Cols("Auto,Auto,*,Auto")
+            .Children(
                 new StackPanel()
+                    .Col(0)
                     .Orientation(Orientation.Horizontal)
-                    .Spacing(8)
-                    .Margin(8, 0)
+                    .Spacing(6)
+                    .VerticalAlignment(VerticalAlignment.Center)
                     .Children(
                         new ComboBox()
                             .Width(140)
+                            .Height(32)
+                            .VerticalAlignment(VerticalAlignment.Center)
                             .ItemsSource(new[] { TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(5), TimeSpan.FromMinutes(15), TimeSpan.FromMinutes(60) })
                             .SelectedItem(CompiledBinding.Create<ServiceMapViewModel, TimeSpan>(x => x.TimeWindow, mode: BindingMode.TwoWay))
                             .ItemTemplate(new FuncDataTemplate<TimeSpan>((timeWindow, _) => new TextBlock()
                                 .Text($"{timeWindow.TotalMinutes} {Assets.Resources.ServiceMapView_TimeWindowMinutes}"))),
-                        new CheckBox()
-                            .Content(Assets.Resources.ServiceMapView_AggregateByNamespace)
-                            .IsChecked(CompiledBinding.Create<ServiceMapViewModel, bool>(x => x.AggregateByNamespace, mode: BindingMode.TwoWay)),
-                        new CheckBox()
-                            .Content(Assets.Resources.ServiceMapView_ShowErrorsOnly)
-                            .IsChecked(CompiledBinding.Create<ServiceMapViewModel, bool>(x => x.ShowOnlyErrors, mode: BindingMode.TwoWay)),
+                        new ToggleButton()
+                            .Width(32)
+                            .Height(32)
+                            .VerticalAlignment(VerticalAlignment.Center)
+                            .IsChecked(CompiledBinding.Create<ServiceMapViewModel, bool>(x => x.AggregateByNamespace, mode: BindingMode.TwoWay))
+                            .ToolTip_Tip(Assets.Resources.ServiceMapView_TooltipAggregate)
+                            .Content(new FluentIcon().Icon(Icon.DataUsage)),
+                        new ToggleButton()
+                            .Width(32)
+                            .Height(32)
+                            .VerticalAlignment(VerticalAlignment.Center)
+                            .IsChecked(CompiledBinding.Create<ServiceMapViewModel, bool>(x => x.ShowOnlyErrors, mode: BindingMode.TwoWay))
+                            .ToolTip_Tip(Assets.Resources.ServiceMapView_TooltipErrorsOnly)
+                            .Content(new FluentIcon().Icon(Icon.Warning))),
+                new StackPanel()
+                    .Col(1)
+                    .Orientation(Orientation.Horizontal)
+                    .Spacing(12)
+                    .VerticalAlignment(VerticalAlignment.Center)
+                    .Margin(8, 0, 0, 0)
+                    .Children(
                         new TextBlock()
                             .VerticalAlignment(VerticalAlignment.Center)
-                            .Margin(12, 0, 0, 0)
                             .Text(CompiledBinding.Create<ServiceMapViewModel, string>(x => x.ConnectionStatus)),
                         new TextBlock()
                             .VerticalAlignment(VerticalAlignment.Center)
-                            .Margin(8, 0, 0, 0)
-                            .Text(graphTextBinding)));
-    }
-
-    private static Border CreateNodePanel(ServiceMapViewModel vm)
-    {
-        return new Border()
-            .Margin(6)
-            .Padding(10)
-            .BorderThickness(1)
-            .BorderBrush(new DynamicResourceExtension("SystemBaseMediumBrush"))
-            .Child(
+                            .Text(CompiledBinding.Create<ServiceMapViewModel, string>(x => x.GraphSummary))),
                 new StackPanel()
-                    .Spacing(8)
+                    .Col(3)
+                    .MaxWidth(456)
+                    .HorizontalAlignment(HorizontalAlignment.Right)
+                    .Orientation(Orientation.Horizontal)
+                    .VerticalAlignment(VerticalAlignment.Center)
                     .Children(
-                        new TextBlock()
-                            .FontWeight(FontWeight.SemiBold)
-                            .Text(Assets.Resources.ServiceMapView_NodeDetails),
-                        new ComboBox()
-                            .ItemsSource(CompiledBinding.Create<ServiceMapViewModel, IEnumerable<ServiceMapNode>>(x => x.Nodes))
-                            .SelectedItem(CompiledBinding.Create<ServiceMapViewModel, ServiceMapNode?>(x => x.SelectedNode, mode: BindingMode.TwoWay))
-                            .ItemTemplate(new FuncDataTemplate<ServiceMapNode>((node, _) => new TextBlock()
-                                .Text($"{node.Namespace}/{node.Name}"))),
-                        new Button()
-                            .Content(Assets.Resources.ServiceMapView_ShowFlowsForNode)
-                            .Command(vm.ShowFlowsForNodeCommand)
-                            .CommandParameter(CompiledBinding.Create<ServiceMapViewModel, ServiceMapNode?>(x => x.SelectedNode)),
-                        new TextBlock()
-                            .FontWeight(FontWeight.SemiBold)
-                            .Text(Assets.Resources.ServiceMapView_SelectedNodeFlows),
-                        new ScrollViewer()
-                            .VerticalScrollBarVisibility(ScrollBarVisibility.Auto)
-                            .Content(new ItemsControl()
-                                .ItemsSource(CompiledBinding.Create<ServiceMapViewModel, IEnumerable<FlowViewModel>>(x => x.SelectedNodeFlows))
-                                .ItemTemplate(new FuncDataTemplate<FlowViewModel>((flow, _) => new TextBlock()
-                                    .Margin(0, 3)
-                                    .Text($"{flow.Timestamp.ToLocalTime():HH:mm:ss} {flow.Verdict}: {flow.SourcePod} → {flow.DestinationPod}"))))));
+                        CreateNamespaceSelector(vm),
+                        new ToggleButton()
+                            .Margin(0, 0, 2, 0)
+                            .IsChecked(CompiledBinding.Create<ServiceMapViewModel, bool>(x => x.IsNamespaceSelectionLinked, source: vm, mode: BindingMode.TwoWay))
+                            .ToolTip_Tip(Assets.Resources.ResourceListView_NamespaceLink)
+                            .Content(new FluentIcon().Icon(Icon.Link))));
     }
 
-    private static string GraphText(ServiceMapViewModel vm)
+    private static UrsaControls.MultiComboBox CreateNamespaceSelector(ServiceMapViewModel viewModel)
     {
-        var nodeCount = vm.Graph?.NodeCount ?? 0;
-        var edgeCount = vm.Graph?.EdgeCount ?? 0;
-        return string.Format(
-            System.Globalization.CultureInfo.CurrentCulture,
-            Assets.Resources.ServiceMapView_GraphCountsFormat,
-            nodeCount,
-            edgeCount);
+        var template = new FuncDataTemplate<V1Namespace>((ns, _) =>
+            new TextBlock().Text(ns?.Metadata?.Name ?? string.Empty));
+
+        return new UrsaControls.MultiComboBox()
+            .Width(200)
+            .MinWidth(140)
+            .MaxHeight(20)
+            .Margin(0, 0, 2, 0)
+            .HorizontalAlignment(HorizontalAlignment.Stretch)
+            .Classes("ClearButton")
+            .ItemsSource(CompiledBinding.Create<ServiceMapViewModel, IEnumerable>(x => x.Cluster!.Runtime.Namespaces, source: viewModel))
+            .PlaceholderText(Assets.Resources.ResourceListView_SelectNamespace)
+            .SelectedItems(CompiledBinding.Create<ServiceMapViewModel, IList>(x => x.SelectedNamespaces, source: viewModel))
+            .ItemTemplate(template)
+            .SelectedItemTemplate(template);
     }
+
+    [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "Graph control ownership is transferred to the visual tree via the fluent builder.")]
+    private static ServiceMapGraphControl CreateGraphViewer(ServiceMapViewModel vm)
+    {
+        return new ServiceMapGraphControl()
+            .BindValue(
+                ServiceMapGraphControl.GraphProperty,
+                CompiledBinding.Create<ServiceMapViewModel, ServiceMapGraph?>(x => x.Graph, source: vm));
+    }
+
+    private static ScrollViewer CreateSelectedFlows()
+    {
+        return new ScrollViewer()
+            .MaxHeight(72)
+            .VerticalScrollBarVisibility(ScrollBarVisibility.Auto)
+            .Content(new StackPanel()
+                .Children(
+                    new ItemsControl()
+                        .ItemsSource(CompiledBinding.Create<ServiceMapViewModel, IEnumerable<FlowViewModel>>(x => x.SelectedNodeFlows))
+                        .ItemTemplate(new FuncDataTemplate<FlowViewModel>((flow, _) => new TextBlock()
+                            .Margin(8, 2)
+                            .Text($"{flow.Timestamp.ToLocalTime():HH:mm:ss} {flow.Verdict}: {flow.SourcePod} \u2192 {flow.DestinationPod}")))));
+    }
+
 }

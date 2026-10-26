@@ -1,6 +1,7 @@
 using Avalonia;
 using Avalonia.Markup.Declarative;
 using Avalonia.Media;
+using KubeUI.Avalonia.Styles;
 using KubeUI.Cilium.Hubble;
 
 namespace KubeUI.Avalonia.Features.Cilium.Hubble.Controls;
@@ -35,7 +36,7 @@ public sealed class FlowEndpointView : StackPanel
             if (e == null)
                 return;
 
-            var secondaryBrush = Application.Current?.TryGetResource("SystemBaseMediumBrush", Application.Current.ActualThemeVariant, out var r) == true && r is IBrush b ? b : Brushes.Gray;
+            var secondaryBrush = ApplicationBrushResources.GetBrush("SubtleOutlineBrush");
 
             Children.Add(new TextBlock
             {

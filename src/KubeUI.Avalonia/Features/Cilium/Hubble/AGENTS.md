@@ -12,12 +12,18 @@
 
 - Preserve individual Hubble flow events by UUID; events without UUIDs need distinct per-event cache identities.
 - Keep flow-list filtering live so changing criteria also changes already received rows.
+- Keep retained flow history bounded by `MaxFlows`; evict nonmatching rows before rows matching active flow and namespace filters.
 - Keep service-map history bounded by both age and event count. Apply selected time window, verdict, and namespace scopes when building the graph.
+- Build the service map from directed service/workload links: aggregate replica pods into their service or workload node, exclude reply flows from graph topology and counts, group remaining events by source/target link, and show destination protocol/port access points on target nodes and links regardless of observer-side traffic direction. Keep independently initiated reverse links directional; do not treat event counts as unique connections.
+- Require at least one selected namespace before opening a service-map flow stream; send namespace filters to Hubble Relay and never interpret an empty selection as all namespaces.
+- Keep per-flow ingestion constant-time and off the UI thread. Build graph and selected-node snapshots on background workers, cancel stale builds, and publish snapshots on the UI thread.
 - Do not present unavailable Hubble fields, such as byte counts, as measured values.
 
 ## UI and tests
 
 - Use compiled bindings and resource strings for visible UI text. Keep pointer and keyboard interactions out of view code-behind.
-- Keep graph rendering in a custom Avalonia control and graph construction in the Cilium layer.
+- The flow list namespace selector must support multiple namespaces, link to cluster namespace selection by default, and allow local selection while unlinked.
+- Keep service-map graph construction in the Cilium layer and render it with GraphX inside a custom Avalonia control.
+- Service Map graph nodes must be draggable and edges must show target-only traffic-direction arrows. Let GraphX perform layout using the same tree-layout approach as Resource Visualization; do not calculate node positions manually or expose a separate layout picker. Preserve manually moved node positions during flow-count-only updates.
 - Add focused tests for flow mapping and identity, filter changes, time and namespace scoping, graph aggregation, retention, DI registration, and document disposal.
 - Follow `src/KubeUI.Avalonia/AGENTS.md` for Avalonia UI and headless testing rules.

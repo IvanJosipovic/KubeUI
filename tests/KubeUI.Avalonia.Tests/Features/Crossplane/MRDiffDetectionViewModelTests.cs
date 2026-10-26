@@ -17,11 +17,32 @@ using KubeUI.Kubernetes.Serialization;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Shouldly;
+using SvcSystems.Avalonia.DynamicTableView;
 
 namespace KubeUI.Avalonia.Tests.Features.Crossplane;
 
 public sealed class MRDiffDetectionViewModelTests
 {
+    [Fact]
+    public void Long_diff_values_use_proportional_width_while_short_fields_fit_content()
+    {
+        var columns = MRDiffDetectionViewModel.CreateColumns();
+
+        var oldValue = columns.Single(column => column.Key == "oldValue");
+        oldValue.WidthMode.ShouldBe(DynamicTableViewWidthMode.Star);
+        oldValue.Width.ShouldBe(2);
+
+        var newValue = columns.Single(column => column.Key == "newValue");
+        newValue.WidthMode.ShouldBe(DynamicTableViewWidthMode.Star);
+        newValue.Width.ShouldBe(2);
+
+        var diffField = columns.Single(column => column.Key == "diffField");
+        diffField.WidthMode.ShouldBe(DynamicTableViewWidthMode.Star);
+        diffField.Width.ShouldBe(1);
+        columns.Single(column => column.Key == "newComputed").WidthMode.ShouldBe(DynamicTableViewWidthMode.Auto);
+        columns.Single(column => column.Key == "occurrences").WidthMode.ShouldBe(DynamicTableViewWidthMode.Auto);
+    }
+
     [AvaloniaFact]
     public async Task Provider_log_diffs_are_searchable_and_clear_restarts_tail_replay()
     {

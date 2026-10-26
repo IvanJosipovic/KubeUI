@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Windows.Input;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
@@ -9,6 +10,7 @@ using Avalonia.Media;
 using CommunityToolkit.Mvvm.Input;
 using FluentIcons.Avalonia;
 using FluentIcons.Common;
+using k8s.Models;
 using KubeUI.Avalonia.Features.Resources.Common;
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
 using KubeUI.Cilium.Hubble;
@@ -121,8 +123,9 @@ public sealed partial class FlowListView : ViewBase<FlowListViewModel>
     {
         return new Grid()
             .Row(0)
-            .MinHeight(32)
+            .Classes("toolbar")
             .Margin(0, 2, 0, 2)
+            .MinHeight(32)
             .Cols("Auto,Auto,*,Auto")
             .Children(
                 new Button()
@@ -130,18 +133,25 @@ public sealed partial class FlowListView : ViewBase<FlowListViewModel>
                     .Margin(2, 0, 0, 0)
                     .Command(vm.ClearCommand)
                     .ToolTip_Tip(Assets.Resources.FlowListView_TooltipClear)
-                    .Content(new TextBlock().Text(Assets.Resources.FlowListView_ButtonClear)),
-
+                    .Content(new FluentIcon().Icon(Icon.Delete)),
                 new Label()
                     .Col(1)
                     .Margin(2, 0, 0, 0)
                     .VerticalContentAlignment(VerticalAlignment.Center)
                     .Content(CompiledBinding.Create<FlowListViewModel, int>(x => x.FlowCount,
                         stringFormat: Assets.Resources.FlowListView_ItemsFormat)),
-
+                new TextBlock()
+                    .Col(2)
+                    .Margin(8, 0)
+                    .VerticalAlignment(VerticalAlignment.Center)
+                    .Text(CompiledBinding.Create<FlowListViewModel, string>(x => x.ConnectionStatus))
+                    .Foreground(CompiledBinding.Create<FlowListViewModel, bool>(x => x.IsConnected,
+                        converter: new BoolToBrushConverter(
+                            new DynamicResourceExtension("PodStatusReadyBrush"),
+                            new DynamicResourceExtension("ContainerStatusErrorBrush")))),
                 new StackPanel()
                     .Col(3)
-                    .MaxWidth(600)
+                    .MaxWidth(940)
                     .HorizontalAlignment(HorizontalAlignment.Right)
                     .Orientation(Orientation.Horizontal)
                     .Children(
@@ -149,75 +159,36 @@ public sealed partial class FlowListView : ViewBase<FlowListViewModel>
                             .Width(200)
                             .MinWidth(120)
                             .Margin(0, 0, 2, 0)
-                            .HorizontalAlignment(HorizontalAlignment.Stretch)
                             .VerticalAlignment(VerticalAlignment.Stretch)
                             .VerticalContentAlignment(VerticalAlignment.Center)
                             .Background(Brushes.Transparent)
                             .PlaceholderText(Assets.Resources.FlowListView_SearchWatermark)
                             .Text(CompiledBinding.Create<FlowListViewModel, string>(x => x.SearchQuery, mode: BindingMode.TwoWay)),
-
-                        new ComboBox()
-                            .Width(120)
+                        CreateNamespaceSelector(vm),
+                        new ToggleButton()
                             .Margin(0, 0, 2, 0)
-                            .ItemsSource(new[] { FlowVerdict.Forwarded, FlowVerdict.Dropped, FlowVerdict.Error })
-                            .SelectedItem(CompiledBinding.Create<FlowListViewModel, FlowVerdict?>(x => x.Filter.Verdict, mode: BindingMode.TwoWay))
-                            .PlaceholderText(Assets.Resources.FlowListView_FilterVerdictAll)
-                            .ItemTemplate(new FuncDataTemplate<FlowVerdict>((v, _) => new TextBlock().Text(v switch
-                            {
-                                FlowVerdict.Forwarded => Assets.Resources.FlowVerdict_Allowed,
-                                FlowVerdict.Dropped => Assets.Resources.FlowVerdict_Dropped,
-                                FlowVerdict.Error => Assets.Resources.FlowVerdict_Error,
-                                _ => Assets.Resources.FlowVerdict_Unknown
-                            }))),
+                            .IsChecked(CompiledBinding.Create<FlowListViewModel, bool>(x => x.IsNamespaceSelectionLinked, source: vm, mode: BindingMode.TwoWay))
+                            .ToolTip_Tip(Assets.Resources.ResourceListView_NamespaceLink)
+                            .Content(new FluentIcon().Icon(Icon.Link))));
+    }
 
-                        new ComboBox()
-                            .Width(100)
-                            .Margin(0, 0, 2, 0)
-                            .ItemsSource(new[] { KubeUI.Cilium.Hubble.FlowDirection.Ingress, KubeUI.Cilium.Hubble.FlowDirection.Egress })
-                            .SelectedItem(CompiledBinding.Create<FlowListViewModel, KubeUI.Cilium.Hubble.FlowDirection?>(x => x.Filter.Direction, mode: BindingMode.TwoWay))
-                            .PlaceholderText(Assets.Resources.FlowListView_FilterDirectionAll)
-                            .ItemTemplate(new FuncDataTemplate<KubeUI.Cilium.Hubble.FlowDirection>((d, _) => new TextBlock().Text(d switch
-                            {
-                                KubeUI.Cilium.Hubble.FlowDirection.Ingress => Assets.Resources.FlowDirection_Ingress,
-                                KubeUI.Cilium.Hubble.FlowDirection.Egress => Assets.Resources.FlowDirection_Egress,
-                                _ => Assets.Resources.FlowDirection_Unknown
-                            }))),
+    private static UrsaControls.MultiComboBox CreateNamespaceSelector(FlowListViewModel viewModel)
+    {
+        var template = new FuncDataTemplate<V1Namespace>((ns, _) =>
+            new TextBlock().Text(ns?.Metadata?.Name ?? string.Empty));
 
-                        new NumericUpDown()
-                            .Width(80)
-                            .Margin(0, 0, 2, 0)
-                            .Minimum(1)
-                            .Maximum(65535)
-                            .Value(CompiledBinding.Create<FlowListViewModel, int?>(x => x.Filter.DestinationPort, mode: BindingMode.TwoWay))
-                            .PlaceholderText(Assets.Resources.FlowListView_FilterPortWatermark),
-
-                        new CheckBox()
-                            .Margin(0, 0, 2, 0)
-                            .Content(Assets.Resources.FlowListView_FilterErrorsOnly)
-                            .IsChecked(CompiledBinding.Create<FlowListViewModel, bool>(x => x.Filter.ShowOnlyErrors, mode: BindingMode.TwoWay)),
-
-                        new Button()
-                            .Margin(0, 0, 2, 0)
-                            .Content(Assets.Resources.FlowListView_ButtonResetFilter)
-                            .Command(vm.ResetFilterCommand),
-
-                        new ProgressBar()
-                            .Width(20)
-                            .Height(20)
-                            .HorizontalAlignment(HorizontalAlignment.Center)
-                            .VerticalAlignment(VerticalAlignment.Center)
-                            .IsIndeterminate(true)
-                            .IsVisible(CompiledBinding.Create<FlowListViewModel, bool>(x => !x.IsConnected)),
-
-                        new TextBlock()
-                            .VerticalAlignment(VerticalAlignment.Center)
-                            .Margin(8, 0, 0, 0)
-                            .Text(CompiledBinding.Create<FlowListViewModel, string>(x => x.ConnectionStatus))
-                            .Foreground(CompiledBinding.Create<FlowListViewModel, bool>(x => x.IsConnected,
-                                converter: new BoolToBrushConverter(
-                                    new DynamicResourceExtension("PodStatusReadyBrush"),
-                                    new DynamicResourceExtension("ContainerStatusErrorBrush")))))
-            );
+        return new UrsaControls.MultiComboBox()
+            .Width(190)
+            .MinWidth(140)
+            .MaxHeight(20)
+            .Margin(0, 0, 2, 0)
+            .HorizontalAlignment(HorizontalAlignment.Stretch)
+            .Classes("ClearButton")
+            .ItemsSource(CompiledBinding.Create<FlowListViewModel, IEnumerable>(x => x.Cluster!.Runtime.Namespaces, source: viewModel))
+            .PlaceholderText(Assets.Resources.ResourceListView_SelectNamespace)
+            .SelectedItems(CompiledBinding.Create<FlowListViewModel, IList>(x => x.SelectedNamespaces, source: viewModel))
+            .ItemTemplate(template)
+            .SelectedItemTemplate(template);
     }
 
     private static ContextMenu CreateContextMenu()

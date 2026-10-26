@@ -16,11 +16,31 @@ using KubeUI.Avalonia.Features.Resources.Yaml;
 using KubeUI.Kubernetes;
 using Moq;
 using Shouldly;
+using SvcSystems.Avalonia.DynamicTableView;
 
 namespace KubeUI.Avalonia.Tests.Features.Helm;
 
 public sealed class HelmReleasesViewModelTests
 {
+    [AvaloniaFact]
+    public void Status_and_updated_columns_fit_content()
+    {
+        using var viewModel = new HelmReleasesViewModel(
+            Mock.Of<IHelmService>(),
+            Mock.Of<IFactory>(),
+            Mock.Of<IDialogService>(),
+            Mock.Of<IHelmReleasePreviewService>(),
+            Mock.Of<Func<ResourceYamlViewModel>>(),
+            Mock.Of<IHelmDocumentOpener>(),
+            Mock.Of<IHelmListNotifier>());
+
+        var columns = viewModel.TableSource.Columns;
+
+        columns.Single(column => column.Key == "status").WidthMode.ShouldBe(DynamicTableViewWidthMode.Auto);
+        columns.Single(column => column.Key == "updated").WidthMode.ShouldBe(DynamicTableViewWidthMode.Auto);
+        columns.Single(column => column.Key == "name").WidthMode.ShouldBe(DynamicTableViewWidthMode.Star);
+    }
+
     [Theory]
     [InlineData("2026-10-21T12:58:46Z", "1m14s")]
     [InlineData("2026-10-21T13:00:00Z", "0ms")]

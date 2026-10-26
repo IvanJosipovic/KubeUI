@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Markup.Declarative;
 using Avalonia.Media;
+using KubeUI.Avalonia.Styles;
 using KubeUI.Cilium.Hubble;
 using KubeUIFlowDirection = KubeUI.Cilium.Hubble.FlowDirection;
 
@@ -24,8 +25,8 @@ public sealed class DirectionIcon : Border
 
         this.GetObservable(DirectionProperty).Subscribe(d =>
         {
-            var ingressBrush = Application.Current?.TryGetResource("PodStatusReadyBrush", Application.Current.ActualThemeVariant, out var r1) == true && r1 is IBrush b1 ? b1 : Brushes.Green;
-            var egressBrush = Application.Current?.TryGetResource("VisualizationRelationshipStorageBrush", Application.Current.ActualThemeVariant, out var r2) == true && r2 is IBrush b2 ? b2 : Brushes.Blue;
+            var ingressBrush = ApplicationBrushResources.GetBrush("PodStatusReadyBrush");
+            var egressBrush = ApplicationBrushResources.GetBrush("VisualizationRelationshipStorageBrush");
 
             var icon = d switch
             {

@@ -90,7 +90,7 @@ public sealed class HubbleConnection : IHubbleConnection
                     HttpHandler = CreateHttpHandler(useTls)
                 });
             _client = new Pb.Observer.ObserverClient(_channel);
-            Flows = Observable.Create<FlowViewModel>(ReadFlowsAsync).Publish().RefCount();
+            Flows = CreateFlowObservable(null).Publish().RefCount();
         }
         catch (OperationCanceledException) when (linkedCancellation.IsCancellationRequested)
         {
@@ -107,7 +107,34 @@ public sealed class HubbleConnection : IHubbleConnection
         }
     }
 
-    private async Task ReadFlowsAsync(IObserver<FlowViewModel> observer, CancellationToken subscriptionToken)
+    /// <inheritdoc />
+    public IObservable<FlowViewModel> ObserveFlows(IReadOnlyCollection<string> namespaces)
+    {
+        ArgumentNullException.ThrowIfNull(namespaces);
+        var namespaceSnapshot = namespaces
+            .Where(static name => !string.IsNullOrWhiteSpace(name))
+            .Distinct(StringComparer.Ordinal)
+            .ToArray();
+        if (namespaceSnapshot.Length == 0)
+        {
+            throw new ArgumentException("At least one namespace must be selected.", nameof(namespaces));
+        }
+
+        if (_client is null)
+        {
+            throw new InvalidOperationException("Start the Hubble connection before observing flows.");
+        }
+
+        return CreateFlowObservable(namespaceSnapshot);
+    }
+
+    private IObservable<FlowViewModel> CreateFlowObservable(IReadOnlyList<string>? namespaces)
+        => Observable.Create<FlowViewModel>((observer, token) => ReadFlowsAsync(observer, token, namespaces));
+
+    private async Task ReadFlowsAsync(
+        IObserver<FlowViewModel> observer,
+        CancellationToken subscriptionToken,
+        IReadOnlyList<string>? namespaces)
     {
         using var linkedCancellation = CancellationTokenSource.CreateLinkedTokenSource(
             subscriptionToken,
@@ -115,6 +142,15 @@ public sealed class HubbleConnection : IHubbleConnection
         try
         {
             var request = new Pb.GetFlowsRequest { Follow = true, Number = 10000 };
+            if (namespaces is not null)
+            {
+                foreach (var ns in namespaces)
+                {
+                    request.Whitelist.Add(new Pb.FlowFilter { SourcePod = { $"{ns}/" } });
+                    request.Whitelist.Add(new Pb.FlowFilter { DestinationPod = { $"{ns}/" } });
+                }
+            }
+
             using var call = _client!.GetFlows(
                 request,
                 cancellationToken: linkedCancellation.Token);

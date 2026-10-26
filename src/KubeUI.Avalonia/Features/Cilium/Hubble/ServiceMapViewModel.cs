@@ -1,7 +1,9 @@
+using System.Collections.Specialized;
 using System.Reactive.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using k8s.Models;
+using KubeUI.Avalonia.Features.Cilium.Hubble.Controls;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Infrastructure.Threading;
@@ -25,6 +27,15 @@ public sealed partial class ServiceMapViewModel : ViewModelBase, IInitializeClus
     private IHubbleConnection? _connection;
     private IDisposable? _flowSubscription;
     private IDisposable? _refreshSubscription;
+    private IDisposable? _namespaceScopeUpdateSubscription;
+    private HashSet<string>? _activeNamespaceNames;
+    private CancellationTokenSource? _graphBuildCancellation;
+    private CancellationTokenSource? _selectedFlowsCancellation;
+    private Task? _graphBuildTask;
+    private Task? _selectedFlowsTask;
+    private long _graphBuildVersion;
+    private long _flowSubscriptionVersion;
+    private long _selectedFlowsVersion;
     private int _disposeState;
     private Task? _initializationTask;
 
@@ -36,16 +47,32 @@ public sealed partial class ServiceMapViewModel : ViewModelBase, IInitializeClus
     [ObservableProperty] public partial bool ShowOnlyErrors { get; set; }
     [ObservableProperty] public partial bool AggregateByNamespace { get; set; }
     [ObservableProperty] public partial ServiceMapNode? SelectedNode { get; set; }
+    [ObservableProperty] public partial bool IsNamespaceSelectionLinked { get; set; } = true;
 
     /// <summary>Gets the current namespace selection used to scope the graph.</summary>
     public ObservableCollection<V1Namespace> SelectedNamespaces
-        => Cluster != null ? Cluster.SelectedNamespaces : _localSelectedNamespaces;
+        => IsNamespaceSelectionLinked && Cluster is not null ? Cluster.SelectedNamespaces : _localSelectedNamespaces;
+
+    /// <summary>Gets whether at least one namespace is selected for the service map.</summary>
+    public bool HasSelectedNamespaces => SelectedNamespaces.Count > 0;
+
+    /// <summary>Gets the empty-state message for the current namespace and flow selection.</summary>
+    public string EmptyStateMessage => HasSelectedNamespaces
+        ? Assets.Resources.ServiceMapView_NoFlows
+        : Assets.Resources.ServiceMapView_SelectNamespacePrompt;
 
     /// <summary>Gets flows associated with the node selected for inspection.</summary>
     public ObservableCollection<FlowViewModel> SelectedNodeFlows => _selectedNodeFlows;
 
     /// <summary>Gets graph nodes for the selector.</summary>
     public IReadOnlyList<ServiceMapNode> Nodes => Graph?.Nodes ?? [];
+
+    /// <summary>Gets the localized node and edge counts displayed above the graph.</summary>
+    public string GraphSummary => string.Format(
+        System.Globalization.CultureInfo.CurrentCulture,
+        Assets.Resources.ServiceMapView_GraphCountsFormat,
+        Graph?.NodeCount ?? 0,
+        Graph?.EdgeCount ?? 0);
 
     /// <summary>Gets whether the current graph contains any nodes.</summary>
     public bool HasFlows => Graph?.NodeCount > 0;
@@ -87,7 +114,6 @@ public sealed partial class ServiceMapViewModel : ViewModelBase, IInitializeClus
         using var linkedCancellation = CancellationTokenSource.CreateLinkedTokenSource(ct, _lifetime.Token);
         Cluster = cluster;
         Id = $"ServiceMap-{cluster.Runtime.Name}";
-        cluster.SelectedNamespaces.CollectionChanged += OnSelectedNamespacesChanged;
         ConnectionStatus = Assets.Resources.ServiceMapView_StatusConnecting;
 
         try
@@ -101,12 +127,7 @@ public sealed partial class ServiceMapViewModel : ViewModelBase, IInitializeClus
             _connection = _hubbleClientFactory.CreateConnection(cluster.Runtime);
             _connection.StatusChanged += OnConnectionStatusChanged;
             await _connection.StartAsync(linkedCancellation.Token).ConfigureAwait(true);
-            _flowSubscription = _connection.Flows
-                .ObserveOn(AvaloniaScheduler.Instance)
-                .Subscribe(OnFlowReceived, OnFlowStreamError);
-            _refreshSubscription = Observable.Interval(TimeSpan.FromSeconds(2), AvaloniaScheduler.Instance)
-                .Subscribe(_ => RebuildGraph());
-            RebuildGraph();
+            UpdateNamespaceScope();
         }
         catch (OperationCanceledException) when (linkedCancellation.IsCancellationRequested)
         {
@@ -121,16 +142,32 @@ public sealed partial class ServiceMapViewModel : ViewModelBase, IInitializeClus
     }
 
     partial void OnTimeWindowChanged(TimeSpan value)
-        => RebuildGraph();
+    {
+        RebuildGraph();
+        LoadSelectedNodeFlows(SelectedNode);
+    }
 
     partial void OnGraphChanged(ServiceMapGraph? value)
     {
         OnPropertyChanged(nameof(Nodes));
         OnPropertyChanged(nameof(HasFlows));
+        OnPropertyChanged(nameof(GraphSummary));
+        OnPropertyChanged(nameof(EmptyStateMessage));
+
+        if (SelectedNode is { } selectedNode)
+        {
+            if (value is null || !value.Nodes.Any(node => node.Id == selectedNode.Id))
+            {
+                SelectedNode = null;
+            }
+        }
     }
 
     partial void OnShowOnlyErrorsChanged(bool value)
-        => RebuildGraph();
+    {
+        RebuildGraph();
+        LoadSelectedNodeFlows(SelectedNode);
+    }
 
     partial void OnAggregateByNamespaceChanged(bool value)
     {
@@ -139,31 +176,98 @@ public sealed partial class ServiceMapViewModel : ViewModelBase, IInitializeClus
         RebuildGraph();
     }
 
-    private void OnSelectedNamespacesChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
+    private INotifyCollectionChanged? _subscribedNamespaces;
+
+    partial void OnClusterChanged(ClusterWorkspace? value)
     {
-        RebuildGraph();
-        if (SelectedNode is { } selectedNode)
+        _namespaceScopeUpdateSubscription?.Dispose();
+        _namespaceScopeUpdateSubscription = null;
+        UnsubscribeFromSelectedNamespaces();
+        OnPropertyChanged(nameof(SelectedNamespaces));
+        SubscribeToSelectedNamespaces();
+        UpdateNamespaceScope();
+    }
+
+    partial void OnIsNamespaceSelectionLinkedChanged(bool value)
+    {
+        if (Cluster is null)
         {
-            ShowFlowsForNode(selectedNode);
+            OnPropertyChanged(nameof(SelectedNamespaces));
+            SubscribeToSelectedNamespaces();
+            UpdateNamespaceScope();
+            return;
+        }
+
+        if (!value)
+        {
+            CopyNamespaces(Cluster.SelectedNamespaces, _localSelectedNamespaces);
+        }
+
+        UnsubscribeFromSelectedNamespaces();
+        OnPropertyChanged(nameof(SelectedNamespaces));
+        SubscribeToSelectedNamespaces();
+        UpdateNamespaceScope();
+    }
+
+    private void SubscribeToSelectedNamespaces()
+    {
+        UnsubscribeFromSelectedNamespaces();
+        _subscribedNamespaces = SelectedNamespaces;
+        _subscribedNamespaces.CollectionChanged += OnSelectedNamespacesChanged;
+    }
+
+    private void UnsubscribeFromSelectedNamespaces()
+    {
+        if (_subscribedNamespaces is not null)
+        {
+            _subscribedNamespaces.CollectionChanged -= OnSelectedNamespacesChanged;
+            _subscribedNamespaces = null;
+        }
+
+        _localSelectedNamespaces.CollectionChanged -= OnSelectedNamespacesChanged;
+    }
+
+    private void OnSelectedNamespacesChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        if (!HasSelectedNamespaces)
+        {
+            _namespaceScopeUpdateSubscription?.Dispose();
+            _namespaceScopeUpdateSubscription = null;
+            UpdateNamespaceScope();
+            return;
+        }
+
+        _namespaceScopeUpdateSubscription?.Dispose();
+        _namespaceScopeUpdateSubscription = Observable.Timer(TimeSpan.FromMilliseconds(150), AvaloniaScheduler.Instance)
+            .Subscribe(_ =>
+            {
+                _namespaceScopeUpdateSubscription?.Dispose();
+                _namespaceScopeUpdateSubscription = null;
+                UpdateNamespaceScope();
+            });
+    }
+
+    private static void CopyNamespaces(IEnumerable<V1Namespace> source, ObservableCollection<V1Namespace> target)
+    {
+        target.Clear();
+        foreach (var selectedNamespace in source)
+        {
+            target.Add(selectedNamespace);
         }
     }
 
-    private void OnFlowReceived(FlowViewModel flow)
+    private void OnFlowReceived(FlowViewModel flow, long subscriptionVersion)
     {
-        if (Volatile.Read(ref _disposeState) != 0)
+        if (Volatile.Read(ref _disposeState) != 0
+            || subscriptionVersion != Volatile.Read(ref _flowSubscriptionVersion))
         {
             return;
         }
 
         _graphBuilder.AddFlow(flow);
-        RebuildGraph();
-        if (SelectedNode is { } selectedNode)
-        {
-            ShowFlowsForNode(selectedNode);
-        }
     }
 
-    private void RebuildGraph()
+    private void UpdateNamespaceScope()
     {
         if (Volatile.Read(ref _disposeState) != 0)
         {
@@ -171,7 +275,44 @@ public sealed partial class ServiceMapViewModel : ViewModelBase, IInitializeClus
         }
 
         var selectedNamespaces = GetSelectedNamespaceNames();
-        Graph = _graphBuilder.Build(TimeWindow, AggregateByNamespace, ShowOnlyErrors, selectedNamespaces);
+        OnPropertyChanged(nameof(HasSelectedNamespaces));
+        OnPropertyChanged(nameof(EmptyStateMessage));
+
+        if (selectedNamespaces.Count == 0)
+        {
+            _activeNamespaceNames = selectedNamespaces;
+            Interlocked.Increment(ref _flowSubscriptionVersion);
+            _flowSubscription?.Dispose();
+            _flowSubscription = null;
+            _refreshSubscription?.Dispose();
+            _refreshSubscription = null;
+            CancelGraphBuild();
+            CancelSelectedFlowsLoad();
+            ConnectionStatus = Assets.Resources.ServiceMapView_StatusSelectNamespace;
+            IsConnected = false;
+            SelectedNode = null;
+            SelectedNodeFlows.Clear();
+            Graph = new ServiceMapGraph();
+            return;
+        }
+
+        var sameScope = _activeNamespaceNames?.SetEquals(selectedNamespaces) == true;
+        _activeNamespaceNames = selectedNamespaces;
+        if (_connection is not null && (!sameScope || _flowSubscription is null))
+        {
+            Interlocked.Increment(ref _flowSubscriptionVersion);
+            _flowSubscription?.Dispose();
+            var subscriptionVersion = Volatile.Read(ref _flowSubscriptionVersion);
+            ConnectionStatus = Assets.Resources.ServiceMapView_StatusConnecting;
+            IsConnected = false;
+            _flowSubscription = _connection.ObserveFlows(selectedNamespaces)
+                .Subscribe(flow => OnFlowReceived(flow, subscriptionVersion), OnFlowStreamError);
+        }
+
+        _refreshSubscription ??= Observable.Interval(TimeSpan.FromSeconds(2), AvaloniaScheduler.Instance)
+            .Subscribe(_ => RebuildGraph());
+        RebuildGraph(selectedNamespaces);
+        LoadSelectedNodeFlows(SelectedNode);
     }
 
     private HashSet<string> GetSelectedNamespaceNames()
@@ -189,40 +330,178 @@ public sealed partial class ServiceMapViewModel : ViewModelBase, IInitializeClus
         return names;
     }
 
+    private void RebuildGraph(HashSet<string>? selectedNamespaces = null)
+    {
+        if (Volatile.Read(ref _disposeState) != 0)
+        {
+            return;
+        }
+
+        selectedNamespaces ??= GetSelectedNamespaceNames();
+        if (selectedNamespaces.Count == 0)
+        {
+            Graph = new ServiceMapGraph();
+            return;
+        }
+
+        var cancellation = new CancellationTokenSource();
+        Cancel(Interlocked.Exchange(ref _graphBuildCancellation, cancellation));
+        var version = Interlocked.Increment(ref _graphBuildVersion);
+        var timeWindow = TimeWindow;
+        var aggregateByNamespace = AggregateByNamespace;
+        var showOnlyErrors = ShowOnlyErrors;
+        _graphBuildTask = BuildGraphAsync(
+            version,
+            timeWindow,
+            aggregateByNamespace,
+            showOnlyErrors,
+            selectedNamespaces,
+            cancellation);
+    }
+
+    private async Task BuildGraphAsync(
+        long version,
+        TimeSpan timeWindow,
+        bool aggregateByNamespace,
+        bool showOnlyErrors,
+        HashSet<string> selectedNamespaces,
+        CancellationTokenSource cancellation)
+    {
+        try
+        {
+            var graph = await Task.Run(
+                () => _graphBuilder.Build(timeWindow, aggregateByNamespace, showOnlyErrors, selectedNamespaces, cancellation.Token),
+                cancellation.Token).ConfigureAwait(false);
+            await Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                if (Volatile.Read(ref _disposeState) == 0
+                    && !cancellation.IsCancellationRequested
+                    && version == Volatile.Read(ref _graphBuildVersion))
+                {
+                    Graph = graph;
+                }
+            });
+        }
+        catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
+        {
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unable to build Hubble service map graph");
+        }
+        finally
+        {
+            Interlocked.CompareExchange(ref _graphBuildCancellation, null, cancellation);
+            cancellation.Dispose();
+        }
+    }
+
+    private void CancelGraphBuild()
+    {
+        Interlocked.Increment(ref _graphBuildVersion);
+        Cancel(Interlocked.Exchange(ref _graphBuildCancellation, null));
+    }
+
     private void ShowFlowsForNode(ServiceMapNode? node)
     {
         SelectedNode = node;
+    }
+
+    partial void OnSelectedNodeChanged(ServiceMapNode? value)
+        => LoadSelectedNodeFlows(value);
+
+    private void LoadSelectedNodeFlows(ServiceMapNode? node)
+    {
+        CancelSelectedFlowsLoad();
         _selectedNodeFlows.Clear();
-        if (node is null)
+        if (node is null || !HasSelectedNamespaces)
         {
             return;
         }
 
         var selectedNamespaces = GetSelectedNamespaceNames();
-        foreach (var flow in _graphBuilder.GetFlows(TimeWindow, ShowOnlyErrors, selectedNamespaces))
+        var cancellation = new CancellationTokenSource();
+        _selectedFlowsCancellation = cancellation;
+        var version = Interlocked.Increment(ref _selectedFlowsVersion);
+        var timeWindow = TimeWindow;
+        var aggregateByNamespace = AggregateByNamespace;
+        var showOnlyErrors = ShowOnlyErrors;
+        _selectedFlowsTask = LoadSelectedNodeFlowsAsync(
+            node,
+            version,
+            timeWindow,
+            aggregateByNamespace,
+            showOnlyErrors,
+            selectedNamespaces,
+            cancellation);
+    }
+
+    private async Task LoadSelectedNodeFlowsAsync(
+        ServiceMapNode node,
+        long version,
+        TimeSpan timeWindow,
+        bool aggregateByNamespace,
+        bool showOnlyErrors,
+        HashSet<string> selectedNamespaces,
+        CancellationTokenSource cancellation)
+    {
+        try
         {
-            var belongsToNode = AggregateByNamespace
-                ? node.Id == NamespaceKey(flow.SourceNamespace) || node.Id == NamespaceKey(flow.DestinationNamespace)
-                : node.Id == PodKey(flow.SourceNamespace, flow.SourcePod, flow.SourceIp, flow.SourceIdentity)
-                    || node.Id == PodKey(flow.DestinationNamespace, flow.DestinationPod, flow.DestinationIp, flow.DestinationIdentity);
-            if (belongsToNode)
+            var flows = await Task.Run(
+                () => _graphBuilder.GetFlowsForNode(node, timeWindow, aggregateByNamespace, showOnlyErrors, selectedNamespaces, cancellation.Token),
+                cancellation.Token).ConfigureAwait(false);
+            await Dispatcher.UIThread.InvokeAsync(() =>
             {
-                _selectedNodeFlows.Add(flow);
-            }
+                if (Volatile.Read(ref _disposeState) != 0
+                    || cancellation.IsCancellationRequested
+                    || version != Volatile.Read(ref _selectedFlowsVersion)
+                    || SelectedNode?.Id != node.Id)
+                {
+                    return;
+                }
+
+                foreach (var flow in flows)
+                {
+                    _selectedNodeFlows.Add(flow);
+                }
+            });
+        }
+        catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
+        {
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unable to load Hubble flows for the selected service-map node");
+        }
+        finally
+        {
+            Interlocked.CompareExchange(ref _selectedFlowsCancellation, null, cancellation);
+            cancellation.Dispose();
         }
     }
 
-    private static string PodKey(string ns, string pod, string ip, uint identity)
+    private void CancelSelectedFlowsLoad()
     {
-        if (!string.IsNullOrEmpty(pod))
-            return $"{ns}/{pod}";
-        if (!string.IsNullOrEmpty(ip))
-            return $"ip/{ip}";
-        return identity == 0 ? "world" : $"identity/{identity}";
+        Interlocked.Increment(ref _selectedFlowsVersion);
+        Cancel(Interlocked.Exchange(ref _selectedFlowsCancellation, null));
     }
 
-    private static string NamespaceKey(string ns)
-        => string.IsNullOrEmpty(ns) ? "world" : $"namespace/{ns}";
+    private static void Cancel(CancellationTokenSource? cancellation)
+    {
+        if (cancellation is null)
+        {
+            return;
+        }
+
+        try
+        {
+            cancellation.Cancel();
+        }
+        catch (ObjectDisposedException)
+        {
+            // The worker completed and disposed its source while cancellation raced.
+        }
+    }
 
     private void OnConnectionStatusChanged(HubbleConnectionStatus status)
     {
@@ -230,6 +509,13 @@ public sealed partial class ServiceMapViewModel : ViewModelBase, IInitializeClus
         {
             if (Volatile.Read(ref _disposeState) != 0)
             {
+                return;
+            }
+
+            if (!HasSelectedNamespaces)
+            {
+                ConnectionStatus = Assets.Resources.ServiceMapView_StatusSelectNamespace;
+                IsConnected = false;
                 return;
             }
 
@@ -283,12 +569,22 @@ public sealed partial class ServiceMapViewModel : ViewModelBase, IInitializeClus
             await initializationTask.ConfigureAwait(false);
         }
 
-        _refreshSubscription?.Dispose();
-        _flowSubscription?.Dispose();
-        if (Cluster is not null)
+        CancelGraphBuild();
+        CancelSelectedFlowsLoad();
+        if (_graphBuildTask is { } graphBuildTask)
         {
-            Cluster.SelectedNamespaces.CollectionChanged -= OnSelectedNamespacesChanged;
+            await graphBuildTask.ConfigureAwait(false);
         }
+
+        if (_selectedFlowsTask is { } selectedFlowsTask)
+        {
+            await selectedFlowsTask.ConfigureAwait(false);
+        }
+
+        _refreshSubscription?.Dispose();
+        _namespaceScopeUpdateSubscription?.Dispose();
+        _flowSubscription?.Dispose();
+        UnsubscribeFromSelectedNamespaces();
 
         if (_connection is not null)
         {

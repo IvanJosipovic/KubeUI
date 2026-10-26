@@ -9,6 +9,10 @@ public interface IHubbleConnection : IAsyncDisposable
     /// <summary>Gets the live flow event stream.</summary>
     IObservable<FlowViewModel> Flows { get; }
 
+    /// <summary>Gets a live flow stream filtered to the selected Kubernetes namespaces.</summary>
+    /// <param name="namespaces">At least one namespace to include.</param>
+    IObservable<FlowViewModel> ObserveFlows(IReadOnlyCollection<string> namespaces);
+
     /// <summary>Starts the port forward and prepares the Hubble client.</summary>
     Task StartAsync(CancellationToken cancellationToken = default);
 }

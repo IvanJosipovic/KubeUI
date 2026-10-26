@@ -9,6 +9,16 @@ namespace KubeUI.Avalonia.Tests.Features.Cilium.Hubble;
 public sealed class HubbleConnectionTests
 {
     [Fact]
+    public async Task Observe_flows_rejects_an_empty_namespace_scope()
+    {
+        var cluster = new Mock<IClusterRuntime>(MockBehavior.Strict);
+        await using var connection = new HubbleConnection(cluster.Object, NullLogger<HubbleConnection>.Instance);
+
+        Should.Throw<ArgumentException>(() => connection.ObserveFlows([]));
+        cluster.VerifyNoOtherCalls();
+    }
+
+    [Fact]
     public async Task Start_rejects_empty_relay_namespace_before_cluster_access()
     {
         var cluster = new Mock<IClusterRuntime>(MockBehavior.Strict);
