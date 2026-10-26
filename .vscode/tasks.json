@@ -2,6 +2,23 @@
     "version": "2.0.0",
     "tasks": [
         {
+        "label": "APM: Install Dependencies",
+        "type": "shell",
+        "command": "apm install --target vscode",
+        "options": {
+            "cwd": "${workspaceFolder}"
+        },
+        "runOptions": {
+            "runOn": "folderOpen"
+        },
+        "presentation": {
+            "reveal": "silent",
+            "panel": "dedicated",
+            "clear": true
+        },
+        "problemMatcher": []
+        },
+        {
             "label": "dotnet: format solution",
             "type": "shell",
             "command": "dotnet",
