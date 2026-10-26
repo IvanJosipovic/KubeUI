@@ -37,11 +37,11 @@ dependencies:
 - repo_url: dotnet/skills
   name: dotnet
   host: github.com
-  resolved_commit: a6bf43ab61967c30919334986515163ab24d7635
+  resolved_commit: 4218d23cd3c05fb81da6d7fbccc92aff926e1eca
   version: 0.2.5
   virtual_path: plugins/dotnet
   is_virtual: true
-  package_type: skill_bundle
+  package_type: marketplace_plugin
   deployed_files:
   - .agents/skills/csharp-expert
   - .agents/skills/csharp-expert/SKILL.md
@@ -128,11 +128,11 @@ dependencies:
 - repo_url: dotnet/skills
   name: dotnet-diag
   host: github.com
-  resolved_commit: a6bf43ab61967c30919334986515163ab24d7635
+  resolved_commit: 4218d23cd3c05fb81da6d7fbccc92aff926e1eca
   version: 0.1.3
   virtual_path: plugins/dotnet-diag
   is_virtual: true
-  package_type: skill_bundle
+  package_type: marketplace_plugin
   deployed_files:
   - .agents/skills/analyzing-dotnet-performance
   - .agents/skills/analyzing-dotnet-performance/SKILL.md
@@ -293,11 +293,11 @@ dependencies:
 - repo_url: dotnet/skills
   name: dotnet11
   host: github.com
-  resolved_commit: a6bf43ab61967c30919334986515163ab24d7635
+  resolved_commit: 4218d23cd3c05fb81da6d7fbccc92aff926e1eca
   version: 0.1.2
   virtual_path: plugins/dotnet11
   is_virtual: true
-  package_type: skill_bundle
+  package_type: marketplace_plugin
   deployed_files:
   - .agents/skills/process-api-net11
   - .agents/skills/process-api-net11/SKILL.md
