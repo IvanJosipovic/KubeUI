@@ -10,6 +10,10 @@ internal sealed class HubbleNavigationSectionProvider : INavigationSectionProvid
 {
     public const string FlowsDocumentId = "hubble-flows";
     public const string ServiceMapDocumentId = "hubble-service-map";
+    public const string CiliumIconAssetPath = "/Assets/cilium/cilium-light.svg";
+    public const string CiliumIconDarkAssetPath = "/Assets/cilium/cilium-dark.svg";
+    public const string HubbleIconAssetPath = "/Assets/cilium/hubble-light.svg";
+    public const string HubbleIconDarkAssetPath = "/Assets/cilium/hubble-dark.svg";
 
     public HubbleNavigationSectionProvider()
     {
@@ -17,7 +21,9 @@ internal sealed class HubbleNavigationSectionProvider : INavigationSectionProvid
             NavigationSections.CiliumId,
             Assets.Resources.NavigationView_Cilium!,
             NavigationSections.AfterCustomResourcesOrder,
-            null);
+            null,
+            CiliumIconAssetPath,
+            CiliumIconDarkAssetPath);
 
         Documents =
         [
@@ -52,7 +58,7 @@ internal sealed class HubbleNavigationSectionProvider : INavigationSectionProvid
 
     public NavigationPlacement DocumentPlacement => NavigationPlacement.InSection(
         Section.Id,
-        [new NavigationGroup("hubble", Assets.Resources.Hubble_GroupName!, 0, null)]);
+        [new NavigationGroup("hubble", Assets.Resources.Hubble_GroupName!, 0, null, HubbleIconAssetPath, HubbleIconDarkAssetPath)]);
 
     public IReadOnlyList<NavigationDocument> Documents { get; }
 

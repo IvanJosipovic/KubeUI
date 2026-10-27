@@ -75,7 +75,11 @@ public sealed class NavigationSectionTests
 
         var cilium = node.NavigationItems.Single(item => item.Id == $"{workspace.Runtime.Name}-section-cilium");
         cilium.Name.ShouldBe(Assets.Resources.NavigationView_Cilium);
+        cilium.SvgIcon.ShouldBe(HubbleNavigationSectionProvider.CiliumIconAssetPath);
+        cilium.SvgIconDark.ShouldBe(HubbleNavigationSectionProvider.CiliumIconDarkAssetPath);
         var hubble = cilium.NavigationItems.Single(item => item.Name == Assets.Resources.Hubble_GroupName);
+        hubble.SvgIcon.ShouldBe(HubbleNavigationSectionProvider.HubbleIconAssetPath);
+        hubble.SvgIconDark.ShouldBe(HubbleNavigationSectionProvider.HubbleIconDarkAssetPath);
         hubble.NavigationItems.OfType<NavigationLink>().Select(link => link.DocumentId).OrderBy(id => id)
             .ShouldBe(new[] { HubbleNavigationSectionProvider.FlowsDocumentId, HubbleNavigationSectionProvider.ServiceMapDocumentId }.OrderBy(id => id));
     }
@@ -118,6 +122,19 @@ public sealed class NavigationSectionTests
         fluentOnly.FluentIcon.ShouldBe(Icon.DataUsage);
         fluentOnly.SvgIcon.ShouldBeNull();
         fluentOnly.SvgIconDark.ShouldBeNull();
+    }
+
+    [Fact]
+    public void navigation_group_carries_theme_specific_svg_icons()
+    {
+        System.Collections.ObjectModel.ObservableCollection<NavigationItem> items = [];
+        NavigationGroup group = new("hubble", "Hubble", 0, null, "/Assets/cilium/hubble-light.svg", "/Assets/cilium/hubble-dark.svg");
+
+        NavigationItem hubble = NavigationTreeEditor.EnsurePath(items, "section-cilium", [group]).Single();
+
+        hubble.SvgIcon.ShouldBe("/Assets/cilium/hubble-light.svg");
+        hubble.SvgIconDark.ShouldBe("/Assets/cilium/hubble-dark.svg");
+        hubble.FluentIcon.ShouldBeNull();
     }
 
     [Theory]
