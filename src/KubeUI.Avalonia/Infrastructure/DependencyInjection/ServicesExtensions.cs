@@ -21,6 +21,7 @@ using KubeUI.Avalonia.Infrastructure.Threading;
 using KubeUI.Avalonia.Resources;
 using KubeUI.Avalonia.Resources.Workloads.v1.Pod.Services;
 using KubeUI.Avalonia.Resources.Workloads.v1.Pod.ViewModels;
+using KubeUI.Avalonia.Services.FeatureFlags;
 using KubeUI.Avalonia.Services.Icons;
 using KubeUI.Avalonia.Services.Settings;
 using KubeUI.Avalonia.Shell.Main;
@@ -62,6 +63,8 @@ public static partial class KubeUIShellServiceCollectionExtensions
         services.AddSingleton<IDataTemplate>(sp => sp.GetRequiredService<ViewLocator>());
         services.AddSingleton<ISettingsPersistence, FileSettingsPersistence>();
         services.AddSingleton<ISettingsService, SettingsService>();
+        services.AddSingleton<IFeatureProvider, SettingsFeatureProvider>();
+        services.AddSingleton<IFeatureClient, FeatureClient>();
         services.AddSingleton<IResourceIconService, ResourceIconService>();
         services.AddTransient(static serviceProvider => new CustomResourceConfig(serviceProvider));
         services.AddSingleton<INavigationSectionProvider, CrossplaneNavigationSectionProvider>();

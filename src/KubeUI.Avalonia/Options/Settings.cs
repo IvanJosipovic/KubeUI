@@ -25,6 +25,9 @@ public sealed partial class Settings : ObservableObject
     public partial bool PreReleaseChannel { get; set; }
 
     [ObservableProperty]
+    public partial FeatureSettings Features { get; set; } = new();
+
+    [ObservableProperty]
     public partial Dictionary<string, ClusterSettings> ClusterSettings { get; set; } = [];
 
     [ObservableProperty]

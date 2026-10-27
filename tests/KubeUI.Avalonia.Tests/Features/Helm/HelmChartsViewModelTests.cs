@@ -10,6 +10,7 @@ using KubeUI.Avalonia.Features.Helm;
 using KubeUI.Avalonia.Features.Helm.Charts;
 using KubeUI.Avalonia.Features.Helm.Releases;
 using KubeUI.Avalonia.Features.Helm.Repositories;
+using KubeUI.Avalonia.Tests.Infra;
 using KubeUI.Kubernetes;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
@@ -70,6 +71,9 @@ public sealed class HelmChartsViewModelTests
             .ReturnsAsync([
                 new("first/web", "web", "2.0"), new("first/web", "web", "1.0"),
                 new("second/web", "web", "3.0"), new("second/web-tools", "web-tools", "1.0")]);
+        helm.Setup(service => service.GetChartValuesAsync(
+                It.IsAny<HelmConnection>(), It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(string.Empty);
         var factory = new Mock<IFactory>();
         var documents = new DocumentDock { VisibleDockables = [] };
         factory.Setup(item => item.GetDockable<IDocumentDock>("Documents")).Returns(documents);
@@ -84,7 +88,7 @@ public sealed class HelmChartsViewModelTests
             Metadata = new k8s.Models.V1ObjectMeta { Name = "apps" }
         });
         using var services = new ServiceCollection().AddSingleton(charts).BuildServiceProvider();
-        var navigation = new HelmNavigationSectionProvider().Documents
+        var navigation = new HelmNavigationSectionProvider(new TestFeatureClient(helm: true)).Documents
             .Single(document => document.Id == HelmNavigationSectionProvider.ChartsDocumentId);
         navigation.CreateDockable(services, workspace).ShouldBeSameAs(charts);
         await charts.RefreshCommand.ExecuteAsync(null).WaitAsync(TestContext.Current.CancellationToken);

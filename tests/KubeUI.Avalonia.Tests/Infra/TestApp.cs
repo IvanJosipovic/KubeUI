@@ -150,7 +150,18 @@ public class TestApp : App, IDisposable
 
         public bool EnsureDirectoryExists() => true;
 
-        public SettingsPersistenceData Load() => new();
+        // Existing navigation tests expect preview sections; focused tests cover the disabled defaults.
+        public SettingsPersistenceData Load() => new()
+        {
+            Settings = new()
+            {
+                Features = new()
+                {
+                    Helm = true,
+                    Hubble = true
+                }
+            }
+        };
 
         public bool Save(SettingsPersistenceData data)
         {

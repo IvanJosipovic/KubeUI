@@ -7,6 +7,7 @@
 - Resolve Hubble connections through `IHubbleConnectionFactory`; do not construct transport from a view or view model.
 - Treat each Hubble document as the owner of its connection and subscriptions. Cancel initialization and dispose subscriptions and connections when the document closes.
 - Keep Hubble documents under the Cilium navigation section, nested in the Hubble group.
+- Hubble navigation is a preview feature gated by `FeatureFlagKeys.Hubble` (`kubeui.hubble`), default off. Capture the flag when the section provider is created; enabling or disabling it requires an application restart.
 
 ## Flow and graph behavior
 

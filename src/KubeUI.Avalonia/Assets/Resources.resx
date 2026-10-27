@@ -888,6 +888,26 @@
     <value>Allows updates to pre-release versions of KubeUI</value>
     <comment/>
   </data>
+  <data name="SettingsView_PreviewFeaturesHeading" xml:space="preserve">
+    <value>Preview Features</value>
+    <comment/>
+  </data>
+  <data name="SettingsView_HelmFeature_Label" xml:space="preserve">
+    <value>Helm Integration (Restart Required)</value>
+    <comment/>
+  </data>
+  <data name="SettingsView_HelmFeature_ToolTip" xml:space="preserve">
+    <value>Enables the Helm integration.</value>
+    <comment/>
+  </data>
+  <data name="SettingsView_HubbleFeature_Label" xml:space="preserve">
+    <value>Hubble Integration (Restart Required)</value>
+    <comment/>
+  </data>
+  <data name="SettingsView_HubbleFeature_ToolTip" xml:space="preserve">
+    <value>Enables the Hubble integration.</value>
+    <comment/>
+  </data>
   <data name="SettingsView_McpEnabled_Label" xml:space="preserve">
     <value>Enable Local MCP Server (Restart Required)</value>
     <comment/>
