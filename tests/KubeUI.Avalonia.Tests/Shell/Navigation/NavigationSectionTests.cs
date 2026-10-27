@@ -103,7 +103,7 @@ public sealed class NavigationSectionTests
     [Fact]
     public void section_svg_icon_overrides_fluent_icon_and_clears_when_removed()
     {
-        System.Collections.ObjectModel.ObservableCollection<NavigationItem> items = [];
+        var items = new System.Collections.ObjectModel.ObservableCollection<NavigationItem>();
 
         var withSvg = NavigationTreeEditor.EnsureNode(
             items,
@@ -128,9 +128,9 @@ public sealed class NavigationSectionTests
     public void navigation_group_carries_theme_specific_svg_icons()
     {
         System.Collections.ObjectModel.ObservableCollection<NavigationItem> items = [];
-        NavigationGroup group = new("hubble", "Hubble", 0, null, "/Assets/cilium/hubble-light.svg", "/Assets/cilium/hubble-dark.svg");
+        var group = new NavigationGroup("hubble", "Hubble", 0, null, "/Assets/cilium/hubble-light.svg", "/Assets/cilium/hubble-dark.svg");
 
-        NavigationItem hubble = NavigationTreeEditor.EnsurePath(items, "section-cilium", [group]).Single();
+        var hubble = NavigationTreeEditor.EnsurePath(items, "section-cilium", [group]).Single();
 
         hubble.SvgIcon.ShouldBe("/Assets/cilium/hubble-light.svg");
         hubble.SvgIconDark.ShouldBe("/Assets/cilium/hubble-dark.svg");
@@ -162,6 +162,16 @@ public sealed class NavigationSectionTests
 
         placement.ShouldNotBeNull().Groups.Select(group => group.Name).ShouldBe(
             ["crossplane.io", "aws.crossplane.io", "provider.aws.crossplane.io"]);
+    }
+
+    [Fact]
+    public void crossplane_section_uses_theme_specific_svg_icons()
+    {
+        var provider = new CrossplaneNavigationSectionProvider();
+
+        provider.Section.Icon.ShouldBeNull();
+        provider.Section.SvgIcon.ShouldBe(CrossplaneNavigationSectionProvider.IconAssetPath);
+        provider.Section.SvgIconDark.ShouldBe(CrossplaneNavigationSectionProvider.IconDarkAssetPath);
     }
 
     [Fact]
@@ -224,7 +234,7 @@ public sealed class NavigationSectionTests
                 [new NavigationGroup("gateway", "Gateway", 0, null)]),
         };
         workspace.AddResourceConfigForTest(resourceConfig);
-
+            var provider = new CrossplaneNavigationSectionProvider();
         using var node = new ClusterNavigationNode(workspace);
         CreateBuilder(new NavigationSectionCatalog([])).Reconcile(node);
 
