@@ -25,4 +25,5 @@
 - Filter virtualized resource lists before targeting rows that may be outside the visible table area.
 - Resource-relationship walkthroughs zoom into the featured Deployment, then pan down through its ReplicaSet to a Pod.
 - Encode one high quality H.264 MP4 per theme using lossless PNG source frames captured at the video resolution.
+- Record walkthrough content inside `MainWindow` and reuse the `WindowDrawnDecorations` overlay produced by its production theme so clips show the same managed decorations as Windows/Linux.
 - Regenerate clips from the repository root with `& .\generate-walkthrough-videos.ps1`; it clears old MP4 outputs after a successful build and before recording.
