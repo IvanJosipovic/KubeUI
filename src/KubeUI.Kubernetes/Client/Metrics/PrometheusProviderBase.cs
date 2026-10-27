@@ -76,7 +76,7 @@ public abstract class PrometheusProviderBase : IPrometheusProvider
         {
             // The label selector is already expressed as Prometheus label matchers by the caller, so it
             // is inserted as-is; only the label names and values it carries are validated there.
-            var labelMatch = $",namespace=\"{escapedNamespace}\",{labelSelector}";
+            var labelMatch = $"namespace=\"{escapedNamespace}\",{labelSelector}";
             return BuildPodQueryByLabel(queryName, selector, rateAccuracy, containerUsageMatcher, containerResourceMatcher, labelMatch);
         }
 
@@ -113,15 +113,22 @@ public abstract class PrometheusProviderBase : IPrometheusProvider
         string containerResourceMatcher,
         string labelMatch)
     {
+        var workloadLabels = $"kube_pod_labels{{{labelMatch}}}";
+        var join = $"* on (namespace, pod) group_left() {workloadLabels}";
+
         return queryName switch
         {
-            "cpuUsage" => $$"""sum(rate(container_cpu_usage_seconds_total{image!="",{{containerUsageMatcher}}} * on (namespace, pod) group_left() group_right(kube_pod_labels{{{labelMatch}}})[{{rateAccuracy}}])) by ({{selector}})""",
-            "memoryUsage" => $$"""sum(container_memory_working_set_bytes{image!="",{{containerUsageMatcher}}} * on (namespace, pod) group_left() group_right(kube_pod_labels{{{labelMatch}}})) by ({{selector}})""",
-            "fsUsage" => $$"""sum(container_fs_usage_bytes{image!="",{{containerUsageMatcher}}} * on (namespace, pod) group_left() group_right(kube_pod_labels{{{labelMatch}}})) by ({{selector}})""",
-            "fsWrites" => $$"""sum(rate(container_fs_writes_bytes_total{image!="",{{containerUsageMatcher}}} * on (namespace, pod) group_left() group_right(kube_pod_labels{{{labelMatch}}})[{{rateAccuracy}}])) by ({{selector}})""",
-            "fsReads" => $$"""sum(rate(container_fs_reads_bytes_total{image!="",{{containerUsageMatcher}}} * on (namespace, pod) group_left() group_right(kube_pod_labels{{{labelMatch}}})[{{rateAccuracy}}])) by ({{selector}})""",
-            "networkReceive" => $$"""sum(rate(container_network_receive_bytes_total{} * on (namespace, pod) group_left() group_right(kube_pod_labels{{{labelMatch}}})[{{rateAccuracy}}])) by ({{selector}})""",
-            "networkTransmit" => $$"""sum(rate(container_network_transmit_bytes_total{} * on (namespace, pod) group_left() group_right(kube_pod_labels{{{labelMatch}}})[{{rateAccuracy}}])) by ({{selector}})""",
+            "cpuUsage" => $$"""sum(rate(container_cpu_usage_seconds_total{image!="",{{containerUsageMatcher}}}[{{rateAccuracy}}]) {{join}}) by ({{selector}})""",
+            "cpuRequests" => $$"""sum(kube_pod_container_resource_requests{resource="cpu"{{containerResourceMatcher}}} {{join}}) by ({{selector}})""",
+            "cpuLimits" => $$"""sum(kube_pod_container_resource_limits{resource="cpu"{{containerResourceMatcher}}} {{join}}) by ({{selector}})""",
+            "memoryUsage" => $$"""sum(container_memory_working_set_bytes{image!="",{{containerUsageMatcher}}} {{join}}) by ({{selector}})""",
+            "memoryRequests" => $$"""sum(kube_pod_container_resource_requests{resource="memory"{{containerResourceMatcher}}} {{join}}) by ({{selector}})""",
+            "memoryLimits" => $$"""sum(kube_pod_container_resource_limits{resource="memory"{{containerResourceMatcher}}} {{join}}) by ({{selector}})""",
+            "fsUsage" => $$"""sum(container_fs_usage_bytes{image!="",{{containerUsageMatcher}}} {{join}}) by ({{selector}})""",
+            "fsWrites" => $$"""sum(rate(container_fs_writes_bytes_total{image!="",{{containerUsageMatcher}}}[{{rateAccuracy}}]) {{join}}) by ({{selector}})""",
+            "fsReads" => $$"""sum(rate(container_fs_reads_bytes_total{image!="",{{containerUsageMatcher}}}[{{rateAccuracy}}]) {{join}}) by ({{selector}})""",
+            "networkReceive" => $$"""sum(rate(container_network_receive_bytes_total{}[{{rateAccuracy}}]) {{join}}) by ({{selector}})""",
+            "networkTransmit" => $$"""sum(rate(container_network_transmit_bytes_total{}[{{rateAccuracy}}]) {{join}}) by ({{selector}})""",
             _ => throw new InvalidOperationException($"Unsupported pod query '{queryName}'."),
         };
     }
