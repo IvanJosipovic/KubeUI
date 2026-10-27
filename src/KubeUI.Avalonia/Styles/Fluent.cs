@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using Avalonia.Controls.Documents;
 using Avalonia.Controls.Primitives;
@@ -7,11 +8,13 @@ using Avalonia.Markup.Xaml.MarkupExtensions;
 using Avalonia.Markup.Xaml.Styling;
 using Avalonia.Themes.Fluent;
 using Avalonia.Xaml.Interactivity;
+using AvaloniaEdit;
 using Dock.Avalonia.Controls;
 using Dock.Avalonia.Themes.Fluent;
 using Dock.Model.Core;
 using FluentAvalonia.Styling;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
+using KubeUI.Avalonia.Infrastructure.Presentation;
 using LiveMarkdown.Avalonia;
 using Semi.Avalonia;
 using SvcSystems.UI.Terminal;
@@ -30,6 +33,7 @@ public sealed class Fluent : AvaloniaStyles
     private readonly ColorPaletteResources _lightPalette = CreateLightPalette();
     private readonly ColorPaletteResources _darkPalette = CreateDarkPalette();
 
+    [RequiresUnreferencedCode("Fluent styles load Avalonia styles from runtime XAML resources.")]
     public Fluent()
     {
         Add(new SemiTheme { Locale = s_locale });
@@ -46,6 +50,9 @@ public sealed class Fluent : AvaloniaStyles
         Add(CreateMarkdownTypographyStyles());
         Add(new DockFluentTheme());
         Add(new TerminalTheme());
+
+        Add(new Style<TextEditor>()
+            .Background(new DynamicResourceExtension("SystemAltHighColor")));
 
         Add(new Style<ToolControl>()
             .Background(new DynamicResourceExtension("SystemRegionBrush")));
@@ -331,6 +338,7 @@ public sealed class Fluent : AvaloniaStyles
         RegionColor = Color("#1E1E1E")
     };
 
+    [RequiresUnreferencedCode("Calls Avalonia.Markup.Xaml.Styling.StyleInclude.StyleInclude(Uri)")]
     private static StyleInclude CreateStyleInclude(string source) => new(s_baseUri) { Source = new Uri(source) };
 
     private static Color Color(string value) => global::Avalonia.Media.Color.Parse(value);
@@ -371,6 +379,6 @@ public sealed class Fluent : AvaloniaStyles
 
     private static ClusterWorkspace? GetCluster(IDockable dockable)
     {
-        return dockable.GetType().GetProperty("Cluster")?.GetValue(dockable) as ClusterWorkspace;
+        return (dockable as IClusterWorkspaceContext)?.Cluster;
     }
 }

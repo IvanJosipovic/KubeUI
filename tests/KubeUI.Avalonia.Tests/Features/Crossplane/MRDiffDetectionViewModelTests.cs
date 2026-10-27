@@ -116,8 +116,8 @@ public sealed class MRDiffDetectionViewModelTests
             serviceProvider.Object,
             NullLogger<ClusterWorkspace>.Instance,
             instrumentation);
-        var providerConfig = CreateResourceConfig(providerKind, "Providers", isCustomResource: true);
-        var widgetConfig = CreateResourceConfig(widgetKind, "Widgets", isCustomResource: true);
+        var providerConfig = CreateResourceConfig(providerKind, "Providers");
+        var widgetConfig = CreateResourceConfig(widgetKind, "Widgets");
         cluster.AddResourceConfigForTest(providerConfig.Object);
         cluster.AddResourceConfigForTest(widgetConfig.Object);
         var seedStarted = new TaskCompletionSource<CancellationToken>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -211,9 +211,11 @@ public sealed class MRDiffDetectionViewModelTests
             mainViewModel.Layout = previousLayout;
         }
 
-        providerConfig.SetupGet(config => config.IsCustomResource).Returns(false);
+        var typedProviderConfig = new Mock<IResourceConfig>();
+        typedProviderConfig.SetupGet(config => config.Kind).Returns(providerKind);
+        cluster.AddResourceConfigForTest(typedProviderConfig.Object);
         MRDiffDetectionViewModel.IsAvailable(cluster).ShouldBeFalse();
-        providerConfig.SetupGet(config => config.IsCustomResource).Returns(true);
+        cluster.AddResourceConfigForTest(providerConfig.Object);
         providerConfig.SetupGet(config => config.PermissionsLoaded).Returns(false);
         MRDiffDetectionViewModel.IsAvailable(cluster).ShouldBeFalse();
         providerConfig.SetupGet(config => config.PermissionsLoaded).Returns(true);
@@ -271,7 +273,8 @@ public sealed class MRDiffDetectionViewModelTests
         streamClient.OpenCount.ShouldBe(0);
 
         viewModel.ClearCommand.Execute(null);
-        await WaitForAsync(() => streamClient.OpenCount >= 2 && GetRows(viewModel).Length == 0);
+        await WaitForAsync(() => streamClient.OpenCount >= 1);
+        await WaitForAsync(() => GetRows(viewModel).Length == 0);
         providerCache.Remove(provider);
         await WaitForAsync(() => viewModel.Status == Assets.Resources.MRDiffDetectionView_SelectProvider);
         viewModel.SelectedProvider.ShouldBeNull();
@@ -351,7 +354,7 @@ public sealed class MRDiffDetectionViewModelTests
             serviceProvider,
             NullLogger<ClusterWorkspace>.Instance,
             instrumentation);
-        cluster.AddResourceConfigForTest(CreateResourceConfig(providerKind, "Providers", isCustomResource: true).Object);
+        cluster.AddResourceConfigForTest(CreateResourceConfig(providerKind, "Providers").Object);
         var pod = new V1Pod
         {
             Metadata = new V1ObjectMeta { Name = "provider-demo-abc", NamespaceProperty = "crossplane-system" },
@@ -403,7 +406,7 @@ public sealed class MRDiffDetectionViewModelTests
             serviceProvider,
             NullLogger<ClusterWorkspace>.Instance,
             instrumentation);
-        cluster.AddResourceConfigForTest(CreateResourceConfig(providerKind, "Providers", isCustomResource: true).Object);
+        cluster.AddResourceConfigForTest(CreateResourceConfig(providerKind, "Providers").Object);
         using var monitor = new CrossplaneProviderLogMonitor(
             new ThrowingPodResolver(),
             new StaticPodLogStreamClient(string.Empty),
@@ -475,14 +478,14 @@ public sealed class MRDiffDetectionViewModelTests
             + "\", New:\""
             + newValue
             + "\"}}}";
-        var payload = System.Text.Json.JsonSerializer.Serialize(new
+        var payload = new System.Text.Json.Nodes.JsonObject
         {
-            uid,
-            name,
-            @namespace = "default",
-            gvk,
-            instanceDiff
-        });
+            ["uid"] = uid,
+            ["name"] = name,
+            ["namespace"] = "default",
+            ["gvk"] = gvk,
+            ["instanceDiff"] = instanceDiff
+        }.ToJsonString();
         return $"DEBUG provider Diff detected {payload}";
     }
 
@@ -495,26 +498,35 @@ public sealed class MRDiffDetectionViewModelTests
             + "\"},\"largeField\":*terraform.ResourceAttrDiff{Old:\""
             + new string('x', 20_000)
             + "\", New:\"unused\"}}}";
-        var payload = System.Text.Json.JsonSerializer.Serialize(new
+        var payload = new System.Text.Json.Nodes.JsonObject
         {
-            uid,
-            name,
-            @namespace = "default",
-            gvk = "example.com/v1, Kind=Widget",
-            instanceDiff
-        });
+            ["uid"] = uid,
+            ["name"] = name,
+            ["namespace"] = "default",
+            ["gvk"] = "example.com/v1, Kind=Widget",
+            ["instanceDiff"] = instanceDiff
+        }.ToJsonString();
         return $"DEBUG provider Diff detected {payload}"[..16_384];
     }
 
     private static Mock<IResourceConfig> CreateResourceConfig(
         GroupApiVersionKind kind,
-        string name,
-        bool isCustomResource)
+        string name)
     {
         var config = new Mock<IResourceConfig>();
         config.SetupGet(resourceConfig => resourceConfig.Kind).Returns(kind);
         config.SetupGet(resourceConfig => resourceConfig.Name).Returns(name);
-        config.SetupGet(resourceConfig => resourceConfig.IsCustomResource).Returns(isCustomResource);
+        config.SetupGet(resourceConfig => resourceConfig.Origin).Returns(ResourceOrigin.CustomResourceDefinition);
+        config.SetupGet(resourceConfig => resourceConfig.IsCustomResource).Returns(true);
+        config.SetupGet(resourceConfig => resourceConfig.CustomResourceDefinition).Returns(new V1CustomResourceDefinition
+        {
+            Spec = new V1CustomResourceDefinitionSpec
+            {
+                Group = kind.Group,
+                Names = new V1CustomResourceDefinitionNames { Kind = kind.Kind, Plural = kind.PluralName },
+                Scope = "Namespaced",
+            }
+        });
         config.SetupGet(resourceConfig => resourceConfig.PermissionsLoaded).Returns(true);
         config.SetupGet(resourceConfig => resourceConfig.CanListAndWatch).Returns(true);
         config.Setup(resourceConfig => resourceConfig.SeedResource(It.IsAny<bool>())).Returns(Task.CompletedTask);
@@ -606,7 +618,69 @@ public sealed class MRDiffDetectionViewModelTests
         {
             Interlocked.Increment(ref _openCount);
             var content = Interlocked.Exchange(ref _contentServed, 1) == 0 ? line + "\n" : string.Empty;
-            return Task.FromResult<Stream>(new MemoryStream(Encoding.UTF8.GetBytes(content)));
+            Stream stream = options.Follow
+                ? new BlockingTailStream(Encoding.UTF8.GetBytes(content), cancellationToken)
+                : new MemoryStream(Encoding.UTF8.GetBytes(content));
+            return Task.FromResult(stream);
+        }
+    }
+
+    private sealed class BlockingTailStream(byte[] content, CancellationToken cancellationToken) : Stream
+    {
+        private readonly MemoryStream _content = new(content);
+        private readonly TaskCompletionSource _tailWait = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public override bool CanRead => true;
+        public override bool CanSeek => false;
+        public override bool CanWrite => false;
+        public override long Length => throw new NotSupportedException();
+        public override long Position
+        {
+            get => throw new NotSupportedException();
+            set => throw new NotSupportedException();
+        }
+
+        public override void Flush() { }
+
+        public override int Read(byte[] buffer, int offset, int count)
+            => _content.Read(buffer, offset, count);
+
+        public override async ValueTask<int> ReadAsync(
+            Memory<byte> buffer,
+            CancellationToken token = default)
+        {
+            var bytesRead = await _content.ReadAsync(buffer, token);
+            if (bytesRead > 0)
+            {
+                return bytesRead;
+            }
+
+            using var linkedCancellation = CancellationTokenSource.CreateLinkedTokenSource(
+                cancellationToken,
+                token);
+            await _tailWait.Task.WaitAsync(linkedCancellation.Token);
+            return 0;
+        }
+
+        public override Task<int> ReadAsync(
+            byte[] buffer,
+            int offset,
+            int count,
+            CancellationToken token)
+            => ReadAsync(buffer.AsMemory(offset, count), token).AsTask();
+
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+        public override void SetLength(long value) => throw new NotSupportedException();
+        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                _content.Dispose();
+            }
+
+            base.Dispose(disposing);
         }
     }
 }

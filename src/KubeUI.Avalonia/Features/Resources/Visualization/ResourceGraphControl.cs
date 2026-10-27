@@ -179,7 +179,8 @@ public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphContr
             _vertices.Clear();
             foreach (var resource in prepared.Resources)
             {
-                var vertex = CreateVertex(resource.Resource, prepared.Cluster, resource.Icon);
+                var icon = _iconService.GetIcon(GetResourceKind(resource.Resource, prepared.Cluster));
+                var vertex = CreateVertex(resource.Resource, prepared.Cluster, icon);
                 _vertices.Add(vertex.Identity, vertex);
             }
 
@@ -222,7 +223,7 @@ public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphContr
             foreach (var resource in graph.Resources)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                resources.Add(new PreparedResource(resource, _iconService.GetIcon(GetResourceKind(resource, cluster))));
+                resources.Add(new PreparedResource(resource));
             }
 
             foreach (var relationship in RemoveTransitiveOwnerRelationships(graph.Relationships))
@@ -295,9 +296,7 @@ public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphContr
         return result;
     }
 
-    private sealed record PreparedResource(
-        IKubernetesObject<V1ObjectMeta> Resource,
-        IImage Icon);
+    private sealed record PreparedResource(IKubernetesObject<V1ObjectMeta> Resource);
 
     private sealed record PreparedGraph(
         IReadOnlyList<PreparedResource> Resources,
@@ -437,6 +436,7 @@ public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphContr
                 Cluster = cluster,
                 Resource = resource,
                 Icon = icon ?? _iconService.GetIcon(GetResourceKind(resource, cluster)),
+                IsPreview = _viewModel?.IsPreview == true,
             },
         };
 

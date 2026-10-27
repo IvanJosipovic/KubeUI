@@ -1,5 +1,7 @@
+using System.Text.Json;
 using k8s;
 using k8s.Models;
+using KubeUI.Kubernetes.Serialization;
 
 namespace KubeUI.Kubernetes;
 
@@ -23,14 +25,11 @@ public partial class Cluster
 
         var currentPod = await Client.CoreV1.ReadNamespacedPodAsync(podName, namespaceName).ConfigureAwait(false);
         var updatedPod = PodEphemeralContainerBuilder.WithDebugContainer(currentPod, targetContainerName, image);
+        var ephemeralContainersJson = JsonSerializer.Serialize(
+            updatedPod.Spec!.EphemeralContainers,
+            KubernetesJsonStaticContext.Default.IListV1EphemeralContainer);
         var patch = new V1Patch(
-            KubernetesJson.Serialize(new
-            {
-                spec = new
-                {
-                    ephemeralContainers = updatedPod.Spec!.EphemeralContainers,
-                },
-            }),
+            "{\"spec\":{\"ephemeralContainers\":" + ephemeralContainersJson + "}}",
             V1Patch.PatchType.MergePatch);
 
         await Client.CoreV1.PatchNamespacedPodEphemeralcontainersWithHttpMessagesAsync(

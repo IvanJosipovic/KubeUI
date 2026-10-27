@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Markup.Xaml.MarkupExtensions;
@@ -11,19 +12,22 @@ using k8s.Models;
 using KubeUI.Avalonia.Features.Resources.Yaml.Behaviors;
 using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
+using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Services.Settings;
 using KubeUI.Avalonia.Styles;
 using SharedConverters = KubeUI.Avalonia.Converters.Converters;
 
+
 namespace KubeUI.Avalonia.Features.Resources.Yaml;
 
-public sealed partial class ResourceYamlView : ViewBase<ResourceYamlViewModel>
+public sealed partial class ResourceYamlView : KubeUIView<ResourceYamlViewModel>
 {
     public ResourceYamlView()
     {
         DesignTimePreview.Run(InitializeDesignTimeDataAsync);
     }
 
+    [RequiresUnreferencedCode("Declarative YAML view construction may use members removed by trimming.")]
     protected override object Build(ResourceYamlViewModel vm)
     {
         ArgumentNullException.ThrowIfNull(vm);
@@ -68,11 +72,13 @@ public sealed partial class ResourceYamlView : ViewBase<ResourceYamlViewModel>
             .Orientation(Orientation.Horizontal)
             .Children(
                 new Button()
+                    .IsVisible(vm, x => x.IsReadOnlyLocked, BindingMode.OneWay, SharedConverters.Not)
                     .Command(vm, x => x.SetEditModeCommand)
                     .ToolTip_Tip(YamlDocumentationViewFactory.CreateCodeText(Assets.Resources.ResourceYamlView_Edit))
                     .Content(new FluentIcon().Icon(Icon.DocumentEdit)),
                 new ToggleButton()
                     .Name("HideNoisyFieldsToggle", Scope)
+                    .IsVisible(vm, x => x.IsReadOnlyLocked, BindingMode.OneWay, SharedConverters.Not)
                     .IsChecked(vm, x => x.HideNoisyFields, BindingMode.TwoWay)
                     .ToolTip_Tip(YamlDocumentationViewFactory.CreateCodeText(Assets.Resources.ResourceYamlView_HideNoisyFields))
                     .Content(new FluentIcon().Icon(Icon.EyeOff)),
@@ -111,11 +117,11 @@ public sealed partial class ResourceYamlView : ViewBase<ResourceYamlViewModel>
             .Content(new FluentIcon().Icon(Icon.TextWrap));
     }
 
+    [RequiresUnreferencedCode("Calls KubeUI.Avalonia.Features.Resources.Yaml.ResourceYamlView.CreateEditorContextMenu(ResourceYamlViewModel, TextEditor)")]
     private static TextEditor CreateEditor(ResourceYamlViewModel vm, Popup hoverPopup)
     {
         var editor = new TextEditor()
             .Row(2)
-            .Background(new DynamicResourceExtension("SystemAltHighColor"))
             .FontFamily(new DynamicResourceExtension(Typography.CodeFontFamilyResourceKey))
             .FontSize(new DynamicResourceExtension(Typography.CodeFontSizeResourceKey))
             .FontWeight(FontWeight.Normal)
@@ -135,6 +141,7 @@ public sealed partial class ResourceYamlView : ViewBase<ResourceYamlViewModel>
             })
             .Behaviors(
                 new YamlEditorBehavior(),
+                new YamlSyntaxHighlightingBehavior(),
                 new YamlDiagnosticRenderingBehavior(),
                 new YamlHoverToolTipBehavior(hoverPopup),
                 new YamlEditorScrollBehavior())
@@ -150,6 +157,7 @@ public sealed partial class ResourceYamlView : ViewBase<ResourceYamlViewModel>
         return editor;
     }
 
+    [RequiresUnreferencedCode("Calls KubeUI.Avalonia.Features.Resources.Yaml.ResourceYamlView.CreateEditorMenuItem(ResourceYamlViewModel, TextEditor, String, KeyGesture, Icon, String, Boolean)")]
     private static ContextMenu CreateEditorContextMenu(ResourceYamlViewModel vm, TextEditor editor)
     {
         return new ContextMenu()
@@ -163,6 +171,7 @@ public sealed partial class ResourceYamlView : ViewBase<ResourceYamlViewModel>
                 CreateEditorMenuItem(vm, editor, Assets.Resources.ResourceYamlView_Action_Redo, new KeyGesture(Key.Y, KeyModifiers.Control), Icon.ArrowRedo, "Redo", requiresEditMode: true));
     }
 
+    [RequiresUnreferencedCode("Calls Avalonia.Xaml.Interactions.Core.EventTriggerBehavior.EventTriggerBehavior()")]
     private static MenuItem CreateEditorMenuItem(ResourceYamlViewModel vm, TextEditor editor, string header, KeyGesture? hotKey, Icon icon, string methodName, bool requiresEditMode)
     {
         var item = new MenuItem()

@@ -19,7 +19,7 @@ internal sealed class NavigationTreeViewItem : TreeViewItem
 
     protected override void OnHeaderDoubleTapped(TappedEventArgs e)
     {
-        // Selection handles expansion on each click, so the native double-tap toggle would toggle twice.
+        // Pointer activation handles expansion on each click, so the native double-tap toggle would toggle twice.
         e.Handled = true;
     }
 }

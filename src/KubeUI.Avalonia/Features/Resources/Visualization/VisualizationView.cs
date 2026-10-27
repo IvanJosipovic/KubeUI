@@ -9,10 +9,12 @@ using FluentIcons.Common;
 using k8s.Models;
 using KubeUI.Avalonia.Features.Resources.Common;
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
+using KubeUI.Avalonia.Infrastructure.Presentation;
+
 
 namespace KubeUI.Avalonia.Features.Resources.Visualization;
 
-public sealed partial class VisualizationView : ViewBase<VisualizationViewModel>
+public sealed partial class VisualizationView : KubeUIView<VisualizationViewModel>
 {
     private static readonly FuncValueConverter<bool, double> NotReadyBorderOpacityConverter = new(
         isNotReady => isNotReady ? 1d : 0d);
@@ -60,7 +62,7 @@ public sealed partial class VisualizationView : ViewBase<VisualizationViewModel>
                 new Label()
                     .Content(vm, x => x.RootResourceDisplay)
                     .VerticalContentAlignment(VerticalAlignment.Center)
-                    .IsVisible(vm, x => x.RootResource, converter: Converters.Converters.NotNull));
+                    .IsVisible(vm, x => x.IsRootResourceDisplayVisible));
     }
 
     private static StackPanel CreateRightToolbar(VisualizationViewModel vm)
@@ -83,17 +85,23 @@ public sealed partial class VisualizationView : ViewBase<VisualizationViewModel>
                     .IsEnabled(vm, x => x.HasResourceTypes),
                 new Ursa.Controls.MultiComboBox()
                     .Width(200)
+                    .MinWidth(140)
                     .MaxHeight(20)
+                    .Margin(0, 0, 2, 0)
                     .Classes("ClearButton")
                     .ItemsSource(vm, x => x.Cluster.Runtime.Namespaces)
                     .SelectedItems(vm, x => x.SelectedNamespaces)
+                    .PlaceholderText(Assets.Resources.ResourceListView_SelectNamespace)
                     .SelectedItemTemplate(template)
                     .ItemTemplate(template)
+                    .IsEnabled(vm, x => x.IsNamespaceSelectionEnabled)
                     .IsVisible(vm, x => x.IsNamespaceSelectorVisible),
                 new ToggleButton()
+                    .Margin(0, 0, 2, 0)
                     .IsChecked(vm, x => x.IsNamespaceSelectionLinked, BindingMode.TwoWay)
                     .ToolTip_Tip(Assets.Resources.ResourceListView_NamespaceLink)
                     .Content(new FluentIcon().Icon(Icon.Link))
+                    .IsEnabled(vm, x => x.IsNamespaceSelectionEnabled)
                     .IsVisible(vm, x => x.IsNamespaceSelectorVisible));
     }
 

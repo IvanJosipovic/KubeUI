@@ -3,14 +3,16 @@ using Avalonia.Input;
 using Dock.Avalonia.Controls;
 using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
+using KubeUI.Avalonia.Infrastructure.Presentation;
+
 
 namespace KubeUI.Avalonia.Shell.Main;
 
-public sealed class MainView : ViewBase<MainViewModel>
+public sealed class MainView : KubeUIView<MainViewModel>
 {
     public MainView()
     {
-        if (Design.IsDesignMode)
+        if (DesignTimePreview.IsDesignMode)
         {
             DataContext = DesignTimePreview.Get<MainViewModel>();
         }

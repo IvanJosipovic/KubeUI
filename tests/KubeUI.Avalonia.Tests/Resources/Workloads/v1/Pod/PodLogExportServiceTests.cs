@@ -32,7 +32,7 @@ public sealed class PodLogExportServiceTests
             .Patterns.ShouldBe(["*.log", "*.txt"]);
         platform.VerifyAll();
         file.VerifyAll();
-        output.Dispose();
+        await output.DisposeAsync();
     }
 
     [Fact]

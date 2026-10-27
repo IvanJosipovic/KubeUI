@@ -2,16 +2,16 @@ using k8s.Models;
 
 namespace KubeUI.Avalonia.Resources.Network.v1.IngressClass;
 
-public sealed partial class V1IngressClassConfig : ResourceConfigBase<V1IngressClass>
+public sealed partial class V1IngressClassConfig : ResourceConfig<V1IngressClass>
 {
     public V1IngressClassConfig(IServiceProvider serviceProvider)
         : base(serviceProvider)
     {
     }
-    public override string Category => Assets.Resources.ResourceConfig_Category_Network!;
+    public override NavigationPlacement Navigation => NavigationPlacement.InSection(NavigationSections.NetworkId);
     public override int Order => 4;
 
-    public override IList<IResourceListColumn> Columns()
+    protected override IList<IResourceListColumn> CreateDefaultColumns()
     {
         return [
             NameColumn(SortDirection.Ascending),

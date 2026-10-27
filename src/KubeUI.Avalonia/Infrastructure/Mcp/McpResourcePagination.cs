@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace KubeUI.Avalonia.Infrastructure.Mcp;
 
@@ -36,7 +37,8 @@ internal static class McpResourceCursorCodec
         var cursor = new McpResourceCursor(
             CurrentVersion, cluster, apiVersion, kind, @namespace,
             lastNamespace, lastName, lastUid);
-        var bytes = JsonSerializer.SerializeToUtf8Bytes(cursor);
+        var bytes = JsonSerializer.SerializeToUtf8Bytes(
+            cursor, McpResourceCursorJsonSerializationContext.Default.McpResourceCursor);
         return Convert.ToBase64String(bytes)
             .TrimEnd('=')
             .Replace('+', '-')
@@ -54,7 +56,8 @@ internal static class McpResourceCursorCodec
             var base64 = cursor.Replace('-', '+').Replace('_', '/');
             base64 += new string('=', (4 - base64.Length % 4) % 4);
             var bytes = Convert.FromBase64String(base64);
-            var decoded = JsonSerializer.Deserialize<McpResourceCursor>(bytes);
+            var decoded = JsonSerializer.Deserialize(
+                bytes, McpResourceCursorJsonSerializationContext.Default.McpResourceCursor);
             if (decoded is null
                 || decoded.Version != CurrentVersion
                 || string.IsNullOrWhiteSpace(decoded.Cluster)
@@ -96,3 +99,7 @@ internal static class McpResourceCursorCodec
     private static ArgumentException InvalidCursor()
         => new("The resource cursor is invalid. Start the listing again.", "cursor");
 }
+
+[JsonSourceGenerationOptions]
+[JsonSerializable(typeof(McpResourceCursor))]
+internal partial class McpResourceCursorJsonSerializationContext : JsonSerializerContext;

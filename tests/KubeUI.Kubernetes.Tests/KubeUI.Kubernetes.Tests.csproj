@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
+    <JsonSerializerIsReflectionEnabledByDefault>false</JsonSerializerIsReflectionEnabledByDefault>
   </PropertyGroup>
 
   <ItemGroup>
@@ -9,6 +10,7 @@
     <PackageReference Include="Microsoft.Testing.Extensions.CodeCoverage" Version="18.12.0" />
     <PackageReference Include="Microsoft.Testing.Extensions.CrashDump" Version="2.5.1" />
     <PackageReference Include="Microsoft.Testing.Extensions.HangDump" Version="2.5.1" />
+    <PackageReference Include="Helm.NET" Version="1.0.0-alpha.11" />
   </ItemGroup>
 
   <ItemGroup>

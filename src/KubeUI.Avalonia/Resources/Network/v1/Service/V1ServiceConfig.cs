@@ -11,7 +11,7 @@ using KubeUI.Kubernetes;
 
 namespace KubeUI.Avalonia.Resources.Network.v1.Service;
 
-public sealed partial class V1ServiceConfig : ResourceConfigBase<V1Service>
+public sealed partial class V1ServiceConfig : ResourceConfig<V1Service>
 {
     private static readonly AuthorizationRequest[] s_portForwardAuthorizationRequests =
     [
@@ -28,10 +28,10 @@ public sealed partial class V1ServiceConfig : ResourceConfigBase<V1Service>
         _platformServices = platformServices;
     }
     public override bool IsNamespaced => true;
-    public override string Category => Assets.Resources.ResourceConfig_Category_Network!;
+    public override NavigationPlacement Navigation => NavigationPlacement.InSection(NavigationSections.NetworkId);
     public override int Order => 0;
 
-    public override IList<IResourceListColumn> Columns()
+    protected override IList<IResourceListColumn> CreateDefaultColumns()
     {
         return [
             NameColumn(SortDirection.Ascending),

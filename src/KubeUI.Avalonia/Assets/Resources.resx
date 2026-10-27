@@ -552,6 +552,18 @@
     <value>Remove</value>
     <comment/>
   </data>
+  <data name="ClusterSettingsView_PermissionsLabel" xml:space="preserve">
+    <value>Permissions</value>
+    <comment/>
+  </data>
+  <data name="ClusterSettingsView_RefreshPermissions" xml:space="preserve">
+    <value>Refresh Permissions</value>
+    <comment/>
+  </data>
+  <data name="ClusterSettingsView_RefreshPermissionsTooltip" xml:space="preserve">
+    <value>Discard cached authorization rules and re-evaluate resource access</value>
+    <comment/>
+  </data>
   <data name="ClusterSettingsView_DebugContainerImageLabel" xml:space="preserve">
     <value>Ephemeral Debug Image</value>
     <comment/>
@@ -912,6 +924,10 @@
     <value>Visualization</value>
     <comment/>
   </data>
+  <data name="VisualizationView_HelmPreviewTitle" xml:space="preserve">
+    <value>Helm preview: {0}</value>
+    <comment/>
+  </data>
   <data name="ResourceConfigBase_MenuItem_Visualize" xml:space="preserve">
     <value>Visualize</value>
     <comment/>
@@ -1270,6 +1286,22 @@
   </data>
   <data name="Shared_Source" xml:space="preserve">
     <value>Source</value>
+    <comment/>
+  </data>
+  <data name="Shared_Cancel" xml:space="preserve">
+    <value>Cancel</value>
+    <comment/>
+  </data>
+  <data name="Shared_Refresh" xml:space="preserve">
+    <value>Refresh</value>
+    <comment/>
+  </data>
+  <data name="Shared_NoCharts" xml:space="preserve">
+    <value>No charts matched the search. Update repository indexes or change the search text.</value>
+    <comment/>
+  </data>
+  <data name="Shared_ErrorOccurred" xml:space="preserve">
+    <value>Error occurred</value>
     <comment/>
   </data>
   <data name="Shared_Count" xml:space="preserve">
@@ -1998,6 +2030,10 @@
   </data>
   <data name="V1CustomResourceDefinitionConfig_Scope" xml:space="preserve">
     <value>Scope</value>
+    <comment/>
+  </data>
+  <data name="V1CustomResourceDefinitionConfig_NavigationName" xml:space="preserve">
+    <value>Definitions</value>
     <comment/>
   </data>
   <data name="V1ClusterRoleBindingConfig_Bindings" xml:space="preserve">
@@ -2832,4 +2868,146 @@
     <value>Revocation was not saved. This token remains active until KubeUI can save the change.</value>
     <comment/>
   </data>
+  <data name="NavigationView_GatewayApi" xml:space="preserve">
+    <value>Gateway</value>
+  </data>
+  <data name="NavigationView_GatewayApiExperimental" xml:space="preserve">
+    <value>Experimental</value>
+  </data>
+  <data name="NavigationView_Crossplane" xml:space="preserve">
+    <value>Crossplane</value>
+  </data>
+  <data name="NavigationView_Helm" xml:space="preserve">
+    <value>Helm</value>
+  </data>
+  <data name="HelmRepositoriesView_Title" xml:space="preserve">
+    <value>Repositories</value>
+  </data>
+  <data name="HelmRepositoriesView_Name" xml:space="preserve">
+    <value>Name</value>
+  </data>
+  <data name="HelmRepositoriesView_Url" xml:space="preserve">
+    <value>URL</value>
+  </data>
+  <data name="HelmRepositoriesView_IndexesUpdated" xml:space="preserve">
+    <value>Indexes updated</value>
+  </data>
+  <data name="HelmRepositoriesView_New" xml:space="preserve">
+    <value>New repository</value>
+  </data>
+  <data name="HelmRepositoriesView_UpdateIndexes" xml:space="preserve">
+    <value>Update repository indexes</value>
+  </data>
+  <data name="HelmRepositoriesView_Edit" xml:space="preserve">
+    <value>Edit</value>
+  </data>
+  <data name="HelmRepositoriesView_Delete" xml:space="preserve">
+    <value>Delete</value>
+  </data>
+  <data name="HelmRepositoriesView_DeleteTitle" xml:space="preserve">
+    <value>Delete repository?</value>
+  </data>
+  <data name="HelmRepositoriesView_DeleteContent" xml:space="preserve">
+    <value>Remove repository '{0}' from Helm configuration?</value>
+  </data>
+  <data name="HelmRepositoryEditorView_NewTitle" xml:space="preserve">
+    <value>New Helm repository</value>
+  </data>
+  <data name="HelmRepositoryEditorView_EditTitle" xml:space="preserve">
+    <value>Edit Helm repository</value>
+  </data>
+  <data name="HelmRepositoryEditorView_Name" xml:space="preserve">
+    <value>Name</value>
+  </data>
+  <data name="HelmRepositoryEditorView_Url" xml:space="preserve">
+    <value>URL</value>
+  </data>
+  <data name="HelmRepositoryEditorView_Username" xml:space="preserve">
+    <value>Username (optional)</value>
+  </data>
+  <data name="HelmRepositoryEditorView_Password" xml:space="preserve">
+    <value>Password (optional)</value>
+  </data>
+  <data name="HelmRepositoryEditorView_CredentialsNote" xml:space="preserve">
+    <value>Helm does not return saved credentials. Re-enter them when editing a protected repository.</value>
+  </data>
+  <data name="HelmRepositoryEditorView_Save" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="HelmReleasesView_Title" xml:space="preserve">
+    <value>Releases</value>
+  </data>
+  <data name="HelmReleasesView_Name" xml:space="preserve"><value>Name</value></data>
+  <data name="HelmReleasesView_Namespace" xml:space="preserve"><value>Namespace</value></data>
+  <data name="HelmReleasesView_Revision" xml:space="preserve"><value>Revision</value></data>
+  <data name="HelmReleasesView_Status" xml:space="preserve"><value>Status</value></data>
+  <data name="HelmReleasesView_Chart" xml:space="preserve"><value>Chart</value></data>
+  <data name="HelmReleasesView_AppVersion" xml:space="preserve"><value>App version</value></data>
+  <data name="HelmReleasesView_Updated" xml:space="preserve"><value>Updated</value></data>
+  <data name="HelmReleasesView_Install" xml:space="preserve"><value>Install release</value></data>
+  <data name="HelmReleasesView_RollbackRevision" xml:space="preserve"><value>Target revision</value></data>
+  <data name="HelmReleasesView_ItemsFormat" xml:space="preserve"><value>Releases: {0}</value></data>
+  <data name="HelmRepositoriesView_ItemsFormat" xml:space="preserve"><value>Repositories: {0}</value></data>
+  <data name="HelmReleasesView_Rollback" xml:space="preserve"><value>Rollback</value></data>
+  <data name="HelmReleasesView_Wait" xml:space="preserve"><value>Wait for actions</value></data>
+  <data name="HelmReleasesView_StatusAction" xml:space="preserve"><value>View status</value></data>
+  <data name="HelmReleasesView_Visualize" xml:space="preserve"><value>Visualize</value></data>
+  <data name="HelmReleasesView_Values" xml:space="preserve"><value>View values</value></data>
+  <data name="HelmReleasesView_Upgrade" xml:space="preserve"><value>Upgrade</value></data>
+  <data name="HelmReleasesView_Uninstall" xml:space="preserve"><value>Uninstall</value></data>
+  <data name="HelmReleasesView_UninstallTitle" xml:space="preserve"><value>Uninstall release?</value></data>
+  <data name="HelmReleasesView_UninstallContent" xml:space="preserve"><value>Uninstall release '{0}' from namespace '{1}'?</value></data>
+  <data name="HelmReleasesView_RollbackDialog_Title" xml:space="preserve"><value>Roll back release?</value></data>
+  <data name="HelmReleasesView_RollbackDialog_Content" xml:space="preserve"><value>Roll back release '{0}' in namespace '{1}'? Revision 0 selects the previous revision.</value></data>
+  <data name="HelmReleasesView_HistoryLabel" xml:space="preserve"><value>Release History</value></data>
+  <data name="HelmRepositoriesView_ViewCharts" xml:space="preserve"><value>View Charts</value></data>
+  <data name="HelmRepositoriesView_RefreshFailed" xml:space="preserve"><value>Refresh failed</value></data>
+  <data name="HelmRepositoriesView_IndexUpdateFailed" xml:space="preserve"><value>Update failed</value></data>
+  <data name="HelmRepositoriesView_DeleteFailed" xml:space="preserve"><value>Delete failed</value></data>
+  <data name="HelmReleasesView_RefreshFailed" xml:space="preserve"><value>Refresh failed</value></data>
+  <data name="HelmReleasesView_VisualizeFailed" xml:space="preserve"><value>Visualize failed</value></data>
+  <data name="HelmReleasesView_StatusLoaded" xml:space="preserve"><value>Status loaded</value></data>
+  <data name="HelmReleasesView_StatusFailed" xml:space="preserve"><value>Status failed</value></data>
+  <data name="HelmReleasesView_ValuesFailed" xml:space="preserve"><value>Values failed</value></data>
+  <data name="HelmReleasesView_RollbackFailed" xml:space="preserve"><value>Rollback failed</value></data>
+  <data name="HelmReleasesView_UninstallFailed" xml:space="preserve"><value>Uninstall failed</value></data>
+  <data name="HelmReleaseEditorView_InstallTitle" xml:space="preserve"><value>Install Helm release</value></data>
+  <data name="HelmReleaseEditorView_UpgradeTitle" xml:space="preserve"><value>Upgrade Helm release</value></data>
+  <data name="HelmReleaseEditorView_Name" xml:space="preserve"><value>Release name</value></data>
+  <data name="HelmReleaseEditorView_ReleaseNameRequired" xml:space="preserve"><value>Release name is required.</value></data>
+  <data name="HelmReleaseEditorView_Chart" xml:space="preserve"><value>Chart reference</value></data>
+  <data name="HelmReleaseEditorView_ChartRequired" xml:space="preserve"><value>Choose a chart or enter a chart reference.</value></data>
+  <data name="HelmReleaseEditorView_Namespace" xml:space="preserve"><value>Namespace</value></data>
+  <data name="HelmReleaseEditorView_NamespaceRequired" xml:space="preserve"><value>Namespace is required.</value></data>
+  <data name="HelmReleaseEditorView_ValuesYaml" xml:space="preserve"><value>Values (YAML)</value></data>
+  <data name="HelmReleaseEditorView_ChartVersion" xml:space="preserve"><value>Chart version</value></data>
+  <data name="HelmReleaseEditorView_VersionRequired" xml:space="preserve"><value>Select a chart version.</value></data>
+  <data name="HelmReleaseEditorView_Repository" xml:space="preserve"><value>Repository</value></data>
+  <data name="HelmReleaseEditorView_ChartSource" xml:space="preserve"><value>Chart source</value></data>
+  <data name="HelmReleaseEditorView_RepositorySource" xml:space="preserve"><value>Repository</value></data>
+  <data name="HelmReleaseEditorView_OciSource" xml:space="preserve"><value>OCI</value></data>
+  <data name="HelmReleaseEditorView_ChartReference" xml:space="preserve"><value>Chart reference (manual or OCI)</value></data>
+  <data name="HelmReleaseEditorView_ChartVersionNotice" xml:space="preserve"><value>Selected chart version is used for install, upgrade, and preview. Leave version empty to use Helm's default resolution.</value></data>
+  <data name="HelmReleaseEditorView_ValuesMustBeObject" xml:space="preserve"><value>Values must be a YAML mapping.</value></data>
+  <data name="HelmReleaseEditorView_ChooseChartReference" xml:space="preserve"><value>No unique repository chart reference found. Enter the chart reference (repository/chart or OCI URL) before upgrading or previewing.</value></data>
+  <data name="HelmReleaseEditorView_Timeout" xml:space="preserve"><value>Timeout seconds (0 = no timeout)</value></data>
+  <data name="HelmReleaseEditorView_CreateNamespace" xml:space="preserve"><value>Create namespace if missing</value></data>
+  <data name="HelmReleaseEditorView_InstallIfMissing" xml:space="preserve"><value>Install if the release does not exist</value></data>
+  <data name="HelmReleaseEditorView_Preview" xml:space="preserve"><value>Preview in visualization</value></data>
+  <data name="HelmReleaseEditorView_InstallUpgrade" xml:space="preserve"><value>Install / Upgrade</value></data>
+  <data name="HelmReleaseEditorView_ConfirmInstallTitle" xml:space="preserve"><value>Install release?</value></data>
+  <data name="HelmReleaseEditorView_ConfirmUpgradeTitle" xml:space="preserve"><value>Upgrade release?</value></data>
+  <data name="HelmReleaseEditorView_ConfirmInstallContent" xml:space="preserve"><value>Install release '{0}' using chart '{1}' in namespace '{2}'?</value></data>
+  <data name="HelmReleaseEditorView_ConfirmUpgradeContent" xml:space="preserve"><value>Upgrade release '{0}' using chart '{1}' in namespace '{2}'?</value></data>
+  <data name="HelmReleasePreviewService_NoResources" xml:space="preserve"><value>Helm rendered no Kubernetes resources to visualize.</value></data>
+  <data name="HelmReleasePreviewService_ReleaseTitle" xml:space="preserve"><value>Helm release: {0} ({1})</value></data>
+  <data name="HelmReleasesView_ValuesTitle" xml:space="preserve"><value>Helm values: {0} ({1})</value></data>
+  <data name="HelmChartsView_Title" xml:space="preserve"><value>Charts</value></data>
+  <data name="HelmChartsView_Chart" xml:space="preserve"><value>Chart</value></data>
+  <data name="HelmChartsView_Description" xml:space="preserve"><value>Description</value></data>
+  <data name="HelmChartsView_LatestVersion" xml:space="preserve"><value>Latest Version</value></data>
+  <data name="HelmChartsView_Install" xml:space="preserve"><value>Install chart</value></data>
+  <data name="HelmChartsView_ItemsFormat" xml:space="preserve"><value>Charts: {0}</value></data>
+  <data name="HelmChartsView_SearchPlaceholder" xml:space="preserve"><value>Search</value></data>
+  <data name="HelmReleaseEditorView_ChartVersionPlaceholder" xml:space="preserve"><value>Leave empty to use latest</value></data>
 </root>

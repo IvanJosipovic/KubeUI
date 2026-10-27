@@ -2,12 +2,14 @@ using System.Collections;
 using System.Diagnostics;
 using System.Reactive.Linq;
 using Avalonia.Controls;
+using Avalonia.Controls.Notifications;
 using Avalonia.Controls.Primitives;
 using Avalonia.Headless.XUnit;
 using Avalonia.Styling;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.Input;
 using Dock.Model.Controls;
+using Dock.Model.Core;
 using FluentAvalonia.UI.Controls;
 using k8s;
 using k8s.Models;
@@ -18,15 +20,36 @@ using KubeUI.Avalonia.Services.Icons;
 using KubeUI.Avalonia.Shell.Navigation;
 using KubeUI.Avalonia.Tests.Features.Clusters.Workspace;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Shell.Navigation;
 
 public class NavigationViewModelTests
 {
+    private static FakeCustomResourceConfig CreateConfiguredFakeCustomResourceConfig(Type resourceType, string name, bool canListAndWatch = true)
+        => new(resourceType, name, canListAndWatch);
+
+    private static string GetCanonicalLinkId(ClusterWorkspace workspace, GroupApiVersionKind kind)
+        => $"{workspace.Runtime.Name}-resource-{(string.IsNullOrEmpty(kind.Group) ? "core" : kind.Group)}/{kind.Kind}";
+
     private NavigationViewModel CreateViewModel()
     {
         return Application.Current.GetTestServices().GetRequiredService<NavigationViewModel>();
+    }
+
+    private NavigationViewModel CreateViewModel(ILogger<NavigationViewModel> logger)
+    {
+        var services = Application.Current.GetTestServices();
+        return new NavigationViewModel(
+            logger,
+            services.GetRequiredService<INotificationManager>(),
+            services.GetRequiredService<HanumanInstitute.MvvmDialogs.IDialogService>(),
+            services.GetRequiredService<ClusterWorkspaceCatalog>(),
+            services,
+            services.GetRequiredService<IResourceNavigationService>(),
+            services.GetRequiredService<NavigationSectionCatalog>(),
+            services.GetRequiredService<Avalonia.Infrastructure.Platform.IPlatformServices>());
     }
 
     private static async Task<T?> WaitForValueAsync<T>(Func<T?> getValue, int timeoutMs = 3000, CancellationToken cancellationToken = default) where T : class
@@ -88,15 +111,8 @@ public class NavigationViewModelTests
         using var vm = CreateViewModel();
         var clusterNode = vm.Clusters.Single(node => node.Cluster == workspace);
 
-        await vm.HandleSelectionChangedCommand.ExecuteAsync(null);
-        await vm.HandleSelectionChangedCommand.ExecuteAsync(new SelectionChangedEventArgs(
-            SelectingItemsControl.SelectionChangedEvent,
-            Array.Empty<object>(),
-            Array.Empty<object>()));
-        await vm.HandleSelectionChangedCommand.ExecuteAsync(new SelectionChangedEventArgs(
-            SelectingItemsControl.SelectionChangedEvent,
-            new object[] { new NavigationItem() },
-            Array.Empty<object>()));
+        await vm.ActivateNavigationItemCommand.ExecuteAsync(null);
+        await vm.ActivateNavigationItemCommand.ExecuteAsync(new NavigationItem());
         await vm.TreeViewSelectionChangedAsync(null);
         await vm.ToggleClusterConnectionCommand.ExecuteAsync(null);
         await vm.OpenClusterSettingsCommand.ExecuteAsync(null);
@@ -175,21 +191,21 @@ public class NavigationViewModelTests
         node.NavigationItems[0].Id.ShouldBe(originalId);
     }
 
-    private static ResourceNavigationLink? FindResourceLink(ClusterNavigationNode root, string name)
+    private static NavigationLink? FindResourceLink(ClusterNavigationNode root, string name)
     {
         return FindResourceLink(root.NavigationItems, name);
     }
 
-    private static ResourceNavigationLink? FindResourceLink(ClusterNavigationNode root, GroupApiVersionKind resourceKind)
+    private static NavigationLink? FindResourceLink(ClusterNavigationNode root, GroupApiVersionKind resourceKind)
     {
         return FindResourceLink(root.NavigationItems, resourceKind);
     }
 
-    private static ResourceNavigationLink? FindResourceLink(IEnumerable<NavigationItem> items, string name)
+    private static NavigationLink? FindResourceLink(IEnumerable<NavigationItem> items, string name)
     {
         foreach (var child in items)
         {
-            if (child is ResourceNavigationLink resourceLink && string.Equals(resourceLink.Name, name, StringComparison.Ordinal))
+            if (child is NavigationLink resourceLink && string.Equals(resourceLink.Name, name, StringComparison.Ordinal))
             {
                 return resourceLink;
             }
@@ -204,11 +220,11 @@ public class NavigationViewModelTests
         return null;
     }
 
-    private static ResourceNavigationLink? FindResourceLink(IEnumerable<NavigationItem> items, GroupApiVersionKind resourceKind)
+    private static NavigationLink? FindResourceLink(IEnumerable<NavigationItem> items, GroupApiVersionKind resourceKind)
     {
         foreach (var child in items)
         {
-            if (child is ResourceNavigationLink resourceLink && resourceLink.ResourceKind == resourceKind)
+            if (child is NavigationLink resourceLink && resourceLink.ResourceKind == resourceKind)
             {
                 return resourceLink;
             }
@@ -221,6 +237,24 @@ public class NavigationViewModelTests
         }
 
         return null;
+    }
+
+    private static IReadOnlyList<NavigationLink> FindResourceLinks(
+        IEnumerable<NavigationItem> items,
+        GroupApiVersionKind resourceKind)
+    {
+        var links = new List<NavigationLink>();
+        foreach (var item in items)
+        {
+            if (item is NavigationLink link && link.ResourceKind == resourceKind)
+            {
+                links.Add(link);
+            }
+
+            links.AddRange(FindResourceLinks(item.NavigationItems, resourceKind));
+        }
+
+        return links;
     }
 
     private static async Task<int?> WaitForObservedCountAsync(IObservable<int>? count, int expected, int timeoutMs = 3000, CancellationToken cancellationToken = default)
@@ -276,13 +310,13 @@ public class NavigationViewModelTests
         return null;
     }
 
-    private static ResourceNavigationLink? FindNavigationLinkByName(
+    private static NavigationLink? FindNavigationLinkByName(
         IEnumerable<NavigationItem> items,
         string name)
     {
         foreach (var item in items)
         {
-            if (item is ResourceNavigationLink link && link.Name == name)
+            if (item is NavigationLink link && link.Name == name)
             {
                 return link;
             }
@@ -366,7 +400,7 @@ public class NavigationViewModelTests
         await workspace.Connect();
 
         var crdRoot = await WaitForValueAsync(
-            () => clusterNode.NavigationItems.SingleOrDefault(x => x.Name == ResourceCategories.CustomResourceDefinitions),
+            () => clusterNode.NavigationItems.SingleOrDefault(x => x.Id == $"{workspace.Runtime.Name}-section-custom-resources"),
             timeoutMs: 10000);
 
         crdRoot.ShouldNotBeNull();
@@ -376,6 +410,119 @@ public class NavigationViewModelTests
         (await WaitForValueAsync(
             () => FindResourceLink(crdRoot.NavigationItems, GetCustomResourceKind(secondCrd)),
             timeoutMs: 10000)).ShouldNotBeNull();
+    }
+
+    [AvaloniaFact]
+    public async Task crossplane_crd_appears_in_canonical_and_section_trees_and_tracks_access_updates()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync(connect: false);
+        await workspace.Connect();
+        workspace.AddResourceConfigForTest(new FakeResourceConfig(typeof(V1CustomResourceDefinition), "Definitions"));
+        var providerKind = GroupApiVersionKind.From<TestCrossplaneManagedResourceDefinition>();
+        var initialConfig = CreateConfiguredFakeCustomResourceConfig(typeof(TestCrossplaneManagedResourceDefinition), "Managed Resources");
+        workspace.AddResourceConfigForTest(initialConfig);
+
+        using var vm = CreateViewModel();
+        vm.ClusterCatalog.Clusters.Add(workspace);
+        var node = vm.Clusters.Single(cluster => cluster.Cluster == workspace);
+
+        await WaitForAsync(() => FindResourceLinks(node.NavigationItems, providerKind).Count == 2);
+        var initialLinks = FindResourceLinks(node.NavigationItems, providerKind);
+        var canonical = initialLinks.Single(link => link.Id == GetCanonicalLinkId(workspace, providerKind));
+        var sectionAlias = initialLinks.Single(link => link.Id.Contains("-section-resource-crossplane-", StringComparison.Ordinal));
+        var section = node.NavigationItems.Single(item => item.Id == $"{workspace.Runtime.Name}-section-crossplane");
+        var group = section.NavigationItems.Single();
+        section.IsExpanded = true;
+        group.IsExpanded = true;
+
+        workspace.AddResourceConfigForTest(CreateConfiguredFakeCustomResourceConfig(typeof(TestCrossplaneManagedResourceDefinition), "Updated Managed Resources"));
+        await WaitForAsync(() => sectionAlias.Name == "Updated Managed Resources");
+
+        FindResourceLinks(node.NavigationItems, providerKind).ShouldContain(link => ReferenceEquals(link, canonical));
+        FindResourceLinks(node.NavigationItems, providerKind).ShouldContain(link => ReferenceEquals(link, sectionAlias));
+        section.IsExpanded.ShouldBeTrue();
+        group.IsExpanded.ShouldBeTrue();
+
+        workspace.AddResourceConfigForTest(CreateConfiguredFakeCustomResourceConfig(
+            typeof(TestCrossplaneManagedResourceDefinition),
+            "Denied Managed Resources",
+            canListAndWatch: false));
+        await WaitForAsync(() => FindResourceLinks(node.NavigationItems, providerKind).Count == 0);
+        node.NavigationItems.ShouldNotContain(item => item.Id == $"{workspace.Runtime.Name}-section-crossplane");
+
+        workspace.AddResourceConfigForTest(CreateConfiguredFakeCustomResourceConfig(typeof(TestCrossplaneManagedResourceDefinition), "Restored Managed Resources"));
+        await WaitForAsync(() => FindResourceLinks(node.NavigationItems, providerKind).Count == 2);
+        FindResourceLinks(node.NavigationItems, providerKind).ShouldContain(link => link.Name == "Restored Managed Resources");
+    }
+
+    [AvaloniaFact]
+    public async Task crossplane_aliases_share_zero_counts_and_open_same_resource_document()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync(connect: false);
+        using var vm = CreateViewModel();
+        vm.ClusterCatalog.Clusters.Add(workspace);
+        await workspace.Connect();
+        await workspace.Runtime.SeedResource<V1CustomResourceDefinition>(true);
+
+        var crd = NavigationTestCustomResourceDefinitionFactory.Create(
+            "tests.crossplane.io",
+            "Tests",
+            "someString",
+            "crossplane.io");
+        await workspace.Runtime.AddOrUpdateResource(crd);
+        var descriptor = await WaitForValueAsync(
+            () => workspace.GetResourceConfigs().SingleOrDefault(config =>
+                config.IsCustomResource && config.CustomResourceDefinition!.Name() == crd.Name()),
+            timeoutMs: 10000);
+        descriptor.ShouldNotBeNull();
+
+        var kind = GetCustomResourceKind(crd);
+        var node = vm.Clusters.Single(cluster => cluster.Cluster == workspace);
+        await WaitForAsync(() => FindResourceLinks(node.NavigationItems, kind).Count == 2, timeoutMs: 10000);
+        var links = FindResourceLinks(node.NavigationItems, kind);
+        var canonical = links.Single(link => link.Id == GetCanonicalLinkId(workspace, kind));
+        var alias = links.Single(link => link.Id.Contains("-section-resource-crossplane-", StringComparison.Ordinal));
+        alias.OpenCommand.ShouldBe(canonical.OpenCommand);
+        alias.OpenInNewTabCommand.ShouldBe(canonical.OpenInNewTabCommand);
+
+        await workspace.Runtime.SeedResource(kind, false, TestContext.Current.CancellationToken);
+        await WaitForAsync(() => links.All(link => link.Count is not null), timeoutMs: 10000);
+        foreach (var link in links)
+        {
+            (await WaitForCountAsync(link.Count, timeoutMs: 5000)).ShouldBe(0);
+        }
+
+        var documents = vm.Factory.GetDockable<IDocumentDock>("Documents").ShouldNotBeNull();
+        try
+        {
+            await vm.OpenResourceNavigationCommand.ExecuteAsync(alias).WaitAsync(TestContext.Current.CancellationToken);
+            await WaitForAsync(
+                () => documents.VisibleDockables?.OfType<IResourceListViewModel>().Count(document => document.Kind == kind) == 1,
+                timeoutMs: 10000);
+            var sharedDocument = documents.VisibleDockables!
+                .OfType<IResourceListViewModel>()
+                .Single(document => document.Kind == kind);
+
+            await vm.OpenResourceNavigationCommand.ExecuteAsync(canonical).WaitAsync(TestContext.Current.CancellationToken);
+            documents.VisibleDockables!.OfType<IResourceListViewModel>()
+                .Single(document => document.Kind == kind)
+                .ShouldBeSameAs(sharedDocument);
+
+            await vm.OpenResourceNavigationInNewTabCommand.ExecuteAsync(alias).WaitAsync(TestContext.Current.CancellationToken);
+            await WaitForAsync(
+                () => documents.VisibleDockables?.OfType<IResourceListViewModel>().Count(document => document.Kind == kind) == 2,
+                timeoutMs: 10000);
+        }
+        finally
+        {
+            foreach (var document in documents.VisibleDockables?.OfType<IResourceListViewModel>()
+                         .Where(document => document.Kind == kind)
+                         .Cast<IDockable>()
+                         .ToArray() ?? [])
+            {
+                vm.Factory.RemoveDockable(document, collapse: false);
+            }
+        }
     }
 
     [AvaloniaFact]
@@ -1268,7 +1415,7 @@ public class NavigationViewModelTests
 
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
         var originalNamespaceLink = clusterNode.NavigationItems
-            .OfType<ResourceNavigationLink>()
+            .OfType<NavigationLink>()
             .Single(x => x.ResourceKind == GroupApiVersionKind.From<V1Namespace>());
         var alphaConfig = new FakeResourceConfig(typeof(TestPermissionResourceAlpha), "Alpha Permission Resource");
         var betaConfig = new FakeResourceConfig(typeof(TestPermissionResourceBeta), "Beta Permission Resource");
@@ -1281,7 +1428,7 @@ public class NavigationViewModelTests
             && FindResourceLink(clusterNode, betaConfig.Name) != null);
 
         clusterNode.NavigationItems
-            .OfType<ResourceNavigationLink>()
+            .OfType<NavigationLink>()
             .Single(x => x.ResourceKind == GroupApiVersionKind.From<V1Namespace>())
             .ShouldBeSameAs(originalNamespaceLink);
     }
@@ -1353,7 +1500,7 @@ public class NavigationViewModelTests
 
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
         var originalNamespaceLink = clusterNode.NavigationItems
-            .OfType<ResourceNavigationLink>()
+            .OfType<NavigationLink>()
             .Single(x => x.ResourceKind == GroupApiVersionKind.From<V1Namespace>());
 
         workspace.AddResourceConfigForTest(new FakeResourceConfig(typeof(TestPermissionResourceAlpha), "Alpha Permission Resource"));
@@ -1362,7 +1509,7 @@ public class NavigationViewModelTests
             timeoutMs: 1000);
 
         var updatedNamespaceLink = clusterNode.NavigationItems
-            .OfType<ResourceNavigationLink>()
+            .OfType<NavigationLink>()
             .Single(x => x.ResourceKind == GroupApiVersionKind.From<V1Namespace>());
 
         ReferenceEquals(originalNamespaceLink, updatedNamespaceLink).ShouldBeTrue();
@@ -1414,6 +1561,40 @@ public class NavigationViewModelTests
             typeof(TestPermissionResourceAlpha),
             "Alpha Permission Resource"));
 
+        FindResourceLink(clusterNode, "Alpha Permission Resource").ShouldNotBeNull();
+    }
+
+    [AvaloniaFact]
+    public async Task background_resource_config_burst_coalesces_reconciliation()
+    {
+        var services = Application.Current.GetTestServices();
+        var workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        await workspace.Connect();
+        await TestApplicationExtensions.WaitForUiAsync();
+
+        var logger = new ReconciliationCountingLogger();
+        using var vm = CreateViewModel(logger);
+        await TestApplicationExtensions.WaitForUiAsync();
+        logger.Reset();
+
+        // A raw thread keeps the burst off the dispatcher thread; Task.Run can be inlined
+        // into a blocked pool-backed dispatcher thread, turning the burst into inline reconciles.
+        var burst = new Thread(() =>
+        {
+            for (var index = 0; index < 50; index++)
+            {
+                workspace.AddResourceConfigForTest(new FakeResourceConfig(
+                    typeof(TestPermissionResourceAlpha),
+                    "Alpha Permission Resource"));
+            }
+        });
+        burst.Start();
+        burst.Join();
+
+        await TestApplicationExtensions.WaitForUiAsync();
+
+        logger.ReconciliationCount.ShouldBe(1);
+        var clusterNode = vm.Clusters.Single(node => node.Cluster == workspace);
         FindResourceLink(clusterNode, "Alpha Permission Resource").ShouldNotBeNull();
     }
 
@@ -1594,7 +1775,13 @@ public class NavigationViewModelTests
         await TestApplicationExtensions.WaitForUiAsync();
 
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
-        clusterNode.NavigationItems.Last().Name.ShouldBe("Custom Resource Definitions");
+        var customResources = clusterNode.NavigationItems.Single(x => x.Name == "Custom Resource Definitions");
+        // Provider sections such as Helm are declared after the custom resources section, so
+        // custom resources must sort after the built-in resource sections, not be the last root item.
+        clusterNode.NavigationItems
+            .Where(x => x.Name != "Custom Resource Definitions" && x.Name != "Helm")
+            .ShouldAllBe(x => x.Order < customResources.Order);
+        clusterNode.NavigationItems.ShouldContain(x => x.Name == "Helm");
     }
 
     [AvaloniaFact]
@@ -1650,7 +1837,7 @@ public class NavigationViewModelTests
         rootNames.ShouldContain("kubeui.com");
 
         var definitionsLink = crdRoot.NavigationItems
-            .OfType<ResourceNavigationLink>()
+            .OfType<NavigationLink>()
             .Single(x => x.ResourceKind == GroupApiVersionKind.From<V1CustomResourceDefinition>());
 
         definitionsLink.Name.ShouldBe("Definitions");
@@ -1664,7 +1851,7 @@ public class NavigationViewModelTests
             .Single(x => x.Name == "alpha.kubeui.com");
 
         alphaGroup.NavigationItems
-            .OfType<ResourceNavigationLink>()
+            .OfType<NavigationLink>()
             .Single()
             .ResourceKind
             .ShouldBe(GroupApiVersionKind.From<TestCustomResourceAlpha>());
@@ -1678,13 +1865,13 @@ public class NavigationViewModelTests
             .Single(x => x.Name == "mygroup.test.kubeui.com");
 
         nestedGroup.NavigationItems
-            .OfType<ResourceNavigationLink>()
+            .OfType<NavigationLink>()
             .Single()
             .ResourceKind
             .ShouldBe(GroupApiVersionKind.From<TestCustomResourceNested>());
 
         clusterNode.NavigationItems
-            .OfType<ResourceNavigationLink>()
+            .OfType<NavigationLink>()
             .Any(x => x.ResourceKind == GroupApiVersionKind.From<TestCustomResourceAlpha>())
             .ShouldBeFalse();
     }
@@ -1730,7 +1917,7 @@ public class NavigationViewModelTests
 
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
         var resourceLink = clusterNode.NavigationItems
-            .OfType<ResourceNavigationLink>()
+            .OfType<NavigationLink>()
             .FirstOrDefault(x => x.ResourceKind == GroupApiVersionKind.From<V1Namespace>());
 
         resourceLink.ShouldNotBeNull();
@@ -1738,11 +1925,11 @@ public class NavigationViewModelTests
 
         workspace.AddResourceConfigForTest(new FakeCustomResourceConfig(typeof(TestCustomResourceAlpha), "Alpha Resources"));
         await WaitForAsync(() => clusterNode.NavigationItems
-            .OfType<ResourceNavigationLink>()
+            .OfType<NavigationLink>()
             .Any(x => x.ResourceKind == GroupApiVersionKind.From<V1Namespace>() && x.Count is not null));
 
         var rebuiltResourceLink = clusterNode.NavigationItems
-            .OfType<ResourceNavigationLink>()
+            .OfType<NavigationLink>()
             .FirstOrDefault(x => x.ResourceKind == GroupApiVersionKind.From<V1Namespace>());
 
         rebuiltResourceLink.ShouldNotBeNull();
@@ -1846,10 +2033,7 @@ public class NavigationViewModelTests
         var workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
 
         await workspace.Connect();
-        await workspace.Runtime.AddOrUpdateResource(new V1Namespace
-        {
-            Metadata = new() { Name = "default" }
-        });
+        await workspace.Runtime.SeedResource<V1Namespace>(true);
 
         await TestApplicationExtensions.WaitForUiAsync();
 
@@ -1877,10 +2061,7 @@ public class NavigationViewModelTests
         var workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
 
         await workspace.Connect();
-        await workspace.Runtime.AddOrUpdateResource(new V1Namespace
-        {
-            Metadata = new() { Name = "default" }
-        });
+        await workspace.Runtime.SeedResource<V1Namespace>(true);
 
         await TestApplicationExtensions.WaitForUiAsync();
 
@@ -1902,7 +2083,11 @@ public class NavigationViewModelTests
             {
                 Name = "pod-one",
                 NamespaceProperty = "default"
-            }
+            },
+            Spec = new V1PodSpec
+            {
+                Containers = [new V1Container { Name = "app", Image = "busybox:1.36" }],
+            },
         });
 
         await vm.TreeViewSelectionChangedAsync(podsLink);
@@ -1917,7 +2102,7 @@ public class NavigationViewModelTests
         var services = Application.Current.GetTestServices();
         var workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         await workspace.Connect();
-        await workspace.Runtime.AddOrUpdateResource(new V1Namespace { Metadata = new() { Name = "default" } });
+        await workspace.Runtime.SeedResource<V1Namespace>(true);
 
         var navigation = CreateViewModel();
         navigation.ClusterCatalog.Clusters.Add(workspace);
@@ -2151,12 +2336,13 @@ public class NavigationViewModelTests
         var workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         await workspace.Connect();
         var config = new FakeResourceConfig(typeof(Corev1Event), "Events");
-        var node = new ClusterNavigationNode(workspace);
+        workspace.AddResourceConfigForTest(config);
+        using var node = new ClusterNavigationNode(workspace);
 
-        var current = new ResourceNavigationLink
+        var current = new NavigationLink
         {
             Cluster = workspace,
-            Id = $"{workspace.Runtime.Name}-{GroupApiVersionKind.From<Corev1Event>()}",
+            Id = GetCanonicalLinkId(workspace, GroupApiVersionKind.From<Corev1Event>()),
             Name = "Events",
             ResourceKind = GroupApiVersionKind.From<Corev1Event>(),
             Order = 1,
@@ -2167,18 +2353,16 @@ public class NavigationViewModelTests
         node.NavigationItems.Add(current);
 
         var originalCount = current.Count;
-        var synchronizer = new NavigationResourceSynchronizer(
+        var builder = new NavigationTreeBuilder(
+            new NavigationSectionCatalog([]),
             services.GetRequiredService<IResourceIconService>(),
             openCommand: null,
             openInNewTabCommand: null,
-            services.GetRequiredService<ILogger<NavigationResourceSynchronizer>>());
-        synchronizer.Apply(
-            workspace,
-            config,
-            [config],
-            new Dictionary<ClusterWorkspace, ClusterNavigationNode> { [workspace] = node });
+            NullLogger.Instance);
+        builder.Reconcile(node);
 
-        node.NavigationItems.OfType<ResourceNavigationLink>().Single().ShouldBeSameAs(current);
+        node.NavigationItems.OfType<NavigationLink>()
+            .Single(item => item.ResourceKind == GroupApiVersionKind.From<Corev1Event>()).ShouldBeSameAs(current);
         current.Count.ShouldBeSameAs(originalCount);
 
         var count = await WaitForCountAsync(current.Count, timeoutMs: 1000);
@@ -2250,10 +2434,7 @@ public class NavigationViewModelTests
         var workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
 
         await workspace.Connect();
-        await workspace.Runtime.AddOrUpdateResource(new V1Namespace
-        {
-            Metadata = new() { Name = "default" }
-        });
+        await workspace.Runtime.SeedResource<V1Namespace>(true);
 
         await TestApplicationExtensions.WaitForUiAsync();
 
@@ -2263,16 +2444,16 @@ public class NavigationViewModelTests
 
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
         var namespaceLink = clusterNode.NavigationItems
-            .OfType<ResourceNavigationLink>()
+            .OfType<NavigationLink>()
             .Single(x => x.ResourceKind == GroupApiVersionKind.From<V1Namespace>());
 
         workspace.AddResourceConfigForTest(new FakeCustomResourceConfig(typeof(TestCustomResourceAlpha), "Alpha Resources"));
         await WaitForAsync(() => clusterNode.NavigationItems
-            .OfType<ResourceNavigationLink>()
+            .OfType<NavigationLink>()
             .Any(x => x.ResourceKind == GroupApiVersionKind.From<V1Namespace>()));
 
         var rebuiltNamespaceLink = clusterNode.NavigationItems
-            .OfType<ResourceNavigationLink>()
+            .OfType<NavigationLink>()
             .Single(x => x.ResourceKind == GroupApiVersionKind.From<V1Namespace>());
 
         ReferenceEquals(namespaceLink, rebuiltNamespaceLink).ShouldBeTrue();
@@ -2286,10 +2467,7 @@ public class NavigationViewModelTests
         var workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         await workspace.Connect();
 
-        await workspace.Runtime.AddOrUpdateResource(new V1Namespace
-        {
-            Metadata = new() { Name = "default" }
-        });
+        await workspace.Runtime.SeedResource<V1Namespace>(true);
 
         await TestApplicationExtensions.WaitForUiAsync();
 
@@ -2299,7 +2477,7 @@ public class NavigationViewModelTests
 
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
         var namespaceLink = clusterNode.NavigationItems
-            .OfType<ResourceNavigationLink>()
+            .OfType<NavigationLink>()
             .Single(x => x.ResourceKind == GroupApiVersionKind.From<V1Namespace>());
         var initialNamespaceCount = workspace.Runtime.Namespaces.Count;
 
@@ -2314,7 +2492,7 @@ public class NavigationViewModelTests
         await WaitForAsync(() => workspace.Runtime.Namespaces.Count == initialNamespaceCount + 1);
 
         var updatedNamespaceLink = clusterNode.NavigationItems
-            .OfType<ResourceNavigationLink>()
+            .OfType<NavigationLink>()
             .Single(x => x.ResourceKind == GroupApiVersionKind.From<V1Namespace>());
 
         ReferenceEquals(namespaceLink, updatedNamespaceLink).ShouldBeTrue();
@@ -2346,7 +2524,7 @@ public class NavigationViewModelTests
                 .Where(x => x.Name == "Custom Resource Definitions")
                 .SelectMany(x => x.NavigationItems.OfType<NavigationItem>())
                 .Where(x => x.Name == "kubeui.com")
-                .SelectMany(x => x.NavigationItems.OfType<ResourceNavigationLink>())
+                .SelectMany(x => x.NavigationItems.OfType<NavigationLink>())
                 .SingleOrDefault(x => x.Name == "Tests"),
             timeoutMs: 10000);
 
@@ -2415,7 +2593,7 @@ public class NavigationViewModelTests
         var originalRootGroup = rootGroup;
 
         var originalLink = await WaitForValueAsync(
-            () => rootGroup.NavigationItems.OfType<ResourceNavigationLink>().SingleOrDefault(x => x.Name == "Tests"),
+            () => rootGroup.NavigationItems.OfType<NavigationLink>().SingleOrDefault(x => x.Name == "Tests"),
             timeoutMs: 10000);
         originalLink.ShouldNotBeNull();
         var originalCount = originalLink.Count;
@@ -2430,7 +2608,7 @@ public class NavigationViewModelTests
         ReferenceEquals(originalRootGroup, updatedRootGroup).ShouldBeTrue();
 
         var updatedLink = await WaitForValueAsync(
-            () => updatedRootGroup.NavigationItems.OfType<ResourceNavigationLink>().SingleOrDefault(x => x.Name == "Tests"),
+            () => updatedRootGroup.NavigationItems.OfType<NavigationLink>().SingleOrDefault(x => x.Name == "Tests"),
             timeoutMs: 10000);
         updatedLink.ShouldNotBeNull();
         ReferenceEquals(originalLink, updatedLink).ShouldBeTrue();
@@ -2501,7 +2679,13 @@ public class NavigationViewModelTests
 
         await workspace.Connect();
         await TestApplicationExtensions.WaitForUiAsync();
-        workspace.AddResourceConfigForTest(new FakeResourceConfig(typeof(V1CustomResourceDefinition), "Definitions"));
+        workspace.AddResourceConfigForTest(new FakeResourceConfig(typeof(V1CustomResourceDefinition), "Definitions")
+        {
+            Navigation = NavigationPlacement.InSection(
+                NavigationSections.CustomResourcesId,
+                name: "Definitions",
+                order: -1),
+        });
         var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
         await TestApplicationExtensions.WaitForUiAsync();
@@ -2528,21 +2712,56 @@ public class NavigationViewModelTests
 
         await workspace.Runtime.DeleteResource(crd);
 
+        await TestWait.UntilAsync(
+            () => workspace.GetResourceConfigs().All(config => config.Kind != GetCustomResourceKind(crd)),
+            TimeSpan.FromSeconds(10),
+            cancellationToken: TestContext.Current.CancellationToken,
+            beforePoll: () => Dispatcher.UIThread.RunJobs());
         await WaitForAsync(
-            () => !crdRoot.NavigationItems
-                .OfType<NavigationItem>()
-                .Any(x => x.Name == "kubeui.com"),
+            () => FindResourceLink(clusterNode, GetCustomResourceKind(crd)) is null,
             timeoutMs: 10000);
+
+        crdRoot.NavigationItems
+            .Where(item => item is not NavigationLink)
+            .Select(item => item.Name)
+            .ShouldBeEmpty();
 
         var updatedRoot = clusterNode.NavigationItems.Single(x => x.Name == "Custom Resource Definitions");
         ReferenceEquals(originalRoot, updatedRoot).ShouldBeTrue();
         updatedRoot.NavigationItems
-            .OfType<ResourceNavigationLink>()
+            .OfType<NavigationLink>()
             .Single(x => x.ResourceKind == GroupApiVersionKind.From<V1CustomResourceDefinition>());
         updatedRoot.NavigationItems
-            .Where(x => x is not ResourceNavigationLink)
+            .Where(x => x is not NavigationLink)
             .Any()
             .ShouldBeFalse();
+    }
+    private sealed class ReconciliationCountingLogger : ILogger<NavigationViewModel>
+    {
+        private int _reconciliationCount;
+
+        public int ReconciliationCount => Volatile.Read(ref _reconciliationCount);
+
+        public IDisposable? BeginScope<TState>(TState state)
+            where TState : notnull
+            => null;
+
+        public bool IsEnabled(LogLevel logLevel) => true;
+
+        public void Log<TState>(
+            LogLevel logLevel,
+            EventId eventId,
+            TState state,
+            Exception? exception,
+            Func<TState, Exception?, string> formatter)
+        {
+            if (formatter(state, exception).StartsWith("Navigation reconciled for ", StringComparison.Ordinal))
+            {
+                Interlocked.Increment(ref _reconciliationCount);
+            }
+        }
+
+        public void Reset() => Interlocked.Exchange(ref _reconciliationCount, 0);
     }
 }
 
@@ -2649,6 +2868,20 @@ internal class FakeCustomResourceConfig : IResourceConfig
         Type = resourceType;
         Name = name;
         CanListAndWatch = canListAndWatch;
+        var kind = GroupApiVersionKind.From(resourceType);
+        Definition = new V1CustomResourceDefinition
+        {
+            Metadata = new V1ObjectMeta { Name = $"{kind.PluralName}.{kind.Group}" },
+            Spec = new V1CustomResourceDefinitionSpec
+            {
+                Group = kind.Group,
+                Names = new V1CustomResourceDefinitionNames { Kind = kind.Kind, Plural = kind.PluralName },
+                Scope = "Namespaced",
+            }
+        };
+        Navigation = NavigationPlacement.InSection(
+            NavigationSections.CustomResourcesId,
+            NavigationTreeEditor.ConstructCustomResourceGroups(kind.Group));
     }
 
     public ClusterWorkspace? Cluster { get; private set; }
@@ -2656,14 +2889,16 @@ internal class FakeCustomResourceConfig : IResourceConfig
     public bool CanListAndWatch { get; set; }
     public bool PermissionsLoaded { get; set; } = true;
     public bool ShowNewResource => true;
-    public bool IsCustomResource => true;
+    public V1CustomResourceDefinition Definition { get; }
+    public V1CustomResourceDefinition? CustomResourceDefinition => Definition;
+    public ResourceOrigin Origin => ResourceOrigin.CustomResourceDefinition;
     public GroupApiVersionKind Kind => GroupApiVersionKind.From(Type);
+    public NavigationPlacement Navigation { get; set; } = NavigationPlacement.Root;
     public IList<IResourceListColumn> Columns() => Array.Empty<IResourceListColumn>();
     public IEnumerable<MenuItemViewModel> GetDefaultMenuItems(IEnumerable? selectedItems) => Array.Empty<MenuItemViewModel>();
     public IEnumerable<MenuItemViewModel> GetCustomMenuItems(IEnumerable? selectedItems) => Array.Empty<MenuItemViewModel>();
     public int Order { get; set; }
     public string Name { get; }
-    public string? Category { get; set; }
     public Style[] ListStyle() => [];
     public IEnumerable<(Verb verb, string? subresource)> Permissions() => [];
     public Task EvaluateListWatchAccessAsync() => Task.CompletedTask;
@@ -2690,19 +2925,20 @@ internal class FakeResourceConfig : IResourceConfig
         CanListAndWatch = canListAndWatch;
     }
 
+    public NavigationPlacement Navigation { get; set; } = NavigationPlacement.Root;
+
     public ClusterWorkspace? Cluster { get; private set; }
     public bool IsNamespaced => true;
     public bool CanListAndWatch { get; set; }
     public bool PermissionsLoaded { get; set; } = true;
     public bool ShowNewResource => true;
-    public bool IsCustomResource => false;
     public GroupApiVersionKind Kind => GroupApiVersionKind.From(Type);
+    public ResourceOrigin Origin => ResourceOrigin.BuiltIn;
     public IList<IResourceListColumn> Columns() => Array.Empty<IResourceListColumn>();
     public IEnumerable<MenuItemViewModel> GetDefaultMenuItems(IEnumerable? selectedItems) => Array.Empty<MenuItemViewModel>();
     public IEnumerable<MenuItemViewModel> GetCustomMenuItems(IEnumerable? selectedItems) => Array.Empty<MenuItemViewModel>();
     public int Order { get; set; }
     public string Name { get; }
-    public string? Category { get; set; }
     public Style[] ListStyle() => [];
     public IEnumerable<(Verb verb, string? subresource)> Permissions() => [];
     public Task EvaluateListWatchAccessAsync() => Task.CompletedTask;
@@ -2736,14 +2972,14 @@ internal sealed class DeferredPermissionResourceConfig : IResourceConfig
     public bool CanListAndWatch { get; set; }
     public bool PermissionsLoaded { get; set; }
     public bool ShowNewResource => true;
-    public bool IsCustomResource => false;
     public GroupApiVersionKind Kind => GroupApiVersionKind.From(Type);
+    public ResourceOrigin Origin => ResourceOrigin.BuiltIn;
+    public NavigationPlacement Navigation => NavigationPlacement.Root;
     public IList<IResourceListColumn> Columns() => Array.Empty<IResourceListColumn>();
     public IEnumerable<MenuItemViewModel> GetDefaultMenuItems(IEnumerable? selectedItems) => Array.Empty<MenuItemViewModel>();
     public IEnumerable<MenuItemViewModel> GetCustomMenuItems(IEnumerable? selectedItems) => Array.Empty<MenuItemViewModel>();
     public int Order { get; set; }
     public string Name { get; }
-    public string? Category => null;
     public Style[] ListStyle() => [];
     public IEnumerable<(Verb verb, string? subresource)> Permissions() => [];
     public Type Type { get; }
@@ -2809,14 +3045,14 @@ internal sealed class SlowPermissionResourceConfig : IResourceConfig
     public bool CanListAndWatch { get; set; }
     public bool PermissionsLoaded { get; set; }
     public bool ShowNewResource => true;
-    public bool IsCustomResource => false;
     public GroupApiVersionKind Kind => GroupApiVersionKind.From(Type);
+    public ResourceOrigin Origin => ResourceOrigin.BuiltIn;
+    public NavigationPlacement Navigation => NavigationPlacement.Root;
     public IList<IResourceListColumn> Columns() => Array.Empty<IResourceListColumn>();
     public IEnumerable<MenuItemViewModel> GetDefaultMenuItems(IEnumerable? selectedItems) => Array.Empty<MenuItemViewModel>();
     public IEnumerable<MenuItemViewModel> GetCustomMenuItems(IEnumerable? selectedItems) => Array.Empty<MenuItemViewModel>();
     public int Order { get; set; }
     public string Name { get; }
-    public string? Category => null;
     public Style[] ListStyle() => [];
     public IEnumerable<(Verb verb, string? subresource)> Permissions() => [];
     public Type Type { get; }

@@ -32,6 +32,48 @@ namespace KubeUI.Avalonia.Tests.Features.Resources.Yaml;
 
 public class ResourceYamlViewModelTests
 {
+    [AvaloniaFact]
+    public async Task Readonly_yaml_snapshot_replaces_resource_state_and_can_be_reinitialized()
+    {
+        using var cluster = await Application.Current.CreateClusterAsync(connect: false);
+        using var viewModel = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
+        var resource = new V1Pod
+        {
+            ApiVersion = "v1",
+            Kind = "Pod",
+            Metadata = new V1ObjectMeta { Name = "resource", NamespaceProperty = "default" }
+        };
+        viewModel.Initialize(cluster, resource);
+        viewModel.EditMode = true;
+
+        viewModel.InitializeReadOnly("Values", "values-id", "enabled: true\n");
+
+        viewModel.Cluster.ShouldBeNull();
+        viewModel.Object.ShouldBeNull();
+        viewModel.EditMode.ShouldBeFalse();
+        viewModel.IsReadOnlyLocked.ShouldBeTrue();
+        viewModel.YamlDocument.Text.ShouldBe("enabled: true\n");
+        viewModel.ValidationDiagnostics.ShouldBeEmpty();
+        viewModel.YamlDocument = new TextDocument("replicas: 2\n");
+        viewModel.ValidationDiagnostics.ShouldBeEmpty();
+        viewModel.InitializeReadOnly("Values updated", "values-id", "replicas: 3\n");
+        viewModel.YamlDocument.Text.ShouldBe("replicas: 3\n");
+
+        viewModel.Initialize(cluster, resource);
+        viewModel.IsReadOnlyLocked.ShouldBeFalse();
+        viewModel.YamlDocument.Text.ShouldContain("kind: Pod");
+        viewModel.Title.ShouldBe(Assets.Resources.ResourceYamlView_Title);
+    }
+
+    [AvaloniaFact]
+    public void Readonly_yaml_initialization_rejects_invalid_arguments()
+    {
+        using var viewModel = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
+        Should.Throw<ArgumentException>(() => viewModel.InitializeReadOnly(" ", "id", ""));
+        Should.Throw<ArgumentException>(() => viewModel.InitializeReadOnly("Values", " ", ""));
+        Should.Throw<ArgumentNullException>(() => viewModel.InitializeReadOnly("Values", "id", null!));
+    }
+
     private static async Task WaitForValidationDebounceAsync(Func<bool>? predicate = null, int timeoutMs = 2500)
     {
         var sw = System.Diagnostics.Stopwatch.StartNew();
@@ -3230,30 +3272,38 @@ public class ResourceYamlViewModelTests
     }
 
     [AvaloniaFact]
+    public void YamlSyntaxValidationService_AcceptsCalicoContainerIdAnnotation()
+    {
+        var service = Application.Current.GetRequiredTestService<IYamlValidationService>();
+
+        var diagnostics = service.Validate("""
+            apiVersion: v1
+            kind: Pod
+            metadata:
+              annotations:
+                cni.projectcalico.org/containerID: 1f38475382e1f66aff44a9cf15ab057b7303637def73b0b20423aaedd97f3886
+            """.ReplaceLineEndings("\n"));
+
+        diagnostics.ShouldBeEmpty();
+    }
+
+    [AvaloniaFact]
     public void YamlSyntaxValidationService_AnchorsDuplicateKeyDiagnostic_ToDuplicateKey()
     {
         var service = Application.Current.GetRequiredTestService<IYamlValidationService>();
 
         var diagnostics = service.Validate("""
-            apiVersion: azure.upbound.io/v1beta1
-            kind: ResourceGroup
+            apiVersion: v1
+            kind: Pod
             metadata:
               name: temp
-              namespace: default
-            spec:
-              forProvider:
-                location: test
-                managedBy: tes
-                tags:
-                  test: val
-                  test: 2
-                  test: 4
+              name: other
             """.ReplaceLineEndings("\n"));
 
         diagnostics.Count.ShouldBe(1);
-        diagnostics[0].Message.ShouldContain("duplicate key test");
-        diagnostics[0].StartLine.ShouldBe(12);
-        diagnostics[0].StartColumn.ShouldBe(7);
+        diagnostics[0].Message.ShouldContain("duplicate key name");
+        diagnostics[0].StartLine.ShouldBe(5);
+        diagnostics[0].StartColumn.ShouldBe(3);
     }
 
     [AvaloniaFact]

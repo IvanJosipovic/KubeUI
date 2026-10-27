@@ -26,7 +26,7 @@ public sealed class MainWindow : Window
                 .Padding(this, x => x.WindowDecorationMargin);
         }
 
-        if (Design.IsDesignMode)
+        if (DesignTimePreview.IsDesignMode)
         {
             DataContext = DesignTimePreview.Get<MainViewModel>();
         }

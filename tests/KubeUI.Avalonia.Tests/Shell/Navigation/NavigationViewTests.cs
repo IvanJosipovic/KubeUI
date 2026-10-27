@@ -74,17 +74,11 @@ public sealed class NavigationViewTests
     {
         var culture = CultureInfo.InvariantCulture;
         var geometry = new StringToGeometryConverter();
-        var svg = new StringToSvgImageConverter();
 
         geometry.Convert("M 0,0 L 1,1", typeof(object), null, culture).ShouldNotBeNull();
         geometry.Convert(string.Empty, typeof(object), null, culture).ShouldBeNull();
         geometry.Convert(42, typeof(object), null, culture).ShouldBeNull();
         geometry.ConvertBack(null, typeof(object), null, culture).ShouldBe(BindingOperations.DoNothing);
-
-        svg.Convert("/Assets/kube/blank.svg", typeof(object), null, culture).ShouldNotBeNull();
-        svg.Convert(" ", typeof(object), null, culture).ShouldBeNull();
-        svg.Convert(42, typeof(object), null, culture).ShouldBeNull();
-        svg.ConvertBack(null, typeof(object), null, culture).ShouldBe(BindingOperations.DoNothing);
     }
 
     [AvaloniaFact]
@@ -95,7 +89,7 @@ public sealed class NavigationViewTests
         var workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         using var navigation = services.GetRequiredService<NavigationViewModel>();
         var clusterNode = new ClusterNavigationNode(workspace) { IsExpanded = true };
-        var podsLink = new ResourceNavigationLink
+        var podsLink = new NavigationLink
         {
             Cluster = workspace,
             Id = "test-pods",
@@ -155,9 +149,10 @@ public sealed class NavigationViewTests
         ReferenceEquals(tree.SelectedItem, section).ShouldBeTrue();
 
         ClickNavigationItem(window, treeItem, section.Name);
-        sectionSelections.ShouldBe(2);
+        sectionSelections.ShouldBe(1);
         section.IsExpanded.ShouldBeFalse();
         treeItem.IsExpanded.ShouldBeFalse();
+        ReferenceEquals(tree.SelectedItem, section).ShouldBeTrue();
 
         var expander = treeItem.GetVisualDescendants().OfType<ToggleButton>()
             .First(toggle => ReferenceEquals(toggle.DataContext, section));
@@ -359,7 +354,7 @@ public sealed class NavigationViewTests
         var workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         using var navigation = services.GetRequiredService<NavigationViewModel>();
         var clusterNode = navigation.Clusters.Single(node => node.Cluster == workspace);
-        var podsLink = new ResourceNavigationLink
+        var podsLink = new NavigationLink
         {
             Id = "test-pods",
             Name = "Pods",
@@ -422,7 +417,7 @@ public sealed class NavigationViewTests
 
         var clusterNode = navigation.Clusters.Single(node => ReferenceEquals(node.Cluster, workspace));
         clusterNode.IsExpanded = true;
-        var podsLink = new ResourceNavigationLink
+        var podsLink = new NavigationLink
         {
             Id = "test-pods",
             Name = "Pods",

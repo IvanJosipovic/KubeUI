@@ -2,16 +2,16 @@ using k8s.Models;
 
 namespace KubeUI.Avalonia.Resources.AccessControl.v1.ClusterRole;
 
-public sealed partial class V1ClusterRoleConfig : ResourceConfigBase<V1ClusterRole>
+public sealed partial class V1ClusterRoleConfig : ResourceConfig<V1ClusterRole>
 {
     public V1ClusterRoleConfig(IServiceProvider serviceProvider)
         : base(serviceProvider)
     {
     }
 
-    public override string Category => Assets.Resources.ResourceConfig_Category_AccessControl!;
+    public override NavigationPlacement Navigation => NavigationPlacement.InSection(NavigationSections.AccessControlId);
     public override int Order => 1;
-    public override IList<IResourceListColumn> Columns()
+    protected override IList<IResourceListColumn> CreateDefaultColumns()
     {
         return [
             NameColumn(SortDirection.Ascending),
