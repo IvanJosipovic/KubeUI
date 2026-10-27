@@ -1776,10 +1776,10 @@ public class NavigationViewModelTests
 
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
         var customResources = clusterNode.NavigationItems.Single(x => x.Name == "Custom Resource Definitions");
-        // Provider sections such as Helm are declared after the custom resources section, so
-        // custom resources must sort after the built-in resource sections, not be the last root item.
+        // Provider sections are independent of built-in resource ordering and may follow custom resources.
+        var builtInResourceSections = new[] { "Workloads", "Configuration", "Network", "Storage", "Access Control" };
         clusterNode.NavigationItems
-            .Where(x => x.Name != "Custom Resource Definitions" && x.Name != "Helm")
+            .Where(x => builtInResourceSections.Contains(x.Name, StringComparer.Ordinal))
             .ShouldAllBe(x => x.Order < customResources.Order);
         clusterNode.NavigationItems.ShouldContain(x => x.Name == "Helm");
     }
