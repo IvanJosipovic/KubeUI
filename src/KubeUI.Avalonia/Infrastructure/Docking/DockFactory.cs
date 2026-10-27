@@ -281,33 +281,4 @@ public class DockFactory : Factory
         SetActiveDockable(dockable);
         SetFocusedDockable(_documentDock, dockable);
     }
-
-    public override void SplitToDock(IDock dock, IDockable dockable, DockOperation operation)
-    {
-        try
-        {
-            var orgProportion = dockable.Proportion;
-
-            base.SplitToDock(dock, dockable, operation);
-
-            //Fixes proportion of dockable when splitting
-            if (dock.Owner is ProportionalDock)
-            {
-                if (orgProportion == 1 || double.IsNaN(orgProportion))
-                {
-                    dockable.Proportion = 0.5;
-                    dock.Proportion = 0.5;
-                }
-                else
-                {
-                    dock.Proportion = 1 - orgProportion;
-                    dockable.Proportion = orgProportion;
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error splitting dockable");
-        }
-    }
 }
