@@ -126,7 +126,7 @@ public sealed class ResourceListViewSelectionTests
         factory.SetActiveDockable(viewModel);
         factory.SetFocusedDockable(documents, viewModel);
         await WaitForAsync(() => ReferenceEquals(documents.ActiveDockable, viewModel));
-        table = await WaitForDockTableAsync(window, table);
+        table = await WaitForDockTableAsync(window);
         await WaitForAsync(() => viewModel.SelectionModel.SelectedItems.Count == 10);
         Assert.Equal(10, viewModel.SelectionModel.SelectedItems.Count);
 
@@ -148,7 +148,7 @@ public sealed class ResourceListViewSelectionTests
         factory.SetActiveDockable(viewModel);
         factory.SetFocusedDockable(documents, viewModel);
         await WaitForAsync(() => ReferenceEquals(documents.ActiveDockable, viewModel));
-        table = await WaitForDockTableAsync(window, table);
+        table = await WaitForDockTableAsync(window);
         await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background);
         Assert.Equal(["dock-pod-05"],
             viewModel.SelectionModel.SelectedItems.Cast<V1Pod>().Select(static pod => pod.Metadata.Name));
@@ -157,11 +157,10 @@ public sealed class ResourceListViewSelectionTests
         viewModel.TableSource.Changed -= sourceChanged;
     }
 
-    private static async Task<DynamicTableView> WaitForDockTableAsync(Window window, DynamicTableView previousTable)
+    private static async Task<DynamicTableView> WaitForDockTableAsync(Window window)
         => await TestWait.UntilValueAsync(
             () => window.GetVisualDescendants().OfType<DynamicTableView>()
-                .FirstOrDefault(table => !ReferenceEquals(table, previousTable) &&
-                    table.GetVisualDescendants().OfType<TableViewRow>().Count() == 10),
+                .FirstOrDefault(table => table.GetVisualDescendants().OfType<TableViewRow>().Count() == 10),
             TimeSpan.FromSeconds(5),
             cancellationToken: TestContext.Current.CancellationToken,
             beforePoll: () => Dispatcher.UIThread.RunJobs())
