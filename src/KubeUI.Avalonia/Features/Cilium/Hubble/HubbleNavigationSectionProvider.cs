@@ -62,7 +62,19 @@ internal sealed class HubbleNavigationSectionProvider : INavigationSectionProvid
 
     public IReadOnlyList<NavigationDocument> Documents { get; }
 
-    public NavigationPlacement? Place(IResourceConfig resource) => null;
+    public NavigationPlacement? Place(IResourceConfig resource)
+    {
+        var group = resource.Kind.Group ?? string.Empty;
+        if (!string.Equals(group, "cilium.io", StringComparison.Ordinal)
+            && !group.EndsWith(".cilium.io", StringComparison.Ordinal))
+        {
+            return null;
+        }
+
+        return NavigationPlacement.InSection(
+            Section.Id,
+            NavigationTreeEditor.ConstructCustomResourceGroups(group));
+    }
 
     private static bool IsAvailable(ClusterWorkspace cluster)
         => cluster.Runtime.Connected;

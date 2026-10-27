@@ -7,6 +7,7 @@
 - Resolve Hubble connections through `IHubbleConnectionFactory`; do not construct transport from a view or view model.
 - Treat each Hubble document as the owner of its connection and subscriptions. Cancel initialization and dispose subscriptions and connections when the document closes.
 - Keep Hubble documents under the Cilium navigation section, nested in the Hubble group.
+- Place CRDs whose API group is exactly `cilium.io` or ends in `.cilium.io` in the Cilium section, preserving their group hierarchy; do not match lookalike suffixes without the dot boundary.
 
 ## Flow and graph behavior
 

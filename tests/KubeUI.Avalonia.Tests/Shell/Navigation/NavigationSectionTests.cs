@@ -453,9 +453,41 @@ public sealed class NavigationSectionTests
             {
                 return nested;
             }
+
         }
 
         return null;
+    }
+
+    [Theory]
+    [InlineData("cilium.io", true)]
+    [InlineData("api.cilium.io", true)]
+    [InlineData("policy.api.cilium.io", true)]
+    [InlineData("cilium.io.example", false)]
+    [InlineData("notcilium.io", false)]
+    [InlineData("Cilium.io", false)]
+    public void cilium_section_matches_exact_group_and_dot_boundary_subgroups(string group, bool expected)
+    {
+        var provider = new HubbleNavigationSectionProvider();
+
+        var placement = provider.Place(CreateResourceConfig(group));
+
+        (placement is not null).ShouldBe(expected);
+        if (expected)
+        {
+            placement!.SectionId.ShouldBe(NavigationSections.CiliumId);
+        }
+    }
+
+    [Fact]
+    public void cilium_section_preserves_custom_resource_group_hierarchy()
+    {
+        var provider = new HubbleNavigationSectionProvider();
+
+        var placement = provider.Place(CreateResourceConfig("policy.api.cilium.io"));
+
+        placement.ShouldNotBeNull().Groups.Select(group => group.Name).ShouldBe(
+            ["cilium.io", "api.cilium.io", "policy.api.cilium.io"]);
     }
 
     private static IEnumerable<NavigationLink> GetResourceLinks(NavigationItem root)
