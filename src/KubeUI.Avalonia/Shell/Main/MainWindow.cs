@@ -1,18 +1,30 @@
-using System.Linq.Expressions;
-using System.Windows.Input;
+using Avalonia.Markup.Xaml.MarkupExtensions;
 using Avalonia.Platform;
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
+using KubeUI.Avalonia.Styles;
 
 namespace KubeUI.Avalonia.Shell.Main;
 
 public sealed class MainWindow : Window
 {
-    public MainWindow()
+    public MainWindow() : this(OperatingSystem.IsMacOS())
     {
-        Title = Assets.Resources.MainWindow_Title;
-        Icon = new WindowIcon(AssetLoader.Open(new Uri("avares://KubeUI.Avalonia/Assets/icon.ico")));
-        UseLayoutRounding = true;
-        Content = new MainView();
+    }
+
+    internal MainWindow(bool useNativeChrome)
+    {
+        UseNativeChrome = useNativeChrome;
+        this.Title(Assets.Resources.MainWindow_Title)
+            .Icon(new WindowIcon(AssetLoader.Open(new Uri("avares://KubeUI.Avalonia/Assets/icon.ico"))))
+            .UseLayoutRounding(true)
+            .FontSize(new DynamicResourceExtension(Typography.AppFontSizeResourceKey))
+            .MinWidth(360)
+            .Content(new MainView());
+        if (!useNativeChrome)
+        {
+            this.ExtendClientAreaToDecorationsHint(true)
+                .Padding(this, x => x.WindowDecorationMargin);
+        }
 
         if (DesignTimePreview.IsDesignMode)
         {
@@ -22,6 +34,8 @@ public sealed class MainWindow : Window
         UpdateMenu();
     }
 
+    internal bool UseNativeChrome { get; }
+
     protected override void OnDataContextChanged(EventArgs e)
     {
         base.OnDataContextChanged(e);
@@ -29,60 +43,23 @@ public sealed class MainWindow : Window
     }
 
     /// <summary>
-    /// Attaches the single application menu to this window. macOS turns it into the system menu bar;
-    /// every other platform presents the same menu in-window through <see cref="MainView"/>'s <see cref="NativeMenuBar"/>.
+    /// Attaches the shared application menu to this window. macOS presents it as the system menu;
+    /// managed decorations present the same actions through their Options flyout.
     /// </summary>
     private void UpdateMenu()
     {
-        if (DataContext is MainViewModel vm)
+        NativeMenu.SetMenu(this, DataContext is MainViewModel menuViewModel
+            ? MainMenu.CreateNativeMenu(menuViewModel)
+            : null);
+
+        if (UseNativeChrome)
         {
-            NativeMenu.SetMenu(this, CreateMenu(vm));
+            WindowDecorationsTheme = null;
+            return;
         }
-    }
 
-    private static NativeMenu CreateMenu(MainViewModel vm)
-    {
-        return [
-            CreateFileMenu(vm),
-            CreateWindowMenu(vm),
-            CreateHelpMenu(vm)
-        ];
-    }
-
-    private static NativeMenuItem CreateFileMenu(MainViewModel vm)
-    {
-        return new NativeMenuItem(Assets.Resources.MainView_Menu_File!)
-            .Menu([
-                CreateCommandItem(vm, Assets.Resources.MainView_Menu_File_LoadKubeConfig!, x => x.LoadKubeConfigCommand),
-                CreateCommandItem(vm, Assets.Resources.MainView_Menu_File_ImportAksCluster!, x => x.ImportAksClusterCommand),
-                CreateCommandItem(vm, Assets.Resources.MainView_Menu_File_Clusters!, x => x.OpenClustersCommand),
-                CreateCommandItem(vm, Assets.Resources.MainView_Menu_File_Settings!, x => x.OpenSettingsCommand),
-                new NativeMenuItemSeparator(),
-                CreateCommandItem(vm, Assets.Resources.MainView_Menu_File_Exit!, x => x.CloseCommand)
-            ]);
-    }
-
-    private static NativeMenuItem CreateWindowMenu(MainViewModel vm)
-    {
-        return new NativeMenuItem(Assets.Resources.MainView_Menu_Window!)
-            .Menu([
-                CreateCommandItem(vm, Assets.Resources.MainView_Menu_Window_ResetLayout!, x => x.ResetLayoutCommand),
-                CreateCommandItem(vm, Assets.Resources.MainView_Menu_Window_SwitchTheme!, x => x.SwitchThemeCommand)
-            ]);
-    }
-
-    private static NativeMenuItem CreateHelpMenu(MainViewModel vm)
-    {
-        return new NativeMenuItem(Assets.Resources.MainView_Menu_Help!)
-            .Menu([
-                CreateCommandItem(vm, Assets.Resources.MainView_Menu_Help_CheckForUpdates!, x => x.CheckForUpdatesCommand),
-                CreateCommandItem(vm, Assets.Resources.MainView_Menu_Help_About!, x => x.OpenAboutCommand)
-            ]);
-    }
-
-    private static NativeMenuItem CreateCommandItem(MainViewModel vm, string header, Expression<Func<MainViewModel, ICommand>> command)
-    {
-        return new NativeMenuItem(header)
-            .Command(vm, command);
+        WindowDecorationsTheme = DataContext is MainViewModel viewModel
+            ? MainWindowDecorations.CreateTheme(this, viewModel)
+            : null;
     }
 }

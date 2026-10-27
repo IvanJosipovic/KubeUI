@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <DebugType>embedded</DebugType>
@@ -37,7 +37,7 @@
     <PackageReference Include="Microsoft.Extensions.Http.Resilience" Version="10.11.0" />
     <PackageReference Include="Microsoft.OpenApi" Version="3.11.0" />
     <PackageReference Include="Swordfish.NET.CollectionsV3" Version="3.3.16" />
-    <PackageReference Include="YamlDotNet.System.Text.Json" Version="1.11.1" />
+    <PackageReference Include="YamlDotNet.System.Text.Json" Version="1.11.2" />
     <PackageReference Include="Vecc.YamlDotNet.Analyzers.StaticGenerator" Version="18.1.0" PrivateAssets="all" />
   </ItemGroup>
 </Project>

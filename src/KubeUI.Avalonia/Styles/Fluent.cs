@@ -1,6 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using Avalonia.Controls.Documents;
+using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Shapes;
 using Avalonia.Controls.Templates;
 using Avalonia.Markup.Xaml.MarkupExtensions;
@@ -60,7 +61,7 @@ public sealed class Fluent : AvaloniaStyles
             .Setter(DocumentControl.HeaderTemplateProperty, new FuncDataTemplate<IDockable>((dockable, _) => CreateDocumentHeader(dockable!), false)));
 
         Add(new Style<MultiComboBoxItem>()
-            .Setter(global::Avalonia.Controls.Primitives.TemplatedControl.PaddingProperty, new Thickness(4, 2, 4, 2))
+            .Setter(TemplatedControl.PaddingProperty, new Thickness(4, 2, 4, 2))
             .Setter(Layoutable.WidthProperty, 200d)
             .Setter(Layoutable.MinHeightProperty, 22d));
 
@@ -164,6 +165,10 @@ public sealed class Fluent : AvaloniaStyles
         };
 
         styles.Add(new Style<Control>()
+            .Setter(TextElement.FontFamilyProperty, new DynamicResourceExtension(Typography.AppFontFamilyResourceKey))
+            .Setter(TextElement.FontSizeProperty, new DynamicResourceExtension(Typography.AppFontSizeResourceKey)));
+
+        styles.Add(new Style<MenuItem>()
             .Setter(TextElement.FontFamilyProperty, new DynamicResourceExtension(Typography.AppFontFamilyResourceKey))
             .Setter(TextElement.FontSizeProperty, new DynamicResourceExtension(Typography.AppFontSizeResourceKey)));
 
