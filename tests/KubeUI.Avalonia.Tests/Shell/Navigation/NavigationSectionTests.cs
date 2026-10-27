@@ -62,17 +62,9 @@ public sealed class NavigationSectionTests
     }
 
     [AvaloniaFact]
-    public async Task hubble_documents_are_nested_under_cilium_and_hubble()
+    public async Task hubble_documents_remain_visible_while_cilium_detection_is_pending()
     {
-        using var workspace = await Application.Current.CreateClusterAsync(
-            config => config.Resources =
-            [
-                new V1CustomResourceDefinition
-                {
-                    Metadata = new V1ObjectMeta { Name = "ciliumnetworkpolicies.cilium.io" }
-                }
-            ],
-            connect: false);
+        using var workspace = await Application.Current.CreateClusterAsync(connect: false);
         await workspace.Connect();
 
         using var node = new ClusterNavigationNode(workspace);

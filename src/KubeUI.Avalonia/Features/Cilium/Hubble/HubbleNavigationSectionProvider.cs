@@ -2,7 +2,6 @@ using KubeUI.Avalonia.Features.Cilium.Hubble;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Resources;
 using KubeUI.Avalonia.Shell.Navigation;
-using KubeUI.Cilium;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace KubeUI.Avalonia.Features.Cilium.Hubble;
@@ -60,5 +59,5 @@ internal sealed class HubbleNavigationSectionProvider : INavigationSectionProvid
     public NavigationPlacement? Place(IResourceConfig resource) => null;
 
     private static bool IsAvailable(ClusterWorkspace cluster)
-        => cluster.Runtime.Connected && cluster.Runtime.IsCiliumInstalled();
+        => cluster.Runtime.Connected;
 }

@@ -5,13 +5,17 @@ namespace KubeUI.Cilium;
 
 public static class CiliumClusterExtensions
 {
-    public static async Task<bool> IsCiliumInstalledAsync(this IClusterRuntime cluster, CancellationToken _ = default)
+    public static async Task<bool> IsCiliumInstalledAsync(this IClusterRuntime cluster, CancellationToken cancellationToken = default)
     {
         try
         {
-            // Check for Cilium CRDs
-            var crds = cluster.GetResourceList<V1CustomResourceDefinition>();
-            return crds.Any(crd => crd.Name()?.StartsWith("cilium", StringComparison.OrdinalIgnoreCase) == true);
+            await cluster.SeedResource<V1CustomResourceDefinition>(waitForReady: true, cancellationToken)
+                .ConfigureAwait(false);
+            return HasCiliumCustomResourceDefinition(cluster.GetResourceList<V1CustomResourceDefinition>());
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
         }
         catch
         {
@@ -23,12 +27,14 @@ public static class CiliumClusterExtensions
     {
         try
         {
-            var crds = cluster.GetResourceList<V1CustomResourceDefinition>();
-            return crds.Any(crd => crd.Name()?.StartsWith("cilium", StringComparison.OrdinalIgnoreCase) == true);
+            return HasCiliumCustomResourceDefinition(cluster.GetResourceList<V1CustomResourceDefinition>());
         }
         catch
         {
             return false;
         }
     }
+
+    private static bool HasCiliumCustomResourceDefinition(IEnumerable<V1CustomResourceDefinition> crds)
+        => crds.Any(crd => string.Equals(crd.Spec?.Group, "cilium.io", StringComparison.OrdinalIgnoreCase));
 }
