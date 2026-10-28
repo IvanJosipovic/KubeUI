@@ -8,7 +8,8 @@
 - Shell views stay thin.
 - Shared shell helpers should stay in `Shell/` or shared infrastructure, not in cluster or resource features.
 ## Main window chrome
-- Windows and Linux reuse Fluent's drawn-decoration template, center its title, and add an Options button at left. Keep Fluent caption controls and decoration roles intact.
+- Windows and Linux use an app-owned drawn-decoration template, center its title, and add an Options button at left. Reuse Fluent caption-button themes and keep decoration roles intact.
+- The managed title bar uses the shared control-plane SVG in a fixed 16px square so the icon cannot increase the decoration height.
 - Keep File, Window, and Help actions in one shared definition for the Options flyout and native application menu.
 - macOS retains native title-bar controls and its native application menu. Dialogs and floating dock windows retain their existing decorations.
 - Bind client padding to `WindowDecorationMargin` when extending the client area into managed decorations so docking content cannot overlap the frame.

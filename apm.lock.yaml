@@ -37,7 +37,7 @@ dependencies:
 - repo_url: dotnet/skills
   name: dotnet
   host: github.com
-  resolved_commit: cf03b2d2ee17ad2800763108698d869f5b997774
+  resolved_commit: 586f13f8d898a60583a3364f146a3b6f5a763164
   version: 0.2.5
   virtual_path: plugins/dotnet
   is_virtual: true
@@ -128,7 +128,7 @@ dependencies:
 - repo_url: dotnet/skills
   name: dotnet-diag
   host: github.com
-  resolved_commit: cf03b2d2ee17ad2800763108698d869f5b997774
+  resolved_commit: 586f13f8d898a60583a3364f146a3b6f5a763164
   version: 0.1.3
   virtual_path: plugins/dotnet-diag
   is_virtual: true
@@ -293,7 +293,7 @@ dependencies:
 - repo_url: dotnet/skills
   name: dotnet11
   host: github.com
-  resolved_commit: cf03b2d2ee17ad2800763108698d869f5b997774
+  resolved_commit: 586f13f8d898a60583a3364f146a3b6f5a763164
   version: 0.1.2
   virtual_path: plugins/dotnet11
   is_virtual: true
@@ -405,7 +405,7 @@ dependencies:
     .agents/skills/avalonia-12-migration/agents/openai.yaml: sha256:cb3fe93e3486f67d4c4c8dd754cd5c6a089a767ad890f6c74ccc6bc8157db199
     .claude/skills/avalonia-12-migration/SKILL.md: sha256:ab7a1dbd943eed1bb12d436960d28c8dd5c35d1d5ff76ed6716b6a5b9dcf6c64
     .claude/skills/avalonia-12-migration/agents/openai.yaml: sha256:cb3fe93e3486f67d4c4c8dd754cd5c6a089a767ad890f6c74ccc6bc8157db199
-  content_hash: sha256:c542ca0f7d87767cc0a71dd4e4501ebd493375a2c670d693ff58d43b9cc1612e
+  content_hash: sha256:4dfadaaa650bc85801b991b1aacf05d55474aecb993002b3c5cb3d50007079ba
 - repo_url: wieslawsoltes/development-plugin-for-avalonia
   name: avalonia-accessibility-and-validation
   host: github.com
@@ -426,7 +426,7 @@ dependencies:
     .agents/skills/avalonia-accessibility-and-validation/agents/openai.yaml: sha256:422f0535f733655c4b464de528f53eda2e4018d7daeb811f22030178282d0481
     .claude/skills/avalonia-accessibility-and-validation/SKILL.md: sha256:1abaa9795d71b0d987512f7e9dbf395c7c59f071f5f62caa34f239525e3b99f3
     .claude/skills/avalonia-accessibility-and-validation/agents/openai.yaml: sha256:422f0535f733655c4b464de528f53eda2e4018d7daeb811f22030178282d0481
-  content_hash: sha256:2ede7cc8508862cdc1122ad9edf8ea3d514f48acc1c5d64f765909534e71a363
+  content_hash: sha256:fff699d5934d5fb55320824604e7f22f7b3897649953911dabcf16afd5122065
 - repo_url: wieslawsoltes/development-plugin-for-avalonia
   name: avalonia-bindings-and-xaml
   host: github.com
@@ -447,7 +447,7 @@ dependencies:
     .agents/skills/avalonia-bindings-and-xaml/agents/openai.yaml: sha256:1e166c26286315b047b10ae4a90f9dd98469af19933e8fa7c8971e7054a85134
     .claude/skills/avalonia-bindings-and-xaml/SKILL.md: sha256:2c894474a7ecefd2c67c15a5ac7738b173cb2672f6e980bbd692b53f1755d5f7
     .claude/skills/avalonia-bindings-and-xaml/agents/openai.yaml: sha256:1e166c26286315b047b10ae4a90f9dd98469af19933e8fa7c8971e7054a85134
-  content_hash: sha256:c93d8c8232a1ca9195389296a4bcc77826a718ca1722e3b914f4a8868d228c27
+  content_hash: sha256:07a30020328e09dd9dc6c8446527f0b13ba46e8d4aef08e624a8d81fab679296
 - repo_url: wieslawsoltes/development-plugin-for-avalonia
   name: avalonia-bootstrap-and-lifetime
   host: github.com
@@ -468,7 +468,7 @@ dependencies:
     .agents/skills/avalonia-bootstrap-and-lifetime/agents/openai.yaml: sha256:e20ed37b6ee9db6bae48cc5d6e0a85be8f7628e3daa4be0ea70a94fceaa19b38
     .claude/skills/avalonia-bootstrap-and-lifetime/SKILL.md: sha256:d4963a2c6f3a466798e0122b172ad1d9b1c5eddd43e3451368970d6a06deb3f3
     .claude/skills/avalonia-bootstrap-and-lifetime/agents/openai.yaml: sha256:e20ed37b6ee9db6bae48cc5d6e0a85be8f7628e3daa4be0ea70a94fceaa19b38
-  content_hash: sha256:a10784b8d3d0556a9e6577a6f4c4cc1cc9e1fc2905375d4790985eaf16caed1f
+  content_hash: sha256:45dd6ad8c7e6bf6af711142f7a95e8f8e089b66181bd7e1dd470395925bf0bb6
 - repo_url: wieslawsoltes/development-plugin-for-avalonia
   name: avalonia-controls-and-windowing
   host: github.com
@@ -489,7 +489,7 @@ dependencies:
     .agents/skills/avalonia-controls-and-windowing/agents/openai.yaml: sha256:9de106f0d2c409ab514364bdba86b6fb8edbcff6eaf0d9cf81e8f8deccd7b29e
     .claude/skills/avalonia-controls-and-windowing/SKILL.md: sha256:a8f38c851dcb1e17334d4713eaf8fbbe5b35f2c863546771a68f79cc8fc3d5ef
     .claude/skills/avalonia-controls-and-windowing/agents/openai.yaml: sha256:9de106f0d2c409ab514364bdba86b6fb8edbcff6eaf0d9cf81e8f8deccd7b29e
-  content_hash: sha256:c499346f7fd997b66018b85022837da06d8632136460811853867ad546a27be7
+  content_hash: sha256:7260e575303070be01f76e428f06bf87464f7d0c3a31e6bb672fd85e3c9b59e8
 - repo_url: wieslawsoltes/development-plugin-for-avalonia
   name: avalonia-design-systems
   host: github.com
@@ -510,7 +510,7 @@ dependencies:
     .agents/skills/avalonia-design-systems/agents/openai.yaml: sha256:6a80e315ea6f368fb6e59a9b96e6041b5e593080d12aa987374cb8a4d0df5f3f
     .claude/skills/avalonia-design-systems/SKILL.md: sha256:60751542dea1b68d17142eaa2b921a48f667c464b5d5608a7abc996d0b21af8a
     .claude/skills/avalonia-design-systems/agents/openai.yaml: sha256:6a80e315ea6f368fb6e59a9b96e6041b5e593080d12aa987374cb8a4d0df5f3f
-  content_hash: sha256:513a945fc4a3352205668c72242447277b851244a21f3fe72e9304d0117f5199
+  content_hash: sha256:ff10e33f322542ab44b4a24baa2b066dc34b9ff46ce829137acfb8286dbf9349
 - repo_url: wieslawsoltes/development-plugin-for-avalonia
   name: avalonia-fluent-design
   host: github.com
@@ -531,7 +531,7 @@ dependencies:
     .agents/skills/avalonia-fluent-design/agents/openai.yaml: sha256:280ccd20a484acb1dd9eba98762770991595c7b57ea006712c7e179df8524457
     .claude/skills/avalonia-fluent-design/SKILL.md: sha256:4e66b0db12e40997ded34a45c30741ae155d654a8057cc315a91efb918cdd996
     .claude/skills/avalonia-fluent-design/agents/openai.yaml: sha256:280ccd20a484acb1dd9eba98762770991595c7b57ea006712c7e179df8524457
-  content_hash: sha256:9ed1ba1dfb10ae287b66fa99f92fdebe8638d800636f270f442fc0fe39a09ef5
+  content_hash: sha256:5779def41b49a1e59b483ac58633b06619beb5978af7913a22a9ec946f0d64ea
 - repo_url: wieslawsoltes/development-plugin-for-avalonia
   name: avalonia-input-and-commands
   host: github.com
@@ -552,7 +552,7 @@ dependencies:
     .agents/skills/avalonia-input-and-commands/agents/openai.yaml: sha256:140a887134036c8ff9d3089ed623dd72e250b4919551e98ba29b63b86f9e583e
     .claude/skills/avalonia-input-and-commands/SKILL.md: sha256:7285258bd59e98462863992f8853005643c58a535d5ec16b80570f50b5762b0a
     .claude/skills/avalonia-input-and-commands/agents/openai.yaml: sha256:140a887134036c8ff9d3089ed623dd72e250b4919551e98ba29b63b86f9e583e
-  content_hash: sha256:5aa1762e3a763171df170da4f82945266abab2ae0b6de84755f0917ac953fe15
+  content_hash: sha256:1956aa7d18054f51e6d2fa270ae96c50381b8cca8cfa2bbeccf6a610dfd85b60
 - repo_url: wieslawsoltes/development-plugin-for-avalonia
   name: avalonia-layout-and-virtualization
   host: github.com
@@ -573,7 +573,7 @@ dependencies:
     .agents/skills/avalonia-layout-and-virtualization/agents/openai.yaml: sha256:a5c4fc9872ed598849f46772f9a7b03437c06bf7eba95d23daf5a99aec10b6fa
     .claude/skills/avalonia-layout-and-virtualization/SKILL.md: sha256:2fde9e65e7586c726a885d882bcd07064ab764e9140e432d33a9f2ed9216801d
     .claude/skills/avalonia-layout-and-virtualization/agents/openai.yaml: sha256:a5c4fc9872ed598849f46772f9a7b03437c06bf7eba95d23daf5a99aec10b6fa
-  content_hash: sha256:edd2427b34e88100e5651d6a6944b525377f692394a133b5724dba892c824fb8
+  content_hash: sha256:467a65db9a9a29009edc1e680f0104ae2cfd902fb967a265ab25d398e95b202d
 - repo_url: wieslawsoltes/development-plugin-for-avalonia
   name: avalonia-platform-services
   host: github.com
@@ -594,7 +594,7 @@ dependencies:
     .agents/skills/avalonia-platform-services/agents/openai.yaml: sha256:62b735a6dfd60b0dac53b628ec3f0af281a03bd095eecee8366a396e54b28c2f
     .claude/skills/avalonia-platform-services/SKILL.md: sha256:45d5d03ef06e711ff2a38559fc8b96441a8e18118021706b1192597f6d6ea358
     .claude/skills/avalonia-platform-services/agents/openai.yaml: sha256:62b735a6dfd60b0dac53b628ec3f0af281a03bd095eecee8366a396e54b28c2f
-  content_hash: sha256:cd097428f17eb61e849ba9d96676cf1b8309605fa0a4301cbb274c7dc68525cb
+  content_hash: sha256:611bb69d00c170326b8c159cf8a9e323adfcccdca70f4044472c925328f9219d
 - repo_url: wieslawsoltes/development-plugin-for-avalonia
   name: avalonia-rendering-and-graphics
   host: github.com
@@ -615,7 +615,7 @@ dependencies:
     .agents/skills/avalonia-rendering-and-graphics/agents/openai.yaml: sha256:a0877842df2ee6087d08ebd7e93ad4f1f234d9a0a319dcbfa038f344bf0ae60f
     .claude/skills/avalonia-rendering-and-graphics/SKILL.md: sha256:e2147cef9d3de9cad3421a5f63e7045c7b970fc39f589c837fb8f41d3b3ede25
     .claude/skills/avalonia-rendering-and-graphics/agents/openai.yaml: sha256:a0877842df2ee6087d08ebd7e93ad4f1f234d9a0a319dcbfa038f344bf0ae60f
-  content_hash: sha256:6d6f5b044819e8a97014fac5816bca49df4096a5fb57b06036f7445565ca8c33
+  content_hash: sha256:64d4c1b2bb5cc307f86ca3743cb4cc601b2ee9cd90407e05a3837916ae0ff5b0
 - repo_url: wieslawsoltes/development-plugin-for-avalonia
   name: avalonia-styling-and-resources
   host: github.com
@@ -636,7 +636,7 @@ dependencies:
     .agents/skills/avalonia-styling-and-resources/agents/openai.yaml: sha256:244f27d211ae22b1447e14015d2e1459ed63fa1407301dc0c50c43806df4f28d
     .claude/skills/avalonia-styling-and-resources/SKILL.md: sha256:fffe7cc85d924dccb00667ea5fd0e004810b74c8d0421ea2d872479798dfe9c1
     .claude/skills/avalonia-styling-and-resources/agents/openai.yaml: sha256:244f27d211ae22b1447e14015d2e1459ed63fa1407301dc0c50c43806df4f28d
-  content_hash: sha256:035828c3b148da76ddd42daace0015fc70791b9156017a1b2bb0a9b9cf42fecb
+  content_hash: sha256:8711e0b34012388d987ae08f11786b4b2a5921444d5b56747eba47bbba419282
 - repo_url: wieslawsoltes/development-plugin-for-avalonia
   name: avalonia-testing-diagnostics-and-performance
   host: github.com
@@ -657,7 +657,7 @@ dependencies:
     .agents/skills/avalonia-testing-diagnostics-and-performance/agents/openai.yaml: sha256:af6084c7068ac54d0a2b3a76a991feb30e6f06e0cafbaab8915406c732af6a8d
     .claude/skills/avalonia-testing-diagnostics-and-performance/SKILL.md: sha256:6854754da3f137295e805997fde05a6a03fe74bd9cdbb320161a2fcfc8d9fa6d
     .claude/skills/avalonia-testing-diagnostics-and-performance/agents/openai.yaml: sha256:af6084c7068ac54d0a2b3a76a991feb30e6f06e0cafbaab8915406c732af6a8d
-  content_hash: sha256:c2b2e3ec3263d166a0e85fa3cf82028b9e4543102600a7e25eadc2ec98deaae4
+  content_hash: sha256:fe744a52b3d0b243c8acca66e117d287a501f2d755de9c3cf24e308538e9ba87
 - repo_url: wieslawsoltes/development-plugin-for-avalonia
   name: avalonia-threading-and-dispatcher
   host: github.com
@@ -678,7 +678,7 @@ dependencies:
     .agents/skills/avalonia-threading-and-dispatcher/agents/openai.yaml: sha256:6d093b0e63dedecfff8fbed525ae3c5e7715d59d1fec9d5b9b7a232ed587115e
     .claude/skills/avalonia-threading-and-dispatcher/SKILL.md: sha256:a2fbb7bcac0c0a3cc878781ebd0ba61536328e7a95c0bcb2eac74fc99344f388
     .claude/skills/avalonia-threading-and-dispatcher/agents/openai.yaml: sha256:6d093b0e63dedecfff8fbed525ae3c5e7715d59d1fec9d5b9b7a232ed587115e
-  content_hash: sha256:fdbe3f4b9bc61851fa4447faa87336345065df4b4257479903afa42f648929e4
+  content_hash: sha256:a1fb3b856ca9025d649ff92b0f6784141a3e19fd0a1968f3fe9e69c81795777c
 - repo_url: wieslawsoltes/development-plugin-for-avalonia
   name: avalonia-views-and-templating
   host: github.com
@@ -699,7 +699,7 @@ dependencies:
     .agents/skills/avalonia-views-and-templating/agents/openai.yaml: sha256:e4697801ee73bdc7f26124bb8c9c712edad9eb1b263b739084d25fc03e5c5d09
     .claude/skills/avalonia-views-and-templating/SKILL.md: sha256:273a869ef7e9cf89b004f20d53575728a2457609725108ae8dca51abe7a58a21
     .claude/skills/avalonia-views-and-templating/agents/openai.yaml: sha256:e4697801ee73bdc7f26124bb8c9c712edad9eb1b263b739084d25fc03e5c5d09
-  content_hash: sha256:c91cad272e36d64fa676e4f0dbb0cce75ed0bd93f4c9553aa2645ab899e98c4f
+  content_hash: sha256:ebcae63fd207e2dc959ab35e602411324e9f97ed7c34a1b6b1a39f8a6b4af29a
 deployments:
 - kind: project-relative
   target: agent-skills

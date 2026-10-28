@@ -4,7 +4,7 @@
         {
         "label": "APM: Install Dependencies",
         "type": "shell",
-        "command": "apm install --target vscode",
+        "command": "apm install --update",
         "options": {
             "cwd": "${workspaceFolder}"
         },

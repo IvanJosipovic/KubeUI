@@ -8,12 +8,14 @@ using Avalonia.Controls.Templates;
 using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
 using Avalonia.Input;
-using Avalonia.Interactivity;
+using Avalonia.Layout;
 using Avalonia.Markup.Declarative;
 using Avalonia.Media;
+using Avalonia.Svg.Skia;
 using Avalonia.Styling;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
+using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Shell.Main;
 using Shouldly;
 
@@ -22,7 +24,7 @@ namespace KubeUI.Avalonia.Tests.Shell.Main;
 public sealed class MainWindowTests
 {
     [AvaloniaFact]
-    public void managed_window_centers_fluent_title_and_options_opens_shared_menu()
+    public void managed_window_centers_title_and_options_opens_shared_menu()
     {
         using var scope = Application.Current.GetTestServices().CreateScope();
         var vm = scope.ServiceProvider.GetRequiredService<MainViewModel>();
@@ -38,18 +40,37 @@ public sealed class MainWindowTests
                 .ShouldBeAssignableTo<IWindowDrawnDecorationsTemplate>();
             var result = (TemplateResult<WindowDrawnDecorationsContent>)((ITemplate)template).Build();
             var overlay = result.Result.Overlay.ShouldNotBeNull();
-            var titlePanel = overlay.GetVisualDescendants()
-                .OfType<Panel>()
-                .Single(panel => panel.Name == "PART_TitleTextPanel");
-            var title = titlePanel.GetVisualDescendants().OfType<TextBlock>().Single();
+            var titleBar = overlay is Panel { Name: "PART_TitleBar" } rootTitleBar
+                ? rootTitleBar
+                : overlay.GetVisualDescendants()
+                    .OfType<Panel>()
+                    .Single(panel => panel.Name == "PART_TitleBar");
+            var title = titleBar.GetVisualDescendants()
+                .OfType<TextBlock>()
+                .Single(text => text.Text == Assets.Resources.MainWindow_Title);
             title.TextAlignment.ShouldBe(TextAlignment.Center);
             title.Margin.ShouldBe(new Thickness(0));
+            WindowDecorationProperties.GetElementRole(title.Parent.ShouldBeAssignableTo<Visual>())
+                .ShouldBe(WindowDecorationsElementRole.TitleBar);
+
+            var applicationIcon = overlay.GetVisualDescendants()
+                .OfType<Image>()
+                .Single(image => image.Name == "PART_TitleBarIcon");
+            applicationIcon.Source.ShouldBeOfType<SvgImage>().Source!.Picture.ShouldNotBeNull();
+            applicationIcon.Width.ShouldBe(16);
+            applicationIcon.Height.ShouldBe(16);
+            applicationIcon.Stretch.ShouldBe(Stretch.Uniform);
+            applicationIcon.VerticalAlignment.ShouldBe(VerticalAlignment.Center);
 
             var options = overlay.GetVisualDescendants()
                 .OfType<Button>()
                 .Single(button => AutomationProperties.GetName(button) == Assets.Resources.MainWindow_Options);
             WindowDecorationProperties.GetElementRole(options).ShouldBe(WindowDecorationsElementRole.User);
             ToolTip.GetTip(options).ShouldBe(Assets.Resources.MainWindow_Options);
+            window.WindowState = WindowState.FullScreen;
+            options.IsVisible.ShouldBeFalse();
+            window.WindowState = WindowState.Normal;
+            options.IsVisible.ShouldBeTrue();
 
             var roles = overlay.GetVisualDescendants()
                 .OfType<Button>()
@@ -62,6 +83,13 @@ public sealed class MainWindowTests
             window.Content(overlay);
             window.Show();
             Dispatcher.UIThread.RunJobs();
+            var iconOrigin = applicationIcon.TranslatePoint(default, window).ShouldNotBeNull();
+            var titleOrigin = title.TranslatePoint(default, window).ShouldNotBeNull();
+            var optionsOrigin = options.TranslatePoint(default, window).ShouldNotBeNull();
+            iconOrigin.X.ShouldBeLessThan(titleOrigin.X);
+            iconOrigin.X.ShouldBeGreaterThanOrEqualTo(optionsOrigin.X + options.Bounds.Width);
+            (titleOrigin.X + title.Bounds.Width / 2).ShouldBe(window.Bounds.Width / 2, tolerance: 1d);
+            applicationIcon.Bounds.Height.ShouldBeLessThanOrEqualTo(titleBar.Bounds.Height);
             var menu = FlyoutBase.GetAttachedFlyout(options).ShouldBeOfType<MenuFlyout>();
             var popupOpened = false;
             menu.Popup.Opened += (_, _) => popupOpened = true;
@@ -110,7 +138,7 @@ public sealed class MainWindowTests
                 .Single(button => AutomationProperties.GetName(button) == Assets.Resources.MainWindow_Options);
 
             var exception = Should.Throw<InvalidOperationException>(() =>
-                options.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)));
+                options.Command.ShouldNotBeNull().Execute(null));
             exception.Message.ShouldBe("The Options button is not in the window visual tree.");
         }
         finally
