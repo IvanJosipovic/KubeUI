@@ -4,7 +4,7 @@
         {
         "label": "APM: Install Dependencies",
         "type": "shell",
-        "command": "apm install --update",
+        "command": "apm install",
         "options": {
             "cwd": "${workspaceFolder}"
         },
