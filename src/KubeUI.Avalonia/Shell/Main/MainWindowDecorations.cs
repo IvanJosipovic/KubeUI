@@ -87,6 +87,7 @@ internal static class MainWindowDecorations
 
         var overlay = new Grid()
             .Name("PART_TitleBar")
+            .VerticalAlignment(VerticalAlignment.Top)
             .Background(Brushes.Transparent)
             .ElementRole(WindowDecorationsElementRole.TitleBar)
             .Height(Template(WindowDrawnDecorations.TitleBarHeightProperty))

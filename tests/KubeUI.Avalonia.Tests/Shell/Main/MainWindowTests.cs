@@ -63,6 +63,33 @@ public sealed class MainWindowTests
     }
 
     [AvaloniaFact]
+    public void managed_title_bar_is_at_top_of_decoration_layer()
+    {
+        using var scope = Application.Current.GetTestServices().CreateScope();
+        var vm = scope.ServiceProvider.GetRequiredService<MainViewModel>();
+        var window = new MainWindow(useNativeChrome: false).DataContext(vm);
+        try
+        {
+            var template = window.WindowDecorationsTheme!.Setters.OfType<Setter>()
+                .Single(setter => setter.Property == WindowDrawnDecorations.TemplateProperty)
+                .Value.ShouldBeAssignableTo<IWindowDrawnDecorationsTemplate>();
+            var overlay = ((TemplateResult<WindowDrawnDecorationsContent>)((ITemplate)template).Build())
+                .Result.Overlay.ShouldBeAssignableTo<Control>();
+            overlay.Height = 30;
+            var layer = new Grid().Children(overlay);
+            layer.Measure(new Size(800, 600));
+            layer.Arrange(new Rect(0, 0, 800, 600));
+
+            overlay.Bounds.Top.ShouldBe(0d);
+            overlay.Bounds.Height.ShouldBe(30d);
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    [AvaloniaFact]
     public void title_bar_background_is_a_drag_area()
     {
         using var scope = Application.Current.GetTestServices().CreateScope();
