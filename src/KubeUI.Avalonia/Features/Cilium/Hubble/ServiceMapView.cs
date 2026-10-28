@@ -1,3 +1,4 @@
+using KubeUI.Avalonia.Infrastructure.Presentation;
 using System.Collections;
 using System.Diagnostics.CodeAnalysis;
 using Avalonia.Controls.Primitives;
@@ -16,7 +17,7 @@ using UrsaControls = Ursa.Controls;
 
 namespace KubeUI.Avalonia.Features.Cilium.Hubble;
 
-public sealed partial class ServiceMapView : ViewBase<ServiceMapViewModel>
+public sealed partial class ServiceMapView : KubeUIView<ServiceMapViewModel>
 {
     protected override object Build(ServiceMapViewModel vm)
     {
