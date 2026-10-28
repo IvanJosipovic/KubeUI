@@ -3457,7 +3457,9 @@ public sealed class PodLogsViewModelTests
             Waiting = new V1ContainerStateWaiting { Reason = "Pending" },
         };
         await UpdatePodAsync((Cluster)workspace.Runtime, pod);
-        await WaitForAsync(() => !viewModel.IsConnected);
+        await WaitForAsync(() => !viewModel.IsConnected
+            && !viewModel.IsConnecting
+            && viewModel.PlannedStreamCount == 0);
         viewModel.Logs.Text = "old pod scope output";
 
         await viewModel.JumpToControlledByLogs();
