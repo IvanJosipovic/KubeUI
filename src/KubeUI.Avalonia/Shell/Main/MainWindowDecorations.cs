@@ -85,7 +85,7 @@ internal static class MainWindowDecorations
                 CaptionButton(names, captionButtonTheme, WindowDecorationsElementRole.MinimizeButton,
                     CaptionIcon("M2048 1229v-205h-2048v205h2048z")),
                 CaptionButton(names, captionButtonTheme, WindowDecorationsElementRole.MaximizeButton,
-                    CaptionIcon("M2048 2048v-2048h-2048v2048h2048zM1843 1843h-1638v-1638h1638v1638z", true)),
+                    MaximizeIcon(window)),
                 CaptionButton(names, captionButtonTheme, WindowDecorationsElementRole.CloseButton,
                     CaptionIcon("M1169 1024l879 -879l-145 -145l-879 879l-879 -879l-145 145l879 879l-879 879l145 145l879 -879l879 879l145 -145z"))
                     .Background(new SolidColorBrush(Color.Parse("#ffe81123")))
@@ -115,25 +115,30 @@ internal static class MainWindowDecorations
         };
     }
 
-    private static Viewbox CaptionIcon(string geometry, bool isMaximize = false)
+    private static Viewbox CaptionIcon(string geometry) =>
+        CaptionIcon(new Path().Data(Geometry.Parse(geometry)));
+
+    private static Viewbox MaximizeIcon(Window window)
     {
+        var maximize = Geometry.Parse("M2048 2048v-2048h-2048v2048h2048zM1843 1843h-1638v-1638h1638v1638z");
+        var restore = Geometry.Parse("M2048 410h-410v-410h-1638v1638h410v410h1638v-1638zM1434 1434h-1229v-1229h1229v1229zM1843 1843h-1229v-205h1024v-1024h205v1229z");
         var path = new Path()
-            .Stretch(Stretch.UniformToFill)
-            .Fill(new DynamicResourceExtension("CaptionButtonForeground"))
-            .Data(Geometry.Parse(geometry));
-        if (isMaximize)
-        {
-            path.Name("RestoreButtonPath");
-        }
+            .Name("RestoreButtonPath")
+            .BindValue(Path.DataProperty, CompiledBinding.Create<Window, WindowState>(
+                x => x.WindowState, source: window,
+                converter: new FuncValueConverter<WindowState, Geometry>(
+                    state => state == WindowState.Maximized ? restore : maximize)));
 
-        var icon = new Viewbox().Width(11).Margin(new Thickness(2)).Child(path);
-        if (isMaximize)
-        {
-            icon.RenderTransform(new RotateTransform(-90));
-        }
-
-        return icon;
+        return CaptionIcon(path).RenderTransform(new RotateTransform(-90));
     }
+
+    private static Viewbox CaptionIcon(Path path) =>
+        new Viewbox()
+            .Width(11)
+            .Margin(new Thickness(2))
+            .Child(path
+                .Stretch(Stretch.UniformToFill)
+                .Fill(new DynamicResourceExtension("CaptionButtonForeground")));
 
     private static void ShowOptionsMenu(Window window, Button button, MenuFlyout menu)
     {

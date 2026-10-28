@@ -93,6 +93,33 @@ public sealed class MainWindowTests
     }
 
     [AvaloniaFact]
+    public void maximize_icon_changes_when_window_is_maximized_and_restored()
+    {
+        using var scope = Application.Current.GetTestServices().CreateScope();
+        var vm = scope.ServiceProvider.GetRequiredService<MainViewModel>();
+        var window = new MainWindow(useNativeChrome: false).DataContext(vm);
+        try
+        {
+            var template = window.WindowDecorationsTheme!.Setters.OfType<Setter>()
+                .Single(setter => setter.Property == WindowDrawnDecorations.TemplateProperty)
+                .Value.ShouldBeAssignableTo<IWindowDrawnDecorationsTemplate>();
+            var result = (TemplateResult<WindowDrawnDecorationsContent>)((ITemplate)template).Build();
+            var button = result.NameScope.Find<Button>("PART_MaximizeButton").ShouldNotBeNull();
+            var path = ((Viewbox)button.Content!).Child.ShouldBeOfType<global::Avalonia.Controls.Shapes.Path>();
+            var normal = path.Data.ShouldNotBeNull();
+
+            window.WindowState = WindowState.Maximized;
+            path.Data.ShouldNotBeSameAs(normal);
+            window.WindowState = WindowState.Normal;
+            path.Data.ShouldBeSameAs(normal);
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    [AvaloniaFact]
     public void managed_title_bar_is_at_top_of_decoration_layer()
     {
         using var scope = Application.Current.GetTestServices().CreateScope();
