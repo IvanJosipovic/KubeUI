@@ -24,6 +24,67 @@ namespace KubeUI.Avalonia.Tests.Shell.Main;
 public sealed class MainWindowTests
 {
     [AvaloniaFact]
+    public void caption_buttons_register_parts_with_their_roles()
+    {
+        var names = new NameScope();
+        var theme = new ControlTheme(typeof(Button));
+        foreach (var (role, name) in new[]
+        {
+            (WindowDecorationsElementRole.MinimizeButton, "PART_MinimizeButton"),
+            (WindowDecorationsElementRole.MaximizeButton, "PART_MaximizeButton"),
+            (WindowDecorationsElementRole.CloseButton, "PART_CloseButton"),
+            (WindowDecorationsElementRole.FullScreenButton, "PART_FullScreenButton")
+        })
+        {
+            var button = DecorationsMarkup.CaptionButton(names, theme, role, "test");
+            names.Find(name).ShouldBeSameAs(button);
+            WindowDecorationProperties.GetElementRole(button).ShouldBe(role);
+            button.Theme.ShouldBeSameAs(theme);
+        }
+
+        Should.Throw<ArgumentOutOfRangeException>(() =>
+            DecorationsMarkup.CaptionButton(names, theme, WindowDecorationsElementRole.User, "test"));
+    }
+
+    [AvaloniaFact]
+    public void decorations_template_creates_independent_name_scopes()
+    {
+        var template = new DecorationsTemplate(names => new WindowDrawnDecorationsContent
+        {
+            Overlay = new Button().Name("PART_CloseButton", names)
+        });
+
+        var first = template.Build();
+        var second = template.Build();
+        first.NameScope.ShouldNotBeSameAs(second.NameScope);
+        first.NameScope.Find("PART_CloseButton").ShouldBeSameAs(first.Result.Overlay);
+        second.NameScope.Find("PART_CloseButton").ShouldBeSameAs(second.Result.Overlay);
+        first.Result.Overlay.ShouldNotBeSameAs(second.Result.Overlay);
+    }
+
+    [AvaloniaFact]
+    public void title_bar_background_is_a_drag_area()
+    {
+        using var scope = Application.Current.GetTestServices().CreateScope();
+        var vm = scope.ServiceProvider.GetRequiredService<MainViewModel>();
+        var window = new MainWindow(useNativeChrome: false).DataContext(vm);
+        try
+        {
+            var template = window.WindowDecorationsTheme!.Setters.OfType<Setter>()
+                .Single(setter => setter.Property == WindowDrawnDecorations.TemplateProperty)
+                .Value.ShouldBeAssignableTo<IWindowDrawnDecorationsTemplate>();
+            var overlay = ((TemplateResult<WindowDrawnDecorationsContent>)((ITemplate)template).Build())
+                .Result.Overlay.ShouldBeAssignableTo<Panel>();
+            WindowDecorationProperties.GetElementRole(overlay).ShouldBe(WindowDecorationsElementRole.TitleBar);
+            overlay.Background.ShouldNotBeNull();
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    [AvaloniaFact]
     public void managed_window_centers_title_and_options_opens_shared_menu()
     {
         using var scope = Application.Current.GetTestServices().CreateScope();

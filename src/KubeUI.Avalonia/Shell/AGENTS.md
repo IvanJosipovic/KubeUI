@@ -16,3 +16,5 @@
 - Global `MenuItem` typography uses the shared app font resources so context menus and the Options flyout follow app settings without per-menu bindings.
 - Headless tests cover centered title layout, Options command parity, and native macOS menu contents. Native decoration interactions should be verified on desktop platforms.
 - The application menu is defined once in `Main/MainMenu.cs`, attached to the window as a `NativeMenu`, and reused for the Options flyout. Do not build a second menu in the view.
+
+- Build managed decoration themes with `DecorationsMarkup` so each template build owns its name scope and caption parts are registered with their roles.
