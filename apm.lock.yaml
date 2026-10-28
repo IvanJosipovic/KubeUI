@@ -34,7 +34,7 @@ dependencies:
 - repo_url: dotnet/skills
   name: dotnet
   host: github.com
-  resolved_commit: cf03b2d2ee17ad2800763108698d869f5b997774
+  resolved_commit: 586f13f8d898a60583a3364f146a3b6f5a763164
   version: 0.2.5
   virtual_path: plugins/dotnet
   is_virtual: true
@@ -125,7 +125,7 @@ dependencies:
 - repo_url: dotnet/skills
   name: dotnet-diag
   host: github.com
-  resolved_commit: cf03b2d2ee17ad2800763108698d869f5b997774
+  resolved_commit: 586f13f8d898a60583a3364f146a3b6f5a763164
   version: 0.1.3
   virtual_path: plugins/dotnet-diag
   is_virtual: true
@@ -290,7 +290,7 @@ dependencies:
 - repo_url: dotnet/skills
   name: dotnet11
   host: github.com
-  resolved_commit: cf03b2d2ee17ad2800763108698d869f5b997774
+  resolved_commit: 586f13f8d898a60583a3364f146a3b6f5a763164
   version: 0.1.2
   virtual_path: plugins/dotnet11
   is_virtual: true
