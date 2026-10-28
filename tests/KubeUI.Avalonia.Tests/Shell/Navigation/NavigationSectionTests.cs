@@ -130,11 +130,13 @@ public sealed class NavigationSectionTests
         System.Collections.ObjectModel.ObservableCollection<NavigationItem> items = [];
         var group = new NavigationGroup("hubble", "Hubble", 0, null, "/Assets/cilium/hubble-light.svg", "/Assets/cilium/hubble-dark.svg");
 
-        var hubble = NavigationTreeEditor.EnsurePath(items, "section-cilium", [group]).Single();
+        var children = NavigationTreeEditor.EnsurePath(items, "section-cilium", [group]);
+        var hubble = items.Single();
 
         hubble.SvgIcon.ShouldBe("/Assets/cilium/hubble-light.svg");
         hubble.SvgIconDark.ShouldBe("/Assets/cilium/hubble-dark.svg");
         hubble.FluentIcon.ShouldBeNull();
+        children.ShouldBeSameAs(hubble.NavigationItems);
     }
 
     [Theory]
