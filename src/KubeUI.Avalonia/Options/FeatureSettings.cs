@@ -11,11 +11,11 @@ public sealed partial class FeatureSettings : ObservableObject
     [ObservableProperty]
     public partial bool Hubble { get; set; }
 
-    /// <summary>Gets or sets whether Kubernetes JSON serialization may use reflection.</summary>
+    /// <summary>Gets or sets whether Kubernetes JSON serialization must disable reflection.</summary>
     [ObservableProperty]
-    public partial bool JsonAllowReflection { get; set; }
+    public partial bool DisableJsonSerializationReflection { get; set; }
 
-    /// <summary>Gets or sets whether Kubernetes YAML serialization may use reflection.</summary>
+    /// <summary>Gets or sets whether Kubernetes YAML serialization must disable reflection.</summary>
     [ObservableProperty]
-    public partial bool YamlAllowReflection { get; set; }
+    public partial bool DisableYamlSerializationReflection { get; set; }
 }

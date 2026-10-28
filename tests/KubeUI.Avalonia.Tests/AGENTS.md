@@ -10,6 +10,8 @@
 - Set `StartDisconnected` only for connection-lifecycle behavior; use a connected `TestCluster` for resource, informer, authorization, and navigation tests.
 
 ## Coverage Focus
+- Every preview flag needs enabled and disabled behavior coverage through Settings. Exercise Helm/Hubble navigation with the real settings-backed feature provider, independent toggle combinations, and restart-only changes; serialization cases must exercise actual JSON/YAML operations with both reflection policies.
+- Serialization preview flags must cover actual JSON and YAML serialization and deserialization using an unregistered Kubernetes-like model. Test both reflection modes and verify generated Kubernetes models still round-trip. Start KubeUI with Settings overrides and use the configured serializers; do not construct serializer options in tests. Verify simultaneously alive hosts keep independent modes. Do not use environment variables or child test processes.
 - The headless test app enables the Helm and Hubble preview flags by default so existing navigation tests keep their sections; cover disabled and default-off behavior with explicit feature clients.
 - Prefer behavior tests for view models, resource configs, and shared UI behaviors that are easy to drift.
 - Preserve tests when migrating them. If a test asserted an implementation detail through a wrapper, replace it with an observable behavior assertion or add the missing transport scenario; do not silently delete coverage.

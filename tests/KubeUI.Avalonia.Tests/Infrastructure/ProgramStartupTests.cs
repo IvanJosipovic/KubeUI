@@ -13,50 +13,6 @@ namespace KubeUI.Avalonia.Tests.Infrastructure;
 public sealed class ProgramStartupTests
 {
     [Fact]
-    public void CreateHostBuilder_enables_static_yaml_metadata()
-    {
-        var previousValue = KubernetesYaml.UseStaticContext;
-        try
-        {
-            KubernetesYaml.UseStaticContext = false;
-            using var host = Program.CreateHostBuilder([], includeOptionalServices: false).Build();
-
-            Assert.True(KubernetesYaml.UseStaticContext);
-        }
-        finally
-        {
-            KubernetesYaml.UseStaticContext = previousValue;
-        }
-    }
-
-    [Fact]
-    public void CreateHostBuilder_uses_persisted_yaml_source_generation_setting()
-    {
-        var previousValue = KubernetesYaml.UseStaticContext;
-        try
-        {
-            var settings = new SettingsPersistenceData
-            {
-                Settings = new KubeUI.Avalonia.Options.Settings
-                {
-                    Features = new FeatureSettings { YamlAllowReflection = true }
-                }
-            };
-
-            using var host = Program.CreateHostBuilder(
-                [],
-                includeOptionalServices: false,
-                settingsOverride: settings).Build();
-
-            KubernetesYaml.UseStaticContext.ShouldBeFalse();
-        }
-        finally
-        {
-            KubernetesYaml.UseStaticContext = previousValue;
-        }
-    }
-
-    [Fact]
     public void StartHostAfterAvaloniaSetup_sets_up_Avalonia_before_host_start()
     {
         Mock<IHost> host = new(MockBehavior.Strict);

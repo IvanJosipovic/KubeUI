@@ -1,3 +1,4 @@
+using Microsoft.Extensions.DependencyInjection;
 using System.Reflection;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
@@ -132,7 +133,8 @@ public class ResourceYamlViewModelTests
             },
         };
 
-        var clone = Utilities.CloneObject(pod);
+        using var serializationServices = new ServiceCollection().AddKubeUIKubernetesServices(jsonAllowReflection: false, yamlAllowReflection: true).BuildServiceProvider();
+        var clone = Utilities.CloneObject(pod, serializationServices.GetRequiredService<IKubernetesJsonSerializer>());
         clone.ShouldBeOfType<V1Pod>();
         var yaml = KubernetesYaml.Serialize(clone);
 
@@ -155,7 +157,8 @@ public class ResourceYamlViewModelTests
             }
             """)!;
 
-        var clone = Utilities.CloneObject(resource);
+        using var serializationServices = new ServiceCollection().AddKubeUIKubernetesServices(jsonAllowReflection: false, yamlAllowReflection: true).BuildServiceProvider();
+        var clone = Utilities.CloneObject(resource, serializationServices.GetRequiredService<IKubernetesJsonSerializer>());
 
         clone.ShouldBeOfType<GenericKubernetesObject>();
         clone.ShouldNotBeSameAs(resource);

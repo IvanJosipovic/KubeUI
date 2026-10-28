@@ -1,3 +1,4 @@
+using KubeUI.Kubernetes.Serialization;
 using System.Globalization;
 using System.Text.Json;
 using Avalonia.Controls;
@@ -19,8 +20,12 @@ using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Features.Helm;
 
-public sealed class HelmReleasesViewModelTests
+public sealed class HelmReleasesViewModelTests : IDisposable
 {
+    private readonly KubernetesYamlSerializer _yamlSerializer = new(allowReflection: true);
+
+    public void Dispose() => _yamlSerializer.Dispose();
+
     [Theory]
     [InlineData("2026-10-21T12:58:46Z", "1m14s")]
     [InlineData("2026-10-21T13:00:00Z", "0ms")]
@@ -50,7 +55,7 @@ public sealed class HelmReleasesViewModelTests
         helm.Setup(service => service.GetValuesAsync(It.IsAny<HelmConnection>(), "web", It.IsAny<CancellationToken>()))
             .ThrowsAsync(new InvalidOperationException("Values unavailable"));
         var createViewer = new Mock<Func<ResourceYamlViewModel>>();
-        using var viewModel = new HelmReleasesViewModel(helm.Object, Mock.Of<IFactory>(), Mock.Of<IDialogService>(),
+        using var viewModel = new HelmReleasesViewModel(helm.Object, _yamlSerializer, Mock.Of<IFactory>(), Mock.Of<IDialogService>(),
             Mock.Of<IHelmReleasePreviewService>(), createViewer.Object, Mock.Of<IHelmDocumentOpener>(),
             Mock.Of<IHelmListNotifier>());
         viewModel.Initialize(workspace);
@@ -85,7 +90,7 @@ public sealed class HelmReleasesViewModelTests
                 bottom.VisibleDockables.Add(document);
             });
         using var viewModel = new HelmReleasesViewModel(
-            helm.Object, factory.Object, Mock.Of<IDialogService>(), Mock.Of<IHelmReleasePreviewService>(),
+            helm.Object, _yamlSerializer, factory.Object, Mock.Of<IDialogService>(), Mock.Of<IHelmReleasePreviewService>(),
             () => Application.Current.GetRequiredTestService<ResourceYamlViewModel>(),
             Mock.Of<IHelmDocumentOpener>(), Mock.Of<IHelmListNotifier>());
         viewModel.Initialize(workspace);
@@ -159,7 +164,7 @@ public sealed class HelmReleasesViewModelTests
             .ReturnsAsync([release])
             .ReturnsAsync([release, new HelmRelease("web", "apps", 1, new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), "deployed", "web-1.0.0", "")]);
         using var viewModel = new HelmReleasesViewModel(
-            helm.Object, Mock.Of<IFactory>(), Mock.Of<IDialogService>(), Mock.Of<IHelmReleasePreviewService>(),
+            helm.Object, _yamlSerializer, Mock.Of<IFactory>(), Mock.Of<IDialogService>(), Mock.Of<IHelmReleasePreviewService>(),
             () => Application.Current.GetRequiredTestService<ResourceYamlViewModel>(),
             Mock.Of<IHelmDocumentOpener>(), Mock.Of<IHelmListNotifier>());
         viewModel.Initialize(workspace);
@@ -204,7 +209,7 @@ public sealed class HelmReleasesViewModelTests
         var preview = new Mock<IHelmReleasePreviewService>();
         preview.Setup(service => service.VisualizeRelease(workspace, "cilium", "kube-system"))
             .Throws(new InvalidOperationException("Unable to open visualization"));
-        using var viewModel = new HelmReleasesViewModel(helm.Object, Mock.Of<IFactory>(), Mock.Of<IDialogService>(), preview.Object,
+        using var viewModel = new HelmReleasesViewModel(helm.Object, _yamlSerializer, Mock.Of<IFactory>(), Mock.Of<IDialogService>(), preview.Object,
             () => Application.Current.GetRequiredTestService<ResourceYamlViewModel>(),
             Mock.Of<IHelmDocumentOpener>(), Mock.Of<IHelmListNotifier>());
         viewModel.Initialize(workspace);
@@ -223,7 +228,7 @@ public sealed class HelmReleasesViewModelTests
         helm.Setup(service => service.GetValuesAsync(It.IsAny<HelmConnection>(), It.IsAny<string>(),
             It.IsAny<CancellationToken>())).ReturnsAsync(JsonSerializer.SerializeToElement(new Dictionary<string, object?>()));
         var preview = new Mock<IHelmReleasePreviewService>();
-        using var viewModel = new HelmReleasesViewModel(helm.Object, Mock.Of<IFactory>(), Mock.Of<IDialogService>(), preview.Object,
+        using var viewModel = new HelmReleasesViewModel(helm.Object, _yamlSerializer, Mock.Of<IFactory>(), Mock.Of<IDialogService>(), preview.Object,
             () => Application.Current.GetRequiredTestService<ResourceYamlViewModel>(),
             Mock.Of<IHelmDocumentOpener>(), Mock.Of<IHelmListNotifier>());
         viewModel.Initialize(workspace);
@@ -262,7 +267,7 @@ public sealed class HelmReleasesViewModelTests
             .ReturnsAsync(releases);
         var factory = new Mock<IFactory>();
         var dialogs = new Mock<IDialogService>();
-        using var viewModel = new HelmReleasesViewModel(helmService.Object, factory.Object, dialogs.Object, previewService.Object,
+        using var viewModel = new HelmReleasesViewModel(helmService.Object, _yamlSerializer, factory.Object, dialogs.Object, previewService.Object,
             () => Application.Current.GetRequiredTestService<ResourceYamlViewModel>(),
             Mock.Of<IHelmDocumentOpener>(), Mock.Of<IHelmListNotifier>());
 
@@ -320,7 +325,7 @@ public sealed class HelmReleasesViewModelTests
         using var yamlViewer = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         List<ContentDialogSettings> dialogs = [];
         using var viewModel = new HelmReleasesViewModel(
-            helmService.Object,
+            helmService.Object, _yamlSerializer,
             factory.Object,
             HelmDialogTestHelper.CreateConfirmingDialogService(dialogs),
             previewService.Object,
@@ -366,7 +371,7 @@ public sealed class HelmReleasesViewModelTests
         helm.Setup(service => service.ListReleasesAsync(It.IsAny<HelmConnection>(), true,
             It.IsAny<string?>(), It.IsAny<CancellationToken>())).ReturnsAsync([]);
         var notifier = new HelmListNotifier();
-        using var viewModel = new HelmReleasesViewModel(helm.Object, Mock.Of<IFactory>(), Mock.Of<IDialogService>(),
+        using var viewModel = new HelmReleasesViewModel(helm.Object, _yamlSerializer, Mock.Of<IFactory>(), Mock.Of<IDialogService>(),
             Mock.Of<IHelmReleasePreviewService>(),
             () => Application.Current.GetRequiredTestService<ResourceYamlViewModel>(),
             Mock.Of<IHelmDocumentOpener>(), notifier);
@@ -391,7 +396,7 @@ public sealed class HelmReleasesViewModelTests
         helm.Setup(service => service.ListReleasesAsync(It.IsAny<HelmConnection>(), true,
             It.IsAny<string?>(), It.IsAny<CancellationToken>())).ReturnsAsync([]);
         var opener = new Mock<IHelmDocumentOpener>();
-        using var viewModel = new HelmReleasesViewModel(helm.Object, Mock.Of<IFactory>(), Mock.Of<IDialogService>(),
+        using var viewModel = new HelmReleasesViewModel(helm.Object, _yamlSerializer, Mock.Of<IFactory>(), Mock.Of<IDialogService>(),
             Mock.Of<IHelmReleasePreviewService>(),
             () => Application.Current.GetRequiredTestService<ResourceYamlViewModel>(),
             opener.Object, Mock.Of<IHelmListNotifier>());

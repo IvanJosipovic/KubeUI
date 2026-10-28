@@ -1,3 +1,6 @@
+using KubeUI.Avalonia.Services.Settings;
+using KubeUI.Desktop;
+using Microsoft.Extensions.Hosting;
 using Avalonia.Headless.XUnit;
 using FluentIcons.Common;
 using k8s;
@@ -22,6 +25,61 @@ namespace KubeUI.Avalonia.Tests.Shell.Navigation;
 
 public sealed class NavigationSectionTests
 {
+    [AvaloniaTheory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public async Task settings_control_helm_and_hubble_navigation_after_restart(bool helmEnabled, bool hubbleEnabled)
+    {
+        using var workspace = await Application.Current.CreateClusterAsync();
+        SettingsPersistenceData settings = new();
+        settings.Settings.PreviewFeatures.Helm = helmEnabled;
+        settings.Settings.PreviewFeatures.Hubble = hubbleEnabled;
+        var persistence = new Mock<ISettingsPersistence>();
+        persistence.Setup(value => value.Load()).Returns(settings);
+        persistence.Setup(value => value.EnsureDirectoryExists()).Returns(true);
+        persistence.Setup(value => value.Save(It.IsAny<SettingsPersistenceData>())).Returns(true);
+
+        using var original = CreateHost();
+        AssertNavigation(original, helmEnabled, hubbleEnabled);
+
+        settings.Settings.PreviewFeatures.Helm = !helmEnabled;
+        settings.Settings.PreviewFeatures.Hubble = !hubbleEnabled;
+        AssertNavigation(original, helmEnabled, hubbleEnabled);
+
+        using var restarted = CreateHost();
+        AssertNavigation(restarted, !helmEnabled, !hubbleEnabled);
+        AssertNavigation(original, helmEnabled, hubbleEnabled);
+
+        IHost CreateHost() => Program.CreateHostBuilder(
+            [], includeOptionalServices: false,
+            configureServices: services => services.AddSingleton(persistence.Object),
+            settingsOverride: settings).Build();
+
+        void AssertNavigation(IHost host, bool expectedHelm, bool expectedHubble)
+        {
+            var catalog = host.Services.GetRequiredService<NavigationSectionCatalog>();
+            foreach (var id in new[] { HelmNavigationSectionProvider.ChartsDocumentId, HelmNavigationSectionProvider.RepositoriesDocumentId, HelmNavigationSectionProvider.ReleasesDocumentId })
+            {
+                catalog.TryGetDocument(id, out var document).ShouldBeTrue();
+                document.IsAvailable(workspace).ShouldBe(expectedHelm);
+            }
+
+            foreach (var id in new[] { HubbleNavigationSectionProvider.FlowsDocumentId, HubbleNavigationSectionProvider.ServiceMapDocumentId })
+            {
+                catalog.TryGetDocument(id, out var document).ShouldBeTrue();
+                document.IsAvailable(workspace).ShouldBe(expectedHubble);
+            }
+
+            using var node = new ClusterNavigationNode(workspace);
+            CreateBuilder(catalog).Reconcile(node);
+            node.NavigationItems.Any(item => item.Id == $"{workspace.Runtime.Name}-section-helm").ShouldBe(expectedHelm);
+            var cilium = node.NavigationItems.SingleOrDefault(item => item.Id == $"{workspace.Runtime.Name}-section-cilium");
+            (cilium?.NavigationItems.Any(item => item.Name == Assets.Resources.Hubble_GroupName) ?? false).ShouldBe(expectedHubble);
+        }
+    }
+
     [Fact]
     public void helm_section_contains_chart_repository_and_release_documents()
     {

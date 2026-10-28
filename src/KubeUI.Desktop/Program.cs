@@ -178,10 +178,7 @@ internal static class Program
         var settings = settingsOverride ?? SettingsPersistenceLoader.Load();
         var features = settings.Settings.PreviewFeatures ?? new FeatureSettings();
 
-        KubernetesYaml.UseStaticContext = !features.YamlAllowReflection;
-
-        builder.Services.AddKubeUIAppServices(
-            jsonAllowReflection: features.JsonAllowReflection);
+        builder.Services.AddKubeUIAppServices(features);
 
         if (mcpEnabledOverride ?? settings.Settings.McpServerEnabled)
             builder.Services.AddKubeUIMcpServer(mcpPortOverride ?? settings.Settings.McpServerPort);

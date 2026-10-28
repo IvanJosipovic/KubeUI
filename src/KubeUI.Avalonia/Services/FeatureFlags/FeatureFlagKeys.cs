@@ -9,9 +9,9 @@ public static class FeatureFlagKeys
     /// <summary>The Hubble integration flag key.</summary>
     public const string Hubble = "kubeui.hubble";
 
-    /// <summary>The Kubernetes JSON reflection flag key.</summary>
-    public const string JsonAllowReflection = "kubeui.json-allow-reflection";
+    /// <summary>The Kubernetes JSON serialization disable-reflection flag key.</summary>
+    public const string DisableJsonSerializationReflection = "kubeui.disable-json-serialization-reflection";
 
-    /// <summary>The Kubernetes YAML reflection flag key.</summary>
-    public const string YamlAllowReflection = "kubeui.yaml-allow-reflection";
+    /// <summary>The Kubernetes YAML serialization disable-reflection flag key.</summary>
+    public const string DisableYamlSerializationReflection = "kubeui.disable-yaml-serialization-reflection";
 }

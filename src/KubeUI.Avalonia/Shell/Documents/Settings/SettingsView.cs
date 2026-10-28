@@ -86,14 +86,14 @@ public sealed class SettingsView() : KubeUIView<SettingsViewModel>
                             x => x.SettingsService.Settings.PreviewFeatures.Hubble),
                         CreateToggleRow(
                             vm,
-                            Assets.Resources.SettingsView_JsonAllowReflection_ToolTip!,
-                            Assets.Resources.SettingsView_JsonAllowReflection_Label!,
-                            x => x.SettingsService.Settings.PreviewFeatures.JsonAllowReflection),
+                            Assets.Resources.SettingsView_DisableJsonSerializationReflection_ToolTip!,
+                            Assets.Resources.SettingsView_DisableJsonSerializationReflection_Label!,
+                            x => x.SettingsService.Settings.PreviewFeatures.DisableJsonSerializationReflection),
                         CreateToggleRow(
                             vm,
-                            Assets.Resources.SettingsView_YamlAllowReflection_ToolTip!,
-                            Assets.Resources.SettingsView_YamlAllowReflection_Label!,
-                            x => x.SettingsService.Settings.PreviewFeatures.YamlAllowReflection)));
+                            Assets.Resources.SettingsView_DisableYamlSerializationReflection_ToolTip!,
+                            Assets.Resources.SettingsView_DisableYamlSerializationReflection_Label!,
+                            x => x.SettingsService.Settings.PreviewFeatures.DisableYamlSerializationReflection)));
     }
 
     private static Border CreateHeading(string text)

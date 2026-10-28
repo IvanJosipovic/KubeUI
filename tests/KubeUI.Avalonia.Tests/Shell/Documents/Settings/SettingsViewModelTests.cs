@@ -151,8 +151,8 @@ public sealed class SettingsViewModelTests
             {
                 Helm = true,
                 Hubble = false,
-                JsonAllowReflection = false,
-                YamlAllowReflection = true
+                DisableJsonSerializationReflection = false,
+                DisableYamlSerializationReflection = true
             }
         };
         var settingsService = new Mock<ISettingsService>();
@@ -173,8 +173,8 @@ public sealed class SettingsViewModelTests
 
         var helmRow = FindToggleRow(view, Assets.Resources.SettingsView_HelmFeature_Label!);
         var hubbleRow = FindToggleRow(view, Assets.Resources.SettingsView_HubbleFeature_Label!);
-        var jsonRow = FindToggleRow(view, Assets.Resources.SettingsView_JsonAllowReflection_Label!);
-        var yamlRow = FindToggleRow(view, Assets.Resources.SettingsView_YamlAllowReflection_Label!);
+        var jsonRow = FindToggleRow(view, Assets.Resources.SettingsView_DisableJsonSerializationReflection_Label!);
+        var yamlRow = FindToggleRow(view, Assets.Resources.SettingsView_DisableYamlSerializationReflection_Label!);
         var helm = helmRow.Children.OfType<CheckBox>().Single();
         var hubble = hubbleRow.Children.OfType<CheckBox>().Single();
         var json = jsonRow.Children.OfType<CheckBox>().Single();
@@ -194,8 +194,8 @@ public sealed class SettingsViewModelTests
         json.IsChecked = true;
         yaml.IsChecked = false;
         Dispatcher.UIThread.RunJobs();
-        settings.PreviewFeatures.JsonAllowReflection.ShouldBeTrue();
-        settings.PreviewFeatures.YamlAllowReflection.ShouldBeFalse();
+        settings.PreviewFeatures.DisableJsonSerializationReflection.ShouldBeTrue();
+        settings.PreviewFeatures.DisableYamlSerializationReflection.ShouldBeFalse();
     }
 
     [AvaloniaFact]

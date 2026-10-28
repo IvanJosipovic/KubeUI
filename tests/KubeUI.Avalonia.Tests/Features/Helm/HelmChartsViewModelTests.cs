@@ -1,3 +1,4 @@
+using KubeUI.Kubernetes.Serialization;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Layout;
@@ -19,8 +20,12 @@ using SvcSystems.Avalonia.DynamicTableView;
 
 namespace KubeUI.Avalonia.Tests.Features.Helm;
 
-public sealed class HelmChartsViewModelTests
+public sealed class HelmChartsViewModelTests : IDisposable
 {
+    private readonly KubernetesYamlSerializer _yamlSerializer = new(allowReflection: true);
+
+    public void Dispose() => _yamlSerializer.Dispose();
+
     [AvaloniaFact]
     public async Task Charts_refresh_when_view_loads()
     {
@@ -224,11 +229,11 @@ public sealed class HelmChartsViewModelTests
         charts.Repositories.ShouldBeEmpty();
     }
 
-    private static HelmDocumentOpener CreateOpener(Mock<IHelmService> helm, Mock<IFactory> factory)
+    private HelmDocumentOpener CreateOpener(Mock<IHelmService> helm, Mock<IFactory> factory)
         => new(
             () => new HelmChartsViewModel(helm.Object, Mock.Of<IHelmDocumentOpener>()),
             () => new HelmReleaseEditorViewModel(
-                helm.Object,
+                helm.Object, _yamlSerializer,
                 factory.Object,
                 Mock.Of<IHelmListNotifier>(),
                 Mock.Of<IHelmReleasePreviewService>(),

@@ -12,6 +12,7 @@ using KubeUI.Avalonia.Infrastructure.Platform;
 using KubeUI.Avalonia.Infrastructure.Threading;
 using KubeUI.Avalonia.Shell.Navigation;
 using KubeUI.Cilium;
+using KubeUI.Avalonia.Options;
 using KubeUI.Kubernetes;
 using KubeUI.Kubernetes.Resources.Relationships;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -20,13 +21,20 @@ namespace KubeUI.Avalonia.Infrastructure.DependencyInjection;
 
 public static class KubeUIAvaloniaServiceCollectionExtensions
 {
+    /// <summary>Registers application services with serialization policies captured from Settings.</summary>
+    /// <param name="services">Service collection to configure.</param>
+    /// <param name="features">Preview feature settings for this application instance.</param>
+    /// <param name="configureOverrides">Optional application service overrides.</param>
+    /// <returns>The configured service collection.</returns>
     public static IServiceCollection AddKubeUIAppServices(
         this IServiceCollection services,
-        Action<IServiceCollection>? configureOverrides = null,
-        bool jsonAllowReflection = false)
+        FeatureSettings features,
+        Action<IServiceCollection>? configureOverrides = null)
     {
         services.AddKubeUIAvaloniaServices();
-        services.AddKubeUIKubernetesServices(jsonAllowReflection);
+        services.AddKubeUIKubernetesServices(
+            jsonAllowReflection: !features.DisableJsonSerializationReflection,
+            yamlAllowReflection: !features.DisableYamlSerializationReflection);
         services.AddCilium();
         services.Replace(ServiceDescriptor.Singleton<IThreadDispatcher>(AvaloniaScheduler.Instance));
         services.AddKubeUIDialogServices();

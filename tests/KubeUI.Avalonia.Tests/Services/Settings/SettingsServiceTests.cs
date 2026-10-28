@@ -28,8 +28,8 @@ public sealed class SettingsServiceTests
         var service = CreateService(settings);
         _ = service.Settings;
 
-        settings.PreviewFeatures.JsonAllowReflection = true;
-        settings.PreviewFeatures.YamlAllowReflection = true;
+        settings.PreviewFeatures.DisableJsonSerializationReflection = true;
+        settings.PreviewFeatures.DisableYamlSerializationReflection = true;
 
         service.SaveCount.ShouldBe(2);
     }

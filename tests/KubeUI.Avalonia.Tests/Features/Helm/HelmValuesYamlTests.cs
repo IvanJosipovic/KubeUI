@@ -1,3 +1,4 @@
+using KubeUI.Kubernetes.Serialization;
 using System.Text.Json;
 using KubeUI.Avalonia.Features.Helm;
 using Shouldly;
@@ -5,16 +6,20 @@ using YamlDotNet.Core;
 
 namespace KubeUI.Avalonia.Tests.Features.Helm;
 
-public sealed class HelmValuesYamlTests
+public sealed class HelmValuesYamlTests : IDisposable
 {
+    private readonly KubernetesYamlSerializer _yamlSerializer = new(allowReflection: true);
+
+    public void Dispose() => _yamlSerializer.Dispose();
+
     [Fact]
     public void Values_roundtrip_preserves_nested_json_types_and_quoted_strings()
     {
         using var source = JsonDocument.Parse("""
             {"replicas":3,"enabled":true,"server":{"name":"true","number":"123","ports":[80,443],"unset":null},"ratio":1.25}
             """);
-        var yaml = HelmValuesYaml.Serialize(source.RootElement);
-        var parsed = HelmValuesYaml.Parse(yaml);
+        var yaml = HelmValuesYaml.Serialize(source.RootElement, _yamlSerializer);
+        var parsed = HelmValuesYaml.Parse(yaml, _yamlSerializer);
         using var result = JsonDocument.Parse(k8s.KubernetesJson.Serialize(parsed));
 
         result.RootElement.GetProperty("replicas").GetInt32().ShouldBe(3);
@@ -37,7 +42,7 @@ public sealed class HelmValuesYamlTests
             server:
               <<: *defaults
               image: apache
-            """);
+            """, _yamlSerializer);
 
         using var result = JsonDocument.Parse(k8s.KubernetesJson.Serialize(parsed));
 
@@ -52,16 +57,16 @@ public sealed class HelmValuesYamlTests
         var exception = Should.Throw<YamlException>(() => HelmValuesYaml.Parse("""
             replicas: 1
             replicas: 2
-            """));
+            """, _yamlSerializer));
 
         exception.Message.ShouldContain("replicas");
     }
 
     [Fact]
     public void Values_reject_non_mapping_documents()
-        => Should.Throw<YamlException>(() => HelmValuesYaml.Parse("- one\n- two"));
+        => Should.Throw<YamlException>(() => HelmValuesYaml.Parse("- one\n- two", _yamlSerializer));
 
     [Fact]
     public void Blank_values_parse_as_empty_mapping()
-        => HelmValuesYaml.Parse(string.Empty).ShouldBeEmpty();
+        => HelmValuesYaml.Parse(string.Empty, _yamlSerializer).ShouldBeEmpty();
 }

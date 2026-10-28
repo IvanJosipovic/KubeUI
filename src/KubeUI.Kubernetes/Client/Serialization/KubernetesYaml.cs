@@ -13,9 +13,9 @@ using YamlDotNet.System.Text.Json;
 namespace KubeUI.Kubernetes.Serialization;
 
 /// <summary>
-/// This is a utility class that helps you load objects from YAML files.
+/// Internal YAML codec and builder helpers used by the application-owned serializer.
 /// </summary>
-public static class KubernetesYaml
+internal static class KubernetesYaml
 {
     private static bool s_useStaticContext;
 
@@ -156,6 +156,17 @@ public static class KubernetesYaml
     }
 
     public static IValueSerializer Serializer => s_threadLocalSerializer.Value;
+
+    internal static IDeserializer CreateDeserializer(bool allowReflection, bool strict) => allowReflection
+        ? strict
+            ? CommonReflectionDeserializerBuilder.WithDuplicateKeyChecking().Build()
+            : CommonReflectionDeserializerBuilder.IgnoreUnmatchedProperties().Build()
+        : strict
+            ? CreateStaticDeserializerBuilder(strict: true).WithDuplicateKeyChecking().Build()
+            : CreateStaticDeserializerBuilder(strict: false).IgnoreUnmatchedProperties().Build();
+
+    internal static IValueSerializer CreateSerializer(bool allowReflection) =>
+        allowReflection ? CreateReflectionSerializer() : CreateStaticSerializer();
 
     private static IValueSerializer CreateStaticSerializer() =>
         new StaticSerializerBuilder(s_staticContext)
@@ -1032,7 +1043,7 @@ public static class KubernetesYaml
         return LoadAllFromStringCore(content, key => typeMap[key], strict);
     }
 
-    private static List<object> LoadAllFromStringCore(string content, Func<string, Type> resolveType, bool strict)
+    internal static List<object> LoadAllFromStringCore(string content, Func<string, Type> resolveType, bool strict, IDeserializer? configuredDeserializer = null)
     {
         var types = new List<Type?>();
         var parser = new MergingParser(new Parser(new StringReader(content)));
@@ -1093,7 +1104,7 @@ public static class KubernetesYaml
         parser.Consume<StreamStart>();
         var ix = 0;
         var results = new List<object>();
-        var deserializer = strict ? s_threadLocalStrictDeserializer.Value : s_threadLocalDeserializer.Value;
+        var deserializer = configuredDeserializer ?? (strict ? s_threadLocalStrictDeserializer.Value : s_threadLocalDeserializer.Value);
         while (parser.Accept<DocumentStart>(out _))
         {
             var objType = types[ix++];
@@ -1158,6 +1169,7 @@ public static class KubernetesYaml
 
     public static string SerializeAll(IEnumerable<object> values)
     {
+        var serializer = s_threadLocalSerializer.Value;
         if (values == null)
         {
             return "";
@@ -1166,7 +1178,6 @@ public static class KubernetesYaml
         var stringBuilder = new StringBuilder();
         var writer = new StringWriter(stringBuilder);
         var emitter = new Emitter(writer);
-        var serializer = s_threadLocalSerializer.Value;
 
         emitter.Emit(new StreamStart());
 
@@ -1183,7 +1194,9 @@ public static class KubernetesYaml
         return stringBuilder.ToString();
     }
 
-    public static string Serialize(object value)
+    public static string Serialize(object value) => Serialize(value, s_threadLocalSerializer.Value);
+
+    internal static string Serialize(object value, IValueSerializer serializer)
     {
         if (value == null)
         {
@@ -1193,7 +1206,6 @@ public static class KubernetesYaml
         var stringBuilder = new StringBuilder();
         var writer = new StringWriter(stringBuilder);
         var emitter = new Emitter(writer);
-        var serializer = s_threadLocalSerializer.Value;
 
         emitter.Emit(new StreamStart());
         emitter.Emit(new DocumentStart());

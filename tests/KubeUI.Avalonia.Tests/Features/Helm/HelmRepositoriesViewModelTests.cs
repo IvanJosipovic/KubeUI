@@ -1,3 +1,4 @@
+using KubeUI.Kubernetes.Serialization;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Dock.Model.Core;
@@ -14,8 +15,12 @@ using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Features.Helm;
 
-public sealed class HelmRepositoriesViewModelTests
+public sealed class HelmRepositoriesViewModelTests : IDisposable
 {
+    private readonly KubernetesYamlSerializer _yamlSerializer = new(allowReflection: true);
+
+    public void Dispose() => _yamlSerializer.Dispose();
+
     [AvaloniaFact]
     public async Task Repository_header_matches_release_header_spacing_count_and_action_alignment()
     {
@@ -27,7 +32,7 @@ public sealed class HelmRepositoriesViewModelTests
             It.IsAny<string?>(), It.IsAny<CancellationToken>())).ReturnsAsync([]);
         using var repositories = new HelmRepositoriesViewModel(helm.Object, Mock.Of<IDialogService>(),
             Mock.Of<IHelmDocumentOpener>(), Mock.Of<IHelmListNotifier>());
-        using var releases = new HelmReleasesViewModel(helm.Object, Mock.Of<IFactory>(), Mock.Of<IDialogService>(),
+        using var releases = new HelmReleasesViewModel(helm.Object, _yamlSerializer, Mock.Of<IFactory>(), Mock.Of<IDialogService>(),
             Mock.Of<IHelmReleasePreviewService>(),
             () => Application.Current.GetRequiredTestService<ResourceYamlViewModel>(),
             Mock.Of<IHelmDocumentOpener>(), Mock.Of<IHelmListNotifier>());

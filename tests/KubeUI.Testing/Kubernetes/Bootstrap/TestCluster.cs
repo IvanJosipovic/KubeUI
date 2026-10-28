@@ -1,3 +1,4 @@
+using KubeUI.Kubernetes.Serialization;
 using System.Reflection;
 using k8s;
 using k8s.KubeConfigModels;
@@ -194,8 +195,8 @@ public sealed class TestCluster : IDisposable, IAsyncDisposable
 
     private K8SConfiguration CloneKubeConfig(string name)
     {
-        var kubeConfig = KubeUI.Kubernetes.Serialization.KubernetesYaml.Deserialize<K8SConfiguration>(
-            KubeUI.Kubernetes.Serialization.KubernetesYaml.Serialize(KubeConfig))
+        var serializer = _services.GetRequiredService<IKubernetesYamlSerializer>();
+        var kubeConfig = serializer.Deserialize<K8SConfiguration>(serializer.Serialize(KubeConfig))
             ?? throw new InvalidOperationException("Unable to clone the kubeconfig.");
         var currentContext = kubeConfig.CurrentContext
             ?? throw new InvalidOperationException("The kubeconfig has no current context.");
@@ -220,9 +221,10 @@ public sealed class TestCluster : IDisposable, IAsyncDisposable
         var createMethod = typeof(TestCluster)
             .GetMethod(nameof(CreateResourceAsync), BindingFlags.Static | BindingFlags.NonPublic)!;
 
-        foreach (var resource in KubeUI.Kubernetes.Serialization.KubernetesYaml.LoadAllFromString(
+        var typeMap = _services.GetRequiredService<KubernetesModelCatalog>().GetYamlTypeMap();
+        foreach (var resource in _services.GetRequiredService<IKubernetesYamlSerializer>().LoadAllFromString(
             yaml,
-            _services.GetRequiredService<KubernetesModelCatalog>().GetYamlTypeMap()).Cast<IKubernetesObject>())
+            key => typeMap[key]).Cast<IKubernetesObject>())
         {
             var createTask = (Task)createMethod
                 .MakeGenericMethod(resource.GetType())

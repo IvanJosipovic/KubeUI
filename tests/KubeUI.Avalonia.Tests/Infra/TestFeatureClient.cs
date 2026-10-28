@@ -10,8 +10,8 @@ internal sealed class TestFeatureClient : IFeatureClient
     {
         _values[FeatureFlagKeys.Helm] = helm;
         _values[FeatureFlagKeys.Hubble] = hubble;
-        _values[FeatureFlagKeys.JsonAllowReflection] = false;
-        _values[FeatureFlagKeys.YamlAllowReflection] = false;
+        _values[FeatureFlagKeys.DisableJsonSerializationReflection] = false;
+        _values[FeatureFlagKeys.DisableYamlSerializationReflection] = false;
     }
 
     public void Set(string flagKey, bool value)

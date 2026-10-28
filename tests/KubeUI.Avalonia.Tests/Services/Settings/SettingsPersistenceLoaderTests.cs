@@ -26,7 +26,7 @@ public sealed class SettingsPersistenceLoaderTests
     public void load_reads_preview_feature_flags_from_file()
     {
         var path = CreateSettingsFile(
-            "{\"Settings\":{\"Features\":{\"Helm\":true,\"Hubble\":false,\"JsonAllowReflection\":true,\"YamlAllowReflection\":false}}}");
+            "{\"Settings\":{\"Features\":{\"Helm\":true,\"Hubble\":false,\"DisableJsonSerializationReflection\":true,\"DisableYamlSerializationReflection\":false}}}");
 
         try
         {
@@ -34,8 +34,8 @@ public sealed class SettingsPersistenceLoaderTests
 
             result.Settings.PreviewFeatures.Helm.ShouldBeTrue();
             result.Settings.PreviewFeatures.Hubble.ShouldBeFalse();
-            result.Settings.PreviewFeatures.JsonAllowReflection.ShouldBeTrue();
-            result.Settings.PreviewFeatures.YamlAllowReflection.ShouldBeFalse();
+            result.Settings.PreviewFeatures.DisableJsonSerializationReflection.ShouldBeTrue();
+            result.Settings.PreviewFeatures.DisableYamlSerializationReflection.ShouldBeFalse();
         }
         finally
         {
@@ -54,8 +54,8 @@ public sealed class SettingsPersistenceLoaderTests
 
             result.Settings.PreviewFeatures.Helm.ShouldBeFalse();
             result.Settings.PreviewFeatures.Hubble.ShouldBeFalse();
-            result.Settings.PreviewFeatures.JsonAllowReflection.ShouldBeFalse();
-            result.Settings.PreviewFeatures.YamlAllowReflection.ShouldBeFalse();
+            result.Settings.PreviewFeatures.DisableJsonSerializationReflection.ShouldBeFalse();
+            result.Settings.PreviewFeatures.DisableYamlSerializationReflection.ShouldBeFalse();
         }
         finally
         {
@@ -74,8 +74,8 @@ public sealed class SettingsPersistenceLoaderTests
         result.Settings.LoggingEnabled.ShouldBeFalse();
         result.Settings.PreviewFeatures.Helm.ShouldBeFalse();
         result.Settings.PreviewFeatures.Hubble.ShouldBeFalse();
-        result.Settings.PreviewFeatures.JsonAllowReflection.ShouldBeFalse();
-        result.Settings.PreviewFeatures.YamlAllowReflection.ShouldBeFalse();
+        result.Settings.PreviewFeatures.DisableJsonSerializationReflection.ShouldBeFalse();
+        result.Settings.PreviewFeatures.DisableYamlSerializationReflection.ShouldBeFalse();
     }
 
     [Fact]

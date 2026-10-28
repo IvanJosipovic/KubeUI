@@ -1,3 +1,4 @@
+using KubeUI.Kubernetes.Serialization;
 using System.Collections.Specialized;
 using System.Globalization;
 using Avalonia.Controls.Selection;
@@ -29,6 +30,7 @@ namespace KubeUI.Avalonia.Features.Helm.Releases;
 public sealed partial class HelmReleasesViewModel : ViewModelBase, IInitializeCluster, IDisposable
 {
     private const string NamespaceScopeFilterId = "helm-releases-namespace";
+    private readonly IKubernetesYamlSerializer _yamlSerializer;
     private readonly IHelmService _helmService;
     private readonly IFactory _factory;
     private readonly IDialogService _dialogService;
@@ -69,6 +71,7 @@ public sealed partial class HelmReleasesViewModel : ViewModelBase, IInitializeCl
 
     public HelmReleasesViewModel(
         IHelmService helmService,
+        IKubernetesYamlSerializer yamlSerializer,
         IFactory factory,
         IDialogService dialogService,
         IHelmReleasePreviewService previewService,
@@ -79,6 +82,7 @@ public sealed partial class HelmReleasesViewModel : ViewModelBase, IInitializeCl
         ILogger<HelmReleasesViewModel>? logger = null)
     {
         _helmService = helmService;
+        _yamlSerializer = yamlSerializer;
         _factory = factory;
         _dialogService = dialogService;
         _previewService = previewService;
@@ -217,7 +221,7 @@ public sealed partial class HelmReleasesViewModel : ViewModelBase, IInitializeCl
         try
         {
             var values = await _helmService.GetValuesAsync(_connection with { Namespace = release.Namespace }, release.Name, cancellationToken);
-            var yaml = HelmValuesYaml.Serialize(values);
+            var yaml = HelmValuesYaml.Serialize(values, _yamlSerializer);
             var id = $"helm-values-{Cluster!.Runtime.Name}-{release.Namespace}-{release.Name}";
             var viewer = _factory.FindDockableById(id) is ResourceYamlViewModel existing
                 ? existing
