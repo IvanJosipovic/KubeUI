@@ -12,11 +12,18 @@ public static partial class KubeUIKubernetesServiceCollectionExtensions
 {
     private static readonly Lock _jsonConfigurationLock = new();
     private static bool _isJsonConfigured;
+    private static bool? _configuredJsonAllowReflection;
     private static ILogger? _jsonLogger;
 
-    public static IServiceCollection AddKubeUIKubernetesServices(this IServiceCollection services)
+    /// <summary>Adds KubeUI Kubernetes services and configures Kubernetes JSON serialization.</summary>
+    /// <param name="services">Service collection to configure.</param>
+    /// <param name="jsonAllowReflection">Whether Kubernetes JSON serialization may use reflection instead of generated metadata.</param>
+    /// <returns>The configured service collection.</returns>
+    public static IServiceCollection AddKubeUIKubernetesServices(
+        this IServiceCollection services,
+        bool jsonAllowReflection = false)
     {
-        ConfigureKubeUIKubernetesJson();
+        ConfigureKubeUIKubernetesJson(jsonAllowReflection);
         services.AddSingleton<IThreadDispatcher, ImmediateThreadDispatcher>();
         services.AddSingleton<IKubeConfigPathProvider, DefaultKubeConfigPathProvider>();
         services.AddSingleton<IPodLogSessionResolver, PodLogSessionResolver>();
@@ -40,16 +47,27 @@ public static partial class KubeUIKubernetesServiceCollectionExtensions
         "Trimming",
         "IL2026",
         Justification = "KubeUI combines its generated JSON context with KubernetesClient's generated source context; CRD payloads use GenericKubernetesObject and JsonElement extension data.")]
-    private static void ConfigureKubeUIKubernetesJson()
+    private static void ConfigureKubeUIKubernetesJson(bool allowReflection)
     {
         lock (_jsonConfigurationLock)
         {
             if (_isJsonConfigured)
             {
+                if (_configuredJsonAllowReflection != allowReflection)
+                {
+                    throw new InvalidOperationException(
+                        "Kubernetes JSON serialization was already configured with a different reflection setting. " +
+                        "Configure this setting once at application startup.");
+                }
+
                 return;
             }
 
-            EnsureResolverCovers(KubernetesJsonRequiredTypes);
+            EnsureJsonReflectionIsAvailable(allowReflection);
+            if (!allowReflection)
+            {
+                EnsureResolverCovers(KubernetesJsonRequiredTypes);
+            }
 
             KubernetesJson.AddJsonOptions(options =>
             {
@@ -60,23 +78,7 @@ public static partial class KubeUIKubernetesServiceCollectionExtensions
 
                 try
                 {
-                    options.TypeInfoResolver = JsonTypeInfoResolver.Combine(
-                        KubernetesJsonStaticContext.Default,
-                        SourceGenerationContext.Default,
-                        new DefaultJsonTypeInfoResolver
-                        {
-                            Modifiers =
-                            {
-                                jsonTypeInfo =>
-                                {
-                                    if (jsonTypeInfo.OriginatingResolver is DefaultJsonTypeInfoResolver
-                                        && _jsonLogger is not null)
-                                    {
-                                        LogTypeSerializedUsingReflection(_jsonLogger, jsonTypeInfo.Type);
-                                    }
-                                }
-                            }
-                        });
+                    options.TypeInfoResolver = CreateKubeUIKubernetesJsonResolver(allowReflection, _jsonLogger);
                 }
                 catch (InvalidOperationException) when (options.IsReadOnly)
                 {
@@ -86,7 +88,39 @@ public static partial class KubeUIKubernetesServiceCollectionExtensions
             });
 
             _isJsonConfigured = true;
+            _configuredJsonAllowReflection = allowReflection;
         }
+    }
+
+    [UnconditionalSuppressMessage(
+        "Trimming",
+        "IL2026",
+        Justification = "Reflection is retained as an explicit opt-in mode, guarded by JsonSerializer.IsReflectionEnabledByDefault; source-generated mode remains the default.")]
+    private static IJsonTypeInfoResolver CreateKubeUIKubernetesJsonResolver(bool allowReflection, ILogger? logger)
+    {
+        var reflectionResolver = new DefaultJsonTypeInfoResolver
+        {
+            Modifiers =
+            {
+                jsonTypeInfo =>
+                {
+                    if (jsonTypeInfo.OriginatingResolver is DefaultJsonTypeInfoResolver
+                        && logger is not null)
+                    {
+                        LogTypeSerializedUsingReflection(logger, jsonTypeInfo.Type);
+                    }
+                }
+            }
+        };
+
+        return allowReflection
+            ? JsonTypeInfoResolver.Combine(
+                KubernetesJsonStaticContext.Default,
+                SourceGenerationContext.Default,
+                reflectionResolver)
+            : JsonTypeInfoResolver.Combine(
+                KubernetesJsonStaticContext.Default,
+                SourceGenerationContext.Default);
     }
 
     /// <summary>
@@ -127,11 +161,35 @@ public static partial class KubeUIKubernetesServiceCollectionExtensions
     /// <summary>
     /// Gets the JSON type metadata resolver that KubeUI installs for Kubernetes payloads.
     /// </summary>
-    /// <returns>The combined generated resolver used for Kubernetes JSON serialization.</returns>
-    internal static IJsonTypeInfoResolver GetKubeUIKubernetesJsonResolver()
-        => JsonTypeInfoResolver.Combine(
+    /// <returns>The generated resolver, optionally followed by a reflection fallback.</returns>
+    [UnconditionalSuppressMessage(
+        "Trimming",
+        "IL2026",
+        Justification = "This test-visible resolver factory creates a reflection resolver only when the caller explicitly allows reflection.")]
+    internal static IJsonTypeInfoResolver GetKubeUIKubernetesJsonResolver(bool allowReflection = false)
+    {
+        EnsureJsonReflectionIsAvailable(allowReflection);
+        if (allowReflection)
+        {
+            return JsonTypeInfoResolver.Combine(
+                KubernetesJsonStaticContext.Default,
+                SourceGenerationContext.Default,
+                new DefaultJsonTypeInfoResolver());
+        }
+
+        return JsonTypeInfoResolver.Combine(
             KubernetesJsonStaticContext.Default,
             SourceGenerationContext.Default);
+    }
+
+    internal static void EnsureJsonReflectionIsAvailable(bool allowReflection)
+    {
+        if (allowReflection && !JsonSerializer.IsReflectionEnabledByDefault)
+        {
+            throw new InvalidOperationException(
+                "Kubernetes JSON reflection cannot be enabled because reflection-based JSON serialization is unavailable.");
+        }
+    }
 
     /// <summary>
     /// Verifies that the combined resolver can supply metadata for every type KubeUI

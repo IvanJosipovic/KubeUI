@@ -20,10 +20,13 @@ namespace KubeUI.Avalonia.Infrastructure.DependencyInjection;
 
 public static class KubeUIAvaloniaServiceCollectionExtensions
 {
-    public static IServiceCollection AddKubeUIAppServices(this IServiceCollection services, Action<IServiceCollection>? configureOverrides = null)
+    public static IServiceCollection AddKubeUIAppServices(
+        this IServiceCollection services,
+        Action<IServiceCollection>? configureOverrides = null,
+        bool jsonAllowReflection = false)
     {
         services.AddKubeUIAvaloniaServices();
-        services.AddKubeUIKubernetesServices();
+        services.AddKubeUIKubernetesServices(jsonAllowReflection);
         services.AddCilium();
         services.Replace(ServiceDescriptor.Singleton<IThreadDispatcher>(AvaloniaScheduler.Instance));
         services.AddKubeUIDialogServices();

@@ -25,7 +25,16 @@ public sealed partial class Settings : ObservableObject
     public partial bool PreReleaseChannel { get; set; }
 
     [ObservableProperty]
-    public partial FeatureSettings Features { get; set; } = new();
+    [property: System.Text.Json.Serialization.JsonPropertyName("Features")]
+    public partial FeatureSettings PreviewFeatures { get; set; } = new();
+
+    [System.Text.Json.Serialization.JsonIgnore]
+    [Obsolete("Use PreviewFeatures instead.")]
+    public FeatureSettings Features
+    {
+        get => PreviewFeatures;
+        set => PreviewFeatures = value;
+    }
 
     [ObservableProperty]
     public partial Dictionary<string, ClusterSettings> ClusterSettings { get; set; } = [];

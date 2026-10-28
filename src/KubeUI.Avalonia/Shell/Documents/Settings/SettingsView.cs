@@ -73,17 +73,27 @@ public sealed class SettingsView() : KubeUIView<SettingsViewModel>
                         CreateAgentRow(vm),
                         CreateMcpClientGrants(vm),
 
-                        CreateHeading(Assets.Resources.SettingsView_PreviewFeaturesHeading!),
+                        CreateHeading(Assets.Resources.SettingsView_FeaturesHeading!),
                         CreateToggleRow(
                             vm,
                             Assets.Resources.SettingsView_HelmFeature_ToolTip,
                             Assets.Resources.SettingsView_HelmFeature_Label!,
-                            x => x.SettingsService.Settings.Features.Helm),
+                            x => x.SettingsService.Settings.PreviewFeatures.Helm),
                         CreateToggleRow(
                             vm,
                             Assets.Resources.SettingsView_HubbleFeature_ToolTip,
                             Assets.Resources.SettingsView_HubbleFeature_Label!,
-                            x => x.SettingsService.Settings.Features.Hubble)));
+                            x => x.SettingsService.Settings.PreviewFeatures.Hubble),
+                        CreateToggleRow(
+                            vm,
+                            Assets.Resources.SettingsView_JsonAllowReflection_ToolTip!,
+                            Assets.Resources.SettingsView_JsonAllowReflection_Label!,
+                            x => x.SettingsService.Settings.PreviewFeatures.JsonAllowReflection),
+                        CreateToggleRow(
+                            vm,
+                            Assets.Resources.SettingsView_YamlAllowReflection_ToolTip!,
+                            Assets.Resources.SettingsView_YamlAllowReflection_Label!,
+                            x => x.SettingsService.Settings.PreviewFeatures.YamlAllowReflection)));
     }
 
     private static Border CreateHeading(string text)

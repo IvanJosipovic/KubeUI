@@ -888,8 +888,8 @@
     <value>Allows updates to pre-release versions of KubeUI</value>
     <comment/>
   </data>
-  <data name="SettingsView_PreviewFeaturesHeading" xml:space="preserve">
-    <value>Preview Features</value>
+  <data name="SettingsView_FeaturesHeading" xml:space="preserve">
+    <value>Features</value>
     <comment/>
   </data>
   <data name="SettingsView_HelmFeature_Label" xml:space="preserve">
@@ -906,6 +906,22 @@
   </data>
   <data name="SettingsView_HubbleFeature_ToolTip" xml:space="preserve">
     <value>Enables the Hubble integration.</value>
+    <comment/>
+  </data>
+  <data name="SettingsView_JsonAllowReflection_Label" xml:space="preserve">
+    <value>Allow Reflection for JSON (Restart Required)</value>
+    <comment/>
+  </data>
+  <data name="SettingsView_JsonAllowReflection_ToolTip" xml:space="preserve">
+    <value>Allows Kubernetes JSON serialization to fall back to reflection when generated metadata is missing. When disabled, missing metadata will fail instead of using reflection. This requires runtime support for JSON reflection.</value>
+    <comment/>
+  </data>
+  <data name="SettingsView_YamlAllowReflection_Label" xml:space="preserve">
+    <value>Allow Reflection for YAML (Restart Required)</value>
+    <comment/>
+  </data>
+  <data name="SettingsView_YamlAllowReflection_ToolTip" xml:space="preserve">
+    <value>Uses reflection-based Kubernetes YAML builders instead of generated metadata. This setting does not change the separate Kubernetes JSON reflection setting.</value>
     <comment/>
   </data>
   <data name="SettingsView_McpEnabled_Label" xml:space="preserve">

@@ -18,7 +18,9 @@ public sealed class FeatureClientTests
             Features = new FeatureSettings
             {
                 Helm = true,
-                Hubble = false
+                Hubble = false,
+                JsonAllowReflection = true,
+                YamlAllowReflection = false
             }
         };
         var settingsService = new Mock<ISettingsService>();
@@ -27,6 +29,8 @@ public sealed class FeatureClientTests
 
         client.GetBooleanValue(FeatureFlagKeys.Helm, false).ShouldBeTrue();
         client.GetBooleanValue(FeatureFlagKeys.Hubble, true).ShouldBeFalse();
+        client.GetBooleanValue(FeatureFlagKeys.JsonAllowReflection, false).ShouldBeTrue();
+        client.GetBooleanValue(FeatureFlagKeys.YamlAllowReflection, true).ShouldBeFalse();
 
         var details = client.GetBooleanDetails(FeatureFlagKeys.Helm, false);
         details.FlagKey.ShouldBe(FeatureFlagKeys.Helm);
@@ -44,6 +48,8 @@ public sealed class FeatureClientTests
 
         client.GetBooleanValue(FeatureFlagKeys.Helm, true).ShouldBeFalse();
         client.GetBooleanValue(FeatureFlagKeys.Hubble, true).ShouldBeFalse();
+        client.GetBooleanValue(FeatureFlagKeys.JsonAllowReflection, true).ShouldBeFalse();
+        client.GetBooleanValue(FeatureFlagKeys.YamlAllowReflection, true).ShouldBeFalse();
     }
 
     [Fact]

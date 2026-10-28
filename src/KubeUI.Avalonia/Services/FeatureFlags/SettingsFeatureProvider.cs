@@ -3,7 +3,7 @@ using KubeUI.Avalonia.Services.Settings;
 
 namespace KubeUI.Avalonia.Services.FeatureFlags;
 
-/// <summary>Resolves preview feature flags from persisted application settings.</summary>
+/// <summary>Resolves feature flags from persisted application settings.</summary>
 public sealed class SettingsFeatureProvider : IFeatureProvider
 {
     private readonly ISettingsService _settingsService;
@@ -27,12 +27,14 @@ public sealed class SettingsFeatureProvider : IFeatureProvider
         // The settings-backed provider resolves from persisted FeatureSettings only; targeting keys and
         // evaluation attributes are intentionally not used (they are no-ops for the file-backed store).
         _ = context;
-        var features = _settingsService.Settings.Features ?? new();
+        var features = _settingsService.Settings.PreviewFeatures ?? new();
 
         return flagKey switch
         {
             FeatureFlagKeys.Helm => Resolve(flagKey, features.Helm),
             FeatureFlagKeys.Hubble => Resolve(flagKey, features.Hubble),
+            FeatureFlagKeys.JsonAllowReflection => Resolve(flagKey, features.JsonAllowReflection),
+            FeatureFlagKeys.YamlAllowReflection => Resolve(flagKey, features.YamlAllowReflection),
             _ => new ResolutionDetails<bool>(
                 flagKey,
                 defaultValue,

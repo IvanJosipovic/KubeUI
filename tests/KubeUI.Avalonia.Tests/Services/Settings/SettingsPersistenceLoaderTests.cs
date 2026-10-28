@@ -26,14 +26,16 @@ public sealed class SettingsPersistenceLoaderTests
     public void load_reads_preview_feature_flags_from_file()
     {
         var path = CreateSettingsFile(
-            "{\"Settings\":{\"Features\":{\"Helm\":true,\"Hubble\":false}}}");
+            "{\"Settings\":{\"Features\":{\"Helm\":true,\"Hubble\":false,\"JsonAllowReflection\":true,\"YamlAllowReflection\":false}}}");
 
         try
         {
             var result = SettingsPersistenceLoader.Load(path);
 
-            result.Settings.Features.Helm.ShouldBeTrue();
-            result.Settings.Features.Hubble.ShouldBeFalse();
+            result.Settings.PreviewFeatures.Helm.ShouldBeTrue();
+            result.Settings.PreviewFeatures.Hubble.ShouldBeFalse();
+            result.Settings.PreviewFeatures.JsonAllowReflection.ShouldBeTrue();
+            result.Settings.PreviewFeatures.YamlAllowReflection.ShouldBeFalse();
         }
         finally
         {
@@ -50,8 +52,10 @@ public sealed class SettingsPersistenceLoaderTests
         {
             var result = SettingsPersistenceLoader.Load(path);
 
-            result.Settings.Features.Helm.ShouldBeFalse();
-            result.Settings.Features.Hubble.ShouldBeFalse();
+            result.Settings.PreviewFeatures.Helm.ShouldBeFalse();
+            result.Settings.PreviewFeatures.Hubble.ShouldBeFalse();
+            result.Settings.PreviewFeatures.JsonAllowReflection.ShouldBeFalse();
+            result.Settings.PreviewFeatures.YamlAllowReflection.ShouldBeFalse();
         }
         finally
         {
@@ -68,8 +72,10 @@ public sealed class SettingsPersistenceLoaderTests
 
         result.Settings.TelemetryEnabled.ShouldBeTrue();
         result.Settings.LoggingEnabled.ShouldBeFalse();
-        result.Settings.Features.Helm.ShouldBeFalse();
-        result.Settings.Features.Hubble.ShouldBeFalse();
+        result.Settings.PreviewFeatures.Helm.ShouldBeFalse();
+        result.Settings.PreviewFeatures.Hubble.ShouldBeFalse();
+        result.Settings.PreviewFeatures.JsonAllowReflection.ShouldBeFalse();
+        result.Settings.PreviewFeatures.YamlAllowReflection.ShouldBeFalse();
     }
 
     [Fact]

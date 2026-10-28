@@ -142,11 +142,11 @@ public class SettingsService : ObservableObject, ISettingsService, IClusterSetti
 
         _hookedSettings = settings;
         settings.PropertyChanged += Settings_PropertyChanged;
-        if (settings.Features is null)
+        if (settings.PreviewFeatures is null)
         {
-            settings.Features = new();
+            settings.PreviewFeatures = new();
         }
-        HookFeatures(settings.Features);
+        HookFeatures(settings.PreviewFeatures);
     }
 
     private void HookFeatures(FeatureSettings? features)
@@ -171,11 +171,10 @@ public class SettingsService : ObservableObject, ISettingsService, IClusterSetti
 
     private void Settings_PropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(AppSettings.Features) && sender is AppSettings settings)
+        if (e.PropertyName == nameof(AppSettings.PreviewFeatures) && sender is AppSettings settings)
         {
-            HookFeatures(settings.Features);
+            HookFeatures(settings.PreviewFeatures);
         }
-
         SaveSettings();
     }
 

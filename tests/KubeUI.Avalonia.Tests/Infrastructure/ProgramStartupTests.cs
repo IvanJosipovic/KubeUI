@@ -1,4 +1,6 @@
 using KubeUI.Desktop;
+using KubeUI.Avalonia.Options;
+using KubeUI.Avalonia.Services.Settings;
 using KubeUI.Kubernetes.Serialization;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -20,6 +22,33 @@ public sealed class ProgramStartupTests
             using var host = Program.CreateHostBuilder([], includeOptionalServices: false).Build();
 
             Assert.True(KubernetesYaml.UseStaticContext);
+        }
+        finally
+        {
+            KubernetesYaml.UseStaticContext = previousValue;
+        }
+    }
+
+    [Fact]
+    public void CreateHostBuilder_uses_persisted_yaml_source_generation_setting()
+    {
+        var previousValue = KubernetesYaml.UseStaticContext;
+        try
+        {
+            var settings = new SettingsPersistenceData
+            {
+                Settings = new KubeUI.Avalonia.Options.Settings
+                {
+                    Features = new FeatureSettings { YamlAllowReflection = true }
+                }
+            };
+
+            using var host = Program.CreateHostBuilder(
+                [],
+                includeOptionalServices: false,
+                settingsOverride: settings).Build();
+
+            KubernetesYaml.UseStaticContext.ShouldBeFalse();
         }
         finally
         {

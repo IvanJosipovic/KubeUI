@@ -16,9 +16,22 @@ public sealed class SettingsServiceTests
         var service = CreateService(settings);
         _ = service.Settings;
 
-        settings.Features.Helm = true;
+        settings.PreviewFeatures.Helm = true;
 
         service.SaveCount.ShouldBe(1);
+    }
+
+    [Fact]
+    public void changing_nested_source_generation_flags_saves_settings()
+    {
+        var settings = new AppSettings();
+        var service = CreateService(settings);
+        _ = service.Settings;
+
+        settings.PreviewFeatures.JsonAllowReflection = true;
+        settings.PreviewFeatures.YamlAllowReflection = true;
+
+        service.SaveCount.ShouldBe(2);
     }
 
     [Fact]
@@ -27,10 +40,10 @@ public sealed class SettingsServiceTests
         var settings = new AppSettings();
         var service = CreateService(settings);
         _ = service.Settings;
-        var original = settings.Features;
+        var original = settings.PreviewFeatures;
         var replacement = new FeatureSettings();
 
-        settings.Features = replacement;
+        settings.PreviewFeatures = replacement;
         replacement.Hubble = true;
         original.Helm = true;
 
@@ -46,8 +59,8 @@ public sealed class SettingsServiceTests
         var replacementSettings = new AppSettings();
 
         service.Settings = replacementSettings;
-        replacementSettings.Features.Helm = true;
-        originalSettings.Features.Hubble = true;
+        replacementSettings.PreviewFeatures.Helm = true;
+        originalSettings.PreviewFeatures.Hubble = true;
 
         service.SaveCount.ShouldBe(2);
     }

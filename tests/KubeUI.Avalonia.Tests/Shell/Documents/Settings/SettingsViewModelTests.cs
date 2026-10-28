@@ -150,7 +150,9 @@ public sealed class SettingsViewModelTests
             Features = new FeatureSettings
             {
                 Helm = true,
-                Hubble = false
+                Hubble = false,
+                JsonAllowReflection = false,
+                YamlAllowReflection = true
             }
         };
         var settingsService = new Mock<ISettingsService>();
@@ -167,22 +169,33 @@ public sealed class SettingsViewModelTests
         Dispatcher.UIThread.RunJobs();
 
         view.GetVisualDescendants().OfType<TextBlock>().Select(text => text.Text)
-            .ShouldContain(Assets.Resources.SettingsView_PreviewFeaturesHeading);
+            .ShouldContain(Assets.Resources.SettingsView_FeaturesHeading);
 
         var helmRow = FindToggleRow(view, Assets.Resources.SettingsView_HelmFeature_Label!);
         var hubbleRow = FindToggleRow(view, Assets.Resources.SettingsView_HubbleFeature_Label!);
+        var jsonRow = FindToggleRow(view, Assets.Resources.SettingsView_JsonAllowReflection_Label!);
+        var yamlRow = FindToggleRow(view, Assets.Resources.SettingsView_YamlAllowReflection_Label!);
         var helm = helmRow.Children.OfType<CheckBox>().Single();
         var hubble = hubbleRow.Children.OfType<CheckBox>().Single();
+        var json = jsonRow.Children.OfType<CheckBox>().Single();
+        var yaml = yamlRow.Children.OfType<CheckBox>().Single();
 
         helm.IsChecked.ShouldBe(true);
         hubble.IsChecked.ShouldBe(false);
+        json.IsChecked.ShouldBe(false);
+        yaml.IsChecked.ShouldBe(true);
 
         helm.IsChecked = false;
         hubble.IsChecked = true;
         Dispatcher.UIThread.RunJobs();
 
-        settings.Features.Helm.ShouldBeFalse();
-        settings.Features.Hubble.ShouldBeTrue();
+        settings.PreviewFeatures.Helm.ShouldBeFalse();
+        settings.PreviewFeatures.Hubble.ShouldBeTrue();
+        json.IsChecked = true;
+        yaml.IsChecked = false;
+        Dispatcher.UIThread.RunJobs();
+        settings.PreviewFeatures.JsonAllowReflection.ShouldBeTrue();
+        settings.PreviewFeatures.YamlAllowReflection.ShouldBeFalse();
     }
 
     [AvaloniaFact]
