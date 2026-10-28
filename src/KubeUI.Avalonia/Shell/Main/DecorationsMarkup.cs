@@ -14,7 +14,7 @@ internal static class DecorationsMarkup
 
     internal static TemplateBinding Template(AvaloniaProperty property) => new() { Property = property };
 
-    internal static Button CaptionButton(NameScope names, ControlTheme theme, WindowDecorationsElementRole role, string content)
+    internal static Button CaptionButton(NameScope names, ControlTheme theme, WindowDecorationsElementRole role, object content)
     {
         var name = role switch
         {

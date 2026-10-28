@@ -2,6 +2,7 @@ using Avalonia.Controls.Chrome;
 using Avalonia.Controls.Primitives.PopupPositioning;
 using Avalonia.Data.Converters;
 using Avalonia.Input;
+using Path = Avalonia.Controls.Shapes.Path;
 using Avalonia.Markup.Xaml.MarkupExtensions;
 using FluentIcons.Avalonia;
 using FluentIcons.Avalonia.Internals;
@@ -81,9 +82,14 @@ internal static class MainWindowDecorations
             .HorizontalAlignment(HorizontalAlignment.Right)
             .VerticalAlignment(VerticalAlignment.Top)
             .Children(
-                CaptionButton(names, captionButtonTheme, WindowDecorationsElementRole.MinimizeButton, "−"),
-                CaptionButton(names, captionButtonTheme, WindowDecorationsElementRole.MaximizeButton, "□"),
-                CaptionButton(names, captionButtonTheme, WindowDecorationsElementRole.CloseButton, "×"));
+                CaptionButton(names, captionButtonTheme, WindowDecorationsElementRole.MinimizeButton,
+                    CaptionIcon("M2048 1229v-205h-2048v205h2048z")),
+                CaptionButton(names, captionButtonTheme, WindowDecorationsElementRole.MaximizeButton,
+                    CaptionIcon("M2048 2048v-2048h-2048v2048h2048zM1843 1843h-1638v-1638h1638v1638z", true)),
+                CaptionButton(names, captionButtonTheme, WindowDecorationsElementRole.CloseButton,
+                    CaptionIcon("M1169 1024l879 -879l-145 -145l-879 879l-879 -879l-145 145l879 879l-879 879l145 145l879 -879l879 879l145 -145z"))
+                    .Background(new SolidColorBrush(Color.Parse("#ffe81123")))
+                    .BorderBrush(new SolidColorBrush(Color.Parse("#fff1707a"))));
 
         var overlay = new Grid()
             .Name("PART_TitleBar")
@@ -107,6 +113,26 @@ internal static class MainWindowDecorations
             Underlay = underlay,
             Overlay = overlay
         };
+    }
+
+    private static Viewbox CaptionIcon(string geometry, bool isMaximize = false)
+    {
+        var path = new Path()
+            .Stretch(Stretch.UniformToFill)
+            .Fill(new DynamicResourceExtension("CaptionButtonForeground"))
+            .Data(Geometry.Parse(geometry));
+        if (isMaximize)
+        {
+            path.Name("RestoreButtonPath");
+        }
+
+        var icon = new Viewbox().Width(11).Margin(new Thickness(2)).Child(path);
+        if (isMaximize)
+        {
+            icon.RenderTransform(new RotateTransform(-90));
+        }
+
+        return icon;
     }
 
     private static void ShowOptionsMenu(Window window, Button button, MenuFlyout menu)

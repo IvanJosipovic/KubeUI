@@ -63,6 +63,36 @@ public sealed class MainWindowTests
     }
 
     [AvaloniaFact]
+    public void caption_buttons_use_fluent_vector_icons()
+    {
+        using var scope = Application.Current.GetTestServices().CreateScope();
+        var vm = scope.ServiceProvider.GetRequiredService<MainViewModel>();
+        var window = new MainWindow(useNativeChrome: false).DataContext(vm);
+        try
+        {
+            var template = window.WindowDecorationsTheme!.Setters.OfType<Setter>()
+                .Single(setter => setter.Property == WindowDrawnDecorations.TemplateProperty)
+                .Value.ShouldBeAssignableTo<IWindowDrawnDecorationsTemplate>();
+            var result = ((TemplateResult<WindowDrawnDecorationsContent>)((ITemplate)template).Build());
+            foreach (var name in new[] { "PART_MinimizeButton", "PART_MaximizeButton", "PART_CloseButton" })
+            {
+                var button = result.NameScope.Find<Button>(name).ShouldNotBeNull();
+                var icon = button.Content.ShouldBeOfType<Viewbox>();
+                icon.Width.ShouldBe(11d);
+                icon.Child.ShouldBeOfType<global::Avalonia.Controls.Shapes.Path>();
+            }
+
+            var maximize = result.NameScope.Find<Button>("PART_MaximizeButton").ShouldNotBeNull();
+            var path = ((Viewbox)maximize.Content!).Child.ShouldBeOfType<global::Avalonia.Controls.Shapes.Path>();
+            path.Name.ShouldBe("RestoreButtonPath");
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    [AvaloniaFact]
     public void managed_title_bar_is_at_top_of_decoration_layer()
     {
         using var scope = Application.Current.GetTestServices().CreateScope();
