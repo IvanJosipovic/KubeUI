@@ -348,6 +348,20 @@ public sealed class HubbleModelTests
     }
 
     [Fact]
+    public void Service_map_ignores_replayed_events_and_releases_evicted_identities()
+    {
+        var builder = new ServiceMapGraphBuilder(maxRetainedFlows: 2);
+        builder.AddFlow(Flow("first"));
+        builder.AddFlow(Flow("first"));
+        builder.AddFlow(Flow("second"));
+        builder.Build(TimeSpan.FromMinutes(5), namespaces: ["team-a"]).Edges.Single().FlowCount.ShouldBe(2);
+        builder.AddFlow(Flow("third"));
+        builder.AddFlow(Flow("first"));
+        builder.GetFlows(TimeSpan.FromMinutes(5), namespaces: ["team-a"]).Select(flow => flow.Uuid)
+            .ShouldBe(["third", "first"]);
+    }
+
+    [Fact]
     public void Service_map_bounds_retained_flow_events()
     {
         var builder = new ServiceMapGraphBuilder(maxRetainedFlows: 2);

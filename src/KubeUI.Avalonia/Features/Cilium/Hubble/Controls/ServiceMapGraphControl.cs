@@ -303,6 +303,8 @@ public sealed class ServiceMapGraphControl : UserControl, IDisposable, IGraphCon
                     }
                     vertex.Node = node;
                     UpdateNodeControl(vertex);
+                    if (_area.VertexList.TryGetValue(vertex, out var vertexControl))
+                        vertexControl.ContextMenu = CreateNodeContextMenu(vertex);
                 }
                 else
                 {
@@ -336,6 +338,13 @@ public sealed class ServiceMapGraphControl : UserControl, IDisposable, IGraphCon
             else
             {
                 edge.UpdateFrom(updated);
+                if (_area.EdgesList.TryGetValue(edge, out var edgeControl))
+                {
+                    if (updated.DeniedCount > 0 && !edgeControl.Classes.Contains("ServiceMapDeniedFlow"))
+                        edgeControl.Classes.Add("ServiceMapDeniedFlow");
+                    else if (updated.DeniedCount == 0)
+                        edgeControl.Classes.Remove("ServiceMapDeniedFlow");
+                }
             }
         }
 

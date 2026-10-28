@@ -9,6 +9,7 @@ public sealed class ServiceMapGraphBuilder
     private static readonly TimeSpan s_maxRetention = TimeSpan.FromHours(1);
     private readonly Lock _gate = new();
     private readonly FlowViewModel[] _recentFlows;
+    private readonly HashSet<string> _retainedUuids = new(StringComparer.Ordinal);
     private readonly int _maxRetainedFlows;
     private int _nextFlowIndex;
     private int _flowCount;
@@ -29,6 +30,16 @@ public sealed class ServiceMapGraphBuilder
 
         lock (_gate)
         {
+            if (!string.IsNullOrWhiteSpace(flow.Uuid) && !_retainedUuids.Add(flow.Uuid))
+            {
+                return;
+            }
+
+            var evicted = _recentFlows[_nextFlowIndex];
+            if (evicted is not null && !string.IsNullOrWhiteSpace(evicted.Uuid))
+            {
+                _retainedUuids.Remove(evicted.Uuid);
+            }
             _recentFlows[_nextFlowIndex] = flow;
             _nextFlowIndex = (_nextFlowIndex + 1) % _maxRetainedFlows;
             _flowCount = Math.Min(_flowCount + 1, _maxRetainedFlows);

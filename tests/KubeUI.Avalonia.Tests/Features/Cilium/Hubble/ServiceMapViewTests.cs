@@ -33,6 +33,40 @@ namespace KubeUI.Avalonia.Tests.Features.Cilium.Hubble;
 public sealed class ServiceMapViewTests
 {
     [AvaloniaFact]
+    public async Task Snapshot_updates_context_menu_and_denied_edge_style()
+    {
+        static ServiceMapGraph Snapshot(int denied)
+        {
+            var graph = new ServiceMapGraph();
+            graph.Nodes.Add(new ServiceMapNode { Id = "a", Name = "a", Namespace = "team", DeniedCount = denied });
+            graph.Nodes.Add(new ServiceMapNode { Id = "b", Name = "b", Namespace = "team" });
+            graph.Edges.Add(new ServiceMapEdge { SourceId = "a", TargetId = "b", FlowCount = 1, DeniedCount = denied });
+            return graph;
+        }
+
+        using var control = new ServiceMapGraphControl { Graph = Snapshot(0) };
+        using var window = Application.Current.CreateTestWindow(1200, 800, control);
+        window.Show();
+        await TestWait.UntilAsync(() => control.HasGeneratedGraph && control.LayoutTask?.IsCompleted == true,
+            timeoutMs: 10_000, cancellationToken: TestContext.Current.CancellationToken,
+            beforePoll: () => Dispatcher.UIThread.RunJobs());
+        var updated = Snapshot(1);
+        control.Graph = updated;
+        await TestWait.UntilAsync(() => control.Area.VertexList.Single(pair => pair.Key.Id == "a").Key.Node == updated.Nodes[0],
+            timeoutMs: 10_000, cancellationToken: TestContext.Current.CancellationToken,
+            beforePoll: () => Dispatcher.UIThread.RunJobs());
+        var vertex = control.Area.VertexList.Single(pair => pair.Key.Id == "a").Value;
+        vertex.ContextMenu!.Items.OfType<MenuItem>().Single().CommandParameter.ShouldBeSameAs(updated.Nodes[0]);
+        control.Area.EdgesList.Single().Value.Classes.Contains("ServiceMapDeniedFlow").ShouldBeTrue();
+        var cleared = Snapshot(0);
+        control.Graph = cleared;
+        await TestWait.UntilAsync(() => control.Area.VertexList.Single(pair => pair.Key.Id == "a").Key.Node == cleared.Nodes[0],
+            timeoutMs: 10_000, cancellationToken: TestContext.Current.CancellationToken,
+            beforePoll: () => Dispatcher.UIThread.RunJobs());
+        control.Area.EdgesList.Single().Value.Classes.Contains("ServiceMapDeniedFlow").ShouldBeFalse();
+    }
+
+    [AvaloniaFact]
     public async Task Disposing_while_layout_is_running_defers_graphx_disposal()
     {
         var graph = new ServiceMapGraph();
