@@ -147,7 +147,7 @@ public sealed class SettingsViewModelTests
     {
         var settings = new AppSettings
         {
-            Features = new FeatureSettings
+            PreviewFeatures = new FeatureSettings
             {
                 Helm = true,
                 Hubble = false,
