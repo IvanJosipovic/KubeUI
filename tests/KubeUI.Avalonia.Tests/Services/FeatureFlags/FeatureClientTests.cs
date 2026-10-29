@@ -21,7 +21,7 @@ public sealed class FeatureClientTests
     {
         var settings = new AppSettings
         {
-            Features = new FeatureSettings
+            PreviewFeatures = new FeatureSettings
             {
                 Helm = helm,
                 Hubble = hubble,
@@ -61,7 +61,7 @@ public sealed class FeatureClientTests
     [Fact]
     public void settings_provider_resolves_flags_when_features_is_explicitly_null()
     {
-        var settings = new AppSettings { Features = null };
+        var settings = new AppSettings { PreviewFeatures = null };
         var settingsService = new Mock<ISettingsService>();
         settingsService.SetupGet(service => service.Settings).Returns(settings);
         var client = CreateClient(new SettingsFeatureProvider(settingsService.Object));

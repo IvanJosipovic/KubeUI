@@ -26,7 +26,7 @@ public sealed class SettingsPersistenceLoaderTests
     public void load_reads_preview_feature_flags_from_file()
     {
         var path = CreateSettingsFile(
-            "{\"Settings\":{\"Features\":{\"Helm\":true,\"Hubble\":false,\"DisableJsonSerializationReflection\":true,\"DisableYamlSerializationReflection\":false}}}");
+            "{\"Settings\":{\"PreviewFeatures\":{\"Helm\":true,\"Hubble\":false,\"DisableJsonSerializationReflection\":true,\"DisableYamlSerializationReflection\":false}}}");
 
         try
         {
@@ -41,6 +41,22 @@ public sealed class SettingsPersistenceLoaderTests
         {
             File.Delete(path);
         }
+    }
+
+    [Fact]
+    public void save_uses_preview_features_json_key()
+    {
+        var settings = new SettingsPersistenceData();
+        settings.Settings.PreviewFeatures.Helm = true;
+
+        var json = System.Text.Json.JsonSerializer.Serialize(
+            settings,
+            SettingsPersistenceSourceGenerationContext.Default.SettingsPersistenceData);
+        using var document = System.Text.Json.JsonDocument.Parse(json);
+        var savedSettings = document.RootElement.GetProperty("Settings");
+
+        savedSettings.GetProperty("PreviewFeatures").GetProperty("Helm").GetBoolean().ShouldBeTrue();
+        savedSettings.TryGetProperty("Features", out _).ShouldBeFalse();
     }
 
     [Fact]
