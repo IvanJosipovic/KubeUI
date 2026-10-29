@@ -96,6 +96,12 @@ public sealed partial class ClusterListViewModel : ViewModelBase, IDisposable
         nameColumn.WidthMode = DynamicTableViewWidthMode.Star;
         nameColumn.Width = 1;
 
+        var aliasColumn = DynamicTableViewColumn<ClusterWorkspace>.Create("alias", Assets.Resources.ClusterListView_Alias,
+            static cluster => cluster.Alias ?? string.Empty,
+            cellTemplate: CreateAliasCellTemplate());
+        aliasColumn.WidthMode = DynamicTableViewWidthMode.Star;
+        aliasColumn.Width = 1;
+
         var kubeconfigColumn = DynamicTableViewColumn<ClusterWorkspace>.Create(
             "kubeconfig",
             Assets.Resources.ClusterListView_KubeConfig,
@@ -107,9 +113,7 @@ public sealed partial class ClusterListViewModel : ViewModelBase, IDisposable
             DynamicTableViewColumn<ClusterWorkspace>.Create("enabled", Assets.Resources.ClusterListView_Enabled,
                 static cluster => cluster.IsEnabled,
                 cellTemplate: CreateEnabledCellTemplate()),
-            DynamicTableViewColumn<ClusterWorkspace>.Create("alias", Assets.Resources.ClusterListView_Alias,
-                static cluster => cluster.Alias ?? string.Empty,
-                cellTemplate: CreateAliasCellTemplate()),
+            aliasColumn,
             nameColumn, kubeconfigColumn];
     }
 
