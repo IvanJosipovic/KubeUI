@@ -927,7 +927,7 @@ public sealed class ServiceMapGraphControl : UserControl, IDisposable, IGraphCon
             return ArrangeGroups(cancellationToken, groupedLayout.VertexPositions, groupKeys, groupMembers, sizes);
         }
 
-        private static IDictionary<ServiceMapVertex, Westermo.GraphX.Measure.Point> ArrangeGroups(
+        private IDictionary<ServiceMapVertex, Westermo.GraphX.Measure.Point> ArrangeGroups(
             CancellationToken cancellationToken,
             IDictionary<ServiceMapVertex, Westermo.GraphX.Measure.Point> groupPositions,
             string[] groupKeys,
@@ -966,6 +966,32 @@ public sealed class ServiceMapGraphControl : UserControl, IDisposable, IGraphCon
             }
 
             var originalBounds = new Dictionary<string, Westermo.GraphX.Measure.Rect>(groupBounds, StringComparer.Ordinal);
+            var groupVertices = groupMembers.ToDictionary(
+                static pair => pair.Key, static pair => pair.Value[0], StringComparer.Ordinal);
+            var groupGraph = new BidirectionalGraph<ServiceMapVertex, ServiceMapEdge>(true);
+            groupGraph.AddVertexRange(groupKeys.Select(key => groupVertices[key]));
+            foreach (var edge in Graph.Edges)
+            {
+                if (edge.Source.GroupKey != edge.Target.GroupKey)
+                {
+                    groupGraph.AddEdge(new ServiceMapEdge(
+                        groupVertices[edge.Source.GroupKey], groupVertices[edge.Target.GroupKey],
+                        new KubeUI.Cilium.Hubble.ServiceMapEdge()));
+                }
+            }
+
+            var groupSizes = groupKeys.ToDictionary(
+                key => groupVertices[key],
+                key => new Westermo.GraphX.Measure.Size(groupBounds[key].Width, groupBounds[key].Height));
+            var groupLayout = CreateGroupLayout(groupGraph, groupSizes);
+            groupLayout.Compute(cancellationToken);
+            foreach (var key in groupKeys)
+            {
+                var position = groupLayout.VertexPositions[groupVertices[key]];
+                var bounds = groupBounds[key];
+                groupBounds[key] = new Westermo.GraphX.Measure.Rect(position.X, position.Y, bounds.Width, bounds.Height);
+            }
+
             var overlapRemoval = new FSAAlgorithm<string>(
                 groupBounds,
                 new OverlapRemovalParameters
@@ -1002,7 +1028,7 @@ public sealed class ServiceMapGraphControl : UserControl, IDisposable, IGraphCon
             BidirectionalGraph<ServiceMapVertex, ServiceMapEdge> groupGraph,
             IDictionary<ServiceMapVertex, Westermo.GraphX.Measure.Size> sizes)
         {
-            var groupAlgorithm = groupGraph.EdgeCount == 0
+            var groupAlgorithm = groupGraph.EdgeCount == 0 && Algorithm != LayoutAlgorithmTypeEnum.SimpleRandom
                 ? LayoutAlgorithmTypeEnum.Circular
                 : Algorithm;
             if (groupAlgorithm == LayoutAlgorithmTypeEnum.SimpleRandom || groupGraph.VertexCount <= 1)

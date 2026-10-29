@@ -372,6 +372,33 @@ public sealed class ServiceMapViewTests
     }
 
     [AvaloniaFact]
+    public async Task Layout_selection_changes_positions_for_cross_namespace_traffic()
+    {
+        var graph = new ServiceMapGraph();
+        graph.Nodes.Add(new ServiceMapNode { Id = "a/client", Name = "client", Namespace = "a" });
+        graph.Nodes.Add(new ServiceMapNode { Id = "b/api", Name = "api", Namespace = "b" });
+        graph.Nodes.Add(new ServiceMapNode { Id = "c/server", Name = "server", Namespace = "c" });
+        graph.Edges.Add(new ServiceMapEdge { SourceId = "a/client", TargetId = "b/api", FlowCount = 1 });
+        graph.Edges.Add(new ServiceMapEdge { SourceId = "b/api", TargetId = "c/server", FlowCount = 1 });
+
+        var graphControl = new ServiceMapGraphControl { Graph = graph };
+        using var window = Application.Current.CreateTestWindow(1200, 800, graphControl);
+        window.Show();
+        await TestWait.UntilAsync(
+            () => graphControl.HasGeneratedGraph && graphControl.LayoutTask?.IsCompleted == true,
+            timeoutMs: 10_000,
+            cancellationToken: TestContext.Current.CancellationToken,
+            beforePoll: () => Dispatcher.UIThread.RunJobs());
+
+        graphControl.LayoutAlgorithm = LayoutAlgorithmTypeEnum.Circular;
+        await graphControl.LayoutTask!.WaitAsync(TestContext.Current.CancellationToken);
+        var circularPositions = graphControl.Area.GetVertexPositions();
+        graphControl.LayoutAlgorithm = LayoutAlgorithmTypeEnum.SimpleRandom;
+        await graphControl.LayoutTask!.WaitAsync(TestContext.Current.CancellationToken);
+        graphControl.Area.GetVertexPositions().Any(pair => pair.Value != circularPositions[pair.Key]).ShouldBeTrue();
+    }
+
+    [AvaloniaFact]
     public async Task GraphX_layout_and_edge_routing_options_can_be_selected()
     {
         var graph = new ServiceMapGraph();
