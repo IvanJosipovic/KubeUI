@@ -81,5 +81,5 @@ Docker
 - The Docusaurus site lives in `website/`; keep app screenshots and source assets in `docs/` and copy only site assets into `website/static/`.
 - Pin Docusaurus packages to one version and commit `website/package-lock.json`.
 - Production URL is `https://KubeUI.com` with root `baseUrl: '/'`; `website/static/CNAME` must contain `KubeUI.com`.
-- `.github/workflows/cicd.yml` publishes the site to GitHub Pages only after a successful semantic release.
+- `.github/workflows/cicd.yml` publishes the site to GitHub Pages on every push to `main`, independently of application releases. Release Please runs on `main` and creates draft releases; upload all installer assets before publishing so GitHub immutable releases include every asset. Retry failed release jobs in the original workflow run while the release remains a draft. Set `RELEASE_PLEASE_TOKEN` to a GitHub App token or PAT when release PRs must trigger CI.
 - Validate site changes with `npm ci` and `npm run build` from `website/`.

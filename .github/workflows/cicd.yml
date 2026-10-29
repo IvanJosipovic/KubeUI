@@ -3,31 +3,86 @@ name: Release
 on:
   workflow_dispatch:
   push:
-    branches:
-      - 'main'
-      - 'alpha'
-      - 'beta'
+    branches: [main]
 
 concurrency:
-  group: ${{ github.workflow }}
+  group: release
   cancel-in-progress: false
   queue: max
 
 permissions:
-  id-token: write
   contents: write
+  id-token: write
   actions: write
   checks: write
-  issues: write
   pull-requests: write
 
 jobs:
+  release-please:
+    name: Prepare Release
+    runs-on: ubuntu-latest
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      version: ${{ steps.release.outputs.version }}
+      tag: ${{ steps.release.outputs.tag_name }}
+      sha: ${{ steps.release.outputs.sha }}
+      notes: ${{ steps.release.outputs.body }}
+    steps:
+      - name: Release Please
+        id: release
+        uses: googleapis/release-please-action@8b8fd2cc23b2e18957157a9d923d75aa0c6f6ad5
+        with:
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
+
+  build-test:
+    name: Build & Test
+    needs: [release-please]
+    uses: ./.github/workflows/build-test.yml
+    with:
+      source_ref: ${{ needs.release-please.outputs.sha || github.sha }}
+
+  publish-matrix:
+    name: Build Installers
+    if: needs.release-please.outputs.release_created == 'true'
+    needs: [release-please, build-test]
+    uses: ./.github/workflows/publish-installer.yml
+    secrets: inherit
+    with:
+      package_version: ${{ needs.release-please.outputs.version }}
+      release_notes: ${{ needs.release-please.outputs.notes }}
+      source_ref: ${{ needs.release-please.outputs.sha }}
+      download_releases: true
+      enable_code_signing: true
+
+  publish-release:
+    name: Publish Release
+    needs: [release-please, publish-matrix]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          pattern: '*-artifacts'
+          path: dist
+          merge-multiple: true
+
+      - name: Upload assets and publish draft
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ needs.release-please.outputs.tag }}
+        run: |
+          set -euo pipefail
+          gh api "repos/$GH_REPO/releases/tags/$RELEASE_TAG" --jq '.draft' | grep -qx true
+          test -n "$(find dist -type f -print -quit)"
+          find dist -type f -print0 | xargs -0 -r gh release upload "$RELEASE_TAG" --clobber
+          gh release edit "$RELEASE_TAG" --draft=false
+
   publish-docs:
-    if: github.ref == 'refs/heads/main'
     name: Publish Documentation
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      actions: read
       pages: write
       id-token: write
     environment:
@@ -35,95 +90,18 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-
-      - name: Setup Node.js
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
         with:
           node-version: current
           cache: npm
           cache-dependency-path: website/package-lock.json
-
-      - name: Install dependencies
-        working-directory: website
+      - working-directory: website
         run: npm ci
-
-      - name: Build website
-        working-directory: website
+      - working-directory: website
         run: npm run build
-
-      - name: Configure GitHub Pages
-        uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b
-
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b
+      - uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b
+      - uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b
         with:
           path: website/build
-
-      - name: Deploy to GitHub Pages
+      - uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e
         id: deployment
-        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e
-
-  build-test:
-    name: Build & Test
-    uses: ./.github/workflows/build-test.yml
-
-  semantic-release:
-    name: Bump Version
-    needs: [build-test]
-    runs-on: ubuntu-latest
-    outputs:
-      new_release_published: ${{ steps.semantic.outputs.new_release_published }}
-      new_release_version: ${{ (steps.semantic.outputs.new_release_published && steps.semantic.outputs.new_release_version) || '0.0.1-alpha.1' }}
-      new_release_notes: ${{ steps.semantic.outputs.new_release_notes }}
-    steps:
-    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-
-    - name: Semantic Release
-      uses: cycjimmy/semantic-release-action@v8.1.4
-      id: semantic
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        dry_run: true
-        extra_plugins: |
-          @semantic-release/github@12.0.10
-          conventional-changelog-conventionalcommits@9
-
-  publish-matrix:
-    name: Publish Installers
-    needs: [semantic-release]
-    uses: ./.github/workflows/publish-installer.yml
-    secrets: inherit
-    with:
-      package_version: ${{ needs.semantic-release.outputs.new_release_version }}
-      release_notes: ${{ needs.semantic-release.outputs.new_release_notes }}
-      download_releases: ${{ needs.semantic-release.outputs.new_release_published == 'true' }}
-      enable_code_signing: true
-
-  release:
-    if: needs.semantic-release.outputs.new_release_published == 'true'
-    name: Create Release
-    needs: [semantic-release, publish-matrix]
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-
-    - name: Download artifacts
-      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
-      with:
-        path: dist/
-
-    - name: Clean Dist
-      shell: pwsh
-      run: |
-        Remove-Item -Path dist/website -Recurse -Force
-
-    - name: Semantic Release
-      uses: cycjimmy/semantic-release-action@v8.1.4
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        dry_run: false
-        extra_plugins: |
-          @semantic-release/github@12.0.10
-          conventional-changelog-conventionalcommits@9

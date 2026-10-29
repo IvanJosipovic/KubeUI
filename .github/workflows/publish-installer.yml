@@ -6,6 +6,10 @@ on:
       package_version:
         type: string
         required: true
+      source_ref:
+        type: string
+        required: false
+        default: ""
       release_notes:
         type: string
         required: false
@@ -63,6 +67,8 @@ jobs:
             icon: src/KubeUI.Avalonia/Assets/icon.icns
     steps:
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.source_ref || github.sha }}
 
       - name: Setup .NET Core
         uses: actions/setup-dotnet@v6
@@ -190,3 +196,4 @@ jobs:
         with:
           name: ${{ matrix.rid }}-artifacts
           path: packed
+          if-no-files-found: error
