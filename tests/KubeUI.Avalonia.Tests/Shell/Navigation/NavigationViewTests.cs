@@ -23,6 +23,38 @@ namespace KubeUI.Avalonia.Tests.Shell.Navigation;
 
 public sealed class NavigationViewTests
 {
+    [AvaloniaFact]
+    public async Task pod_document_cluster_indicator_uses_alias_in_tooltip()
+    {
+        var services = Application.Current.GetTestServices();
+        using var workspace = await Application.Current.CreateClusterAsync();
+        workspace.Alias = "r720";
+        using var navigation = services.GetRequiredService<NavigationViewModel>();
+        var main = services.GetRequiredService<MainViewModel>();
+        main.Initialize();
+        var mainView = new MainView { DataContext = main };
+        using var window = Application.Current.CreateTestWindow(content: mainView);
+        window.Show();
+
+        var podsLink = new NavigationLink
+        {
+            Id = "alias-test-pods",
+            Name = "Pods",
+            Cluster = workspace,
+            ResourceKind = GroupApiVersionKind.From<V1Pod>(),
+            OpenCommand = navigation.OpenResourceNavigationCommand,
+        };
+        await navigation.OpenResourceNavigationCommand.ExecuteAsync(podsLink).WaitAsync(TestContext.Current.CancellationToken);
+        var indicator = await TestWait.UntilValueAsync(
+            () => mainView.GetVisualDescendants().OfType<global::Avalonia.Controls.Shapes.Rectangle>()
+                .FirstOrDefault(rectangle => Equals(ToolTip.GetTip(rectangle), workspace.Runtime.Name)
+                    || Equals(ToolTip.GetTip(rectangle), workspace.DisplayName)),
+            5000, cancellationToken: TestContext.Current.CancellationToken,
+            beforePoll: () => Dispatcher.UIThread.RunJobs());
+        indicator.ShouldNotBeNull();
+        ToolTip.GetTip(indicator).ShouldBe("r720");
+    }
+
     [Fact]
     public void navigation_item_name_comparer_handles_nulls_and_names()
     {
