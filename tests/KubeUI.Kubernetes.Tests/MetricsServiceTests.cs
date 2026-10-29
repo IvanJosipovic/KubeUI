@@ -666,6 +666,12 @@ public sealed class MetricsServiceTests
     {
         public IReadOnlyCollection<string> KubeConfigPaths => [];
 
+        public bool KubeConfigAutoDiscoveryEnabled { get; set; }
+
+        public void RemoveKubeConfigPath(string path)
+        {
+        }
+
         public void AddKubeConfigPath(string path)
         {
         }
