@@ -37,23 +37,35 @@ public static class KubernetesRbac
         const string roleName = "kubeui-test-namespace-reader";
         return
         [
-            new V1Role
-            {
-                ApiVersion = "rbac.authorization.k8s.io/v1",
-                Kind = V1Role.KubeKind,
-                Metadata = new V1ObjectMeta { NamespaceProperty = @namespace, Name = roleName },
-                Rules = rules.Select(ToPolicyRule).ToList(),
-            },
-            new V1RoleBinding
-            {
-                ApiVersion = "rbac.authorization.k8s.io/v1",
-                Kind = V1RoleBinding.KubeKind,
-                Metadata = new V1ObjectMeta { NamespaceProperty = @namespace, Name = "kubeui-test-namespace-reader-binding" },
-                RoleRef = new() { ApiGroup = "rbac.authorization.k8s.io", Kind = "Role", Name = roleName },
-                Subjects = [new Rbacv1Subject { Kind = "ServiceAccount", NamespaceProperty = ServiceAccountNamespace, Name = ServiceAccountName }],
-            },
+            NamespacedRole(@namespace, roleName, rules),
+            NamespacedRoleBinding(@namespace, "kubeui-test-namespace-reader-binding", roleName),
         ];
     }
+
+    /// <summary>
+    /// Creates a namespaced role bound to the shared test service account.
+    /// </summary>
+    public static V1Role NamespacedRole(string @namespace, string name, params RbacRule[] rules)
+        => new()
+        {
+            ApiVersion = "rbac.authorization.k8s.io/v1",
+            Kind = V1Role.KubeKind,
+            Metadata = new V1ObjectMeta { NamespaceProperty = @namespace, Name = name },
+            Rules = rules.Select(ToPolicyRule).ToList(),
+        };
+
+    /// <summary>
+    /// Creates a namespaced role binding for the shared test service account.
+    /// </summary>
+    public static V1RoleBinding NamespacedRoleBinding(string @namespace, string name, string roleName)
+        => new()
+        {
+            ApiVersion = "rbac.authorization.k8s.io/v1",
+            Kind = V1RoleBinding.KubeKind,
+            Metadata = new V1ObjectMeta { NamespaceProperty = @namespace, Name = name },
+            RoleRef = new() { ApiGroup = "rbac.authorization.k8s.io", Kind = "Role", Name = roleName },
+            Subjects = [new Rbacv1Subject { Kind = "ServiceAccount", NamespaceProperty = ServiceAccountNamespace, Name = ServiceAccountName }],
+        };
 
     private static V1PolicyRule ToPolicyRule(RbacRule rule)
         => new()

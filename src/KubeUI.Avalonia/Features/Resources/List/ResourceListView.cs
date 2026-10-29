@@ -8,11 +8,12 @@ using FluentIcons.Common;
 using k8s.Models;
 using KubeUI.Avalonia.Features.Resources.Common;
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
+using KubeUI.Avalonia.Infrastructure.Presentation;
 using Ursa.Controls;
 
 namespace KubeUI.Avalonia.Features.Resources.List;
 
-public partial class ResourceListView : ViewBase<IResourceListViewModel>
+public partial class ResourceListView : KubeUIView<IResourceListViewModel>
 {
     private DynamicTableView _table = null!;
     private DynamicTableView? _restoredTable;

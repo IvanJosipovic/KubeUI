@@ -1,3 +1,5 @@
+using System.Text.Json;
+using KubeUI.Kubernetes.Serialization;
 using k8s;
 using k8s.Autorest;
 using k8s.Models;
@@ -17,7 +19,7 @@ internal static class YamlServerValidationDiagnosticFactory
 
         try
         {
-            var status = KubernetesJson.Deserialize<V1Status>(operationException.Response.Content);
+            var status = JsonSerializer.Deserialize(operationException.Response.Content, KubernetesJsonStaticContext.Default.V1Status);
             if (status?.Details?.Causes is not { Count: > 0 } causes)
             {
                 return [];

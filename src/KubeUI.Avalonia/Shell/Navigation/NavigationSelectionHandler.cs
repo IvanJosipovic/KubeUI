@@ -7,6 +7,7 @@ using KubeUI.Avalonia.Features.Resources.Visualization;
 using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Infrastructure.Platform;
 using KubeUI.Avalonia.Infrastructure.Presentation;
+using KubeUI.Avalonia.Resources;
 using KubeUI.Avalonia.Resources.Workloads.v1.Pod;
 
 namespace KubeUI.Avalonia.Shell.Navigation;
@@ -16,7 +17,7 @@ internal sealed class NavigationSelectionHandler
     private readonly ILogger _logger;
     private readonly INotificationManager _notificationManager;
     private readonly IServiceProvider _serviceProvider;
-    private readonly NavigationFeatureCatalog _featureCatalog;
+    private readonly NavigationSectionCatalog _sectionCatalog;
     private readonly IPlatformServices _platformServices;
     private readonly Action<IDockable> _addToDocuments;
 
@@ -24,23 +25,23 @@ internal sealed class NavigationSelectionHandler
         ILogger logger,
         INotificationManager notificationManager,
         IServiceProvider serviceProvider,
-        NavigationFeatureCatalog featureCatalog,
+        NavigationSectionCatalog sectionCatalog,
         IPlatformServices platformServices,
         Action<IDockable> addToDocuments)
     {
         _logger = logger;
         _notificationManager = notificationManager;
         _serviceProvider = serviceProvider;
-        _featureCatalog = featureCatalog;
+        _sectionCatalog = sectionCatalog;
         _platformServices = platformServices;
         _addToDocuments = addToDocuments;
     }
 
     public async Task SelectAsync(NavigationLink link)
     {
-        if (link.ViewModelKey is { } featureId && _featureCatalog.TryGet(featureId, out var feature))
+        if (link.DocumentId is { } documentId && _sectionCatalog.TryGetDocument(documentId, out var document))
         {
-            _addToDocuments(feature.CreateDockable(_serviceProvider, link.Cluster));
+            _addToDocuments(document.CreateDockable(_serviceProvider, link.Cluster));
             return;
         }
 

@@ -8,11 +8,19 @@ public static partial class KubeUIAvaloniaResourceServiceCollectionExtensions
 {
     public static IServiceCollection AddKubeUIAvaloniaResourceServices(this IServiceCollection services)
     {
+        services.AddSingleton<ClusterWorkspacePreferences>();
         services.AddSingleton<ClusterWorkspaceCatalog>();
+        services.AddKubeUIAvaloniaCustomResourceConfigs();
         return services.AddKubeUIAvaloniaResourceGeneratedServices();
     }
 
+    [GenerateServiceRegistrations(
+        AssignableTo = typeof(CustomResourceConfig),
+        Lifetime = ServiceLifetime.Transient,
+        ExcludeByTypeName = "KubeUI.Avalonia.Resources.CustomResourceConfig",
+        AssemblyNameFilter = "KubeUI.Avalonia")]
+    private static partial IServiceCollection AddKubeUIAvaloniaCustomResourceConfigs(this IServiceCollection services);
+
     [GenerateServiceRegistrations(AssignableTo = typeof(ResourceConfigBase<>), Lifetime = ServiceLifetime.Transient, AsSelf = true, AsImplementedInterfaces = true, AssemblyNameFilter = "KubeUI.Avalonia")]
-    [GenerateServiceRegistrations(AssignableTo = typeof(CRDResourceConfig), Lifetime = ServiceLifetime.Transient, AsSelf = true, AsImplementedInterfaces = true, AssemblyNameFilter = "KubeUI.Avalonia")]
     private static partial IServiceCollection AddKubeUIAvaloniaResourceGeneratedServices(this IServiceCollection services);
 }

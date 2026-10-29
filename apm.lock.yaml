@@ -1,0 +1,3548 @@
+lockfile_version: '1'
+apm_version: 0.35.0
+dependencies:
+- repo_url: _local/kube-ui-testing
+  name: kube-ui-testing
+  version: unknown
+  package_type: claude_skill
+  deployed_files:
+  - .claude/skills/kube-ui-testing
+  - .claude/skills/kube-ui-testing/SKILL.md
+  deployed_file_hashes:
+    .claude/skills/kube-ui-testing/SKILL.md: sha256:55f1067c5fe5db7f2936772d7c431f6afd98561db2cd4cc544528b0c76fb73ba
+  source: local
+  local_path: ./skills/kube-ui-testing
+  content_hash: sha256:b12eeaaa38bad38a0e207eb36d620bcb0a48f989cdbc5d99c7d7a364e6acd3bd
+- repo_url: aaronontheweb/dotnet-skills
+  materialization_repo_url: Aaronontheweb/dotnet-skills
+  name: ilspy-decompile
+  host: github.com
+  resolved_commit: ac0deb2f531ff5090718cb0069c73ba3f9f95f69
+  version: unknown
+  virtual_path: skills/ilspy-decompile
+  is_virtual: true
+  package_type: claude_skill
+  deployed_files:
+  - .agents/skills/ilspy-decompile
+  - .agents/skills/ilspy-decompile/SKILL.md
+  - .claude/skills/ilspy-decompile
+  - .claude/skills/ilspy-decompile/SKILL.md
+  deployed_file_hashes:
+    .agents/skills/ilspy-decompile/SKILL.md: sha256:aed579dde8ab8bcfe151983ce66100d39f146061c653148fc7bb237a6a20db21
+    .claude/skills/ilspy-decompile/SKILL.md: sha256:aed579dde8ab8bcfe151983ce66100d39f146061c653148fc7bb237a6a20db21
+  content_hash: sha256:247a8d9ff0e3ba06dbad1b426fd9d0da09845a8b95bc8797701134640dd0a4a3
+- repo_url: dotnet/skills
+  name: dotnet
+  host: github.com
+  resolved_commit: 586f13f8d898a60583a3364f146a3b6f5a763164
+  version: 0.2.5
+  virtual_path: plugins/dotnet
+  is_virtual: true
+  package_type: marketplace_plugin
+  deployed_files:
+  - .agents/skills/csharp-expert
+  - .agents/skills/csharp-expert/SKILL.md
+  - .agents/skills/csharp-expert/references/dotnet-skills-marketplace.md
+  - .agents/skills/csharp-refactoring
+  - .agents/skills/csharp-refactoring/SKILL.md
+  - .agents/skills/csharp-refactoring/references/operation-catalog.md
+  - .agents/skills/msbuild
+  - .agents/skills/msbuild/SKILL.md
+  - .agents/skills/msbuild/references/antipatterns/additional-antipatterns.md
+  - .agents/skills/msbuild/references/antipatterns/incremental-build-inputs-outputs.md
+  - .agents/skills/msbuild/references/antipatterns/private-assets.md
+  - .agents/skills/msbuild/references/binlog-failure-analysis.md
+  - .agents/skills/msbuild/references/binlog-generation.md
+  - .agents/skills/msbuild/references/build-perf-baseline.md
+  - .agents/skills/msbuild/references/build-perf-diagnostics.md
+  - .agents/skills/msbuild/references/copy-to-output-directory.md
+  - .agents/skills/msbuild/references/eval-performance.md
+  - .agents/skills/msbuild/references/extension-points.md
+  - .agents/skills/msbuild/references/incremental-build.md
+  - .agents/skills/msbuild/references/msbuild-antipatterns.md
+  - .agents/skills/setup-local-sdk
+  - .agents/skills/setup-local-sdk/SKILL.md
+  - .claude/skills/csharp-expert
+  - .claude/skills/csharp-expert/SKILL.md
+  - .claude/skills/csharp-expert/references/dotnet-skills-marketplace.md
+  - .claude/skills/csharp-refactoring
+  - .claude/skills/csharp-refactoring/SKILL.md
+  - .claude/skills/csharp-refactoring/references/operation-catalog.md
+  - .claude/skills/msbuild
+  - .claude/skills/msbuild/SKILL.md
+  - .claude/skills/msbuild/references/antipatterns/additional-antipatterns.md
+  - .claude/skills/msbuild/references/antipatterns/incremental-build-inputs-outputs.md
+  - .claude/skills/msbuild/references/antipatterns/private-assets.md
+  - .claude/skills/msbuild/references/binlog-failure-analysis.md
+  - .claude/skills/msbuild/references/binlog-generation.md
+  - .claude/skills/msbuild/references/build-perf-baseline.md
+  - .claude/skills/msbuild/references/build-perf-diagnostics.md
+  - .claude/skills/msbuild/references/copy-to-output-directory.md
+  - .claude/skills/msbuild/references/eval-performance.md
+  - .claude/skills/msbuild/references/extension-points.md
+  - .claude/skills/msbuild/references/incremental-build.md
+  - .claude/skills/msbuild/references/msbuild-antipatterns.md
+  - .claude/skills/setup-local-sdk
+  - .claude/skills/setup-local-sdk/SKILL.md
+  deployed_file_hashes:
+    .agents/skills/csharp-expert/SKILL.md: sha256:b3a86c6cd037996237fc3cf12de41d4938cdae92ed8be1ff132a315524dd39e9
+    .agents/skills/csharp-expert/references/dotnet-skills-marketplace.md: sha256:e41fa64545d59b6c51fe91edcd2f5bbe20fc0e5d92edba79c792fac8540aad19
+    .agents/skills/csharp-refactoring/SKILL.md: sha256:a5516d690bc0713665870e31b7db6c6d09089c0d1a524482a156e01377ef0d72
+    .agents/skills/csharp-refactoring/references/operation-catalog.md: sha256:94311ac23ea1098c130942084ceb07969f73790d59072c90b87967cbdc3b8dfa
+    .agents/skills/msbuild/SKILL.md: sha256:671a9b2c77be4a6758dba4b013a50a29b2b3c5c6c77a10c2c81c11042f785c55
+    .agents/skills/msbuild/references/antipatterns/additional-antipatterns.md: sha256:02955e8765404cd792d6c29a6574c5261afa55bcf37766998499d5b3077a10b5
+    .agents/skills/msbuild/references/antipatterns/incremental-build-inputs-outputs.md: sha256:361f23ef4cd84da9f8bf875151b2b1df27e0a2ab3354b8b6728d88b94db131ad
+    .agents/skills/msbuild/references/antipatterns/private-assets.md: sha256:76ff2c88d729494b21fe3f12078b10e10ffcbc41857161defeb79487b97d829c
+    .agents/skills/msbuild/references/binlog-failure-analysis.md: sha256:11b3962a232ef18ac184be8a52c86de8b35f05e10a3bfc7d5f5b3396f707e5ca
+    .agents/skills/msbuild/references/binlog-generation.md: sha256:f6fc3dfbcb895b3cf5cc4c98dcacd76c3eaaab9d3b1a6e714a3bd596557df512
+    .agents/skills/msbuild/references/build-perf-baseline.md: sha256:4be937e36d2e60eb549a50b58f1eeb1ac2f74d419d3bcee5132f97699e3c2871
+    .agents/skills/msbuild/references/build-perf-diagnostics.md: sha256:c715b1dfa297f898b45e893937e40d96e02f6f44c9c3f508dc4442c6dc7cc2f8
+    .agents/skills/msbuild/references/copy-to-output-directory.md: sha256:01409f41fd8df30189d544d82dd20556690e5b2c0f16993625f1492d7bff09b2
+    .agents/skills/msbuild/references/eval-performance.md: sha256:8a4eeb553ab4e43c9b2b19252fee41bd7a275fca4a8536920e99f9826cb00bdd
+    .agents/skills/msbuild/references/extension-points.md: sha256:d474bccb8069449ceca4fc0ecff7493a8f701b3eb189bcffd0b85c7612d9b766
+    .agents/skills/msbuild/references/incremental-build.md: sha256:8e5d4c4871c2c44fd49b7be64b040e074363b7c9bbacee7cd226d48d5ff4798d
+    .agents/skills/msbuild/references/msbuild-antipatterns.md: sha256:b470f187400c3e6a5620e75cccaf448a09a0207a0a4202b3e18d2dd65296f8f9
+    .agents/skills/setup-local-sdk/SKILL.md: sha256:6b4904db9ae950da582f85dc2f4cf2adf586776d84ce805a273edb4045f1a74e
+    .claude/skills/csharp-expert/SKILL.md: sha256:b3a86c6cd037996237fc3cf12de41d4938cdae92ed8be1ff132a315524dd39e9
+    .claude/skills/csharp-expert/references/dotnet-skills-marketplace.md: sha256:e41fa64545d59b6c51fe91edcd2f5bbe20fc0e5d92edba79c792fac8540aad19
+    .claude/skills/csharp-refactoring/SKILL.md: sha256:a5516d690bc0713665870e31b7db6c6d09089c0d1a524482a156e01377ef0d72
+    .claude/skills/csharp-refactoring/references/operation-catalog.md: sha256:94311ac23ea1098c130942084ceb07969f73790d59072c90b87967cbdc3b8dfa
+    .claude/skills/msbuild/SKILL.md: sha256:671a9b2c77be4a6758dba4b013a50a29b2b3c5c6c77a10c2c81c11042f785c55
+    .claude/skills/msbuild/references/antipatterns/additional-antipatterns.md: sha256:02955e8765404cd792d6c29a6574c5261afa55bcf37766998499d5b3077a10b5
+    .claude/skills/msbuild/references/antipatterns/incremental-build-inputs-outputs.md: sha256:361f23ef4cd84da9f8bf875151b2b1df27e0a2ab3354b8b6728d88b94db131ad
+    .claude/skills/msbuild/references/antipatterns/private-assets.md: sha256:76ff2c88d729494b21fe3f12078b10e10ffcbc41857161defeb79487b97d829c
+    .claude/skills/msbuild/references/binlog-failure-analysis.md: sha256:11b3962a232ef18ac184be8a52c86de8b35f05e10a3bfc7d5f5b3396f707e5ca
+    .claude/skills/msbuild/references/binlog-generation.md: sha256:f6fc3dfbcb895b3cf5cc4c98dcacd76c3eaaab9d3b1a6e714a3bd596557df512
+    .claude/skills/msbuild/references/build-perf-baseline.md: sha256:4be937e36d2e60eb549a50b58f1eeb1ac2f74d419d3bcee5132f97699e3c2871
+    .claude/skills/msbuild/references/build-perf-diagnostics.md: sha256:c715b1dfa297f898b45e893937e40d96e02f6f44c9c3f508dc4442c6dc7cc2f8
+    .claude/skills/msbuild/references/copy-to-output-directory.md: sha256:01409f41fd8df30189d544d82dd20556690e5b2c0f16993625f1492d7bff09b2
+    .claude/skills/msbuild/references/eval-performance.md: sha256:8a4eeb553ab4e43c9b2b19252fee41bd7a275fca4a8536920e99f9826cb00bdd
+    .claude/skills/msbuild/references/extension-points.md: sha256:d474bccb8069449ceca4fc0ecff7493a8f701b3eb189bcffd0b85c7612d9b766
+    .claude/skills/msbuild/references/incremental-build.md: sha256:8e5d4c4871c2c44fd49b7be64b040e074363b7c9bbacee7cd226d48d5ff4798d
+    .claude/skills/msbuild/references/msbuild-antipatterns.md: sha256:b470f187400c3e6a5620e75cccaf448a09a0207a0a4202b3e18d2dd65296f8f9
+    .claude/skills/setup-local-sdk/SKILL.md: sha256:6b4904db9ae950da582f85dc2f4cf2adf586776d84ce805a273edb4045f1a74e
+  content_hash: sha256:08694f2d95526be67f230f2382d3a3263fac5a740a0272b065ec6b9cb0379d32
+- repo_url: dotnet/skills
+  name: dotnet-diag
+  host: github.com
+  resolved_commit: 586f13f8d898a60583a3364f146a3b6f5a763164
+  version: 0.1.3
+  virtual_path: plugins/dotnet-diag
+  is_virtual: true
+  package_type: marketplace_plugin
+  deployed_files:
+  - .agents/skills/analyzing-dotnet-performance
+  - .agents/skills/analyzing-dotnet-performance/SKILL.md
+  - .agents/skills/analyzing-dotnet-performance/references/async-patterns.md
+  - .agents/skills/analyzing-dotnet-performance/references/collections-and-linq.md
+  - .agents/skills/analyzing-dotnet-performance/references/critical-patterns.md
+  - .agents/skills/analyzing-dotnet-performance/references/io-and-serialization.md
+  - .agents/skills/analyzing-dotnet-performance/references/memory-and-strings.md
+  - .agents/skills/analyzing-dotnet-performance/references/regex-patterns.md
+  - .agents/skills/analyzing-dotnet-performance/references/structural-patterns.md
+  - .agents/skills/android-tombstone-symbolication
+  - .agents/skills/android-tombstone-symbolication/SKILL.md
+  - .agents/skills/android-tombstone-symbolication/scripts/Symbolicate-Tombstone.ps1
+  - .agents/skills/apple-crash-symbolication
+  - .agents/skills/apple-crash-symbolication/SKILL.md
+  - .agents/skills/apple-crash-symbolication/references/ips-crash-format.md
+  - .agents/skills/apple-crash-symbolication/scripts/Symbolicate-Crash.ps1
+  - .agents/skills/clr-activation-debugging
+  - .agents/skills/clr-activation-debugging/SKILL.md
+  - .agents/skills/clr-activation-debugging/references/activation-flow.md
+  - .agents/skills/clr-activation-debugging/references/com-activation.md
+  - .agents/skills/clr-activation-debugging/references/log-format.md
+  - .agents/skills/dotnet-trace-collect
+  - .agents/skills/dotnet-trace-collect/SKILL.md
+  - .agents/skills/dotnet-trace-collect/references/dotnet-monitor.md
+  - .agents/skills/dotnet-trace-collect/references/dotnet-trace-collect-linux.md
+  - .agents/skills/dotnet-trace-collect/references/dotnet-trace-collect.md
+  - .agents/skills/dotnet-trace-collect/references/perfcollect.md
+  - .agents/skills/dotnet-trace-collect/references/perfview.md
+  - .agents/skills/dump-collect
+  - .agents/skills/dump-collect/SKILL.md
+  - .agents/skills/dump-collect/references/container-dumps.md
+  - .agents/skills/dump-collect/references/coreclr-dumps.md
+  - .agents/skills/dump-collect/references/nativeaot-dumps.md
+  - .agents/skills/microbenchmarking
+  - .agents/skills/microbenchmarking/SKILL.md
+  - .agents/skills/microbenchmarking/references/bdn-internals-and-tuning.md
+  - .agents/skills/microbenchmarking/references/comparison-strategies.md
+  - .agents/skills/microbenchmarking/references/diagnosers-and-exporters.md
+  - .agents/skills/microbenchmarking/references/project-setup-and-running.md
+  - .agents/skills/microbenchmarking/references/writing-benchmarks.md
+  - .claude/agents/optimizing-dotnet-performance.md
+  - .claude/skills/analyzing-dotnet-performance
+  - .claude/skills/analyzing-dotnet-performance/SKILL.md
+  - .claude/skills/analyzing-dotnet-performance/references/async-patterns.md
+  - .claude/skills/analyzing-dotnet-performance/references/collections-and-linq.md
+  - .claude/skills/analyzing-dotnet-performance/references/critical-patterns.md
+  - .claude/skills/analyzing-dotnet-performance/references/io-and-serialization.md
+  - .claude/skills/analyzing-dotnet-performance/references/memory-and-strings.md
+  - .claude/skills/analyzing-dotnet-performance/references/regex-patterns.md
+  - .claude/skills/analyzing-dotnet-performance/references/structural-patterns.md
+  - .claude/skills/android-tombstone-symbolication
+  - .claude/skills/android-tombstone-symbolication/SKILL.md
+  - .claude/skills/android-tombstone-symbolication/scripts/Symbolicate-Tombstone.ps1
+  - .claude/skills/apple-crash-symbolication
+  - .claude/skills/apple-crash-symbolication/SKILL.md
+  - .claude/skills/apple-crash-symbolication/references/ips-crash-format.md
+  - .claude/skills/apple-crash-symbolication/scripts/Symbolicate-Crash.ps1
+  - .claude/skills/clr-activation-debugging
+  - .claude/skills/clr-activation-debugging/SKILL.md
+  - .claude/skills/clr-activation-debugging/references/activation-flow.md
+  - .claude/skills/clr-activation-debugging/references/com-activation.md
+  - .claude/skills/clr-activation-debugging/references/log-format.md
+  - .claude/skills/dotnet-trace-collect
+  - .claude/skills/dotnet-trace-collect/SKILL.md
+  - .claude/skills/dotnet-trace-collect/references/dotnet-monitor.md
+  - .claude/skills/dotnet-trace-collect/references/dotnet-trace-collect-linux.md
+  - .claude/skills/dotnet-trace-collect/references/dotnet-trace-collect.md
+  - .claude/skills/dotnet-trace-collect/references/perfcollect.md
+  - .claude/skills/dotnet-trace-collect/references/perfview.md
+  - .claude/skills/dump-collect
+  - .claude/skills/dump-collect/SKILL.md
+  - .claude/skills/dump-collect/references/container-dumps.md
+  - .claude/skills/dump-collect/references/coreclr-dumps.md
+  - .claude/skills/dump-collect/references/nativeaot-dumps.md
+  - .claude/skills/microbenchmarking
+  - .claude/skills/microbenchmarking/SKILL.md
+  - .claude/skills/microbenchmarking/references/bdn-internals-and-tuning.md
+  - .claude/skills/microbenchmarking/references/comparison-strategies.md
+  - .claude/skills/microbenchmarking/references/diagnosers-and-exporters.md
+  - .claude/skills/microbenchmarking/references/project-setup-and-running.md
+  - .claude/skills/microbenchmarking/references/writing-benchmarks.md
+  - .codex/agents/optimizing-dotnet-performance.toml
+  - .github/agents/optimizing-dotnet-performance.agent.md
+  - .opencode/agents/optimizing-dotnet-performance.md
+  deployed_file_hashes:
+    .agents/skills/analyzing-dotnet-performance/SKILL.md: sha256:66d06c577cf6cf55d548318c10bd80de3c8ee5495bea1f6d20d277ddde63ea83
+    .agents/skills/analyzing-dotnet-performance/references/async-patterns.md: sha256:18e881ff7fbddbaf8e1da84cd46f182fa81c2c2c070915286e2aba671fcd3be7
+    .agents/skills/analyzing-dotnet-performance/references/collections-and-linq.md: sha256:6911129ce735bd7c232ab75fd93fe5c4c0e6ddef911c0062ae974b33c76eeddf
+    .agents/skills/analyzing-dotnet-performance/references/critical-patterns.md: sha256:ac17e1301a2f997a1be552d8efc5210b9b3c1ca30c71a5d60ed6f7d03d2e8290
+    .agents/skills/analyzing-dotnet-performance/references/io-and-serialization.md: sha256:a9cb85c2bbfdce1059cc8e4c102d728728b79b8cb0c1d6091076bf79bca05c89
+    .agents/skills/analyzing-dotnet-performance/references/memory-and-strings.md: sha256:917ea09f0496a59a15fe5abe2cea7b6ac38cf8d85e19b730bb497d35eb387d59
+    .agents/skills/analyzing-dotnet-performance/references/regex-patterns.md: sha256:cfbd9bb1a4596b8acc537ed4a58d939237441e8716d5c747175cd8bc3b840a62
+    .agents/skills/analyzing-dotnet-performance/references/structural-patterns.md: sha256:ee75e7da219e1d5fcc91c728babe9978793be97e37e01a78b51cc47316ecf170
+    .agents/skills/android-tombstone-symbolication/SKILL.md: sha256:3e25d754833c1a362b3d1968cc81ab75b0d1824b161c3ab9d14113a41cacbe9f
+    .agents/skills/android-tombstone-symbolication/scripts/Symbolicate-Tombstone.ps1: sha256:050257edb89ce80796233ee6870bfc178c6c1ef1bb3f3ac05e4f893368acaa5a
+    .agents/skills/apple-crash-symbolication/SKILL.md: sha256:c8db1d3298cb94e321c47b29fdc0a611b22716b4fc72c32442db0d717de79198
+    .agents/skills/apple-crash-symbolication/references/ips-crash-format.md: sha256:df15e681730d1962b53e9006345f4c5d7caee9a0ab3ea05d87e675aaea766694
+    .agents/skills/apple-crash-symbolication/scripts/Symbolicate-Crash.ps1: sha256:5dd9ffdd9097adf7c104b504ced59e31514202ead8a8c22f5744ee3a0bbc3019
+    .agents/skills/clr-activation-debugging/SKILL.md: sha256:de030774c23c61b3297e82af68e1b15e37e2ad8df4028a54975b2a5af3183762
+    .agents/skills/clr-activation-debugging/references/activation-flow.md: sha256:04d748a40788aa47dd7bb325f682615486da71812b3a80b9a6403ce97eca4d9f
+    .agents/skills/clr-activation-debugging/references/com-activation.md: sha256:3da57d54a8f6dd85bfb9e2a3b617fa5521e6551b7187bfc3bac73f71c1b6c9bc
+    .agents/skills/clr-activation-debugging/references/log-format.md: sha256:f594da621cd46f457a93aebc5273ed2e102730a03086eb9cb0cb96e07e2e8472
+    .agents/skills/dotnet-trace-collect/SKILL.md: sha256:a701fd47f61e196b456cea55699d2e523cc8fc37f382e53d241c153b1c21a494
+    .agents/skills/dotnet-trace-collect/references/dotnet-monitor.md: sha256:726655946aac6f654c58cb3a92e37b9e1b0b4b7c2d990cd9bdfd1e54912882dd
+    .agents/skills/dotnet-trace-collect/references/dotnet-trace-collect-linux.md: sha256:fcb65d649219958c61e6070f4278caaac07e75a418328976bed7bddc77ef24af
+    .agents/skills/dotnet-trace-collect/references/dotnet-trace-collect.md: sha256:c47af38a982c1184cf43eafed795260c9872a85f09718d7b51095b7f22afbe6d
+    .agents/skills/dotnet-trace-collect/references/perfcollect.md: sha256:5b5de0486d84ff2e1b86be7de04631a2a3b32d55ca0bb2a3c2c636c0d167943a
+    .agents/skills/dotnet-trace-collect/references/perfview.md: sha256:c8018e9f1844fa854d971f0d1d75e61887e9ebd5ca97def209650ac634626813
+    .agents/skills/dump-collect/SKILL.md: sha256:d00af814b354faae10cd78fedf7c94a78de6e64f04d4c15703b8fbac5e08e2e2
+    .agents/skills/dump-collect/references/container-dumps.md: sha256:e8f1bad53e928efa41caa6855b7022062e30f11b96fdf9ded37526e03b86f5e3
+    .agents/skills/dump-collect/references/coreclr-dumps.md: sha256:180c6b4ab82f2d27b85b751e309bf0aa445fde68ddc0c6a507b51999f02cf195
+    .agents/skills/dump-collect/references/nativeaot-dumps.md: sha256:63bda7821ce96ad27e343b93fdf46eb31d2209ba66c387f669062909e3d532a0
+    .agents/skills/microbenchmarking/SKILL.md: sha256:64dab692a441a8af87b40cda1f3c2c9e5046551446fdea55d2801eaabb34785e
+    .agents/skills/microbenchmarking/references/bdn-internals-and-tuning.md: sha256:213842a5ced85bbdd5db4d7f6de4c3bdd231367b292f7c994a504960e32c83f0
+    .agents/skills/microbenchmarking/references/comparison-strategies.md: sha256:cdbc8e7d4b9b2c9eeb1dbc1a7ceaee5b3cb453d041211bf30fc93b150c4fecf7
+    .agents/skills/microbenchmarking/references/diagnosers-and-exporters.md: sha256:9410eb556b83af2a63bdb593a791077a4a070210df569887f6265d9ecd825b14
+    .agents/skills/microbenchmarking/references/project-setup-and-running.md: sha256:dd6866d218be83e84e772b9bda17d1d8261da4a8318d6b098faffe71b95bfcdf
+    .agents/skills/microbenchmarking/references/writing-benchmarks.md: sha256:00279137333ae46cec081a3b85d53858cec9a7565beddf902e15a6f7abe81f09
+    .claude/agents/optimizing-dotnet-performance.md: sha256:bcabb8c04cd05765bf0e0c2b6e322510b1434319121890dcfe5717d3a56198e4
+    .claude/skills/analyzing-dotnet-performance/SKILL.md: sha256:66d06c577cf6cf55d548318c10bd80de3c8ee5495bea1f6d20d277ddde63ea83
+    .claude/skills/analyzing-dotnet-performance/references/async-patterns.md: sha256:18e881ff7fbddbaf8e1da84cd46f182fa81c2c2c070915286e2aba671fcd3be7
+    .claude/skills/analyzing-dotnet-performance/references/collections-and-linq.md: sha256:6911129ce735bd7c232ab75fd93fe5c4c0e6ddef911c0062ae974b33c76eeddf
+    .claude/skills/analyzing-dotnet-performance/references/critical-patterns.md: sha256:ac17e1301a2f997a1be552d8efc5210b9b3c1ca30c71a5d60ed6f7d03d2e8290
+    .claude/skills/analyzing-dotnet-performance/references/io-and-serialization.md: sha256:a9cb85c2bbfdce1059cc8e4c102d728728b79b8cb0c1d6091076bf79bca05c89
+    .claude/skills/analyzing-dotnet-performance/references/memory-and-strings.md: sha256:917ea09f0496a59a15fe5abe2cea7b6ac38cf8d85e19b730bb497d35eb387d59
+    .claude/skills/analyzing-dotnet-performance/references/regex-patterns.md: sha256:cfbd9bb1a4596b8acc537ed4a58d939237441e8716d5c747175cd8bc3b840a62
+    .claude/skills/analyzing-dotnet-performance/references/structural-patterns.md: sha256:ee75e7da219e1d5fcc91c728babe9978793be97e37e01a78b51cc47316ecf170
+    .claude/skills/android-tombstone-symbolication/SKILL.md: sha256:3e25d754833c1a362b3d1968cc81ab75b0d1824b161c3ab9d14113a41cacbe9f
+    .claude/skills/android-tombstone-symbolication/scripts/Symbolicate-Tombstone.ps1: sha256:050257edb89ce80796233ee6870bfc178c6c1ef1bb3f3ac05e4f893368acaa5a
+    .claude/skills/apple-crash-symbolication/SKILL.md: sha256:c8db1d3298cb94e321c47b29fdc0a611b22716b4fc72c32442db0d717de79198
+    .claude/skills/apple-crash-symbolication/references/ips-crash-format.md: sha256:df15e681730d1962b53e9006345f4c5d7caee9a0ab3ea05d87e675aaea766694
+    .claude/skills/apple-crash-symbolication/scripts/Symbolicate-Crash.ps1: sha256:5dd9ffdd9097adf7c104b504ced59e31514202ead8a8c22f5744ee3a0bbc3019
+    .claude/skills/clr-activation-debugging/SKILL.md: sha256:de030774c23c61b3297e82af68e1b15e37e2ad8df4028a54975b2a5af3183762
+    .claude/skills/clr-activation-debugging/references/activation-flow.md: sha256:04d748a40788aa47dd7bb325f682615486da71812b3a80b9a6403ce97eca4d9f
+    .claude/skills/clr-activation-debugging/references/com-activation.md: sha256:3da57d54a8f6dd85bfb9e2a3b617fa5521e6551b7187bfc3bac73f71c1b6c9bc
+    .claude/skills/clr-activation-debugging/references/log-format.md: sha256:f594da621cd46f457a93aebc5273ed2e102730a03086eb9cb0cb96e07e2e8472
+    .claude/skills/dotnet-trace-collect/SKILL.md: sha256:a701fd47f61e196b456cea55699d2e523cc8fc37f382e53d241c153b1c21a494
+    .claude/skills/dotnet-trace-collect/references/dotnet-monitor.md: sha256:726655946aac6f654c58cb3a92e37b9e1b0b4b7c2d990cd9bdfd1e54912882dd
+    .claude/skills/dotnet-trace-collect/references/dotnet-trace-collect-linux.md: sha256:fcb65d649219958c61e6070f4278caaac07e75a418328976bed7bddc77ef24af
+    .claude/skills/dotnet-trace-collect/references/dotnet-trace-collect.md: sha256:c47af38a982c1184cf43eafed795260c9872a85f09718d7b51095b7f22afbe6d
+    .claude/skills/dotnet-trace-collect/references/perfcollect.md: sha256:5b5de0486d84ff2e1b86be7de04631a2a3b32d55ca0bb2a3c2c636c0d167943a
+    .claude/skills/dotnet-trace-collect/references/perfview.md: sha256:c8018e9f1844fa854d971f0d1d75e61887e9ebd5ca97def209650ac634626813
+    .claude/skills/dump-collect/SKILL.md: sha256:d00af814b354faae10cd78fedf7c94a78de6e64f04d4c15703b8fbac5e08e2e2
+    .claude/skills/dump-collect/references/container-dumps.md: sha256:e8f1bad53e928efa41caa6855b7022062e30f11b96fdf9ded37526e03b86f5e3
+    .claude/skills/dump-collect/references/coreclr-dumps.md: sha256:180c6b4ab82f2d27b85b751e309bf0aa445fde68ddc0c6a507b51999f02cf195
+    .claude/skills/dump-collect/references/nativeaot-dumps.md: sha256:63bda7821ce96ad27e343b93fdf46eb31d2209ba66c387f669062909e3d532a0
+    .claude/skills/microbenchmarking/SKILL.md: sha256:64dab692a441a8af87b40cda1f3c2c9e5046551446fdea55d2801eaabb34785e
+    .claude/skills/microbenchmarking/references/bdn-internals-and-tuning.md: sha256:213842a5ced85bbdd5db4d7f6de4c3bdd231367b292f7c994a504960e32c83f0
+    .claude/skills/microbenchmarking/references/comparison-strategies.md: sha256:cdbc8e7d4b9b2c9eeb1dbc1a7ceaee5b3cb453d041211bf30fc93b150c4fecf7
+    .claude/skills/microbenchmarking/references/diagnosers-and-exporters.md: sha256:9410eb556b83af2a63bdb593a791077a4a070210df569887f6265d9ecd825b14
+    .claude/skills/microbenchmarking/references/project-setup-and-running.md: sha256:dd6866d218be83e84e772b9bda17d1d8261da4a8318d6b098faffe71b95bfcdf
+    .claude/skills/microbenchmarking/references/writing-benchmarks.md: sha256:00279137333ae46cec081a3b85d53858cec9a7565beddf902e15a6f7abe81f09
+    .codex/agents/optimizing-dotnet-performance.toml: sha256:c713d8c3c18349b07cf7ebf68c9a541104fefeb08794668ef6f901e3c6830dd2
+    .github/agents/optimizing-dotnet-performance.agent.md: sha256:bcabb8c04cd05765bf0e0c2b6e322510b1434319121890dcfe5717d3a56198e4
+    .opencode/agents/optimizing-dotnet-performance.md: sha256:bcabb8c04cd05765bf0e0c2b6e322510b1434319121890dcfe5717d3a56198e4
+  content_hash: sha256:d461845dcd0fd384aace0af48475c8b3433d08c4b1171d34e8be269db7b7acb7
+- repo_url: dotnet/skills
+  name: dotnet11
+  host: github.com
+  resolved_commit: 586f13f8d898a60583a3364f146a3b6f5a763164
+  version: 0.1.2
+  virtual_path: plugins/dotnet11
+  is_virtual: true
+  package_type: marketplace_plugin
+  deployed_files:
+  - .agents/skills/process-api-net11
+  - .agents/skills/process-api-net11/SKILL.md
+  - .agents/skills/system-text-json-net11
+  - .agents/skills/system-text-json-net11/SKILL.md
+  - .claude/skills/process-api-net11
+  - .claude/skills/process-api-net11/SKILL.md
+  - .claude/skills/system-text-json-net11
+  - .claude/skills/system-text-json-net11/SKILL.md
+  deployed_file_hashes:
+    .agents/skills/process-api-net11/SKILL.md: sha256:66f79536a3d80372caeff06d77940639b9677f5b4cb41c5358407b43b4cb4d59
+    .agents/skills/system-text-json-net11/SKILL.md: sha256:e067f1ad212f97bd11510505748f2ed87b51b3e0328b27fb8116c01a86817e7d
+    .claude/skills/process-api-net11/SKILL.md: sha256:66f79536a3d80372caeff06d77940639b9677f5b4cb41c5358407b43b4cb4d59
+    .claude/skills/system-text-json-net11/SKILL.md: sha256:e067f1ad212f97bd11510505748f2ed87b51b3e0328b27fb8116c01a86817e7d
+  content_hash: sha256:979105b8d6db85c948204e00b96a942a1153ecb0f99a908d50b8e9150fc98169
+- repo_url: juliusbrussee/caveman
+  materialization_repo_url: JuliusBrussee/caveman
+  name: caveman
+  host: github.com
+  resolved_commit: 9b68f7ed12b05e7efaff18e65c5a3fc2849fd0a4
+  version: unknown
+  virtual_path: skills/caveman
+  is_virtual: true
+  package_type: claude_skill
+  deployed_files:
+  - .agents/skills/caveman
+  - .agents/skills/caveman/README.md
+  - .agents/skills/caveman/SKILL.md
+  - .claude/skills/caveman
+  - .claude/skills/caveman/README.md
+  - .claude/skills/caveman/SKILL.md
+  deployed_file_hashes:
+    .agents/skills/caveman/README.md: sha256:e8b22f37ccb204bd00cdf98c723c0df37aeda1f5863e9ad1d634f5c839d99e5d
+    .agents/skills/caveman/SKILL.md: sha256:415d43518f2b1a9498c15a445d4657117b129ee5e81b19454ce348439cc6672b
+    .claude/skills/caveman/README.md: sha256:e8b22f37ccb204bd00cdf98c723c0df37aeda1f5863e9ad1d634f5c839d99e5d
+    .claude/skills/caveman/SKILL.md: sha256:415d43518f2b1a9498c15a445d4657117b129ee5e81b19454ce348439cc6672b
+  content_hash: sha256:71b600c88c8d1d36f18c4875db23b53c5d6cb9ba3195e19451d6b1bb67db07c4
+- repo_url: microsoft/debugmcp
+  materialization_repo_url: microsoft/DebugMCP
+  name: debug-live
+  host: github.com
+  resolved_commit: d0b4a334a6a3d8d600c5aa75ec60d9de272af3c4
+  version: unknown
+  virtual_path: skills/debug-live
+  is_virtual: true
+  package_type: claude_skill
+  deployed_files:
+  - .agents/skills/debug-live
+  - .agents/skills/debug-live/README.md
+  - .agents/skills/debug-live/SKILL.md
+  - .agents/skills/debug-live/references/troubleshooting/cpp.md
+  - .agents/skills/debug-live/references/troubleshooting/csharp.md
+  - .agents/skills/debug-live/references/troubleshooting/go.md
+  - .agents/skills/debug-live/references/troubleshooting/java.md
+  - .agents/skills/debug-live/references/troubleshooting/javascript.md
+  - .agents/skills/debug-live/references/troubleshooting/python.md
+  - .agents/skills/debug-live/references/troubleshooting/ruby.md
+  - .claude/skills/debug-live
+  - .claude/skills/debug-live/README.md
+  - .claude/skills/debug-live/SKILL.md
+  - .claude/skills/debug-live/references/troubleshooting/cpp.md
+  - .claude/skills/debug-live/references/troubleshooting/csharp.md
+  - .claude/skills/debug-live/references/troubleshooting/go.md
+  - .claude/skills/debug-live/references/troubleshooting/java.md
+  - .claude/skills/debug-live/references/troubleshooting/javascript.md
+  - .claude/skills/debug-live/references/troubleshooting/python.md
+  - .claude/skills/debug-live/references/troubleshooting/ruby.md
+  deployed_file_hashes:
+    .agents/skills/debug-live/README.md: sha256:bd9a601370d6e4bc093e4f242ec5531268d8718a646a1a4e831210c6293cdbc1
+    .agents/skills/debug-live/SKILL.md: sha256:fca3b2a9eee02bccc85725e80b360d11b1aad2a55d54fd0abf89f699411879e0
+    .agents/skills/debug-live/references/troubleshooting/cpp.md: sha256:88acb2fcd8e134c7caa7056b9da2c5922e1cfd2307fa330725dd32edb6ebe45f
+    .agents/skills/debug-live/references/troubleshooting/csharp.md: sha256:351be802bbd00f73e876d8e5b65cc2e675507a5fa9c39510c505b799da34961f
+    .agents/skills/debug-live/references/troubleshooting/go.md: sha256:b948595798a258308a52278ac9780305035482b6cc8384485214e5e53dd4c485
+    .agents/skills/debug-live/references/troubleshooting/java.md: sha256:5e5682082a8409d0ac9cc4215bd432a8edae0f239a80890f65eedfb29e1a924e
+    .agents/skills/debug-live/references/troubleshooting/javascript.md: sha256:373e9f903ead02706f3d2c5eeb3d986ae53c4a49ae72b604ae2bf15e58063e9c
+    .agents/skills/debug-live/references/troubleshooting/python.md: sha256:6dcf148e98f9a3c3cb41b186efe849010e239b0a52ed75259b7b294390b65a64
+    .agents/skills/debug-live/references/troubleshooting/ruby.md: sha256:b9aca82ad67a6780d7114af7fdbd0b4cf3612517d53dcf6a37c4dc81161b413d
+    .claude/skills/debug-live/README.md: sha256:bd9a601370d6e4bc093e4f242ec5531268d8718a646a1a4e831210c6293cdbc1
+    .claude/skills/debug-live/SKILL.md: sha256:fca3b2a9eee02bccc85725e80b360d11b1aad2a55d54fd0abf89f699411879e0
+    .claude/skills/debug-live/references/troubleshooting/cpp.md: sha256:88acb2fcd8e134c7caa7056b9da2c5922e1cfd2307fa330725dd32edb6ebe45f
+    .claude/skills/debug-live/references/troubleshooting/csharp.md: sha256:351be802bbd00f73e876d8e5b65cc2e675507a5fa9c39510c505b799da34961f
+    .claude/skills/debug-live/references/troubleshooting/go.md: sha256:b948595798a258308a52278ac9780305035482b6cc8384485214e5e53dd4c485
+    .claude/skills/debug-live/references/troubleshooting/java.md: sha256:5e5682082a8409d0ac9cc4215bd432a8edae0f239a80890f65eedfb29e1a924e
+    .claude/skills/debug-live/references/troubleshooting/javascript.md: sha256:373e9f903ead02706f3d2c5eeb3d986ae53c4a49ae72b604ae2bf15e58063e9c
+    .claude/skills/debug-live/references/troubleshooting/python.md: sha256:6dcf148e98f9a3c3cb41b186efe849010e239b0a52ed75259b7b294390b65a64
+    .claude/skills/debug-live/references/troubleshooting/ruby.md: sha256:b9aca82ad67a6780d7114af7fdbd0b4cf3612517d53dcf6a37c4dc81161b413d
+  content_hash: sha256:ebf54cacd0c0071f69b25fb6c53de4bf24b40f1b657c844e96c789edab4c690c
+- repo_url: wieslawsoltes/development-plugin-for-avalonia
+  name: avalonia-12-migration
+  host: github.com
+  resolved_commit: 95cccf7118f42d9e7fbd479ccedeb3b012f4d421
+  version: unknown
+  virtual_path: skills/avalonia-12-migration
+  is_virtual: true
+  package_type: claude_skill
+  deployed_files:
+  - .agents/skills/avalonia-12-migration
+  - .agents/skills/avalonia-12-migration/SKILL.md
+  - .agents/skills/avalonia-12-migration/agents/openai.yaml
+  - .claude/skills/avalonia-12-migration
+  - .claude/skills/avalonia-12-migration/SKILL.md
+  - .claude/skills/avalonia-12-migration/agents/openai.yaml
+  deployed_file_hashes:
+    .agents/skills/avalonia-12-migration/SKILL.md: sha256:ab7a1dbd943eed1bb12d436960d28c8dd5c35d1d5ff76ed6716b6a5b9dcf6c64
+    .agents/skills/avalonia-12-migration/agents/openai.yaml: sha256:cb3fe93e3486f67d4c4c8dd754cd5c6a089a767ad890f6c74ccc6bc8157db199
+    .claude/skills/avalonia-12-migration/SKILL.md: sha256:ab7a1dbd943eed1bb12d436960d28c8dd5c35d1d5ff76ed6716b6a5b9dcf6c64
+    .claude/skills/avalonia-12-migration/agents/openai.yaml: sha256:cb3fe93e3486f67d4c4c8dd754cd5c6a089a767ad890f6c74ccc6bc8157db199
+  content_hash: sha256:4dfadaaa650bc85801b991b1aacf05d55474aecb993002b3c5cb3d50007079ba
+- repo_url: wieslawsoltes/development-plugin-for-avalonia
+  name: avalonia-accessibility-and-validation
+  host: github.com
+  resolved_commit: 95cccf7118f42d9e7fbd479ccedeb3b012f4d421
+  version: unknown
+  virtual_path: skills/avalonia-accessibility-and-validation
+  is_virtual: true
+  package_type: claude_skill
+  deployed_files:
+  - .agents/skills/avalonia-accessibility-and-validation
+  - .agents/skills/avalonia-accessibility-and-validation/SKILL.md
+  - .agents/skills/avalonia-accessibility-and-validation/agents/openai.yaml
+  - .claude/skills/avalonia-accessibility-and-validation
+  - .claude/skills/avalonia-accessibility-and-validation/SKILL.md
+  - .claude/skills/avalonia-accessibility-and-validation/agents/openai.yaml
+  deployed_file_hashes:
+    .agents/skills/avalonia-accessibility-and-validation/SKILL.md: sha256:1abaa9795d71b0d987512f7e9dbf395c7c59f071f5f62caa34f239525e3b99f3
+    .agents/skills/avalonia-accessibility-and-validation/agents/openai.yaml: sha256:422f0535f733655c4b464de528f53eda2e4018d7daeb811f22030178282d0481
+    .claude/skills/avalonia-accessibility-and-validation/SKILL.md: sha256:1abaa9795d71b0d987512f7e9dbf395c7c59f071f5f62caa34f239525e3b99f3
+    .claude/skills/avalonia-accessibility-and-validation/agents/openai.yaml: sha256:422f0535f733655c4b464de528f53eda2e4018d7daeb811f22030178282d0481
+  content_hash: sha256:fff699d5934d5fb55320824604e7f22f7b3897649953911dabcf16afd5122065
+- repo_url: wieslawsoltes/development-plugin-for-avalonia
+  name: avalonia-bindings-and-xaml
+  host: github.com
+  resolved_commit: 95cccf7118f42d9e7fbd479ccedeb3b012f4d421
+  version: unknown
+  virtual_path: skills/avalonia-bindings-and-xaml
+  is_virtual: true
+  package_type: claude_skill
+  deployed_files:
+  - .agents/skills/avalonia-bindings-and-xaml
+  - .agents/skills/avalonia-bindings-and-xaml/SKILL.md
+  - .agents/skills/avalonia-bindings-and-xaml/agents/openai.yaml
+  - .claude/skills/avalonia-bindings-and-xaml
+  - .claude/skills/avalonia-bindings-and-xaml/SKILL.md
+  - .claude/skills/avalonia-bindings-and-xaml/agents/openai.yaml
+  deployed_file_hashes:
+    .agents/skills/avalonia-bindings-and-xaml/SKILL.md: sha256:2c894474a7ecefd2c67c15a5ac7738b173cb2672f6e980bbd692b53f1755d5f7
+    .agents/skills/avalonia-bindings-and-xaml/agents/openai.yaml: sha256:1e166c26286315b047b10ae4a90f9dd98469af19933e8fa7c8971e7054a85134
+    .claude/skills/avalonia-bindings-and-xaml/SKILL.md: sha256:2c894474a7ecefd2c67c15a5ac7738b173cb2672f6e980bbd692b53f1755d5f7
+    .claude/skills/avalonia-bindings-and-xaml/agents/openai.yaml: sha256:1e166c26286315b047b10ae4a90f9dd98469af19933e8fa7c8971e7054a85134
+  content_hash: sha256:07a30020328e09dd9dc6c8446527f0b13ba46e8d4aef08e624a8d81fab679296
+- repo_url: wieslawsoltes/development-plugin-for-avalonia
+  name: avalonia-bootstrap-and-lifetime
+  host: github.com
+  resolved_commit: 95cccf7118f42d9e7fbd479ccedeb3b012f4d421
+  version: unknown
+  virtual_path: skills/avalonia-bootstrap-and-lifetime
+  is_virtual: true
+  package_type: claude_skill
+  deployed_files:
+  - .agents/skills/avalonia-bootstrap-and-lifetime
+  - .agents/skills/avalonia-bootstrap-and-lifetime/SKILL.md
+  - .agents/skills/avalonia-bootstrap-and-lifetime/agents/openai.yaml
+  - .claude/skills/avalonia-bootstrap-and-lifetime
+  - .claude/skills/avalonia-bootstrap-and-lifetime/SKILL.md
+  - .claude/skills/avalonia-bootstrap-and-lifetime/agents/openai.yaml
+  deployed_file_hashes:
+    .agents/skills/avalonia-bootstrap-and-lifetime/SKILL.md: sha256:d4963a2c6f3a466798e0122b172ad1d9b1c5eddd43e3451368970d6a06deb3f3
+    .agents/skills/avalonia-bootstrap-and-lifetime/agents/openai.yaml: sha256:e20ed37b6ee9db6bae48cc5d6e0a85be8f7628e3daa4be0ea70a94fceaa19b38
+    .claude/skills/avalonia-bootstrap-and-lifetime/SKILL.md: sha256:d4963a2c6f3a466798e0122b172ad1d9b1c5eddd43e3451368970d6a06deb3f3
+    .claude/skills/avalonia-bootstrap-and-lifetime/agents/openai.yaml: sha256:e20ed37b6ee9db6bae48cc5d6e0a85be8f7628e3daa4be0ea70a94fceaa19b38
+  content_hash: sha256:45dd6ad8c7e6bf6af711142f7a95e8f8e089b66181bd7e1dd470395925bf0bb6
+- repo_url: wieslawsoltes/development-plugin-for-avalonia
+  name: avalonia-controls-and-windowing
+  host: github.com
+  resolved_commit: 95cccf7118f42d9e7fbd479ccedeb3b012f4d421
+  version: unknown
+  virtual_path: skills/avalonia-controls-and-windowing
+  is_virtual: true
+  package_type: claude_skill
+  deployed_files:
+  - .agents/skills/avalonia-controls-and-windowing
+  - .agents/skills/avalonia-controls-and-windowing/SKILL.md
+  - .agents/skills/avalonia-controls-and-windowing/agents/openai.yaml
+  - .claude/skills/avalonia-controls-and-windowing
+  - .claude/skills/avalonia-controls-and-windowing/SKILL.md
+  - .claude/skills/avalonia-controls-and-windowing/agents/openai.yaml
+  deployed_file_hashes:
+    .agents/skills/avalonia-controls-and-windowing/SKILL.md: sha256:a8f38c851dcb1e17334d4713eaf8fbbe5b35f2c863546771a68f79cc8fc3d5ef
+    .agents/skills/avalonia-controls-and-windowing/agents/openai.yaml: sha256:9de106f0d2c409ab514364bdba86b6fb8edbcff6eaf0d9cf81e8f8deccd7b29e
+    .claude/skills/avalonia-controls-and-windowing/SKILL.md: sha256:a8f38c851dcb1e17334d4713eaf8fbbe5b35f2c863546771a68f79cc8fc3d5ef
+    .claude/skills/avalonia-controls-and-windowing/agents/openai.yaml: sha256:9de106f0d2c409ab514364bdba86b6fb8edbcff6eaf0d9cf81e8f8deccd7b29e
+  content_hash: sha256:7260e575303070be01f76e428f06bf87464f7d0c3a31e6bb672fd85e3c9b59e8
+- repo_url: wieslawsoltes/development-plugin-for-avalonia
+  name: avalonia-design-systems
+  host: github.com
+  resolved_commit: 95cccf7118f42d9e7fbd479ccedeb3b012f4d421
+  version: unknown
+  virtual_path: skills/avalonia-design-systems
+  is_virtual: true
+  package_type: claude_skill
+  deployed_files:
+  - .agents/skills/avalonia-design-systems
+  - .agents/skills/avalonia-design-systems/SKILL.md
+  - .agents/skills/avalonia-design-systems/agents/openai.yaml
+  - .claude/skills/avalonia-design-systems
+  - .claude/skills/avalonia-design-systems/SKILL.md
+  - .claude/skills/avalonia-design-systems/agents/openai.yaml
+  deployed_file_hashes:
+    .agents/skills/avalonia-design-systems/SKILL.md: sha256:60751542dea1b68d17142eaa2b921a48f667c464b5d5608a7abc996d0b21af8a
+    .agents/skills/avalonia-design-systems/agents/openai.yaml: sha256:6a80e315ea6f368fb6e59a9b96e6041b5e593080d12aa987374cb8a4d0df5f3f
+    .claude/skills/avalonia-design-systems/SKILL.md: sha256:60751542dea1b68d17142eaa2b921a48f667c464b5d5608a7abc996d0b21af8a
+    .claude/skills/avalonia-design-systems/agents/openai.yaml: sha256:6a80e315ea6f368fb6e59a9b96e6041b5e593080d12aa987374cb8a4d0df5f3f
+  content_hash: sha256:ff10e33f322542ab44b4a24baa2b066dc34b9ff46ce829137acfb8286dbf9349
+- repo_url: wieslawsoltes/development-plugin-for-avalonia
+  name: avalonia-fluent-design
+  host: github.com
+  resolved_commit: 95cccf7118f42d9e7fbd479ccedeb3b012f4d421
+  version: unknown
+  virtual_path: skills/avalonia-fluent-design
+  is_virtual: true
+  package_type: claude_skill
+  deployed_files:
+  - .agents/skills/avalonia-fluent-design
+  - .agents/skills/avalonia-fluent-design/SKILL.md
+  - .agents/skills/avalonia-fluent-design/agents/openai.yaml
+  - .claude/skills/avalonia-fluent-design
+  - .claude/skills/avalonia-fluent-design/SKILL.md
+  - .claude/skills/avalonia-fluent-design/agents/openai.yaml
+  deployed_file_hashes:
+    .agents/skills/avalonia-fluent-design/SKILL.md: sha256:4e66b0db12e40997ded34a45c30741ae155d654a8057cc315a91efb918cdd996
+    .agents/skills/avalonia-fluent-design/agents/openai.yaml: sha256:280ccd20a484acb1dd9eba98762770991595c7b57ea006712c7e179df8524457
+    .claude/skills/avalonia-fluent-design/SKILL.md: sha256:4e66b0db12e40997ded34a45c30741ae155d654a8057cc315a91efb918cdd996
+    .claude/skills/avalonia-fluent-design/agents/openai.yaml: sha256:280ccd20a484acb1dd9eba98762770991595c7b57ea006712c7e179df8524457
+  content_hash: sha256:5779def41b49a1e59b483ac58633b06619beb5978af7913a22a9ec946f0d64ea
+- repo_url: wieslawsoltes/development-plugin-for-avalonia
+  name: avalonia-input-and-commands
+  host: github.com
+  resolved_commit: 95cccf7118f42d9e7fbd479ccedeb3b012f4d421
+  version: unknown
+  virtual_path: skills/avalonia-input-and-commands
+  is_virtual: true
+  package_type: claude_skill
+  deployed_files:
+  - .agents/skills/avalonia-input-and-commands
+  - .agents/skills/avalonia-input-and-commands/SKILL.md
+  - .agents/skills/avalonia-input-and-commands/agents/openai.yaml
+  - .claude/skills/avalonia-input-and-commands
+  - .claude/skills/avalonia-input-and-commands/SKILL.md
+  - .claude/skills/avalonia-input-and-commands/agents/openai.yaml
+  deployed_file_hashes:
+    .agents/skills/avalonia-input-and-commands/SKILL.md: sha256:7285258bd59e98462863992f8853005643c58a535d5ec16b80570f50b5762b0a
+    .agents/skills/avalonia-input-and-commands/agents/openai.yaml: sha256:140a887134036c8ff9d3089ed623dd72e250b4919551e98ba29b63b86f9e583e
+    .claude/skills/avalonia-input-and-commands/SKILL.md: sha256:7285258bd59e98462863992f8853005643c58a535d5ec16b80570f50b5762b0a
+    .claude/skills/avalonia-input-and-commands/agents/openai.yaml: sha256:140a887134036c8ff9d3089ed623dd72e250b4919551e98ba29b63b86f9e583e
+  content_hash: sha256:1956aa7d18054f51e6d2fa270ae96c50381b8cca8cfa2bbeccf6a610dfd85b60
+- repo_url: wieslawsoltes/development-plugin-for-avalonia
+  name: avalonia-layout-and-virtualization
+  host: github.com
+  resolved_commit: 95cccf7118f42d9e7fbd479ccedeb3b012f4d421
+  version: unknown
+  virtual_path: skills/avalonia-layout-and-virtualization
+  is_virtual: true
+  package_type: claude_skill
+  deployed_files:
+  - .agents/skills/avalonia-layout-and-virtualization
+  - .agents/skills/avalonia-layout-and-virtualization/SKILL.md
+  - .agents/skills/avalonia-layout-and-virtualization/agents/openai.yaml
+  - .claude/skills/avalonia-layout-and-virtualization
+  - .claude/skills/avalonia-layout-and-virtualization/SKILL.md
+  - .claude/skills/avalonia-layout-and-virtualization/agents/openai.yaml
+  deployed_file_hashes:
+    .agents/skills/avalonia-layout-and-virtualization/SKILL.md: sha256:2fde9e65e7586c726a885d882bcd07064ab764e9140e432d33a9f2ed9216801d
+    .agents/skills/avalonia-layout-and-virtualization/agents/openai.yaml: sha256:a5c4fc9872ed598849f46772f9a7b03437c06bf7eba95d23daf5a99aec10b6fa
+    .claude/skills/avalonia-layout-and-virtualization/SKILL.md: sha256:2fde9e65e7586c726a885d882bcd07064ab764e9140e432d33a9f2ed9216801d
+    .claude/skills/avalonia-layout-and-virtualization/agents/openai.yaml: sha256:a5c4fc9872ed598849f46772f9a7b03437c06bf7eba95d23daf5a99aec10b6fa
+  content_hash: sha256:467a65db9a9a29009edc1e680f0104ae2cfd902fb967a265ab25d398e95b202d
+- repo_url: wieslawsoltes/development-plugin-for-avalonia
+  name: avalonia-platform-services
+  host: github.com
+  resolved_commit: 95cccf7118f42d9e7fbd479ccedeb3b012f4d421
+  version: unknown
+  virtual_path: skills/avalonia-platform-services
+  is_virtual: true
+  package_type: claude_skill
+  deployed_files:
+  - .agents/skills/avalonia-platform-services
+  - .agents/skills/avalonia-platform-services/SKILL.md
+  - .agents/skills/avalonia-platform-services/agents/openai.yaml
+  - .claude/skills/avalonia-platform-services
+  - .claude/skills/avalonia-platform-services/SKILL.md
+  - .claude/skills/avalonia-platform-services/agents/openai.yaml
+  deployed_file_hashes:
+    .agents/skills/avalonia-platform-services/SKILL.md: sha256:45d5d03ef06e711ff2a38559fc8b96441a8e18118021706b1192597f6d6ea358
+    .agents/skills/avalonia-platform-services/agents/openai.yaml: sha256:62b735a6dfd60b0dac53b628ec3f0af281a03bd095eecee8366a396e54b28c2f
+    .claude/skills/avalonia-platform-services/SKILL.md: sha256:45d5d03ef06e711ff2a38559fc8b96441a8e18118021706b1192597f6d6ea358
+    .claude/skills/avalonia-platform-services/agents/openai.yaml: sha256:62b735a6dfd60b0dac53b628ec3f0af281a03bd095eecee8366a396e54b28c2f
+  content_hash: sha256:611bb69d00c170326b8c159cf8a9e323adfcccdca70f4044472c925328f9219d
+- repo_url: wieslawsoltes/development-plugin-for-avalonia
+  name: avalonia-rendering-and-graphics
+  host: github.com
+  resolved_commit: 95cccf7118f42d9e7fbd479ccedeb3b012f4d421
+  version: unknown
+  virtual_path: skills/avalonia-rendering-and-graphics
+  is_virtual: true
+  package_type: claude_skill
+  deployed_files:
+  - .agents/skills/avalonia-rendering-and-graphics
+  - .agents/skills/avalonia-rendering-and-graphics/SKILL.md
+  - .agents/skills/avalonia-rendering-and-graphics/agents/openai.yaml
+  - .claude/skills/avalonia-rendering-and-graphics
+  - .claude/skills/avalonia-rendering-and-graphics/SKILL.md
+  - .claude/skills/avalonia-rendering-and-graphics/agents/openai.yaml
+  deployed_file_hashes:
+    .agents/skills/avalonia-rendering-and-graphics/SKILL.md: sha256:e2147cef9d3de9cad3421a5f63e7045c7b970fc39f589c837fb8f41d3b3ede25
+    .agents/skills/avalonia-rendering-and-graphics/agents/openai.yaml: sha256:a0877842df2ee6087d08ebd7e93ad4f1f234d9a0a319dcbfa038f344bf0ae60f
+    .claude/skills/avalonia-rendering-and-graphics/SKILL.md: sha256:e2147cef9d3de9cad3421a5f63e7045c7b970fc39f589c837fb8f41d3b3ede25
+    .claude/skills/avalonia-rendering-and-graphics/agents/openai.yaml: sha256:a0877842df2ee6087d08ebd7e93ad4f1f234d9a0a319dcbfa038f344bf0ae60f
+  content_hash: sha256:64d4c1b2bb5cc307f86ca3743cb4cc601b2ee9cd90407e05a3837916ae0ff5b0
+- repo_url: wieslawsoltes/development-plugin-for-avalonia
+  name: avalonia-styling-and-resources
+  host: github.com
+  resolved_commit: 95cccf7118f42d9e7fbd479ccedeb3b012f4d421
+  version: unknown
+  virtual_path: skills/avalonia-styling-and-resources
+  is_virtual: true
+  package_type: claude_skill
+  deployed_files:
+  - .agents/skills/avalonia-styling-and-resources
+  - .agents/skills/avalonia-styling-and-resources/SKILL.md
+  - .agents/skills/avalonia-styling-and-resources/agents/openai.yaml
+  - .claude/skills/avalonia-styling-and-resources
+  - .claude/skills/avalonia-styling-and-resources/SKILL.md
+  - .claude/skills/avalonia-styling-and-resources/agents/openai.yaml
+  deployed_file_hashes:
+    .agents/skills/avalonia-styling-and-resources/SKILL.md: sha256:fffe7cc85d924dccb00667ea5fd0e004810b74c8d0421ea2d872479798dfe9c1
+    .agents/skills/avalonia-styling-and-resources/agents/openai.yaml: sha256:244f27d211ae22b1447e14015d2e1459ed63fa1407301dc0c50c43806df4f28d
+    .claude/skills/avalonia-styling-and-resources/SKILL.md: sha256:fffe7cc85d924dccb00667ea5fd0e004810b74c8d0421ea2d872479798dfe9c1
+    .claude/skills/avalonia-styling-and-resources/agents/openai.yaml: sha256:244f27d211ae22b1447e14015d2e1459ed63fa1407301dc0c50c43806df4f28d
+  content_hash: sha256:8711e0b34012388d987ae08f11786b4b2a5921444d5b56747eba47bbba419282
+- repo_url: wieslawsoltes/development-plugin-for-avalonia
+  name: avalonia-testing-diagnostics-and-performance
+  host: github.com
+  resolved_commit: 95cccf7118f42d9e7fbd479ccedeb3b012f4d421
+  version: unknown
+  virtual_path: skills/avalonia-testing-diagnostics-and-performance
+  is_virtual: true
+  package_type: claude_skill
+  deployed_files:
+  - .agents/skills/avalonia-testing-diagnostics-and-performance
+  - .agents/skills/avalonia-testing-diagnostics-and-performance/SKILL.md
+  - .agents/skills/avalonia-testing-diagnostics-and-performance/agents/openai.yaml
+  - .claude/skills/avalonia-testing-diagnostics-and-performance
+  - .claude/skills/avalonia-testing-diagnostics-and-performance/SKILL.md
+  - .claude/skills/avalonia-testing-diagnostics-and-performance/agents/openai.yaml
+  deployed_file_hashes:
+    .agents/skills/avalonia-testing-diagnostics-and-performance/SKILL.md: sha256:6854754da3f137295e805997fde05a6a03fe74bd9cdbb320161a2fcfc8d9fa6d
+    .agents/skills/avalonia-testing-diagnostics-and-performance/agents/openai.yaml: sha256:af6084c7068ac54d0a2b3a76a991feb30e6f06e0cafbaab8915406c732af6a8d
+    .claude/skills/avalonia-testing-diagnostics-and-performance/SKILL.md: sha256:6854754da3f137295e805997fde05a6a03fe74bd9cdbb320161a2fcfc8d9fa6d
+    .claude/skills/avalonia-testing-diagnostics-and-performance/agents/openai.yaml: sha256:af6084c7068ac54d0a2b3a76a991feb30e6f06e0cafbaab8915406c732af6a8d
+  content_hash: sha256:fe744a52b3d0b243c8acca66e117d287a501f2d755de9c3cf24e308538e9ba87
+- repo_url: wieslawsoltes/development-plugin-for-avalonia
+  name: avalonia-threading-and-dispatcher
+  host: github.com
+  resolved_commit: 95cccf7118f42d9e7fbd479ccedeb3b012f4d421
+  version: unknown
+  virtual_path: skills/avalonia-threading-and-dispatcher
+  is_virtual: true
+  package_type: claude_skill
+  deployed_files:
+  - .agents/skills/avalonia-threading-and-dispatcher
+  - .agents/skills/avalonia-threading-and-dispatcher/SKILL.md
+  - .agents/skills/avalonia-threading-and-dispatcher/agents/openai.yaml
+  - .claude/skills/avalonia-threading-and-dispatcher
+  - .claude/skills/avalonia-threading-and-dispatcher/SKILL.md
+  - .claude/skills/avalonia-threading-and-dispatcher/agents/openai.yaml
+  deployed_file_hashes:
+    .agents/skills/avalonia-threading-and-dispatcher/SKILL.md: sha256:a2fbb7bcac0c0a3cc878781ebd0ba61536328e7a95c0bcb2eac74fc99344f388
+    .agents/skills/avalonia-threading-and-dispatcher/agents/openai.yaml: sha256:6d093b0e63dedecfff8fbed525ae3c5e7715d59d1fec9d5b9b7a232ed587115e
+    .claude/skills/avalonia-threading-and-dispatcher/SKILL.md: sha256:a2fbb7bcac0c0a3cc878781ebd0ba61536328e7a95c0bcb2eac74fc99344f388
+    .claude/skills/avalonia-threading-and-dispatcher/agents/openai.yaml: sha256:6d093b0e63dedecfff8fbed525ae3c5e7715d59d1fec9d5b9b7a232ed587115e
+  content_hash: sha256:a1fb3b856ca9025d649ff92b0f6784141a3e19fd0a1968f3fe9e69c81795777c
+- repo_url: wieslawsoltes/development-plugin-for-avalonia
+  name: avalonia-views-and-templating
+  host: github.com
+  resolved_commit: 95cccf7118f42d9e7fbd479ccedeb3b012f4d421
+  version: unknown
+  virtual_path: skills/avalonia-views-and-templating
+  is_virtual: true
+  package_type: claude_skill
+  deployed_files:
+  - .agents/skills/avalonia-views-and-templating
+  - .agents/skills/avalonia-views-and-templating/SKILL.md
+  - .agents/skills/avalonia-views-and-templating/agents/openai.yaml
+  - .claude/skills/avalonia-views-and-templating
+  - .claude/skills/avalonia-views-and-templating/SKILL.md
+  - .claude/skills/avalonia-views-and-templating/agents/openai.yaml
+  deployed_file_hashes:
+    .agents/skills/avalonia-views-and-templating/SKILL.md: sha256:273a869ef7e9cf89b004f20d53575728a2457609725108ae8dca51abe7a58a21
+    .agents/skills/avalonia-views-and-templating/agents/openai.yaml: sha256:e4697801ee73bdc7f26124bb8c9c712edad9eb1b263b739084d25fc03e5c5d09
+    .claude/skills/avalonia-views-and-templating/SKILL.md: sha256:273a869ef7e9cf89b004f20d53575728a2457609725108ae8dca51abe7a58a21
+    .claude/skills/avalonia-views-and-templating/agents/openai.yaml: sha256:e4697801ee73bdc7f26124bb8c9c712edad9eb1b263b739084d25fc03e5c5d09
+  content_hash: sha256:ebcae63fd207e2dc959ab35e602411324e9f97ed7c34a1b6b1a39f8a6b4af29a
+deployments:
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/analyzing-dotnet-performance
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet-diag
+  active_owner: dotnet/skills/plugins/dotnet-diag
+  content_hash: null
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/analyzing-dotnet-performance/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet-diag
+  active_owner: dotnet/skills/plugins/dotnet-diag
+  content_hash: sha256:66d06c577cf6cf55d548318c10bd80de3c8ee5495bea1f6d20d277ddde63ea83
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/analyzing-dotnet-performance/references/async-patterns.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet-diag
+  active_owner: dotnet/skills/plugins/dotnet-diag
+  content_hash: sha256:18e881ff7fbddbaf8e1da84cd46f182fa81c2c2c070915286e2aba671fcd3be7
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/analyzing-dotnet-performance/references/collections-and-linq.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet-diag
+  active_owner: dotnet/skills/plugins/dotnet-diag
+  content_hash: sha256:6911129ce735bd7c232ab75fd93fe5c4c0e6ddef911c0062ae974b33c76eeddf
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/analyzing-dotnet-performance/references/critical-patterns.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet-diag
+  active_owner: dotnet/skills/plugins/dotnet-diag
+  content_hash: sha256:ac17e1301a2f997a1be552d8efc5210b9b3c1ca30c71a5d60ed6f7d03d2e8290
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/analyzing-dotnet-performance/references/io-and-serialization.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet-diag
+  active_owner: dotnet/skills/plugins/dotnet-diag
+  content_hash: sha256:a9cb85c2bbfdce1059cc8e4c102d728728b79b8cb0c1d6091076bf79bca05c89
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/analyzing-dotnet-performance/references/memory-and-strings.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet-diag
+  active_owner: dotnet/skills/plugins/dotnet-diag
+  content_hash: sha256:917ea09f0496a59a15fe5abe2cea7b6ac38cf8d85e19b730bb497d35eb387d59
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/analyzing-dotnet-performance/references/regex-patterns.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet-diag
+  active_owner: dotnet/skills/plugins/dotnet-diag
+  content_hash: sha256:cfbd9bb1a4596b8acc537ed4a58d939237441e8716d5c747175cd8bc3b840a62
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/analyzing-dotnet-performance/references/structural-patterns.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet-diag
+  active_owner: dotnet/skills/plugins/dotnet-diag
+  content_hash: sha256:ee75e7da219e1d5fcc91c728babe9978793be97e37e01a78b51cc47316ecf170
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/android-tombstone-symbolication
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet-diag
+  active_owner: dotnet/skills/plugins/dotnet-diag
+  content_hash: null
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/android-tombstone-symbolication/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet-diag
+  active_owner: dotnet/skills/plugins/dotnet-diag
+  content_hash: sha256:3e25d754833c1a362b3d1968cc81ab75b0d1824b161c3ab9d14113a41cacbe9f
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/android-tombstone-symbolication/scripts/Symbolicate-Tombstone.ps1
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet-diag
+  active_owner: dotnet/skills/plugins/dotnet-diag
+  content_hash: sha256:050257edb89ce80796233ee6870bfc178c6c1ef1bb3f3ac05e4f893368acaa5a
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/apple-crash-symbolication
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet-diag
+  active_owner: dotnet/skills/plugins/dotnet-diag
+  content_hash: null
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/apple-crash-symbolication/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet-diag
+  active_owner: dotnet/skills/plugins/dotnet-diag
+  content_hash: sha256:c8db1d3298cb94e321c47b29fdc0a611b22716b4fc72c32442db0d717de79198
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/apple-crash-symbolication/references/ips-crash-format.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet-diag
+  active_owner: dotnet/skills/plugins/dotnet-diag
+  content_hash: sha256:df15e681730d1962b53e9006345f4c5d7caee9a0ab3ea05d87e675aaea766694
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/apple-crash-symbolication/scripts/Symbolicate-Crash.ps1
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet-diag
+  active_owner: dotnet/skills/plugins/dotnet-diag
+  content_hash: sha256:5dd9ffdd9097adf7c104b504ced59e31514202ead8a8c22f5744ee3a0bbc3019
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/avalonia-12-migration
+  runtime: null
+  scope: project
+  owners:
+  - wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-12-migration
+  active_owner: wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-12-migration
+  content_hash: null
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/avalonia-12-migration/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-12-migration
+  active_owner: wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-12-migration
+  content_hash: sha256:ab7a1dbd943eed1bb12d436960d28c8dd5c35d1d5ff76ed6716b6a5b9dcf6c64
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/avalonia-12-migration/agents/openai.yaml
+  runtime: null
+  scope: project
+  owners:
+  - wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-12-migration
+  active_owner: wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-12-migration
+  content_hash: sha256:cb3fe93e3486f67d4c4c8dd754cd5c6a089a767ad890f6c74ccc6bc8157db199
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/avalonia-accessibility-and-validation
+  runtime: null
+  scope: project
+  owners:
+  - wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-accessibility-and-validation
+  active_owner: wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-accessibility-and-validation
+  content_hash: null
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/avalonia-accessibility-and-validation/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-accessibility-and-validation
+  active_owner: wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-accessibility-and-validation
+  content_hash: sha256:1abaa9795d71b0d987512f7e9dbf395c7c59f071f5f62caa34f239525e3b99f3
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/avalonia-accessibility-and-validation/agents/openai.yaml
+  runtime: null
+  scope: project
+  owners:
+  - wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-accessibility-and-validation
+  active_owner: wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-accessibility-and-validation
+  content_hash: sha256:422f0535f733655c4b464de528f53eda2e4018d7daeb811f22030178282d0481
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/avalonia-bindings-and-xaml
+  runtime: null
+  scope: project
+  owners:
+  - wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-bindings-and-xaml
+  active_owner: wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-bindings-and-xaml
+  content_hash: null
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/avalonia-bindings-and-xaml/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-bindings-and-xaml
+  active_owner: wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-bindings-and-xaml
+  content_hash: sha256:2c894474a7ecefd2c67c15a5ac7738b173cb2672f6e980bbd692b53f1755d5f7
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/avalonia-bindings-and-xaml/agents/openai.yaml
+  runtime: null
+  scope: project
+  owners:
+  - wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-bindings-and-xaml
+  active_owner: wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-bindings-and-xaml
+  content_hash: sha256:1e166c26286315b047b10ae4a90f9dd98469af19933e8fa7c8971e7054a85134
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/avalonia-bootstrap-and-lifetime
+  runtime: null
+  scope: project
+  owners:
+  - wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-bootstrap-and-lifetime
+  active_owner: wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-bootstrap-and-lifetime
+  content_hash: null
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/avalonia-bootstrap-and-lifetime/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-bootstrap-and-lifetime
+  active_owner: wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-bootstrap-and-lifetime
+  content_hash: sha256:d4963a2c6f3a466798e0122b172ad1d9b1c5eddd43e3451368970d6a06deb3f3
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/avalonia-bootstrap-and-lifetime/agents/openai.yaml
+  runtime: null
+  scope: project
+  owners:
+  - wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-bootstrap-and-lifetime
+  active_owner: wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-bootstrap-and-lifetime
+  content_hash: sha256:e20ed37b6ee9db6bae48cc5d6e0a85be8f7628e3daa4be0ea70a94fceaa19b38
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/avalonia-controls-and-windowing
+  runtime: null
+  scope: project
+  owners:
+  - wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-controls-and-windowing
+  active_owner: wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-controls-and-windowing
+  content_hash: null
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/avalonia-controls-and-windowing/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-controls-and-windowing
+  active_owner: wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-controls-and-windowing
+  content_hash: sha256:a8f38c851dcb1e17334d4713eaf8fbbe5b35f2c863546771a68f79cc8fc3d5ef
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/avalonia-controls-and-windowing/agents/openai.yaml
+  runtime: null
+  scope: project
+  owners:
+  - wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-controls-and-windowing
+  active_owner: wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-controls-and-windowing
+  content_hash: sha256:9de106f0d2c409ab514364bdba86b6fb8edbcff6eaf0d9cf81e8f8deccd7b29e
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/avalonia-design-systems
+  runtime: null
+  scope: project
+  owners:
+  - wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-design-systems
+  active_owner: wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-design-systems
+  content_hash: null
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/avalonia-design-systems/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-design-systems
+  active_owner: wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-design-systems
+  content_hash: sha256:60751542dea1b68d17142eaa2b921a48f667c464b5d5608a7abc996d0b21af8a
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/avalonia-design-systems/agents/openai.yaml
+  runtime: null
+  scope: project
+  owners:
+  - wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-design-systems
+  active_owner: wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-design-systems
+  content_hash: sha256:6a80e315ea6f368fb6e59a9b96e6041b5e593080d12aa987374cb8a4d0df5f3f
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/avalonia-fluent-design
+  runtime: null
+  scope: project
+  owners:
+  - wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-fluent-design
+  active_owner: wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-fluent-design
+  content_hash: null
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/avalonia-fluent-design/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-fluent-design
+  active_owner: wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-fluent-design
+  content_hash: sha256:4e66b0db12e40997ded34a45c30741ae155d654a8057cc315a91efb918cdd996
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/avalonia-fluent-design/agents/openai.yaml
+  runtime: null
+  scope: project
+  owners:
+  - wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-fluent-design
+  active_owner: wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-fluent-design
+  content_hash: sha256:280ccd20a484acb1dd9eba98762770991595c7b57ea006712c7e179df8524457
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/avalonia-input-and-commands
+  runtime: null
+  scope: project
+  owners:
+  - wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-input-and-commands
+  active_owner: wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-input-and-commands
+  content_hash: null
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/avalonia-input-and-commands/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-input-and-commands
+  active_owner: wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-input-and-commands
+  content_hash: sha256:7285258bd59e98462863992f8853005643c58a535d5ec16b80570f50b5762b0a
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/avalonia-input-and-commands/agents/openai.yaml
+  runtime: null
+  scope: project
+  owners:
+  - wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-input-and-commands
+  active_owner: wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-input-and-commands
+  content_hash: sha256:140a887134036c8ff9d3089ed623dd72e250b4919551e98ba29b63b86f9e583e
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/avalonia-layout-and-virtualization
+  runtime: null
+  scope: project
+  owners:
+  - wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-layout-and-virtualization
+  active_owner: wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-layout-and-virtualization
+  content_hash: null
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/avalonia-layout-and-virtualization/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-layout-and-virtualization
+  active_owner: wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-layout-and-virtualization
+  content_hash: sha256:2fde9e65e7586c726a885d882bcd07064ab764e9140e432d33a9f2ed9216801d
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/avalonia-layout-and-virtualization/agents/openai.yaml
+  runtime: null
+  scope: project
+  owners:
+  - wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-layout-and-virtualization
+  active_owner: wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-layout-and-virtualization
+  content_hash: sha256:a5c4fc9872ed598849f46772f9a7b03437c06bf7eba95d23daf5a99aec10b6fa
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/avalonia-platform-services
+  runtime: null
+  scope: project
+  owners:
+  - wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-platform-services
+  active_owner: wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-platform-services
+  content_hash: null
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/avalonia-platform-services/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-platform-services
+  active_owner: wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-platform-services
+  content_hash: sha256:45d5d03ef06e711ff2a38559fc8b96441a8e18118021706b1192597f6d6ea358
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/avalonia-platform-services/agents/openai.yaml
+  runtime: null
+  scope: project
+  owners:
+  - wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-platform-services
+  active_owner: wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-platform-services
+  content_hash: sha256:62b735a6dfd60b0dac53b628ec3f0af281a03bd095eecee8366a396e54b28c2f
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/avalonia-rendering-and-graphics
+  runtime: null
+  scope: project
+  owners:
+  - wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-rendering-and-graphics
+  active_owner: wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-rendering-and-graphics
+  content_hash: null
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/avalonia-rendering-and-graphics/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-rendering-and-graphics
+  active_owner: wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-rendering-and-graphics
+  content_hash: sha256:e2147cef9d3de9cad3421a5f63e7045c7b970fc39f589c837fb8f41d3b3ede25
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/avalonia-rendering-and-graphics/agents/openai.yaml
+  runtime: null
+  scope: project
+  owners:
+  - wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-rendering-and-graphics
+  active_owner: wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-rendering-and-graphics
+  content_hash: sha256:a0877842df2ee6087d08ebd7e93ad4f1f234d9a0a319dcbfa038f344bf0ae60f
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/avalonia-styling-and-resources
+  runtime: null
+  scope: project
+  owners:
+  - wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-styling-and-resources
+  active_owner: wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-styling-and-resources
+  content_hash: null
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/avalonia-styling-and-resources/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-styling-and-resources
+  active_owner: wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-styling-and-resources
+  content_hash: sha256:fffe7cc85d924dccb00667ea5fd0e004810b74c8d0421ea2d872479798dfe9c1
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/avalonia-styling-and-resources/agents/openai.yaml
+  runtime: null
+  scope: project
+  owners:
+  - wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-styling-and-resources
+  active_owner: wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-styling-and-resources
+  content_hash: sha256:244f27d211ae22b1447e14015d2e1459ed63fa1407301dc0c50c43806df4f28d
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/avalonia-testing-diagnostics-and-performance
+  runtime: null
+  scope: project
+  owners:
+  - wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-testing-diagnostics-and-performance
+  active_owner: wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-testing-diagnostics-and-performance
+  content_hash: null
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/avalonia-testing-diagnostics-and-performance/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-testing-diagnostics-and-performance
+  active_owner: wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-testing-diagnostics-and-performance
+  content_hash: sha256:6854754da3f137295e805997fde05a6a03fe74bd9cdbb320161a2fcfc8d9fa6d
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/avalonia-testing-diagnostics-and-performance/agents/openai.yaml
+  runtime: null
+  scope: project
+  owners:
+  - wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-testing-diagnostics-and-performance
+  active_owner: wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-testing-diagnostics-and-performance
+  content_hash: sha256:af6084c7068ac54d0a2b3a76a991feb30e6f06e0cafbaab8915406c732af6a8d
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/avalonia-threading-and-dispatcher
+  runtime: null
+  scope: project
+  owners:
+  - wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-threading-and-dispatcher
+  active_owner: wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-threading-and-dispatcher
+  content_hash: null
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/avalonia-threading-and-dispatcher/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-threading-and-dispatcher
+  active_owner: wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-threading-and-dispatcher
+  content_hash: sha256:a2fbb7bcac0c0a3cc878781ebd0ba61536328e7a95c0bcb2eac74fc99344f388
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/avalonia-threading-and-dispatcher/agents/openai.yaml
+  runtime: null
+  scope: project
+  owners:
+  - wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-threading-and-dispatcher
+  active_owner: wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-threading-and-dispatcher
+  content_hash: sha256:6d093b0e63dedecfff8fbed525ae3c5e7715d59d1fec9d5b9b7a232ed587115e
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/avalonia-views-and-templating
+  runtime: null
+  scope: project
+  owners:
+  - wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-views-and-templating
+  active_owner: wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-views-and-templating
+  content_hash: null
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/avalonia-views-and-templating/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-views-and-templating
+  active_owner: wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-views-and-templating
+  content_hash: sha256:273a869ef7e9cf89b004f20d53575728a2457609725108ae8dca51abe7a58a21
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/avalonia-views-and-templating/agents/openai.yaml
+  runtime: null
+  scope: project
+  owners:
+  - wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-views-and-templating
+  active_owner: wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-views-and-templating
+  content_hash: sha256:e4697801ee73bdc7f26124bb8c9c712edad9eb1b263b739084d25fc03e5c5d09
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/caveman
+  runtime: null
+  scope: project
+  owners:
+  - juliusbrussee/caveman/skills/caveman
+  active_owner: juliusbrussee/caveman/skills/caveman
+  content_hash: null
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/caveman/README.md
+  runtime: null
+  scope: project
+  owners:
+  - juliusbrussee/caveman/skills/caveman
+  active_owner: juliusbrussee/caveman/skills/caveman
+  content_hash: sha256:e8b22f37ccb204bd00cdf98c723c0df37aeda1f5863e9ad1d634f5c839d99e5d
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/caveman/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - juliusbrussee/caveman/skills/caveman
+  active_owner: juliusbrussee/caveman/skills/caveman
+  content_hash: sha256:415d43518f2b1a9498c15a445d4657117b129ee5e81b19454ce348439cc6672b
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/clr-activation-debugging
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet-diag
+  active_owner: dotnet/skills/plugins/dotnet-diag
+  content_hash: null
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/clr-activation-debugging/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet-diag
+  active_owner: dotnet/skills/plugins/dotnet-diag
+  content_hash: sha256:de030774c23c61b3297e82af68e1b15e37e2ad8df4028a54975b2a5af3183762
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/clr-activation-debugging/references/activation-flow.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet-diag
+  active_owner: dotnet/skills/plugins/dotnet-diag
+  content_hash: sha256:04d748a40788aa47dd7bb325f682615486da71812b3a80b9a6403ce97eca4d9f
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/clr-activation-debugging/references/com-activation.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet-diag
+  active_owner: dotnet/skills/plugins/dotnet-diag
+  content_hash: sha256:3da57d54a8f6dd85bfb9e2a3b617fa5521e6551b7187bfc3bac73f71c1b6c9bc
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/clr-activation-debugging/references/log-format.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet-diag
+  active_owner: dotnet/skills/plugins/dotnet-diag
+  content_hash: sha256:f594da621cd46f457a93aebc5273ed2e102730a03086eb9cb0cb96e07e2e8472
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/csharp-expert
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet
+  active_owner: dotnet/skills/plugins/dotnet
+  content_hash: null
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/csharp-expert/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet
+  active_owner: dotnet/skills/plugins/dotnet
+  content_hash: sha256:b3a86c6cd037996237fc3cf12de41d4938cdae92ed8be1ff132a315524dd39e9
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/csharp-expert/references/dotnet-skills-marketplace.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet
+  active_owner: dotnet/skills/plugins/dotnet
+  content_hash: sha256:e41fa64545d59b6c51fe91edcd2f5bbe20fc0e5d92edba79c792fac8540aad19
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/csharp-refactoring
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet
+  active_owner: dotnet/skills/plugins/dotnet
+  content_hash: null
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/csharp-refactoring/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet
+  active_owner: dotnet/skills/plugins/dotnet
+  content_hash: sha256:a5516d690bc0713665870e31b7db6c6d09089c0d1a524482a156e01377ef0d72
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/csharp-refactoring/references/operation-catalog.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet
+  active_owner: dotnet/skills/plugins/dotnet
+  content_hash: sha256:94311ac23ea1098c130942084ceb07969f73790d59072c90b87967cbdc3b8dfa
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/debug-live
+  runtime: null
+  scope: project
+  owners:
+  - microsoft/debugmcp/skills/debug-live
+  active_owner: microsoft/debugmcp/skills/debug-live
+  content_hash: null
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/debug-live/README.md
+  runtime: null
+  scope: project
+  owners:
+  - microsoft/debugmcp/skills/debug-live
+  active_owner: microsoft/debugmcp/skills/debug-live
+  content_hash: sha256:bd9a601370d6e4bc093e4f242ec5531268d8718a646a1a4e831210c6293cdbc1
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/debug-live/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - microsoft/debugmcp/skills/debug-live
+  active_owner: microsoft/debugmcp/skills/debug-live
+  content_hash: sha256:fca3b2a9eee02bccc85725e80b360d11b1aad2a55d54fd0abf89f699411879e0
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/debug-live/references/troubleshooting/cpp.md
+  runtime: null
+  scope: project
+  owners:
+  - microsoft/debugmcp/skills/debug-live
+  active_owner: microsoft/debugmcp/skills/debug-live
+  content_hash: sha256:88acb2fcd8e134c7caa7056b9da2c5922e1cfd2307fa330725dd32edb6ebe45f
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/debug-live/references/troubleshooting/csharp.md
+  runtime: null
+  scope: project
+  owners:
+  - microsoft/debugmcp/skills/debug-live
+  active_owner: microsoft/debugmcp/skills/debug-live
+  content_hash: sha256:351be802bbd00f73e876d8e5b65cc2e675507a5fa9c39510c505b799da34961f
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/debug-live/references/troubleshooting/go.md
+  runtime: null
+  scope: project
+  owners:
+  - microsoft/debugmcp/skills/debug-live
+  active_owner: microsoft/debugmcp/skills/debug-live
+  content_hash: sha256:b948595798a258308a52278ac9780305035482b6cc8384485214e5e53dd4c485
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/debug-live/references/troubleshooting/java.md
+  runtime: null
+  scope: project
+  owners:
+  - microsoft/debugmcp/skills/debug-live
+  active_owner: microsoft/debugmcp/skills/debug-live
+  content_hash: sha256:5e5682082a8409d0ac9cc4215bd432a8edae0f239a80890f65eedfb29e1a924e
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/debug-live/references/troubleshooting/javascript.md
+  runtime: null
+  scope: project
+  owners:
+  - microsoft/debugmcp/skills/debug-live
+  active_owner: microsoft/debugmcp/skills/debug-live
+  content_hash: sha256:373e9f903ead02706f3d2c5eeb3d986ae53c4a49ae72b604ae2bf15e58063e9c
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/debug-live/references/troubleshooting/python.md
+  runtime: null
+  scope: project
+  owners:
+  - microsoft/debugmcp/skills/debug-live
+  active_owner: microsoft/debugmcp/skills/debug-live
+  content_hash: sha256:6dcf148e98f9a3c3cb41b186efe849010e239b0a52ed75259b7b294390b65a64
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/debug-live/references/troubleshooting/ruby.md
+  runtime: null
+  scope: project
+  owners:
+  - microsoft/debugmcp/skills/debug-live
+  active_owner: microsoft/debugmcp/skills/debug-live
+  content_hash: sha256:b9aca82ad67a6780d7114af7fdbd0b4cf3612517d53dcf6a37c4dc81161b413d
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/dotnet-trace-collect
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet-diag
+  active_owner: dotnet/skills/plugins/dotnet-diag
+  content_hash: null
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/dotnet-trace-collect/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet-diag
+  active_owner: dotnet/skills/plugins/dotnet-diag
+  content_hash: sha256:a701fd47f61e196b456cea55699d2e523cc8fc37f382e53d241c153b1c21a494
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/dotnet-trace-collect/references/dotnet-monitor.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet-diag
+  active_owner: dotnet/skills/plugins/dotnet-diag
+  content_hash: sha256:726655946aac6f654c58cb3a92e37b9e1b0b4b7c2d990cd9bdfd1e54912882dd
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/dotnet-trace-collect/references/dotnet-trace-collect-linux.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet-diag
+  active_owner: dotnet/skills/plugins/dotnet-diag
+  content_hash: sha256:fcb65d649219958c61e6070f4278caaac07e75a418328976bed7bddc77ef24af
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/dotnet-trace-collect/references/dotnet-trace-collect.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet-diag
+  active_owner: dotnet/skills/plugins/dotnet-diag
+  content_hash: sha256:c47af38a982c1184cf43eafed795260c9872a85f09718d7b51095b7f22afbe6d
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/dotnet-trace-collect/references/perfcollect.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet-diag
+  active_owner: dotnet/skills/plugins/dotnet-diag
+  content_hash: sha256:5b5de0486d84ff2e1b86be7de04631a2a3b32d55ca0bb2a3c2c636c0d167943a
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/dotnet-trace-collect/references/perfview.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet-diag
+  active_owner: dotnet/skills/plugins/dotnet-diag
+  content_hash: sha256:c8018e9f1844fa854d971f0d1d75e61887e9ebd5ca97def209650ac634626813
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/dump-collect
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet-diag
+  active_owner: dotnet/skills/plugins/dotnet-diag
+  content_hash: null
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/dump-collect/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet-diag
+  active_owner: dotnet/skills/plugins/dotnet-diag
+  content_hash: sha256:d00af814b354faae10cd78fedf7c94a78de6e64f04d4c15703b8fbac5e08e2e2
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/dump-collect/references/container-dumps.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet-diag
+  active_owner: dotnet/skills/plugins/dotnet-diag
+  content_hash: sha256:e8f1bad53e928efa41caa6855b7022062e30f11b96fdf9ded37526e03b86f5e3
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/dump-collect/references/coreclr-dumps.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet-diag
+  active_owner: dotnet/skills/plugins/dotnet-diag
+  content_hash: sha256:180c6b4ab82f2d27b85b751e309bf0aa445fde68ddc0c6a507b51999f02cf195
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/dump-collect/references/nativeaot-dumps.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet-diag
+  active_owner: dotnet/skills/plugins/dotnet-diag
+  content_hash: sha256:63bda7821ce96ad27e343b93fdf46eb31d2209ba66c387f669062909e3d532a0
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/ilspy-decompile
+  runtime: null
+  scope: project
+  owners:
+  - aaronontheweb/dotnet-skills/skills/ilspy-decompile
+  active_owner: aaronontheweb/dotnet-skills/skills/ilspy-decompile
+  content_hash: null
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/ilspy-decompile/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - aaronontheweb/dotnet-skills/skills/ilspy-decompile
+  active_owner: aaronontheweb/dotnet-skills/skills/ilspy-decompile
+  content_hash: sha256:aed579dde8ab8bcfe151983ce66100d39f146061c653148fc7bb237a6a20db21
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/microbenchmarking
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet-diag
+  active_owner: dotnet/skills/plugins/dotnet-diag
+  content_hash: null
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/microbenchmarking/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet-diag
+  active_owner: dotnet/skills/plugins/dotnet-diag
+  content_hash: sha256:64dab692a441a8af87b40cda1f3c2c9e5046551446fdea55d2801eaabb34785e
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/microbenchmarking/references/bdn-internals-and-tuning.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet-diag
+  active_owner: dotnet/skills/plugins/dotnet-diag
+  content_hash: sha256:213842a5ced85bbdd5db4d7f6de4c3bdd231367b292f7c994a504960e32c83f0
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/microbenchmarking/references/comparison-strategies.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet-diag
+  active_owner: dotnet/skills/plugins/dotnet-diag
+  content_hash: sha256:cdbc8e7d4b9b2c9eeb1dbc1a7ceaee5b3cb453d041211bf30fc93b150c4fecf7
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/microbenchmarking/references/diagnosers-and-exporters.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet-diag
+  active_owner: dotnet/skills/plugins/dotnet-diag
+  content_hash: sha256:9410eb556b83af2a63bdb593a791077a4a070210df569887f6265d9ecd825b14
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/microbenchmarking/references/project-setup-and-running.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet-diag
+  active_owner: dotnet/skills/plugins/dotnet-diag
+  content_hash: sha256:dd6866d218be83e84e772b9bda17d1d8261da4a8318d6b098faffe71b95bfcdf
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/microbenchmarking/references/writing-benchmarks.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet-diag
+  active_owner: dotnet/skills/plugins/dotnet-diag
+  content_hash: sha256:00279137333ae46cec081a3b85d53858cec9a7565beddf902e15a6f7abe81f09
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/msbuild
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet
+  active_owner: dotnet/skills/plugins/dotnet
+  content_hash: null
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/msbuild/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet
+  active_owner: dotnet/skills/plugins/dotnet
+  content_hash: sha256:671a9b2c77be4a6758dba4b013a50a29b2b3c5c6c77a10c2c81c11042f785c55
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/msbuild/references/antipatterns/additional-antipatterns.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet
+  active_owner: dotnet/skills/plugins/dotnet
+  content_hash: sha256:02955e8765404cd792d6c29a6574c5261afa55bcf37766998499d5b3077a10b5
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/msbuild/references/antipatterns/incremental-build-inputs-outputs.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet
+  active_owner: dotnet/skills/plugins/dotnet
+  content_hash: sha256:361f23ef4cd84da9f8bf875151b2b1df27e0a2ab3354b8b6728d88b94db131ad
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/msbuild/references/antipatterns/private-assets.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet
+  active_owner: dotnet/skills/plugins/dotnet
+  content_hash: sha256:76ff2c88d729494b21fe3f12078b10e10ffcbc41857161defeb79487b97d829c
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/msbuild/references/binlog-failure-analysis.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet
+  active_owner: dotnet/skills/plugins/dotnet
+  content_hash: sha256:11b3962a232ef18ac184be8a52c86de8b35f05e10a3bfc7d5f5b3396f707e5ca
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/msbuild/references/binlog-generation.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet
+  active_owner: dotnet/skills/plugins/dotnet
+  content_hash: sha256:f6fc3dfbcb895b3cf5cc4c98dcacd76c3eaaab9d3b1a6e714a3bd596557df512
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/msbuild/references/build-perf-baseline.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet
+  active_owner: dotnet/skills/plugins/dotnet
+  content_hash: sha256:4be937e36d2e60eb549a50b58f1eeb1ac2f74d419d3bcee5132f97699e3c2871
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/msbuild/references/build-perf-diagnostics.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet
+  active_owner: dotnet/skills/plugins/dotnet
+  content_hash: sha256:c715b1dfa297f898b45e893937e40d96e02f6f44c9c3f508dc4442c6dc7cc2f8
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/msbuild/references/copy-to-output-directory.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet
+  active_owner: dotnet/skills/plugins/dotnet
+  content_hash: sha256:01409f41fd8df30189d544d82dd20556690e5b2c0f16993625f1492d7bff09b2
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/msbuild/references/eval-performance.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet
+  active_owner: dotnet/skills/plugins/dotnet
+  content_hash: sha256:8a4eeb553ab4e43c9b2b19252fee41bd7a275fca4a8536920e99f9826cb00bdd
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/msbuild/references/extension-points.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet
+  active_owner: dotnet/skills/plugins/dotnet
+  content_hash: sha256:d474bccb8069449ceca4fc0ecff7493a8f701b3eb189bcffd0b85c7612d9b766
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/msbuild/references/incremental-build.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet
+  active_owner: dotnet/skills/plugins/dotnet
+  content_hash: sha256:8e5d4c4871c2c44fd49b7be64b040e074363b7c9bbacee7cd226d48d5ff4798d
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/msbuild/references/msbuild-antipatterns.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet
+  active_owner: dotnet/skills/plugins/dotnet
+  content_hash: sha256:b470f187400c3e6a5620e75cccaf448a09a0207a0a4202b3e18d2dd65296f8f9
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/process-api-net11
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet11
+  active_owner: dotnet/skills/plugins/dotnet11
+  content_hash: null
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/process-api-net11/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet11
+  active_owner: dotnet/skills/plugins/dotnet11
+  content_hash: sha256:66f79536a3d80372caeff06d77940639b9677f5b4cb41c5358407b43b4cb4d59
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/setup-local-sdk
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet
+  active_owner: dotnet/skills/plugins/dotnet
+  content_hash: null
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/setup-local-sdk/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet
+  active_owner: dotnet/skills/plugins/dotnet
+  content_hash: sha256:6b4904db9ae950da582f85dc2f4cf2adf586776d84ce805a273edb4045f1a74e
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/system-text-json-net11
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet11
+  active_owner: dotnet/skills/plugins/dotnet11
+  content_hash: null
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/system-text-json-net11/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet11
+  active_owner: dotnet/skills/plugins/dotnet11
+  content_hash: sha256:e067f1ad212f97bd11510505748f2ed87b51b3e0328b27fb8116c01a86817e7d
+- kind: project-relative
+  target: claude
+  value: .claude/agents/optimizing-dotnet-performance.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet-diag
+  active_owner: dotnet/skills/plugins/dotnet-diag
+  content_hash: sha256:bcabb8c04cd05765bf0e0c2b6e322510b1434319121890dcfe5717d3a56198e4
+- kind: project-relative
+  target: claude
+  value: .claude/skills/analyzing-dotnet-performance
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet-diag
+  active_owner: dotnet/skills/plugins/dotnet-diag
+  content_hash: null
+- kind: project-relative
+  target: claude
+  value: .claude/skills/analyzing-dotnet-performance/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet-diag
+  active_owner: dotnet/skills/plugins/dotnet-diag
+  content_hash: sha256:66d06c577cf6cf55d548318c10bd80de3c8ee5495bea1f6d20d277ddde63ea83
+- kind: project-relative
+  target: claude
+  value: .claude/skills/analyzing-dotnet-performance/references/async-patterns.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet-diag
+  active_owner: dotnet/skills/plugins/dotnet-diag
+  content_hash: sha256:18e881ff7fbddbaf8e1da84cd46f182fa81c2c2c070915286e2aba671fcd3be7
+- kind: project-relative
+  target: claude
+  value: .claude/skills/analyzing-dotnet-performance/references/collections-and-linq.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet-diag
+  active_owner: dotnet/skills/plugins/dotnet-diag
+  content_hash: sha256:6911129ce735bd7c232ab75fd93fe5c4c0e6ddef911c0062ae974b33c76eeddf
+- kind: project-relative
+  target: claude
+  value: .claude/skills/analyzing-dotnet-performance/references/critical-patterns.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet-diag
+  active_owner: dotnet/skills/plugins/dotnet-diag
+  content_hash: sha256:ac17e1301a2f997a1be552d8efc5210b9b3c1ca30c71a5d60ed6f7d03d2e8290
+- kind: project-relative
+  target: claude
+  value: .claude/skills/analyzing-dotnet-performance/references/io-and-serialization.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet-diag
+  active_owner: dotnet/skills/plugins/dotnet-diag
+  content_hash: sha256:a9cb85c2bbfdce1059cc8e4c102d728728b79b8cb0c1d6091076bf79bca05c89
+- kind: project-relative
+  target: claude
+  value: .claude/skills/analyzing-dotnet-performance/references/memory-and-strings.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet-diag
+  active_owner: dotnet/skills/plugins/dotnet-diag
+  content_hash: sha256:917ea09f0496a59a15fe5abe2cea7b6ac38cf8d85e19b730bb497d35eb387d59
+- kind: project-relative
+  target: claude
+  value: .claude/skills/analyzing-dotnet-performance/references/regex-patterns.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet-diag
+  active_owner: dotnet/skills/plugins/dotnet-diag
+  content_hash: sha256:cfbd9bb1a4596b8acc537ed4a58d939237441e8716d5c747175cd8bc3b840a62
+- kind: project-relative
+  target: claude
+  value: .claude/skills/analyzing-dotnet-performance/references/structural-patterns.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet-diag
+  active_owner: dotnet/skills/plugins/dotnet-diag
+  content_hash: sha256:ee75e7da219e1d5fcc91c728babe9978793be97e37e01a78b51cc47316ecf170
+- kind: project-relative
+  target: claude
+  value: .claude/skills/android-tombstone-symbolication
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet-diag
+  active_owner: dotnet/skills/plugins/dotnet-diag
+  content_hash: null
+- kind: project-relative
+  target: claude
+  value: .claude/skills/android-tombstone-symbolication/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet-diag
+  active_owner: dotnet/skills/plugins/dotnet-diag
+  content_hash: sha256:3e25d754833c1a362b3d1968cc81ab75b0d1824b161c3ab9d14113a41cacbe9f
+- kind: project-relative
+  target: claude
+  value: .claude/skills/android-tombstone-symbolication/scripts/Symbolicate-Tombstone.ps1
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet-diag
+  active_owner: dotnet/skills/plugins/dotnet-diag
+  content_hash: sha256:050257edb89ce80796233ee6870bfc178c6c1ef1bb3f3ac05e4f893368acaa5a
+- kind: project-relative
+  target: claude
+  value: .claude/skills/apple-crash-symbolication
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet-diag
+  active_owner: dotnet/skills/plugins/dotnet-diag
+  content_hash: null
+- kind: project-relative
+  target: claude
+  value: .claude/skills/apple-crash-symbolication/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet-diag
+  active_owner: dotnet/skills/plugins/dotnet-diag
+  content_hash: sha256:c8db1d3298cb94e321c47b29fdc0a611b22716b4fc72c32442db0d717de79198
+- kind: project-relative
+  target: claude
+  value: .claude/skills/apple-crash-symbolication/references/ips-crash-format.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet-diag
+  active_owner: dotnet/skills/plugins/dotnet-diag
+  content_hash: sha256:df15e681730d1962b53e9006345f4c5d7caee9a0ab3ea05d87e675aaea766694
+- kind: project-relative
+  target: claude
+  value: .claude/skills/apple-crash-symbolication/scripts/Symbolicate-Crash.ps1
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet-diag
+  active_owner: dotnet/skills/plugins/dotnet-diag
+  content_hash: sha256:5dd9ffdd9097adf7c104b504ced59e31514202ead8a8c22f5744ee3a0bbc3019
+- kind: project-relative
+  target: claude
+  value: .claude/skills/avalonia-12-migration
+  runtime: null
+  scope: project
+  owners:
+  - wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-12-migration
+  active_owner: wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-12-migration
+  content_hash: null
+- kind: project-relative
+  target: claude
+  value: .claude/skills/avalonia-12-migration/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-12-migration
+  active_owner: wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-12-migration
+  content_hash: sha256:ab7a1dbd943eed1bb12d436960d28c8dd5c35d1d5ff76ed6716b6a5b9dcf6c64
+- kind: project-relative
+  target: claude
+  value: .claude/skills/avalonia-12-migration/agents/openai.yaml
+  runtime: null
+  scope: project
+  owners:
+  - wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-12-migration
+  active_owner: wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-12-migration
+  content_hash: sha256:cb3fe93e3486f67d4c4c8dd754cd5c6a089a767ad890f6c74ccc6bc8157db199
+- kind: project-relative
+  target: claude
+  value: .claude/skills/avalonia-accessibility-and-validation
+  runtime: null
+  scope: project
+  owners:
+  - wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-accessibility-and-validation
+  active_owner: wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-accessibility-and-validation
+  content_hash: null
+- kind: project-relative
+  target: claude
+  value: .claude/skills/avalonia-accessibility-and-validation/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-accessibility-and-validation
+  active_owner: wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-accessibility-and-validation
+  content_hash: sha256:1abaa9795d71b0d987512f7e9dbf395c7c59f071f5f62caa34f239525e3b99f3
+- kind: project-relative
+  target: claude
+  value: .claude/skills/avalonia-accessibility-and-validation/agents/openai.yaml
+  runtime: null
+  scope: project
+  owners:
+  - wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-accessibility-and-validation
+  active_owner: wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-accessibility-and-validation
+  content_hash: sha256:422f0535f733655c4b464de528f53eda2e4018d7daeb811f22030178282d0481
+- kind: project-relative
+  target: claude
+  value: .claude/skills/avalonia-bindings-and-xaml
+  runtime: null
+  scope: project
+  owners:
+  - wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-bindings-and-xaml
+  active_owner: wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-bindings-and-xaml
+  content_hash: null
+- kind: project-relative
+  target: claude
+  value: .claude/skills/avalonia-bindings-and-xaml/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-bindings-and-xaml
+  active_owner: wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-bindings-and-xaml
+  content_hash: sha256:2c894474a7ecefd2c67c15a5ac7738b173cb2672f6e980bbd692b53f1755d5f7
+- kind: project-relative
+  target: claude
+  value: .claude/skills/avalonia-bindings-and-xaml/agents/openai.yaml
+  runtime: null
+  scope: project
+  owners:
+  - wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-bindings-and-xaml
+  active_owner: wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-bindings-and-xaml
+  content_hash: sha256:1e166c26286315b047b10ae4a90f9dd98469af19933e8fa7c8971e7054a85134
+- kind: project-relative
+  target: claude
+  value: .claude/skills/avalonia-bootstrap-and-lifetime
+  runtime: null
+  scope: project
+  owners:
+  - wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-bootstrap-and-lifetime
+  active_owner: wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-bootstrap-and-lifetime
+  content_hash: null
+- kind: project-relative
+  target: claude
+  value: .claude/skills/avalonia-bootstrap-and-lifetime/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-bootstrap-and-lifetime
+  active_owner: wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-bootstrap-and-lifetime
+  content_hash: sha256:d4963a2c6f3a466798e0122b172ad1d9b1c5eddd43e3451368970d6a06deb3f3
+- kind: project-relative
+  target: claude
+  value: .claude/skills/avalonia-bootstrap-and-lifetime/agents/openai.yaml
+  runtime: null
+  scope: project
+  owners:
+  - wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-bootstrap-and-lifetime
+  active_owner: wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-bootstrap-and-lifetime
+  content_hash: sha256:e20ed37b6ee9db6bae48cc5d6e0a85be8f7628e3daa4be0ea70a94fceaa19b38
+- kind: project-relative
+  target: claude
+  value: .claude/skills/avalonia-controls-and-windowing
+  runtime: null
+  scope: project
+  owners:
+  - wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-controls-and-windowing
+  active_owner: wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-controls-and-windowing
+  content_hash: null
+- kind: project-relative
+  target: claude
+  value: .claude/skills/avalonia-controls-and-windowing/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-controls-and-windowing
+  active_owner: wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-controls-and-windowing
+  content_hash: sha256:a8f38c851dcb1e17334d4713eaf8fbbe5b35f2c863546771a68f79cc8fc3d5ef
+- kind: project-relative
+  target: claude
+  value: .claude/skills/avalonia-controls-and-windowing/agents/openai.yaml
+  runtime: null
+  scope: project
+  owners:
+  - wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-controls-and-windowing
+  active_owner: wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-controls-and-windowing
+  content_hash: sha256:9de106f0d2c409ab514364bdba86b6fb8edbcff6eaf0d9cf81e8f8deccd7b29e
+- kind: project-relative
+  target: claude
+  value: .claude/skills/avalonia-design-systems
+  runtime: null
+  scope: project
+  owners:
+  - wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-design-systems
+  active_owner: wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-design-systems
+  content_hash: null
+- kind: project-relative
+  target: claude
+  value: .claude/skills/avalonia-design-systems/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-design-systems
+  active_owner: wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-design-systems
+  content_hash: sha256:60751542dea1b68d17142eaa2b921a48f667c464b5d5608a7abc996d0b21af8a
+- kind: project-relative
+  target: claude
+  value: .claude/skills/avalonia-design-systems/agents/openai.yaml
+  runtime: null
+  scope: project
+  owners:
+  - wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-design-systems
+  active_owner: wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-design-systems
+  content_hash: sha256:6a80e315ea6f368fb6e59a9b96e6041b5e593080d12aa987374cb8a4d0df5f3f
+- kind: project-relative
+  target: claude
+  value: .claude/skills/avalonia-fluent-design
+  runtime: null
+  scope: project
+  owners:
+  - wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-fluent-design
+  active_owner: wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-fluent-design
+  content_hash: null
+- kind: project-relative
+  target: claude
+  value: .claude/skills/avalonia-fluent-design/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-fluent-design
+  active_owner: wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-fluent-design
+  content_hash: sha256:4e66b0db12e40997ded34a45c30741ae155d654a8057cc315a91efb918cdd996
+- kind: project-relative
+  target: claude
+  value: .claude/skills/avalonia-fluent-design/agents/openai.yaml
+  runtime: null
+  scope: project
+  owners:
+  - wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-fluent-design
+  active_owner: wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-fluent-design
+  content_hash: sha256:280ccd20a484acb1dd9eba98762770991595c7b57ea006712c7e179df8524457
+- kind: project-relative
+  target: claude
+  value: .claude/skills/avalonia-input-and-commands
+  runtime: null
+  scope: project
+  owners:
+  - wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-input-and-commands
+  active_owner: wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-input-and-commands
+  content_hash: null
+- kind: project-relative
+  target: claude
+  value: .claude/skills/avalonia-input-and-commands/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-input-and-commands
+  active_owner: wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-input-and-commands
+  content_hash: sha256:7285258bd59e98462863992f8853005643c58a535d5ec16b80570f50b5762b0a
+- kind: project-relative
+  target: claude
+  value: .claude/skills/avalonia-input-and-commands/agents/openai.yaml
+  runtime: null
+  scope: project
+  owners:
+  - wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-input-and-commands
+  active_owner: wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-input-and-commands
+  content_hash: sha256:140a887134036c8ff9d3089ed623dd72e250b4919551e98ba29b63b86f9e583e
+- kind: project-relative
+  target: claude
+  value: .claude/skills/avalonia-layout-and-virtualization
+  runtime: null
+  scope: project
+  owners:
+  - wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-layout-and-virtualization
+  active_owner: wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-layout-and-virtualization
+  content_hash: null
+- kind: project-relative
+  target: claude
+  value: .claude/skills/avalonia-layout-and-virtualization/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-layout-and-virtualization
+  active_owner: wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-layout-and-virtualization
+  content_hash: sha256:2fde9e65e7586c726a885d882bcd07064ab764e9140e432d33a9f2ed9216801d
+- kind: project-relative
+  target: claude
+  value: .claude/skills/avalonia-layout-and-virtualization/agents/openai.yaml
+  runtime: null
+  scope: project
+  owners:
+  - wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-layout-and-virtualization
+  active_owner: wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-layout-and-virtualization
+  content_hash: sha256:a5c4fc9872ed598849f46772f9a7b03437c06bf7eba95d23daf5a99aec10b6fa
+- kind: project-relative
+  target: claude
+  value: .claude/skills/avalonia-platform-services
+  runtime: null
+  scope: project
+  owners:
+  - wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-platform-services
+  active_owner: wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-platform-services
+  content_hash: null
+- kind: project-relative
+  target: claude
+  value: .claude/skills/avalonia-platform-services/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-platform-services
+  active_owner: wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-platform-services
+  content_hash: sha256:45d5d03ef06e711ff2a38559fc8b96441a8e18118021706b1192597f6d6ea358
+- kind: project-relative
+  target: claude
+  value: .claude/skills/avalonia-platform-services/agents/openai.yaml
+  runtime: null
+  scope: project
+  owners:
+  - wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-platform-services
+  active_owner: wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-platform-services
+  content_hash: sha256:62b735a6dfd60b0dac53b628ec3f0af281a03bd095eecee8366a396e54b28c2f
+- kind: project-relative
+  target: claude
+  value: .claude/skills/avalonia-rendering-and-graphics
+  runtime: null
+  scope: project
+  owners:
+  - wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-rendering-and-graphics
+  active_owner: wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-rendering-and-graphics
+  content_hash: null
+- kind: project-relative
+  target: claude
+  value: .claude/skills/avalonia-rendering-and-graphics/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-rendering-and-graphics
+  active_owner: wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-rendering-and-graphics
+  content_hash: sha256:e2147cef9d3de9cad3421a5f63e7045c7b970fc39f589c837fb8f41d3b3ede25
+- kind: project-relative
+  target: claude
+  value: .claude/skills/avalonia-rendering-and-graphics/agents/openai.yaml
+  runtime: null
+  scope: project
+  owners:
+  - wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-rendering-and-graphics
+  active_owner: wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-rendering-and-graphics
+  content_hash: sha256:a0877842df2ee6087d08ebd7e93ad4f1f234d9a0a319dcbfa038f344bf0ae60f
+- kind: project-relative
+  target: claude
+  value: .claude/skills/avalonia-styling-and-resources
+  runtime: null
+  scope: project
+  owners:
+  - wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-styling-and-resources
+  active_owner: wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-styling-and-resources
+  content_hash: null
+- kind: project-relative
+  target: claude
+  value: .claude/skills/avalonia-styling-and-resources/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-styling-and-resources
+  active_owner: wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-styling-and-resources
+  content_hash: sha256:fffe7cc85d924dccb00667ea5fd0e004810b74c8d0421ea2d872479798dfe9c1
+- kind: project-relative
+  target: claude
+  value: .claude/skills/avalonia-styling-and-resources/agents/openai.yaml
+  runtime: null
+  scope: project
+  owners:
+  - wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-styling-and-resources
+  active_owner: wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-styling-and-resources
+  content_hash: sha256:244f27d211ae22b1447e14015d2e1459ed63fa1407301dc0c50c43806df4f28d
+- kind: project-relative
+  target: claude
+  value: .claude/skills/avalonia-testing-diagnostics-and-performance
+  runtime: null
+  scope: project
+  owners:
+  - wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-testing-diagnostics-and-performance
+  active_owner: wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-testing-diagnostics-and-performance
+  content_hash: null
+- kind: project-relative
+  target: claude
+  value: .claude/skills/avalonia-testing-diagnostics-and-performance/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-testing-diagnostics-and-performance
+  active_owner: wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-testing-diagnostics-and-performance
+  content_hash: sha256:6854754da3f137295e805997fde05a6a03fe74bd9cdbb320161a2fcfc8d9fa6d
+- kind: project-relative
+  target: claude
+  value: .claude/skills/avalonia-testing-diagnostics-and-performance/agents/openai.yaml
+  runtime: null
+  scope: project
+  owners:
+  - wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-testing-diagnostics-and-performance
+  active_owner: wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-testing-diagnostics-and-performance
+  content_hash: sha256:af6084c7068ac54d0a2b3a76a991feb30e6f06e0cafbaab8915406c732af6a8d
+- kind: project-relative
+  target: claude
+  value: .claude/skills/avalonia-threading-and-dispatcher
+  runtime: null
+  scope: project
+  owners:
+  - wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-threading-and-dispatcher
+  active_owner: wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-threading-and-dispatcher
+  content_hash: null
+- kind: project-relative
+  target: claude
+  value: .claude/skills/avalonia-threading-and-dispatcher/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-threading-and-dispatcher
+  active_owner: wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-threading-and-dispatcher
+  content_hash: sha256:a2fbb7bcac0c0a3cc878781ebd0ba61536328e7a95c0bcb2eac74fc99344f388
+- kind: project-relative
+  target: claude
+  value: .claude/skills/avalonia-threading-and-dispatcher/agents/openai.yaml
+  runtime: null
+  scope: project
+  owners:
+  - wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-threading-and-dispatcher
+  active_owner: wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-threading-and-dispatcher
+  content_hash: sha256:6d093b0e63dedecfff8fbed525ae3c5e7715d59d1fec9d5b9b7a232ed587115e
+- kind: project-relative
+  target: claude
+  value: .claude/skills/avalonia-views-and-templating
+  runtime: null
+  scope: project
+  owners:
+  - wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-views-and-templating
+  active_owner: wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-views-and-templating
+  content_hash: null
+- kind: project-relative
+  target: claude
+  value: .claude/skills/avalonia-views-and-templating/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-views-and-templating
+  active_owner: wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-views-and-templating
+  content_hash: sha256:273a869ef7e9cf89b004f20d53575728a2457609725108ae8dca51abe7a58a21
+- kind: project-relative
+  target: claude
+  value: .claude/skills/avalonia-views-and-templating/agents/openai.yaml
+  runtime: null
+  scope: project
+  owners:
+  - wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-views-and-templating
+  active_owner: wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-views-and-templating
+  content_hash: sha256:e4697801ee73bdc7f26124bb8c9c712edad9eb1b263b739084d25fc03e5c5d09
+- kind: project-relative
+  target: claude
+  value: .claude/skills/caveman
+  runtime: null
+  scope: project
+  owners:
+  - juliusbrussee/caveman/skills/caveman
+  active_owner: juliusbrussee/caveman/skills/caveman
+  content_hash: null
+- kind: project-relative
+  target: claude
+  value: .claude/skills/caveman/README.md
+  runtime: null
+  scope: project
+  owners:
+  - juliusbrussee/caveman/skills/caveman
+  active_owner: juliusbrussee/caveman/skills/caveman
+  content_hash: sha256:e8b22f37ccb204bd00cdf98c723c0df37aeda1f5863e9ad1d634f5c839d99e5d
+- kind: project-relative
+  target: claude
+  value: .claude/skills/caveman/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - juliusbrussee/caveman/skills/caveman
+  active_owner: juliusbrussee/caveman/skills/caveman
+  content_hash: sha256:415d43518f2b1a9498c15a445d4657117b129ee5e81b19454ce348439cc6672b
+- kind: project-relative
+  target: claude
+  value: .claude/skills/clr-activation-debugging
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet-diag
+  active_owner: dotnet/skills/plugins/dotnet-diag
+  content_hash: null
+- kind: project-relative
+  target: claude
+  value: .claude/skills/clr-activation-debugging/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet-diag
+  active_owner: dotnet/skills/plugins/dotnet-diag
+  content_hash: sha256:de030774c23c61b3297e82af68e1b15e37e2ad8df4028a54975b2a5af3183762
+- kind: project-relative
+  target: claude
+  value: .claude/skills/clr-activation-debugging/references/activation-flow.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet-diag
+  active_owner: dotnet/skills/plugins/dotnet-diag
+  content_hash: sha256:04d748a40788aa47dd7bb325f682615486da71812b3a80b9a6403ce97eca4d9f
+- kind: project-relative
+  target: claude
+  value: .claude/skills/clr-activation-debugging/references/com-activation.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet-diag
+  active_owner: dotnet/skills/plugins/dotnet-diag
+  content_hash: sha256:3da57d54a8f6dd85bfb9e2a3b617fa5521e6551b7187bfc3bac73f71c1b6c9bc
+- kind: project-relative
+  target: claude
+  value: .claude/skills/clr-activation-debugging/references/log-format.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet-diag
+  active_owner: dotnet/skills/plugins/dotnet-diag
+  content_hash: sha256:f594da621cd46f457a93aebc5273ed2e102730a03086eb9cb0cb96e07e2e8472
+- kind: project-relative
+  target: claude
+  value: .claude/skills/csharp-expert
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet
+  active_owner: dotnet/skills/plugins/dotnet
+  content_hash: null
+- kind: project-relative
+  target: claude
+  value: .claude/skills/csharp-expert/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet
+  active_owner: dotnet/skills/plugins/dotnet
+  content_hash: sha256:b3a86c6cd037996237fc3cf12de41d4938cdae92ed8be1ff132a315524dd39e9
+- kind: project-relative
+  target: claude
+  value: .claude/skills/csharp-expert/references/dotnet-skills-marketplace.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet
+  active_owner: dotnet/skills/plugins/dotnet
+  content_hash: sha256:e41fa64545d59b6c51fe91edcd2f5bbe20fc0e5d92edba79c792fac8540aad19
+- kind: project-relative
+  target: claude
+  value: .claude/skills/csharp-refactoring
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet
+  active_owner: dotnet/skills/plugins/dotnet
+  content_hash: null
+- kind: project-relative
+  target: claude
+  value: .claude/skills/csharp-refactoring/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet
+  active_owner: dotnet/skills/plugins/dotnet
+  content_hash: sha256:a5516d690bc0713665870e31b7db6c6d09089c0d1a524482a156e01377ef0d72
+- kind: project-relative
+  target: claude
+  value: .claude/skills/csharp-refactoring/references/operation-catalog.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet
+  active_owner: dotnet/skills/plugins/dotnet
+  content_hash: sha256:94311ac23ea1098c130942084ceb07969f73790d59072c90b87967cbdc3b8dfa
+- kind: project-relative
+  target: claude
+  value: .claude/skills/debug-live
+  runtime: null
+  scope: project
+  owners:
+  - microsoft/debugmcp/skills/debug-live
+  active_owner: microsoft/debugmcp/skills/debug-live
+  content_hash: null
+- kind: project-relative
+  target: claude
+  value: .claude/skills/debug-live/README.md
+  runtime: null
+  scope: project
+  owners:
+  - microsoft/debugmcp/skills/debug-live
+  active_owner: microsoft/debugmcp/skills/debug-live
+  content_hash: sha256:bd9a601370d6e4bc093e4f242ec5531268d8718a646a1a4e831210c6293cdbc1
+- kind: project-relative
+  target: claude
+  value: .claude/skills/debug-live/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - microsoft/debugmcp/skills/debug-live
+  active_owner: microsoft/debugmcp/skills/debug-live
+  content_hash: sha256:fca3b2a9eee02bccc85725e80b360d11b1aad2a55d54fd0abf89f699411879e0
+- kind: project-relative
+  target: claude
+  value: .claude/skills/debug-live/references/troubleshooting/cpp.md
+  runtime: null
+  scope: project
+  owners:
+  - microsoft/debugmcp/skills/debug-live
+  active_owner: microsoft/debugmcp/skills/debug-live
+  content_hash: sha256:88acb2fcd8e134c7caa7056b9da2c5922e1cfd2307fa330725dd32edb6ebe45f
+- kind: project-relative
+  target: claude
+  value: .claude/skills/debug-live/references/troubleshooting/csharp.md
+  runtime: null
+  scope: project
+  owners:
+  - microsoft/debugmcp/skills/debug-live
+  active_owner: microsoft/debugmcp/skills/debug-live
+  content_hash: sha256:351be802bbd00f73e876d8e5b65cc2e675507a5fa9c39510c505b799da34961f
+- kind: project-relative
+  target: claude
+  value: .claude/skills/debug-live/references/troubleshooting/go.md
+  runtime: null
+  scope: project
+  owners:
+  - microsoft/debugmcp/skills/debug-live
+  active_owner: microsoft/debugmcp/skills/debug-live
+  content_hash: sha256:b948595798a258308a52278ac9780305035482b6cc8384485214e5e53dd4c485
+- kind: project-relative
+  target: claude
+  value: .claude/skills/debug-live/references/troubleshooting/java.md
+  runtime: null
+  scope: project
+  owners:
+  - microsoft/debugmcp/skills/debug-live
+  active_owner: microsoft/debugmcp/skills/debug-live
+  content_hash: sha256:5e5682082a8409d0ac9cc4215bd432a8edae0f239a80890f65eedfb29e1a924e
+- kind: project-relative
+  target: claude
+  value: .claude/skills/debug-live/references/troubleshooting/javascript.md
+  runtime: null
+  scope: project
+  owners:
+  - microsoft/debugmcp/skills/debug-live
+  active_owner: microsoft/debugmcp/skills/debug-live
+  content_hash: sha256:373e9f903ead02706f3d2c5eeb3d986ae53c4a49ae72b604ae2bf15e58063e9c
+- kind: project-relative
+  target: claude
+  value: .claude/skills/debug-live/references/troubleshooting/python.md
+  runtime: null
+  scope: project
+  owners:
+  - microsoft/debugmcp/skills/debug-live
+  active_owner: microsoft/debugmcp/skills/debug-live
+  content_hash: sha256:6dcf148e98f9a3c3cb41b186efe849010e239b0a52ed75259b7b294390b65a64
+- kind: project-relative
+  target: claude
+  value: .claude/skills/debug-live/references/troubleshooting/ruby.md
+  runtime: null
+  scope: project
+  owners:
+  - microsoft/debugmcp/skills/debug-live
+  active_owner: microsoft/debugmcp/skills/debug-live
+  content_hash: sha256:b9aca82ad67a6780d7114af7fdbd0b4cf3612517d53dcf6a37c4dc81161b413d
+- kind: project-relative
+  target: claude
+  value: .claude/skills/dotnet-trace-collect
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet-diag
+  active_owner: dotnet/skills/plugins/dotnet-diag
+  content_hash: null
+- kind: project-relative
+  target: claude
+  value: .claude/skills/dotnet-trace-collect/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet-diag
+  active_owner: dotnet/skills/plugins/dotnet-diag
+  content_hash: sha256:a701fd47f61e196b456cea55699d2e523cc8fc37f382e53d241c153b1c21a494
+- kind: project-relative
+  target: claude
+  value: .claude/skills/dotnet-trace-collect/references/dotnet-monitor.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet-diag
+  active_owner: dotnet/skills/plugins/dotnet-diag
+  content_hash: sha256:726655946aac6f654c58cb3a92e37b9e1b0b4b7c2d990cd9bdfd1e54912882dd
+- kind: project-relative
+  target: claude
+  value: .claude/skills/dotnet-trace-collect/references/dotnet-trace-collect-linux.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet-diag
+  active_owner: dotnet/skills/plugins/dotnet-diag
+  content_hash: sha256:fcb65d649219958c61e6070f4278caaac07e75a418328976bed7bddc77ef24af
+- kind: project-relative
+  target: claude
+  value: .claude/skills/dotnet-trace-collect/references/dotnet-trace-collect.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet-diag
+  active_owner: dotnet/skills/plugins/dotnet-diag
+  content_hash: sha256:c47af38a982c1184cf43eafed795260c9872a85f09718d7b51095b7f22afbe6d
+- kind: project-relative
+  target: claude
+  value: .claude/skills/dotnet-trace-collect/references/perfcollect.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet-diag
+  active_owner: dotnet/skills/plugins/dotnet-diag
+  content_hash: sha256:5b5de0486d84ff2e1b86be7de04631a2a3b32d55ca0bb2a3c2c636c0d167943a
+- kind: project-relative
+  target: claude
+  value: .claude/skills/dotnet-trace-collect/references/perfview.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet-diag
+  active_owner: dotnet/skills/plugins/dotnet-diag
+  content_hash: sha256:c8018e9f1844fa854d971f0d1d75e61887e9ebd5ca97def209650ac634626813
+- kind: project-relative
+  target: claude
+  value: .claude/skills/dump-collect
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet-diag
+  active_owner: dotnet/skills/plugins/dotnet-diag
+  content_hash: null
+- kind: project-relative
+  target: claude
+  value: .claude/skills/dump-collect/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet-diag
+  active_owner: dotnet/skills/plugins/dotnet-diag
+  content_hash: sha256:d00af814b354faae10cd78fedf7c94a78de6e64f04d4c15703b8fbac5e08e2e2
+- kind: project-relative
+  target: claude
+  value: .claude/skills/dump-collect/references/container-dumps.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet-diag
+  active_owner: dotnet/skills/plugins/dotnet-diag
+  content_hash: sha256:e8f1bad53e928efa41caa6855b7022062e30f11b96fdf9ded37526e03b86f5e3
+- kind: project-relative
+  target: claude
+  value: .claude/skills/dump-collect/references/coreclr-dumps.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet-diag
+  active_owner: dotnet/skills/plugins/dotnet-diag
+  content_hash: sha256:180c6b4ab82f2d27b85b751e309bf0aa445fde68ddc0c6a507b51999f02cf195
+- kind: project-relative
+  target: claude
+  value: .claude/skills/dump-collect/references/nativeaot-dumps.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet-diag
+  active_owner: dotnet/skills/plugins/dotnet-diag
+  content_hash: sha256:63bda7821ce96ad27e343b93fdf46eb31d2209ba66c387f669062909e3d532a0
+- kind: project-relative
+  target: claude
+  value: .claude/skills/ilspy-decompile
+  runtime: null
+  scope: project
+  owners:
+  - aaronontheweb/dotnet-skills/skills/ilspy-decompile
+  active_owner: aaronontheweb/dotnet-skills/skills/ilspy-decompile
+  content_hash: null
+- kind: project-relative
+  target: claude
+  value: .claude/skills/ilspy-decompile/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - aaronontheweb/dotnet-skills/skills/ilspy-decompile
+  active_owner: aaronontheweb/dotnet-skills/skills/ilspy-decompile
+  content_hash: sha256:aed579dde8ab8bcfe151983ce66100d39f146061c653148fc7bb237a6a20db21
+- kind: project-relative
+  target: claude
+  value: .claude/skills/kube-ui-testing
+  runtime: null
+  scope: project
+  owners:
+  - ./skills/kube-ui-testing
+  active_owner: ./skills/kube-ui-testing
+  content_hash: null
+- kind: project-relative
+  target: claude
+  value: .claude/skills/kube-ui-testing/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - ./skills/kube-ui-testing
+  active_owner: ./skills/kube-ui-testing
+  content_hash: sha256:55f1067c5fe5db7f2936772d7c431f6afd98561db2cd4cc544528b0c76fb73ba
+- kind: project-relative
+  target: claude
+  value: .claude/skills/microbenchmarking
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet-diag
+  active_owner: dotnet/skills/plugins/dotnet-diag
+  content_hash: null
+- kind: project-relative
+  target: claude
+  value: .claude/skills/microbenchmarking/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet-diag
+  active_owner: dotnet/skills/plugins/dotnet-diag
+  content_hash: sha256:64dab692a441a8af87b40cda1f3c2c9e5046551446fdea55d2801eaabb34785e
+- kind: project-relative
+  target: claude
+  value: .claude/skills/microbenchmarking/references/bdn-internals-and-tuning.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet-diag
+  active_owner: dotnet/skills/plugins/dotnet-diag
+  content_hash: sha256:213842a5ced85bbdd5db4d7f6de4c3bdd231367b292f7c994a504960e32c83f0
+- kind: project-relative
+  target: claude
+  value: .claude/skills/microbenchmarking/references/comparison-strategies.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet-diag
+  active_owner: dotnet/skills/plugins/dotnet-diag
+  content_hash: sha256:cdbc8e7d4b9b2c9eeb1dbc1a7ceaee5b3cb453d041211bf30fc93b150c4fecf7
+- kind: project-relative
+  target: claude
+  value: .claude/skills/microbenchmarking/references/diagnosers-and-exporters.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet-diag
+  active_owner: dotnet/skills/plugins/dotnet-diag
+  content_hash: sha256:9410eb556b83af2a63bdb593a791077a4a070210df569887f6265d9ecd825b14
+- kind: project-relative
+  target: claude
+  value: .claude/skills/microbenchmarking/references/project-setup-and-running.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet-diag
+  active_owner: dotnet/skills/plugins/dotnet-diag
+  content_hash: sha256:dd6866d218be83e84e772b9bda17d1d8261da4a8318d6b098faffe71b95bfcdf
+- kind: project-relative
+  target: claude
+  value: .claude/skills/microbenchmarking/references/writing-benchmarks.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet-diag
+  active_owner: dotnet/skills/plugins/dotnet-diag
+  content_hash: sha256:00279137333ae46cec081a3b85d53858cec9a7565beddf902e15a6f7abe81f09
+- kind: project-relative
+  target: claude
+  value: .claude/skills/msbuild
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet
+  active_owner: dotnet/skills/plugins/dotnet
+  content_hash: null
+- kind: project-relative
+  target: claude
+  value: .claude/skills/msbuild/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet
+  active_owner: dotnet/skills/plugins/dotnet
+  content_hash: sha256:671a9b2c77be4a6758dba4b013a50a29b2b3c5c6c77a10c2c81c11042f785c55
+- kind: project-relative
+  target: claude
+  value: .claude/skills/msbuild/references/antipatterns/additional-antipatterns.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet
+  active_owner: dotnet/skills/plugins/dotnet
+  content_hash: sha256:02955e8765404cd792d6c29a6574c5261afa55bcf37766998499d5b3077a10b5
+- kind: project-relative
+  target: claude
+  value: .claude/skills/msbuild/references/antipatterns/incremental-build-inputs-outputs.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet
+  active_owner: dotnet/skills/plugins/dotnet
+  content_hash: sha256:361f23ef4cd84da9f8bf875151b2b1df27e0a2ab3354b8b6728d88b94db131ad
+- kind: project-relative
+  target: claude
+  value: .claude/skills/msbuild/references/antipatterns/private-assets.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet
+  active_owner: dotnet/skills/plugins/dotnet
+  content_hash: sha256:76ff2c88d729494b21fe3f12078b10e10ffcbc41857161defeb79487b97d829c
+- kind: project-relative
+  target: claude
+  value: .claude/skills/msbuild/references/binlog-failure-analysis.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet
+  active_owner: dotnet/skills/plugins/dotnet
+  content_hash: sha256:11b3962a232ef18ac184be8a52c86de8b35f05e10a3bfc7d5f5b3396f707e5ca
+- kind: project-relative
+  target: claude
+  value: .claude/skills/msbuild/references/binlog-generation.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet
+  active_owner: dotnet/skills/plugins/dotnet
+  content_hash: sha256:f6fc3dfbcb895b3cf5cc4c98dcacd76c3eaaab9d3b1a6e714a3bd596557df512
+- kind: project-relative
+  target: claude
+  value: .claude/skills/msbuild/references/build-perf-baseline.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet
+  active_owner: dotnet/skills/plugins/dotnet
+  content_hash: sha256:4be937e36d2e60eb549a50b58f1eeb1ac2f74d419d3bcee5132f97699e3c2871
+- kind: project-relative
+  target: claude
+  value: .claude/skills/msbuild/references/build-perf-diagnostics.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet
+  active_owner: dotnet/skills/plugins/dotnet
+  content_hash: sha256:c715b1dfa297f898b45e893937e40d96e02f6f44c9c3f508dc4442c6dc7cc2f8
+- kind: project-relative
+  target: claude
+  value: .claude/skills/msbuild/references/copy-to-output-directory.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet
+  active_owner: dotnet/skills/plugins/dotnet
+  content_hash: sha256:01409f41fd8df30189d544d82dd20556690e5b2c0f16993625f1492d7bff09b2
+- kind: project-relative
+  target: claude
+  value: .claude/skills/msbuild/references/eval-performance.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet
+  active_owner: dotnet/skills/plugins/dotnet
+  content_hash: sha256:8a4eeb553ab4e43c9b2b19252fee41bd7a275fca4a8536920e99f9826cb00bdd
+- kind: project-relative
+  target: claude
+  value: .claude/skills/msbuild/references/extension-points.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet
+  active_owner: dotnet/skills/plugins/dotnet
+  content_hash: sha256:d474bccb8069449ceca4fc0ecff7493a8f701b3eb189bcffd0b85c7612d9b766
+- kind: project-relative
+  target: claude
+  value: .claude/skills/msbuild/references/incremental-build.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet
+  active_owner: dotnet/skills/plugins/dotnet
+  content_hash: sha256:8e5d4c4871c2c44fd49b7be64b040e074363b7c9bbacee7cd226d48d5ff4798d
+- kind: project-relative
+  target: claude
+  value: .claude/skills/msbuild/references/msbuild-antipatterns.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet
+  active_owner: dotnet/skills/plugins/dotnet
+  content_hash: sha256:b470f187400c3e6a5620e75cccaf448a09a0207a0a4202b3e18d2dd65296f8f9
+- kind: project-relative
+  target: claude
+  value: .claude/skills/process-api-net11
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet11
+  active_owner: dotnet/skills/plugins/dotnet11
+  content_hash: null
+- kind: project-relative
+  target: claude
+  value: .claude/skills/process-api-net11/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet11
+  active_owner: dotnet/skills/plugins/dotnet11
+  content_hash: sha256:66f79536a3d80372caeff06d77940639b9677f5b4cb41c5358407b43b4cb4d59
+- kind: project-relative
+  target: claude
+  value: .claude/skills/setup-local-sdk
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet
+  active_owner: dotnet/skills/plugins/dotnet
+  content_hash: null
+- kind: project-relative
+  target: claude
+  value: .claude/skills/setup-local-sdk/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet
+  active_owner: dotnet/skills/plugins/dotnet
+  content_hash: sha256:6b4904db9ae950da582f85dc2f4cf2adf586776d84ce805a273edb4045f1a74e
+- kind: project-relative
+  target: claude
+  value: .claude/skills/system-text-json-net11
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet11
+  active_owner: dotnet/skills/plugins/dotnet11
+  content_hash: null
+- kind: project-relative
+  target: claude
+  value: .claude/skills/system-text-json-net11/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet11
+  active_owner: dotnet/skills/plugins/dotnet11
+  content_hash: sha256:e067f1ad212f97bd11510505748f2ed87b51b3e0328b27fb8116c01a86817e7d
+- kind: project-relative
+  target: codex
+  value: .codex/agents/optimizing-dotnet-performance.toml
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet-diag
+  active_owner: dotnet/skills/plugins/dotnet-diag
+  content_hash: sha256:c713d8c3c18349b07cf7ebf68c9a541104fefeb08794668ef6f901e3c6830dd2
+- kind: project-relative
+  target: copilot
+  value: .github/agents/optimizing-dotnet-performance.agent.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet-diag
+  active_owner: dotnet/skills/plugins/dotnet-diag
+  content_hash: sha256:bcabb8c04cd05765bf0e0c2b6e322510b1434319121890dcfe5717d3a56198e4
+- kind: uri
+  target: lsp
+  value: csharp
+  runtime: claude
+  scope: project
+  owners:
+  - .
+  active_owner: .
+  content_hash: null
+- kind: uri
+  target: lsp
+  value: csharp
+  runtime: copilot
+  scope: project
+  owners:
+  - .
+  active_owner: .
+  content_hash: null
+- kind: uri
+  target: mcp
+  value: aspire
+  runtime: claude
+  scope: project
+  owners:
+  - .
+  active_owner: .
+  content_hash: sha256:68670ccfe3285c4f4e5a3adc2d8da75a1dbcc7072f984d9f37bf593f29b4d20f
+- kind: uri
+  target: mcp
+  value: avalonia
+  runtime: claude
+  scope: project
+  owners:
+  - .
+  active_owner: .
+  content_hash: sha256:99157f1dcfc78340e82d209fa35f67c7bb3aaacf2746fc2c3a9acc1c793cab7e
+- kind: uri
+  target: mcp
+  value: avalonia-docs
+  runtime: claude
+  scope: project
+  owners:
+  - .
+  active_owner: .
+  content_hash: sha256:59f34d4aebcf4f8444cb56168c3e6d8bac06946ef80140b04bd464fd06cb4571
+- kind: uri
+  target: mcp
+  value: mcp-debugger
+  runtime: claude
+  scope: project
+  owners:
+  - .
+  active_owner: .
+  content_hash: sha256:d42c2ea080e29737eb2fe0f7252bc189000129bbd34ee2f2fae9ed295e2c8514
+- kind: uri
+  target: mcp
+  value: microsoft-learn
+  runtime: claude
+  scope: project
+  owners:
+  - .
+  active_owner: .
+  content_hash: sha256:d2772832e36d4a259be991a0c9319f07f31f342e0bb8cbaf956538aff31ab6c4
+- kind: uri
+  target: mcp
+  value: roslyn-codelens-mcp
+  runtime: claude
+  scope: project
+  owners:
+  - .
+  active_owner: .
+  content_hash: sha256:7de7c043f82c939f83700f355825c54d00fba0494271d5f525ae8fff75023f45
+- kind: uri
+  target: mcp
+  value: roslyn-mcp
+  runtime: claude
+  scope: project
+  owners:
+  - .
+  active_owner: .
+  content_hash: sha256:947a7eac16277a0c65cd5860e00cef7c9d489ec96136241578ce518f38d72744
+- kind: uri
+  target: mcp
+  value: aspire
+  runtime: codex
+  scope: project
+  owners:
+  - .
+  active_owner: .
+  content_hash: sha256:a782b44d84ec6e2400e74f594c0bdfac678f4364f6792770887df78800f5051d
+- kind: uri
+  target: mcp
+  value: avalonia
+  runtime: codex
+  scope: project
+  owners:
+  - .
+  active_owner: .
+  content_hash: sha256:ff36bc0ec3ddc2b268507a09bc8a91300fcd57f41df0c4d5117f749599d52621
+- kind: uri
+  target: mcp
+  value: avalonia-docs
+  runtime: codex
+  scope: project
+  owners:
+  - .
+  active_owner: .
+  content_hash: sha256:045c1d58d09d02e493fc86c299720b4d49ab93b12e8f91f6c120af527cd19a3c
+- kind: uri
+  target: mcp
+  value: mcp-debugger
+  runtime: codex
+  scope: project
+  owners:
+  - .
+  active_owner: .
+  content_hash: sha256:adda0fa55702cd1fe9fed4732174d05dc36e950b1811b5ab1ba83cd28113bceb
+- kind: uri
+  target: mcp
+  value: microsoft-learn
+  runtime: codex
+  scope: project
+  owners:
+  - .
+  active_owner: .
+  content_hash: sha256:93099150ef6fe93063eff7c77644e10b6f630cdb278ca89c1533d16c767098ad
+- kind: uri
+  target: mcp
+  value: roslyn-codelens-mcp
+  runtime: codex
+  scope: project
+  owners:
+  - .
+  active_owner: .
+  content_hash: sha256:deef316c90d40d267fe3a74f41a6a3521ab8e52b3933b0be6fe5dfdd79549c09
+- kind: uri
+  target: mcp
+  value: roslyn-mcp
+  runtime: codex
+  scope: project
+  owners:
+  - .
+  active_owner: .
+  content_hash: sha256:f3cd403a6430fe1583ba86699978f3dc3d6b1af2fc7216f8be19572825ba3374
+- kind: uri
+  target: mcp
+  value: aspire
+  runtime: copilot
+  scope: project
+  owners:
+  - .
+  active_owner: .
+  content_hash: null
+- kind: uri
+  target: mcp
+  value: avalonia
+  runtime: copilot
+  scope: project
+  owners:
+  - .
+  active_owner: .
+  content_hash: null
+- kind: uri
+  target: mcp
+  value: avalonia-docs
+  runtime: copilot
+  scope: project
+  owners:
+  - .
+  active_owner: .
+  content_hash: null
+- kind: uri
+  target: mcp
+  value: mcp-debugger
+  runtime: copilot
+  scope: project
+  owners:
+  - .
+  active_owner: .
+  content_hash: null
+- kind: uri
+  target: mcp
+  value: microsoft-learn
+  runtime: copilot
+  scope: project
+  owners:
+  - .
+  active_owner: .
+  content_hash: null
+- kind: uri
+  target: mcp
+  value: roslyn-codelens-mcp
+  runtime: copilot
+  scope: project
+  owners:
+  - .
+  active_owner: .
+  content_hash: null
+- kind: uri
+  target: mcp
+  value: roslyn-mcp
+  runtime: copilot
+  scope: project
+  owners:
+  - .
+  active_owner: .
+  content_hash: null
+- kind: uri
+  target: mcp
+  value: aspire
+  runtime: gemini
+  scope: project
+  owners:
+  - .
+  active_owner: .
+  content_hash: null
+- kind: uri
+  target: mcp
+  value: avalonia
+  runtime: gemini
+  scope: project
+  owners:
+  - .
+  active_owner: .
+  content_hash: null
+- kind: uri
+  target: mcp
+  value: avalonia-docs
+  runtime: gemini
+  scope: project
+  owners:
+  - .
+  active_owner: .
+  content_hash: null
+- kind: uri
+  target: mcp
+  value: mcp-debugger
+  runtime: gemini
+  scope: project
+  owners:
+  - .
+  active_owner: .
+  content_hash: null
+- kind: uri
+  target: mcp
+  value: microsoft-learn
+  runtime: gemini
+  scope: project
+  owners:
+  - .
+  active_owner: .
+  content_hash: null
+- kind: uri
+  target: mcp
+  value: roslyn-codelens-mcp
+  runtime: gemini
+  scope: project
+  owners:
+  - .
+  active_owner: .
+  content_hash: null
+- kind: uri
+  target: mcp
+  value: roslyn-mcp
+  runtime: gemini
+  scope: project
+  owners:
+  - .
+  active_owner: .
+  content_hash: null
+- kind: uri
+  target: mcp
+  value: aspire
+  runtime: opencode
+  scope: project
+  owners:
+  - .
+  active_owner: .
+  content_hash: null
+- kind: uri
+  target: mcp
+  value: avalonia
+  runtime: opencode
+  scope: project
+  owners:
+  - .
+  active_owner: .
+  content_hash: null
+- kind: uri
+  target: mcp
+  value: avalonia-docs
+  runtime: opencode
+  scope: project
+  owners:
+  - .
+  active_owner: .
+  content_hash: null
+- kind: uri
+  target: mcp
+  value: mcp-debugger
+  runtime: opencode
+  scope: project
+  owners:
+  - .
+  active_owner: .
+  content_hash: null
+- kind: uri
+  target: mcp
+  value: microsoft-learn
+  runtime: opencode
+  scope: project
+  owners:
+  - .
+  active_owner: .
+  content_hash: null
+- kind: uri
+  target: mcp
+  value: roslyn-codelens-mcp
+  runtime: opencode
+  scope: project
+  owners:
+  - .
+  active_owner: .
+  content_hash: null
+- kind: uri
+  target: mcp
+  value: roslyn-mcp
+  runtime: opencode
+  scope: project
+  owners:
+  - .
+  active_owner: .
+  content_hash: null
+- kind: uri
+  target: mcp
+  value: aspire
+  runtime: vscode
+  scope: project
+  owners:
+  - .
+  active_owner: .
+  content_hash: null
+- kind: uri
+  target: mcp
+  value: avalonia
+  runtime: vscode
+  scope: project
+  owners:
+  - .
+  active_owner: .
+  content_hash: null
+- kind: uri
+  target: mcp
+  value: avalonia-docs
+  runtime: vscode
+  scope: project
+  owners:
+  - .
+  active_owner: .
+  content_hash: null
+- kind: uri
+  target: mcp
+  value: mcp-debugger
+  runtime: vscode
+  scope: project
+  owners:
+  - .
+  active_owner: .
+  content_hash: null
+- kind: uri
+  target: mcp
+  value: microsoft-learn
+  runtime: vscode
+  scope: project
+  owners:
+  - .
+  active_owner: .
+  content_hash: null
+- kind: uri
+  target: mcp
+  value: roslyn-codelens-mcp
+  runtime: vscode
+  scope: project
+  owners:
+  - .
+  active_owner: .
+  content_hash: null
+- kind: uri
+  target: mcp
+  value: roslyn-mcp
+  runtime: vscode
+  scope: project
+  owners:
+  - .
+  active_owner: .
+  content_hash: null
+- kind: project-relative
+  target: opencode
+  value: .opencode/agents/optimizing-dotnet-performance.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet-diag
+  active_owner: dotnet/skills/plugins/dotnet-diag
+  content_hash: sha256:bcabb8c04cd05765bf0e0c2b6e322510b1434319121890dcfe5717d3a56198e4
+mcp_servers:
+- aspire
+- avalonia
+- avalonia-docs
+- mcp-debugger
+- microsoft-learn
+- roslyn-codelens-mcp
+- roslyn-mcp
+mcp_configs:
+  aspire:
+    name: aspire
+    transport: stdio
+    args:
+    - Aspire.Cli dashboard run --allow-anonymous
+    registry: false
+    command: dnx
+  avalonia:
+    name: avalonia
+    transport: http
+    registry: false
+    url: http://127.0.0.1:5599
+  avalonia-docs:
+    name: avalonia-docs
+    transport: http
+    registry: false
+    url: https://docs-mcp.avaloniaui.net/mcp
+  mcp-debugger:
+    name: mcp-debugger
+    transport: stdio
+    args:
+    - -y
+    - '@debugmcp/mcp-debugger'
+    - stdio
+    registry: false
+    command: npx
+  microsoft-learn:
+    name: microsoft-learn
+    transport: http
+    registry: false
+    url: https://learn.microsoft.com/api/mcp
+  roslyn-codelens-mcp:
+    name: roslyn-codelens-mcp
+    transport: stdio
+    args:
+    - RoslynCodeLens.Mcp
+    - --yes
+    registry: false
+    command: dnx
+  roslyn-mcp:
+    name: roslyn-mcp
+    transport: stdio
+    args:
+    - RoslynMcp.Server
+    registry: false
+    command: dnx
+mcp_target_servers:
+  claude:
+  - aspire
+  - avalonia
+  - avalonia-docs
+  - mcp-debugger
+  - microsoft-learn
+  - roslyn-codelens-mcp
+  - roslyn-mcp
+  codex:
+  - aspire
+  - avalonia
+  - avalonia-docs
+  - mcp-debugger
+  - microsoft-learn
+  - roslyn-codelens-mcp
+  - roslyn-mcp
+  copilot:
+  - aspire
+  - avalonia
+  - avalonia-docs
+  - mcp-debugger
+  - microsoft-learn
+  - roslyn-codelens-mcp
+  - roslyn-mcp
+  gemini:
+  - aspire
+  - avalonia
+  - avalonia-docs
+  - mcp-debugger
+  - microsoft-learn
+  - roslyn-codelens-mcp
+  - roslyn-mcp
+  opencode:
+  - aspire
+  - avalonia
+  - avalonia-docs
+  - mcp-debugger
+  - microsoft-learn
+  - roslyn-codelens-mcp
+  - roslyn-mcp
+  vscode:
+  - aspire
+  - avalonia
+  - avalonia-docs
+  - mcp-debugger
+  - microsoft-learn
+  - roslyn-codelens-mcp
+  - roslyn-mcp
+lsp_servers:
+- csharp
+lsp_configs:
+  csharp:
+    name: csharp
+    command: dnx
+    args:
+    - roslyn-language-server
+    - --yes
+    - --prerelease
+    - --
+    - --stdio
+    - --daemon-mode
+    - --autoLoadProjects
+    extensionToLanguage:
+      .cs: csharp
+      .razor: aspnetcorerazor
+      .cshtml: aspnetcorerazor
+    startupTimeout: 120000
+lsp_target_servers:
+  claude:
+  - csharp
+  copilot:
+  - csharp
+lsp_config_provenance:
+  csharp: package:dotnet/skills/plugins/dotnet

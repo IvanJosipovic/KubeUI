@@ -2,7 +2,7 @@ using k8s.Models;
 
 namespace KubeUI.Avalonia.Resources.AccessControl.v1.RoleBinding;
 
-public sealed partial class V1RoleBindingConfig : ResourceConfigBase<V1RoleBinding>
+public sealed partial class V1RoleBindingConfig : ResourceConfig<V1RoleBinding>
 {
     public V1RoleBindingConfig(IServiceProvider serviceProvider)
         : base(serviceProvider)
@@ -10,10 +10,10 @@ public sealed partial class V1RoleBindingConfig : ResourceConfigBase<V1RoleBindi
     }
 
     public override bool IsNamespaced => true;
-    public override string Category => Assets.Resources.ResourceConfig_Category_AccessControl!;
+    public override NavigationPlacement Navigation => NavigationPlacement.InSection(NavigationSections.AccessControlId);
     public override int Order => 4;
 
-    public override IList<IResourceListColumn> Columns()
+    protected override IList<IResourceListColumn> CreateDefaultColumns()
     {
         return [
             NameColumn(SortDirection.Ascending),

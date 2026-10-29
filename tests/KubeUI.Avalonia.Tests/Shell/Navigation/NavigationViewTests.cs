@@ -23,6 +23,38 @@ namespace KubeUI.Avalonia.Tests.Shell.Navigation;
 
 public sealed class NavigationViewTests
 {
+    [AvaloniaFact]
+    public async Task pod_document_cluster_indicator_uses_alias_in_tooltip()
+    {
+        var services = Application.Current.GetTestServices();
+        using var workspace = await Application.Current.CreateClusterAsync();
+        workspace.Alias = "r720";
+        using var navigation = services.GetRequiredService<NavigationViewModel>();
+        var main = services.GetRequiredService<MainViewModel>();
+        main.Initialize();
+        var mainView = new MainView { DataContext = main };
+        using var window = Application.Current.CreateTestWindow(content: mainView);
+        window.Show();
+
+        var podsLink = new NavigationLink
+        {
+            Id = "alias-test-pods",
+            Name = "Pods",
+            Cluster = workspace,
+            ResourceKind = GroupApiVersionKind.From<V1Pod>(),
+            OpenCommand = navigation.OpenResourceNavigationCommand,
+        };
+        await navigation.OpenResourceNavigationCommand.ExecuteAsync(podsLink).WaitAsync(TestContext.Current.CancellationToken);
+        var indicator = await TestWait.UntilValueAsync(
+            () => mainView.GetVisualDescendants().OfType<global::Avalonia.Controls.Shapes.Rectangle>()
+                .FirstOrDefault(rectangle => Equals(ToolTip.GetTip(rectangle), workspace.Runtime.Name)
+                    || Equals(ToolTip.GetTip(rectangle), workspace.DisplayName)),
+            5000, cancellationToken: TestContext.Current.CancellationToken,
+            beforePoll: () => Dispatcher.UIThread.RunJobs());
+        indicator.ShouldNotBeNull();
+        ToolTip.GetTip(indicator).ShouldBe("r720");
+    }
+
     [Fact]
     public void navigation_item_name_comparer_handles_nulls_and_names()
     {
@@ -74,17 +106,11 @@ public sealed class NavigationViewTests
     {
         var culture = CultureInfo.InvariantCulture;
         var geometry = new StringToGeometryConverter();
-        var svg = new StringToSvgImageConverter();
 
         geometry.Convert("M 0,0 L 1,1", typeof(object), null, culture).ShouldNotBeNull();
         geometry.Convert(string.Empty, typeof(object), null, culture).ShouldBeNull();
         geometry.Convert(42, typeof(object), null, culture).ShouldBeNull();
         geometry.ConvertBack(null, typeof(object), null, culture).ShouldBe(BindingOperations.DoNothing);
-
-        svg.Convert("/Assets/kube/blank.svg", typeof(object), null, culture).ShouldNotBeNull();
-        svg.Convert(" ", typeof(object), null, culture).ShouldBeNull();
-        svg.Convert(42, typeof(object), null, culture).ShouldBeNull();
-        svg.ConvertBack(null, typeof(object), null, culture).ShouldBe(BindingOperations.DoNothing);
     }
 
     [AvaloniaFact]
@@ -95,7 +121,7 @@ public sealed class NavigationViewTests
         var workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         using var navigation = services.GetRequiredService<NavigationViewModel>();
         var clusterNode = new ClusterNavigationNode(workspace) { IsExpanded = true };
-        var podsLink = new ResourceNavigationLink
+        var podsLink = new NavigationLink
         {
             Cluster = workspace,
             Id = "test-pods",
@@ -155,9 +181,10 @@ public sealed class NavigationViewTests
         ReferenceEquals(tree.SelectedItem, section).ShouldBeTrue();
 
         ClickNavigationItem(window, treeItem, section.Name);
-        sectionSelections.ShouldBe(2);
+        sectionSelections.ShouldBe(1);
         section.IsExpanded.ShouldBeFalse();
         treeItem.IsExpanded.ShouldBeFalse();
+        ReferenceEquals(tree.SelectedItem, section).ShouldBeTrue();
 
         var expander = treeItem.GetVisualDescendants().OfType<ToggleButton>()
             .First(toggle => ReferenceEquals(toggle.DataContext, section));
@@ -359,7 +386,7 @@ public sealed class NavigationViewTests
         var workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
         using var navigation = services.GetRequiredService<NavigationViewModel>();
         var clusterNode = navigation.Clusters.Single(node => node.Cluster == workspace);
-        var podsLink = new ResourceNavigationLink
+        var podsLink = new NavigationLink
         {
             Id = "test-pods",
             Name = "Pods",
@@ -384,6 +411,7 @@ public sealed class NavigationViewTests
         clusterMenu.Items.OfType<MenuItem>()
             .Select(menuItem => menuItem.Header?.ToString())
             .ShouldBe([
+                Assets.Resources.NavigationView_ContextMenu_Collapse,
                 Assets.Resources.NavigationView_ContextMenu_Connect,
                 Assets.Resources.NavigationView_ContextMenu_Settings
             ]);
@@ -422,7 +450,7 @@ public sealed class NavigationViewTests
 
         var clusterNode = navigation.Clusters.Single(node => ReferenceEquals(node.Cluster, workspace));
         clusterNode.IsExpanded = true;
-        var podsLink = new ResourceNavigationLink
+        var podsLink = new NavigationLink
         {
             Id = "test-pods",
             Name = "Pods",

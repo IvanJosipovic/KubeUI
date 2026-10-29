@@ -2,17 +2,17 @@ using k8s.Models;
 
 namespace KubeUI.Avalonia.Resources.Network.v1.Ingress;
 
-public sealed partial class V1IngressConfig : ResourceConfigBase<V1Ingress>
+public sealed partial class V1IngressConfig : ResourceConfig<V1Ingress>
 {
     public V1IngressConfig(IServiceProvider serviceProvider)
         : base(serviceProvider)
     {
     }
     public override bool IsNamespaced => true;
-    public override string Category => Assets.Resources.ResourceConfig_Category_Network!;
+    public override NavigationPlacement Navigation => NavigationPlacement.InSection(NavigationSections.NetworkId);
     public override int Order => 3;
 
-    public override IList<IResourceListColumn> Columns()
+    protected override IList<IResourceListColumn> CreateDefaultColumns()
     {
         return [
             NameColumn(SortDirection.Ascending),

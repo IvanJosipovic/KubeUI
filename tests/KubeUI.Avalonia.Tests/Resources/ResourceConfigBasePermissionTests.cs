@@ -5,13 +5,50 @@ using Dock.Model.Core;
 using k8s.Models;
 using KubeUI.Avalonia.Features.Resources.Editor;
 using KubeUI.Avalonia.Infrastructure.Presentation;
+using KubernetesClient.Informer.Client;
+using KubeUI.Avalonia.Features.Resources.Common;
 using KubeUI.Avalonia.Resources;
+using KubeUI.Avalonia.Shell.Navigation;
+using KubeUI.Kubernetes;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Resources;
 
 public sealed class ResourceConfigBasePermissionTests
 {
+    [AvaloniaFact]
+    public void kind_specific_template_creates_fresh_typed_resource_with_default_identity()
+    {
+        var services = Application.Current.GetTestServices();
+        var config = new TemplatedPodConfig(services);
+
+        var first = config.CreateResource();
+        var second = config.CreateResource();
+
+        first.ShouldBeOfType<V1Pod>();
+        first.ShouldNotBeSameAs(second);
+        first.Kind.ShouldBe(config.Kind.Kind);
+        first.ApiVersion.ShouldBe(config.Kind.GroupApiVersion);
+        first.Metadata.Name.ShouldBe("sample-pod");
+        first.Metadata.NamespaceProperty.ShouldBe("default");
+        first.Spec.Containers.ShouldHaveSingleItem().Image.ShouldBe("example:latest");
+    }
+
+    [AvaloniaFact]
+    public async Task typed_resource_uses_config_overrides_for_template_columns_and_actions()
+    {
+        var services = Application.Current.GetTestServices();
+        using var cluster = await Application.Current.CreateClusterAsync(connect: false);
+        var config = new ContributedPodConfig(services);
+        config.Initialize(cluster);
+
+        var resource = config.CreateResource();
+
+        resource.Metadata.Labels["source"].ShouldBe("config");
+        config.Columns().ShouldContain(column => column.Name == "Configured");
+        config.GetCustomMenuItems(Array.Empty<V1Pod>()).Single().Title.ShouldBe("Configured action");
+    }
+
     [AvaloniaFact]
     public void permissions_manifest_includes_default_and_custom_permissions()
     {
@@ -117,9 +154,63 @@ public sealed class ResourceConfigBasePermissionTests
 
         public override bool IsNamespaced => true;
 
+        public override Task SeedResource(bool waitForReady, CancellationToken cancellationToken)
+            => Task.CompletedTask;
+
         public override IList<(Verb verb, string? subResource)> CustomPermissions() =>
         [
             (Verb.Get, "status")
         ];
+    }
+
+    private sealed class TemplatedPodConfig(IServiceProvider serviceProvider) : ResourceConfig<V1Pod>(serviceProvider)
+    {
+        public override bool IsNamespaced => true;
+
+        public override Task SeedResource(bool waitForReady, CancellationToken cancellationToken)
+            => Task.CompletedTask;
+
+        protected override V1Pod CreateInitialResourceTemplate()
+            => new()
+            {
+                Metadata = new V1ObjectMeta { Name = "sample-pod" },
+                Spec = new V1PodSpec
+                {
+                    Containers = [new V1Container { Name = "example", Image = "example:latest" }]
+                }
+            };
+
+        public V1Pod CreateResource() => CreateNewResource();
+    }
+
+    private sealed class ContributedPodConfig(IServiceProvider serviceProvider)
+        : ResourceConfig<V1Pod>(serviceProvider)
+    {
+        private static readonly ResourceListColumn<V1Pod, string> ConfiguredColumn = new()
+        {
+            Key = "configured",
+            Name = "Configured",
+            Field = _ => "value",
+        };
+
+        public override bool IsNamespaced => true;
+        public override Task SeedResource(bool waitForReady, CancellationToken cancellationToken) => Task.CompletedTask;
+        public V1Pod CreateResource() => CreateNewResource();
+
+        protected override V1Pod CreateInitialResourceTemplate() => new()
+        {
+            Metadata = new V1ObjectMeta { Labels = new Dictionary<string, string> { ["source"] = "config" } },
+            Spec = new V1PodSpec { Containers = [new V1Container { Name = "app", Image = "example:latest" }] },
+        };
+
+        protected override IList<IResourceListColumn> CreateDefaultColumns()
+        {
+            var columns = base.CreateDefaultColumns();
+            columns.Insert(columns.Count - 1, ConfiguredColumn);
+            return columns;
+        }
+
+        protected override IEnumerable<MenuItemViewModel> CreateCustomMenuItems(IEnumerable<V1Pod>? selectedItems)
+            => [new MenuItemViewModel { Title = "Configured action" }];
     }
 }

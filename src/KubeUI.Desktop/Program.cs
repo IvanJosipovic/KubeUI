@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Net.Sockets;
 using System.Reflection;
 using Avalonia;
@@ -14,7 +15,10 @@ using KubeUI.AI.Diagnostics;
 using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
 using KubeUI.Avalonia.Infrastructure.Platform;
+using KubeUI.Avalonia.Options;
 using KubeUI.Avalonia.Services.Settings;
+using KubeUI.Kubernetes;
+using KubeUI.Kubernetes.Serialization;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -39,6 +43,7 @@ internal static class Program
         EnsureMacOsPath();
 
         using var host = CreateHostBuilder(args).Build();
+        host.Services.ConfigureKubeUIKubernetesJsonLogging();
 
         try
         {
@@ -78,7 +83,7 @@ internal static class Program
             .ConfigureFonts(fontManager => fontManager.AddFontCollection(new CascadiaMonoFontCollection()))
             .WithInterFont()
             .UseServiceProvider(services)
-            .UseComponentControlFactory(type => (Control)ActivatorUtilities.CreateInstance(services, type))
+            .UseComponentControlFactory(type => CreateComponentControl(type, services))
             .UseViewInitializationStrategy(ViewInitializationStrategy.Lazy);
 #if DEBUG
         if (enableDevelopmentTools)
@@ -94,6 +99,19 @@ internal static class Program
 #endif
         return builder;
     }
+
+    /// <summary>
+    /// Creates a declarative component control from the application's service provider.
+    /// </summary>
+    /// <param name="type">Component control type requested by the declarative view factory.</param>
+    /// <param name="services">Application services used to construct the control.</param>
+    /// <returns>The created control.</returns>
+    [UnconditionalSuppressMessage(
+        "Trimming",
+        "IL2067",
+        Justification = "Avalonia.Markup.Declarative exposes the component factory as an unannotated Func<Type, Control>. KubeUI declares no ComponentBase types, so this reflection path is unreachable; all views are resolved through the generated ViewLocator factories.")]
+    private static Control CreateComponentControl(Type type, IServiceProvider services)
+        => (Control)ActivatorUtilities.CreateInstance(services, type);
 
     internal static void StartHostAfterAvaloniaSetup(
         IHost host,
@@ -136,9 +154,10 @@ internal static class Program
     internal static HostApplicationBuilder CreateHostBuilder(
         string[] args,
         bool includeOptionalServices = true,
-        Action<IServiceCollection>? configureServices = null)
+        Action<IServiceCollection>? configureServices = null,
+        SettingsPersistenceData? settingsOverride = null)
     {
-        return CreateDesktopHostBuilder(args, includeOptionalServices, configureServices, null, null);
+        return CreateDesktopHostBuilder(args, includeOptionalServices, configureServices, null, null, settingsOverride);
     }
 
     private static HostApplicationBuilder CreateDesktopHostBuilder(
@@ -146,7 +165,8 @@ internal static class Program
         bool includeOptionalServices,
         Action<IServiceCollection>? configureServices,
         int? mcpPortOverride,
-        bool? mcpEnabledOverride)
+        bool? mcpEnabledOverride,
+        SettingsPersistenceData? settingsOverride = null)
     {
         var builder = Host.CreateEmptyApplicationBuilder(new HostApplicationBuilderSettings
         {
@@ -155,8 +175,10 @@ internal static class Program
         });
         builder.Logging.SetMinimumLevel(LogLevel.Debug);
 
-        var settings = SettingsPersistenceLoader.Load();
-        builder.Services.AddKubeUIAppServices();
+        var settings = settingsOverride ?? SettingsPersistenceLoader.Load();
+        var features = settings.Settings.PreviewFeatures ?? new FeatureSettings();
+
+        builder.Services.AddKubeUIAppServices(features);
 
         if (mcpEnabledOverride ?? settings.Settings.McpServerEnabled)
             builder.Services.AddKubeUIMcpServer(mcpPortOverride ?? settings.Settings.McpServerPort);
@@ -190,6 +212,9 @@ internal static class Program
         // Tests use this helper only; keep streamed MCP responses from stretching each host teardown to the full shutdown grace period.
         hostBuilder.Services.Configure<HostOptions>(options => options.ShutdownTimeout = TimeSpan.FromSeconds(1));
         var host = hostBuilder.Build();
+        // Report Kubernetes types that still fall back to reflection-based serialization so the
+        // remaining source-generation gaps are visible in the logs.
+        host.Services.ConfigureKubeUIKubernetesJsonLogging();
         host.Start();
         return host;
     }

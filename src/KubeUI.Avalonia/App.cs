@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using Avalonia.Markup.Xaml.Styling;
 using Dock.Model.Controls;
 using Dock.Model.Core;
@@ -80,6 +81,7 @@ public partial class App : Application, IServiceProviderHost
         KubernetesClientConfiguration.ExecStdError -= KubernetesClientConfiguration_ExecStdError;
     }
 
+    [RequiresUnreferencedCode("Application initialization loads Avalonia styles from runtime XAML resources.")]
     public override void Initialize()
     {
         DockSettings.MinimumHorizontalDragDistance = 8;
@@ -147,11 +149,11 @@ public partial class App : Application, IServiceProviderHost
     {
         if (string.IsNullOrWhiteSpace(e.Data))
         {
-            _logger.LogError("Cluster ExecStdError: no data");
+            _logger.LogTrace("Cluster ExecStdError: no data");
             return;
         }
 
-        _logger.LogError("Cluster ExecStdError: {Data}", e.Data);
+        _logger.LogWarning("Cluster ExecStdError: {Data}", e.Data);
 
         Dispatcher.UIThread.Post(() => ShowClusterError(e.Data), DispatcherPriority.Background);
     }

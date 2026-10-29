@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Net;
 using System.Reactive.Linq;
 using System.Text;
 using DynamicData;
@@ -9,8 +10,10 @@ using k8s.KubeConfigModels;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
 using KubeUI.Kubernetes.Client;
+using KubeUI.Kubernetes.Serialization;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Http.Resilience;
+using Microsoft.Extensions.Options;
 using Polly;
 using YamlDotNet.Core;
 using YamlDotNet.Core.Events;
@@ -21,12 +24,18 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
 {
     public IClusterAuthorization Permissions => this;
 
+    private readonly IKubernetesJsonSerializer _jsonSerializer;
+    private readonly IKubernetesYamlSerializer _yamlSerializer;
+
     private ILoggerFactory _loggerFactory;
 
     private ILogger<Cluster> _logger;
 
     private KubernetesOpenApiSchemaLoader _openApiSchemaLoader;
     private KubernetesApiDiscoveryClient? _discoveryClient;
+    private readonly Lock _discoveryRefreshGate = new();
+    private Task? _discoveryRefreshTask;
+    private bool _discoveryRefreshRequested;
 
     private IClusterSettingsStore _settings;
 
@@ -96,11 +105,14 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
     /// <param name="settings">Cluster settings store.</param>
     /// <param name="serviceProvider">Application service provider.</param>
     /// <param name="dispatcher">Dispatcher used for UI-bound observable updates.</param>
-    public Cluster(ILogger<Cluster> logger, ILoggerFactory loggerFactory, ClusterModelCatalog modelCatalog, IClusterSettingsStore settings, IServiceProvider serviceProvider, IThreadDispatcher dispatcher)
+    /// <param name="authorizationOptions">Authorization behavior options.</param>
+    public Cluster(ILogger<Cluster> logger, ILoggerFactory loggerFactory, ClusterModelCatalog modelCatalog, IClusterSettingsStore settings, IServiceProvider serviceProvider, IThreadDispatcher dispatcher, IKubernetesJsonSerializer jsonSerializer, IKubernetesYamlSerializer yamlSerializer, IOptions<ClusterAuthorizationOptions>? authorizationOptions = null)
     {
         _loggerFactory = loggerFactory;
         _logger = logger;
         _portForwardSessionFactory = new KubernetesPortForwardSessionFactory(this);
+        _jsonSerializer = jsonSerializer;
+        _yamlSerializer = yamlSerializer;
         ModelCatalog = modelCatalog;
         _openApiSchemaLoader = new(
             ModelCatalog.OpenApiSchemas,
@@ -108,7 +120,10 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
         _settings = settings;
         _serviceProvider = serviceProvider;
         _dispatcher = dispatcher;
+        _authorizationOptions = authorizationOptions?.Value ?? new ClusterAuthorizationOptions();
     }
+
+    private ClusterAuthorizationOptions _authorizationOptions;
 
     public async ValueTask DisposeAsync()
     {
@@ -171,15 +186,17 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
                         })
                         .ConfigureTelemetry(_loggerFactory);
 
-                        var handler = new OperationKeyHandler()
+                        var handler = new OperationKeyHandler(InvalidatePermissionsAfterForbiddenResponse, _authorizationOptions.ForbiddenCoalesceWindow)
                         {
                             InnerHandler = new ResilienceHandler(pipe.Build())
                         };
 
+                        _jsonSerializer.ConfigureClient(config);
                         Client = new k8s.Kubernetes(config, handler);
                     }
                     else
                     {
+                        _jsonSerializer.ConfigureClient(config);
                         Client = KubernetesClientFactory(config);
                     }
 
@@ -272,7 +289,13 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
             Client = null;
             Connected = false;
             _openApiSchemaLoader.Reset();
-            _discoveryClient = null;
+            lock (_discoveryRefreshGate)
+            {
+                _discoveryClient = null;
+                _discoveryRefreshTask = null;
+                _discoveryRefreshRequested = false;
+            }
+
             Status = ClusterStatus.None;
             LastError = null;
             ResetAuthorizationIndex();
@@ -451,7 +474,15 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
         {
             if (!IsResourceNamespaced<T>())
             {
-                return;
+                if (!TryFindDiscoveryResource(kind))
+                {
+                    await RefreshApiGroupDiscoveryListAsync().WaitAsync(informerCancellationToken).ConfigureAwait(false);
+                }
+
+                if (!IsResourceNamespaced<T>())
+                {
+                    return;
+                }
             }
 
             foreach (var item in GetResourceList<V1Namespace>())
@@ -489,12 +520,12 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
                 switch (eventType)
                 {
                     case WatchEventType.Added:
-                        items.AddOrUpdate(item);
                         RegisterCustomResourceDefinition(item as V1CustomResourceDefinition);
+                        items.AddOrUpdate(item);
                         break;
                     case WatchEventType.Modified:
-                        items.AddOrUpdate(item);
                         RegisterCustomResourceDefinition(item as V1CustomResourceDefinition);
+                        items.AddOrUpdate(item);
                         break;
                     case WatchEventType.Deleted:
                         items.Remove(item);
@@ -511,7 +542,40 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
         });
     }
 
-    private async Task RefreshApiGroupDiscoveryListAsync()
+    private Task RefreshApiGroupDiscoveryListAsync()
+    {
+        lock (_discoveryRefreshGate)
+        {
+            _discoveryRefreshRequested = true;
+            if (_discoveryRefreshTask is null || _discoveryRefreshTask.IsCompleted)
+            {
+                _discoveryRefreshTask = RunDiscoveryRefreshWorkerAsync();
+            }
+
+            return _discoveryRefreshTask;
+        }
+    }
+
+    private async Task RunDiscoveryRefreshWorkerAsync()
+    {
+        while (true)
+        {
+            lock (_discoveryRefreshGate)
+            {
+                if (!_discoveryRefreshRequested)
+                {
+                    _discoveryRefreshTask = null;
+                    return;
+                }
+
+                _discoveryRefreshRequested = false;
+            }
+
+            await RefreshApiGroupDiscoveryListCoreAsync().ConfigureAwait(false);
+        }
+    }
+
+    private async Task RefreshApiGroupDiscoveryListCoreAsync()
     {
         try
         {
@@ -787,7 +851,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
         }
     }
 
-    private static List<GenericKubernetesObject> LoadGenericResources(Stream stream)
+    private List<GenericKubernetesObject> LoadGenericResources(Stream stream)
     {
         using var reader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, bufferSize: 1024, leaveOpen: true);
         var parser = new Parser(reader);
@@ -796,7 +860,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
 
         while (parser.Accept<DocumentStart>(out _))
         {
-            resources.Add((GenericKubernetesObject)Serialization.KubernetesYaml.Deserialize(
+            resources.Add((GenericKubernetesObject)_yamlSerializer.Deserialize(
                 parser,
                 typeof(GenericKubernetesObject))!);
         }
@@ -898,6 +962,17 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
                     dryRun: dryRun);
             }
         }
+    }
+
+    private bool TryFindDiscoveryResource(GroupApiVersionKind kind)
+    {
+        if (_discoveryClient is null)
+        {
+            return false;
+        }
+
+        return GetAPIGroupDiscoveryListItem(kind, true) is not null
+            || GetAPIGroupDiscoveryListItem(kind) is not null;
     }
 
     public bool IsResourceNamespaced(GroupApiVersionKind kind)
@@ -1263,6 +1338,26 @@ public partial class ContainerClass<T> : ObservableObject, IClearableResourceCon
 
 public sealed class OperationKeyHandler : DelegatingHandler
 {
+    private readonly TimeSpan _forbiddenCoalesceWindow;
+    private readonly Action? _onForbidden;
+    private long _lastForbiddenNotificationTicks;
+
+    public OperationKeyHandler()
+        : this(null, TimeSpan.FromSeconds(5))
+    {
+    }
+
+    public OperationKeyHandler(Action onForbidden)
+        : this(onForbidden, TimeSpan.FromSeconds(5))
+    {
+    }
+
+    public OperationKeyHandler(Action? onForbidden, TimeSpan forbiddenCoalesceWindow)
+    {
+        _onForbidden = onForbidden;
+        _forbiddenCoalesceWindow = forbiddenCoalesceWindow;
+    }
+
     protected override async Task<HttpResponseMessage> SendAsync(
         HttpRequestMessage request,
         CancellationToken cancellationToken)
@@ -1274,11 +1369,72 @@ public sealed class OperationKeyHandler : DelegatingHandler
 
         try
         {
-            return await base.SendAsync(request, cancellationToken);
+            var response = await base.SendAsync(request, cancellationToken);
+            if (response.StatusCode == HttpStatusCode.Forbidden)
+            {
+                NotifyForbidden(request);
+            }
+
+            return response;
         }
         finally
         {
             ResilienceContextPool.Shared.Return(ctx);
         }
+    }
+
+    /// <summary>
+    /// Reports a forbidden response to the permission cache.
+    /// </summary>
+    private void NotifyForbidden(HttpRequestMessage request)
+    {
+        // A rules review reports the caller's own permissions, so a forbidden review cannot
+        // mean the caller's permissions changed. Reporting it would make the refresh loop
+        // retrigger itself.
+        if (_onForbidden is null || IsSelfSubjectReviewRequest(request))
+        {
+            return;
+        }
+
+        // A forbidden response is usually a legitimate, permanent denial for the requested
+        // resource. Reporting every one of them would wipe the permission cache and re-run
+        // every authorization review, which reproduces the same denial and repeats the cycle.
+        // Coalesce a burst of forbidden responses into a single invalidation.
+        var now = DateTime.UtcNow.Ticks;
+        var previous = Interlocked.Read(ref _lastForbiddenNotificationTicks);
+        if (previous != 0
+            && now - previous < _forbiddenCoalesceWindow.Ticks)
+        {
+            return;
+        }
+
+        if (Interlocked.CompareExchange(ref _lastForbiddenNotificationTicks, now, previous) != previous)
+        {
+            return;
+        }
+
+        try
+        {
+            _onForbidden();
+        }
+        catch (Exception ex)
+        {
+            // Authorization refresh is best-effort and must never break the original response.
+            Debug.WriteLine(ex);
+        }
+    }
+
+    private static bool IsSelfSubjectReviewRequest(HttpRequestMessage request)
+    {
+        var path = request.RequestUri?.AbsolutePath;
+        if (string.IsNullOrEmpty(path))
+        {
+            return false;
+        }
+
+        // Compare the trailing path segments so a configured API path prefix does not
+        // change the outcome.
+        return path.EndsWith("/selfsubjectaccessreviews", StringComparison.Ordinal)
+            || path.EndsWith("/selfsubjectrulesreviews", StringComparison.Ordinal);
     }
 }

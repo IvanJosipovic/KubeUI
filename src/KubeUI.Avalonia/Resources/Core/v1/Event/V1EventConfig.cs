@@ -6,14 +6,14 @@ using KubeUI.Avalonia.Styles;
 
 namespace KubeUI.Avalonia.Resources.Core.v1.Event;
 
-public sealed class V1EventConfig(IServiceProvider serviceProvider) : ResourceConfigBase<Corev1Event>(serviceProvider)
+public sealed class V1EventConfig(IServiceProvider serviceProvider) : ResourceConfig<Corev1Event>(serviceProvider)
 {
     public override bool IsNamespaced => true;
     public override bool SeedOnConnect => true;
     public override bool ShowNewResource => false;
     public override int Order => 7;
 
-    public override IList<IResourceListColumn> Columns()
+    protected override IList<IResourceListColumn> CreateDefaultColumns()
     {
         return [
             new ResourceListColumn<Corev1Event, string>()

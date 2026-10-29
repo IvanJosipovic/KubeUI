@@ -7,12 +7,13 @@ using Avalonia.Data.Converters;
 using Avalonia.Markup.Xaml.MarkupExtensions;
 using KubeUI.AI.Agents;
 using KubeUI.Avalonia.Features.Resources.Properties.Controls;
-using KubeUI.Avalonia.Infrastructure.Mcp;
+using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Options;
+
 
 namespace KubeUI.Avalonia.Shell.Documents.Settings;
 
-public sealed class SettingsView() : ViewBase<SettingsViewModel>
+public sealed class SettingsView() : KubeUIView<SettingsViewModel>
 {
     protected override object Build(SettingsViewModel vm)
     {
@@ -41,6 +42,12 @@ public sealed class SettingsView() : ViewBase<SettingsViewModel>
                             Assets.Resources.SettingsView_PreRelease_Label!,
                             x => x.SettingsService.Settings.PreReleaseChannel),
 
+                        CreateHeading(Assets.Resources.SettingsView_ClustersHeading!),
+                        CreateToggleRow(
+                            vm,
+                            Assets.Resources.SettingsView_AutoDiscovery_ToolTip!,
+                            Assets.Resources.SettingsView_AutoDiscovery_Label!,
+                            x => x.KubeConfigAutoDiscoveryEnabled),
                         CreateHeading(Assets.Resources.SettingsView_AppearanceHeading!),
                         CreateThemeRow(vm),
                         CreateNumericRow(
@@ -70,7 +77,29 @@ public sealed class SettingsView() : ViewBase<SettingsViewModel>
                             65535)
                             .IsEnabled(vm, x => x.SettingsService.Settings.McpServerEnabled),
                         CreateAgentRow(vm),
-                        CreateMcpClientGrants(vm)));
+                        CreateMcpClientGrants(vm),
+
+                        CreateHeading(Assets.Resources.SettingsView_FeaturesHeading!),
+                        CreateToggleRow(
+                            vm,
+                            Assets.Resources.SettingsView_HelmFeature_ToolTip,
+                            Assets.Resources.SettingsView_HelmFeature_Label!,
+                            x => x.SettingsService.Settings.PreviewFeatures.Helm),
+                        CreateToggleRow(
+                            vm,
+                            Assets.Resources.SettingsView_HubbleFeature_ToolTip,
+                            Assets.Resources.SettingsView_HubbleFeature_Label!,
+                            x => x.SettingsService.Settings.PreviewFeatures.Hubble),
+                        CreateToggleRow(
+                            vm,
+                            Assets.Resources.SettingsView_DisableJsonSerializationReflection_ToolTip!,
+                            Assets.Resources.SettingsView_DisableJsonSerializationReflection_Label!,
+                            x => x.SettingsService.Settings.PreviewFeatures.DisableJsonSerializationReflection),
+                        CreateToggleRow(
+                            vm,
+                            Assets.Resources.SettingsView_DisableYamlSerializationReflection_ToolTip!,
+                            Assets.Resources.SettingsView_DisableYamlSerializationReflection_Label!,
+                            x => x.SettingsService.Settings.PreviewFeatures.DisableYamlSerializationReflection)));
     }
 
     private static Border CreateHeading(string text)

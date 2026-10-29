@@ -38,20 +38,43 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
     private readonly Dictionary<ResourceKey, PendingIncrementalChange> _pendingIncrementalChanges = [];
     private readonly ObservableCollection<V1Namespace> _localSelectedNamespaces = [];
     private ResourceRelationshipGraph _completeGraph = ResourceRelationshipGraph.Empty;
+    private IReadOnlyList<IKubernetesObject<V1ObjectMeta>> _previewResources = [];
+    private VisualizationScope? _scope;
+    private bool _fullBuildRunning;
+    private bool _resourceRebuildPending;
 
     [ObservableProperty]
     public partial IKubernetesObject<V1ObjectMeta>? RootResource { get; set; }
 
-    public string RootResourceDisplay => RootResource == null
-        ? string.Empty
-        : $"Resource: {RootResource.ApiVersion}/{RootResource.Kind} {RootResource.Namespace()}/{RootResource.Name()}";
+    public string RootResourceDisplay => _scope?.ResourceDisplay ?? (RootResource == null
+        ? IsPreview ? string.Format(Assets.Resources.VisualizationView_HelmPreviewTitle!, PreviewTitle) : string.Empty
+        : $"Resource: {RootResource.ApiVersion}/{RootResource.Kind} {RootResource.Namespace()}/{RootResource.Name()}");
+
+    public bool IsRootResourceDisplayVisible => _scope is not null || IsPreview || RootResource != null;
+
+    [ObservableProperty]
+    public partial bool IsPreview { get; private set; }
+
+    [ObservableProperty]
+    public partial string PreviewTitle { get; private set; } = string.Empty;
 
     partial void OnRootResourceChanged(IKubernetesObject<V1ObjectMeta>? value)
     {
         OnPropertyChanged(nameof(RootResourceDisplay));
+        OnPropertyChanged(nameof(IsRootResourceDisplayVisible));
         OnPropertyChanged(nameof(IsNamespaceSelectorVisible));
         Run();
     }
+
+    partial void OnIsPreviewChanged(bool value)
+    {
+        OnPropertyChanged(nameof(RootResourceDisplay));
+        OnPropertyChanged(nameof(IsRootResourceDisplayVisible));
+        OnPropertyChanged(nameof(IsNamespaceSelectorVisible));
+    }
+
+    partial void OnPreviewTitleChanged(string value)
+        => OnPropertyChanged(nameof(RootResourceDisplay));
 
     [ObservableProperty]
     public partial ClusterWorkspace? Cluster { get; set; }
@@ -88,7 +111,10 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
     public ObservableCollection<V1Namespace> SelectedNamespaces
         => IsNamespaceSelectionLinked && Cluster != null ? Cluster.SelectedNamespaces : _localSelectedNamespaces;
 
-    public bool IsNamespaceSelectorVisible => RootResource == null || RootResource is V1Namespace;
+    public bool IsNamespaceSelectorVisible => !IsPreview && (RootResource == null || RootResource is V1Namespace);
+
+    /// <summary>Whether the namespace scope can be changed by the visualization toolbar.</summary>
+    public bool IsNamespaceSelectionEnabled => _scope?.IsNamespaceReadOnly != true;
 
     public VisualizationViewModel(ILogger<VisualizationViewModel>? logger = null)
     {
@@ -129,7 +155,16 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
     public void Initialize(ClusterWorkspace cluster, IKubernetesObject<V1ObjectMeta>? rootResource)
     {
         ArgumentNullException.ThrowIfNull(cluster);
+        _scope = null;
+        _resourceRebuildPending = false;
+        OnPropertyChanged(nameof(IsNamespaceSelectionEnabled));
+        OnPropertyChanged(nameof(RootResourceDisplay));
+        OnPropertyChanged(nameof(IsRootResourceDisplayVisible));
         UnsubscribeCluster();
+        IsPreview = false;
+        PreviewTitle = string.Empty;
+        _previewResources = [];
+        Title = Assets.Resources.VisualizationView_Title!;
         Cluster = cluster;
         var isNamespaceRoot = rootResource is V1Namespace;
         RootResource = isNamespaceRoot ? null : rootResource;
@@ -149,6 +184,8 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         _requiredSeedKinds.Clear();
         _pendingReferences.Clear();
         _completeGraph = ResourceRelationshipGraph.Empty;
+        Graph = ResourceRelationshipGraph.Empty;
+        Error = null;
         _knownResourceTypes.Clear();
         _excludedResourceTypes.Clear();
         ResourceTypes.Clear();
@@ -178,6 +215,87 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 
         _initializationCancellation = new CancellationTokenSource();
         _ = LoadCurrentResourcesAsync(cluster.Runtime, initializationVersion, _initializationCancellation.Token);
+    }
+
+    /// <summary>Initializes a named live graph using annotation-selected roots and local namespace controls.</summary>
+    /// <param name="cluster">Cluster containing the resources.</param>
+    /// <param name="scope">Resource description, selector, namespace, and toolbar restrictions.</param>
+    public void InitializeScope(ClusterWorkspace cluster, VisualizationScope scope)
+    {
+        ArgumentNullException.ThrowIfNull(cluster);
+        ArgumentNullException.ThrowIfNull(scope);
+        ArgumentException.ThrowIfNullOrWhiteSpace(scope.Namespace);
+        ArgumentException.ThrowIfNullOrWhiteSpace(scope.ResourceDisplay);
+        ArgumentNullException.ThrowIfNull(scope.Selector);
+        var namespaceResource = cluster.Runtime.Namespaces.FirstOrDefault(item => item.Name() == scope.Namespace)
+            ?? new V1Namespace { Metadata = new V1ObjectMeta { Name = scope.Namespace } };
+        Initialize(cluster, namespaceResource);
+        _scope = scope;
+        OnPropertyChanged(nameof(IsNamespaceSelectionEnabled));
+        OnPropertyChanged(nameof(RootResourceDisplay));
+        OnPropertyChanged(nameof(IsRootResourceDisplayVisible));
+        foreach (var config in cluster.GetResourceConfigs())
+        {
+            RequireSeed(cluster, config.Kind);
+        }
+
+        Title = scope.ResourceDisplay;
+        Id = $"{nameof(VisualizationViewModel)}-{cluster.Title}-{scope.Namespace}-{scope.ResourceDisplay}";
+        Run();
+    }
+
+    /// <summary>
+    /// Initializes a read-only graph preview from rendered Helm resources without seeding or mutating the cluster.
+    /// </summary>
+    /// <param name="cluster">Cluster whose theme and navigation context the preview uses.</param>
+    /// <param name="releaseName">Name of the Helm release being previewed.</param>
+    /// <param name="resources">Kubernetes resources rendered by Helm.</param>
+    public void InitializePreview(
+        ClusterWorkspace cluster,
+        string releaseName,
+        IEnumerable<IKubernetesObject<V1ObjectMeta>> resources)
+    {
+        ArgumentNullException.ThrowIfNull(cluster);
+        ArgumentException.ThrowIfNullOrWhiteSpace(releaseName);
+        ArgumentNullException.ThrowIfNull(resources);
+
+        _scope = null;
+        _resourceRebuildPending = false;
+        OnPropertyChanged(nameof(IsNamespaceSelectionEnabled));
+        OnPropertyChanged(nameof(RootResourceDisplay));
+        OnPropertyChanged(nameof(IsRootResourceDisplayVisible));
+        UnsubscribeCluster();
+        Interlocked.Increment(ref _initializationVersion);
+        Interlocked.Increment(ref _graphApplicationVersion);
+        Interlocked.Increment(ref _filterVersion);
+        _resourceStore.Clear();
+        _requiredSeedKinds.Clear();
+        _pendingReferences.Clear();
+        _completeGraph = ResourceRelationshipGraph.Empty;
+        Graph = ResourceRelationshipGraph.Empty;
+        Error = null;
+        _knownResourceTypes.Clear();
+        _excludedResourceTypes.Clear();
+        _deferredResourceChanges.Clear();
+        _pendingIncrementalChanges.Clear();
+        _suppressResourceChanges = false;
+        _previewResources = resources.ToArray();
+
+        _suppressResourceTypeChanges = true;
+        SelectedResourceTypes.Clear();
+        ResourceTypes.Clear();
+        _suppressResourceTypeChanges = false;
+        OnPropertyChanged(nameof(HasResourceTypes));
+
+        IsPreview = true;
+        PreviewTitle = releaseName;
+        RootResource = null;
+        IsNamespaceSelectionLinked = false;
+        Cluster = cluster;
+        Title = string.Format(Assets.Resources.VisualizationView_HelmPreviewTitle!, releaseName);
+        Id = $"{nameof(VisualizationViewModel)}-{cluster.Title}-helm-preview-{Guid.NewGuid():N}";
+        OnPropertyChanged(nameof(SelectedNamespaces));
+        Run();
     }
 
     private async Task LoadCurrentResourcesAsync(
@@ -394,7 +512,10 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
             UpdateResourceTypes(application.AvailableTypes);
             foreach (var resourceKind in application.RequiredSeedKinds)
             {
-                RequireSeed(cluster!, resourceKind);
+                if (!IsPreview)
+                {
+                    RequireSeed(cluster!, resourceKind);
+                }
             }
 
             Graph = application.FilteredGraph;
@@ -426,7 +547,9 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         }
 
         pendingReferences.UnionWith(graph.PendingReferences);
-        var requiredSeedKinds = VisualizationSeedPlanner.FindRequiredSeedKinds(graph, pendingReferences, cluster);
+        var requiredSeedKinds = IsPreview
+            ? new HashSet<GroupApiVersionKind>()
+            : VisualizationSeedPlanner.FindRequiredSeedKinds(graph, pendingReferences, cluster);
         var availableTypes = graph.Resources
             .Select(resource => resource.Kind)
             .OfType<string>()
@@ -519,6 +642,12 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 
     partial void OnIsNamespaceSelectionLinkedChanged(bool value)
     {
+        if (IsPreview)
+        {
+            OnPropertyChanged(nameof(SelectedNamespaces));
+            return;
+        }
+
         if (Cluster == null)
         {
             OnPropertyChanged(nameof(SelectedNamespaces));
@@ -613,16 +742,15 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         if (change.EventType == WatchEventType.Deleted)
         {
             var affectsGraph = ResourceCanAffectGraph(change.Resource);
-            if (affectsGraph)
-            {
-                _buildCoordinator.Invalidate();
-            }
-
             _resourceStore.Remove(key, change.Resource);
-            RemoveResourceFromGraph(change.Resource);
             if (affectsGraph)
             {
-                Run();
+                if (!_fullBuildRunning)
+                {
+                    RemoveResourceFromGraph(change.Resource);
+                }
+
+                RequestResourceRebuild();
             }
 
             return;
@@ -637,8 +765,21 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
             return;
         }
 
+        if (_scope is not null && previousResource is not null
+            && _scope.Selector.Matches(previousResource) != _scope.Selector.Matches(change.Resource))
+        {
+            RequestResourceRebuild();
+            return;
+        }
+
         if (!ResourceCanAffectGraph(change.Resource))
         {
+            return;
+        }
+
+        if (_fullBuildRunning)
+        {
+            _resourceRebuildPending = true;
             return;
         }
 
@@ -724,7 +865,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
             var namespaces = SelectedNamespaces.Select(x => x.Name()).OfType<string>().ToHashSet(StringComparer.Ordinal);
             var hideNoise = HideNoise;
             var source = _resourceStore.Snapshot();
-            IReadOnlySet<string> buildNamespaces = RootResource == null
+            IReadOnlySet<string> buildNamespaces = RootResource == null && _scope is null
                 ? namespaces
                 : new HashSet<string>(StringComparer.Ordinal);
             var delta = await Task.Run(() => _resourceRelationshipBuilder.BuildAdditionDelta(
@@ -772,7 +913,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                     return;
                 }
 
-                if (RootResource == null)
+                if (RootResource == null && _scope is null)
                 {
                     delta = ResourceGraphProjection.ToSelectedNamespacesIncremental(delta, namespaces, currentIdentities);
                     if (!replaceExisting && delta.Resources.Count == 0)
@@ -793,7 +934,9 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                     relationships,
                     current.PendingReferences.Union(delta.PendingReferences).ToHashSet(),
                     current.RequiredSeedPrerequisites.Union(delta.RequiredSeedPrerequisites).ToHashSet());
-                var completeGraph = RootResource is { } root
+                var completeGraph = _scope is { } scope
+                    ? ResourceGraphProjection.ToSelector(merged, scope.Selector)
+                    : RootResource is { } root
                     ? ResourceGraphProjection.ToRootResource(merged, root)
                     : ResourceGraphProjection.ToSelectedNamespaces(merged, namespaces);
                 await ApplyGraphAsync(completeGraph);
@@ -847,7 +990,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
             return;
         }
 
-        Run();
+        RequestResourceRebuild();
     }
 
     private void ResourceConfigProcessed(ClusterWorkspace cluster, IResourceConfig resourceConfig)
@@ -861,6 +1004,11 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         if (_disposed || !ReferenceEquals(Cluster, cluster))
         {
             return;
+        }
+
+        if (_scope is not null)
+        {
+            RequireSeed(cluster, resourceConfig.Kind);
         }
 
         var seedRequested = _requiredSeedKinds.Contains(resourceConfig.Kind)
@@ -883,7 +1031,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 
         if (seedRequested || ownerReferenceFound)
         {
-            Run();
+            RequestResourceRebuild();
         }
     }
 
@@ -952,6 +1100,16 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
             return false;
         }
 
+        if (_scope is { } scope)
+        {
+            // A named scope projects the selector matches plus their relationship ancestry and descendants.
+            // Resources from the scope namespace can still join through ownership; anything else only counts
+            // when it is already connected to the graph.
+            return scope.Selector.Matches(resource)
+                || string.Equals(resource.Namespace(), scope.Namespace, StringComparison.Ordinal)
+                || IsConnectedToGraph(resource);
+        }
+
         var cluster = Cluster;
         if (cluster == null)
         {
@@ -980,10 +1138,32 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
             return SelectedNamespaces.Any(selected => selected.Name() == namespaceName);
         }
 
+        return IsConnectedToGraph(resource);
+    }
+
+    private bool IsConnectedToGraph(IKubernetesObject<V1ObjectMeta> resource)
+    {
         var identity = GetIdentity(resource);
         return _completeGraph.Resources.Any(current => GetIdentity(current) == identity)
             || _resourceStore.HasOwnerReferencesTo(resource)
             || _completeGraph.PendingReferences.Any(reference => Matches(reference, resource));
+    }
+
+    private void RequestResourceRebuild()
+    {
+        if (!Dispatcher.UIThread.CheckAccess())
+        {
+            Dispatcher.UIThread.Post(RequestResourceRebuild);
+            return;
+        }
+
+        if (_fullBuildRunning)
+        {
+            _resourceRebuildPending = true;
+            return;
+        }
+
+        Run();
     }
 
     private void Run()
@@ -1000,7 +1180,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         }
 
         var cluster = Cluster;
-        if (cluster == null || (RootResource == null && SelectedNamespaces.Count == 0))
+        if (cluster == null || (!IsPreview && RootResource == null && SelectedNamespaces.Count == 0))
         {
             _buildCoordinator.Clear();
             Interlocked.Increment(ref _graphApplicationVersion);
@@ -1011,21 +1191,26 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
             return;
         }
 
-        var namespaces = SelectedNamespaces.Select(x => x.Name()).OfType<string>().ToHashSet(StringComparer.Ordinal);
+        var preview = IsPreview;
+        var namespaces = preview
+            ? new HashSet<string>(StringComparer.Ordinal)
+            : SelectedNamespaces.Select(x => x.Name()).OfType<string>().ToHashSet(StringComparer.Ordinal);
         var root = RootResource;
         var hideNoise = HideNoise;
-        var source = _resourceStore.Snapshot();
+        var source = preview ? _previewResources : _resourceStore.Snapshot();
 
-        _buildCoordinator.Enqueue(new RebuildRequest(source, root, namespaces, hideNoise));
+        _buildCoordinator.Enqueue(new RebuildRequest(source, root, namespaces, hideNoise, preview, _scope?.Selector));
     }
 
     private async Task ProcessBuildAsync(RebuildRequest request, int version, CancellationToken cancellationToken)
     {
         Dispatcher.UIThread.VerifyAccess();
+        _fullBuildRunning = true;
+
         try
         {
             var graph = await Task.Run(
-                () => BuildGraph(request.Source, request.Root, request.Namespaces, request.HideNoise),
+                () => BuildGraph(request.Source, request.Root, request.Namespaces, request.HideNoise, request.IsPreview, request.Selector),
                 cancellationToken).ConfigureAwait(true);
 
             if (_buildCoordinator.IsCurrent(version) && !cancellationToken.IsCancellationRequested)
@@ -1040,25 +1225,47 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         {
             ReportError(exception);
         }
+        finally
+        {
+            _fullBuildRunning = false;
+            if (_resourceRebuildPending && !_disposed)
+            {
+                _resourceRebuildPending = false;
+                Run();
+            }
+        }
     }
 
     private sealed record RebuildRequest(
         IReadOnlyList<IKubernetesObject<V1ObjectMeta>> Source,
         IKubernetesObject<V1ObjectMeta>? Root,
         IReadOnlySet<string> Namespaces,
-        bool HideNoise);
+        bool HideNoise,
+        bool IsPreview,
+        ResourceAnnotationSelector? Selector);
 
     private ResourceRelationshipGraph BuildGraph(
         IReadOnlyList<IKubernetesObject<V1ObjectMeta>> source,
         IKubernetesObject<V1ObjectMeta>? root,
         IReadOnlySet<string> namespaces,
-        bool hideNoise)
+        bool hideNoise,
+        bool isPreview,
+        ResourceAnnotationSelector? selector)
     {
-        var buildNamespaces = root == null
+        if (isPreview)
+        {
+            return _resourceRelationshipBuilder.Build(source, new HashSet<string>(StringComparer.Ordinal), hideNoise);
+        }
+
+        var buildNamespaces = root == null && selector is null
             ? namespaces
             : new HashSet<string>(StringComparer.Ordinal);
         var graph = _resourceRelationshipBuilder.Build(source, buildNamespaces, hideNoise);
-        if (root != null)
+        if (selector is not null)
+        {
+            graph = ResourceGraphProjection.ToSelector(graph, selector);
+        }
+        else if (root != null)
         {
             graph = ResourceGraphProjection.ToRootResource(graph, root);
         }

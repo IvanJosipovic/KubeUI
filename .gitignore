@@ -20,7 +20,7 @@ mono_crash.*
 [Dd]ebug/
 [Dd]ebugPublic/
 [Rr]elease/
-[Rr]eleases/
+/[Rr]eleases/
 x64/
 x86/
 [Ww][Ii][Nn]32/
@@ -409,3 +409,19 @@ packed
 
 # Local debugger MCP configuration
 .debugmcp.json
+
+# APM dependencies
+apm_modules/
+
+.claude/
+
+.github/lsp.json
+.github/mcp.json
+.agents/
+.opencode/
+.cursor/
+.codex
+.github/agents
+.gemini/
+.mcp.json
+opencode.json
