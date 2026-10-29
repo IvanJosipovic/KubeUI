@@ -160,8 +160,11 @@ public static class FactoryExtensions
 
         var insertIndex = rightDock.VisibleDockables?.Count ?? 0;
         factory.InsertDockable(rightDock, vm, insertIndex);
-        factory.SetActiveDockable(vm);
-        factory.SetFocusedDockable(rightDock, vm);
+        if (previewPinned || pinnedDoc is null)
+        {
+            factory.SetActiveDockable(vm);
+            factory.SetFocusedDockable(rightDock, vm);
+        }
 
         if (pinnedDoc != null)
         {

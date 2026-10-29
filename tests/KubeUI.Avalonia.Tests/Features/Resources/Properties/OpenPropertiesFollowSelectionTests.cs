@@ -200,6 +200,63 @@ public sealed class OpenPropertiesFollowSelectionTests
         properties.Object.ShouldBeSameAs(sameNameInSecond);
     }
 
+    [AvaloniaFact]
+    public async Task restoring_unchanged_selection_updates_properties()
+    {
+        var (_, _, rightDock) = CreateLayout();
+        using var cluster = await Application.Current.CreateClusterAsync();
+        using var first = await CreatePodListAsync(cluster, Pod("api"), Pod("worker"));
+        using var second = await CreatePodListAsync(cluster, Pod("api"), Pod("worker"));
+        var api = SelectByName(first, "api");
+        first.CaptureSelectionState();
+        first.ResourceConfig.View(new[] { api });
+        var properties = rightDock.VisibleDockables!.OfType<ResourcePropertiesViewModel<V1Pod>>().Single();
+        var worker = SelectByName(second, "worker");
+        properties.Object.ShouldBeSameAs(worker);
+
+        first.RestoreSelectionState();
+
+        properties.Object.ShouldBeSameAs(api);
+    }
+
+    [AvaloniaFact]
+    public async Task replacing_auto_hidden_properties_preserves_focus()
+    {
+        var (factory, root, rightDock) = CreateLayout();
+        using var cluster = await Application.Current.CreateClusterAsync();
+        using var pods = await CreatePodListAsync(cluster, Pod("api"));
+        pods.ResourceConfig.View(new[] { SelectByName(pods, "api") });
+        var properties = rightDock.VisibleDockables!.OfType<ResourcePropertiesViewModel<V1Pod>>().Single();
+        factory.PinDockable(properties);
+        var documents = factory.GetDockable<IDocumentDock>("Documents")!;
+        factory.InsertDockable(documents, pods, 0);
+        factory.SetFocusedDockable(documents, pods);
+        using var deployments = Application.Current.GetRequiredTestService<ResourceListViewModel<V1Deployment>>();
+        deployments.Initialize(cluster);
+        deployments.Objects.AddOrUpdate(new V1Deployment { ApiVersion = V1Deployment.KubeApiVersion, Kind = V1Deployment.KubeKind, Metadata = new V1ObjectMeta { Name = "web", NamespaceProperty = "team-a" } });
+        await WaitForAsync(() => deployments.ItemCount == 1);
+
+        deployments.SelectionModel.Select(0);
+
+        root.FocusedDockable.ShouldBeSameAs(pods);
+    }
+
+    [AvaloniaFact]
+    public async Task in_flight_callback_from_previous_cluster_is_ignored()
+    {
+        using var first = await Application.Current.CreateClusterAsync();
+        using var second = await Application.Current.CreateClusterAsync();
+        using var properties = Application.Current.GetRequiredTestService<ResourcePropertiesViewModel<V1Pod>>();
+        properties.Initialize(first, Pod("api"));
+        var current = Pod("api");
+        properties.ShowResource(second, current);
+
+        properties.OnClusterChange(first, Pod("api"));
+        Dispatcher.UIThread.RunJobs();
+
+        properties.Object.ShouldBeSameAs(current);
+    }
+
     private static (IFactory Factory, IRootDock Root, IToolDock RightDock) CreateLayout()
     {
         var factory = Application.Current.GetTestServices().GetRequiredService<IFactory>();

@@ -95,7 +95,10 @@ public partial class ResourceListViewModel<[DynamicallyAccessedMembers(Dynamical
 
         if (selection.SelectedIndexes.Count == desiredIndexes.Count &&
             selection.SelectedIndexes.SequenceEqual(desiredIndexes))
+        {
+            ResourceConfig?.ShowInOpenProperties(SelectedItems?.ToArray());
             return;
+        }
 
         using (selection.BatchUpdate())
         {

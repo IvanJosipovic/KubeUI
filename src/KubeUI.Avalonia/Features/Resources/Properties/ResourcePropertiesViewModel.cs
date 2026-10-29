@@ -17,6 +17,7 @@ public sealed partial class ResourcePropertiesViewModel<T> : ViewModelBase, IVie
     public GroupApiVersionKind Kind { get; private set; }
 
     private T? _object;
+    private Action<WatchEventType, GroupApiVersionKind, IKubernetesObject<V1ObjectMeta>>? _changeHandler;
 
     public T? Object
     {
@@ -60,9 +61,11 @@ public sealed partial class ResourcePropertiesViewModel<T> : ViewModelBase, IVie
 
         if (!ReferenceEquals(Cluster, cluster))
         {
-            Cluster?.Runtime.OnChange -= Cluster_OnChange;
+            if (Cluster is not null && _changeHandler is not null)
+                Cluster.Runtime.OnChange -= _changeHandler;
             Cluster = cluster;
-            Cluster.Runtime.OnChange += Cluster_OnChange;
+            _changeHandler = (eventType, kind, changed) => OnClusterChange(cluster, changed);
+            cluster.Runtime.OnChange += _changeHandler;
         }
 
         Kind = resource.GetResourceKind(cluster.Runtime.ModelCatalog);
@@ -85,8 +88,16 @@ public sealed partial class ResourcePropertiesViewModel<T> : ViewModelBase, IVie
 
     public void Cluster_OnChange(WatchEventType eventType, GroupApiVersionKind groupApiVersionKind, IKubernetesObject<V1ObjectMeta> resource)
     {
+        _ = eventType;
+        _ = groupApiVersionKind;
         var cluster = Cluster;
-        if (!IsShown(resource))
+        if (cluster is not null)
+            OnClusterChange(cluster, resource);
+    }
+
+    internal void OnClusterChange(ClusterWorkspace cluster, IKubernetesObject<V1ObjectMeta> resource)
+    {
+        if (!ReferenceEquals(Cluster, cluster) || !IsShown(resource))
         {
             return;
         }
@@ -112,7 +123,9 @@ public sealed partial class ResourcePropertiesViewModel<T> : ViewModelBase, IVie
 
     public void Dispose()
     {
-        Cluster?.Runtime.OnChange -= Cluster_OnChange;
+        if (Cluster is not null && _changeHandler is not null)
+            Cluster.Runtime.OnChange -= _changeHandler;
+        _changeHandler = null;
         Cluster = null;
     }
 }
