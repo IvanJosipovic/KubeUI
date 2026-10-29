@@ -1,9 +1,10 @@
+using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Features.Resources.Properties.Controls;
 
 namespace KubeUI.Avalonia.Features.Cilium.Hubble;
 
 /// <summary>Displays Hubble details for an aggregated service-map node.</summary>
-public sealed class ServiceMapNodePropertiesView : ViewBase<ServiceMapNodePropertiesViewModel>
+public sealed class ServiceMapNodePropertiesView : KubeUIView<ServiceMapNodePropertiesViewModel>
 {
     protected override object Build(ServiceMapNodePropertiesViewModel viewModel)
     {

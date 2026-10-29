@@ -2,6 +2,7 @@
 
 - Helm integrations live under `Features/Helm/`; Kubernetes-layer contracts and Helm client operations live in `KubeUI.Kubernetes/Helm/`.
 - Docked Helm views inherit `KubeUIView<TViewModel>` so generated `ViewLocator` discovery can create them.
+- The Helm navigation section is a preview feature gated by `FeatureFlagKeys.Helm` (`kubeui.helm`), default off. Capture the flag when the section provider is created; enabling or disabling it requires an application restart.
 - Use `Helm.NET` for Helm actions; never launch the Helm executable.
 - Run synchronous native calls off the UI thread and serialize native Helm calls because the shim and default repository configuration are process-wide.
 - Helm navigation owns the `Helm` section with `Repositories`, `Charts`, and `Releases` documents placed after custom resources via `NavigationSections.AfterCustomResourcesOrder`; Helm data is not a Kubernetes `ResourceConfig`. The section row shows the official CNCF Helm icon via `ThemedSvgImage`: color variant `Assets/helm/helm-icon-color.svg` (`HelmNavigationSectionProvider.IconAssetPath`) in the light theme and white variant `Assets/helm/helm-icon-white.svg` (`IconDarkAssetPath`) in the dark theme; see `Assets/helm/README.md` for licensing and do not recolor or crop them.

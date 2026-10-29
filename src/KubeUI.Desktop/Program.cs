@@ -15,6 +15,7 @@ using KubeUI.AI.Diagnostics;
 using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
 using KubeUI.Avalonia.Infrastructure.Platform;
+using KubeUI.Avalonia.Options;
 using KubeUI.Avalonia.Services.Settings;
 using KubeUI.Kubernetes;
 using KubeUI.Kubernetes.Serialization;
@@ -153,9 +154,10 @@ internal static class Program
     internal static HostApplicationBuilder CreateHostBuilder(
         string[] args,
         bool includeOptionalServices = true,
-        Action<IServiceCollection>? configureServices = null)
+        Action<IServiceCollection>? configureServices = null,
+        SettingsPersistenceData? settingsOverride = null)
     {
-        return CreateDesktopHostBuilder(args, includeOptionalServices, configureServices, null, null);
+        return CreateDesktopHostBuilder(args, includeOptionalServices, configureServices, null, null, settingsOverride);
     }
 
     private static HostApplicationBuilder CreateDesktopHostBuilder(
@@ -163,18 +165,20 @@ internal static class Program
         bool includeOptionalServices,
         Action<IServiceCollection>? configureServices,
         int? mcpPortOverride,
-        bool? mcpEnabledOverride)
+        bool? mcpEnabledOverride,
+        SettingsPersistenceData? settingsOverride = null)
     {
         var builder = Host.CreateEmptyApplicationBuilder(new HostApplicationBuilderSettings
         {
             ApplicationName = "KubeUI",
             Args = args
         });
-        KubernetesYaml.UseStaticContext = true;
         builder.Logging.SetMinimumLevel(LogLevel.Debug);
 
-        var settings = SettingsPersistenceLoader.Load();
-        builder.Services.AddKubeUIAppServices();
+        var settings = settingsOverride ?? SettingsPersistenceLoader.Load();
+        var features = settings.Settings.PreviewFeatures ?? new FeatureSettings();
+
+        builder.Services.AddKubeUIAppServices(features);
 
         if (mcpEnabledOverride ?? settings.Settings.McpServerEnabled)
             builder.Services.AddKubeUIMcpServer(mcpPortOverride ?? settings.Settings.McpServerPort);

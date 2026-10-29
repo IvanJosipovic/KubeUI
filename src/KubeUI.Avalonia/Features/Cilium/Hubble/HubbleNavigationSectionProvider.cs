@@ -1,6 +1,7 @@
 using KubeUI.Avalonia.Features.Cilium.Hubble;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Resources;
+using KubeUI.Avalonia.Services.FeatureFlags;
 using KubeUI.Avalonia.Shell.Navigation;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -15,8 +16,11 @@ internal sealed class HubbleNavigationSectionProvider : INavigationSectionProvid
     public const string HubbleIconAssetPath = "/Assets/cilium/hubble-light.svg";
     public const string HubbleIconDarkAssetPath = "/Assets/cilium/hubble-dark.svg";
 
-    public HubbleNavigationSectionProvider()
+    private readonly bool _enabled;
+
+    public HubbleNavigationSectionProvider(IFeatureClient featureClient)
     {
+        _enabled = featureClient.GetBooleanValue(FeatureFlagKeys.Hubble, false);
         Section = new NavigationSection(
             NavigationSections.CiliumId,
             Assets.Resources.NavigationView_Cilium!,
@@ -76,6 +80,6 @@ internal sealed class HubbleNavigationSectionProvider : INavigationSectionProvid
             NavigationTreeEditor.ConstructCustomResourceGroups(group));
     }
 
-    private static bool IsAvailable(ClusterWorkspace cluster)
-        => cluster.Runtime.Connected;
+    private bool IsAvailable(ClusterWorkspace cluster)
+        => _enabled && cluster.Runtime.Connected;
 }

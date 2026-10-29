@@ -1,3 +1,4 @@
+using KubeUI.Avalonia.Infrastructure.Presentation;
 using System.Collections;
 using System.Windows.Input;
 using Avalonia.Controls;
@@ -19,7 +20,7 @@ using UrsaControls = Ursa.Controls;
 
 namespace KubeUI.Avalonia.Features.Cilium.Hubble;
 
-public sealed partial class FlowListView : ViewBase<FlowListViewModel>
+public sealed partial class FlowListView : KubeUIView<FlowListViewModel>
 {
     private DynamicTableView _table = null!;
     private DynamicTableView? _restoredTable;

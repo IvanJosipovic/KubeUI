@@ -46,8 +46,9 @@ public sealed class GatewayApiConfigTests
     }
 
     [AvaloniaFact]
-    public void kind_configs_create_their_own_parseable_starter_templates()
+    public async Task kind_configs_create_their_own_parseable_starter_templates()
     {
+        using var workspace = await Application.Current.CreateClusterAsync(connect: false);
         (string Group, string Version, string Kind, string Property)[] expected =
         [
             (StandardGroup, "v1", "BackendTLSPolicy", "targetRefs"),
@@ -78,6 +79,7 @@ public sealed class GatewayApiConfigTests
             config.Navigation.Groups.Select(static navigationGroup => navigationGroup.Id)
                 .ShouldBe(group == ExperimentalGroup ? ["gateway", "experimental"] : ["gateway"]);
 
+            config.Initialize(workspace);
             var resource = config.CreateNewResource();
             resource.ApiVersion.ShouldBe($"{group}/{version}");
             resource.Kind.ShouldBe(kind);

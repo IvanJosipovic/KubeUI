@@ -372,6 +372,82 @@ public sealed class ServiceMapViewTests
     }
 
     [AvaloniaFact]
+    public async Task Repeated_filter_and_namespace_topology_changes_complete_without_stale_vertices()
+    {
+        var detailed = CreateGroupedGraph();
+        var aggregated = new ServiceMapGraph();
+        aggregated.Nodes.Add(new ServiceMapNode { Id = "namespace/a", Name = "team-a", Namespace = "team-a", WorkloadType = "namespace" });
+        aggregated.Nodes.Add(new ServiceMapNode { Id = "namespace/b", Name = "team-b", Namespace = "team-b", WorkloadType = "namespace" });
+        aggregated.Edges.Add(new ServiceMapEdge { SourceId = "namespace/a", TargetId = "namespace/a", FlowCount = 1 });
+        aggregated.Edges.Add(new ServiceMapEdge { SourceId = "namespace/a", TargetId = "namespace/b", FlowCount = 1 });
+        var empty = new ServiceMapGraph();
+
+        using var graphControl = new ServiceMapGraphControl { Graph = detailed };
+        using var window = Application.Current.CreateTestWindow(1200, 800, graphControl);
+        window.Show();
+        await TestWait.UntilAsync(() => graphControl.HasGeneratedGraph && graphControl.LayoutTask?.IsCompleted == true,
+            timeoutMs: 10_000, cancellationToken: TestContext.Current.CancellationToken,
+            beforePoll: () => Dispatcher.UIThread.RunJobs());
+
+        for (var iteration = 0; iteration < 3; iteration++)
+        {
+            foreach (var snapshot in new[] { aggregated, empty, detailed })
+            {
+                graphControl.Graph = snapshot;
+                try
+                {
+                    await TestWait.UntilAsync(
+                        () => graphControl.GraphXVertexCount == snapshot.Nodes.Count
+                            && graphControl.LayoutTask?.IsCompleted == true,
+                        timeoutMs: 10_000, cancellationToken: TestContext.Current.CancellationToken,
+                        beforePoll: () => Dispatcher.UIThread.RunJobs());
+                }
+                catch (TimeoutException ex)
+                {
+                    throw new InvalidOperationException($"Iteration {iteration}: expected {snapshot.Nodes.Count} vertices, found {graphControl.GraphXVertexCount}; layout {graphControl.LayoutTask?.Status}.", ex);
+                }
+                await graphControl.LayoutTask!.WaitAsync(TestContext.Current.CancellationToken);
+                var compound = graphControl.Area.LogicCore!.Graph!;
+                foreach (var vertex in compound.Vertices.Where(static vertex => !vertex.IsGroup))
+                {
+                    var parent = compound.GetParent(vertex);
+                    parent.ShouldNotBeNull();
+                    compound.ContainsVertex(parent).ShouldBeTrue();
+                    compound.GetChildrenVertices(parent).ShouldContain(vertex);
+                }
+                graphControl.Area.VertexList.Count.ShouldBe(snapshot.Nodes.Count);
+            }
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task Layout_selection_changes_positions_for_cross_namespace_traffic()
+    {
+        var graph = new ServiceMapGraph();
+        graph.Nodes.Add(new ServiceMapNode { Id = "a/client", Name = "client", Namespace = "a" });
+        graph.Nodes.Add(new ServiceMapNode { Id = "b/api", Name = "api", Namespace = "b" });
+        graph.Nodes.Add(new ServiceMapNode { Id = "c/server", Name = "server", Namespace = "c" });
+        graph.Edges.Add(new ServiceMapEdge { SourceId = "a/client", TargetId = "b/api", FlowCount = 1 });
+        graph.Edges.Add(new ServiceMapEdge { SourceId = "b/api", TargetId = "c/server", FlowCount = 1 });
+
+        var graphControl = new ServiceMapGraphControl { Graph = graph };
+        using var window = Application.Current.CreateTestWindow(1200, 800, graphControl);
+        window.Show();
+        await TestWait.UntilAsync(
+            () => graphControl.HasGeneratedGraph && graphControl.LayoutTask?.IsCompleted == true,
+            timeoutMs: 10_000,
+            cancellationToken: TestContext.Current.CancellationToken,
+            beforePoll: () => Dispatcher.UIThread.RunJobs());
+
+        graphControl.LayoutAlgorithm = LayoutAlgorithmTypeEnum.Circular;
+        await graphControl.LayoutTask!.WaitAsync(TestContext.Current.CancellationToken);
+        var circularPositions = graphControl.Area.GetVertexPositions();
+        graphControl.LayoutAlgorithm = LayoutAlgorithmTypeEnum.SimpleRandom;
+        await graphControl.LayoutTask!.WaitAsync(TestContext.Current.CancellationToken);
+        graphControl.Area.GetVertexPositions().Any(pair => pair.Value != circularPositions[pair.Key]).ShouldBeTrue();
+    }
+
+    [AvaloniaFact]
     public async Task GraphX_layout_and_edge_routing_options_can_be_selected()
     {
         var graph = new ServiceMapGraph();

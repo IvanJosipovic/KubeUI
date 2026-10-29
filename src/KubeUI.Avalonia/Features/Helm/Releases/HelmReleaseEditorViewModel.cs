@@ -1,3 +1,4 @@
+using KubeUI.Kubernetes.Serialization;
 using System.Collections;
 using Dock.Model.Core;
 using FluentAvalonia.UI.Controls;
@@ -15,6 +16,7 @@ namespace KubeUI.Avalonia.Features.Helm.Releases;
 
 public sealed partial class HelmReleaseEditorViewModel : ViewModelBase, INotifyDataErrorInfo
 {
+    private readonly IKubernetesYamlSerializer _yamlSerializer;
     private readonly IHelmService _helmService;
     private readonly IFactory _factory;
     private readonly IDialogService _dialogService;
@@ -139,12 +141,14 @@ public sealed partial class HelmReleaseEditorViewModel : ViewModelBase, INotifyD
 
     public HelmReleaseEditorViewModel(
         IHelmService helmService,
+        IKubernetesYamlSerializer yamlSerializer,
         IFactory factory,
         IHelmListNotifier listNotifier,
         IHelmReleasePreviewService previewService,
         IDialogService dialogService)
     {
         _helmService = helmService;
+        _yamlSerializer = yamlSerializer;
         _factory = factory;
         _listNotifier = listNotifier;
         _previewService = previewService;
@@ -220,7 +224,7 @@ public sealed partial class HelmReleaseEditorViewModel : ViewModelBase, INotifyD
             {
                 var connection = _connection with { Namespace = _release.Namespace };
                 var values = await _helmService.GetValuesAsync(connection, _release.Name, cancellationToken);
-                ValuesYaml = HelmValuesYaml.Serialize(values);
+                ValuesYaml = HelmValuesYaml.Serialize(values, _yamlSerializer);
                 _valuesLoaded = true;
                 metadata = string.IsNullOrWhiteSpace(_release.ChartName)
                     ? await _helmService.StatusAsync(connection, _release.Name, cancellationToken)
@@ -540,7 +544,7 @@ public sealed partial class HelmReleaseEditorViewModel : ViewModelBase, INotifyD
     {
         try
         {
-            values = HelmValuesYaml.Parse(ValuesYaml);
+            values = HelmValuesYaml.Parse(ValuesYaml, _yamlSerializer);
             error = string.Empty;
             return true;
         }

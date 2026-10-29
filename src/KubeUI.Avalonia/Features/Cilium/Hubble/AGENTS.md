@@ -7,6 +7,8 @@
 - Resolve Hubble connections through `IHubbleConnectionFactory`; do not construct transport from a view or view model.
 - Treat each Hubble document as the owner of its connection and subscriptions. Cancel initialization and dispose subscriptions and connections when the document closes.
 - Keep Hubble documents under the Cilium navigation section, nested in the Hubble group.
+- Resolve Hubble document and node-property views through generated view discovery; test each view with JSON and YAML reflection both enabled and disabled.
+- Hubble navigation is a preview feature gated by `FeatureFlagKeys.Hubble` (`kubeui.hubble`), default off. Capture the flag when the section provider is created; enabling or disabling it requires an application restart.
 - Place CRDs whose API group is exactly `cilium.io` or ends in `.cilium.io` in the Cilium section, preserving their group hierarchy; do not match lookalike suffixes without the dot boundary.
 
 ## Flow and graph behavior

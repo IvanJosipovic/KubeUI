@@ -11,6 +11,8 @@ using static k8s.KubernetesJson;
 namespace KubeUI.Kubernetes.Serialization;
 
 [JsonSerializable(typeof(Dictionary<object, object>))]
+[JsonSerializable(typeof(Dictionary<string, object>))]
+[JsonSerializable(typeof(List<object>))]
 [JsonSerializable(typeof(ICollection))]
 [JsonSerializable(typeof(ICollection<KeyValuePair<object, object>>))]
 [JsonSerializable(typeof(IDictionary))]

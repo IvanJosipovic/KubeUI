@@ -1,3 +1,4 @@
+using KubeUI.Kubernetes.Serialization;
 using Avalonia.Headless.XUnit;
 using Dock.Model.Controls;
 using Dock.Model.Core;
@@ -14,8 +15,12 @@ using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Features.Helm;
 
-public sealed class LiveHelmVisualizationTests
+public sealed class LiveHelmVisualizationTests : IDisposable
 {
+    private readonly KubernetesYamlSerializer _yamlSerializer = new(allowReflection: true);
+
+    public void Dispose() => _yamlSerializer.Dispose();
+
     [LiveClusterFact]
     public async Task Alpha10_lists_releases_across_namespaces_and_reads_release_metadata()
     {
@@ -78,7 +83,7 @@ public sealed class LiveHelmVisualizationTests
         var documents = new DocumentDock { VisibleDockables = [] };
         factory.Setup(item => item.GetDockable<IDocumentDock>("Documents")).Returns(documents);
         factory.Setup(item => item.InsertDockable(documents, It.IsAny<IDockable>(), It.IsAny<int>()));
-        var service = new HelmReleasePreviewService(Mock.Of<IHelmService>(), () => viewModel, factory.Object);
+        var service = new HelmReleasePreviewService(Mock.Of<IHelmService>(), _yamlSerializer, () => viewModel, factory.Object);
         service.VisualizeRelease(cluster, "authentik", "authentik");
         using var window = Application.Current.CreateTestWindow(content: new VisualizationView { DataContext = viewModel });
         try

@@ -10,6 +10,10 @@
 - Set `StartDisconnected` only for connection-lifecycle behavior; use a connected `TestCluster` for resource, informer, authorization, and navigation tests.
 
 ## Coverage Focus
+- Tests that parse custom-resource starter templates must initialize the config with a test-owned workspace first, so parsing uses that workspace's serializer policy.
+- Every preview flag needs enabled and disabled behavior coverage through Settings. Exercise Helm/Hubble navigation with the real settings-backed feature provider, independent toggle combinations, and restart-only changes; serialization cases must exercise actual JSON/YAML operations with both reflection policies.
+- Serialization preview flags must cover actual JSON and YAML serialization and deserialization using an unregistered Kubernetes-like model. Test both reflection modes and verify generated Kubernetes models still round-trip. Start KubeUI with Settings overrides and use the configured serializers; do not construct serializer options in tests. Verify simultaneously alive hosts keep independent modes. Do not use environment variables or child test processes.
+- The headless test app enables the Helm and Hubble preview flags by default so existing navigation tests keep their sections; cover disabled and default-off behavior with explicit feature clients.
 - Prefer behavior tests for view models, resource configs, and shared UI behaviors that are easy to drift.
 - Preserve tests when migrating them. If a test asserted an implementation detail through a wrapper, replace it with an observable behavior assertion or add the missing transport scenario; do not silently delete coverage.
 - Kubernetes-client parity is exercised by the shared fake/Kind matrix. Avalonia tests that exercise HTTP-backed authorization, informer, or limited-access behavior use `AvaloniaTheory` with `[KubernetesBackendData]`; deterministic UI-only and fault-injection tests continue to use the fake transport. Local runs use fake only and CI enables Kind with `KUBEUI_RUN_KIND_TESTS=1`. Matrix rows are displayed with `- fake` or `- kind`.

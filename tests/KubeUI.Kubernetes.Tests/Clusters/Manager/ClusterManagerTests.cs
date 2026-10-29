@@ -1,3 +1,4 @@
+using KubeUI.Kubernetes.Serialization;
 using System.Reactive.Concurrency;
 using k8s;
 using k8s.KubeConfigModels;
@@ -25,7 +26,8 @@ public class ClusterManagerTests
             services,
             services.GetRequiredService<IClusterSettingsStore>(),
             dispatcher,
-            services.GetRequiredService<IKubeConfigPathProvider>());
+            services.GetRequiredService<IKubeConfigPathProvider>(),
+            services.GetRequiredService<IKubernetesYamlSerializer>());
 
         await manager.LoadClustersAsync(TestContext.Current.CancellationToken);
 
@@ -49,7 +51,8 @@ public class ClusterManagerTests
             services,
             services.GetRequiredService<IClusterSettingsStore>(),
             dispatcher,
-            services.GetRequiredService<IKubeConfigPathProvider>());
+            services.GetRequiredService<IKubeConfigPathProvider>(),
+            services.GetRequiredService<IKubernetesYamlSerializer>());
 
         var config = new K8SConfiguration
         {
@@ -94,7 +97,8 @@ public class ClusterManagerTests
             services,
             services.GetRequiredService<IClusterSettingsStore>(),
             dispatcher,
-            services.GetRequiredService<IKubeConfigPathProvider>());
+            services.GetRequiredService<IKubeConfigPathProvider>(),
+            services.GetRequiredService<IKubernetesYamlSerializer>());
 
         await manager.LoadClustersAsync(TestContext.Current.CancellationToken);
         dispatcher.Drain();
@@ -144,7 +148,8 @@ public class ClusterManagerTests
             services,
             services.GetRequiredService<IClusterSettingsStore>(),
             dispatcher,
-            services.GetRequiredService<IKubeConfigPathProvider>());
+            services.GetRequiredService<IKubeConfigPathProvider>(),
+            services.GetRequiredService<IKubernetesYamlSerializer>());
 
         await manager.LoadClustersAsync(TestContext.Current.CancellationToken);
         dispatcher.Drain();

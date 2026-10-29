@@ -293,7 +293,7 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
             InvalidateGroupedDiscoveryETag();
         }
 
-        var json = ParseObject(KubernetesJson.Serialize(resource));
+        var json = ParseObject(JsonSerializer.Serialize(resource, s_jsonSerializerOptions));
         EnsureMetadata(json, resource.Metadata);
         _resources[ResourceKey(ResourcePath(
             definition.Api,
@@ -321,7 +321,8 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
 
     public void AddYaml(string yaml, IDictionary<string, Type> typeMap)
     {
-        foreach (var resource in KubeUI.Kubernetes.Serialization.KubernetesYaml.LoadAllFromString(yaml, typeMap))
+        using var serializer = new KubernetesYamlSerializer(allowReflection: false);
+        foreach (var resource in serializer.LoadAllFromString(yaml, key => typeMap[key]))
         {
             var add = GetType()
                 .GetMethods()

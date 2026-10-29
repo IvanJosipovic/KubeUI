@@ -3,6 +3,7 @@ using KubeUI.Avalonia.Features.Helm.Charts;
 using KubeUI.Avalonia.Features.Helm.Releases;
 using KubeUI.Avalonia.Features.Helm.Repositories;
 using KubeUI.Avalonia.Resources;
+using KubeUI.Avalonia.Services.FeatureFlags;
 using KubeUI.Avalonia.Shell.Navigation;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -20,8 +21,11 @@ internal sealed class HelmNavigationSectionProvider : INavigationSectionProvider
     /// <summary>Asset path of the official CNCF Helm white icon, used in the dark theme.</summary>
     public const string IconDarkAssetPath = "/Assets/helm/helm-icon-white.svg";
 
-    public HelmNavigationSectionProvider()
+    private readonly bool _enabled;
+
+    public HelmNavigationSectionProvider(IFeatureClient featureClient)
     {
+        _enabled = featureClient.GetBooleanValue(FeatureFlagKeys.Helm, false);
         Section = new NavigationSection(
             "helm",
             Assets.Resources.NavigationView_Helm!,
@@ -77,5 +81,5 @@ internal sealed class HelmNavigationSectionProvider : INavigationSectionProvider
 
     public NavigationPlacement? Place(IResourceConfig resource) => null;
 
-    private static bool IsAvailable(ClusterWorkspace cluster) => cluster.Runtime.Connected;
+    private bool IsAvailable(ClusterWorkspace cluster) => _enabled && cluster.Runtime.Connected;
 }

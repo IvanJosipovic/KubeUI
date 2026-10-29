@@ -6,17 +6,17 @@ namespace KubeUI.Avalonia.Features.Helm;
 
 internal static class HelmValuesYaml
 {
-    public static string Serialize(JsonElement values)
+    public static string Serialize(JsonElement values, IKubernetesYamlSerializer serializer)
     {
         if (values.ValueKind != JsonValueKind.Object)
         {
             throw new JsonException("Helm release values must be a JSON object.");
         }
 
-        return KubernetesYaml.Serialize(values);
+        return serializer.Serialize(values);
     }
 
-    public static IReadOnlyDictionary<string, object?> Parse(string yaml)
+    public static IReadOnlyDictionary<string, object?> Parse(string yaml, IKubernetesYamlSerializer serializer)
     {
         ArgumentNullException.ThrowIfNull(yaml);
         if (string.IsNullOrWhiteSpace(yaml))
@@ -33,7 +33,7 @@ internal static class HelmValuesYaml
             stream.Load(reader);
         }
 
-        var values = KubernetesYaml.Deserialize<Dictionary<string, object?>>(yaml);
+        var values = serializer.Deserialize<Dictionary<string, object?>>(yaml);
         return values ?? throw new InvalidOperationException(Assets.Resources.HelmReleaseEditorView_ValuesMustBeObject);
     }
 }

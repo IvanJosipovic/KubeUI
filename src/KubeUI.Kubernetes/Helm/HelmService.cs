@@ -1,3 +1,4 @@
+using KubeUI.Kubernetes.Serialization;
 using System.Text.Json;
 using System.Threading;
 using Helm.NET;
@@ -11,6 +12,7 @@ namespace KubeUI.Kubernetes;
 public sealed class HelmService : IHelmService, IDisposable
 {
     private readonly IHelmClientFactory _clientFactory;
+    private readonly IKubernetesJsonSerializer _jsonSerializer;
     private readonly ReaderWriterLockSlim _nativeGate = new(LockRecursionPolicy.NoRecursion);
     private readonly CancellationTokenSource _disposeCancellation = new();
     private int _disposed;
@@ -22,10 +24,12 @@ public sealed class HelmService : IHelmService, IDisposable
     /// Initializes a Helm service.
     /// </summary>
     /// <param name="clientFactory">Factory creating the Helm client for each operation.</param>
-    public HelmService(IHelmClientFactory clientFactory)
+    /// <param name="jsonSerializer">Application serializer for Helm values.</param>
+    public HelmService(IHelmClientFactory clientFactory, IKubernetesJsonSerializer jsonSerializer)
     {
         ArgumentNullException.ThrowIfNull(clientFactory);
         _clientFactory = clientFactory;
+        _jsonSerializer = jsonSerializer;
     }
 
     /// <inheritdoc />
@@ -277,14 +281,14 @@ public sealed class HelmService : IHelmService, IDisposable
             isWriteOperation: true);
     }
 
-    private static JsonElement? ToJsonElement(IReadOnlyDictionary<string, object?>? values)
+    private JsonElement? ToJsonElement(IReadOnlyDictionary<string, object?>? values)
     {
         if (values is null)
         {
             return null;
         }
 
-        using var document = JsonDocument.Parse(k8s.KubernetesJson.Serialize(values));
+        using var document = JsonDocument.Parse(_jsonSerializer.Serialize(values));
         return document.RootElement.Clone();
     }
 

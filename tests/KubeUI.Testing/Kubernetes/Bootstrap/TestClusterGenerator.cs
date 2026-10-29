@@ -1,3 +1,4 @@
+using KubeUI.Kubernetes.Serialization;
 using System.Reflection;
 using k8s;
 using k8s.KubeConfigModels;
@@ -454,7 +455,7 @@ public sealed class TestClusterGenerator
         return handlers;
     }
 
-    private static async Task ApplyInitialYamlAsync(
+    private async Task ApplyInitialYamlAsync(
         IKubernetes client,
         string? yaml,
         IDictionary<string, Type> typeMap,
@@ -467,7 +468,7 @@ public sealed class TestClusterGenerator
 
         await ApplyResourcesAsync(
             client,
-            KubeUI.Kubernetes.Serialization.KubernetesYaml.LoadAllFromString(yaml, typeMap).Cast<IKubernetesObject>(),
+            _services.GetRequiredService<IKubernetesYamlSerializer>().LoadAllFromString(yaml, key => typeMap[key]).Cast<IKubernetesObject>(),
             cancellationToken).ConfigureAwait(false);
     }
 

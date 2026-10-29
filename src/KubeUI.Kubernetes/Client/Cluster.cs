@@ -10,6 +10,7 @@ using k8s.KubeConfigModels;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
 using KubeUI.Kubernetes.Client;
+using KubeUI.Kubernetes.Serialization;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Http.Resilience;
 using Microsoft.Extensions.Options;
@@ -22,6 +23,9 @@ namespace KubeUI.Kubernetes;
 public sealed partial class Cluster : ObservableObject, IClusterRuntime, IClusterAuthorization, IAsyncDisposable
 {
     public IClusterAuthorization Permissions => this;
+
+    private readonly IKubernetesJsonSerializer _jsonSerializer;
+    private readonly IKubernetesYamlSerializer _yamlSerializer;
 
     private ILoggerFactory _loggerFactory;
 
@@ -102,11 +106,13 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
     /// <param name="serviceProvider">Application service provider.</param>
     /// <param name="dispatcher">Dispatcher used for UI-bound observable updates.</param>
     /// <param name="authorizationOptions">Authorization behavior options.</param>
-    public Cluster(ILogger<Cluster> logger, ILoggerFactory loggerFactory, ClusterModelCatalog modelCatalog, IClusterSettingsStore settings, IServiceProvider serviceProvider, IThreadDispatcher dispatcher, IOptions<ClusterAuthorizationOptions>? authorizationOptions = null)
+    public Cluster(ILogger<Cluster> logger, ILoggerFactory loggerFactory, ClusterModelCatalog modelCatalog, IClusterSettingsStore settings, IServiceProvider serviceProvider, IThreadDispatcher dispatcher, IKubernetesJsonSerializer jsonSerializer, IKubernetesYamlSerializer yamlSerializer, IOptions<ClusterAuthorizationOptions>? authorizationOptions = null)
     {
         _loggerFactory = loggerFactory;
         _logger = logger;
         _portForwardSessionFactory = new KubernetesPortForwardSessionFactory(this);
+        _jsonSerializer = jsonSerializer;
+        _yamlSerializer = yamlSerializer;
         ModelCatalog = modelCatalog;
         _openApiSchemaLoader = new(
             ModelCatalog.OpenApiSchemas,
@@ -185,10 +191,12 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
                             InnerHandler = new ResilienceHandler(pipe.Build())
                         };
 
+                        _jsonSerializer.ConfigureClient(config);
                         Client = new k8s.Kubernetes(config, handler);
                     }
                     else
                     {
+                        _jsonSerializer.ConfigureClient(config);
                         Client = KubernetesClientFactory(config);
                     }
 
@@ -806,7 +814,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
         }
     }
 
-    private static List<GenericKubernetesObject> LoadGenericResources(Stream stream)
+    private List<GenericKubernetesObject> LoadGenericResources(Stream stream)
     {
         using var reader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, bufferSize: 1024, leaveOpen: true);
         var parser = new Parser(reader);
@@ -815,7 +823,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
 
         while (parser.Accept<DocumentStart>(out _))
         {
-            resources.Add((GenericKubernetesObject)Serialization.KubernetesYaml.Deserialize(
+            resources.Add((GenericKubernetesObject)_yamlSerializer.Deserialize(
                 parser,
                 typeof(GenericKubernetesObject))!);
         }

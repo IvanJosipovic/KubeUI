@@ -888,6 +888,42 @@
     <value>Allows updates to pre-release versions of KubeUI</value>
     <comment/>
   </data>
+  <data name="SettingsView_FeaturesHeading" xml:space="preserve">
+    <value>Preview Features</value>
+    <comment/>
+  </data>
+  <data name="SettingsView_HelmFeature_Label" xml:space="preserve">
+    <value>Helm Integration (Restart Required)</value>
+    <comment/>
+  </data>
+  <data name="SettingsView_HelmFeature_ToolTip" xml:space="preserve">
+    <value>Enables the Helm integration.</value>
+    <comment/>
+  </data>
+  <data name="SettingsView_HubbleFeature_Label" xml:space="preserve">
+    <value>Hubble Integration (Restart Required)</value>
+    <comment/>
+  </data>
+  <data name="SettingsView_HubbleFeature_ToolTip" xml:space="preserve">
+    <value>Enables the Hubble integration.</value>
+    <comment/>
+  </data>
+  <data name="SettingsView_DisableJsonSerializationReflection_Label" xml:space="preserve">
+    <value>Disable JSON Serialization Reflection (Restart Required)</value>
+    <comment/>
+  </data>
+  <data name="SettingsView_DisableJsonSerializationReflection_ToolTip" xml:space="preserve">
+    <value>Disables reflection fallback for Kubernetes JSON serialization. When enabled, missing generated metadata will fail instead of using reflection. Reflection is enabled by default and requires runtime support.</value>
+    <comment/>
+  </data>
+  <data name="SettingsView_DisableYamlSerializationReflection_Label" xml:space="preserve">
+    <value>Disable YAML Serialization Reflection (Restart Required)</value>
+    <comment/>
+  </data>
+  <data name="SettingsView_DisableYamlSerializationReflection_ToolTip" xml:space="preserve">
+    <value>Disables reflection-based Kubernetes YAML builders and uses generated metadata instead. Reflection is enabled by default. This setting does not change the separate Kubernetes JSON reflection setting.</value>
+    <comment/>
+  </data>
   <data name="SettingsView_McpEnabled_Label" xml:space="preserve">
     <value>Enable Local MCP Server (Restart Required)</value>
     <comment/>

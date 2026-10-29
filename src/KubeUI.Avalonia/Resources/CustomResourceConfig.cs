@@ -198,7 +198,7 @@ public class CustomResourceConfig : ResourceConfig<GenericKubernetesObject>
     protected override GenericKubernetesObject CreateInitialResourceTemplate()
         => string.IsNullOrWhiteSpace(Template)
             ? new GenericKubernetesObject()
-            : KubernetesYaml.Deserialize<GenericKubernetesObject>(Template);
+            : ServiceProvider.GetRequiredService<IKubernetesYamlSerializer>().Deserialize<GenericKubernetesObject>(Template);
 
     private readonly List<IResourceListColumn> _columns = [];
 

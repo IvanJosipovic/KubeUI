@@ -2,6 +2,7 @@ using k8s;
 using k8s.Models;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
+using KubeUI.Kubernetes.Serialization;
 
 namespace KubeUI.Kubernetes.Tests.Configuration;
 
@@ -15,37 +16,64 @@ public sealed class KubeUIKubernetesServiceCollectionExtensionsTests
         services.ConfigureKubeUIKubernetesJsonLogging();
     }
 
-    [Fact]
-    public void generated_json_metadata_covers_every_required_kubernetes_type()
+    [Theory]
+    [InlineData(typeof(V1Status))]
+    [InlineData(typeof(V1DeleteOptions))]
+    [InlineData(typeof(V1Patch))]
+    [InlineData(typeof(GenericKubernetesObject))]
+    [InlineData(typeof(KubernetesObject))]
+    [InlineData(typeof(KubernetesList<GenericKubernetesObject>))]
+    [InlineData(typeof(KubernetesList<V1Pod>))]
+    [InlineData(typeof(KubernetesList<Corev1Event>))]
+    public void generated_json_metadata_covers_protocol_payload_types(Type payloadType)
     {
-        Should.NotThrow(() =>
-            KubeUIKubernetesServiceCollectionExtensions.EnsureResolverCovers(
-            [
-                typeof(V1Pod),
-                typeof(V1Deployment),
-                typeof(V1Service),
-                typeof(V1ConfigMap),
-                typeof(V1Secret),
-                typeof(V1Namespace),
-                typeof(V1Node),
-                typeof(Corev1Event),
-                typeof(V1Status),
-                typeof(V1DeleteOptions),
-                typeof(V1Patch),
-                typeof(GenericKubernetesObject),
-                typeof(KubernetesObject),
-                typeof(KubernetesList<V1Pod>),
-                typeof(KubernetesList<Corev1Event>)
-            ]));
+        using var services = new ServiceCollection()
+            .AddKubeUIKubernetesServices(jsonAllowReflection: false, yamlAllowReflection: false)
+            .BuildServiceProvider();
+        var serializer = services.GetRequiredService<IKubernetesJsonSerializer>();
+        KubernetesClientConfiguration configuration = new();
+        serializer.ConfigureClient(configuration);
+
+        Should.NotThrow(() => configuration.JsonSerializerOptions.GetTypeInfo(payloadType));
     }
 
     [Fact]
-    public void resolver_guard_reports_a_type_without_generated_metadata()
+    public void json_resolver_uses_reflection_fallback_only_when_allowed()
     {
-        var exception = Should.Throw<InvalidOperationException>(() =>
-            KubeUIKubernetesServiceCollectionExtensions.EnsureResolverCovers([typeof(Uri)]));
+        using var services = new ServiceCollection()
+            .AddKubeUIKubernetesServices(jsonAllowReflection: false, yamlAllowReflection: false)
+            .BuildServiceProvider();
+        var serializer = services.GetRequiredService<IKubernetesJsonSerializer>();
+        Should.Throw<NotSupportedException>(() =>
+            serializer.Serialize(new Uri("https://example.com")));
 
-        exception.Message.ShouldContain("Uri");
-        exception.Message.ShouldContain("KubernetesJsonStaticContext");
+        if (System.Text.Json.JsonSerializer.IsReflectionEnabledByDefault)
+        {
+            using var reflectionServices = new ServiceCollection()
+                .AddKubeUIKubernetesServices(jsonAllowReflection: true, yamlAllowReflection: false)
+                .BuildServiceProvider();
+            reflectionServices.GetRequiredService<IKubernetesJsonSerializer>().Serialize(new Uri("https://example.com"))
+                .ShouldBe("\"https://example.com/\"");
+            return;
+        }
+
+        Should.Throw<InvalidOperationException>(() =>
+            new ServiceCollection().AddKubeUIKubernetesServices(jsonAllowReflection: true, yamlAllowReflection: false))
+            .Message.ShouldContain("reflection-based JSON serialization is unavailable");
+    }
+
+    [Fact]
+    public void disabling_json_source_generation_requires_reflection_support()
+    {
+        if (System.Text.Json.JsonSerializer.IsReflectionEnabledByDefault)
+        {
+            Should.NotThrow(() =>
+                KubeUIKubernetesServiceCollectionExtensions.EnsureJsonReflectionIsAvailable(allowReflection: true));
+            return;
+        }
+
+        Should.Throw<InvalidOperationException>(() =>
+            KubeUIKubernetesServiceCollectionExtensions.EnsureJsonReflectionIsAvailable(allowReflection: true))
+            .Message.ShouldContain("reflection-based JSON serialization is unavailable");
     }
 }

@@ -1,4 +1,6 @@
 using KubeUI.Desktop;
+using KubeUI.Avalonia.Options;
+using KubeUI.Avalonia.Services.Settings;
 using KubeUI.Kubernetes.Serialization;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -10,23 +12,6 @@ namespace KubeUI.Avalonia.Tests.Infrastructure;
 
 public sealed class ProgramStartupTests
 {
-    [Fact]
-    public void CreateHostBuilder_enables_static_yaml_metadata()
-    {
-        var previousValue = KubernetesYaml.UseStaticContext;
-        try
-        {
-            KubernetesYaml.UseStaticContext = false;
-            using var host = Program.CreateHostBuilder([], includeOptionalServices: false).Build();
-
-            Assert.True(KubernetesYaml.UseStaticContext);
-        }
-        finally
-        {
-            KubernetesYaml.UseStaticContext = previousValue;
-        }
-    }
-
     [Fact]
     public void StartHostAfterAvaloniaSetup_sets_up_Avalonia_before_host_start()
     {

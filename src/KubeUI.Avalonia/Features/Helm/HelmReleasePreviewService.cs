@@ -14,16 +14,19 @@ namespace KubeUI.Avalonia.Features.Helm;
 /// <summary>Opens live release graphs or isolated Helm template previews without applying resources.</summary>
 public sealed class HelmReleasePreviewService : IHelmReleasePreviewService
 {
+    private readonly IKubernetesYamlSerializer _yamlSerializer;
     private readonly IHelmService _helmService;
     private readonly Func<VisualizationViewModel> _createVisualization;
     private readonly IFactory _factory;
 
     /// <summary>Creates the Helm release preview service.</summary>
+    /// <param name="yamlSerializer">Application serializer for preview manifests.</param>
     /// <param name="helmService">The Helm client abstraction used for chart rendering.</param>
     /// <param name="createVisualization">Creates the visualization document model.</param>
     /// <param name="factory">Application dock factory used to open visualization documents.</param>
     public HelmReleasePreviewService(
         IHelmService helmService,
+        IKubernetesYamlSerializer yamlSerializer,
         Func<VisualizationViewModel> createVisualization,
         IFactory factory)
     {
@@ -31,6 +34,7 @@ public sealed class HelmReleasePreviewService : IHelmReleasePreviewService
         ArgumentNullException.ThrowIfNull(createVisualization);
         ArgumentNullException.ThrowIfNull(factory);
         _helmService = helmService;
+        _yamlSerializer = yamlSerializer;
         _createVisualization = createVisualization;
         _factory = factory;
     }
@@ -85,7 +89,7 @@ public sealed class HelmReleasePreviewService : IHelmReleasePreviewService
             throw new InvalidOperationException(Assets.Resources.HelmReleasePreviewService_NoResources!);
         }
 
-        var parsed = Kubernetes.Serialization.KubernetesYaml.LoadAllFromString(
+        var parsed = _yamlSerializer.LoadAllFromString(
             manifest,
             key =>
             {
