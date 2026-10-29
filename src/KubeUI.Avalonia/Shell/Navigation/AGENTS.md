@@ -25,6 +25,9 @@
 - A section or group row shows its Fluent `Icon` or, when its SVG path is set, the asset rendered by `ThemedSvgImage`, which swaps to the dark path while the effective theme variant is dark and falls back to the light path. SVG wins when both icon kinds are set. Brand icons may use a tight, centered viewport around the official symbol to omit wordmarks at navigation size; do not redraw or recolor the brand artwork.
 - Connection failures update or open the shared cluster-error document. Missing namespace permission opens cluster settings and shows the permission prompt.
 - One click on a navigation row activates it: resource links open their document, sections and groups toggle expansion, and disconnected clusters start connecting. Clicking an already connected cluster toggles expansion. Keyboard Enter or Space activates the focused row. Native TreeView double-tap expansion is suppressed so it cannot toggle a row a second time.
+- Cluster nodes exist only for enabled workspaces (`ClusterWorkspace.IsEnabled`). Toggling `IsEnabled` removes or re-inserts the node in catalog order without rebuilding other nodes.
+- Cluster nodes display `ClusterWorkspace.DisplayName` (alias or context name); navigation IDs keep using the runtime context name.
+- The cluster context menu has an explicit Expand/Collapse item (`ToggleClusterExpansionCommand`): it toggles a connected cluster and connects a disconnected one (which expands on connect).
 
 ## Invariants
 

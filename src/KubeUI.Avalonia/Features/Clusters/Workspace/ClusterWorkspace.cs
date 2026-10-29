@@ -65,7 +65,58 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
     [ObservableProperty]
     public partial IClusterRuntime Runtime { get; set; }
 
-    public string Title => Runtime.Name;
+    public string Title => DisplayName;
+
+    /// <summary>
+    /// Gets or sets the KubeUI-only display name. The context name is used when empty.
+    /// </summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(DisplayName))]
+    [NotifyPropertyChangedFor(nameof(Title))]
+    public partial string? Alias { get; set; }
+
+    /// <summary>
+    /// Gets or sets whether the cluster is shown in navigation. Disabling a connected cluster disconnects it.
+    /// </summary>
+    [ObservableProperty]
+    public partial bool IsEnabled { get; set; } = true;
+
+    /// <summary>
+    /// Gets the name shown to the user: the alias when set, otherwise the context name.
+    /// </summary>
+    public string DisplayName => string.IsNullOrWhiteSpace(Alias) ? Runtime.Name : Alias;
+
+    partial void OnIsEnabledChanged(bool value)
+    {
+        if (!value)
+        {
+            _ = DisconnectDisabledAsync();
+        }
+    }
+
+    private async Task DisconnectDisabledAsync()
+    {
+        try
+        {
+            Task? connectTask;
+            lock (_connectLock)
+            {
+                connectTask = _connectTask;
+            }
+            if (connectTask is not null)
+            {
+                await connectTask.ConfigureAwait(false);
+            }
+            if (!IsEnabled && Runtime.Connected)
+            {
+                await Disconnect().ConfigureAwait(false);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error disconnecting disabled cluster {ClusterName}", Runtime.Name);
+        }
+    }
 
     internal IServiceProvider ServiceProvider => _serviceProvider;
 
@@ -92,6 +143,7 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
     {
         lock (_connectLock)
         {
+            ObjectDisposedException.ThrowIf(_disposed, this);
             if (_connectTask is { IsCompleted: false })
             {
                 return _connectTask;
@@ -111,6 +163,12 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
             await Runtime.Connect().ConfigureAwait(false);
             if (!Runtime.Connected)
             {
+                return;
+            }
+
+            if (!IsEnabled || _disposed)
+            {
+                await Disconnect().ConfigureAwait(false);
                 return;
             }
 
@@ -368,12 +426,15 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
 
     public void Dispose()
     {
-        if (_disposed)
+        lock (_connectLock)
         {
-            return;
+            if (_disposed)
+            {
+                return;
+            }
+            _disposed = true;
         }
 
-        _disposed = true;
         Runtime.OnChange -= OnRuntimeChange;
         if (Runtime.Permissions is { } permissions)
         {
@@ -393,6 +454,38 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
 
         _disposeCancellation.Cancel();
         _disposeCancellation.Dispose();
+    }
+
+    internal void DisconnectAfterRemoval()
+    {
+        Dispose();
+        _ = DisconnectAfterRemovalAsync();
+    }
+
+    private async Task DisconnectAfterRemovalAsync()
+    {
+        try
+        {
+            Task? connectTask;
+            lock (_connectLock)
+            {
+                connectTask = _connectTask;
+            }
+
+            if (connectTask is not null)
+            {
+                await connectTask.ConfigureAwait(false);
+            }
+
+            if (Runtime.Connected)
+            {
+                await Disconnect().ConfigureAwait(false);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error disconnecting removed cluster {ClusterName}", Runtime.Name);
+        }
     }
 
     private void EnsureBuiltInResourceConfigs()
@@ -519,6 +612,11 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
         if (e.PropertyName == nameof(IClusterRuntime.Namespaces))
         {
             SubscribeNamespaces();
+        }
+        else if (e.PropertyName == nameof(IClusterRuntime.Name))
+        {
+            OnPropertyChanged(nameof(DisplayName));
+            OnPropertyChanged(nameof(Title));
         }
     }
 

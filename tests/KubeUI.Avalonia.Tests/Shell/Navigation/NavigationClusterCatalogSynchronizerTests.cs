@@ -34,6 +34,7 @@ public sealed class NavigationClusterCatalogSynchronizerTests
             _ => Interlocked.Increment(ref reconciles),
             command,
             command,
+            command,
             NullLogger<NavigationClusterCatalogSynchronizer>.Instance);
 
         try

@@ -67,6 +67,31 @@ public partial class ClusterNavigationNode : NavigationItem, IDisposable
         ? Icon.Dismiss
         : Icon.Link;
 
+    /// <summary>
+    /// Gets the context-menu header for the expand/collapse action.
+    /// </summary>
+    public string ExpansionMenuHeader => IsExpanded
+        ? Assets.Resources.NavigationView_ContextMenu_Collapse!
+        : Assets.Resources.NavigationView_ContextMenu_Expand!;
+
+    /// <summary>
+    /// Gets the context-menu icon for the expand/collapse action.
+    /// </summary>
+    public Icon ExpansionMenuIcon => IsExpanded
+        ? Icon.ChevronUp
+        : Icon.ChevronDown;
+
+    protected override void OnPropertyChanged(PropertyChangedEventArgs e)
+    {
+        base.OnPropertyChanged(e);
+
+        if (e.PropertyName == nameof(IsExpanded))
+        {
+            OnPropertyChanged(nameof(ExpansionMenuHeader));
+            OnPropertyChanged(nameof(ExpansionMenuIcon));
+        }
+    }
+
     private void OnRuntimePropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName == nameof(IClusterRuntime.Connected))
@@ -81,6 +106,12 @@ public partial class ClusterNavigationNode : NavigationItem, IDisposable
 
     [ObservableProperty]
     public partial ICommand? OpenSettingsCommand { get; set; }
+
+    /// <summary>
+    /// Gets or sets the command that expands or collapses the cluster node.
+    /// </summary>
+    [ObservableProperty]
+    public partial ICommand? ToggleExpansionCommand { get; set; }
 
     internal void UpdateNavigationIds(string oldName, string newName)
     {

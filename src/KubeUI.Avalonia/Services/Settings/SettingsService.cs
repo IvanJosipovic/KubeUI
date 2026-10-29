@@ -73,9 +73,20 @@ public class SettingsService : ObservableObject, ISettingsService, IClusterSetti
 
     IReadOnlyCollection<string> IClusterSettingsStore.KubeConfigPaths => Settings.KubeConfigs;
 
+    bool IClusterSettingsStore.KubeConfigAutoDiscoveryEnabled
+    {
+        get => Settings.KubeConfigAutoDiscoveryEnabled;
+        set => Settings.KubeConfigAutoDiscoveryEnabled = value;
+    }
+
     public void AddKubeConfigPath(string path)
     {
         Settings.AddKubeConfig(path);
+    }
+
+    public void RemoveKubeConfigPath(string path)
+    {
+        Settings.RemoveKubeConfig(path);
     }
 
     public IReadOnlyCollection<string> GetClusterNamespaces(IClusterRuntime cluster)
