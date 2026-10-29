@@ -1,4 +1,5 @@
 using Avalonia.Headless.XUnit;
+using Avalonia.Controls;
 using Avalonia.Threading;
 using Dock.Model.Controls;
 using Dock.Model.Core;
@@ -177,7 +178,7 @@ public sealed class OpenPropertiesFollowSelectionTests
         properties.Initialize(cluster, Pod("api"));
         var worker = Pod("worker");
 
-        properties.Cluster_OnChange(WatchEventType.Modified, GroupApiVersionKind.From<V1Pod>(), Pod("api"));
+        properties.OnClusterChange(cluster, Pod("api"));
         properties.ShowResource(cluster, worker);
         Dispatcher.UIThread.RunJobs();
 
@@ -193,7 +194,7 @@ public sealed class OpenPropertiesFollowSelectionTests
         properties.Initialize(first, Pod("api"));
         var sameNameInSecond = Pod("api");
 
-        properties.Cluster_OnChange(WatchEventType.Modified, GroupApiVersionKind.From<V1Pod>(), Pod("api"));
+        properties.OnClusterChange(first, Pod("api"));
         properties.ShowResource(second, sameNameInSecond);
         Dispatcher.UIThread.RunJobs();
 
@@ -222,7 +223,7 @@ public sealed class OpenPropertiesFollowSelectionTests
     [AvaloniaFact]
     public async Task replacing_auto_hidden_properties_preserves_focus()
     {
-        var (factory, root, rightDock) = CreateLayout();
+        var (factory, _, rightDock) = CreateLayout();
         using var cluster = await Application.Current.CreateClusterAsync();
         using var pods = await CreatePodListAsync(cluster, Pod("api"));
         pods.ResourceConfig.View(new[] { SelectByName(pods, "api") });
@@ -231,6 +232,10 @@ public sealed class OpenPropertiesFollowSelectionTests
         var documents = factory.GetDockable<IDocumentDock>("Documents")!;
         factory.InsertDockable(documents, pods, 0);
         factory.SetFocusedDockable(documents, pods);
+        var input = new TextBox();
+        using var window = Application.Current.CreateTestWindow(content: input);
+        window.Show();
+        input.Focus().ShouldBeTrue();
         using var deployments = Application.Current.GetRequiredTestService<ResourceListViewModel<V1Deployment>>();
         deployments.Initialize(cluster);
         deployments.Objects.AddOrUpdate(new V1Deployment { ApiVersion = V1Deployment.KubeApiVersion, Kind = V1Deployment.KubeKind, Metadata = new V1ObjectMeta { Name = "web", NamespaceProperty = "team-a" } });
@@ -238,7 +243,7 @@ public sealed class OpenPropertiesFollowSelectionTests
 
         deployments.SelectionModel.Select(0);
 
-        root.FocusedDockable.ShouldBeSameAs(pods);
+        input.IsFocused.ShouldBeTrue();
     }
 
     [AvaloniaFact]
@@ -255,6 +260,79 @@ public sealed class OpenPropertiesFollowSelectionTests
         Dispatcher.UIThread.RunJobs();
 
         properties.Object.ShouldBeSameAs(current);
+    }
+
+    [AvaloniaFact]
+    public async Task queued_update_is_ignored_after_selecting_away_and_back()
+    {
+        using var cluster = await Application.Current.CreateClusterAsync();
+        using var properties = Application.Current.GetRequiredTestService<ResourcePropertiesViewModel<V1Pod>>();
+        properties.Initialize(cluster, Pod("api"));
+        properties.OnClusterChange(cluster, Pod("api"));
+        properties.ShowResource(cluster, Pod("worker"));
+        var current = Pod("api");
+        properties.ShowResource(cluster, current);
+        Dispatcher.UIThread.RunJobs();
+        properties.Object.ShouldBeSameAs(current);
+    }
+
+    [AvaloniaFact]
+    public async Task inactive_list_selection_does_not_retarget_properties()
+    {
+        var (factory, _, rightDock) = CreateLayout();
+        using var cluster = await Application.Current.CreateClusterAsync();
+        using var inactive = await CreatePodListAsync(cluster, Pod("api"), Pod("worker"));
+        using var active = await CreatePodListAsync(cluster, Pod("api"), Pod("worker"));
+        var documents = factory.GetDockable<IDocumentDock>("Documents")!;
+        factory.InsertDockable(documents, inactive, 0);
+        factory.InsertDockable(documents, active, 1);
+        factory.SetActiveDockable(active);
+        var api = SelectByName(active, "api");
+        active.ResourceConfig.View(new[] { api });
+        var properties = rightDock.VisibleDockables!.OfType<ResourcePropertiesViewModel<V1Pod>>().Single();
+        SelectByName(inactive, "worker");
+        properties.Object.ShouldBeSameAs(api);
+    }
+
+    [AvaloniaFact]
+    public async Task retargeted_properties_observe_only_the_new_cluster_informer()
+    {
+        var firstSeed = Pod("api");
+        firstSeed.Spec = new V1PodSpec { Containers = [new V1Container { Name = "app", Image = "example/app" }] };
+        var secondSeed = Pod("api");
+        secondSeed.Spec = new V1PodSpec { Containers = [new V1Container { Name = "app", Image = "example/app" }] };
+        using var first = await Application.Current.CreateClusterAsync(config => config.InitialResources = [firstSeed]);
+        using var second = await Application.Current.CreateClusterAsync(config => config.InitialResources = [secondSeed]);
+        await first.Runtime.SeedResource(GroupApiVersionKind.From<V1Pod>());
+        await second.Runtime.SeedResource(GroupApiVersionKind.From<V1Pod>());
+        await WaitForAsync(() => first.Runtime.GetResource<V1Pod>("team-a", "api") is not null
+            && second.Runtime.GetResource<V1Pod>("team-a", "api") is not null);
+        using var properties = Application.Current.GetRequiredTestService<ResourcePropertiesViewModel<V1Pod>>();
+        properties.Initialize(first, first.Runtime.GetResource<V1Pod>("team-a", "api")!);
+        var secondPod = second.Runtime.GetResource<V1Pod>("team-a", "api")!;
+        properties.ShowResource(second, secondPod);
+        var observed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        void OnFirstChange(WatchEventType eventType, GroupApiVersionKind kind, IKubernetesObject<V1ObjectMeta> resource)
+        {
+            if (kind == GroupApiVersionKind.From<V1Pod>() && resource.Metadata?.Labels?.ContainsKey("old-cluster") == true)
+                observed.TrySetResult();
+        }
+        first.Runtime.OnChange += OnFirstChange;
+        try
+        {
+            using var firstClient = first.Runtime.Client!.GetGenericClient<V1Pod>();
+            await firstClient.PatchNamespacedAsync<V1Pod>(new V1Patch("{\"metadata\":{\"labels\":{\"old-cluster\":\"yes\"}}}", V1Patch.PatchType.MergePatch), "team-a", "api", TestContext.Current.CancellationToken);
+            await observed.Task.WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken);
+            Dispatcher.UIThread.RunJobs();
+            properties.Object.ShouldBeSameAs(secondPod);
+            using var secondClient = second.Runtime.Client!.GetGenericClient<V1Pod>();
+            await secondClient.PatchNamespacedAsync<V1Pod>(new V1Patch("{\"metadata\":{\"labels\":{\"new-cluster\":\"yes\"}}}", V1Patch.PatchType.MergePatch), "team-a", "api", TestContext.Current.CancellationToken);
+            await WaitForAsync(() => properties.Object?.Metadata?.Labels?.ContainsKey("new-cluster") == true);
+        }
+        finally
+        {
+            first.Runtime.OnChange -= OnFirstChange;
+        }
     }
 
     private static (IFactory Factory, IRootDock Root, IToolDock RightDock) CreateLayout()

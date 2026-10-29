@@ -96,7 +96,7 @@ public partial class ResourceListViewModel<[DynamicallyAccessedMembers(Dynamical
         if (selection.SelectedIndexes.Count == desiredIndexes.Count &&
             selection.SelectedIndexes.SequenceEqual(desiredIndexes))
         {
-            ResourceConfig?.ShowInOpenProperties(SelectedItems?.ToArray());
+            UpdateOpenPropertiesFromSelection();
             return;
         }
 
@@ -402,12 +402,20 @@ public partial class ResourceListViewModel<[DynamicallyAccessedMembers(Dynamical
     private void TableSourceOnError(object? sender, Exception exception)
         => _logger.LogError(exception, "Error updating resource list for {Kind}", Kind);
 
+    private void UpdateOpenPropertiesFromSelection(IList? selection = null)
+    {
+        if (Owner is Dock.Model.Core.IDock dock && !ReferenceEquals(dock.ActiveDockable, this))
+            return;
+
+        ResourceConfig?.ShowInOpenProperties(selection ?? SelectedItems?.ToArray());
+    }
+
     private void SelectionModelOnSelectionChanged(object? sender, SelectionModelSelectionChangedEventArgs e)
     {
         OnPropertyChanged(nameof(SelectedItem));
         OnPropertyChanged(nameof(SelectedItems));
         var selectedItems = SelectedItems?.Where(static selected => selected is not null).ToArray();
-        ResourceConfig?.ShowInOpenProperties(selectedItems);
+        UpdateOpenPropertiesFromSelection(selectedItems);
         _agentContextService.SetContext(this, selectedItems is not { Length: > 0 }
             ? null
             : new AgentContext

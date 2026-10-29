@@ -33,6 +33,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
     protected INotificationManager _notificationManager = null!;
     protected IFactory _factory = null!;
     private IPodLogsLauncher _podLogsLauncher = null!;
+    private ResourcePropertiesCoordinator _propertiesCoordinator = null!;
 
     protected ResourceConfigBase()
     {
@@ -58,6 +59,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
         _logger = serviceProvider.GetRequiredService<ILogger<ResourceConfigBase<T>>>();
         _dialogService = serviceProvider.GetRequiredService<IDialogService>();
         _factory = serviceProvider.GetRequiredService<IFactory>();
+        _propertiesCoordinator = new ResourcePropertiesCoordinator(_factory, serviceProvider);
         _podLogsLauncher = serviceProvider.GetRequiredService<IPodLogsLauncher>();
         _notificationManager = serviceProvider.GetRequiredService<INotificationManager>();
         ServiceProvider = serviceProvider;
@@ -485,12 +487,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
     [RelayCommand(CanExecute = nameof(CanView))]
     public void View(IList items)
     {
-        var instance = ServiceProvider.GetRequiredService<ResourcePropertiesViewModel<T>>();
-        instance.Initialize(Cluster, (T)items[0]!);
-        instance.CanFloat = false;
-        instance.CanDockAsDocument = false;
-
-        _factory.AddToRight(instance);
+        _propertiesCoordinator.Open(Cluster, (T)items[0]!);
     }
 
     public bool CanView(IList? items)
@@ -506,38 +503,8 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
     /// <param name="items">The current selection.</param>
     public void ShowInOpenProperties(IList? items)
     {
-        if (items is not { Count: 1 } || items[0] is not T resource)
-        {
-            return;
-        }
-
-        const string propertiesId = nameof(ResourcePropertiesViewModel<>);
-        var autoHidden = _factory.FindRightPinnedDockable(propertiesId);
-        var open = autoHidden ?? _factory.FindDockableById(propertiesId);
-        if (open is null)
-        {
-            return;
-        }
-
-        if (open is ResourcePropertiesViewModel<T> properties)
-        {
-            if (!ReferenceEquals(properties.Object, resource) || !ReferenceEquals(properties.Cluster, Cluster))
-            {
-                properties.ShowResource(Cluster, resource);
-            }
-
-            return;
-        }
-
-        var instance = ServiceProvider.GetRequiredService<ResourcePropertiesViewModel<T>>();
-        instance.Initialize(Cluster, resource);
-        instance.CanFloat = false;
-        instance.CanDockAsDocument = false;
-
-        if (autoHidden is not null || !_factory.ReplaceDockable(open, instance))
-        {
-            _factory.AddToRight(instance, previewPinned: false);
-        }
+        if (items is { Count: 1 } && items[0] is T resource)
+            _propertiesCoordinator.Follow(Cluster, resource);
     }
 
     [RelayCommand(CanExecute = nameof(CanViewYaml))]

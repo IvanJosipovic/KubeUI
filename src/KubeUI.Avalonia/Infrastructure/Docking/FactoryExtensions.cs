@@ -137,7 +137,8 @@ public static class FactoryExtensions
     /// <param name="factory">The dock factory.</param>
     /// <param name="vm">The dockable to show.</param>
     /// <param name="previewPinned">Whether a pinned replacement is temporarily shown; pass <see langword="false"/> to keep it collapsed.</param>
-    public static void AddToRight(this IFactory factory, IDockable vm, bool previewPinned = true)
+    /// <param name="focus">Whether to activate and focus the replacement.</param>
+    public static void AddToRight(this IFactory factory, IDockable vm, bool previewPinned = true, bool focus = true)
     {
         var rightDock = factory.GetDockable<IToolDock>("RightDock");
 
@@ -160,7 +161,7 @@ public static class FactoryExtensions
 
         var insertIndex = rightDock.VisibleDockables?.Count ?? 0;
         factory.InsertDockable(rightDock, vm, insertIndex);
-        if (previewPinned || pinnedDoc is null)
+        if (focus)
         {
             factory.SetActiveDockable(vm);
             factory.SetFocusedDockable(rightDock, vm);

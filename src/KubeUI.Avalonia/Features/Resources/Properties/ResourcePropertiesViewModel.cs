@@ -18,6 +18,8 @@ public sealed partial class ResourcePropertiesViewModel<T> : ViewModelBase, IVie
 
     private T? _object;
     private Action<WatchEventType, GroupApiVersionKind, IKubernetesObject<V1ObjectMeta>>? _changeHandler;
+    private object? _subscription;
+    private long _selectionGeneration;
 
     public T? Object
     {
@@ -59,12 +61,15 @@ public sealed partial class ResourcePropertiesViewModel<T> : ViewModelBase, IVie
         ArgumentNullException.ThrowIfNull(cluster);
         ArgumentNullException.ThrowIfNull(resource);
 
+        Interlocked.Increment(ref _selectionGeneration);
         if (!ReferenceEquals(Cluster, cluster))
         {
             if (Cluster is not null && _changeHandler is not null)
                 Cluster.Runtime.OnChange -= _changeHandler;
             Cluster = cluster;
-            _changeHandler = (eventType, kind, changed) => OnClusterChange(cluster, changed);
+            var subscription = new object();
+            _subscription = subscription;
+            _changeHandler = (eventType, kind, changed) => OnClusterChange(cluster, changed, subscription);
             cluster.Runtime.OnChange += _changeHandler;
         }
 
@@ -86,18 +91,13 @@ public sealed partial class ResourcePropertiesViewModel<T> : ViewModelBase, IVie
         OnPropertyChanged(nameof(Actions));
     }
 
-    public void Cluster_OnChange(WatchEventType eventType, GroupApiVersionKind groupApiVersionKind, IKubernetesObject<V1ObjectMeta> resource)
-    {
-        _ = eventType;
-        _ = groupApiVersionKind;
-        var cluster = Cluster;
-        if (cluster is not null)
-            OnClusterChange(cluster, resource);
-    }
-
     internal void OnClusterChange(ClusterWorkspace cluster, IKubernetesObject<V1ObjectMeta> resource)
+        => OnClusterChange(cluster, resource, _subscription);
+
+    private void OnClusterChange(ClusterWorkspace cluster, IKubernetesObject<V1ObjectMeta> resource, object? subscription)
     {
-        if (!ReferenceEquals(Cluster, cluster) || !IsShown(resource))
+        var generation = Interlocked.Read(ref _selectionGeneration);
+        if (!ReferenceEquals(_subscription, subscription) || !ReferenceEquals(Cluster, cluster) || !IsShown(resource))
         {
             return;
         }
@@ -105,7 +105,9 @@ public sealed partial class ResourcePropertiesViewModel<T> : ViewModelBase, IVie
         Dispatcher.UIThread.Post(() =>
         {
             // The view may have been retargeted (or moved to another cluster) before this runs.
-            if (ReferenceEquals(Cluster, cluster) && IsShown(resource))
+            if (generation == Interlocked.Read(ref _selectionGeneration)
+                && ReferenceEquals(_subscription, subscription)
+                && ReferenceEquals(Cluster, cluster) && IsShown(resource))
             {
                 Object = (T)resource;
             }
@@ -126,6 +128,8 @@ public sealed partial class ResourcePropertiesViewModel<T> : ViewModelBase, IVie
         if (Cluster is not null && _changeHandler is not null)
             Cluster.Runtime.OnChange -= _changeHandler;
         _changeHandler = null;
+        _subscription = null;
+        Interlocked.Increment(ref _selectionGeneration);
         Cluster = null;
     }
 }
