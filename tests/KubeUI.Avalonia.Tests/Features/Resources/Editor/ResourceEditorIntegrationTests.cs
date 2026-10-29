@@ -525,7 +525,7 @@ public sealed class ResourceEditorIntegrationTests
         vm.ErrorMessage.ShouldContain("containers");
         vm.HasActionFailureResult.ShouldBeTrue();
         vm.ActionResultTitle.ShouldBe(Assets.Resources.ResourceEditorView_ValidationFailed);
-        vm.ActionResultMessage.ShouldContain("Pod spec.containers must contain at least one container.");
+        vm.ActionResultMessage.ShouldContain("spec.containers: Required value: must specify at least one container");
         vm.ActionResultMessage.ShouldNotContain("Operation returned an invalid status code");
 
         var spec = vm.EditorRoot!.Children.Single(node => node.Name == "spec");
@@ -541,7 +541,7 @@ public sealed class ResourceEditorIntegrationTests
         var section = containersControl.GetVisualDescendants().OfType<ExpandableSection>().Single();
         DataValidationErrors.GetHasErrors(section).ShouldBeTrue();
         DataValidationErrors.GetErrors(section)
-            .ShouldContain("Pod spec.containers must contain at least one container.");
+            .ShouldContain("Required value: must specify at least one container");
 
         var specNode = vm.EditorRoot!.Children.Single(node => node.Name == "spec");
         var rootControl = view.GetVisualDescendants().OfType<ResourceEditorNodeControl>()
@@ -555,9 +555,9 @@ public sealed class ResourceEditorIntegrationTests
         DataValidationErrors.GetHasErrors(rootSection).ShouldBeTrue();
         DataValidationErrors.GetHasErrors(specSection).ShouldBeTrue();
         DataValidationErrors.GetErrors(rootSection)
-            .ShouldContain("spec.containers: Pod spec.containers must contain at least one container.");
+            .ShouldContain("spec.containers: Required value: must specify at least one container");
         DataValidationErrors.GetErrors(specSection)
-            .ShouldContain("spec.containers: Pod spec.containers must contain at least one container.");
+            .ShouldContain("spec.containers: Required value: must specify at least one container");
         rootOutline.BorderThickness.ShouldBe(new Thickness(1));
         specOutline.BorderThickness.ShouldBe(new Thickness(1));
         vm.EditorRoot.HasErrors.ShouldBeTrue();

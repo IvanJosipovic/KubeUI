@@ -4,11 +4,12 @@ using Avalonia.Markup.Xaml.MarkupExtensions;
 using FluentAvalonia.UI.Controls;
 using FluentIcons.Avalonia;
 using FluentIcons.Common;
+using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Styles;
 
 namespace KubeUI.Avalonia.Features.Resources.Editor;
 
-public sealed class ResourceEditorView : ViewBase<ResourceEditorViewModel>
+public sealed partial class ResourceEditorView : KubeUIView<ResourceEditorViewModel>
 {
     public ResourceEditorView()
     {
