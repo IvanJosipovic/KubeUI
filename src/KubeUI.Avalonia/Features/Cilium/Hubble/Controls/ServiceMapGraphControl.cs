@@ -279,10 +279,16 @@ public sealed class ServiceMapGraphControl : UserControl, IDisposable, IGraphCon
             foreach (var node in snapshot.Nodes)
                 desiredNodeIds.Add(node.Id);
 
+        // GraphX's RemoveVertexAndEdges visits self-edges twice, once for each direction.
+        foreach (var edge in graph.Edges.Where(edge => !desiredNodeIds.Contains(edge.Source.Id) || !desiredNodeIds.Contains(edge.Target.Id)).ToArray())
+        {
+            _area.RemoveEdge(edge, removeEdgeFromDataGraph: true);
+        }
+
         foreach (var vertex in _vertices.Values.Where(vertex => !desiredNodeIds.Contains(vertex.Id)).ToArray())
         {
             RemoveChildMembership(graph, vertex);
-            _area.RemoveVertexAndEdges(vertex);
+            _area.RemoveVertex(vertex, removeVertexFromDataGraph: true);
             if (graph.ContainsVertex(vertex))
                 graph.RemoveVertex(vertex);
             _vertices.Remove(vertex.Id);
