@@ -335,6 +335,52 @@ public sealed class OpenPropertiesFollowSelectionTests
         }
     }
 
+    [AvaloniaFact]
+    public async Task previewed_auto_hidden_properties_stay_visible_when_switching_resource_kind()
+    {
+        var (factory, root, rightDock) = CreateLayout();
+        using var cluster = await Application.Current.CreateClusterAsync();
+        using var pods = await CreatePodListAsync(cluster, Pod("api"));
+        pods.ResourceConfig.View(new[] { SelectByName(pods, "api") });
+        var podProperties = rightDock.VisibleDockables!.OfType<ResourcePropertiesViewModel<V1Pod>>().Single();
+        factory.PinDockable(podProperties);
+        factory.PreviewPinnedDockable(podProperties);
+        root.PinnedDock!.VisibleDockables!.ShouldContain(podProperties);
+        using var deployments = Application.Current.GetRequiredTestService<ResourceListViewModel<V1Deployment>>();
+        deployments.Initialize(cluster);
+        deployments.Objects.AddOrUpdate(new V1Deployment
+        {
+            ApiVersion = V1Deployment.KubeApiVersion,
+            Kind = V1Deployment.KubeKind,
+            Metadata = new V1ObjectMeta { Name = "web", NamespaceProperty = "team-a" },
+        });
+        await WaitForAsync(() => deployments.ItemCount == 1);
+
+        deployments.SelectionModel.Select(0);
+
+        await WaitForAsync(() => root.RightPinnedDockables!.OfType<ResourcePropertiesViewModel<V1Deployment>>().Any());
+        var deploymentProperties = root.RightPinnedDockables!.ShouldHaveSingleItem().ShouldBeOfType<ResourcePropertiesViewModel<V1Deployment>>();
+        root.PinnedDock!.VisibleDockables!.ShouldContain(deploymentProperties);
+        rightDock.VisibleDockables!.ShouldNotContain(deploymentProperties);
+    }
+
+    [AvaloniaFact]
+    public async Task queued_update_for_recreated_object_with_same_name_is_ignored()
+    {
+        using var cluster = await Application.Current.CreateClusterAsync();
+        using var properties = Application.Current.GetRequiredTestService<ResourcePropertiesViewModel<V1Pod>>();
+        var current = Pod("api");
+        current.Metadata.Uid = "current-uid";
+        properties.Initialize(cluster, current);
+        var recreated = Pod("api");
+        recreated.Metadata.Uid = "recreated-uid";
+
+        properties.OnClusterChange(cluster, recreated);
+        Dispatcher.UIThread.RunJobs();
+
+        properties.Object.ShouldBeSameAs(current);
+    }
+
     private static (IFactory Factory, IRootDock Root, IToolDock RightDock) CreateLayout()
     {
         var factory = Application.Current.GetTestServices().GetRequiredService<IFactory>();

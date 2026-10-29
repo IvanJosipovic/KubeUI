@@ -15,6 +15,8 @@ internal sealed class ResourcePropertiesCoordinator(IFactory factory, IServicePr
     {
         const string id = nameof(ResourcePropertiesViewModel<>);
         var pinned = factory.FindRightPinnedDockable(id);
+        // Keep a previewed (temporarily shown) pinned view visible; a collapsed one stays collapsed.
+        var previewPinned = pinned is not null && factory.IsRightPinnedDockablePreviewed(pinned);
         var open = pinned ?? factory.FindDockableById(id);
         if (open is null)
             return;
@@ -28,7 +30,7 @@ internal sealed class ResourcePropertiesCoordinator(IFactory factory, IServicePr
 
         var replacement = Create(cluster, resource);
         if (pinned is not null || !factory.ReplaceDockable(open, replacement))
-            factory.AddToRight(replacement, previewPinned: false, focus: false);
+            factory.AddToRight(replacement, previewPinned, focus: false);
     }
 
     private ResourcePropertiesViewModel<T> Create<T>(ClusterWorkspace cluster, T resource) where T : class, IKubernetesObject<V1ObjectMeta>, new()

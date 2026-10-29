@@ -120,7 +120,8 @@ public sealed partial class ResourcePropertiesViewModel<T> : ViewModelBase, IVie
             && Object.Kind == resource.Kind
             && Object.ApiVersion == resource.ApiVersion
             && Object.Metadata.Name == resource.Metadata.Name
-            && Object.Metadata.NamespaceProperty == resource.Metadata.NamespaceProperty;
+            && Object.Metadata.NamespaceProperty == resource.Metadata.NamespaceProperty
+            && Object.Metadata.Uid == resource.Metadata.Uid;
     }
 
     public void Dispose()

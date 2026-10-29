@@ -190,6 +190,18 @@ public static class FactoryExtensions
     }
 
     /// <summary>
+    /// Determines whether a pinned dockable is currently previewed (temporarily shown) in the root pinned dock.
+    /// </summary>
+    /// <param name="factory">The dock factory.</param>
+    /// <param name="dockable">The pinned dockable to check.</param>
+    /// <returns><see langword="true"/> when the dockable is visible in the pinned dock; otherwise <see langword="false"/>.</returns>
+    public static bool IsRightPinnedDockablePreviewed(this IFactory factory, IDockable dockable)
+    {
+        var root = factory.GetDockable<IRootDock>("Root");
+        return root?.PinnedDock?.VisibleDockables?.Contains(dockable) == true;
+    }
+
+    /// <summary>
     /// Replaces a docked (not auto-hidden) <paramref name="existing"/> with <paramref name="replacement"/> in the same dock and position,
     /// keeping it the active tab if it was, without moving keyboard focus. The replaced dockable is disposed.
     /// </summary>
