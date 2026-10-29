@@ -49,11 +49,7 @@ public sealed partial class ClusterListView : KubeUIView<ClusterListViewModel>
                                         new Setter(MenuItem.CommandProperty, vm.RemoveKubeConfigCommand),
                                         new Setter(MenuItem.CommandParameterProperty, CompiledBinding.Create<string, string>(x => x)),
                                     }
-                                })),
-                        new CheckBox()
-                            .VerticalAlignment(VerticalAlignment.Center)
-                            .Content(Assets.Resources.ClusterListView_AutoDiscovery)
-                            .IsChecked(vm, x => x.KubeConfigAutoDiscoveryEnabled, BindingMode.TwoWay)),
+                                }))),
                 new DynamicTableView
                 {
                     GridLinesVisibility = DynamicTableViewGridLinesVisibility.All,

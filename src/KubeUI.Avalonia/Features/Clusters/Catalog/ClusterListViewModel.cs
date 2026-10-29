@@ -48,7 +48,6 @@ public sealed partial class ClusterListViewModel : ViewModelBase, IDisposable
         _kubeConfigPathProvider = kubeConfigPathProvider;
         _kubeConfigDiscovery = kubeConfigDiscovery;
         _notificationManager = notificationManager;
-        KubeConfigAutoDiscoveryEnabled = runtimeCatalog.KubeConfigAutoDiscoveryEnabled;
         _settingsService.Settings.PropertyChanged += SettingsOnPropertyChanged;
         RefreshRemovableKubeConfigs();
 
@@ -70,20 +69,9 @@ public sealed partial class ClusterListViewModel : ViewModelBase, IDisposable
     }
 
     /// <summary>
-    /// Gets or sets whether kubeconfig files in the kubeconfig directory are discovered automatically.
-    /// </summary>
-    [ObservableProperty]
-    public partial bool KubeConfigAutoDiscoveryEnabled { get; set; }
-
-    /// <summary>
     /// Gets the manually added kubeconfig paths that can be removed from KubeUI.
     /// </summary>
     public ObservableCollection<string> RemovableKubeConfigs { get; } = [];
-
-    partial void OnKubeConfigAutoDiscoveryEnabledChanged(bool value)
-    {
-        _runtimeCatalog.SetKubeConfigAutoDiscovery(value);
-    }
 
     public IDynamicTableViewSource TableSource => _tableSource ?? throw new ObjectDisposedException(nameof(ClusterListViewModel));
 

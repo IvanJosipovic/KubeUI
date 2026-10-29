@@ -2834,8 +2834,14 @@
   <data name="ClusterListView_InvalidKubeConfig" xml:space="preserve">
     <value>"{0}" is not a kubeconfig file with at least one context.</value>
   </data>
-  <data name="ClusterListView_AutoDiscovery" xml:space="preserve">
-    <value>Auto-discover kubeconfigs in ~/.kube</value>
+  <data name="SettingsView_ClustersHeading" xml:space="preserve">
+    <value>Clusters</value>
+  </data>
+  <data name="SettingsView_AutoDiscovery_Label" xml:space="preserve">
+    <value>Auto-discover kubeconfigs</value>
+  </data>
+  <data name="SettingsView_AutoDiscovery_ToolTip" xml:space="preserve">
+    <value>Automatically discover kubeconfig files in the default kubeconfig directory.</value>
   </data>
   <data name="NavigationView_ContextMenu_Expand" xml:space="preserve">
     <value>Expand</value>

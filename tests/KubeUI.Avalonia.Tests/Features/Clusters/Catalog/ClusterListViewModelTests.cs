@@ -46,22 +46,6 @@ public sealed class ClusterListViewModelTests
         services.GetRequiredService<ISettingsService>().Settings.KubeConfigs.ShouldNotContain(path);
     }
 
-    [AvaloniaFact]
-    public void auto_discovery_toggle_updates_catalog_and_settings()
-    {
-        var services = Application.Current.GetTestServices();
-        var runtimeCatalog = services.GetRequiredService<IClusterRuntimeCatalog>();
-        using var vm = services.GetRequiredService<ClusterListViewModel>();
-        vm.KubeConfigAutoDiscoveryEnabled.ShouldBe(runtimeCatalog.KubeConfigAutoDiscoveryEnabled);
-
-        vm.KubeConfigAutoDiscoveryEnabled = false;
-        runtimeCatalog.KubeConfigAutoDiscoveryEnabled.ShouldBeFalse();
-        services.GetRequiredService<ISettingsService>().Settings.KubeConfigAutoDiscoveryEnabled.ShouldBeFalse();
-
-        vm.KubeConfigAutoDiscoveryEnabled = true;
-        runtimeCatalog.KubeConfigAutoDiscoveryEnabled.ShouldBeTrue();
-    }
-
     private static Task WaitAsync(Func<bool> predicate) =>
         TestWait.UntilAsync(predicate, 5000, TestContext.Current.CancellationToken, () => Dispatcher.UIThread.RunJobs());
 
