@@ -42,6 +42,12 @@ public sealed class SettingsView() : KubeUIView<SettingsViewModel>
                             Assets.Resources.SettingsView_PreRelease_Label!,
                             x => x.SettingsService.Settings.PreReleaseChannel),
 
+                        CreateHeading(Assets.Resources.SettingsView_ClustersHeading!),
+                        CreateToggleRow(
+                            vm,
+                            Assets.Resources.SettingsView_AutoDiscovery_ToolTip!,
+                            Assets.Resources.SettingsView_AutoDiscovery_Label!,
+                            x => x.KubeConfigAutoDiscoveryEnabled),
                         CreateHeading(Assets.Resources.SettingsView_AppearanceHeading!),
                         CreateThemeRow(vm),
                         CreateNumericRow(

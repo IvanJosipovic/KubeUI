@@ -16,6 +16,39 @@ namespace KubeUI.Avalonia.Tests.Shell.Documents.Settings;
 
 public sealed class SettingsViewModelTests
 {
+    [AvaloniaFact]
+    public void auto_discovery_setting_updates_runtime_and_persisted_setting()
+    {
+        var services = Application.Current.GetTestServices();
+        var runtimeCatalog = services.GetRequiredService<IClusterRuntimeCatalog>();
+        var settings = services.GetRequiredService<ISettingsService>();
+        var agent = new Mock<IAgent>();
+        agent.SetupGet(value => value.Name).Returns("Test agent");
+        var registry = new Mock<IAgentRegistry>();
+        registry.SetupGet(value => value.Agents).Returns([agent.Object]);
+        using var viewModel = CreateViewModel(settings, registry.Object, runtimeCatalog);
+        var view = new SettingsView { DataContext = viewModel };
+        using var window = Application.Current.CreateTestWindow(600, 900, view);
+        window.Show();
+        Dispatcher.UIThread.RunJobs();
+        var toggle = FindToggleRow(view, Assets.Resources.SettingsView_AutoDiscovery_Label!).Children.OfType<CheckBox>().Single();
+        try
+        {
+            toggle.IsChecked = false;
+            Dispatcher.UIThread.RunJobs();
+            runtimeCatalog.KubeConfigAutoDiscoveryEnabled.ShouldBeFalse();
+            settings.Settings.KubeConfigAutoDiscoveryEnabled.ShouldBeFalse();
+            toggle.IsChecked = true;
+            Dispatcher.UIThread.RunJobs();
+            runtimeCatalog.KubeConfigAutoDiscoveryEnabled.ShouldBeTrue();
+            settings.Settings.KubeConfigAutoDiscoveryEnabled.ShouldBeTrue();
+        }
+        finally
+        {
+            runtimeCatalog.SetKubeConfigAutoDiscovery(true);
+        }
+    }
+
     [Fact]
     public void selected_agent_updates_persisted_agent_id()
     {
@@ -146,7 +179,7 @@ public sealed class SettingsViewModelTests
     {
         var settings = new AppSettings
         {
-            Features = new FeatureSettings
+            PreviewFeatures = new FeatureSettings
             {
                 Helm = true,
                 Hubble = false,

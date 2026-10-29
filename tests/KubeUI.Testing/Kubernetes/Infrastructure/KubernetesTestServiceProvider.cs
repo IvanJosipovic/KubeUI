@@ -15,6 +15,8 @@ public sealed class KubernetesTestKubeConfigPathProvider : IKubeConfigPathProvid
     }
 
     public string DefaultPath { get; }
+
+    public string? DiscoveryDirectory => null;
 }
 
 public sealed class KubernetesTestHostApplicationLifetime : IHostApplicationLifetime
@@ -38,6 +40,10 @@ public sealed class KubernetesTestSettingsStore : IClusterSettingsStore
     }
 
     public IReadOnlyCollection<string> KubeConfigPaths => _kubeConfigPaths;
+
+    public bool KubeConfigAutoDiscoveryEnabled { get; set; } = true;
+
+    public void RemoveKubeConfigPath(string path) => _kubeConfigPaths.Remove(path);
 
     public void AddKubeConfigPath(string path)
     {

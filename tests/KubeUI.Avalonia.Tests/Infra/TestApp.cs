@@ -156,7 +156,7 @@ public class TestApp : App, IDisposable
         {
             Settings = new()
             {
-                Features = new()
+                PreviewFeatures = new()
                 {
                     Helm = true,
                     Hubble = true

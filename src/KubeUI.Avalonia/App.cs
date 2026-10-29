@@ -149,11 +149,11 @@ public partial class App : Application, IServiceProviderHost
     {
         if (string.IsNullOrWhiteSpace(e.Data))
         {
-            _logger.LogError("Cluster ExecStdError: no data");
+            _logger.LogTrace("Cluster ExecStdError: no data");
             return;
         }
 
-        _logger.LogError("Cluster ExecStdError: {Data}", e.Data);
+        _logger.LogWarning("Cluster ExecStdError: {Data}", e.Data);
 
         Dispatcher.UIThread.Post(() => ShowClusterError(e.Data), DispatcherPriority.Background);
     }
