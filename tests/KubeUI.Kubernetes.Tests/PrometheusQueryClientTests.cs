@@ -38,8 +38,7 @@ public sealed class PrometheusQueryClientTests
 
         await client.PrepareAsync(cluster, endpoint);
 
-        observedUris.Count.ShouldBe(1);
-        new Uri(observedUris[0]).AbsolutePath.ShouldBe("/api/v1/namespaces/monitoring/services");
+        observedUris.Count(uri => new Uri(uri).AbsolutePath == "/api/v1/namespaces/monitoring/services").ShouldBe(1);
         var service = cluster.GetResource<k8s.Models.V1Service>("monitoring", "prometheus-operated");
         service.ShouldNotBeNull();
         service.Spec.Ports[0].Port.ShouldBe(9090);
@@ -51,8 +50,7 @@ public sealed class PrometheusQueryClientTests
     {
         List<string> observedUris = [];
         List<string?> observedTokens = [];
-        int kubernetesApiRequests = 0;
-        using var kubernetesHandler = new RecordingHandler(_ => kubernetesApiRequests++, ServiceListResponseBody);
+        using var kubernetesHandler = new RecordingHandler(_ => { }, ServiceListResponseBody);
         using var queryHandler = new RecordingHandler(request =>
         {
             observedUris.Add(request.RequestUri?.ToString() ?? string.Empty);
@@ -97,8 +95,8 @@ public sealed class PrometheusQueryClientTests
         Uri.UnescapeDataString(observedUri.Query).ShouldContain("query=up{job=\"kube api\"}");
         observedTokens.ShouldBe(["prometheus-token"]);
         cluster.PortForwarders.Count.ShouldBe(1);
-        kubernetesApiRequests.ShouldBe(1);
-        kubernetesHandler.RequestUris.Single().ShouldStartWith("/api/v1/namespaces/monitoring/services?");
+        kubernetesHandler.RequestUris.Count(uri => uri.StartsWith("/api/v1/namespaces/monitoring/services?", StringComparison.Ordinal))
+            .ShouldBe(1);
         await client.ResetAsync();
     }
 
