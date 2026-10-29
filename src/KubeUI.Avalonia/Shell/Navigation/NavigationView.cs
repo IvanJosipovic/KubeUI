@@ -65,6 +65,11 @@ public sealed class NavigationView : ViewBase<NavigationViewModel>
                 .ContextMenu(new ContextMenu()
                     .Items(
                         new MenuItem()
+                            .Header(node, x => x.ExpansionMenuHeader)
+                            .Command(node, x => x.ToggleExpansionCommand)
+                            .CommandParameter(node)
+                            .Icon(new FluentIcon().Icon(node, x => x.ExpansionMenuIcon)),
+                        new MenuItem()
                             .Header(node, x => x.ConnectionMenuHeader)
                             .Command(node, x => x.ToggleConnectionCommand)
                             .CommandParameter(node)
@@ -89,7 +94,7 @@ public sealed class NavigationView : ViewBase<NavigationViewModel>
                                 .StrokeThickness(0.6),
                             new TextBlock()
                                 .VerticalAlignment(VerticalAlignment.Center)
-                                .Text(node, x => x.Cluster.Runtime.Name))
+                                .Text(node, x => x.Cluster.DisplayName))
                 )
                 .ToolTip_Tip(node, x => x.Cluster.Runtime.Status, BindingMode.OneWay, new FuncValueConverter<ClusterStatus, string>(status =>
                 {
