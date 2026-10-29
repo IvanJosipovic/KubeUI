@@ -374,7 +374,7 @@ public sealed class Fluent : AvaloniaStyles
             ? indicator
             : indicator
                 .Fill(cluster, x => x.ClusterColor)
-                .ToolTip_Tip(cluster, x => x.Runtime.Name);
+                .ToolTip_Tip(cluster, x => x.DisplayName);
     }
 
     private static ClusterWorkspace? GetCluster(IDockable dockable)
