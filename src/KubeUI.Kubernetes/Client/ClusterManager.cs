@@ -1,5 +1,4 @@
 using KubeUI.Kubernetes.Serialization;
-using System.Diagnostics;
 using k8s;
 using k8s.KubeConfigModels;
 using Swordfish.NET.Collections;
@@ -44,18 +43,6 @@ public sealed partial class ClusterManager : ObservableObject, IClusterRuntimeCa
         _dispatcher = dispatcher;
         _kubeConfigPathProvider = kubeConfigPathProvider;
 
-        KubernetesClientConfiguration.ExecStdError += KubernetesClientConfiguration_ExecStdError;
-    }
-
-    private void KubernetesClientConfiguration_ExecStdError(object? sender, DataReceivedEventArgs e)
-    {
-        if (string.IsNullOrEmpty(e.Data))
-        {
-            _logger.LogError("Cluster ExecStdError: no data");
-            return;
-        }
-
-        _logger.LogError("Cluster ExecStdError: {data}", e.Data);
     }
 
     internal async Task LoadClustersAsync(CancellationToken cancellationToken)
@@ -388,8 +375,6 @@ public sealed partial class ClusterManager : ObservableObject, IClusterRuntimeCa
 
     public void Dispose()
     {
-        KubernetesClientConfiguration.ExecStdError -= KubernetesClientConfiguration_ExecStdError;
-
         foreach (var watcher in _fileWatchers.Values)
         {
             watcher.Dispose();
