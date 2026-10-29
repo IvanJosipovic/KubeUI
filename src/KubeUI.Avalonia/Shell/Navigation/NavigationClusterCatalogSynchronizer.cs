@@ -14,7 +14,6 @@ internal sealed class NavigationClusterCatalogSynchronizer : IDisposable
     private readonly Action<ClusterWorkspace> _reconcile;
     private readonly ICommand _toggleConnectionCommand;
     private readonly ICommand _openSettingsCommand;
-    private readonly ICommand _toggleExpansionCommand;
     private readonly ILogger<NavigationClusterCatalogSynchronizer> _logger;
     private readonly Dictionary<ClusterWorkspace, ClusterNavigationNode> _nodesByWorkspace = [];
     private readonly Dictionary<IClusterRuntime, ClusterWorkspace> _workspacesByRuntime = [];
@@ -28,7 +27,6 @@ internal sealed class NavigationClusterCatalogSynchronizer : IDisposable
         Action<ClusterWorkspace> reconcile,
         ICommand toggleConnectionCommand,
         ICommand openSettingsCommand,
-        ICommand toggleExpansionCommand,
         ILogger<NavigationClusterCatalogSynchronizer> logger)
     {
         _catalog = catalog;
@@ -38,7 +36,6 @@ internal sealed class NavigationClusterCatalogSynchronizer : IDisposable
         _reconcile = reconcile;
         _toggleConnectionCommand = toggleConnectionCommand;
         _openSettingsCommand = openSettingsCommand;
-        _toggleExpansionCommand = toggleExpansionCommand;
         _logger = logger;
 
         if (_catalog.Clusters is INotifyCollectionChanged collection)
@@ -208,7 +205,6 @@ internal sealed class NavigationClusterCatalogSynchronizer : IDisposable
         {
             ToggleConnectionCommand = _toggleConnectionCommand,
             OpenSettingsCommand = _openSettingsCommand,
-            ToggleExpansionCommand = _toggleExpansionCommand,
         };
 
         _nodes.Insert(GetInsertIndex(workspace), node);
